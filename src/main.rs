@@ -1,3 +1,3 @@
 fn main() {
-    println!("Hello, world!");
+    println!("orbit 0.1.0");
 }

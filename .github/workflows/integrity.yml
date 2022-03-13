@@ -13,9 +13,9 @@ jobs:
 
     - name: Compute checksums
       run: |
-        cd ./orbit-linux-x64; sha256sum orbit-linux-x64.tar.gz > checksum.txt; cd ..
-        cd ./orbit-macos-x64; sha256sum orbit-macos-x64.tar.gz >> checksum.txt; cd ..
-        cd ./orbit-windows-x64; sha256sum orbit-windows-x64.zip >> checksum.txt; cd ..
+        cd ./orbit-linux-x64; sha256sum orbit-linux-x64.tar.gz >> ./../checksum.txt; cd ..
+        cd ./orbit-macos-x64; sha256sum orbit-macos-x64.tar.gz >> ./../checksum.txt; cd ..
+        cd ./orbit-windows-x64; sha256sum orbit-windows-x64.zip >> ./../checksum.txt; cd ..
 
     - name: Review checksums
       run: cat ./checksums.txt

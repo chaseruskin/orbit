@@ -13,8 +13,12 @@ jobs:
 
     - name: Compute checksums
       run: |
-        sha256sum /unknown/path.txt > checksum.txt
-        sha256sum /unknown/path.txt >> checksum.txt
+        cd ./orbit-linux-x64; sha256sum orbit-linux-x64.tar.gz > checksum.txt
+        cd ./orbit-macos-x64; sha256sum orbit-macos-x64.tar.gz >> checksum.txt
+        cd ./orbit-windows-x64; sha256sum orbit-windows-x64.zip >> checksum.txt
+
+    - name: Review checksums
+      run: cat ./checksums.txt
 
     - name: Upload checksums
       uses: actions/upload-artifact@v2

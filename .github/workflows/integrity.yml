@@ -18,7 +18,7 @@ jobs:
         cd ./orbit-windows-x64; sha256sum orbit-windows-x64.zip >> ./../checksum.txt; cd ..
 
     - name: Review checksums
-      run: cat ./checksums.txt
+      run: cat ./checksum.txt
 
     - name: Upload checksums
       uses: actions/upload-artifact@v2

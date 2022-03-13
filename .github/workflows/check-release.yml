@@ -12,7 +12,14 @@ jobs:
     outputs:
       ready: ${{ steps.ready.outputs.ready }}
     steps:
-      - uses: actions/checkout@v2
+      - name: Fetch Repository
+        uses: actions/checkout@v2
+
+      - name: Setup python
+        uses: actions/setup-python@v2.2.2
+        with:
+          python-version: 3.x
+          
       - name: Evaluate Cargo crate version
         id: ready
-        run: echo "::set-output name=ready::0"
+        run: echo "::set-output name=ready::$(python ./tools/evalver.py)"

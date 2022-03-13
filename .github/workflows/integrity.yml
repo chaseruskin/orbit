@@ -1,0 +1,23 @@
+name: integrity
+on: 
+  workflow_call:
+
+jobs:
+  integrity:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/download-artifact@v2
+
+    - name: debug- Display structure of downloaded files
+      run: ls -R
+
+    - name: Compute checksums
+      run: |
+        sha256sum /unknown/path.txt > checksum.txt
+        sha256sum /unknown/path.txt >> checksum.txt
+
+    - name: Upload checksums
+      uses: actions/upload-artifact@v2
+      with:
+        name: checksum
+        path: ./checksum.txt

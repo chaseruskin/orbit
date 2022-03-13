@@ -1,0 +1,24 @@
+name: release
+on: 
+  workflow_call:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - uses: actions/download-artifact@v2
+
+    - name: debug- Display structure of downloaded files
+      run: ls -R
+
+    - name: Auto-generate CHANGELOG
+      run: python ./tools/autocl.py
+      
+    - name: Uploads releases
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: '**/orbit-*.tar.gz,**/orbit-*.zip'
+        bodyFile: CHANGELOG.md
+        token: ${{ secrets.GITHUB_TOKEN }}

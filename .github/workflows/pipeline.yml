@@ -1,0 +1,21 @@
+name: pipeline
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: c-rus/orbit/.github/workflows/build.yml@trunk
+
+  integrity:
+    uses: c-rus/orbit/.github/workflows/integrity.yml@trunk
+    needs: [build]
+
+  check-release:
+    uses: c-rus/orbit/.github/workflows/check-release.yml@trunk
+    needs: [integrity]
+
+  release:
+    uses: c-rus/orbit/.github/workflows/release.yml@trunk
+    if: ${{ needs.check-release.outputs.ready == '1' }}
+    needs: [check-release]

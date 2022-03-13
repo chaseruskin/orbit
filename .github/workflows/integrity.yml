@@ -6,9 +6,10 @@ jobs:
   integrity:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/download-artifact@v2
+    - name: Fetch Repository
+      uses: actions/download-artifact@v2
 
-    - name: debug- Display structure of downloaded files
+    - name: Display filesystem contents
       run: ls -R
 
     - name: Compute checksums

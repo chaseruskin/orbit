@@ -6,19 +6,26 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - name: Fetch Repository
+      uses: actions/checkout@v2
 
-    - uses: actions/download-artifact@v2
+    - name: Download artifacts
+      uses: actions/download-artifact@v2
 
-    - name: debug- Display structure of downloaded files
+    - name: Setup python
+      uses: actions/setup-python@v2.2.2
+      with:
+        python-version: 3.x
+
+    - name: Display filesystem contents
       run: ls -R
 
     - name: Auto-generate CHANGELOG
       run: python ./tools/autocl.py
       
-    - name: Uploads releases
+    - name: Upload releases
       uses: ncipollo/release-action@v1
       with:
-        artifacts: '**/orbit-*.tar.gz,**/orbit-*.zip'
+        artifacts: '**/orbit-*.tar.gz,**/orbit-*.zip,**/checksum.txt'
         bodyFile: CHANGELOG.md
         token: ${{ secrets.GITHUB_TOKEN }}

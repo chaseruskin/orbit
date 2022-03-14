@@ -1,25 +1,17 @@
 //! File     : pkgid.rs
 //! Abstract :
-//!     A `pkgid` is formed from a string following VLNV format.
+//!     A `pkgid` is formed is a unique string following VLNV format that allows
+//!     reference to a particular package/ip.
 
 use std::str::FromStr;
 use std::error::Error;
 use std::fmt::Display;
 
 #[derive(Debug, PartialEq)]
-struct PkgId {
+pub struct PkgId {
     vendor: Option<String>,
     library: Option<String>,
     name: String
-}
-
-impl Display for PkgId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
-        write!(f, "{0}.{1}.{2}", 
-            self.vendor.as_ref().unwrap_or(&"".to_owned()), 
-            self.library.as_ref().unwrap_or(&"".to_owned()), 
-            self.name)
-    }
 }
 
 impl PkgId {
@@ -46,19 +38,17 @@ impl PkgId {
         Ok(self)
     }
 
-    pub fn get_name(&self) -> &String {
-        &self.name
+    /// Two `PkgId`'s are considered equivalent if they have identical case 
+    /// insensitive string parts. Different than `==` operator.
+    pub fn equivalent(&self, other: &Self) -> bool {
+        self.name.to_lowercase() == other.name.to_lowercase() &&
+        self.library.as_ref().and_then(|s| Some(s.to_lowercase())) == other.library.as_ref().and_then(|s| Some(s.to_lowercase())) &&
+        self.vendor.as_ref().and_then(|s| Some(s.to_lowercase())) == other.vendor.as_ref().and_then(|s| Some(s.to_lowercase()))
     }
 
-    pub fn get_library(&self) -> &Option<String> {
-        &self.library
-    }
-
-    pub fn get_vendor(&self) -> &Option<String> {
-        &self.vendor
-    }
-
-    /// Verify a part follows the spec
+    /// Verify a part follows the `PkgId` specification.
+    /// First character must be `alphabetic`. Remaining characters must be
+    /// `alphanumeric`, `-`, or `_`.
     fn validate_part<'a>(s: &'a str) -> Result<&'a str, PkgIdError> {
         use PkgIdError::*;
 
@@ -86,10 +76,52 @@ impl PkgId {
         self.vendor.is_some() && self.vendor.as_ref().unwrap().len() > 0 &&
         self.library.is_some() && self.library.as_ref().unwrap().len() > 0
     }
+
+    pub fn get_name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn get_library(&self) -> &Option<String> {
+        &self.library
+    }
+
+    pub fn get_vendor(&self) -> &Option<String> {
+        &self.vendor
+    }
+}
+
+impl Display for PkgId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
+        write!(f, "{0}.{1}.{2}", 
+            self.vendor.as_ref().unwrap_or(&"".to_owned()), 
+            self.library.as_ref().unwrap_or(&"".to_owned()), 
+            self.name)
+    }
+}
+
+impl FromStr for PkgId {
+    type Err = PkgIdError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> { 
+        let chunks: Vec<&str> = s.rsplit_terminator('.').collect();
+        if chunks.len() > 3 {
+            return Err(PkgIdError::BadLen(s.to_owned(), chunks.len()));
+        }
+
+        Ok(PkgId {
+            name: if let Some(&n) = chunks.get(0) {
+                PkgId::validate_part(n)?.to_owned() } else { return Err(PkgIdError::Empty) },
+            library: if let Some(&l) = chunks.get(1) {
+                Some(PkgId::validate_part(l)?.to_owned()) } else { None },
+            vendor: if let Some(&v) = chunks.get(2) {
+                Some(PkgId::validate_part(v)?.to_owned()) } else { None }
+            }
+        )
+    }
 }
 
 #[derive(Debug, PartialEq)]
-enum PkgIdError {
+pub enum PkgIdError {
     NotAlphabeticFirst(String),
     BadLen(String, usize),
     Empty,
@@ -99,7 +131,6 @@ enum PkgIdError {
 impl Error for PkgIdError {}
 
 impl Display for PkgIdError {
-
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
         use PkgIdError::*;
         match self {
@@ -110,31 +141,6 @@ impl Display for PkgIdError {
         }
     }
 }
-
-impl FromStr for PkgId {
-    type Err = PkgIdError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> { 
-        use PkgIdError::*;
-        
-        let chunks: Vec<&str> = s.rsplit_terminator('.').collect();
-
-        if chunks.len() > 3 {
-            return Err(BadLen(s.to_owned(), chunks.len()));
-        }
-
-        Ok(PkgId {
-            name: if let Some(&n) = chunks.get(0) {
-                PkgId::validate_part(n)?.to_owned() } else { return Err(Empty) },
-            library: if let Some(&l) = chunks.get(1) {
-                Some(PkgId::validate_part(l)?.to_owned()) } else { None },
-            vendor: if let Some(&v) = chunks.get(2) {
-                Some(PkgId::validate_part(v)?.to_owned()) } else { None }
-            }
-        )
-    }
-}
-
 
 #[cfg(test)]
 mod test {
@@ -158,8 +164,43 @@ mod test {
             library: Some("rary".to_owned()),
             vendor: Some("vendor".to_owned()),
         });
+
+        assert_eq!(pkgid.get_name(), "name");
+        assert_eq!(pkgid.get_library(), &Some("rary".to_owned()));
+        assert_eq!(pkgid.get_vendor(), &Some("vendor".to_owned()));
     }
 
+    #[test]
+    fn equivalence() {
+        let p1 = PkgId::new()
+            .name("NAME").unwrap()
+            .library("library").unwrap()
+            .vendor("Vendor").unwrap();
+
+        let p2 = PkgId::new()
+            .name("name").unwrap()
+            .library("LIBRARY").unwrap()
+            .vendor("vendoR").unwrap();
+        assert!(p1.equivalent(&p2));
+
+        let p2 = PkgId::new()
+            .name("name").unwrap()
+            .library("library2").unwrap()
+            .vendor("vendor").unwrap();
+        assert_eq!(p1.equivalent(&p2), false);
+
+        let p2 = PkgId::new()
+            .name("name4").unwrap()
+            .library("library").unwrap()
+            .vendor("vendor").unwrap();
+        assert_eq!(p1.equivalent(&p2), false);
+
+        let p2 = PkgId::new()
+            .name("name").unwrap()
+            .library("library").unwrap()
+            .vendor("ven_dor").unwrap();
+        assert_eq!(p1.equivalent(&p2), false);
+    }
 
     #[test]
     fn validate() {

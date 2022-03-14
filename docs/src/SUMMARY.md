@@ -11,6 +11,7 @@
 - [Topic Guide](./4_topic/0_topic.md)
 
 - [Reference](./5_reference/0_reference.md)
+    - [Packages](./5_reference/1_packages.md)
 
 - [Commands](./6_commands/0_commands.md)
 

@@ -10,6 +10,8 @@ use std::fmt::Display;
 
 type VerNum = u16;
 
+// :todo: make `minor` and `patch` fields optional?
+
 #[derive(Debug, PartialEq, PartialOrd)]
 pub struct Version {
     major: VerNum, 

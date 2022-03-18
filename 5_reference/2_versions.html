@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Commands - The Book of Orbit</title>
+        <title>Versions - The Book of Orbit</title>
                 
 
         <!-- Custom HTML head -->
@@ -82,7 +82,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../1_starting/0_starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="../2_tutorials/0_tutorials.html"><strong aria-hidden="true">2.</strong> Tutorials</a></li><li class="chapter-item expanded "><a href="../3_user/0_user.html"><strong aria-hidden="true">3.</strong> User Guide</a></li><li class="chapter-item expanded "><a href="../4_topic/0_topic.html"><strong aria-hidden="true">4.</strong> Topic Guide</a></li><li class="chapter-item expanded "><a href="../5_reference/0_reference.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../5_reference/1_packages.html"><strong aria-hidden="true">5.1.</strong> Packages</a></li><li class="chapter-item expanded "><a href="../5_reference/2_versions.html"><strong aria-hidden="true">5.2.</strong> Versions</a></li></ol></li><li class="chapter-item expanded "><a href="../6_commands/0_commands.html" class="active"><strong aria-hidden="true">6.</strong> Commands</a></li><li class="chapter-item expanded "><a href="../glossary.html"><strong aria-hidden="true">7.</strong> Appendix: Glossary</a></li></ol>            </div>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../1_starting/0_starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="../2_tutorials/0_tutorials.html"><strong aria-hidden="true">2.</strong> Tutorials</a></li><li class="chapter-item expanded "><a href="../3_user/0_user.html"><strong aria-hidden="true">3.</strong> User Guide</a></li><li class="chapter-item expanded "><a href="../4_topic/0_topic.html"><strong aria-hidden="true">4.</strong> Topic Guide</a></li><li class="chapter-item expanded "><a href="../5_reference/0_reference.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../5_reference/1_packages.html"><strong aria-hidden="true">5.1.</strong> Packages</a></li><li class="chapter-item expanded "><a href="../5_reference/2_versions.html" class="active"><strong aria-hidden="true">5.2.</strong> Versions</a></li></ol></li><li class="chapter-item expanded "><a href="../6_commands/0_commands.html"><strong aria-hidden="true">6.</strong> Commands</a></li><li class="chapter-item expanded "><a href="../glossary.html"><strong aria-hidden="true">7.</strong> Appendix: Glossary</a></li></ol>            </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
 
@@ -143,17 +143,50 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="commands"><a class="header" href="#commands">Commands</a></h1>
+                        <h1 id="versions"><a class="header" href="#versions">Versions</a></h1>
+<p>Code evolves over time, and versions provide a method for capturing a project's state at a given time stamp.</p>
+<p>Orbit uses the <em>semantic versioning</em> scheme for capturing project's state at given time periods. Semantic versioning uses 3 numeric values to signify different levels of change.</p>
+<pre><code>&lt;MAJOR&gt;.&lt;MINOR&gt;.&lt;PATCH&gt;
+</code></pre>
+<table><thead><tr><th>Level</th><th>Explanation</th></tr></thead><tbody>
+<tr><td>Major</td><td>incompatible API changes</td></tr>
+<tr><td>Minor</td><td>adding functionality in backward-compatible way</td></tr>
+<tr><td>Patch</td><td>fixing bugs in backward-compatible way</td></tr>
+</tbody></table>
+<p>To learn more about semantic versioning, visit the official <a href="https://semver.org">website</a>. </p>
+<p>Since everyone's stance on what code changes affect which version level may differ, it's important to keep a changelog highlighting differences among versions.</p>
+<h2 id="example-scenarios"><a class="header" href="#example-scenarios">Example Scenarios</a></h2>
+<p>The version must be written in every project's manifest file.</p>
+<pre><code>[ip]
+...
+version = 0.1.0
+...
+</code></pre>
+<p>To request a particular version when installing packages, you may append the version number after <code>@v</code> to the pkgid.</p>
+<pre><code>orbit install uf-ece.rary.gates@v1.5.4
+</code></pre>
+<p>You may also request a particular version of an entity from an IP.</p>
+<pre><code>orbit get uf-ece.rary.gates::nor_gate --version 1.5.4
+</code></pre>
+<h2 id="comparing-versions"><a class="header" href="#comparing-versions">Comparing versions</a></h2>
+<p>The following is pseudocode to learn about how versions are compared (selecting 'higher' version).</p>
+<pre><code>IF major levels are not equal:
+    RETURN version with larger major level value.
+ELSE IF minor levels are not equal:
+    RETURN version with larger minor level value.
+ELSE:
+    RETURN version with larger patch level value. 
+</code></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                                                    <a rel="prev" href="../5_reference/2_versions.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                                    <a rel="prev" href="../5_reference/1_packages.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
-                                                    <a rel="next" href="../glossary.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                                    <a rel="next" href="../6_commands/0_commands.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -163,11 +196,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                                    <a rel="prev" href="../5_reference/2_versions.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                    <a rel="prev" href="../5_reference/1_packages.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
-                                    <a rel="next" href="../glossary.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                    <a rel="next" href="../6_commands/0_commands.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                             </nav>

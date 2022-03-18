@@ -11,15 +11,17 @@ The following rules apply to each section in the pkgid (vendor, library, and nam
 - must begin with an alphabetic character
 - can only contain alphanumeric characters, dashes `-`, and underscores `_`
 
+### Fully Qualified Status
+
+In some cases, a pkgid must be _fully qualified_, which means all 3 identifiers are provided: vendor, library, and name. For example, a pkgid must be fully qualified when creating a new package from the command-line.
+
 ### Specification Grammar
 
 ```
-PKGID ::= [[<VENDOR>.]<LIBRARY>.]<NAME>[@<VERSION>]
+PKGID ::= [[<VENDOR>.]<LIBRARY>.]<NAME>[@v<VERSION>]
 ```
 
 If a pkgid can be determined by Orbit without specifying all parts, then unnecessary parts may be omitted. See examples for more information.
-
-
 
 ### Example Specifications
 | pkgid                       | Vendor | Library | Name         | Version

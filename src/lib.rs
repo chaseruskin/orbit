@@ -1,4 +1,5 @@
 mod pkgid;
+mod version;
 
 #[test]
 fn it_works() {

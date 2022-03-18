@@ -12,6 +12,7 @@
 
 - [Reference](./5_reference/0_reference.md)
     - [Packages](./5_reference/1_packages.md)
+    - [Versions](./5_reference/2_versions.md)
 
 - [Commands](./6_commands/0_commands.md)
 

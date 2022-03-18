@@ -197,6 +197,12 @@ mod test {
             minor: 256,
             patch: 0,
         });
+        let v = Version::from_str("019.004.073").unwrap();
+        assert_eq!(v, Version {
+            major: 19,
+            minor: 4,
+            patch: 73,
+        });
         // invalid cases
         let v = Version::from_str("1.2.");
         assert!(v.is_err());
@@ -207,6 +213,8 @@ mod test {
         let v = Version::from_str("1.-4.5");
         assert!(v.is_err());
         let v = Version::from_str("1.4.5.9");
+        assert!(v.is_err());
+        let v = Version::from_str("1.4.1_5");
         assert!(v.is_err());
     }
 

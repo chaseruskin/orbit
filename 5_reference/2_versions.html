@@ -155,21 +155,36 @@
 </tbody></table>
 <p>To learn more about semantic versioning, visit the official <a href="https://semver.org">website</a>. </p>
 <p>Since everyone's stance on what code changes affect which version level may differ, it's important to keep a changelog highlighting differences among versions.</p>
-<h2 id="example-scenarios"><a class="header" href="#example-scenarios">Example Scenarios</a></h2>
-<p>The version must be written in every project's manifest file.</p>
+<h3 id="rules"><a class="header" href="#rules">Rules</a></h3>
+<p>All 3 levels must be given a numeric value consisting of only digits separated by a dot (<code>.</code>) character. This is considered a <em>fully qualified</em> version.</p>
+<pre><code>1.0.0
+</code></pre>
+<p>In some scenarios a <em>partially qualified</em> version can be accepted. This means one or more of the version's levels are omitted. </p>
+<pre><code>1
+1.0
+</code></pre>
+<p>When given a partially qualified version, Orbit references the maximum version available that satifies the partially qualified version.</p>
+<pre><code>Available versions: { 1.0.0, 1.2.0, 1.2.1, 1.5.0, 2.1.0 }
+1       -&gt; 1.5.0
+1.1     -&gt; not found
+1.2     -&gt; 1.2.1
+2       -&gt; 2.1.0
+</code></pre>
+<h3 id="example-scenarios"><a class="header" href="#example-scenarios">Example Scenarios</a></h3>
+<p>A fully qualified version must be written in every project's manifest file.</p>
 <pre><code>[ip]
 ...
 version = 0.1.0
 ...
 </code></pre>
-<p>To request a particular version when installing packages, you may append the version number after <code>@v</code> to the pkgid.</p>
+<p>To request a particular version (partially or fully qualified) when installing packages, you may append the version number after <code>@v</code> to the pkgid.</p>
 <pre><code>orbit install uf-ece.rary.gates@v1.5.4
 </code></pre>
-<p>You may also request a particular version of an entity from an IP.</p>
+<p>You may also request a particular version (partially or fully qualified) for an entity from an IP .</p>
 <pre><code>orbit get uf-ece.rary.gates::nor_gate --version 1.5.4
 </code></pre>
-<h2 id="comparing-versions"><a class="header" href="#comparing-versions">Comparing versions</a></h2>
-<p>The following is pseudocode to learn about how versions are compared (selecting 'higher' version).</p>
+<h3 id="comparing-versions"><a class="header" href="#comparing-versions">Comparing versions</a></h3>
+<p>The following pseudocode provides additional help in learning about how versions are compared (selecting a &quot;higher&quot; version).</p>
 <pre><code>IF major levels are not equal:
     RETURN version with larger major level value.
 ELSE IF minor levels are not equal:

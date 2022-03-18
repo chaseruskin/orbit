@@ -152,8 +152,10 @@
 <li>must begin with an alphabetic character</li>
 <li>can only contain alphanumeric characters, dashes <code>-</code>, and underscores <code>_</code></li>
 </ul>
+<h3 id="fully-qualified-status"><a class="header" href="#fully-qualified-status">Fully Qualified Status</a></h3>
+<p>In some cases, a pkgid must be <em>fully qualified</em>, which means all 3 identifiers are provided: vendor, library, and name. For example, a pkgid must be fully qualified when creating a new package from the command-line.</p>
 <h3 id="specification-grammar"><a class="header" href="#specification-grammar">Specification Grammar</a></h3>
-<pre><code>PKGID ::= [[&lt;VENDOR&gt;.]&lt;LIBRARY&gt;.]&lt;NAME&gt;[@&lt;VERSION&gt;]
+<pre><code>PKGID ::= [[&lt;VENDOR&gt;.]&lt;LIBRARY&gt;.]&lt;NAME&gt;[@v&lt;VERSION&gt;]
 </code></pre>
 <p>If a pkgid can be determined by Orbit without specifying all parts, then unnecessary parts may be omitted. See examples for more information.</p>
 <h3 id="example-specifications"><a class="header" href="#example-specifications">Example Specifications</a></h3>

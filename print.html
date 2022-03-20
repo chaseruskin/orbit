@@ -191,6 +191,12 @@
 <blockquote>
 <p><strong>Note</strong>: In this table, a '#' in a version position represents the highest available value for that position. So, version <code>#.#.#</code> would refer to the latest available version.</p>
 </blockquote>
+<h3 id="namespace-collisions"><a class="header" href="#namespace-collisions">Namespace Collisions</a></h3>
+<p>Within a user's <em>catalog</em>, two different pkgids may share common identifiers, but cannot all be equivalent. Two identifiers are considered equivalent if their lower-case mapping is identical, including mapping dashes <code>-</code> to underscore <code>_</code>.</p>
+<ul>
+<li>Intel.gfx.vga <strong>!=</strong> Intel.gfx.hdmi</li>
+<li>uf-ece.rary.gates <strong>==</strong> UF_ECE.Rary.gates</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="versions"><a class="header" href="#versions">Versions</a></h1>
 <p>Code evolves over time, and versions provide a method for capturing a project's state at a given time stamp.</p>
 <p>Orbit uses the <em>semantic versioning</em> scheme for capturing project's state at given time periods. Semantic versioning uses 3 numeric values to signify different levels of change.</p>

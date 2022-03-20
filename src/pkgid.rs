@@ -39,11 +39,20 @@ impl PkgId {
     }
 
     /// Two `PkgId`'s are considered equivalent if they have identical case 
-    /// insensitive string parts. Different than `==` operator.
+    /// insensitive string parts. Different than `==` operator. Converting '-' 
+    /// to '_' is also applied.
     pub fn equivalent(&self, other: &Self) -> bool {
-        self.name.to_lowercase() == other.name.to_lowercase() &&
-        self.library.as_ref().and_then(|s| Some(s.to_lowercase())) == other.library.as_ref().and_then(|s| Some(s.to_lowercase())) &&
-        self.vendor.as_ref().and_then(|s| Some(s.to_lowercase())) == other.vendor.as_ref().and_then(|s| Some(s.to_lowercase()))
+        self.name.replace('-', "_").to_lowercase() == other.name.replace('-', "_").to_lowercase() &&
+        self.library.as_ref().and_then(|s| 
+            Some(s.replace('-', "_").to_lowercase())
+        ) == other.library.as_ref().and_then(|s| 
+            Some(s.replace('-', "_").to_lowercase())
+        ) &&
+        self.vendor.as_ref().and_then(|s| 
+            Some(s.replace('-', "_").to_lowercase())
+        ) == other.vendor.as_ref().and_then(|s| 
+            Some(s.replace('-', "_").to_lowercase())
+        )
     }
 
     /// Verify a part follows the `PkgId` specification.
@@ -200,6 +209,18 @@ mod test {
             .library("library").unwrap()
             .vendor("ven_dor").unwrap();
         assert_eq!(p1.equivalent(&p2), false);
+
+        // Converting '-' to '_' is applied for equivalence
+        let p1 = PkgId::new()
+            .name("name").unwrap()
+            .library("lib_rary").unwrap()
+            .vendor("Vendor").unwrap();
+
+        let p2 = PkgId::new()
+            .name("name").unwrap()
+            .library("lib-rary").unwrap()
+            .vendor("vendor").unwrap();
+        assert_eq!(p1.equivalent(&p2), true);
     }
 
     #[test]

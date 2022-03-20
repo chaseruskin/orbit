@@ -215,6 +215,7 @@ mod test {
         assert_eq!(PkgId::validate_part(s), Ok(s));
 
         //errors
+        assert!(PkgId::validate_part("ven dor").is_err());
         assert!(PkgId::validate_part("2name").is_err());
         assert!(PkgId::validate_part("_name").is_err());
         assert!(PkgId::validate_part("-name").is_err());
@@ -312,6 +313,7 @@ mod test {
         assert!(PkgId::from_str("vendor.0library.name").is_err());
         assert!(PkgId::from_str("vendor.library.0name").is_err());
         assert!(PkgId::from_str("vendor.library.name=").is_err());
+        assert!(PkgId::from_str("vendor.lib rary.name").is_err());
 
         assert!(PkgId::from_str("v$ndor.library.name").is_err());
         assert!(PkgId::from_str("vendor.l*brary.name").is_err());

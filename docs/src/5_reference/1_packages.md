@@ -35,3 +35,10 @@ AMD.procs.cpu@v2              | AMD    | procs   | cpu          | 2.#.#
 Uf.crypto.simon-cipher@latest | Uf     | crypto  | simon-cipher | #.#.#
 
 > __Note__: In this table, a '#' in a version position represents the highest available value for that position. So, version `#.#.#` would refer to the latest available version.
+
+### Namespace Collisions
+
+Within a user's _catalog_, two different pkgids may share common identifiers, but cannot all be equivalent. Two identifiers are considered equivalent if their lower-case mapping is identical, including mapping dashes `-` to underscore `_`.
+
+- Intel.gfx.vga __!=__ Intel.gfx.hdmi
+- uf-ece.rary.gates __==__ UF_ECE.Rary.gates

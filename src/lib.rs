@@ -1,4 +1,7 @@
+#![allow(dead_code)]
+
 mod pkgid;
+mod cfgfile;
 mod version;
 
 #[test]

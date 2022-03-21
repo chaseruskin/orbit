@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
-mod pkgid;
+pub mod cli;
+pub mod pkgid;
 mod cfgfile;
 mod version;
 

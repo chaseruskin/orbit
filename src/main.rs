@@ -27,13 +27,15 @@ fn main() {
         }
         "complex" => {
             let r = Complex {
-                code: cli.get_option("--code").unwrap(),
-                level: cli.get_option("--level").unwrap(),
+                code: cli.get_option(cli::Optional("--code")).unwrap(),
+                level: cli.get_option(cli::Optional("--level")).unwrap().or(Some(99u8)),
                 digits: cli.get_option_vec("--digit").unwrap(),
                 en: cli.next_positional().unwrap(),
             };
             cli.is_clean().unwrap();
-
+            println!("{:?}", r.level);
+            println!("{:?}", r.code);
+            println!("{:?}", r.en);
             if let Some(d) = r.digits {
                 for i in d {
                     println!("{}", i);

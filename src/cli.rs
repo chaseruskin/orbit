@@ -73,23 +73,22 @@ impl Cli {
         }
     }
 
-    /// pop off the next positional in the list
-    /// ### Errors
-    /// - no valid entries left
-    /// - failure to cast to `T`
+    /// Pop off the next positional in the provided order.
     pub fn next_positional<T: FromStr + std::fmt::Debug>(&mut self) -> Result<T, CliError>
         where <T as std::str::FromStr>::Err: std::fmt::Debug {
+        // :todo: refactor using iterators
         self.past_opts = true;
-        // find the first non-None value
-        for p in &mut self.positionals {
+        for p in &mut self.positionals {        
+            // find the first non-None value
             if p.is_some() {
-                // :todo: err: failed to cast to T
-                let result = p.as_ref().unwrap().parse::<T>().unwrap();
-                *p = None;
-                return Ok(result);
+                if let Ok(r) = p.take().unwrap().parse::<T>() {
+                    return Ok(r)
+                } else {
+                    todo!("failed to cast to T for positional")
+                }
             }
         }
-        // err: missing positional
+        // found zero available arguments
         Err(CliError::ExpectingPositional)
     }
 
@@ -98,34 +97,27 @@ impl Cli {
         self.past_opts = b;
     }
 
-    pub fn get_flag(&mut self, opt: &str) -> Result<bool, CliError> {
-        // check if it is in the map
-        let val = self.options.remove(opt);
-        // user did not provide the flag
-        let mut val = if let None = val {
-            return Ok(false);
-        } else {
-            val.unwrap()
-        };
-        let element = val.pop().unwrap();
-        if val.is_empty() == false {
-            // err: duplicate values
-            return Err(CliError::DuplicateOptions);
-        }
-        // investigate if user provided a param for the flag
-        if let Some(p) = element {
-            match p {
-                Param::Direct(_) => {
-                    // err: cannot have a value
-                    return Err(CliError::UnexpectedValue);
-                },
-                Param::Indirect(_) => {
-                    Ok(true)
+    /// Query if a flag was raised. Returns errors if a direct value was given or
+    /// if the flag was raised multiple times
+    pub fn get_flag(&mut self, flag: Flag) -> Result<bool, CliError> {
+        // // check if it is in the map
+        if let Some(mut val) = self.options.remove(flag.0) {
+            // raise error if there is an attached option to the flag
+            if val.len() > 1 {
+                // err: duplicate values
+                Err(CliError::DuplicateOptions)
+            } else {
+                match val.pop().unwrap() {
+                    Some(p) => match p {
+                        Param::Direct(_) => Err(CliError::UnexpectedValue),
+                        Param::Indirect(_) => Ok(true),
+                    }
+                    None => Ok(true),
                 }
             }
-        // user only raised flag
+        // flag was not found in options map
         } else {
-            Ok(true)
+            Ok(false)
         }
     }
 
@@ -149,88 +141,71 @@ impl Cli {
     }
 
     /// Query for a particular option and get it's value.
-    pub fn get_option<T: FromStr + std::fmt::Debug>(&mut self, opt: &str) -> Result<Option<T>, CliError>
+    /// To set a default value, chain `.or()` to this function call.
+    pub fn get_option<T: FromStr + std::fmt::Debug>(&mut self, opt: Optional) -> Result<Option<T>, CliError>
     where <T as std::str::FromStr>::Err: std::fmt::Debug {
         if self.past_opts { 
             panic!("options must be evaluated before positionals")
         }
         // check if it is in the map (pull from map)
-        let val = self.options.remove(opt);
-        // user did not provide option -- :todo: provide default if available
-        let mut val = if let None = val {
-            return Ok(None);
-        } else {
-            val.unwrap()
-        };
-        let element = val.pop().unwrap();
-        if val.is_empty() == false {
-            // err: duplicate values
-            return Err(CliError::DuplicateOptions);
-        }
-        // investigate if the user provided a param for the option
-        if let Some(p) = element {
-            match p {
-                Param::Direct(s) => {
-                    // cast to T
-                    Ok(Some(s.parse::<T>().unwrap()))
-                },
-                Param::Indirect(i) => {
-                    // `i` is verified to be within size of vec; safe to unwrap
-                    let p = self.positionals.get(i).unwrap();
-                    if p.is_none() {
-                        // panic: options should be listed first in subcommand
-                        panic!("value was stolen from option {}", opt)
-                    }
-                    let result = p.as_ref().unwrap().parse::<T>().unwrap();
-                    // perform a swap on the data unless it has already been used up
-                    self.positionals[i] = None;
-                    Ok(Some(result))
-                }
+        if let Some(mut m) = self.options.remove(opt.0) { 
+            if m.len() > 1 {
+                Err(CliError::DuplicateOptions)
+            // investigate if the user provided a param for the option
+            } else if let Some(p) = m.pop().unwrap() {
+                Ok(Some(self.parse_param(p)?))
+            } else {
+                Err(CliError::ExpectingValue)
             }
-        } else {
-            // err: require a value
-            Err(CliError::ExpectingValue)
+        } else { 
+            Ok(None)
         }
     }
 
-    /// Query for a particular option and return back all values as list
+    fn parse_param<T: FromStr + std::fmt::Debug>(&mut self, p: Param) -> Result<T, CliError>
+    where <T as std::str::FromStr>::Err: std::fmt::Debug {
+        match p {
+            Param::Direct(s) => {
+                if let Ok(c) = s.parse::<T>() {
+                    Ok(c)
+                } else {
+                    todo!("handle parse error")
+                }
+            }
+            Param::Indirect(i) => {
+                // `i` is verified to be within size of vec
+                let p = &mut self.positionals[i];
+                // perform a swap on the data unless it has already been used up
+                if let Ok(c) = p.take().expect("value was stolen from option").parse::<T>() {
+                    Ok(c)
+                } else {
+                    todo!("handle parse error");
+                }
+            }
+        }
+   }
+
+    /// Query for a particular option and return back all values provided
     pub fn get_option_vec<T: FromStr + std::fmt::Debug>(&mut self, opt: &str) -> Result<Option<Vec<T>>, CliError>
     where <T as std::str::FromStr>::Err: std::fmt::Debug {
         if self.past_opts { 
             panic!("options must be evaluated before positionals")
         }
-        let val = self.options.remove(opt);
-        // option was not provided by user, return None
-        if let None = val {
-            return Ok(None);
-        }
-        let mut res = Vec::<T>::with_capacity(val.as_ref().unwrap().len());
-        let mut val = val.unwrap().into_iter();
-        while let Some(e) = val.next() {
-            if let Some(p) = e {
-                match p {
-                    Param::Direct(s) => {
-                        res.push(s.parse::<T>().unwrap()); // :todo: handle err
-                    }
-                    Param::Indirect(i) => {
-                        // `i` is verified to be within size of vec
-                        let p = self.positionals.get(i).unwrap();
-                        if p.is_none() {
-                            // panic: options should be listed first in subcommand
-                            panic!("value was stolen from option {}", opt)
-                        }
-                        let result = p.as_ref().unwrap().parse::<T>().unwrap();
-                        // perform a swap on the data unless it has already been used up
-                        self.positionals[i] = None;
-                        res.push(result);
-                    }
+        if let Some(m) = self.options.remove(opt) {
+            let mut res = Vec::<T>::with_capacity(m.len());
+            let mut m = m.into_iter();
+            while let Some(e) = m.next() {
+                if let Some(p) = e {
+                    res.push(self.parse_param(p)?);
+                } else {
+                    return Err(CliError::ExpectingValue);
                 }
-            } else {
-                // err: a option was provided with no value
-                return Err(CliError::ExpectingValue);
             }
+            Ok(Some(res))
+        } else {
+            // option was not provided by user, return None
+            Ok(None)
         }
-        Ok(Some(res))
     }
 }
 
@@ -242,6 +217,36 @@ impl Cli {
 //     Flag(&'a str),
 //     MultipleOpt(&'a str),
 // }
+
+pub struct Positional<'a>(&'a str);
+
+impl Display for Positional<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
+        write!(f, "<{}>", self.0)
+    }
+}
+
+pub struct Flag<'a>(&'a str);
+
+impl Display for Flag<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
+        write!(f, "--{}", self.0)
+    }
+}
+
+pub struct Optional<'a>(pub &'a str);
+
+impl Display for Optional<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
+        write!(f, "--{} <{}>", self.0, self.0)
+    }
+}
+
+pub enum Arg<'a> {
+    Positional(Positional<'a>),
+    Flag(Flag<'a>),
+    Optional(Optional<'a>),
+}
 
 #[derive(Debug, PartialEq)]
 pub enum CliError {
@@ -317,13 +322,13 @@ mod test {
         ].into_iter().map(|s| s.to_owned());
         let mut cli = Cli::new(args);
 
-        assert_eq!(cli.get_flag("--lib"), Ok(true));
-        assert_eq!(cli.get_option::<String>("--log"), Ok(None));
+        assert_eq!(cli.get_flag(Flag("--lib")), Ok(true));
+        assert_eq!(cli.get_option::<String>(Optional("--log")), Ok(None));
         // undesired here... options must be evaluated before positionals
         assert_eq!(cli.next_positional(), Ok("general:editor=code".to_owned()));
         assert_eq!(cli.next_positional(), Ok("new".to_owned()));
         // panic occurs on first call to an option once beginning to read positionals
-        assert_eq!(cli.get_option::<String>("--config"), Ok(Some("general:editor=code".to_owned())));
+        assert_eq!(cli.get_option(Optional("--config")), Ok(Some("general:editor=code".to_owned())));
     }
 
     #[test]
@@ -356,15 +361,15 @@ mod test {
         ].into_iter().map(|s| s.to_owned());
         let mut cli = Cli::new(args);
 
-        assert_eq!(cli.get_option::<String>("--path"), Ok(None));
-        assert_eq!(cli.get_option::<String>("--log"), Ok(None));
+        assert_eq!(cli.get_option::<String>(Optional("--path")), Ok(None));
+        assert_eq!(cli.get_option::<String>(Optional("--log")), Ok(None));
         assert_eq!(cli.next_positional(), Ok("build".to_owned()));
         assert_eq!(cli.next_positional(), Ok("quartus".to_owned()));
         // verify there are no more positionals
         assert!(cli.next_positional::<String>().is_err());
-        assert_eq!(cli.get_flag("--plan"), Ok(true));
-        assert_eq!(cli.get_flag("--version"), Ok(false));
-        assert_eq!(cli.get_flag("--help"), Ok(false));
+        assert_eq!(cli.get_flag(Flag("--plan")), Ok(true));
+        assert_eq!(cli.get_flag(Flag("--version")), Ok(false));
+        assert_eq!(cli.get_flag(Flag("--help")), Ok(false));
         // these arguments are passed to internally called command
         assert_eq!(cli.get_remainder(), &vec!["synthesize", "--log", "./quartus.log"]);
         assert!(cli.is_clean().is_ok());
@@ -407,8 +412,8 @@ mod test {
             past_opts: false,
         };
 
-        assert_eq!(cli.get_option("--verbose"), Ok(Some(2)));
-        assert_eq!(cli.get_option("--path"), Ok(Some("C:/Users/chase".to_owned())));
+        assert_eq!(cli.get_option(Optional("--verbose")), Ok(Some(2)));
+        assert_eq!(cli.get_option(Optional("--path")), Ok(Some("C:/Users/chase".to_owned())));
         assert_eq!(cli.next_positional(), Ok("new".to_owned()));
         assert_eq!(cli.next_positional(), Ok("rary.gates".to_owned()));
 
@@ -417,10 +422,10 @@ mod test {
         ].into_iter().map(|s| s.to_owned());
         let mut cli = Cli::new(args);
 
-        assert_eq!(cli.get_option("--code"), Ok(Some("vhdl".to_string())));
+        assert_eq!(cli.get_option(Optional("--code")), Ok(Some("vhdl".to_string())));
         assert_eq!(cli.next_positional(), Ok("get".to_owned()));
         assert_eq!(cli.next_positional(), Ok("gates::nor_gate".to_owned()));
-        assert_eq!(cli.get_flag("--version"), Ok(true));
+        assert_eq!(cli.get_flag(Flag("--version")), Ok(true));
         assert!(cli.is_clean().is_ok());
 
         let args = vec![
@@ -428,11 +433,11 @@ mod test {
         ].into_iter().map(|s| s.to_owned());
         let mut cli = Cli::new(args);
 
-        assert_eq!(cli.get_option("--path"), Ok(Some("c:/users/chase".to_string())));
+        assert_eq!(cli.get_option(Optional("--path")), Ok(Some("c:/users/chase".to_string())));
         assert_eq!(cli.next_positional(), Ok("info".to_owned()));
-        assert_eq!(cli.get_flag("--stats"), Ok(true));
-        assert_eq!(cli.get_flag("--version"), Ok(false));
-        assert_eq!(cli.get_flag("--help"), Ok(true));
+        assert_eq!(cli.get_flag(Flag("--stats")), Ok(true));
+        assert_eq!(cli.get_flag(Flag("--version")), Ok(false));
+        assert_eq!(cli.get_flag(Flag("--help")), Ok(true));
         assert!(cli.is_clean().is_ok());
     }
 
@@ -443,8 +448,8 @@ mod test {
         ].into_iter().map(|s| s.to_owned());
         let mut cli = Cli::new(args);
         // command only expects these two flags
-        assert_eq!(cli.get_flag("--version"), Ok(true));
-        assert_eq!(cli.get_flag("--help"), Ok(false));
+        assert_eq!(cli.get_flag(Flag("--version")), Ok(true));
+        assert_eq!(cli.get_flag(Flag("--help")), Ok(false));
         // --unknown was not caught
         assert!(cli.is_clean().is_err());
     }

@@ -19,6 +19,9 @@ pub struct Cli {
     options: HashMap<String, Value>,
     remainder: Vec::<String>,
     past_opts: bool,
+    // build up vector as parameters are queried to generate a list of valid params 
+    // to later compute edit distance if an unknown argument was entered for a command
+    // known_params: Vec<String>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -89,7 +92,7 @@ impl Cli {
             }
         }
         // found zero available arguments
-        Err(CliError::ExpectingPositional)
+        Err(CliError::MissingPositional)
     }
 
     // :todo: make better
@@ -101,7 +104,7 @@ impl Cli {
     /// if the flag was raised multiple times
     pub fn get_flag(&mut self, flag: Flag) -> Result<bool, CliError> {
         // // check if it is in the map
-        if let Some(mut val) = self.options.remove(flag.0) {
+        if let Some(mut val) = self.options.remove(&("--".to_owned()+flag.0)) {
             // raise error if there is an attached option to the flag
             if val.len() > 1 {
                 // err: duplicate values
@@ -109,7 +112,7 @@ impl Cli {
             } else {
                 match val.pop().unwrap() {
                     Some(p) => match p {
-                        Param::Direct(_) => Err(CliError::UnexpectedValue),
+                        Param::Direct(s) => Err(CliError::UnexpectedValue(flag.0.to_owned(), s)),
                         Param::Indirect(_) => Ok(true),
                     }
                     None => Ok(true),
@@ -125,12 +128,12 @@ impl Cli {
     /// `options` is not empty or `positionals` has a non-None value.
     pub fn is_clean(&self) -> Result<(), CliError> {
         if self.options.is_empty() != true {
-            return Err(CliError::UnexpectedArg);
+            Err(CliError::UnexpectedArg(self.options.keys().next().unwrap().to_owned()))
+        } else if let Some(Some(a)) = self.positionals.iter().find(|f| f.is_some()) {
+            Err(CliError::UnexpectedArg(a.to_owned()))
+        } else {
+            Ok(())
         }
-        if self.positionals.iter().find(|f| f.is_some()).is_some() {
-            return Err(CliError::UnexpectedArg);
-        }
-        Ok(())
     }
 
     /// Retuns the vector of leftover arguments to pass to internal command. Also
@@ -155,13 +158,15 @@ impl Cli {
             } else if let Some(p) = m.pop().unwrap() {
                 Ok(Some(self.parse_param(p)?))
             } else {
-                Err(CliError::ExpectingValue)
+                Err(CliError::ExpectingValue(opt.0.to_owned()))
             }
         } else { 
             Ok(None)
         }
     }
 
+    /// Handle updating the positional vector depending on if a param was direct
+    /// or indirect.
     fn parse_param<T: FromStr + std::fmt::Debug>(&mut self, p: Param) -> Result<T, CliError>
     where <T as std::str::FromStr>::Err: std::fmt::Debug {
         match p {
@@ -198,7 +203,7 @@ impl Cli {
                 if let Some(p) = e {
                     res.push(self.parse_param(p)?);
                 } else {
-                    return Err(CliError::ExpectingValue);
+                    return Err(CliError::ExpectingValue(opt.to_owned()));
                 }
             }
             Ok(Some(res))
@@ -209,15 +214,6 @@ impl Cli {
     }
 }
 
-// struct Opt<'a, T>(&'a str, Option<T>);
-
-// enum Arg<'a> {
-//     Positional(&'a str),
-//     Optional(Opt<'a, T>),
-//     Flag(&'a str),
-//     MultipleOpt(&'a str),
-// }
-
 pub struct Positional<'a>(&'a str);
 
 impl Display for Positional<'_> {
@@ -226,7 +222,7 @@ impl Display for Positional<'_> {
     }
 }
 
-pub struct Flag<'a>(&'a str);
+pub struct Flag<'a>(pub &'a str);
 
 impl Display for Flag<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
@@ -251,11 +247,11 @@ pub enum Arg<'a> {
 #[derive(Debug, PartialEq)]
 pub enum CliError {
     BadType,
-    ExpectingPositional,
+    MissingPositional,
     DuplicateOptions,
-    ExpectingValue,
-    UnexpectedValue,
-    UnexpectedArg,
+    ExpectingValue(String),
+    UnexpectedValue(String, String),
+    UnexpectedArg(String),
 }
 
 impl Error for CliError {}
@@ -265,11 +261,11 @@ impl Display for CliError {
         use CliError::*;
         match self {
             BadType => write!(f, "bad type conversion from string"),
-            ExpectingPositional => write!(f, "expecting positional"),
+            MissingPositional => write!(f, "missing positional"),
             DuplicateOptions => write!(f, "duplicate options"),
-            ExpectingValue => write!(f, "expecting value"),
-            UnexpectedValue => write!(f, "unexpected value"),
-            UnexpectedArg => write!(f, "unexpected argument"),
+            ExpectingValue(x) => write!(f, "option \"{}\" expects a value but none was supplied", x),
+            UnexpectedValue(x, s) => write!(f, "flag \"{}\" cannot accept values but one was supplied \"{}\"", x, s),
+            UnexpectedArg(s) => write!(f, "unknown argument \"{}\"", s),
         }
     }
 }
@@ -322,7 +318,7 @@ mod test {
         ].into_iter().map(|s| s.to_owned());
         let mut cli = Cli::new(args);
 
-        assert_eq!(cli.get_flag(Flag("--lib")), Ok(true));
+        assert_eq!(cli.get_flag(Flag("lib")), Ok(true));
         assert_eq!(cli.get_option::<String>(Optional("--log")), Ok(None));
         // undesired here... options must be evaluated before positionals
         assert_eq!(cli.next_positional(), Ok("general:editor=code".to_owned()));
@@ -367,9 +363,9 @@ mod test {
         assert_eq!(cli.next_positional(), Ok("quartus".to_owned()));
         // verify there are no more positionals
         assert!(cli.next_positional::<String>().is_err());
-        assert_eq!(cli.get_flag(Flag("--plan")), Ok(true));
-        assert_eq!(cli.get_flag(Flag("--version")), Ok(false));
-        assert_eq!(cli.get_flag(Flag("--help")), Ok(false));
+        assert_eq!(cli.get_flag(Flag("plan")), Ok(true));
+        assert_eq!(cli.get_flag(Flag("version")), Ok(false));
+        assert_eq!(cli.get_flag(Flag("help")), Ok(false));
         // these arguments are passed to internally called command
         assert_eq!(cli.get_remainder(), &vec!["synthesize", "--log", "./quartus.log"]);
         assert!(cli.is_clean().is_ok());
@@ -425,7 +421,7 @@ mod test {
         assert_eq!(cli.get_option(Optional("--code")), Ok(Some("vhdl".to_string())));
         assert_eq!(cli.next_positional(), Ok("get".to_owned()));
         assert_eq!(cli.next_positional(), Ok("gates::nor_gate".to_owned()));
-        assert_eq!(cli.get_flag(Flag("--version")), Ok(true));
+        assert_eq!(cli.get_flag(Flag("version")), Ok(true));
         assert!(cli.is_clean().is_ok());
 
         let args = vec![
@@ -435,9 +431,9 @@ mod test {
 
         assert_eq!(cli.get_option(Optional("--path")), Ok(Some("c:/users/chase".to_string())));
         assert_eq!(cli.next_positional(), Ok("info".to_owned()));
-        assert_eq!(cli.get_flag(Flag("--stats")), Ok(true));
-        assert_eq!(cli.get_flag(Flag("--version")), Ok(false));
-        assert_eq!(cli.get_flag(Flag("--help")), Ok(true));
+        assert_eq!(cli.get_flag(Flag("stats")), Ok(true));
+        assert_eq!(cli.get_flag(Flag("version")), Ok(false));
+        assert_eq!(cli.get_flag(Flag("help")), Ok(true));
         assert!(cli.is_clean().is_ok());
     }
 
@@ -448,8 +444,8 @@ mod test {
         ].into_iter().map(|s| s.to_owned());
         let mut cli = Cli::new(args);
         // command only expects these two flags
-        assert_eq!(cli.get_flag(Flag("--version")), Ok(true));
-        assert_eq!(cli.get_flag(Flag("--help")), Ok(false));
+        assert_eq!(cli.get_flag(Flag("version")), Ok(true));
+        assert_eq!(cli.get_flag(Flag("help")), Ok(false));
         // --unknown was not caught
         assert!(cli.is_clean().is_err());
     }

@@ -3,17 +3,28 @@ use orbit::pkgid;
 
 fn main() {
     let mut cli = cli::Cli::new(std::env::args());
-    println!("orbit 0.1.0");
 
-    let command: String = cli.next_positional().unwrap();
-    println!("orbit-info: requesting command- {}", command);
-    let runner = New {
-        ip: cli.next_positional().unwrap(),
+    let command = cli.next_positional::<String>();
+    if command.is_err() {
+        println!("orbit 0.1.0");
+        return ();
+    }
+    let command = command.unwrap();
+    let runner = match command.as_ref() {
+        "new" => New {
+            ip: cli.next_positional().unwrap(),
+        },
+        _ => {
+            println!("unknown subcommand: {}", command);
+            return ()
+        },
     };
-    if runner.ip.fully_qualified() {
-        println!("orbit-info: ip valid- {}", runner.ip);
+    cli.is_clean().unwrap();
+
+    if runner.ip.fully_qualified().is_ok() {
+        println!("IP is valid: {}", runner.ip);
     } else {
-        println!("orbit-error: ip is not fully qualified- {}", runner.ip);
+        println!("IP {} is not fully qualified: {}", runner.ip, runner.ip.fully_qualified().unwrap_err());
     }
     
 }

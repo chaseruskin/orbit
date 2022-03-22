@@ -80,10 +80,16 @@ impl PkgId {
     }
 
     /// Checks if all the parts for a `PkgId` are specified and nonempty.
-    pub fn fully_qualified(&self) -> bool {
-        self.name.len() > 0 && 
-        self.vendor.is_some() && self.vendor.as_ref().unwrap().len() > 0 &&
-        self.library.is_some() && self.library.as_ref().unwrap().len() > 0
+    pub fn fully_qualified(&self) -> Result<(), PkgIdError> {
+        if self.name.len() == 0 {
+            Err(PkgIdError::Empty)
+        } else if self.vendor.is_none() || self.vendor.as_ref().unwrap().len() == 0 {
+            Err(PkgIdError::MissingVendor)
+        } else if self.library.is_none() || self.library.as_ref().unwrap().len() == 0 {
+            Err(PkgIdError::MissingLibrary)
+        } else {
+            Ok(())
+        }
     }
 
     pub fn get_name(&self) -> &String {
@@ -135,6 +141,8 @@ pub enum PkgIdError {
     BadLen(String, usize),
     Empty,
     InvalidChar(String, char),
+    MissingVendor,
+    MissingLibrary,
 }
 
 impl Error for PkgIdError {}
@@ -147,6 +155,8 @@ impl Display for PkgIdError {
             BadLen(id, len) => write!(f, "bad length for pkgid \"{}\"; expecting 3 parts but found {}", id, len),
             InvalidChar(part, ch) => write!(f, "invalid character {} in pkgid part \"{}\"; can only contain alphanumeric characters, dashes, or underscores", ch, part),
             Empty => write!(f, "empty pkgid"),
+            MissingLibrary => write!(f, "missing library part"),
+            MissingVendor => write!(f, "missing vendor part"),
         }
     }
 }
@@ -251,42 +261,42 @@ mod test {
             library: Some("library".to_owned()),
             name: "name".to_owned(),
         };
-        assert_eq!(pkgid.fully_qualified(), true);
+        assert_eq!(pkgid.fully_qualified().is_ok(), true);
 
         let pkgid = PkgId {
             vendor: Some("".to_owned()),
             library: Some("library".to_owned()),
             name: "name".to_owned(),
         };
-        assert_eq!(pkgid.fully_qualified(), false);
+        assert_eq!(pkgid.fully_qualified().is_ok(), false);
 
         let pkgid = PkgId {
             vendor: None,
             library: Some("library".to_owned()),
             name: "name".to_owned(),
         };
-        assert_eq!(pkgid.fully_qualified(), false);
+        assert_eq!(pkgid.fully_qualified().is_ok(), false);
 
         let pkgid = PkgId {
             vendor: Some("vendor".to_owned()),
             library: Some("".to_owned()),
             name: "name".to_owned(),
         };
-        assert_eq!(pkgid.fully_qualified(), false);
+        assert_eq!(pkgid.fully_qualified().is_ok(), false);
 
         let pkgid = PkgId {
             vendor: Some("vendor".to_owned()),
             library: None,
             name: "name".to_owned(),
         };
-        assert_eq!(pkgid.fully_qualified(), false);
+        assert_eq!(pkgid.fully_qualified().is_ok(), false);
 
         let pkgid = PkgId {
             vendor: Some("vendor".to_owned()),
             library: Some("library".to_owned()),
             name: "".to_owned(),
         };
-        assert_eq!(pkgid.fully_qualified(), false);
+        assert_eq!(pkgid.fully_qualified().is_ok(), false);
     }
 
     #[test]

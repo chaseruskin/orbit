@@ -93,6 +93,11 @@ impl Cli {
         Err(CliError::ExpectingPositional)
     }
 
+    // :todo: make better
+    pub fn set_past(&mut self, b: bool) {
+        self.past_opts = b;
+    }
+
     pub fn get_flag(&mut self, opt: &str) -> Result<bool, CliError> {
         // check if it is in the map
         let val = self.options.remove(opt);
@@ -144,7 +149,7 @@ impl Cli {
     }
 
     /// Query for a particular option and get it's value.
-    fn get_option<T: FromStr + std::fmt::Debug>(&mut self, opt: &str) -> Result<Option<T>, CliError>
+    pub fn get_option<T: FromStr + std::fmt::Debug>(&mut self, opt: &str) -> Result<Option<T>, CliError>
     where <T as std::str::FromStr>::Err: std::fmt::Debug {
         if self.past_opts { 
             panic!("options must be evaluated before positionals")
@@ -189,7 +194,7 @@ impl Cli {
     }
 
     /// Query for a particular option and return back all values as list
-    fn get_option_vec<T: FromStr + std::fmt::Debug>(&mut self, opt: &str) -> Result<Option<Vec<T>>, CliError>
+    pub fn get_option_vec<T: FromStr + std::fmt::Debug>(&mut self, opt: &str) -> Result<Option<Vec<T>>, CliError>
     where <T as std::str::FromStr>::Err: std::fmt::Debug {
         if self.past_opts { 
             panic!("options must be evaluated before positionals")

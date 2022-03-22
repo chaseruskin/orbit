@@ -87,7 +87,7 @@ impl Cli {
                 if let Ok(r) = p.take().unwrap().parse::<T>() {
                     return Ok(r)
                 } else {
-                    todo!("failed to cast to T for positional")
+                    todo!("handle error for invalid positional value")
                 }
             }
         }
@@ -165,31 +165,6 @@ impl Cli {
         }
     }
 
-    /// Handle updating the positional vector depending on if a param was direct
-    /// or indirect.
-    fn parse_param<T: FromStr + std::fmt::Debug>(&mut self, p: Param) -> Result<T, CliError>
-    where <T as std::str::FromStr>::Err: std::fmt::Debug {
-        match p {
-            Param::Direct(s) => {
-                if let Ok(c) = s.parse::<T>() {
-                    Ok(c)
-                } else {
-                    todo!("handle parse error")
-                }
-            }
-            Param::Indirect(i) => {
-                // `i` is verified to be within size of vec
-                let p = &mut self.positionals[i];
-                // perform a swap on the data unless it has already been used up
-                if let Ok(c) = p.take().expect("value was stolen from option").parse::<T>() {
-                    Ok(c)
-                } else {
-                    todo!("handle parse error");
-                }
-            }
-        }
-   }
-
     /// Query for a particular option and return back all values provided
     pub fn get_option_vec<T: FromStr + std::fmt::Debug>(&mut self, opt: &str) -> Result<Option<Vec<T>>, CliError>
     where <T as std::str::FromStr>::Err: std::fmt::Debug {
@@ -212,6 +187,31 @@ impl Cli {
             Ok(None)
         }
     }
+
+    /// Handle updating the positional vector depending on if a param was direct
+    /// or indirect.
+    fn parse_param<T: FromStr + std::fmt::Debug>(&mut self, p: Param) -> Result<T, CliError>
+    where <T as std::str::FromStr>::Err: std::fmt::Debug {
+        match p {
+            Param::Direct(s) => {
+                if let Ok(c) = s.parse::<T>() {
+                    Ok(c)
+                } else {
+                    todo!("handle parse error")
+                }
+            }
+            Param::Indirect(i) => {
+                // `i` is verified to be within size of vec
+                let p = &mut self.positionals[i];
+                // perform a swap on the data unless it has already been used up
+                if let Ok(c) = p.take().expect("value was stolen by positional").parse::<T>() {
+                    Ok(c)
+                } else {
+                    todo!("handle parse error");
+                }
+            }
+        }
+   }
 }
 
 pub struct Positional<'a>(&'a str);

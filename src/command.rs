@@ -15,6 +15,7 @@ pub trait Command {
 // example command demo
 #[derive(Debug, PartialEq)]
 pub struct Sum {
+    guess: u8,
     digits: Vec<u8>,
     verbose: bool,
 }
@@ -24,7 +25,8 @@ impl Command for Sum {
         let v = cli::Flag("verbose");
 
         Ok(Sum { 
-            digits: cla.get_option_vec("--digit")?.or(Some(vec![])).unwrap(), 
+            digits: cla.get_option_vec("--digit")?.or(Some(vec![])).unwrap(),
+            guess: cla.next_positional()?,
             verbose: cla.get_flag(v)?,
         })
     }
@@ -39,12 +41,19 @@ impl Sum {
         });
         if self.verbose { print!("{}= ", txt.trim_end_matches("+ ")); }
         println!("{}", s);
+        if s == self.guess {
+            println!("you guessed right!");
+        } else {
+            println!("you guessed incorrectly.");
+        }
     }
 }
 
 /*
+Orbit is a tool for hdl package management.
+
 Usage:
-    orbit [options] <command> [arguments]
+    orbit <command> [arguments]
 
 Commands:
     new             create a new orbit ip
@@ -55,11 +64,22 @@ Commands:
     plan            generate a blueprint file
     build           execute a backend workflow
     launch          release the next version for an ip
-
-Options:
-    --version       print the current orbit version
-    --help          print help information
-    --list          list all plugins and commands
+    list            list all plugins and command
 
 Use "orbit help <command>" for more information about a command.
+*/
+
+/*
+Create a new orbit ip as <pkgid>
+
+Usage:
+    orbit new [options] <pkgid> 
+
+Options:
+    --path <PATH>       destination to create ip (default is ORBIT_WORKSPACE)
+    --template <PATH>   a directory to be used as a template
+    --vcs <VCS>         initialize a new repository (git) or none (none)
+
+Args:
+    <pkgid>             a fully-qualified pkgid
 */

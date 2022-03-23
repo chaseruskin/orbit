@@ -4,6 +4,7 @@
 //! 
 //! Notes    :
 //! - options must be queried before positionals
+//! - parameters must be provided only after their respective subcommands
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -11,14 +12,19 @@ use std::fmt::Debug;
 use std::error::Error;
 use std::fmt::Display;
 
-use crate::command::Command;
-
 type Value = Vec::<Option<Param>>;
+type Index = usize;
+
+#[derive(Debug, PartialEq)]
+struct ParamArg(Index, Value);
+
+#[derive(Debug, PartialEq)]
+struct PosArg(Index, String);
 
 #[derive(Debug, PartialEq)]
 pub struct Cli {
-    positionals: Vec<Option<String>>,
-    options: HashMap<String, Value>,
+    positionals: Vec<Option<PosArg>>,
+    options: HashMap<String, ParamArg>,
     remainder: Vec::<String>,
     past_opts: bool,
     // build up vector as parameters are queried to generate a list of valid params 
@@ -32,67 +38,93 @@ enum Param {
     Indirect(usize),
 }
 
+// #[derive(Debug, PartialEq)]
+// enum PosArg {
+//     Ambigious(usize, String),
+//     Clear(usize, String),
+// }
+
+// impl PosArg {
+//     fn reveal(&self) -> &String {
+//         match self {
+//             Self::Ambigious(_, a) => a,
+//             Self::Clear(_, a) => a,
+//         }
+//     }
+
+//     fn reveal_mut(&mut self) -> &mut String {
+//         match self {
+//             Self::Ambigious(_, a) => a,
+//             Self::Clear(_, a) => a,
+//         }
+//     }
+// }
+
 impl Cli {
     pub fn new<T: Iterator<Item=String>>(cla: T) -> Cli {
         // skip the program's name
-        let mut cla = cla.skip(1).peekable();
-        let mut options = HashMap::<String, Value>::new();
+        let mut cla = cla.skip(1).enumerate().peekable();
+        let mut options = HashMap::<String, ParamArg>::new();
         let mut positionals = Vec::new();
         // appending an element behind the key (ensuring a vector always exist)
-        let mut enter = |k, v| {
+        let mut enter = |k, v, i| {
             options
                 .entry(k)
-                .or_insert(Vec::new())
+                .or_insert(ParamArg(i, Vec::new())).1
                 .push(v);
         };
         // iterate through available arguments
-        while let Some(arg) = cla.next() {
+        while let Some((i, arg)) = cla.next() {
             if arg == "--" {
-                enter(arg, None);
+                enter(arg, None, i);
                 break;
             } else if arg.starts_with("--") {
                 // direct- detect if needs to split on first '=' sign
                 if let Some((opt, param)) = arg.split_once('=') {
-                    enter(opt.to_owned(), Some(Param::Direct(param.to_owned())));
+                    enter(opt.to_owned(), Some(Param::Direct(param.to_owned())), i);
                 // indirect- peek if the next arg is the param to the current option
-                } else if let Some(trailing) = cla.peek() {
+                } else if let Some((_, trailing)) = cla.peek() {
                     if trailing.starts_with("--") {
-                        enter(arg, None);
+                        enter(arg, None, i);
                     } else {
-                        enter(arg, Some(Param::Indirect(positionals.len())));
-                        positionals.push(cla.next());
+                        enter(arg, Some(Param::Indirect(positionals.len())), i);
+                        match cla.next() {
+                            Some((k, fa)) => positionals.push(Some(PosArg(k, fa))),
+                            None => positionals.push(None),
+                        };
                     }
                 // none- no param was supplied to current option
                 } else {
-                    enter(arg, None);
+                    enter(arg, None, i);
                 }
             } else {
-                positionals.push(Some(arg));
+                positionals.push(Some(PosArg(i, arg)));
             }
         }
         Cli {
             positionals: positionals,
             options: options,
-            remainder: cla.collect(),
+            remainder: cla.map(|(_, v)| v).collect(),
             past_opts: false,
         }
     }
 
-    pub fn next_command<T: FromStr + std::fmt::Debug>(&mut self, arg: Positional, /*mapper: Box<dyn Fn(T) -> ()*/) -> Result<Box<dyn crate::command::Command>, CliError>
-        where <T as std::str::FromStr>::Err: std::fmt::Debug {
-        let a: String = self.next_positional(arg).unwrap(); //replace String with T
-        self.past_opts = false;
+    pub fn next_command<T: crate::command::Dispatch>(&mut self, arg: Positional) -> Result<Option<Box<dyn crate::command::Command>>, CliError> {
         // continually skip values that could be indirect with flags (or that fail)
+        let pos_it = self.positionals
+            .iter()
+            .find(|p| p.is_some());
 
-        // invalid: $ orbit --digit 10 --version sum 10 --verbose
-        // who is --digit 10?
-        // clean up until command call index?
-        // valid: $ orbit --config key=value cast --config key2=value2 10 --base 2 --version
-        match a.as_ref() {
-            "sum" =>  Ok(Box::new(crate::command::Sum::initialize(self)?)),
-            "cast" => Ok(Box::new(crate::command::NumCast::initialize(self)?)),
-            _ => todo!()
-        }
+        let i = if let Some(a) = pos_it {
+            a.as_ref().unwrap().0
+        } else {
+            return Ok(None);
+        };
+        // :todo: add ability to offer suggestion to maybe move ooc arg after the successfully parsed subcommand
+        self.is_partial_clean(i)?;
+        let sub: String = self.next_positional(arg)?;
+        self.past_opts = false;
+        Ok(Some(T::dispatch(&sub, self)?))
     }
 
     /// Pop off the next positional in the provided order.
@@ -102,7 +134,7 @@ impl Cli {
         if let Some(p) = self.positionals.iter_mut()
             .skip_while(|s| s.is_none())
             .next() {
-            if let Ok(r) = p.take().unwrap().parse::<T>() {
+            if let Ok(r) = p.take().unwrap().1.parse::<T>() {
                 return Ok(r)
             } else {
                 todo!("handle error for invalid positional value")
@@ -113,22 +145,17 @@ impl Cli {
         }
     }
 
-    // :todo: make better
-    pub fn set_past(&mut self, b: bool) {
-        self.past_opts = b;
-    }
-
     /// Query if a flag was raised. Returns errors if a direct value was given or
     /// if the flag was raised multiple times
     pub fn get_flag(&mut self, flag: Flag) -> Result<bool, CliError> {
         // // check if it is in the map
         if let Some(mut val) = self.options.remove(&("--".to_owned()+flag.0)) {
             // raise error if there is an attached option to the flag
-            if val.len() > 1 {
+            if val.1.len() > 1 {
                 // err: duplicate values
-                Err(CliError::DuplicateOptions)
+                Err(CliError::DuplicateOptions(flag.0.to_owned()))
             } else {
-                match val.pop().unwrap() {
+                match val.1.pop().unwrap() {
                     Some(p) => match p {
                         Param::Direct(s) => Err(CliError::UnexpectedValue(flag.0.to_owned(), s)),
                         Param::Indirect(_) => Ok(true),
@@ -141,15 +168,29 @@ impl Cli {
             Ok(false)
         }
     }
+    
+    pub fn is_partial_clean(&self, i: usize) -> Result<(), CliError> {
+        // :todo: filter out options that have a position < i
+        let m = self.options.iter().find(|(_, o)| {
+            o.0 <= i
+        });
+        if let Some(arg) = m {
+            Err(CliError::OutOfContextArg(arg.0.to_string()))
+        } else {
+            Ok(())
+        }
+    }
 
     /// Ensure there are no unused/unchecked arguments. Results in error if
     /// `options` is not empty or `positionals` has a non-None value.
     pub fn is_clean(&self) -> Result<(), CliError> {
         // :idea: clean up until a given subcommand? then pass rest of it to subcommand data
+        // :todo: filter out options that have a position < i
         if self.options.is_empty() != true {
             Err(CliError::UnexpectedArg(self.options.keys().next().unwrap().to_owned()))
+        // :todo: take positonals up until i
         } else if let Some(Some(a)) = self.positionals.iter().find(|f| f.is_some()) {
-            Err(CliError::UnexpectedArg(a.to_owned()))
+            Err(CliError::UnexpectedArg(a.1.to_owned()))
         } else {
             Ok(())
         }
@@ -171,10 +212,10 @@ impl Cli {
         }
         // check if it is in the map (pull from map)
         if let Some(mut m) = self.options.remove(opt.0) { 
-            if m.len() > 1 {
-                Err(CliError::DuplicateOptions)
+            if m.1.len() > 1 {
+                Err(CliError::DuplicateOptions(opt.0.to_owned()))
             // investigate if the user provided a param for the option
-            } else if let Some(p) = m.pop().unwrap() {
+            } else if let Some(p) = m.1.pop().unwrap() {
                 Ok(Some(self.parse_param(p)?))
             } else {
                 Err(CliError::ExpectingValue(opt.0.to_owned()))
@@ -191,8 +232,8 @@ impl Cli {
             panic!("options must be evaluated before positionals")
         }
         if let Some(m) = self.options.remove(opt.0) {
-            let mut res = Vec::<T>::with_capacity(m.len());
-            let mut m = m.into_iter();
+            let mut res = Vec::<T>::with_capacity(m.1.len());
+            let mut m = m.1.into_iter();
             while let Some(e) = m.next() {
                 if let Some(p) = e {
                     res.push(self.parse_param(p)?);
@@ -223,7 +264,7 @@ impl Cli {
                 // `i` is verified to be within size of vec
                 let p = &mut self.positionals[i];
                 // perform a swap on the data unless it has already been used up
-                if let Ok(c) = p.take().expect("value was stolen by positional").parse::<T>() {
+                if let Ok(c) = p.take().expect("value was stolen by positional").1.parse::<T>() {
                     Ok(c)
                 } else {
                     todo!("handle parse error");
@@ -267,9 +308,10 @@ pub enum Arg<'a> {
 pub enum CliError {
     BadType,
     MissingPositional(String),
-    DuplicateOptions,
+    DuplicateOptions(String),
     ExpectingValue(String),
     UnexpectedValue(String, String),
+    OutOfContextArg(String),
     UnexpectedArg(String),
 }
 
@@ -279,9 +321,10 @@ impl Display for CliError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
         use CliError::*;
         match self {
+            OutOfContextArg(o) => write!(f, "invalid arg in current context \"{}\"", o),
             BadType => write!(f, "bad type conversion from string"),
             MissingPositional(p) => write!(f, "missing positional <{}>", p),
-            DuplicateOptions => write!(f, "duplicate options"),
+            DuplicateOptions(o) => write!(f, "duplicate options \"{}\"", o),
             ExpectingValue(x) => write!(f, "option \"{}\" expects a value but none was supplied", x),
             UnexpectedValue(x, s) => write!(f, "flag \"{}\" cannot accept values but one was supplied \"{}\"", x, s),
             UnexpectedArg(s) => write!(f, "unknown argument \"{}\"", s),
@@ -318,8 +361,8 @@ mod test {
         let cli = Cli::new(args);
 
         let mut opts = HashMap::new();
-        opts.insert("--version".to_owned(), vec![None]);
-        opts.insert("--help".to_owned(), vec![None]);
+        opts.insert("--version".to_owned(), ParamArg(0, vec![None]));
+        opts.insert("--help".to_owned(), ParamArg(1, vec![None]));
 
         assert_eq!(cli, Cli {
             positionals: Vec::new(),
@@ -355,13 +398,13 @@ mod test {
             "--verbose=2",
         ].into_iter().map(|s| s.to_owned());
         let mut opts = HashMap::new();
-        opts.insert("--path".to_owned(), vec![Some(Param::Indirect(0))]);
-        opts.insert("--verbose".to_owned(), vec![Some(Param::Direct("2".to_owned()))]);
+        opts.insert("--path".to_owned(), ParamArg(0, vec![Some(Param::Indirect(0))]));
+        opts.insert("--verbose".to_owned(), ParamArg(2, vec![Some(Param::Direct("2".to_owned()))]));
         
         let cli = Cli::new(args);
         assert_eq!(cli, Cli {
             positionals: vec![
-                Some("C:/Users/chase/hdl".to_owned()),
+                Some(PosArg(1, "C:/Users/chase/hdl".to_owned())),
             ],
             options: opts,
             remainder: Vec::new(),
@@ -401,8 +444,8 @@ mod test {
 
         assert_eq!(cli, Cli {
             positionals: vec![
-                Some("new".to_owned()),
-                Some("rary.gates".to_owned()),
+                Some(PosArg(0, "new".to_owned())),
+                Some(PosArg(1, "rary.gates".to_owned())),
             ],
             options: HashMap::new(),
             remainder: Vec::new(),
@@ -414,13 +457,13 @@ mod test {
     fn query_cli() {
         // $ orbit new --path C:/Users/chase rary.gates --verbose=2
         let mut opts = HashMap::new();
-        opts.insert("--path".to_owned(), vec![Some(Param::Indirect(1))]);
-        opts.insert("--verbose".to_owned(), vec![Some(Param::Direct("2".to_owned()))]);
+        opts.insert("--path".to_owned(), ParamArg(1, vec![Some(Param::Indirect(1))]));
+        opts.insert("--verbose".to_owned(), ParamArg(4, vec![Some(Param::Direct("2".to_owned()))]));
         let mut cli = Cli {
             positionals: vec![
-                Some("new".to_owned()),
-                Some("C:/Users/chase".to_owned()),
-                Some("rary.gates".to_owned()),
+                Some(PosArg(0, "new".to_owned())),
+                Some(PosArg(2, "C:/Users/chase".to_owned())),
+                Some(PosArg(3, "rary.gates".to_owned())),
             ],
             options: opts,
             remainder: Vec::new(),

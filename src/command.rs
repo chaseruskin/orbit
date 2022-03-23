@@ -1,6 +1,6 @@
 use crate::cli;
-use std::str::FromStr;
 use std::fmt::Debug;
+// use std::str::FromStr;
 
 pub trait Command: Debug {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError>
@@ -14,7 +14,14 @@ pub trait Command: Debug {
         Ok(cmd)
     }
 
+    // :todo: implement a rules fn to verify all args requested do not conflict
+    // example: --lib | --bin, errors if --lib & --bin are passed
+
     fn run(&self) -> ();
+}
+
+pub trait Dispatch: Debug {
+    fn dispatch(s: &str, cla: &mut cli::Cli) -> Result<Box<dyn Command>, cli::CliError>;
 }
 
 #[derive(Debug, PartialEq)]
@@ -23,34 +30,32 @@ enum Subcommand {
     NumCast(NumCast),
 }
 
-#[derive(Debug, PartialEq)]
-enum SubcommandError {}
 
-impl FromStr for Subcommand {
-    type Err = SubcommandError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> { 
-        todo!() 
+impl Dispatch for Subcommand {
+    fn dispatch(s: &str, cla: &mut cli::Cli) -> Result<Box<dyn Command>, cli::CliError> {
+        match s {
+            "sum" => Ok(Box::new(Sum::initialize(cla)?)),
+            "cast"=> Ok(Box::new(NumCast::initialize(cla)?)),
+            _ => todo!("handle error for invalid subcommand")
+        }
     }
 }
+
+
 
 #[derive(Debug)]
 pub struct Orbit {
     version: bool,
     help: bool,
     config: Vec<String>,
-    command: Box<dyn Command>,
+    color: Option<u8>,
+    command: Option<Box<dyn Command>>,
 }
 
 impl Command for Orbit {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> {
-        // :todo: pass this into next_command?
-        let subs = |s: &str| match s {
-            "sum" => Some(Subcommand::Sum(Sum::default())),
-            "cast"=> Some(Subcommand::NumCast(NumCast::default())),
-            _ => None
-        };
-
         Ok(Orbit { 
+            color: cla.get_option(cli::Optional("--color"))?,
             config: cla.get_option_vec(cli::Optional("--config"))?.unwrap_or(vec![]),
             help: cla.get_flag(cli::Flag("help"))?,
             version: cla.get_flag(cli::Flag("version"))?,
@@ -66,12 +71,14 @@ impl Command for Orbit {
         });
         if self.version {
             println!("orbit 0.1.0");
+        } else if let Some(cmd) = &self.command {
+            cmd.run();
+        } else {
+            println!("orbit is a tool for hdl package management");
+            println!("usage:\n\torbit [options] [command]");
         }
-        self.command.run();
     }
 }
-
-
 
 
 // example command demo

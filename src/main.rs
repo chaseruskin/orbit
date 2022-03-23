@@ -3,8 +3,8 @@ use orbit::command::Command;
 use orbit::command;
 
 fn main() {
-    let cli = cli::Cli::new(std::env::args());
-    let cmd = command::Sum::initialize(cli);
+    let mut cli = cli::Cli::new(std::env::args());
+    let cmd = command::Orbit::initialize(&mut cli);
     if let Ok(req) = cmd {
         req.run();
     } else {

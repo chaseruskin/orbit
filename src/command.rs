@@ -1,19 +1,81 @@
 use crate::cli;
+use std::str::FromStr;
+use std::fmt::Debug;
 
-pub trait Command {
+pub trait Command: Debug {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError>
     where Self: Sized;
 
-    fn initialize(mut cla: cli::Cli) -> Result<Self, cli::CliError>
+    fn initialize(cla: &mut cli::Cli) -> Result<Self, cli::CliError>
     where Self: Sized {
-        let cmd = Self::new(&mut cla)?;
+        // :todo: set the usage before failing
+        let cmd = Self::new(cla)?;
         cla.is_clean()?;
         Ok(cmd)
     }
+
+    fn run(&self) -> ();
 }
 
-// example command demo
 #[derive(Debug, PartialEq)]
+enum Subcommand {
+    Sum(Sum),
+    NumCast(NumCast),
+}
+
+#[derive(Debug, PartialEq)]
+enum SubcommandError {}
+
+impl FromStr for Subcommand {
+    type Err = SubcommandError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> { 
+        todo!() 
+    }
+}
+
+#[derive(Debug)]
+pub struct Orbit {
+    version: bool,
+    help: bool,
+    config: Vec<String>,
+    command: Box<dyn Command>,
+}
+
+impl Command for Orbit {
+    fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> {
+        // :todo: pass this into next_command?
+        let subs = |s: &str| match s {
+            "sum" => Some(Subcommand::Sum(Sum::default())),
+            "cast"=> Some(Subcommand::NumCast(NumCast::default())),
+            _ => None
+        };
+
+        Ok(Orbit { 
+            config: cla.get_option_vec(cli::Optional("--config"))?.unwrap_or(vec![]),
+            help: cla.get_flag(cli::Flag("help"))?,
+            version: cla.get_flag(cli::Flag("version"))?,
+            command: cla.next_command::<Subcommand>(cli::Positional("subcommand"))?,
+        })
+    }
+
+    fn run(&self) {
+        self.config.iter().for_each(|f| {
+            if let Some((k, v)) = f.split_once("=") {
+                println!("key: {}\tvalue: {}", k, v);
+            }
+        });
+        if self.version {
+            println!("orbit 0.1.0");
+        }
+        self.command.run();
+    }
+}
+
+
+
+
+// example command demo
+#[derive(Debug, PartialEq, Default)]
 pub struct Sum {
     guess: u8,
     digits: Vec<u8>,
@@ -23,17 +85,15 @@ pub struct Sum {
 impl Command for Sum {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> {
         let v = cli::Flag("verbose");
-
         Ok(Sum { 
-            digits: cla.get_option_vec("--digit")?.or(Some(vec![])).unwrap(),
-            guess: cla.next_positional()?,
+            digits: cla.get_option_vec(cli::Optional("--digit"))?
+                .unwrap_or(vec![]),
+            guess: cla.next_positional(cli::Positional("guess"))?,
             verbose: cla.get_flag(v)?,
         })
     }
-}
 
-impl Sum {
-    pub fn run(self) {
+    fn run(&self) {
         let mut txt = String::new();
         let s = self.digits.iter().fold(0, |acc, x| {
             txt += &format!("{} + ", x);
@@ -46,6 +106,37 @@ impl Sum {
         } else {
             println!("you guessed incorrectly.");
         }
+    }
+}
+
+// example command demo
+#[derive(Debug, PartialEq, Default)]
+pub struct NumCast {
+    deci: u32,
+    base: u8,
+    pad: u8,
+}
+
+impl Command for NumCast {
+    fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> {
+        Ok(NumCast { 
+            pad: cla.get_option(cli::Optional("--pad"))?.unwrap_or(0),
+            base: cla.get_option(cli::Optional("--base"))?.unwrap_or(10),
+            deci: cla.next_positional(cli::Positional("num"))?,
+        })
+    }
+
+    fn run(&self) {
+        let resp = if self.base == 2 {
+            format!("{:b}", self.deci)
+        } else if self.base == 8 {
+            format!("{:o}", self.deci)
+        } else if self.base == 16 {
+            format!("{:x}", self.deci)
+        } else {
+            "unsupported base value".to_string()
+        };
+        println!("{}", resp);
     }
 }
 

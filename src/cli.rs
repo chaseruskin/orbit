@@ -11,6 +11,8 @@ use std::fmt::Debug;
 use std::error::Error;
 use std::fmt::Display;
 
+use crate::command::Command;
+
 type Value = Vec::<Option<Param>>;
 
 #[derive(Debug, PartialEq)]
@@ -76,23 +78,39 @@ impl Cli {
         }
     }
 
-    /// Pop off the next positional in the provided order.
-    pub fn next_positional<T: FromStr + std::fmt::Debug>(&mut self) -> Result<T, CliError>
+    pub fn next_command<T: FromStr + std::fmt::Debug>(&mut self, arg: Positional, /*mapper: Box<dyn Fn(T) -> ()*/) -> Result<Box<dyn crate::command::Command>, CliError>
         where <T as std::str::FromStr>::Err: std::fmt::Debug {
-        // :todo: refactor using iterators
-        self.past_opts = true;
-        for p in &mut self.positionals {        
-            // find the first non-None value
-            if p.is_some() {
-                if let Ok(r) = p.take().unwrap().parse::<T>() {
-                    return Ok(r)
-                } else {
-                    todo!("handle error for invalid positional value")
-                }
-            }
+        let a: String = self.next_positional(arg).unwrap(); //replace String with T
+        self.past_opts = false;
+        // continually skip values that could be indirect with flags (or that fail)
+
+        // invalid: $ orbit --digit 10 --version sum 10 --verbose
+        // who is --digit 10?
+        // clean up until command call index?
+        // valid: $ orbit --config key=value cast --config key2=value2 10 --base 2 --version
+        match a.as_ref() {
+            "sum" =>  Ok(Box::new(crate::command::Sum::initialize(self)?)),
+            "cast" => Ok(Box::new(crate::command::NumCast::initialize(self)?)),
+            _ => todo!()
         }
-        // found zero available arguments
-        Err(CliError::MissingPositional)
+    }
+
+    /// Pop off the next positional in the provided order.
+    pub fn next_positional<T: FromStr + std::fmt::Debug>(&mut self, arg: Positional) -> Result<T, CliError>
+        where <T as std::str::FromStr>::Err: std::fmt::Debug {
+        self.past_opts = true;
+        if let Some(p) = self.positionals.iter_mut()
+            .skip_while(|s| s.is_none())
+            .next() {
+            if let Ok(r) = p.take().unwrap().parse::<T>() {
+                return Ok(r)
+            } else {
+                todo!("handle error for invalid positional value")
+            }
+        } else {
+            // found zero available arguments
+            Err(CliError::MissingPositional(arg.0.to_owned()))
+        }
     }
 
     // :todo: make better
@@ -127,6 +145,7 @@ impl Cli {
     /// Ensure there are no unused/unchecked arguments. Results in error if
     /// `options` is not empty or `positionals` has a non-None value.
     pub fn is_clean(&self) -> Result<(), CliError> {
+        // :idea: clean up until a given subcommand? then pass rest of it to subcommand data
         if self.options.is_empty() != true {
             Err(CliError::UnexpectedArg(self.options.keys().next().unwrap().to_owned()))
         } else if let Some(Some(a)) = self.positionals.iter().find(|f| f.is_some()) {
@@ -144,7 +163,7 @@ impl Cli {
     }
 
     /// Query for a particular option and get it's value.
-    /// To set a default value, chain `.or()` to this function call.
+    /// To set a default value, chain `.unwrap_or()` to this function call.
     pub fn get_option<T: FromStr + std::fmt::Debug>(&mut self, opt: Optional) -> Result<Option<T>, CliError>
     where <T as std::str::FromStr>::Err: std::fmt::Debug {
         if self.past_opts { 
@@ -166,19 +185,19 @@ impl Cli {
     }
 
     /// Query for a particular option and return back all values provided
-    pub fn get_option_vec<T: FromStr + std::fmt::Debug>(&mut self, opt: &str) -> Result<Option<Vec<T>>, CliError>
+    pub fn get_option_vec<T: FromStr + std::fmt::Debug>(&mut self, opt: Optional) -> Result<Option<Vec<T>>, CliError>
     where <T as std::str::FromStr>::Err: std::fmt::Debug {
         if self.past_opts { 
             panic!("options must be evaluated before positionals")
         }
-        if let Some(m) = self.options.remove(opt) {
+        if let Some(m) = self.options.remove(opt.0) {
             let mut res = Vec::<T>::with_capacity(m.len());
             let mut m = m.into_iter();
             while let Some(e) = m.next() {
                 if let Some(p) = e {
                     res.push(self.parse_param(p)?);
                 } else {
-                    return Err(CliError::ExpectingValue(opt.to_owned()));
+                    return Err(CliError::ExpectingValue(opt.0.to_owned()));
                 }
             }
             Ok(Some(res))
@@ -214,7 +233,7 @@ impl Cli {
    }
 }
 
-pub struct Positional<'a>(&'a str);
+pub struct Positional<'a>(pub &'a str);
 
 impl Display for Positional<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
@@ -247,7 +266,7 @@ pub enum Arg<'a> {
 #[derive(Debug, PartialEq)]
 pub enum CliError {
     BadType,
-    MissingPositional,
+    MissingPositional(String),
     DuplicateOptions,
     ExpectingValue(String),
     UnexpectedValue(String, String),
@@ -261,7 +280,7 @@ impl Display for CliError {
         use CliError::*;
         match self {
             BadType => write!(f, "bad type conversion from string"),
-            MissingPositional => write!(f, "missing positional"),
+            MissingPositional(p) => write!(f, "missing positional <{}>", p),
             DuplicateOptions => write!(f, "duplicate options"),
             ExpectingValue(x) => write!(f, "option \"{}\" expects a value but none was supplied", x),
             UnexpectedValue(x, s) => write!(f, "flag \"{}\" cannot accept values but one was supplied \"{}\"", x, s),
@@ -321,8 +340,8 @@ mod test {
         assert_eq!(cli.get_flag(Flag("lib")), Ok(true));
         assert_eq!(cli.get_option::<String>(Optional("--log")), Ok(None));
         // undesired here... options must be evaluated before positionals
-        assert_eq!(cli.next_positional(), Ok("general:editor=code".to_owned()));
-        assert_eq!(cli.next_positional(), Ok("new".to_owned()));
+        assert_eq!(cli.next_positional(Positional("subcommand")), Ok("general:editor=code".to_owned()));
+        assert_eq!(cli.next_positional(Positional("pkgid")), Ok("new".to_owned()));
         // panic occurs on first call to an option once beginning to read positionals
         assert_eq!(cli.get_option(Optional("--config")), Ok(Some("general:editor=code".to_owned())));
     }
@@ -359,10 +378,10 @@ mod test {
 
         assert_eq!(cli.get_option::<String>(Optional("--path")), Ok(None));
         assert_eq!(cli.get_option::<String>(Optional("--log")), Ok(None));
-        assert_eq!(cli.next_positional(), Ok("build".to_owned()));
-        assert_eq!(cli.next_positional(), Ok("quartus".to_owned()));
+        assert_eq!(cli.next_positional(Positional("subcommand")), Ok("build".to_owned()));
+        assert_eq!(cli.next_positional(Positional("plugin")), Ok("quartus".to_owned()));
         // verify there are no more positionals
-        assert!(cli.next_positional::<String>().is_err());
+        assert!(cli.next_positional::<String>(Positional("extra")).is_err());
         assert_eq!(cli.get_flag(Flag("plan")), Ok(true));
         assert_eq!(cli.get_flag(Flag("version")), Ok(false));
         assert_eq!(cli.get_flag(Flag("help")), Ok(false));
@@ -410,8 +429,8 @@ mod test {
 
         assert_eq!(cli.get_option(Optional("--verbose")), Ok(Some(2)));
         assert_eq!(cli.get_option(Optional("--path")), Ok(Some("C:/Users/chase".to_owned())));
-        assert_eq!(cli.next_positional(), Ok("new".to_owned()));
-        assert_eq!(cli.next_positional(), Ok("rary.gates".to_owned()));
+        assert_eq!(cli.next_positional(Positional("subcommand")), Ok("new".to_owned()));
+        assert_eq!(cli.next_positional(Positional("pkgid")), Ok("rary.gates".to_owned()));
 
         let args = vec![
             "orbit", "--version", "get", "gates::nor_gate", "--code", "vhdl",
@@ -419,8 +438,8 @@ mod test {
         let mut cli = Cli::new(args);
 
         assert_eq!(cli.get_option(Optional("--code")), Ok(Some("vhdl".to_string())));
-        assert_eq!(cli.next_positional(), Ok("get".to_owned()));
-        assert_eq!(cli.next_positional(), Ok("gates::nor_gate".to_owned()));
+        assert_eq!(cli.next_positional(Positional("subcommand")), Ok("get".to_owned()));
+        assert_eq!(cli.next_positional(Positional("pkgid")), Ok("gates::nor_gate".to_owned()));
         assert_eq!(cli.get_flag(Flag("version")), Ok(true));
         assert!(cli.is_clean().is_ok());
 
@@ -430,7 +449,7 @@ mod test {
         let mut cli = Cli::new(args);
 
         assert_eq!(cli.get_option(Optional("--path")), Ok(Some("c:/users/chase".to_string())));
-        assert_eq!(cli.next_positional(), Ok("info".to_owned()));
+        assert_eq!(cli.next_positional(Positional("subcommand")), Ok("info".to_owned()));
         assert_eq!(cli.get_flag(Flag("stats")), Ok(true));
         assert_eq!(cli.get_flag(Flag("version")), Ok(false));
         assert_eq!(cli.get_flag(Flag("help")), Ok(true));
@@ -453,13 +472,13 @@ mod test {
     #[test]
     fn dupe_options() {
         let args = vec![
-            "orbit", "--config", "general:editor=code", "--config", "general:author=chase",
+            "orbit", "--config", "general.editor=code", "--config", "general.author=chase",
         ].into_iter().map(|s| s.to_owned());
         let mut cli = Cli::new(args);
 
-        assert_eq!(cli.get_option_vec("--config"), Ok(Some(vec![
-            "general:editor=code".to_string(),
-            "general:author=chase".to_string(),
+        assert_eq!(cli.get_option_vec(Optional("--config")), Ok(Some(vec![
+            "general.editor=code".to_string(),
+            "general.author=chase".to_string(),
         ])));
     }
 }

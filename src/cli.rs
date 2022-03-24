@@ -91,6 +91,9 @@ impl Cli {
         }
     }
 
+    /// Queries for the next command in the chain.
+    /// 
+    /// Recursively enters a new `dyn Command` to assign its args from the collected `Cli` data.
     pub fn next_command<T: crate::command::Dispatch>(&mut self, arg: Positional) -> Result<Option<Box<dyn crate::command::Command>>, CliError> {
         // continually skip values that could be indirect with flags (or that fail)
         let pos_it = self.positionals
@@ -105,6 +108,7 @@ impl Cli {
         // :todo: add ability to offer suggestion to maybe move ooc arg after the successfully parsed subcommand
         self.is_partial_clean(i)?;
         let sub: String = self.next_positional(arg)?;
+        // :todo: check if the subcommand was entered incorrectly, then try to offer suggestion
         self.past_opts = false;
         Ok(Some(T::dispatch(&sub, self)?))
     }
@@ -218,18 +222,20 @@ impl Cli {
         }
         // check if it is in the map (pull from map)
         let o = if let Some(mut m) = self.options.remove(&opt.get_flag().to_string()) { 
-            // add optional to the known args
+            // option was supplied more than once
             if m.1.len() > 1 {
                 return Err(CliError::DuplicateOptions(Arg::Optional(opt)));
-            // investigate if the user provided a param for the option
+            // verify the user supplied a value for this option
             } else if let Some(p) = m.1.pop().unwrap() {
                 Some(self.parse_param(p, &opt)?)
+            // there is no value in the vector or that value was `None`
             } else {
                 return Err(CliError::ExpectingValue(Arg::Optional(opt)));
             }
         } else { 
             None
         };
+        // add optional to the known args
         self.known_args.push(Arg::Optional(opt));
         Ok(o)
     }

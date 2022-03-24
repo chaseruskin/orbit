@@ -2,13 +2,16 @@ use crate::cli;
 use std::fmt::Debug;
 use std::str::FromStr;
 
+type Route<T> = Option<T>;
+pub type DynCommand = Box<dyn Command>;
+
 pub trait Command: Debug {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError>
     where Self: Sized;
 
     fn initialize(cla: &mut cli::Cli) -> Result<Self, cli::CliError>
     where Self: Sized {
-        // :todo: set the usage before failing
+        // :todo: set the usage before failing and read if --help is there
         let cmd = Self::new(cla)?;
         cla.is_clean()?;
         Ok(cmd)
@@ -16,39 +19,37 @@ pub trait Command: Debug {
 
     // :todo: implement a rules fn to verify all args requested do not conflict
     // example: --lib | --bin, errors if --lib & --bin are passed
+    fn verify_rules(&self) -> () { todo!() }
 
     fn run(&self) -> ();
 }
 
 pub trait Dispatch: Debug {
-    fn dispatch(self, cla: &mut cli::Cli) -> Result<Box<dyn Command>, cli::CliError>;
+    fn dispatch(self, cla: &mut cli::Cli) -> Result<DynCommand, cli::CliError>;
 }
 
-type Route<T> = Option<T>;
-pub type DynCommand = Box<dyn Command>;
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 enum Subcommand {
     Sum(Route<Sum>),
     NumCast(Route<NumCast>),
 }
 
-impl  FromStr for Subcommand  {
+impl FromStr for Subcommand  {
     type Err = Vec<String>;
 
     fn from_str(s: & str) -> Result<Subcommand, Self::Err> {
         use Subcommand::*;
         match s {
             "sum" => Ok(Sum(None)),
-            "cast" => Ok(NumCast(None)),
+            "cast" | "c" => Ok(NumCast(None)),
             _ => {
-                Err(vec!["sum".to_owned(), "cast".to_owned()])
+                Err(vec!["sum".to_owned(), "cast".to_owned(), "c".to_owned()])
             }
         }
     }
 }
 
-impl  Dispatch for Subcommand  {
+impl Dispatch for Subcommand  {
     fn dispatch(self, cla: &mut cli::Cli) -> Result<DynCommand, cli::CliError> {
         match self {
             Subcommand::Sum(_) => Ok(Box::new(Sum::initialize(cla)?)),

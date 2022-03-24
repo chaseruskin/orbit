@@ -48,7 +48,7 @@ impl Cli {
         let mut options = HashMap::<String, ParamArg>::new();
         let mut positionals = Vec::new();
         // appending an element behind the key (ensuring a vector always exist)
-        let mut enter = |k, v, i| {
+        let mut enter = |k: String, v, i| {
             options
                 .entry(k)
                 .or_insert(ParamArg(i, Vec::new())).1
@@ -85,7 +85,7 @@ impl Cli {
         Cli {
             positionals: positionals,
             options: options,
-            remainder: cla.map(|(_, v)| v).collect(),
+            remainder: cla.map(|f| f.1).collect(),
             past_opts: false,
             known_args: Vec::new(),
         }
@@ -96,7 +96,11 @@ impl Cli {
     /// Recursively enters a new `dyn Command` to assign its args from the collected `Cli` data.
     pub fn next_command<T: crate::command::Dispatch + FromStr>(&mut self, arg: Positional) -> Result<Option<command::DynCommand>, CliError> 
     where T: std::str::FromStr<Err = Vec<String>> {
-        let cmd = self.next_arg(&arg)?;
+        let cmd = match self.next_arg(&arg) {
+            Ok(c) => c,
+            Err(_) => return Ok(None),
+        };
+        // :todo: add ability to offer suggestion to maybe move ooc arg after the successfully parsed subcommand
         self.is_partial_clean(cmd.0)?;
         // check if the subcommand was entered incorrectly, then try to offer suggestion
         let sub = match cmd.1.parse::<T>() {
@@ -108,7 +112,6 @@ impl Cli {
                 };
             }
         };
-        // :todo: add ability to offer suggestion to maybe move ooc arg after the successfully parsed subcommand
         self.past_opts = false;
         Ok(Some(T::dispatch(sub, self)?))
     }
@@ -175,13 +178,13 @@ impl Cli {
                 match self.suggest_word(unknown) {
                     Some(e) => Err(e),
                     None => Err(CliError::OutOfContextArg(unknown.to_string())),
-                }
+            }
         } else {
             Ok(())
-        }
+        }   
     }
 
-    /// Attempts to pull a minimally edited word from known args to match `unknown`.
+    /// Attempts to pull a minimally edited word from `known_args` to match `unknown`.
     fn suggest_word(&self, unknown: &str) -> Option<CliError> {
         // filter to only get the names of optional/flag parameters
         let word_bank = self.known_args.iter().filter_map(|f| {

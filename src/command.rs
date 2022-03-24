@@ -1,6 +1,7 @@
 use crate::cli;
 use std::fmt::Debug;
 use std::str::FromStr;
+use crate::arg::*;
 
 type Route<T> = Option<T>;
 pub type DynCommand = Box<dyn Command>;
@@ -64,17 +65,17 @@ pub struct Orbit {
     help: bool,
     config: Vec<String>,
     color: Option<u8>,
-    command: Option<Box<dyn Command>>,
+    command: Option<DynCommand>,
 }
 
 impl Command for Orbit {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> {
         Ok(Orbit { 
-            color: cla.get_option(cli::Optional::new("color"))?,
-            config: cla.get_option_vec(cli::Optional::new("config").value("KEY=VALUE"))?.unwrap_or(vec![]),
-            help: cla.get_flag(cli::Flag::new("help"))?,
-            version: cla.get_flag(cli::Flag::new("version"))?,
-            command: cla.next_command::<Subcommand>(cli::Positional::new("subcommand"))?,
+            color: cla.get_option(Optional::new("color"))?,
+            config: cla.get_option_vec(Optional::new("config").value("KEY=VALUE"))?.unwrap_or(vec![]),
+            help: cla.get_flag(Flag::new("help"))?,
+            version: cla.get_flag(Flag::new("version"))?,
+            command: cla.next_command::<Subcommand>(Positional::new("subcommand"))?,
         })
     }
 
@@ -106,12 +107,12 @@ pub struct Sum {
 
 impl Command for Sum {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> {
-        let v = cli::Flag::new("verbose");
+        let v = Flag::new("verbose");
         Ok(Sum { 
-            digits: cla.get_option_vec(cli::Optional::new("digit"))?
+            digits: cla.get_option_vec(Optional::new("digit"))?
                 .unwrap_or(vec![]),
-            guess: cla.next_positional(cli::Positional::new("guess"))?,
-            ver: cla.next_positional(cli::Positional::new("version"))?,
+            guess: cla.next_positional(Positional::new("guess"))?,
+            ver: cla.next_positional(Positional::new("version"))?,
             verbose: cla.get_flag(v)?,
         })
     }
@@ -143,9 +144,9 @@ pub struct NumCast {
 impl Command for NumCast {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> {
         Ok(NumCast { 
-            pad: cla.get_option(cli::Optional::new("pad"))?.unwrap_or(0),
-            base: cla.get_option_vec(cli::Optional::new("base"))?.unwrap_or(vec![]),
-            deci: cla.next_positional(cli::Positional::new("num"))?,
+            pad: cla.get_option(Optional::new("pad"))?.unwrap_or(0),
+            base: cla.get_option_vec(Optional::new("base"))?.unwrap_or(vec![]),
+            deci: cla.next_positional(Positional::new("num"))?,
         })
     }
 

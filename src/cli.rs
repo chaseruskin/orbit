@@ -15,6 +15,13 @@ use std::error::Error;
 use std::fmt::Display;
 use crate::seqalin;
 use crate::command;
+use crate::arg::*;
+
+#[derive(Debug, PartialEq)]
+enum Param {
+    Direct(String),
+    Indirect(usize),
+}
 
 type Value = Vec::<Option<Param>>;
 type Index = usize;
@@ -33,12 +40,6 @@ pub struct Cli {
     past_opts: bool,
     /// stores `Arg` as it is queried by command for computing edit distances
     known_args: Vec<Arg>,
-}
-
-#[derive(Debug, PartialEq)]
-enum Param {
-    Direct(String),
-    Indirect(usize),
 }
 
 impl Cli {
@@ -116,19 +117,6 @@ impl Cli {
         Ok(Some(T::dispatch(sub, self)?))
     }
 
-    /// Pops off the next positional in the provided order.
-    fn next_arg(&mut self, arg: &Positional) -> Result<PosArg, CliError> {
-        if let Some(p) = self.positionals
-            .iter_mut()
-            .find(|s| s.is_some()) {
-                // safe to unwrap because we first found if it existed
-                Ok(p.take().unwrap())
-        } else {
-            // found zero available arguments
-            Err(CliError::MissingPositional(Arg::Positional(arg.clone())))
-        }
-    }
-
     /// Moves the arg onto `known_args` and ensures the parameter can be parsed correctly.
     pub fn next_positional<T: FromStr + std::fmt::Debug>(&mut self, arg: Positional) -> Result<T, CliError>
         where <T as std::str::FromStr>::Err: std::error::Error {
@@ -169,36 +157,6 @@ impl Cli {
         Ok(raised)
     }
 
-    /// Filters out undetermined options that have a position < i.
-    pub fn is_partial_clean(&self, i: usize) -> Result<(), CliError> {
-        if let Some(arg) = self.options
-            .iter()
-            .find(|(_, o)| { o.0 <= i }) {
-                let unknown = arg.0;
-                match self.suggest_word(unknown) {
-                    Some(e) => Err(e),
-                    None => Err(CliError::OutOfContextArg(unknown.to_string())),
-            }
-        } else {
-            Ok(())
-        }   
-    }
-
-    /// Attempts to pull a minimally edited word from `known_args` to match `unknown`.
-    fn suggest_word(&self, unknown: &str) -> Option<CliError> {
-        // filter to only get the names of optional/flag parameters
-        let word_bank = self.known_args.iter().filter_map(|f| {
-            match f {
-                Arg::Flag(g) => Some(g.to_string()),
-                Arg::Optional(o) => Some(o.name.to_string()),
-                _ => None
-            }
-        }).collect();
-        // compute edit distance on known args to generate suggestion
-        let w = seqalin::sel_min_edit_str(&unknown, &word_bank, 3)?;
-        Some(CliError::SuggestArg(unknown.to_owned(), w.to_owned()))
-    }
-
     /// Checks that there are no unused/unchecked arguments.
     pub fn is_clean(&self) -> Result<(), CliError> {
         // errors if `options` is not empty or `positionals` has a non-None value.
@@ -213,12 +171,6 @@ impl Cli {
         } else {
             Ok(())
         }
-    }
-
-    /// Retuns the vector of leftover arguments split by '--' and removes that flag from the `options` map.
-    pub fn get_remainder(&mut self) -> &Vec::<String> {
-        self.options.remove("--");
-        return &self.remainder
     }
 
     /// Queries for a particular option to get it's value.
@@ -276,6 +228,12 @@ impl Cli {
         Ok(vals)
     }
 
+    /// Retuns the vector of leftover arguments split by '--' and removes that flag from the `options` map.
+    pub fn get_remainder(&mut self) -> &Vec::<String> {
+        self.options.remove("--");
+        return &self.remainder
+    }
+
     /// Handles updating the positional vector depending on if a paramater was direct or indirect.
     fn parse_param<T: FromStr + std::fmt::Debug>(&mut self, p: Param, opt: &Optional) -> Result<T, CliError>
     where <T as std::str::FromStr>::Err: std::error::Error {
@@ -289,86 +247,48 @@ impl Cli {
             Err(e) => Err(CliError::BadType(Arg::Optional(opt.clone()), format!("{}", e)))
         }
    }
-}
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct Positional {
-    name: String
-}
-
-impl Positional {
-    pub fn new(s: &str) -> Self {
-        Positional { name: s.to_string() }
-    }
-}
-
-impl Display for Positional {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
-        write!(f, "<{}>", self.name)
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct Flag {
-    name: String
-}
-
-impl Flag {
-    pub fn new(s: &str) -> Self {
-        Flag { name: s.to_string() }
-    }
-}
-
-impl Display for Flag {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
-        write!(f, "--{}", self.name)
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct Optional {
-    name: Flag,
-    value: Positional,
-}
-
-impl Optional {
-    pub fn new(s: &str) -> Self {
-        Optional { 
-            name: Flag::new(s),
-            value: Positional::new(s),
+    /// Pops off the next positional in the provided order.
+    fn next_arg(&mut self, arg: &Positional) -> Result<PosArg, CliError> {
+        if let Some(p) = self.positionals
+            .iter_mut()
+            .find(|s| s.is_some()) {
+                // safe to unwrap because we first found if it existed
+                Ok(p.take().unwrap())
+        } else {
+            // found zero available arguments
+            Err(CliError::MissingPositional(Arg::Positional(arg.clone())))
         }
     }
-    
-    pub fn get_flag(&self) -> &Flag {
-        &self.name
+
+    /// Attempts to pull a minimally edited word from `known_args` to match `unknown`.
+    fn suggest_word(&self, unknown: &str) -> Option<CliError> {
+        // filter to only get the names of optional/flag parameters
+        let word_bank = self.known_args.iter().filter_map(|f| {
+            match f {
+                Arg::Flag(g) => Some(g.to_string()),
+                Arg::Optional(o) => Some(o.get_flag().to_string()),
+                _ => None
+            }
+        }).collect();
+        // compute edit distance on known args to generate suggestion
+        let w = seqalin::sel_min_edit_str(&unknown, &word_bank, 3)?;
+        Some(CliError::SuggestArg(unknown.to_owned(), w.to_owned()))
     }
 
-    pub fn value(mut self, s: &str) -> Self {
-        self.value.name = s.to_string();
-        self
-    }
-}
-
-impl Display for Optional {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
-        write!(f, "{} {}", self.name, self.value)
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Arg {
-    Positional(Positional),
-    Flag(Flag),
-    Optional(Optional),
-}
-
-impl Display for Arg {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
-        match self {
-            Self::Flag(a) => write!(f, "{}", a),
-            Self::Positional(a) => write!(f, "{}", a),
-            Self::Optional(a) => write!(f, "{}", a),
-        }
+    /// Filters out undetermined options that have a position < i.
+    fn is_partial_clean(&self, i: usize) -> Result<(), CliError> {
+        if let Some(arg) = self.options
+            .iter()
+            .find(|(_, o)| { o.0 <= i }) {
+                let unknown = arg.0;
+                match self.suggest_word(unknown) {
+                    Some(e) => Err(e),
+                    None => Err(CliError::OutOfContextArg(unknown.to_string())),
+            }
+        } else {
+            Ok(())
+        }   
     }
 }
 

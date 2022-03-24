@@ -1,5 +1,6 @@
 use crate::cli;
 use std::fmt::Debug;
+use std::str::FromStr;
 
 pub trait Command: Debug {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError>
@@ -20,22 +21,38 @@ pub trait Command: Debug {
 }
 
 pub trait Dispatch: Debug {
-    fn dispatch(s: &str, cla: &mut cli::Cli) -> Result<Box<dyn Command>, cli::CliError>;
+    fn dispatch(self, cla: &mut cli::Cli) -> Result<Box<dyn Command>, cli::CliError>;
 }
 
-// :todo: improve flow
+type Route<T> = Option<T>;
+pub type DynCommand = Box<dyn Command>;
+
 #[derive(Debug, PartialEq)]
 enum Subcommand {
-    Sum(Sum),
-    NumCast(NumCast),
+    Sum(Route<Sum>),
+    NumCast(Route<NumCast>),
 }
 
-impl Dispatch for Subcommand {
-    fn dispatch(s: &str, cla: &mut cli::Cli) -> Result<Box<dyn Command>, cli::CliError> {
+impl  FromStr for Subcommand  {
+    type Err = Vec<String>;
+
+    fn from_str(s: & str) -> Result<Subcommand, Self::Err> {
+        use Subcommand::*;
         match s {
-            "sum" => Ok(Box::new(Sum::initialize(cla)?)),
-            "cast" => Ok(Box::new(NumCast::initialize(cla)?)),
-            _ => todo!("handle error for invalid subcommand")
+            "sum" => Ok(Sum(None)),
+            "cast" => Ok(NumCast(None)),
+            _ => {
+                Err(vec!["sum".to_owned(), "cast".to_owned()])
+            }
+        }
+    }
+}
+
+impl  Dispatch for Subcommand  {
+    fn dispatch(self, cla: &mut cli::Cli) -> Result<DynCommand, cli::CliError> {
+        match self {
+            Subcommand::Sum(_) => Ok(Box::new(Sum::initialize(cla)?)),
+            Subcommand::NumCast(_) => Ok(Box::new(NumCast::initialize(cla)?)),
         }
     }
 }

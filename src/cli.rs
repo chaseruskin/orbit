@@ -14,6 +14,7 @@ use std::fmt::Debug;
 use std::error::Error;
 use std::fmt::Display;
 use crate::seqalin;
+use crate::command;
 
 type Value = Vec::<Option<Param>>;
 type Index = usize;
@@ -30,8 +31,7 @@ pub struct Cli {
     options: HashMap<String, ParamArg>,
     remainder: Vec::<String>,
     past_opts: bool,
-    // build up vector as parameters are queried to generate a list of valid params 
-    // to later compute edit distance if an unknown argument was entered for a command
+    /// stores `Arg` as it is queried by command for computing edit distances
     known_args: Vec<Arg>,
 }
 
@@ -74,7 +74,7 @@ impl Cli {
                             None => positionals.push(None),
                         };
                     }
-                // none- no param was supplied to current option
+                // none- no parameter was supplied to the current option
                 } else {
                     enter(arg, None, i);
                 }
@@ -94,42 +94,48 @@ impl Cli {
     /// Queries for the next command in the chain.
     /// 
     /// Recursively enters a new `dyn Command` to assign its args from the collected `Cli` data.
-    pub fn next_command<T: crate::command::Dispatch>(&mut self, arg: Positional) -> Result<Option<Box<dyn crate::command::Command>>, CliError> {
-        // continually skip values that could be indirect with flags (or that fail)
-        let pos_it = self.positionals
-            .iter()
-            .find(|p| p.is_some());
-
-        let i = if let Some(a) = pos_it {
-            a.as_ref().unwrap().0
-        } else {
-            return Ok(None);
+    pub fn next_command<T: crate::command::Dispatch + FromStr>(&mut self, arg: Positional) -> Result<Option<command::DynCommand>, CliError> 
+    where T: std::str::FromStr<Err = Vec<String>> {
+        let cmd = self.next_arg(&arg)?;
+        self.is_partial_clean(cmd.0)?;
+        // check if the subcommand was entered incorrectly, then try to offer suggestion
+        let sub = match cmd.1.parse::<T>() {
+            Ok(s) => s,
+            Err(v) => {
+                match seqalin::sel_min_edit_str(&cmd.1, &v, 3) {
+                    Some(w) => return Err(CliError::SuggestArg(cmd.1.to_owned(), w.to_owned())),
+                    _ => return Err(CliError::UnknownSubcommand(Arg::Positional(arg), cmd.1.to_owned()))
+                };
+            }
         };
         // :todo: add ability to offer suggestion to maybe move ooc arg after the successfully parsed subcommand
-        self.is_partial_clean(i)?;
-        let sub: String = self.next_positional(arg)?;
-        // :todo: check if the subcommand was entered incorrectly, then try to offer suggestion
         self.past_opts = false;
-        Ok(Some(T::dispatch(&sub, self)?))
+        Ok(Some(T::dispatch(sub, self)?))
     }
 
     /// Pops off the next positional in the provided order.
+    fn next_arg(&mut self, arg: &Positional) -> Result<PosArg, CliError> {
+        if let Some(p) = self.positionals
+            .iter_mut()
+            .find(|s| s.is_some()) {
+                // safe to unwrap because we first found if it existed
+                Ok(p.take().unwrap())
+        } else {
+            // found zero available arguments
+            Err(CliError::MissingPositional(Arg::Positional(arg.clone())))
+        }
+    }
+
+    /// Moves the arg onto `known_args` and ensures the parameter can be parsed correctly.
     pub fn next_positional<T: FromStr + std::fmt::Debug>(&mut self, arg: Positional) -> Result<T, CliError>
         where <T as std::str::FromStr>::Err: std::error::Error {
         self.past_opts = true;
-        if let Some(p) = self.positionals.iter_mut()
-            .skip_while(|s| s.is_none())
-            .next() {
-                match p.take().unwrap().1.parse::<T>() {
-                    Ok(r) => {
-                        self.known_args.push(Arg::Positional(arg));
-                        Ok(r) 
-                    }
-                    Err(e) => Err(CliError::BadType(Arg::Positional(arg), format!("{}", e)))
-                }
-        } else {
-            // found zero available arguments
-            Err(CliError::MissingPositional(Arg::Positional(arg)))
+        match self.next_arg(&arg)?.1.parse::<T>() {
+            Ok(r) => {
+                self.known_args.push(Arg::Positional(arg));
+                Ok(r)
+            }
+            Err(e) => Err(CliError::BadType(Arg::Positional(arg), format!("{}", e))),
         }
     }
 
@@ -248,21 +254,20 @@ impl Cli {
         if self.past_opts { 
             panic!("options must be evaluated before positionals")
         }
-        let vals = if let Some(m) = self.options.remove(&opt.get_flag().to_string()) {
-            let mut res = Vec::<T>::with_capacity(m.1.len());
-            let mut m = m.1.into_iter();
-            while let Some(e) = m.next() {
-                if let Some(p) = e {
-                    res.push(self.parse_param(p, &opt)?);
-                } else {
-                    return Err(CliError::ExpectingValue(Arg::Optional(opt)));
+        let vals = match self.options.remove(&opt.get_flag().to_string()) {
+            Some(m) => {
+                let mut res = Vec::<T>::with_capacity(m.1.len());
+                let mut m = m.1.into_iter();
+                while let Some(e) = m.next() {
+                    match e {
+                        Some(p) => res.push(self.parse_param::<T>(p, &opt)?),
+                        None => return Err(CliError::ExpectingValue(Arg::Optional(opt))),
+                    }
                 }
+                Some(res)
             }
-            
-            Some(res)
-        // option was not provided by user, return None
-        } else {
-            None
+            // option was not provided by user, return None 
+            None => None,
         };
         self.known_args.push(Arg::Optional(opt));
         Ok(vals)
@@ -271,20 +276,14 @@ impl Cli {
     /// Handles updating the positional vector depending on if a paramater was direct or indirect.
     fn parse_param<T: FromStr + std::fmt::Debug>(&mut self, p: Param, opt: &Optional) -> Result<T, CliError>
     where <T as std::str::FromStr>::Err: std::error::Error {
-        match p {
-            Param::Direct(s) => {
-                match s.parse::<T>() {
-                    Ok(r) => Ok(r),
-                    Err(e) => Err(CliError::BadType(Arg::Optional(opt.clone()), format!("{}", e)))
-                }
-            }
-            Param::Indirect(i) => {
-                // perform a swap on the data unless it has already been used up
-                match self.positionals[i].take().expect("value was stolen by positional").1.parse::<T>() {
-                    Ok(r) => Ok(r),
-                    Err(e) => Err(CliError::BadType(Arg::Optional(opt.clone()), format!("{}", e)))
-                }
-            }
+        let st = match p {
+            Param::Direct(s) => s,
+            // perform a swap on the data unless it has already been used up
+            Param::Indirect(i) => self.positionals[i].take().expect("value was stolen by positional").1
+        };
+        match st.parse::<T>() {
+            Ok(r) => Ok(r),
+            Err(e) => Err(CliError::BadType(Arg::Optional(opt.clone()), format!("{}", e)))
         }
    }
 }
@@ -380,6 +379,7 @@ pub enum CliError {
     OutOfContextArg(String),
     UnexpectedArg(String),
     SuggestArg(String, String),
+    UnknownSubcommand(Arg, String),
 }
 
 impl Error for CliError {}
@@ -396,6 +396,7 @@ impl Display for CliError {
             ExpectingValue(x) => write!(f, "option '{}' expects a value but none was supplied", x),
             UnexpectedValue(x, s) => write!(f, "flag '{}' cannot accept values but one was supplied \"{}\"", x, s),
             UnexpectedArg(s) => write!(f, "unknown argument '{}'", s),
+            UnknownSubcommand(c, a) => write!(f, "'{}' is not a valid subcommand for {}", a, c),
         }
     }
 }

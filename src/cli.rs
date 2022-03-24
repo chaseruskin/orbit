@@ -33,7 +33,7 @@ pub struct Cli {
     past_opts: bool,
     // build up vector as parameters are queried to generate a list of valid params 
     // to later compute edit distance if an unknown argument was entered for a command
-    // known_args: Vec<Arg>,
+    known_args: Vec<Arg>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -88,6 +88,7 @@ impl Cli {
             options: options,
             remainder: cla.map(|(_, v)| v).collect(),
             past_opts: false,
+            known_args: Vec::new(),
         }
     }
 
@@ -117,7 +118,10 @@ impl Cli {
             .skip_while(|s| s.is_none())
             .next() {
                 match p.take().unwrap().1.parse::<T>() {
-                    Ok(r) => Ok(r),
+                    Ok(r) => {
+                        self.known_args.push(Arg::Positional(arg));
+                        Ok(r) 
+                    }
                     Err(e) => Err(CliError::BadType(Arg::Positional(arg), format!("{}", e)))
                 }
         } else {
@@ -131,24 +135,26 @@ impl Cli {
     /// __Errors__: if a direct value was given or if the flag was raised multiple times
     pub fn get_flag(&mut self, flag: Flag) -> Result<bool, CliError> {
         // // check if it is in the map
-        if let Some(mut val) = self.options.remove(&flag.to_string()) {
+        let raised = if let Some(mut val) = self.options.remove(&flag.to_string()) {
             // raise error if there is an attached option to the flag
             if val.1.len() > 1 {
                 // err: duplicate values
-                Err(CliError::DuplicateOptions(Arg::Flag(flag)))
+                return Err(CliError::DuplicateOptions(Arg::Flag(flag)))
             } else {
                 match val.1.pop().unwrap() {
                     Some(p) => match p {
-                        Param::Direct(s) => Err(CliError::UnexpectedValue(Arg::Flag(flag), s)),
-                        Param::Indirect(_) => Ok(true),
+                        Param::Direct(s) => return Err(CliError::UnexpectedValue(Arg::Flag(flag), s)),
+                        Param::Indirect(_) => true,
                     }
-                    None => Ok(true),
+                    None => true,
                 }
             }
         // flag was not found in options map
         } else {
-            Ok(false)
-        }
+            false
+        };
+        self.known_args.push(Arg::Flag(flag));
+        Ok(raised)
     }
 
     /// Filters out undetermined options that have a position < i.
@@ -164,12 +170,13 @@ impl Cli {
 
     /// Checks that there are no unused/unchecked arguments.
     pub fn is_clean(&self) -> Result<(), CliError> {
-        // :todo: compute edit distance on known args to generate suggestion
         // errors if `options` is not empty or `positionals` has a non-None value.
         if self.options.is_empty() != true {
-            Err(CliError::UnexpectedArg(self.options.keys().next().unwrap().to_owned()))
-        } else if let Some(Some(a)) = self.positionals.iter().find(|f| f.is_some()) {
-            Err(CliError::UnexpectedArg(a.1.to_owned()))
+            // :todo: compute edit distance on known args to generate suggestion
+            let unknown = self.options.keys().next().unwrap().to_owned();
+            Err(CliError::UnexpectedArg(unknown))
+        } else if let Some(Some(unknown)) = self.positionals.iter().find(|f| f.is_some()) {
+            Err(CliError::UnexpectedArg(unknown.1.to_owned())) 
         } else {
             Ok(())
         }
@@ -190,18 +197,21 @@ impl Cli {
             panic!("options must be evaluated before positionals")
         }
         // check if it is in the map (pull from map)
-        if let Some(mut m) = self.options.remove(&opt.get_flag().to_string()) { 
+        let o = if let Some(mut m) = self.options.remove(&opt.get_flag().to_string()) { 
+            // add optional to the known args
             if m.1.len() > 1 {
-                Err(CliError::DuplicateOptions(Arg::Optional(opt)))
+                return Err(CliError::DuplicateOptions(Arg::Optional(opt)));
             // investigate if the user provided a param for the option
             } else if let Some(p) = m.1.pop().unwrap() {
-                Ok(Some(self.parse_param(p, &opt)?))
+                Some(self.parse_param(p, &opt)?)
             } else {
-                Err(CliError::ExpectingValue(Arg::Optional(opt)))
+                return Err(CliError::ExpectingValue(Arg::Optional(opt)));
             }
         } else { 
-            Ok(None)
-        }
+            None
+        };
+        self.known_args.push(Arg::Optional(opt));
+        Ok(o)
     }
 
     /// Queries for a particular option and returns all supplied values.
@@ -222,6 +232,7 @@ impl Cli {
                     return Err(CliError::ExpectingValue(Arg::Optional(opt)));
                 }
             }
+            self.known_args.push(Arg::Optional(opt));
             Ok(Some(res))
         // option was not provided by user, return None
         } else {
@@ -375,6 +386,7 @@ mod test {
             options: HashMap::new(),
             remainder: Vec::new(),
             past_opts: false,
+            known_args: Vec::new(),
         });
     }
 
@@ -396,6 +408,7 @@ mod test {
             options: opts,
             remainder: Vec::new(),
             past_opts: false,
+            known_args: Vec::new(),
         });
     }
 
@@ -436,6 +449,7 @@ mod test {
             options: opts,
             remainder: Vec::new(),
             past_opts: false,
+            known_args: Vec::new(),
         });
     }
 
@@ -477,6 +491,7 @@ mod test {
             options: HashMap::new(),
             remainder: Vec::new(),
             past_opts: false,
+            known_args: Vec::new(),
         });
     }
 
@@ -495,6 +510,7 @@ mod test {
             options: opts,
             remainder: Vec::new(),
             past_opts: false,
+            known_args: Vec::new(),
         };
 
         assert_eq!(cli.get_option(Optional::new("verbose")), Ok(Some(2)));
@@ -550,5 +566,47 @@ mod test {
             "general.editor=code".to_string(),
             "general.author=chase".to_string(),
         ])));
+    }
+
+    #[test]
+    fn known_args() {
+        let args = vec![
+            "orbit", 
+            "--config", "key1=value1", 
+            "--config=key2=value2",
+            "--verbose",
+            "new",
+            "--f1",
+            "--f2",
+            "--o1=10"
+        ].into_iter().map(|s| s.to_owned());
+        let mut cli = Cli::new(args);
+
+        let cfg = Optional::new("config").value("KEY=VALUE");
+        let verbose = Flag::new("verbose");
+        let quiet = Flag::new("quiet");
+        let sub = Positional::new("subcommand");
+        let f1 = Flag::new("f1");
+        let f2 = Flag::new("f2");
+        let f3 = Flag::new("f3");
+        let o1 = Optional::new("o1").value("NUM");
+
+        assert_eq!(cli.get_option_vec(cfg.clone()).unwrap(), Some(vec![
+            "key1=value1".to_string(),
+            "key2=value2".to_string(),
+        ]));
+        assert_eq!(cli.get_option(o1.clone()).unwrap(), Some(10));
+        assert_eq!(cli.get_flag(verbose.clone()).unwrap(), true);
+        assert_eq!(cli.get_flag(quiet.clone()).unwrap(), false);
+        assert_eq!(cli.next_positional::<String>(sub.clone()).unwrap(), "new");
+        assert_eq!(cli.get_flag(f1.clone()).unwrap(), true);
+        assert_eq!(cli.get_flag(f2.clone()).unwrap(), true);
+        assert_eq!(cli.get_flag(f3.clone()).unwrap(), false);
+
+        assert_eq!(cli.known_args, vec![
+            Arg::Optional(cfg), Arg::Optional(o1), Arg::Flag(verbose),
+            Arg::Flag(quiet), Arg::Positional(sub), 
+            Arg::Flag(f1), Arg::Flag(f2), Arg::Flag(f3),
+        ]);
     }
 }

@@ -1,20 +1,19 @@
 //! File     : cli.rs
 //! Abstract :
 //!     The command-line interface parses user's requests into program code.
-//! 
 //! Notes    :
 //! - options must be queried before positionals
 //! - parameters must be provided only after their respective subcommands
 //! Todo    :
 //! - allow lowercase option lookups
 //! - allow shorthand options with single dash
-//! - use `known_args` to compute edit distance among options and report a close find
 
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::fmt::Debug;
 use std::error::Error;
 use std::fmt::Display;
+use crate::seqalin;
 
 type Value = Vec::<Option<Param>>;
 type Index = usize;
@@ -162,19 +161,40 @@ impl Cli {
         if let Some(arg) = self.options
             .iter()
             .find(|(_, o)| { o.0 <= i }) {
-                Err(CliError::OutOfContextArg(arg.0.to_string()))
+                let unknown = arg.0;
+                match self.suggest_word(unknown) {
+                    Some(e) => Err(e),
+                    None => Err(CliError::OutOfContextArg(unknown.to_string())),
+                }
         } else {
             Ok(())
         }
+    }
+
+    /// Attempts to pull a minimally edited word from known args to match `unknown`.
+    fn suggest_word(&self, unknown: &str) -> Option<CliError> {
+        // filter to only get the names of optional/flag parameters
+        let word_bank = self.known_args.iter().filter_map(|f| {
+            match f {
+                Arg::Flag(g) => Some(g.to_string()),
+                Arg::Optional(o) => Some(o.name.to_string()),
+                _ => None
+            }
+        }).collect();
+        // compute edit distance on known args to generate suggestion
+        let w = seqalin::sel_min_edit_str(&unknown, &word_bank, 3)?;
+        Some(CliError::SuggestArg(unknown.to_owned(), w.to_owned()))
     }
 
     /// Checks that there are no unused/unchecked arguments.
     pub fn is_clean(&self) -> Result<(), CliError> {
         // errors if `options` is not empty or `positionals` has a non-None value.
         if self.options.is_empty() != true {
-            // :todo: compute edit distance on known args to generate suggestion
-            let unknown = self.options.keys().next().unwrap().to_owned();
-            Err(CliError::UnexpectedArg(unknown))
+            let unknown = self.options.keys().next().unwrap();
+            match self.suggest_word(unknown) {
+                Some(e) => Err(e),
+                None => Err(CliError::UnexpectedArg(unknown.to_owned()))
+            }
         } else if let Some(Some(unknown)) = self.positionals.iter().find(|f| f.is_some()) {
             Err(CliError::UnexpectedArg(unknown.1.to_owned())) 
         } else {
@@ -222,7 +242,7 @@ impl Cli {
         if self.past_opts { 
             panic!("options must be evaluated before positionals")
         }
-        if let Some(m) = self.options.remove(&opt.get_flag().to_string()) {
+        let vals = if let Some(m) = self.options.remove(&opt.get_flag().to_string()) {
             let mut res = Vec::<T>::with_capacity(m.1.len());
             let mut m = m.1.into_iter();
             while let Some(e) = m.next() {
@@ -232,12 +252,14 @@ impl Cli {
                     return Err(CliError::ExpectingValue(Arg::Optional(opt)));
                 }
             }
-            self.known_args.push(Arg::Optional(opt));
-            Ok(Some(res))
+            
+            Some(res)
         // option was not provided by user, return None
         } else {
-            Ok(None)
-        }
+            None
+        };
+        self.known_args.push(Arg::Optional(opt));
+        Ok(vals)
     }
 
     /// Handles updating the positional vector depending on if a paramater was direct or indirect.
@@ -351,6 +373,7 @@ pub enum CliError {
     UnexpectedValue(Arg, String),
     OutOfContextArg(String),
     UnexpectedArg(String),
+    SuggestArg(String, String),
 }
 
 impl Error for CliError {}
@@ -359,7 +382,8 @@ impl Display for CliError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
         use CliError::*;
         match self {
-            OutOfContextArg(o) => write!(f, "invalid argument in current context '{}'", o),
+            SuggestArg(a, sug) => write!(f, "unknown argument '{}'; did you mean '{}'?", a, sug),
+            OutOfContextArg(o) => write!(f, "argument '{}' is unknown, or invalid in the current context", o),
             BadType(a, e) => write!(f, "argument '{}' has {}", a, e),
             MissingPositional(p) => write!(f, "missing positional '{}'", p),
             DuplicateOptions(o) => write!(f, "option '{}' was requested more than once, but can only be supplied once", o),
@@ -583,6 +607,7 @@ mod test {
         let mut cli = Cli::new(args);
 
         let cfg = Optional::new("config").value("KEY=VALUE");
+        let env = Optional::new("env").value("KEY=VALUE");
         let verbose = Flag::new("verbose");
         let quiet = Flag::new("quiet");
         let sub = Positional::new("subcommand");
@@ -595,6 +620,7 @@ mod test {
             "key1=value1".to_string(),
             "key2=value2".to_string(),
         ]));
+        assert_eq!(cli.get_option_vec::<String>(env.clone()).unwrap(), None);
         assert_eq!(cli.get_option(o1.clone()).unwrap(), Some(10));
         assert_eq!(cli.get_flag(verbose.clone()).unwrap(), true);
         assert_eq!(cli.get_flag(quiet.clone()).unwrap(), false);
@@ -604,7 +630,7 @@ mod test {
         assert_eq!(cli.get_flag(f3.clone()).unwrap(), false);
 
         assert_eq!(cli.known_args, vec![
-            Arg::Optional(cfg), Arg::Optional(o1), Arg::Flag(verbose),
+            Arg::Optional(cfg), Arg::Optional(env), Arg::Optional(o1), Arg::Flag(verbose),
             Arg::Flag(quiet), Arg::Positional(sub), 
             Arg::Flag(f1), Arg::Flag(f2), Arg::Flag(f3),
         ]);

@@ -1,7 +1,6 @@
 //! File     : seqalin.rs  
 //! Author   : Chase Ruskin  
 //! Topic    : Dynamic Programming
-//! 
 //! Abstract :
 //!     Given two strings `s1` and `s2`, find a min-cost alignment. Costs are
 //!     supplied to _gaps_ and _mismatches_. 
@@ -55,7 +54,7 @@ fn sequence_alignment(s1: &str, s2: &str, gap_penalty: Cost, mismatch_penalty: C
 /// the minimum edit distance to the given word while being below the `threshold`.
 /// 
 /// The `gap_penalty` and `mismatch penalty` for sequence alignment are internally set.
-fn sel_min_edit_str<'a>(s: &str, bank: &'a Vec<String>, threshold: Cost) -> Option<&'a str> {
+pub fn sel_min_edit_str<'a>(s: &str, bank: &'a Vec<String>, threshold: Cost) -> Option<&'a str> {
     let (w, c) = bank.iter().map(|f| {
         (f, sequence_alignment(s, f, 1, 1))
     }).min_by(|x, y| {

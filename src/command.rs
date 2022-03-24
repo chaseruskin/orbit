@@ -1,5 +1,6 @@
 use crate::cli;
 use std::fmt::Debug;
+use std::process::exit;
 use std::str::FromStr;
 use crate::arg::*;
 
@@ -12,20 +13,62 @@ pub trait Command: Debug {
 
     fn initialize(cla: &mut cli::Cli) -> Result<Self, cli::CliError>
     where Self: Sized {
-        // :todo: set the usage before failing and read if --help is there
-        let cmd = Self::new(cla)?;
+        let cmd = match Self::new(cla) {
+            Ok(c) => {
+                match cla.asking_for_help() {
+                    true => {
+                        Self::route_help(cla);
+                        exit(0);
+                    }
+                    false => c,
+                }
+            },
+            Err(e) => {
+                match e {
+                    cli::CliError::SuggestArg(..) => {
+                        return Err(e);
+                    }
+                    _ => {
+                        // check if help is asked for because we errored
+                        match cla.asking_for_help() {
+                            true => {
+                                Self::route_help(cla);
+                                exit(0);
+                            }
+                            false => return Err(e)
+                        }
+                    }
+                }
+
+            }
+        };
         cla.is_clean()?;
+        cmd.verify_rules()?;
         Ok(cmd)
     }
 
+    fn route_help(cla: &mut cli::Cli) -> () where Self: Sized {
+        match cla.next_command::<Subcommand>(Positional::new("subcommand")) {
+            Ok(None) | Err(_) => println!("{}", Self::help()),
+            //Err(e) => println!("{}", e),
+            _ => ()
+        }
+    }
+
+    fn usage(&self) -> &str;
+
+    fn help() -> String where Self: Sized;
+
     // :todo: implement a rules fn to verify all args requested do not conflict
     // example: --lib | --bin, errors if --lib & --bin are passed
-    fn verify_rules(&self) -> () { todo!() }
+    fn verify_rules(&self) -> Result<(), cli::CliError> { 
+        Ok(())
+    }
 
-    fn run(&self) -> ();
+    fn run(&self);
 }
 
-pub trait Dispatch: Debug {
+pub trait Branch: Debug {
     fn dispatch(self, cla: &mut cli::Cli) -> Result<DynCommand, cli::CliError>;
 }
 
@@ -33,6 +76,7 @@ pub trait Dispatch: Debug {
 enum Subcommand {
     Sum(Route<Sum>),
     NumCast(Route<NumCast>),
+    Help(Route<Help>),
 }
 
 impl FromStr for Subcommand  {
@@ -42,19 +86,21 @@ impl FromStr for Subcommand  {
         use Subcommand::*;
         match s {
             "sum" => Ok(Sum(None)),
-            "cast" | "c" => Ok(NumCast(None)),
+            "cast" => Ok(NumCast(None)),
+            "help" => Ok(Help(None)),
             _ => {
-                Err(vec!["sum".to_owned(), "cast".to_owned(), "c".to_owned()])
+                Err(vec!["sum".to_owned(), "cast".to_owned(), "help".to_owned()])
             }
         }
     }
 }
 
-impl Dispatch for Subcommand  {
+impl Branch for Subcommand  {
     fn dispatch(self, cla: &mut cli::Cli) -> Result<DynCommand, cli::CliError> {
         match self {
             Subcommand::Sum(_) => Ok(Box::new(Sum::initialize(cla)?)),
             Subcommand::NumCast(_) => Ok(Box::new(NumCast::initialize(cla)?)),
+            Subcommand::Help(_) => Ok(Box::new(Help::initialize(cla)?)),
         }
     }
 }
@@ -70,13 +116,38 @@ pub struct Orbit {
 
 impl Command for Orbit {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> {
+        // :idea: allow cli to first take in data about argument names, then suggest if a mismatch exists
         Ok(Orbit { 
+            help : cla.get_flag(Flag::new("help"))?,
             color: cla.get_option(Optional::new("color"))?,
             config: cla.get_option_vec(Optional::new("config").value("KEY=VALUE"))?.unwrap_or(vec![]),
-            help: cla.get_flag(Flag::new("help"))?,
             version: cla.get_flag(Flag::new("version"))?,
             command: cla.next_command::<Subcommand>(Positional::new("subcommand"))?,
         })
+    }
+
+    fn help() -> String {
+"orbit is a tool for hdl package management.
+
+Usage:
+    orbit [options] <command>
+
+Commands:
+    cast            convert a decimal number to a different base [test]
+    sum             add up a variable amount of numbers [test]
+
+Options:
+    --config <KEY=VALUE>    override a configuration settings
+    --color <INT>           set the color intensity
+    --version               print the version and exit
+    --help                  print help information
+
+Use 'orbit help <command>' for more information about a command.
+".to_string()
+    }
+
+    fn usage(&self) -> &str {
+        "orbit [options] <subcommand>"
     }
 
     fn run(&self) {
@@ -90,8 +161,7 @@ impl Command for Orbit {
         } else if let Some(cmd) = &self.command {
             cmd.run();
         } else {
-            println!("orbit is a tool for hdl package management");
-            println!("usage:\n\torbit [options] [command]");
+            println!("{}", Self::help())
         }
     }
 }
@@ -102,19 +172,48 @@ pub struct Sum {
     guess: u8,
     digits: Vec<u8>,
     verbose: bool,
-    ver: crate::version::Version,
+    pkg: crate::pkgid::PkgId,
 }
 
 impl Command for Sum {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> {
         let v = Flag::new("verbose");
         Ok(Sum { 
-            digits: cla.get_option_vec(Optional::new("digit"))?
+            digits: cla.get_option_vec(Optional::new("digit").value("N"))?
                 .unwrap_or(vec![]),
             guess: cla.next_positional(Positional::new("guess"))?,
-            ver: cla.next_positional(Positional::new("version"))?,
+            pkg: cla.next_positional(Positional::new("pkgid"))?,
             verbose: cla.get_flag(v)?,
         })
+    }
+
+    fn usage(&self) -> &str {
+        "orbit sum [options] <guess> <pkgid>"
+    }
+
+    fn help() -> String {
+"Add multiple numbers together
+
+Usage:
+    orbit sum [options] <guess> <pkgid>
+
+Args:
+    <guess>         a number to compare against the summation
+    <pkgid>         a fully qualified pkgid
+
+Options:
+    --verbose       print out the math equation
+    --digit <N>...  give a digit to include in the summation
+
+Run 'orbit help sum' for more details.
+".to_string()
+    }
+
+    fn verify_rules(&self) -> Result<(), cli::CliError> {
+        if let Err(e) = self.pkg.fully_qualified() {
+            return Err(cli::CliError::BrokenRule(format!("<pkgid> is {}", e.to_string())));
+        }
+        Ok(())
     }
 
     fn run(&self) {
@@ -150,6 +249,27 @@ impl Command for NumCast {
         })
     }
 
+    fn usage(&self) -> &str {
+        "orbit cast [options] <num>"
+    }
+
+    fn help() -> String {
+"Convert a decimal number to a different base
+
+Usage:
+    orbit cast [options] <num>
+
+Args:
+    <num>           a decimal number
+
+Options:
+    --base <N>...   numbering system to convert to [2, 8, 10, 16]
+    --pad <N>       number of leading zeros
+
+Run 'orbit help sum' for more details.
+".to_string()
+    }
+
     fn run(&self) {
         self.base.iter().for_each(|&b| {
             match b {
@@ -162,6 +282,73 @@ impl Command for NumCast {
         });
     }
 }
+
+#[derive(Debug, PartialEq)]
+enum Topic {
+    Cast,
+    Sum,
+}
+
+impl FromStr for Topic {
+    type Err = Vec<String>;
+
+    fn from_str(s: & str) -> Result<Topic, Self::Err> {
+        use Topic::*;
+        match s {
+            "sum" => Ok(Sum),
+            "cast" => Ok(Cast),
+            _ => {
+                Err(vec!["sum".to_owned(), "cast".to_owned()])
+            }
+        }
+    } 
+}
+
+// example command demo
+#[derive(Debug)]
+pub struct Help {
+    topic: Option<DynCommand>,
+}
+
+impl Command for Help {
+    fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> {
+        Ok(Help { 
+            topic: cla.next_command::<Subcommand>(Positional::new("<command>"))?,
+        })
+    }
+
+    fn usage(&self) -> &str { 
+        todo!() 
+    }
+
+    fn help() -> String { 
+"orbit is a tool for hdl package management.
+
+Usage:
+    orbit [options] <command>
+
+Commands:
+    cast            convert a decimal number to a different base [test]
+    sum             add up a variable amount of numbers [test]
+
+Options:
+    --config <KEY=VALUE>    override a configuration settings
+    --color <INT>           set the color intensity
+    --version               print the version and exit
+    --help                  print help information
+
+Use 'orbit help <command>' for more information about a command.
+".to_string()
+    }
+
+    fn run(&self) { 
+        match &self.topic {
+            Some(t) => println!("{:?}", t),
+            None => println!("{}", Self::help()),
+        }
+    }
+}
+    
 
 /*
 Orbit is a tool for hdl package management.

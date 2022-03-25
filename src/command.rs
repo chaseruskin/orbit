@@ -1,6 +1,5 @@
-use crate::cli;
+use crate::cli::{self, CliError};
 use std::fmt::Debug;
-use std::process::exit;
 use std::str::FromStr;
 use crate::arg::*;
 
@@ -11,35 +10,28 @@ pub trait Command: Debug {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError>
     where Self: Sized;
 
-    fn initialize(cla: &mut cli::Cli) -> Result<Self, cli::CliError>
-    where Self: Sized {
+    fn load(cla: &mut cli::Cli) -> Result<Self, cli::CliError> where Self: Sized {
         let cmd = match Self::new(cla) {
             Ok(c) => {
-                match cla.asking_for_help() {
-                    true => {
-                        Self::route_help(cla);
-                        exit(0);
-                    }
-                    false => c,
+                if cla.asking_for_help() {
+                    println!("{}", Self::help());
+                    std::process::exit(0);
                 }
+                c
             },
             Err(e) => {
-                match e {
-                    cli::CliError::SuggestArg(..) => {
-                        return Err(e);
+                if let cli::CliError::SuggestArg(..) = e {
+                    return Err(e)
+                } else {
+                    // check if help is asked for because we errored
+                    if cla.asking_for_help() {
+                        println!("{}", Self::help());
+                        std::process::exit(0);
+                    } else if let cli::CliError::MissingPositional(..) = e {
+                        cla.is_clean()?;
                     }
-                    _ => {
-                        // check if help is asked for because we errored
-                        match cla.asking_for_help() {
-                            true => {
-                                Self::route_help(cla);
-                                exit(0);
-                            }
-                            false => return Err(e)
-                        }
-                    }
+                    return Err(e);
                 }
-
             }
         };
         cla.is_clean()?;
@@ -47,20 +39,10 @@ pub trait Command: Debug {
         Ok(cmd)
     }
 
-    fn route_help(cla: &mut cli::Cli) -> () where Self: Sized {
-        match cla.next_command::<Subcommand>(Positional::new("subcommand")) {
-            Ok(None) | Err(_) => println!("{}", Self::help()),
-            //Err(e) => println!("{}", e),
-            _ => ()
-        }
-    }
-
     fn usage(&self) -> &str;
 
     fn help() -> String where Self: Sized;
 
-    // :todo: implement a rules fn to verify all args requested do not conflict
-    // example: --lib | --bin, errors if --lib & --bin are passed
     fn verify_rules(&self) -> Result<(), cli::CliError> { 
         Ok(())
     }
@@ -98,9 +80,9 @@ impl FromStr for Subcommand  {
 impl Branch for Subcommand  {
     fn dispatch(self, cla: &mut cli::Cli) -> Result<DynCommand, cli::CliError> {
         match self {
-            Subcommand::Sum(_) => Ok(Box::new(Sum::initialize(cla)?)),
-            Subcommand::NumCast(_) => Ok(Box::new(NumCast::initialize(cla)?)),
-            Subcommand::Help(_) => Ok(Box::new(Help::initialize(cla)?)),
+            Subcommand::Sum(_) => Ok(Box::new(Sum::load(cla)?)),
+            Subcommand::NumCast(_) => Ok(Box::new(NumCast::load(cla)?)),
+            Subcommand::Help(_) => Ok(Box::new(Help::load(cla)?)),
         }
     }
 }
@@ -116,12 +98,11 @@ pub struct Orbit {
 
 impl Command for Orbit {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> {
-        // :idea: allow cli to first take in data about argument names, then suggest if a mismatch exists
         Ok(Orbit { 
             help : cla.get_flag(Flag::new("help"))?,
+            version: cla.get_flag(Flag::new("version"))?,
             color: cla.get_option(Optional::new("color"))?,
             config: cla.get_option_vec(Optional::new("config").value("KEY=VALUE"))?.unwrap_or(vec![]),
-            version: cla.get_flag(Flag::new("version"))?,
             command: cla.next_command::<Subcommand>(Positional::new("subcommand"))?,
         })
     }
@@ -147,7 +128,7 @@ Use 'orbit help <command>' for more information about a command.
     }
 
     fn usage(&self) -> &str {
-        "orbit [options] <subcommand>"
+        "orbit [options] <command>"
     }
 
     fn run(&self) {
@@ -177,13 +158,12 @@ pub struct Sum {
 
 impl Command for Sum {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> {
-        let v = Flag::new("verbose");
         Ok(Sum { 
             digits: cla.get_option_vec(Optional::new("digit").value("N"))?
                 .unwrap_or(vec![]),
             guess: cla.next_positional(Positional::new("guess"))?,
             pkg: cla.next_positional(Positional::new("pkgid"))?,
-            verbose: cla.get_flag(v)?,
+            verbose: cla.get_flag(Flag::new("verbose"))?,
         })
     }
 
@@ -287,10 +267,11 @@ Run 'orbit help sum' for more details.
 enum Topic {
     Cast,
     Sum,
+    Help,
 }
 
 impl FromStr for Topic {
-    type Err = Vec<String>;
+    type Err = cli::CliError;
 
     fn from_str(s: & str) -> Result<Topic, Self::Err> {
         use Topic::*;
@@ -298,7 +279,7 @@ impl FromStr for Topic {
             "sum" => Ok(Sum),
             "cast" => Ok(Cast),
             _ => {
-                Err(vec!["sum".to_owned(), "cast".to_owned()])
+                Err(CliError::BrokenRule(s.to_owned()))
             }
         }
     } 
@@ -307,18 +288,33 @@ impl FromStr for Topic {
 // example command demo
 #[derive(Debug)]
 pub struct Help {
-    topic: Option<DynCommand>,
+    topic: Topic,
 }
 
 impl Command for Help {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> {
+        let topic = match cla.next_positional(Positional::new("command")) {
+            // default the topic to be in-depth about orbit if none was supplied
+            Err(cli::CliError::MissingPositional(..)) => {
+                Ok(Topic::Help)
+            }
+            // try to suggest a topic if none was provided
+            Err(cli::CliError::BadType(_, s)) => {
+                match crate::seqalin::sel_min_edit_str(&s, &vec!["sum".to_owned(), "cast".to_owned()], 3) {
+                    Some(w) => Err(cli::CliError::SuggestArg(s.to_owned(), w.to_owned())),
+                    _ => Err(cli::CliError::UnknownSubcommand(Arg::Positional(Positional::new("command")), s.to_owned()))
+                }
+            }
+            Err(e) => Err(e),
+            Ok(o) => Ok(o),
+        };
         Ok(Help { 
-            topic: cla.next_command::<Subcommand>(Positional::new("<command>"))?,
+            topic: topic?,
         })
     }
 
     fn usage(&self) -> &str { 
-        todo!() 
+        "orbit help <command>" 
     }
 
     fn help() -> String { 
@@ -343,8 +339,9 @@ Use 'orbit help <command>' for more information about a command.
 
     fn run(&self) { 
         match &self.topic {
-            Some(t) => println!("{:?}", t),
-            None => println!("{}", Self::help()),
+            Topic::Help => println!("{}", "in-depth about orbit"),
+            Topic::Cast => println!("{}", "more help for cast"),
+            Topic::Sum => println!("{}", "more help for sum"),
         }
     }
 }

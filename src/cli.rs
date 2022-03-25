@@ -104,7 +104,9 @@ impl Cli {
             Err(_) => return Ok(None),
         };
         // :todo: add ability to offer suggestion to maybe move ooc arg after the successfully parsed subcommand
-        self.is_partial_clean(cmd.0)?;
+        if self.asking_for_help() == false {
+            self.is_partial_clean(cmd.0)?;
+        }
         // check if the subcommand was entered incorrectly, then try to offer suggestion
         let sub = match cmd.1.parse::<T>() {
             Ok(s) => s,
@@ -128,7 +130,10 @@ impl Cli {
                 self.known_args.push(Arg::Positional(arg));
                 Ok(r)
             }
-            Err(e) => Err(CliError::BadType(Arg::Positional(arg), format!("{}", e))),
+            Err(e) => {
+                self.is_clean()?;
+                Err(CliError::BadType(Arg::Positional(arg), format!("{}", e)))
+            },
         }
     }
 
@@ -137,27 +142,23 @@ impl Cli {
     /// __Errors__: if a direct value was given or if the flag was raised multiple times
     pub fn get_flag(&mut self, flag: Flag) -> Result<bool, CliError> {
         // // check if it is in the map
-        let raised = if let Some(mut val) = self.options.remove(&flag.to_string()) {
+        let key = flag.to_string();
+        let raised = if let Some(mut val) = self.options.remove(&key) {
             // raise error if there is an attached option to the flag
             if val.1.len() > 1 {
-                // err: duplicate values
                 return Err(CliError::DuplicateOptions(Arg::Flag(flag)))
-            } else {
-                match val.1.pop().unwrap() {
-                    Some(p) => match p {
-                        Param::Direct(s) => return Err(CliError::UnexpectedValue(Arg::Flag(flag), s)),
-                        Param::Indirect(_) => true,
-                    }
-                    None => true,
-                }
+            // raise error if a value was directly attached to the flag
+            } else if let Some(Param::Direct(s)) = val.1.pop().unwrap() {
+                return Err(CliError::UnexpectedValue(Arg::Flag(flag), s));
+            // trigger help to be raised for rest of processing
+            } else if key == "--help" {
+                self.asking_for_help = true;
             }
+            true
         // flag was not found in options map
         } else {
             false
         };
-        if flag.to_string() == "--help" && raised {
-            self.asking_for_help = true;
-        }
         self.known_args.push(Arg::Flag(flag));
         Ok(raised)
     }
@@ -253,7 +254,16 @@ impl Cli {
         };
         match st.parse::<T>() {
             Ok(r) => Ok(r),
-            Err(e) => Err(CliError::BadType(Arg::Optional(opt.clone()), format!("{}", e)))
+            Err(e) => {
+                match self.is_clean() {
+                    Ok(_) => (),
+                    Err(e) => match e {
+                        CliError::UnexpectedArg(..) => (),
+                        _ => return Err(e),
+                    }
+                }
+                Err(CliError::BadType(Arg::Optional(opt.clone()), format!("{}", e)))
+            }
         }
    }
 
@@ -313,6 +323,7 @@ pub enum CliError {
     SuggestArg(String, String),
     UnknownSubcommand(Arg, String),
     BrokenRule(String),
+   // TrySuggest(String, Vec<String>),
 }
 
 impl Error for CliError {}

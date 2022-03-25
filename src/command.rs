@@ -99,6 +99,7 @@ pub struct Orbit {
     version: bool,
     help: bool,
     config: Vec<String>,
+    upgrade: bool,
     color: Option<u8>,
     command: Option<DynCommand>,
 }
@@ -106,8 +107,9 @@ pub struct Orbit {
 impl Command for Orbit {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> {
         Ok(Orbit { 
-            help   : cla.get_flag(Flag::new("help"))?,
+            help   : cla.get_flag(Flag::new("help").short('h'))?,
             version: cla.get_flag(Flag::new("version"))?,
+            upgrade: cla.get_flag(Flag::new("upgrade"))?,
             color  : cla.get_option(Optional::new("color"))?,
             config : cla.get_option_vec(Optional::new("config").value("KEY=VALUE"))?.unwrap_or(vec![]),
             command: cla.next_command::<Subcommand>(Positional::new("subcommand"))?,
@@ -135,21 +137,7 @@ impl Command for Orbit {
     }
 
     fn help() -> String {
-format!("orbit is a tool for hdl package management.
-{}
-
-Commands:
-    cast            convert a decimal number to a different base [test]
-    sum             add up a variable amount of numbers [test]
-
-Options:
-    --config <KEY=VALUE>    override a configuration settings
-    --color <INT>           set the color intensity
-    --version               print the version and exit
-    --help                  print help information
-
-Use 'orbit help <command>' for more information about a command.
-", Self::usage())
+        format!("{}", OVERVIEW)
     }
 }
 
@@ -204,13 +192,13 @@ impl Command for Sum {
 format!("Add multiple numbers together
 {}
 
-Args:
-    <guess>         a number to compare against the summation
-    <pkgid>         a fully qualified pkgid
-
 Options:
     --verbose       print out the math equation
     --digit <N>...  give a digit to include in the summation
+
+Args:
+    <guess>         a number to compare against the summation
+    <pkgid>         a fully qualified pkgid
 
 Run 'orbit help sum' for more details.
 ", Self::usage())
@@ -255,12 +243,12 @@ impl Command for NumCast {
 format!("Convert a decimal number to a different base
 {}
 
-Args:
-    <num>           a decimal number
-
 Options:
     --base <N>...   numbering system to convert to [2, 8, 10, 16]
     --pad  <N>      number of leading zeros
+
+Args:
+    <num>           a decimal number
 
 Run 'orbit help sum' for more details.
 ", Self::usage())
@@ -302,7 +290,7 @@ impl Command for Help {
             }
             // try to suggest a topic if none was provided
             Err(cli::CliError::BadType(_, s)) => {
-                match crate::seqalin::sel_min_edit_str(&s, &vec!["sum".to_owned(), "cast".to_owned()], 3) {
+                match crate::seqalin::sel_min_edit_str(&s, &vec!["sum".to_owned(), "cast".to_owned()], 4) {
                     Some(w) => Err(cli::CliError::SuggestArg(s.to_owned(), w.to_owned())),
                     _ => Err(cli::CliError::UnknownSubcommand(Arg::Positional(Positional::new("command")), s.to_owned()))
                 }
@@ -329,23 +317,7 @@ impl Command for Help {
     }
 
     fn help() -> String { 
-format!("orbit is a tool for hdl package management.
-
-Usage:
-    orbit [options] <command>
-
-Commands:
-    cast            convert a decimal number to a different base [test]
-    sum             add up a variable amount of numbers [test]
-
-Options:
-    --config <KEY=VALUE>    override a configuration settings
-    --color <INT>           set the color intensity
-    --version               print the version and exit
-    --help                  print help information
-
-Use 'orbit help <command>' for more information about a command.
-")
+        format!("{}", OVERVIEW)
     }
 }
     
@@ -384,3 +356,22 @@ Options:
 Args:
     <pkgid>             a fully-qualified pkgid
 */
+
+const OVERVIEW: &str = "orbit is a tool for hdl package management.
+
+Usage:
+    orbit [options] <command>
+
+Options:
+    --config <KEY=VALUE>    override a configuration settings
+    --color <INT>           set the color intensity
+    --upgrade               check for the latest orbit binary
+    --version               print the version and exit
+    --help, -h              print help information
+
+Commands:
+    cast            convert a decimal number to a different base [test]
+    sum             add up a variable amount of numbers [test]
+
+Use 'orbit help <command>' for more information about a command.
+";

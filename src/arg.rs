@@ -2,12 +2,21 @@ use std::fmt::Display;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Positional {
-    name: String
+    name: String,
+    short: Option<char>,
 }
 
 impl Positional {
     pub fn new(s: &str) -> Self {
-        Positional { name: s.to_string() }
+        Positional { 
+            name: s.to_string(),
+            short: None,
+        }
+    }
+
+    pub fn short(mut self, s: char) -> Self {
+        self.short = Some(s);
+        self
     }
 }
 
@@ -19,12 +28,27 @@ impl Display for Positional {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Flag {
-    name: String
+    name: String,
+    short: Option<char>,
 }
 
 impl Flag {
     pub fn new(s: &str) -> Self {
-        Flag { name: s.to_string() }
+        Flag { 
+            name: s.to_string(),
+            short: None,
+        }
+    }
+
+    pub fn get_short(&self) -> Option<String> {
+        let mut s = String::from('-');
+        s.push(self.short?);
+        Some(s)
+    }
+
+    pub fn short(mut self, s: char) -> Self {
+        self.short = Some(s);
+        self
     }
 }
 
@@ -50,6 +74,11 @@ impl Optional {
     
     pub fn get_flag(&self) -> &Flag {
         &self.name
+    }
+
+    pub fn short(mut self, s: char) -> Self {
+        self.name = self.name.short(s);
+        self
     }
 
     pub fn value(mut self, s: &str) -> Self {

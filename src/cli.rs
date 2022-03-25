@@ -62,13 +62,13 @@ impl Cli {
             if arg == "--" {
                 enter(arg, None, i);
                 break;
-            } else if arg.starts_with("--") {
+            } else if arg.starts_with("-") {
                 // direct- detect if needs to split on first '=' sign
                 if let Some((opt, param)) = arg.split_once('=') {
                     enter(opt.to_owned(), Some(Param::Direct(param.to_owned())), i);
                 // indirect- peek if the next arg is the param to the current option
                 } else if let Some((_, trailing)) = cla.peek() {
-                    if trailing.starts_with("--") {
+                    if trailing.starts_with("-") {
                         enter(arg, None, i);
                     } else {
                         enter(arg, Some(Param::Indirect(positionals.len())), i);
@@ -118,7 +118,7 @@ impl Cli {
         let sub = match cmd.1.parse::<T>() {
             Ok(s) => s,
             Err(v) => {
-                match seqalin::sel_min_edit_str(&cmd.1, &v, 3) {
+                match seqalin::sel_min_edit_str(&cmd.1, &v, 4) {
                     Some(w) => return Err(CliError::SuggestArg(cmd.1.to_owned(), w.to_owned())),
                     _ => return Err(CliError::UnknownSubcommand(Arg::Positional(arg), cmd.1.to_owned()))
                 };
@@ -148,9 +148,17 @@ impl Cli {
     /// 
     /// __Errors__: if a direct value was given or if the flag was raised multiple times
     pub fn get_flag(&mut self, flag: Flag) -> Result<bool, CliError> {
-        // // check if it is in the map
+        // // check if it is in the map (also checks if shorthand was found)
         let key = flag.to_string();
-        let raised = if let Some(mut val) = self.options.remove(&key) {
+        let alias = match self.options.remove(&key) {
+            Some(a) => Some(a),
+            None => if let Some(s) = flag.get_short() {
+                self.options.remove(&s) 
+            } else {
+                None
+            }
+        };
+        let raised = if let Some(mut val) = alias {
             // raise error if there is an attached option to the flag
             if val.1.len() > 1 {
                 return Err(CliError::DuplicateOptions(Arg::Flag(flag)))
@@ -300,7 +308,7 @@ impl Cli {
             }
         }).collect();
         // compute edit distance on known args to generate suggestion
-        let w = seqalin::sel_min_edit_str(&unknown, &word_bank, 3)?;
+        let w = seqalin::sel_min_edit_str(&unknown, &word_bank, 4)?;
         Some(CliError::SuggestArg(unknown.to_owned(), w.to_owned()))
     }
 

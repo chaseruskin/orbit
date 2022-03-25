@@ -1,16 +1,18 @@
 use crate::cli::{self, CliError};
 use std::fmt::Debug;
 use std::str::FromStr;
+use std::error::Error;
 use crate::arg::*;
 
-type Route<T> = Option<T>;
 pub type DynCommand = Box<dyn Command>;
 
 pub trait Command: Debug {
-    fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError>
-    where Self: Sized;
+    /// Pulls data from the command-line args into the `Command` struct.
+    fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> where Self: Sized;
 
+    /// Performs various checks and calls `new` to generate a struct implementing the `Command` trait.
     fn load(cla: &mut cli::Cli) -> Result<Self, cli::CliError> where Self: Sized {
+        cla.set_usage(&Self::usage());
         let cmd = match Self::new(cla) {
             Ok(c) => {
                 if cla.asking_for_help() {
@@ -39,50 +41,55 @@ pub trait Command: Debug {
         Ok(cmd)
     }
 
-    fn usage(&self) -> &str;
+    /// Returns general command usage syntax.
+    fn usage() -> String where Self: Sized;
 
+    /// Returns short command help guide.
     fn help() -> String where Self: Sized;
 
+    /// Validates that arguments are logically grouped on the command-line.
     fn verify_rules(&self) -> Result<(), cli::CliError> { 
         Ok(())
     }
 
-    fn run(&self);
+    /// Executes the command.
+    fn run(&self) -> Result<(), Box<dyn Error>>;
 }
 
-pub trait Branch: Debug {
+pub trait Dispatch: Debug {
     fn dispatch(self, cla: &mut cli::Cli) -> Result<DynCommand, cli::CliError>;
 }
 
 #[derive(Debug)]
 enum Subcommand {
-    Sum(Route<Sum>),
-    NumCast(Route<NumCast>),
-    Help(Route<Help>),
+    Sum,
+    NumCast,
+    Help,
 }
 
 impl FromStr for Subcommand  {
     type Err = Vec<String>;
 
-    fn from_str(s: & str) -> Result<Subcommand, Self::Err> {
-        use Subcommand::*;
-        match s {
-            "sum" => Ok(Sum(None)),
-            "cast" => Ok(NumCast(None)),
-            "help" => Ok(Help(None)),
-            _ => {
-                Err(vec!["sum".to_owned(), "cast".to_owned(), "help".to_owned()])
-            }
-        }
+    fn from_str(s: & str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "sum" => Subcommand::Sum,
+            "cast" => Subcommand::NumCast,
+            "help" => Subcommand::Help,
+            _ => return Err(vec![
+                "sum".to_owned(), 
+                "cast".to_owned(), 
+                "help".to_owned()
+                ])
+        })
     }
 }
 
-impl Branch for Subcommand  {
+impl Dispatch for Subcommand  {
     fn dispatch(self, cla: &mut cli::Cli) -> Result<DynCommand, cli::CliError> {
         match self {
-            Subcommand::Sum(_) => Ok(Box::new(Sum::load(cla)?)),
-            Subcommand::NumCast(_) => Ok(Box::new(NumCast::load(cla)?)),
-            Subcommand::Help(_) => Ok(Box::new(Help::load(cla)?)),
+            Subcommand::Sum => Ok(Box::new(Sum::load(cla)?)),
+            Subcommand::NumCast => Ok(Box::new(NumCast::load(cla)?)),
+            Subcommand::Help => Ok(Box::new(Help::load(cla)?)),
         }
     }
 }
@@ -99,19 +106,37 @@ pub struct Orbit {
 impl Command for Orbit {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> {
         Ok(Orbit { 
-            help : cla.get_flag(Flag::new("help"))?,
+            help   : cla.get_flag(Flag::new("help"))?,
             version: cla.get_flag(Flag::new("version"))?,
-            color: cla.get_option(Optional::new("color"))?,
-            config: cla.get_option_vec(Optional::new("config").value("KEY=VALUE"))?.unwrap_or(vec![]),
+            color  : cla.get_option(Optional::new("color"))?,
+            config : cla.get_option_vec(Optional::new("config").value("KEY=VALUE"))?.unwrap_or(vec![]),
             command: cla.next_command::<Subcommand>(Positional::new("subcommand"))?,
         })
     }
 
-    fn help() -> String {
-"orbit is a tool for hdl package management.
+    fn run(&self) -> Result <(), Box<dyn Error>> {
+        self.config.iter().for_each(|f| {
+            if let Some((k, v)) = f.split_once("=") {
+                println!("key: {}\tvalue: {}", k, v);
+            }
+        });
+        if self.version {
+            println!("orbit 0.1.0");
+        } else if let Some(cmd) = &self.command {
+            cmd.run()?;
+        } else {
+            println!("{}", Self::help())
+        }
+        Ok(())
+    }
 
-Usage:
-    orbit [options] <command>
+    fn usage() -> String {
+        format!("\nUsage:\n    orbit [options] <command>")
+    }
+
+    fn help() -> String {
+format!("orbit is a tool for hdl package management.
+{}
 
 Commands:
     cast            convert a decimal number to a different base [test]
@@ -124,26 +149,7 @@ Options:
     --help                  print help information
 
 Use 'orbit help <command>' for more information about a command.
-".to_string()
-    }
-
-    fn usage(&self) -> &str {
-        "orbit [options] <command>"
-    }
-
-    fn run(&self) {
-        self.config.iter().for_each(|f| {
-            if let Some((k, v)) = f.split_once("=") {
-                println!("key: {}\tvalue: {}", k, v);
-            }
-        });
-        if self.version {
-            println!("orbit 0.1.0");
-        } else if let Some(cmd) = &self.command {
-            cmd.run();
-        } else {
-            println!("{}", Self::help())
-        }
+", Self::usage())
     }
 }
 
@@ -167,36 +173,7 @@ impl Command for Sum {
         })
     }
 
-    fn usage(&self) -> &str {
-        "orbit sum [options] <guess> <pkgid>"
-    }
-
-    fn help() -> String {
-"Add multiple numbers together
-
-Usage:
-    orbit sum [options] <guess> <pkgid>
-
-Args:
-    <guess>         a number to compare against the summation
-    <pkgid>         a fully qualified pkgid
-
-Options:
-    --verbose       print out the math equation
-    --digit <N>...  give a digit to include in the summation
-
-Run 'orbit help sum' for more details.
-".to_string()
-    }
-
-    fn verify_rules(&self) -> Result<(), cli::CliError> {
-        if let Err(e) = self.pkg.fully_qualified() {
-            return Err(cli::CliError::BrokenRule(format!("<pkgid> is {}", e.to_string())));
-        }
-        Ok(())
-    }
-
-    fn run(&self) {
+    fn run(&self) -> Result<(), Box<dyn Error>> {
         let mut txt = String::new();
         let s = self.digits.iter().fold(0, |acc, x| {
             txt += &format!("{} + ", x);
@@ -209,6 +186,34 @@ Run 'orbit help sum' for more details.
         } else {
             println!("you guessed incorrectly.");
         }
+        Ok(())
+    }
+
+    fn verify_rules(&self) -> Result<(), cli::CliError> {
+        if let Err(e) = self.pkg.fully_qualified() {
+            return Err(cli::CliError::BadType(Arg::Positional(Positional::new("pkgid")), e.to_string()));
+        }
+        Ok(())
+    }
+
+    fn usage() -> String {
+        format!("\nUsage:\n    orbit sum [options] <guess> <pkgid>")
+    }
+
+    fn help() -> String {
+format!("Add multiple numbers together
+{}
+
+Args:
+    <guess>         a number to compare against the summation
+    <pkgid>         a fully qualified pkgid
+
+Options:
+    --verbose       print out the math equation
+    --digit <N>...  give a digit to include in the summation
+
+Run 'orbit help sum' for more details.
+", Self::usage())
     }
 }
 
@@ -229,28 +234,7 @@ impl Command for NumCast {
         })
     }
 
-    fn usage(&self) -> &str {
-        "orbit cast [options] <num>"
-    }
-
-    fn help() -> String {
-"Convert a decimal number to a different base
-
-Usage:
-    orbit cast [options] <num>
-
-Args:
-    <num>           a decimal number
-
-Options:
-    --base <N>...   numbering system to convert to [2, 8, 10, 16]
-    --pad <N>       number of leading zeros
-
-Run 'orbit help sum' for more details.
-".to_string()
-    }
-
-    fn run(&self) {
+    fn run(&self) -> Result<(), Box<dyn Error>>{
         self.base.iter().for_each(|&b| {
             match b {
                 2 => println!("0b{:b}", self.deci),
@@ -260,6 +244,26 @@ Run 'orbit help sum' for more details.
                 _ => println!("error: base {} is unsupported", b),
             }
         });
+        Ok(())
+    }
+
+    fn usage() -> String {
+        format!("\nUsage:\n    orbit cast [options] <num>")
+    }
+
+    fn help() -> String {
+format!("Convert a decimal number to a different base
+{}
+
+Args:
+    <num>           a decimal number
+
+Options:
+    --base <N>...   numbering system to convert to [2, 8, 10, 16]
+    --pad  <N>      number of leading zeros
+
+Run 'orbit help sum' for more details.
+", Self::usage())
     }
 }
 
@@ -273,16 +277,14 @@ enum Topic {
 impl FromStr for Topic {
     type Err = cli::CliError;
 
-    fn from_str(s: & str) -> Result<Topic, Self::Err> {
+    fn from_str(s: & str) -> Result<Self, Self::Err> {
         use Topic::*;
-        match s {
-            "sum" => Ok(Sum),
-            "cast" => Ok(Cast),
-            _ => {
-                Err(CliError::BrokenRule(s.to_owned()))
-            }
-        }
-    } 
+        Ok(match s {
+            "sum" => Sum,
+            "cast" => Cast,
+            _ => return Err(CliError::BrokenRule(s.to_owned()))
+        })
+    }
 }
 
 // example command demo
@@ -313,12 +315,21 @@ impl Command for Help {
         })
     }
 
-    fn usage(&self) -> &str { 
-        "orbit help <command>" 
+    fn run(&self) -> Result<(), Box<dyn Error>> { 
+        match &self.topic {
+            Topic::Help => println!("{}", "in-depth about orbit"),
+            Topic::Cast => println!("{}", "more help for cast"),
+            Topic::Sum => println!("{}", "more help for sum"),
+        }
+        Ok(())
+    }
+
+    fn usage() -> String { 
+        format!("\nUsage:\n    orbit help <command>")
     }
 
     fn help() -> String { 
-"orbit is a tool for hdl package management.
+format!("orbit is a tool for hdl package management.
 
 Usage:
     orbit [options] <command>
@@ -334,15 +345,7 @@ Options:
     --help                  print help information
 
 Use 'orbit help <command>' for more information about a command.
-".to_string()
-    }
-
-    fn run(&self) { 
-        match &self.topic {
-            Topic::Help => println!("{}", "in-depth about orbit"),
-            Topic::Cast => println!("{}", "more help for cast"),
-            Topic::Sum => println!("{}", "more help for sum"),
-        }
+")
     }
 }
     

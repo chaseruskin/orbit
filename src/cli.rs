@@ -41,6 +41,7 @@ pub struct Cli {
     asking_for_help: bool,
     /// stores `Arg` as it is queried by command for computing edit distances
     known_args: Vec<Arg>,
+    usage: String,
 }
 
 impl Cli {
@@ -91,13 +92,19 @@ impl Cli {
             remainder: cla.map(|f| f.1).collect(),
             past_opts: false,
             known_args: Vec::new(),
+            usage: String::new(),
         }
+    }
+
+    /// Sets the current command's usage text. Used for helping print errors.
+    pub fn set_usage(&mut self, s: &str) {
+        self.usage = s.to_owned();
     }
 
     /// Queries for the next command in the chain.
     /// 
     /// Recursively enters a new `dyn Command` to assign its args from the collected `Cli` data.
-    pub fn next_command<T: crate::command::Branch + FromStr>(&mut self, arg: Positional) -> Result<Option<command::DynCommand>, CliError> 
+    pub fn next_command<T: crate::command::Dispatch + FromStr>(&mut self, arg: Positional) -> Result<Option<command::DynCommand>, CliError> 
     where T: std::str::FromStr<Err = Vec<String>> {
         let cmd = match self.next_arg(&arg) {
             Ok(c) => c,
@@ -163,6 +170,8 @@ impl Cli {
         Ok(raised)
     }
 
+    /// Checks if the `--help` flag has been raised during processing. Assumes `get_flag` has
+    /// already been called on `--help`.
     pub fn asking_for_help(&self) -> bool {
         self.asking_for_help
     }
@@ -276,7 +285,7 @@ impl Cli {
                 Ok(p.take().unwrap())
         } else {
             // found zero available arguments
-            Err(CliError::MissingPositional(Arg::Positional(arg.clone())))
+            Err(CliError::MissingPositional(Arg::Positional(arg.clone()), self.usage.to_string()))
         }
     }
 
@@ -297,14 +306,16 @@ impl Cli {
 
     /// Filters out undetermined options that have a position < i.
     fn is_partial_clean(&self, i: usize) -> Result<(), CliError> {
+        // prioritize invalid flag calls over ooc arguments
+        if let Some(e) = self.options
+            .iter()
+            .find_map(|(unknown, _)| { self.suggest_word(unknown) }) { 
+                return Err(e) 
+            };
         if let Some(arg) = self.options
             .iter()
             .find(|(_, o)| { o.0 <= i }) {
-                let unknown = arg.0;
-                match self.suggest_word(unknown) {
-                    Some(e) => Err(e),
-                    None => Err(CliError::OutOfContextArg(unknown.to_string())),
-            }
+                Err(CliError::OutOfContextArg(arg.0.to_string()))
         } else {
             Ok(())
         }   
@@ -314,7 +325,7 @@ impl Cli {
 #[derive(Debug, PartialEq)]
 pub enum CliError {
     BadType(Arg, String),
-    MissingPositional(Arg),
+    MissingPositional(Arg, String),
     DuplicateOptions(Arg),
     ExpectingValue(Arg),
     UnexpectedValue(Arg, String),
@@ -331,13 +342,14 @@ impl Error for CliError {}
 impl Display for CliError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
         use CliError::*;
+        let footer = "\n\nFor more information try --help";
         match self {
-            SuggestArg(a, sug) => write!(f, "unknown argument '{}'; did you mean '{}'?", a, sug),
-            OutOfContextArg(o) => write!(f, "argument '{}' is unknown, or invalid in the current context", o),
-            BadType(a, e) => write!(f, "argument '{}' failed to parse because {}", a, e),
-            MissingPositional(p) => write!(f, "missing positional '{}'", p),
+            SuggestArg(a, sug) => write!(f, "unknown argument '{}'\n\nDid you mean '{}'?", a, sug),
+            OutOfContextArg(o) => write!(f, "argument '{}' is unknown, or invalid in the current context{}", o, footer),
+            BadType(a, e) => write!(f, "argument '{}' did not process due to {}{}", a, e, footer),
+            MissingPositional(p, u) => write!(f, "missing required argument '{}'\n{}{}", p, u, footer),
             DuplicateOptions(o) => write!(f, "option '{}' was requested more than once, but can only be supplied once", o),
-            ExpectingValue(x) => write!(f, "option '{}' expects a value but none was supplied", x),
+            ExpectingValue(x) => write!(f, "option '{}' expects a value but none was supplied{}", x, footer),
             UnexpectedValue(x, s) => write!(f, "flag '{}' cannot accept values but one was supplied \"{}\"", x, s),
             UnexpectedArg(s) => write!(f, "unknown argument '{}'", s),
             UnknownSubcommand(c, a) => write!(f, "'{}' is not a valid subcommand for {}", a, c),
@@ -364,6 +376,7 @@ mod test {
             past_opts: false,
             known_args: Vec::new(),
             asking_for_help: false,
+            usage: String::new(),
         });
     }
 
@@ -386,6 +399,7 @@ mod test {
             remainder: Vec::new(),
             past_opts: false,
             known_args: Vec::new(),
+            usage: String::new(),
             asking_for_help: false,
         });
     }
@@ -429,6 +443,7 @@ mod test {
             past_opts: false,
             known_args: Vec::new(),
             asking_for_help: false,
+            usage: String::new(),
         });
     }
 
@@ -472,6 +487,7 @@ mod test {
             past_opts: false,
             known_args: Vec::new(),
             asking_for_help: false,
+            usage: String::new(),
         });
     }
 
@@ -492,6 +508,7 @@ mod test {
             past_opts: false,
             known_args: Vec::new(),
             asking_for_help: false,
+            usage: String::new(),
         };
 
         assert_eq!(cli.get_option(Optional::new("verbose")), Ok(Some(2)));

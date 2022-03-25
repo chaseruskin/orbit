@@ -83,10 +83,10 @@ impl PkgId {
     pub fn fully_qualified(&self) -> Result<(), PkgIdError> {
         if self.name.len() == 0 {
             Err(PkgIdError::Empty)
-        } else if self.vendor.is_none() || self.vendor.as_ref().unwrap().len() == 0 {
-            Err(PkgIdError::MissingVendor)
         } else if self.library.is_none() || self.library.as_ref().unwrap().len() == 0 {
             Err(PkgIdError::MissingLibrary)
+        } else if self.vendor.is_none() || self.vendor.as_ref().unwrap().len() == 0 {
+            Err(PkgIdError::MissingVendor)
         } else {
             Ok(())
         }
@@ -268,35 +268,42 @@ mod test {
             library: Some("library".to_owned()),
             name: "name".to_owned(),
         };
-        assert_eq!(pkgid.fully_qualified().is_ok(), false);
+        assert_eq!(pkgid.fully_qualified().unwrap_err(), PkgIdError::MissingVendor);
 
         let pkgid = PkgId {
             vendor: None,
             library: Some("library".to_owned()),
             name: "name".to_owned(),
         };
-        assert_eq!(pkgid.fully_qualified().is_ok(), false);
+        assert_eq!(pkgid.fully_qualified().unwrap_err(), PkgIdError::MissingVendor);
 
         let pkgid = PkgId {
             vendor: Some("vendor".to_owned()),
             library: Some("".to_owned()),
             name: "name".to_owned(),
         };
-        assert_eq!(pkgid.fully_qualified().is_ok(), false);
+        assert_eq!(pkgid.fully_qualified().unwrap_err(), PkgIdError::MissingLibrary);
 
         let pkgid = PkgId {
             vendor: Some("vendor".to_owned()),
             library: None,
             name: "name".to_owned(),
         };
-        assert_eq!(pkgid.fully_qualified().is_ok(), false);
+        assert_eq!(pkgid.fully_qualified().unwrap_err(), PkgIdError::MissingLibrary);
 
         let pkgid = PkgId {
             vendor: Some("vendor".to_owned()),
             library: Some("library".to_owned()),
             name: "".to_owned(),
         };
-        assert_eq!(pkgid.fully_qualified().is_ok(), false);
+        assert_eq!(pkgid.fully_qualified().unwrap_err(), PkgIdError::Empty);
+
+        let pkgid = PkgId {
+            vendor: None,
+            library: None,
+            name: "name".to_owned(),
+        };
+        assert_eq!(pkgid.fully_qualified().unwrap_err(), PkgIdError::MissingLibrary);
     }
 
     #[test]

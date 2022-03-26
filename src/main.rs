@@ -4,7 +4,7 @@ use orbit::command;
 
 fn main() {
     match command::Orbit::load(&mut cli::Cli::new(std::env::args())) {
-        Ok(cmd) => match cmd.run() {
+        Ok(cmd) => match cmd.execute() {
             Ok(_) => (),
             Err(e) => {
                 eprintln!("error: {}", e);

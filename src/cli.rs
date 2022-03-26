@@ -48,11 +48,11 @@ impl Cli {
     pub fn new<T: Iterator<Item=String>>(cla: T) -> Cli {
         // skip the program's name
         let mut cla = cla.skip(1).enumerate().peekable();
-        let mut options = HashMap::<String, ParamArg>::new();
-        let mut positionals = Vec::new();
+        let mut opt_table = HashMap::<String, ParamArg>::new();
+        let mut pos_list = Vec::new();
         // appending an element behind the key (ensuring a vector always exist)
         let mut enter = |k: String, v, i| {
-            options
+            opt_table
                 .entry(k)
                 .or_insert(ParamArg(i, Vec::new())).1
                 .push(v);
@@ -71,10 +71,10 @@ impl Cli {
                     if trailing.starts_with("-") {
                         enter(arg, None, i);
                     } else {
-                        enter(arg, Some(Param::Indirect(positionals.len())), i);
+                        enter(arg, Some(Param::Indirect(pos_list.len())), i);
                         match cla.next() {
-                            Some((k, fa)) => positionals.push(Some(PosArg(k, fa))),
-                            None => positionals.push(None),
+                            Some((k, fa)) => pos_list.push(Some(PosArg(k, fa))),
+                            None => pos_list.push(None),
                         };
                     }
                 // none- no parameter was supplied to the current option
@@ -82,12 +82,12 @@ impl Cli {
                     enter(arg, None, i);
                 }
             } else {
-                positionals.push(Some(PosArg(i, arg)));
+                pos_list.push(Some(PosArg(i, arg)));
             }
         }
         Cli {
-            positionals: positionals,
-            options: options,
+            positionals: pos_list,
+            options: opt_table,
             asking_for_help: false,
             remainder: cla.map(|f| f.1).collect(),
             past_opts: false,
@@ -230,13 +230,25 @@ impl Cli {
 
     /// Checks that there are no unused/unchecked arguments.
     pub fn is_clean(&self) -> Result<(), CliError> {
-        // errors if `options` is not empty or `positionals` has a non-None value.
+        // errors if `options` is not empty
         if self.options.is_empty() != true {
             let unknown = self.options.keys().next().unwrap();
             match self.suggest_word(unknown) {
                 Some(e) => Err(e),
                 None => Err(CliError::UnexpectedArg(unknown.to_owned()))
             }
+        } else {
+            Ok(())
+        }
+    }
+
+    // :todo: refactor... lots of overlap between is_clean, try_suggest_word, is_partial_clean
+    fn try_suggest_word(&self) -> Result<(), CliError> {
+        // iterates through rest of options and tries to see if a suggestion can be made
+        if let Some(e) = self.options
+            .keys()
+            .find_map(|unknown| self.suggest_word(unknown)) {
+                Err(e)
         } else {
             Ok(())
         }
@@ -268,14 +280,14 @@ impl Cli {
                 match vals.pop().unwrap() {
                     Some(v) => Some(self.parse_param(&v, &opt)?),
                     None => {
-                        self.is_clean()?;
+                        self.try_suggest_word()?;
                         return Err(CliError::ExpectingValue(Arg::Optional(opt)))
                     },
                 }
             }
             // option was supplied more than once
             _ => {
-                self.is_clean()?;
+                self.try_suggest_word()?;
                 return Err(CliError::DuplicateOptions(Arg::Optional(opt)))
             },
         };
@@ -326,7 +338,7 @@ impl Cli {
         match st.parse::<T>() {
             Ok(r) => Ok(r),
             Err(e) => {
-                self.is_clean()?;
+                self.try_suggest_word()?;
                 Err(CliError::BadType(Arg::Optional(opt.clone()), format!("{}", e)))
             }
         }
@@ -365,10 +377,13 @@ impl Cli {
         // prioritize invalid flag calls over ooc arguments
         if let Some(e) = self.options
             .iter()
-            .take_while(|(_, o)| o.0 <= cmd.0)
-            .find_map(|(unknown, _)| self.suggest_word(unknown)) { 
+            .find_map(|(unknown, o)| 
+                match o.0 <= cmd.0 {
+                    true => self.suggest_word(unknown),
+                    false => None
+            }) { 
                 return Err(e) 
-            };
+        };
         if let Some(arg) = self.options
             .iter()
             .find(|(_, o)| o.0 <= cmd.0) {

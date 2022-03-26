@@ -6,6 +6,9 @@ use crate::arg::*;
 
 pub type DynCommand = Box<dyn Command>;
 
+// :idea: make a struct called 'glue' that will hold the cli and these functions
+// acting between cli and commands.
+
 pub trait Command: Debug {
     /// Pulls data from the command-line args into the `Command` struct.
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> where Self: Sized;
@@ -54,7 +57,7 @@ pub trait Command: Debug {
     }
 
     /// Executes the command.
-    fn run(&self) -> Result<(), Box<dyn Error>>;
+    fn execute(&self) -> Result<(), Box<dyn Error>>;
 }
 
 pub trait Dispatch: Debug {
@@ -117,7 +120,7 @@ impl Command for Orbit {
         })
     }
 
-    fn run(&self) -> Result <(), Box<dyn Error>> {
+    fn execute(&self) -> Result <(), Box<dyn Error>> {
         self.config.iter().for_each(|f| {
             if let Some((k, v)) = f.split_once("=") {
                 println!("key: {}\tvalue: {}", k, v);
@@ -126,7 +129,7 @@ impl Command for Orbit {
         if self.version {
             println!("orbit 0.1.0");
         } else if let Some(cmd) = &self.command {
-            cmd.run()?;
+            cmd.execute()?;
         } else {
             println!("{}", Self::help())
         }
@@ -162,7 +165,7 @@ impl Command for Sum {
         })
     }
 
-    fn run(&self) -> Result<(), Box<dyn Error>> {
+    fn execute(&self) -> Result<(), Box<dyn Error>> {
         let mut txt = String::new();
         let s = self.digits.iter().fold(0, |acc, x| {
             txt += &format!("{} + ", x);
@@ -223,7 +226,7 @@ impl Command for NumCast {
         })
     }
 
-    fn run(&self) -> Result<(), Box<dyn Error>>{
+    fn execute(&self) -> Result<(), Box<dyn Error>>{
         self.base.iter().for_each(|&b| {
             match b {
                 2 => println!("0b{:b}", self.deci),
@@ -304,7 +307,7 @@ impl Command for Help {
         })
     }
 
-    fn run(&self) -> Result<(), Box<dyn Error>> { 
+    fn execute(&self) -> Result<(), Box<dyn Error>> { 
         match &self.topic {
             Topic::Help => println!("{}", "in-depth about orbit"),
             Topic::Cast => println!("{}", "more help for cast"),
@@ -321,42 +324,6 @@ impl Command for Help {
         format!("{}", OVERVIEW)
     }
 }
-    
-
-/*
-Orbit is a tool for hdl package management.
-
-Usage:
-    orbit <command> [arguments]
-
-Commands:
-    new             create a new orbit ip
-    init            create a new orbit ip in an existing directory
-    edit            work on an ip in your development path
-    install         load a released ip to your orbit cache
-    get             add dependencies to current ip
-    plan            generate a blueprint file
-    build           execute a backend workflow
-    launch          release the next version for an ip
-    list            list all plugins and command
-
-Use "orbit help <command>" for more information about a command.
-*/
-
-/*
-Create a new orbit ip as <pkgid>
-
-Usage:
-    orbit new [options] <pkgid> 
-
-Options:
-    --path <PATH>       destination to create ip (default is ORBIT_WORKSPACE)
-    --template <PATH>   a directory to be used as a template
-    --vcs <VCS>         initialize a new repository (git) or none (none)
-
-Args:
-    <pkgid>             a fully-qualified pkgid
-*/
 
 const OVERVIEW: &str = "orbit is a tool for hdl package management.
 
@@ -371,8 +338,87 @@ Options:
     --help, -h                  print help information
 
 Commands:
-    cast            convert a decimal number to a different base [test]
+    cast            convert a decimal number to another base [test]
     sum             add up a variable amount of numbers [test]
 
 Use 'orbit help <command>' for more information about a command.
 ";
+
+/*
+$ orbit
+Orbit is a tool for hdl package management.
+
+Usage:
+    orbit [options] <command>
+
+Commands:
+    new             create a new orbit ip
+    init            create a new orbit ip in an existing directory
+    edit            work on an ip in your development path
+    install         load a released ip to your orbit cache
+    get             add dependencies to current ip
+    tree            visualize dependency relations
+    plan            generate a blueprint file
+    build           execute a backend workflow
+    launch          release the next version for an ip
+    list            view ip
+    update          increment dependency versions in an ip
+    config          overwrite configuration settings
+
+Options:
+    --version       print version and exit
+    --upgrade       check for latest orbit binary
+    --no-pager      disable paging all output
+    --list          list all commands
+    --topics        print available help topics
+    --no-color      disable colored output
+    --help, -h      print help information
+
+Use "orbit help <command>" for more information about a command.
+
+*/
+
+
+
+
+/*
+Create a new orbit ip as <pkgid>
+
+Usage:
+    orbit new [options] <pkgid> 
+
+Args:
+    <pkgid>             a fully-qualified pkgid
+
+Options:
+    --path <PATH>       destination to create ip (default is ORBIT_WORKSPACE)
+    --template <PATH>   a directory to be used as a template
+    --vcs <VCS>         initialize a new repository (git) or none (none)
+
+Run 'orbit help new' for more details.
+*/
+
+
+
+
+/* 
+$ orbit get --help
+Fetch a dependency and its relevant code.
+
+Usage:
+    orbit get [options] <unit>  
+
+Args:
+    <unit>              primary design unit
+
+Options:
+    --component, -c     print component declaration
+    --signals, -s       print signal declaration code
+    --instance, -i      print instantiation code
+    --code <LANG>       determine coding language [vhdl or vlog]
+    --no-datasheet      do not print the datasheet
+    --architecture      list available architectures
+    --edges             display connected units and relations
+
+Run 'orbit help get' for more details.
+*/

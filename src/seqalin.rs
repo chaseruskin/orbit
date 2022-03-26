@@ -80,6 +80,8 @@ mod test {
         assert_eq!(sequence_alignment("go gators", "go gators", 2, 1), 0);
         assert_eq!(sequence_alignment("", "alpha", 2, 1), 10);
         assert_eq!(sequence_alignment("", "", 2, 1), 0);
+        assert_eq!(sequence_alignment("--verbsoe", "--verbose", 1, 1), 2);
+        assert_eq!(sequence_alignment("--verbsoe", "--version", 1, 1), 3);
     }
 
     #[test]

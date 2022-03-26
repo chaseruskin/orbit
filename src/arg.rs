@@ -3,20 +3,13 @@ use std::fmt::Display;
 #[derive(Debug, PartialEq, Clone)]
 pub struct Positional {
     name: String,
-    short: Option<char>,
 }
 
 impl Positional {
     pub fn new(s: &str) -> Self {
         Positional { 
             name: s.to_string(),
-            short: None,
         }
-    }
-
-    pub fn short(mut self, s: char) -> Self {
-        self.short = Some(s);
-        self
     }
 }
 
@@ -40,9 +33,11 @@ impl Flag {
         }
     }
 
-    pub fn get_short(&self) -> Option<String> {
-        let mut s = String::from('-');
-        s.push(self.short?);
+    pub fn get_short<'a>(&self) -> Option<String> {
+        let c = self.short?;
+        let mut s = String::with_capacity(2);
+        s.push('-');
+        s.push(c);
         Some(s)
     }
 

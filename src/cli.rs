@@ -106,17 +106,22 @@ impl Cli {
     /// Recursively enters a new `dyn Command` to assign its args from the collected `Cli` data.
     pub fn next_command<T: crate::command::Dispatch + FromStr>(&mut self, arg: Positional) -> Result<Option<command::DynCommand>, CliError> 
     where T: std::str::FromStr<Err = Vec<String>> {
+        // grab the next arg available from the positionals vector
         let cmd = match self.next_arg(&arg) {
             Ok(c) => c,
-            Err(_) => return Ok(None),
+            Err(_) => return Ok(None), // command is allowed to not exist
         };
-        // :todo: add ability to offer suggestion to maybe move ooc arg after the successfully parsed subcommand
+
+        let casting = cmd.1.parse::<T>();
+        // offer suggestion to maybe move ooc arg after the successfully parsed subcommand
         if self.asking_for_help() == false {
-            self.is_partial_clean(cmd.0)?;
+            self.is_partial_clean(&cmd, casting.is_ok())?;
         }
         // check if the subcommand was entered incorrectly, then try to offer suggestion
-        let sub = match cmd.1.parse::<T>() {
+        let sub = match casting {
             Ok(s) => s,
+            // if the parsing failed, that means there is an untaken care of positional value, 
+            // or the user typed the command in wrong
             Err(v) => {
                 match seqalin::sel_min_edit_str(&cmd.1, &v, 4) {
                     Some(w) => return Err(CliError::SuggestArg(cmd.1.to_owned(), w.to_owned())),
@@ -138,10 +143,61 @@ impl Cli {
                 Ok(r)
             }
             Err(e) => {
-                self.is_clean()?;
                 Err(CliError::BadType(Arg::Positional(arg), format!("{}", e)))
             },
         }
+    }
+
+    fn lookup_param(&mut self, arg: &Flag, clos: &mut dyn FnMut(&mut Self, &Flag, Option<Param>) -> Result<Option<String>, CliError>) -> Result<Vec<Option<String>>, CliError> {
+        let mut values: Vec<Result<Option<String>, CliError>> = Vec::new();
+
+        if let Some(m) = self.options.remove(&arg.to_string()) {
+            let mut z: Vec<Result<Option<String>, CliError>> = m.1
+                .into_iter()
+                .map(|f| {
+                    clos(self, &arg, f)
+                }).collect();
+            values.append(&mut z);
+        }
+
+        if let Some(s) = arg.get_short() {
+            if let Some(m) = self.options.remove(&s) {
+                let mut z: Vec<Result<Option<String>, CliError>> = m.1
+                    .into_iter()
+                    .map(|f| {
+                        clos(self, &arg, f)
+                    }).collect();
+                values.append(&mut z);
+            }
+        }
+        // transforms a vec<result<ok, err> into result<vec, err>
+        values.into_iter().collect()
+    }
+
+    /// Determines how to percieve data requested for the given flag `arg` at the given `Param` as
+    /// a flag. Used as a fn ptr for `lookup_param` fn.
+    fn match_flag(&mut self, arg: &Flag, f: Option<Param>) -> Result<Option<String>, CliError> {
+        match f {
+            Some(p) => match p {
+                Param::Direct(s) => Err(CliError::UnexpectedValue(Arg::Flag(arg.clone()), s)),
+                // perform a swap on the data unless it has already been used up
+                Param::Indirect(_) => Ok(None)
+            },
+            None => Ok(None),
+        }
+    }
+
+    /// Determines how to percieve data requested for the given flag `arg` at the given `Param` as
+    /// an option. Used as a fn ptr for `lookup_param` fn.
+    fn match_opt(&mut self, _: &Flag, f: Option<Param>) ->  Result<Option<String>, CliError> {
+        Ok(match f {
+            Some(p) => match p {
+                Param::Direct(s) => Some(s),
+                // perform a swap on the data unless it has already been used up
+                Param::Indirect(i) => Some(self.positionals[i].take().expect("value was stolen by positional").1),
+            }
+            None => None,
+        })
     }
 
     /// Queries if a flag was raised once. 
@@ -149,30 +205,18 @@ impl Cli {
     /// __Errors__: if a direct value was given or if the flag was raised multiple times
     pub fn get_flag(&mut self, flag: Flag) -> Result<bool, CliError> {
         // // check if it is in the map (also checks if shorthand was found)
-        let key = flag.to_string();
-        let alias = match self.options.remove(&key) {
-            Some(a) => Some(a),
-            None => if let Some(s) = flag.get_short() {
-                self.options.remove(&s) 
-            } else {
-                None
+        let vals = self.lookup_param(&flag, &mut Cli::match_flag)?;    
+        let raised = match vals.len() {
+            // flag was not found in options map
+            0 => false,
+            1 => {
+                // trigger help to be raised for rest of processing
+                if flag.to_string() == "--help" {
+                    self.asking_for_help = true;
+                }
+                true
             }
-        };
-        let raised = if let Some(mut val) = alias {
-            // raise error if there is an attached option to the flag
-            if val.1.len() > 1 {
-                return Err(CliError::DuplicateOptions(Arg::Flag(flag)))
-            // raise error if a value was directly attached to the flag
-            } else if let Some(Param::Direct(s)) = val.1.pop().unwrap() {
-                return Err(CliError::UnexpectedValue(Arg::Flag(flag), s));
-            // trigger help to be raised for rest of processing
-            } else if key == "--help" {
-                self.asking_for_help = true;
-            }
-            true
-        // flag was not found in options map
-        } else {
-            false
+            _ => return Err(CliError::DuplicateOptions(Arg::Flag(flag))),
         };
         self.known_args.push(Arg::Flag(flag));
         Ok(raised)
@@ -193,7 +237,13 @@ impl Cli {
                 Some(e) => Err(e),
                 None => Err(CliError::UnexpectedArg(unknown.to_owned()))
             }
-        } else if let Some(Some(unknown)) = self.positionals.iter().find(|f| f.is_some()) {
+        } else {
+            Ok(())
+        }
+    }
+
+    pub fn has_no_extra_positionals(&self) -> Result<(), CliError> {
+        if let Some(Some(unknown)) = self.positionals.iter().find(|f| f.is_some()) {
             Err(CliError::UnexpectedArg(unknown.1.to_owned())) 
         } else {
             Ok(())
@@ -209,19 +259,25 @@ impl Cli {
             panic!("options must be evaluated before positionals")
         }
         // check if it is in the map (pull from map)
-        let o = if let Some(mut m) = self.options.remove(&opt.get_flag().to_string()) { 
-            // option was supplied more than once
-            if m.1.len() > 1 {
-                return Err(CliError::DuplicateOptions(Arg::Optional(opt)));
-            // verify the user supplied a value for this option
-            } else if let Some(p) = m.1.pop().unwrap() {
-                Some(self.parse_param(p, &opt)?)
+        let mut vals = self.lookup_param(&opt.get_flag(), &mut Cli::match_opt)?;
+        let o: Option<T> = match vals.len() {
             // there is no value in the vector or that value was `None`
-            } else {
-                return Err(CliError::ExpectingValue(Arg::Optional(opt)));
+            0 => None,
+            1 => {
+                // verify the user supplied a value for this option
+                match vals.pop().unwrap() {
+                    Some(v) => Some(self.parse_param(&v, &opt)?),
+                    None => {
+                        self.is_clean()?;
+                        return Err(CliError::ExpectingValue(Arg::Optional(opt)))
+                    },
+                }
             }
-        } else { 
-            None
+            // option was supplied more than once
+            _ => {
+                self.is_clean()?;
+                return Err(CliError::DuplicateOptions(Arg::Optional(opt)))
+            },
         };
         // add optional to the known args
         self.known_args.push(Arg::Optional(opt));
@@ -236,23 +292,26 @@ impl Cli {
         if self.past_opts { 
             panic!("options must be evaluated before positionals")
         }
-        let vals = match self.options.remove(&opt.get_flag().to_string()) {
-            Some(m) => {
-                let mut res = Vec::<T>::with_capacity(m.1.len());
-                let mut m = m.1.into_iter();
-                while let Some(e) = m.next() {
-                    match e {
-                        Some(p) => res.push(self.parse_param::<T>(p, &opt)?),
-                        None => return Err(CliError::ExpectingValue(Arg::Optional(opt))),
+        let vals = self.lookup_param(&opt.get_flag(), &mut Cli::match_opt)?;
+        let options = match vals.len() {
+            // option was not provided by user, be none 
+            0 => Ok(None),
+            _ => {
+                let mut res = Vec::<T>::with_capacity(vals.len());
+                for v in vals {
+                    match v {
+                        Some(s) => res.push(self.parse_param::<T>(&s, &opt)?),
+                        None => {
+                            self.is_clean()?;
+                            return Err(CliError::ExpectingValue(Arg::Optional(opt)))
+                        }
                     }
                 }
-                Some(res)
+                Ok(Some(res))
             }
-            // option was not provided by user, return None 
-            None => None,
         };
         self.known_args.push(Arg::Optional(opt));
-        Ok(vals)
+        options
     }
 
     /// Retuns the vector of leftover arguments split by '--' and removes that flag from the `options` map.
@@ -261,24 +320,13 @@ impl Cli {
         return &self.remainder
     }
 
-    /// Handles updating the positional vector depending on if a paramater was direct or indirect.
-    fn parse_param<T: FromStr + std::fmt::Debug>(&mut self, p: Param, opt: &Optional) -> Result<T, CliError>
+    /// Handles updating the positional vector depending on if a parameter was direct or indirect.
+    fn parse_param<T: FromStr + std::fmt::Debug>(&mut self, st: &str, opt: &Optional) -> Result<T, CliError>
     where <T as std::str::FromStr>::Err: std::error::Error {
-        let st = match p {
-            Param::Direct(s) => s,
-            // perform a swap on the data unless it has already been used up
-            Param::Indirect(i) => self.positionals[i].take().expect("value was stolen by positional").1
-        };
         match st.parse::<T>() {
             Ok(r) => Ok(r),
             Err(e) => {
-                match self.is_clean() {
-                    Ok(_) => (),
-                    Err(e) => match e {
-                        CliError::UnexpectedArg(..) => (),
-                        _ => return Err(e),
-                    }
-                }
+                self.is_clean()?;
                 Err(CliError::BadType(Arg::Optional(opt.clone()), format!("{}", e)))
             }
         }
@@ -312,18 +360,24 @@ impl Cli {
         Some(CliError::SuggestArg(unknown.to_owned(), w.to_owned()))
     }
 
-    /// Filters out undetermined options that have a position < i.
-    fn is_partial_clean(&self, i: usize) -> Result<(), CliError> {
+    /// Filters out undetermined options that have a position <= i.
+    fn is_partial_clean(&self, cmd: &PosArg, ooc_move: bool) -> Result<(), CliError> {
         // prioritize invalid flag calls over ooc arguments
         if let Some(e) = self.options
             .iter()
-            .find_map(|(unknown, _)| { self.suggest_word(unknown) }) { 
+            .take_while(|(_, o)| o.0 <= cmd.0)
+            .find_map(|(unknown, _)| self.suggest_word(unknown)) { 
                 return Err(e) 
             };
         if let Some(arg) = self.options
             .iter()
-            .find(|(_, o)| { o.0 <= i }) {
-                Err(CliError::OutOfContextArg(arg.0.to_string()))
+            .find(|(_, o)| o.0 <= cmd.0) {
+                let word = if ooc_move {
+                    format!("\n\nMaybe move it after '{}'?", cmd.1)
+                } else {
+                    String::new()
+                };
+                Err(CliError::OutOfContextArg(arg.0.to_string(), word))
         } else {
             Ok(())
         }   
@@ -337,7 +391,7 @@ pub enum CliError {
     DuplicateOptions(Arg),
     ExpectingValue(Arg),
     UnexpectedValue(Arg, String),
-    OutOfContextArg(String),
+    OutOfContextArg(String, String),
     UnexpectedArg(String),
     SuggestArg(String, String),
     UnknownSubcommand(Arg, String),
@@ -353,13 +407,13 @@ impl Display for CliError {
         let footer = "\n\nFor more information try --help";
         match self {
             SuggestArg(a, sug) => write!(f, "unknown argument '{}'\n\nDid you mean '{}'?", a, sug),
-            OutOfContextArg(o) => write!(f, "argument '{}' is unknown, or invalid in the current context{}", o, footer),
+            OutOfContextArg(o, cmd) => write!(f, "argument '{}' is unknown, or invalid in the current context{}{}", o, cmd, footer),
             BadType(a, e) => write!(f, "argument '{}' did not process due to {}{}", a, e, footer),
             MissingPositional(p, u) => write!(f, "missing required argument '{}'\n{}{}", p, u, footer),
             DuplicateOptions(o) => write!(f, "option '{}' was requested more than once, but can only be supplied once", o),
             ExpectingValue(x) => write!(f, "option '{}' expects a value but none was supplied{}", x, footer),
             UnexpectedValue(x, s) => write!(f, "flag '{}' cannot accept values but one was supplied \"{}\"", x, s),
-            UnexpectedArg(s) => write!(f, "unknown argument '{}'", s),
+            UnexpectedArg(s) => write!(f, "unknown argument '{}'{}", s, footer),
             UnknownSubcommand(c, a) => write!(f, "'{}' is not a valid subcommand for {}", a, c),
             BrokenRule(r) => write!(f, "{}", r),
         }
@@ -474,6 +528,36 @@ mod test {
         // these arguments are passed to internally called command
         assert_eq!(cli.get_remainder(), &vec!["synthesize", "--log", "./quartus.log"]);
         assert!(cli.is_clean().is_ok());
+    }
+
+    #[test]
+    fn query_param() {
+        // arg1 --opt1 arg2 --flag1 --opt2=value1 -s value2 -f
+        let mut opts = HashMap::new();
+        opts.insert("--opt1".to_owned(), ParamArg(1, vec![Some(Param::Indirect(1))]));
+        opts.insert("--flag1".to_owned(), ParamArg(3, vec![None]));
+        opts.insert("--opt2".to_owned(), ParamArg(4, vec![Some(Param::Direct("value1".to_owned()))]));
+        opts.insert("-s".to_owned(), ParamArg(5, vec![Some(Param::Indirect(2))]));
+        opts.insert("-f".to_owned(), ParamArg(7, vec![None]));
+        let mut cli = Cli {
+            positionals: vec![
+                Some(PosArg(0, "arg1".to_string())),
+                Some(PosArg(1, "arg2".to_string())),
+                Some(PosArg(2, "value2".to_string())),
+                ],
+            options: opts,
+            remainder: Vec::new(),
+            past_opts: false,
+            known_args: Vec::new(),
+            usage: String::new(),
+            asking_for_help: false,
+        };
+
+        assert_eq!(cli.lookup_param(&Flag::new("flag2"), &mut Cli::match_flag), Ok(vec![]));
+        assert_eq!(cli.lookup_param(&Flag::new("flag1"), &mut Cli::match_flag), Ok(vec![None]));
+        assert_eq!(cli.lookup_param(&Flag::new("opt2").short('s'), &mut Cli::match_opt), Ok(vec![Some("value1".to_string()), Some("value2".to_string())]));
+        // takes away the args from storage
+        assert_eq!(cli.lookup_param(&Flag::new("opt2").short('s'), &mut Cli::match_opt), Ok(vec![]));
     }
 
     #[test]

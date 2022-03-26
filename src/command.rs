@@ -37,6 +37,7 @@ pub trait Command: Debug {
             }
         };
         cla.is_clean()?;
+        cla.has_no_extra_positionals()?;
         cmd.verify_rules()?;
         Ok(cmd)
     }
@@ -111,7 +112,7 @@ impl Command for Orbit {
             version: cla.get_flag(Flag::new("version"))?,
             upgrade: cla.get_flag(Flag::new("upgrade"))?,
             color  : cla.get_option(Optional::new("color"))?,
-            config : cla.get_option_vec(Optional::new("config").value("KEY=VALUE"))?.unwrap_or(vec![]),
+            config : cla.get_option_vec(Optional::new("config").value("KEY=VALUE").short('c'))?.unwrap_or(vec![]),
             command: cla.next_command::<Subcommand>(Positional::new("subcommand"))?,
         })
     }
@@ -153,11 +154,11 @@ pub struct Sum {
 impl Command for Sum {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> {
         Ok(Sum { 
-            digits: cla.get_option_vec(Optional::new("digit").value("N"))?
+            verbose: cla.get_flag(Flag::new("verbose"))?,
+            digits: cla.get_option_vec(Optional::new("digit").value("N").short('d'))?
                 .unwrap_or(vec![]),
             guess: cla.next_positional(Positional::new("guess"))?,
             pkg: cla.next_positional(Positional::new("pkgid"))?,
-            verbose: cla.get_flag(Flag::new("verbose"))?,
         })
     }
 
@@ -193,8 +194,8 @@ format!("Add multiple numbers together
 {}
 
 Options:
-    --verbose       print out the math equation
-    --digit <N>...  give a digit to include in the summation
+    --verbose           print out the math equation
+    --digit, -d <N>...  give a digit to include in the summation
 
 Args:
     <guess>         a number to compare against the summation
@@ -363,11 +364,11 @@ Usage:
     orbit [options] <command>
 
 Options:
-    --config <KEY=VALUE>    override a configuration settings
-    --color <INT>           set the color intensity
-    --upgrade               check for the latest orbit binary
-    --version               print the version and exit
-    --help, -h              print help information
+    --config, -c <KEY=VALUE>    override a configuration settings
+    --color <INT>               set the color intensity
+    --upgrade                   check for the latest orbit binary
+    --version                   print the version and exit
+    --help, -h                  print help information
 
 Commands:
     cast            convert a decimal number to a different base [test]

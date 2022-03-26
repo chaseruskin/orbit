@@ -1,4 +1,4 @@
-use crate::cli::{self, CliError};
+use crate::cli;
 use std::fmt::Debug;
 use std::str::FromStr;
 use std::error::Error;
@@ -15,30 +15,9 @@ pub trait Command: Debug {
 
     /// Performs various checks and calls `new` to generate a struct implementing the `Command` trait.
     fn load(cla: &mut cli::Cli) -> Result<Self, cli::CliError> where Self: Sized {
-        cla.set_usage(&Self::usage());
-        let cmd = match Self::new(cla) {
-            Ok(c) => {
-                if cla.asking_for_help() {
-                    println!("{}", Self::help());
-                    std::process::exit(0);
-                }
-                c
-            },
-            Err(e) => {
-                if let cli::CliError::SuggestArg(..) = e {
-                    return Err(e)
-                } else {
-                    // check if help is asked for because we errored
-                    if cla.asking_for_help() {
-                        println!("{}", Self::help());
-                        std::process::exit(0);
-                    } else if let cli::CliError::MissingPositional(..) = e {
-                        cla.is_clean()?;
-                    }
-                    return Err(e);
-                }
-            }
-        };
+        cla.set_usage(Self::usage());
+        cla.set_help(Self::help());
+        let cmd = Self::new(cla)?;
         cla.is_clean()?;
         cla.has_no_extra_positionals()?;
         cmd.verify_rules()?;
@@ -266,15 +245,30 @@ enum Topic {
     Help,
 }
 
+#[derive(Debug)]
+enum TopicError {
+    InvalidTopic(String),
+}
+
+impl Error for TopicError {}
+
+impl std::fmt::Display for TopicError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
+        match self {
+            TopicError::InvalidTopic(t) => write!(f, "{}", t)
+        }
+    }
+}
+
 impl FromStr for Topic {
-    type Err = cli::CliError;
+    type Err = TopicError;
 
     fn from_str(s: & str) -> Result<Self, Self::Err> {
         use Topic::*;
         Ok(match s {
             "sum" => Sum,
             "cast" => Cast,
-            _ => return Err(CliError::BrokenRule(s.to_owned()))
+            _ => return Err(Self::Err::InvalidTopic(s.to_owned()))
         })
     }
 }
@@ -289,14 +283,15 @@ impl Command for Help {
     fn new(cla: &mut cli::Cli) -> Result<Self, cli::CliError> {
         let topic = match cla.next_positional(Positional::new("command")) {
             // default the topic to be in-depth about orbit if none was supplied
-            Err(cli::CliError::MissingPositional(..)) => {
-                Ok(Topic::Help)
-            }
-            // try to suggest a topic if none was provided
+            Err(cli::CliError::MissingPositional(..)) => Ok(Topic::Help),
+            // try to suggest a topic if an invalid one was provided
             Err(cli::CliError::BadType(_, s)) => {
                 match crate::seqalin::sel_min_edit_str(&s, &vec!["sum".to_owned(), "cast".to_owned()], 4) {
                     Some(w) => Err(cli::CliError::SuggestArg(s.to_owned(), w.to_owned())),
-                    _ => Err(cli::CliError::UnknownSubcommand(Arg::Positional(Positional::new("command")), s.to_owned()))
+                    _ => {
+                        cla.is_clean()?;
+                        Err(cli::CliError::UnknownSubcommand(Arg::Positional(Positional::new("command")), s.to_owned()))
+                    }
                 }
             }
             Err(e) => Err(e),

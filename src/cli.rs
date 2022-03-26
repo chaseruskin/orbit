@@ -8,6 +8,9 @@
 //! - allow lowercase option lookups
 //! - write tests for new functions
 //! - create better api call `fn query(arg: Arg, style: ArgStyle)`
+//! - if wanting support for -d10 syle short options with values, cheat by
+//!     storing list of valid switches that will take value immediately following char.
+//!     Use that list to determine when to stop switch expansion. 
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -43,6 +46,7 @@ pub struct Cli {
     /// stores `Arg` as it is queried by command for computing edit distances
     known_args: Vec<Arg>,
     usage: String,
+    help: String,
 }
 
 impl Cli {
@@ -115,12 +119,18 @@ impl Cli {
             past_opts: false,
             known_args: Vec::new(),
             usage: String::new(),
+            help: String::new(),
         }
     }
 
     /// Sets the current command's usage text. Used for helping print errors.
-    pub fn set_usage(&mut self, s: &str) {
-        self.usage = s.to_owned();
+    pub fn set_usage(&mut self, s: String) {
+        self.usage = s;
+    }
+
+    /// Sets the current command's short help text. Used for help information.
+    pub fn set_help(&mut self, s: String) {
+        self.help = s;
     }
 
     /// Queries for the next command in the chain.
@@ -216,7 +226,13 @@ impl Cli {
             Some(p) => match p {
                 Param::Direct(s) => Some(s),
                 // perform a swap on the data unless it has already been used up
-                Param::Indirect(i) => Some(self.positionals[i].take().expect("value was stolen by positional").1),
+                Param::Indirect(i) => {
+                    match self.positionals[i].take() {
+                        Some(p) => Some(p.1),
+                        // value was stolen by positional argument
+                        None => None,
+                    }
+                }
             }
             None => None,
         })
@@ -252,8 +268,11 @@ impl Cli {
 
     /// Checks that there are no unused/unchecked arguments.
     pub fn is_clean(&self) -> Result<(), CliError> {
+        if self.asking_for_help() {
+            println!("{}", self.help);
+            std::process::exit(0);
         // errors if `options` is not empty
-        if self.options.is_empty() != true {
+        } else if self.options.is_empty() != true {
             let unknown = self.options.keys().next().unwrap();
             match self.suggest_word(unknown) {
                 Some(e) => Err(e),
@@ -271,6 +290,9 @@ impl Cli {
             .keys()
             .find_map(|unknown| self.suggest_word(unknown)) {
                 Err(e)
+        } else if self.asking_for_help() {
+                println!("{}", self.help);
+                std::process::exit(0);
         } else {
             Ok(())
         }
@@ -433,7 +455,6 @@ pub enum CliError {
     SuggestArg(String, String),
     UnknownSubcommand(Arg, String),
     BrokenRule(String),
-   // TrySuggest(String, Vec<String>),
 }
 
 impl Error for CliError {}
@@ -447,11 +468,11 @@ impl Display for CliError {
             OutOfContextArg(o, cmd) => write!(f, "argument '{}' is unknown, or invalid in the current context{}{}", o, cmd, footer),
             BadType(a, e) => write!(f, "argument '{}' did not process due to {}{}", a, e, footer),
             MissingPositional(p, u) => write!(f, "missing required argument '{}'\n{}{}", p, u, footer),
-            DuplicateOptions(o) => write!(f, "option '{}' was requested more than once, but can only be supplied once", o),
+            DuplicateOptions(o) => write!(f, "option '{}' was requested more than once, but can only be supplied once{}", o, footer),
             ExpectingValue(x) => write!(f, "option '{}' expects a value but none was supplied{}", x, footer),
-            UnexpectedValue(x, s) => write!(f, "flag '{}' cannot accept values but one was supplied \"{}\"", x, s),
+            UnexpectedValue(x, s) => write!(f, "flag '{}' cannot accept values but one was supplied \"{}\"{}", x, s, footer),
             UnexpectedArg(s) => write!(f, "unknown argument '{}'{}", s, footer),
-            UnknownSubcommand(c, a) => write!(f, "'{}' is not a valid subcommand for {}", a, c),
+            UnknownSubcommand(c, a) => write!(f, "'{}' is not a valid subcommand for {}{}", a, c, footer),
             BrokenRule(r) => write!(f, "{}", r),
         }
     }
@@ -476,6 +497,7 @@ mod test {
             known_args: Vec::new(),
             asking_for_help: false,
             usage: String::new(),
+            help: String::new(),
         });
     }
 
@@ -504,6 +526,7 @@ mod test {
             known_args: Vec::new(),
             asking_for_help: false,
             usage: String::new(),
+            help: String::new(),
         });
     }
 
@@ -528,6 +551,7 @@ mod test {
             known_args: Vec::new(),
             usage: String::new(),
             asking_for_help: false,
+            help: String::new(),
         });
     }
 
@@ -571,6 +595,7 @@ mod test {
             known_args: Vec::new(),
             asking_for_help: false,
             usage: String::new(),
+            help: String::new(),
         });
     }
 
@@ -616,6 +641,7 @@ mod test {
             known_args: Vec::new(),
             usage: String::new(),
             asking_for_help: false,
+            help: String::new(),
         };
 
         assert_eq!(cli.lookup_param(&Flag::new("flag2"), &mut Cli::match_flag), Ok(vec![]));
@@ -645,6 +671,7 @@ mod test {
             known_args: Vec::new(),
             asking_for_help: false,
             usage: String::new(),
+            help: String::new(),
         });
     }
 
@@ -666,6 +693,7 @@ mod test {
             known_args: Vec::new(),
             asking_for_help: false,
             usage: String::new(),
+            help: String::new(),
         };
 
         assert_eq!(cli.get_option(Optional::new("verbose")), Ok(Some(2)));

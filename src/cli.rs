@@ -6,7 +6,8 @@
 //! - parameters must be provided only after their respective subcommands
 //! Todo    :
 //! - allow lowercase option lookups
-//! - allow shorthand options to be combined onto single dash
+//! - write tests for new functions
+//! - create better api call `fn query(arg: Arg, style: ArgStyle)`
 
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -52,6 +53,27 @@ impl Cli {
         let mut pos_list = Vec::new();
         // appending an element behind the key (ensuring a vector always exist)
         let mut enter = |k: String, v, i| {
+            // switch expansion - enter none for every switch found before last switch
+            let mut chars = k.chars().skip(1).peekable();
+            let k = match chars.next() {
+                Some('-') | None => k,
+                Some(c) => {
+                    let mut short = String::with_capacity(2);
+                    short.push('-');
+                    short.push(c);
+                    while let Some(d) = chars.peek() {
+                        opt_table
+                            .entry(short.to_owned())
+                            .or_insert(ParamArg(i, Vec::new())).1
+                            .push(None);
+                        short.pop();
+                        short.push(*d);
+                        chars.next();
+                    }
+                    short
+                }
+            };
+            // enter last switch/flag with value passed into closure
             opt_table
                 .entry(k)
                 .or_insert(ParamArg(i, Vec::new())).1
@@ -314,7 +336,7 @@ impl Cli {
                     match v {
                         Some(s) => res.push(self.parse_param::<T>(&s, &opt)?),
                         None => {
-                            self.is_clean()?;
+                            self.try_suggest_word()?;
                             return Err(CliError::ExpectingValue(Arg::Optional(opt)))
                         }
                     }
@@ -449,6 +471,34 @@ mod test {
         assert_eq!(cli, Cli {
             positionals: Vec::new(),
             options: HashMap::new(),
+            remainder: Vec::new(),
+            past_opts: false,
+            known_args: Vec::new(),
+            asking_for_help: false,
+            usage: String::new(),
+        });
+    }
+
+    #[test]
+    fn shorthand_switches() {
+        let args = vec![
+            "orbit", "-a", "-bcd", "-efg=1", "-h", "2",
+        ].into_iter().map(|s| s.to_owned());
+        let cli = Cli::new(args);
+
+        let mut opt_table = HashMap::new();
+        opt_table.insert("-a".to_owned(), ParamArg(0, vec![None]));
+        opt_table.insert("-b".to_owned(), ParamArg(1, vec![None]));
+        opt_table.insert("-c".to_owned(), ParamArg(1, vec![None]));
+        opt_table.insert("-d".to_owned(), ParamArg(1, vec![None]));
+        opt_table.insert("-e".to_owned(), ParamArg(2, vec![None]));
+        opt_table.insert("-f".to_owned(), ParamArg(2, vec![None]));
+        opt_table.insert("-g".to_owned(), ParamArg(2, vec![Some(Param::Direct("1".to_string()))]));
+        opt_table.insert("-h".to_owned(), ParamArg(3, vec![Some(Param::Indirect(0))]));
+
+        assert_eq!(cli, Cli {
+            positionals: vec![Some(PosArg(4, "2".to_string()))],
+            options: opt_table,
             remainder: Vec::new(),
             past_opts: false,
             known_args: Vec::new(),

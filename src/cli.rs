@@ -6,7 +6,7 @@
 //! - parameters must be provided only after their respective subcommands
 //! Todo    :
 //! - allow lowercase option lookups
-//! - allow shorthand options with single dash
+//! - allow shorthand options to be combined onto single dash
 
 use std::collections::HashMap;
 use std::str::FromStr;

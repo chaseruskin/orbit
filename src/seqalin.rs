@@ -12,6 +12,8 @@ type Cost = usize;
 /// 
 /// __time complexity__: O(nm)   
 /// __space complexity__: O(nm)
+/// 
+/// Note: Case sensitivity is not applied within the function.
 fn sequence_alignment(s1: &str, s2: &str, gap_penalty: Cost, mismatch_penalty: Cost) -> Cost {
     // create 2D cache filling 0th row and 0th col with gap penalties
     let mut lut = Vec::<Vec::<usize>>::with_capacity(s1.len()+1);
@@ -82,6 +84,8 @@ mod test {
         assert_eq!(sequence_alignment("", "", 2, 1), 0);
         assert_eq!(sequence_alignment("--verbsoe", "--verbose", 1, 1), 2);
         assert_eq!(sequence_alignment("--verbsoe", "--version", 1, 1), 3);
+        // case sensitivity is not applied inside the fn
+        assert_eq!(sequence_alignment("ALPHA", "alpha", 2, 1), 10);
     }
 
     #[test]

@@ -136,7 +136,7 @@ impl Cli {
     /// Queries for the next command in the chain.
     /// 
     /// Recursively enters a new `dyn Command` to assign its args from the collected `Cli` data.
-    pub fn next_command<T: crate::command::Dispatch + FromStr>(&mut self, arg: Positional) -> Result<Option<command::DynCommand>, CliError> 
+    pub fn next_command<T: crate::command::Dispatch + FromStr>(&mut self, arg: Positional) -> Result<Option<Box<dyn command::Command>>, CliError> 
     where T: std::str::FromStr<Err = Vec<String>> {
         // grab the next arg available from the positionals vector
         let cmd = match self.next_arg(&arg) {

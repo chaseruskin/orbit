@@ -4,8 +4,6 @@ use std::str::FromStr;
 use std::error::Error;
 use crate::arg::*;
 
-pub type DynCommand = Box<dyn Command>;
-
 // :idea: make a struct called 'glue' that will hold the cli and these functions
 // acting between cli and commands.
 
@@ -40,7 +38,7 @@ pub trait Command: Debug {
 }
 
 pub trait Dispatch: Debug {
-    fn dispatch(self, cla: &mut cli::Cli) -> Result<DynCommand, cli::CliError>;
+    fn dispatch(self, cla: &mut cli::Cli) -> Result<Box<dyn Command>, cli::CliError>;
 }
 
 #[derive(Debug)]
@@ -68,7 +66,7 @@ impl FromStr for Subcommand  {
 }
 
 impl Dispatch for Subcommand  {
-    fn dispatch(self, cla: &mut cli::Cli) -> Result<DynCommand, cli::CliError> {
+    fn dispatch(self, cla: &mut cli::Cli) -> Result<Box<dyn Command>, cli::CliError> {
         match self {
             Subcommand::Sum => Ok(Box::new(Sum::load(cla)?)),
             Subcommand::NumCast => Ok(Box::new(NumCast::load(cla)?)),
@@ -84,7 +82,7 @@ pub struct Orbit {
     config: Vec<String>,
     upgrade: bool,
     color: Option<u8>,
-    command: Option<DynCommand>,
+    command: Option<Box<dyn Command>>,
 }
 
 impl Command for Orbit {

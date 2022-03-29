@@ -1,7 +1,9 @@
 #![allow(dead_code)]
 
-pub mod cli;
 mod altcli;
+mod altarg;
+
+pub mod cli;
 pub mod arg;
 pub mod seqalin;
 pub mod command;

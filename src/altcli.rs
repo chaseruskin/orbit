@@ -24,14 +24,14 @@ impl Token {
 #[derive(Debug, PartialEq)]
 struct Cli {
     tokens: Vec<Option<Token>>,
-    flag_store: HashMap<String, Vec<usize>>,
+    opt_store: HashMap<String, Vec<usize>>,
 }
 
 impl Cli {
     fn new() -> Self {
         Cli {
             tokens: Vec::new(),
-            flag_store: HashMap::new(),
+            opt_store: HashMap::new(),
         }
     }
 
@@ -61,8 +61,9 @@ impl Cli {
                 }
                 // handle long flag signal
                 if arg.starts_with("--") {
+                    arg.replace_range(0..=1, "");
                     // caught the terminator (purely "--")
-                    if arg.len() == 2 {
+                    if arg.is_empty() {
                         tokens.push(Some(Token::Terminator(i)));
                         terminated = true;
                     // caught a 'long option' flag
@@ -90,7 +91,7 @@ impl Cli {
         }
         Cli { 
             tokens: tokens,
-            flag_store: store,
+            opt_store: store,
         }
     }
 
@@ -98,9 +99,11 @@ impl Cli {
     fn next_uarg(&mut self) -> Option<String> {
         if let Some(p) = self.tokens
             .iter_mut()
-            .find(|s| match s {
-                Some(Token::UnattachedArgument(_, _)) | Some(Token::Terminator(_)) => true,
-                _ => false,
+            .find(|s| {
+                match s {
+                    Some(Token::UnattachedArgument(_, _)) | Some(Token::Terminator(_)) => true,
+                    _ => false,
+                }
             }) {
                 if let Some(Token::Terminator(_)) = p {
                     None
@@ -111,6 +114,16 @@ impl Cli {
             None
         }
     }
+
+    /// Accept a command's list of options before processing
+    // fn learn_options(&mut self, &Vec<Arg>) {
+    //     todo!()
+    // }
+
+    /// Find the first unattached argument that matches a possible subcommand name
+    // fn detect_subcommand(&mut self, Vec<String>) {
+    //     todo!()
+    // }
 
     /// Grabs the flag/switch from the token stream, and collects. If an argument were to follow
     /// it will be in the vector.
@@ -142,15 +155,20 @@ impl Cli {
     }
 
     /// Removes the ignored tokens from the stream, if they exist.
-    fn get_remainder(&mut self) -> Option<Vec<String>> {
-        // can unwrap because guaranteed to have only 1 terminator
-        let pos = self.take_flag_locs("--")?.pop().unwrap();
-        todo!()
+    fn get_remainder(&mut self) -> Vec<String> {
+        self.tokens.iter_mut().filter_map(|f| {
+            match f {
+                Some(Token::Ignore(_, _)) => {
+                    Some(f.take().unwrap().take_str())
+                }
+                _ => None
+            }
+        }).collect()
     }
 
     /// Returns all locations in the token stream where the flag is found.
     fn take_flag_locs(&mut self, s: &str) -> Option<Vec<usize>> {
-        Some(self.flag_store.remove(s)?)
+        Some(self.opt_store.remove(s)?)
     }
 
     /// Returns all locations in the token stream where the switch is found.
@@ -158,7 +176,7 @@ impl Cli {
         // allocate &str to the stack and not the heap to get from store
         let mut tmp = [0; 4];
         let m = c.encode_utf8(&mut tmp);
-        Some(self.flag_store.remove(m)?)
+        Some(self.opt_store.remove(m)?)
     }
 }
 
@@ -217,6 +235,14 @@ mod test {
             ],
         );
 
+        // an attached argument can sneak in behind a terminator
+        let cli = Cli::tokenize(args(vec!["orbit", "--=value", "extra"]));
+        assert_eq!(cli.tokens, vec![
+            Some(Token::Terminator(0)),
+            Some(Token::AttachedArgument(0, "value".to_string())),
+            Some(Token::Ignore(1, "extra".to_string())),
+        ]);
+
         // final boss
         let cli = Cli::tokenize(args(
             vec!["orbit", "--help", "-v", "new", "ip", "--lib", "--name=rary.gates", "--help", "-sci", "--", "--map", "synthesis", "-jto"]
@@ -248,13 +274,13 @@ mod test {
         ));
 
         // detects 0
-        assert_eq!(cli.take_flag_locs("--version"), None);
+        assert_eq!(cli.take_flag_locs("version"), None);
         // detects 1
-        assert_eq!(cli.take_flag_locs("--lib"), Some(vec![4]));
+        assert_eq!(cli.take_flag_locs("lib"), Some(vec![4]));
         // detects multiple
-        assert_eq!(cli.take_flag_locs("--help"), Some(vec![0, 7]));
+        assert_eq!(cli.take_flag_locs("help"), Some(vec![0, 7]));
         // flag was past terminator and marked as ignore
-        assert_eq!(cli.take_flag_locs("--map"), None);
+        assert_eq!(cli.take_flag_locs("map"), None);
         // filters out arguments
         assert_eq!(cli.take_flag_locs("rary.gates"), None);
 
@@ -275,15 +301,15 @@ mod test {
         ));
         let mut opt_store = HashMap::<String, Vec<usize>>::new();
         // store long options
-        opt_store.insert("--help".to_string(), vec![0, 7]);
-        opt_store.insert("--lib".to_string(), vec![4]);
-        opt_store.insert("--name".to_string(), vec![5]);
+        opt_store.insert("help".to_string(), vec![0, 7]);
+        opt_store.insert("lib".to_string(), vec![4]);
+        opt_store.insert("name".to_string(), vec![5]);
         // stores switches too
         opt_store.insert("v".to_string(), vec![1]);
         opt_store.insert("s".to_string(), vec![8]);
         opt_store.insert("c".to_string(), vec![9]);
         opt_store.insert("i".to_string(), vec![10]);
-        assert_eq!(cli.flag_store, opt_store);
+        assert_eq!(cli.opt_store, opt_store);
     }
 
     #[test]
@@ -299,29 +325,43 @@ mod test {
     }
 
     #[test]
+    fn take_remainder_args() {
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "--help", "-v", "new", "ip", "--lib", "--name=rary.gates", "--help", "-scii", "get", "--", "--map", "synthesis", "-jto"]
+        ));
+        assert_eq!(cli.get_remainder(), vec!["--map", "synthesis", "-jto"]);
+        // the items were removed from the token stream
+        assert_eq!(cli.get_remainder(), Vec::<String>::new());
+
+        // an attached argument can sneak in behind a terminator (handle in a result fn)
+        let mut cli = Cli::tokenize(args(vec!["orbit", "--=value", "extra"]));
+        assert_eq!(cli.get_remainder(), vec!["extra"]);
+    }
+
+    #[test]
     fn pull_values_from_flags() {
         let mut cli = Cli::tokenize(args(
             vec!["orbit", "--help"],
         ));
-        let locs = cli.take_flag_locs("--help").unwrap();
+        let locs = cli.take_flag_locs("help").unwrap();
         assert_eq!(cli.pull_flag(locs, false), vec![None]);
         assert_eq!(cli.tokens.get(0), Some(&None));
 
         let mut cli = Cli::tokenize(args(
             vec!["orbit", "--name", "gates", "arg", "--lib", "new", "--name=gates2", "--opt=1", "--opt", "--help"]
         ));
-        let locs = cli.take_flag_locs("--lib").unwrap();
+        let locs = cli.take_flag_locs("lib").unwrap();
         assert_eq!(cli.pull_flag(locs, false), vec![None]);
         // token no longer exists
         assert_eq!(cli.tokens.get(3), Some(&None));
 
         // gets strings and removes both instances of flag from token stream
-        let locs = cli.take_flag_locs("--name").unwrap();
+        let locs = cli.take_flag_locs("name").unwrap();
         assert_eq!(cli.pull_flag(locs, true), vec![Some("gates".to_string()), Some("gates2".to_string())]);
         assert_eq!(cli.tokens.get(0), Some(&None));
         assert_eq!(cli.tokens.get(5), Some(&None));
 
-        let locs = cli.take_flag_locs("--opt").unwrap();
+        let locs = cli.take_flag_locs("opt").unwrap();
         assert_eq!(cli.pull_flag(locs, true), vec![Some("1".to_string()), None]);
 
         // gets switches as well from the store
@@ -342,6 +382,40 @@ mod test {
         assert_eq!(cli.pull_flag(locs, false), vec![None]);
         let locs = cli.take_switch_locs(&'m').unwrap();
         assert_eq!(cli.pull_flag(locs, false), vec![None]);
+    }
+
+    #[test]
+    fn take_token_str() {
+        let t = Token::UnattachedArgument(0, "get".to_string());
+        // consumes token and returns its internal string
+        assert_eq!(t.take_str(), "get");
+
+        let t = Token::AttachedArgument(1, "rary.gates".to_string());
+        assert_eq!(t.take_str(), "rary.gates");
+
+        let t = Token::Ignore(7, "--map".to_string());
+        assert_eq!(t.take_str(), "--map");
+    }
+
+    #[test]
+    #[should_panic]
+    fn take_impossible_token_flag_str() {
+        let t = Token::Flag(7);
+        t.take_str();
+    }
+
+    #[test]
+    #[should_panic]
+    fn take_impossible_token_switch_str() {
+        let t = Token::Switch(7, 'h');
+        t.take_str();
+    }
+
+    #[test]
+    #[should_panic]
+    fn take_impossible_token_terminator_str() {
+        let t = Token::Terminator(9);
+        t.take_str();
     }
 }
 

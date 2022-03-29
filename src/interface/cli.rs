@@ -22,20 +22,20 @@ impl Token {
 }
 
 #[derive(Debug, PartialEq)]
-struct Cli {
+pub struct Cli {
     tokens: Vec<Option<Token>>,
     opt_store: HashMap<String, Vec<usize>>,
 }
 
 impl Cli {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Cli {
             tokens: Vec::new(),
             opt_store: HashMap::new(),
         }
     }
 
-    fn tokenize<T: Iterator<Item=String>>(args: T) -> Self {
+    pub fn tokenize<T: Iterator<Item=String>>(args: T) -> Self {
         let mut tokens = Vec::<Option<Token>>::new();
         let mut store = HashMap::new();
         let mut terminated = false;

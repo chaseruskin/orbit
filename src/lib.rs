@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
-mod altcli;
-mod altarg;
+pub mod interface;
 
 pub mod cli;
 pub mod arg;

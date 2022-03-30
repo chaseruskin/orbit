@@ -1,4 +1,7 @@
 use std::collections::HashMap;
+use crate::interface::errors::CliError;
+use crate::interface::arg::*;
+use std::str::FromStr;
 
 #[derive(Debug, PartialEq)]
 enum Token {
@@ -8,6 +11,12 @@ enum Token {
     Switch(usize, char),
     Ignore(usize, String),
     Terminator(usize),
+}
+
+impl<'c> Drop for Cli<'c> {
+    fn drop(&mut self) {
+        println!("dropping!");
+    }
 }
 
 impl Token {
@@ -22,16 +31,18 @@ impl Token {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Cli {
+pub struct Cli<'c> {
     tokens: Vec<Option<Token>>,
     opt_store: HashMap<String, Vec<usize>>,
+    known_args: Vec<Arg<'c>>,
 }
 
-impl Cli {
+impl<'c> Cli<'c> {
     pub fn new() -> Self {
         Cli {
             tokens: Vec::new(),
             opt_store: HashMap::new(),
+            known_args: Vec::new(),
         }
     }
 
@@ -92,6 +103,7 @@ impl Cli {
         Cli { 
             tokens: tokens,
             opt_store: store,
+            known_args: vec![],
         }
     }
 
@@ -112,6 +124,109 @@ impl Cli {
                 }
         } else {
             None
+        }
+    }
+
+    /// Serves the next `Positional` value in the token stream parsed as `T`.
+    /// 
+    /// Errors if parsing fails.
+    pub fn check_positional<'a, T: FromStr>(&mut self, p: Positional<'c>) -> Result<Option<T>, CliError<'c>> 
+    where <T as FromStr>::Err: std::error::Error {
+        self.known_args.push(Arg::Positional(p));
+        match self.next_uarg() {
+            Some(s) => {
+                match s.parse::<T>() {
+                    Ok(r) => Ok(Some(r)),
+                    Err(e) => Err(CliError::BadType(self.known_args.pop().unwrap(), e.to_string())),
+                }
+            },
+            None => {
+                Ok(None)
+            }
+        }
+    }
+
+    /// Forces the next `Positional to exist from token stream.
+    /// 
+    /// Errors if parsing fails or if no unattached argument is left in the token stream.
+    pub fn require_positional<'a, T: FromStr>(&mut self, p: Positional<'c>) -> Result<T, CliError<'c>> 
+    where <T as FromStr>::Err: std::error::Error {
+        if let Some(value) = self.check_positional(p)? {
+            Ok(value)
+        } else {
+            Err(CliError::MissingPositional(self.known_args.pop().unwrap(), "usage".to_string()))
+        }
+    }
+
+    /// Queries for a value of `Optional`.
+    /// 
+    /// Errors if there are multiple values or if parsing fails.
+    pub fn check_option<'a, T: FromStr>(&mut self, o: Optional<'c>) -> Result<Option<T>, CliError<'c>>
+    where <T as FromStr>::Err: std::error::Error {
+        // collect information on where the flag can be found
+        let locs_flag = self.take_flag_locs(o.get_flag_ref().get_name_ref());
+        let locs_switch = if let Some(c) = o.get_flag_ref().get_switch_ref() {
+            self.take_switch_locs(c)
+        } else {
+            None
+        };
+        self.known_args.push(Arg::Optional(o));
+        let locs = Self::combine_locations(locs_flag, locs_switch);
+        // pull values from where the option flags were found (including switch)
+        let mut values = self.pull_flag(locs, true);
+        match values.len() {
+            1 => {
+                if let Some(s) = values.pop().unwrap() {
+                    let result = s.parse::<T>();
+                    match result {
+                        Ok(r) => Ok(Some(r)),
+                        Err(e) => Err(CliError::BadType(self.known_args.pop().unwrap(), e.to_string()))
+                    }
+                } else {
+                    Err(CliError::ExpectingValue(self.known_args.pop().unwrap()))
+                }
+            },
+            0 => Ok(None),
+            _ => Err(CliError::DuplicateOptions(self.known_args.pop().unwrap())),
+        }
+    }
+
+    fn combine_locations(lhs: Option<Vec<usize>>, rhs: Option<Vec<usize>>) -> Vec<usize> {
+        if let Some(mut u_lhs) = lhs {
+            if let Some(u_rhs) = rhs {
+                u_lhs.extend(u_rhs);
+            }
+            u_lhs
+        } else if let Some(u_rhs) = rhs {
+            u_rhs
+        } else {
+            vec![]
+        }
+    }
+
+    /// Queries if a flag was raised once and only once. 
+    /// 
+    /// Errors if the flag has an attached value or was raised multiple times.
+    pub fn check_flag<'a>(&mut self, f: Flag<'c>) -> Result<bool, CliError<'c>> {
+        // collect information on where the flag can be found
+        let locs_flag = self.take_flag_locs(f.get_name_ref());
+        let locs_switch = if let Some(c) = f.get_switch_ref() {
+            self.take_switch_locs(c)
+        } else {
+            None
+        };
+        self.known_args.push(Arg::Flag(f));
+        let locs = Self::combine_locations(locs_flag, locs_switch);
+        let mut occurences = self.pull_flag(locs, false);
+        // verify there are no values attached to this flag
+        if let Some(val) = occurences.iter_mut().find(|p| p.is_some()) {
+            return Err(CliError::UnexpectedValue(self.known_args.pop().unwrap(), val.take().unwrap()));
+        } else {
+            match occurences.len() {
+                1 => Ok(true),
+                0 => Ok(false),
+                _ => Err(CliError::DuplicateOptions(self.known_args.pop().unwrap())),
+            }
         }
     }
 
@@ -156,7 +271,12 @@ impl Cli {
 
     /// Removes the ignored tokens from the stream, if they exist.
     fn get_remainder(&mut self) -> Vec<String> {
-        self.tokens.iter_mut().filter_map(|f| {
+        self.tokens.iter_mut().skip_while(|p| {
+            match p {
+                Some(Token::Terminator(_)) => false,
+                _ => true,
+            }
+        }).filter_map(|f| {
             match f {
                 Some(Token::Ignore(_, _)) => {
                     Some(f.take().unwrap().take_str())
@@ -382,6 +502,65 @@ mod test {
         assert_eq!(cli.pull_flag(locs, false), vec![None]);
         let locs = cli.take_switch_locs(&'m').unwrap();
         assert_eq!(cli.pull_flag(locs, false), vec![None]);
+    }
+
+    #[test]
+    fn check_flag() {
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "--help", "--verbose", "get"]
+        ));
+        assert_eq!(cli.check_flag(Flag::new("help")), Ok(true));
+        assert_eq!(cli.check_flag(Flag::new("verbose")), Ok(true));
+        assert_eq!(cli.check_flag(Flag::new("version")), Ok(false));
+
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "--help", "-h"]
+        ));
+        assert_eq!(cli.check_flag(Flag::new("help").switch('h')), Err(CliError::DuplicateOptions(Arg::Flag(Flag::new("help").switch('h')))));
+
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "--help", "--help", "--version=9"]
+        ));
+        assert_eq!(cli.check_flag(Flag::new("help")), Err(CliError::DuplicateOptions(Arg::Flag(Flag::new("help")))));
+        assert_eq!(cli.check_flag(Flag::new("version")), Err(CliError::UnexpectedValue(Arg::Flag(Flag::new("version")), "9".to_string())));
+    }
+
+    #[test]
+    fn check_positional() {
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "new", "rary.gates"]
+        ));
+        assert_eq!(cli.check_positional::<String>(Positional::new("command")), Ok(Some("new".to_string())));
+        assert_eq!(cli.check_positional::<String>(Positional::new("ip")), Ok(Some("rary.gates".to_string())));
+        assert_eq!(cli.check_positional::<i32>(Positional::new("path")), Ok(None));
+    }
+
+    #[test]
+    fn check_option() {
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "command", "--rate", "10"]
+        ));
+        assert_eq!(cli.check_option(Optional::new("rate")), Ok(Some(10)));
+
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "--flag", "--rate=9", "command", "-r", "14"]
+        ));
+        assert_eq!(cli.check_option::<i32>(Optional::new("rate").switch('r')), Err(CliError::DuplicateOptions(Arg::Optional(Optional::new("rate").switch('r')))));
+
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "--flag", "-r", "14"]
+        ));
+        assert_eq!(cli.check_option(Optional::new("rate").switch('r')), Ok(Some(14)));
+
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "--flag", "--rate", "--verbose"]
+        ));
+        assert_eq!(cli.check_option::<i32>(Optional::new("rate")), Err(CliError::ExpectingValue(Arg::Optional(Optional::new("rate")))));
+
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "--flag", "--rate", "five", "--verbose"]
+        ));
+        assert!(cli.check_option::<i32>(Optional::new("rate")).is_err());
     }
 
     #[test]

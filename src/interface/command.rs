@@ -1,18 +1,20 @@
 use crate::interface::cli::Cli;
 use std::fmt::Debug;
+use crate::interface::errors::CliError;
 
-trait Command {
+pub trait Command {
     fn exec(self) -> ();
 }
 
-trait FromCli {
-    fn from_cli(cli: &mut Cli) -> Result<Self, ()> where Self: Sized;
+pub trait FromCli {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError<'c>> where Self: Sized;
 }
 
-trait Runner: Command + FromCli + Debug {}
+pub trait Runner: Command + FromCli + Debug {}
 
 #[cfg(test)]
 mod test {
+    use crate::interface::arg::*;
     use super::*;
 
     /// Helper test fn to write vec of &str as iterator for Cli parameter.
@@ -45,29 +47,33 @@ mod test {
     }
 
     impl FromCli for Add {
-        fn from_cli(cli: &mut Cli) -> Result<Self, ()> {
+        fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
             // the ability to "learn options" beforehand is possible, or can be skipped
             // "learn options" here (take in known args (as ref?))
             // -- possible CLI API --
             // opti_all -> accept multiple values (must have >= 1, all Non-none, all valid) (Option<Vec<T>>)
-            // flag_all -> count number of flag raises (usize)
+            // flag_cnt -> count number of flag raises (usize)
             // flag_one -> verify only one flag raised if any (bool)
             // opti_one -> accept only 1 valid value parsed from str (Option<T>)
             // position -> get next argument (T)
+            // ...
+            //  ip: value(Positional("ip"))?.require()?
+            //  name: value(Optional("count"))?.default(10)?
+            // ...
             // nest_cmd -> gather subcommand, and then recursively create command using `from_cli` to store as dyn Command
             // note: overload `fn drop` for cli to check itself if it is clean (no unhandled args)
             // --
             // :todo: add usage of cli (API..?)
             Ok(Add {
                 // then call API cli.query(Arg::Flag("verbose"))?
-                verbose: false,
-                lhs: 0,
-                rhs: 0,
+                verbose: cli.check_flag(Flag::new("verbose"))?,
+                lhs: cli.require_positional(Positional::new("lhs"))?,
+                rhs: cli.require_positional(Positional::new("rhs"))?,
             })
         }
     }
 
-    // #[test]
+    #[test]
     fn make_add_command() {
         let mut cli = Cli::tokenize(args(vec!["add", "9", "10"]));
         let add = Add::from_cli(&mut cli).unwrap();

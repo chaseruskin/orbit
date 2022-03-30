@@ -1,3 +1,4 @@
-mod arg;
-mod cli;
-mod command;
+pub mod arg;
+pub mod cli;
+pub mod command;
+pub mod errors;

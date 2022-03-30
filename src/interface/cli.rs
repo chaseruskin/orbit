@@ -13,12 +13,6 @@ enum Token {
     Terminator(usize),
 }
 
-impl<'c> Drop for Cli<'c> {
-    fn drop(&mut self) {
-        println!("dropping!");
-    }
-}
-
 impl Token {
     fn take_str(self) -> String {
         match self {

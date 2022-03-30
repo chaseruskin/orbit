@@ -4,8 +4,12 @@ use orbit::interface::command::*;
 use orbit::interface::arg::*;
 
 fn main() {
-    match Add::from_cli(&mut Cli::tokenize(std::env::args())) {
-        Ok(r) => r.exec(),
+    let mut cli = Cli::tokenize(std::env::args());
+    match Add::from_cli(&mut cli) {
+        Ok(r) => {
+            std::mem::drop(cli);
+            r.exec()
+        },
         Err(e) => eprintln!("error: {}", e),
     }
 }

@@ -31,6 +31,8 @@ pub struct Cli<'c> {
     tokens: Vec<Option<Token>>,
     opt_store: HashMap<String, Vec<usize>>,
     known_args: Vec<Arg<'c>>,
+    help: &'c str,
+    asking_for_help: bool,
 }
 
 impl<'c> Cli<'c> {
@@ -39,9 +41,12 @@ impl<'c> Cli<'c> {
             tokens: Vec::new(),
             opt_store: HashMap::new(),
             known_args: Vec::new(),
+            help: "",
+            asking_for_help: false,
         }
     }
 
+    /// Perfoms lexical analysis on the vector of `String`s.
     pub fn tokenize<T: Iterator<Item=String>>(args: T) -> Self {
         let mut tokens = Vec::<Option<Token>>::new();
         let mut store = HashMap::new();
@@ -100,6 +105,23 @@ impl<'c> Cli<'c> {
             tokens: tokens,
             opt_store: store,
             known_args: vec![],
+            help: "",
+            asking_for_help: false,
+        }
+    }
+
+    /// Sets the help text to display when detecting `--help` on the command-line.
+    pub fn set_help(&mut self, s: &'c str) {
+        self.help = s;
+    }
+
+    /// Checks if help has been raised and will return its own error for displaying
+    /// help.
+    fn prioritize_help(&self) -> Result<(), CliError<'c>> {
+        if self.asking_for_help {
+            Err(CliError::Help(self.help))
+        } else {
+            Ok(())
         }
     }
 
@@ -154,7 +176,7 @@ impl<'c> Cli<'c> {
     /// this command, but through a `from_cli` call after `check_command` has been issued.
     pub fn match_command<T: AsRef<str> + std::cmp::PartialEq>(&mut self, words: &[T]) -> Result<String, CliError<'c>> {
         let s = self.next_uarg().expect("`check_command` must be called before this function");
-        // :todo: perform proper checks (partial clean)
+        // :todo: perform proper checks (partial clean), set help text
         if words.iter().find(|p| { p.as_ref() == s }).is_some() {
             // return the valid string
             Ok(s)
@@ -163,6 +185,7 @@ impl<'c> Cli<'c> {
             if let Some(w) = seqalin::sel_min_edit_str(&s, &words, 4)  {
                 Err(CliError::SuggestSubcommand(s, w.to_string()))
             } else {
+                self.prioritize_help()?;
                 Err(CliError::UnknownSubcommand(self.known_args.pop().unwrap(), s))
             }
         }
@@ -178,7 +201,10 @@ impl<'c> Cli<'c> {
             Some(s) => {
                 match s.parse::<T>() {
                     Ok(r) => Ok(Some(r)),
-                    Err(e) => Err(CliError::BadType(self.known_args.pop().unwrap(), e.to_string())),
+                    Err(e) => {
+                        self.prioritize_help()?;
+                        Err(CliError::BadType(self.known_args.pop().unwrap(), e.to_string()))
+                    }
                 }
             },
             None => {
@@ -195,6 +221,7 @@ impl<'c> Cli<'c> {
         if let Some(value) = self.check_positional(p)? {
             Ok(value)
         } else {
+            self.prioritize_help()?;
             Err(CliError::MissingPositional(self.known_args.pop().unwrap(), "usage".to_string()))
         }
     }
@@ -218,14 +245,21 @@ impl<'c> Cli<'c> {
                     let result = s.parse::<T>();
                     match result {
                         Ok(r) => Ok(Some(r)),
-                        Err(e) => Err(CliError::BadType(self.known_args.pop().unwrap(), e.to_string()))
+                        Err(e) => {
+                            self.prioritize_help()?;
+                            Err(CliError::BadType(self.known_args.pop().unwrap(), e.to_string()))
+                        }
                     }
                 } else {
+                    self.prioritize_help()?;
                     Err(CliError::ExpectingValue(self.known_args.pop().unwrap()))
                 }
             },
             0 => Ok(None),
-            _ => Err(CliError::DuplicateOptions(self.known_args.pop().unwrap())),
+            _ => {
+                self.prioritize_help()?;
+                Err(CliError::DuplicateOptions(self.known_args.pop().unwrap()))
+            }
         }
     }
 
@@ -240,6 +274,10 @@ impl<'c> Cli<'c> {
         };
         self.known_args.push(Arg::Flag(f));
         let mut occurences = self.pull_flag(locs, false);
+        // check if the user is asking for help
+        if self.known_args.last().unwrap().as_flag_ref().get_name_ref() == "help" && occurences.len() > 0 {
+            self.asking_for_help = true;
+        }
         // verify there are no values attached to this flag
         if let Some(val) = occurences.iter_mut().find(|p| p.is_some()) {
             return Err(CliError::UnexpectedValue(self.known_args.pop().unwrap(), val.take().unwrap()));
@@ -247,7 +285,10 @@ impl<'c> Cli<'c> {
             match occurences.len() {
                 1 => Ok(true),
                 0 => Ok(false),
-                _ => Err(CliError::DuplicateOptions(self.known_args.pop().unwrap())),
+                _ => {
+                    self.prioritize_help()?;
+                    Err(CliError::DuplicateOptions(self.known_args.pop().unwrap()))
+                }
             }
         }
     }
@@ -302,15 +343,17 @@ impl<'c> Cli<'c> {
                     },
                     _ => panic!("no other tokens are allowed in hashmap"),
                 };
+                self.prioritize_help()?;
                 Err(CliError::UnexpectedArg(format!("{}{}", prefix, key)))
             } else {
                 panic!("this token's values have been removed")
             }
         // find first non-none token
-        } else if let Some(t) = self.tokens.iter_mut().find(|p| p.is_some()) {
+        } else if let Some(t) = self.tokens.iter().find(|p| p.is_some()) {
+            self.prioritize_help()?;
             match t {
-                Some(Token::UnattachedArgument(_, _)) => {
-                    Err(CliError::UnexpectedArg(t.take().unwrap().take_str()))
+                Some(Token::UnattachedArgument(_, s)) => {
+                    Err(CliError::UnexpectedArg(s.to_string()))
                 }
                 Some(Token::Terminator(_)) => {
                     Err(CliError::UnexpectedArg("--".to_string()))
@@ -689,14 +732,14 @@ mod test {
         assert_eq!(cli.check_flag(Flag::new("version")), Ok(false));
 
         let mut cli = Cli::tokenize(args(
-            vec!["orbit", "--help", "-h"]
+            vec!["orbit", "--upgrade", "-u"]
         ));
-        assert_eq!(cli.check_flag(Flag::new("help").switch('h')), Err(CliError::DuplicateOptions(Arg::Flag(Flag::new("help").switch('h')))));
+        assert_eq!(cli.check_flag(Flag::new("upgrade").switch('u')), Err(CliError::DuplicateOptions(Arg::Flag(Flag::new("upgrade").switch('u')))));
 
         let mut cli = Cli::tokenize(args(
-            vec!["orbit", "--help", "--help", "--version=9"]
+            vec!["orbit", "--verbose", "--verbose", "--version=9"]
         ));
-        assert_eq!(cli.check_flag(Flag::new("help")), Err(CliError::DuplicateOptions(Arg::Flag(Flag::new("help")))));
+        assert_eq!(cli.check_flag(Flag::new("verbose")), Err(CliError::DuplicateOptions(Arg::Flag(Flag::new("verbose")))));
         assert_eq!(cli.check_flag(Flag::new("version")), Err(CliError::UnexpectedValue(Arg::Flag(Flag::new("version")), "9".to_string())));
     }
 
@@ -772,33 +815,3 @@ mod test {
         t.take_str();
     }
 }
-
-// orbit --help -v new ip --lib --name=rary.gates -sci -- --map synthesis
-
-// noop Flag Switch Arg Arg Flag Flag Arg Switch Switch Switch Flag Ignore Ignore
-
-// grammar, collect tokens
-/*
-
-Subcommand -> 
-
-
-*/
-
-/*
-Build a command (ideal)
-
-struct DoSomething {
-    action: String,
-    repeat: Option<u8>,
-}
-
-
-fn new() -> Self {
-    DoSomething {
-        action: args.match(Positional::new("action"))
-    }
-}
-
-
-*/

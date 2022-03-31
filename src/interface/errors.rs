@@ -15,6 +15,7 @@ pub enum CliError<'a> {
     SuggestSubcommand(String, String),
     UnknownSubcommand(Arg<'a>, String),
     BrokenRule(String),
+    Help(&'a str),
 }
 
 impl<'a> Error for CliError<'a> {}
@@ -24,6 +25,7 @@ impl<'a> Display for CliError<'a> {
         use CliError::*;
         let footer = "\n\nFor more information try --help";
         match self {
+            Help(h) => write!(f, "{}", h),
             SuggestArg(a, sug) => write!(f, "unknown argument '{}'\n\nDid you mean '{}'?", a, sug),
             SuggestSubcommand(a, sug) => write!(f, "unknown subcommand '{}'\n\nDid you mean '{}'?", a, sug),
             OutOfContextArg(o, cmd) => write!(f, "argument '{}' is unknown, or invalid in the current context{}{}", o, cmd, footer),

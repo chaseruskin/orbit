@@ -55,6 +55,7 @@ mod test {
 
     impl FromCli for Add {
         fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
+            cli.set_help("add <lhs> <rhs> [--verbose]");
             // the ability to "learn options" beforehand is possible, or can be skipped
             // "learn options" here (take in known args (as ref?))
             Ok(Add {

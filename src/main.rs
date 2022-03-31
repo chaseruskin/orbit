@@ -10,7 +10,12 @@ fn main() {
             std::mem::drop(cli);
             r.exec()
         },
-        Err(e) => eprintln!("error: {}", e),
+        Err(e) => {
+            match e {
+                CliError::Help(s) => println!("{}", s),
+                _ => eprintln!("error: {}", e),
+            }
+        }
     }
 }
 
@@ -20,6 +25,7 @@ struct Add {
     lhs: u32,
     rhs: u32,
     verbose: bool,
+    help: bool,
     rem: Vec<String>,
 }
 
@@ -42,7 +48,9 @@ impl Add {
 
 impl FromCli for Add {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
+        cli.set_help(HELP);
         let m = Ok(Add {
+            help: cli.check_flag(Flag::new("help"))?,
             verbose: cli.check_flag(Flag::new("verbose"))?,
             lhs: cli.require_positional(Positional::new("lhs"))?,
             rhs: cli.require_positional(Positional::new("rhs"))?,
@@ -52,3 +60,19 @@ impl FromCli for Add {
         m
     }
 }
+
+const HELP: &str = "\
+a demo program utilizing the cli for orbit
+
+Usage:
+    add [options] <lhs> <rhs>
+
+Args:
+    <lhs>   a numeric value
+    <rhs>   a numeric value
+
+Options:
+    --verbose   display detailed computation
+
+Use 'orbit help <command>' for more information about a command.
+";

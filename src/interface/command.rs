@@ -7,6 +7,13 @@ pub trait Command: Debug {
 }
 
 pub trait FromCli {
+    /// Collects tokens from the command-line interface to define a struct's fields.
+    /// 
+    /// The recommended argument discovery order is 
+    /// 1. `flags`
+    /// 2. `optionals`
+    /// 3. `positionals`
+    /// 4. `subcommands`
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError<'c>> where Self: Sized;
 }
 
@@ -50,22 +57,7 @@ mod test {
         fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
             // the ability to "learn options" beforehand is possible, or can be skipped
             // "learn options" here (take in known args (as ref?))
-            // -- possible CLI API --
-            // opti_all -> accept multiple values (must have >= 1, all Non-none, all valid) (Option<Vec<T>>)
-            // flag_cnt -> count number of flag raises (usize)
-            // flag_one -> verify only one flag raised if any (bool)
-            // opti_one -> accept only 1 valid value parsed from str (Option<T>)
-            // position -> get next argument (T)
-            // ...
-            //  ip: value(Positional("ip"))?.require()?
-            //  name: value(Optional("count"))?.default(10)?
-            // ...
-            // nest_cmd -> gather subcommand, and then recursively create command using `from_cli` to store as dyn Command
-            // note: overload `fn drop` for cli to check itself if it is clean (no unhandled args)
-            // --
-            // :todo: add usage of cli (API..?)
             Ok(Add {
-                // then call API cli.query(Arg::Flag("verbose"))?
                 verbose: cli.check_flag(Flag::new("verbose"))?,
                 lhs: cli.require_positional(Positional::new("lhs"))?,
                 rhs: cli.require_positional(Positional::new("rhs"))?,
@@ -74,30 +66,48 @@ mod test {
     }
 
     // testing a nested subcommand cli structure
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     struct Op {
-        command: Box<dyn Command>,
+        command: Option<OpSubcommand>,
     }
 
     impl Command for Op {
         fn exec(&self) -> () {
-            self.command.exec();
+            if let Some(command) = &self.command {
+                command.exec();
+            }
         }
     }
 
     impl FromCli for Op {
         fn from_cli<'c>(cli: &'c mut Cli<'_>) -> Result<Self, CliError<'c>> { 
-            // Ok(Op {
-            //     command: // ??
-            // });
-            todo!()
+            Ok(Op {
+                command: cli.check_command(Positional::new("subcommand"))?,
+            })
         }
     }
 
+    #[derive(Debug, PartialEq)]
     enum OpSubcommand {
         Add(Add)
     }
 
+    impl FromCli for OpSubcommand {
+        fn from_cli<'c>(cli: &'c mut Cli<'_>) -> Result<Self, CliError<'c>> { 
+            match cli.match_command(&["add", "mult", "sub"])?.as_ref() {
+                "add" => Ok(OpSubcommand::Add(Add::from_cli(cli)?)),
+                _ => panic!("an unimplemented command was passed through!")
+            }
+        }
+    }
+
+    impl Command for OpSubcommand {
+        fn exec(&self) {
+            match self {
+                OpSubcommand::Add(c) => c.exec(),
+            }
+        }
+    }
 
     #[test]
     fn make_add_command() {
@@ -124,5 +134,41 @@ mod test {
             rhs: 2,
             verbose: true
         });
+    }
+
+    #[test]
+    fn nested_commands() {
+        let mut cli = Cli::tokenize(args(vec!["op", "add", "9", "10"]));
+        let op = Op::from_cli(&mut cli).unwrap();
+        assert_eq!(op, Op {
+            command: Some(OpSubcommand::Add(Add {
+                lhs: 9,
+                rhs: 10,
+                verbose: false,
+            }))
+        });
+
+        let mut cli = Cli::tokenize(args(vec!["op"]));
+        let op = Op::from_cli(&mut cli).unwrap();
+        assert_eq!(op, Op {
+            command: None
+        });
+
+        let mut cli = Cli::tokenize(args(vec!["op", "--verbose", "add", "9", "10"]));
+        let op = Op::from_cli(&mut cli).unwrap();
+        assert_eq!(op, Op {
+            command: Some(OpSubcommand::Add(Add {
+                lhs: 9,
+                rhs: 10,
+                verbose: true,
+            }))
+        });
+    }
+
+    #[test]
+    #[should_panic]
+    fn unimplemented_nested_command() {
+        let mut cli = Cli::tokenize(args(vec!["op", "mult", "9", "10"]));
+        let _ = Op::from_cli(&mut cli);
     }
 }

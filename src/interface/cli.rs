@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use crate::interface::errors::CliError;
 use crate::interface::arg::*;
 use std::str::FromStr;
+use crate::interface::command::FromCli;
 use crate::seqalin;
 
 #[derive(Debug, PartialEq)]
@@ -121,6 +122,49 @@ impl<'c> Cli<'c> {
                 }
         } else {
             None
+        }
+    }
+
+    /// Determines if an `UnattachedArg` exists to be served as a subcommand.
+    /// 
+    /// If so, it will call `from_cli` on the type defined. If not, it will return none.
+    pub fn check_command<'a, T: FromCli>(&mut self, p: Positional<'c>) -> Result<Option<T>, CliError<'_>> {
+        self.known_args.push(Arg::Positional(p));
+        // check but do not remove if an unattached arg exists
+        let command_exists = self.tokens
+            .iter()
+            .find(|f| {
+                match f {
+                Some(Token::UnattachedArgument(_, _)) => true,
+                _ => false,
+                }
+            }).is_some();
+        if command_exists {
+            Ok(Some(T::from_cli(self)?))
+        } else {
+            return Ok(None)
+        }
+    }
+    
+    /// Tries to match the next `UnattachedArg` with a list of given `words`.
+    /// 
+    /// If fails, it will attempt to offer a spelling suggestion if the name is close.
+    /// 
+    /// Panics if there is not a next `UnattachedArg`. It is recommended to not directly call
+    /// this command, but through a `from_cli` call after `check_command` has been issued.
+    pub fn match_command<T: AsRef<str> + std::cmp::PartialEq>(&mut self, words: &[T]) -> Result<String, CliError<'c>> {
+        let s = self.next_uarg().expect("`check_command` must be called before this function");
+        // :todo: perform proper checks (partial clean)
+        if words.iter().find(|p| { p.as_ref() == s }).is_some() {
+            // return the valid string
+            Ok(s)
+        // try to offer a spelling suggestion o.w. say unexpected arg
+        } else {
+            if let Some(w) = seqalin::sel_min_edit_str(&s, &words, 4)  {
+                Err(CliError::SuggestSubcommand(s, w.to_string()))
+            } else {
+                Err(CliError::UnknownSubcommand(self.known_args.pop().unwrap(), s))
+            }
         }
     }
 
@@ -278,16 +322,6 @@ impl<'c> Cli<'c> {
         }
     }
 
-    /// Accept a command's list of options before processing
-    // fn learn_options(&mut self, &Vec<Arg>) {
-    //     todo!()
-    // }
-
-    /// Find the first unattached argument that matches a possible subcommand name
-    // fn detect_subcommand(&mut self, Vec<String>) {
-    //     todo!()
-    // }
-
     /// Grabs the flag/switch from the token stream, and collects. If an argument were to follow
     /// it will be in the vector.
     fn pull_flag(&mut self, m: Vec<usize>, with_uarg: bool) -> Vec<Option<String>> {
@@ -368,6 +402,19 @@ mod test {
     /// Helper test fn to write vec of &str as iterator for Cli parameter.
     fn args<'a>(args: Vec<&'a str>) -> Box<dyn Iterator<Item=String> + 'a> {
         Box::new(args.into_iter().map(|f| f.to_string()).into_iter())
+    }
+
+    #[test]
+    fn match_command() {
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "get", "rary.gates", "--instance", "--component"]
+        ));
+        assert_eq!(cli.match_command(&["new", "get", "install", "edit"]), Ok("get".to_string()));
+
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "got", "rary.gates", "--instance", "--component"]
+        ));
+        assert!(cli.match_command(&["new", "get", "install", "edit"]).is_err());
     }
 
     #[test]

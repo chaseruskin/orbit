@@ -2,10 +2,7 @@
 
 pub mod interface;
 
-pub mod cli;
-pub mod arg;
 pub mod seqalin;
-pub mod command;
 pub mod pkgid;
 mod cfgfile;
 mod version;

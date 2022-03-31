@@ -12,6 +12,7 @@ pub enum CliError<'a> {
     OutOfContextArg(String, String),
     UnexpectedArg(String),
     SuggestArg(String, String),
+    SuggestSubcommand(String, String),
     UnknownSubcommand(Arg<'a>, String),
     BrokenRule(String),
 }
@@ -24,6 +25,7 @@ impl<'a> Display for CliError<'a> {
         let footer = "\n\nFor more information try --help";
         match self {
             SuggestArg(a, sug) => write!(f, "unknown argument '{}'\n\nDid you mean '{}'?", a, sug),
+            SuggestSubcommand(a, sug) => write!(f, "unknown subcommand '{}'\n\nDid you mean '{}'?", a, sug),
             OutOfContextArg(o, cmd) => write!(f, "argument '{}' is unknown, or invalid in the current context{}{}", o, cmd, footer),
             BadType(a, e) => write!(f, "argument '{}' did not process due to {}{}", a, e, footer),
             MissingPositional(p, u) => write!(f, "missing required argument '{}'\n{}{}", p, u, footer),

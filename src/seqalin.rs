@@ -56,14 +56,14 @@ fn sequence_alignment(s1: &str, s2: &str, gap_penalty: Cost, mismatch_penalty: C
 /// the minimum edit distance to the given word while being below the `threshold`.
 /// 
 /// The `gap_penalty` and `mismatch penalty` for sequence alignment are internally set.
-pub fn sel_min_edit_str<'a>(s: &str, bank: &'a Vec<String>, threshold: Cost) -> Option<&'a str> {
+pub fn sel_min_edit_str<'a, T: AsRef<str>>(s: &str, bank: &'a [T], threshold: Cost) -> Option<&'a str> {
     let (w, c) = bank.iter().map(|f| {
-        (f, sequence_alignment(s, f, 1, 1))
+        (f, sequence_alignment(s, f.as_ref(), 1, 1))
     }).min_by(|x, y| {
         x.1.cmp(&y.1)
     })?;
     if c < threshold {
-        Some(w)
+        Some(w.as_ref())
     } else {
         None
     }
@@ -85,18 +85,15 @@ mod test {
         assert_eq!(sequence_alignment("--verbsoe", "--verbose", 1, 1), 2);
         assert_eq!(sequence_alignment("--verbsoe", "--version", 1, 1), 3);
         // case sensitivity is not applied inside the fn
-        assert_eq!(sequence_alignment("ALPHA", "alpha", 2, 1), 10);
+        assert_eq!(sequence_alignment("ALPHA", "alpha", 2, 1), 5);
     }
 
     #[test]
     fn get_closest_word() {
-        let bank = vec![];
+        let bank: Vec<&str> = vec![];
         assert_eq!(sel_min_edit_str("word", &bank, 3), None);
 
-        let bank: Vec<String> = vec!["run", "check", "build", "plan", "config", "play", "digit"]
-            .iter()
-            .map(|s| s.to_string())
-            .collect();
+        let bank: Vec<&str> = vec!["run", "check", "build", "plan", "config", "play", "digit"];
 
         assert_eq!(sel_min_edit_str("buif", &bank, 3), Some("build"));
         assert_eq!(sel_min_edit_str("word", &bank, 3), None);

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use crate::interface::errors::CliError;
 use crate::interface::arg::*;
 use std::str::FromStr;
+use crate::seqalin;
 
 #[derive(Debug, PartialEq)]
 enum Token {
@@ -101,7 +102,9 @@ impl<'c> Cli<'c> {
         }
     }
 
-    /// Takes out the next UnattachedArg from the token stream.
+    /// Pulls the next `UnattachedArg` token from the token stream.
+    /// 
+    /// If no more `UnattachedArg` tokens are left, it will return none.
     fn next_uarg(&mut self) -> Option<String> {
         if let Some(p) = self.tokens
             .iter_mut()
@@ -158,14 +161,11 @@ impl<'c> Cli<'c> {
     pub fn check_option<'a, T: FromStr>(&mut self, o: Optional<'c>) -> Result<Option<T>, CliError<'c>>
     where <T as FromStr>::Err: std::error::Error {
         // collect information on where the flag can be found
-        let locs_flag = self.take_flag_locs(o.get_flag_ref().get_name_ref());
-        let locs_switch = if let Some(c) = o.get_flag_ref().get_switch_ref() {
-            self.take_switch_locs(c)
-        } else {
-            None
-        };
+        let mut locs = self.take_flag_locs(o.get_flag_ref().get_name_ref());
+        if let Some(c) = o.get_flag_ref().get_switch_ref() {
+            locs.extend(self.take_switch_locs(c));
+        }
         self.known_args.push(Arg::Optional(o));
-        let locs = Self::combine_locations(locs_flag, locs_switch);
         // pull values from where the option flags were found (including switch)
         let mut values = self.pull_flag(locs, true);
         match values.len() {
@@ -185,32 +185,16 @@ impl<'c> Cli<'c> {
         }
     }
 
-    fn combine_locations(lhs: Option<Vec<usize>>, rhs: Option<Vec<usize>>) -> Vec<usize> {
-        if let Some(mut u_lhs) = lhs {
-            if let Some(u_rhs) = rhs {
-                u_lhs.extend(u_rhs);
-            }
-            u_lhs
-        } else if let Some(u_rhs) = rhs {
-            u_rhs
-        } else {
-            vec![]
-        }
-    }
-
     /// Queries if a flag was raised once and only once. 
     /// 
     /// Errors if the flag has an attached value or was raised multiple times.
     pub fn check_flag<'a>(&mut self, f: Flag<'c>) -> Result<bool, CliError<'c>> {
         // collect information on where the flag can be found
-        let locs_flag = self.take_flag_locs(f.get_name_ref());
-        let locs_switch = if let Some(c) = f.get_switch_ref() {
-            self.take_switch_locs(c)
-        } else {
-            None
+        let mut locs = self.take_flag_locs(f.get_name_ref());
+        if let Some(c) = f.get_switch_ref() {
+            locs.extend(self.take_switch_locs(c));
         };
         self.known_args.push(Arg::Flag(f));
-        let locs = Self::combine_locations(locs_flag, locs_switch);
         let mut occurences = self.pull_flag(locs, false);
         // verify there are no values attached to this flag
         if let Some(val) = occurences.iter_mut().find(|p| p.is_some()) {
@@ -221,6 +205,76 @@ impl<'c> Cli<'c> {
                 0 => Ok(false),
                 _ => Err(CliError::DuplicateOptions(self.known_args.pop().unwrap())),
             }
+        }
+    }
+
+    /// Transforms the list of `known_args` into a list of the names for every available
+    /// flag.
+    /// 
+    /// This method is useful for acquiring a word bank to offer a flag spelling suggestion.
+    fn known_args_as_flag_names(&self) -> Vec<&str> {
+        self.known_args.iter().filter_map(|f| { 
+            match f {
+                Arg::Flag(f) => Some(f.get_name_ref()),
+                Arg::Optional(o) => Some(o.get_flag_ref().get_name_ref()),
+                _ => None,
+            }
+        }).collect()
+    }
+
+    /// Returns the first index where a flag/switch still remains in the token stream.
+    /// 
+    /// If if the `opt_store` hashmap is empty, it will return none.
+    fn find_first_flag_left(&self) -> Option<(&str, usize)> {
+        let mut min_i: Option<(&str, usize)> = None;
+        let mut opt_it = self.opt_store.iter();
+        while let Some((key, val)) = opt_it.next() {
+            min_i = Some(if min_i.is_none() || min_i.unwrap().1 > *val.first().unwrap() {
+                (key.as_ref(), *val.first().unwrap())
+            } else {
+                min_i.unwrap()
+            });
+        };
+        min_i
+    }
+
+    /// Verifies there are no more tokens remaining in the stream. 
+    /// 
+    /// Note this mutates the referenced self only if an error is found.
+    pub fn is_empty(&mut self) -> Result<(), CliError<'c>> {
+        // check if map is empty, and return the minimum found index.
+        if let Some((key, val)) = self.find_first_flag_left() {
+            // check what type of token it was to determine if it was called with '-' or '--'
+            if let Some(t) = self.tokens.get(val).unwrap() {
+                let prefix = match t {
+                    Token::Switch(_, _) => "-",
+                    Token::Flag(_) => {
+                        // try to match it with a valid flag from word bank
+                        let bank  = self.known_args_as_flag_names();
+                        if let Some(s) = seqalin::sel_min_edit_str(key, &bank, 4)  {
+                            return Err(CliError::SuggestArg(format!("--{}", key), format!("--{}", s)));
+                        }
+                        "--"
+                    },
+                    _ => panic!("no other tokens are allowed in hashmap"),
+                };
+                Err(CliError::UnexpectedArg(format!("{}{}", prefix, key)))
+            } else {
+                panic!("this token's values have been removed")
+            }
+        // find first non-none token
+        } else if let Some(t) = self.tokens.iter_mut().find(|p| p.is_some()) {
+            match t {
+                Some(Token::UnattachedArgument(_, _)) => {
+                    Err(CliError::UnexpectedArg(t.take().unwrap().take_str()))
+                }
+                Some(Token::Terminator(_)) => {
+                    Err(CliError::UnexpectedArg("--".to_string()))
+                }
+                _ => panic!("no other tokens types should be left")
+            }
+        } else {
+            Ok(())
         }
     }
 
@@ -237,7 +291,7 @@ impl<'c> Cli<'c> {
     /// Grabs the flag/switch from the token stream, and collects. If an argument were to follow
     /// it will be in the vector.
     fn pull_flag(&mut self, m: Vec<usize>, with_uarg: bool) -> Vec<Option<String>> {
-        // remove flags
+        // remove all flag instances located at each index in `m`
         m.iter().map(|f| {
             // remove the flag instance from the token stream
             self.tokens.get_mut(*f).unwrap().take();
@@ -281,16 +335,18 @@ impl<'c> Cli<'c> {
     }
 
     /// Returns all locations in the token stream where the flag is found.
-    fn take_flag_locs(&mut self, s: &str) -> Option<Vec<usize>> {
-        Some(self.opt_store.remove(s)?)
+    ///
+    /// Information about Option<Vec<T>> vs. empty Vec<T>: https://users.rust-lang.org/t/space-time-usage-to-construct-vec-t-vs-option-vec-t/35596/6
+    fn take_flag_locs(&mut self, s: &str) -> Vec<usize> {
+        self.opt_store.remove(s).unwrap_or(vec![])
     }
 
     /// Returns all locations in the token stream where the switch is found.
-    fn take_switch_locs(&mut self, c: &char) -> Option<Vec<usize>> {
+    fn take_switch_locs(&mut self, c: &char) -> Vec<usize> {
         // allocate &str to the stack and not the heap to get from store
         let mut tmp = [0; 4];
         let m = c.encode_utf8(&mut tmp);
-        Some(self.opt_store.remove(m)?)
+        self.opt_store.remove(m).unwrap_or(vec![])
     }
 }
 
@@ -301,6 +357,60 @@ mod test {
     /// Helper test fn to write vec of &str as iterator for Cli parameter.
     fn args<'a>(args: Vec<&'a str>) -> Box<dyn Iterator<Item=String> + 'a> {
         Box::new(args.into_iter().map(|f| f.to_string()).into_iter())
+    }
+
+    #[test]
+    fn find_first_flag_left() {
+        let cli = Cli::tokenize(args(
+            vec!["orbit", "--help", "new", "rary.gates", "--vcs", "git"]
+        ));
+        assert_eq!(cli.find_first_flag_left(), Some(("help", 0)));
+
+        let cli = Cli::tokenize(args(
+            vec!["orbit", "new", "rary.gates"]
+        ));
+        assert_eq!(cli.find_first_flag_left(), None);
+
+        let cli = Cli::tokenize(args(
+            vec!["orbit", "new", "rary.gates", "--vcs", "git", "--help"]
+        ));
+        assert_eq!(cli.find_first_flag_left(), Some(("vcs", 2)));
+
+        let cli = Cli::tokenize(args(
+            vec!["orbit", "new", "rary.gates", "-c=git", "--help"]
+        ));
+        assert_eq!(cli.find_first_flag_left(), Some(("c", 2)));
+    }
+
+    #[test]
+    fn processed_all_args() {
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "--help", "new", "rary.gates", "--vcs", "git"]
+        ));
+        // tokens are still in token stream 
+        let _  = cli.check_flag(Flag::new("help")).unwrap();
+        let _: Option<String>  = cli.check_option(Optional::new("vcs")).unwrap();
+        let _: String = cli.require_positional(Positional::new("command")).unwrap();
+        let _: String = cli.require_positional(Positional::new("ip")).unwrap();
+        // no more tokens left in stream
+        assert_eq!(cli.is_empty(), Ok(()));
+
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "new", "rary.gates", "--"]
+        ));
+        // removes only valid args/flags/opts
+        let _  = cli.check_flag(Flag::new("help")).unwrap();
+        let _: Option<String>  = cli.check_option(Optional::new("vcs")).unwrap();
+        let _: String = cli.require_positional(Positional::new("command")).unwrap();
+        let _: String = cli.require_positional(Positional::new("ip")).unwrap();
+        // unexpected '--'
+        assert!(cli.is_empty().is_err());
+
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "--help", "new", "rary.gates", "--vcs", "git"]
+        ));
+        // no tokens were removed
+        assert!(cli.is_empty().is_err());
     }
 
     #[test]
@@ -388,24 +498,24 @@ mod test {
         ));
 
         // detects 0
-        assert_eq!(cli.take_flag_locs("version"), None);
+        assert_eq!(cli.take_flag_locs("version"), vec![]);
         // detects 1
-        assert_eq!(cli.take_flag_locs("lib"), Some(vec![4]));
+        assert_eq!(cli.take_flag_locs("lib"), vec![4]);
         // detects multiple
-        assert_eq!(cli.take_flag_locs("help"), Some(vec![0, 7]));
+        assert_eq!(cli.take_flag_locs("help"), vec![0, 7]);
         // flag was past terminator and marked as ignore
-        assert_eq!(cli.take_flag_locs("map"), None);
+        assert_eq!(cli.take_flag_locs("map"), vec![]);
         // filters out arguments
-        assert_eq!(cli.take_flag_locs("rary.gates"), None);
+        assert_eq!(cli.take_flag_locs("rary.gates"), vec![]);
 
         // detects 0
-        assert_eq!(cli.take_switch_locs(&'q'), None);
+        assert_eq!(cli.take_switch_locs(&'q'), vec![]);
         // detects 1
-        assert_eq!(cli.take_switch_locs(&'v'), Some(vec![1]));
+        assert_eq!(cli.take_switch_locs(&'v'), vec![1]);
         // detects multiple
-        assert_eq!(cli.take_switch_locs(&'i'), Some(vec![10, 11]));
+        assert_eq!(cli.take_switch_locs(&'i'), vec![10, 11]);
         // switch was past terminator and marked as ignore
-        assert_eq!(cli.take_switch_locs(&'j'), None);
+        assert_eq!(cli.take_switch_locs(&'j'), vec![]);
     }
 
     #[test]
@@ -457,44 +567,44 @@ mod test {
         let mut cli = Cli::tokenize(args(
             vec!["orbit", "--help"],
         ));
-        let locs = cli.take_flag_locs("help").unwrap();
+        let locs = cli.take_flag_locs("help");
         assert_eq!(cli.pull_flag(locs, false), vec![None]);
         assert_eq!(cli.tokens.get(0), Some(&None));
 
         let mut cli = Cli::tokenize(args(
             vec!["orbit", "--name", "gates", "arg", "--lib", "new", "--name=gates2", "--opt=1", "--opt", "--help"]
         ));
-        let locs = cli.take_flag_locs("lib").unwrap();
+        let locs = cli.take_flag_locs("lib");
         assert_eq!(cli.pull_flag(locs, false), vec![None]);
         // token no longer exists
         assert_eq!(cli.tokens.get(3), Some(&None));
 
         // gets strings and removes both instances of flag from token stream
-        let locs = cli.take_flag_locs("name").unwrap();
+        let locs = cli.take_flag_locs("name");
         assert_eq!(cli.pull_flag(locs, true), vec![Some("gates".to_string()), Some("gates2".to_string())]);
         assert_eq!(cli.tokens.get(0), Some(&None));
         assert_eq!(cli.tokens.get(5), Some(&None));
 
-        let locs = cli.take_flag_locs("opt").unwrap();
+        let locs = cli.take_flag_locs("opt");
         assert_eq!(cli.pull_flag(locs, true), vec![Some("1".to_string()), None]);
 
         // gets switches as well from the store
         let mut cli = Cli::tokenize(args(
             vec!["orbit", "--name", "gates", "-sicn", "dut", "new", "-vl=direct", "--help", "-l", "-m", "install"]
         ));
-        let locs = cli.take_switch_locs(&'l').unwrap();
+        let locs = cli.take_switch_locs(&'l');
         assert_eq!(cli.pull_flag(locs, true), vec![Some("direct".to_string()), None]);
         assert_eq!(cli.tokens.get(9), Some(&None));
         assert_eq!(cli.tokens.get(12), Some(&None));
-        let locs = cli.take_switch_locs(&'s').unwrap();
+        let locs = cli.take_switch_locs(&'s');
         assert_eq!(cli.pull_flag(locs, true), vec![None]);
-        let locs = cli.take_switch_locs(&'v').unwrap();
+        let locs = cli.take_switch_locs(&'v');
         assert_eq!(cli.pull_flag(locs, true), vec![None]);
-        let locs = cli.take_switch_locs(&'i').unwrap();
+        let locs = cli.take_switch_locs(&'i');
         assert_eq!(cli.pull_flag(locs, true), vec![None]);
-        let locs = cli.take_switch_locs(&'c').unwrap();
+        let locs = cli.take_switch_locs(&'c');
         assert_eq!(cli.pull_flag(locs, false), vec![None]);
-        let locs = cli.take_switch_locs(&'m').unwrap();
+        let locs = cli.take_switch_locs(&'m');
         assert_eq!(cli.pull_flag(locs, false), vec![None]);
     }
 

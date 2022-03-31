@@ -404,7 +404,7 @@ impl Cli {
     /// Attempts to pull a minimally edited word from `known_args` to match `unknown`.
     fn suggest_word(&self, unknown: &str) -> Option<CliError> {
         // filter to only get the names of optional/flag parameters
-        let word_bank = self.known_args.iter().filter_map(|f| {
+        let word_bank: Vec<String> = self.known_args.iter().filter_map(|f| {
             match f {
                 Arg::Flag(g) => Some(g.to_string()),
                 Arg::Optional(o) => Some(o.get_flag().to_string()),

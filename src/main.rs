@@ -41,10 +41,12 @@ impl Add {
 
 impl FromCli for Add {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        Ok(Add {
+        let m = Ok(Add {
             verbose: cli.check_flag(Flag::new("verbose"))?,
             lhs: cli.require_positional(Positional::new("lhs"))?,
             rhs: cli.require_positional(Positional::new("rhs"))?,
-        })
+        });
+        cli.is_empty()?;
+        m
     }
 }

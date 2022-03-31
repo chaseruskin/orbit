@@ -274,21 +274,21 @@ impl<'c> Cli<'c> {
         };
         self.known_args.push(Arg::Flag(f));
         let mut occurences = self.pull_flag(locs, false);
-        // check if the user is asking for help
-        if self.known_args.last().unwrap().as_flag_ref().get_name_ref() == "help" && occurences.len() > 0 {
-            self.asking_for_help = true;
-        }
         // verify there are no values attached to this flag
         if let Some(val) = occurences.iter_mut().find(|p| p.is_some()) {
+            self.prioritize_help()?;
             return Err(CliError::UnexpectedValue(self.known_args.pop().unwrap(), val.take().unwrap()));
         } else {
-            match occurences.len() {
-                1 => Ok(true),
-                0 => Ok(false),
-                _ => {
-                    self.prioritize_help()?;
-                    Err(CliError::DuplicateOptions(self.known_args.pop().unwrap()))
+            if occurences.len() > 1 {
+                self.prioritize_help()?;
+                Err(CliError::DuplicateOptions(self.known_args.pop().unwrap()))
+            } else {
+                let raised = occurences.len() != 0;
+                // check if the user is asking for help
+                if raised && "help" == self.known_args.last().unwrap().as_flag_ref().get_name_ref() {
+                    self.asking_for_help = true;
                 }
+                Ok(raised)
             }
         }
     }

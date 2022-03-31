@@ -355,7 +355,8 @@ impl<'c> Cli<'c> {
     /// Verifies there are no more tokens remaining in the stream. 
     /// 
     /// Note this mutates the referenced self only if an error is found.
-    pub fn is_empty(&mut self) -> Result<(), CliError<'c>> {
+    pub fn is_empty<'a>(&'a self) -> Result<(), CliError<'c>> {
+        self.prioritize_help()?;
         // check if map is empty, and return the minimum found index.
         if let Some((key, val)) = self.find_first_flag_left() {
             // check what type of token it was to determine if it was called with '-' or '--'
@@ -372,14 +373,12 @@ impl<'c> Cli<'c> {
                     },
                     _ => panic!("no other tokens are allowed in hashmap"),
                 };
-                self.prioritize_help()?;
                 Err(CliError::UnexpectedArg(format!("{}{}", prefix, key)))
             } else {
                 panic!("this token's values have been removed")
             }
         // find first non-none token
         } else if let Some(t) = self.tokens.iter().find(|p| p.is_some()) {
-            self.prioritize_help()?;
             match t {
                 Some(Token::UnattachedArgument(_, s)) => {
                     Err(CliError::UnexpectedArg(s.to_string()))
@@ -515,10 +514,10 @@ mod test {
     #[test]
     fn processed_all_args() {
         let mut cli = Cli::tokenize(args(
-            vec!["orbit", "--help", "new", "rary.gates", "--vcs", "git"]
+            vec!["orbit", "--upgrade", "new", "rary.gates", "--vcs", "git"]
         ));
         // tokens are still in token stream 
-        let _  = cli.check_flag(Flag::new("help")).unwrap();
+        let _  = cli.check_flag(Flag::new("upgrade")).unwrap();
         let _: Option<String>  = cli.check_option(Optional::new("vcs")).unwrap();
         let _: String = cli.require_positional(Positional::new("command")).unwrap();
         let _: String = cli.require_positional(Positional::new("ip")).unwrap();
@@ -536,10 +535,10 @@ mod test {
         // unexpected '--'
         assert!(cli.is_empty().is_err());
 
-        let mut cli = Cli::tokenize(args(
+        let cli = Cli::tokenize(args(
             vec!["orbit", "--help", "new", "rary.gates", "--vcs", "git"]
         ));
-        // no tokens were removed
+        // no tokens were removed (help will also raise error)
         assert!(cli.is_empty().is_err());
 
         let mut cli = Cli::tokenize(args(

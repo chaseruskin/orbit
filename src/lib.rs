@@ -2,11 +2,8 @@
 
 mod interface;
 mod commands;
-
-pub mod seqalin;
-pub mod pkgid;
-mod cfgfile;
-mod version;
+mod util;
+mod core;
 
 use crate::interface::cli::*;
 use crate::interface::errors::*;

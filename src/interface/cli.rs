@@ -3,7 +3,7 @@ use crate::interface::errors::CliError;
 use crate::interface::arg::*;
 use std::str::FromStr;
 use crate::interface::command::FromCli;
-use crate::seqalin;
+use crate::util::seqalin;
 
 #[derive(Debug, PartialEq)]
 enum Token {

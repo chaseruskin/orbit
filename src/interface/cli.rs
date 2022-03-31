@@ -203,6 +203,7 @@ impl<'c> Cli<'c> {
                     Ok(r) => Ok(Some(r)),
                     Err(e) => {
                         self.prioritize_help()?;
+                        self.prioritize_suggestion()?;
                         Err(CliError::BadType(self.known_args.pop().unwrap(), e.to_string()))
                     }
                 }
@@ -222,7 +223,34 @@ impl<'c> Cli<'c> {
             Ok(value)
         } else {
             self.prioritize_help()?;
+            self.is_empty()?;
             Err(CliError::MissingPositional(self.known_args.pop().unwrap(), "usage".to_string()))
+        }
+    }
+
+    /// Iterates through the list of tokens to find the first suggestion against a flag to return.
+    /// 
+    /// Returns ok if cannot make a suggestion.
+    fn prioritize_suggestion(&self) -> Result<(), CliError<'c>> {
+        let mut kv: Vec<(&String, &Vec<usize>)> = self.opt_store.iter().collect();
+        kv.sort_by(|a, b| a.1.first().unwrap().cmp(b.1.first().unwrap()));
+        let bank  = self.known_args_as_flag_names();
+        let r = kv.iter().find_map(|f| {
+            match self.tokens.get(*f.1.first().unwrap()).unwrap() {
+                Some(Token::Flag(_)) => {
+                    if let Some(word) = seqalin::sel_min_edit_str(f.0, &bank, 4) {
+                        Some(CliError::SuggestArg(format!("--{}", f.0), format!("--{}", word)))
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            }
+        });
+        if let Some(e) = r {
+            Err(e)
+        } else {
+            Ok(())
         }
     }
 
@@ -247,6 +275,7 @@ impl<'c> Cli<'c> {
                         Ok(r) => Ok(Some(r)),
                         Err(e) => {
                             self.prioritize_help()?;
+                            self.prioritize_suggestion()?;
                             Err(CliError::BadType(self.known_args.pop().unwrap(), e.to_string()))
                         }
                     }

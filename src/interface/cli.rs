@@ -318,7 +318,10 @@ impl<'c> Cli<'c> {
     }
 
     /// Removes the ignored tokens from the stream, if they exist.
-    fn get_remainder(&mut self) -> Vec<String> {
+    /// 
+    /// Errors if an `AttachedArg` is found (could only be immediately after terminator)
+    /// after the terminator.
+    pub fn check_remainder(&mut self) -> Result<Vec<String>, CliError<'c>> {
         self.tokens.iter_mut().skip_while(|p| {
             match p {
                 Some(Token::Terminator(_)) => false,
@@ -326,10 +329,18 @@ impl<'c> Cli<'c> {
             }
         }).filter_map(|f| {
             match f {
-                Some(Token::Ignore(_, _)) => {
-                    Some(f.take().unwrap().take_str())
+                // remove the terminator from the stream
+                Some(Token::Terminator(_)) => {
+                    f.take().unwrap();
+                    None
                 }
-                _ => None
+                Some(Token::Ignore(_, _)) => {
+                    Some(Ok(f.take().unwrap().take_str()))
+                }
+                Some(Token::AttachedArgument(_, _)) => {
+                    Some(Err(CliError::UnexpectedValue(Arg::Flag(Flag::new("")), f.take().unwrap().take_str())))
+                }
+                _ => panic!("no other tokens should exist beyond terminator {:?}", f)
             }
         }).collect()
     }
@@ -411,6 +422,13 @@ mod test {
         ));
         // no tokens were removed
         assert!(cli.is_empty().is_err());
+
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "--", "some", "extra", "words"]
+        ));
+        let _: Vec<String> = cli.check_remainder().unwrap();
+        // terminator removed as well as its arguments that were ignored
+        assert_eq!(cli.is_empty(), Ok(()));
     }
 
     #[test]
@@ -553,13 +571,19 @@ mod test {
         let mut cli = Cli::tokenize(args(
             vec!["orbit", "--help", "-v", "new", "ip", "--lib", "--name=rary.gates", "--help", "-scii", "get", "--", "--map", "synthesis", "-jto"]
         ));
-        assert_eq!(cli.get_remainder(), vec!["--map", "synthesis", "-jto"]);
+        assert_eq!(cli.check_remainder().unwrap(), vec!["--map", "synthesis", "-jto"]);
         // the items were removed from the token stream
-        assert_eq!(cli.get_remainder(), Vec::<String>::new());
+        assert_eq!(cli.check_remainder().unwrap(), Vec::<String>::new());
 
         // an attached argument can sneak in behind a terminator (handle in a result fn)
         let mut cli = Cli::tokenize(args(vec!["orbit", "--=value", "extra"]));
-        assert_eq!(cli.get_remainder(), vec!["extra"]);
+        assert!(cli.check_remainder().is_err());
+
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "--help"]
+        ));
+        // the terminator was never found
+        assert_eq!(cli.check_remainder().unwrap(), Vec::<String>::new());
     }
 
     #[test]

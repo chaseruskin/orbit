@@ -20,17 +20,18 @@ struct Add {
     lhs: u32,
     rhs: u32,
     verbose: bool,
+    rem: Vec<String>,
 }
 
 impl Command for Add {
-    fn exec(self) -> () {
+    fn exec(&self) -> () {
         println!("{}", self.run());
     }
 }
 
 impl Add {
     /// Simple fn to return an answer for the `Add` test command.
-    fn run(self) -> String {
+    fn run(&self) -> String {
         let sum = self.lhs + self.rhs;
         match self.verbose {
             true => format!("{} + {} = {}", self.lhs, self.rhs, sum),
@@ -45,6 +46,7 @@ impl FromCli for Add {
             verbose: cli.check_flag(Flag::new("verbose"))?,
             lhs: cli.require_positional(Positional::new("lhs"))?,
             rhs: cli.require_positional(Positional::new("rhs"))?,
+            rem: cli.check_remainder()?,
         });
         cli.is_empty()?;
         m

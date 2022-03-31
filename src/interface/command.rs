@@ -2,8 +2,8 @@ use crate::interface::cli::Cli;
 use std::fmt::Debug;
 use crate::interface::errors::CliError;
 
-pub trait Command {
-    fn exec(self) -> ();
+pub trait Command: Debug {
+    fn exec(&self) -> ();
 }
 
 pub trait FromCli {
@@ -30,14 +30,14 @@ mod test {
     }
 
     impl Command for Add {
-        fn exec(self) -> () {
+        fn exec(&self) -> () {
             println!("{}", self.run());
         }
     }
 
     impl Add {
         /// Simple fn to return an answer for the `Add` test command.
-        fn run(self) -> String {
+        fn run(&self) -> String {
             let sum = self.lhs + self.rhs;
             match self.verbose {
                 true => format!("{} + {} = {}", self.lhs, self.rhs, sum),
@@ -72,6 +72,32 @@ mod test {
             })
         }
     }
+
+    // testing a nested subcommand cli structure
+    #[derive(Debug)]
+    struct Op {
+        command: Box<dyn Command>,
+    }
+
+    impl Command for Op {
+        fn exec(&self) -> () {
+            self.command.exec();
+        }
+    }
+
+    impl FromCli for Op {
+        fn from_cli<'c>(cli: &'c mut Cli<'_>) -> Result<Self, CliError<'c>> { 
+            // Ok(Op {
+            //     command: // ??
+            // });
+            todo!()
+        }
+    }
+
+    enum OpSubcommand {
+        Add(Add)
+    }
+
 
     #[test]
     fn make_add_command() {

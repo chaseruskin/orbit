@@ -1,6 +1,7 @@
 use crate::interface::arg::Arg;
 use std::fmt::Display;
 use std::error::Error;
+use colored::*;
 
 #[derive(Debug, PartialEq)]
 pub enum CliError<'a> {
@@ -23,18 +24,18 @@ impl<'a> Error for CliError<'a> {}
 impl<'a> Display for CliError<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
         use CliError::*;
-        let footer = "\n\nFor more information try --help";
+        let footer = format!("\n\nFor more information try {}", "--help".green());
         match self {
             Help(h) => write!(f, "{}", h),
-            SuggestArg(a, sug) => write!(f, "unknown argument '{}'\n\nDid you mean '{}'?", a, sug),
-            SuggestSubcommand(a, sug) => write!(f, "unknown subcommand '{}'\n\nDid you mean '{}'?", a, sug),
+            SuggestArg(a, sug) => write!(f, "unknown argument '{}'\n\nDid you mean '{}'?", a.yellow(), sug.green()),
+            SuggestSubcommand(a, sug) => write!(f, "unknown subcommand '{}'\n\nDid you mean '{}'?", a.yellow(), sug.green()),
             OutOfContextArg(o, cmd) => write!(f, "argument '{}' is unknown, or invalid in the current context{}{}", o, cmd, footer),
             BadType(a, e) => write!(f, "argument '{}' did not process due to {}{}", a, e, footer),
             MissingPositional(p, u) => write!(f, "missing required argument '{}'\n{}{}", p, u, footer),
             DuplicateOptions(o) => write!(f, "option '{}' was requested more than once, but can only be supplied once{}", o, footer),
             ExpectingValue(x) => write!(f, "option '{}' expects a value but none was supplied{}", x, footer),
             UnexpectedValue(x, s) => write!(f, "flag '{}' cannot accept values but one was supplied \"{}\"{}", x, s, footer),
-            UnexpectedArg(s) => write!(f, "unknown argument '{}'{}", s, footer),
+            UnexpectedArg(s) => write!(f, "unknown argument '{}'{}", s.yellow(), footer),
             UnknownSubcommand(c, a) => write!(f, "'{}' is not a valid subcommand for {}{}", a, c, footer),
             BrokenRule(r) => write!(f, "a rule conflict occurred from {}", r),
         }

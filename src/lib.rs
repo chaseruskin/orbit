@@ -9,6 +9,7 @@ use crate::interface::cli::*;
 use crate::interface::errors::*;
 use crate::interface::command::*;
 use crate::commands::orbit::*;
+use colored::*;
 
 pub fn run() -> u8 {
     // interface level
@@ -21,7 +22,7 @@ pub fn run() -> u8 {
                     println!("{}", s);
                     return 0;
                 }
-                _ => eprintln!("error: {}", e)
+                _ => eprintln!("{} {}", "error:".red().bold(), e)
             }
             return 101;
         }
@@ -32,7 +33,7 @@ pub fn run() -> u8 {
                 println!("{}", s);
                 return 0;
             }
-            _ => eprintln!("error: {}", e),
+            _ => eprintln!("{} {}", "error:".red().bold(), e),
         }
         return 101;
     }

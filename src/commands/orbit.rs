@@ -3,6 +3,7 @@ use crate::FromCli;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Positional};
 use crate::interface::errors::CliError;
+use hyper::Client;
 
 #[derive(Debug, PartialEq)]
 pub struct Orbit {
@@ -23,6 +24,12 @@ impl Orbit {
         // prioritize version information
         if self.version {
             println!("orbit {}", VERSION);
+        // prioritize upgrade information
+        } else if self.upgrade == true {
+            match Self::upgrade() {
+                Ok(_) => (),
+                Err(e) => eprintln!("upgrade-error: {}", e),
+            }
         // run the specified command
         } else if let Some(c) = &self.command {
             c.exec();
@@ -30,6 +37,28 @@ impl Orbit {
         } else {
             println!("{}", HELP);
         }
+    }
+
+    fn upgrade() -> Result<(), String> {
+        println!("checking for latest version...");
+        Self::connect().unwrap();
+        Ok(())
+    }
+
+    #[tokio::main]
+    async fn connect() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        // This is where we will setup our HTTP client requests.
+        // Still inside `async fn main`...
+        let client = Client::new();
+
+        // Parse an `http::Uri`...
+        let uri = "https://github.com/c-rus/orbit/releases/".parse()?;
+
+        // Await the response...
+        let mut resp = client.get(uri).await?;
+
+        println!("Response: {}", resp.status());
+        Ok(())
     }
 }
 

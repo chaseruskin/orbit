@@ -1,11 +1,12 @@
 use crate::Command;
 use crate::FromCli;
 use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional};
+use crate::interface::arg::{Positional, Flag};
 use crate::interface::errors::CliError;
 
 #[derive(Debug, PartialEq)]
 pub struct Help {
+    man: bool,
     topic: Option<String>,
 }
 
@@ -25,6 +26,7 @@ impl FromCli for Help {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.set_help(HELP);
         let command = Ok(Help {
+            man: cli.check_flag(Flag::new("man"))?,
             topic: cli.check_positional(Positional::new("topic"))?,
         });
         command

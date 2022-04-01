@@ -24,6 +24,17 @@ impl Token {
             _ => panic!("cannot call take_str on token without string"),
         }
     }
+
+    fn get_index_ref(&self) -> &usize {
+        match self {
+            Self::UnattachedArgument(i, _) => i,
+            Self::AttachedArgument(i, _) => i,
+            Self::Flag(i) => i,
+            Self::Switch(i, _) => i,
+            Self::Terminator(i) => i,
+            Self::Ignore(i, _) => i,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -175,11 +186,21 @@ impl<'c> Cli<'c> {
     /// Panics if there is not a next `UnattachedArg`. It is recommended to not directly call
     /// this command, but through a `from_cli` call after `check_command` has been issued.
     pub fn match_command<T: AsRef<str> + std::cmp::PartialEq>(&mut self, words: &[T]) -> Result<String, CliError<'c>> {
+        // find the unattached arg's index before it is removed from the token stream
+        let i: usize = self.tokens.iter()
+            .find_map(|f| match f { Some(Token::UnattachedArgument(i, _)) => Some(*i), _ => None })
+            .expect("an unattached argument must exist before calling `match_command`");
         let s = self.next_uarg().expect("`check_command` must be called before this function");
-        // :todo: perform proper checks (partial clean), set help text
+        // perform partial clean to ensure no arguments are remaining behind the command (uncaught options)
+        let ooc_arg = self.capture_bad_flag()?;
+        
         if words.iter().find(|p| { p.as_ref() == s }).is_some() {
+            if ooc_arg.is_some() && ooc_arg.unwrap().1 < i {
+                Err(CliError::OutOfContextArgSuggest(ooc_arg.unwrap().0.to_string(), s))
             // return the valid string
-            Ok(s)
+            } else {
+                Ok(s)
+            }
         // try to offer a spelling suggestion o.w. say unexpected arg
         } else {
             if let Some(w) = seqalin::sel_min_edit_str(&s, &words, 4)  {
@@ -352,12 +373,8 @@ impl<'c> Cli<'c> {
         min_i
     }
 
-    /// Verifies there are no more tokens remaining in the stream. 
-    /// 
-    /// Note this mutates the referenced self only if an error is found.
-    pub fn is_empty<'a>(&'a self) -> Result<(), CliError<'c>> {
-        self.prioritize_help()?;
-        // check if map is empty, and return the minimum found index.
+    // :todo: refactor and use in partial clean
+    fn capture_bad_flag<'a>(&self) -> Result<Option<String>, CliError<'c>> {
         if let Some((key, val)) = self.find_first_flag_left() {
             // check what type of token it was to determine if it was called with '-' or '--'
             if let Some(t) = self.tokens.get(val).unwrap() {
@@ -373,10 +390,23 @@ impl<'c> Cli<'c> {
                     },
                     _ => panic!("no other tokens are allowed in hashmap"),
                 };
-                Err(CliError::UnexpectedArg(format!("{}{}", prefix, key)))
+                Ok(Some(format!("{}{}", prefix, key)))
             } else {
                 panic!("this token's values have been removed")
             }
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Verifies there are no more tokens remaining in the stream. 
+    /// 
+    /// Note this mutates the referenced self only if an error is found.
+    pub fn is_empty<'a>(&'a self) -> Result<(), CliError<'c>> {
+        self.prioritize_help()?;
+        // check if map is empty, and return the minimum found index.
+        if let Some(arg) = self.capture_bad_flag()? {
+            Err(CliError::UnexpectedArg(arg))
         // find first non-none token
         } else if let Some(t) = self.tokens.iter().find(|p| p.is_some()) {
             match t {

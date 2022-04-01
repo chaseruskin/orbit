@@ -69,6 +69,7 @@ mod test {
     // testing a nested subcommand cli structure
     #[derive(Debug, PartialEq)]
     struct Op {
+        version: bool,
         command: Option<OpSubcommand>,
     }
 
@@ -83,6 +84,7 @@ mod test {
     impl FromCli for Op {
         fn from_cli<'c>(cli: &'c mut Cli<'_>) -> Result<Self, CliError<'c>> { 
             Ok(Op {
+                version: cli.check_flag(Flag::new("version"))?,
                 command: cli.check_command(Positional::new("subcommand"))?,
             })
         }
@@ -142,6 +144,7 @@ mod test {
         let mut cli = Cli::tokenize(args(vec!["op", "add", "9", "10"]));
         let op = Op::from_cli(&mut cli).unwrap();
         assert_eq!(op, Op {
+            version: false,
             command: Some(OpSubcommand::Add(Add {
                 lhs: 9,
                 rhs: 10,
@@ -152,18 +155,25 @@ mod test {
         let mut cli = Cli::tokenize(args(vec!["op"]));
         let op = Op::from_cli(&mut cli).unwrap();
         assert_eq!(op, Op {
+            version: false,
             command: None
         });
 
-        let mut cli = Cli::tokenize(args(vec!["op", "--verbose", "add", "9", "10"]));
+        let mut cli = Cli::tokenize(args(vec!["op", "--version", "add", "9", "10"]));
         let op = Op::from_cli(&mut cli).unwrap();
         assert_eq!(op, Op {
+            version: true,
             command: Some(OpSubcommand::Add(Add {
                 lhs: 9,
                 rhs: 10,
-                verbose: true,
+                verbose: false,
             }))
         });
+
+        // out-of-context arg '--verbose' move it after 'add'
+        let mut cli = Cli::tokenize(args(vec!["op", "--verbose", "add", "9", "10"]));
+        let op = Op::from_cli(&mut cli);
+        assert!(op.is_err());
     }
 
     #[test]

@@ -43,8 +43,8 @@ Args:
     <topic>         a listed topic or any orbit subcommand
 
 Topics:
-    topic1          information about topic1
-    topic2          information about topic2
+    manifest        learn about .cfg files
+    cache           learn about orbit's caching system
 
 Use 'orbit help <topic>' for more information about a command.
 ";

@@ -129,7 +129,7 @@ impl<'c> Cli<'c> {
     /// Checks if help has been raised and will return its own error for displaying
     /// help.
     fn prioritize_help(&self) -> Result<(), CliError<'c>> {
-        if self.asking_for_help {
+        if self.asking_for_help == true {
             Err(CliError::Help(self.help))
         } else {
             Ok(())
@@ -195,12 +195,13 @@ impl<'c> Cli<'c> {
         let ooc_arg = self.capture_bad_flag()?;
         
         if words.iter().find(|p| { p.as_ref() == s }).is_some() {
-            if ooc_arg.is_some() && ooc_arg.unwrap().1 < i {
-                Err(CliError::OutOfContextArgSuggest(ooc_arg.unwrap().0.to_string(), s))
-            // return the valid string
-            } else {
-                Ok(s)
+            if let Some((prefix, key, pos)) = ooc_arg {
+                if pos < i {
+                    self.prioritize_help()?;
+                    return Err(CliError::OutOfContextArgSuggest(format!("{}{}", prefix, key), s))
+                } 
             }
+            Ok(s)
         // try to offer a spelling suggestion o.w. say unexpected arg
         } else {
             if let Some(w) = seqalin::sel_min_edit_str(&s, &words, 4)  {
@@ -268,7 +269,9 @@ impl<'c> Cli<'c> {
                 _ => None,
             }
         });
-        if let Some(e) = r {
+        if self.asking_for_help == true {
+            Ok(())
+        } else if let Some(e) = r {
             Err(e)
         } else {
             Ok(())
@@ -373,8 +376,9 @@ impl<'c> Cli<'c> {
         min_i
     }
 
-    // :todo: refactor and use in partial clean
-    fn capture_bad_flag<'a>(&self) -> Result<Option<String>, CliError<'c>> {
+    // :todo: document
+    fn capture_bad_flag<'a>(&self) -> Result<Option<(&str, &str, usize)>, CliError<'c>> {
+        self.prioritize_help()?;
         if let Some((key, val)) = self.find_first_flag_left() {
             // check what type of token it was to determine if it was called with '-' or '--'
             if let Some(t) = self.tokens.get(val).unwrap() {
@@ -390,7 +394,7 @@ impl<'c> Cli<'c> {
                     },
                     _ => panic!("no other tokens are allowed in hashmap"),
                 };
-                Ok(Some(format!("{}{}", prefix, key)))
+                Ok(Some((prefix, key, val)))
             } else {
                 panic!("this token's values have been removed")
             }
@@ -405,8 +409,8 @@ impl<'c> Cli<'c> {
     pub fn is_empty<'a>(&'a self) -> Result<(), CliError<'c>> {
         self.prioritize_help()?;
         // check if map is empty, and return the minimum found index.
-        if let Some(arg) = self.capture_bad_flag()? {
-            Err(CliError::UnexpectedArg(arg))
+        if let Some((prefix, key, _)) = self.capture_bad_flag()? {
+            Err(CliError::UnexpectedArg(format!("{}{}", prefix, key)))
         // find first non-none token
         } else if let Some(t) = self.tokens.iter().find(|p| p.is_some()) {
             match t {

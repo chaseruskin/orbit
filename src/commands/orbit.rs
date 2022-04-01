@@ -3,7 +3,7 @@ use crate::FromCli;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Positional};
 use crate::interface::errors::CliError;
-use hyper::Client;
+
 
 #[derive(Debug, PartialEq)]
 pub struct Orbit {
@@ -18,6 +18,9 @@ impl Command for Orbit {
         self.run();
     }
 }
+
+use reqwest;
+use std::io::prelude::*;
 
 impl Orbit {
     fn run(&self) -> () {
@@ -41,23 +44,28 @@ impl Orbit {
 
     fn upgrade() -> Result<(), String> {
         println!("checking for latest version...");
-        Self::connect().unwrap();
+        Self::connect_2().unwrap();
         Ok(())
     }
 
     #[tokio::main]
-    async fn connect() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        // This is where we will setup our HTTP client requests.
-        // Still inside `async fn main`...
-        let client = Client::new();
+    async fn connect_2() -> Result<(), Box<dyn std::error::Error>> {
+        let res = reqwest::get("https://github.com/c-rus/guessing-game/releases").await?;
+        println!("Status: {}", res.status());
+        println!("Headers:\n{:#?}", res.headers());
+    
+        let body = res.text().await?;
+        println!("Body:\n{}", body);
 
-        // Parse an `http::Uri`...
-        let uri = "https://github.com/c-rus/orbit/releases/".parse()?;
+        let res = reqwest::get("https://github.com/c-rus/guessing-game/releases/download/v1.0.2/guessing-game-windows-x64.zip").await?;
+        println!("Status: {}", res.status());
+        println!("Headers:\n{:#?}", res.headers());
 
-        // Await the response...
-        let mut resp = client.get(uri).await?;
-
-        println!("Response: {}", resp.status());
+        let body_bytes = res.bytes().await?;
+        // println!("Body:\n{:?}", body_bytes);
+        // write the bytes to a file
+        let mut file = std::fs::File::create("./foo.zip")?;
+        file.write_all(&body_bytes)?;
         Ok(())
     }
 }

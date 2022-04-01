@@ -22,7 +22,7 @@ impl Orbit {
     fn run(&self) -> () {
         // prioritize version information
         if self.version {
-            println!("0.1.0");
+            println!("orbit {}", VERSION);
         // run the specified command
         } else if let Some(c) = &self.command {
             c.exec();
@@ -69,6 +69,9 @@ impl Command for OrbitSubcommand {
         }
     }
 }
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+// :todo: check for additional data such as the commit being used
 
 const HELP: &str = "\
 Orbit is a tool for hdl package management.

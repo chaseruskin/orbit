@@ -23,10 +23,12 @@ jobs:
     - name: Auto-generate CHANGELOG
       run: python ./tools/autocl.py
 
-    # todo! push a version tag once the changelog is completed, then use tag in 
+    # :todo: push a version tag once the changelog is completed, then use tag in 
     # release action. Or push tag that will trigger separate workflow based on tag.
-    # - name: Push new version tag
+    # - name: Tag commit as version
     #   run: git tag ${{ inputs.version }}
+    # - name: Push tag
+    #   run: git push --tags
       
     - name: Upload releases
       uses: ncipollo/release-action@v1

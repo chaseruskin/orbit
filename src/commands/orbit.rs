@@ -139,7 +139,10 @@ impl Orbit {
         let key = "href=\"/c-rus/guessing-game/releases/tag/";
 
         // if cannot find the key then the releases page failed to auto-detect in html data
-        let pos = body.find(&key).expect("bad html or search pattern");
+        let pos = match body.find(&key) {
+            Some(r) => r,
+            None => return Err(Box::new(UpgradeError::NoReleasesFound))?
+        };
         // +1 to drop the leading 'v' with a version tag
         let (_, sub) = body.split_at(pos+key.len()+1);
         let (version, _) = sub.split_once('\"').unwrap();
@@ -174,6 +177,7 @@ enum UpgradeError {
     UnsupportedOS,
     FailedConnection(String, reqwest::StatusCode),
     FailedDownload(String, reqwest::StatusCode),
+    NoReleasesFound,
 }
 
 impl std::error::Error for UpgradeError {}
@@ -184,6 +188,7 @@ impl std::fmt::Display for UpgradeError {
             Self::FailedConnection(url, status) => write!(f, "connection to internet failed for request\n\nurl: {}\nstatus: {}", url, status),
             Self::FailedDownload(url, status) => write!(f, "download failed for request\n\nurl: {}\nstatus: {}", url, status),
             Self::UnsupportedOS => write!(f, "no pre-compiled binaries exist for your operating system"),
+            Self::NoReleasesFound => write!(f, "no releases were found"),
         } 
     }
 }

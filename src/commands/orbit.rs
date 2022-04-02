@@ -43,29 +43,11 @@ impl Orbit {
     }
 
     fn upgrade() -> Result<(), String> {
-        println!("checking for latest version...");
-        Self::connect_2().unwrap();
-        Ok(())
-    }
-
-    #[tokio::main]
-    async fn connect_2() -> Result<(), Box<dyn std::error::Error>> {
-        let res = reqwest::get("https://github.com/c-rus/guessing-game/releases").await?;
-        println!("Status: {}", res.status());
-        println!("Headers:\n{:#?}", res.headers());
-    
-        let body = res.text().await?;
-        println!("Body:\n{}", body);
-
-        let res = reqwest::get("https://github.com/c-rus/guessing-game/releases/download/v1.0.2/guessing-game-windows-x64.zip").await?;
-        println!("Status: {}", res.status());
-        println!("Headers:\n{:#?}", res.headers());
-
-        let body_bytes = res.bytes().await?;
-        // println!("Body:\n{:?}", body_bytes);
-        // write the bytes to a file
-        let mut file = std::fs::File::create("./foo.zip")?;
-        file.write_all(&body_bytes)?;
+        println!("info: checking for latest orbit binary...");
+        match Self::connect() {
+            Ok(()) => (),
+            Err(e) => eprintln!("error: {}", e),
+        }
         Ok(())
     }
 }
@@ -126,3 +108,82 @@ Options:
 
 Use 'orbit help <command>' for more information about a command.
 ";
+
+
+use crate::core::version;
+use std::str::FromStr;
+
+impl Orbit {
+    #[tokio::main]
+    async fn connect() -> Result<(), Box<dyn std::error::Error>> {
+        // bail early if the user has a unsupported os
+        let os: &str = if cfg!(target_os = "windows") {
+            "windows"
+        } else if cfg!(target_os = "linux") {
+            "linux"
+        } else if cfg!(target_os = "macos") {
+            "macos"
+        } else {
+            return Err(Box::new(UpgradeError::UnsupportedOS))?
+        };
+
+        // check the connection to grab latest html data
+        let url: &str = "https://github.com/c-rus/guessing-game/releases";
+        let res = reqwest::get(url).await?;
+        if res.status() != 200 {
+            return Err(Box::new(UpgradeError::FailedConnection(url.to_string(), res.status())))?
+        }
+
+        // create body into string to find the latest version
+        let body = res.text().await?;
+        let key = "href=\"/c-rus/guessing-game/releases/tag/";
+
+        // if cannot find the key then the releases page failed to auto-detect in html data
+        let pos = body.find(&key).expect("bad html or search pattern");
+        // +1 to drop the leading 'v' with a version tag
+        let (_, sub) = body.split_at(pos+key.len()+1);
+        let (version, _) = sub.split_once('\"').unwrap();
+
+        // our current version is guaranteed to be valid
+        let current = version::Version::from_str(VERSION).unwrap();
+        // the latest version 
+        let latest = version::Version::from_str(version).expect("invalid version released");
+        if latest > current {
+            println!("info: a new version is available ({}), would you like to upgrade? [y/n]", latest);
+        } else {
+            println!("info: you have the latest version already ({}).", latest);
+            return Ok(());
+        }
+
+        let url = format!("{}/download/v{}/guessing-game-{}-x64.zip",&url, &version, &os);
+        let res = reqwest::get(&url).await?;
+        if res.status() != 200 {
+            return Err(Box::new(UpgradeError::FailedDownload(url.to_string(), res.status())))?
+        }
+
+        let body_bytes = res.bytes().await?;
+        // write the bytes to a file
+        let mut file = std::fs::File::create("./upgrade.zip")?;
+        file.write_all(&body_bytes)?;
+        Ok(())
+    }
+}
+
+#[derive(Debug, PartialEq)]
+enum UpgradeError {
+    UnsupportedOS,
+    FailedConnection(String, reqwest::StatusCode),
+    FailedDownload(String, reqwest::StatusCode),
+}
+
+impl std::error::Error for UpgradeError {}
+
+impl std::fmt::Display for UpgradeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
+        match self {
+            Self::FailedConnection(url, status) => write!(f, "connection to internet failed for request\n\nurl: {}\nstatus: {}", url, status),
+            Self::FailedDownload(url, status) => write!(f, "download failed for request\n\nurl: {}\nstatus: {}", url, status),
+            Self::UnsupportedOS => write!(f, "no pre-compiled binaries exist for your operating system"),
+        } 
+    }
+}

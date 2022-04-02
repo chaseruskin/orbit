@@ -31,6 +31,6 @@ jobs:
     - name: Upload releases
       uses: ncipollo/release-action@v1
       with:
-        artifacts: '**/orbit-*.tar.gz,**/orbit-*.zip,**/checksum.txt'
+        artifacts: '**/orbit-*.zip,**/checksum.txt'
         bodyFile: CHANGELOG.md
         token: ${{ secrets.GITHUB_TOKEN }}

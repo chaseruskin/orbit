@@ -40,7 +40,7 @@ jobs:
 
       - name: Compress binary executable for Unix
         if: ${{ runner.os == 'macOS' || runner.os == 'Linux' }}
-        run: cd ./target/release && tar -cvzf ./../../${{ env.TARGET }}-${{ matrix.platform }}.tar.gz ${{ env.TARGET }}
+        run: cd ./target/release && zip ./../../${{ env.TARGET }}-${{ matrix.platform }}.zip ${{ env.TARGET }}
 
       - name: Compress binary executable for Windows
         if: ${{ runner.os == 'Windows' }}
@@ -50,4 +50,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ${{ env.TARGET }}-${{ matrix.platform }}
-          path: ./${{ env.TARGET }}-${{ matrix.platform }}.**
+          path: ./${{ env.TARGET }}-${{ matrix.platform }}.zip

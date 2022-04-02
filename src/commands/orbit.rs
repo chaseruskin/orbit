@@ -20,7 +20,6 @@ impl Command for Orbit {
 }
 
 use reqwest;
-use std::io::prelude::*;
 
 impl Orbit {
     fn run(&self) -> () {
@@ -165,12 +164,16 @@ impl Orbit {
         }
 
         let body_bytes = res.bytes().await?;
+        let sum = sha256::compute_sha256(&body_bytes);
+        println!("{}", sum);
         // write the bytes to a file
-        let mut file = std::fs::File::create("./upgrade.zip")?;
-        file.write_all(&body_bytes)?;
+        //let mut file = std::fs::File::create(filename)?;
+        //file.write_all(&body_bytes)?;
         Ok(())
     }
 }
+
+use crate::util::sha256;
 
 #[derive(Debug, PartialEq)]
 enum UpgradeError {

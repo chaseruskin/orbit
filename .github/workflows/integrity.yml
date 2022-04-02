@@ -9,14 +9,19 @@ jobs:
     - name: Fetch Repository
       uses: actions/download-artifact@v2
 
+    - name: Setup python
+      uses: actions/setup-python@v2.2.2
+      with:
+        python-version: 3.x
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v2
+
     - name: Display filesystem contents
       run: ls -R
 
     - name: Compute checksums
-      run: |
-        cd ./orbit-linux-x64; sha256sum orbit-linux-x64.tar.gz >> ./../checksum.txt; cd ..
-        cd ./orbit-macos-x64; sha256sum orbit-macos-x64.tar.gz >> ./../checksum.txt; cd ..
-        cd ./orbit-windows-x64; sha256sum orbit-windows-x64.zip >> ./../checksum.txt; cd ..
+      run: echo "$(python ./tools/sum.py "./**/orbit-*.zip")" > ./checksum.txt
 
     - name: Review checksums
       run: cat ./checksum.txt

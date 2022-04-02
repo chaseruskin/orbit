@@ -8,6 +8,10 @@
 #   feat: adds auto-changelog script (close #1)
 #   mod: asks user for path in initial setup
 #   docs: adds section additional help text (#3)
+# Todo     :
+#   - [ ] prepend/insert to an existing changelog file tracked by git
+#   - [ ] for a github actions release, take all notes past version header up
+#           up until next version header
 # ------------------------------------------------------------------------------
 
 from asyncio.subprocess import STDOUT

@@ -127,6 +127,7 @@ impl Orbit {
         };
 
         // check the connection to grab latest html data
+        //  https://github.com/c-rus/guessing-game/releases/download/v1.0.6/checksum.txt
         let url: &str = "https://github.com/c-rus/guessing-game/releases";
         let res = reqwest::get(url).await?;
         if res.status() != 200 {
@@ -156,22 +157,50 @@ impl Orbit {
             println!("info: you have the latest version already ({}).", latest);
             return Ok(());
         }
-
-        let url = format!("{}/download/v{}/guessing-game-{}-x64.zip",&url, &version, &os);
-        let res = reqwest::get(&url).await?;
+    
+        let pkg = format!("guessing-game-{}-x64.zip", &os);
+        // download the zip file
+        let pkg_url = format!("{}/download/v{}/{}",&url, &version, &pkg);
+        let res = reqwest::get(&pkg_url).await?;
         if res.status() != 200 {
             return Err(Box::new(UpgradeError::FailedDownload(url.to_string(), res.status())))?
         }
-
         let body_bytes = res.bytes().await?;
+        // compute the checksum on the downloaded zip file
         let sum = sha256::compute_sha256(&body_bytes);
-        println!("{}", sum);
-        // write the bytes to a file
-        //let mut file = std::fs::File::create(filename)?;
-        //file.write_all(&body_bytes)?;
+
+        // download the list of checksums
+        let sum_url = format!("{}/download/v{}/checksum.txt", &url, &version);
+        let res = reqwest::get(&sum_url).await?;
+        // search the checksums for the downloaded pkg and verify they match
+        let checksums = String::from_utf8(res.bytes().await?.to_vec())?;
+        checksums.split_terminator('\n').find_map(|p| {
+            let (cert, key) = p.split_once(' ').expect("bad checksum file format");
+            if key == pkg  {
+                match sum == sha256::Sha256Hash::from_str(cert).expect("bad checksum") {
+                    true => Some(Ok(())),
+                    false => Some(Err(UpgradeError::BadChecksum))
+                }
+            } else {
+                None
+            }
+        }).expect("missing package in checksum.txt")?;
+        println!("info: verified download");
+
+        // unzip the bytes and then write to a file and rename current exe
+        let mut temp_file = tempfile::tempfile()?;
+        temp_file.write_all(&body_bytes)?;
+        let mut zip_archive = zip::ZipArchive::new(temp_file)?;
+        // rename the current exe as format!("orbit-{}", VERSION)
+        let current_exe_dir = "."; //todo find exe path/directory
+        zip_archive.extract(current_exe_dir)?;
         Ok(())
     }
 }
+
+use std::io::Write;
+use zip;
+use tempfile;
 
 use crate::util::sha256;
 
@@ -181,6 +210,7 @@ enum UpgradeError {
     FailedConnection(String, reqwest::StatusCode),
     FailedDownload(String, reqwest::StatusCode),
     NoReleasesFound,
+    BadChecksum,
 }
 
 impl std::error::Error for UpgradeError {}
@@ -188,6 +218,7 @@ impl std::error::Error for UpgradeError {}
 impl std::fmt::Display for UpgradeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
         match self {
+            Self::BadChecksum => write!(f, "checksums did not match, please try again"),
             Self::FailedConnection(url, status) => write!(f, "connection to internet failed for request\n\nurl: {}\nstatus: {}", url, status),
             Self::FailedDownload(url, status) => write!(f, "download failed for request\n\nurl: {}\nstatus: {}", url, status),
             Self::UnsupportedOS => write!(f, "no pre-compiled binaries exist for your operating system"),

@@ -3,6 +3,8 @@
 [Introduction](./index.md)
 
 - [Getting Started](./1_starting/0_starting.md)
+    - [Installing](./1_starting/1_installing.md)
+    - [Upgrading](./1_starting/2_upgrading.md)
 
 - [Tutorials](./2_tutorials/0_tutorials.md)
 

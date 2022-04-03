@@ -195,11 +195,7 @@ impl Orbit {
         let mut temp_file = tempfile::tempfile()?;
         temp_file.write_all(&body_bytes)?;
         let mut zip_archive = zip::ZipArchive::new(temp_file)?;
-        // rename the current exe as format!("orbit-{}", VERSION)
-        //let current_exe_dir = "."; //todo find exe path/directory
-        //zip_archive.extract(current_exe_dir)?;
         let exe_path = get_exe_path()?;
-        // println!("{}", exe_path.display());
         let mut new_path = exe_path.clone();
         new_path.pop();
         let current_exe_dir = new_path.clone();
@@ -207,13 +203,16 @@ impl Orbit {
         let paths = std::fs::read_dir(&current_exe_dir).unwrap();
         for path in paths {
             if path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap().starts_with("orbit-") {
-                println!("Removing old version: {}", path.as_ref().unwrap().path().display());
-                std::fs::remove_file(path.as_ref().unwrap().path())?;
+                //println!("Removing old version: {}", path.as_ref().unwrap().path().display());
+                // uncomment the following line to remove old binaries
+                //std::fs::remove_file(path.as_ref().unwrap().path())?;
             }
         }
-        let new_path = new_path.join(std::path::Path::new(&format!("orbit-{}", VERSION)));
-        std::fs::rename(exe_path, new_path)?;
-        zip_archive.extract(current_exe_dir)?;
+        // uncomment the following lines to rename current binary to a stale state
+        //let new_path = new_path.join(std::path::Path::new(&format!("orbit-{}", VERSION)));
+        //std::fs::rename(exe_path, new_path)?;
+        // decompress zip to 
+        //zip_archive.extract(current_exe_dir)?;
         Ok(())
     }
 }

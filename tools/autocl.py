@@ -13,7 +13,6 @@
 #   - [ ] for a github actions release, take all notes past version header up
 #           up until next version header
 # ------------------------------------------------------------------------------
-
 from asyncio.subprocess import STDOUT
 import subprocess
 from datetime import date
@@ -66,73 +65,78 @@ def parse(prefix, commit):
     return False
 
 
-# grab the current upcoming version from crate manifest
-VER = None
-with open("./Cargo.toml", 'r') as manifest:
-    for l in manifest.readlines():
-        property = l.split('=', 1)
-        if(len(property) == 2 and property[0].strip() == 'version'):
-            VER = 'v'+property[1].strip().strip('\"')
-            break
-    pass
-
-if VER.startswith('v0.0'):
-    exit("autocl-error: Crate version is too low for a release -> "+VER)
-
-# store the last tagged version
-PREV_VER = ''
-try:
-    proc = subprocess.check_output('git describe --tags --abbrev=0', shell=True)
-    PREV_VER = proc.decode().strip()
-except:
-    # do not exit on this error; just allow no range on `git log` call
-    # exit('autocl-error: No previous versions detected')
-    pass
-
-# verify the version exists and is not the same as the previous version
-if VER == None:
-    exit("autocl-error: Could not find Cargo crate version")
-elif VER == PREV_VER:
-    exit("autocl-error: Cannot make changelog due to equal versions -> "+VER)
-
-# create version range for filtering git commit log
-if len(PREV_VER):
-    PREV_VER+='..'
-
-# gather data about latest commits
-commits = ''
-try:
-    proc = subprocess.check_output('git log --pretty=format:"%s" '+PREV_VER, shell=True)
-    commits = proc.decode().strip()
-except:
-    exit('autocl-error: No commits found in the repository')
-
-# iterate through the available commits
-for c in commits.splitlines(keepends=False):
-    if len(c) == 0:
-        continue
-    for f in prefix_map.keys():
-        if parse(f, c):
-            break
-    else:
-        print('autocl-warning: Skipping commit \"'+c+"\"")
-    pass
-
-logpath ="./"+LOGFILE+".md"
-
-# write the data to a changelog file in markdown format
-with open(logpath, 'w') as log:
-    empty = True
-    log.write('# '+VER+' ('+date.strftime(date.today(),'%F')+')\n')
-    for k in include:
-        entries = mapping[prefix_map[k]]
-        if len(entries):
-            log.write('\n## '+prefix_map[k]+'\n')
-            empty = False
-        for e in entries:
-            log.write(e+'\n')
+def main():
+    # grab the current upcoming version from crate manifest
+    VER = None
+    with open("./Cargo.toml", 'r') as manifest:
+        for l in manifest.readlines():
+            property = l.split('=', 1)
+            if(len(property) == 2 and property[0].strip() == 'version'):
+                VER = 'v'+property[1].strip().strip('\"')
+                break
         pass
-    if empty:
-        log.write("_There are no documented changes for this release._\n\n")
 
-print('autocl-info: Changelog written to:',logpath)
+    if VER.startswith('v0.0'):
+        exit("autocl-error: Crate version is too low for a release -> "+VER)
+
+    # store the last tagged version
+    PREV_VER = ''
+    try:
+        proc = subprocess.check_output('git describe --tags --abbrev=0', shell=True)
+        PREV_VER = proc.decode().strip()
+    except:
+        # do not exit on this error; just allow no range on `git log` call
+        # exit('autocl-error: No previous versions detected')
+        pass
+
+    # verify the version exists and is not the same as the previous version
+    if VER == None:
+        exit("autocl-error: Could not find Cargo crate version")
+    elif VER == PREV_VER:
+        exit("autocl-error: Cannot make changelog due to equal versions -> "+VER)
+
+    # create version range for filtering git commit log
+    if len(PREV_VER):
+        PREV_VER+='..'
+
+    # gather data about latest commits
+    commits = ''
+    try:
+        proc = subprocess.check_output('git log --pretty=format:"%s" '+PREV_VER, shell=True)
+        commits = proc.decode().strip()
+    except:
+        exit('autocl-error: No commits found in the repository')
+
+    # iterate through the available commits
+    for c in commits.splitlines(keepends=False):
+        if len(c) == 0:
+            continue
+        for f in prefix_map.keys():
+            if parse(f, c):
+                break
+        else:
+            print('autocl-warning: Skipping commit \"'+c+"\"")
+        pass
+
+    logpath ="./"+LOGFILE+".md"
+
+    # write the data to a changelog file in markdown format
+    with open(logpath, 'w') as log:
+        empty = True
+        log.write('# '+VER+' ('+date.strftime(date.today(),'%F')+')\n')
+        for k in include:
+            entries = mapping[prefix_map[k]]
+            if len(entries):
+                log.write('\n## '+prefix_map[k]+'\n')
+                empty = False
+            for e in entries:
+                log.write(e+'\n')
+            pass
+        if empty:
+            log.write("_There are no documented changes for this release._\n\n")
+
+    print('autocl-info: Changelog written to:',logpath)
+
+
+if __name__ == "__main__":
+    main()

@@ -51,17 +51,3 @@ jobs:
         with:
           name: ${{ env.PROJECT }}-${{ matrix.target }}
           path: ./${{ env.PROJECT }}-${{ matrix.target }}.zip
-
-  test-tools:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Fetch repository
-        uses: actions/checkout@v2
-
-      - name: Setup python
-        uses: actions/setup-python@v2.2.2
-        with:
-          python-version: 3.x
-
-      - name: Test python scripts
-        run: python -m unittest discover -s ./tools -p "*.py"

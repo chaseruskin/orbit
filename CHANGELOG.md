@@ -2,8 +2,4 @@
 
 # Changelog
 
-## 0.1.0 -
-- implements command-line interface
-- adds `--upgrade` flag
-
-## 0.0.0
+## 0.1.0 - unreleased

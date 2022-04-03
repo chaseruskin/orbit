@@ -1,2 +1,4 @@
 /target
 /docs/book
+
+__pycache__

@@ -3,7 +3,7 @@ on:
   workflow_call:
 
 env:
-  TARGET: orbit
+  PROJECT: orbit
 
 jobs:
   build:
@@ -12,11 +12,11 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - os: ubuntu-latest
-            platform: linux-x64
+            target: linux-x64
           - os: windows-latest
-            platform: windows-x64
+            target: windows-x64
           - os: macos-latest
-            platform: macos-x64
+            target: macos-x64
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -40,14 +40,28 @@ jobs:
 
       - name: Compress binary executable for Unix
         if: ${{ runner.os == 'macOS' || runner.os == 'Linux' }}
-        run: cd ./target/release && zip ./../../${{ env.TARGET }}-${{ matrix.platform }}.zip ${{ env.TARGET }}
+        run: cd ./target/release && zip ./../../${{ env.PROJECT }}-${{ matrix.target }}.zip ${{ env.PROJECT }}
 
       - name: Compress binary executable for Windows
         if: ${{ runner.os == 'Windows' }}
-        run: cd ./target/release && powershell.exe "compress-archive ${{ env.TARGET }}.exe ./../../${{ env.TARGET }}-${{ matrix.platform }}.zip"
+        run: cd ./target/release && powershell.exe "compress-archive ${{ env.PROJECT }}.exe ./../../${{ env.PROJECT }}-${{ matrix.target }}.zip"
 
-      - name: Upload ${{ matrix.platform }} artifact
+      - name: Upload ${{ matrix.target }} artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.TARGET }}-${{ matrix.platform }}
-          path: ./${{ env.TARGET }}-${{ matrix.platform }}.zip
+          name: ${{ env.PROJECT }}-${{ matrix.target }}
+          path: ./${{ env.PROJECT }}-${{ matrix.target }}.zip
+
+  test-tools:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch repository
+        uses: actions/checkout@v2
+
+      - name: Setup python
+        uses: actions/setup-python@v2.2.2
+        with:
+          python-version: 3.x
+
+      - name: Test python scripts
+        run: python -m unittest discover -p "*.py"

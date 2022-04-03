@@ -10,6 +10,7 @@ pub struct Orbit {
     help: bool,
     upgrade: bool,
     version: bool,
+    force: bool,
     command: Option<OrbitSubcommand>,
 }
 
@@ -59,6 +60,7 @@ impl FromCli for Orbit {
             help: cli.check_flag(Flag::new("help").switch('h'))?,
             version: cli.check_flag(Flag::new("version"))?,
             upgrade: cli.check_flag(Flag::new("upgrade"))?,
+            force: cli.check_flag(Flag::new("force"))?,
             command: cli.check_command(Positional::new("command"))?,
         });
         orbit
@@ -104,6 +106,7 @@ Commands:
 Options:
     --version       print version information and exit
     --upgrade       check for the latest orbit binary
+    --force         bypass interactive prompts
     --help, -h      print help information
 
 Use 'orbit help <command>' for more information about a command.
@@ -128,7 +131,6 @@ impl Orbit {
         };
 
         // check the connection to grab latest html data
-        //  https://github.com/c-rus/guessing-game/releases/download/v1.0.6/checksum.txt
         let url: &str = "https://github.com/c-rus/guessing-game/releases";
         let res = reqwest::get(url).await?;
         if res.status() != 200 {
@@ -249,11 +251,11 @@ impl std::fmt::Display for UpgradeError {
 use std::env;
 use std::path::PathBuf;
 
-fn get_exe_path<'a>() -> Result<PathBuf, Box::<dyn std::error::Error>> {
+fn get_exe_path() -> Result<PathBuf, Box::<dyn std::error::Error>> {
     match env::current_exe() {    
         Ok(exe_path) => {
-            // println!("found: {}", exe_path.display());
             let attr = std::fs::symlink_metadata(&exe_path)?;
+            // follow soft links 
             if attr.file_type().is_symlink() == true {
                 match std::fs::read_link(exe_path) {
                     Ok(p) => Ok(p),

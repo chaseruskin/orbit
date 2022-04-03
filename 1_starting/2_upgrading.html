@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Commands - The Book of Orbit</title>
+        <title>Upgrading - The Book of Orbit</title>
                 
 
         <!-- Custom HTML head -->
@@ -82,7 +82,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../1_starting/0_starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../1_starting/1_installing.html"><strong aria-hidden="true">1.1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="../1_starting/2_upgrading.html"><strong aria-hidden="true">1.2.</strong> Upgrading</a></li></ol></li><li class="chapter-item expanded "><a href="../2_tutorials/0_tutorials.html"><strong aria-hidden="true">2.</strong> Tutorials</a></li><li class="chapter-item expanded "><a href="../3_user/0_user.html"><strong aria-hidden="true">3.</strong> User Guide</a></li><li class="chapter-item expanded "><a href="../4_topic/0_topic.html"><strong aria-hidden="true">4.</strong> Topic Guide</a></li><li class="chapter-item expanded "><a href="../5_reference/0_reference.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../5_reference/1_packages.html"><strong aria-hidden="true">5.1.</strong> Packages</a></li><li class="chapter-item expanded "><a href="../5_reference/2_versions.html"><strong aria-hidden="true">5.2.</strong> Versions</a></li><li class="chapter-item expanded "><a href="../5_reference/3_command_line.html"><strong aria-hidden="true">5.3.</strong> Command line</a></li></ol></li><li class="chapter-item expanded "><a href="../6_commands/0_commands.html" class="active"><strong aria-hidden="true">6.</strong> Commands</a></li><li class="chapter-item expanded "><a href="../glossary.html"><strong aria-hidden="true">7.</strong> Appendix: Glossary</a></li></ol>            </div>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../1_starting/0_starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../1_starting/1_installing.html"><strong aria-hidden="true">1.1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="../1_starting/2_upgrading.html" class="active"><strong aria-hidden="true">1.2.</strong> Upgrading</a></li></ol></li><li class="chapter-item expanded "><a href="../2_tutorials/0_tutorials.html"><strong aria-hidden="true">2.</strong> Tutorials</a></li><li class="chapter-item expanded "><a href="../3_user/0_user.html"><strong aria-hidden="true">3.</strong> User Guide</a></li><li class="chapter-item expanded "><a href="../4_topic/0_topic.html"><strong aria-hidden="true">4.</strong> Topic Guide</a></li><li class="chapter-item expanded "><a href="../5_reference/0_reference.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../5_reference/1_packages.html"><strong aria-hidden="true">5.1.</strong> Packages</a></li><li class="chapter-item expanded "><a href="../5_reference/2_versions.html"><strong aria-hidden="true">5.2.</strong> Versions</a></li><li class="chapter-item expanded "><a href="../5_reference/3_command_line.html"><strong aria-hidden="true">5.3.</strong> Command line</a></li></ol></li><li class="chapter-item expanded "><a href="../6_commands/0_commands.html"><strong aria-hidden="true">6.</strong> Commands</a></li><li class="chapter-item expanded "><a href="../glossary.html"><strong aria-hidden="true">7.</strong> Appendix: Glossary</a></li></ol>            </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
 
@@ -143,17 +143,46 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="commands"><a class="header" href="#commands">Commands</a></h1>
+                        <h1 id="upgrading"><a class="header" href="#upgrading">Upgrading</a></h1>
+<p>Once Orbit is installed, it can be self-upgraded to the latest official version released found on its Github.</p>
+<pre><code>$ orbit --upgrade
+</code></pre>
+<p>This behavior performs the following strategy:</p>
+<ol>
+<li>
+<p>Connect to https://github.com/c-rus/orbit/releases to find the most recent released version.</p>
+</li>
+<li>
+<p>Check if the most recent version online is ahead of the currently installed version. </p>
+</li>
+</ol>
+<blockquote>
+<p><strong>Note</strong>: If the version online is ahead, it will prompt you to confirm you wish to install to the new version. This will be able to be skipped with a <code>--force</code> flag.</p>
+</blockquote>
+<ol start="3">
+<li>
+<p>Tries to find a suitable package for the current operating system and downloads it along with the checksum file.</p>
+</li>
+<li>
+<p>Computes the checksum for the downloaded package and verifies the checksum matches with the one listed in the file.</p>
+</li>
+<li>
+<p>Removes any executable in the executable's directory starting with <code>orbit-</code>, and renames the current executable to <code>orbit-&lt;version&gt;</code>.</p>
+</li>
+<li>
+<p>Decompresses the downloaded executable and places it in the current executable's directory.</p>
+</li>
+</ol>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                                                    <a rel="prev" href="../5_reference/3_command_line.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                                    <a rel="prev" href="../1_starting/1_installing.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
-                                                    <a rel="next" href="../glossary.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                                    <a rel="next" href="../2_tutorials/0_tutorials.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -163,11 +192,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                                    <a rel="prev" href="../5_reference/3_command_line.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                    <a rel="prev" href="../1_starting/1_installing.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
-                                    <a rel="next" href="../glossary.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                    <a rel="next" href="../2_tutorials/0_tutorials.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                             </nav>

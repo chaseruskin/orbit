@@ -13,9 +13,8 @@ jobs:
 
   check-release:
     uses: c-rus/orbit/.github/workflows/check-release.yml@trunk
-    needs: [integrity]
 
   release:
     uses: c-rus/orbit/.github/workflows/release.yml@trunk
     if: ${{ needs.check-release.outputs.ready == '1' }}
-    needs: [check-release]
+    needs: [check-release, integrity]

@@ -177,25 +177,25 @@
 </code></pre>
 <h3 id="windows"><a class="header" href="#windows">Windows</a></h3>
 <ol>
-<li>Open a terminal to where Orbit was downloaded.</li>
+<li>Open a terminal (Powershell) to where Orbit was downloaded.</li>
 <li>Make a new directory:</li>
 </ol>
-<pre><code>$ mkdir &quot;C:/Program Files (x86)/orbit/bin&quot;
+<pre><code>$ mkdir &quot;$env:LOCALAPPDATA\Programs\orbit\bin&quot;
 </code></pre>
 <ol start="3">
 <li>Move the executable to the new directory:</li>
 </ol>
-<pre><code>$ mv orbit.exe &quot;C:/Program Files (x86)/orbit/bin/orbit.exe&quot;
+<pre><code>$ mv orbit.exe &quot;$env:LOCALAPPDATA\Programs\orbit\bin\orbit.exe&quot;
 </code></pre>
 <ol start="4">
-<li>Open <em><strong>System properties</strong></em> and add <strong>C:/Program Files (x86)/orbit/bin</strong> to the PATH environment variable.</li>
+<li>Edit the user-level PATH environment variable in <em><strong>Control Panel</strong></em> by adding <strong>%LOCALAPPDATA%\Programs\orbit\bin</strong>.</li>
 </ol>
 <h2 id="2-installing-with-cargo"><a class="header" href="#2-installing-with-cargo">2. Installing with Cargo</a></h2>
 <blockquote>
 <p><strong>Note</strong>: This method is currently unavailable until Orbit is on <a href="https://crates.io">crates.io</a>.</p>
 </blockquote>
 <h2 id="checking-orbit-is-installed-correctly"><a class="header" href="#checking-orbit-is-installed-correctly">Checking Orbit is installed correctly</a></h2>
-<p>To verify orbit is working correctly on your system, run:</p>
+<p>To verify orbit is working correctly on your system, open a new terminal and run:</p>
 <pre><code>$ orbit --version
 </code></pre>
 <p>This should print out your version of orbit you installed. Congratulations!</p>

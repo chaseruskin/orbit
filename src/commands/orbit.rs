@@ -196,8 +196,24 @@ impl Orbit {
         temp_file.write_all(&body_bytes)?;
         let mut zip_archive = zip::ZipArchive::new(temp_file)?;
         // rename the current exe as format!("orbit-{}", VERSION)
-        let current_exe_dir = "."; //todo find exe path/directory
+        //let current_exe_dir = "."; //todo find exe path/directory
         //zip_archive.extract(current_exe_dir)?;
+        let exe_path = get_exe_path()?;
+        // println!("{}", exe_path.display());
+        let mut new_path = exe_path.clone();
+        new_path.pop();
+        let current_exe_dir = new_path.clone();
+        // find any old versions existing in folder
+        let paths = std::fs::read_dir(&current_exe_dir).unwrap();
+        for path in paths {
+            if path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap().starts_with("orbit-") {
+                println!("Removing old version: {}", path.as_ref().unwrap().path().display());
+                std::fs::remove_file(path.as_ref().unwrap().path())?;
+            }
+        }
+        let new_path = new_path.join(std::path::Path::new(&format!("orbit-{}", VERSION)));
+        std::fs::rename(exe_path, new_path)?;
+        zip_archive.extract(current_exe_dir)?;
         Ok(())
     }
 }
@@ -228,5 +244,26 @@ impl std::fmt::Display for UpgradeError {
             Self::UnsupportedOS => write!(f, "no pre-compiled binaries exist for your operating system"),
             Self::NoReleasesFound => write!(f, "no releases were found"),
         } 
+    }
+}
+
+use std::env;
+use std::path::PathBuf;
+
+fn get_exe_path<'a>() -> Result<PathBuf, Box::<dyn std::error::Error>> {
+    match env::current_exe() {    
+        Ok(exe_path) => {
+            // println!("found: {}", exe_path.display());
+            let attr = std::fs::symlink_metadata(&exe_path)?;
+            if attr.file_type().is_symlink() == true {
+                match std::fs::read_link(exe_path) {
+                    Ok(p) => Ok(p),
+                    Err(e) => Err(Box::new(e)),
+                }
+            } else {
+                Ok(exe_path)
+            }
+        },
+        Err(e) => Err(Box::new(e)),
     }
 }

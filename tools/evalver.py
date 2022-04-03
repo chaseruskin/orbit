@@ -1,10 +1,12 @@
 # ------------------------------------------------------------------------------
-# File     : evalver.py
-# Author   : Chase Ruskin
-# Abstract :
+# File: evalver.py
+# Author: Chase Ruskin
+# Abstract:
 #   Evaluate the version in the Cargo.toml manifest with the latest version of
 #   this branch. A '1' will indicate the current manifest version is larger
 #   than the previously tagged version. A '0' indicates otherwise.
+# Usage:
+#   python evalver.py
 # ------------------------------------------------------------------------------
 import subprocess
 import unittest

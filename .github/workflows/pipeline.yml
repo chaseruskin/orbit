@@ -7,12 +7,12 @@ jobs:
   build:
     uses: c-rus/orbit/.github/workflows/build.yml@trunk
 
-  integrity:
-    uses: c-rus/orbit/.github/workflows/integrity.yml@trunk
-    needs: [build]
-    
   tools:
     uses: c-rus/orbit/.github/workflows/tools.yml@trunk
+    
+  integrity:
+    uses: c-rus/orbit/.github/workflows/integrity.yml@trunk
+    needs: [tools, build]
 
   check-release:
     uses: c-rus/orbit/.github/workflows/check-release.yml@trunk

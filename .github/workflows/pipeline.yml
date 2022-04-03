@@ -23,4 +23,4 @@ jobs:
     if: ${{ needs.check-release.outputs.ready == '1' }}
     needs: [check-release, integrity]
     with:
-      target: ${{ needs.check-release.outputs.version }}
+      version: ${{ needs.check-release.outputs.version }}

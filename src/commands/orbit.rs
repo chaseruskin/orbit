@@ -20,6 +20,7 @@ impl Command for Orbit {
 }
 
 use reqwest;
+use colored::*;
 
 impl Orbit {
     fn run(&self) -> () {
@@ -45,7 +46,7 @@ impl Orbit {
         println!("info: checking for latest orbit binary...");
         match Self::connect() {
             Ok(()) => (),
-            Err(e) => eprintln!("error: {}", e),
+            Err(e) => eprintln!("{} {}", "error:".red().bold(), e),
         }
         Ok(())
     }
@@ -163,7 +164,7 @@ impl Orbit {
         let pkg_url = format!("{}/download/v{}/{}",&url, &version, &pkg);
         let res = reqwest::get(&pkg_url).await?;
         if res.status() != 200 {
-            return Err(Box::new(UpgradeError::FailedDownload(url.to_string(), res.status())))?
+            return Err(Box::new(UpgradeError::FailedDownload(pkg_url.to_string(), res.status())))?
         }
         let body_bytes = res.bytes().await?;
         // compute the checksum on the downloaded zip file
@@ -172,6 +173,9 @@ impl Orbit {
         // download the list of checksums
         let sum_url = format!("{}/download/v{}/checksum.txt", &url, &version);
         let res = reqwest::get(&sum_url).await?;
+        if res.status() != 200 {
+            return Err(Box::new(UpgradeError::FailedDownload(sum_url.to_string(), res.status())))?
+        }
         // search the checksums for the downloaded pkg and verify they match
         let checksums = String::from_utf8(res.bytes().await?.to_vec())?;
         checksums.split_terminator('\n').find_map(|p| {
@@ -193,7 +197,7 @@ impl Orbit {
         let mut zip_archive = zip::ZipArchive::new(temp_file)?;
         // rename the current exe as format!("orbit-{}", VERSION)
         let current_exe_dir = "."; //todo find exe path/directory
-        zip_archive.extract(current_exe_dir)?;
+        //zip_archive.extract(current_exe_dir)?;
         Ok(())
     }
 }
@@ -219,8 +223,8 @@ impl std::fmt::Display for UpgradeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
         match self {
             Self::BadChecksum => write!(f, "checksums did not match, please try again"),
-            Self::FailedConnection(url, status) => write!(f, "connection to internet failed for request\n\nurl: {}\nstatus: {}", url, status),
-            Self::FailedDownload(url, status) => write!(f, "download failed for request\n\nurl: {}\nstatus: {}", url, status),
+            Self::FailedConnection(url, status) => write!(f, "connection failed\n\nurl: {}\nstatus: {}", url, status),
+            Self::FailedDownload(url, status) => write!(f, "download failed\n\nurl: {}\nstatus: {}", url, status),
             Self::UnsupportedOS => write!(f, "no pre-compiled binaries exist for your operating system"),
             Self::NoReleasesFound => write!(f, "no releases were found"),
         } 

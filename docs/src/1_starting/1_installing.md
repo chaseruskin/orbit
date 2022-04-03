@@ -18,16 +18,16 @@ $ mv orbit /usr/local/bin/orbit
 ```
 
 ### Windows
-1. Open a terminal to where Orbit was downloaded.
+1. Open a terminal (Powershell) to where Orbit was downloaded.
 2. Make a new directory:  
 ```
-$ mkdir "C:/Program Files (x86)/orbit/bin"
+$ mkdir "$env:LOCALAPPDATA\Programs\orbit\bin"
 ```
 3. Move the executable to the new directory:
 ```
-$ mv orbit.exe "C:/Program Files (x86)/orbit/bin/orbit.exe"
+$ mv orbit.exe "$env:LOCALAPPDATA\Programs\orbit\bin\orbit.exe"
 ```
-4. Open ___System properties___ and add __C:/Program Files (x86)/orbit/bin__ to the PATH environment variable.
+4. Edit the user-level PATH environment variable in ___Control Panel___ by adding __%LOCALAPPDATA%\Programs\orbit\bin__.
 
 ## 2. Installing with Cargo
 
@@ -35,7 +35,7 @@ $ mv orbit.exe "C:/Program Files (x86)/orbit/bin/orbit.exe"
 
 ## Checking Orbit is installed correctly
 
-To verify orbit is working correctly on your system, run:
+To verify orbit is working correctly on your system, open a new terminal and run:
 ```
 $ orbit --version
 ```

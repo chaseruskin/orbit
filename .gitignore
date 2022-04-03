@@ -2,3 +2,5 @@
 /docs/book
 
 __pycache__
+RELEASE_NOTES.md
+CHANGELOG_MERGE.md

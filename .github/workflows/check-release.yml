@@ -5,12 +5,16 @@ on:
       ready:
         description: 'Auto-release conditional indicator'
         value: ${{ jobs.parameters.outputs.ready }}
+      version:
+        description: 'Version to release'
+        value: ${{ jobs.parameters.outputs.version }}
 
 jobs:
   check-release:
     runs-on: ubuntu-latest
     outputs:
       ready: ${{ steps.ready.outputs.ready }}
+      version: ${{ steps.ready.outputs.version }}
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v2
@@ -22,7 +26,11 @@ jobs:
         uses: actions/setup-python@v2.2.2
         with:
           python-version: 3.x
-          
+
+      - name: Extract Cargo crate version
+        id: version
+        run: echo "::set-output name=version::$(python ./tools/evalver.py --version)"
+
       - name: Evaluate Cargo crate version
         id: ready
         run: echo "::set-output name=ready::$(python ./tools/evalver.py)"

@@ -6,9 +6,11 @@
 #   this branch. A '1' will indicate the current manifest version is larger
 #   than the previously tagged version. A '0' indicates otherwise.
 # Usage:
-#   python evalver.py
+#   python evalver.py [--version]
+# Options:
+#   --version       print the cargo crate manifest version and exit
 # ------------------------------------------------------------------------------
-import subprocess
+import subprocess, sys
 import unittest
 from typing import List
 
@@ -68,6 +70,11 @@ def main():
         current_version = extract_crate_version(manifest.readlines())
     if current_version == None:
         exit('error: bad cargo crate manifest file (could not find version)')
+
+    # print the cargo crate manifest version and exit
+    if sys.argv.count('--version'):
+        print(current_version)
+        exit()
 
     # store the last tagged version
     proc = subprocess.check_output('git tag --list', shell=True)

@@ -10,7 +10,6 @@
 #   '''
 # Usage:    
 #   pyton sum.py <pattern>
-#
 # Args:
 #   <pattern>   a filepath pattern to collect a common set files
 # ------------------------------------------------------------------------------

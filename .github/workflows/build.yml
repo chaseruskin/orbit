@@ -42,7 +42,7 @@ jobs:
         run: cargo test
 
       - name: Package and compress binary executable
-        run: ./tools/pack.py ${{ env.TARGET }}
+        run: python ./tools/pack.py ${{ env.TARGET }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2

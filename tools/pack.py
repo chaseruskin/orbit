@@ -52,6 +52,10 @@ def main():
 
     # compress data
     shutil.make_archive(pkg, 'zip', os.path.dirname(root), base_dir=pkg)
+
+    # verify the zipped package exists
+    if os.path.exists('./'+pkg+'.zip') == False:
+        exit('error: zip package was not created')
     pass
 
 

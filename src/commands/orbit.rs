@@ -30,10 +30,11 @@ impl Orbit {
             println!("orbit {}", VERSION);
         // prioritize upgrade information
         } else if self.upgrade == true {
-            match Self::upgrade() {
-                Ok(_) => (),
-                Err(e) => eprintln!("upgrade-error: {}", e),
-            }
+            println!("info: checking for latest orbit binary...");
+            match self.upgrade() {
+                Ok(i) => println!("info: {}", i),
+                Err(e) => eprintln!("{} {}", "error:".red().bold(), e),
+            };
         // run the specified command
         } else if let Some(c) = &self.command {
             c.exec();
@@ -41,15 +42,6 @@ impl Orbit {
         } else {
             println!("{}", HELP);
         }
-    }
-
-    fn upgrade() -> Result<(), String> {
-        println!("info: checking for latest orbit binary...");
-        match Self::connect() {
-            Ok(()) => (),
-            Err(e) => eprintln!("{} {}", "error:".red().bold(), e),
-        }
-        Ok(())
     }
 }
 
@@ -112,45 +104,47 @@ Options:
 Use 'orbit help <command>' for more information about a command.
 ";
 
-
 use crate::core::version;
+use crate::util::sha256;
 use std::str::FromStr;
+use std::io::Write;
+use zip;
+use tempfile;
 
 impl Orbit {
     #[tokio::main]
-    async fn connect() -> Result<(), Box<dyn std::error::Error>> {
-
-        // :todo: use {std::env::consts::ARCH, std::env::consts::OS} to get available target
-
-        // bail early if the user has a unsupported os
-        let os: &str = if cfg!(target_os = "windows") {
-            "windows"
-        } else if cfg!(target_os = "linux") {
-            "linux"
-        } else if cfg!(target_os = "macos") {
-            "macos"
-        } else {
-            return Err(Box::new(UpgradeError::UnsupportedOS))?
-        };
+    async fn upgrade(&self) -> Result<String, Box<dyn std::error::Error>> {
+        // check for stale versions at the current executable's path
+        let exe_path = get_exe_path()?;
+        let mut current_exe_dir = exe_path.clone();
+        current_exe_dir.pop();
+        // find any old versions existing in executable's current folder
+        let paths = std::fs::read_dir(&current_exe_dir)?;
+        for path in paths {
+            if path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap().starts_with("orbit-") {
+                // remove stale binaries
+                std::fs::remove_file(path.as_ref().unwrap().path())?;
+            }
+        }
 
         // check the connection to grab latest html data
-        let url: &str = "https://github.com/c-rus/guessing-game/releases";
-        let res = reqwest::get(url).await?;
+        let base_url: &str = "https://github.com/c-rus/orbit/releases";
+        let res = reqwest::get(base_url).await?;
         if res.status() != 200 {
-            return Err(Box::new(UpgradeError::FailedConnection(url.to_string(), res.status())))?
+            return Err(Box::new(UpgradeError::FailedConnection(base_url.to_string(), res.status())))?
         }
 
         // create body into string to find the latest version
         let body = res.text().await?;
-        let key = "href=\"/c-rus/guessing-game/releases/tag/";
+        let key = "href=\"/c-rus/orbit/releases/tag/";
 
         // if cannot find the key then the releases page failed to auto-detect in html data
         let pos = match body.find(&key) {
             Some(r) => r,
             None => return Err(Box::new(UpgradeError::NoReleasesFound))?
         };
-        // +1 to drop the leading 'v' with a version tag
-        let (_, sub) = body.split_at(pos+key.len()+1);
+        // assumes tag is complete version i.e. 1.0.0
+        let (_, sub) = body.split_at(pos+key.len());
         let (version, _) = sub.split_once('\"').unwrap();
 
         // our current version is guaranteed to be valid
@@ -158,86 +152,111 @@ impl Orbit {
         // the latest version 
         let latest = version::Version::from_str(version).expect("invalid version released");
         if latest > current {
-            println!("info: a new version is available ({}), would you like to upgrade? [y/n]", latest);
+            // await user input
+            if self.force == false {
+                println!("info: a new version is available ({}), would you like to upgrade? [y/n]", latest);
+                let mut line = String::new();
+                let proceed = loop {
+                    std::io::stdin().read_line(&mut line).unwrap();
+                    let result = match line.to_lowercase().as_ref() {
+                        "\n" | "y\n" => Some(true),
+                        "n\n" => Some(false),
+                        _ => {
+                            line = String::new();
+                            None
+                        },
+                    };
+                    if let Some(r) = result {
+                        break r
+                    };
+                };
+                if proceed == false {
+                    return Ok(String::from("upgrade cancelled"))
+                }
+            }
         } else {
-            println!("info: you have the latest version already ({}).", latest);
-            return Ok(());
+            return Ok(format!("the latest version is already installed ({})", &latest));
         }
-    
-        let pkg = format!("guessing-game-{}-x64.zip", &os);
-        // download the zip file
-        let pkg_url = format!("{}/download/v{}/{}",&url, &version, &pkg);
+
+        // download the list of checksums
+        let sum_url = format!("{0}/download/{1}/orbit-{1}-checksums.txt", &base_url, &latest);
+        let res = reqwest::get(&sum_url).await?;
+        if res.status() != 200 {
+            return Err(Box::new(UpgradeError::FailedDownload(sum_url.to_string(), res.status())))?
+        }
+
+        // store user's target
+        let target = format!("{}-{}", std::env::consts::ARCH, std::env::consts::OS);
+        
+        let checksums = String::from_utf8(res.bytes().await?.to_vec())?;
+        let pkg = format!("orbit-{}-{}.zip", &latest, &target);
+        // search the checksums to check if the desired pkg is available for download
+        let cert = checksums.split_terminator('\n').find_map(|p| {
+            let (cert, key) = p.split_once(' ').expect("bad checksum file format");
+            if key == pkg  {
+                Some(sha256::Sha256Hash::from_str(cert).expect("bad checksum format"))
+            } else {
+                None
+            }
+        });
+        // verify there was a certificate/checksum for the requested pkg
+        let cert = match cert {
+            Some(c) => c,
+            None => return Err(Box::new(UpgradeError::UnsupportedTarget(target)))?,
+        };
+
+        // download the zip pkg file
+        let pkg_url = format!("{}/download/{}/{}",&base_url, &latest, &pkg);
         let res = reqwest::get(&pkg_url).await?;
         if res.status() != 200 {
             return Err(Box::new(UpgradeError::FailedDownload(pkg_url.to_string(), res.status())))?
         }
         let body_bytes = res.bytes().await?;
+
         // compute the checksum on the downloaded zip file
         let sum = sha256::compute_sha256(&body_bytes);
+        // verify the checksums match
+        match sum == cert {
+            true => println!("info: verified download"),
+            false =>  return Err(Box::new(UpgradeError::BadChecksum))?,
+        };
 
-        // download the list of checksums
-        let sum_url = format!("{}/download/v{}/checksum.txt", &url, &version);
-        let res = reqwest::get(&sum_url).await?;
-        if res.status() != 200 {
-            return Err(Box::new(UpgradeError::FailedDownload(sum_url.to_string(), res.status())))?
-        }
-        // search the checksums for the downloaded pkg and verify they match
-        let checksums = String::from_utf8(res.bytes().await?.to_vec())?;
-        checksums.split_terminator('\n').find_map(|p| {
-            let (cert, key) = p.split_once(' ').expect("bad checksum file format");
-            if key == pkg  {
-                match sum == sha256::Sha256Hash::from_str(cert).expect("bad checksum") {
-                    true => Some(Ok(())),
-                    false => Some(Err(UpgradeError::BadChecksum))
-                }
-            } else {
-                None
-            }
-        }).expect("missing package in checksum.txt")?;
-        println!("info: verified download");
-
-        // unzip the bytes and then write to a file and rename current exe
+        // unzip the bytes and put file in temporary file
         let mut temp_file = tempfile::tempfile()?;
         temp_file.write_all(&body_bytes)?;
         let mut zip_archive = zip::ZipArchive::new(temp_file)?;
-        let exe_path = get_exe_path()?;
-        let mut new_path = exe_path.clone();
-        new_path.pop();
-        let current_exe_dir = new_path.clone();
-        // find any old versions existing in folder
-        let paths = std::fs::read_dir(&current_exe_dir).unwrap();
-        for path in paths {
-            if path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap().starts_with("orbit-") {
-                //println!("Removing old version: {}", path.as_ref().unwrap().path().display());
-                // uncomment the following line to remove old binaries
-                //std::fs::remove_file(path.as_ref().unwrap().path())?;
-            }
-        }
-        // uncomment the following lines to rename current binary to a stale state
-        //let new_path = new_path.join(std::path::Path::new(&format!("orbit-{}", VERSION)));
-        //std::fs::rename(exe_path, new_path)?;
-        // decompress zip to 
+
+        // decompress zip file to a temporary directory
         let temp_dir = tempfile::tempdir()?;
         zip_archive.extract(&temp_dir)?;
-        // :todo: use std::env::consts::EXE_EXTENSION to copy binary from tempdir
-        // std::fs::copy(temp_dir.path().join("guessing-game/bin/guessing-game"), exe_path)?;
-        Ok(())
+
+        let exe_ext = if std::env::consts::EXE_EXTENSION.is_empty() == false { "" } else { ".exe" };
+
+        // verify the path to the new executable exists before renaming current binary
+        let temp_exe_path = temp_dir.path().join(&format!("orbit-{}-{}/bin/orbit{}", &latest, &target, &exe_ext));
+        if std::path::Path::exists(&temp_exe_path) == false {
+            return Err(Box::new(UpgradeError::MissingExe))?;
+        }
+
+        // rename the current binary with its version to become a 'stale binary'
+        let stale_exe_path = current_exe_dir.join(&format!("orbit-{}", VERSION));
+        std::fs::rename(&exe_path, &stale_exe_path)?;
+
+        // copy the executable from the temporary directory to the original location
+        std::fs::copy(&temp_exe_path, &exe_path)?;
+
+        Ok(String::from(format!("successfully upgraded orbit to version {}", &latest)))
     }
 }
 
-use std::io::Write;
-use zip;
-use tempfile;
-
-use crate::util::sha256;
-
 #[derive(Debug, PartialEq)]
 enum UpgradeError {
-    UnsupportedOS,
+    UnsupportedTarget(String),
     FailedConnection(String, reqwest::StatusCode),
     FailedDownload(String, reqwest::StatusCode),
     NoReleasesFound,
     BadChecksum,
+    MissingExe,
 }
 
 impl std::error::Error for UpgradeError {}
@@ -245,12 +264,13 @@ impl std::error::Error for UpgradeError {}
 impl std::fmt::Display for UpgradeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
         match self {
+            Self::MissingExe => write!(f, "failed to find the binary in the downloaded package"),
             Self::BadChecksum => write!(f, "checksums did not match, please try again"),
             Self::FailedConnection(url, status) => write!(f, "connection failed\n\nurl: {}\nstatus: {}", url, status),
             Self::FailedDownload(url, status) => write!(f, "download failed\n\nurl: {}\nstatus: {}", url, status),
-            Self::UnsupportedOS => write!(f, "no pre-compiled binaries exist for your operating system"),
+            Self::UnsupportedTarget(t) => write!(f, "no pre-compiled binaries exist for the current target {}", t),
             Self::NoReleasesFound => write!(f, "no releases were found"),
-        } 
+        }
     }
 }
 

@@ -20,14 +20,17 @@ jobs:
     - name: Display filesystem contents
       run: ls -R
 
+    - name: Identify current version
+      run: echo "VERSION=$(./tools/evalver.py --version)" >> $GITHUB_ENV
+
     - name: Compute checksums
-      run: echo "$(./tools/sum.py "./**/orbit-*.zip")" > ./checksum.txt
+      run: echo "$(./tools/sum.py "./**/orbit-*.zip")" > ./orbit-${{ env.VERSION }}-checksums.txt
 
     - name: Review checksums
-      run: cat ./checksum.txt
+      run: cat ./orbit-${{ env.VERSION }}-checksums.txt
 
     - name: Upload checksums
       uses: actions/upload-artifact@v2
       with:
-        name: checksum
-        path: ./checksum.txt
+        name: orbit-${{ env.VERSION }}-checksums
+        path: ./orbit-${{ env.VERSION }}-checksums.txt

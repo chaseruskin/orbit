@@ -29,11 +29,12 @@ jobs:
       - name: Enable Cargo caching
         uses: Swatinem/rust-cache@v1
 
-      - name: Identify target triple
+      - name: Identify target triple and current version
         shell: bash
         run: |
           rustc ./tools/target-triple.rs -o ./tools/target-triple.exe
           echo "TARGET=$(./tools/target-triple.exe)" >> $GITHUB_ENV
+          echo "VERSION=$(python ./tools/evalver.py --version)" >> $GITHUB_ENV
 
       - name: Build
         run: cargo build --release
@@ -42,10 +43,10 @@ jobs:
         run: cargo test
 
       - name: Package and compress binary executable
-        run: python ./tools/pack.py ${{ env.TARGET }}
+        run: python ./tools/pack.py ${{ env.VERSION }}-${{ env.TARGET }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.PROJECT }}-${{ env.TARGET }}
-          path: ./${{ env.PROJECT }}-${{ env.TARGET }}.zip
+          name: ${{ env.PROJECT }}-${{ env.VERSION }}-${{ env.TARGET }}
+          path: ./${{ env.PROJECT }}-${{ env.VERSION }}-${{ env.TARGET }}.zip

@@ -11,10 +11,9 @@
 # ------------------------------------------------------------------------------
 import shutil, os, sys
 
-def pack(src: str, dst: str) -> None:
+def pack(root: str, src: str, dst: str) -> None:
     '''Places the specified file/directory into final package directory. Fails if
     the `src` does not exist.'''
-    root = './target/orbit'
     if os.path.isfile(src) == True:
         # create missing directories for particular file
         if os.path.exists(root+os.path.dirname(dst)) == False:
@@ -27,28 +26,31 @@ def pack(src: str, dst: str) -> None:
 
 
 def main():
+    global project
     if len(sys.argv) != 2:
         exit('error: accepts one argument <target>')
     target = sys.argv[1]
 
     project = 'orbit'
+    pkg = project+'-'+target
 
+    root = './target/'+pkg
     # clean and create new directory for packaging
-    if os.path.isdir('./target/'+project) == True:
-        shutil.rmtree('./target/'+project)
-    os.mkdir('./target/'+project)
+    if os.path.isdir(root) == True:
+        shutil.rmtree(root)
+    os.mkdir(root)
 
     bin = '/'+project 
     # append '.exe' to grab windows executable
     if target.lower().count('windows') == True: bin += '.exe'
 
     # place binary in bin/
-    pack('./target/release'+bin, '/bin/'+bin)
+    pack(root, './target/release'+bin, '/bin/'+bin)
     # place license at root
-    pack('./LICENSE', '/LICENSE')
+    pack(root, './LICENSE', '/LICENSE')
 
     # compress data
-    shutil.make_archive(project+'-'+target, 'zip', './target', base_dir=project)
+    shutil.make_archive(pkg, 'zip', os.path.dirname(root), base_dir=pkg)
     pass
 
 

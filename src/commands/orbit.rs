@@ -119,6 +119,9 @@ use std::str::FromStr;
 impl Orbit {
     #[tokio::main]
     async fn connect() -> Result<(), Box<dyn std::error::Error>> {
+
+        // :todo: use {std::env::consts::ARCH, std::env::consts::OS} to get available target
+
         // bail early if the user has a unsupported os
         let os: &str = if cfg!(target_os = "windows") {
             "windows"
@@ -216,6 +219,7 @@ impl Orbit {
         // decompress zip to 
         let temp_dir = tempfile::tempdir()?;
         zip_archive.extract(&temp_dir)?;
+        // :todo: use std::env::consts::EXE_EXTENSION to copy binary from tempdir
         // std::fs::copy(temp_dir.path().join("guessing-game/bin/guessing-game"), exe_path)?;
         Ok(())
     }

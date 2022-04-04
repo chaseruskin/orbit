@@ -10,14 +10,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          - os: ubuntu-latest
-            target: linux-x64
-          - os: windows-latest
-            target: windows-x64
-          - os: macos-latest
-            target: macos-x64
-
     runs-on: ${{ matrix.os }}
     steps:
       - name: Fetch repository
@@ -37,6 +29,12 @@ jobs:
       - name: Enable Cargo caching
         uses: Swatinem/rust-cache@v1
 
+      - name: Identify target triple
+        shell: bash
+        run: |
+          rustc ./tools/target-triple.rs -o ./tools/target-triple.exe
+          echo "TARGET=$(./tools/target-triple.exe)" >> $GITHUB_ENV
+
       - name: Build
         run: cargo build --release
 
@@ -44,10 +42,10 @@ jobs:
         run: cargo test
 
       - name: Package and compress binary executable
-        run: python ./tools/pack.py ${{ matrix.target }}
+        run: python ./tools/pack.py ${{ env.TARGET }}
 
-      - name: Upload ${{ matrix.target }} artifact
+      - name: Upload ${{ env.TARGET }} artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.PROJECT }}-${{ matrix.target }}
-          path: ./${{ env.PROJECT }}-${{ matrix.target }}.zip
+          name: ${{ env.PROJECT }}-${{ env.TARGET }}
+          path: ./${{ env.PROJECT }}-${{ env.TARGET }}.zip

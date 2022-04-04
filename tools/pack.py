@@ -2,7 +2,8 @@
 # File: pack.py
 # Author: Chase Ruskin
 # Abstract:
-#
+#   Packages project files into single folder and compresses them using zip 
+#   archive format for distribution.
 # Usage:    
 #   python pack.py <target>
 # Args:
@@ -28,15 +29,16 @@ def pack(src: str, dst: str) -> None:
 def main():
     if len(sys.argv) != 2:
         exit('error: accepts one argument <target>')
-
     target = sys.argv[1]
 
-    # clean and create new directory for packaging
-    if os.path.isdir('./target/orbit') == True:
-        shutil.rmtree('./target/orbit')
-    os.mkdir('./target/orbit')
+    project = 'orbit'
 
-    bin = '/orbit' 
+    # clean and create new directory for packaging
+    if os.path.isdir('./target/'+project) == True:
+        shutil.rmtree('./target/'+project)
+    os.mkdir('./target/'+project)
+
+    bin = '/'+project 
     # append '.exe' to grab windows executable
     if target.lower().count('windows') == True: bin += '.exe'
 
@@ -46,7 +48,7 @@ def main():
     pack('./LICENSE', '/LICENSE')
 
     # compress data
-    shutil.make_archive('orbit-'+target, 'zip', './target', base_dir='orbit')
+    shutil.make_archive(project+'-'+target, 'zip', './target', base_dir=project)
     pass
 
 

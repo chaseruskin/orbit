@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # ------------------------------------------------------------------------------
 # File: evalver.py
 # Author: Chase Ruskin

@@ -21,7 +21,7 @@ jobs:
       run: ls -R
 
     - name: Compute checksums
-      run: echo "$(python ./tools/sum.py "./**/orbit-*.zip")" > ./checksum.txt
+      run: echo "$(./tools/sum.py "./**/orbit-*.zip")" > ./checksum.txt
 
     - name: Review checksums
       run: cat ./checksum.txt

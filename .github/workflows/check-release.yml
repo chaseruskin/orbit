@@ -29,8 +29,8 @@ jobs:
 
       - name: Extract Cargo crate version
         id: version
-        run: echo "::set-output name=version::$(python ./tools/evalver.py --version)"
+        run: echo "::set-output name=version::$(./tools/evalver.py --version)"
 
       - name: Evaluate Cargo crate version
         id: ready
-        run: echo "::set-output name=ready::$(python ./tools/evalver.py)"
+        run: echo "::set-output name=ready::$(./tools/evalver.py)"

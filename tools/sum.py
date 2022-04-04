@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # ------------------------------------------------------------------------------
 # File: sum.py
 # Author: Chase Ruskin
@@ -16,7 +17,6 @@
 import hashlib
 import unittest
 import glob, os, sys
-from typing import List
 
 def compute_sha256(data: bytes) -> str:
     '''Compute the sha256 using built-in library function.'''
@@ -31,7 +31,7 @@ def main():
     pkgs = glob.glob(pattern)
 
     if len(pkgs) == 0:
-        exit("error: found zero matches for",pattern)
+        exit("error: found zero matches for "+pattern)
 
     for pkg in pkgs:
         with open(pkg, 'rb') as f:

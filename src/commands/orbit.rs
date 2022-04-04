@@ -214,7 +214,9 @@ impl Orbit {
         //let new_path = new_path.join(std::path::Path::new(&format!("orbit-{}", VERSION)));
         //std::fs::rename(exe_path, new_path)?;
         // decompress zip to 
-        //zip_archive.extract(current_exe_dir)?;
+        let temp_dir = tempfile::tempdir()?;
+        zip_archive.extract(&temp_dir)?;
+        // std::fs::copy(temp_dir.path().join("guessing-game/bin/guessing-game"), exe_path)?;
         Ok(())
     }
 }

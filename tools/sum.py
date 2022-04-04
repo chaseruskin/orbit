@@ -9,7 +9,7 @@
 #   67cf113292aedfdb788e63da973c5de0d2ae4dc1c649cb3718dddbb9f6a5dd7f main.rs
 #   '''
 # Usage:    
-#   pyton sum.py <pattern>
+#   python sum.py <pattern>
 # Args:
 #   <pattern>   a filepath pattern to collect a common set files
 # ------------------------------------------------------------------------------

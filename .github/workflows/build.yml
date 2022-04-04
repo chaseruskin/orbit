@@ -44,7 +44,7 @@ jobs:
       - name: Package and compress binary executable
         run: python ./tools/pack.py ${{ env.TARGET }}
 
-      - name: Upload ${{ env.TARGET }} artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: ${{ env.PROJECT }}-${{ env.TARGET }}

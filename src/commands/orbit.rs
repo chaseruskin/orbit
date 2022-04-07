@@ -3,7 +3,7 @@ use crate::FromCli;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Positional};
 use crate::interface::errors::CliError;
-
+use crate::util::prompt;
 
 #[derive(Debug, PartialEq)]
 pub struct Orbit {
@@ -154,23 +154,7 @@ impl Orbit {
         if latest > current {
             // await user input
             if self.force == false {
-                println!("info: a new version is available ({}), would you like to upgrade? [y/n]", latest);
-                let mut line = String::new();
-                let proceed = loop {
-                    std::io::stdin().read_line(&mut line).unwrap();
-                    let result = match line.to_lowercase().as_ref() {
-                        "\n" | "y\n" => Some(true),
-                        "n\n" => Some(false),
-                        _ => {
-                            line = String::new();
-                            None
-                        },
-                    };
-                    if let Some(r) = result {
-                        break r
-                    };
-                };
-                if proceed == false {
+                if prompt::prompt(&format!("info: a new version is available ({}), would you like to upgrade", latest))? == false {
                     return Ok(String::from("upgrade cancelled"))
                 }
             }

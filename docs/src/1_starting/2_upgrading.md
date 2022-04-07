@@ -8,16 +8,21 @@ $ orbit --upgrade
 
 This behavior performs the following strategy:
 
-1. Connect to https://github.com/c-rus/orbit/releases to find the most recent released version.
+1. Removes any executable in the executable's directory starting with `orbit-` (these are considered stale binaries, such as `orbit-0.1.0`).
 
-2. Check if the most recent version online is ahead of the currently installed version. 
+2. Connects to https://github.com/c-rus/orbit/releases to find the most recent released version.
 
-> __Note__: If the version online is ahead, it will prompt you to confirm you wish to install to the new version. This will be able to be skipped with a `--force` flag.
+3. Checks if the most recent version online is ahead of the currently installed version. 
 
-3. Tries to find a suitable package for the current operating system and downloads it along with the checksum file.
+> __Note__: If the version online is newer, a prompt will appear to confirm you wish to install the new version. This prompt can be bypassed by adding the `--force` flag to the above command.
 
-4. Computes the checksum for the downloaded package and verifies the checksum matches with the one listed in the file.
+4. Downloads the checksum file to a temporary directory to see if there is a prebuilt package available for the current architecture and operating system.
 
-5. Removes any executable in the executable's directory starting with `orbit-`, and renames the current executable to `orbit-<version>`.
+5. Downloads the package to a temporary directory and computes the checksum to verify the contents.
 
-6. Decompresses the downloaded executable and places it in the current executable's directory.
+6. Renames the current executable by appending its version to the name (marking it as a stale binary, such as `orbit-0.1.1`).
+
+7. Unzips the package and moves the new executable to the original executable's location.
+
+
+> __Note__: If you wish to remove the newly created stale binary after an upgrade, rerunning `$ orbit --upgrade` immediately again will perform step 1 and stop at step 3.

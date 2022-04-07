@@ -4,30 +4,38 @@ There are two main methods for getting orbit running on your system: downloading
 
 ## 1. Downloading a precompiled binary
 
-1.  Visit to the [releases](https://github.com/c-rus/orbit/releases) page on Orbit's Github to find all official releases. 
-2. Download the binary for your operating system.
-3. Place orbit in a location recognized by the PATH environment variable.
+1.  Visit Orbit's [releases](https://github.com/c-rus/orbit/releases) page on Github to find all official releases. 
+2. Download the binary for your architecture and operating system.
+3. Place the Orbit executable (`orbit` for unix and `orbit.exe` for windows) in a location recognized by the PATH environment variable.
 
 There are multiple ways to accomplish step 3. The following outlines one way depending on the user's operating system. 
 
 ### Unix
 1. Open a terminal to where Orbit was downloaded.
-2. Move the executable to a location already set in the PATH environment variable:  
+2. Unzip the prebuilt package.
 ```
-$ mv orbit /usr/local/bin/orbit
+$ unzip orbit-1.0.0-x86_64-macos.zip
+```
+3. Move the executable to a location already set in the PATH environment variable. 
+```
+$ mv ./orbit-1.0.0-x86_64-macos/bin/orbit /usr/local/bin/orbit
 ```
 
 ### Windows
 1. Open a terminal (Powershell) to where Orbit was downloaded.
-2. Make a new directory:  
+2. Unzip the prebuilt package.
 ```
-$ mkdir "$env:LOCALAPPDATA\Programs\orbit\bin"
+$ expand-archive ".\orbit-1.0.0-x86_64-windows.zip" -destinationpath .
 ```
-3. Move the executable to the new directory:
+3. Make a new directory to store this package.
 ```
-$ mv orbit.exe "$env:LOCALAPPDATA\Programs\orbit\bin\orbit.exe"
+new-item -path "$env:LOCALAPPDATA\Programs\orbit" -itemtype directory
 ```
-4. Edit the user-level PATH environment variable in ___Control Panel___ by adding __%LOCALAPPDATA%\Programs\orbit\bin__.
+4. Move the package to the new directory.
+```
+$ copy-item ".\orbit-1.0.0-x86_64-windows\*" -destination "$env:LOCALAPPDATA\Programs\orbit" -recurse
+```
+5. Edit the user-level PATH environment variable in ___Control Panel___ by adding __%LOCALAPPDATA%\Programs\orbit\bin__.
 
 ## 2. Installing with Cargo
 

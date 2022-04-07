@@ -147,31 +147,41 @@
 <p>There are two main methods for getting orbit running on your system: downloading a precompiled binary or using cargo.</p>
 <h2 id="1-downloading-a-precompiled-binary"><a class="header" href="#1-downloading-a-precompiled-binary">1. Downloading a precompiled binary</a></h2>
 <ol>
-<li>Visit to the <a href="https://github.com/c-rus/orbit/releases">releases</a> page on Orbit's Github to find all official releases. </li>
-<li>Download the binary for your operating system.</li>
-<li>Place orbit in a location recognized by the PATH environment variable.</li>
+<li>Visit Orbit's <a href="https://github.com/c-rus/orbit/releases">releases</a> page on Github to find all official releases. </li>
+<li>Download the binary for your architecture and operating system.</li>
+<li>Place the Orbit executable (<code>orbit</code> for unix and <code>orbit.exe</code> for windows) in a location recognized by the PATH environment variable.</li>
 </ol>
 <p>There are multiple ways to accomplish step 3. The following outlines one way depending on the user's operating system. </p>
 <h3 id="unix"><a class="header" href="#unix">Unix</a></h3>
 <ol>
 <li>Open a terminal to where Orbit was downloaded.</li>
-<li>Move the executable to a location already set in the PATH environment variable:</li>
+<li>Unzip the prebuilt package.</li>
 </ol>
-<pre><code>$ mv orbit /usr/local/bin/orbit
+<pre><code>$ unzip orbit-1.0.0-x86_64-macos.zip
+</code></pre>
+<ol start="3">
+<li>Move the executable to a location already set in the PATH environment variable. </li>
+</ol>
+<pre><code>$ mv ./orbit-1.0.0-x86_64-macos/bin/orbit /usr/local/bin/orbit
 </code></pre>
 <h3 id="windows"><a class="header" href="#windows">Windows</a></h3>
 <ol>
 <li>Open a terminal (Powershell) to where Orbit was downloaded.</li>
-<li>Make a new directory:</li>
+<li>Unzip the prebuilt package.</li>
 </ol>
-<pre><code>$ mkdir &quot;$env:LOCALAPPDATA\Programs\orbit\bin&quot;
+<pre><code>$ expand-archive &quot;.\orbit-1.0.0-x86_64-windows.zip&quot; -destinationpath .
 </code></pre>
 <ol start="3">
-<li>Move the executable to the new directory:</li>
+<li>Make a new directory to store this package.</li>
 </ol>
-<pre><code>$ mv orbit.exe &quot;$env:LOCALAPPDATA\Programs\orbit\bin\orbit.exe&quot;
+<pre><code>new-item -path &quot;$env:LOCALAPPDATA\Programs\orbit&quot; -itemtype directory
 </code></pre>
 <ol start="4">
+<li>Move the package to the new directory.</li>
+</ol>
+<pre><code>$ copy-item &quot;.\orbit-1.0.0-x86_64-windows\*&quot; -destination &quot;$env:LOCALAPPDATA\Programs\orbit&quot; -recurse
+</code></pre>
+<ol start="5">
 <li>Edit the user-level PATH environment variable in <em><strong>Control Panel</strong></em> by adding <strong>%LOCALAPPDATA%\Programs\orbit\bin</strong>.</li>
 </ol>
 <h2 id="2-installing-with-cargo"><a class="header" href="#2-installing-with-cargo">2. Installing with Cargo</a></h2>

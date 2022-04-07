@@ -159,35 +159,53 @@
 <h2 id="about-the-documentation"><a class="header" href="#about-the-documentation">About the Documentation</a></h2>
 <p>Documentation system and methodology is inspired by <a href="https://documentation.divio.com">Divio</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
+<ol>
+<li>
+<p><a href="1_starting/./1_installing.html">Installing Orbit</a></p>
+</li>
+<li>
+<p><a href="1_starting/./2_upgrading.html">Upgrading Orbit</a></p>
+</li>
+</ol>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="installing"><a class="header" href="#installing">Installing</a></h1>
 <p>There are two main methods for getting orbit running on your system: downloading a precompiled binary or using cargo.</p>
 <h2 id="1-downloading-a-precompiled-binary"><a class="header" href="#1-downloading-a-precompiled-binary">1. Downloading a precompiled binary</a></h2>
 <ol>
-<li>Visit to the <a href="https://github.com/c-rus/orbit/releases">releases</a> page on Orbit's Github to find all official releases. </li>
-<li>Download the binary for your operating system.</li>
-<li>Place orbit in a location recognized by the PATH environment variable.</li>
+<li>Visit Orbit's <a href="https://github.com/c-rus/orbit/releases">releases</a> page on Github to find all official releases. </li>
+<li>Download the binary for your architecture and operating system.</li>
+<li>Place the Orbit executable (<code>orbit</code> for unix and <code>orbit.exe</code> for windows) in a location recognized by the PATH environment variable.</li>
 </ol>
 <p>There are multiple ways to accomplish step 3. The following outlines one way depending on the user's operating system. </p>
 <h3 id="unix"><a class="header" href="#unix">Unix</a></h3>
 <ol>
 <li>Open a terminal to where Orbit was downloaded.</li>
-<li>Move the executable to a location already set in the PATH environment variable:</li>
+<li>Unzip the prebuilt package.</li>
 </ol>
-<pre><code>$ mv orbit /usr/local/bin/orbit
+<pre><code>$ unzip orbit-1.0.0-x86_64-macos.zip
+</code></pre>
+<ol start="3">
+<li>Move the executable to a location already set in the PATH environment variable. </li>
+</ol>
+<pre><code>$ mv ./orbit-1.0.0-x86_64-macos/bin/orbit /usr/local/bin/orbit
 </code></pre>
 <h3 id="windows"><a class="header" href="#windows">Windows</a></h3>
 <ol>
 <li>Open a terminal (Powershell) to where Orbit was downloaded.</li>
-<li>Make a new directory:</li>
+<li>Unzip the prebuilt package.</li>
 </ol>
-<pre><code>$ mkdir &quot;$env:LOCALAPPDATA\Programs\orbit\bin&quot;
+<pre><code>$ expand-archive &quot;.\orbit-1.0.0-x86_64-windows.zip&quot; -destinationpath .
 </code></pre>
 <ol start="3">
-<li>Move the executable to the new directory:</li>
+<li>Make a new directory to store this package.</li>
 </ol>
-<pre><code>$ mv orbit.exe &quot;$env:LOCALAPPDATA\Programs\orbit\bin\orbit.exe&quot;
+<pre><code>new-item -path &quot;$env:LOCALAPPDATA\Programs\orbit&quot; -itemtype directory
 </code></pre>
 <ol start="4">
+<li>Move the package to the new directory.</li>
+</ol>
+<pre><code>$ copy-item &quot;.\orbit-1.0.0-x86_64-windows\*&quot; -destination &quot;$env:LOCALAPPDATA\Programs\orbit&quot; -recurse
+</code></pre>
+<ol start="5">
 <li>Edit the user-level PATH environment variable in <em><strong>Control Panel</strong></em> by adding <strong>%LOCALAPPDATA%\Programs\orbit\bin</strong>.</li>
 </ol>
 <h2 id="2-installing-with-cargo"><a class="header" href="#2-installing-with-cargo">2. Installing with Cargo</a></h2>
@@ -206,29 +224,35 @@
 <p>This behavior performs the following strategy:</p>
 <ol>
 <li>
-<p>Connect to https://github.com/c-rus/orbit/releases to find the most recent released version.</p>
+<p>Removes any executable in the executable's directory starting with <code>orbit-</code> (these are considered stale binaries, such as <code>orbit-0.1.0</code>).</p>
 </li>
 <li>
-<p>Check if the most recent version online is ahead of the currently installed version. </p>
+<p>Connects to https://github.com/c-rus/orbit/releases to find the most recent released version.</p>
+</li>
+<li>
+<p>Checks if the most recent version online is ahead of the currently installed version. </p>
 </li>
 </ol>
 <blockquote>
-<p><strong>Note</strong>: If the version online is ahead, it will prompt you to confirm you wish to install to the new version. This will be able to be skipped with a <code>--force</code> flag.</p>
+<p><strong>Note</strong>: If the version online is newer, a prompt will appear to confirm you wish to install the new version. This prompt can be bypassed by adding the <code>--force</code> flag to the above command.</p>
 </blockquote>
-<ol start="3">
+<ol start="4">
 <li>
-<p>Tries to find a suitable package for the current operating system and downloads it along with the checksum file.</p>
+<p>Downloads the checksum file to a temporary directory to see if there is a prebuilt package available for the current architecture and operating system.</p>
 </li>
 <li>
-<p>Computes the checksum for the downloaded package and verifies the checksum matches with the one listed in the file.</p>
+<p>Downloads the package to a temporary directory and computes the checksum to verify the contents.</p>
 </li>
 <li>
-<p>Removes any executable in the executable's directory starting with <code>orbit-</code>, and renames the current executable to <code>orbit-&lt;version&gt;</code>.</p>
+<p>Renames the current executable by appending its version to the name (marking it as a stale binary, such as <code>orbit-0.1.1</code>).</p>
 </li>
 <li>
-<p>Decompresses the downloaded executable and places it in the current executable's directory.</p>
+<p>Unzips the package and moves the new executable to the original executable's location.</p>
 </li>
 </ol>
+<blockquote>
+<p><strong>Note</strong>: If you wish to remove the newly created stale binary after an upgrade, rerunning <code>$ orbit --upgrade</code> immediately again will perform step 1 and stop at step 3.</p>
+</blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="tutorials"><a class="header" href="#tutorials">Tutorials</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="user-guide"><a class="header" href="#user-guide">User Guide</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="topic-guide"><a class="header" href="#topic-guide">Topic Guide</a></h1>

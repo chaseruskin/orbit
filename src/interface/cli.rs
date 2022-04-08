@@ -192,7 +192,7 @@ impl<'c> Cli<'c> {
             .expect("an unattached argument must exist before calling `match_command`");
         let s = self.next_uarg().expect("`check_command` must be called before this function");
         // perform partial clean to ensure no arguments are remaining behind the command (uncaught options)
-        let ooc_arg = self.capture_bad_flag()?;
+        let ooc_arg = self.capture_bad_flag(i)?;
         
         if words.iter().find(|p| { p.as_ref() == s }).is_some() {
             if let Some((prefix, key, pos)) = ooc_arg {
@@ -362,24 +362,26 @@ impl<'c> Cli<'c> {
 
     /// Returns the first index where a flag/switch still remains in the token stream.
     /// 
-    /// If if the `opt_store` hashmap is empty, it will return none.
-    fn find_first_flag_left(&self) -> Option<(&str, usize)> {
+    /// The flag must occur in the token stream before the `breakpoint` index. If
+    /// the `opt_store` hashmap is empty, it will return none.
+    fn find_first_flag_left(&self, breakpoint: usize) -> Option<(&str, usize)> {
         let mut min_i: Option<(&str, usize)> = None;
         let mut opt_it = self.opt_store.iter();
         while let Some((key, val)) = opt_it.next() {
-            min_i = Some(if min_i.is_none() || min_i.unwrap().1 > *val.first().unwrap() {
-                (key.as_ref(), *val.first().unwrap())
+            // check if this flag's index comes before the currently known minimum index
+            min_i = if *val.first().unwrap() < breakpoint && (min_i.is_none() || min_i.unwrap().1 > *val.first().unwrap()) {
+                Some((key.as_ref(), *val.first().unwrap()))
             } else {
-                min_i.unwrap()
-            });
+                min_i
+            };
         };
         min_i
     }
 
-    // :todo: document
-    fn capture_bad_flag<'a>(&self) -> Result<Option<(&str, &str, usize)>, CliError<'c>> {
-        self.prioritize_help()?;
-        if let Some((key, val)) = self.find_first_flag_left() {
+    /// Verifies there are no uncaught flags behind a given index.
+    fn capture_bad_flag<'a>(&self, i: usize) -> Result<Option<(&str, &str, usize)>, CliError<'c>> {
+        if let Some((key, val)) = self.find_first_flag_left(i) {
+            self.prioritize_help()?;
             // check what type of token it was to determine if it was called with '-' or '--'
             if let Some(t) = self.tokens.get(val).unwrap() {
                 let prefix = match t {
@@ -409,7 +411,7 @@ impl<'c> Cli<'c> {
     pub fn is_empty<'a>(&'a self) -> Result<(), CliError<'c>> {
         self.prioritize_help()?;
         // check if map is empty, and return the minimum found index.
-        if let Some((prefix, key, _)) = self.capture_bad_flag()? {
+        if let Some((prefix, key, _)) = self.capture_bad_flag(self.tokens.len())? {
             Err(CliError::UnexpectedArg(format!("{}{}", prefix, key)))
         // find first non-none token
         } else if let Some(t) = self.tokens.iter().find(|p| p.is_some()) {
@@ -527,22 +529,32 @@ mod test {
         let cli = Cli::tokenize(args(
             vec!["orbit", "--help", "new", "rary.gates", "--vcs", "git"]
         ));
-        assert_eq!(cli.find_first_flag_left(), Some(("help", 0)));
+        assert_eq!(cli.find_first_flag_left(cli.tokens.len()), Some(("help", 0)));
 
         let cli = Cli::tokenize(args(
             vec!["orbit", "new", "rary.gates"]
         ));
-        assert_eq!(cli.find_first_flag_left(), None);
+        assert_eq!(cli.find_first_flag_left(cli.tokens.len()), None);
 
         let cli = Cli::tokenize(args(
             vec!["orbit", "new", "rary.gates", "--vcs", "git", "--help"]
         ));
-        assert_eq!(cli.find_first_flag_left(), Some(("vcs", 2)));
+        assert_eq!(cli.find_first_flag_left(cli.tokens.len()), Some(("vcs", 2)));
 
         let cli = Cli::tokenize(args(
             vec!["orbit", "new", "rary.gates", "-c=git", "--help"]
         ));
-        assert_eq!(cli.find_first_flag_left(), Some(("c", 2)));
+        assert_eq!(cli.find_first_flag_left(cli.tokens.len()), Some(("c", 2)));
+
+        let cli = Cli::tokenize(args(
+            vec!["orbit", "new", "rary.gates", "-c=git", "--help"]
+        ));
+        assert_eq!(cli.find_first_flag_left(1), None); // check before 'rary.gates' position
+
+        let cli = Cli::tokenize(args(
+            vec!["orbit", "--unknown", "new", "rary.gates", "-c=git", "--help"]
+        ));
+        assert_eq!(cli.find_first_flag_left(1), Some(("unknown", 0))); // check before 'new' subcommand
     }
 
     #[test]

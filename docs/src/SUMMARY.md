@@ -16,6 +16,7 @@
     - [Packages](./5_reference/1_packages.md)
     - [Versions](./5_reference/2_versions.md)
     - [Command line](./5_reference/3_command_line.md)
+    - [Environment Variables](./5_reference/4_environment_variables.md)
 
 - [Commands](./6_commands/0_commands.md)
 

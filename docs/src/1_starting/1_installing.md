@@ -25,7 +25,7 @@ $ mv ./orbit-1.0.0-x86_64-macos/bin/orbit /usr/local/bin/orbit
 1. Open a terminal (Powershell) to where Orbit was downloaded.
 2. Unzip the prebuilt package.
 ```
-$ expand-archive ".\orbit-1.0.0-x86_64-windows.zip" -destinationpath .
+$ expand-archive ".\orbit-1.0.0-x86_64-windows.zip"
 ```
 3. Make a new directory to store this package.
 ```

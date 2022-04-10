@@ -83,7 +83,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="1_starting/0_starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="1_starting/1_installing.html"><strong aria-hidden="true">1.1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="1_starting/2_upgrading.html"><strong aria-hidden="true">1.2.</strong> Upgrading</a></li></ol></li><li class="chapter-item expanded "><a href="2_tutorials/0_tutorials.html"><strong aria-hidden="true">2.</strong> Tutorials</a></li><li class="chapter-item expanded "><a href="3_user/0_user.html"><strong aria-hidden="true">3.</strong> User Guide</a></li><li class="chapter-item expanded "><a href="4_topic/0_topic.html"><strong aria-hidden="true">4.</strong> Topic Guide</a></li><li class="chapter-item expanded "><a href="5_reference/0_reference.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="5_reference/1_packages.html"><strong aria-hidden="true">5.1.</strong> Packages</a></li><li class="chapter-item expanded "><a href="5_reference/2_versions.html"><strong aria-hidden="true">5.2.</strong> Versions</a></li><li class="chapter-item expanded "><a href="5_reference/3_command_line.html"><strong aria-hidden="true">5.3.</strong> Command line</a></li></ol></li><li class="chapter-item expanded "><a href="6_commands/0_commands.html"><strong aria-hidden="true">6.</strong> Commands</a></li><li class="chapter-item expanded "><a href="glossary.html"><strong aria-hidden="true">7.</strong> Appendix: Glossary</a></li></ol>            </div>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="1_starting/0_starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="1_starting/1_installing.html"><strong aria-hidden="true">1.1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="1_starting/2_upgrading.html"><strong aria-hidden="true">1.2.</strong> Upgrading</a></li></ol></li><li class="chapter-item expanded "><a href="2_tutorials/0_tutorials.html"><strong aria-hidden="true">2.</strong> Tutorials</a></li><li class="chapter-item expanded "><a href="3_user/0_user.html"><strong aria-hidden="true">3.</strong> User Guide</a></li><li class="chapter-item expanded "><a href="4_topic/0_topic.html"><strong aria-hidden="true">4.</strong> Topic Guide</a></li><li class="chapter-item expanded "><a href="5_reference/0_reference.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="5_reference/1_packages.html"><strong aria-hidden="true">5.1.</strong> Packages</a></li><li class="chapter-item expanded "><a href="5_reference/2_versions.html"><strong aria-hidden="true">5.2.</strong> Versions</a></li><li class="chapter-item expanded "><a href="5_reference/3_command_line.html"><strong aria-hidden="true">5.3.</strong> Command line</a></li><li class="chapter-item expanded "><a href="5_reference/4_environment_variables.html"><strong aria-hidden="true">5.4.</strong> Environment Variables</a></li></ol></li><li class="chapter-item expanded "><a href="6_commands/0_commands.html"><strong aria-hidden="true">6.</strong> Commands</a></li><li class="chapter-item expanded "><a href="glossary.html"><strong aria-hidden="true">7.</strong> Appendix: Glossary</a></li></ol>            </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
 
@@ -193,7 +193,7 @@
 <li>Open a terminal (Powershell) to where Orbit was downloaded.</li>
 <li>Unzip the prebuilt package.</li>
 </ol>
-<pre><code>$ expand-archive &quot;.\orbit-1.0.0-x86_64-windows.zip&quot; -destinationpath .
+<pre><code>$ expand-archive &quot;.\orbit-1.0.0-x86_64-windows.zip&quot;
 </code></pre>
 <ol start="3">
 <li>Make a new directory to store this package.</li>
@@ -378,7 +378,36 @@ ELSE:
 <ul>
 <li><strong>Argument terminator</strong>: Special no-op flag <code>--</code> that tells Orbit to parse up until the argument terminator.</li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="commands"><a class="header" href="#commands">Commands</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="environment-variables"><a class="header" href="#environment-variables">Environment Variables</a></h1>
+<p>Orbit's configuration can be customized with the setting of specific environment variables. </p>
+<ul>
+<li>
+<p><code>ORBIT_HOME</code> - directory where orbit stores its data. By default it is <code>$HOME/.orbit</code>.</p>
+</li>
+<li>
+<p><code>ORBIT_CACHE</code> - directory where orbit caches installed IP. By default it is <code>$ORBIT_HOME/cache</code>.</p>
+</li>
+<li>
+<p><code>NO_COLOR</code> - does not print colorized output when set to a value.</p>
+</li>
+</ul>
+<!--
+- `ORBIT_BUILD_DIR` - directory to locate the `blueprint.tsv` file within the current IP. By default is called `build`.
+-->
+<h3 id="runtime-environment-variables"><a class="header" href="#runtime-environment-variables">Runtime environment variables</a></h3>
+<p>Orbit also sets environment variables during runtime so a plugin has access to runtime information. </p>
+<!-- 
+- `ORBIT_TOP` - the toplevel design unit identifier
+
+- `ORBIT_BENCH` - the toplevel design's testbench identifier
+-->
+<!--Note about environment variables vs. settings file vs. arguments
+
+environment variables: only to change across systems (infrequent)
+
+settings file: 
+
+ --><div style="break-before: page; page-break-before: always;"></div><h1 id="commands"><a class="header" href="#commands">Commands</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="glossary"><a class="header" href="#glossary">Glossary</a></h1>
 
                     </main>

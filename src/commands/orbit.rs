@@ -4,6 +4,7 @@ use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Positional};
 use crate::interface::errors::CliError;
 use crate::util::prompt;
+use crate::core::context;
 
 #[derive(Debug, PartialEq)]
 pub struct Orbit {
@@ -22,6 +23,7 @@ impl Command for Orbit {
 
 use reqwest;
 use colored::*;
+use std::env;
 
 impl Orbit {
     fn run(&self) -> () {
@@ -37,6 +39,12 @@ impl Orbit {
             };
         // run the specified command
         } else if let Some(c) = &self.command {
+            // set up the context
+            let _ = context::Context::new()
+                .home("ORBIT_HOME")
+                .cache("ORBIT_CACHE")
+                .settings("settings.ini");
+            // pass the context to the given command
             c.exec();
         // if no command is given then print default help
         } else {
@@ -258,23 +266,11 @@ impl std::fmt::Display for UpgradeError {
     }
 }
 
-use std::env;
 use std::path::PathBuf;
 
 fn get_exe_path() -> Result<PathBuf, Box::<dyn std::error::Error>> {
     match env::current_exe() {    
-        Ok(exe_path) => {
-            let attr = std::fs::symlink_metadata(&exe_path)?;
-            // follow soft links 
-            if attr.file_type().is_symlink() == true {
-                match std::fs::read_link(exe_path) {
-                    Ok(p) => Ok(p),
-                    Err(e) => Err(Box::new(e)),
-                }
-            } else {
-                Ok(exe_path)
-            }
-        },
+        Ok(exe_path) => Ok(std::fs::canonicalize(exe_path)?),
         Err(e) => Err(Box::new(e)),
     }
 }

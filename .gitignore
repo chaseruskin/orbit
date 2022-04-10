@@ -6,5 +6,6 @@ RELEASE_NOTES.md
 CHANGELOG_MERGE.md
 
 init.sh
+install.sh
 
 /tools/target-triple.exe

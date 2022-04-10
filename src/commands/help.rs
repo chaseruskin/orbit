@@ -1,12 +1,11 @@
 use crate::Command;
 use crate::FromCli;
 use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Flag};
+use crate::interface::arg::{Positional};
 use crate::interface::errors::CliError;
 
 #[derive(Debug, PartialEq)]
 pub struct Help {
-    man: bool,
     topic: Option<String>,
 }
 
@@ -18,7 +17,7 @@ impl Command for Help {
 
 impl Help {
     fn run(&self) -> () {
-        println!("running command: help"); 
+        println!("info: displaying help text");
     }
 }
 
@@ -26,7 +25,6 @@ impl FromCli for Help {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.set_help(HELP);
         let command = Ok(Help {
-            man: cli.check_flag(Flag::new("man"))?,
             topic: cli.check_positional(Positional::new("topic"))?,
         });
         command
@@ -46,5 +44,5 @@ Topics:
     manifest        learn about .cfg files
     cache           learn about orbit's caching system
 
-Use 'orbit help <topic>' for more information about a command.
+Use 'orbit help --list' to see all available topics.
 ";

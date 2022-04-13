@@ -43,7 +43,7 @@ architecture rtl of top is
 -- ...
 begin
 
-    u_mux : mux_2x1 generic map ( -- (version 1.0.0 defined in manifest)
+    u_mux : mux_2x1 generic map ( -- entity from MUX_IP 1.0.0 defined in manifest)
         n => 8
     ) port map (
         in1    => in1,
@@ -51,7 +51,7 @@ begin
         sel    => sel,
         output => output);
 
-    u_a : ent_a port map ( -- some entity from A_IP version 2.0.0
+    u_a : ent_a port map ( -- entity from A_IP 2.0.0 defined in manifest
         x => x, 
         y => y); 
 
@@ -81,7 +81,7 @@ entity ent_a is
 end entity ent_a;
 
 architecture rtl of ent_a is
-    u_mux : mux_2x1 port map ( -- diff mux than used in SUPER_IP/top.vhd
+    u_mux : mux_2x1 port map ( -- different mux_2x1 than used in SUPER_IP/top.vhd
         a    => in1,
         b    => in2,
         sel  => sel,
@@ -93,10 +93,11 @@ end architecture;
 
 How can we allow both?
 
-
 ## Solution: Dynamic Symbol Collision Resolution (DSCR)
 
-The `ent_a.vhd` file in "IP_A" is not easily accessible to the user because it is stored in the cache abstracted away. We also don't want the user to open and directly edit this file, they could accidently modify some other piece of code and then a reproducible build would be no longer possible.
+The `ent_a.vhd` file in "IP_A" is not easily accessible to the user because it is stored in the cache abstracted away. We also don't want the user to open and directly edit this file for multiple reasons. First, editing every symbol collision is tedious work to place on the user, especially when the project grows in complexityd drawing from many different IP. Second, the user could accidently modify some other piece of code and then break the build and any chance for reproducibility.
+
+### Gameplan
 
 Here is the "MUX_IP" orbit package in the cache:
 

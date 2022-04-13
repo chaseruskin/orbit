@@ -10,7 +10,7 @@ We will attempt to formulate the problem that arises during HDL development when
 
 - __Symbol__: an identifier from a project's public API. For example, in VHDL, primary design units can be thought of as the API, they are callable from the global space.
 
-- __Hash__: a series of hexadecimal digits as the output of performing the SHA256 on the entire set of a project's IP. The hash can be used as a unique identifier for a project's current state.
+- __Hash__: a series of hexadecimal digits as the output of performing the SHA256 on the entire set of a project's files. The hash can be used as a unique identifier for a project's current state.
 
 ## Problem
 

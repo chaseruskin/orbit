@@ -61,7 +61,7 @@ end architecture;
 "A_IP" also uses "MUX_IP", or more generally, has a component in its design called `mux_2x1`. That is the root of the problem: a symbol collision. This `mux_2x1` is not the same as the one being used in `top.vhd` for "SUPER_IP".
 
 ``` ini
-; cache/a3b8e41-a_ip-2.0.0/Orbit.cfg
+; cache/a3b8e4-a_ip-2.0.0/Orbit.cfg
 [ip]
 name    = A_IP
 ; ...
@@ -75,7 +75,7 @@ MUX_IP = 0.3.0
 ```
 
 ``` vhdl
--- cache/a3b8e41-a_ip-2.0.0/ent_a.vhd
+-- cache/a3b8e4-a_ip-2.0.0/ent_a.vhd
 entity ent_a is 
 -- ...
 end entity ent_a;
@@ -127,7 +127,7 @@ end entity mux_2x1_fb59a1;
 Now, because of the current state of "SUPER_IP", the "A_IP"'s cached file actually contains:
 
 ``` vhdl
--- cache/a3b8e41-a_ip-2.0.0/ent_a.vhd
+-- cache/a3b8e4-a_ip-2.0.0/ent_a.vhd
 entity ent_a is 
 -- ...
 end entity ent_a;
@@ -139,6 +139,14 @@ architecture rtl of ent_a is
         sel  => sel,
         z    => output);
 end architecture;
+```
+
+The end result hierarchy tree looks like this:
+``` bash
+top                   # /top.vhd
+\_ mux_2x1            # cache/a1e35f-mux_ip-1.0.0/mux_2x1.vhd
+\_ ent_a              # cache/a3b8e4-a_ip-2.0.0/ent_a.vhd
+    \_ mux_2x1_fb59a1 # cache/fb59a1-mux_ip-0.3.0/mux_2x1.vhd
 ```
 
 If we were to change the state of SUPER_IP:
@@ -154,7 +162,7 @@ MUX_IP = 0.3
 
 Then "A_IP"'s cached file would be also updated:
 ``` vhdl
--- cache/a3b8e41-a_ip-2.0.0/ent_a.vhd
+-- cache/a3b8e4-a_ip-2.0.0/ent_a.vhd
 entity ent_a is 
 -- ...
 end entity ent_a;
@@ -169,6 +177,14 @@ end architecture;
 ```
 
 Because "SUPER_IP" and "A_IP" agreed on the same minimum selected version for "MUX_IP", they are the same symbol (version 0.3.0)!
+
+The end result hierarchy tree now looks like this:
+``` bash
+top             # /top.vhd
+\_ mux_2x1      # cache/fb59a1-mux_ip-0.3.0/mux_2x1.vhd
+\_ ent_a        # cache/a3b8e4-a_ip-2.0.0/ent_a.vhd
+    \_ mux_2x1  # cache/fb59a1-mux_ip-0.3.0/mux_2x1.vhd
+```
 
 ## Reproducibility
 Because we are source-based, the cache is always mutating in-place when the state of the current IP changes dependency requirements to best account for symbol collisions.

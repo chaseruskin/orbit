@@ -4,6 +4,7 @@
 //!     resembles a ini-like syntax and structure composed of "tables" 
 //!     (sections) and "fields" (key-value pairs).
 use std::collections::HashMap;
+use crate::core::cfg::field;
 
 type Line = usize;
 type Col = usize;
@@ -34,7 +35,7 @@ enum CfgState {
 
 #[derive(Debug, PartialEq)]
 enum CfgError {
-
+    InvalidIdentifier(String),
 }
 
 impl CfgLanguage {
@@ -49,7 +50,7 @@ impl CfgLanguage {
     fn parse(tokens: Vec::<Token>) -> Result<HashMap::<String, String>, CfgError> {
         use Token::*;
         // track the current table name
-        let mut table: Option<String> = None;
+        let mut table: Option<field::Identifier> = None;
 
         let mut map = HashMap::new();
         let mut t_stream = tokens.into_iter().peekable();
@@ -67,7 +68,7 @@ impl CfgLanguage {
 
                     // add data to the hashmap (case-insensitive keys)
                     if let Some(section) = &table {
-                        map.insert([section.clone(), key].join("."), val);
+                        map.insert([section.get_id(), key.as_ref()].join("."), val);
                     } else {
                         map.insert(key, val);
                     }
@@ -122,17 +123,11 @@ impl CfgLanguage {
 
     /// Verify the identifier is valid. It may contain only ascii letters and numbers, dashes,
     /// and dots.
-    fn verify_identifier(t: Option<Token>) -> Result<String, CfgError> {
+    fn verify_identifier(t: Option<Token>) -> Result<field::Identifier, field::IdentifierError> {
         if let Some(tk) = t {
             match tk {
                 Token::Identifier(_, s) => {
-                    // check that only ascii numbers and letters are allowed
-                    for c in s.chars() {
-                        if c.is_ascii_alphanumeric() == false && c != '.' && c != '-' {
-                            panic!("invalid identifier")
-                        }
-                    }
-                    Ok(s)
+                    field::Identifier::from_move(s)
                 },
                 _ => panic!("unexpected token")
             }
@@ -142,16 +137,19 @@ impl CfgLanguage {
     }
 
     /// TABLE ::= __\[__ IDENTIFIER __\]__
-    fn build_table(ts: &mut impl Iterator<Item=Token>) -> Result<String, CfgError> {
+    fn build_table(ts: &mut impl Iterator<Item=Token>) -> Result<field::Identifier, CfgError> {
         // accept [
         CfgLanguage::accept_op(ts.next(), '[')?;
         // verify identifier and do something with it
-        let result = CfgLanguage::verify_identifier(ts.next())?;
+        let table = match CfgLanguage::verify_identifier(ts.next()) {
+            Ok(t) => t,
+            Err(e) => return Err(CfgError::InvalidIdentifier(e.to_string())),
+        };
         // accept ]
         CfgLanguage::accept_op(ts.next(), ']')?;
         // accept EOL/EOF
         CfgLanguage::accept_terminator(ts.next())?;
-        Ok(result)
+        Ok(table)
     }
     
     /// Given some text `s`, tokenize it according the cfg language.
@@ -261,6 +259,8 @@ impl CfgLanguage {
 mod test {
     use super::*;
     use Token::*;
+    use std::str::FromStr;
+    use super::field::IdentifierError;
 
     #[test]
     fn parse_table() {
@@ -270,7 +270,7 @@ mod test {
             Operator(Pos(1, 7), ']'),
             EOL,
         ];
-        assert_eq!(CfgLanguage::build_table(&mut v.into_iter()).unwrap(), "table");
+        assert_eq!(CfgLanguage::build_table(&mut v.into_iter()).unwrap(), field::Identifier::from_str("table").unwrap());
 
         let v = vec![
             Operator(Pos(1, 1), '['),
@@ -278,7 +278,7 @@ mod test {
             Operator(Pos(1, 6), ']'),
             EOF,
         ];
-        assert_eq!(CfgLanguage::build_table(&mut v.into_iter()).unwrap(), "CORE");
+        assert_eq!(CfgLanguage::build_table(&mut v.into_iter()).unwrap(), field::Identifier::from_str("CORE").unwrap());
     }
 
     #[test]

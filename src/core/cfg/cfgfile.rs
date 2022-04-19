@@ -5,6 +5,7 @@
 //!     (sections) and "fields" (key-value pairs).
 use std::collections::HashMap;
 use crate::core::cfg::field;
+use std::str::FromStr;
 
 type Line = usize;
 type Col = usize;
@@ -19,12 +20,40 @@ enum Token {
     Comment(Pos, String),
     Operator(Pos, char),
     Identifier(Pos, String),
-    EOL,
+    EOL(Pos),
     EOF,
 }
 
+impl Token {
+    fn take_pos(self) -> Pos {
+        match self {
+            Token::Operator(p, _) => p,
+            Token::Comment(p, _) => p,
+            Token::Identifier(p, _) => p,
+            Token::EOL(p) => p,
+            Token::EOF => panic!("end of file has no posiiton")
+        }
+    }
+
+    fn take_str(self) -> String {
+        match self {
+            Token::Identifier(_, s) => s,
+            _ => panic!("this token does not have a string")
+        }
+    }
+
+    fn take_op(self, c: char) -> Result<char, CfgError> {
+        match self {
+            Token::Operator(_, tc) => Ok(tc),
+            _ => {
+                Err(CfgError::ExpectedOperator(self, c))
+            }
+        }
+    }
+}
+
 struct CfgLanguage {
-    map: HashMap::<String, String>,
+    map: HashMap::<field::Identifier, field::Value>,
 }
 
 enum CfgState {
@@ -35,7 +64,13 @@ enum CfgState {
 
 #[derive(Debug, PartialEq)]
 enum CfgError {
-    InvalidIdentifier(String),
+    InvalidIdentifier(field::IdentifierError),
+    MissingOperator(char),
+    MissingEOL,
+    ExpectedOperator(Token, char),
+    /// (position, expected, got)
+    InvalidOperator(Pos, char, char),
+    ExpectedEOL(Token),
 }
 
 impl CfgLanguage {
@@ -46,8 +81,13 @@ impl CfgLanguage {
         }
     }
 
+    /// Access the value behind a key.
+    pub fn get(&self, s: &str) -> Option<&field::Value> {
+        self.map.get(&field::Identifier::from_str(s).unwrap())
+    }
+
     /// Given a stream of tokens, build up hashmap according to the grammar.
-    fn parse(tokens: Vec::<Token>) -> Result<HashMap::<String, String>, CfgError> {
+    fn parse(tokens: Vec::<Token>) -> Result<HashMap::<field::Identifier, field::Value>, CfgError> {
         use Token::*;
         // track the current table name
         let mut table: Option<field::Identifier> = None;
@@ -57,8 +97,13 @@ impl CfgLanguage {
         while let Some(t) = t_stream.peek() {
             match t {
                 // define a table
-                Operator(_, _) => {
-                    table = Some(CfgLanguage::build_table(&mut t_stream)?);
+                Operator(_, op) => {
+                    match op {
+                        ';' | '#' => { t_stream.next(); }
+                        _ => {
+                            table = Some(CfgLanguage::build_table(&mut t_stream)?);
+                        }
+                    };
                     // :todo: add this explicit table name (preserve case sense) to a different map for later saving
                 }
                 // create a key
@@ -68,13 +113,14 @@ impl CfgLanguage {
 
                     // add data to the hashmap (case-insensitive keys)
                     if let Some(section) = &table {
-                        map.insert([section.get_id(), key.as_ref()].join("."), val);
+                        // prefix the base to the key name
+                        map.insert(key.prepend(section), val);
                     } else {
                         map.insert(key, val);
                     }
                 }
                 // move along in the stream
-                EOL | EOF | Comment(_, _) => {
+                EOL(_) | EOF | Comment(_, _) => {
                     t_stream.next();
                 },
             };
@@ -82,13 +128,46 @@ impl CfgLanguage {
         Ok(map)
     }
 
-    /// FIELD ::= KEY __=__ (BASIC_VALUE | LITERAL_VALUE)
-    fn build_field(ts: &mut impl Iterator<Item=Token>) -> Result<(String, String), CfgError> {
+    /// FIELD ::= IDENTIFIER __=__ (BASIC_VALUE | LITERAL_VALUE)
+    fn build_field(ts: &mut impl Iterator<Item=Token>) -> Result<(field::Identifier, field::Value), CfgError> {
         // verify identifier and do something with it
+        let key = match CfgLanguage::verify_identifier(ts.next()) {
+            Ok(t) => t,
+            Err(e) => return Err(CfgError::InvalidIdentifier(e)),
+        };
         // verify that the next token is a '='
+        CfgLanguage::accept_op(ts.next(), '=')?;
+        let mut ts = ts.peekable();
+
         // accept value quoted literal || accept basic literal || EOL/EOF
+        let value = match ts.peek().unwrap() {
+            Token::Identifier(_, _) => {
+                field::Value::from_move(ts.next().unwrap().take_str())
+            }
+            Token::Operator(_, o) => {
+                match o {
+                    '\'' => {
+                        CfgLanguage::accept_op(ts.next(), '\'')?;
+                        let v = field::Value::from_move(ts.next().unwrap().take_str());
+                        CfgLanguage::accept_op(ts.next(), '\'')?;
+                        v
+                    }
+                    '\"' => {
+                        CfgLanguage::accept_op(ts.next(), '\"')?;
+                        let v = field::Value::from_move(ts.next().unwrap().take_str());
+                        CfgLanguage::accept_op(ts.next(), '\"')?;
+                        v
+                    }
+                    _ => panic!("bad op!")
+                }
+            }
+            Token::EOF | Token::EOL(_) => {
+                field::Value::from_str("").unwrap()
+            }
+            _ => todo!()
+        };
         // return
-        todo!()
+        Ok((key, value))
     }
 
     fn accept_op(t: Option<Token>, c: char) -> Result<(), CfgError> {
@@ -98,26 +177,26 @@ impl CfgLanguage {
                     if tc == c {
                         Ok(())
                     } else {
-                        panic!("bad operator")
+                        Err(CfgError::InvalidOperator(p, tc, c))
                     }
                 }
                 _ => {
-                    panic!("bad token")
+                    Err(CfgError::ExpectedOperator(tk, c))
                 }
             }
         } else {
-            panic!("missing token!")
+            Err(CfgError::MissingOperator(c))
         }
     }
 
     fn accept_terminator(t: Option<Token>) -> Result<(), CfgError> {
         if let Some(tk) = t {
             match tk {
-                Token::EOL | Token::EOF => Ok(()),
-                _ => panic!("unexpected token")
+                Token::EOL(_) | Token::EOF => Ok(()),
+                _ => Err(CfgError::ExpectedEOL(tk)),
             }
         } else {
-            panic!("missing token!")
+            Err(CfgError::MissingEOL)
         }
     }
 
@@ -140,10 +219,10 @@ impl CfgLanguage {
     fn build_table(ts: &mut impl Iterator<Item=Token>) -> Result<field::Identifier, CfgError> {
         // accept [
         CfgLanguage::accept_op(ts.next(), '[')?;
-        // verify identifier and do something with it
+        // verify identifier
         let table = match CfgLanguage::verify_identifier(ts.next()) {
             Ok(t) => t,
-            Err(e) => return Err(CfgError::InvalidIdentifier(e.to_string())),
+            Err(e) => return Err(CfgError::InvalidIdentifier(e)),
         };
         // accept ]
         CfgLanguage::accept_op(ts.next(), ']')?;
@@ -176,8 +255,8 @@ impl CfgLanguage {
                     match c {
                         '\n' => {
                             tokens.push(Token::Comment(Pos(buf_pos.0, buf_pos.1), buf.to_string()));
+                            tokens.push(Token::EOL(Pos(line, col)));
                             buf.clear();
-                            tokens.push(Token::EOL);
                             state = CfgState::NORMAL;
                             line += 1;
                             col = 0;
@@ -205,7 +284,7 @@ impl CfgLanguage {
                         }
                         '\n' => {
                             complete_token(&mut tokens, &mut buf_pos, &mut buf);
-                            tokens.push(Token::EOL);
+                            tokens.push(Token::EOL(Pos(line, col)));
                             line += 1;
                             col = 0;
                         }
@@ -260,7 +339,6 @@ mod test {
     use super::*;
     use Token::*;
     use std::str::FromStr;
-    use super::field::IdentifierError;
 
     #[test]
     fn parse_table() {
@@ -268,7 +346,7 @@ mod test {
             Operator(Pos(1, 1), '['),
             Identifier(Pos(1, 2), "table".to_string()),
             Operator(Pos(1, 7), ']'),
-            EOL,
+            EOL(Pos(1, 8)),
         ];
         assert_eq!(CfgLanguage::build_table(&mut v.into_iter()).unwrap(), field::Identifier::from_str("table").unwrap());
 
@@ -291,11 +369,11 @@ key = value
             Operator(Pos(1, 1), '['),
             Identifier(Pos(1, 2), "table".to_string()),
             Operator(Pos(1, 7), ']'),
-            EOL,
+            EOL(Pos(1, 8)),
             Identifier(Pos(2, 1), "key".to_string()),
             Operator(Pos(2, 5), '='),
             Identifier(Pos(2, 7), "value".to_string()),
-            EOL,
+            EOL(Pos(2, 12)),
             EOF,
         ]);
 
@@ -307,11 +385,11 @@ key = place the value here
             Operator(Pos(1, 1), '['),
             Identifier(Pos(1, 2), "table".to_string()),
             Operator(Pos(1, 7), ']'),
-            EOL,
+            EOL(Pos(1, 8)),
             Identifier(Pos(2, 1), "key".to_string()),
             Operator(Pos(2, 5), '='),
             Identifier(Pos(2, 7), "place the value here".to_string()),
-            EOL,
+            EOL(Pos(2, 27)),
             EOF,
         ]);
 
@@ -324,19 +402,19 @@ jot = 'notes'
             Operator(Pos(1, 1), '['),
             Identifier(Pos(1, 2), "table".to_string()),
             Operator(Pos(1, 7), ']'),
-            EOL,
+            EOL(Pos(1, 8)),
             Identifier(Pos(2, 1), "key".to_string()),
             Operator(Pos(2, 5), '='),
             Operator(Pos(2, 7), '"'),
             Identifier(Pos(2, 8), "value".to_string()),
             Operator(Pos(2, 13), '"'),
-            EOL,
+            EOL(Pos(2, 14)),
             Identifier(Pos(3, 1), "jot".to_string()),
             Operator(Pos(3, 5), '='),
             Operator(Pos(3, 7), '\''),
             Identifier(Pos(3, 8), "notes".to_string()),
             Operator(Pos(3, 13), '\''),
-            EOL,
+            EOL(Pos(3, 14)),
             EOF,
         ]);
     }
@@ -387,15 +465,15 @@ key2 = value2
             Operator(Pos(1, 1), '['),
             Identifier(Pos(1, 2), "table".to_string()),
             Operator(Pos(1, 7), ']'),
-            EOL,
+            EOL(Pos(1, 8)),
             Identifier(Pos(2, 1), "key1".to_string()),
             Operator(Pos(2, 6), '='),
             Identifier(Pos(2, 8), "value1".to_string()),
-            EOL,
+            EOL(Pos(2, 14)),
             Identifier(Pos(3, 1), "key2".to_string()),
             Operator(Pos(3, 6), '='),
             Identifier(Pos(3, 8), "value2".to_string()),
-            EOL,
+            EOL(Pos(3, 14)),
             EOF,
         ]);
     }
@@ -412,13 +490,13 @@ key2 = value2";
             Operator(Pos(1, 1), '['),
             Identifier(Pos(1, 2), "table".to_string()),
             Operator(Pos(1, 7), ']'),
-            EOL,
+            EOL(Pos(1, 8)),
             Identifier(Pos(2, 1), "key1".to_string()),
             Operator(Pos(2, 6), '='),
             Identifier(Pos(2, 8), "value1".to_string()),
-            EOL,
-            EOL,
-            EOL,
+            EOL(Pos(2, 14)),
+            EOL(Pos(3, 1)),
+            EOL(Pos(4, 1)),
             Identifier(Pos(5, 1), "key2".to_string()),
             Operator(Pos(5, 6), '='),
             Identifier(Pos(5, 8), "value2".to_string()),
@@ -431,7 +509,7 @@ key2 = value2";
             Operator(Pos(1, 5), '['),
             Identifier(Pos(1, 6), "table".to_string()),
             Operator(Pos(1, 11), ']'),
-            EOL,
+            EOL(Pos(1, 12)),
             Identifier(Pos(2, 3), "key1".to_string()),
             Operator(Pos(2, 7), '='),
             Identifier(Pos(2, 10), "value1".to_string()),
@@ -448,11 +526,11 @@ user = chase # your name or \"alias\"! ";
         assert_eq!(CfgLanguage::tokenize(s), vec![
             Operator(Pos(1, 1), ';'),
             Comment(Pos(1, 2), " For more information visit orbit's website.".to_string()),
-            EOL,
+            EOL(Pos(1, 46)),
             Operator(Pos(2, 1), '['),
             Identifier(Pos(2, 2), "core".to_string()),
             Operator(Pos(2, 6), ']'),
-            EOL,
+            EOL(Pos(2, 7)),
             Identifier(Pos(3, 1), "user".to_string()),
             Operator(Pos(3, 6), '='),
             Identifier(Pos(3, 8), "chase".to_string()),
@@ -460,5 +538,29 @@ user = chase # your name or \"alias\"! ";
             Comment(Pos(3, 15), " your name or \"alias\"! ".to_string()),
             EOF,
         ]);
+    }
+
+    #[test]
+    fn parse() {
+        let s = "\
+; orbit configuration file
+
+include.path = profile/eastwind-trading/config.ini,
+
+[core]
+path = /users/chase/hdl
+user = 'Chase Ruskin'
+
+[env]
+course=EEL4712C: Digital Design   
+";
+        let tokens = CfgLanguage::tokenize(s);
+        let map = CfgLanguage::parse(tokens).unwrap();
+        let config = CfgLanguage {
+            map: map,
+        };
+
+        assert_eq!(config.get("core.path"), Some(&field::Value::from_str("/users/chase/hdl").unwrap()));
+        assert_eq!(config.get("core.user"), Some(&field::Value::from_str("Chase Ruskin").unwrap()));
     }
 }

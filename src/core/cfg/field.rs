@@ -1,21 +1,31 @@
 use std::str::FromStr;
 
-#[derive(Debug, PartialEq)]
-pub struct Field {
-    key: Identifier,
-    value: Option<Value>,
-}
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Hash)]
 pub struct Identifier {
     id: String,
 }
+
+impl PartialEq for Identifier {
+    fn eq(&self, other: &Self) -> bool {
+        // case insensitive
+        self.id.to_lowercase() == other.id.to_lowercase()
+    }
+}
+
+impl Eq for Identifier {}
 
 impl Identifier {
     pub fn get_id(&self) -> &str {
         self.id.as_ref()
     }
+    
+    /// Joins the base path to the self's path to create a new `Identifier`.
+    pub fn prepend(mut self, base: &Self) -> Identifier {
+        self.id = [base.get_id(), self.get_id()].join(".");
+        self
+    }
 
+    /// Ensures a given string follows the rules for denoting an identifier.
     fn validate(s: &str) -> Result<(), IdentifierError> {
         let mut chars = s.chars().peekable();
         match chars.next() {
@@ -38,6 +48,11 @@ impl Identifier {
         if s.ends_with('.') == true {
             return Err(IdentifierError::TrailingSep)
         }
+
+        // cannot have consecutive '.'
+        if s.contains("..") == true {
+            return Err(IdentifierError::EmptyTable)
+        }
         
         match result {
             Some(c) => Err(IdentifierError::InvalidChar(c)),
@@ -45,32 +60,12 @@ impl Identifier {
         }
     }
 
+    /// Takes the `String` and moves it into a new `Identifier` struct.
     pub fn from_move(s: String) -> Result<Self, IdentifierError> {
         Identifier::validate(&s)?;
         Ok(Identifier { id: s })
     }
 }
-
-#[derive(Debug, PartialEq)]
-pub enum IdentifierError {
-    Empty,
-    InvalidChar(char),
-    BadFirstChar(char),
-    TrailingSep,
-}
-
-impl std::fmt::Display for IdentifierError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
-        match self {
-            Self::Empty => write!(f, "empty identifier"),
-            Self::InvalidChar(c) => write!(f, "invalid character '{}' in identifier", c),
-            Self::BadFirstChar(c) => write!(f, "invalid first character '{}'", c),
-            Self::TrailingSep => write!(f, "invalid trailing separator '.'"),
-        }
-    }
-}
-
-impl std::error::Error for IdentifierError {}
 
 impl FromStr for Identifier {
     type Err = IdentifierError;
@@ -81,6 +76,28 @@ impl FromStr for Identifier {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum IdentifierError {
+    Empty,
+    InvalidChar(char),
+    BadFirstChar(char),
+    TrailingSep,
+    EmptyTable,
+}
+
+impl std::error::Error for IdentifierError {}
+
+impl std::fmt::Display for IdentifierError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
+        match self {
+            Self::Empty => write!(f, "empty identifier"),
+            Self::InvalidChar(c) => write!(f, "invalid character '{}' in identifier", c),
+            Self::BadFirstChar(c) => write!(f, "invalid first character '{}'", c),
+            Self::TrailingSep => write!(f, "invalid trailing separator '.'"),
+            Self::EmptyTable => write!(f, "empty table identifier"),
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub struct Value {
@@ -101,11 +118,13 @@ impl FromStr for Value {
 }
 
 impl Value {
+    /// Takes the `String` and moves it into a new `Value` struct.
     pub fn from_move(s: String) -> Self {
         Value { value: s }
     }
 
-    pub fn as_list(&self, sep: char) -> Vec<&str> {
+    /// Casts into a list split by 'sep'.
+    pub fn as_vec(&self, sep: char) -> Vec<&str> {
         self.value.split_terminator(sep).collect()
     }
 
@@ -118,6 +137,25 @@ impl Value {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub struct Field {
+    key: Identifier,
+    value: Value,
+}
+
+impl Field {
+    pub fn get_key(&self) -> &Identifier {
+        &self.key
+    }
+
+    pub fn get_value(&self) -> &Value {
+        &self.value
+    }
+
+    pub fn take_split(self) -> (Identifier, Value) {
+        (self.key, self.value)
+    }
+}
 
 #[cfg(test)]
 mod test {
@@ -125,20 +163,53 @@ mod test {
 
     #[test]
     fn key_from_str() {
-        let key = Identifier::from_str("include.path");
-        assert_eq!(key.is_ok(), true);
+        let id = Identifier::from_str("include.path");
+        assert!(id.is_ok());
 
         let id = Identifier::from_str("plugin.ghdl.symbol.py-model");
+        assert!(id.is_ok());
+
+        let id = Identifier::from_str("name");
         assert!(id.is_ok());
 
         let id = Identifier::from_str("mykey?");
         assert!(id.is_err());
 
+        // cannot end with a '.'
         let id = Identifier::from_str("core.");
         assert!(id.is_err());
 
+        // cannot begin with a number
         let id = Identifier::from_str("9key");
         assert!(id.is_err());
+
+        // cannot begin with a '.'
+        let id = Identifier::from_str(".key");
+        assert!(id.is_err());
+
+        // cannot have a space
+        let id = Identifier::from_str("core user");
+        assert!(id.is_err());
+
+        // cannot have a empty middle table
+        let id = Identifier::from_str("core..user");
+        assert!(id.is_err());
+    }
+
+    #[test]
+    fn prepend() {
+        let table = Identifier::from_str("core").unwrap();
+        let key = Identifier::from_str("user").unwrap();
+
+        assert_eq!(key.prepend(&table), Identifier {
+            id: "core.user".to_owned(),
+        });
+
+        let key = Identifier::from_str("ghdl.symbol.py-model").unwrap();
+
+        assert_eq!(key.prepend(&table), Identifier {
+            id: "core.ghdl.symbol.py-model".to_owned(),
+        });
     }
 
     #[test]
@@ -167,20 +238,20 @@ mod test {
     }
 
     #[test]
-    fn as_list() {
+    fn as_vec() {
         let v = Value::from_str("nor_gate,and_gate,mux_2x1").unwrap();
-        assert_eq!(v.as_list(','), ["nor_gate", "and_gate", "mux_2x1"]);
+        assert_eq!(v.as_vec(','), ["nor_gate", "and_gate", "mux_2x1"]);
 
         let v = Value::from_str("").unwrap();
-        assert_eq!(v.as_list(','), Vec::<&str>::new());
+        assert_eq!(v.as_vec(','), Vec::<&str>::new());
 
         let v = Value::from_str("mux_2x1").unwrap();
-        assert_eq!(v.as_list(','), ["mux_2x1"]);
+        assert_eq!(v.as_vec(','), ["mux_2x1"]);
 
         let v = Value::from_str("profile/eel4712c/config.ini,").unwrap();
-        assert_eq!(v.as_list(','), ["profile/eel4712c/config.ini"]);
+        assert_eq!(v.as_vec(','), ["profile/eel4712c/config.ini"]);
 
         let v = Value::from_str(",profile/eel4712c/config.ini").unwrap();
-        assert_eq!(v.as_list(','), ["", "profile/eel4712c/config.ini"]);
+        assert_eq!(v.as_vec(','), ["", "profile/eel4712c/config.ini"]);
     }
 }

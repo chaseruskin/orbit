@@ -176,5 +176,11 @@ mod test {
 
         let v = Value::from_str("mux_2x1").unwrap();
         assert_eq!(v.as_list(','), ["mux_2x1"]);
+
+        let v = Value::from_str("profile/eel4712c/config.ini,").unwrap();
+        assert_eq!(v.as_list(','), ["profile/eel4712c/config.ini"]);
+
+        let v = Value::from_str(",profile/eel4712c/config.ini").unwrap();
+        assert_eq!(v.as_list(','), ["", "profile/eel4712c/config.ini"]);
     }
 }

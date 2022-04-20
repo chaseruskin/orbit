@@ -412,10 +412,10 @@ settings file:
 <p>Orbit uses an INI-like syntax to store manifest and configuration data. To read up on the basics of INI, visit the wikipedia page <a href="https://en.wikipedia.org/wiki/INI_file">here</a>.</p>
 <p>Files with a <code>.cfg</code> extension are readable by Orbit following the provided guidelines and rules.</p>
 <h2 id="structure"><a class="header" href="#structure">Structure</a></h2>
-<p>The file is essentially stores key-value pairs. It consists of sections, keys, and values.</p>
+<p>The file's purpose is to store key-value pairs. It consists of sections, keys, and values.</p>
 <ul>
 <li>
-<p>A section is a non-terminal key path. These can be listed within square brackets to denote the following keys belong to that section.</p>
+<p>A section is a non-terminal key path. These can be listed within square brackets to denote the keys defined below it belong to that section.</p>
 </li>
 <li>
 <p>A key is a terminal node that stores a value.</p>
@@ -452,6 +452,26 @@ settings file:
 </li>
 </ul>
 <h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
+<p>The Orbit manifest file <code>orbit.cfg</code> may resemble something like this:</p>
+<pre><code class="language-ini">[ip]
+name    = gates
+version = 0.1.0
+library = rary
+vendor  = c-rus
+
+public  = rtl/gates_pkg.vhd,rtl/top.vhd
+
+[dependencies]
+c-rus.eel4712c.lab1 = 1.0.0
+</code></pre>
+<p>An example portion of an Orbit configuration file <code>config.cfg</code> to specify a plugin for <code>ghdl</code>:</p>
+<pre><code class="language-ini">; ...
+[plugin.ghdl]
+execute = &quot;python ${ ORBIT_HOME }/plugin/ghdl.py&quot;
+summary = backend script to wrap the GHDL executable as an orbit plugin
+symbol.py-model = *_mdl.py
+
+</code></pre>
 <p>A very inclusive demonstration of the file format:</p>
 <pre><code class="language-ini">[section] ; this is a comment
 basic-value = my value # whitespace surrounding 'my value' will be removed
@@ -465,26 +485,6 @@ nested-section.key = full key path is section.nested-section.key
 ; moving on to the start of a section called &quot;section2&quot;
 [section2]
 key = value
-</code></pre>
-<p>The Orbit manifest <code>orbit.cfg</code> may resemble something like this:</p>
-<pre><code class="language-ini">[ip]
-name    = gates
-version = 0.1.0
-library = rary
-vendor  = c-rus
-
-public  = rtl/gates_pkg.vhd,rtl/top.vhd
-
-[dependencies]
-c-rus.eel4712c.lab1 = 1.0.0
-</code></pre>
-<p>An example portion of an orbit configuration file to specify a plugin for <code>ghdl</code>:</p>
-<pre><code class="language-ini">; ...
-[plugin.ghdl]
-execute = &quot;python ${ ORBIT_HOME }/plugin/ghdl.py&quot;
-summary = backend script to wrap the GHDL executable as an orbit plugin
-symbol.py-model = *_mdl.py
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="commands"><a class="header" href="#commands">Commands</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="glossary"><a class="header" href="#glossary">Glossary</a></h1>

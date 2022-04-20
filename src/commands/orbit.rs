@@ -4,7 +4,7 @@ use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Positional};
 use crate::interface::errors::CliError;
 use crate::util::prompt;
-use crate::core::context;
+use crate::core::context::Context;
 
 #[derive(Debug, PartialEq)]
 pub struct Orbit {
@@ -17,8 +17,8 @@ pub struct Orbit {
 
 impl Command for Orbit {
     type Err = Box<dyn std::error::Error>;
-    fn exec(&self) -> Result<(), Self::Err> {
-        self.run()
+    fn exec(&self, context: &Context) -> Result<(), Self::Err> {
+        self.run(context)
     }
 }
 
@@ -26,7 +26,7 @@ use reqwest;
 use std::env;
 
 impl Orbit {
-    fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn run(&self, _: &Context) -> Result<(), Box<dyn std::error::Error>> {
         // prioritize version information
         if self.version {
             println!("orbit {}", VERSION);
@@ -39,13 +39,13 @@ impl Orbit {
             Ok(())
         // run the specified command
         } else if let Some(c) = &self.command {
-            // set up the context
-            let _ = context::Context::new()
-                .home("ORBIT_HOME")
-                .cache("ORBIT_CACHE")
-                .settings("config.ini");
+            // set up the context (ignores the context passed in)
+            let context = Context::new()
+                .home("ORBIT_HOME")?
+                .cache("ORBIT_CACHE")?
+                .settings("config.ini")?;
             // pass the context to the given command
-            c.exec()
+            c.exec(&context)
         // if no command is given then print default help
         } else {
             Ok(println!("{}", HELP))
@@ -91,10 +91,10 @@ impl FromCli for OrbitSubcommand {
 
 impl Command for OrbitSubcommand {
     type Err = Box<dyn std::error::Error>;
-    fn exec(&self) -> Result<(), Self::Err> {
+    fn exec(&self, context: &Context) -> Result<(), Self::Err> {
         match self {
-            OrbitSubcommand::Help(c) => c.exec(),
-            OrbitSubcommand::New(c) => c.exec(),
+            OrbitSubcommand::Help(c) => c.exec(context),
+            OrbitSubcommand::New(c) => c.exec(context),
         }
     }
 }

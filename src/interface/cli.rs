@@ -246,7 +246,7 @@ impl<'c> Cli<'c> {
         } else {
             self.prioritize_help()?;
             self.is_empty()?;
-            Err(CliError::MissingPositional(self.known_args.pop().unwrap(), "usage".to_string()))
+            Err(CliError::MissingPositional(self.known_args.pop().unwrap(), self.help.to_string()))
         }
     }
 

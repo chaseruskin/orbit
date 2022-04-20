@@ -33,7 +33,15 @@ impl<'a> Display for CliError<'a> {
             OutOfContextArgSuggest(o, cmd) => write!(f, "argument '{}' is unknown, or invalid in the current context\n\nMaybe move it after '{}'?{}", o.yellow(), cmd.green(), footer),
             OutOfContextArg(o) => write!(f, "argument '{}' is unknown, or invalid in the current context{}", o.yellow(), footer),
             BadType(a, e) => write!(f, "argument '{}' did not process due to {}{}", a, e, footer),
-            MissingPositional(p, u) => write!(f, "missing required argument '{}'\n{}{}", p, u, footer),
+            MissingPositional(p, u) => {
+                // detect the usage statement to print from command's short help text
+                let usage = if let Some(text) = u.split_terminator('\n').skip(3).next() {
+                    "usage:\n".to_string() + text
+                } else {
+                    "".to_string()
+                };
+                write!(f, "missing required argument '{}'\n{}{}", p, usage, footer)
+            },
             DuplicateOptions(o) => write!(f, "option '{}' was requested more than once, but can only be supplied once{}", o.to_string().yellow(), footer),
             ExpectingValue(x) => write!(f, "option '{}' expects a value but none was supplied{}", x, footer),
             UnexpectedValue(x, s) => write!(f, "flag '{}' cannot accept values but one was supplied \"{}\"{}", x, s, footer),

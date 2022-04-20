@@ -1,10 +1,11 @@
 use crate::interface::cli::Cli;
 use std::fmt::Debug;
 use crate::interface::errors::CliError;
+use crate::core::context::Context;
 
 pub trait Command: Debug {
     type Err;
-    fn exec(&self) -> Result<(), Self::Err>;
+    fn exec(&self, context: &Context) -> Result<(), Self::Err>;
 }
 
 pub trait FromCli {
@@ -39,7 +40,7 @@ mod test {
 
     impl Command for Add {
         type Err = ();
-        fn exec(&self) -> Result<(), Self::Err> {
+        fn exec(&self, _: &Context) -> Result<(), Self::Err> {
            Ok(println!("{}", self.run()))
         }
     }
@@ -77,9 +78,9 @@ mod test {
 
     impl Command for Op {
         type Err = ();
-        fn exec(&self) -> Result<(), Self::Err> {
+        fn exec(&self, context: &Context) -> Result<(), Self::Err> {
             if let Some(command) = &self.command {
-                command.exec()
+                command.exec(context)
             } else {
                 Ok(())
             }
@@ -111,9 +112,9 @@ mod test {
 
     impl Command for OpSubcommand {
         type Err = ();
-        fn exec(&self) -> Result<(), Self::Err> {
+        fn exec(&self, _: &Context) -> Result<(), Self::Err> {
             match self {
-                OpSubcommand::Add(c) => c.exec(),
+                OpSubcommand::Add(c) => c.exec(&Context::new()),
             }
         }
     }

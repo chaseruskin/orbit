@@ -4,6 +4,8 @@ use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional};
 use crate::interface::errors::CliError;
 use crate::core::pkgid;
+use crate::interface::arg::Arg;
+use crate::core::context::Context;
 
 #[derive(Debug, PartialEq)]
 pub struct New {
@@ -12,15 +14,21 @@ pub struct New {
 
 impl Command for New {
     type Err = Box<dyn std::error::Error>;
-    fn exec(&self) -> Result<(), Self::Err> {
-        self.ip.fully_qualified()?;
+    fn exec(&self, context: &Context) -> Result<(), Self::Err> {
+        // extra validation for a new IP spec to contain all fields (V.L.N)
+        if let Err(e) = self.ip.fully_qualified() {
+            return Err(Box::new(CliError::BadType(Arg::Positional(Positional::new("ip")), e.to_string())));
+        }
+
+        println!("{:?}", context.get_config().get("core.path"));
+        // :todo: only pass in necessary variables from context
         Ok(self.run())
     }
 }
 
 impl New {
     fn run(&self) -> () {
-        println!("info: creating new ip");
+        println!("info: creating new ip {}", self.ip);
     }
 }
 
@@ -38,7 +46,7 @@ const HELP: &str = "\
 Create a new orbit ip package.
 
 Usage:
-    orbit new <ip>
+    orbit new [options] <ip>
 
 Args:
     <ip>                the V.L.N for the new package

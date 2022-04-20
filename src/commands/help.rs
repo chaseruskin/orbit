@@ -3,6 +3,7 @@ use crate::FromCli;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional};
 use crate::interface::errors::CliError;
+use crate::core::context::Context;
 
 #[derive(Debug, PartialEq)]
 pub struct Help {
@@ -11,7 +12,7 @@ pub struct Help {
 
 impl Command for Help {
     type Err = Box<dyn std::error::Error>;
-    fn exec(&self) -> Result<(), Self::Err> {
+    fn exec(&self, _: &Context) -> Result<(), Self::Err> {
         Ok(self.run())
     }
 }

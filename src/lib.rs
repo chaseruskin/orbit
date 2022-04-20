@@ -10,6 +10,7 @@ use crate::interface::errors::*;
 use crate::interface::command::*;
 use crate::commands::orbit::*;
 use colored::*;
+use crate::core::context::Context;
 
 pub fn run() -> u8 {
     // interface level
@@ -39,7 +40,7 @@ pub fn run() -> u8 {
     }
     std::mem::drop(cli);
     // program level
-    match orbit.exec() {
+    match orbit.exec(&Context::new()) {
         Ok(_) => 0,
         Err(e) => {
             eprintln!("{} {}", "error:".red().bold(), e); 

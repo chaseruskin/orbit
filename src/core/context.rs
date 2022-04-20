@@ -21,7 +21,7 @@ impl Context {
 
     /// Sets the home directory. By default this is `$HOME/.orbit`. If set by `var`,
     /// it must be an existing directory.
-    pub fn home(mut self, key: &str) -> Context {
+    pub fn home(mut self, key: &str) -> Result<Context, ContextError> {
         self.home_path = if let Ok(s) = env::var(key) {
             std::path::PathBuf::from(s)
         } else {
@@ -38,12 +38,12 @@ impl Context {
         }
         // verify the environment variable is set
         env::set_var(key, &self.home_path);
-        self
+        Ok(self)
     }   
 
     /// Sets the cache directory. If it was set from `var`, it assumes the path
     /// exists. If setting by default (within HOME), it assumes HOME is already existing.
-    pub fn cache(mut self, key: &str) -> Context {
+    pub fn cache(mut self, key: &str) -> Result<Context, ContextError> {
         self.cache_path = if let Ok(s) = env::var(key) {
             let cp = std::path::PathBuf::from(s);
             // do not allow a nonexistent directory to be set for cache path
@@ -62,12 +62,12 @@ impl Context {
         };
         // verify the environment variable is set
         env::set_var(key, &self.cache_path);
-        self
+        Ok(self)
     }
 
     /// Configures and reads data from the settings object to return a `Settings` struct
     /// in the `Context`. The settings file `s` must be directly under `$ORBIT_HOME`.
-    pub fn settings(mut self, s: &str) -> Context {
+    pub fn settings(mut self, s: &str) -> Result<Context, ContextError> {
         // create the settings file if does not exist
         let cfg_path = self.home_path.join(s);
         if path::Path::exists(&cfg_path) == false {
@@ -78,17 +78,29 @@ impl Context {
         match cfg {
             Ok(r) => self.config = r,
             // :todo: return as error
-            Err(e) => eprintln!("error: {}:{}", cfg_path.display(), e),
+            Err(e) => return Err(ContextError(format!("{}:{}", cfg_path.display(), e))),
         };
         // :todo: also look within every path along current directory for a /.orbit/config.ini file to load
 
         // :todo: dynamically set from environment variables from configuration data
         
-        self
+        Ok(self)
     }
 
     /// Access the configuration data.
     pub fn get_config(&self) -> &cfgfile::CfgLanguage {
         &self.config
+    }
+}
+
+
+#[derive(Debug)]
+pub struct ContextError(String);
+
+impl std::error::Error for ContextError {}
+
+impl std::fmt::Display for ContextError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }

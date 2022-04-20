@@ -46,5 +46,5 @@ Args:
 Options:
     --template <key>    specify a template to start from
 
-Use 'orbit help new' read more about the command.
+Use 'orbit help new' to read more about the command.
 ";

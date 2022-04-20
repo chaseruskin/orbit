@@ -42,8 +42,11 @@ Args:
     <topic>         a listed topic or any orbit subcommand
 
 Topics:
-    manifest        learn about .cfg files
+    cfg             learn about .cfg files
     cache           learn about orbit's caching system
+    manifest        learn about the orbit.cfg file
+    template        learn about templates
+    blueprint       learn about generating a pre-build data file
 
 Use 'orbit help --list' to see all available topics.
 ";

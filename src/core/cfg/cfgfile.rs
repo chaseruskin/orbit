@@ -17,7 +17,7 @@ impl Pos {
     fn new() -> Self {
         Pos(1, 0)
     }
-    
+
     /// Line += 1 and resets col to 0.
     fn increment_line(&mut self) {
         self.0 += 1;
@@ -618,7 +618,7 @@ key     =
         };
 
         assert_eq!(config.get("core.path"), Some(&field::Value::from_str("/users/chase/hdl").unwrap()));
-        assert_eq!(config.get("core.user"), Some(&field::Value::from_str("Chase Ruskin ").unwrap()));
+        assert_eq!(config.get("CORE.USER"), Some(&field::Value::from_str("Chase Ruskin ").unwrap()));
         assert_eq!(config.get("table.key"), Some(&field::Value::from_str("").unwrap()));
         assert_eq!(config.get("plugin.ghdl.execute"), None);
     }

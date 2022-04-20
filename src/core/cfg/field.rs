@@ -1,14 +1,22 @@
 use std::str::FromStr;
+use std::hash::{Hash, Hasher};
 
-#[derive(Debug, Hash)]
+#[derive(Debug)]
 pub struct Identifier {
     id: String,
 }
 
 impl PartialEq for Identifier {
     fn eq(&self, other: &Self) -> bool {
-        // case insensitive
+        // case insensitive comparison
         self.id.to_lowercase() == other.id.to_lowercase()
+    }
+}
+
+impl Hash for Identifier {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // case insensitive hashing
+        self.id.to_lowercase().hash(state);
     }
 }
 

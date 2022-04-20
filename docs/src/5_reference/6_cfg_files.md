@@ -6,9 +6,9 @@ Files with a `.cfg` extension are readable by Orbit following the provided guide
 
 ## Structure
 
-The file is essentially stores key-value pairs. It consists of sections, keys, and values.
+The file's purpose is to store key-value pairs. It consists of sections, keys, and values.
 
-- A section is a non-terminal key path. These can be listed within square brackets to denote the following keys belong to that section.
+- A section is a non-terminal key path. These can be listed within square brackets to denote the keys defined below it belong to that section.
 
 - A key is a terminal node that stores a value.
 
@@ -34,6 +34,30 @@ The file is essentially stores key-value pairs. It consists of sections, keys, a
 
 ## Examples
 
+The Orbit manifest file `orbit.cfg` may resemble something like this:
+``` ini
+[ip]
+name    = gates
+version = 0.1.0
+library = rary
+vendor  = c-rus
+
+public  = rtl/gates_pkg.vhd,rtl/top.vhd
+
+[dependencies]
+c-rus.eel4712c.lab1 = 1.0.0
+```
+
+An example portion of an Orbit configuration file `config.cfg` to specify a plugin for `ghdl`:
+``` ini
+; ...
+[plugin.ghdl]
+execute = "python ${ ORBIT_HOME }/plugin/ghdl.py"
+summary = backend script to wrap the GHDL executable as an orbit plugin
+symbol.py-model = *_mdl.py
+
+```
+
 A very inclusive demonstration of the file format:
 
 ``` ini
@@ -49,28 +73,4 @@ nested-section.key = full key path is section.nested-section.key
 ; moving on to the start of a section called "section2"
 [section2]
 key = value
-```
-
-The Orbit manifest `orbit.cfg` may resemble something like this:
-``` ini
-[ip]
-name    = gates
-version = 0.1.0
-library = rary
-vendor  = c-rus
-
-public  = rtl/gates_pkg.vhd,rtl/top.vhd
-
-[dependencies]
-c-rus.eel4712c.lab1 = 1.0.0
-```
-
-An example portion of an orbit configuration file to specify a plugin for `ghdl`:
-``` ini
-; ...
-[plugin.ghdl]
-execute = "python ${ ORBIT_HOME }/plugin/ghdl.py"
-summary = backend script to wrap the GHDL executable as an orbit plugin
-symbol.py-model = *_mdl.py
-
 ```

@@ -110,6 +110,10 @@ Usage:
 
 Commands:
     new             create a new ip
+    edit            open an ip in a text editor
+    tree            view the dependency graph
+    plan            generate a blueprint file
+    build           execute a plugin
 
 Options:
     --version       print version information and exit

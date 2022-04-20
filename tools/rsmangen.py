@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+# ------------------------------------------------------------------------------
+# File: rsmangen.py
+# Author: Chase Ruskin
+# Abstract:
+#   Generates rust code str literal from docs markdown manual page found under
+#   docs/src/6_commands/.
+# Usage:    
+#   python rsmangen.py
+# ------------------------------------------------------------------------------
+import os, glob
+
+def main():
+    # detect all command files
+    commands = glob.glob('./docs/src/6_commands/*.md')
+
+    for cmd in commands:
+        name: str = os.path.basename(cmd).rsplit('_')[1].split('.')[0]
+        if os.path.basename(cmd).rsplit('_')[0] == '0':
+            continue
+
+        transform = 'pub const MANUAL: &str = "\\\n'
+        with open(cmd, 'r') as f:
+            for line in f.readlines():
+                transform_line = '    ' + line + '\n'
+                # skip title line
+                if line.startswith('# '):
+                    continue
+                if line.startswith('## '):
+                    transform_line = line[3:].replace('__', '')
+                # skip code syntax
+                elif line.startswith('```'):
+                    continue
+                elif len(line) == 1:
+                    continue
+                transform += transform_line
+            pass
+
+        # add closing rust syntax and write to file
+        transform += '";'
+        output = './src/commands/manuals/'+name+'.rs'
+        with open(output, 'w') as f:
+            f.write(transform)
+
+        print('info: file written to '+output)
+        pass
+    pass
+
+
+if __name__ == "__main__":
+    main()

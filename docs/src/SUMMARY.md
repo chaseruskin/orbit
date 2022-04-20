@@ -21,5 +21,6 @@
     - [.cfg Files](./5_reference/6_cfg_files.md)
 
 - [Commands](./6_commands/0_commands.md)
+    - [orbit new](./6_commands/1_new.md)
 
 - [Appendix: Glossary](./glossary.md)

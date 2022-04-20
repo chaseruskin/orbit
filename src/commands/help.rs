@@ -19,7 +19,13 @@ impl Command for Help {
 
 impl Help {
     fn run(&self) -> () {
-        println!("info: displaying help text");
+        if let Some(t) = &self.topic {
+            if t == "new" {
+                println!("{}", crate::commands::manuals::new::MANUAL);
+            }
+        } else {
+            println!("info: displaying help text");
+        }
     }
 }
 

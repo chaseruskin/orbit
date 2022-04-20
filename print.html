@@ -209,9 +209,10 @@
 <li>Edit the user-level PATH environment variable in <em><strong>Control Panel</strong></em> by adding <strong>%LOCALAPPDATA%\Programs\orbit\bin</strong>.</li>
 </ol>
 <h2 id="2-installing-with-cargo"><a class="header" href="#2-installing-with-cargo">2. Installing with Cargo</a></h2>
-<blockquote>
-<p><strong>Note</strong>: This method is currently unavailable until Orbit is on <a href="https://crates.io">crates.io</a>.</p>
-</blockquote>
+<p>To install with Cargo, enter the following command while replacing <code>&lt;VERSION&gt;</code> with the desired version tag (such as &quot;1.0.0&quot;).</p>
+<pre><code>$ cargo install --git https://github.com/c-rus/orbit.git --tag &lt;VERSION&gt;
+</code></pre>
+<p>This will build the <code>orbit</code> binary and place it a path already set in the PATH environment variable.</p>
 <h2 id="checking-orbit-is-installed-correctly"><a class="header" href="#checking-orbit-is-installed-correctly">Checking Orbit is installed correctly</a></h2>
 <p>To verify orbit is working correctly on your system, open a new terminal and run:</p>
 <pre><code>$ orbit --version

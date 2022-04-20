@@ -202,7 +202,7 @@ impl CfgLanguage {
         // accept EOL or EOF
         let sym = ts.next().unwrap();
         match sym.get_token() {
-            TokenType::EOF | TokenType::EOL => Ok(table),
+            TokenType::EOF | TokenType::EOL | TokenType::COMMENT(_) => Ok(table),
             _ => Err(CfgError::MissingEOL(sym.get_location().clone())),
         }
     }
@@ -230,7 +230,7 @@ impl CfgLanguage {
                 CfgLanguage::accept_op(ts.next().unwrap(), q)?;
                 v
             }
-            TokenType::EOL | TokenType::EOF => {
+            TokenType::EOL | TokenType::EOF | TokenType::COMMENT(_) => {
                 field::Value::from_str("").unwrap()
             }
             _ => {
@@ -241,7 +241,7 @@ impl CfgLanguage {
         // accept EOL or EOF
         let sym = ts.next().unwrap();
         match sym.get_token() {
-            TokenType::EOF | TokenType::EOL => Ok((key, value)),
+            TokenType::EOF | TokenType::EOL | TokenType::COMMENT(_) => Ok((key, value)),
             _ => Err(CfgError::MissingEOL(sym.get_location().clone())),
         }
     }
@@ -652,15 +652,15 @@ user = CHASE # your name or \"alias\"! ";
 
 include.path = profile/eastwind-trading/config.ini,
 
-[core]
-path = /users/chase/hdl
+[core] ; comment
+path = /users/chase/hdl ; comment #2
 user = 'Chase Ruskin '
 
 [env]
 course=EEL4712C: Digital Design 
 
 [table]
-key     =
+key     = ; comment #3
 ";
         let config = CfgLanguage::from_str(s).unwrap();
 

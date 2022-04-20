@@ -37,15 +37,15 @@ The file's purpose is to store key-value pairs. It consists of sections, keys, a
 The Orbit manifest file `orbit.cfg` may resemble something like this:
 ``` ini
 [ip]
-name    = gates
-version = 0.1.0
-library = rary
-vendor  = c-rus
+name    = "gates"
+version = "0.1.0"
+library = "rary"
+vendor  = "c-rus"
 
-public  = rtl/gates_pkg.vhd,rtl/top.vhd
+public  = "rtl/gates_pkg.vhd,rtl/top.vhd"
 
 [dependencies]
-c-rus.eel4712c.lab1 = 1.0.0
+c-rus.eel4712c.lab1 = "1.0.0"
 ```
 
 An example portion of an Orbit configuration file `config.cfg` to specify a plugin for `ghdl`:
@@ -53,8 +53,8 @@ An example portion of an Orbit configuration file `config.cfg` to specify a plug
 ; ...
 [plugin.ghdl]
 execute = "python ${ ORBIT_HOME }/plugin/ghdl.py"
-summary = backend script to wrap the GHDL executable as an orbit plugin
-symbol.py-model = *_mdl.py
+summary = "backend script to wrap the GHDL executable as an orbit plugin"
+symbol.py-model = "*_mdl.py"
 
 ```
 
@@ -62,15 +62,13 @@ A very inclusive demonstration of the file format:
 
 ``` ini
 [section] ; this is a comment
-basic-value = my value # whitespace surrounding 'my value' will be removed
-
-quoted-value = " all characters in here; are preserved[] "
+key = " all characters in here; are preserved[] "
 
 esc-quotes = "to escape a quote within a quoted value, ""double"" the quote character"
 
-nested-section.key = full key path is section.nested-section.key
+nested-section.key = "full key path is section.nested-section.key"
 
 ; moving on to the start of a section called "section2"
 [section2]
-key = value
+key = "value"
 ```

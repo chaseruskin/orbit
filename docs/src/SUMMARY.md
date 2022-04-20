@@ -18,6 +18,7 @@
     - [Command line](./5_reference/3_command_line.md)
     - [Environment Variables](./5_reference/4_environment_variables.md)
     - [Configuration](./5_reference/5_configuration.md)
+    - [.cfg Files](./5_reference/6_cfg_files.md)
 
 - [Commands](./6_commands/0_commands.md)
 

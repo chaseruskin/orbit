@@ -3,3 +3,13 @@
 # Changelog
 
 ## 0.1.0 - unreleased
+
+### Features
+
+- adds support for the ini configuration file format to store key value pairs
+
+- creates home folder at ~/.orbit if `ORBIT_HOME` enviornment variable is not set
+
+- adds `--upgrade` flag for self-updating binary with latest Github release for user's targeted OS and architecture
+
+- adds command-line interface with helpful misspelling suggestions and argument input validation

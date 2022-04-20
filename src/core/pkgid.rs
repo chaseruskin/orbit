@@ -118,7 +118,7 @@ impl FromStr for PkgId {
     type Err = PkgIdError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> { 
-        let chunks: Vec<&str> = s.rsplit_terminator('.').collect();
+        let chunks: Vec<&str> = s.rsplit('.').collect();
         if chunks.len() > 3 {
             return Err(PkgIdError::BadLen(s.to_owned(), chunks.len()));
         }
@@ -345,6 +345,8 @@ mod test {
         }));
 
         // invalid pkgids
+        assert!(PkgId::from_str("vendor.library.name.").is_err());
+        assert!(PkgId::from_str(".vendor.library.name").is_err());
         assert!(PkgId::from_str("vendor?.library.name").is_err());
         assert!(PkgId::from_str("vendor.library.name.extra").is_err());
         assert!(PkgId::from_str("0vendor.library.name").is_err());

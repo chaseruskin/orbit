@@ -4,7 +4,7 @@
 //!     resembles a ini-like syntax and structure composed of "tables" 
 //!     (sections) and "fields" (key-value pairs).
 use std::collections::HashMap;
-use crate::core::cfg::field;
+use crate::util::cfg::field;
 use std::str::FromStr;
 
 type Line = usize;

@@ -1,6 +1,6 @@
 use std::path;
 use std::env;
-use crate::core::cfg::cfgfile;
+use crate::util::cfg::cfgfile;
 
 pub struct Context {
     home_path: path::PathBuf,

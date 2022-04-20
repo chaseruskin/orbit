@@ -39,7 +39,12 @@ $ copy-item ".\orbit-1.0.0-x86_64-windows\*" -destination "$env:LOCALAPPDATA\Pro
 
 ## 2. Installing with Cargo
 
-> __Note__: This method is currently unavailable until Orbit is on [crates.io](https://crates.io).
+To install with Cargo, enter the following command while replacing `<VERSION>` with the desired version tag (such as "1.0.0").
+```
+$ cargo install --git https://github.com/c-rus/orbit.git --tag <VERSION>
+```
+
+This will build the `orbit` binary and place it a path already set in the PATH environment variable.
 
 ## Checking Orbit is installed correctly
 

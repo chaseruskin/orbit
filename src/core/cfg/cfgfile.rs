@@ -12,6 +12,24 @@ type Col = usize;
 #[derive(Debug, PartialEq, Clone)]
 struct Pos(Line, Col);
 
+impl Pos {
+    /// Starts a new position at line 1, column 0.
+    fn new() -> Self {
+        Pos(1, 0)
+    }
+    
+    /// Line += 1 and resets col to 0.
+    fn increment_line(&mut self) {
+        self.0 += 1;
+        self.1 = 0;
+    }
+
+    /// Col += 1 and does not modify line.
+    fn increment_col(&mut self) {
+        self.1 += 1;
+    }
+}
+
 #[derive(Debug, PartialEq)]
 enum TokenType {
     COMMENT(String),    // ; or #
@@ -237,9 +255,11 @@ impl CfgLanguage {
     /// Given some text `s`, tokenize it according the cfg language.
     fn tokenize(s: &str) -> Vec::<Symbol> {
         let mut symbols = Vec::new();
-        let mut cur_pos = Pos(1, 0);
+        // tracks the tokenizer's current position
+        let mut cur_pos = Pos::new();
+        // tracks the buffer's intitial position
+        let mut buf_pos = Pos::new();
         let mut buf: String = String::new();
-        let mut buf_pos: Pos = cur_pos.clone();
         let mut state = CfgState::NORMAL;
 
         let complete_literal = |v: &mut Vec::<Symbol>, p: &Pos, b: &str| {
@@ -251,7 +271,7 @@ impl CfgLanguage {
         let mut chars = s.chars().peekable();
         // main state machine logic for handling each character
         while let Some(c) = chars.next() {
-            cur_pos.1 += 1;
+            cur_pos.increment_col();
             match state {
                 CfgState::COMMENT => {
                     match c {
@@ -260,8 +280,7 @@ impl CfgLanguage {
                             buf.clear();
                             symbols.push(Symbol::new(cur_pos.clone(), TokenType::EOL));
                             state = CfgState::NORMAL;
-                            cur_pos.0 += 1;
-                            cur_pos.1 = 0;
+                            cur_pos.increment_line();
                         }
                         _ => {
                             buf.push(c);
@@ -286,7 +305,7 @@ impl CfgLanguage {
                                 state = CfgState::QUOTE(c);
                                 // mark where the quote begins
                                 buf_pos = cur_pos.clone();
-                                buf_pos.1 += 1;
+                                buf_pos.increment_col();
                             };
                         }
                         '\n' => {
@@ -294,9 +313,7 @@ impl CfgLanguage {
                             complete_literal(&mut symbols, &mut buf_pos, buf.trim());
                             buf.clear();
                             symbols.push(Symbol::new(cur_pos.clone(), TokenType::EOL));
-                            cur_pos.0 += 1;
-                            cur_pos.1 = 0;
-
+                            cur_pos.increment_line();
                         }
                         _ => {
                             if (c.is_whitespace() == false) || (buf.is_empty() == false) {
@@ -314,7 +331,7 @@ impl CfgLanguage {
                         if chars.peek() == Some(&q) {
                             // discard the escape quote
                             buf.push(chars.next().unwrap());
-                            cur_pos.1 += 1;
+                            cur_pos.increment_col();
                         // finish the quoted literal
                         } else {
                             complete_literal(&mut symbols, &mut buf_pos, &buf);
@@ -325,8 +342,7 @@ impl CfgLanguage {
                     } else {
                         buf.push(c);
                         if c == '\n' {
-                            cur_pos.0 += 1;
-                            cur_pos.1 = 0;
+                            cur_pos.increment_line();
                         }
                     }
                 }
@@ -345,7 +361,7 @@ impl CfgLanguage {
                 complete_literal(&mut symbols, &mut buf_pos, &mut buf);
             },
         }
-        cur_pos.1 += 1;
+        cur_pos.increment_col();
         symbols.push(Symbol::new(cur_pos, TokenType::EOF));
         symbols    
     }

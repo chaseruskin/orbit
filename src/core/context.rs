@@ -80,7 +80,6 @@ impl Context {
         let cfg = cfgfile::CfgLanguage::load_from_file(&cfg_path);
         match cfg {
             Ok(r) => self.config = r,
-            // :todo: return as error
             Err(e) => return Err(ContextError(format!("{}:{}", cfg_path.display(), e))),
         };
         // :todo: also look within every path along current directory for a /.orbit/config.ini file to load

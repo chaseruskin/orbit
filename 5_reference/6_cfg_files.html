@@ -189,37 +189,35 @@
 <h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
 <p>The Orbit manifest file <code>orbit.cfg</code> may resemble something like this:</p>
 <pre><code class="language-ini">[ip]
-name    = gates
-version = 0.1.0
-library = rary
-vendor  = c-rus
+name    = &quot;gates&quot;
+version = &quot;0.1.0&quot;
+library = &quot;rary&quot;
+vendor  = &quot;c-rus&quot;
 
-public  = rtl/gates_pkg.vhd,rtl/top.vhd
+public  = &quot;rtl/gates_pkg.vhd,rtl/top.vhd&quot;
 
 [dependencies]
-c-rus.eel4712c.lab1 = 1.0.0
+c-rus.eel4712c.lab1 = &quot;1.0.0&quot;
 </code></pre>
 <p>An example portion of an Orbit configuration file <code>config.cfg</code> to specify a plugin for <code>ghdl</code>:</p>
 <pre><code class="language-ini">; ...
 [plugin.ghdl]
 execute = &quot;python ${ ORBIT_HOME }/plugin/ghdl.py&quot;
-summary = backend script to wrap the GHDL executable as an orbit plugin
-symbol.py-model = *_mdl.py
+summary = &quot;backend script to wrap the GHDL executable as an orbit plugin&quot;
+symbol.py-model = &quot;*_mdl.py&quot;
 
 </code></pre>
 <p>A very inclusive demonstration of the file format:</p>
 <pre><code class="language-ini">[section] ; this is a comment
-basic-value = my value # whitespace surrounding 'my value' will be removed
-
-quoted-value = &quot; all characters in here; are preserved[] &quot;
+key = &quot; all characters in here; are preserved[] &quot;
 
 esc-quotes = &quot;to escape a quote within a quoted value, &quot;&quot;double&quot;&quot; the quote character&quot;
 
-nested-section.key = full key path is section.nested-section.key
+nested-section.key = &quot;full key path is section.nested-section.key&quot;
 
 ; moving on to the start of a section called &quot;section2&quot;
 [section2]
-key = value
+key = &quot;value&quot;
 </code></pre>
 
                     </main>

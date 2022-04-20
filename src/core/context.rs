@@ -25,7 +25,10 @@ impl Context {
         self.home_path = if let Ok(s) = env::var(key) {
             std::path::PathBuf::from(s)
         } else {
-            let hp = home::home_dir().expect("no home directory detected").join(".orbit");
+            let hp = match home::home_dir() {
+                Some(p) => p.join(".orbit"),
+                None => return Err(ContextError(format!("failed to detect user's home directory; please set the ORBIT_HOME environment variable")))
+            };
             // create the directory if does not exist
             if path::Path::exists(&hp) == false {
                 std::fs::create_dir(&hp).expect("failed to create .orbit directory");
@@ -34,7 +37,7 @@ impl Context {
         };
         // do not allow a non-existent directory to be set for the home
         if path::Path::exists(&self.home_path) == false {
-            panic!("the home directory does not exist");
+            return Err(ContextError(format!("directory {} does not exist for ORBIT_HOME", self.home_path.display())))
         }
         // verify the environment variable is set
         env::set_var(key, &self.home_path);
@@ -48,7 +51,7 @@ impl Context {
             let cp = std::path::PathBuf::from(s);
             // do not allow a nonexistent directory to be set for cache path
             if path::Path::exists(&cp) == false {
-                panic!("the cache directory does not exist");
+                return Err(ContextError(format!("directory {} does not exist for ORBIT_CACHE", cp.display())))
             }
             cp
         // proceed with default

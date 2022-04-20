@@ -16,39 +16,39 @@ pub struct Orbit {
 }
 
 impl Command for Orbit {
-    fn exec(&self) -> () {
-        self.run();
+    type Err = Box<dyn std::error::Error>;
+    fn exec(&self) -> Result<(), Self::Err> {
+        self.run()
     }
 }
 
 use reqwest;
-use colored::*;
 use std::env;
 
 impl Orbit {
-    fn run(&self) -> () {
+    fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
         // prioritize version information
         if self.version {
             println!("orbit {}", VERSION);
+            Ok(())
         // prioritize upgrade information
         } else if self.upgrade == true {
             println!("info: checking for latest orbit binary...");
-            match self.upgrade() {
-                Ok(i) => println!("info: {}", i),
-                Err(e) => eprintln!("{} {}", "error:".red().bold(), e),
-            };
+            let info = self.upgrade()?;
+            println!("info: {}", info);
+            Ok(())
         // run the specified command
         } else if let Some(c) = &self.command {
             // set up the context
             let _ = context::Context::new()
                 .home("ORBIT_HOME")
                 .cache("ORBIT_CACHE")
-                .settings("settings.ini");
+                .settings("config.ini");
             // pass the context to the given command
-            c.exec();
+            c.exec()
         // if no command is given then print default help
         } else {
-            println!("{}", HELP);
+            Ok(println!("{}", HELP))
         }
     }
 }
@@ -68,25 +68,33 @@ impl FromCli for Orbit {
 }
 
 use crate::commands::help::Help;
+use crate::commands::new::New;
 
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
     Help(Help),
+    New(New),
 }
 
 impl FromCli for OrbitSubcommand {
     fn from_cli<'c>(cli: &'c mut Cli<'_>) -> Result<Self, CliError<'c>> { 
-        match cli.match_command(&["help"])?.as_ref() {
+        match cli.match_command(&[
+            "help", 
+            "new"
+        ])?.as_ref() {
             "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
+            "new" => Ok(OrbitSubcommand::New(New::from_cli(cli)?)),
             _ => panic!("an unimplemented command was passed through!")
         }
     }
 }
 
 impl Command for OrbitSubcommand {
-    fn exec(&self) {
+    type Err = Box<dyn std::error::Error>;
+    fn exec(&self) -> Result<(), Self::Err> {
         match self {
             OrbitSubcommand::Help(c) => c.exec(),
+            OrbitSubcommand::New(c) => c.exec(),
         }
     }
 }

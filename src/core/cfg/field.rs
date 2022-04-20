@@ -99,10 +99,10 @@ impl std::fmt::Display for IdentifierError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
         match self {
             Self::Empty => write!(f, "empty identifier"),
-            Self::InvalidChar(c) => write!(f, "invalid character '{}' in identifier", c),
+            Self::InvalidChar(c) => write!(f, "invalid character '{}'", c),
             Self::BadFirstChar(c) => write!(f, "invalid first character '{}'", c),
             Self::TrailingSep => write!(f, "invalid trailing separator '.'"),
-            Self::EmptyTable => write!(f, "empty table identifier"),
+            Self::EmptyTable => write!(f, "empty section identifier"),
         }
     }
 }
@@ -112,13 +112,8 @@ pub struct Value {
     value: String,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum ValueError {
-    // todo
-}
-
 impl FromStr for Value {
-    type Err = ValueError;
+    type Err = ();
 
     fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> { 
         Ok(Value { value: s.to_owned() })
@@ -126,6 +121,14 @@ impl FromStr for Value {
 }
 
 impl Value {
+    pub fn new(s: &str) -> Self {
+        Value { value: s.to_owned() }
+    }
+
+    pub fn get_str(&self) -> &str {
+        &self.value
+    }
+
     /// Takes the `String` and moves it into a new `Value` struct.
     pub fn from_move(s: String) -> Self {
         Value { value: s }
@@ -142,26 +145,6 @@ impl Value {
             "yes" | "true" | "1" | "on" | "enable" => true,
             _ => false,
         }
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Field {
-    key: Identifier,
-    value: Value,
-}
-
-impl Field {
-    pub fn get_key(&self) -> &Identifier {
-        &self.key
-    }
-
-    pub fn get_value(&self) -> &Value {
-        &self.value
-    }
-
-    pub fn take_split(self) -> (Identifier, Value) {
-        (self.key, self.value)
     }
 }
 

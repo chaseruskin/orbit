@@ -39,6 +39,11 @@ pub fn run() -> u8 {
     }
     std::mem::drop(cli);
     // program level
-    orbit.exec();
-    0
+    match orbit.exec() {
+        Ok(_) => 0,
+        Err(e) => {
+            eprintln!("{} {}", "error:".red().bold(), e); 
+            101
+        }
+    }
 }

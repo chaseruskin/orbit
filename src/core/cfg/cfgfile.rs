@@ -10,12 +10,12 @@ use std::str::FromStr;
 type Line = usize;
 type Col = usize;
 #[derive(Debug, PartialEq, Clone)]
-struct Pos(Line, Col);
+pub struct Location(Line, Col);
 
-impl Pos {
+impl Location {
     /// Starts a new position at line 1, column 0.
     fn new() -> Self {
-        Pos(1, 0)
+        Location(1, 0)
     }
 
     /// Line += 1 and resets col to 0.
@@ -30,8 +30,14 @@ impl Pos {
     }
 }
 
+impl std::fmt::Display for Location {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}", self.0, self.1)
+    }
+}
+
 #[derive(Debug, PartialEq)]
-enum TokenType {
+pub enum TokenType {
     COMMENT(String),    // ; or #
     ASSIGNMENT,         // =
     EOL,                // \n
@@ -50,7 +56,7 @@ impl TokenType {
             '=' => Self::ASSIGNMENT,
             ']' => Self::RBRACKET,
             '[' => Self::LBRACKET,
-            _ => panic!("invalid operator!")
+            _ => panic!("invalid operator character \"{}\"", c)
         }
     }
 
@@ -83,21 +89,25 @@ impl std::fmt::Display for TokenType {
 }
 
 #[derive(Debug, PartialEq)]
-struct Symbol {
-    location: Pos,
+pub struct Symbol {
+    location: Location,
     token: TokenType,
 }
 
 impl Symbol {
-    pub fn new(pos: Pos, token: TokenType) -> Self {
+    pub fn new(location: Location, token: TokenType) -> Self {
         Self {
-            location: pos,
+            location: location,
             token: token,
         }
     }
 
     pub fn get_token(&self) -> &TokenType {
         &self.token
+    }
+
+    pub fn get_location(&self) -> &Location {
+        &self.location
     }
 
     pub fn take_str(self) -> String {
@@ -115,33 +125,44 @@ enum CfgState {
     NORMAL,
 }
 
-struct CfgLanguage {
+pub struct CfgLanguage {
     map: HashMap::<field::Identifier, field::Value>,
+    // for saving, also store a list of the explicit table names mapped to list of sub key names
+    // key is explicit table id, value a list of partial key ids
 }
 
+// api impl block
 impl CfgLanguage {
-    fn new() -> Self {
+    pub fn new() -> Self {
         CfgLanguage { 
-            map: HashMap::new(),
-            // for saving, also store a list of the explicit table names mapped to list of sub key names
-            // key is explicit table id, value a list of partial key ids
+            map: HashMap::new(), 
         }
     }
 
-    /// Access the value behind a key.
+    /// Accesses the value behind a key.
+    /// 
+    /// Returns `None` if the key does not exist.
     pub fn get(&self, s: &str) -> Option<&field::Value> {
         self.map.get(&field::Identifier::from_str(s).expect("invalid key format"))
     }
 
+    pub fn load_from_file(f: &std::path::PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
+        let data = std::fs::read_to_string(f)?;
+        let cfg = CfgLanguage::from_str(&data)?;
+        Ok(cfg)
+    }
+}
+
+// lexer and parser impl block
+impl CfgLanguage {
     /// Given a stream of tokens, build up hashmap according to the grammar.
     fn parse(tokens: Vec::<Symbol>) -> Result<HashMap::<field::Identifier, field::Value>, CfgError> {
         // track the current table name
         let mut table: Option<field::Identifier> = None;
-
         let mut map = HashMap::new();
         let mut t_stream = tokens.into_iter().peekable();
-        while let Some(t) = t_stream.peek() {
-            match t.get_token() {
+        while let Some(sym) = t_stream.peek() {
+            match sym.get_token() {
                 // define a table
                 TokenType::LBRACKET => {
                     table = Some(CfgLanguage::build_table(&mut t_stream)?);
@@ -163,14 +184,30 @@ impl CfgLanguage {
                     t_stream.next();
                 }
                 _ => {
-                    panic!("unexpected token {:?}", t)
+                    return Err(CfgError::UnexpectedToken(t_stream.next().unwrap()))
                 }
             };
         }
         Ok(map)
     }
 
-    /// FIELD ::= IDENTIFIER __=__ (BASIC_VALUE | LITERAL_VALUE)
+    /// TABLE ::= __\[__ IDENTIFIER __\]__ EOL
+    fn build_table(ts: &mut impl Iterator<Item=Symbol>) -> Result<field::Identifier, CfgError> {
+        // accept [ ...guaranteed to be LBRACKET
+        CfgLanguage::accept_op(ts.next().unwrap(), '[')?;
+        // verify identifier
+        let table = CfgLanguage::verify_identifier(ts.next().unwrap())?;
+        // accept ]
+        CfgLanguage::accept_op(ts.next().unwrap(), ']')?;
+        // accept EOL or EOF
+        let sym = ts.next().unwrap();
+        match sym.get_token() {
+            TokenType::EOF | TokenType::EOL => Ok(table),
+            _ => Err(CfgError::MissingEOL(sym.get_location().clone())),
+        }
+    }
+
+    /// FIELD ::= IDENTIFIER __=__ (BASIC_VALUE | LITERAL_VALUE) EOL
     fn build_field(ts: &mut impl Iterator<Item=Symbol>) -> Result<(field::Identifier, field::Value), CfgError> {
         let mut ts = ts.peekable();
         // verify identifier and do something with it
@@ -196,59 +233,48 @@ impl CfgLanguage {
             TokenType::EOL | TokenType::EOF => {
                 field::Value::from_str("").unwrap()
             }
-            _ => panic!("invalid token when parsing literal {:?}", ts.next().unwrap())
+            _ => {
+                // panic!("invalid token when parsing literal {:?}", ts.next().unwrap())
+                return Err(CfgError::UnexpectedToken(ts.next().unwrap()))
+            }
         };
         // accept EOL or EOF
-        match ts.next().unwrap().get_token() {
+        let sym = ts.next().unwrap();
+        match sym.get_token() {
             TokenType::EOF | TokenType::EOL => Ok((key, value)),
-            _ => Err(CfgError::MissingEOL),
+            _ => Err(CfgError::MissingEOL(sym.get_location().clone())),
         }
     }
 
     /// Consumes an operator if it is matching `c` or reports an error.
-    fn accept_op(t: Symbol, c: char) -> Result<(), CfgError> {
-        if let Ok(v) = t.get_token().as_operator() {
+    fn accept_op(sym: Symbol, c: char) -> Result<(), CfgError> {
+        if let Ok(v) = sym.get_token().as_operator() {
             if v == c {
                 Ok(())
             } else {
-                panic!("unexpected operator {:?}", t)
+                Err(CfgError::UnexpectedToken(sym))
             }
         } else {
-            panic!("unexpected token {:?}", t)
+            Err(CfgError::UnexpectedToken(sym))
         }
     }
 
     /// Verify the identifier is valid. It may contain only ascii letters and numbers, dashes,
     /// and dots.
-    fn verify_identifier(t: Symbol) -> Result<field::Identifier, CfgError> {
-        match t.get_token() {
-            TokenType::LITERAL(_) => {
-                match field::Identifier::from_move(t.take_str()) {
+    fn verify_identifier(sym: Symbol) -> Result<field::Identifier, CfgError> {
+        match sym.get_token() {
+            TokenType::LITERAL(s) => {
+                match field::Identifier::from_str(s.as_ref()) {
                     Ok(r) => Ok(r),
-                    Err(e) => Err(CfgError::InvalidIdentifier(e)),
+                    Err(e) => Err(CfgError::InvalidIdentifier(sym, e)),
                 }
             },
             TokenType::EOF => {
                 panic!("missing identifier")
             }
             _ => {
-                panic!("unexpected token {:?}", t)
+                Err(CfgError::UnexpectedToken(sym))
             }
-        }
-    }
-
-    /// TABLE ::= __\[__ IDENTIFIER __\]__
-    fn build_table(ts: &mut impl Iterator<Item=Symbol>) -> Result<field::Identifier, CfgError> {
-        // accept [ ...guaranteed to be LBRACKET
-        CfgLanguage::accept_op(ts.next().unwrap(), '[')?;
-        // verify identifier
-        let table = CfgLanguage::verify_identifier(ts.next().unwrap())?;
-        // accept ]
-        CfgLanguage::accept_op(ts.next().unwrap(), ']')?;
-        // accept EOL or EOF
-        match ts.next().unwrap().get_token() {
-            TokenType::EOF | TokenType::EOL => Ok(table),
-            _ => Err(CfgError::MissingEOL),
         }
     }
     
@@ -256,13 +282,13 @@ impl CfgLanguage {
     fn tokenize(s: &str) -> Vec::<Symbol> {
         let mut symbols = Vec::new();
         // tracks the tokenizer's current position
-        let mut cur_pos = Pos::new();
+        let mut cur_loc = Location::new();
         // tracks the buffer's intitial position
-        let mut buf_pos = Pos::new();
+        let mut buf_loc = Location::new();
         let mut buf: String = String::new();
         let mut state = CfgState::NORMAL;
 
-        let complete_literal = |v: &mut Vec::<Symbol>, p: &Pos, b: &str| {
+        let complete_literal = |v: &mut Vec::<Symbol>, p: &Location, b: &str| {
             if b.is_empty() == false {
                 v.push(Symbol::new(p.clone(), TokenType::LITERAL(b.to_owned())));
             }
@@ -271,16 +297,16 @@ impl CfgLanguage {
         let mut chars = s.chars().peekable();
         // main state machine logic for handling each character
         while let Some(c) = chars.next() {
-            cur_pos.increment_col();
+            cur_loc.increment_col();
             match state {
                 CfgState::COMMENT => {
                     match c {
                         '\n' => {
-                            symbols.push(Symbol::new(buf_pos.clone(), TokenType::COMMENT(buf.to_string())));
+                            symbols.push(Symbol::new(buf_loc.clone(), TokenType::COMMENT(buf.to_string())));
                             buf.clear();
-                            symbols.push(Symbol::new(cur_pos.clone(), TokenType::EOL));
+                            symbols.push(Symbol::new(cur_loc.clone(), TokenType::EOL));
                             state = CfgState::NORMAL;
-                            cur_pos.increment_line();
+                            cur_loc.increment_line();
                         }
                         _ => {
                             buf.push(c);
@@ -290,36 +316,36 @@ impl CfgLanguage {
                 CfgState::NORMAL => {
                     match c {
                         ';' | '#' => {
-                            complete_literal(&mut symbols, &mut buf_pos, buf.trim());
+                            complete_literal(&mut symbols, &mut buf_loc, buf.trim());
                             buf.clear();
                             state = CfgState::COMMENT;
                             buf.push(c);
                             // mark where the comment begins
-                            buf_pos = cur_pos.clone();
+                            buf_loc = cur_loc.clone();
                         }
                         ']' | '[' | '=' | '\"' | '\'' => {
-                            complete_literal(&mut symbols, &mut buf_pos, buf.trim());
+                            complete_literal(&mut symbols, &mut buf_loc, buf.trim());
                             buf.clear();
-                            symbols.push(Symbol::new(cur_pos.clone(), TokenType::from_char(c)));
+                            symbols.push(Symbol::new(cur_loc.clone(), TokenType::from_char(c)));
                             if c == '\"' || c == '\'' { 
                                 state = CfgState::QUOTE(c);
                                 // mark where the quote begins
-                                buf_pos = cur_pos.clone();
-                                buf_pos.increment_col();
+                                buf_loc = cur_loc.clone();
+                                buf_loc.increment_col();
                             };
                         }
                         '\n' => {
                             buf = buf.trim().to_string();
-                            complete_literal(&mut symbols, &mut buf_pos, buf.trim());
+                            complete_literal(&mut symbols, &mut buf_loc, buf.trim());
                             buf.clear();
-                            symbols.push(Symbol::new(cur_pos.clone(), TokenType::EOL));
-                            cur_pos.increment_line();
+                            symbols.push(Symbol::new(cur_loc.clone(), TokenType::EOL));
+                            cur_loc.increment_line();
                         }
                         _ => {
                             if (c.is_whitespace() == false) || (buf.is_empty() == false) {
                                 // mark the beginning location for this literal
                                 if buf.is_empty() == true {
-                                    buf_pos = cur_pos.clone();
+                                    buf_loc = cur_loc.clone();
                                 }
                                 buf.push(c);
                             }
@@ -331,18 +357,18 @@ impl CfgLanguage {
                         if chars.peek() == Some(&q) {
                             // discard the escape quote
                             buf.push(chars.next().unwrap());
-                            cur_pos.increment_col();
+                            cur_loc.increment_col();
                         // finish the quoted literal
                         } else {
-                            complete_literal(&mut symbols, &mut buf_pos, &buf);
+                            complete_literal(&mut symbols, &mut buf_loc, &buf);
                             buf.clear();
-                            symbols.push(Symbol::new(cur_pos.clone(), TokenType::ENDQUOTE(q)));
+                            symbols.push(Symbol::new(cur_loc.clone(), TokenType::ENDQUOTE(q)));
                             state = CfgState::NORMAL;
                         }
                     } else {
                         buf.push(c);
                         if c == '\n' {
-                            cur_pos.increment_line();
+                            cur_loc.increment_line();
                         }
                     }
                 }
@@ -351,31 +377,56 @@ impl CfgLanguage {
         // final check to ensure emptying the buffer
         match state {
             CfgState::COMMENT => {
-                symbols.push(Symbol::new(buf_pos, TokenType::COMMENT(buf)));
+                symbols.push(Symbol::new(buf_loc, TokenType::COMMENT(buf)));
             },
             CfgState::NORMAL => {
                 buf = buf.trim().to_string();
-                complete_literal(&mut symbols, &mut buf_pos, &mut buf);
+                complete_literal(&mut symbols, &mut buf_loc, &mut buf);
             }
             CfgState::QUOTE(_) => {
-                complete_literal(&mut symbols, &mut buf_pos, &mut buf);
+                complete_literal(&mut symbols, &mut buf_loc, &mut buf);
             },
         }
-        cur_pos.increment_col();
-        symbols.push(Symbol::new(cur_pos, TokenType::EOF));
+        cur_loc.increment_col();
+        symbols.push(Symbol::new(cur_loc, TokenType::EOF));
         symbols    
     }
 }
 
+impl FromStr for CfgLanguage {
+    type Err = CfgError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let tokens = CfgLanguage::tokenize(s);
+        Ok(CfgLanguage {
+            map: CfgLanguage::parse(tokens)?,
+        })
+    }
+}
+
 #[derive(Debug, PartialEq)]
-enum CfgError {
-    InvalidIdentifier(field::IdentifierError),
-    MissingOperator(char),
-    MissingEOL,
+pub enum CfgError {
+    InvalidIdentifier(Symbol, field::IdentifierError),
+    MissingEOL(Location),
+    UnexpectedToken(Symbol),
+    // MissingOperator(char),
+
     // ExpectedOperator(Token, char),
-    /// (position, expected, got)
-    InvalidOperator(Pos, char, char),
+    // (position, expected, got)
+    // InvalidOperator(Location, char, char),
     // ExpectedEOL(Token),
+}
+
+impl std::error::Error for CfgError {}
+
+impl std::fmt::Display for CfgError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::InvalidIdentifier(sym, e) => write!(f, "{} invalid identifier \'{}\' due to {}", sym.get_location(), sym.get_token(), e),
+            Self::MissingEOL(l) => write!(f, "{} missing end of line", l),
+            Self::UnexpectedToken(sym) => write!(f, "{} unexpected token \'{}\'", sym.get_location(), sym.get_token()),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -386,23 +437,23 @@ mod test {
     #[test]
     fn parse_key() {
         let v = vec![
-            Symbol::new(Pos(1, 1), TokenType::LITERAL("key1".to_owned())),
-            Symbol::new(Pos(1, 2), TokenType::ASSIGNMENT),
-            Symbol::new(Pos(1, 3), TokenType::LITERAL("value".to_owned())),
-            Symbol::new(Pos(1, 4), TokenType::EOL),
+            Symbol::new(Location(1, 1), TokenType::LITERAL("key1".to_owned())),
+            Symbol::new(Location(1, 2), TokenType::ASSIGNMENT),
+            Symbol::new(Location(1, 3), TokenType::LITERAL("value".to_owned())),
+            Symbol::new(Location(1, 4), TokenType::EOL),
         ];
         assert_eq!(CfgLanguage::build_field(&mut v.into_iter()).unwrap(), 
             (field::Identifier::from_str("key1").unwrap(), field::Value::from_str("value").unwrap()));
             
         // only one key can be defined on a line (missing eol)
         let v = vec![
-            Symbol::new(Pos(1, 1), TokenType::LITERAL("key1".to_owned())),
-            Symbol::new(Pos(1, 2), TokenType::ASSIGNMENT),
-            Symbol::new(Pos(1, 3), TokenType::LITERAL("value".to_owned())),
-            Symbol::new(Pos(2, 1), TokenType::LITERAL("key2".to_owned())),
-            Symbol::new(Pos(2, 2), TokenType::ASSIGNMENT),
-            Symbol::new(Pos(2, 3), TokenType::LITERAL("value".to_owned())),
-            Symbol::new(Pos(2, 4), TokenType::EOL),
+            Symbol::new(Location(1, 1), TokenType::LITERAL("key1".to_owned())),
+            Symbol::new(Location(1, 2), TokenType::ASSIGNMENT),
+            Symbol::new(Location(1, 3), TokenType::LITERAL("value".to_owned())),
+            Symbol::new(Location(2, 1), TokenType::LITERAL("key2".to_owned())),
+            Symbol::new(Location(2, 2), TokenType::ASSIGNMENT),
+            Symbol::new(Location(2, 3), TokenType::LITERAL("value".to_owned())),
+            Symbol::new(Location(2, 4), TokenType::EOL),
         ];
         assert!(CfgLanguage::build_field(&mut v.into_iter()).is_err());
     }
@@ -410,30 +461,30 @@ mod test {
     #[test]
     fn parse_table() {
         let v = vec![
-            Symbol::new(Pos(1, 1), TokenType::LBRACKET),
-            Symbol::new(Pos(1, 2), TokenType::LITERAL("table".to_owned())),
-            Symbol::new(Pos(1, 7), TokenType::RBRACKET),
-            Symbol::new(Pos(1, 8), TokenType::EOL),
+            Symbol::new(Location(1, 1), TokenType::LBRACKET),
+            Symbol::new(Location(1, 2), TokenType::LITERAL("table".to_owned())),
+            Symbol::new(Location(1, 7), TokenType::RBRACKET),
+            Symbol::new(Location(1, 8), TokenType::EOL),
         ];
         assert_eq!(CfgLanguage::build_table(&mut v.into_iter()).unwrap(), field::Identifier::from_str("table").unwrap());
 
         let v = vec![
-            Symbol::new(Pos(1, 1), TokenType::LBRACKET),
-            Symbol::new(Pos(1, 2), TokenType::LITERAL("CORE".to_owned())),
-            Symbol::new(Pos(1, 6), TokenType::RBRACKET),
-            Symbol::new(Pos(1, 7), TokenType::EOF),
+            Symbol::new(Location(1, 1), TokenType::LBRACKET),
+            Symbol::new(Location(1, 2), TokenType::LITERAL("CORE".to_owned())),
+            Symbol::new(Location(1, 6), TokenType::RBRACKET),
+            Symbol::new(Location(1, 7), TokenType::EOF),
         ];
         assert_eq!(CfgLanguage::build_table(&mut v.into_iter()).unwrap(), field::Identifier::from_str("CORE").unwrap());
 
         // only one table can be defined on a line
         let v = vec![
-            Symbol::new(Pos(1, 1), TokenType::LBRACKET),
-            Symbol::new(Pos(1, 2), TokenType::LITERAL("CORE".to_owned())),
-            Symbol::new(Pos(1, 3), TokenType::RBRACKET),
-            Symbol::new(Pos(1, 4), TokenType::LBRACKET),
-            Symbol::new(Pos(1, 5), TokenType::LITERAL("SUPERCORE".to_owned())),
-            Symbol::new(Pos(1, 6), TokenType::RBRACKET),
-            Symbol::new(Pos(1, 7), TokenType::EOF),
+            Symbol::new(Location(1, 1), TokenType::LBRACKET),
+            Symbol::new(Location(1, 2), TokenType::LITERAL("CORE".to_owned())),
+            Symbol::new(Location(1, 3), TokenType::RBRACKET),
+            Symbol::new(Location(1, 4), TokenType::LBRACKET),
+            Symbol::new(Location(1, 5), TokenType::LITERAL("SUPERCORE".to_owned())),
+            Symbol::new(Location(1, 6), TokenType::RBRACKET),
+            Symbol::new(Location(1, 7), TokenType::EOF),
         ];
         assert!(CfgLanguage::build_table(&mut v.into_iter()).is_err());
     }
@@ -445,15 +496,15 @@ mod test {
 key = value
 ";      
         assert_eq!(CfgLanguage::tokenize(s), vec![
-            Symbol::new(Pos(1, 1), TokenType::LBRACKET),
-            Symbol::new(Pos(1, 2), TokenType::LITERAL("table".to_owned())),
-            Symbol::new(Pos(1, 7), TokenType::RBRACKET),
-            Symbol::new(Pos(1, 8), TokenType::EOL),
-            Symbol::new(Pos(2, 1), TokenType::LITERAL("key".to_owned())),
-            Symbol::new(Pos(2, 5), TokenType::ASSIGNMENT),
-            Symbol::new(Pos(2, 7), TokenType::LITERAL("value".to_owned())),
-            Symbol::new(Pos(2, 12), TokenType::EOL),
-            Symbol::new(Pos(3, 1), TokenType::EOF),
+            Symbol::new(Location(1, 1), TokenType::LBRACKET),
+            Symbol::new(Location(1, 2), TokenType::LITERAL("table".to_owned())),
+            Symbol::new(Location(1, 7), TokenType::RBRACKET),
+            Symbol::new(Location(1, 8), TokenType::EOL),
+            Symbol::new(Location(2, 1), TokenType::LITERAL("key".to_owned())),
+            Symbol::new(Location(2, 5), TokenType::ASSIGNMENT),
+            Symbol::new(Location(2, 7), TokenType::LITERAL("value".to_owned())),
+            Symbol::new(Location(2, 12), TokenType::EOL),
+            Symbol::new(Location(3, 1), TokenType::EOF),
         ]);
 
         let s = "\
@@ -461,15 +512,15 @@ key = value
 key = place the value here
 ";      
         assert_eq!(CfgLanguage::tokenize(s), vec![
-            Symbol::new(Pos(1, 1), TokenType::LBRACKET),
-            Symbol::new(Pos(1, 2), TokenType::LITERAL("table".to_owned())),
-            Symbol::new(Pos(1, 7), TokenType::RBRACKET),
-            Symbol::new(Pos(1, 8), TokenType::EOL),
-            Symbol::new(Pos(2, 1), TokenType::LITERAL("key".to_owned())),
-            Symbol::new(Pos(2, 5), TokenType::ASSIGNMENT),
-            Symbol::new(Pos(2, 7), TokenType::LITERAL("place the value here".to_owned())),
-            Symbol::new(Pos(2, 27), TokenType::EOL),
-            Symbol::new(Pos(3, 1), TokenType::EOF),
+            Symbol::new(Location(1, 1), TokenType::LBRACKET),
+            Symbol::new(Location(1, 2), TokenType::LITERAL("table".to_owned())),
+            Symbol::new(Location(1, 7), TokenType::RBRACKET),
+            Symbol::new(Location(1, 8), TokenType::EOL),
+            Symbol::new(Location(2, 1), TokenType::LITERAL("key".to_owned())),
+            Symbol::new(Location(2, 5), TokenType::ASSIGNMENT),
+            Symbol::new(Location(2, 7), TokenType::LITERAL("place the value here".to_owned())),
+            Symbol::new(Location(2, 27), TokenType::EOL),
+            Symbol::new(Location(3, 1), TokenType::EOF),
         ]);
 
         let s = "\
@@ -478,23 +529,23 @@ key = \"value\"
 jot = 'notes'
 ";      
         assert_eq!(CfgLanguage::tokenize(s), vec![
-            Symbol::new(Pos(1, 1), TokenType::LBRACKET),
-            Symbol::new(Pos(1, 2), TokenType::LITERAL("table".to_owned())),
-            Symbol::new(Pos(1, 7), TokenType::RBRACKET),
-            Symbol::new(Pos(1, 8), TokenType::EOL),
-            Symbol::new(Pos(2, 1), TokenType::LITERAL("key".to_owned())),
-            Symbol::new(Pos(2, 5), TokenType::ASSIGNMENT),
-            Symbol::new(Pos(2, 7), TokenType::QUOTE('"')),
-            Symbol::new(Pos(2, 8), TokenType::LITERAL("value".to_owned())),
-            Symbol::new(Pos(2, 13), TokenType::ENDQUOTE('"')),
-            Symbol::new(Pos(2, 14), TokenType::EOL),
-            Symbol::new(Pos(3, 1), TokenType::LITERAL("jot".to_owned())),
-            Symbol::new(Pos(3, 5), TokenType::ASSIGNMENT),
-            Symbol::new(Pos(3, 7), TokenType::QUOTE('\'')),
-            Symbol::new(Pos(3, 8), TokenType::LITERAL("notes".to_owned())),
-            Symbol::new(Pos(3, 13), TokenType::ENDQUOTE('\'')),
-            Symbol::new(Pos(3, 14), TokenType::EOL),
-            Symbol::new(Pos(4, 1), TokenType::EOF),
+            Symbol::new(Location(1, 1), TokenType::LBRACKET),
+            Symbol::new(Location(1, 2), TokenType::LITERAL("table".to_owned())),
+            Symbol::new(Location(1, 7), TokenType::RBRACKET),
+            Symbol::new(Location(1, 8), TokenType::EOL),
+            Symbol::new(Location(2, 1), TokenType::LITERAL("key".to_owned())),
+            Symbol::new(Location(2, 5), TokenType::ASSIGNMENT),
+            Symbol::new(Location(2, 7), TokenType::QUOTE('"')),
+            Symbol::new(Location(2, 8), TokenType::LITERAL("value".to_owned())),
+            Symbol::new(Location(2, 13), TokenType::ENDQUOTE('"')),
+            Symbol::new(Location(2, 14), TokenType::EOL),
+            Symbol::new(Location(3, 1), TokenType::LITERAL("jot".to_owned())),
+            Symbol::new(Location(3, 5), TokenType::ASSIGNMENT),
+            Symbol::new(Location(3, 7), TokenType::QUOTE('\'')),
+            Symbol::new(Location(3, 8), TokenType::LITERAL("notes".to_owned())),
+            Symbol::new(Location(3, 13), TokenType::ENDQUOTE('\'')),
+            Symbol::new(Location(3, 14), TokenType::EOL),
+            Symbol::new(Location(4, 1), TokenType::EOF),
         ]);
     }
 
@@ -503,34 +554,34 @@ jot = 'notes'
         // using comment operator in value
         let s = "key =\"value; more value! \"";      
         assert_eq!(CfgLanguage::tokenize(s), vec![
-            Symbol::new(Pos(1, 1), TokenType::LITERAL("key".to_owned())),
-            Symbol::new(Pos(1, 5), TokenType::ASSIGNMENT),
-            Symbol::new(Pos(1, 6), TokenType::QUOTE('"')),
-            Symbol::new(Pos(1, 7), TokenType::LITERAL("value; more value! ".to_owned())),
-            Symbol::new(Pos(1, 26), TokenType::ENDQUOTE('"')),
-            Symbol::new(Pos(1, 27), TokenType::EOF),
+            Symbol::new(Location(1, 1), TokenType::LITERAL("key".to_owned())),
+            Symbol::new(Location(1, 5), TokenType::ASSIGNMENT),
+            Symbol::new(Location(1, 6), TokenType::QUOTE('"')),
+            Symbol::new(Location(1, 7), TokenType::LITERAL("value; more value! ".to_owned())),
+            Symbol::new(Location(1, 26), TokenType::ENDQUOTE('"')),
+            Symbol::new(Location(1, 27), TokenType::EOF),
         ]);
 
         // missing trailing quote
         let s = "\
 key =\"[value;]=";
         assert_eq!(CfgLanguage::tokenize(s), vec![
-            Symbol::new(Pos(1, 1), TokenType::LITERAL("key".to_owned())),
-            Symbol::new(Pos(1, 5), TokenType::ASSIGNMENT),
-            Symbol::new(Pos(1, 6), TokenType::QUOTE('"')),
-            Symbol::new(Pos(1, 7), TokenType::LITERAL("[value;]=".to_owned())),
-            Symbol::new(Pos(1, 16), TokenType::EOF),
+            Symbol::new(Location(1, 1), TokenType::LITERAL("key".to_owned())),
+            Symbol::new(Location(1, 5), TokenType::ASSIGNMENT),
+            Symbol::new(Location(1, 6), TokenType::QUOTE('"')),
+            Symbol::new(Location(1, 7), TokenType::LITERAL("[value;]=".to_owned())),
+            Symbol::new(Location(1, 16), TokenType::EOF),
         ]);
 
         // inserting newline and escaping quotes
         let s = "key =\"'orbit' is an HDL \n\"\"package manager\"\"\"";      
         assert_eq!(CfgLanguage::tokenize(s), vec![
-            Symbol::new(Pos(1, 1), TokenType::LITERAL("key".to_owned())),
-            Symbol::new(Pos(1, 5), TokenType::ASSIGNMENT),
-            Symbol::new(Pos(1, 6), TokenType::QUOTE('"')),
-            Symbol::new(Pos(1, 7), TokenType::LITERAL("'orbit' is an HDL \n\"package manager\"".to_string())),
-            Symbol::new(Pos(2, 20), TokenType::ENDQUOTE('"')),
-            Symbol::new(Pos(2, 21), TokenType::EOF),
+            Symbol::new(Location(1, 1), TokenType::LITERAL("key".to_owned())),
+            Symbol::new(Location(1, 5), TokenType::ASSIGNMENT),
+            Symbol::new(Location(1, 6), TokenType::QUOTE('"')),
+            Symbol::new(Location(1, 7), TokenType::LITERAL("'orbit' is an HDL \n\"package manager\"".to_string())),
+            Symbol::new(Location(2, 20), TokenType::ENDQUOTE('"')),
+            Symbol::new(Location(2, 21), TokenType::EOF),
         ]);
     }
 
@@ -543,33 +594,33 @@ key1 = value1
 
 key2 = value2";      
         assert_eq!(CfgLanguage::tokenize(s), vec![
-            Symbol::new(Pos(1, 1), TokenType::LBRACKET),
-            Symbol::new(Pos(1, 2), TokenType::LITERAL("table".to_owned())),
-            Symbol::new(Pos(1, 7), TokenType::RBRACKET),
-            Symbol::new(Pos(1, 8), TokenType::EOL),
-            Symbol::new(Pos(2, 1), TokenType::LITERAL("key1".to_owned())),
-            Symbol::new(Pos(2, 6), TokenType::ASSIGNMENT),
-            Symbol::new(Pos(2, 8), TokenType::LITERAL("value1".to_owned())),
-            Symbol::new(Pos(2, 14), TokenType::EOL),
-            Symbol::new(Pos(3, 1), TokenType::EOL),
-            Symbol::new(Pos(4, 1), TokenType::EOL),
-            Symbol::new(Pos(5, 1), TokenType::LITERAL("key2".to_owned())),
-            Symbol::new(Pos(5, 6), TokenType::ASSIGNMENT),
-            Symbol::new(Pos(5, 8), TokenType::LITERAL("value2".to_owned())),
-            Symbol::new(Pos(5, 14), TokenType::EOF),
+            Symbol::new(Location(1, 1), TokenType::LBRACKET),
+            Symbol::new(Location(1, 2), TokenType::LITERAL("table".to_owned())),
+            Symbol::new(Location(1, 7), TokenType::RBRACKET),
+            Symbol::new(Location(1, 8), TokenType::EOL),
+            Symbol::new(Location(2, 1), TokenType::LITERAL("key1".to_owned())),
+            Symbol::new(Location(2, 6), TokenType::ASSIGNMENT),
+            Symbol::new(Location(2, 8), TokenType::LITERAL("value1".to_owned())),
+            Symbol::new(Location(2, 14), TokenType::EOL),
+            Symbol::new(Location(3, 1), TokenType::EOL),
+            Symbol::new(Location(4, 1), TokenType::EOL),
+            Symbol::new(Location(5, 1), TokenType::LITERAL("key2".to_owned())),
+            Symbol::new(Location(5, 6), TokenType::ASSIGNMENT),
+            Symbol::new(Location(5, 8), TokenType::LITERAL("value2".to_owned())),
+            Symbol::new(Location(5, 14), TokenType::EOF),
         ]);
 
         let s = "    [table]
   key1=  value1 ";      
         assert_eq!(CfgLanguage::tokenize(s), vec![
-            Symbol::new(Pos(1, 5), TokenType::LBRACKET),
-            Symbol::new(Pos(1, 6), TokenType::LITERAL("table".to_owned())),
-            Symbol::new(Pos(1, 11), TokenType::RBRACKET),
-            Symbol::new(Pos(1, 12), TokenType::EOL),
-            Symbol::new(Pos(2, 3), TokenType::LITERAL("key1".to_owned())),
-            Symbol::new(Pos(2, 7), TokenType::ASSIGNMENT),
-            Symbol::new(Pos(2, 10), TokenType::LITERAL("value1".to_owned())),
-            Symbol::new(Pos(2, 17), TokenType::EOF),
+            Symbol::new(Location(1, 5), TokenType::LBRACKET),
+            Symbol::new(Location(1, 6), TokenType::LITERAL("table".to_owned())),
+            Symbol::new(Location(1, 11), TokenType::RBRACKET),
+            Symbol::new(Location(1, 12), TokenType::EOL),
+            Symbol::new(Location(2, 3), TokenType::LITERAL("key1".to_owned())),
+            Symbol::new(Location(2, 7), TokenType::ASSIGNMENT),
+            Symbol::new(Location(2, 10), TokenType::LITERAL("value1".to_owned())),
+            Symbol::new(Location(2, 17), TokenType::EOF),
         ]);
     }
 
@@ -580,22 +631,22 @@ key2 = value2";
 [core]
 user = CHASE # your name or \"alias\"! ";      
         assert_eq!(CfgLanguage::tokenize(s), vec![
-            Symbol::new(Pos(1, 1), TokenType::COMMENT("; For more information visit orbit's website.".to_string())),
-            Symbol::new(Pos(1, 46), TokenType::EOL),
-            Symbol::new(Pos(2, 1), TokenType::LBRACKET),
-            Symbol::new(Pos(2, 2), TokenType::LITERAL("core".to_owned())),
-            Symbol::new(Pos(2, 6), TokenType::RBRACKET),
-            Symbol::new(Pos(2, 7), TokenType::EOL),
-            Symbol::new(Pos(3, 1), TokenType::LITERAL("user".to_owned())),
-            Symbol::new(Pos(3, 6), TokenType::ASSIGNMENT),
-            Symbol::new(Pos(3, 8), TokenType::LITERAL("CHASE".to_owned())),
-            Symbol::new(Pos(3, 14), TokenType::COMMENT("# your name or \"alias\"! ".to_string())),
-            Symbol::new(Pos(3, 38), TokenType::EOF),
+            Symbol::new(Location(1, 1), TokenType::COMMENT("; For more information visit orbit's website.".to_string())),
+            Symbol::new(Location(1, 46), TokenType::EOL),
+            Symbol::new(Location(2, 1), TokenType::LBRACKET),
+            Symbol::new(Location(2, 2), TokenType::LITERAL("core".to_owned())),
+            Symbol::new(Location(2, 6), TokenType::RBRACKET),
+            Symbol::new(Location(2, 7), TokenType::EOL),
+            Symbol::new(Location(3, 1), TokenType::LITERAL("user".to_owned())),
+            Symbol::new(Location(3, 6), TokenType::ASSIGNMENT),
+            Symbol::new(Location(3, 8), TokenType::LITERAL("CHASE".to_owned())),
+            Symbol::new(Location(3, 14), TokenType::COMMENT("# your name or \"alias\"! ".to_string())),
+            Symbol::new(Location(3, 38), TokenType::EOF),
         ]);
     }
 
     #[test]
-    fn parse() {
+    fn from_str() {
         let s = "\
 ; orbit configuration file
 
@@ -609,17 +660,14 @@ user = 'Chase Ruskin '
 course=EEL4712C: Digital Design 
 
 [table]
-key     = 
+key     =
 ";
-        let tokens = CfgLanguage::tokenize(s);
-        let map = CfgLanguage::parse(tokens).unwrap();
-        let config = CfgLanguage {
-            map: map,
-        };
+        let config = CfgLanguage::from_str(s).unwrap();
 
         assert_eq!(config.get("core.path"), Some(&field::Value::from_str("/users/chase/hdl").unwrap()));
         assert_eq!(config.get("CORE.USER"), Some(&field::Value::from_str("Chase Ruskin ").unwrap()));
         assert_eq!(config.get("table.key"), Some(&field::Value::from_str("").unwrap()));
         assert_eq!(config.get("plugin.ghdl.execute"), None);
+        assert_eq!(config.get("table.key"), Some(&field::Value::from_str("").unwrap()));
     }
 }

@@ -3,7 +3,8 @@ use std::fmt::Debug;
 use crate::interface::errors::CliError;
 
 pub trait Command: Debug {
-    fn exec(&self) -> ();
+    type Err;
+    fn exec(&self) -> Result<(), Self::Err>;
 }
 
 pub trait FromCli {
@@ -37,8 +38,9 @@ mod test {
     }
 
     impl Command for Add {
-        fn exec(&self) -> () {
-            println!("{}", self.run());
+        type Err = ();
+        fn exec(&self) -> Result<(), Self::Err> {
+           Ok(println!("{}", self.run()))
         }
     }
 
@@ -74,9 +76,12 @@ mod test {
     }
 
     impl Command for Op {
-        fn exec(&self) -> () {
+        type Err = ();
+        fn exec(&self) -> Result<(), Self::Err> {
             if let Some(command) = &self.command {
-                command.exec();
+                command.exec()
+            } else {
+                Ok(())
             }
         }
     }
@@ -105,7 +110,8 @@ mod test {
     }
 
     impl Command for OpSubcommand {
-        fn exec(&self) {
+        type Err = ();
+        fn exec(&self) -> Result<(), Self::Err> {
             match self {
                 OpSubcommand::Add(c) => c.exec(),
             }

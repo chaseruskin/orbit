@@ -10,8 +10,9 @@ pub struct Help {
 }
 
 impl Command for Help {
-    fn exec(&self) -> () {
-        self.run();
+    type Err = Box<dyn std::error::Error>;
+    fn exec(&self) -> Result<(), Self::Err> {
+        Ok(self.run())
     }
 }
 

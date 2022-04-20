@@ -1,9 +1,11 @@
 use std::path;
 use std::env;
+use crate::core::cfg::cfgfile;
 
 pub struct Context {
     home_path: path::PathBuf,
     cache_path: path::PathBuf,
+    config: cfgfile::CfgLanguage,
 }
 
 impl Context {
@@ -12,7 +14,8 @@ impl Context {
         let cache = home.join("cache");
         Context { 
             home_path: home,
-            cache_path: cache, 
+            cache_path: cache,
+            config: cfgfile::CfgLanguage::new(),
         }
     }
 
@@ -34,7 +37,7 @@ impl Context {
             panic!("the home directory does not exist");
         }
         // verify the environment variable is set
-        env::set_var("ORBIT_HOME", &self.home_path);
+        env::set_var(key, &self.home_path);
         self
     }   
 
@@ -64,13 +67,28 @@ impl Context {
 
     /// Configures and reads data from the settings object to return a `Settings` struct
     /// in the `Context`. The settings file `s` must be directly under `$ORBIT_HOME`.
-    pub fn settings(self, s: &str) -> Context {
+    pub fn settings(mut self, s: &str) -> Context {
         // create the settings file if does not exist
-        let settings_path = self.home_path.join(s);
-        if path::Path::exists(&settings_path) == false {
-            std::fs::write(&settings_path, "").expect("failed to create settings file");
+        let cfg_path = self.home_path.join(s);
+        if path::Path::exists(&cfg_path) == false {
+            std::fs::write(&cfg_path, "").expect("failed to create settings file");
         }
-        // :todo: read the data from the settings file and return `Settings` struct
+        // read the data from the main config file and return `Configuration` struct
+        let cfg = cfgfile::CfgLanguage::load_from_file(&cfg_path);
+        match cfg {
+            Ok(r) => self.config = r,
+            // :todo: return as error
+            Err(e) => eprintln!("error: {}:{}", cfg_path.display(), e),
+        };
+        // :todo: also look within every path along current directory for a /.orbit/config.ini file to load
+
+        // :todo: dynamically set from environment variables from configuration data
+        
         self
+    }
+
+    /// Access the configuration data.
+    pub fn get_config(&self) -> &cfgfile::CfgLanguage {
+        &self.config
     }
 }

@@ -83,7 +83,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="1_starting/0_starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="1_starting/1_installing.html"><strong aria-hidden="true">1.1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="1_starting/2_upgrading.html"><strong aria-hidden="true">1.2.</strong> Upgrading</a></li></ol></li><li class="chapter-item expanded "><a href="2_tutorials/0_tutorials.html"><strong aria-hidden="true">2.</strong> Tutorials</a></li><li class="chapter-item expanded "><a href="3_user/0_user.html"><strong aria-hidden="true">3.</strong> User Guide</a></li><li class="chapter-item expanded "><a href="4_topic/0_topic.html"><strong aria-hidden="true">4.</strong> Topic Guide</a></li><li class="chapter-item expanded "><a href="5_reference/0_reference.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="5_reference/1_packages.html"><strong aria-hidden="true">5.1.</strong> Packages</a></li><li class="chapter-item expanded "><a href="5_reference/2_versions.html"><strong aria-hidden="true">5.2.</strong> Versions</a></li><li class="chapter-item expanded "><a href="5_reference/3_command_line.html"><strong aria-hidden="true">5.3.</strong> Command line</a></li><li class="chapter-item expanded "><a href="5_reference/4_environment_variables.html"><strong aria-hidden="true">5.4.</strong> Environment Variables</a></li><li class="chapter-item expanded "><a href="5_reference/5_configuration.html"><strong aria-hidden="true">5.5.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="5_reference/6_cfg_files.html"><strong aria-hidden="true">5.6.</strong> .cfg Files</a></li></ol></li><li class="chapter-item expanded "><a href="6_commands/0_commands.html"><strong aria-hidden="true">6.</strong> Commands</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="6_commands/1_new.html"><strong aria-hidden="true">6.1.</strong> orbit new</a></li></ol></li><li class="chapter-item expanded "><a href="glossary.html"><strong aria-hidden="true">7.</strong> Appendix: Glossary</a></li></ol>            </div>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="1_starting/0_starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="1_starting/1_installing.html"><strong aria-hidden="true">1.1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="1_starting/2_upgrading.html"><strong aria-hidden="true">1.2.</strong> Upgrading</a></li></ol></li><li class="chapter-item expanded "><a href="2_tutorials/0_tutorials.html"><strong aria-hidden="true">2.</strong> Tutorials</a></li><li class="chapter-item expanded "><a href="3_user/0_user.html"><strong aria-hidden="true">3.</strong> User Guide</a></li><li class="chapter-item expanded "><a href="4_topic/0_topic.html"><strong aria-hidden="true">4.</strong> Topic Guide</a></li><li class="chapter-item expanded "><a href="5_reference/0_reference.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="5_reference/1_packages.html"><strong aria-hidden="true">5.1.</strong> Packages</a></li><li class="chapter-item expanded "><a href="5_reference/2_versions.html"><strong aria-hidden="true">5.2.</strong> Versions</a></li><li class="chapter-item expanded "><a href="5_reference/3_command_line.html"><strong aria-hidden="true">5.3.</strong> Command line</a></li><li class="chapter-item expanded "><a href="5_reference/4_environment_variables.html"><strong aria-hidden="true">5.4.</strong> Environment Variables</a></li><li class="chapter-item expanded "><a href="5_reference/5_configuration.html"><strong aria-hidden="true">5.5.</strong> Configuration</a></li></ol></li><li class="chapter-item expanded "><a href="6_commands/0_commands.html"><strong aria-hidden="true">6.</strong> Commands</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="6_commands/1_new.html"><strong aria-hidden="true">6.1.</strong> orbit new</a></li></ol></li><li class="chapter-item expanded "><a href="glossary.html"><strong aria-hidden="true">7.</strong> Appendix: Glossary</a></li></ol>            </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
 
@@ -409,82 +409,33 @@ environment variables: only to change across systems (infrequent)
 settings file: 
 
  --><div style="break-before: page; page-break-before: always;"></div><h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="cfg-files"><a class="header" href="#cfg-files">.cfg Files</a></h1>
-<p>Orbit uses an INI-like syntax to store manifest and configuration data. To read up on the basics of INI, visit the wikipedia page <a href="https://en.wikipedia.org/wiki/INI_file">here</a>.</p>
-<p>Files with a <code>.cfg</code> extension are readable by Orbit following the provided guidelines and rules.</p>
-<h2 id="structure"><a class="header" href="#structure">Structure</a></h2>
-<p>The file's purpose is to store key-value pairs. It consists of sections, keys, and values.</p>
-<ul>
-<li>
-<p>A section is a non-terminal key path. These can be listed within square brackets to denote the keys defined below it belong to that section.</p>
-</li>
-<li>
-<p>A key is a terminal node that stores a value.</p>
-</li>
-<li>
-<p>A value is a group of characters.</p>
-</li>
-</ul>
-<h2 id="rules-2"><a class="header" href="#rules-2">Rules</a></h2>
-<ul>
-<li>
-<p>assign a value to a key using the equals <code>=</code> character</p>
-</li>
-<li>
-<p>single-line comments can either begin with a semicolon <code>;</code> or pound sign <code>#</code></p>
-</li>
-<li>
-<p>keys and sections are case-insensitive</p>
-</li>
-<li>
-<p>a section must be between square brackets <code>[ ]</code> and denoted on its own line</p>
-</li>
-<li>
-<p>no two key-value pairs can share the same line</p>
-</li>
-<li>
-<p>key and section identifiers must begin with an alphabetic character, and may either contain alphanumeric characters, dashes <code>-</code>, and underscores <code>_</code></p>
-</li>
-<li>
-<p>wrap a value in single quotes <code>' '</code> or double quotes <code>&quot; &quot;</code> to preserve all characters as the value</p>
-</li>
-<li>
-<p>multiple sections can be nested by using a dot <code>.</code> as the path separator</p>
-</li>
-</ul>
-<h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
-<p>The Orbit manifest file <code>orbit.cfg</code> may resemble something like this:</p>
-<pre><code class="language-ini">[ip]
-name    = &quot;gates&quot;
-version = &quot;0.1.0&quot;
-library = &quot;rary&quot;
-vendor  = &quot;c-rus&quot;
+<p>The configuration data Orbit processes is stored in TOML files. TOML files have a file extension <code>.toml</code> and store key-value pairs. To learn more about TOML files, visit their <a href="https://toml.io/en/">website</a>.</p>
+<h2 id="configtoml"><a class="header" href="#configtoml">config.toml</a></h2>
+<p>The first config file you may come across is <code>config.toml</code>. This file is used to load initial startup settings into orbit and customize a user's application experience.</p>
+<p>Here is a very minimal and basic example config file:</p>
+<pre><code class="language-toml">include = [
+    &quot;profile/kepler-space-tech/config.toml&quot;
+]
 
-public  = &quot;rtl/gates_pkg.vhd,rtl/top.vhd&quot;
+[core]
+path = &quot;c:/users/kepler/hdl&quot; # path to find and store IP in-development
+user = &quot;kepler&quot;
+
+</code></pre>
+<h2 id="orbittoml"><a class="header" href="#orbittoml">orbit.toml</a></h2>
+<p>This is the manifest file for all valid Orbit IP packages. </p>
+<p>Here is a very minimal and basic example manifest file:</p>
+<pre><code class="language-toml">[ip]
+name    = &quot;gates&quot;
+library = &quot;rary&quot;
+version = &quot;0.1.0&quot;
+vendor  = &quot;ks-tech&quot;
+summary = &quot;low-level combinational gate logic&quot;
 
 [dependencies]
-c-rus.eel4712c.lab1 = &quot;1.0.0&quot;
-</code></pre>
-<p>An example portion of an Orbit configuration file <code>config.cfg</code> to specify a plugin for <code>ghdl</code>:</p>
-<pre><code class="language-ini">; ...
-[plugin.ghdl]
-execute = &quot;python ${ ORBIT_HOME }/plugin/ghdl.py&quot;
-summary = &quot;backend script to wrap the GHDL executable as an orbit plugin&quot;
-symbol.py-model = &quot;*_mdl.py&quot;
 
 </code></pre>
-<p>A very inclusive demonstration of the file format:</p>
-<pre><code class="language-ini">[section] ; this is a comment
-key = &quot; all characters in here; are preserved[] &quot;
-
-esc-quotes = &quot;to escape a quote within a quoted value, &quot;&quot;double&quot;&quot; the quote character&quot;
-
-nested-section.key = &quot;full key path is section.nested-section.key&quot;
-
-; moving on to the start of a section called &quot;section2&quot;
-[section2]
-key = &quot;value&quot;
-</code></pre>
+<p>To learn more about the manifest, see the manifest page.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="commands"><a class="header" href="#commands">Commands</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-new"><a class="header" href="#orbit-new"><strong>orbit new</strong></a></h1>
 <h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>
@@ -494,7 +445,7 @@ key = &quot;value&quot;
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will create a new HDL IP package.</p>
-<h2 id="examples-1"><a class="header" href="#examples-1"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit new space-tech.rary.gates
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="glossary"><a class="header" href="#glossary">Glossary</a></h1>

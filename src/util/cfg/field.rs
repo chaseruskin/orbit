@@ -110,19 +110,26 @@ impl std::fmt::Display for IdentifierError {
 #[derive(Debug, PartialEq)]
 pub struct Value {
     value: String,
+    array: Vec<Box<Value>>,
 }
 
 impl FromStr for Value {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> { 
-        Ok(Value { value: s.to_owned() })
+        Ok(Value { 
+            value: s.to_owned(),
+            array: Vec::new(),
+        })
     }
 }
 
 impl Value {
     pub fn new(s: &str) -> Self {
-        Value { value: s.to_owned() }
+        Value { 
+            value: s.to_owned(),
+            array: Vec::new(),
+        }
     }
 
     pub fn get_str(&self) -> &str {
@@ -131,12 +138,23 @@ impl Value {
 
     /// Takes the `String` and moves it into a new `Value` struct.
     pub fn from_move(s: String) -> Self {
-        Value { value: s }
+        Value { 
+            value: s,
+            array: Vec::new(),
+        }
     }
 
-    /// Casts into a list split by 'sep'.
-    pub fn as_vec(&self, sep: char) -> Vec<&str> {
-        self.value.split_terminator(sep).collect()
+    pub fn push_value(&mut self, v: Value) {
+        self.array.push(Box::new(v));
+    }
+
+    /// Casts into a list.
+    pub fn as_vec(&self) -> Vec<&str> {
+        let mut result: Vec<&str> = vec![self.value.as_ref()];
+        result.append(&mut self.array.iter().map(|f| {
+            f.get_str()
+        }).collect());
+        result
     }
 
     /// Returns true iff value is "YES", "ON", "1", "TRUE", or "ENABLE".
@@ -206,11 +224,11 @@ mod test {
     #[test]
     fn new_value() {
         let v = Value::from_str("yes").unwrap(); 
-        assert_eq!(v, Value { value: "yes".to_owned() });
+        assert_eq!(v, Value { value: "yes".to_owned(), array: Vec::new() });
 
         let v = String::from("hello world!");
         let v = Value::from_move(v);
-        assert_eq!(v, Value { value: "hello world!".to_owned() });
+        assert_eq!(v, Value { value: "hello world!".to_owned(), array: Vec::new() });
     }
 
     #[test]
@@ -230,19 +248,21 @@ mod test {
 
     #[test]
     fn as_vec() {
-        let v = Value::from_str("nor_gate,and_gate,mux_2x1").unwrap();
-        assert_eq!(v.as_vec(','), ["nor_gate", "and_gate", "mux_2x1"]);
+        let v = Value { 
+            value: "val1".to_owned(), 
+            array: vec![
+                Box::new(Value { 
+                    value: "val2".to_owned(), 
+                    array: vec![] 
+                })
+            ] 
+        };
+        assert_eq!(v.as_vec(), ["val1", "val2"]);
 
         let v = Value::from_str("").unwrap();
-        assert_eq!(v.as_vec(','), Vec::<&str>::new());
+        assert_eq!(v.as_vec(), vec![""]);
 
         let v = Value::from_str("mux_2x1").unwrap();
-        assert_eq!(v.as_vec(','), ["mux_2x1"]);
-
-        let v = Value::from_str("profile/eel4712c/config.ini,").unwrap();
-        assert_eq!(v.as_vec(','), ["profile/eel4712c/config.ini"]);
-
-        let v = Value::from_str(",profile/eel4712c/config.ini").unwrap();
-        assert_eq!(v.as_vec(','), ["", "profile/eel4712c/config.ini"]);
+        assert_eq!(v.as_vec(), ["mux_2x1"]);
     }
 }

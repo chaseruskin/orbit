@@ -46,6 +46,7 @@ pub enum TokenType {
     LITERAL(String),
     QUOTE(char),        // ' or "
     ENDQUOTE(char),     // ' or "
+    COMMA,
     EOF,
 }
 
@@ -56,6 +57,7 @@ impl TokenType {
             '=' => Self::ASSIGNMENT,
             ']' => Self::RBRACKET,
             '[' => Self::LBRACKET,
+            ',' => Self::COMMA,
             _ => panic!("invalid operator character \"{}\"", c)
         }
     }
@@ -65,6 +67,7 @@ impl TokenType {
             Self::ASSIGNMENT => '=',
             Self::RBRACKET => ']',
             Self::LBRACKET => '[',
+            Self::COMMA => ',',
             Self::QUOTE(q) => *q,
             Self::ENDQUOTE(q) => *q,
             _ => return Err(()),
@@ -80,6 +83,7 @@ impl std::fmt::Display for TokenType {
             Self::EOL => write!(f, "newline"),
             Self::RBRACKET => write!(f, "]"),
             Self::LBRACKET => write!(f, "["),
+            Self::COMMA => write!(f, ","),
             Self::LITERAL(l) => write!(f, "{}", l),
             Self::QUOTE(q) => write!(f, "{}", q),
             Self::ENDQUOTE(q) => write!(f, "{}", q),
@@ -114,7 +118,7 @@ impl Symbol {
         match self.token {
             TokenType::LITERAL(s) => s,
             TokenType::COMMENT(s) => s,
-            _ => panic!("this token does not own a String")
+            _ => panic!("this token does not own a String {}", self.token)
         }
     }
 }
@@ -207,18 +211,10 @@ impl CfgLanguage {
         }
     }
 
-    /// FIELD ::= IDENTIFIER __=__ (BASIC_VALUE | LITERAL_VALUE) EOL
-    fn build_field(ts: &mut impl Iterator<Item=Symbol>) -> Result<(field::Identifier, field::Value), CfgError> {
+    /// LITERAL ::= __"__ IDENTIFIER __"__
+    fn build_literal(ts: &mut impl Iterator<Item=Symbol>) -> Result<field::Value, CfgError> {
         let mut ts = ts.peekable();
-        // verify identifier and do something with it
-        let key = CfgLanguage::verify_identifier(ts.next().unwrap())?;
-        // verify that the next token is a '='
-        CfgLanguage::accept_op(ts.next().unwrap(), '=')?;
-        // accept accept basic literal || quoted literal || EOL/EOF
-        let value = match ts.peek().unwrap().get_token() {
-            TokenType::LITERAL(_) => {
-                field::Value::from_move(ts.next().unwrap().take_str())
-            }
+        Ok(match ts.peek().unwrap().get_token() {
             TokenType::QUOTE(_) => {
                 // check what quote was used
                 let q = ts.peek().unwrap().get_token().as_operator().unwrap();
@@ -236,6 +232,69 @@ impl CfgLanguage {
             _ => {
                 // panic!("invalid token when parsing literal {:?}", ts.next().unwrap())
                 return Err(CfgError::UnexpectedToken(ts.next().unwrap()))
+            }
+        })
+    }
+
+    /// ARRAY ::= __\[__ LITERAL (__,__ ...) __\]__
+    fn build_array(ts: &mut impl Iterator<Item=Symbol>) -> Result<field::Value, CfgError> {
+        // accept left bracket
+        CfgLanguage::accept_op(ts.next().unwrap(), '[')?;
+        // enter variable length decoding process
+        let mut ts = ts.peekable();
+
+        let mut root_value: Option<field::Value> = None;
+        let mut accepted_comma = true;
+        loop {
+            match ts.peek().unwrap().get_token() {
+                TokenType::RBRACKET => break,
+                TokenType::COMMENT(_) | TokenType::EOL | TokenType::EOF => {
+                    ts.next().unwrap();
+                },
+                _ => {
+                    // accept a literal (only if accepted a comma previously)
+                    if accepted_comma == true {
+                        let v = CfgLanguage::build_literal(&mut ts)?;
+                        root_value = match root_value.take() {
+                            Some(mut rv) => {
+                                rv.push_value(v);
+                                Some(rv)
+                            }
+                            None => Some(v),
+                        };
+                        accepted_comma = false;
+                    } else {
+                       return Err(CfgError::ExpectingComma(ts.next().unwrap()))
+                    }
+                    // accept a comma (if present)
+                    if ts.peek().unwrap().get_token() == &TokenType::COMMA {
+                        CfgLanguage::accept_op(ts.next().unwrap(), ',')?;
+                        accepted_comma = true;
+                    };
+                }
+            }
+        }
+        CfgLanguage::accept_op(ts.next().unwrap(), ']')?;
+        Ok(root_value.unwrap_or(field::Value::new("")))
+    }
+
+    /// FIELD ::= IDENTIFIER __=__ (LITERAL | ARRAY) EOL
+    fn build_field(ts: &mut impl Iterator<Item=Symbol>) -> Result<(field::Identifier, field::Value), CfgError> {
+        let mut ts = ts.peekable();
+        // verify identifier and do something with it
+        let key = CfgLanguage::verify_identifier(ts.next().unwrap())?;
+        // verify that the next token is a '='
+        CfgLanguage::accept_op(ts.next().unwrap(), '=')?;
+        // accept accept quote || quoted literal || EOL/EOF
+        let value = match ts.peek().unwrap().get_token() {
+            TokenType::LBRACKET => {
+                CfgLanguage::build_array(&mut ts)?
+            }
+            TokenType::EOF => {
+                field::Value::new("")
+            }
+            _ => {
+                CfgLanguage::build_literal(&mut ts)?
             }
         };
         // accept EOL or EOF
@@ -323,7 +382,7 @@ impl CfgLanguage {
                             // mark where the comment begins
                             buf_loc = cur_loc.clone();
                         }
-                        ']' | '[' | '=' | '\"' | '\'' => {
+                        ']' | '[' | '=' | '\"' | '\'' | ',' => {
                             complete_literal(&mut symbols, &mut buf_loc, buf.trim());
                             buf.clear();
                             symbols.push(Symbol::new(cur_loc.clone(), TokenType::from_char(c)));
@@ -360,7 +419,7 @@ impl CfgLanguage {
                             cur_loc.increment_col();
                         // finish the quoted literal
                         } else {
-                            complete_literal(&mut symbols, &mut buf_loc, &buf);
+                            symbols.push(Symbol::new(buf_loc.clone(), TokenType::LITERAL(buf.to_owned())));
                             buf.clear();
                             symbols.push(Symbol::new(cur_loc.clone(), TokenType::ENDQUOTE(q)));
                             state = CfgState::NORMAL;
@@ -409,6 +468,7 @@ pub enum CfgError {
     InvalidIdentifier(Symbol, field::IdentifierError),
     MissingEOL(Location),
     UnexpectedToken(Symbol),
+    ExpectingComma(Symbol),
     // MissingOperator(char),
 
     // ExpectedOperator(Token, char),
@@ -422,6 +482,7 @@ impl std::error::Error for CfgError {}
 impl std::fmt::Display for CfgError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::ExpectingComma(sym) => write!(f, "{} expecting comma", sym.get_location()),
             Self::InvalidIdentifier(sym, e) => write!(f, "{} invalid identifier \'{}\' due to {}", sym.get_location(), sym.get_token(), e),
             Self::MissingEOL(l) => write!(f, "{} missing end of line", l),
             Self::UnexpectedToken(sym) => write!(f, "{} unexpected token \'{}\'", sym.get_location(), sym.get_token()),
@@ -439,8 +500,10 @@ mod test {
         let v = vec![
             Symbol::new(Location(1, 1), TokenType::LITERAL("key1".to_owned())),
             Symbol::new(Location(1, 2), TokenType::ASSIGNMENT),
-            Symbol::new(Location(1, 3), TokenType::LITERAL("value".to_owned())),
-            Symbol::new(Location(1, 4), TokenType::EOL),
+            Symbol::new(Location(1, 3), TokenType::QUOTE('"')),
+            Symbol::new(Location(1, 4), TokenType::LITERAL("value".to_owned())),
+            Symbol::new(Location(1, 5), TokenType::ENDQUOTE('"')),
+            Symbol::new(Location(1, 6), TokenType::EOL),
         ];
         assert_eq!(CfgLanguage::build_field(&mut v.into_iter()).unwrap(), 
             (field::Identifier::from_str("key1").unwrap(), field::Value::from_str("value").unwrap()));
@@ -449,7 +512,9 @@ mod test {
         let v = vec![
             Symbol::new(Location(1, 1), TokenType::LITERAL("key1".to_owned())),
             Symbol::new(Location(1, 2), TokenType::ASSIGNMENT),
-            Symbol::new(Location(1, 3), TokenType::LITERAL("value".to_owned())),
+            Symbol::new(Location(1, 3), TokenType::QUOTE('"')),
+            Symbol::new(Location(1, 4), TokenType::LITERAL("value".to_owned())),
+            Symbol::new(Location(1, 5), TokenType::ENDQUOTE('"')),
             Symbol::new(Location(2, 1), TokenType::LITERAL("key2".to_owned())),
             Symbol::new(Location(2, 2), TokenType::ASSIGNMENT),
             Symbol::new(Location(2, 3), TokenType::LITERAL("value".to_owned())),
@@ -550,6 +615,17 @@ jot = 'notes'
     }
 
     #[test]
+    fn empty_value() {
+        let s = "\"\"";
+        assert_eq!(CfgLanguage::tokenize(s), vec![
+            Symbol::new(Location(1, 1), TokenType::QUOTE('"')),
+            Symbol::new(Location(1, 2), TokenType::LITERAL("".to_owned())),
+            Symbol::new(Location(1, 2), TokenType::ENDQUOTE('"')),
+            Symbol::new(Location(1, 3), TokenType::EOF),
+        ]);
+    }
+
+    #[test]
     fn quoted_value() {
         // using comment operator in value
         let s = "key =\"value; more value! \"";      
@@ -625,6 +701,27 @@ key2 = value2";
     }
 
     #[test]
+    fn comma() {
+        let s = "[\"a\",\"b\",\"c\"]";      
+        assert_eq!(CfgLanguage::tokenize(s), vec![
+            Symbol::new(Location(1, 1), TokenType::LBRACKET),
+            Symbol::new(Location(1, 2), TokenType::QUOTE('"')),
+            Symbol::new(Location(1, 3), TokenType::LITERAL("a".to_owned())),
+            Symbol::new(Location(1, 4), TokenType::ENDQUOTE('"')),
+            Symbol::new(Location(1, 5), TokenType::COMMA),
+            Symbol::new(Location(1, 6), TokenType::QUOTE('"')),
+            Symbol::new(Location(1, 7), TokenType::LITERAL("b".to_owned())),
+            Symbol::new(Location(1, 8), TokenType::ENDQUOTE('"')),
+            Symbol::new(Location(1, 9), TokenType::COMMA),
+            Symbol::new(Location(1, 10), TokenType::QUOTE('"')),
+            Symbol::new(Location(1, 11), TokenType::LITERAL("c".to_owned())),
+            Symbol::new(Location(1, 12), TokenType::ENDQUOTE('"')),
+            Symbol::new(Location(1, 13), TokenType::RBRACKET),
+            Symbol::new(Location(1, 14), TokenType::EOF),
+        ]);   
+    }
+
+    #[test]
     fn comments() {
         let s = "\
 ; For more information visit orbit's website.
@@ -650,14 +747,15 @@ user = CHASE # your name or \"alias\"! ";
         let s = "\
 ; orbit configuration file
 
-include.path = profile/eastwind-trading/config.ini,
+include.path = 'profile/eastwind-trading/config.ini'
 
 [core] ; comment
-path = /users/chase/hdl ; comment #2
+path = '/users/chase/hdl' ; comment #2
 user = 'Chase Ruskin '
 
 [env]
-course=EEL4712C: Digital Design 
+course= 'EEL4712C: Digital Design'
+items = ['apples', 'bananas']
 
 [table]
 key     = ; comment #3
@@ -669,5 +767,6 @@ key     = ; comment #3
         assert_eq!(config.get("table.key"), Some(&field::Value::from_str("").unwrap()));
         assert_eq!(config.get("plugin.ghdl.execute"), None);
         assert_eq!(config.get("table.key"), Some(&field::Value::from_str("").unwrap()));
+        assert_eq!(config.get("env.items").unwrap().as_vec(), vec!["apples", "bananas"]);
     }
 }

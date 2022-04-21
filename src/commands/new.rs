@@ -20,7 +20,8 @@ impl Command for New {
             return Err(Box::new(CliError::BadType(Arg::Positional(Positional::new("ip")), e.to_string())));
         }
 
-        println!("{:?}", context.get_config().get("core.path"));
+        let m = context.get_config().get("core").unwrap().get("path").unwrap();
+        println!("orbit path: {}", m.as_str().unwrap());
         // :todo: only pass in necessary variables from context
         Ok(self.run())
     }

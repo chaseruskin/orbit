@@ -1,11 +1,12 @@
 use std::path;
 use std::env;
-use crate::util::cfg::cfgfile;
+use toml_edit::Document;
 
 pub struct Context {
     home_path: path::PathBuf,
     cache_path: path::PathBuf,
-    config: cfgfile::CfgLanguage,
+    config: Document,
+
 }
 
 impl Context {
@@ -15,7 +16,7 @@ impl Context {
         Context { 
             home_path: home,
             cache_path: cache,
-            config: cfgfile::CfgLanguage::new(),
+            config: Document::new(),
         }
     }
 
@@ -76,24 +77,25 @@ impl Context {
         if path::Path::exists(&cfg_path) == false {
             std::fs::write(&cfg_path, "").expect("failed to create settings file");
         }
-        // read the data from the main config file and return `Configuration` struct
-        let cfg = cfgfile::CfgLanguage::load_from_file(&cfg_path);
-        match cfg {
-            Ok(r) => self.config = r,
-            Err(e) => return Err(ContextError(format!("{}:{}", cfg_path.display(), e))),
+        let toml = std::fs::read_to_string(&cfg_path).expect("could not read string");
+        let doc = toml.parse::<Document>();
+        self.config = match doc {
+            Ok(d) => d,
+            Err(er) => return Err(ContextError(er.to_string()))
         };
-        // :todo: also look within every path along current directory for a /.orbit/config.ini file to load
+        // :todo: also look within every path along current directory for a /.orbit/config.toml file to load
 
         // :todo: dynamically set from environment variables from configuration data
-        
         Ok(self)
     }
 
     /// Access the configuration data.
-    pub fn get_config(&self) -> &cfgfile::CfgLanguage {
+    pub fn get_config(&self) -> &Document {
         &self.config
     }
 }
+
+
 
 
 #[derive(Debug)]

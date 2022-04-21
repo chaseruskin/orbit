@@ -43,7 +43,7 @@ impl Orbit {
             let context = Context::new()
                 .home("ORBIT_HOME")?
                 .cache("ORBIT_CACHE")?
-                .settings("config.ini")?;
+                .settings("config.toml")?;
             // pass the context to the given command
             c.exec(&context)
         // if no command is given then print default help

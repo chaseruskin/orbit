@@ -147,10 +147,18 @@
 <h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>
 <p>new - create a new ip</p>
 <h2 id="synposis"><a class="header" href="#synposis"><strong>SYNPOSIS</strong></a></h2>
-<pre><code>orbit new [options] path
+<pre><code>orbit new [options] &lt;ip&gt;
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will create a new HDL IP package.</p>
+<p>This command will create a new IP package. The default destination path is
+<code>$ORBIT_PATH/&lt;vendor&gt;/&lt;library&gt;/&lt;name&gt;</code>. If the ORBIT_PATH environment variable
+is not set nor is the <code>core.path</code> key in the config.toml, Orbit will use the
+command's relative path to create the corresponding directories.</p>
+<h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
+<p><code>--force</code><br />
+- Removes the destination directory if it already exists</p>
+<p><code>--path &lt;path&gt;</code><br />
+- Specify the destination path</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit new space-tech.rary.gates
 </code></pre>

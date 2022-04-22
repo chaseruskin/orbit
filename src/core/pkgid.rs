@@ -57,19 +57,19 @@ impl PkgId {
 
     /// Verify a part follows the `PkgId` specification.
     /// First character must be `alphabetic`. Remaining characters must be
-    /// `alphanumeric`, `-`, or `_`.
+    /// `ascii alphanumeric`, `-`, or `_`.
     fn validate_part<'a>(s: &'a str) -> Result<&'a str, PkgIdError> {
         use PkgIdError::*;
 
         if let Some(c) = s.chars().next() {
-            if c.is_alphabetic() == false {
+            if c.is_ascii_alphabetic() == false {
                 return Err(NotAlphabeticFirst(s.to_owned()));
             }
         }
         // find first char in pkgid part not following spec
         let result = s.chars()
             .find(|&c| {
-                !c.is_alphanumeric() && !(c == '_') && !(c == '-')
+                !c.is_ascii_alphanumeric() && !(c == '_') && !(c == '-')
             }
         );
         if let Some(r) = result {

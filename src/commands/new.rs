@@ -21,10 +21,17 @@ impl Command for New {
         if let Err(e) = self.ip.fully_qualified() {
             return Err(Box::new(CliError::BadType(Arg::Positional(Positional::new("ip")), e.to_string())));
         }
-
+        
+        // an explicit environment variable takes precedence over config file data
+        let root = std::path::PathBuf::from(match std::env::var("ORBIT_PATH") {
+            Ok(v) => v,
+            Err(_) => {
+                let path = context.get_config().get("core").unwrap().get("path").unwrap().as_str().unwrap();
+                std::env::set_var("ORBIT_PATH", &path);
+                path.to_string()
+            }
+        });
         // :todo: verify the orbit path exists
-        let root = std::path::PathBuf::from(context.get_config().get("core").unwrap().get("path").unwrap().as_str().unwrap());
-        // :todo: o.w. fallback to relative path if there was not ORBIT_PATH set.
 
         // only pass in necessary variables from context
         self.run(root, context.force)

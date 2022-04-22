@@ -260,42 +260,40 @@
 <div style="break-before: page; page-break-before: always;"></div><h1 id="reference"><a class="header" href="#reference">Reference</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="packages"><a class="header" href="#packages">Packages</a></h1>
 <h2 id="package-identifier"><a class="header" href="#package-identifier">Package Identifier</a></h2>
-<p>The package identifier (<strong>pkgid</strong>) is a project's unique string of characters following a specification. This specification is similiar to Xilinx's Vendor-Library-Name-Version (VLNV) format. When referencing a pkgid on the command-line, each section of the pkgid is separated with a dot.</p>
+<p>The package identifier (<strong>pkgid</strong>) is a project's unique string of characters following a specification. This specification is similiar to Xilinx's Vendor-Library-Name-Version (VLNV) format. When referencing a pkgid, each section is separated by a dot (<code>.</code>).</p>
 <h3 id="rules"><a class="header" href="#rules">Rules</a></h3>
 <p>The following rules apply to each section in the pkgid (vendor, library, and name):</p>
 <ul>
-<li>must begin with an alphabetic character</li>
-<li>can only contain alphanumeric characters, dashes <code>-</code>, and underscores <code>_</code></li>
+<li>begins with an ASCII letter (<code>a-z</code>, <code>A-Z</code>)</li>
+<li>contains only ASCII letters (<code>a-z</code>, <code>A-Z</code>), ASCII digits (<code>0-9</code>), dashes <code>-</code>, and underscores <code>_</code></li>
 </ul>
 <h3 id="fully-qualified-status"><a class="header" href="#fully-qualified-status">Fully Qualified Status</a></h3>
-<p>In some cases, a pkgid must be <em>fully qualified</em>, which means all 3 identifiers are provided: vendor, library, and name. For example, a pkgid must be fully qualified when creating a new package from the command-line.</p>
+<p>In some cases, a pkgid must be <em>fully qualified</em>, which means all 3 identifiers are provided: vendor, library, and name. For example, a pkgid must be fully qualified when creating a new one from the command-line.</p>
 <h3 id="specification-grammar"><a class="header" href="#specification-grammar">Specification Grammar</a></h3>
-<pre><code>PKGID ::= [[&lt;VENDOR&gt;.]&lt;LIBRARY&gt;.]&lt;NAME&gt;[@v&lt;VERSION&gt;]
+<pre><code>pkgid ::= [[&lt;vendor&gt;.]&lt;library&gt;.]&lt;name&gt;[@v&lt;version&gt;]
 </code></pre>
 <p>If a pkgid can be determined by Orbit without specifying all parts, then unnecessary parts may be omitted. See examples for more information.</p>
 <h3 id="example-specifications"><a class="header" href="#example-specifications">Example Specifications</a></h3>
 <table><thead><tr><th>pkgid</th><th>Vendor</th><th>Library</th><th>Name</th><th>Version</th></tr></thead><tbody>
-<tr><td>uf-ece.rary.gates</td><td>uf-ece</td><td>rary</td><td>gates</td><td>#.#.#</td></tr>
-<tr><td>Xilinx.DSP.filter</td><td>Xilinx</td><td>DSP</td><td>filter</td><td>#.#.#</td></tr>
+<tr><td>ks-tech.rary.gates</td><td>ks-tech</td><td>rary</td><td>gates</td><td>#.#.#</td></tr>
+<tr><td>uf.crypto.simon-cipher</td><td>uf</td><td>crypto</td><td>simon-cipher</td><td>#.#.#</td></tr>
 <tr><td>eel4712c.lab1</td><td></td><td>eel4712c</td><td>lab1</td><td>#.#.#</td></tr>
-<tr><td>Intel.gfx_lib.vga@v1.0.0</td><td>Intel</td><td>gfx_lib</td><td>vga</td><td>1.0.0</td></tr>
 <tr><td>lab2@v3.1</td><td></td><td></td><td>lab2</td><td>3.1.#</td></tr>
-<tr><td>AMD.procs.cpu@v2</td><td>AMD</td><td>procs</td><td>cpu</td><td>2.#.#</td></tr>
-<tr><td>Uf.crypto.simon-cipher@latest</td><td>Uf</td><td>crypto</td><td>simon-cipher</td><td>#.#.#</td></tr>
+<tr><td>mips-cpu@latest</td><td></td><td></td><td>mips-cpu</td><td>#.#.#</td></tr>
 </tbody></table>
 <blockquote>
 <p><strong>Note</strong>: In this table, a '#' in a version position represents the highest available value for that position. So, version <code>#.#.#</code> would refer to the latest available version.</p>
 </blockquote>
 <h3 id="namespace-collisions"><a class="header" href="#namespace-collisions">Namespace Collisions</a></h3>
-<p>Within a user's <em>catalog</em>, two different pkgids may share common identifiers, but cannot all be equivalent. Two identifiers are considered equivalent if their lower-case mapping is identical, including mapping dashes <code>-</code> to underscore <code>_</code>.</p>
+<p>Within a user's <em>catalog</em>, two different pkgids may share common identifiers, but cannot all be equivalent. Two identifiers are considered equivalent if their lowercase mapping is identical, where dashes <code>-</code> also map to underscores <code>_</code>.</p>
 <ul>
-<li>Intel.gfx.vga <strong>!=</strong> Intel.gfx.hdmi</li>
-<li>uf-ece.rary.gates <strong>==</strong> UF_ECE.Rary.gates</li>
+<li>ks-tech.rary.gates <strong>!=</strong> kstech.rary.gates</li>
+<li>ks-tech.rary.gates <strong>==</strong> KS_TECH.RARY.GATES</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="versions"><a class="header" href="#versions">Versions</a></h1>
 <p>Code evolves over time, and versions provide a method for capturing a project's state at a given time stamp.</p>
 <p>Orbit uses the <em>semantic versioning</em> scheme for capturing project's state at given time periods. Semantic versioning uses 3 numeric values to signify different levels of change.</p>
-<pre><code>&lt;MAJOR&gt;.&lt;MINOR&gt;.&lt;PATCH&gt;
+<pre><code>version ::= &lt;major&gt;.&lt;minor&gt;.&lt;patch&gt;
 </code></pre>
 <table><thead><tr><th>Level</th><th>Explanation</th></tr></thead><tbody>
 <tr><td>Major</td><td>incompatible API changes</td></tr>
@@ -305,6 +303,9 @@
 <p>To learn more about semantic versioning, visit the official <a href="https://semver.org">website</a>. </p>
 <p>Since everyone's stance on what code changes affect which version level may differ, it's important to keep a changelog highlighting differences among versions.</p>
 <h3 id="rules-1"><a class="header" href="#rules-1">Rules</a></h3>
+<ul>
+<li>each level may only contain ASCII digits (<code>0-9</code>)</li>
+</ul>
 <p>All 3 levels must be given a numeric value consisting of only digits separated by a dot (<code>.</code>) character. This is considered a <em>fully qualified</em> version.</p>
 <pre><code>1.0.0
 </code></pre>
@@ -321,16 +322,16 @@
 </code></pre>
 <h3 id="example-scenarios"><a class="header" href="#example-scenarios">Example Scenarios</a></h3>
 <p>A fully qualified version must be written in every project's manifest file.</p>
-<pre><code>[ip]
-...
-version = 0.1.0
-...
+<pre><code class="language-toml">[ip]
+# ...
+version = &quot;0.1.0&quot;
+# ...
 </code></pre>
 <p>To request a particular version (partially or fully qualified) when installing packages, you may append the version number after <code>@v</code> to the pkgid.</p>
-<pre><code>orbit install uf-ece.rary.gates@v1.5.4
+<pre><code>$ orbit install ks-tech.rary.gates@v1.5.4
 </code></pre>
 <p>You may also request a particular version (partially or fully qualified) for an entity from an IP .</p>
-<pre><code>orbit get uf-ece.rary.gates::nor_gate --version 1.5.4
+<pre><code>$ orbit get ks-tech.rary.gates::nor_gate --version 1.5.4
 </code></pre>
 <h3 id="comparing-versions"><a class="header" href="#comparing-versions">Comparing versions</a></h3>
 <p>The following pseudocode provides additional help in learning about how versions are compared (selecting a &quot;higher&quot; version).</p>
@@ -343,47 +344,49 @@ ELSE:
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="command-line"><a class="header" href="#command-line">Command line</a></h1>
 <p>The command line is the main way of interacting with Orbit. Let's understand some terminology and rules for communicating with Orbit through the command line.</p>
+<h2 id="syntax"><a class="header" href="#syntax">Syntax</a></h2>
+<p><code>&lt; &gt;</code> denotes that a user input is required. The label within the angular brackets gives a hint to the user as to what type of value to enter here.</p>
+<p><code>[ ]</code> denotes that this input is optional and is not required to get the command to successfully run.</p>
 <h2 id="jargon"><a class="header" href="#jargon">Jargon</a></h2>
-<p>Orbit uses <em>subcommands</em>, <em>arguments</em>, <em>options</em>, and <em>flags</em>.</p>
-<ul>
-<li><strong>Subcommands</strong>: Special keywords to route to a particular action. Each subcommand inherits all supercommand's available options.</li>
-</ul>
+<p>Orbit uses <em>subcommands</em>, <em>arguments</em>, <em>options</em>, <em>flags</em>, and <em>switches</em>.</p>
+<h3 id="subcommand"><a class="header" href="#subcommand"><strong>Subcommand</strong></a></h3>
+<p>Special keyword to route to a particular action. Each subcommand inherits all supercommand's available options.</p>
 <pre><code>orbit &lt;command&gt;
 </code></pre>
-<ul>
-<li><strong>Argument</strong>: A value interpreted based on its position in the input. Arguments must be included when requested by Orbit.</li>
-</ul>
+<h3 id="argument"><a class="header" href="#argument"><strong>Argument</strong></a></h3>
+<p>A value interpreted based on its position in the input. Arguments must be included when requested by Orbit.</p>
 <pre><code>orbit new &lt;ip&gt;
 </code></pre>
-<ul>
-<li><strong>Flags</strong>: Simple boolean on-off switches to alter a command's behavior. Flags do not take an argument and can be omitted.</li>
-</ul>
-<pre><code>--help
-</code></pre>
-<ul>
-<li><strong>Options</strong>: Flags that are required to have an argument assigned to them. The argument may immediately proceed the option's flag separated by whitespace or an equal sign <code>=</code>. Options can be omitted.</li>
-</ul>
+<h3 id="option"><a class="header" href="#option"><strong>Option</strong></a></h3>
+<p>A flag that are required to have an argument assigned to them. The argument may immediately proceed the option's flag separated by whitespace or an equal sign <code>=</code>. Options can be omitted.</p>
 <pre><code>--output &lt;file&gt;
 
 --code=&lt;language&gt;
 </code></pre>
 <p>Common flags and options may have a shorthand <em>switch</em> associated with them. For example, <code>--help</code> can be alternatively passed with just <code>-h</code>.</p>
-<ul>
-<li><strong>Switch</strong>: Shorthand flag denoted by a single dash and a single character. Switches can be chained onto the same dash.</li>
-</ul>
+<h3 id="flag"><a class="header" href="#flag"><strong>Flag</strong></a></h3>
+<p>Simple boolean on-off conditional to alter a command's behavior. Flags are options that do not take an argument and can be omitted.</p>
+<pre><code>--help
+</code></pre>
+<h3 id="switch"><a class="header" href="#switch"><strong>Switch</strong></a></h3>
+<p>Shorthand flag denoted by a single dash and a single character. Switches can be chained onto the same dash.</p>
 <pre><code>-c -i
 -ci
 </code></pre>
 <p>If a switch is associated with an option, it must be declared last on a chain with its argument separated by whitespace or an equal sign <code>=</code>.</p>
+<pre><code>-o &lt;file&gt;
+</code></pre>
+<h3 id="argument-terminator"><a class="header" href="#argument-terminator"><strong>Argument terminator</strong></a></h3>
+<p>Special no-op flag <code>--</code> that tells Orbit to parse up until this symbol.</p>
 <p>Some scenarios will allow you to pass arguments through Orbit to an internally executed command. You can pass these arguments by using the <em>argument terminator</em>.</p>
-<ul>
-<li><strong>Argument terminator</strong>: Special no-op flag <code>--</code> that tells Orbit to parse up until the argument terminator.</li>
-</ul>
+<pre><code>orbit build vivado -- synthesis --incremental
+</code></pre>
+<p>An example where an argument terminator is used is when invoking a plugin with Orbit. In this example,  <code>synthesis --incremental</code> is passed to a plugin recognized as &quot;quartus&quot; by Orbit.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="environment-variables"><a class="header" href="#environment-variables">Environment Variables</a></h1>
 <p>Orbit's configuration can be customized with the setting of specific environment variables. </p>
 <ul>
 <li>
-<p><code>ORBIT_HOME</code> - directory where orbit stores its data. By default it is <code>$HOME/.orbit</code>.</p>
+<p><code>ORBIT_HOME</code> - directory where orbit stores its data. By default it is <code>$HOME/.orbit</code> on Unix systems and <code>%USERPROFILE%/.orbit</code> on Windows systems.</p>
 </li>
 <li>
 <p><code>ORBIT_CACHE</code> - directory where orbit caches installed IP. By default it is <code>$ORBIT_HOME/cache</code>.</p>
@@ -392,26 +395,32 @@ ELSE:
 <p><code>NO_COLOR</code> - does not print colorized output when set to a value.</p>
 </li>
 <li>
-<p><code>EDITOR</code> - chooses this value as the default text editor when no <code>core.editor</code> key is present in the config.toml</p>
+<p><code>EDITOR</code> - chooses this value as the default text editor when no <code>core.editor</code> key is present in the config.toml.</p>
 </li>
 </ul>
-<!--
-- `ORBIT_BUILD_DIR` - directory to locate the `blueprint.tsv` file within the current IP. By default is called `build`.
--->
-<h3 id="runtime-environment-variables"><a class="header" href="#runtime-environment-variables">Runtime environment variables</a></h3>
+<h2 id="runtime-environment-variables"><a class="header" href="#runtime-environment-variables">Runtime environment variables</a></h2>
 <p>Orbit also sets environment variables during runtime so a plugin has access to runtime information. </p>
-<!-- 
-- `ORBIT_TOP` - the toplevel design unit identifier
-
-- `ORBIT_BENCH` - the toplevel design's testbench identifier
--->
+<ul>
+<li>
+<p><code>ORBIT_PATH</code> - path to locate in-development IP. Unless explicitly set, Orbit will set this value to the path found as <code>core.path</code> set in config.toml.</p>
+</li>
+<li>
+<p><code>ORBIT_BUILD_DIR</code> - directory to place the <code>blueprint.tsv</code> file relative to the current IP path. Default is <code>build</code> unless set as <code>core.build-dir</code> in config.toml.</p>
+</li>
+<li>
+<p><code>ORBIT_TOP</code> - toplevel design unit identifier</p>
+</li>
+<li>
+<p><code>ORBIT_BENCH</code> - toplevel design's testbench identifier</p>
+</li>
+</ul>
 <!--Note about environment variables vs. settings file vs. arguments
 
-environment variables: only to change across systems (infrequent)
-
-settings file: 
-
- --><div style="break-before: page; page-break-before: always;"></div><h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
+precedence:
+3. config file
+2. env vars
+1. command-line
+--><div style="break-before: page; page-break-before: always;"></div><h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
 <p>The configuration data Orbit processes is stored in TOML files. TOML files have a file extension <code>.toml</code> and store key-value pairs. To learn more about TOML files, visit their <a href="https://toml.io/en/">website</a>.</p>
 <h2 id="configtoml"><a class="header" href="#configtoml">config.toml</a></h2>
 <p>The first config file you may come across is <code>config.toml</code>. This file is used to load initial startup settings into orbit and customize a user's application experience.</p>

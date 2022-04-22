@@ -145,37 +145,35 @@
                     <main>
                         <h1 id="packages"><a class="header" href="#packages">Packages</a></h1>
 <h2 id="package-identifier"><a class="header" href="#package-identifier">Package Identifier</a></h2>
-<p>The package identifier (<strong>pkgid</strong>) is a project's unique string of characters following a specification. This specification is similiar to Xilinx's Vendor-Library-Name-Version (VLNV) format. When referencing a pkgid on the command-line, each section of the pkgid is separated with a dot.</p>
+<p>The package identifier (<strong>pkgid</strong>) is a project's unique string of characters following a specification. This specification is similiar to Xilinx's Vendor-Library-Name-Version (VLNV) format. When referencing a pkgid, each section is separated by a dot (<code>.</code>).</p>
 <h3 id="rules"><a class="header" href="#rules">Rules</a></h3>
 <p>The following rules apply to each section in the pkgid (vendor, library, and name):</p>
 <ul>
-<li>must begin with an alphabetic character</li>
-<li>can only contain alphanumeric characters, dashes <code>-</code>, and underscores <code>_</code></li>
+<li>begins with an ASCII letter (<code>a-z</code>, <code>A-Z</code>)</li>
+<li>contains only ASCII letters (<code>a-z</code>, <code>A-Z</code>), ASCII digits (<code>0-9</code>), dashes <code>-</code>, and underscores <code>_</code></li>
 </ul>
 <h3 id="fully-qualified-status"><a class="header" href="#fully-qualified-status">Fully Qualified Status</a></h3>
-<p>In some cases, a pkgid must be <em>fully qualified</em>, which means all 3 identifiers are provided: vendor, library, and name. For example, a pkgid must be fully qualified when creating a new package from the command-line.</p>
+<p>In some cases, a pkgid must be <em>fully qualified</em>, which means all 3 identifiers are provided: vendor, library, and name. For example, a pkgid must be fully qualified when creating a new one from the command-line.</p>
 <h3 id="specification-grammar"><a class="header" href="#specification-grammar">Specification Grammar</a></h3>
-<pre><code>PKGID ::= [[&lt;VENDOR&gt;.]&lt;LIBRARY&gt;.]&lt;NAME&gt;[@v&lt;VERSION&gt;]
+<pre><code>pkgid ::= [[&lt;vendor&gt;.]&lt;library&gt;.]&lt;name&gt;[@v&lt;version&gt;]
 </code></pre>
 <p>If a pkgid can be determined by Orbit without specifying all parts, then unnecessary parts may be omitted. See examples for more information.</p>
 <h3 id="example-specifications"><a class="header" href="#example-specifications">Example Specifications</a></h3>
 <table><thead><tr><th>pkgid</th><th>Vendor</th><th>Library</th><th>Name</th><th>Version</th></tr></thead><tbody>
-<tr><td>uf-ece.rary.gates</td><td>uf-ece</td><td>rary</td><td>gates</td><td>#.#.#</td></tr>
-<tr><td>Xilinx.DSP.filter</td><td>Xilinx</td><td>DSP</td><td>filter</td><td>#.#.#</td></tr>
+<tr><td>ks-tech.rary.gates</td><td>ks-tech</td><td>rary</td><td>gates</td><td>#.#.#</td></tr>
+<tr><td>uf.crypto.simon-cipher</td><td>uf</td><td>crypto</td><td>simon-cipher</td><td>#.#.#</td></tr>
 <tr><td>eel4712c.lab1</td><td></td><td>eel4712c</td><td>lab1</td><td>#.#.#</td></tr>
-<tr><td>Intel.gfx_lib.vga@v1.0.0</td><td>Intel</td><td>gfx_lib</td><td>vga</td><td>1.0.0</td></tr>
 <tr><td>lab2@v3.1</td><td></td><td></td><td>lab2</td><td>3.1.#</td></tr>
-<tr><td>AMD.procs.cpu@v2</td><td>AMD</td><td>procs</td><td>cpu</td><td>2.#.#</td></tr>
-<tr><td>Uf.crypto.simon-cipher@latest</td><td>Uf</td><td>crypto</td><td>simon-cipher</td><td>#.#.#</td></tr>
+<tr><td>mips-cpu@latest</td><td></td><td></td><td>mips-cpu</td><td>#.#.#</td></tr>
 </tbody></table>
 <blockquote>
 <p><strong>Note</strong>: In this table, a '#' in a version position represents the highest available value for that position. So, version <code>#.#.#</code> would refer to the latest available version.</p>
 </blockquote>
 <h3 id="namespace-collisions"><a class="header" href="#namespace-collisions">Namespace Collisions</a></h3>
-<p>Within a user's <em>catalog</em>, two different pkgids may share common identifiers, but cannot all be equivalent. Two identifiers are considered equivalent if their lower-case mapping is identical, including mapping dashes <code>-</code> to underscore <code>_</code>.</p>
+<p>Within a user's <em>catalog</em>, two different pkgids may share common identifiers, but cannot all be equivalent. Two identifiers are considered equivalent if their lowercase mapping is identical, where dashes <code>-</code> also map to underscores <code>_</code>.</p>
 <ul>
-<li>Intel.gfx.vga <strong>!=</strong> Intel.gfx.hdmi</li>
-<li>uf-ece.rary.gates <strong>==</strong> UF_ECE.Rary.gates</li>
+<li>ks-tech.rary.gates <strong>!=</strong> kstech.rary.gates</li>
+<li>ks-tech.rary.gates <strong>==</strong> KS_TECH.RARY.GATES</li>
 </ul>
 
                     </main>

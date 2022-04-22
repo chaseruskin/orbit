@@ -145,42 +145,44 @@
                     <main>
                         <h1 id="command-line"><a class="header" href="#command-line">Command line</a></h1>
 <p>The command line is the main way of interacting with Orbit. Let's understand some terminology and rules for communicating with Orbit through the command line.</p>
+<h2 id="syntax"><a class="header" href="#syntax">Syntax</a></h2>
+<p><code>&lt; &gt;</code> denotes that a user input is required. The label within the angular brackets gives a hint to the user as to what type of value to enter here.</p>
+<p><code>[ ]</code> denotes that this input is optional and is not required to get the command to successfully run.</p>
 <h2 id="jargon"><a class="header" href="#jargon">Jargon</a></h2>
-<p>Orbit uses <em>subcommands</em>, <em>arguments</em>, <em>options</em>, and <em>flags</em>.</p>
-<ul>
-<li><strong>Subcommands</strong>: Special keywords to route to a particular action. Each subcommand inherits all supercommand's available options.</li>
-</ul>
+<p>Orbit uses <em>subcommands</em>, <em>arguments</em>, <em>options</em>, <em>flags</em>, and <em>switches</em>.</p>
+<h3 id="subcommand"><a class="header" href="#subcommand"><strong>Subcommand</strong></a></h3>
+<p>Special keyword to route to a particular action. Each subcommand inherits all supercommand's available options.</p>
 <pre><code>orbit &lt;command&gt;
 </code></pre>
-<ul>
-<li><strong>Argument</strong>: A value interpreted based on its position in the input. Arguments must be included when requested by Orbit.</li>
-</ul>
+<h3 id="argument"><a class="header" href="#argument"><strong>Argument</strong></a></h3>
+<p>A value interpreted based on its position in the input. Arguments must be included when requested by Orbit.</p>
 <pre><code>orbit new &lt;ip&gt;
 </code></pre>
-<ul>
-<li><strong>Flags</strong>: Simple boolean on-off switches to alter a command's behavior. Flags do not take an argument and can be omitted.</li>
-</ul>
-<pre><code>--help
-</code></pre>
-<ul>
-<li><strong>Options</strong>: Flags that are required to have an argument assigned to them. The argument may immediately proceed the option's flag separated by whitespace or an equal sign <code>=</code>. Options can be omitted.</li>
-</ul>
+<h3 id="option"><a class="header" href="#option"><strong>Option</strong></a></h3>
+<p>A flag that are required to have an argument assigned to them. The argument may immediately proceed the option's flag separated by whitespace or an equal sign <code>=</code>. Options can be omitted.</p>
 <pre><code>--output &lt;file&gt;
 
 --code=&lt;language&gt;
 </code></pre>
 <p>Common flags and options may have a shorthand <em>switch</em> associated with them. For example, <code>--help</code> can be alternatively passed with just <code>-h</code>.</p>
-<ul>
-<li><strong>Switch</strong>: Shorthand flag denoted by a single dash and a single character. Switches can be chained onto the same dash.</li>
-</ul>
+<h3 id="flag"><a class="header" href="#flag"><strong>Flag</strong></a></h3>
+<p>Simple boolean on-off conditional to alter a command's behavior. Flags are options that do not take an argument and can be omitted.</p>
+<pre><code>--help
+</code></pre>
+<h3 id="switch"><a class="header" href="#switch"><strong>Switch</strong></a></h3>
+<p>Shorthand flag denoted by a single dash and a single character. Switches can be chained onto the same dash.</p>
 <pre><code>-c -i
 -ci
 </code></pre>
 <p>If a switch is associated with an option, it must be declared last on a chain with its argument separated by whitespace or an equal sign <code>=</code>.</p>
+<pre><code>-o &lt;file&gt;
+</code></pre>
+<h3 id="argument-terminator"><a class="header" href="#argument-terminator"><strong>Argument terminator</strong></a></h3>
+<p>Special no-op flag <code>--</code> that tells Orbit to parse up until this symbol.</p>
 <p>Some scenarios will allow you to pass arguments through Orbit to an internally executed command. You can pass these arguments by using the <em>argument terminator</em>.</p>
-<ul>
-<li><strong>Argument terminator</strong>: Special no-op flag <code>--</code> that tells Orbit to parse up until the argument terminator.</li>
-</ul>
+<pre><code>orbit build vivado -- synthesis --incremental
+</code></pre>
+<p>An example where an argument terminator is used is when invoking a plugin with Orbit. In this example,  <code>synthesis --incremental</code> is passed to a plugin recognized as &quot;quartus&quot; by Orbit.</p>
 
                     </main>
 

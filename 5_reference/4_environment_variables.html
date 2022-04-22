@@ -147,7 +147,7 @@
 <p>Orbit's configuration can be customized with the setting of specific environment variables. </p>
 <ul>
 <li>
-<p><code>ORBIT_HOME</code> - directory where orbit stores its data. By default it is <code>$HOME/.orbit</code>.</p>
+<p><code>ORBIT_HOME</code> - directory where orbit stores its data. By default it is <code>$HOME/.orbit</code> on Unix systems and <code>%USERPROFILE%/.orbit</code> on Windows systems.</p>
 </li>
 <li>
 <p><code>ORBIT_CACHE</code> - directory where orbit caches installed IP. By default it is <code>$ORBIT_HOME/cache</code>.</p>
@@ -156,26 +156,32 @@
 <p><code>NO_COLOR</code> - does not print colorized output when set to a value.</p>
 </li>
 <li>
-<p><code>EDITOR</code> - chooses this value as the default text editor when no <code>core.editor</code> key is present in the config.toml</p>
+<p><code>EDITOR</code> - chooses this value as the default text editor when no <code>core.editor</code> key is present in the config.toml.</p>
 </li>
 </ul>
-<!--
-- `ORBIT_BUILD_DIR` - directory to locate the `blueprint.tsv` file within the current IP. By default is called `build`.
--->
-<h3 id="runtime-environment-variables"><a class="header" href="#runtime-environment-variables">Runtime environment variables</a></h3>
+<h2 id="runtime-environment-variables"><a class="header" href="#runtime-environment-variables">Runtime environment variables</a></h2>
 <p>Orbit also sets environment variables during runtime so a plugin has access to runtime information. </p>
-<!-- 
-- `ORBIT_TOP` - the toplevel design unit identifier
-
-- `ORBIT_BENCH` - the toplevel design's testbench identifier
--->
+<ul>
+<li>
+<p><code>ORBIT_PATH</code> - path to locate in-development IP. Unless explicitly set, Orbit will set this value to the path found as <code>core.path</code> set in config.toml.</p>
+</li>
+<li>
+<p><code>ORBIT_BUILD_DIR</code> - directory to place the <code>blueprint.tsv</code> file relative to the current IP path. Default is <code>build</code> unless set as <code>core.build-dir</code> in config.toml.</p>
+</li>
+<li>
+<p><code>ORBIT_TOP</code> - toplevel design unit identifier</p>
+</li>
+<li>
+<p><code>ORBIT_BENCH</code> - toplevel design's testbench identifier</p>
+</li>
+</ul>
 <!--Note about environment variables vs. settings file vs. arguments
 
-environment variables: only to change across systems (infrequent)
-
-settings file: 
-
- -->
+precedence:
+3. config file
+2. env vars
+1. command-line
+-->
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">

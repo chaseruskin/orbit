@@ -5,7 +5,7 @@ Code evolves over time, and versions provide a method for capturing a project's 
 Orbit uses the _semantic versioning_ scheme for capturing project's state at given time periods. Semantic versioning uses 3 numeric values to signify different levels of change.
 
 ```
-<MAJOR>.<MINOR>.<PATCH>
+version ::= <major>.<minor>.<patch>
 ```
 
 | Level    | Explanation
@@ -19,6 +19,8 @@ To learn more about semantic versioning, visit the official [website](https://se
 Since everyone's stance on what code changes affect which version level may differ, it's important to keep a changelog highlighting differences among versions.
 
 ### Rules
+
+- each level may only contain ASCII digits (`0-9`)
 
 All 3 levels must be given a numeric value consisting of only digits separated by a dot (`.`) character. This is considered a _fully qualified_ version.
 ```
@@ -42,22 +44,22 @@ Available versions: { 1.0.0, 1.2.0, 1.2.1, 1.5.0, 2.1.0 }
 ### Example Scenarios
 
 A fully qualified version must be written in every project's manifest file.
-```
+``` toml
 [ip]
-...
-version = 0.1.0
-...
+# ...
+version = "0.1.0"
+# ...
 ```
 
 To request a particular version (partially or fully qualified) when installing packages, you may append the version number after `@v` to the pkgid.
 
 ```
-orbit install uf-ece.rary.gates@v1.5.4
+$ orbit install ks-tech.rary.gates@v1.5.4
 ```
 
 You may also request a particular version (partially or fully qualified) for an entity from an IP .
 ```
-orbit get uf-ece.rary.gates::nor_gate --version 1.5.4
+$ orbit get ks-tech.rary.gates::nor_gate --version 1.5.4
 ```
 
 ### Comparing versions

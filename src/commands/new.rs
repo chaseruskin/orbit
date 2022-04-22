@@ -1,7 +1,7 @@
 use crate::Command;
 use crate::FromCli;
 use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional};
+use crate::interface::arg::{Positional, Optional};
 use crate::interface::errors::CliError;
 use crate::core::pkgid;
 use crate::interface::arg::Arg;
@@ -11,6 +11,7 @@ use std::error::Error;
 #[derive(Debug, PartialEq)]
 pub struct New {
     ip: pkgid::PkgId,
+    path: Option<std::path::PathBuf>,
 }
 
 impl Command for New {
@@ -22,11 +23,11 @@ impl Command for New {
         }
 
         // :todo: verify the orbit path exists
-        let m = context.get_config().get("core").unwrap().get("path").unwrap();
-        println!("orbit path: {}", m.as_str().unwrap());
+        let root = std::path::PathBuf::from(context.get_config().get("core").unwrap().get("path").unwrap().as_str().unwrap());
+        // :todo: o.w. fallback to relative path if there was not ORBIT_PATH set.
 
         // only pass in necessary variables from context
-        self.run(std::path::PathBuf::from(m.as_str().unwrap()), context.force)
+        self.run(root, context.force)
     }
 }
 
@@ -34,12 +35,15 @@ use crate::core::ip::IP;
 
 impl New {
     fn run(&self, root: std::path::PathBuf, force: bool) -> Result<(), Box<dyn Error>> {
-        // create ip stemming from ORBIT_PATH
-        let ip_path = root.join(self.ip.get_vendor().as_ref().unwrap())
-            .join(self.ip.get_library().as_ref().unwrap())
-            .join(self.ip.get_name());
-
-        let ip =  IP::new(ip_path, &self.ip, force)?;
+        // create ip stemming from ORBIT_PATH with default /VENDOR/LIBRARY/NAME
+        let ip_path = if self.path.is_none() {
+            root.join(self.ip.get_vendor().as_ref().unwrap())
+                .join(self.ip.get_library().as_ref().unwrap())
+                .join(self.ip.get_name())
+        } else {
+            root.join(self.path.as_ref().unwrap())
+        };
+        let ip = IP::new(ip_path, &self.ip, force)?;
         println!("info: new ip created at {}", ip.get_path().display());
         Ok(())
     }
@@ -50,6 +54,7 @@ impl FromCli for New {
         cli.set_help(HELP);
         let command = Ok(New {
             ip: cli.require_positional(Positional::new("ip"))?,
+            path: cli.check_option(Optional::new("path"))?,
         });
         command
     }
@@ -65,6 +70,7 @@ Args:
     <ip>                the V.L.N for the new package
 
 Options:
+    --path <path>       set the destination directory
     --template <key>    specify a template to copy
 
 Use 'orbit help new' to read more about the command.

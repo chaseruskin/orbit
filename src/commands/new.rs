@@ -50,7 +50,7 @@ impl New {
         } else {
             root.join(self.path.as_ref().unwrap())
         };
-        let ip = IP::new(ip_path, &self.ip, force)?;
+        let ip = IP::new(ip_path, force)?.create_manifest(&self.ip)?;
         println!("info: new ip created at {}", ip.get_path().display());
         Ok(())
     }

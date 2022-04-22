@@ -10,10 +10,17 @@ pub struct Manifest {
 }
 
 impl Manifest {
-    pub fn new(path: path::PathBuf) -> Self {
+    pub fn create(path: path::PathBuf) -> Self {
         Self {
             path: path,
             document: BARE_MANIFEST.parse::<Document>().unwrap(),
+        }
+    }
+
+    pub fn new() -> Self {
+        Self {
+            path: path::PathBuf::new(),
+            document: Document::new(),
         }
     }
 
@@ -57,7 +64,7 @@ mod test {
     #[test]
     fn new() {
         let m = tempfile::NamedTempFile::new().unwrap();
-        let manifest = Manifest::new(m.path().to_path_buf());
+        let manifest = Manifest::create(m.path().to_path_buf());
         assert_eq!(manifest.document.to_string(), BARE_MANIFEST);
     }
 }

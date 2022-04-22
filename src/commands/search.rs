@@ -17,14 +17,20 @@ pub struct Search {
 impl Command for Search {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, _: &Context) -> Result<(), Self::Err> {
-        Ok(self.run())
+        self.run()
     }
 }
 
-impl Search {
-    fn run(&self) -> () {
-        // walk the ORBIT_PATH directory 
+use glob::glob;
 
+impl Search {
+    fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+        // walk the ORBIT_PATH directory 
+        for entry in glob("./**/Orbit.toml").expect("Failed to read glob pattern") {
+            let e = entry?;
+            println!("{}", e.display());
+        }
+        Ok(())
         // find all ip installed in cache
 
         // walk vendor directory to find all ip manifest available

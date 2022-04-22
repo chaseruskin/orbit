@@ -8,6 +8,8 @@ Orbit's configuration can be customized with the setting of specific environment
 
 - `NO_COLOR` - does not print colorized output when set to a value.
 
+- `EDITOR` - chooses this value as the default text editor when no `core.editor` key is present in the config.toml
+
 <!--
 - `ORBIT_BUILD_DIR` - directory to locate the `blueprint.tsv` file within the current IP. By default is called `build`.
 -->

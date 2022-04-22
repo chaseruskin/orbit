@@ -18,16 +18,23 @@ def main():
         name: str = os.path.basename(cmd).rsplit('_')[1].split('.')[0]
         if os.path.basename(cmd).rsplit('_')[0] == '0':
             continue
-
+        first = True
         transform = 'pub const MANUAL: &str = "\\\n'
         with open(cmd, 'r') as f:
             for line in f.readlines():
-                transform_line = '    ' + line + '\n'
+                # remove bullets
+                if line.startswith('    - '):
+                    line = line[0:3] + line[6:]
+                # add indentation to body text
+                transform_line = '    ' + line.replace('`', '')
                 # skip title line
                 if line.startswith('# '):
                     continue
                 if line.startswith('## '):
                     transform_line = line[3:].replace('__', '')
+                    if first == False:
+                        transform_line = '\n' + transform_line
+                    first = False
                 # skip code syntax
                 elif line.startswith('```'):
                     continue

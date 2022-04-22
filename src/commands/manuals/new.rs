@@ -3,12 +3,21 @@ NAME
     new - create a new ip
 
 SYNPOSIS
-    orbit new [options] path
+    orbit new [options] <ip>
 
 DESCRIPTION
-    This command will create a new HDL IP package.
+    This command will create a new IP package. The default destination path is
+    $ORBIT_PATH/<vendor>/<library>/<name>. If the ORBIT_PATH environment variable
+    is not set nor is the core.path key in the config.toml, Orbit will use the
+    command's relative path to create the corresponding directories.
+
+OPTIONS
+    --force  
+       Removes the destination directory if it already exists
+      
+    --path <path>  
+       Specify the destination path
 
 EXAMPLES
     orbit new space-tech.rary.gates
-
 ";

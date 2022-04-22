@@ -6,6 +6,7 @@ pub struct Context {
     home_path: path::PathBuf,
     cache_path: path::PathBuf,
     config: Document,
+    pub force: bool,
 
 }
 
@@ -17,7 +18,13 @@ impl Context {
             home_path: home,
             cache_path: cache,
             config: Document::new(),
+            force: false,
         }
+    }
+
+    pub fn retain_options(mut self, force: bool) -> Context {
+        self.force = force;
+        self
     }
 
     /// Sets the home directory. By default this is `$HOME/.orbit`. If set by `var`,

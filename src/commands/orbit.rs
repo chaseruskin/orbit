@@ -43,7 +43,8 @@ impl Orbit {
             let context = Context::new()
                 .home("ORBIT_HOME")?
                 .cache("ORBIT_CACHE")?
-                .settings("config.toml")?;
+                .settings("config.toml")?
+                .retain_options(self.force);
             // pass the context to the given command
             c.exec(&context)
         // if no command is given then print default help
@@ -69,21 +70,25 @@ impl FromCli for Orbit {
 
 use crate::commands::help::Help;
 use crate::commands::new::New;
+use crate::commands::search::Search;
 
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
     Help(Help),
     New(New),
+    Search(Search),
 }
 
 impl FromCli for OrbitSubcommand {
     fn from_cli<'c>(cli: &'c mut Cli<'_>) -> Result<Self, CliError<'c>> { 
         match cli.match_command(&[
             "help", 
-            "new"
+            "new",
+            "search",
         ])?.as_ref() {
             "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
             "new" => Ok(OrbitSubcommand::New(New::from_cli(cli)?)),
+            "search" => Ok(OrbitSubcommand::Search(Search::from_cli(cli)?)),
             _ => panic!("an unimplemented command was passed through!")
         }
     }
@@ -95,6 +100,7 @@ impl Command for OrbitSubcommand {
         match self {
             OrbitSubcommand::Help(c) => c.exec(context),
             OrbitSubcommand::New(c) => c.exec(context),
+            OrbitSubcommand::Search(c) => c.exec(context),
         }
     }
 }
@@ -114,6 +120,7 @@ Commands:
     tree            view the dependency graph
     plan            generate a blueprint file
     build           execute a plugin
+    search          browse the ip catalog 
 
 Options:
     --version       print version information and exit

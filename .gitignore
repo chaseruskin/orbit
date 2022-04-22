@@ -9,3 +9,5 @@ init.sh
 install.sh
 
 /tools/target-triple.exe
+
+.DS_Store

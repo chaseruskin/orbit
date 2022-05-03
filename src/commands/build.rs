@@ -1,3 +1,5 @@
+use std::io::Read;
+
 use crate::Command;
 use crate::FromCli;
 use crate::interface::cli::Cli;
@@ -32,6 +34,21 @@ impl Command for Build {
         let blueprint_file = c.get_ip_path().unwrap().join(c.get_build_dir()).join("blueprint.tsv");
         if blueprint_file.exists() == false {
             return Err(Box::new(AnyError(format!("no blueprint file to build from; consider running 'orbit plan'"))))
+        }
+        // read the .env file
+        let env_file = c.get_ip_path().unwrap().join(c.get_build_dir()).join(".env");
+        if env_file.exists() == true {
+            let mut file = std::fs::File::open(env_file).expect("failed to open .env file");
+            let mut contents = String::new();
+            file.read_to_string(&mut contents).expect("failed to read contents");
+            // transform into environment variables
+            for line in contents.split_terminator('\n') {
+                let result = line.split_once('=');
+                // set env variables
+                if let Some((name, value)) = result {
+                    std::env::set_var(name, value);
+                }
+            }
         }
         self.run()
     }

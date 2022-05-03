@@ -6,7 +6,19 @@
 
 ### Features
 
-- adds support for the ini configuration file format to store key value pairs
+- allows an option to be accepted multiple times on the command-line (example: `--filesets`)
+
+- allows filesets to be created/overriden on command-line for `plan` command
+
+- verifies `build` and `plan` commands are called from an "IP-directory-sensitive" path
+
+- prevents IPs from becoming nested within each other's path in `new` command
+
+- adds `build` command to execute an external process within orbit
+
+- adds `plan` command to generate a blueprint.tsv file in a build output directory
+
+- adds support for the toml configuration file format to store key value pairs
 
 - creates home folder at ~/.orbit if `ORBIT_HOME` enviornment variable is not set
 

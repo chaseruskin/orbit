@@ -278,6 +278,43 @@ impl<'c> Cli<'c> {
         }
     }
 
+    /// Queries for all values behind an `Optional`.
+    /// 
+    /// Errors if a parsing fails from string.
+    pub fn check_option_all<'a, T: FromStr>(&mut self, o: Optional<'c>) -> Result<Option<Vec<T>>, CliError<'c>>
+    where <T as FromStr>::Err: std::error::Error {
+        // collect information on where the flag can be found
+        let mut locs = self.take_flag_locs(o.get_flag_ref().get_name_ref());
+        if let Some(c) = o.get_flag_ref().get_switch_ref() {
+            locs.extend(self.take_switch_locs(c));
+        }
+        self.known_args.push(Arg::Optional(o));
+        // pull values from where the option flags were found (including switch)
+        let values = self.pull_flag(locs, true);
+        if values.is_empty() {
+            return Ok(None)
+        }
+        // try to convert each value into the type T
+        let mut transform = Vec::<T>::with_capacity(values.len());
+        for val in values {
+            if let Some(s) = val {
+                let result = s.parse::<T>();
+                match result {
+                    Ok(r) => transform.push(r),
+                    Err(e) => {
+                        self.prioritize_help()?;
+                        self.prioritize_suggestion()?;
+                        return Err(CliError::BadType(self.known_args.pop().unwrap(), e.to_string()))
+                    }
+                }
+            } else {
+                self.prioritize_help()?;
+                return Err(CliError::ExpectingValue(self.known_args.pop().unwrap()))
+            }
+        }
+        Ok(Some(transform))
+    }
+
     /// Queries for a value of `Optional`.
     /// 
     /// Errors if there are multiple values or if parsing fails.
@@ -509,6 +546,45 @@ mod test {
     /// Helper test fn to write vec of &str as iterator for Cli parameter.
     fn args<'a>(args: Vec<&'a str>) -> Box<dyn Iterator<Item=String> + 'a> {
         Box::new(args.into_iter().map(|f| f.to_string()).into_iter())
+    }
+
+    #[test]
+    fn get_all_optionals() {
+        // option provided multiple times
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "plan", "--fileset", "a", "--fileset=b", "--fileset", "c"]
+        ));
+        let sets: Vec<String> = cli.check_option_all(Optional::new("fileset")).unwrap().unwrap();
+        assert_eq!(sets, vec![
+            "a", "b", "c"
+        ]);
+        // failing case- bad conversion of 'c' to an integer
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "plan", "--digit", "10", "--digit=9", "--digit", "c"]
+        ));
+        assert_eq!(cli.check_option_all::<i32>(Optional::new("digit")).is_err(), true); // bad conversion
+        // option provided as valid integers
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "plan", "--digit", "10", "--digit=9", "--digit", "1"]
+        ));
+        let sets: Vec<i32> = cli.check_option_all(Optional::new("digit")).unwrap().unwrap();
+        assert_eq!(sets, vec![
+            10, 9, 1
+        ]);
+        // option provided once
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "plan", "--fileset", "a"]
+        ));
+        let sets: Vec<String> = cli.check_option_all(Optional::new("fileset")).unwrap().unwrap();
+        assert_eq!(sets, vec![
+            "a"
+        ]);
+        // option not provided
+        let mut cli = Cli::tokenize(args(
+            vec!["orbit", "plan"]
+        ));
+        let sets: Option<Vec<String>> = cli.check_option_all(Optional::new("fileset")).unwrap();
+        assert_eq!(sets, None);
     }
 
     #[test]

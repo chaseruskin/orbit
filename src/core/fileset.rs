@@ -1,3 +1,6 @@
+use std::str::FromStr;
+use ignore::Walk;
+
 #[derive(Debug, PartialEq)]
 pub struct Fileset {
     name: String,
@@ -7,6 +10,7 @@ pub struct Fileset {
 #[derive(Debug)]
 pub enum FilesetError {
     MissingSeparator(char),
+    EmptyPattern,
     PatternError(String, glob::PatternError),
 }
 
@@ -15,13 +19,14 @@ impl std::error::Error for FilesetError {}
 impl std::fmt::Display for FilesetError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
+            Self::EmptyPattern => write!(f, "empty pattern"),
             Self::MissingSeparator(c) => write!(f, "missing separator '{}'", c),
             Self::PatternError(p, e) => write!(f, "'{}' {}", p, e.to_string().to_lowercase()),
         }
     }
 }
 
-impl std::str::FromStr for Fileset {
+impl FromStr for Fileset {
     type Err = FilesetError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -33,7 +38,12 @@ impl std::str::FromStr for Fileset {
         let (name, pattern) = result.unwrap();
         Ok(Fileset {
             pattern: match glob::Pattern::new(pattern) {
-                Ok(p) => p,
+                // pattern must not be empty
+                Ok(p) => if p.as_str().is_empty() {
+                    return Err(Self::Err::EmptyPattern)
+                } else {
+                    p
+                },
                 Err(e) => return Err(Self::Err::PatternError(pattern.to_string(), e))
             },
             name: Self::standardize_name(name),
@@ -144,14 +154,31 @@ pub fn gather_current_files() -> Vec<String> {
     }).collect()
 }
 
-#[derive(Debug, PartialEq)]
-pub struct BuildFile {
-    path: std::path::PathBuf,
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn fset_from_str() {
+        let s = "xsim-cfg=*.wcfg";
+        let fset = Fileset::from_str(s);
+        assert_eq!(fset.unwrap(), Fileset {
+            name: "XSIM-CFG".to_string(),
+            pattern: glob::Pattern::new("*.wcfg").unwrap()
+        });
+
+        let s = "xsim-cfg=";
+        let fset = Fileset::from_str(s);
+        assert_eq!(fset.is_err(), true); // empty pattern
+
+        let s = "xsim-cfg";
+        let fset = Fileset::from_str(s);
+        assert_eq!(fset.is_err(), true); // missing separator
+
+        let s = "xsim-cfg=[";
+        let fset = Fileset::from_str(s);
+        assert_eq!(fset.is_err(), true); // pattern error
+    }
 
     #[test]
     fn std_name() {
@@ -214,5 +241,3 @@ mod test {
         ]);
     }
 }
-
-use ignore::Walk;

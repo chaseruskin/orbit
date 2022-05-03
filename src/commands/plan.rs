@@ -14,7 +14,7 @@ pub struct Plan {
     bench: Option<String>,
     top: Option<String>,
     // :todo: make it accept a vector (need to make new cli fn check_option_all(...))
-    filesets: Option<Fileset>
+    filesets: Option<Vec<Fileset>>
 }
 
 impl Command for Plan {
@@ -53,11 +53,13 @@ impl Plan {
         // store data in blueprint TSV format
         let mut blueprint_data = String::new();
 
-        // use command-line set fileset
-        if let Some(fset) = &self.filesets {
-            let data = fset.collect_files(&files);
-            for f in data {
-                blueprint_data += &format!("{}\t{}\t{}\n", fset.get_name(), std::path::PathBuf::from(f).file_stem().unwrap_or(&OsString::new()).to_str().unwrap(), f);
+        // use command-line set filesets
+        if let Some(fsets) = &self.filesets {
+            for fset in fsets {
+                let data = fset.collect_files(&files);
+                for f in data {
+                    blueprint_data += &format!("{}\t{}\t{}\n", fset.get_name(), std::path::PathBuf::from(f).file_stem().unwrap_or(&OsString::new()).to_str().unwrap(), f);
+                }
             }
         }
         for f in vhdl_rtl_files {
@@ -88,7 +90,7 @@ impl FromCli for Plan {
             top: cli.check_option(Optional::new("top").value("unit"))?,
             bench: cli.check_option(Optional::new("bench").value("tb"))?,
             plugin: cli.check_option(Optional::new("plugin"))?,
-            filesets: cli.check_option(Optional::new("fileset").value("key=glob"))?,
+            filesets: cli.check_option_all(Optional::new("fileset").value("key=glob"))?,
         });
         command
     }

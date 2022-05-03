@@ -11,6 +11,7 @@ pub struct Fileset {
 pub enum FilesetError {
     MissingSeparator(char),
     EmptyPattern,
+    EmptyName,
     PatternError(String, glob::PatternError),
 }
 
@@ -20,6 +21,7 @@ impl std::fmt::Display for FilesetError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
             Self::EmptyPattern => write!(f, "empty pattern"),
+            Self::EmptyName => write!(f, "empty name"),
             Self::MissingSeparator(c) => write!(f, "missing separator '{}'", c),
             Self::PatternError(p, e) => write!(f, "'{}' {}", p, e.to_string().to_lowercase()),
         }
@@ -36,6 +38,10 @@ impl FromStr for Fileset {
             return Err(Self::Err::MissingSeparator('='));
         }
         let (name, pattern) = result.unwrap();
+        // name cannot be empty
+        if name.is_empty() {
+            return Err(Self::Err::EmptyName)
+        }
         Ok(Fileset {
             pattern: match glob::Pattern::new(pattern) {
                 // pattern must not be empty
@@ -170,6 +176,10 @@ mod test {
         let s = "xsim-cfg=";
         let fset = Fileset::from_str(s);
         assert_eq!(fset.is_err(), true); // empty pattern
+
+        let s = "=*.txt";
+        let fset = Fileset::from_str(s);
+        assert_eq!(fset.is_err(), true); // empty name
 
         let s = "xsim-cfg";
         let fset = Fileset::from_str(s);

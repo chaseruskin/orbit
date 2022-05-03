@@ -42,7 +42,8 @@ impl Command for Plan {
 
 impl Plan {
     fn run(&self, build_dir: &str) -> () {
-        let mut blueprint_path = std::env::current_dir().unwrap();
+        let mut build_path = std::env::current_dir().unwrap();
+        build_path.push(build_dir);
         // gather filesets
         let files = crate::core::fileset::gather_current_files();
         // @TODO remove and properly include only-necessary in-order hdl files
@@ -70,12 +71,19 @@ impl Plan {
         if std::path::PathBuf::from(build_dir).exists() == false {
             std::fs::create_dir_all(build_dir).expect("could not create build dir");
         }
-        // create the file
-        blueprint_path.push(build_dir);
-        blueprint_path.push("blueprint.tsv");
-        let mut blueprint_file = std::fs::File::create(&blueprint_path).expect("could not create blueprint file");
+        // create the blueprint file
+        let blueprint_path = build_path.join("blueprint.tsv");
+        let mut blueprint_file = std::fs::File::create(&blueprint_path).expect("could not create blueprint.tsv file");
         // write the data
         blueprint_file.write_all(blueprint_data.as_bytes()).expect("failed to write data to blueprint");
+        
+        // create environment variables to .env file
+        let env_path = build_path.join(".env");
+        let mut env_file = std::fs::File::create(&env_path).expect("could not create .env file");
+        let contents = format!("ORBIT_TOP={}\nORBIT_BENCH={}\n", &self.top.as_ref().unwrap_or(&String::new()), &self.bench.as_ref().unwrap_or(&String::new()));
+        // write the data
+        env_file.write_all(contents.as_bytes()).expect("failed to write data to .env file");
+
         // create a blueprint file
         println!("info: Blueprint created at: {}", blueprint_path.display());
     }

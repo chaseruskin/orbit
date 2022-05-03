@@ -4,13 +4,17 @@ use crate::interface::cli::Cli;
 use crate::interface::arg::Optional;
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
+use std::ffi::OsString;
 use std::io::Write;
+use crate::core::fileset::Fileset;
 
 #[derive(Debug, PartialEq)]
 pub struct Plan {
     plugin: Option<String>,
     bench: Option<String>,
     top: Option<String>,
+    // :todo: make it accept a vector (need to make new cli fn check_option_all(...))
+    filesets: Option<Fileset>
 }
 
 impl Command for Plan {
@@ -48,6 +52,14 @@ impl Plan {
         let vhdl_sim_files = crate::core::fileset::collect_vhdl_files(&files, true);
         // store data in blueprint TSV format
         let mut blueprint_data = String::new();
+
+        // use command-line set fileset
+        if let Some(fset) = &self.filesets {
+            let data = fset.collect_files(&files);
+            for f in data {
+                blueprint_data += &format!("{}\t{}\t{}\n", fset.get_name(), std::path::PathBuf::from(f).file_stem().unwrap_or(&OsString::new()).to_str().unwrap(), f);
+            }
+        }
         for f in vhdl_rtl_files {
             blueprint_data += &format!("VHDL-RTL\twork\t{}\n", f);
         }
@@ -73,9 +85,10 @@ impl FromCli for Plan {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.set_help(PLAN);
         let command = Ok(Plan {
-            top: cli.check_option(Optional::new("top"))?,
-            bench: cli.check_option(Optional::new("bench"))?,
+            top: cli.check_option(Optional::new("top").value("unit"))?,
+            bench: cli.check_option(Optional::new("bench").value("tb"))?,
             plugin: cli.check_option(Optional::new("plugin"))?,
+            filesets: cli.check_option(Optional::new("fileset").value("key=glob"))?,
         });
         command
     }

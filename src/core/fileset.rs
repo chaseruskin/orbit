@@ -4,6 +4,43 @@ pub struct Fileset {
     pattern: glob::Pattern,
 }
 
+#[derive(Debug)]
+pub enum FilesetError {
+    MissingSeparator(char),
+    PatternError(String, glob::PatternError),
+}
+
+impl std::error::Error for FilesetError {}
+
+impl std::fmt::Display for FilesetError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            Self::MissingSeparator(c) => write!(f, "missing separator '{}'", c),
+            Self::PatternError(p, e) => write!(f, "'{}' {}", p, e.to_string().to_lowercase()),
+        }
+    }
+}
+
+impl std::str::FromStr for Fileset {
+    type Err = FilesetError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // split by '=' sign (or ':'?)
+        let result = s.split_once('=');
+        if result == None {
+            return Err(Self::Err::MissingSeparator('='));
+        }
+        let (name, pattern) = result.unwrap();
+        Ok(Fileset {
+            pattern: match glob::Pattern::new(pattern) {
+                Ok(p) => p,
+                Err(e) => return Err(Self::Err::PatternError(pattern.to_string(), e))
+            },
+            name: Self::standardize_name(name),
+        })
+    }
+}
+
 impl Fileset {
     /// Create a new `Fileset` structure.
     pub fn new() -> Self {
@@ -20,9 +57,9 @@ impl Fileset {
     }
 
     /// Set the `Fileset` glob-style pattern.
-    pub fn pattern(mut self, p: &str) -> Self {
-        self.pattern = glob::Pattern::new(p).unwrap();
-        self
+    pub fn pattern(mut self, p: &str) -> Result<Self, glob::PatternError>{
+        self.pattern = glob::Pattern::new(p)?;
+        Ok(self)
     }
 
     /// Standardizes the name to be UPPER-AND-HYPHENS.

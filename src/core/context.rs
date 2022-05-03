@@ -5,9 +5,9 @@ use toml_edit::Document;
 pub struct Context {
     home_path: path::PathBuf,
     cache_path: path::PathBuf,
+    build_dir: String,
     config: Document,
     pub force: bool,
-
 }
 
 impl Context {
@@ -18,6 +18,7 @@ impl Context {
             home_path: home,
             cache_path: cache,
             config: Document::new(),
+            build_dir: String::new(),
             force: false,
         }
     }
@@ -99,6 +100,49 @@ impl Context {
     /// Access the configuration data.
     pub fn get_config(&self) -> &Document {
         &self.config
+    }
+
+    /// Access the build directory data.
+    pub fn get_build_dir(&self) -> &String {
+        &self.build_dir
+    }
+
+    /// Determines if the directory is within a current IP and sets the proper
+    /// runtime environment variable.
+    pub fn current_ip_dir(self, s: &str) -> Result<Context, ContextError> {
+        match self.get_ip_path() {
+            Some(cwd) => {
+                env::set_var(s, cwd);
+            }
+            None => (),
+        }
+        Ok(self)
+    }
+
+    /// Finds the complete path to the current IP's directory.
+    pub fn get_ip_path(&self) -> Option<path::PathBuf> {
+        let cwd = std::env::current_dir().expect("could not locate cwd");
+        // search for the manifest file
+        let mut entries = std::fs::read_dir(&cwd).expect("could not read cwd");
+        entries.find_map(|p| {
+            match p {
+                Ok(file) => {
+                    if file.file_name() == "Orbit.toml" {
+                        Some(cwd.to_path_buf())
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            }
+        })
+    }
+
+    /// Sets the IP's build directory and the corresponding environment variable.
+    pub fn build_dir(mut self, s: &str) -> Result<Context, ContextError> {
+        self.build_dir = String::from("build");
+        env::set_var(s, &self.build_dir);
+        Ok(self)
     }
 }
 

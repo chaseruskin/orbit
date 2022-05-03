@@ -44,6 +44,8 @@ impl Orbit {
                 .home("ORBIT_HOME")?
                 .cache("ORBIT_CACHE")?
                 .settings("config.toml")?
+                .current_ip_dir("ORBIT_IP_PATH")?
+                .build_dir("ORBIT_BUILD_DIR")?
                 .retain_options(self.force);
             // pass the context to the given command
             c.exec(&context)
@@ -71,24 +73,28 @@ impl FromCli for Orbit {
 use crate::commands::help::Help;
 use crate::commands::new::New;
 use crate::commands::search::Search;
+use crate::commands::plan::Plan;
 
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
     Help(Help),
     New(New),
     Search(Search),
+    Plan(Plan),
 }
 
 impl FromCli for OrbitSubcommand {
     fn from_cli<'c>(cli: &'c mut Cli<'_>) -> Result<Self, CliError<'c>> { 
         match cli.match_command(&[
-            "help", 
+            "help",
             "new",
             "search",
+            "plan",
         ])?.as_ref() {
             "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
             "new" => Ok(OrbitSubcommand::New(New::from_cli(cli)?)),
             "search" => Ok(OrbitSubcommand::Search(Search::from_cli(cli)?)),
+            "plan" => Ok(OrbitSubcommand::Plan(Plan::from_cli(cli)?)),
             _ => panic!("an unimplemented command was passed through!")
         }
     }
@@ -101,6 +107,7 @@ impl Command for OrbitSubcommand {
             OrbitSubcommand::Help(c) => c.exec(context),
             OrbitSubcommand::New(c) => c.exec(context),
             OrbitSubcommand::Search(c) => c.exec(context),
+            OrbitSubcommand::Plan(c) => c.exec(context),
         }
     }
 }

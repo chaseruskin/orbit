@@ -5,6 +5,7 @@ use toml_edit::Document;
 pub struct Context {
     home_path: path::PathBuf,
     cache_path: path::PathBuf,
+    ip_path: Option<path::PathBuf>,
     build_dir: String,
     config: Document,
     pub force: bool,
@@ -17,6 +18,7 @@ impl Context {
         Context { 
             home_path: home,
             cache_path: cache,
+            ip_path: None,
             config: Document::new(),
             build_dir: String::new(),
             force: false,
@@ -107,15 +109,21 @@ impl Context {
         &self.build_dir
     }
 
+    /// Access the ip directory detected from the current working directory.
+    pub fn get_ip_path(&self) -> Option<&path::PathBuf> {
+        self.ip_path.as_ref()
+    }
+
     /// Determines if the directory is within a current IP and sets the proper
     /// runtime environment variable.
-    pub fn current_ip_dir(self, s: &str) -> Result<Context, ContextError> {
-        match self.get_ip_path() {
+    pub fn current_ip_dir(mut self, s: &str) -> Result<Context, ContextError> {
+        self.ip_path = match Context::find_ip_path(&std::env::current_dir().expect("failed to get current directory")) {
             Some(cwd) => {
-                env::set_var(s, cwd);
+                env::set_var(s, &cwd);
+                Some(cwd)
             }
-            None => (),
-        }
+            None => None,
+        };
         Ok(self)
     }
 
@@ -123,8 +131,9 @@ impl Context {
     /// 
     /// This function will recursively backtrack down the current working directory
     /// until finding the first directory with a file named "Orbit.toml".
-    pub fn get_ip_path(&self) -> Option<path::PathBuf> {
-        let mut cwd = std::env::current_dir().expect("could not locate cwd");
+    pub fn find_ip_path(dir: &std::path::PathBuf) -> Option<path::PathBuf> {
+        //let mut cwd = std::env::current_dir().expect("could not locate cwd");
+        let mut cwd = dir.clone();
         // search for the manifest file
         loop {
             let mut entries = std::fs::read_dir(&cwd).expect("could not read cwd");

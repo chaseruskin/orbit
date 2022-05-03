@@ -11,3 +11,5 @@ install.sh
 /tools/target-triple.exe
 
 .DS_Store
+
+/src/commands/template.txt

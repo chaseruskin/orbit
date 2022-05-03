@@ -7,6 +7,7 @@ use crate::core::context::Context;
 use std::ffi::OsString;
 use std::io::Write;
 use crate::core::fileset::Fileset;
+use crate::util::anyerror::AnyError;
 
 #[derive(Debug, PartialEq)]
 pub struct Plan {
@@ -27,10 +28,11 @@ impl Command for Plan {
                 std::env::set_current_dir(&cwd).expect("could not change directories");
             }
             None => {
-                panic!("must be called from an IP's directory");
+                // @IDEA also give information about reading about ip-dir sensitive commands as a topic?
+                return Err(Box::new(AnyError(format!("no orbit IP detected in current directory;"))));
             }
         }
-        // set top-level environment variables (:todo: verify these are valid toplevels to be set!)
+        // set top-level environment variables (@TODO verify these are valid toplevels to be set!)
         if let Some(t) = &self.top {
             std::env::set_var("ORBIT_TOP", t);
         }
@@ -43,7 +45,7 @@ impl Command for Plan {
         } else {
             c.get_build_dir()
         };
-        // :todo: pass in the current IP struct
+        // @TODO pass in the current IP struct
         Ok(self.run(b_dir))
     }
 }
@@ -53,7 +55,7 @@ impl Plan {
         let mut blueprint_path = std::env::current_dir().unwrap();
         // gather filesets
         let files = crate::core::fileset::gather_current_files();
-        // :todo: remove and properly include only-necessary in-order hdl files
+        // @TODO remove and properly include only-necessary in-order hdl files
         let vhdl_rtl_files = crate::core::fileset::collect_vhdl_files(&files, false);
         let vhdl_sim_files = crate::core::fileset::collect_vhdl_files(&files, true);
         // store data in blueprint TSV format
@@ -91,7 +93,7 @@ impl Plan {
 
 impl FromCli for Plan {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(PLAN);
+        cli.set_help(HELP);
         let command = Ok(Plan {
             top: cli.check_option(Optional::new("top").value("unit"))?,
             bench: cli.check_option(Optional::new("bench").value("tb"))?,
@@ -103,7 +105,7 @@ impl FromCli for Plan {
     }
 }
 
-const PLAN: &str = "\
+const HELP: &str = "\
 Generates a blueprint file.
 
 Usage:

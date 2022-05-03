@@ -1,3 +1,4 @@
+// This manual page was automatically generated from the rsmangen.py tool.
 pub const MANUAL: &str = "\
 NAME
     new - create a new ip

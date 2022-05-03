@@ -19,7 +19,7 @@ def main():
         if os.path.basename(cmd).rsplit('_')[0] == '0':
             continue
         first = True
-        transform = 'pub const MANUAL: &str = "\\\n'
+        transform = '// This manual page was automatically generated from the rsmangen.py tool.\npub const MANUAL: &str = "\\\n'
         with open(cmd, 'r') as f:
             for line in f.readlines():
                 # remove bullets

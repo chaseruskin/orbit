@@ -7,7 +7,6 @@ use crate::core::context::Context;
 use std::ffi::OsString;
 use std::io::Write;
 use crate::core::fileset::Fileset;
-use crate::util::anyerror::AnyError;
 
 #[derive(Debug, PartialEq)]
 pub struct Plan {
@@ -22,16 +21,7 @@ impl Command for Plan {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // check that user is in an IP directory
-        match c.get_ip_path() {
-            Some(cwd) => {
-                // set the current working directory to here
-                std::env::set_current_dir(&cwd).expect("could not change directories");
-            }
-            None => {
-                // @IDEA also give information about reading about ip-dir sensitive commands as a topic?
-                return Err(Box::new(AnyError(format!("no orbit IP detected in current directory;"))));
-            }
-        }
+        c.goto_ip_path()?;
         // set top-level environment variables (@TODO verify these are valid toplevels to be set!)
         if let Some(t) = &self.top {
             std::env::set_var("ORBIT_TOP", t);

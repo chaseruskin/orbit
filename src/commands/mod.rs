@@ -4,3 +4,4 @@ mod new;
 mod manuals;
 mod search;
 mod plan;
+mod build;

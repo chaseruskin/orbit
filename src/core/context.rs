@@ -127,6 +127,23 @@ impl Context {
         Ok(self)
     }
 
+    /// Changes current working directory to the detected IP path.
+    /// 
+    /// Returns an error if ip_path is `None`.
+    pub fn goto_ip_path(&self) -> Result<(), ContextError> {
+        match self.get_ip_path() {
+            Some(cwd) => {
+                // set the current working directory to here
+                std::env::set_current_dir(&cwd).expect("could not change directories");
+            }
+            None => {
+                // @IDEA also give information about reading about ip-dir sensitive commands as a topic?
+                return Err(ContextError(format!("no orbit IP detected in current directory")));
+            }
+        }
+        Ok(())
+    }
+
     /// Finds the complete path to the current IP's directory.
     /// 
     /// This function will recursively backtrack down the current working directory

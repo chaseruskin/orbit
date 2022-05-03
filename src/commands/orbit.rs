@@ -74,6 +74,7 @@ use crate::commands::help::Help;
 use crate::commands::new::New;
 use crate::commands::search::Search;
 use crate::commands::plan::Plan;
+use crate::commands::build::Build;
 
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
@@ -81,6 +82,7 @@ enum OrbitSubcommand {
     New(New),
     Search(Search),
     Plan(Plan),
+    Build(Build),
 }
 
 impl FromCli for OrbitSubcommand {
@@ -90,11 +92,13 @@ impl FromCli for OrbitSubcommand {
             "new",
             "search",
             "plan",
+            "build",
         ])?.as_ref() {
             "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
             "new" => Ok(OrbitSubcommand::New(New::from_cli(cli)?)),
             "search" => Ok(OrbitSubcommand::Search(Search::from_cli(cli)?)),
             "plan" => Ok(OrbitSubcommand::Plan(Plan::from_cli(cli)?)),
+            "build" => Ok(OrbitSubcommand::Build(Build::from_cli(cli)?)),
             _ => panic!("an unimplemented command was passed through!")
         }
     }
@@ -104,6 +108,7 @@ impl Command for OrbitSubcommand {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, context: &Context) -> Result<(), Self::Err> {
         match self {
+            OrbitSubcommand::Build(c) => c.exec(context),
             OrbitSubcommand::Help(c) => c.exec(context),
             OrbitSubcommand::New(c) => c.exec(context),
             OrbitSubcommand::Search(c) => c.exec(context),

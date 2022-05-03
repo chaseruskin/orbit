@@ -13,7 +13,7 @@ pub struct Plan {
     plugin: Option<String>,
     bench: Option<String>,
     top: Option<String>,
-    // :todo: make it accept a vector (need to make new cli fn check_option_all(...))
+    build_dir: Option<String>,
     filesets: Option<Vec<Fileset>>
 }
 
@@ -37,8 +37,14 @@ impl Command for Plan {
         if let Some(b) = &self.bench {
             std::env::set_var("ORBIT_BENCH", b);
         }
-        // :todo: pass in the current IP struct, and the filesets to gather
-        Ok(self.run(c.get_build_dir()))
+        // determine the build directory
+        let b_dir = if let Some(dir) = &self.build_dir {
+            dir
+        } else {
+            c.get_build_dir()
+        };
+        // :todo: pass in the current IP struct
+        Ok(self.run(b_dir))
     }
 }
 
@@ -68,9 +74,9 @@ impl Plan {
         for f in vhdl_sim_files {
             blueprint_data += &format!("VHDL-SIM\twork\t{}\n", f);
         }
-        // create a single-level directory (ok if it already exists)
+        // create a output build directorie(s) if they do not exist
         if std::path::PathBuf::from(build_dir).exists() == false {
-            std::fs::create_dir(build_dir).expect("could not create build dir");
+            std::fs::create_dir_all(build_dir).expect("could not create build dir");
         }
         // create the file
         blueprint_path.push(build_dir);
@@ -90,6 +96,7 @@ impl FromCli for Plan {
             top: cli.check_option(Optional::new("top").value("unit"))?,
             bench: cli.check_option(Optional::new("bench").value("tb"))?,
             plugin: cli.check_option(Optional::new("plugin"))?,
+            build_dir: cli.check_option(Optional::new("build-dir").value("dir"))?,
             filesets: cli.check_option_all(Optional::new("fileset").value("key=glob"))?,
         });
         command

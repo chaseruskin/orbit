@@ -120,22 +120,32 @@ impl Context {
     }
 
     /// Finds the complete path to the current IP's directory.
+    /// 
+    /// This function will recursively backtrack down the current working directory
+    /// until finding the first directory with a file named "Orbit.toml".
     pub fn get_ip_path(&self) -> Option<path::PathBuf> {
-        let cwd = std::env::current_dir().expect("could not locate cwd");
+        let mut cwd = std::env::current_dir().expect("could not locate cwd");
         // search for the manifest file
-        let mut entries = std::fs::read_dir(&cwd).expect("could not read cwd");
-        entries.find_map(|p| {
-            match p {
-                Ok(file) => {
-                    if file.file_name() == "Orbit.toml" {
-                        Some(cwd.to_path_buf())
-                    } else {
-                        None
+        loop {
+            let mut entries = std::fs::read_dir(&cwd).expect("could not read cwd");
+            let result = entries.find_map(|p| {
+                match p {
+                    Ok(file) => {
+                        if file.file_name() == "Orbit.toml" {
+                            Some(cwd.to_path_buf())
+                        } else {
+                            None
+                        }
                     }
+                    _ => None,
                 }
-                _ => None,
+            });
+            if let Some(r) = result {
+                break Some(r)
+            } else if cwd.pop() == false {
+                break None
             }
-        })
+        }
     }
 
     /// Sets the IP's build directory and the corresponding environment variable.

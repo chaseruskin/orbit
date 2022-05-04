@@ -4,28 +4,65 @@ use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
+use crate::commands::manuals;
+use crate::util::anyerror::AnyError;
 
 #[derive(Debug, PartialEq)]
 pub struct Help {
-    topic: Option<String>,
+    topic: Option<Topic>,
+}
+
+#[derive(Debug, PartialEq)]
+enum Topic {
+    New,
+    Plan,
+    Build,
+    Launch,
+}
+
+impl std::str::FromStr for Topic {
+    type Err = AnyError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "new" => Self::New,
+            "plan" => Self::Plan,
+            "build" => Self::Build,
+            "launch" => Self::Launch,
+            _ => return Err(AnyError(format!("topic '{}' not found", s)))
+        })
+    }
+}
+
+impl Topic {
+    /// Transforms the variant to its corresponding manual page.
+    fn as_manual(&self) -> &str {
+        use Topic::*;
+        match &self {
+            New => manuals::new::MANUAL,
+            Plan => manuals::plan::MANUAL,
+            Build => manuals::build::MANUAL,
+            Launch => manuals::build::MANUAL,
+        }
+    }
 }
 
 impl Command for Help {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, _: &Context) -> Result<(), Self::Err> {
-        Ok(self.run())
+        self.run()?;
+        Ok(())
     }
 }
 
 impl Help {
-    fn run(&self) -> () {
-        if let Some(t) = &self.topic {
-            if t == "new" {
-                println!("{}", crate::commands::manuals::new::MANUAL);
-            }
-        } else {
-            println!("info: displaying help text");
-        }
+    fn run(&self) -> Result<(), AnyError> {
+        let contents = match &self.topic {
+            Some(t) => t.as_manual(),
+            None => manuals::orbit::MANUAL
+        };
+        // @TODO check for a pager program to pipe contents into
+        println!("{}", contents);
+        Ok(())
     }
 }
 

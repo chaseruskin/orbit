@@ -4,7 +4,7 @@
 
 new - create a new ip
 
-## __SYNPOSIS__
+## __SYNOPSIS__
 
 ```
 orbit new [options] <ip>
@@ -13,9 +13,10 @@ orbit new [options] <ip>
 ## __DESCRIPTION__
 
 This command will create a new IP package. The default destination path is
-`$ORBIT_PATH/<vendor>/<library>/<name>`. If the ORBIT_PATH environment variable
-is not set nor is the `core.path` key in the config.toml, Orbit will use the
-command's relative path to create the corresponding directories.
+`$ORBIT_PATH/<vendor>/<library>/<name>`. If the ORBIT_PATH environment
+variable is not set nor is the `core.path` key in the config.toml, Orbit
+will use the command's relative path to create the corresponding
+directories.
 
 ## __OPTIONS__
 

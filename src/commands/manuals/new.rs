@@ -3,14 +3,15 @@ pub const MANUAL: &str = "\
 NAME
     new - create a new ip
 
-SYNPOSIS
+SYNOPSIS
     orbit new [options] <ip>
 
 DESCRIPTION
     This command will create a new IP package. The default destination path is
-    $ORBIT_PATH/<vendor>/<library>/<name>. If the ORBIT_PATH environment variable
-    is not set nor is the core.path key in the config.toml, Orbit will use the
-    command's relative path to create the corresponding directories.
+    $ORBIT_PATH/<vendor>/<library>/<name>. If the ORBIT_PATH environment
+    variable is not set nor is the core.path key in the config.toml, Orbit
+    will use the command's relative path to create the corresponding
+    directories.
 
 OPTIONS
     --force  

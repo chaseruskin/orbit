@@ -83,7 +83,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="1_starting/0_starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="1_starting/1_installing.html"><strong aria-hidden="true">1.1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="1_starting/2_upgrading.html"><strong aria-hidden="true">1.2.</strong> Upgrading</a></li></ol></li><li class="chapter-item expanded "><a href="2_tutorials/0_tutorials.html"><strong aria-hidden="true">2.</strong> Tutorials</a></li><li class="chapter-item expanded "><a href="3_user/0_user.html"><strong aria-hidden="true">3.</strong> User Guide</a></li><li class="chapter-item expanded "><a href="4_topic/0_topic.html"><strong aria-hidden="true">4.</strong> Topic Guide</a></li><li class="chapter-item expanded "><a href="5_reference/0_reference.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="5_reference/1_packages.html"><strong aria-hidden="true">5.1.</strong> Packages</a></li><li class="chapter-item expanded "><a href="5_reference/2_versions.html"><strong aria-hidden="true">5.2.</strong> Versions</a></li><li class="chapter-item expanded "><a href="5_reference/3_command_line.html"><strong aria-hidden="true">5.3.</strong> Command line</a></li><li class="chapter-item expanded "><a href="5_reference/4_environment_variables.html"><strong aria-hidden="true">5.4.</strong> Environment Variables</a></li><li class="chapter-item expanded "><a href="5_reference/5_configuration.html"><strong aria-hidden="true">5.5.</strong> Configuration</a></li></ol></li><li class="chapter-item expanded "><a href="6_commands/0_commands.html"><strong aria-hidden="true">6.</strong> Commands</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="6_commands/1_new.html"><strong aria-hidden="true">6.1.</strong> orbit new</a></li></ol></li><li class="chapter-item expanded "><a href="glossary.html"><strong aria-hidden="true">7.</strong> Appendix: Glossary</a></li></ol>            </div>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="1_starting/0_starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="1_starting/1_installing.html"><strong aria-hidden="true">1.1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="1_starting/2_upgrading.html"><strong aria-hidden="true">1.2.</strong> Upgrading</a></li></ol></li><li class="chapter-item expanded "><a href="2_tutorials/0_tutorials.html"><strong aria-hidden="true">2.</strong> Tutorials</a></li><li class="chapter-item expanded "><a href="3_user/0_user.html"><strong aria-hidden="true">3.</strong> User Guide</a></li><li class="chapter-item expanded "><a href="4_topic/0_topic.html"><strong aria-hidden="true">4.</strong> Topic Guide</a></li><li class="chapter-item expanded "><a href="5_reference/0_reference.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="5_reference/1_packages.html"><strong aria-hidden="true">5.1.</strong> Packages</a></li><li class="chapter-item expanded "><a href="5_reference/2_versions.html"><strong aria-hidden="true">5.2.</strong> Versions</a></li><li class="chapter-item expanded "><a href="5_reference/3_command_line.html"><strong aria-hidden="true">5.3.</strong> Command line</a></li><li class="chapter-item expanded "><a href="5_reference/4_environment_variables.html"><strong aria-hidden="true">5.4.</strong> Environment Variables</a></li><li class="chapter-item expanded "><a href="5_reference/5_configuration.html"><strong aria-hidden="true">5.5.</strong> Configuration</a></li></ol></li><li class="chapter-item expanded "><a href="6_commands/0_commands.html"><strong aria-hidden="true">6.</strong> Commands</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="6_commands/1_new.html"><strong aria-hidden="true">6.1.</strong> orbit new</a></li><li class="chapter-item expanded "><a href="6_commands/3_plan.html"><strong aria-hidden="true">6.2.</strong> orbit plan</a></li><li class="chapter-item expanded "><a href="6_commands/4_build.html"><strong aria-hidden="true">6.3.</strong> orbit build</a></li><li class="chapter-item expanded "><a href="6_commands/2_launch.html"><strong aria-hidden="true">6.4.</strong> orbit launch</a></li></ol></li><li class="chapter-item expanded "><a href="glossary.html"><strong aria-hidden="true">7.</strong> Appendix: Glossary</a></li></ol>            </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
 
@@ -452,14 +452,15 @@ summary = &quot;low-level combinational gate logic&quot;
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-new"><a class="header" href="#orbit-new"><strong>orbit new</strong></a></h1>
 <h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>
 <p>new - create a new ip</p>
-<h2 id="synposis"><a class="header" href="#synposis"><strong>SYNPOSIS</strong></a></h2>
+<h2 id="synopsis"><a class="header" href="#synopsis"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit new [options] &lt;ip&gt;
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will create a new IP package. The default destination path is
-<code>$ORBIT_PATH/&lt;vendor&gt;/&lt;library&gt;/&lt;name&gt;</code>. If the ORBIT_PATH environment variable
-is not set nor is the <code>core.path</code> key in the config.toml, Orbit will use the
-command's relative path to create the corresponding directories.</p>
+<code>$ORBIT_PATH/&lt;vendor&gt;/&lt;library&gt;/&lt;name&gt;</code>. If the ORBIT_PATH environment
+variable is not set nor is the <code>core.path</code> key in the config.toml, Orbit
+will use the command's relative path to create the corresponding
+directories.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--force</code><br />
 - Removes the destination directory if it already exists</p>
@@ -467,6 +468,72 @@ command's relative path to create the corresponding directories.</p>
 - Specify the destination path</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit new space-tech.rary.gates
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-plan"><a class="header" href="#orbit-plan"><strong>orbit plan</strong></a></h1>
+<h2 id="name-1"><a class="header" href="#name-1"><strong>NAME</strong></a></h2>
+<p>plan - generate a blueprint file </p>
+<h2 id="synopsis-1"><a class="header" href="#synopsis-1"><strong>SYNOPSIS</strong></a></h2>
+<pre><code>orbit plan [options]
+</code></pre>
+<h2 id="description-1"><a class="header" href="#description-1"><strong>DESCRIPTION</strong></a></h2>
+<p>This command will set up the current ip for build processes. It will collect
+all necessary files according to their defined fileset into the 
+blueprint.tsv file.</p>
+<p>By default, the top level unit and testbench are auto-detected according to
+the current design heirarchy. If there is ambiguity, it will ask the user to
+select one of the possibilities when not set as options.</p>
+<p>The top level unit and top level testbench will be stored in a .env file to
+be set during any following calls to the 'build' command.</p>
+<h2 id="options-1"><a class="header" href="#options-1"><strong>OPTIONS</strong></a></h2>
+<p><code>--top &lt;unit&gt;</code><br />
+- The top level entity to explicitly define</p>
+<p><code>--bench &lt;tb&gt;</code><br />
+- The top level testbench to explicitly define</p>
+<p><code>--plugin &lt;plugin&gt;</code>
+- A plugin to refer to gather its declared filesets</p>
+<p><code>--build-dir &lt;dir&gt;</code>
+- The relative directory to place the blueprint.tsv file</p>
+<p><code>--filset &lt;key=glob&gt;...</code>
+- A glob-style pattern identified by a name to add into the blueprint</p>
+<p><code>-all</code>
+- Ignore any design hierarchy and include all hdl files</p>
+<h2 id="examples-1"><a class="header" href="#examples-1"><strong>EXAMPLES</strong></a></h2>
+<pre><code>orbit plan --top top_level --fileset PIN-PLAN=&quot;*.board&quot;
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-build"><a class="header" href="#orbit-build"><strong>orbit build</strong></a></h1>
+<h2 id="name-2"><a class="header" href="#name-2"><strong>NAME</strong></a></h2>
+<p>build - execute a plugin/backend tool flow</p>
+<h2 id="synopsis-2"><a class="header" href="#synopsis-2"><strong>SYNOPSIS</strong></a></h2>
+<pre><code>orbit build [options] &lt;plugin&gt; [--] [args]...
+</code></pre>
+<h2 id="description-2"><a class="header" href="#description-2"><strong>DESCRIPTION</strong></a></h2>
+<p>This command will call a user-defined command (plugin). A plugin should
+typically require a blueprint.tsv to be generated. The command also
+should read the data from the blueprint, and then process the data 
+(synthesis, simulation, etc.).</p>
+<h2 id="options-2"><a class="header" href="#options-2"><strong>OPTIONS</strong></a></h2>
+<p><code>-- args...</code><br />
+- Arguments to pass to the requested command</p>
+<h2 id="examples-2"><a class="header" href="#examples-2"><strong>EXAMPLES</strong></a></h2>
+<pre><code>orbit build xsim -- --waves
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-launch"><a class="header" href="#orbit-launch"><strong>orbit launch</strong></a></h1>
+<h2 id="name-3"><a class="header" href="#name-3"><strong>NAME</strong></a></h2>
+<p>launch - release an ip's next version </p>
+<h2 id="synopsis-3"><a class="header" href="#synopsis-3"><strong>SYNOPSIS</strong></a></h2>
+<pre><code>orbit launch [options] &lt;version&gt;
+</code></pre>
+<h2 id="description-3"><a class="header" href="#description-3"><strong>DESCRIPTION</strong></a></h2>
+<p>This command will tag the current commit as a new version. By default, it
+will perform a dry run of the launch process to verify the procedure will 
+run with no errors. To actually perform a launch, include the '--ready'
+flag.</p>
+<h2 id="options-3"><a class="header" href="#options-3"><strong>OPTIONS</strong></a></h2>
+<p><code>--ready</code><br />
+- perform a real run through the launch process</p>
+<h2 id="examples-3"><a class="header" href="#examples-3"><strong>EXAMPLES</strong></a></h2>
+<pre><code>orbit launch 1.0.0
+orbit launch 1.0.0 --ready
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="glossary"><a class="header" href="#glossary">Glossary</a></h1>
 

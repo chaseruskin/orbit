@@ -463,9 +463,9 @@ will use the command's relative path to create the corresponding
 directories.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--force</code><br />
-- Removes the destination directory if it already exists</p>
+      Removes the destination directory if it already exists</p>
 <p><code>--path &lt;path&gt;</code><br />
-- Specify the destination path</p>
+      Specify the destination path</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit new space-tech.rary.gates
 </code></pre>
@@ -486,17 +486,18 @@ select one of the possibilities when not set as options.</p>
 be set during any following calls to the 'build' command.</p>
 <h2 id="options-1"><a class="header" href="#options-1"><strong>OPTIONS</strong></a></h2>
 <p><code>--top &lt;unit&gt;</code><br />
-- The top level entity to explicitly define</p>
+      The top level entity to explicitly define</p>
 <p><code>--bench &lt;tb&gt;</code><br />
-- The top level testbench to explicitly define</p>
-<p><code>--plugin &lt;plugin&gt;</code>
-- A plugin to refer to gather its declared filesets</p>
-<p><code>--build-dir &lt;dir&gt;</code>
-- The relative directory to place the blueprint.tsv file</p>
-<p><code>--filset &lt;key=glob&gt;...</code>
-- A glob-style pattern identified by a name to add into the blueprint</p>
-<p><code>-all</code>
-- Ignore any design hierarchy and include all hdl files</p>
+      The top level testbench to explicitly define</p>
+<p><code>--plugin &lt;plugin&gt;</code><br />
+      A plugin to refer to gather its declared filesets</p>
+<p><code>--build-dir &lt;dir&gt;</code><br />
+      The relative directory to place the blueprint.tsv file</p>
+<p><code>--filset &lt;key=glob&gt;...</code><br />
+      A glob-style pattern identified by a name to add into the blueprint</p>
+<p><code>-all</code><br />
+      Ignore any design hierarchy and include all hdl files
+      </p>
 <h2 id="examples-1"><a class="header" href="#examples-1"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit plan --top top_level --fileset PIN-PLAN=&quot;*.board&quot;
 </code></pre>
@@ -513,7 +514,7 @@ should read the data from the blueprint, and then process the data
 (synthesis, simulation, etc.).</p>
 <h2 id="options-2"><a class="header" href="#options-2"><strong>OPTIONS</strong></a></h2>
 <p><code>-- args...</code><br />
-- Arguments to pass to the requested command</p>
+      Arguments to pass to the requested command</p>
 <h2 id="examples-2"><a class="header" href="#examples-2"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit build xsim -- --waves
 </code></pre>
@@ -530,7 +531,7 @@ run with no errors. To actually perform a launch, include the '--ready'
 flag.</p>
 <h2 id="options-3"><a class="header" href="#options-3"><strong>OPTIONS</strong></a></h2>
 <p><code>--ready</code><br />
-- perform a real run through the launch process</p>
+      perform a real run through the launch process</p>
 <h2 id="examples-3"><a class="header" href="#examples-3"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit launch 1.0.0
 orbit launch 1.0.0 --ready

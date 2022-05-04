@@ -20,7 +20,7 @@ should read the data from the blueprint, and then process the data
 ## __OPTIONS__
 
 `-- args...`  
-    - Arguments to pass to the requested command
+      Arguments to pass to the requested command
 
 ## __EXAMPLES__
 

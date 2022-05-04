@@ -26,23 +26,23 @@ be set during any following calls to the 'build' command.
 ## __OPTIONS__
 
 `--top <unit>`  
-    - The top level entity to explicitly define
+      The top level entity to explicitly define
   
 `--bench <tb>`  
-    - The top level testbench to explicitly define
+      The top level testbench to explicitly define
    
-`--plugin <plugin>`
-    - A plugin to refer to gather its declared filesets
+`--plugin <plugin>`  
+      A plugin to refer to gather its declared filesets
  
-`--build-dir <dir>`
-    - The relative directory to place the blueprint.tsv file
+`--build-dir <dir>`  
+      The relative directory to place the blueprint.tsv file
  
-`--filset <key=glob>...`
-    - A glob-style pattern identified by a name to add into the blueprint    
+`--filset <key=glob>...`  
+      A glob-style pattern identified by a name to add into the blueprint    
  
-`-all`
-    - Ignore any design hierarchy and include all hdl files
-
+`-all`  
+      Ignore any design hierarchy and include all hdl files
+      
 ## __EXAMPLES__
 
 ```

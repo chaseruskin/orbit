@@ -14,7 +14,7 @@ DESCRIPTION
 
 OPTIONS
     --ready  
-       perform a real run through the launch process
+      perform a real run through the launch process
 
 EXAMPLES
     orbit launch 1.0.0

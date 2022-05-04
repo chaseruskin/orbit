@@ -20,7 +20,7 @@ flag.
 ## __OPTIONS__
 
 `--ready`  
-    - perform a real run through the launch process
+      perform a real run through the launch process
 
 ## __EXAMPLES__
 

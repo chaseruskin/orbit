@@ -15,10 +15,10 @@ DESCRIPTION
 
 OPTIONS
     --force  
-       Removes the destination directory if it already exists
+      Removes the destination directory if it already exists
       
     --path <path>  
-       Specify the destination path
+      Specify the destination path
 
 EXAMPLES
     orbit new space-tech.rary.gates

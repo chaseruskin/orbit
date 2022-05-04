@@ -21,10 +21,10 @@ directories.
 ## __OPTIONS__
 
 `--force`  
-    - Removes the destination directory if it already exists
+      Removes the destination directory if it already exists
   
 `--path <path>`  
-    - Specify the destination path
+      Specify the destination path
 
 ## __EXAMPLES__
 

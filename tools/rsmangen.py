@@ -25,6 +25,8 @@ def main():
                 # remove bullets
                 if line.startswith('    - '):
                     line = line[0:3] + line[6:]
+                elif line.startswith('      '):
+                    line = '  ' + line[6:]
                 # add indentation to body text
                 transform_line = '    ' + line.replace('`', '')
                 # skip title line

@@ -14,7 +14,7 @@ DESCRIPTION
 
 OPTIONS
     -- args...  
-       Arguments to pass to the requested command
+      Arguments to pass to the requested command
 
 EXAMPLES
     orbit build xsim -- --waves

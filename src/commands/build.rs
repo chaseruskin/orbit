@@ -54,16 +54,17 @@ impl Command for Build {
     }
 }
 
+use std::process::Stdio;
+
 impl Build {
     fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
 
-        let proc = std::process::Command::new(&self.command)
+        let mut proc = std::process::Command::new(&self.command)
             .args(&self.args)
-            .output()?;
-        print!("{}", std::str::from_utf8(&proc.stdout).unwrap());
-        if proc.stderr.is_empty() == false {
-            return Err(Box::new(AnyError(std::str::from_utf8(&proc.stderr).unwrap().to_string())))
-        }
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .spawn()?;
+        let _ = proc.wait()?;
         Ok(())
     }
 }

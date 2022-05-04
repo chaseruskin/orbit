@@ -24,6 +24,10 @@ impl Manifest {
         }
     }
 
+    pub fn get_doc(&self) -> &Document {
+        &self.document
+    }
+
     pub fn get_mut_doc(&mut self) -> &mut Document {
         &mut self.document
     }

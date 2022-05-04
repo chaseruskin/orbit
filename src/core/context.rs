@@ -6,6 +6,7 @@ pub struct Context {
     home_path: path::PathBuf,
     cache_path: path::PathBuf,
     ip_path: Option<path::PathBuf>,
+    dev_path: Option<path::PathBuf>,
     build_dir: String,
     config: Document,
     pub force: bool,
@@ -19,6 +20,7 @@ impl Context {
             home_path: home,
             cache_path: cache,
             ip_path: None,
+            dev_path: None,
             config: Document::new(),
             build_dir: String::new(),
             force: false,
@@ -97,6 +99,36 @@ impl Context {
 
         // :todo: dynamically set from environment variables from configuration data
         Ok(self)
+    }
+
+    /// Determines the orbit ip development path.
+    /// 
+    /// First checks if the environment already has ORBIT_PATH set, otherwise it
+    /// will look for the value found in the config file. If no development path
+    /// is set, it will use the current directory.
+    pub fn development_path(mut self, s: &str) -> Result<Context, ContextError> {
+        // an explicit environment variable takes precedence over config file data
+        self.dev_path = Some(std::path::PathBuf::from(match std::env::var(s) {
+            Ok(v) => v,
+            Err(_) => {
+                // @TODO use current directory if the key-value pair is not there
+                let path = self.get_config().get("core").unwrap().get("path").unwrap().as_str().unwrap();
+                std::env::set_var(s, &path);
+                path.to_owned()
+            }
+        }));
+        // verify the orbit path exists and is a directory
+        if self.dev_path.as_ref().unwrap().exists() == false {
+            return Err(ContextError(format!("orbit path '{}' does not exist", self.dev_path.as_ref().unwrap().display())));
+        } else if self.dev_path.as_ref().unwrap().is_dir() == false {
+            return Err(ContextError(format!("orbit path '{}' is not a directory", self.dev_path.as_ref().unwrap().display())));
+        }
+        Ok(self)
+    }
+
+    /// Access the Orbit development path.
+    pub fn get_development_path(&self) -> Option<&path::PathBuf> {
+        self.dev_path.as_ref()
     }
 
     /// Access the configuration data.

@@ -1,5 +1,6 @@
 use crate::Command;
 use crate::FromCli;
+use crate::core::manifest::Manifest;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Flag};
 use crate::interface::errors::CliError;
@@ -16,19 +17,23 @@ pub struct Search {
 
 impl Command for Search {
     type Err = Box<dyn std::error::Error>;
-    fn exec(&self, _: &Context) -> Result<(), Self::Err> {
-        self.run()
+    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+        let dev_path = c.get_development_path().unwrap();
+        self.run(dev_path)
     }
 }
 
 use glob::glob;
 
 impl Search {
-    fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
-        // walk the ORBIT_PATH directory 
-        for entry in glob("./**/Orbit.toml").expect("Failed to read glob pattern") {
+    fn run(&self, dev_path: &std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+        // walk the ORBIT_PATH directory @TODO recursively walk directories until hitting first 'Orbit.toml' file.
+        for entry in glob(&dev_path.join("**/Orbit.toml").display().to_string()).expect("Failed to read glob pattern") {
             let e = entry?;
-            println!("{}", e.display());
+            // read ip_spec from each manifest
+            let m = Manifest::load(e)?;
+            // print the ip_spec to the console
+            println!("{}.{}.{}", m.get_doc()["ip"]["vendor"].as_str().unwrap(), m.get_doc()["ip"]["library"].as_str().unwrap(), m.get_doc()["ip"]["name"].as_str().unwrap());
         }
         Ok(())
         // find all ip installed in cache

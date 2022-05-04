@@ -23,29 +23,14 @@ impl Command for New {
         if let Err(e) = self.ip.fully_qualified() {
             return Err(Box::new(CliError::BadType(Arg::Positional(Positional::new("ip")), e.to_string())));
         }
-        // an explicit environment variable takes precedence over config file data
-        let root = std::path::PathBuf::from(match std::env::var("ORBIT_PATH") {
-            Ok(v) => v,
-            Err(_) => {
-                let path = context.get_config().get("core").unwrap().get("path").unwrap().as_str().unwrap();
-                std::env::set_var("ORBIT_PATH", &path);
-                path.to_string()
-            }
-        });
-        // verify the orbit path exists and is a directory
-        if root.exists() == false {
-            return Err(Box::new(AnyError(format!("orbit path '{}' does not exist", root.display()))));
-        } else if root.is_dir() == false {
-            return Err(Box::new(AnyError(format!("orbit path '{}' is not a directory", root.display()))));
-        }
-
+        let root = context.get_development_path().unwrap();
         // only pass in necessary variables from context
         self.run(root, context.force)
     }
 }
 
 impl New {
-    fn run(&self, root: std::path::PathBuf, force: bool) -> Result<(), Box<dyn Error>> {
+    fn run(&self, root: &std::path::PathBuf, force: bool) -> Result<(), Box<dyn Error>> {
         // create ip stemming from ORBIT_PATH with default /VENDOR/LIBRARY/NAME
         let ip_path = if self.rel_path.is_none() {
             root.join(self.ip.get_vendor().as_ref().unwrap())

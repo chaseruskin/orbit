@@ -18,6 +18,7 @@ enum Topic {
     Plan,
     Build,
     Launch,
+    Edit,
 }
 
 impl std::str::FromStr for Topic {
@@ -28,6 +29,7 @@ impl std::str::FromStr for Topic {
             "plan" => Self::Plan,
             "build" => Self::Build,
             "launch" => Self::Launch,
+            "edit" => Self::Edit,
             _ => return Err(AnyError(format!("topic '{}' not found", s)))
         })
     }
@@ -38,6 +40,7 @@ impl Topic {
     fn as_manual(&self) -> &str {
         use Topic::*;
         match &self {
+            Edit => manuals::edit::MANUAL,
             New => manuals::new::MANUAL,
             Plan => manuals::plan::MANUAL,
             Build => manuals::build::MANUAL,

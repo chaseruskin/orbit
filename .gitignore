@@ -14,3 +14,4 @@ install.sh
 .DS_Store
 
 /src/commands/template.txt
+/docs/src/6_commands/template.txt

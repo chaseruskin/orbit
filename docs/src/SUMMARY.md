@@ -21,6 +21,7 @@
 
 - [Commands](./6_commands/0_commands.md)
     - [orbit new](./6_commands/1_new.md)
+    - [orbit edit](./6_commands/5_edit.md)
     - [orbit plan](./6_commands/3_plan.md)
     - [orbit build](./6_commands/4_build.md)
     - [orbit launch](./6_commands/2_launch.md)

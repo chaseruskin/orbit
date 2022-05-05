@@ -148,6 +148,16 @@ impl PkgId {
         self.fully_qualified()?;
         Ok(vec![self.name, self.library.unwrap(), self.vendor.unwrap()])
     }
+
+    /// Transform a vector of `PkgPart` parts into a `PkgId`.
+    pub fn from_vec(mut vec: Vec<PkgPart>) -> Self {
+        Self {
+            name: vec.remove(0),
+            library: Some(vec.remove(0)),
+            vendor: Some(vec.remove(0)),
+        }
+    }
+    
 }
 
 impl Display for PkgId {
@@ -211,21 +221,49 @@ mod test {
     use super::*;
 
     #[test]
+    fn from_vec() {
+        let parts = vec![
+            PkgPart("NAME".to_owned()),
+            PkgPart("library".to_owned()),
+            PkgPart("Vendor".to_owned()),
+        ];
+        assert_eq!(PkgId::from_vec(parts), PkgId::new()
+            .name("NAME").unwrap()
+            .library("library").unwrap()
+            .vendor("Vendor").unwrap()
+        );
+    }
+
+    #[test]
     fn into_vec() {
+        let p1 = PkgId::new()
+        .name("NAME").unwrap()
+        .library("library").unwrap()
+        .vendor("Vendor").unwrap();
+        assert_eq!(p1.into_full_vec(), Ok(vec![
+            PkgPart("NAME".to_owned()),
+            PkgPart("library".to_owned()),
+            PkgPart("Vendor".to_owned()),
+        ]));
+
         let p1 = PkgId::new()
             .name("NAME").unwrap()
             .library("library").unwrap()
             .vendor("Vendor").unwrap();
-
         assert_eq!(p1.into_vec(), vec![
             Some(PkgPart("NAME".to_owned())),
             Some(PkgPart("library".to_owned())),
             Some(PkgPart("Vendor".to_owned())),
         ]);
 
+
+        let p1 = PkgId::new()
+            .name("NAME").unwrap()
+            .library("library").unwrap();
+        assert_eq!(p1.into_full_vec().is_err(), true);
+
         let p1 = PkgId::new()
             .name("NAME").unwrap();
-
         assert_eq!(p1.into_vec(), vec![
             Some(PkgPart("NAME".to_owned())),
             None,

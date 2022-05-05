@@ -2,22 +2,50 @@
 
 /// Given a partially defined `target`, reduce the `space` for solutions that match
 /// the `target` as much as possible.
-pub fn reduce<T>(mut space: Vec<Option<Vec<T>>>, target: &[Option<T>]) -> Vec<Option<Vec<T>>> 
+pub fn reduce<T>(mut space: Vec<Vec<T>>, target: &[Option<T>]) -> Vec<Vec<T>> 
     where T: std::cmp::PartialEq {
     // at each level provide filter until target provides no more information
     let mut target_iter = target.iter().enumerate();
     while let Some((i, Some(t))) = target_iter.next() {
-        space
-            .iter_mut()
-            .for_each(|f| {
-                if f.is_none() || f.as_ref().unwrap().get(i).is_none() || f.as_ref().unwrap().get(i).unwrap() != t {
-                    f.take()
-                } else {
-                    None
-                };
-        });
+        space = space
+            .into_iter()
+            .filter(|f| { f.get(i).unwrap() == t })
+            .collect();
     }
     space
+}
+
+/// Given a partially defined `target`, try to find the unique occurence among the entire
+/// `space`.
+/// 
+/// Errors if there are multiple solutions (ambigious) or no solution.
+pub fn solve<T>(space: Vec<Vec<T>>, target: &[Option<T>]) -> Result<Vec<T>, OverDetSysError<T>> 
+    where T: std::cmp::PartialEq {
+    let mut space = reduce(space, &target);
+    match space.len() {
+        0 => Err(OverDetSysError::NoSolution),
+        1 => Ok(space.pop().unwrap()),
+        _ => Err(OverDetSysError::Ambigious(space)),
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum OverDetSysError<T: std::cmp::PartialEq> {
+    Ambigious(Vec<Vec<T>>),
+    NoSolution,
+}
+
+impl<T> std::error::Error for OverDetSysError<T> 
+    where  T: std::cmp::PartialEq + std::fmt::Debug {}
+
+impl<T> std::fmt::Display for OverDetSysError<T> 
+    where T: std::cmp::PartialEq {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            Self::Ambigious(s) => write!(f, "multiple solutions"),
+            Self::NoSolution => write!(f, "no solution"),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -27,41 +55,35 @@ mod test {
     #[test]
     fn one_soln() {
         let space = vec![
-            Some(vec![10, 0, 9]),
-            Some(vec![4, 1, 2]),
-            Some(vec![0, 1, 2]),
+            vec![10, 0, 9],
+            vec![4, 1, 2],
+            vec![0, 1, 2],
         ];
         assert_eq!(reduce(space, &vec![Some(4), None, None]), vec![
-            None, 
-            Some(vec![4, 1, 2]), 
-            None,
+            vec![4, 1, 2], 
         ]);
 
         let space = vec![
-            Some(vec![10, 0, 9]),
-            Some(vec![4, 1, 2]),
-            Some(vec![4, 2, 5]),
+            vec![10, 0, 9],
+            vec![4, 1, 2],
+            vec![4, 2, 5],
         ];
         assert_eq!(reduce(space, &vec![Some(4), Some(2), None]), vec![
-            None, 
-            None, 
-            Some(vec![4, 2, 5]),
+            vec![4, 2, 5],
         ]);
     }
 
     #[test]
     fn mult_soln() {
         let space = vec![
-            Some(vec![10, 0, 9]),
-            Some(vec![4, 1, 2]),
-            Some(vec![0, 1, 2]),
-            Some(vec![4, 9, 5]),
+            vec![10, 0, 9],
+            vec![4, 1, 2],
+            vec![0, 1, 2],
+            vec![4, 9, 5],
         ];
         assert_eq!(reduce(space, &vec![Some(4), None, None]), vec![
-            None, 
-            Some(vec![4, 1, 2]), 
-            None,
-            Some(vec![4, 9, 5]),
+            vec![4, 1, 2],
+            vec![4, 9, 5],
         ]);
     }
 
@@ -72,70 +94,53 @@ mod test {
     fn reduce_pkgid() {
         // one solution
         let space = vec![
-            Some(pkgid::PkgId::from_str("ks-tech.rary1.ip1").unwrap().into_full_vec().unwrap()),
-            Some(pkgid::PkgId::from_str("ks-tech.rary1.ip2").unwrap().into_full_vec().unwrap()),
-            Some(pkgid::PkgId::from_str("ks-tech.rary1.ip3").unwrap().into_full_vec().unwrap()),
-            Some(pkgid::PkgId::from_str("ks-tech.rary2.ip1").unwrap().into_full_vec().unwrap()),
-            Some(pkgid::PkgId::from_str("ks-tech.rary2.ip2").unwrap().into_full_vec().unwrap()),
+            pkgid::PkgId::from_str("ks-tech.rary1.ip1").unwrap().into_full_vec().unwrap(),
+            pkgid::PkgId::from_str("ks-tech.rary1.ip2").unwrap().into_full_vec().unwrap(),
+            pkgid::PkgId::from_str("ks-tech.rary1.ip3").unwrap().into_full_vec().unwrap(),
+            pkgid::PkgId::from_str("ks-tech.rary2.ip1").unwrap().into_full_vec().unwrap(),
+            pkgid::PkgId::from_str("ks-tech.rary2.ip2").unwrap().into_full_vec().unwrap(),
         ];
         let target = pkgid::PkgId::from_str("ip3").unwrap().into_vec();
         assert_eq!(reduce(space, target.as_slice()), vec![
-            None,
-            None, 
-            Some(vec![pkgid::PkgPart::from_str("ip3").unwrap(), pkgid::PkgPart::from_str("rary1").unwrap(), pkgid::PkgPart::from_str("ks-tech").unwrap()]), 
-            None, 
-            None
+            pkgid::PkgId::from_str("ks-tech.rary1.ip3").unwrap().into_full_vec().unwrap(),
         ]);
 
         // one solution (comparing as `PkgPart`)
         let space = vec![
-            Some(pkgid::PkgId::from_str("ks-tech.rary1.ip1").unwrap().into_full_vec().unwrap()),
-            Some(pkgid::PkgId::from_str("ks-tech.rary1.ip2").unwrap().into_full_vec().unwrap()),
-            Some(pkgid::PkgId::from_str("ks-tech.rary1.ip3").unwrap().into_full_vec().unwrap()),
-            Some(pkgid::PkgId::from_str("ks-tech.rary2.ip1").unwrap().into_full_vec().unwrap()),
-            Some(pkgid::PkgId::from_str("ks-tech.rary2.ip2").unwrap().into_full_vec().unwrap()),
+            pkgid::PkgId::from_str("ks-tech.rary1.ip1").unwrap().into_full_vec().unwrap(),
+            pkgid::PkgId::from_str("ks-tech.rary1.ip2").unwrap().into_full_vec().unwrap(),
+            pkgid::PkgId::from_str("ks-tech.rary1.ip3").unwrap().into_full_vec().unwrap(),
+            pkgid::PkgId::from_str("ks-tech.rary2.ip1").unwrap().into_full_vec().unwrap(),
+            pkgid::PkgId::from_str("ks-tech.rary2.ip2").unwrap().into_full_vec().unwrap(),
         ];
         let target = pkgid::PkgId::from_str("IP3").unwrap().into_vec();
         assert_eq!(reduce(space, target.as_slice()), vec![
-            None,
-            None, 
-            Some(vec![pkgid::PkgPart::from_str("ip3").unwrap(), pkgid::PkgPart::from_str("rary1").unwrap(), pkgid::PkgPart::from_str("ks-tech").unwrap()]), 
-            None, 
-            None
+            vec![pkgid::PkgPart::from_str("ip3").unwrap(), pkgid::PkgPart::from_str("rary1").unwrap(), pkgid::PkgPart::from_str("ks-tech").unwrap()], 
         ]);
 
         // no solution
         let space = vec![
-            Some(pkgid::PkgId::from_str("ks-tech.rary1.ip1").unwrap().into_full_vec().unwrap()),
-            Some(pkgid::PkgId::from_str("ks-tech.rary1.ip2").unwrap().into_full_vec().unwrap()),
-            Some(pkgid::PkgId::from_str("ks-tech.rary1.ip3").unwrap().into_full_vec().unwrap()),
-            Some(pkgid::PkgId::from_str("ks-tech.rary2.ip1").unwrap().into_full_vec().unwrap()),
-            Some(pkgid::PkgId::from_str("ks-tech.rary2.ip2").unwrap().into_full_vec().unwrap()),
+            pkgid::PkgId::from_str("ks-tech.rary1.ip1").unwrap().into_full_vec().unwrap(),
+            pkgid::PkgId::from_str("ks-tech.rary1.ip2").unwrap().into_full_vec().unwrap(),
+            pkgid::PkgId::from_str("ks-tech.rary1.ip3").unwrap().into_full_vec().unwrap(),
+            pkgid::PkgId::from_str("ks-tech.rary2.ip1").unwrap().into_full_vec().unwrap(),
+            pkgid::PkgId::from_str("ks-tech.rary2.ip2").unwrap().into_full_vec().unwrap(),
         ];
         let target = pkgid::PkgId::from_str("ip3.unknown").unwrap().into_vec();
-        assert_eq!(reduce(space, target.as_slice()), vec![
-            None,
-            None, 
-            None,
-            None, 
-            None
-        ]);
+        assert_eq!(reduce(space, target.as_slice()), Vec::<Vec<pkgid::PkgPart>>::new());
 
         // multiple solutions
         let space = vec![
-            Some(pkgid::PkgId::from_str("ks-tech.rary1.ip1").unwrap().into_full_vec().unwrap()),
-            Some(pkgid::PkgId::from_str("ks-tech.rary1.ip2").unwrap().into_full_vec().unwrap()),
-            Some(pkgid::PkgId::from_str("ks-tech.rary1.ip3").unwrap().into_full_vec().unwrap()),
-            Some(pkgid::PkgId::from_str("ks-tech.rary2.ip1").unwrap().into_full_vec().unwrap()),
-            Some(pkgid::PkgId::from_str("ks-tech.rary2.ip2").unwrap().into_full_vec().unwrap()),
+            pkgid::PkgId::from_str("ks-tech.rary1.ip1").unwrap().into_full_vec().unwrap(),
+            pkgid::PkgId::from_str("ks-tech.rary1.ip2").unwrap().into_full_vec().unwrap(),
+            pkgid::PkgId::from_str("ks-tech.rary1.ip3").unwrap().into_full_vec().unwrap(),
+            pkgid::PkgId::from_str("ks-tech.rary2.ip1").unwrap().into_full_vec().unwrap(),
+            pkgid::PkgId::from_str("ks-tech.rary2.ip2").unwrap().into_full_vec().unwrap(),
         ];
         let target = pkgid::PkgId::from_str("ip2").unwrap().into_vec();
         assert_eq!(reduce(space, target.as_slice()), vec![
-            None,
-            Some(pkgid::PkgId::from_str("ks-tech.rary1.ip2").unwrap().into_full_vec().unwrap()), 
-            None,
-            None, 
-            Some(pkgid::PkgId::from_str("ks-tech.rary2.ip2").unwrap().into_full_vec().unwrap())
+            pkgid::PkgId::from_str("ks-tech.rary1.ip2").unwrap().into_full_vec().unwrap(), 
+            pkgid::PkgId::from_str("ks-tech.rary2.ip2").unwrap().into_full_vec().unwrap()
         ]);
     }
 }

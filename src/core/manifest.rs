@@ -1,6 +1,7 @@
 use toml_edit::Document;
 use std::path;
 use std::error::Error;
+use crate::core::pkgid::PkgId;
 
 pub struct Manifest {
     // track where the file loads/stores from
@@ -53,7 +54,14 @@ impl Manifest {
         std::fs::write(&self.path, self.document.to_string())?;
         Ok(())
     }
-    
+
+    /// Creates a new `PkgId` from the fields of the manifest document.
+    pub fn as_pkgid(&self) -> PkgId {
+        PkgId::new().vendor(self.get_doc()["ip"]["vendor"].as_str().unwrap()).unwrap()
+            .library(self.get_doc()["ip"]["library"].as_str().unwrap()).unwrap()
+            .name(self.get_doc()["ip"]["name"].as_str().unwrap()).unwrap()
+    }
+
     pub fn get_doc(&self) -> &Document {
         &self.document
     }

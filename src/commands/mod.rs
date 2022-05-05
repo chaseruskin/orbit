@@ -5,3 +5,4 @@ mod manuals;
 mod search;
 mod plan;
 mod build;
+mod edit;

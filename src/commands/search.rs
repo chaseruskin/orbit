@@ -26,9 +26,7 @@ impl Search {
     fn run(&self, dev_path: &std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         let ips = crate::core::manifest::find_dev_manifests(dev_path)?;
         for ip in ips {
-            println!("{0}.{1}.{2}", ip.get_doc()["ip"]["vendor"].as_str().unwrap(), 
-                ip.get_doc()["ip"]["library"].as_str().unwrap(), 
-                ip.get_doc()["ip"]["name"].as_str().unwrap())
+            println!("{}", ip.as_pkgid())
         }
         Ok(())
         // find all ip installed in cache

@@ -28,7 +28,7 @@ example, if EDITOR="code", then the command orbit will execute is:
 `<ip>`  
       The PKGID to look up the ip under ORBIT_PATH.
   
-`--editor <command>`  
+`--editor <cmd>`  
       The command to open the requested text-editor.
 
 ## __EXAMPLES__

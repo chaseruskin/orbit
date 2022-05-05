@@ -18,20 +18,20 @@ pub fn reduce<T>(mut space: Vec<Vec<T>>, target: &[Option<T>]) -> Vec<Vec<T>>
 /// Given a partially defined `target`, try to find the unique occurence among the entire
 /// `space`.
 /// 
-/// Errors if there are multiple solutions (ambigious) or no solution.
+/// Errors if there are multiple solutions (ambiguous) or no solution.
 pub fn solve<T>(space: Vec<Vec<T>>, target: &[Option<T>]) -> Result<Vec<T>, OverDetSysError<T>> 
     where T: std::cmp::PartialEq {
     let mut space = reduce(space, &target);
     match space.len() {
         0 => Err(OverDetSysError::NoSolution),
         1 => Ok(space.pop().unwrap()),
-        _ => Err(OverDetSysError::Ambigious(space)),
+        _ => Err(OverDetSysError::Ambiguous(space)),
     }
 }
 
 #[derive(Debug, PartialEq)]
 pub enum OverDetSysError<T: std::cmp::PartialEq> {
-    Ambigious(Vec<Vec<T>>),
+    Ambiguous(Vec<Vec<T>>),
     NoSolution,
 }
 
@@ -42,7 +42,7 @@ impl<T> std::fmt::Display for OverDetSysError<T>
     where T: std::cmp::PartialEq {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
-            Self::Ambigious(s) => write!(f, "multiple solutions"),
+            Self::Ambiguous(s) => write!(f, "multiple solutions"),
             Self::NoSolution => write!(f, "no solution"),
         }
     }

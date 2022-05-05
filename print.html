@@ -83,7 +83,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="1_starting/0_starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="1_starting/1_installing.html"><strong aria-hidden="true">1.1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="1_starting/2_upgrading.html"><strong aria-hidden="true">1.2.</strong> Upgrading</a></li></ol></li><li class="chapter-item expanded "><a href="2_tutorials/0_tutorials.html"><strong aria-hidden="true">2.</strong> Tutorials</a></li><li class="chapter-item expanded "><a href="3_user/0_user.html"><strong aria-hidden="true">3.</strong> User Guide</a></li><li class="chapter-item expanded "><a href="4_topic/0_topic.html"><strong aria-hidden="true">4.</strong> Topic Guide</a></li><li class="chapter-item expanded "><a href="5_reference/0_reference.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="5_reference/1_packages.html"><strong aria-hidden="true">5.1.</strong> Packages</a></li><li class="chapter-item expanded "><a href="5_reference/2_versions.html"><strong aria-hidden="true">5.2.</strong> Versions</a></li><li class="chapter-item expanded "><a href="5_reference/3_command_line.html"><strong aria-hidden="true">5.3.</strong> Command line</a></li><li class="chapter-item expanded "><a href="5_reference/4_environment_variables.html"><strong aria-hidden="true">5.4.</strong> Environment Variables</a></li><li class="chapter-item expanded "><a href="5_reference/5_configuration.html"><strong aria-hidden="true">5.5.</strong> Configuration</a></li></ol></li><li class="chapter-item expanded "><a href="6_commands/0_commands.html"><strong aria-hidden="true">6.</strong> Commands</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="6_commands/1_new.html"><strong aria-hidden="true">6.1.</strong> orbit new</a></li><li class="chapter-item expanded "><a href="6_commands/3_plan.html"><strong aria-hidden="true">6.2.</strong> orbit plan</a></li><li class="chapter-item expanded "><a href="6_commands/4_build.html"><strong aria-hidden="true">6.3.</strong> orbit build</a></li><li class="chapter-item expanded "><a href="6_commands/2_launch.html"><strong aria-hidden="true">6.4.</strong> orbit launch</a></li></ol></li><li class="chapter-item expanded "><a href="glossary.html"><strong aria-hidden="true">7.</strong> Appendix: Glossary</a></li></ol>            </div>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="1_starting/0_starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="1_starting/1_installing.html"><strong aria-hidden="true">1.1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="1_starting/2_upgrading.html"><strong aria-hidden="true">1.2.</strong> Upgrading</a></li></ol></li><li class="chapter-item expanded "><a href="2_tutorials/0_tutorials.html"><strong aria-hidden="true">2.</strong> Tutorials</a></li><li class="chapter-item expanded "><a href="3_user/0_user.html"><strong aria-hidden="true">3.</strong> User Guide</a></li><li class="chapter-item expanded "><a href="4_topic/0_topic.html"><strong aria-hidden="true">4.</strong> Topic Guide</a></li><li class="chapter-item expanded "><a href="5_reference/0_reference.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="5_reference/1_packages.html"><strong aria-hidden="true">5.1.</strong> Packages</a></li><li class="chapter-item expanded "><a href="5_reference/2_versions.html"><strong aria-hidden="true">5.2.</strong> Versions</a></li><li class="chapter-item expanded "><a href="5_reference/3_command_line.html"><strong aria-hidden="true">5.3.</strong> Command line</a></li><li class="chapter-item expanded "><a href="5_reference/4_environment_variables.html"><strong aria-hidden="true">5.4.</strong> Environment Variables</a></li><li class="chapter-item expanded "><a href="5_reference/5_configuration.html"><strong aria-hidden="true">5.5.</strong> Configuration</a></li></ol></li><li class="chapter-item expanded "><a href="6_commands/0_commands.html"><strong aria-hidden="true">6.</strong> Commands</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="6_commands/1_new.html"><strong aria-hidden="true">6.1.</strong> orbit new</a></li><li class="chapter-item expanded "><a href="6_commands/5_edit.html"><strong aria-hidden="true">6.2.</strong> orbit edit</a></li><li class="chapter-item expanded "><a href="6_commands/3_plan.html"><strong aria-hidden="true">6.3.</strong> orbit plan</a></li><li class="chapter-item expanded "><a href="6_commands/4_build.html"><strong aria-hidden="true">6.4.</strong> orbit build</a></li><li class="chapter-item expanded "><a href="6_commands/2_launch.html"><strong aria-hidden="true">6.5.</strong> orbit launch</a></li></ol></li><li class="chapter-item expanded "><a href="glossary.html"><strong aria-hidden="true">7.</strong> Appendix: Glossary</a></li></ol>            </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
 
@@ -469,13 +469,37 @@ directories.</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit new space-tech.rary.gates
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-plan"><a class="header" href="#orbit-plan"><strong>orbit plan</strong></a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-edit"><a class="header" href="#orbit-edit"><strong>orbit edit</strong></a></h1>
 <h2 id="name-1"><a class="header" href="#name-1"><strong>NAME</strong></a></h2>
-<p>plan - generate a blueprint file </p>
+<p>edit - further develop an ip in a text editor</p>
 <h2 id="synopsis-1"><a class="header" href="#synopsis-1"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit plan [options]
+<pre><code>orbit edit [options] &lt;ip&gt;
 </code></pre>
 <h2 id="description-1"><a class="header" href="#description-1"><strong>DESCRIPTION</strong></a></h2>
+<p>This command will open an ip project in the configured text editor. To
+determine the editor, it will first check if the EDITOR environment
+variable is set. If not, it will search for the key 'core.editor' in the
+config.toml file. Explicitly setting the '--editor' option will override
+any previously determined value.</p>
+<p>The ip's project directory must be located on the ORBIT_PATH. The ip's 
+project path will be passed as an argument to the text editor command. For 
+example, if EDITOR=&quot;code&quot;, then the command orbit will execute is: 
+<code>code &lt;ip-path&gt;</code>.</p>
+<h2 id="options-1"><a class="header" href="#options-1"><strong>OPTIONS</strong></a></h2>
+<p><code>&lt;ip&gt;</code><br />
+      The PKGID to look up the ip under ORBIT_PATH.</p>
+<p><code>--editor &lt;command&gt;</code><br />
+      The command to open the requested text-editor.</p>
+<h2 id="examples-1"><a class="header" href="#examples-1"><strong>EXAMPLES</strong></a></h2>
+<pre><code>orbit edit ks-tech.rary.gates --editor=code
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-plan"><a class="header" href="#orbit-plan"><strong>orbit plan</strong></a></h1>
+<h2 id="name-2"><a class="header" href="#name-2"><strong>NAME</strong></a></h2>
+<p>plan - generate a blueprint file </p>
+<h2 id="synopsis-2"><a class="header" href="#synopsis-2"><strong>SYNOPSIS</strong></a></h2>
+<pre><code>orbit plan [options]
+</code></pre>
+<h2 id="description-2"><a class="header" href="#description-2"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will set up the current ip for build processes. It will collect
 all necessary files according to their defined fileset into the 
 blueprint.tsv file.</p>
@@ -484,7 +508,7 @@ the current design heirarchy. If there is ambiguity, it will ask the user to
 select one of the possibilities when not set as options.</p>
 <p>The top level unit and top level testbench will be stored in a .env file to
 be set during any following calls to the 'build' command.</p>
-<h2 id="options-1"><a class="header" href="#options-1"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-2"><a class="header" href="#options-2"><strong>OPTIONS</strong></a></h2>
 <p><code>--top &lt;unit&gt;</code><br />
       The top level entity to explicitly define</p>
 <p><code>--bench &lt;tb&gt;</code><br />
@@ -498,41 +522,41 @@ be set during any following calls to the 'build' command.</p>
 <p><code>-all</code><br />
       Ignore any design hierarchy and include all hdl files
       </p>
-<h2 id="examples-1"><a class="header" href="#examples-1"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-2"><a class="header" href="#examples-2"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit plan --top top_level --fileset PIN-PLAN=&quot;*.board&quot;
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-build"><a class="header" href="#orbit-build"><strong>orbit build</strong></a></h1>
-<h2 id="name-2"><a class="header" href="#name-2"><strong>NAME</strong></a></h2>
+<h2 id="name-3"><a class="header" href="#name-3"><strong>NAME</strong></a></h2>
 <p>build - execute a plugin/backend tool flow</p>
-<h2 id="synopsis-2"><a class="header" href="#synopsis-2"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-3"><a class="header" href="#synopsis-3"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit build [options] &lt;plugin&gt; [--] [args]...
 </code></pre>
-<h2 id="description-2"><a class="header" href="#description-2"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-3"><a class="header" href="#description-3"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will call a user-defined command (plugin). A plugin should
 typically require a blueprint.tsv to be generated. The command also
 should read the data from the blueprint, and then process the data 
 (synthesis, simulation, etc.).</p>
-<h2 id="options-2"><a class="header" href="#options-2"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-3"><a class="header" href="#options-3"><strong>OPTIONS</strong></a></h2>
 <p><code>-- args...</code><br />
       Arguments to pass to the requested command</p>
-<h2 id="examples-2"><a class="header" href="#examples-2"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-3"><a class="header" href="#examples-3"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit build xsim -- --waves
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-launch"><a class="header" href="#orbit-launch"><strong>orbit launch</strong></a></h1>
-<h2 id="name-3"><a class="header" href="#name-3"><strong>NAME</strong></a></h2>
+<h2 id="name-4"><a class="header" href="#name-4"><strong>NAME</strong></a></h2>
 <p>launch - release an ip's next version </p>
-<h2 id="synopsis-3"><a class="header" href="#synopsis-3"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-4"><a class="header" href="#synopsis-4"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit launch [options] &lt;version&gt;
 </code></pre>
-<h2 id="description-3"><a class="header" href="#description-3"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-4"><a class="header" href="#description-4"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will tag the current commit as a new version. By default, it
 will perform a dry run of the launch process to verify the procedure will 
 run with no errors. To actually perform a launch, include the '--ready'
 flag.</p>
-<h2 id="options-3"><a class="header" href="#options-3"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-4"><a class="header" href="#options-4"><strong>OPTIONS</strong></a></h2>
 <p><code>--ready</code><br />
       perform a real run through the launch process</p>
-<h2 id="examples-3"><a class="header" href="#examples-3"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-4"><a class="header" href="#examples-4"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit launch 1.0.0
 orbit launch 1.0.0 --ready
 </code></pre>

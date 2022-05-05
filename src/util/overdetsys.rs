@@ -2,6 +2,8 @@
 
 /// Given a partially defined `target`, reduce the `space` for solutions that match
 /// the `target` as much as possible.
+/// 
+/// @TODO accept a `fn` as argument to customize how to 'filter' at each part...useful for search command
 pub fn reduce<'a, T, U>(mut space: Vec<Vec<U>>, target: T) -> Vec<Vec<U>> 
     where U: std::cmp::PartialEq + 'a, T: Iterator<Item = &'a U> + 'a {
     // at each level provide filter until target provides no more information

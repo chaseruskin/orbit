@@ -9,6 +9,20 @@ pub struct Manifest {
     document: Document
 }
 
+use glob::glob;
+
+/// Finds all Manifest files available in the provided path
+pub fn find_dev_manifests(path: &std::path::PathBuf) -> Result<Vec<Manifest>, Box<dyn std::error::Error>> {
+    let mut result = Vec::new();
+    // walk the ORBIT_PATH directory @TODO recursively walk directories until hitting first 'Orbit.toml' file.
+    for entry in glob(&path.join("**/Orbit.toml").display().to_string()).expect("Failed to read glob pattern") {
+        let e = entry?;
+        // read ip_spec from each manifest
+        result.push(Manifest::load(e)?);
+    }
+    Ok(result)
+}
+
 impl Manifest {
     pub fn create(path: path::PathBuf) -> Self {
         Self {
@@ -22,14 +36,6 @@ impl Manifest {
             path: path::PathBuf::new(),
             document: Document::new(),
         }
-    }
-
-    pub fn get_doc(&self) -> &Document {
-        &self.document
-    }
-
-    pub fn get_mut_doc(&mut self) -> &mut Document {
-        &mut self.document
     }
 
     /// Loads data from file as a `Manifest` struct.
@@ -46,6 +52,18 @@ impl Manifest {
     pub fn save(&self) -> Result<(), Box<dyn Error>> {
         std::fs::write(&self.path, self.document.to_string())?;
         Ok(())
+    }
+    
+    pub fn get_doc(&self) -> &Document {
+        &self.document
+    }
+
+    pub fn get_path(&self) -> &path::PathBuf {
+        &self.path
+    }
+
+    pub fn get_mut_doc(&mut self) -> &mut Document {
+        &mut self.document
     }
 }
 

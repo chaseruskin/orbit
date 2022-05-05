@@ -2,11 +2,11 @@
 
 /// Given a partially defined `target`, reduce the `space` for solutions that match
 /// the `target` as much as possible.
-pub fn reduce<T>(mut space: Vec<Vec<T>>, target: &[Option<T>]) -> Vec<Vec<T>> 
-    where T: std::cmp::PartialEq {
+pub fn reduce<'a, T, U>(mut space: Vec<Vec<U>>, target: T) -> Vec<Vec<U>> 
+    where U: std::cmp::PartialEq + 'a, T: Iterator<Item = &'a U> + 'a {
     // at each level provide filter until target provides no more information
-    let mut target_iter = target.iter().enumerate();
-    while let Some((i, Some(t))) = target_iter.next() {
+    let mut target_iter = target.enumerate();
+    while let Some((i, t)) = target_iter.next() {
         space = space
             .into_iter()
             .filter(|f| { f.get(i).unwrap() == t })
@@ -19,9 +19,9 @@ pub fn reduce<T>(mut space: Vec<Vec<T>>, target: &[Option<T>]) -> Vec<Vec<T>>
 /// `space`.
 /// 
 /// Errors if there are multiple solutions (ambiguous) or no solution.
-pub fn solve<T>(space: Vec<Vec<T>>, target: &[Option<T>]) -> Result<Vec<T>, OverDetSysError<T>> 
-    where T: std::cmp::PartialEq {
-    let mut space = reduce(space, &target);
+pub fn solve<'a, T, U>(space: Vec<Vec<U>>, target: T) -> Result<Vec<U>, OverDetSysError<U>> 
+    where U: std::cmp::PartialEq + 'a, T: Iterator<Item = &'a U> + 'a {
+    let mut space = reduce(space, target);
     match space.len() {
         0 => Err(OverDetSysError::NoSolution),
         1 => Ok(space.pop().unwrap()),
@@ -39,10 +39,11 @@ impl<T> std::error::Error for OverDetSysError<T>
     where  T: std::cmp::PartialEq + std::fmt::Debug {}
 
 impl<T> std::fmt::Display for OverDetSysError<T> 
-    where T: std::cmp::PartialEq {
+    where T: std::cmp::PartialEq + std::fmt::Debug {
+
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
-            Self::Ambiguous(s) => write!(f, "multiple solutions"),
+            Self::Ambiguous(_) => write!(f, "multiple solutions"),
             Self::NoSolution => write!(f, "no solution"),
         }
     }
@@ -59,7 +60,8 @@ mod test {
             vec![4, 1, 2],
             vec![0, 1, 2],
         ];
-        assert_eq!(reduce(space, &vec![Some(4), None, None]), vec![
+        let nums = vec![4];
+        assert_eq!(reduce(space, nums.iter()), vec![
             vec![4, 1, 2], 
         ]);
 
@@ -68,7 +70,8 @@ mod test {
             vec![4, 1, 2],
             vec![4, 2, 5],
         ];
-        assert_eq!(reduce(space, &vec![Some(4), Some(2), None]), vec![
+        let nums = vec![4, 2];
+        assert_eq!(reduce(space, nums.iter()), vec![
             vec![4, 2, 5],
         ]);
     }
@@ -81,7 +84,8 @@ mod test {
             vec![0, 1, 2],
             vec![4, 9, 5],
         ];
-        assert_eq!(reduce(space, &vec![Some(4), None, None]), vec![
+        let nums = vec![4];
+        assert_eq!(reduce(space, nums.iter()), vec![
             vec![4, 1, 2],
             vec![4, 9, 5],
         ]);
@@ -100,8 +104,8 @@ mod test {
             pkgid::PkgId::from_str("ks-tech.rary2.ip1").unwrap().into_full_vec().unwrap(),
             pkgid::PkgId::from_str("ks-tech.rary2.ip2").unwrap().into_full_vec().unwrap(),
         ];
-        let target = pkgid::PkgId::from_str("ip3").unwrap().into_vec();
-        assert_eq!(reduce(space, target.as_slice()), vec![
+        let target = pkgid::PkgId::from_str("ip3").unwrap();
+        assert_eq!(reduce(space, target.iter()), vec![
             pkgid::PkgId::from_str("ks-tech.rary1.ip3").unwrap().into_full_vec().unwrap(),
         ]);
 
@@ -113,8 +117,8 @@ mod test {
             pkgid::PkgId::from_str("ks-tech.rary2.ip1").unwrap().into_full_vec().unwrap(),
             pkgid::PkgId::from_str("ks-tech.rary2.ip2").unwrap().into_full_vec().unwrap(),
         ];
-        let target = pkgid::PkgId::from_str("IP3").unwrap().into_vec();
-        assert_eq!(reduce(space, target.as_slice()), vec![
+        let target = pkgid::PkgId::from_str("IP3").unwrap();
+        assert_eq!(reduce(space, target.iter()), vec![
             vec![pkgid::PkgPart::from_str("ip3").unwrap(), pkgid::PkgPart::from_str("rary1").unwrap(), pkgid::PkgPart::from_str("ks-tech").unwrap()], 
         ]);
 
@@ -126,8 +130,8 @@ mod test {
             pkgid::PkgId::from_str("ks-tech.rary2.ip1").unwrap().into_full_vec().unwrap(),
             pkgid::PkgId::from_str("ks-tech.rary2.ip2").unwrap().into_full_vec().unwrap(),
         ];
-        let target = pkgid::PkgId::from_str("ip3.unknown").unwrap().into_vec();
-        assert_eq!(reduce(space, target.as_slice()), Vec::<Vec<pkgid::PkgPart>>::new());
+        let target = pkgid::PkgId::from_str("ip3.unknown").unwrap();
+        assert_eq!(reduce(space, target.iter()), Vec::<Vec<pkgid::PkgPart>>::new());
 
         // multiple solutions
         let space = vec![
@@ -137,8 +141,8 @@ mod test {
             pkgid::PkgId::from_str("ks-tech.rary2.ip1").unwrap().into_full_vec().unwrap(),
             pkgid::PkgId::from_str("ks-tech.rary2.ip2").unwrap().into_full_vec().unwrap(),
         ];
-        let target = pkgid::PkgId::from_str("ip2").unwrap().into_vec();
-        assert_eq!(reduce(space, target.as_slice()), vec![
+        let target = pkgid::PkgId::from_str("ip2").unwrap();
+        assert_eq!(reduce(space, target.iter()), vec![
             pkgid::PkgId::from_str("ks-tech.rary1.ip2").unwrap().into_full_vec().unwrap(), 
             pkgid::PkgId::from_str("ks-tech.rary2.ip2").unwrap().into_full_vec().unwrap()
         ]);

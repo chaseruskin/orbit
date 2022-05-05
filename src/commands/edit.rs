@@ -4,7 +4,7 @@ use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
-use crate::core::pkgid::PkgId;
+use crate::core::pkgid::{PkgId, PkgPart};
 use crate::core::manifest;
 use crate::util::anyerror::AnyError;
 
@@ -30,7 +30,7 @@ impl Command for Edit {
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         let manifests = manifest::find_dev_manifests(c.get_development_path().as_ref().unwrap())?;
         // determine editor
-        let editor = match &self.editor {
+        let sel_editor = match &self.editor {
             // first check if cli arg is empty
             Some(e) => e.to_owned(),
             None => {
@@ -46,24 +46,42 @@ impl Command for Edit {
                 }
             }
         };
-        self.run(&manifests, &editor)
+        self.run(&manifests, &sel_editor)
     }
 }
+
+use crate::util::overdetsys;
 
 impl Edit {
     fn run(&self, manifests: &[manifest::Manifest], editor: &str) -> Result<(), Box<dyn std::error::Error>> {
         // try to find ip name
-        let result = manifests.iter().find(|f| { self.ip.equivalent(&f.as_pkgid()) });
-        if let Some(r) = result {
-            let mut root = r.get_path().to_owned();
-            root.pop();
-            // perform the process
-            let _ = std::process::Command::new(editor)
-                .args(&[root.display().to_string()])
-                .spawn()?;
-        } else {
-            return Err(Box::new(AnyError(format!("ip {} does not exist on development path", self.ip))));
-        }
+        let space: Vec<Vec<PkgPart>> = manifests.iter().map(|f| { f.as_pkgid().into_full_vec().unwrap() }).collect();
+        let result = match overdetsys::solve(space, self.ip.iter()) {
+            Ok(r) => r,
+            Err(e) => match e {
+                overdetsys::OverDetSysError::NoSolution => Err(AnyError(format!("no ip as '{}' exists", self.ip)))?,
+                overdetsys::OverDetSysError::Ambiguous(set) => {
+                    // assemble error message
+                    let mut set = set.into_iter().map(|f| PkgId::from_vec(f) );
+                    let mut content = String::new();
+                    while let Some(s) = set.next() {
+                        content.push_str(&format!("    {}\n", s.to_string()));
+                    }
+                    Err(AnyError(format!("ambiguous ip '{}' yields multiple solutions:\n{}", self.ip, content)))?
+                }
+            }
+        };
+
+        let full_ip = PkgId::from_vec(result);
+        // find the full ip name among the manifests to get the path
+        let result = manifests.iter().find(|f| { full_ip == f.as_pkgid() }).unwrap();
+        let mut root = result.get_path().to_owned();
+        root.pop();
+        // perform the process
+        let _ = std::process::Command::new(editor)
+            .args(&[root.display().to_string()])
+            .spawn()?;
+    
         Ok(())
     }
 }

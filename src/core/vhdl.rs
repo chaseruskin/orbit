@@ -186,18 +186,47 @@ impl BaseSpec {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 enum Identifier {
     Basic(String),
     Extended(String),
 }
 
 impl Identifier {
+    // Returns the reference to the inner `String` struct.
     fn as_str(&self) -> &str {
         match self {
             Self::Basic(id) => id.as_ref(),
             Self::Extended(id) => id.as_ref(),
         }
+    }
+
+    /// Checks if `self` is an extended identifier or not.
+    fn is_extended(&self) -> bool {
+        match self {
+            Self::Extended(_) => true,
+            Self::Basic(_) => false,
+        }
+    }
+}
+
+impl std::cmp::Eq for Identifier {}
+
+impl std::cmp::PartialEq for Identifier {
+    fn eq(&self, other: &Self) -> bool {
+        // instantly not equal if not they are not of same type
+        if self.is_extended() != other.is_extended() { return false };
+        // compare with case sensitivity
+        if self.is_extended() == true {
+            self.as_str() == other.as_str()
+        // compare without case sensitivity
+        } else {
+            cmp_ignore_case(self.as_str(), other.as_str())
+        }
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        self.eq(other) == false
     }
 }
 
@@ -210,6 +239,21 @@ impl std::fmt::Display for Identifier {
     }
 }
 
+#[derive(Debug, PartialEq)]
+enum AbstLiteral {
+    Decimal(String),
+    Based(String),
+}
+
+impl AbstLiteral {
+    fn as_str(&self) -> &str {
+        match self {
+            Self::Decimal(val) => val.as_ref(),
+            Self::Based(val) => val.as_ref(),
+        }
+    }
+}
+
 trait Tokenize {
     type TokenType;
     fn tokenize(s: &str) -> Vec<Token<Self::TokenType>>;
@@ -217,15 +261,13 @@ trait Tokenize {
 
 #[derive(Debug, PartialEq)]
 enum VHDLToken {
-    Whitespace,
     Comment(Comment),               // (String) 
     Identifier(Identifier),         // (String) ...can be general or extended (case-sensitive) identifier
-    AbstLiteral,                    // (String)
+    AbstLiteral(AbstLiteral),       // (String)
     CharLiteral(Character),         // (char)
     StrLiteral(String),             // (String)
     BitStrLiteral(BitStrLiteral),   // (String)
     EOF,
-    DoubleQuote,    // "
     // --- delimiters
     Ampersand,      // &
     SingleQuote,    // '
@@ -648,15 +690,13 @@ impl VHDLToken {
 impl std::fmt::Display for VHDLToken {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            Self::Whitespace    => " ",
             Self::Comment(note) => note.as_str(),
             Self::Identifier(id) => id.as_str(),
-            Self::EOF           => "EOF",
-            Self::AbstLiteral   => "abstract literal",
+            Self::AbstLiteral(a) => a.as_str(),
             Self::CharLiteral(c) => c.as_str(),
             Self::StrLiteral(s) => s.as_ref(),
             Self::BitStrLiteral(b) => b.as_str(),
-            Self::DoubleQuote   => "\"",
+            Self::EOF           => "EOF",
             // --- delimiters
             Self::Ampersand     => "&",
             Self::SingleQuote   => "'",
@@ -902,6 +942,9 @@ mod char_set {
     pub const FWDSLASH: char = '/';
     pub const UNDERLINE: char = '_';
     pub const SINGLE_QUOTE: char = '\'';
+    pub const DOT: char = '.';
+    pub const HASH: char = '#';
+    pub const PLUS: char = '+';
 
     /// Checks if `c` is a space according to VHDL-2008 LRM p225.
     /// Set: space, nbsp
@@ -933,6 +976,11 @@ mod char_set {
             'A'..='Z' | 'À'..='Þ' => true,
             _ => false   
         }
+    }
+
+    /// Checks if `c` is a new-line character.
+    pub fn is_newline(c: &char) -> bool {
+        c == &'\n'
     }
 
     /// Checks if `c` is a special character according to VHDL-2008 LRM p225.
@@ -981,7 +1029,9 @@ mod char_set {
 
 use std::str::FromStr;
 
-/// Collects a basic identifer ::= letter { [ underline ] letter_or_digit }
+/// Collects a basic identifer or a bit string literal with omitting integer.
+/// - basic_identifier ::= letter { \[ underline ] letter_or_digit }
+/// - bit_str_literal  ::= \[ integer ] base_specifier " \[ bit_value ] "
 fn collect_identifier<T>(stream: &mut Peekable<T>, loc: &mut Position, c0: char) -> Result<VHDLToken, ()>
     where T: Iterator<Item=char> {
 
@@ -1032,6 +1082,7 @@ fn collect_comment<T>(stream: &mut Peekable<T>, loc: &mut Position) -> VHDLToken
     // skip over second '-'
     stream.next(); 
     loc.next_col();
+    // consume characters to form the comment
     let mut note = String::new();
     while let Some(c) = stream.peek() {
         // cannot be vt, cr (\r), lf (\n)
@@ -1048,14 +1099,13 @@ fn collect_comment<T>(stream: &mut Peekable<T>, loc: &mut Position) -> VHDLToken
 /// Collects a delimited comment (all characters after a `/*` up until `*/`).
 fn collect_delim_comment<T>(stream: &mut Peekable<T>, loc: &mut Position) -> VHDLToken
     where T: Iterator<Item=char> { 
-        
     // skip over opening '*'
     stream.next();
     loc.next_col();
     let mut note = String::new();
     while let Some(c) = stream.next() {
         loc.next_col();
-        if c == '\n' {
+        if char_set::is_newline(&c) == true {
             loc.next_line();
         }
         // check if we are breaking from the comment
@@ -1104,6 +1154,51 @@ where T: Iterator<Item=char> {
     Ok(VHDLToken::CharLiteral(Character(char_lit)))
 }
 
+/// Captures an abstract literal; namely a decimal_literal or based_literal.
+fn collect_abst_lit<T>(stream: &mut Peekable<T>, loc: &mut Position, c0: char) -> Result<VHDLToken, ()> 
+where T: Iterator<Item=char> {
+    // begin with first identified digit
+    let mut lit = String::from(c0);
+    let mut is_deci = true; // start by assuming decimal
+    let mut dotted = false; // check if already used 'dot'
+    let mut was_underline = false; // remember if last char was '_'
+    let mut handle_exponent = false;
+    while let Some(c) = stream.peek() {
+        // verify it is a digit | underline
+        if char_set::is_digit(&c) == true || c == &char_set::UNDERLINE {
+            was_underline = if c == &char_set::UNDERLINE {
+                // cannot have '._'
+                if lit.ends_with('.') == true { panic!("digit must come after dot") };
+                // cannot have double underscores '__'
+                if was_underline == true { panic!("double underline in number") };
+                true
+            } else {
+                false
+            };
+            loc.next_col();
+            lit.push(stream.next().unwrap());
+        } else if c == &char_set::DOT {
+            // cannot have multiple dots
+            if dotted == true { panic!("multiple dots in number") };
+            // add dot to literal and mark as 'dotted'
+            loc.next_col();
+            lit.push(stream.next().unwrap());
+            dotted = true;
+        // this is a based_literal
+        } else if c == &char_set::HASH {
+            // @TODO
+        } else {  
+            handle_exponent = c == &'e' || c == &'E';
+            break;
+        }
+    }
+    // handle the rules for exponent
+    if handle_exponent {
+
+    }
+    Ok(VHDLToken::AbstLiteral(AbstLiteral::Decimal(lit)))
+}
+
 impl Tokenize for VHDLTokenizer {
     type TokenType = VHDLToken;
 
@@ -1139,7 +1234,8 @@ impl Tokenize for VHDLTokenizer {
 
             } else if char_set::is_digit(&c) {
                 // collect decimal literal (or bit string literal or based literal)
-                // @TODO
+                let tk = collect_abst_lit(&mut chars, &mut loc, c).expect("invalid abst literal");
+                tokens.push(Token::new(tk, tk_loc));
 
             } else if c == char_set::DASH && chars.peek().is_some() && chars.peek().unwrap() == &char_set::DASH {    
                 // collect a single-line comment           
@@ -1158,7 +1254,7 @@ impl Tokenize for VHDLTokenizer {
                 }
             }
             // o.w. collect whitespace
-            if c == '\n' {
+            if char_set::is_newline(&c) == true {
                 loc.next_line();
             }
         }
@@ -1207,6 +1303,26 @@ mod test {
 
     mod vhdl {
         use super::*;
+
+        #[test]
+        fn read_deci_literal() {
+            let mut loc = Position(1, 1);
+            let contents = "234";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '1').unwrap(), VHDLToken::AbstLiteral(vhdl::AbstLiteral::Decimal("1234".to_owned())));
+            assert_eq!(stream.collect::<String>(), "");
+            assert_eq!(loc, Position(1, 4));
+        }
+    
+        #[test]
+        fn read_deci_literal_2() {
+            let mut loc = Position(1, 1);
+            let contents = "23_4.5;";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '1').unwrap(), VHDLToken::AbstLiteral(vhdl::AbstLiteral::Decimal("123_4.5".to_owned())));
+            assert_eq!(stream.collect::<String>(), ";");
+            assert_eq!(loc, Position(1, 7));
+        }
 
         #[test]
         fn easy_tokens() {
@@ -1412,7 +1528,7 @@ entity fa is end entity;";
             let c = ' '; // space
             assert_eq!(char_set::is_separator(&c), true);
 
-            let c = ' '; // nbsp
+            let c = '\u{00A0}'; // nbsp
             assert_eq!(char_set::is_separator(&c), true);
 
             let c = '\t'; // horizontal tab
@@ -1450,6 +1566,25 @@ entity fa is end entity;";
             assert_eq!(collect_identifier(&mut stream, &mut loc, 'b'), Ok(VHDLToken::BitStrLiteral(vhdl::BitStrLiteral { width: None, base: BaseSpec::B, literal: "1010".to_owned() })));
             assert_eq!(stream.collect::<String>(), "more text");
             assert_eq!(loc, Position(1, 7));
+        }
+        
+        #[test]
+        fn eq_identifiers() {
+            let id0 = Identifier::Basic("fa".to_owned());
+            let id1 = Identifier::Basic("Fa".to_owned());
+            assert_eq!(id0, id1);
+
+            let id0 = Identifier::Basic("fa".to_owned());
+            let id1 = Identifier::Basic("Full_adder".to_owned());
+            assert_ne!(id0, id1);
+
+            let id0 = Identifier::Basic("VHDL".to_owned());    // written as: VHDL
+            let id1 = Identifier::Extended("VHDL".to_owned()); // written as: \VHDL\
+            assert_ne!(id0, id1);
+
+            let id0 = Identifier::Extended("vhdl".to_owned()); // written as: \vhdl\
+            let id1 = Identifier::Extended("VHDL".to_owned()); // written as: \VHDL\
+            assert_ne!(id0, id1);
         }
 
         #[test]

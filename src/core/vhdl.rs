@@ -103,8 +103,8 @@ enum VHDLToken {
     Box,            // <>
     SigAssoc,       // <=>
     CondConv,       // ??
-    MatchEq,        // ?=
-    MatchIneq,      // ?/=
+    MatchEQ,        // ?=
+    MatchNE,        // ?/=
     MatchLT,        // ?<
     MatchLTE,       // ?<=
     MatchGT,        // ?>
@@ -232,6 +232,93 @@ enum VHDLToken {
     Xor,
 }
 
+/// Walks through the possible interpretations for capturing a VHDL delimiter.
+/// 
+/// If it successfully finds a valid VHDL delimiter, it will move the `loc` the number
+/// of characters it consumed.
+fn collect_delimiter<T>(stream: &mut Peekable<T>, loc: &mut Position, c0: Option<char>) -> Option<VHDLToken> 
+    where T: Iterator<Item=char> {
+
+    let mut delim = String::with_capacity(3);
+    if let Some(c) = c0 {
+        delim.push(c);
+    }
+
+    while let Some(c) = stream.peek() {
+        match delim.len() {
+            0 => match c {
+                // ambiguous characters...read another character (could be a len-2 delimiter)
+                '?' | '<' | '>' | '/' | '=' | '*' | ':' => {
+                    loc.next_col();
+                    delim.push(stream.next().unwrap())
+                },
+                _ => { 
+                    let op = VHDLToken::match_delimiter(&String::from(c.clone()));
+                    // if it was a delimiter, take the character and increment the location
+                    if let Some(r) = op {
+                        loc.next_col();
+                        stream.next();
+                        return Some(r)
+                    } else {
+                        return None
+                    }
+                }
+            }
+            1 => match delim.chars().nth(0).unwrap() {
+                '?' => {
+                    match c {
+                        // move on to next round (could be a len-3 delimiter)
+                        '/' | '<' | '>' => {
+                            loc.next_col();
+                            delim.push(stream.next().unwrap())
+                        }
+                        _ => { return Some(VHDLToken::match_delimiter(&delim).expect("invalid token")) }
+                    }
+                }
+                '<' => {
+                    match c {
+                        // move on to next round (could be a len-3 delimiter)
+                        '=' => {
+                            loc.next_col();
+                            delim.push(stream.next().unwrap())
+                        },
+                        _ => { return Some(VHDLToken::match_delimiter(&delim).expect("invalid token")) }
+                    }
+                }
+                _ => {
+                    // try with 2
+                    delim.push(c.clone());
+                    if let Some(op) = VHDLToken::match_delimiter(&delim) {
+                        loc.next_col();
+                        stream.next();
+                        return Some(op)
+                    } else {
+                        // revert back to 1
+                        delim.pop();
+                        return VHDLToken::match_delimiter(&delim)
+                    }
+                }
+            }
+            2 => {
+                // try with 3
+                delim.push(c.clone());
+                if let Some(op) = VHDLToken::match_delimiter(&delim) {
+                    stream.next();
+                    loc.next_col();
+                    return Some(op)
+                } else {
+                    // revert back to 2 (guaranteed to exist)
+                    delim.pop();
+                    return Some(VHDLToken::match_delimiter(&delim).expect("invalid token"))
+                }
+            }
+            _ => todo!("here")
+        }
+    };
+    // try when hiting end of stream
+    VHDLToken::match_delimiter(&delim)
+}
+
 impl VHDLToken {
     /// Attempts to match the given string of characters `s` to a VHDL delimiter.
     fn match_delimiter(s: &str) -> Option<Self> {
@@ -266,8 +353,8 @@ impl VHDLToken {
             "<>"    => Self::Box,            
             "<=>"   => Self::SigAssoc,       
             "??"    => Self::CondConv,       
-            "?="    => Self::MatchEq,        
-            "?/="   => Self::MatchIneq,      
+            "?="    => Self::MatchEQ,        
+            "?/="   => Self::MatchNE,      
             "?<"    => Self::MatchLT,        
             "?<="   => Self::MatchLTE,       
             "?>"    => Self::MatchGT,        
@@ -447,8 +534,8 @@ impl std::fmt::Display for VHDLToken {
             Self::Box           => "<>",
             Self::SigAssoc      => "<=>",
             Self::CondConv      => "??",
-            Self::MatchEq       => "?=",
-            Self::MatchIneq     => "?/=",
+            Self::MatchEQ       => "?=",
+            Self::MatchNE       => "?/=",
             Self::MatchLT       => "?<",
             Self::MatchLTE      => "?<=",
             Self::MatchGT       => "?>",
@@ -619,14 +706,23 @@ use std::iter::Peekable;
 /// 
 /// An escape is allowed by double placing the `br`, i.e. """hello"" world".
 /// Assumes the first token to parse in the stream is not the `br` character.
-fn enclose<T>(br: &char, stream: &mut Peekable<T>) -> String 
+/// The `loc` stays up to date on its position in the file.
+fn enclose<T>(br: &char, stream: &mut Peekable<T>, loc: &mut Position) -> String 
     where T: Iterator<Item=char> {
         let mut result = String::new();
         while let Some(c) = stream.next() {
+            loc.next_col();
+            if c == '\n' {
+                loc.next_line();
+            }
             // detect escape sequence
             if br == &c {
                 match stream.peek() {
                     Some(c_next) => if br == c_next {
+                        loc.next_col();
+                        if c_next == &'\n' {
+                            loc.next_line();
+                        }
                         stream.next(); // skip over escape character
                     } else {
                         break;
@@ -639,21 +735,97 @@ fn enclose<T>(br: &char, stream: &mut Peekable<T>) -> String
         result
 }
 
+/// Checks if `c` is an upper-case letter according to VHDL LRM 2019 p257.
+fn is_vhdl_upper(c: &char) -> bool {
+    match c {
+        '\u{00D7}' => false, // reject multiplication sign
+        'A'..='Z' | 'À'..='Þ' => true,
+        _ => false   
+    }
+}
+
+/// Checks if `c` is a lower-case letter according to VHDL LRM 2019 p257.
+fn is_vhdl_lower(c: &char) -> bool {
+    match c {
+        '\u{00F7}' => false, // reject division sign
+        'a'..='z' | 'ß'..='ÿ' => true,
+        _ => false,
+    }
+}
+
+/// Checks if `c` is a letter according to VHDL LRM 2019 p257.
+fn is_vhdl_letter(c: &char) -> bool {
+    is_vhdl_lower(&c) || is_vhdl_upper(&c)
+}
+
 /// Checks if the character is a seperator according to IEEE VHDL LRM 2019 p. 259.
-fn is_separator(c: &char) -> bool {
+fn is_vhdl_separator(c: &char) -> bool {
     // whitespace: space, nbsp
     c == &' ' || c == &'\u{00A0}' ||
     // format-effectors: ht, vt (\t), cr (\r), lf (\n)
     c == &'\u{0009}' || c == &'\u{000B}' || c == &'\u{000D}' || c == &'\u{000A}'
 }
 
+
+/// Collects a basic identifer ::= letter { [ underline ] letter_or_digit }
+fn collect_identifier<T>(stream: &mut Peekable<T>, loc: &mut Position, c0: char) -> String
+    where T: Iterator<Item=char> {
+
+    let mut id = String::from(c0);
+    while let Some(c) = stream.peek() {
+        if c.is_ascii_digit() || is_vhdl_letter(&c) || c == &'_' {
+            loc.next_col();
+            let c = stream.next().unwrap();
+            id.push(c);
+        } else {
+            break;
+        }
+    }
+    id
+}
+
 impl Tokenize for VHDLTokenizer {
     type TokenType = VHDLToken;
 
     fn tokenize(s: &str) -> Vec<Token<Self::TokenType>> {
-        let mut chars = s.chars();
+        let mut loc = Position::new();
+        let mut chars = s.chars().peekable();
         while let Some(c) = chars.next() {
-            println!("{}", c);
+            loc.next_col();
+
+            //println!("{}:{} {}", loc.0, loc.1, c);
+            if is_vhdl_letter(&c) {
+                // collect general identifier (or bit string literal)
+                let id = collect_identifier(&mut chars, &mut loc, c);
+                // try to transform to key word
+                if let Some(keyword) = VHDLToken::match_keyword(&id) {
+                    println!("keyword: {}", keyword);
+                } else {
+                    println!("basic identifier: {}", id);
+                }
+            } else if c == '\\' {
+                // collect extended identifier
+                let id = enclose(&c, &mut chars, &mut loc);
+                println!("extended identifier: {:?}", id);
+            } else if c == '\"' {
+                // collect string literal
+                let str_lit = enclose(&c, &mut chars, &mut loc);
+                println!("string literal: {:?}", str_lit);
+            } else if c == '\'' {
+                // collect character literal
+            } else if c.is_ascii_digit() {
+                // collect decimal literal (or bit string literal or based literal)
+            } else {
+                // collect delimiter
+                if let Some(delim) = collect_delimiter(&mut chars, &mut loc, Some(c)) {
+                    println!("delimiter: {:?}", delim);
+                }
+            }
+
+            // o.w. collect whitespace
+            if c == '\n' {
+                loc.next_line();
+            }
         }
         vec![]
     }
@@ -699,6 +871,7 @@ mod test {
         use super::*;
 
         #[test]
+        #[ignore]
         fn first_tokens() {
             use super::VHDLToken::*;
 
@@ -716,6 +889,80 @@ mod test {
                 Terminator,
                 EOF,
             ]);
+        }
+
+        #[test]
+        fn read_delimiter_single() {
+            use super::VHDLToken::*;
+
+            let mut loc = Position::new();
+            let contents = "&";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_delimiter(&mut stream, &mut loc, None), Some(Ampersand));
+            assert_eq!(stream.collect::<String>(), "");
+            assert_eq!(loc, Position(1, 1));
+
+            let mut loc = Position::new();
+            let contents = "?";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_delimiter(&mut stream, &mut loc, None), Some(Question));
+            assert_eq!(stream.collect::<String>(), "");
+            assert_eq!(loc, Position(1, 1));
+
+            let mut loc = Position::new();
+            let contents = "< MAX_COUNT";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_delimiter(&mut stream, &mut loc, None), Some(Lt));
+            assert_eq!(stream.collect::<String>(), " MAX_COUNT");
+            assert_eq!(loc, Position(1, 1));
+        }
+
+        #[test]
+        fn read_delimiter_none() {
+            let mut loc = Position::new();
+            let contents = "fa";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_delimiter(&mut stream, &mut loc, None), None);
+            assert_eq!(stream.collect::<String>(), "fa");
+            assert_eq!(loc, Position(1, 0));
+        }
+
+        #[test]
+        fn read_delimiter_double() {
+            use super::VHDLToken::*;
+
+            let mut loc = Position::new();
+            let contents = "<=";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_delimiter(&mut stream, &mut loc, None), Some(SigAssign));
+            assert_eq!(stream.collect::<String>(), "");
+            assert_eq!(loc, Position(1, 2));
+
+            let mut loc = Position::new();
+            let contents = "**WIDTH";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_delimiter(&mut stream, &mut loc, None), Some(DoubleStar));
+            assert_eq!(stream.collect::<String>(), "WIDTH");
+            assert_eq!(loc, Position(1, 2));
+        }
+
+        #[test]
+        fn read_delimiter_triple() {
+            use super::VHDLToken::*;
+
+            let mut loc = Position::new();
+            let contents = "<=>";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_delimiter(&mut stream, &mut loc, None), Some(SigAssoc));
+            assert_eq!(stream.collect::<String>(), "");
+            assert_eq!(loc, Position(1, 3));
+
+            let mut loc = Position::new();
+            let contents = "?/= MAGIC_NUM";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_delimiter(&mut stream, &mut loc, None), Some(MatchNE));
+            assert_eq!(stream.collect::<String>(), " MAGIC_NUM");
+            assert_eq!(loc, Position(1, 3));
         }
 
         #[test]
@@ -758,41 +1005,66 @@ mod test {
         #[test]
         fn is_sep() {
             let c = ' ';
-            assert_eq!(is_separator(&c), true);
+            assert_eq!(is_vhdl_separator(&c), true);
 
             let c = '\t';
-            assert_eq!(is_separator(&c), true);
+            assert_eq!(is_vhdl_separator(&c), true);
 
             let c = '\n';
-            assert_eq!(is_separator(&c), true);
+            assert_eq!(is_vhdl_separator(&c), true);
 
             let c = 'c';
-            assert_eq!(is_separator(&c), false);
+            assert_eq!(is_vhdl_separator(&c), false);
+        }
+
+        #[test]
+        fn read_identifier() {
+            let mut loc = Position(1, 1);
+            let words = "ntity is";
+            let mut stream = words.chars().peekable();
+            assert_eq!(collect_identifier(&mut stream, &mut loc, 'e'), "entity");
+            assert_eq!(stream.collect::<String>(), " is");
+            assert_eq!(loc, Position(1, 6));
+
+            let mut loc = Position(1, 1);
+            let words = "eady_OUT<=";
+            let mut stream = words.chars().peekable();
+            assert_eq!(collect_identifier(&mut stream, &mut loc, 'r'), "ready_OUT");
+            assert_eq!(stream.collect::<String>(), "<=");
+            assert_eq!(loc, Position(1, 9));
         }
 
         #[test]
         fn wrap_enclose() {
+            let mut loc = Position(1, 1);
             let contents = "\"Setup time is too short\"more text";
             let mut stream = contents.chars().peekable();
-            assert_eq!(enclose(&stream.next().unwrap(), &mut stream), "Setup time is too short");
+            assert_eq!(enclose(&stream.next().unwrap(), &mut stream, &mut loc), "Setup time is too short");
             assert_eq!(stream.collect::<String>(), "more text");
+            assert_eq!(loc, Position(1, 25));
 
+            let mut loc = Position(1, 1);
             let contents = "\"\"\"\"\"\"";
             let mut stream = contents.chars().peekable();
-            assert_eq!(enclose(&stream.next().unwrap(), &mut stream), "\"\"");
+            assert_eq!(enclose(&stream.next().unwrap(), &mut stream, &mut loc), "\"\"");
+            assert_eq!(loc, Position(1, 6));
 
-            let contents = "\" go \"\"gators\"\" from UF! \"";
+            let mut loc = Position::new();
+            let contents = "\" go \"\"gators\"\" from UF! \n\"";
             let mut stream = contents.chars().peekable();
-            assert_eq!(enclose(&stream.next().unwrap(), &mut stream), " go \"gators\" from UF! ");
+            assert_eq!(enclose(&stream.next().unwrap(), &mut stream, &mut loc), " go \"gators\" from UF! \n");
+            assert_eq!(loc, Position(2, 1));
 
+            let mut loc = Position::new();
             let contents = "\\VHDL\\";
             let mut stream = contents.chars().peekable();
-            assert_eq!(enclose(&stream.next().unwrap(), &mut stream), "VHDL");
+            assert_eq!(enclose(&stream.next().unwrap(), &mut stream, &mut loc), "VHDL");
 
+            let mut loc = Position::new();
             let contents = "\\a\\\\b\\more text afterward";
             let mut stream = contents.chars().peekable();
             let br = stream.next().unwrap();
-            assert_eq!(enclose(&br, &mut stream), "a\\b");
+            assert_eq!(enclose(&br, &mut stream, &mut loc), "a\\b");
             // verify the stream is left in the correct state
             assert_eq!(stream.collect::<String>(), "more text afterward");
         }

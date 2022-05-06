@@ -1,7 +1,6 @@
 //! VHDL tokenizer
 
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 /// (Line, Col)
 struct Position(usize, usize);
 
@@ -16,12 +15,38 @@ impl Position {
         self.1 += 1;
     }   
 
+    /// Increments the column counter by 1. If the current char `c` is a newline,
+    /// it will then drop down to the next line.
+    fn step(&mut self, c: &char) {
+        if c == &'\n' {
+            self.next_line();
+        }
+        // @TODO step by +4 if encountered a tab?
+        self.next_col();
+    }
+
     /// Increments the line counter by 1.
     /// 
     /// Also resets the column counter to 0.
     fn next_line(&mut self) {
         self.0 += 1;
         self.1 = 0;
+    }
+
+    /// Access the line (`.0`) number.
+    fn line(&self) -> usize {
+        self.0
+    }
+
+    /// Access the col (`.1`) number.
+    fn col(&self) -> usize {
+        self.1
+    }
+}
+
+impl std::fmt::Display for Position {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:{}", self.0, self.1)
     }
 }
 
@@ -48,10 +73,64 @@ impl<T> Token<T> {
     }
 
     /// Creates a new token.
-    fn new(ttype: T) -> Self {
+    fn new(ttype: T, loc: Position) -> Self {
         Self {
-            position: Position::new(),
+            position: loc,
             ttype: ttype,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+enum Comment {
+    Single(String),
+    Delimited(String),
+}
+
+impl Comment {
+    fn as_str(&self) -> &str {
+        match self {
+            Self::Single(note) => note.as_ref(),
+            Self::Delimited(note) => note.as_ref(),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+struct Character {
+    inner: String,
+}
+
+impl Character {
+    fn new(c: char) -> Self {
+        Self { inner: String::from(c), } 
+    }
+
+    fn as_str(&self) -> &str {
+        &self.inner.as_ref()
+    }
+}
+
+#[derive(Debug, PartialEq)]
+enum Identifier {
+    Basic(String),
+    Extended(String),
+}
+
+impl Identifier {
+    fn as_str(&self) -> &str {
+        match self {
+            Self::Basic(id) => id.as_ref(),
+            Self::Extended(id) => id.as_ref(),
+        }
+    }
+}
+
+impl std::fmt::Display for Identifier {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Basic(id) => write!(f, "{}", id),
+            Self::Extended(id) => write!(f, "{}", id),
         }
     }
 }
@@ -64,12 +143,12 @@ trait Tokenize {
 #[derive(Debug, PartialEq)]
 enum VHDLToken {
     Whitespace,
-    Comment,        // (String) 
-    Identifier,     // (String) ...can be general or extended (case-sensitive) identifier
-    AbstLiteral,    // (String)
-    CharLiteral,    // (String)
-    StrLiteral,     // (String)
-    BitStrLiteral,  // (String)
+    Comment(Comment),           // (String) 
+    Identifier(Identifier),     // (String) ...can be general or extended (case-sensitive) identifier
+    AbstLiteral,                // (String)
+    CharLiteral(Character),     // (char)
+    StrLiteral(String),         // (String)
+    BitStrLiteral,              // (String)
     EOF,
     DoubleQuote,    // "
     // --- delimiters
@@ -312,7 +391,7 @@ fn collect_delimiter<T>(stream: &mut Peekable<T>, loc: &mut Position, c0: Option
                     return Some(VHDLToken::match_delimiter(&delim).expect("invalid token"))
                 }
             }
-            _ => todo!("here")
+            _ => panic!("delimiter matching exceeds 3 characters")
         }
     };
     // try when hiting end of stream
@@ -495,12 +574,12 @@ impl std::fmt::Display for VHDLToken {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
             Self::Whitespace    => " ",
-            Self::Comment       => "--",
-            Self::Identifier    => "<identifier>",
+            Self::Comment(note) => note.as_str(),
+            Self::Identifier(id) => id.as_str(),
             Self::EOF           => "EOF",
             Self::AbstLiteral   => "abstract literal",
-            Self::CharLiteral   => "char literal",
-            Self::StrLiteral    => "string literal",
+            Self::CharLiteral(c) => c.as_str(),
+            Self::StrLiteral(s) => s.as_ref(),
             Self::BitStrLiteral => "bit string literal",
             Self::DoubleQuote   => "\"",
             // --- delimiters
@@ -664,9 +743,18 @@ impl std::fmt::Display for VHDLToken {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(PartialEq)]
 struct VHDLTokenizer {
     inner: Vec<Token<VHDLToken>>,
+}
+
+impl std::fmt::Debug for VHDLTokenizer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for tk in &self.inner {
+            write!(f, "{} {}\n", tk.locate(), tk.unwrap())?
+        }
+        Ok(())
+    } 
 }
 
 /// Compares to string references `s0` and `s1` with case conversion.
@@ -761,8 +849,8 @@ fn is_vhdl_letter(c: &char) -> bool {
 /// Checks if the character is a seperator according to IEEE VHDL LRM 2019 p. 259.
 fn is_vhdl_separator(c: &char) -> bool {
     // whitespace: space, nbsp
-    c == &' ' || c == &'\u{00A0}' ||
-    // format-effectors: ht, vt (\t), cr (\r), lf (\n)
+    c == &'\u{0020}' || c == &'\u{00A0}' ||
+    // format-effectors: ht (\t), vt, cr (\r), lf (\n)
     c == &'\u{0009}' || c == &'\u{000B}' || c == &'\u{000D}' || c == &'\u{000A}'
 }
 
@@ -784,41 +872,113 @@ fn collect_identifier<T>(stream: &mut Peekable<T>, loc: &mut Position, c0: char)
     id
 }
 
+/// Collects a single-line comment (all characters after a `--` up until end-of-line).
+fn collect_comment<T>(stream: &mut Peekable<T>, loc: &mut Position) -> String
+    where T: Iterator<Item=char> { 
+    
+    let mut note = String::new();
+    while let Some(c) = stream.peek() {
+        // cannot be vt, cr (\r), lf (\n)
+        if c == &'\u{000B}' || c == &'\u{000D}' || c == &'\u{000A}' {
+            break
+        } else {
+            loc.next_col();
+            note.push(stream.next().unwrap());
+        }
+    }
+    note
+}
+
+/// Collects a delimited comment (all characters after a `/*` up until `*/`).
+fn collect_delim_comment<T>(stream: &mut Peekable<T>, loc: &mut Position) -> String
+    where T: Iterator<Item=char> { 
+    
+    let mut note = String::new();
+    while let Some(c) = stream.next() {
+        loc.next_col();
+        if c == '\n' {
+            loc.next_line();
+        }
+        // check if we are breaking from the comment
+        if c == '*' {
+            if let Some(c_next) = stream.peek() {
+                // break from the comment
+                if c_next == &'/' {
+                    loc.next_col();
+                    stream.next();
+                    break;
+                }
+            }
+        }
+        note.push(c);
+    }
+    note
+}
+
 impl Tokenize for VHDLTokenizer {
     type TokenType = VHDLToken;
 
     fn tokenize(s: &str) -> Vec<Token<Self::TokenType>> {
         let mut loc = Position::new();
         let mut chars = s.chars().peekable();
+        // store results here as we consume the characters
+        let mut tokens = Vec::new();
         while let Some(c) = chars.next() {
             loc.next_col();
 
+            let tk_loc = Position(loc.0, loc.1);
             //println!("{}:{} {}", loc.0, loc.1, c);
             if is_vhdl_letter(&c) {
-                // collect general identifier (or bit string literal)
+                // collect general identifier (or bit string literal) 
+                // @TODO
                 let id = collect_identifier(&mut chars, &mut loc, c);
                 // try to transform to key word
                 if let Some(keyword) = VHDLToken::match_keyword(&id) {
-                    println!("keyword: {}", keyword);
+                    tokens.push(Token::new(keyword, tk_loc));
                 } else {
-                    println!("basic identifier: {}", id);
+                    tokens.push(Token::new(VHDLToken::Identifier(Identifier::Basic(id)), tk_loc));
                 }
             } else if c == '\\' {
                 // collect extended identifier
                 let id = enclose(&c, &mut chars, &mut loc);
-                println!("extended identifier: {:?}", id);
+                tokens.push(Token::new(VHDLToken::Identifier(Identifier::Extended(id)), tk_loc));
             } else if c == '\"' {
                 // collect string literal
                 let str_lit = enclose(&c, &mut chars, &mut loc);
-                println!("string literal: {:?}", str_lit);
+                tokens.push(Token::new(VHDLToken::StrLiteral(str_lit), tk_loc));
             } else if c == '\'' {
-                // collect character literal
+                // collect character literal @TODO separate to a fn call
+                if let Some(c) = chars.next() {
+                    loc.next_col();
+                    if c == '\n' {
+                        loc.next_line();
+                    }
+                    let char_lit = Character::new(c);
+                    // expect a closing single-quote @TODO handle erros
+                    let c = chars.next().unwrap();
+                    if c != '\'' { panic!("expecting closing '\'' character") }
+                    loc.next_col();
+                    tokens.push(Token::new(VHDLToken::CharLiteral(char_lit), tk_loc));
+                }
             } else if c.is_ascii_digit() {
                 // collect decimal literal (or bit string literal or based literal)
+                // @TODO
+            } else if c == '-' && chars.peek().is_some() && chars.peek().unwrap() == &'-' {
+                chars.next(); 
+                loc.next_col();    
+                // collect a single-line comment           
+                let comment = collect_comment(&mut chars, &mut loc);
+                tokens.push(Token::new(VHDLToken::Comment(Comment::Single(comment)), tk_loc));
+            } else if c == '/' && chars.peek().is_some() && chars.peek().unwrap() == &'*' {
+                chars.next();
+                loc.next_col();
+                // collect delimited (multi-line) comment
+                let comment = collect_delim_comment(&mut chars, &mut loc);
+                tokens.push(Token::new(VHDLToken::Comment(Comment::Delimited(comment)), tk_loc));
             } else {
                 // collect delimiter
                 if let Some(delim) = collect_delimiter(&mut chars, &mut loc, Some(c)) {
-                    println!("delimiter: {:?}", delim);
+                    tokens.push(Token::new(delim, tk_loc));
                 }
             }
 
@@ -827,7 +987,10 @@ impl Tokenize for VHDLTokenizer {
                 loc.next_line();
             }
         }
-        vec![]
+        // push final EOF token
+        loc.next_col();
+        tokens.push(Token::new(VHDLToken::EOF, loc));
+        tokens
     }
 }
 
@@ -871,24 +1034,72 @@ mod test {
         use super::*;
 
         #[test]
-        #[ignore]
-        fn first_tokens() {
+        fn easy_tokens() {
             use super::VHDLToken::*;
-
-            let s = "entity fa is end entity;";
+            use crate::core::vhdl::*;
+            let s = "\
+entity fa is end entity;";
             let tokens: Vec<VHDLToken> = VHDLTokenizer::tokenize(s)
                 .into_iter()
                 .map(|f| { f.take() })
                 .collect();
             assert_eq!(tokens, vec![
                 Entity,
-                Identifier,
+                Identifier(vhdl::Identifier::Basic("fa".to_owned())),
                 Is,
                 End,
                 Entity,
                 Terminator,
                 EOF,
             ]);
+        }
+
+        #[test]
+        fn comment_token() {
+            use super::VHDLToken::*;
+            use crate::core::vhdl::*;
+            let s = "\
+-- here is a vhdl single-line comment!";
+            let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s);
+            assert_eq!(tokens, vec![
+                Token::new(Comment(vhdl::Comment::Single(" here is a vhdl single-line comment!".to_owned())), Position(1, 1)),
+                Token::new(EOF, Position(1, 39)),
+            ]);
+        }
+
+        #[test]
+        fn comment_token_delim() {
+            use super::VHDLToken::*;
+            use crate::core::vhdl::*;
+            let s = "\
+/* here is a vhdl 
+    delimited-line comment. Look at all the space! */";
+            let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s);
+            assert_eq!(tokens, vec![
+                Token::new(Comment(vhdl::Comment::Delimited(" here is a vhdl 
+    delimited-line comment. Look at all the space! ".to_owned())), Position(1, 1)),
+                Token::new(EOF, Position(2, 54)),
+            ]);
+        }
+
+        #[test]
+        fn easy_locations() {
+            use crate::core::vhdl::*;
+            let s = "\
+entity fa is end entity;";
+            let tokens: Vec<Position> = VHDLTokenizer::tokenize(s)
+                .into_iter()
+                .map(|f| { f.locate().clone() })
+                .collect();
+            assert_eq!(tokens, vec![
+                Position(1, 1),  // 1:1 keyword: entity
+                Position(1, 8),  // 1:8 basic identifier: fa
+                Position(1, 11), // 1:11 keyword: is
+                Position(1, 14), // 1:14 keyword: end
+                Position(1, 18), // 1:18 keyword: entity
+                Position(1, 24), // 1:24 delimiter: ;
+                Position(1, 25), // 1:25 eof
+            ]);  
         }
 
         #[test]
@@ -1004,16 +1215,19 @@ mod test {
 
         #[test]
         fn is_sep() {
-            let c = ' ';
+            let c = ' '; // space
             assert_eq!(is_vhdl_separator(&c), true);
 
-            let c = '\t';
+            let c = ' '; // nbsp
             assert_eq!(is_vhdl_separator(&c), true);
 
-            let c = '\n';
+            let c = '\t'; // horizontal tab
             assert_eq!(is_vhdl_separator(&c), true);
 
-            let c = 'c';
+            let c = '\n'; // new-line
+            assert_eq!(is_vhdl_separator(&c), true);
+
+            let c = 'c';  // negative case: ascii char
             assert_eq!(is_vhdl_separator(&c), false);
         }
 

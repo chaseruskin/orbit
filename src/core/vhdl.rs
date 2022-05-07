@@ -136,7 +136,7 @@ enum BaseSpec {
 }
 
 impl std::str::FromStr for BaseSpec {
-    type Err = (); // @TODO handle errors
+    type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s.to_ascii_lowercase().as_str() {
             "b"  => Self::B,
@@ -149,7 +149,7 @@ impl std::str::FromStr for BaseSpec {
             "so" => Self::SO,
             "sx" => Self::SX,
             "d"  => Self::D,
-            _ => panic!("invalid base specifier {}", s)
+            _ => return Err(String::from("invalid base specifier"))
         })
     }
 }
@@ -932,6 +932,14 @@ mod char_set {
         }
     }
 
+    /// Checks if `c` is a graphic character according to VHDL-2008 LRM p225 and
+    /// is NOT a double character ".
+    /// 
+    /// This function is exclusively used in the logic for collecting a bit string literal.
+    pub fn is_graphic_and_not_double_quote(c: &char) -> bool {
+        c != &DOUBLE_QUOTE && is_graphic(&c)
+    }
+
     /// Checks if `c` is an "other special character" according to VHDL-2008 LRM p225.
     /// Set: `!$%\^{} ~¡¢£¤¥¦§ ̈©a«¬® ̄°±23 ́μ¶· ̧1o»1⁄41⁄23⁄4¿×÷-`
     pub fn is_other_special(c: &char) -> bool {
@@ -1154,15 +1162,50 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
     // none
 }
 
+use std::str::FromStr;
+
 /// Captures VHDL Tokens: keywords and basic identifiers.
 /// 
 /// Assumes the first `letter` char was the last char consumed before the function call.
 fn consume_word(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Result<VHDLToken, String> {
-    let word = consume_integer(train, Some(c0), char_set::is_letter_or_digit)?;
+    let mut word = consume_integer(train, Some(c0), char_set::is_letter_or_digit)?;
     match VHDLToken::match_keyword(&word) {
         Some(keyword) => Ok(keyword),
-        None => Ok(VHDLToken::Identifier(Identifier::Basic(word)))
+        None => {
+            // * bit string literal: check if the next char is a double quote
+            if let Some(c) = train.peek() {
+                if c == &char_set::DOUBLE_QUOTE {
+                    // @TODO verify valid base specifier
+                    BaseSpec::from_str(&word)?;
+                    // add the opening '"' character to the literal
+                    word.push(train.consume().unwrap());
+                    return Ok(consume_bit_str_literal(train, word)?)
+                }
+            }
+            Ok(VHDLToken::Identifier(Identifier::Basic(word)))
+        }
     }
+}
+
+/// Captures the remaining characters for a bit string literal.
+/// 
+/// Assumes the integer, base_specifier, and first " char are already consumed
+/// and moved as `s0`.  Rules taken from VHDL 2019 LRM p177 due to backward-compatible additions. Note
+/// a bit string literal is allowed to have no characters within the " ".
+/// - bit_string_literal ::= \[ integer ] base_specifier " \[ bit_value ] "
+/// - bit_value ::= graphic_character { [ underline ] graphic_character } 
+fn consume_bit_str_literal(train: &mut TrainCar<impl Iterator<Item=char>>, s0: String) -> Result<VHDLToken, String> {
+    let mut literal = s0;
+    // consume bit_value (all graphic characters except the double quote " char)
+    let bit_value = consume_integer(train, None, char_set::is_graphic_and_not_double_quote)?;
+    literal.push_str(&bit_value);
+    // verify the next character is the closing double quote " char
+    if train.peek().is_none() || train.peek().unwrap() != &char_set::DOUBLE_QUOTE {
+        return Err(String::from("expecting closing double quote for bit string literal"))
+    }
+    // accept the closing " char
+    literal.push(train.consume().unwrap());
+    Ok(VHDLToken::BitStrLiteral(BitStrLiteral(literal)))
 }
 
 /// Captures the generic pattern production rule by passing a fn as `eval` to compare.
@@ -1382,14 +1425,19 @@ mod test {
     use super::*;
 
     #[test]
-    #[ignore] // @TODO 
     fn lex_partial_bit_str() {
         let words = "b\"1010\"more text";
         let mut tc = TrainCar::new(words.chars());
         let c0 = tc.consume().unwrap();
-        assert_eq!(consume_word(&mut tc, c0), Ok(VHDLToken::BitStrLiteral(BitStrLiteral("b1010".to_owned()))));
+        assert_eq!(consume_word(&mut tc, c0), Ok(VHDLToken::BitStrLiteral(BitStrLiteral("b\"1010\"".to_owned()))));
         assert_eq!(tc.as_ref().clone().collect::<String>(), "more text");
         assert_eq!(tc.locate(), &Position(1, 7));
+
+        // invalid base specifier in any language standard
+        let words = "z\"1010\"more text";
+        let mut tc = TrainCar::new(words.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_word(&mut tc, c0).is_err(), true);
     }
 
     #[test]
@@ -1459,6 +1507,11 @@ mod test {
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(consume_numeric(&mut tc, c0).unwrap(), VHDLToken::AbstLiteral(AbstLiteral::Based("016:0FF:".to_owned())));
+
+        let contents = "016:0FF#";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_numeric(&mut tc, c0).is_err(), true);
     }
 
     #[test]
@@ -1553,6 +1606,14 @@ delimited-line comment. Look at all the space! ".to_owned())));
 
     #[test]
     fn lex_integer() {
+        // allow bit string literal to be none
+        let contents = "";
+        // testing using digit prod. rule "graphic"
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(consume_integer(&mut tc, None, char_set::is_graphic).unwrap(), "");
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position(1, 0));
+
         let contents = "234";
         // testing using digit prod. rule "integer"
         let mut tc = TrainCar::new(contents.chars());

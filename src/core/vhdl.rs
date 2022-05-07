@@ -18,11 +18,11 @@ impl Position {
     /// Increments the column counter by 1. If the current char `c` is a newline,
     /// it will then drop down to the next line.
     fn step(&mut self, c: &char) {
+        // @TODO step by +4 if encountered a tab?
+        self.next_col();
         if c == &'\n' {
             self.next_line();
         }
-        // @TODO step by +4 if encountered a tab?
-        self.next_col();
     }
 
     /// Increments the line counter by 1.
@@ -104,6 +104,16 @@ impl Character {
         Self(String::from(c))
     }
 
+    fn as_str(&self) -> &str {
+        &self.0.as_ref()
+    }
+}
+
+#[derive(Debug, PartialEq)]
+struct BitStringLiteral(String); // @TODO overwrite old `bitstrliteral`
+
+impl BitStringLiteral {
+    // Returns the reference to the inner `String` struct.
     fn as_str(&self) -> &str {
         &self.0.as_ref()
     }
@@ -437,28 +447,21 @@ enum VHDLToken {
 /// 
 /// If it successfully finds a valid VHDL delimiter, it will move the `loc` the number
 /// of characters it consumed.
-fn collect_delimiter<T>(stream: &mut Peekable<T>, loc: &mut Position, c0: Option<char>) -> Option<VHDLToken> 
-    where T: Iterator<Item=char> {
-
+fn collect_delimiter(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<char>) -> Option<VHDLToken> {
     let mut delim = String::with_capacity(3);
-    if let Some(c) = c0 {
-        delim.push(c);
-    }
+    if let Some(c) = c0 { delim.push(c); }
 
-    while let Some(c) = stream.peek() {
+    while let Some(c) = train.peek() {
         match delim.len() {
             0 => match c {
                 // ambiguous characters...read another character (could be a len-2 delimiter)
                 '?' | '<' | '>' | '/' | '=' | '*' | ':' => {
-                    loc.next_col();
-                    delim.push(stream.next().unwrap())
+                    delim.push(train.consume().unwrap())
                 },
                 _ => { 
-                    let op = VHDLToken::match_delimiter(&String::from(c.clone()));
                     // if it was a delimiter, take the character and increment the location
-                    if let Some(r) = op {
-                        loc.next_col();
-                        stream.next();
+                    if let Some(r) = VHDLToken::match_delimiter(&String::from(*c)) {
+                        train.consume();
                         return Some(r)
                     } else {
                         return None
@@ -470,8 +473,7 @@ fn collect_delimiter<T>(stream: &mut Peekable<T>, loc: &mut Position, c0: Option
                     match c {
                         // move on to next round (could be a len-3 delimiter)
                         '/' | '<' | '>' => {
-                            loc.next_col();
-                            delim.push(stream.next().unwrap())
+                            delim.push(train.consume().unwrap())
                         }
                         _ => { return Some(VHDLToken::match_delimiter(&delim).expect("invalid token")) }
                     }
@@ -480,18 +482,16 @@ fn collect_delimiter<T>(stream: &mut Peekable<T>, loc: &mut Position, c0: Option
                     match c {
                         // move on to next round (could be a len-3 delimiter)
                         '=' => {
-                            loc.next_col();
-                            delim.push(stream.next().unwrap())
+                            delim.push(train.consume().unwrap())
                         },
                         _ => { return Some(VHDLToken::match_delimiter(&delim).expect("invalid token")) }
                     }
                 }
                 _ => {
                     // try with 2
-                    delim.push(c.clone());
+                    delim.push(*c);
                     if let Some(op) = VHDLToken::match_delimiter(&delim) {
-                        loc.next_col();
-                        stream.next();
+                        train.consume();
                         return Some(op)
                     } else {
                         // revert back to 1
@@ -502,10 +502,9 @@ fn collect_delimiter<T>(stream: &mut Peekable<T>, loc: &mut Position, c0: Option
             }
             2 => {
                 // try with 3
-                delim.push(c.clone());
+                delim.push(*c);
                 if let Some(op) = VHDLToken::match_delimiter(&delim) {
-                    stream.next();
-                    loc.next_col();
+                    train.consume();
                     return Some(op)
                 } else {
                     // revert back to 2 (guaranteed to exist)
@@ -1025,6 +1024,16 @@ mod char_set {
         is_lower(&c) || is_upper(&c)
     }
 
+    /// Checks if `c` is a digit | letter according to VHDL-2008 LRM p230.
+    pub fn is_extended_digit(c: &char) -> bool {
+        is_digit(&c) || is_letter(&c)
+    }
+
+    /// Checks if `c` is a digit | letter according to VHDL-2008 LRM p229.
+    pub fn is_letter_or_digit(c: &char) -> bool {
+        is_digit(&c) || is_letter(&c)
+    }
+
     /// Checks if the character is a seperator according to VHDL-2019 LRM p259.
     pub fn is_separator(c: &char) -> bool {
         // whitespace: space, nbsp
@@ -1091,94 +1100,6 @@ fn collect_identifier<T>(stream: &mut Peekable<T>, loc: &mut Position, c0: char)
             })
         }
     }
-}
-
-/// Collects a single-line comment (all characters after a `--` up until end-of-line).
-fn collect_comment<T>(stream: &mut Peekable<T>, loc: &mut Position) -> VHDLToken
-    where T: Iterator<Item=char> { 
-    // skip over second '-'
-    stream.next(); 
-    loc.next_col();
-    // consume characters to form the comment
-    let mut note = String::new();
-    while let Some(c) = stream.peek() {
-        // cannot be vt, cr (\r), lf (\n)
-        if c == &'\u{000B}' || c == &'\u{000D}' || c == &'\u{000A}' {
-            break
-        } else {
-            loc.next_col();
-            note.push(stream.next().unwrap());
-        }
-    }
-    VHDLToken::Comment(Comment::Single(note))
-}
-
-/// Captures the bit string literal.
-/// 
-/// At this point, the `value` will have (maybe) integer and a base_specifier.
-/// - bit_string_literal ::=  \[ integer ] base_specifier " \[ bit_value ] "
-fn collect_bit_str_literal<T>(value: String, stream: &mut Peekable<T>, loc: &mut Position) -> VHDLToken
-where T: Iterator<Item=char> {
-
-    todo!()
-}
-
-/// Collects a delimited comment (all characters after a `/*` up until `*/`).
-fn collect_delim_comment<T>(stream: &mut Peekable<T>, loc: &mut Position) -> VHDLToken
-    where T: Iterator<Item=char> { 
-    // skip over opening '*'
-    stream.next();
-    loc.next_col();
-    let mut note = String::new();
-    while let Some(c) = stream.next() {
-        loc.next_col();
-        if char_set::is_newline(&c) == true {
-            loc.next_line();
-        }
-        // check if we are breaking from the comment
-        if c == char_set::STAR {
-            if let Some(c_next) = stream.peek() {
-                // break from the comment
-                if c_next == &char_set::FWDSLASH {
-                    loc.next_col();
-                    stream.next();
-                    break;
-                }
-            }
-        }
-        note.push(c);
-    }
-    VHDLToken::Comment(Comment::Delimited(note))
-}
-
-/// Captures an extended identifier token.
-/// 
-/// Errors if the identifier is empty.
-fn collect_extended_identifier<T>(stream: &mut Peekable<T>, loc: &mut Position) -> Result<VHDLToken, ()>
-where T: Iterator<Item=char> { 
-    let id = enclose(&char_set::BACKSLASH, stream, loc);
-    if id.is_empty() { panic!("extended identifier cannot be empty") }
-    Ok(VHDLToken::Identifier(Identifier::Extended(id)))
-}
-
-/// Captures a character literal according to VHDL-2018 LRM p231.
-fn collect_chr_lit<T>(stream: &mut Peekable<T>, loc: &mut Position) -> Result<VHDLToken, ()> 
-where T: Iterator<Item=char> {
-    let mut char_lit = String::with_capacity(1);
-    if let Some(c) = stream.next() {
-        // verify the character is a graphic character
-        if char_set::is_graphic(&c) == false { panic!("invalid char {}", c) }
-        loc.next_col();
-        // add to the struct
-        char_lit.push(c);
-        // expect a closing single-quote 
-        // @TODO handle errors
-        if stream.next().expect("missing closing char") != char_set::SINGLE_QUOTE {
-            panic!("expecting closing '\'' character")
-        };
-        loc.next_col();
-    }
-    Ok(VHDLToken::CharLiteral(Character(char_lit)))
 }
 
 /// Checks is a character `c` is within the given extended digit range set by `b`.
@@ -1317,71 +1238,445 @@ impl Tokenize for VHDLTokenizer {
     type TokenType = VHDLToken;
 
     fn tokenize(s: &str) -> Vec<Token<Self::TokenType>> {
-        let mut loc = Position::new();
-        let mut chars = s.chars().peekable();
+        let mut train = TrainCar::new(s.chars());
         // store results here as we consume the characters
         let mut tokens = Vec::new();
         // consume every character (lexical analysis)
-        while let Some(c) = chars.next() {
-            loc.next_col();
-
-            let tk_loc = Position(loc.0, loc.1);
+        while let Some(c) = train.consume() {
+            let tk_loc = train.locate().clone();
             if char_set::is_letter(&c) {
-                // collect general identifier (or bit string literal) 
-                let tk = collect_identifier(&mut chars, &mut loc, c).expect("failed to read identifier");
+                // collect general identifier (@TODO or bit string literal)
+                let tk = consume_word(&mut train, c).unwrap(); 
                 tokens.push(Token::new(tk, tk_loc));
 
             } else if c == char_set::BACKSLASH {
                 // collect extended identifier
-                let tk = collect_extended_identifier(&mut chars, &mut loc).unwrap();
+                let tk = consume_extended_identifier(&mut train).unwrap();
                 tokens.push(Token::new(tk, tk_loc));
 
             } else if c == char_set::DOUBLE_QUOTE {
                 // collect string literal
-                let tk = VHDLToken::StrLiteral(enclose(&c, &mut chars, &mut loc));
+                let tk = consume_str_lit(&mut train).unwrap();
                 tokens.push(Token::new(tk, tk_loc));
 
             } else if c == char_set::SINGLE_QUOTE {
                 // collect character literal
-                let tk = collect_chr_lit(&mut chars, &mut loc).expect("invalid char literal");
+                let tk = consume_char_lit(&mut train).unwrap();
                 tokens.push(Token::new(tk, tk_loc));
 
             } else if char_set::is_digit(&c) {
                 // collect decimal literal (or bit string literal or based literal)
-                let tk = collect_abst_lit(&mut chars, &mut loc, c).expect("invalid abst literal");
-                tokens.push(Token::new(tk, tk_loc));
+                //let tk = collect_abst_lit(&mut chars, &mut loc, c).expect("invalid abst literal");
+                //tokens.push(Token::new(tk, tk_loc));
 
-            } else if c == char_set::DASH && chars.peek().is_some() && chars.peek().unwrap() == &char_set::DASH {    
+            } else if c == char_set::DASH && train.peek().is_some() && train.peek().unwrap() == &char_set::DASH {    
                 // collect a single-line comment           
-                let tk = collect_comment(&mut chars, &mut loc);
+                let tk = consume_comment(&mut train).unwrap();
                 tokens.push(Token::new(tk, tk_loc));
 
-            } else if c == char_set::FWDSLASH && chars.peek().is_some() && chars.peek().unwrap() == &char_set::STAR {
+            } else if c == char_set::FWDSLASH && train.peek().is_some() && train.peek().unwrap() == &char_set::STAR {
                 // collect delimited (multi-line) comment
-                let tk = collect_delim_comment(&mut chars, &mut loc);
+                let tk = consume_delim_comment(&mut train).unwrap();
                 tokens.push(Token::new(tk, tk_loc));
 
             } else {
                 // collect delimiter
-                if let Some(tk) = collect_delimiter(&mut chars, &mut loc, Some(c)) {
+                if let Some(tk) = collect_delimiter(&mut train, Some(c)) {
                     tokens.push(Token::new(tk, tk_loc));
                 }
             }
-            // o.w. collect whitespace
-            if char_set::is_newline(&c) == true {
-                loc.next_line();
-            }
         }
         // push final EOF token
-        loc.next_col();
-        tokens.push(Token::new(VHDLToken::EOF, loc));
+        let mut tk_loc = train.locate().clone();
+        tk_loc.next_col();
+        tokens.push(Token::new(VHDLToken::EOF,  tk_loc.clone()));
         tokens
     }
 }
 
+
+// --- REFACTORED SECTION ---
+
+/// Captures VHDL Tokens keywords and basic identifiers.
+/// 
+/// Assumes the first `letter` char was the last char consumed before the function call.
+fn consume_word(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Result<VHDLToken, String> {
+    let word = consume_integer(train, Some(c0), char_set::is_letter_or_digit)?;
+    match VHDLToken::match_keyword(&word) {
+        Some(keyword) => Ok(keyword),
+        None => Ok(VHDLToken::Identifier(Identifier::Basic(word)))
+    }
+}
+
+/// Captures VHDL Tokens that begin with a letter (basic identifier and bit string literal)
+fn consume_start_with_letter() {}
+
+/// Captures the generic pattern production rule by passing a fn as `eval` to compare.
+/// - A ::= A { \[ underline ] A }
+fn consume_integer(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<char>, eval: fn(&char) -> bool) -> Result<String, String> {
+        let mut car = if let Some(c) = c0 { String::from(c) } else { String::new() };
+        while let Some(c) = train.peek() {
+            if eval(&c) == true {
+                car.push(train.consume().unwrap());
+            } else if c == &char_set::UNDERLINE {
+                if car.is_empty() == true { return Err(String::from("expecting a digit before underline")) }
+                car.push(train.consume().unwrap());
+                // a digit must proceed the underline
+                if let Some(c_next) = train.consume() {
+                    if eval(&c_next) == false {
+                        return Err(String::from("expecting a digit to follow underline"))
+                    } else {
+                        car.push(c_next);
+                    }
+                } else {
+                    return Err(String::from("expecting a digit"))
+                }
+            } else {
+                break;
+            }
+        }
+        Ok(car)
+}
+
+/// Captures an exponent.   
+///
+/// Assumes the previous function has already peeked and determined the next char is 'E' as `c0`.
+/// - exponent ::= E \[ + ] integer | E – integer  
+fn consume_exponent(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Result<String, String> {
+    // start with 'E'
+    let mut expon = String::from(c0);
+    // check for sign
+    let sign = if let Some(c1) = train.consume() {
+        if c1 != char_set::PLUS && c1 != char_set::DASH && char_set::is_digit(&c1) == false {
+            return Err(String::from("expecting +, -, or a digit"))
+        } else {
+            c1
+        }
+    } else {
+        return Err(String::from("expecting +, -, or digit but got nothing"))
+    };
+    // determine if c0 was a digit 
+    let c0 = if char_set::is_digit(&sign) == true {
+        Some(sign)
+    } else {
+        // add the sign to the exponent
+        expon.push(sign);
+        None
+    };
+    let value = consume_integer(train, c0, char_set::is_digit)?;
+    if value.is_empty() {
+        Err(String::from("expecting an integer exponent value but got nothing"))
+    } else {
+        expon.push_str(&value);
+        Ok(expon)
+    }
+}
+
+/// Captures an extended identifier token.
+/// 
+/// Errors if the identifier is empty.
+/// train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<char>) -> Result<String, String> {
+fn consume_extended_identifier(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VHDLToken, String> { 
+    let id = consume_literal(train, &char_set::BACKSLASH)?;
+    if id.is_empty() { 
+        Err(String::from("extended identifier cannot be empty")) 
+    } else {
+        Ok(VHDLToken::Identifier(Identifier::Extended(id)))
+    }
+}
+
+/// Walks through the stream to gather a `String` literal until finding the 
+/// exiting character `br`.
+/// 
+/// An escape is allowed by double placing the `br`, i.e. """hello"" world".
+/// Assumes the first token to parse in the stream is not the `br` character.
+/// Allows for zero or more characters in result and chars must be graphic.
+fn consume_literal(train: &mut TrainCar<impl Iterator<Item=char>>, br: &char) -> Result<String, String> { 
+        let mut result = String::new();
+        while let Some(c) = train.consume() {
+            // verify it is a graphic character
+            if char_set::is_graphic(&c) == false { return Err(String::from("invalid character in literal")) }
+            // detect escape sequence
+            if br == &c {
+                match train.peek() {
+                    Some(c_next) => if br == c_next {
+                        train.consume(); // skip over escape character
+                    } else {
+                        return Ok(result);
+                    }
+                    None => return Ok(result),
+                }
+            } 
+            result.push(c);
+        }
+        Err(String::from("expecting closing delimiter"))
+}
+
+/// Captures a character literal according to VHDL-2018 LRM p231. 
+/// 
+/// Assumes the first single quote '\'' was the last char consumed.
+fn consume_char_lit(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VHDLToken, String> {
+    let mut char_lit = String::with_capacity(1);
+    if let Some(c) = train.consume() {
+        // verify the character is a graphic character
+        if char_set::is_graphic(&c) == false { return Err(String::from("char not graphic")) }
+        // add to the struct
+        char_lit.push(c);
+        // expect a closing single-quote 
+        if let Some(c) = train.consume() {
+            if c != char_set::SINGLE_QUOTE {
+                return Err(String::from("expecting a single quote but got something else"))
+            }
+        } else {
+            return Err(String::from("expecting a single quote but got none"))
+        }
+    }
+    Ok(VHDLToken::CharLiteral(Character(char_lit)))
+}
+
+/// Captures a string literal.
+/// 
+/// Assumes the first double quote '\"' was the last char consumed before entering the function.
+fn consume_str_lit(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VHDLToken, String> {
+    let value = consume_literal(train, &char_set::DOUBLE_QUOTE)?;
+    Ok(VHDLToken::StrLiteral(value))
+}
+
+/// Collects a delimited comment (all characters after a `/*` up until `*/`).
+/// 
+/// Assumes the opening '/' char was the last char consumed before entering the function.
+/// Also assumes the next char is '*'.
+fn consume_delim_comment(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VHDLToken, String> {
+    // skip over opening '*'
+    train.consume().expect("assumes '*' exists");
+    let mut note = String::new();
+    while let Some(c) = train.consume() {
+        // check if we are breaking from the comment
+        if c == char_set::STAR {
+            if let Some(c_next) = train.peek() {
+                // break from the comment
+                if c_next == &char_set::FWDSLASH {
+                    train.consume();
+                    return Ok(VHDLToken::Comment(Comment::Delimited(note)))
+                }
+            }
+        }
+        note.push(c);
+    }
+    Err(String::from("missing closing delimiter */"))
+}
+
+/// Collects a single-line comment (all characters after a `--` up until end-of-line).
+/// 
+/// Assumes the opening '-' was the last char consumed before entering the function.
+/// Also assumes the next char is '-'.
+fn consume_comment(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VHDLToken, String> { 
+    // skip over second '-'
+    train.consume(); 
+    // consume characters to form the comment
+    let mut note = String::new();
+    while let Some(c) = train.consume() {
+        // cannot be vt, cr (\r), lf (\n)
+        if c == '\u{000B}' || c == '\u{000D}' || c == '\u{000A}' {
+            break;
+        } else {
+            note.push(c);
+        }
+    }
+    Ok(VHDLToken::Comment(Comment::Single(note)))
+}
+
+/// Helps keep the current position in the contents as the characters are consumed.
+struct TrainCar<T> where T: Iterator<Item=char> {
+    contents: Peekable<T>,
+    loc: Position,
+}
+
+impl<T> TrainCar<T> where T: Iterator<Item=char> {
+    fn consume(&mut self) -> Option<char> {
+        if let Some(c) = self.contents.next() {
+            self.loc.step(&c);
+            Some(c)
+        } else {
+            None
+        }
+    }
+
+    fn peek(&mut self) -> Option<&char> {
+        self.contents.peek()
+    }
+
+    fn new(s: T) -> Self {
+        Self {
+            loc: Position::new(),
+            contents: s.peekable(),
+        }
+    }
+
+    fn as_ref(&self) -> &Peekable<T> {
+        &self.contents
+    }
+
+    /// Access the position of the first remainig character.
+    fn locate(&self) -> &Position {
+        &self.loc
+    }
+}
+
+
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn lex_single_comment() {
+        let contents = "\
+--here is a vhdl comment";
+        let mut tc = TrainCar::new(contents.chars());
+        tc.consume(); // already determined first dash
+        assert_eq!(consume_comment(&mut tc).unwrap(), VHDLToken::Comment(Comment::Single("here is a vhdl comment".to_owned())));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position(1, 24));
+
+        let contents = "\
+--here is a vhdl comment
+entity fa is end entity;";
+        let mut tc = TrainCar::new(contents.chars());
+        tc.consume(); // already determined first dash
+        assert_eq!(consume_comment(&mut tc).unwrap(), VHDLToken::Comment(Comment::Single("here is a vhdl comment".to_owned())));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "entity fa is end entity;");
+        assert_eq!(tc.locate(), &Position(2, 0));
+    }
+
+    #[test]
+    fn lex_delim_comment() {
+        let contents = "\
+/* here is a vhdl 
+delimited-line comment. Look at all the space! */;";
+        let mut tc = TrainCar::new(contents.chars());
+        tc.consume();
+        assert_eq!(consume_delim_comment(&mut tc).unwrap(), VHDLToken::Comment(Comment::Delimited(" here is a vhdl 
+delimited-line comment. Look at all the space! ".to_owned())));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
+        assert_eq!(tc.locate(), &Position(2, 49));
+
+        let contents = "/* here is a vhdl comment";
+        let mut tc = TrainCar::new(contents.chars());
+        tc.consume();
+        assert_eq!(consume_delim_comment(&mut tc).is_err(), true);
+    }
+
+    #[test]
+    fn lex_char_literal() {
+        let contents = "1'";
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(consume_char_lit(&mut tc).unwrap(), VHDLToken::CharLiteral(Character("1".to_owned())));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position(1, 2));
+
+        let contents = "12'";
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(consume_char_lit(&mut tc).is_err(), true);
+    }
+
+    #[test]
+    fn lex_expon() {
+        let contents = "E+24";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_exponent(&mut tc, c0).unwrap(), "E+24");
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position(1, 4));
+
+        let contents = "e6;";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_exponent(&mut tc, c0).unwrap(), "e6");
+        assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
+        assert_eq!(tc.locate(), &Position(1, 2));
+
+        let contents = "e-12;";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_exponent(&mut tc, c0).unwrap(), "e-12");
+        assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
+
+        // negative test cases
+        let contents = "e-;";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_exponent(&mut tc, c0).is_err(), true);
+
+        let contents = "e+2_;";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_exponent(&mut tc, c0).is_err(), true);
+
+        let contents = "e";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_exponent(&mut tc, c0).is_err(), true);
+    }
+
+    #[test]
+    fn lex_integer() {
+        let contents = "234";
+        // testing using digit prod. rule "integer"
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(consume_integer(&mut tc, None, char_set::is_digit).unwrap(), "234");
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position(1, 3));
+
+        let contents = "1_2_345 ";
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(consume_integer(&mut tc, None, char_set::is_digit).unwrap(), "1_2_345");
+        assert_eq!(tc.as_ref().clone().collect::<String>(), " ");
+        assert_eq!(tc.locate(), &Position(1, 7));
+
+        let contents = "23__4";
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(consume_integer(&mut tc, None, char_set::is_digit).is_err(), true); // double underscore
+
+        let contents = "_24";
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(consume_integer(&mut tc, None, char_set::is_digit).is_err(), true); // leading underscore
+
+        let contents = "_23_4";
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(consume_integer(&mut tc, Some('1'), char_set::is_digit).is_ok(), true); 
+
+        // testing using extended_digit prod. rule "based_integer"
+        let contents = "abcd_FFFF_0021";
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(consume_integer(&mut tc, None, char_set::is_extended_digit).unwrap(), "abcd_FFFF_0021");
+
+        // testing using graphic_char prod. rule "bit_value"
+        let contents = "XXXX_01LH_F--1";
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(consume_integer(&mut tc, None, char_set::is_graphic).unwrap(), "XXXX_01LH_F--1");
+    }
+
+    #[test]
+    fn lex_literal() {
+        let contents = "\" go Gators! \" ";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_literal(&mut tc, &c0).unwrap(), " go Gators! ");
+        assert_eq!(tc.as_ref().clone().collect::<String>(), " ");
+        assert_eq!(tc.locate(), &Position(1, 14));
+
+        let contents = "\" go \"\"to\"\"\" ";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_literal(&mut tc, &c0).unwrap(), " go \"to\"");
+        assert_eq!(tc.as_ref().clone().collect::<String>(), " ");
+        assert_eq!(tc.locate(), &Position(1, 12));
+
+        let contents = "\"go ";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_literal(&mut tc, &c0).is_err(), true); // no closing quote
+    }
 
     #[test]
     fn ignore_case_cmp() {
@@ -1597,74 +1892,66 @@ entity fa is end entity;";
         fn read_delimiter_single() {
             use super::VHDLToken::*;
 
-            let mut loc = Position::new();
             let contents = "&";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_delimiter(&mut stream, &mut loc, None), Some(Ampersand));
-            assert_eq!(stream.collect::<String>(), "");
-            assert_eq!(loc, Position(1, 1));
+            let mut tc = TrainCar::new(contents.chars());
+            assert_eq!(collect_delimiter(&mut tc, None), Some(Ampersand));
+            assert_eq!(tc.as_ref().clone().collect::<String>(), "");
+            assert_eq!(tc.locate(), &Position(1, 1));
 
-            let mut loc = Position::new();
             let contents = "?";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_delimiter(&mut stream, &mut loc, None), Some(Question));
-            assert_eq!(stream.collect::<String>(), "");
-            assert_eq!(loc, Position(1, 1));
+            let mut tc = TrainCar::new(contents.chars());
+            assert_eq!(collect_delimiter(&mut tc, None), Some(Question));
+            assert_eq!(tc.as_ref().clone().collect::<String>(), "");
+            assert_eq!(tc.locate(), &Position(1, 1));
 
-            let mut loc = Position::new();
             let contents = "< MAX_COUNT";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_delimiter(&mut stream, &mut loc, None), Some(Lt));
-            assert_eq!(stream.collect::<String>(), " MAX_COUNT");
-            assert_eq!(loc, Position(1, 1));
+            let mut tc = TrainCar::new(contents.chars());
+            assert_eq!(collect_delimiter(&mut tc, None), Some(Lt));
+            assert_eq!(tc.as_ref().clone().collect::<String>(), " MAX_COUNT");
+            assert_eq!(tc.locate(), &Position(1, 1));
         }
 
         #[test]
         fn read_delimiter_none() {
-            let mut loc = Position::new();
             let contents = "fa";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_delimiter(&mut stream, &mut loc, None), None);
-            assert_eq!(stream.collect::<String>(), "fa");
-            assert_eq!(loc, Position(1, 0));
+            let mut tc = TrainCar::new(contents.chars());
+            assert_eq!(collect_delimiter(&mut tc, None), None);
+            assert_eq!(tc.as_ref().clone().collect::<String>(), "fa");
+            assert_eq!(tc.locate(), &Position(1, 0));
         }
 
         #[test]
         fn read_delimiter_double() {
             use super::VHDLToken::*;
 
-            let mut loc = Position::new();
             let contents = "<=";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_delimiter(&mut stream, &mut loc, None), Some(SigAssign));
-            assert_eq!(stream.collect::<String>(), "");
-            assert_eq!(loc, Position(1, 2));
+            let mut tc = TrainCar::new(contents.chars());
+            assert_eq!(collect_delimiter(&mut tc, None), Some(SigAssign));
+            assert_eq!(tc.as_ref().clone().collect::<String>(), "");
+            assert_eq!(tc.locate(), &Position(1, 2));
 
-            let mut loc = Position::new();
             let contents = "**WIDTH";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_delimiter(&mut stream, &mut loc, None), Some(DoubleStar));
-            assert_eq!(stream.collect::<String>(), "WIDTH");
-            assert_eq!(loc, Position(1, 2));
+            let mut tc = TrainCar::new(contents.chars());
+            assert_eq!(collect_delimiter(&mut tc, None), Some(DoubleStar));
+            assert_eq!(tc.as_ref().clone().collect::<String>(), "WIDTH");
+            assert_eq!(tc.locate(), &Position(1, 2));
         }
 
         #[test]
         fn read_delimiter_triple() {
             use super::VHDLToken::*;
 
-            let mut loc = Position::new();
             let contents = "<=>";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_delimiter(&mut stream, &mut loc, None), Some(SigAssoc));
-            assert_eq!(stream.collect::<String>(), "");
-            assert_eq!(loc, Position(1, 3));
+            let mut tc = TrainCar::new(contents.chars());
+            assert_eq!(collect_delimiter(&mut tc, None), Some(SigAssoc));
+            assert_eq!(tc.as_ref().clone().collect::<String>(), "");
+            assert_eq!(tc.locate(), &Position(1, 3));
 
-            let mut loc = Position::new();
             let contents = "?/= MAGIC_NUM";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_delimiter(&mut stream, &mut loc, None), Some(MatchNE));
-            assert_eq!(stream.collect::<String>(), " MAGIC_NUM");
-            assert_eq!(loc, Position(1, 3));
+            let mut tc = TrainCar::new(contents.chars());
+            assert_eq!(collect_delimiter(&mut tc, None), Some(MatchNE));
+            assert_eq!(tc.as_ref().clone().collect::<String>(), " MAGIC_NUM");
+            assert_eq!(tc.locate(), &Position(1, 3));
         }
 
         #[test]

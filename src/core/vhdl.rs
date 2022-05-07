@@ -1,5 +1,11 @@
 //! VHDL tokenizer
 use std::iter::Peekable;
+use std::str::FromStr;
+
+trait Tokenize {
+    type TokenType;
+    fn tokenize(s: &str) -> Vec<Token<Self::TokenType>>;
+} 
 
 #[derive(Debug, PartialEq, Clone)]
 /// (Line, Col)
@@ -239,19 +245,14 @@ impl AbstLiteral {
     }
 }
 
-trait Tokenize {
-    type TokenType;
-    fn tokenize(s: &str) -> Vec<Token<Self::TokenType>>;
-} 
-
 #[derive(Debug, PartialEq)]
 enum VHDLToken {
     Comment(Comment),               // (String) 
     Identifier(Identifier),         // (String) ...can be general or extended (case-sensitive) identifier
     AbstLiteral(AbstLiteral),       // (String)
-    CharLiteral(Character),         // (char)
+    CharLiteral(Character),         // (String)
     StrLiteral(String),             // (String)
-    BitStrLiteral(BitStrLiteral),  // (String)
+    BitStrLiteral(BitStrLiteral),   // (String)
     EOF,
     // --- delimiters
     Ampersand,      // &
@@ -418,40 +419,29 @@ enum VHDLToken {
 /// If it successfully finds a valid VHDL delimiter, it will move the `loc` the number
 /// of characters it consumed.
 fn collect_delimiter(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<char>) -> Result<VHDLToken, String> {
+    // delimiter will have at most 3 characters
     let mut delim = String::with_capacity(3);
-    if let Some(c) = c0 { delim.push(c); }
-
+    if let Some(c) = c0 { delim.push(c); };
+    // check the next character in the sequence
     while let Some(c) = train.peek() {
         match delim.len() {
             0 => match c {
                 // ambiguous characters...read another character (could be a len-2 delimiter)
-                '?' | '<' | '>' | '/' | '=' | '*' | ':' => {
-                    delim.push(train.consume().unwrap())
-                },
-                _ => { 
-                    // if it was a delimiter, take the character and increment the location
-                    return VHDLToken::match_delimiter(&String::from(train.consume().unwrap()))
-                }
+                '?' | '<' | '>' | '/' | '=' | '*' | ':' => delim.push(train.consume().unwrap()),
+                // if it was a delimiter, take the character and increment the location
+                _ => return VHDLToken::match_delimiter(&String::from(train.consume().unwrap())),
             }
             1 => match delim.chars().nth(0).unwrap() {
-                '?' => {
-                    match c {
+                '?' => match c {
                         // move on to next round (could be a len-3 delimiter)
-                        '/' | '<' | '>' => {
-                            delim.push(train.consume().unwrap())
-                        }
-                        _ => { return Ok(VHDLToken::match_delimiter(&delim).expect("invalid token")) }
-                    }
-                }
-                '<' => {
-                    match c {
+                        '/' | '<' | '>' => delim.push(train.consume().unwrap()),
+                        _ => return Ok(VHDLToken::match_delimiter(&delim).expect("invalid token")),
+                    },
+                '<' => match c {
                         // move on to next round (could be a len-3 delimiter)
-                        '=' => {
-                            delim.push(train.consume().unwrap())
-                        },
-                        _ => { return Ok(VHDLToken::match_delimiter(&delim).expect("invalid token")) }
-                    }
-                }
+                        '=' => delim.push(train.consume().unwrap()),
+                        _ => return Ok(VHDLToken::match_delimiter(&delim).expect("invalid token")),
+                    },
                 _ => {
                     // try with 2
                     delim.push(*c);
@@ -985,6 +975,9 @@ mod char_set {
 }
 
 /// Checks is a character `c` is within the given extended digit range set by `b`.
+/// 
+/// This function is useful for verifying the values of extended_digits in a based
+/// literal because 2 <= `b` <= 16 (VHDL-1987 LRM - current).
 fn in_range(b: usize, c: &char) -> bool {
     let within_digit = (*c as usize) < char_set::ASCII_ZERO + b && (*c as usize) >= char_set::ASCII_ZERO;
     if b <= 10 {
@@ -1165,13 +1158,7 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
     } else {
         Ok(VHDLToken::AbstLiteral(AbstLiteral::Decimal(number)))
     }
-    // check for exponent, dot, -> decimal_literal
-    // check for hash -> based_literal
-    // check for alphabetic characters other than 'e' -> bit_str_literal
-    // none
 }
-
-use std::str::FromStr;
 
 /// Captures VHDL Tokens: keywords and basic identifiers.
 /// 
@@ -1199,8 +1186,8 @@ fn consume_word(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Res
 /// Captures the remaining characters for a bit string literal.
 /// 
 /// Assumes the integer, base_specifier, and first " char are already consumed
-/// and moved as `s0`.  Rules taken from VHDL 2019 LRM p177 due to backward-compatible additions. Note
-/// a bit string literal is allowed to have no characters within the " ".
+/// and moved as `s0`.  Rules taken from VHDL-2019 LRM p177 due to backward-compatible additions. Note
+/// that a bit string literal is allowed to have no characters within the " ".
 /// - bit_string_literal ::= \[ integer ] base_specifier " \[ bit_value ] "
 /// - bit_value ::= graphic_character { [ underline ] graphic_character } 
 fn consume_bit_str_literal(train: &mut TrainCar<impl Iterator<Item=char>>, s0: String) -> Result<VHDLToken, String> {
@@ -1510,7 +1497,7 @@ mod test {
         let c0 = tc.consume().unwrap();
         assert_eq!(consume_numeric(&mut tc, c0).unwrap(), VHDLToken::AbstLiteral(AbstLiteral::Based("016#0FF#".to_owned())));
 
-        // '#' can be replaced by ':' if done in both occurences - VHDL 1993 LRM p180
+        // '#' can be replaced by ':' if done in both occurences - VHDL-1993 LRM p180
         let contents = "016:0FF:";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();

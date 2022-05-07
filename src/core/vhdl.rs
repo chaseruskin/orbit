@@ -133,6 +133,11 @@ impl BitStrLiteral {
         self.literal = s;
         self
     }
+
+    fn width(mut self, w: usize) -> Self {
+        self.width = Some(w);
+        self
+    }
 }
 
 // B|O|X|UB|UO|UX|SB|SO|SX|D
@@ -285,7 +290,7 @@ enum VHDLToken {
     Eq,             // =
     Gt,             // >
     BackTick,       // `
-    Pipe,           // |
+    Pipe,           // | or ! VHDL-1993 LRM p180
     BrackL,         // [
     BrackR,         // ]
     Question,       // ?
@@ -535,7 +540,7 @@ impl VHDLToken {
             "="     => Self::Eq,           
             ">"     => Self::Gt,           
             "`"     => Self::BackTick,     
-            "|"     => Self::Pipe,         
+      "!" | "|"     => Self::Pipe,         
             "["     => Self::BrackL,       
             "]"     => Self::BrackR,       
             "?"     => Self::Question,     
@@ -935,6 +940,7 @@ fn enclose<T>(br: &char, stream: &mut Peekable<T>, loc: &mut Position) -> String
 }
 
 mod char_set {
+    pub const ASCII_ZERO: usize = '0' as usize;
     pub const DOUBLE_QUOTE: char = '\"';
     pub const BACKSLASH: char = '\\';
     pub const STAR: char = '*';
@@ -944,6 +950,7 @@ mod char_set {
     pub const SINGLE_QUOTE: char = '\'';
     pub const DOT: char = '.';
     pub const HASH: char = '#';
+    pub const COLON: char = ':';
     pub const PLUS: char = '+';
 
     /// Checks if `c` is a space according to VHDL-2008 LRM p225.
@@ -1037,30 +1044,40 @@ fn collect_identifier<T>(stream: &mut Peekable<T>, loc: &mut Position, c0: char)
 
     let mut id = String::from(c0);
     let mut bit_lit: Option<BitStrLiteral> = None;
+    let mut was_underline = false;
 
     while let Some(c) = stream.peek() {
         if (bit_lit.is_none() && (char_set::is_letter(&c) || c == &char_set::UNDERLINE)) ||
             (bit_lit.is_some() && c != &char_set::DOUBLE_QUOTE && (char_set::is_graphic(&c) || c == &char_set::UNDERLINE)) {
+            // verify the last character was not an underline if as a bit literal
+            if bit_lit.is_some() && c == &char_set::UNDERLINE && was_underline == true { panic!("cannot have double underline") }
+            // remember if the current char was an underline for next state
+            was_underline = c == &char_set::UNDERLINE;
+            // consume character into literal/idenifier
             loc.next_col();
-            let c = stream.next().unwrap();
-            id.push(c);
-        // handle bit string literals
+            id.push(stream.next().unwrap());
+        // handle bit string literals 
         } else if c == &char_set::DOUBLE_QUOTE {
             if bit_lit.is_none() {
                 let base = BaseSpec::from_str(&id)?;
                 // clear id to begin reading string literal
                 id.clear();
                 // throw away initial " char
-                stream.next().unwrap(); 
                 loc.next_col();
+                stream.next().unwrap(); 
+                // enter creating a bit string literal
+                // @TODO return Ok(collect_bit_str_literal(id, stream, loc))
                 bit_lit = Some(BitStrLiteral::new(base));
             } else if bit_lit.is_some() {
+                // verify the last character was not an underline
+                if was_underline == true { panic!("last character cannot be underline") }
                 // throw away closing " char
-                stream.next().unwrap(); 
                 loc.next_col();
+                stream.next().unwrap(); 
                 break; // exit loop
             }
         } else {
+            if bit_lit.is_some() { panic!("missing closing quote") }
             break;
         }
     }
@@ -1094,6 +1111,16 @@ fn collect_comment<T>(stream: &mut Peekable<T>, loc: &mut Position) -> VHDLToken
         }
     }
     VHDLToken::Comment(Comment::Single(note))
+}
+
+/// Captures the bit string literal.
+/// 
+/// At this point, the `value` will have (maybe) integer and a base_specifier.
+/// - bit_string_literal ::=  \[ integer ] base_specifier " \[ bit_value ] "
+fn collect_bit_str_literal<T>(value: String, stream: &mut Peekable<T>, loc: &mut Position) -> VHDLToken
+where T: Iterator<Item=char> {
+
+    todo!()
 }
 
 /// Collects a delimited comment (all characters after a `/*` up until `*/`).
@@ -1154,49 +1181,136 @@ where T: Iterator<Item=char> {
     Ok(VHDLToken::CharLiteral(Character(char_lit)))
 }
 
-/// Captures an abstract literal; namely a decimal_literal or based_literal.
+/// Checks is a character `c` is within the given extended digit range set by `b`.
+fn in_range(b: usize, c: &char) -> bool {
+    let within_digit = (*c as usize) < char_set::ASCII_ZERO + b && (*c as usize) >= char_set::ASCII_ZERO;
+    if b <= 10 {
+        return within_digit
+    } else {
+        match b {
+            11 => within_digit || match c { 'a'..='a' | 'A'..='A' => true, _ => false },
+            12 => within_digit || match c { 'a'..='b' | 'A'..='B' => true, _ => false },
+            13 => within_digit || match c { 'a'..='c' | 'A'..='C' => true, _ => false },
+            14 => within_digit || match c { 'a'..='d' | 'A'..='D' => true, _ => false },
+            15 => within_digit || match c { 'a'..='e' | 'A'..='E' => true, _ => false },
+            16 => within_digit || match c { 'a'..='f' | 'A'..='F' => true, _ => false },
+            _ => panic!("invalid base (only 2-16)")
+        }
+    }
+}
+
+/// Captures an abstract literal: either a decimal_literal or based_literal.
 fn collect_abst_lit<T>(stream: &mut Peekable<T>, loc: &mut Position, c0: char) -> Result<VHDLToken, ()> 
 where T: Iterator<Item=char> {
     // begin with first identified digit
     let mut lit = String::from(c0);
-    let mut is_deci = true; // start by assuming decimal
-    let mut dotted = false; // check if already used 'dot'
-    let mut was_underline = false; // remember if last char was '_'
-    let mut handle_exponent = false;
+    // a base literal's base 
+    let mut base: Option<usize> = None;
+    // check if already used 'dot'
+    let mut dotted = false; 
+    // remember if last char was a digit 0..=9
+    let mut was_digit = true; 
+    // remember if the char is a ':' or '#' to start based literal
+    let mut base_delim_char: Option<char> = None;
+    // gather a base / number
     while let Some(c) = stream.peek() {
-        // verify it is a digit | underline
-        if char_set::is_digit(&c) == true || c == &char_set::UNDERLINE {
-            was_underline = if c == &char_set::UNDERLINE {
-                // cannot have '._'
-                if lit.ends_with('.') == true { panic!("digit must come after dot") };
-                // cannot have double underscores '__'
-                if was_underline == true { panic!("double underline in number") };
-                true
-            } else {
-                false
-            };
+        // is a integer | underline | extended_digit
+        if char_set::is_digit(&c) == true || c == &char_set::UNDERLINE || (base.is_some() && (c.is_ascii_alphabetic() || char_set::is_digit(&c))) {
+            // verify character is within range for a based_literal
+            if let Some(b) = base {
+                if c != &char_set::UNDERLINE && in_range(b, &c) == false { panic!("invalid extended digit {} {}", b, c) }
+            }
+            if c == &char_set::UNDERLINE && was_digit == false { panic!("underline must come after a digit") }
+            // remember if this char was a digit for next char logic
+            was_digit = c != &char_set::UNDERLINE;
             loc.next_col();
             lit.push(stream.next().unwrap());
+        // is a based_literal '#' char
+        } else if c == &char_set::HASH || c == &char_set::COLON {
+            // ensure we are using the right char
+            if let Some(d) = base_delim_char {
+                if c != &d { panic!("based literal must close with same character {}", d) }
+            // remember the starting character
+            } else {
+                base_delim_char = Some(*c);
+            }
+            if was_digit == false { panic!("digit must come before hash") }
+            // exit if it is the closing char '#'
+            if base.is_some() {
+                 // add char to lit
+                loc.next_col();
+                lit.push(stream.next().unwrap());
+                break; // exit the loop
+            }
+            // convert lit to a base
+            base = Some(lit.replace('_', "").parse::<usize>().unwrap());
+            // verify the base is a good range
+            if base < Some(2) || base > Some(16) { panic!("invalid base (2 <= x <= 16)") }
+            // add char to lit
+            loc.next_col();
+            lit.push(stream.next().unwrap());
+            was_digit = false;
+        // is a dot '.' (decimal point)
         } else if c == &char_set::DOT {
-            // cannot have multiple dots
-            if dotted == true { panic!("multiple dots in number") };
-            // add dot to literal and mark as 'dotted'
+            if dotted == true { panic!("cannot have multiple dots") };
+            // verify the last char was a digit
+            if was_digit == false { panic!("expected digit before dot") };
+            // add dot to lit
             loc.next_col();
             lit.push(stream.next().unwrap());
             dotted = true;
-        // this is a based_literal
-        } else if c == &char_set::HASH {
-            // @TODO
-        } else {  
-            handle_exponent = c == &'e' || c == &'E';
+            was_digit = false;
+        } else {
             break;
         }
     }
-    // handle the rules for exponent
-    if handle_exponent {
-
+    // check for exponent
+    let has_exponent = if let Some(c) = stream.peek() {
+        if c == &'e' || c == &'E' {
+            loc.next_col();
+            lit.push(stream.next().unwrap());
+            true
+        // pass to bit string literal
+        } else if c.is_ascii_alphabetic() == true { 
+            loc.next_col();
+            let c = stream.next().unwrap();
+            // @TODO somehow pass width found as `lit`?
+            return collect_identifier(stream, loc, c)
+        } else {
+            false
+        }
+    } else { false };
+    // capture exponent
+    if has_exponent == true {
+        // check for sign
+        loc.next_col();
+        let sign = stream.next().expect("missing exponent value");
+        if sign != char_set::PLUS && sign != char_set::DASH && char_set::is_digit(&sign) == false {
+            panic!("expecting +, -, or a digit")
+        }
+        was_digit = char_set::is_digit(&sign);
+        lit.push(sign);
+        while let Some(c) = stream.peek() {
+            was_digit = if char_set::is_digit(&c) == true {
+                loc.next_col();
+                lit.push(stream.next().unwrap());
+                true
+            } else if c == &char_set::UNDERLINE {
+                if was_digit == false { panic!("must have digit before underline")}
+                loc.next_col();
+                lit.push(stream.next().unwrap());
+                false
+            } else {
+                if was_digit == false { panic!("must close with a digit") }
+                break;
+            }
+        }
     }
-    Ok(VHDLToken::AbstLiteral(AbstLiteral::Decimal(lit)))
+    if base.is_some() {
+        Ok(VHDLToken::AbstLiteral(AbstLiteral::Based(lit)))
+    } else {
+        Ok(VHDLToken::AbstLiteral(AbstLiteral::Decimal(lit)))
+    }    
 }
 
 impl Tokenize for VHDLTokenizer {
@@ -1322,6 +1436,73 @@ mod test {
             assert_eq!(collect_abst_lit(&mut stream, &mut loc, '1').unwrap(), VHDLToken::AbstLiteral(vhdl::AbstLiteral::Decimal("123_4.5".to_owned())));
             assert_eq!(stream.collect::<String>(), ";");
             assert_eq!(loc, Position(1, 7));
+        }
+
+        #[test]
+        #[ignore]
+        fn read_full_bit_str_literal() {
+            let mut loc = Position(1, 1);
+            let contents = "0b\"10_1001_1111\";";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '1').unwrap(), VHDLToken::BitStrLiteral(vhdl::BitStrLiteral::new(BaseSpec::B).literal("10_1001_1111".to_owned()).width(10)));
+            assert_eq!(stream.collect::<String>(), ";");
+            assert_eq!(loc, Position(1, 17));
+
+            let mut loc = Position(1, 1);
+            let contents = "2SX\"F-\";";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '1').unwrap(), VHDLToken::BitStrLiteral(vhdl::BitStrLiteral::new(BaseSpec::SX).literal("F-".to_owned()).width(12)));
+            assert_eq!(stream.collect::<String>(), ";");
+            assert_eq!(loc, Position(1, 8));
+        }
+
+        #[test]
+        fn read_deci_literal_exp() {
+            let mut loc = Position(1, 1);
+            let contents = ".023E+24";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '6').unwrap(), VHDLToken::AbstLiteral(vhdl::AbstLiteral::Decimal("6.023E+24".to_owned())));
+            assert_eq!(stream.collect::<String>(), "");
+            assert_eq!(loc, Position(1, 9));
+
+            let mut loc = Position(1, 1);
+            let contents = "E6";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '1').unwrap(), VHDLToken::AbstLiteral(vhdl::AbstLiteral::Decimal("1E6".to_owned())));
+            assert_eq!(stream.collect::<String>(), "");
+            assert_eq!(loc, Position(1, 3));
+
+            let mut loc = Position(1, 1);
+            let contents = ".34e-12;";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '1').unwrap(), VHDLToken::AbstLiteral(vhdl::AbstLiteral::Decimal("1.34e-12".to_owned())));
+            assert_eq!(stream.collect::<String>(), ";");
+            assert_eq!(loc, Position(1, 8));
+        }
+
+        #[test]
+        fn read_based_literal() {
+            let mut loc = Position(1, 1);
+            let contents = "#1001_1010#;";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '2').unwrap(), VHDLToken::AbstLiteral(vhdl::AbstLiteral::Based("2#1001_1010#".to_owned())));
+            assert_eq!(stream.collect::<String>(), ";");
+            assert_eq!(loc, Position(1, 12));
+
+            let mut loc = Position(1, 1);
+            let contents = "6#abcd_FFFF#;";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '1').unwrap(), VHDLToken::AbstLiteral(vhdl::AbstLiteral::Based("16#abcd_FFFF#".to_owned())));
+            assert_eq!(stream.collect::<String>(), ";");
+            assert_eq!(loc, Position(1, 13));
+
+            // colon ':' can be replacement if used as open and closing VHDL-2019 LRM p180
+            let mut loc = Position(1, 1);
+            let contents = "6:abcd_FFFF:;";
+            let mut stream = contents.chars().peekable();
+            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '1').unwrap(), VHDLToken::AbstLiteral(vhdl::AbstLiteral::Based("16:abcd_FFFF:".to_owned())));
+            assert_eq!(stream.collect::<String>(), ";");
+            assert_eq!(loc, Position(1, 13));
         }
 
         #[test]

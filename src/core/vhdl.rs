@@ -1,4 +1,5 @@
 //! VHDL tokenizer
+use std::iter::Peekable;
 
 #[derive(Debug, PartialEq, Clone)]
 /// (Line, Col)
@@ -906,38 +907,6 @@ fn cmp_ascii_ignore_case(s0: &str, s1: &str) -> bool {
     true
 }
 
-use std::iter::Peekable;
-
-/// Walks through the stream to gather a `String` literal until finding the 
-/// exiting character `br`.
-/// 
-/// An escape is allowed by double placing the `br`, i.e. """hello"" world".
-/// Assumes the first token to parse in the stream is not the `br` character.
-/// The `loc` stays up to date on its position in the file.
-fn enclose<T>(br: &char, stream: &mut Peekable<T>, loc: &mut Position) -> String 
-    where T: Iterator<Item=char> {
-        let mut result = String::new();
-        while let Some(c) = stream.next() {
-            loc.next_col();
-            // verify it is a graphic character
-            if char_set::is_graphic(&c) == false { panic!("invalid character {}", c) }
-            // detect escape sequence
-            if br == &c {
-                match stream.peek() {
-                    Some(c_next) => if br == c_next {
-                        loc.next_col();
-                        stream.next(); // skip over escape character
-                    } else {
-                        break;
-                    }
-                    None => break,
-                }
-            } 
-            result.push(c);
-        }
-        result
-}
-
 mod char_set {
     pub const ASCII_ZERO: usize = '0' as usize;
     pub const DOUBLE_QUOTE: char = '\"';
@@ -1679,6 +1648,40 @@ delimited-line comment. Look at all the space! ".to_owned())));
     }
 
     #[test]
+    fn lex_literal_2() {
+        let contents = "\"Setup time is too short\"more text";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_literal(&mut tc, &c0).unwrap(), "Setup time is too short");
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "more text");
+        assert_eq!(tc.locate(), &Position(1, 25));
+
+        let contents = "\"\"\"\"\"\"";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_literal(&mut tc, &c0).unwrap(), "\"\"");
+        assert_eq!(tc.locate(), &Position(1, 6));
+
+        let contents = "\" go \"\"gators\"\" from UF! \"";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_literal(&mut tc, &c0).unwrap(), " go \"gators\" from UF! ");
+        assert_eq!(tc.locate(), &Position(1, 26));
+
+        let contents = "\\VHDL\\";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_literal(&mut tc, &c0).unwrap(), "VHDL");
+
+        let contents = "\\a\\\\b\\more text afterward";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_literal(&mut tc, &c0).unwrap(), "a\\b");
+        // verify the stream is left in the correct state
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "more text afterward");
+    }
+
+    #[test]
     fn ignore_case_cmp() {
         let s0 = "ABC";
         let s1 = "abc";
@@ -2060,41 +2063,6 @@ entity fa is end entity;";
             let id0 = Identifier::Extended("vhdl".to_owned()); // written as: \vhdl\
             let id1 = Identifier::Extended("VHDL".to_owned()); // written as: \VHDL\
             assert_ne!(id0, id1);
-        }
-
-        #[test]
-        fn wrap_enclose() {
-            let mut loc = Position(1, 1);
-            let contents = "\"Setup time is too short\"more text";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(enclose(&stream.next().unwrap(), &mut stream, &mut loc), "Setup time is too short");
-            assert_eq!(stream.collect::<String>(), "more text");
-            assert_eq!(loc, Position(1, 25));
-
-            let mut loc = Position(1, 1);
-            let contents = "\"\"\"\"\"\"";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(enclose(&stream.next().unwrap(), &mut stream, &mut loc), "\"\"");
-            assert_eq!(loc, Position(1, 6));
-
-            let mut loc = Position::new();
-            let contents = "\" go \"\"gators\"\" from UF! \"";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(enclose(&stream.next().unwrap(), &mut stream, &mut loc), " go \"gators\" from UF! ");
-            assert_eq!(loc, Position(1, 25));
-
-            let mut loc = Position::new();
-            let contents = "\\VHDL\\";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(enclose(&stream.next().unwrap(), &mut stream, &mut loc), "VHDL");
-
-            let mut loc = Position::new();
-            let contents = "\\a\\\\b\\more text afterward";
-            let mut stream = contents.chars().peekable();
-            let br = stream.next().unwrap();
-            assert_eq!(enclose(&br, &mut stream, &mut loc), "a\\b");
-            // verify the stream is left in the correct state
-            assert_eq!(stream.collect::<String>(), "more text afterward");
         }
 
         #[test]

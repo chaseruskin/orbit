@@ -1047,10 +1047,10 @@ fn collect_identifier<T>(stream: &mut Peekable<T>, loc: &mut Position, c0: char)
     let mut was_underline = false;
 
     while let Some(c) = stream.peek() {
-        if (bit_lit.is_none() && (char_set::is_letter(&c) || c == &char_set::UNDERLINE)) ||
+        if (bit_lit.is_none() && (char_set::is_letter(&c) || c == &char_set::UNDERLINE || char_set::is_digit(&c))) ||
             (bit_lit.is_some() && c != &char_set::DOUBLE_QUOTE && (char_set::is_graphic(&c) || c == &char_set::UNDERLINE)) {
-            // verify the last character was not an underline if as a bit literal
-            if bit_lit.is_some() && c == &char_set::UNDERLINE && was_underline == true { panic!("cannot have double underline") }
+            // avoid double underline
+            if c == &char_set::UNDERLINE && was_underline == true { panic!("cannot have double underline") }
             // remember if the current char was an underline for next state
             was_underline = c == &char_set::UNDERLINE;
             // consume character into literal/idenifier
@@ -1732,6 +1732,13 @@ entity fa is end entity;";
             assert_eq!(loc, Position(1, 6));
 
             let mut loc = Position(1, 1);
+            let words = "td_logic_1164.all;";
+            let mut stream = words.chars().peekable();
+            assert_eq!(collect_identifier(&mut stream, &mut loc, 's').unwrap(), VHDLToken::Identifier(vhdl::Identifier::Basic("std_logic_1164".to_owned())));
+            assert_eq!(stream.collect::<String>(), ".all;");
+            assert_eq!(loc, Position(1, 14));
+
+            let mut loc = Position(1, 1);
             let words = "eady_OUT<=";
             let mut stream = words.chars().peekable();
             assert_eq!(collect_identifier(&mut stream, &mut loc, 'r').unwrap(), VHDLToken::Identifier(vhdl::Identifier::Basic("ready_OUT".to_owned())));
@@ -1801,6 +1808,38 @@ entity fa is end entity;";
             assert_eq!(enclose(&br, &mut stream, &mut loc), "a\\b");
             // verify the stream is left in the correct state
             assert_eq!(stream.collect::<String>(), "more text afterward");
+        }
+
+        #[test]
+        #[ignore]
+        fn nor_gate_design_code() {
+            let s = "\
+-- design file for a nor_gate
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity nor_gate is 
+    generic(
+        N: positive
+    );
+    port(
+        a : in std_logic_vector(N-1 downto 0);
+        \\In\\ : in std_logic_vector(N-1 downto 0);
+        c : out std_logic_vector(N-1 downto 0)
+    );
+end entity nor_gate;
+
+architecture rtl of nor_gate is
+    constant MAGIC_NUM_1 : integer := 2#10101#; -- test constants against tokenizer
+    constant MAGIC_NUM_2 : std_logic_vector(7 downto 0) := 8x\"11\";
+begin
+    c <= a nor \\In\\;
+
+end architecture rtl;";
+            let vhdl = VHDLTokenizer::tokenize(&s);
+            let vhdl = VHDLTokenizer { inner: vhdl };
+            println!("{:?}", vhdl);
+            todo!()
         }
     }
 

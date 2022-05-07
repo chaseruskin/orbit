@@ -1137,11 +1137,20 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
             }
         // * bit string literal
         } else if c != &'e' && c != &'E' && char_set::is_letter(&c) {
-            todo!("implement bit string literal rule")
             // gather letters
-            // get double quote
-            // consume_integer(...) for char_set::is_graphic
-            // get double quote
+            let base_spec = consume_integer(train, None, char_set::is_letter)?;
+            // verify valid base specifier
+            BaseSpec::from_str(&base_spec)?;
+            // force double quote to be next
+            if train.peek().is_none() || train.peek().unwrap() != &char_set::DOUBLE_QUOTE {
+                return Err(String::from("expecting opening quote character for bit string literal"))
+            }
+            // append base_specifier
+            number.push_str(&base_spec);
+            // append first double quote " char
+            number.push(train.consume().unwrap());
+            // complete tokenizing the bit string literal
+            return Ok(consume_bit_str_literal(train, number)?)
         }
         // gather exponent
         if c == &'e' || c == &'E' {
@@ -1175,7 +1184,7 @@ fn consume_word(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Res
             // * bit string literal: check if the next char is a double quote
             if let Some(c) = train.peek() {
                 if c == &char_set::DOUBLE_QUOTE {
-                    // @TODO verify valid base specifier
+                    // verify valid base specifier
                     BaseSpec::from_str(&word)?;
                     // add the opening '"' character to the literal
                     word.push(train.consume().unwrap());
@@ -1198,11 +1207,11 @@ fn consume_bit_str_literal(train: &mut TrainCar<impl Iterator<Item=char>>, s0: S
     let mut literal = s0;
     // consume bit_value (all graphic characters except the double quote " char)
     let bit_value = consume_integer(train, None, char_set::is_graphic_and_not_double_quote)?;
-    literal.push_str(&bit_value);
     // verify the next character is the closing double quote " char
     if train.peek().is_none() || train.peek().unwrap() != &char_set::DOUBLE_QUOTE {
         return Err(String::from("expecting closing double quote for bit string literal"))
     }
+    literal.push_str(&bit_value);
     // accept the closing " char
     literal.push(train.consume().unwrap());
     Ok(VHDLToken::BitStrLiteral(BitStrLiteral(literal)))
@@ -1441,19 +1450,18 @@ mod test {
     }
 
     #[test]
-    #[ignore] // @TODO
     fn lex_full_bit_str() {
         let contents = "10b\"10_1001_1111\";";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap(); // already determined first digit
-        assert_eq!(consume_numeric(&mut tc, c0).unwrap(), VHDLToken::BitStrLiteral(BitStrLiteral("10b10_1001_1111".to_owned())));
+        assert_eq!(consume_numeric(&mut tc, c0).unwrap(), VHDLToken::BitStrLiteral(BitStrLiteral("10b\"10_1001_1111\"".to_owned())));
         assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
         assert_eq!(tc.locate(), &Position(1, 17));
 
         let contents = "12SX\"F-\";";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap(); // already determined first digit
-        assert_eq!(consume_numeric(&mut tc, c0).unwrap(), VHDLToken::BitStrLiteral(BitStrLiteral("12SXF-".to_owned())));
+        assert_eq!(consume_numeric(&mut tc, c0).unwrap(), VHDLToken::BitStrLiteral(BitStrLiteral("12SX\"F-\"".to_owned())));
         assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
         assert_eq!(tc.locate(), &Position(1, 8));
     }
@@ -2019,6 +2027,7 @@ entity nor_gate is
 end entity nor_gate;
 
 architecture rtl of nor_gate is
+    signal   MAGIC_NUM_3 : bit_vector(3 downto 0) := 0sx\"\"
     constant MAGIC_NUM_1 : integer := 2#10101#; -- test constants against tokenizer
     constant MAGIC_NUM_2 : std_logic_vector(7 downto 0) := 0; --8x\"11\";
 begin

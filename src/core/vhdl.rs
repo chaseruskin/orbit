@@ -1083,8 +1083,8 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
             } else {
                 return Ok(VHDLToken::AbstLiteral(AbstLiteral::Decimal(number)))
             };
-        // * based_literal
-        } else if c == &char_set::HASH {
+        // * based_literal (can begin with '#' or ':')
+        } else if c == &char_set::HASH || c == &char_set::COLON {
             based_delim = Some(*c);
             number.push(train.consume().unwrap());
             // gather first base integers
@@ -1164,9 +1164,6 @@ fn consume_word(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Res
         None => Ok(VHDLToken::Identifier(Identifier::Basic(word)))
     }
 }
-
-/// Captures VHDL Tokens that begin with a letter (basic identifier and bit string literal)
-fn consume_start_with_letter() {}
 
 /// Captures the generic pattern production rule by passing a fn as `eval` to compare.
 /// - A ::= A { \[ underline ] A }
@@ -1456,6 +1453,12 @@ mod test {
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(consume_numeric(&mut tc, c0).unwrap(), VHDLToken::AbstLiteral(AbstLiteral::Based("016#0FF#".to_owned())));
+
+        // '#' can be replaced by ':' if done in both occurences - VHDL 1993 LRM p180
+        let contents = "016:0FF:";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_numeric(&mut tc, c0).unwrap(), VHDLToken::AbstLiteral(AbstLiteral::Based("016:0FF:".to_owned())));
     }
 
     #[test]

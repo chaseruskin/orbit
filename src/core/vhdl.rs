@@ -111,43 +111,12 @@ impl Character {
 }
 
 #[derive(Debug, PartialEq)]
-struct BitStringLiteral(String); // @TODO overwrite old `bitstrliteral`
+struct BitStrLiteral(String);
 
-impl BitStringLiteral {
+impl BitStrLiteral {
     // Returns the reference to the inner `String` struct.
     fn as_str(&self) -> &str {
         &self.0.as_ref()
-    }
-}
-
-#[derive(Debug, PartialEq)]
-struct BitStrLiteral {
-    width: Option<usize>,
-    base: BaseSpec,
-    literal: String,
-}
-
-impl BitStrLiteral {
-    fn as_str(&self) -> &str {
-        &self.literal
-    }
-
-    fn new(b: BaseSpec) -> Self {
-        Self {
-            width: None,
-            base: b,
-            literal: String::new(),
-        }
-    }
-
-    fn literal(mut self, s: String) -> Self {
-        self.literal = s;
-        self
-    }
-
-    fn width(mut self, w: usize) -> Self {
-        self.width = Some(w);
-        self
     }
 }
 
@@ -282,7 +251,7 @@ enum VHDLToken {
     AbstLiteral(AbstLiteral),       // (String)
     CharLiteral(Character),         // (char)
     StrLiteral(String),             // (String)
-    BitStrLiteral(BitStrLiteral),   // (String)
+    BitStrLiteral(BitStrLiteral),  // (String)
     EOF,
     // --- delimiters
     Ampersand,      // &
@@ -448,7 +417,7 @@ enum VHDLToken {
 /// 
 /// If it successfully finds a valid VHDL delimiter, it will move the `loc` the number
 /// of characters it consumed.
-fn collect_delimiter(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<char>) -> Option<VHDLToken> {
+fn collect_delimiter(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<char>) -> Result<VHDLToken, String> {
     let mut delim = String::with_capacity(3);
     if let Some(c) = c0 { delim.push(c); }
 
@@ -461,12 +430,7 @@ fn collect_delimiter(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<
                 },
                 _ => { 
                     // if it was a delimiter, take the character and increment the location
-                    if let Some(r) = VHDLToken::match_delimiter(&String::from(*c)) {
-                        train.consume();
-                        return Some(r)
-                    } else {
-                        return None
-                    }
+                    return VHDLToken::match_delimiter(&String::from(train.consume().unwrap()))
                 }
             }
             1 => match delim.chars().nth(0).unwrap() {
@@ -476,7 +440,7 @@ fn collect_delimiter(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<
                         '/' | '<' | '>' => {
                             delim.push(train.consume().unwrap())
                         }
-                        _ => { return Some(VHDLToken::match_delimiter(&delim).expect("invalid token")) }
+                        _ => { return Ok(VHDLToken::match_delimiter(&delim).expect("invalid token")) }
                     }
                 }
                 '<' => {
@@ -485,15 +449,15 @@ fn collect_delimiter(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<
                         '=' => {
                             delim.push(train.consume().unwrap())
                         },
-                        _ => { return Some(VHDLToken::match_delimiter(&delim).expect("invalid token")) }
+                        _ => { return Ok(VHDLToken::match_delimiter(&delim).expect("invalid token")) }
                     }
                 }
                 _ => {
                     // try with 2
                     delim.push(*c);
-                    if let Some(op) = VHDLToken::match_delimiter(&delim) {
+                    if let Ok(op) = VHDLToken::match_delimiter(&delim) {
                         train.consume();
-                        return Some(op)
+                        return Ok(op)
                     } else {
                         // revert back to 1
                         delim.pop();
@@ -504,13 +468,13 @@ fn collect_delimiter(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<
             2 => {
                 // try with 3
                 delim.push(*c);
-                if let Some(op) = VHDLToken::match_delimiter(&delim) {
+                if let Ok(op) = VHDLToken::match_delimiter(&delim) {
                     train.consume();
-                    return Some(op)
+                    return Ok(op)
                 } else {
                     // revert back to 2 (guaranteed to exist)
                     delim.pop();
-                    return Some(VHDLToken::match_delimiter(&delim).expect("invalid token"))
+                    return Ok(VHDLToken::match_delimiter(&delim).expect("invalid token"))
                 }
             }
             _ => panic!("delimiter matching exceeds 3 characters")
@@ -522,8 +486,8 @@ fn collect_delimiter(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<
 
 impl VHDLToken {
     /// Attempts to match the given string of characters `s` to a VHDL delimiter.
-    fn match_delimiter(s: &str) -> Option<Self> {
-        Some(match s {
+    fn match_delimiter(s: &str) -> Result<Self, String> {
+        Ok(match s {
             "&"     => Self::Ampersand,    
             "'"     => Self::SingleQuote,  
             "("     => Self::ParenL,       
@@ -562,7 +526,7 @@ impl VHDLToken {
             "?>="   => Self::MatchGTE,       
             "<<"    => Self::DoubleLT,       
             ">>"    => Self::DoubleGT,       
-            _ => return None,
+            _ => return Err(format!("invalid character: {}", s)),
         })
     }
 
@@ -1012,65 +976,6 @@ mod char_set {
     }
 }
 
-use std::str::FromStr;
-
-/// Collects a basic identifer or a bit string literal with omitting integer.
-/// - basic_identifier ::= letter { \[ underline ] letter_or_digit }
-/// - bit_str_literal  ::= \[ integer ] base_specifier " \[ bit_value ] "
-fn collect_identifier<T>(stream: &mut Peekable<T>, loc: &mut Position, c0: char) -> Result<VHDLToken, ()>
-    where T: Iterator<Item=char> {
-
-    let mut id = String::from(c0);
-    let mut bit_lit: Option<BitStrLiteral> = None;
-    let mut was_underline = false;
-
-    while let Some(c) = stream.peek() {
-        if (bit_lit.is_none() && (char_set::is_letter(&c) || c == &char_set::UNDERLINE || char_set::is_digit(&c))) ||
-            (bit_lit.is_some() && c != &char_set::DOUBLE_QUOTE && (char_set::is_graphic(&c) || c == &char_set::UNDERLINE)) {
-            // avoid double underline
-            if c == &char_set::UNDERLINE && was_underline == true { panic!("cannot have double underline") }
-            // remember if the current char was an underline for next state
-            was_underline = c == &char_set::UNDERLINE;
-            // consume character into literal/idenifier
-            loc.next_col();
-            id.push(stream.next().unwrap());
-        // handle bit string literals 
-        } else if c == &char_set::DOUBLE_QUOTE {
-            if bit_lit.is_none() {
-                let base = BaseSpec::from_str(&id)?;
-                // clear id to begin reading string literal
-                id.clear();
-                // throw away initial " char
-                loc.next_col();
-                stream.next().unwrap(); 
-                // enter creating a bit string literal
-                // @TODO return Ok(collect_bit_str_literal(id, stream, loc))
-                bit_lit = Some(BitStrLiteral::new(base));
-            } else if bit_lit.is_some() {
-                // verify the last character was not an underline
-                if was_underline == true { panic!("last character cannot be underline") }
-                // throw away closing " char
-                loc.next_col();
-                stream.next().unwrap(); 
-                break; // exit loop
-            }
-        } else {
-            if bit_lit.is_some() { panic!("missing closing quote") }
-            break;
-        }
-    }
-    match bit_lit {
-        Some(b) => Ok(VHDLToken::BitStrLiteral(b.literal(id))),
-        None => {
-            // try to transform to key word
-            Ok(match VHDLToken::match_keyword(&id) {
-                Some(keyword) => keyword,
-                None => VHDLToken::Identifier(Identifier::Basic(id))
-            })
-        }
-    }
-}
-
 /// Checks is a character `c` is within the given extended digit range set by `b`.
 fn in_range(b: usize, c: &char) -> bool {
     let within_digit = (*c as usize) < char_set::ASCII_ZERO + b && (*c as usize) >= char_set::ASCII_ZERO;
@@ -1087,120 +992,6 @@ fn in_range(b: usize, c: &char) -> bool {
             _ => panic!("invalid base (only 2-16)")
         }
     }
-}
-
-/// Captures an abstract literal: either a decimal_literal or based_literal.
-fn collect_abst_lit<T>(stream: &mut Peekable<T>, loc: &mut Position, c0: char) -> Result<VHDLToken, ()> 
-where T: Iterator<Item=char> {
-    // begin with first identified digit
-    let mut lit = String::from(c0);
-    // a base literal's base 
-    let mut base: Option<usize> = None;
-    // check if already used 'dot'
-    let mut dotted = false; 
-    // remember if last char was a digit 0..=9
-    let mut was_digit = true; 
-    // remember if the char is a ':' or '#' to start based literal
-    let mut base_delim_char: Option<char> = None;
-    // gather a base / number
-    while let Some(c) = stream.peek() {
-        // is a integer | underline | extended_digit
-        if char_set::is_digit(&c) == true || c == &char_set::UNDERLINE || (base.is_some() && (c.is_ascii_alphabetic() || char_set::is_digit(&c))) {
-            // verify character is within range for a based_literal
-            if let Some(b) = base {
-                if c != &char_set::UNDERLINE && in_range(b, &c) == false { panic!("invalid extended digit {} {}", b, c) }
-            }
-            if c == &char_set::UNDERLINE && was_digit == false { panic!("underline must come after a digit") }
-            // remember if this char was a digit for next char logic
-            was_digit = c != &char_set::UNDERLINE;
-            loc.next_col();
-            lit.push(stream.next().unwrap());
-        // is a based_literal '#' char
-        } else if c == &char_set::HASH || c == &char_set::COLON {
-            // ensure we are using the right char
-            if let Some(d) = base_delim_char {
-                if c != &d { panic!("based literal must close with same character {}", d) }
-            // remember the starting character
-            } else {
-                base_delim_char = Some(*c);
-            }
-            if was_digit == false { panic!("digit must come before hash") }
-            // exit if it is the closing char '#'
-            if base.is_some() {
-                 // add char to lit
-                loc.next_col();
-                lit.push(stream.next().unwrap());
-                break; // exit the loop
-            }
-            // convert lit to a base
-            base = Some(lit.replace('_', "").parse::<usize>().unwrap());
-            // verify the base is a good range
-            if base < Some(2) || base > Some(16) { panic!("invalid base (2 <= x <= 16)") }
-            // add char to lit
-            loc.next_col();
-            lit.push(stream.next().unwrap());
-            was_digit = false;
-        // is a dot '.' (decimal point)
-        } else if c == &char_set::DOT {
-            if dotted == true { panic!("cannot have multiple dots") };
-            // verify the last char was a digit
-            if was_digit == false { panic!("expected digit before dot") };
-            // add dot to lit
-            loc.next_col();
-            lit.push(stream.next().unwrap());
-            dotted = true;
-            was_digit = false;
-        } else {
-            break;
-        }
-    }
-    // check for exponent
-    let has_exponent = if let Some(c) = stream.peek() {
-        if c == &'e' || c == &'E' {
-            loc.next_col();
-            lit.push(stream.next().unwrap());
-            true
-        // pass to bit string literal
-        } else if c.is_ascii_alphabetic() == true { 
-            loc.next_col();
-            let c = stream.next().unwrap();
-            // @TODO somehow pass width found as `lit`?
-            return collect_identifier(stream, loc, c)
-        } else {
-            false
-        }
-    } else { false };
-    // capture exponent
-    if has_exponent == true {
-        // check for sign
-        loc.next_col();
-        let sign = stream.next().expect("missing exponent value");
-        if sign != char_set::PLUS && sign != char_set::DASH && char_set::is_digit(&sign) == false {
-            panic!("expecting +, -, or a digit")
-        }
-        was_digit = char_set::is_digit(&sign);
-        lit.push(sign);
-        while let Some(c) = stream.peek() {
-            was_digit = if char_set::is_digit(&c) == true {
-                loc.next_col();
-                lit.push(stream.next().unwrap());
-                true
-            } else if c == &char_set::UNDERLINE {
-                if was_digit == false { panic!("must have digit before underline")}
-                loc.next_col();
-                lit.push(stream.next().unwrap());
-                false
-            } else {
-                if was_digit == false { panic!("must close with a digit") }
-                break;
-            }
-        }
-    }
-    if base.is_some() {
-        Ok(VHDLToken::AbstLiteral(AbstLiteral::Based(lit)))
-    } else {
-        Ok(VHDLToken::AbstLiteral(AbstLiteral::Decimal(lit)))
-    }    
 }
 
 impl Tokenize for VHDLTokenizer {
@@ -1249,11 +1040,10 @@ impl Tokenize for VHDLTokenizer {
                 let tk = consume_delim_comment(&mut train).unwrap();
                 tokens.push(Token::new(tk, tk_loc));
 
-            } else {
+            } else if char_set::is_separator(&c) == false {
                 // collect delimiter
-                if let Some(tk) = collect_delimiter(&mut train, Some(c)) {
-                    tokens.push(Token::new(tk, tk_loc));
-                }
+                let tk = collect_delimiter(&mut train, Some(c)).unwrap();
+                tokens.push(Token::new(tk, tk_loc));
             }
         }
         // push final EOF token
@@ -1274,10 +1064,11 @@ impl Tokenize for VHDLTokenizer {
 fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Result<VHDLToken, String> {
     let mut based_delim: Option<char> = None;
     let mut number = consume_integer(train, Some(c0), char_set::is_digit)?;
-    if let Some(mut c) = train.consume() {
+    // check if the next char should be included
+    if let Some(mut c) = train.peek() {
         // * decimal_literal
-        if c == char_set::DOT {
-            number.push(c);
+        if c == &char_set::DOT {
+            number.push(train.consume().unwrap());
             // gather more integers (must exist)
             let fraction = consume_integer(train, None, char_set::is_digit)?;
             if fraction.is_empty() {
@@ -1287,15 +1078,15 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
                 number.push_str(&fraction);
             }
             // update c if there is another token to grab!
-            c = if let Some(c_next) = train.consume() {
+            c = if let Some(c_next) = train.peek() {
                 c_next
             } else {
                 return Ok(VHDLToken::AbstLiteral(AbstLiteral::Decimal(number)))
             };
         // * based_literal
-        } else if c == char_set::HASH {
-            based_delim = Some(c.clone());
-            number.push(c);
+        } else if c == &char_set::HASH {
+            based_delim = Some(*c);
+            number.push(train.consume().unwrap());
             // gather first base integers
             let base_integers = consume_integer(train, None, char_set::is_extended_digit)?;
             number.push_str(&base_integers);
@@ -1328,7 +1119,7 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
                     return Err(String::from("expecting closing '#'"))
                 }
                 // update c if there is another token to grab!
-                c = if let Some(c_next_next) = train.consume() {
+                c = if let Some(c_next_next) = train.peek() {
                     c_next_next
                 } else {
                     return Ok(VHDLToken::AbstLiteral(AbstLiteral::Based(number)))
@@ -1337,7 +1128,7 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
                 return Err(String::from("expecting closing '#'"))
             }
         // * bit string literal
-        } else if c != 'e' && c != 'E' && char_set::is_letter(&c) {
+        } else if c != &'e' && c != &'E' && char_set::is_letter(&c) {
             todo!("implement bit string literal rule")
             // gather letters
             // get double quote
@@ -1345,8 +1136,9 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
             // get double quote
         }
         // gather exponent
-        if c == 'e' || c == 'E' {
-            let expon = consume_exponent(train, c)?;
+        if c == &'e' || c == &'E' {
+            let c0 = train.consume().unwrap();
+            let expon = consume_exponent(train, c0)?;
             number.push_str(&expon);
         }
         return Ok(VHDLToken::AbstLiteral(match based_delim {
@@ -1588,22 +1380,52 @@ impl<T> TrainCar<T> where T: Iterator<Item=char> {
     }
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
 
     #[test]
+    #[ignore] // @TODO 
+    fn lex_partial_bit_str() {
+        let words = "b\"1010\"more text";
+        let mut tc = TrainCar::new(words.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_word(&mut tc, c0), Ok(VHDLToken::BitStrLiteral(BitStrLiteral("b1010".to_owned()))));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "more text");
+        assert_eq!(tc.locate(), &Position(1, 7));
+    }
+
+    #[test]
+    #[ignore] // @TODO
+    fn lex_full_bit_str() {
+        let contents = "10b\"10_1001_1111\";";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap(); // already determined first digit
+        assert_eq!(consume_numeric(&mut tc, c0).unwrap(), VHDLToken::BitStrLiteral(BitStrLiteral("10b10_1001_1111".to_owned())));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
+        assert_eq!(tc.locate(), &Position(1, 17));
+
+        let contents = "12SX\"F-\";";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap(); // already determined first digit
+        assert_eq!(consume_numeric(&mut tc, c0).unwrap(), VHDLToken::BitStrLiteral(BitStrLiteral("12SXF-".to_owned())));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
+        assert_eq!(tc.locate(), &Position(1, 8));
+    }
+
+    #[test]
     fn lex_numeric() {
-        let contents = "32";
+        let contents = "32)";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap(); // already determined first digit
         assert_eq!(consume_numeric(&mut tc, c0).unwrap(), VHDLToken::AbstLiteral(AbstLiteral::Decimal("32".to_owned())));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), ")");
 
         let contents = "32_000;";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(consume_numeric(&mut tc, c0).unwrap(), VHDLToken::AbstLiteral(AbstLiteral::Decimal("32_000".to_owned())));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
 
         let contents = "0.456";
         let mut tc = TrainCar::new(contents.chars());
@@ -1765,6 +1587,30 @@ delimited-line comment. Look at all the space! ".to_owned())));
     }
 
     #[test]
+    fn lex_identifier() {
+        let words = "entity is";
+        let mut tc = TrainCar::new(words.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_word(&mut tc, c0).unwrap(), VHDLToken::Entity);
+        assert_eq!(tc.as_ref().clone().collect::<String>(), " is");
+        assert_eq!(tc.locate(), &Position(1, 6));
+
+        let words = "std_logic_1164.all;";
+        let mut tc = TrainCar::new(words.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_word(&mut tc, c0).unwrap(), VHDLToken::Identifier(Identifier::Basic("std_logic_1164".to_owned())));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), ".all;");
+        assert_eq!(tc.locate(), &Position(1, 14));
+
+        let words = "ready_OUT<=";
+        let mut tc = TrainCar::new(words.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_word(&mut tc, c0).unwrap(), VHDLToken::Identifier(Identifier::Basic("ready_OUT".to_owned())));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "<=");
+        assert_eq!(tc.locate(), &Position(1, 9));
+    }
+
+    #[test]
     fn lex_literal() {
         let contents = "\" go Gators! \" ";
         let mut tc = TrainCar::new(contents.chars());
@@ -1854,93 +1700,6 @@ delimited-line comment. Look at all the space! ".to_owned())));
 
     mod vhdl {
         use super::*;
-
-        #[test]
-        fn read_deci_literal() {
-            let mut loc = Position(1, 1);
-            let contents = "234";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '1').unwrap(), VHDLToken::AbstLiteral(vhdl::AbstLiteral::Decimal("1234".to_owned())));
-            assert_eq!(stream.collect::<String>(), "");
-            assert_eq!(loc, Position(1, 4));
-        }
-    
-        #[test]
-        fn read_deci_literal_2() {
-            let mut loc = Position(1, 1);
-            let contents = "23_4.5;";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '1').unwrap(), VHDLToken::AbstLiteral(vhdl::AbstLiteral::Decimal("123_4.5".to_owned())));
-            assert_eq!(stream.collect::<String>(), ";");
-            assert_eq!(loc, Position(1, 7));
-        }
-
-        #[test]
-        #[ignore]
-        fn read_full_bit_str_literal() {
-            let mut loc = Position(1, 1);
-            let contents = "0b\"10_1001_1111\";";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '1').unwrap(), VHDLToken::BitStrLiteral(vhdl::BitStrLiteral::new(BaseSpec::B).literal("10_1001_1111".to_owned()).width(10)));
-            assert_eq!(stream.collect::<String>(), ";");
-            assert_eq!(loc, Position(1, 17));
-
-            let mut loc = Position(1, 1);
-            let contents = "2SX\"F-\";";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '1').unwrap(), VHDLToken::BitStrLiteral(vhdl::BitStrLiteral::new(BaseSpec::SX).literal("F-".to_owned()).width(12)));
-            assert_eq!(stream.collect::<String>(), ";");
-            assert_eq!(loc, Position(1, 8));
-        }
-
-        #[test]
-        fn read_deci_literal_exp() {
-            let mut loc = Position(1, 1);
-            let contents = ".023E+24";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '6').unwrap(), VHDLToken::AbstLiteral(vhdl::AbstLiteral::Decimal("6.023E+24".to_owned())));
-            assert_eq!(stream.collect::<String>(), "");
-            assert_eq!(loc, Position(1, 9));
-
-            let mut loc = Position(1, 1);
-            let contents = "E6";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '1').unwrap(), VHDLToken::AbstLiteral(vhdl::AbstLiteral::Decimal("1E6".to_owned())));
-            assert_eq!(stream.collect::<String>(), "");
-            assert_eq!(loc, Position(1, 3));
-
-            let mut loc = Position(1, 1);
-            let contents = ".34e-12;";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '1').unwrap(), VHDLToken::AbstLiteral(vhdl::AbstLiteral::Decimal("1.34e-12".to_owned())));
-            assert_eq!(stream.collect::<String>(), ";");
-            assert_eq!(loc, Position(1, 8));
-        }
-
-        #[test]
-        fn read_based_literal() {
-            let mut loc = Position(1, 1);
-            let contents = "#1001_1010#;";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '2').unwrap(), VHDLToken::AbstLiteral(vhdl::AbstLiteral::Based("2#1001_1010#".to_owned())));
-            assert_eq!(stream.collect::<String>(), ";");
-            assert_eq!(loc, Position(1, 12));
-
-            let mut loc = Position(1, 1);
-            let contents = "6#abcd_FFFF#;";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '1').unwrap(), VHDLToken::AbstLiteral(vhdl::AbstLiteral::Based("16#abcd_FFFF#".to_owned())));
-            assert_eq!(stream.collect::<String>(), ";");
-            assert_eq!(loc, Position(1, 13));
-
-            // colon ':' can be replacement if used as open and closing VHDL-2019 LRM p180
-            let mut loc = Position(1, 1);
-            let contents = "6:abcd_FFFF:;";
-            let mut stream = contents.chars().peekable();
-            assert_eq!(collect_abst_lit(&mut stream, &mut loc, '1').unwrap(), VHDLToken::AbstLiteral(vhdl::AbstLiteral::Based("16:abcd_FFFF:".to_owned())));
-            assert_eq!(stream.collect::<String>(), ";");
-            assert_eq!(loc, Position(1, 13));
-        }
 
         #[test]
         fn easy_tokens() {
@@ -2036,25 +1795,25 @@ entity fa is end entity;";
 
             let contents = "&";
             let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Some(Ampersand));
+            assert_eq!(collect_delimiter(&mut tc, None), Ok(Ampersand));
             assert_eq!(tc.as_ref().clone().collect::<String>(), "");
             assert_eq!(tc.locate(), &Position(1, 1));
 
             let contents = "?";
             let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Some(Question));
+            assert_eq!(collect_delimiter(&mut tc, None), Ok(Question));
             assert_eq!(tc.as_ref().clone().collect::<String>(), "");
             assert_eq!(tc.locate(), &Position(1, 1));
 
             let contents = "< MAX_COUNT";
             let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Some(Lt));
+            assert_eq!(collect_delimiter(&mut tc, None), Ok(Lt));
             assert_eq!(tc.as_ref().clone().collect::<String>(), " MAX_COUNT");
             assert_eq!(tc.locate(), &Position(1, 1));
 
             let contents = ");";
             let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Some(ParenR));
+            assert_eq!(collect_delimiter(&mut tc, None), Ok(ParenR));
             assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
             assert_eq!(tc.locate(), &Position(1, 1));
         }
@@ -2063,9 +1822,9 @@ entity fa is end entity;";
         fn read_delimiter_none() {
             let contents = "fa";
             let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), None);
-            assert_eq!(tc.as_ref().clone().collect::<String>(), "fa");
-            assert_eq!(tc.locate(), &Position(1, 0));
+            assert_eq!(collect_delimiter(&mut tc, None).is_err(), true);
+            assert_eq!(tc.as_ref().clone().collect::<String>(), "a");
+            assert_eq!(tc.locate(), &Position(1, 1));
         }
 
         #[test]
@@ -2074,13 +1833,13 @@ entity fa is end entity;";
 
             let contents = "<=";
             let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Some(SigAssign));
+            assert_eq!(collect_delimiter(&mut tc, None), Ok(SigAssign));
             assert_eq!(tc.as_ref().clone().collect::<String>(), "");
             assert_eq!(tc.locate(), &Position(1, 2));
 
             let contents = "**WIDTH";
             let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Some(DoubleStar));
+            assert_eq!(collect_delimiter(&mut tc, None), Ok(DoubleStar));
             assert_eq!(tc.as_ref().clone().collect::<String>(), "WIDTH");
             assert_eq!(tc.locate(), &Position(1, 2));
         }
@@ -2091,13 +1850,13 @@ entity fa is end entity;";
 
             let contents = "<=>";
             let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Some(SigAssoc));
+            assert_eq!(collect_delimiter(&mut tc, None), Ok(SigAssoc));
             assert_eq!(tc.as_ref().clone().collect::<String>(), "");
             assert_eq!(tc.locate(), &Position(1, 3));
 
             let contents = "?/= MAGIC_NUM";
             let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Some(MatchNE));
+            assert_eq!(collect_delimiter(&mut tc, None), Ok(MatchNE));
             assert_eq!(tc.as_ref().clone().collect::<String>(), " MAGIC_NUM");
             assert_eq!(tc.locate(), &Position(1, 3));
         }
@@ -2107,19 +1866,19 @@ entity fa is end entity;";
             use super::VHDLToken::*;
 
             let word = "<=";
-            assert_eq!(VHDLToken::match_delimiter(word), Some(SigAssign));
+            assert_eq!(VHDLToken::match_delimiter(word), Ok(SigAssign));
 
             let word = "-";
-            assert_eq!(VHDLToken::match_delimiter(word), Some(Dash));
+            assert_eq!(VHDLToken::match_delimiter(word), Ok(Dash));
 
             let word = "<=>";
-            assert_eq!(VHDLToken::match_delimiter(word), Some(SigAssoc));
+            assert_eq!(VHDLToken::match_delimiter(word), Ok(SigAssoc));
 
             let word = "^";
-            assert_eq!(VHDLToken::match_delimiter(word), None);
+            assert_eq!(VHDLToken::match_delimiter(word).is_err(), true);
 
             let word = "entity";
-            assert_eq!(VHDLToken::match_delimiter(word), None);
+            assert_eq!(VHDLToken::match_delimiter(word).is_err(), true);
         }
 
         #[test]
@@ -2156,40 +1915,6 @@ entity fa is end entity;";
             let c = 'c';  // negative case: ascii char
             assert_eq!(char_set::is_separator(&c), false);
         }
-
-        #[test]
-        fn read_identifier() {
-            let mut loc = Position(1, 1);
-            let words = "ntity is";
-            let mut stream = words.chars().peekable();
-            assert_eq!(collect_identifier(&mut stream, &mut loc, 'e').unwrap(), VHDLToken::Entity);
-            assert_eq!(stream.collect::<String>(), " is");
-            assert_eq!(loc, Position(1, 6));
-
-            let mut loc = Position(1, 1);
-            let words = "td_logic_1164.all;";
-            let mut stream = words.chars().peekable();
-            assert_eq!(collect_identifier(&mut stream, &mut loc, 's').unwrap(), VHDLToken::Identifier(vhdl::Identifier::Basic("std_logic_1164".to_owned())));
-            assert_eq!(stream.collect::<String>(), ".all;");
-            assert_eq!(loc, Position(1, 14));
-
-            let mut loc = Position(1, 1);
-            let words = "eady_OUT<=";
-            let mut stream = words.chars().peekable();
-            assert_eq!(collect_identifier(&mut stream, &mut loc, 'r').unwrap(), VHDLToken::Identifier(vhdl::Identifier::Basic("ready_OUT".to_owned())));
-            assert_eq!(stream.collect::<String>(), "<=");
-            assert_eq!(loc, Position(1, 9));
-        }
-
-        #[test]
-        fn read_bit_str_literal() {
-            let mut loc = Position(1, 1);
-            let words = "\"1010\"more text";
-            let mut stream = words.chars().peekable();
-            assert_eq!(collect_identifier(&mut stream, &mut loc, 'b'), Ok(VHDLToken::BitStrLiteral(vhdl::BitStrLiteral { width: None, base: BaseSpec::B, literal: "1010".to_owned() })));
-            assert_eq!(stream.collect::<String>(), "more text");
-            assert_eq!(loc, Position(1, 7));
-        }
         
         #[test]
         fn eq_identifiers() {
@@ -2211,7 +1936,7 @@ entity fa is end entity;";
         }
 
         #[test]
-        #[ignore] // @TODO investigate skipping ')' in port list
+        #[ignore]
         fn nor_gate_design_code() {
             let s = "\
 -- design file for a nor_gate

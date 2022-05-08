@@ -1604,6 +1604,49 @@ mod test {
     }
 
     #[test]
+    #[ignore]
+    fn single_quote_as_delimiter() {
+        let contents = "\
+foo <= std_logic_vector'('a','b','c');";
+        let tokens: Vec<VHDLToken> = VHDLTokenizer::tokenize(&contents)
+            .into_iter()
+            .map(|f| { f.unwrap().take() })
+            .collect();
+        assert_eq!(tokens, vec![
+            VHDLToken::Identifier(Identifier::Basic("foo".to_owned())),
+            VHDLToken::SigAssign,
+            VHDLToken::Identifier(Identifier::Basic("std_logic_vector".to_owned())),
+            VHDLToken::SingleQuote,
+            VHDLToken::ParenL,
+            VHDLToken::CharLiteral(Character("a".to_owned())),
+            VHDLToken::Comma,
+            VHDLToken::CharLiteral(Character("b".to_owned())),
+            VHDLToken::Comma,
+            VHDLToken::CharLiteral(Character("c".to_owned())),
+            VHDLToken::ParenR,
+            VHDLToken::Terminator,
+            VHDLToken::EOF,
+        ]);
+
+        let contents = "\
+(clk'event = '1')";
+            let tokens: Vec<VHDLToken> = VHDLTokenizer::tokenize(&contents)
+            .into_iter()
+            .map(|f| { f.unwrap().take() })
+            .collect();
+        assert_eq!(tokens, vec![
+            VHDLToken::ParenL,
+            VHDLToken::Identifier(Identifier::Basic("clk".to_owned())),
+            VHDLToken::SingleQuote,
+            VHDLToken::Identifier(Identifier::Basic("event".to_owned())),
+            VHDLToken::Eq,
+            VHDLToken::CharLiteral(Character("1".to_owned())),
+            VHDLToken::ParenR,
+            VHDLToken::EOF,
+        ]);
+    }
+
+    #[test]
     fn lex_partial_bit_str() {
         let words = "b\"1010\"more text";
         let mut tc = TrainCar::new(words.chars());
@@ -2038,7 +2081,7 @@ entity fa is end entity;";
             let s = "\
 /* here is a vhdl 
     delimited-line comment. Look at all the space! */";
-            let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();;
+            let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();
             assert_eq!(tokens, vec![
                 Token::new(Comment(vhdl::Comment::Delimited(" here is a vhdl 
     delimited-line comment. Look at all the space! ".to_owned())), Position(1, 1)),
@@ -2052,7 +2095,7 @@ entity fa is end entity;";
             use crate::core::vhdl::*;
             let s = "\
 signal magic_num : std_logic := '1';";
-            let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();;
+            let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();
             assert_eq!(tokens, vec![
                 Token::new(Signal, Position(1, 1)),
                 Token::new(Identifier(vhdl::Identifier::Basic("magic_num".to_owned())), Position(1, 8)),

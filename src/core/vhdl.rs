@@ -379,54 +379,7 @@ impl AbstLiteral {
 }
 
 #[derive(Debug, PartialEq)]
-enum VHDLToken {
-    Comment(Comment),               // (String) 
-    Identifier(Identifier),         // (String) ...can be general or extended (case-sensitive) identifier
-    AbstLiteral(AbstLiteral),       // (String)
-    CharLiteral(Character),         // (String)
-    StrLiteral(String),             // (String)
-    BitStrLiteral(BitStrLiteral),   // (String)
-    EOF,
-    // --- delimiters ---
-    Ampersand,      // &
-    SingleQuote,    // '
-    ParenL,         // (
-    ParenR,         // )
-    Star,           // *
-    Plus,           // +
-    Comma,          // ,
-    Dash,           // -
-    Dot,            // .
-    FwdSlash,       // /
-    Colon,          // :
-    Terminator,     // ;
-    Lt,             // <
-    Eq,             // =
-    Gt,             // >
-    BackTick,       // `
-    Pipe,           // | or ! VHDL-1993 LRM p180
-    BrackL,         // [
-    BrackR,         // ]
-    Question,       // ?
-    AtSymbol,       // @
-    Arrow,          // =>
-    DoubleStar,     // **
-    VarAssign,      // :=
-    Inequality,     // /=
-    GTE,            // >=
-    SigAssign,      // <=
-    Box,            // <>
-    SigAssoc,       // <=>
-    CondConv,       // ??
-    MatchEQ,        // ?=
-    MatchNE,        // ?/=
-    MatchLT,        // ?<
-    MatchLTE,       // ?<=
-    MatchGT,        // ?>
-    MatchGTE,       // ?>=
-    DoubleLT,       // <<
-    DoubleGT,       // >>
-    // --- keywords ---
+enum Keyword {
     Abs,            // VHDL-1987 LRM - current 
     Access,         // VHDL-1987 LRM - current
     After,          // VHDL-1987 LRM - current
@@ -545,6 +498,184 @@ enum VHDLToken {
     With,           // VHDL-1987 LRM - current
     Xnor, 
     Xor,            // VHDL-1987 LRM - current
+}
+
+impl Keyword {
+    /// Attempts to match the given string of characters `s` to a VHDL keyword.
+    /// 
+    /// Compares `s` against keywords using ascii lowercase comparison.
+    fn match_keyword(s: &str) -> Option<Self> {
+        Some(match s.to_ascii_lowercase().as_ref() {
+            "abs"           => Self::Abs, 
+            "access"        => Self::Access, 
+            "after"         => Self::After, 
+            "alias"         => Self::Alias, 
+            "all"           => Self::All, 
+            "and"           => Self::And, 
+            "architecture"  => Self::Architecture, 
+            "array"         => Self::Array, 
+            "assert"        => Self::Assert, 
+            "assume"        => Self::Assume, 
+            "attribute"     => Self::Attribute, 
+            "begin"         => Self::Begin, 
+            "block"         => Self::Block, 
+            "body"          => Self::Body, 
+            "buffer"        => Self::Buffer, 
+            "bus"           => Self::Bus, 
+            "case"          => Self::Case, 
+            "component"     => Self::Component, 
+            "configuration" => Self::Configuration, 
+            "constant"      => Self::Constant, 
+            "context"       => Self::Context, 
+            "cover"         => Self::Cover, 
+            "default"       => Self::Default, 
+            "disconnect"    => Self::Disconnect, 
+            "downto"        => Self::Downto, 
+            "else"          => Self::Else, 
+            "elsif"         => Self::Elsif, 
+            "end"           => Self::End, 
+            "entity"        => Self::Entity, 
+            "exit"          => Self::Exit, 
+            "fairness"      => Self::Fairness, 
+            "file"          => Self::File, 
+            "for"           => Self::For, 
+            "force"         => Self::Force, 
+            "function"      => Self::Function, 
+            "generate"      => Self::Generate, 
+            "generic"       => Self::Generic, 
+            "group"         => Self::Group, 
+            "guarded"       => Self::Guarded, 
+            "if"            => Self::If, 
+            "impure"        => Self::Impure, 
+            "in"            => Self::In, 
+            "inertial"      => Self::Inertial, 
+            "inout"         => Self::Inout, 
+            "is"            => Self::Is, 
+            "label"         => Self::Label, 
+            "library"       => Self::Library, 
+            "linkage"       => Self::Linkage, 
+            "literal"       => Self::Literal, 
+            "loop"          => Self::Loop, 
+            "map"           => Self::Map, 
+            "mod"           => Self::Mod, 
+            "nand"          => Self::Nand, 
+            "new"           => Self::New, 
+            "next"          => Self::Next, 
+            "nor"           => Self::Nor, 
+            "not"           => Self::Not, 
+            "null"          => Self::Null, 
+            "of"            => Self::Of, 
+            "on"            => Self::On, 
+            "open"          => Self::Open, 
+            "or"            => Self::Or, 
+            "others"        => Self::Others, 
+            "out"           => Self::Out, 
+            "package"       => Self::Package, 
+            "parameter"     => Self::Parameter, 
+            "port"          => Self::Port, 
+            "postponed"     => Self::Postponed, 
+            "private"       => Self::Private, 
+            "procedure"     => Self::Procedure, 
+            "process"       => Self::Process, 
+            "property"      => Self::Property, 
+            "protected"     => Self::Protected, 
+            "pure"          => Self::Pure, 
+            "range"         => Self::Range, 
+            "record"        => Self::Record, 
+            "register"      => Self::Register, 
+            "reject"        => Self::Reject, 
+            "release"       => Self::Release, 
+            "rem"           => Self::Rem, 
+            "report"        => Self::Report, 
+            "restrict"      => Self::Restrict, 
+            "return"        => Self::Return, 
+            "rol"           => Self::Rol, 
+            "ror"           => Self::Ror, 
+            "select"        => Self::Select, 
+            "sequence"      => Self::Sequence, 
+            "severity"      => Self::Severity, 
+            "signal"        => Self::Signal, 
+            "shared"        => Self::Shared, 
+            "sla"           => Self::Sla, 
+            "sll"           => Self::Sll, 
+            "sra"           => Self::Sra, 
+            "srl"           => Self::Srl, 
+            "strong"        => Self::Strong, 
+            "subtype"       => Self::Subtype, 
+            "then"          => Self::Then, 
+            "to"            => Self::To, 
+            "transport"     => Self::Transport, 
+            "type"          => Self::Type, 
+            "unaffected"    => Self::Unaffected, 
+            "units"         => Self::Units, 
+            "until"         => Self::Until, 
+            "use"           => Self::Use, 
+            "variable"      => Self::Variable, 
+            "view"          => Self::View, 
+            "vmode"         => Self::Vmode, 
+            "vpkg"          => Self::Vpkg, 
+            "vprop"         => Self::Vprop, 
+            "vunit"         => Self::Vunit, 
+            "wait"          => Self::Wait, 
+            "when"          => Self::When, 
+            "while"         => Self::While, 
+            "with"          => Self::With, 
+            "xnor"          => Self::Xnor, 
+            "xor"           => Self::Xor, 
+            _ => return None
+        })
+    }
+}
+
+#[derive(Debug, PartialEq)]
+enum VHDLToken {
+    Comment(Comment),               // (String) 
+    Identifier(Identifier),         // (String) ...can be general or extended (case-sensitive) identifier
+    AbstLiteral(AbstLiteral),       // (String)
+    CharLiteral(Character),         // (String)
+    StrLiteral(String),             // (String)
+    BitStrLiteral(BitStrLiteral),   // (String)
+    Keyword(Keyword),
+    EOF,
+    // --- delimiters ---
+    Ampersand,      // &
+    SingleQuote,    // '
+    ParenL,         // (
+    ParenR,         // )
+    Star,           // *
+    Plus,           // +
+    Comma,          // ,
+    Dash,           // -
+    Dot,            // .
+    FwdSlash,       // /
+    Colon,          // :
+    Terminator,     // ;
+    Lt,             // <
+    Eq,             // =
+    Gt,             // >
+    BackTick,       // `
+    Pipe,           // | or ! VHDL-1993 LRM p180
+    BrackL,         // [
+    BrackR,         // ]
+    Question,       // ?
+    AtSymbol,       // @
+    Arrow,          // =>
+    DoubleStar,     // **
+    VarAssign,      // :=
+    Inequality,     // /=
+    GTE,            // >=
+    SigAssign,      // <=
+    Box,            // <>
+    SigAssoc,       // <=>
+    CondConv,       // ??
+    MatchEQ,        // ?=
+    MatchNE,        // ?/=
+    MatchLT,        // ?<
+    MatchLTE,       // ?<=
+    MatchGT,        // ?>
+    MatchGTE,       // ?>=
+    DoubleLT,       // <<
+    DoubleGT,       // >>
 }
 
 /// Walks through the possible interpretations for capturing a VHDL delimiter.
@@ -697,183 +828,11 @@ impl VHDLToken {
             _ => return Err(VHDLTokenError::Invalid(s.to_string())),
         })
     }
-
-    /// Attempts to match the given string of characters `s` to a VHDL keyword.
-    /// 
-    /// Compares `s` against keywords using ascii lowercase comparison.
-    fn match_keyword(s: &str) -> Option<Self> {
-        Some(match s.to_ascii_lowercase().as_ref() {
-            "abs"           => Self::Abs, 
-            "access"        => Self::Access, 
-            "after"         => Self::After, 
-            "alias"         => Self::Alias, 
-            "all"           => Self::All, 
-            "and"           => Self::And, 
-            "architecture"  => Self::Architecture, 
-            "array"         => Self::Array, 
-            "assert"        => Self::Assert, 
-            "assume"        => Self::Assume, 
-            "attribute"     => Self::Attribute, 
-            "begin"         => Self::Begin, 
-            "block"         => Self::Block, 
-            "body"          => Self::Body, 
-            "buffer"        => Self::Buffer, 
-            "bus"           => Self::Bus, 
-            "case"          => Self::Case, 
-            "component"     => Self::Component, 
-            "configuration" => Self::Configuration, 
-            "constant"      => Self::Constant, 
-            "context"       => Self::Context, 
-            "cover"         => Self::Cover, 
-            "default"       => Self::Default, 
-            "disconnect"    => Self::Disconnect, 
-            "downto"        => Self::Downto, 
-            "else"          => Self::Else, 
-            "elsif"         => Self::Elsif, 
-            "end"           => Self::End, 
-            "entity"        => Self::Entity, 
-            "exit"          => Self::Exit, 
-            "fairness"      => Self::Fairness, 
-            "file"          => Self::File, 
-            "for"           => Self::For, 
-            "force"         => Self::Force, 
-            "function"      => Self::Function, 
-            "generate"      => Self::Generate, 
-            "generic"       => Self::Generic, 
-            "group"         => Self::Group, 
-            "guarded"       => Self::Guarded, 
-            "if"            => Self::If, 
-            "impure"        => Self::Impure, 
-            "in"            => Self::In, 
-            "inertial"      => Self::Inertial, 
-            "inout"         => Self::Inout, 
-            "is"            => Self::Is, 
-            "label"         => Self::Label, 
-            "library"       => Self::Library, 
-            "linkage"       => Self::Linkage, 
-            "literal"       => Self::Literal, 
-            "loop"          => Self::Loop, 
-            "map"           => Self::Map, 
-            "mod"           => Self::Mod, 
-            "nand"          => Self::Nand, 
-            "new"           => Self::New, 
-            "next"          => Self::Next, 
-            "nor"           => Self::Nor, 
-            "not"           => Self::Not, 
-            "null"          => Self::Null, 
-            "of"            => Self::Of, 
-            "on"            => Self::On, 
-            "open"          => Self::Open, 
-            "or"            => Self::Or, 
-            "others"        => Self::Others, 
-            "out"           => Self::Out, 
-            "package"       => Self::Package, 
-            "parameter"     => Self::Parameter, 
-            "port"          => Self::Port, 
-            "postponed"     => Self::Postponed, 
-            "private"       => Self::Private, 
-            "procedure"     => Self::Procedure, 
-            "process"       => Self::Process, 
-            "property"      => Self::Property, 
-            "protected"     => Self::Protected, 
-            "pure"          => Self::Pure, 
-            "range"         => Self::Range, 
-            "record"        => Self::Record, 
-            "register"      => Self::Register, 
-            "reject"        => Self::Reject, 
-            "release"       => Self::Release, 
-            "rem"           => Self::Rem, 
-            "report"        => Self::Report, 
-            "restrict"      => Self::Restrict, 
-            "return"        => Self::Return, 
-            "rol"           => Self::Rol, 
-            "ror"           => Self::Ror, 
-            "select"        => Self::Select, 
-            "sequence"      => Self::Sequence, 
-            "severity"      => Self::Severity, 
-            "signal"        => Self::Signal, 
-            "shared"        => Self::Shared, 
-            "sla"           => Self::Sla, 
-            "sll"           => Self::Sll, 
-            "sra"           => Self::Sra, 
-            "srl"           => Self::Srl, 
-            "strong"        => Self::Strong, 
-            "subtype"       => Self::Subtype, 
-            "then"          => Self::Then, 
-            "to"            => Self::To, 
-            "transport"     => Self::Transport, 
-            "type"          => Self::Type, 
-            "unaffected"    => Self::Unaffected, 
-            "units"         => Self::Units, 
-            "until"         => Self::Until, 
-            "use"           => Self::Use, 
-            "variable"      => Self::Variable, 
-            "view"          => Self::View, 
-            "vmode"         => Self::Vmode, 
-            "vpkg"          => Self::Vpkg, 
-            "vprop"         => Self::Vprop, 
-            "vunit"         => Self::Vunit, 
-            "wait"          => Self::Wait, 
-            "when"          => Self::When, 
-            "while"         => Self::While, 
-            "with"          => Self::With, 
-            "xnor"          => Self::Xnor, 
-            "xor"           => Self::Xor, 
-            _ => return None
-        })
-    }
 }
 
-impl std::fmt::Display for VHDLToken {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            Self::Comment(note) => note.as_str(),
-            Self::Identifier(id) => id.as_str(),
-            Self::AbstLiteral(a) => a.as_str(),
-            Self::CharLiteral(c) => c.as_str(),
-            Self::StrLiteral(s) => s.as_ref(),
-            Self::BitStrLiteral(b) => b.as_str(),
-            Self::EOF           => "EOF",
-            // --- delimiters
-            Self::Ampersand     => "&",
-            Self::SingleQuote   => "'",
-            Self::ParenL        => "(",
-            Self::ParenR        => ")",
-            Self::Star          => "*",
-            Self::Plus          => "+",
-            Self::Comma         => ",",
-            Self::Dash          => "-",
-            Self::Dot           => ".",
-            Self::FwdSlash      => "/",
-            Self::Colon         => ":",
-            Self::Terminator    => ";",
-            Self::Lt            => "<",
-            Self::Eq            => "=",
-            Self::Gt            => ">",
-            Self::BackTick      => "`",
-            Self::Pipe          => "|",
-            Self::BrackL        => "[",
-            Self::BrackR        => "]",
-            Self::Question      => "?",
-            Self::AtSymbol      => "@",
-            Self::Arrow         => "=>",
-            Self::DoubleStar    => "**",
-            Self::VarAssign     => ":=",
-            Self::Inequality    => "/=",
-            Self::GTE           => ">=",
-            Self::SigAssign     => "<=",
-            Self::Box           => "<>",
-            Self::SigAssoc      => "<=>",
-            Self::CondConv      => "??",
-            Self::MatchEQ       => "?=",
-            Self::MatchNE       => "?/=",
-            Self::MatchLT       => "?<",
-            Self::MatchLTE      => "?<=",
-            Self::MatchGT       => "?>",
-            Self::MatchGTE      => "?>=",
-            Self::DoubleLT      => "<<",
-            Self::DoubleGT      => ">>",
-            // --- keywords
+impl Keyword {
+    fn as_str(&self) -> &str {
+        match self {
             Self::Abs           => "abs",
             Self::Access        => "access",
             Self::After         => "after",
@@ -990,6 +949,66 @@ impl std::fmt::Display for VHDLToken {
             Self::With          => "with",
             Self::Xnor          => "xnor", 
             Self::Xor           => "xor",
+        }
+    }
+}
+
+impl std::fmt::Display for Keyword {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl std::fmt::Display for VHDLToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            Self::Comment(note) => note.as_str(),
+            Self::Identifier(id) => id.as_str(),
+            Self::AbstLiteral(a) => a.as_str(),
+            Self::CharLiteral(c) => c.as_str(),
+            Self::StrLiteral(s) => s.as_str(),
+            Self::BitStrLiteral(b) => b.as_str(),
+            Self::Keyword(kw) => kw.as_str(),
+            Self::EOF           => "EOF",
+            // --- delimiters
+            Self::Ampersand     => "&",
+            Self::SingleQuote   => "'",
+            Self::ParenL        => "(",
+            Self::ParenR        => ")",
+            Self::Star          => "*",
+            Self::Plus          => "+",
+            Self::Comma         => ",",
+            Self::Dash          => "-",
+            Self::Dot           => ".",
+            Self::FwdSlash      => "/",
+            Self::Colon         => ":",
+            Self::Terminator    => ";",
+            Self::Lt            => "<",
+            Self::Eq            => "=",
+            Self::Gt            => ">",
+            Self::BackTick      => "`",
+            Self::Pipe          => "|",
+            Self::BrackL        => "[",
+            Self::BrackR        => "]",
+            Self::Question      => "?",
+            Self::AtSymbol      => "@",
+            Self::Arrow         => "=>",
+            Self::DoubleStar    => "**",
+            Self::VarAssign     => ":=",
+            Self::Inequality    => "/=",
+            Self::GTE           => ">=",
+            Self::SigAssign     => "<=",
+            Self::Box           => "<>",
+            Self::SigAssoc      => "<=>",
+            Self::CondConv      => "??",
+            Self::MatchEQ       => "?=",
+            Self::MatchNE       => "?/=",
+            Self::MatchLT       => "?<",
+            Self::MatchLTE      => "?<=",
+            Self::MatchGT       => "?>",
+            Self::MatchGTE      => "?>=",
+            Self::DoubleLT      => "<<",
+            Self::DoubleGT      => ">>",
         };
         write!(f, "{}", s)
     }
@@ -1369,8 +1388,8 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
 /// Assumes the first `letter` char was the last char consumed before the function call.
 fn consume_word(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Result<VHDLToken, VHDLTokenError> {
     let mut word = consume_value_pattern(train, Some(c0), char_set::is_letter_or_digit)?;
-    match VHDLToken::match_keyword(&word) {
-        Some(keyword) => Ok(keyword),
+    match Keyword::match_keyword(&word) {
+        Some(kw) => Ok(VHDLToken::Keyword(kw)),
         None => {
             // * bit string literal: check if the next char is a double quote
             if let Some(c) = train.peek() {
@@ -1979,7 +1998,7 @@ delimited-line comment. Look at all the space! ".to_owned())));
         let words = "entity is";
         let mut tc = TrainCar::new(words.chars());
         let c0 = tc.consume().unwrap();
-        assert_eq!(consume_word(&mut tc, c0).unwrap(), VHDLToken::Entity);
+        assert_eq!(consume_word(&mut tc, c0).unwrap(), VHDLToken::Keyword(Keyword::Entity));
         assert_eq!(tc.as_ref().clone().collect::<String>(), " is");
         assert_eq!(tc.locate(), &Position(1, 6));
 
@@ -2091,8 +2110,6 @@ delimited-line comment. Look at all the space! ".to_owned())));
 
         #[test]
         fn easy_tokens() {
-            use super::VHDLToken::*;
-            use crate::core::vhdl::*;
             let s = "\
 entity fa is end entity;";
             let tokens: Vec<VHDLToken> = VHDLTokenizer::tokenize(s)
@@ -2100,13 +2117,13 @@ entity fa is end entity;";
                 .map(|f| { f.unwrap().take() })
                 .collect();
             assert_eq!(tokens, vec![
-                Entity,
-                Identifier(vhdl::Identifier::Basic("fa".to_owned())),
-                Is,
-                End,
-                Entity,
-                Terminator,
-                EOF,
+                VHDLToken::Keyword(Keyword::Entity),
+                VHDLToken::Identifier(Identifier::Basic("fa".to_owned())),
+                VHDLToken::Keyword(Keyword::Is),
+                VHDLToken::Keyword(Keyword::End),
+                VHDLToken::Keyword(Keyword::Entity),
+                VHDLToken::Terminator,
+                VHDLToken::EOF,
             ]);
         }
 
@@ -2140,20 +2157,18 @@ entity fa is end entity;";
 
         #[test]
         fn char_literal() {
-            use super::VHDLToken::*;
-            use crate::core::vhdl::*;
             let s = "\
 signal magic_num : std_logic := '1';";
             let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();
             assert_eq!(tokens, vec![
-                Token::new(Signal, Position(1, 1)),
-                Token::new(Identifier(vhdl::Identifier::Basic("magic_num".to_owned())), Position(1, 8)),
-                Token::new(Colon, Position(1, 18)),
-                Token::new(Identifier(vhdl::Identifier::Basic("std_logic".to_owned())), Position(1, 20)),
-                Token::new(VarAssign, Position(1, 30)),
-                Token::new(CharLiteral(vhdl::Character("1".to_owned())), Position(1, 33)),
-                Token::new(Terminator, Position(1, 36)),
-                Token::new(EOF, Position(1, 37)),
+                Token::new(VHDLToken::Keyword(Keyword::Signal), Position(1, 1)),
+                Token::new(VHDLToken::Identifier(Identifier::Basic("magic_num".to_owned())), Position(1, 8)),
+                Token::new(VHDLToken::Colon, Position(1, 18)),
+                Token::new(VHDLToken::Identifier(Identifier::Basic("std_logic".to_owned())), Position(1, 20)),
+                Token::new(VHDLToken::VarAssign, Position(1, 30)),
+                Token::new(VHDLToken::CharLiteral(Character("1".to_owned())), Position(1, 33)),
+                Token::new(VHDLToken::Terminator, Position(1, 36)),
+                Token::new(VHDLToken::EOF, Position(1, 37)),
             ]);
         }
 
@@ -2271,19 +2286,17 @@ entity fa is end entity;";
 
         #[test]
         fn match_reserved_idenifier() {
-            use super::VHDLToken::*;
-
             let word = "END";
-            assert_eq!(VHDLToken::match_keyword(word), Some(End));
+            assert_eq!(Keyword::match_keyword(word), Some(Keyword::End));
 
             let word = "EnTITY";
-            assert_eq!(VHDLToken::match_keyword(word), Some(Entity));
+            assert_eq!(Keyword::match_keyword(word), Some(Keyword::Entity));
 
             let word = "entitys";
-            assert_eq!(VHDLToken::match_keyword(word), None);
+            assert_eq!(Keyword::match_keyword(word), None);
 
             let word = "<=";
-            assert_eq!(VHDLToken::match_keyword(word), None);
+            assert_eq!(Keyword::match_keyword(word), None);
         }
 
         #[test]

@@ -4,8 +4,54 @@ use std::str::FromStr;
 
 trait Tokenize {
     type TokenType;
-    fn tokenize(s: &str) -> Vec<Token<Self::TokenType>>;
+    type Err;
+    fn tokenize(s: &str) -> Vec<Result<Token<Self::TokenType>, Self::Err>>;
 } 
+
+/// Compares to string references `s0` and `s1` with case conversion.
+/// 
+/// Returns `true` if they are deemed equivalent without regarding case sensivity.
+fn cmp_ignore_case(s0: &str, s1: &str) -> bool {
+    if s0.len() != s1.len() { return false }
+    let mut s0 = s0.chars();
+    let mut s1 = s1.chars();
+    while let Some(c) = s0.next() {
+        if c.to_lowercase().cmp(s1.next().unwrap().to_lowercase()) != std::cmp::Ordering::Equal {
+            return false
+        }
+    }
+    true
+}
+
+/// Compares to string references `s0` and `s1` with only ascii case conversion.
+/// 
+/// Returns `true` if they are deemed equivalent without regarding ascii case sensivity.
+fn cmp_ascii_ignore_case(s0: &str, s1: &str) -> bool {
+    if s0.len() != s1.len() { return false }
+    let mut s0 = s0.chars();
+    let mut s1 = s1.chars();
+    while let Some(c) = s0.next() {
+        if c.to_ascii_lowercase() != s1.next().unwrap().to_ascii_lowercase() {
+            return false
+        }
+    }
+    true
+}
+
+/// Transform a VHDL integer `s` into a real unsigned number to be used in rust code.
+/// 
+/// Assumes the integer is valid under the following production rule:
+/// - integer ::= digit { \[ underline ] digit }
+fn interpret_integer(s: &str) -> usize {
+    let mut chars = s.chars();
+    let mut number = String::from(chars.next().expect("must have a lead-off digit"));
+    while let Some(c) = chars.next() {
+        if c != char_set::UNDERLINE {
+            number.push(c);
+        }
+    }
+    number.parse::<usize>().expect("integer can only contain 0..=9 or underline '_'")
+}
 
 #[derive(Debug, PartialEq, Clone)]
 /// (Line, Col)
@@ -25,7 +71,6 @@ impl Position {
     /// Increments the column counter by 1. If the current char `c` is a newline,
     /// it will then drop down to the next line.
     fn step(&mut self, c: &char) {
-        // @TODO step by +4 if encountered a tab?
         self.next_col();
         if c == &'\n' {
             self.next_line();
@@ -126,7 +171,7 @@ impl BitStrLiteral {
     }
 }
 
-// B|O|X|UB|UO|UX|SB|SO|SX|D
+/// Set: B | O | X | UB | UO | UX | SB | SO | SX | D
 #[derive(Debug, PartialEq)]
 enum BaseSpec {
     B,
@@ -139,6 +184,48 @@ enum BaseSpec {
     SO,
     SX,
     D
+}
+
+pub mod based_integer {
+    /// Transforms the base `n` into its character validiation function.
+    /// 
+    /// The output is used to verify extended digits in a based_literal.
+    pub fn as_fn(n: usize) -> fn(c: &char) -> bool {
+        match n {
+            2  => is_base_2,
+            3  => is_base_3,
+            4  => is_base_4,
+            5  => is_base_5,
+            6  => is_base_6,
+            7  => is_base_7,
+            8  => is_base_8,
+            9  => is_base_9,
+            10 => is_base_10,
+            11 => is_base_11,
+            12 => is_base_12,
+            13 => is_base_13,
+            14 => is_base_14,
+            15 => is_base_15,
+            16 => is_base_16,
+            _ => panic!("base `n` must be at least 2 and at most 16")
+        }
+    }
+
+    pub fn is_base_2(c: &char)  -> bool { match c { '0'..='1' => true, _ => false, } }
+    pub fn is_base_3(c: &char)  -> bool { match c { '0'..='2' => true, _ => false, } }
+    pub fn is_base_4(c: &char)  -> bool { match c { '0'..='3' => true, _ => false, } }
+    pub fn is_base_5(c: &char)  -> bool { match c { '0'..='4' => true, _ => false, } }
+    pub fn is_base_6(c: &char)  -> bool { match c { '0'..='5' => true, _ => false, } }
+    pub fn is_base_7(c: &char)  -> bool { match c { '0'..='6' => true, _ => false, } }
+    pub fn is_base_8(c: &char)  -> bool { match c { '0'..='7' => true, _ => false, } }
+    pub fn is_base_9(c: &char)  -> bool { match c { '0'..='8' => true, _ => false, } }
+    pub fn is_base_10(c: &char) -> bool { match c { '0'..='9' => true, _ => false, } }
+    pub fn is_base_11(c: &char) -> bool { match c { '0'..='9' | 'a'..='a' | 'A'..='A' => true, _ => false, } }
+    pub fn is_base_12(c: &char) -> bool { match c { '0'..='9' | 'a'..='b' | 'A'..='B' => true, _ => false, } }
+    pub fn is_base_13(c: &char) -> bool { match c { '0'..='9' | 'a'..='c' | 'A'..='C' => true, _ => false, } }
+    pub fn is_base_14(c: &char) -> bool { match c { '0'..='9' | 'a'..='d' | 'A'..='D' => true, _ => false, } }
+    pub fn is_base_15(c: &char) -> bool { match c { '0'..='9' | 'a'..='e' | 'A'..='E' => true, _ => false, } }
+    pub fn is_base_16(c: &char) -> bool { match c { '0'..='9' | 'a'..='f' | 'A'..='F' => true, _ => false, } }
 }
 
 impl std::str::FromStr for BaseSpec {
@@ -822,6 +909,46 @@ struct VHDLTokenizer {
     inner: Vec<Token<VHDLToken>>,
 }
 
+#[derive(Debug)]
+struct VHDLTokenError(Position, String);
+
+#[derive(Debug)]
+enum TokenError {
+
+}
+
+impl VHDLTokenizer {
+    /// Creates a new `VHDLTokenizer` struct.
+    fn new() -> Self {
+        Self { inner: Vec::new(), }
+    }
+
+    /// Generates a `VHDLTokenizer` struct from source code `s`.
+    /// 
+    /// If `skip_err` is true, it will silently omit erroneous parsing from the
+    /// final vector and guarantee to be `Ok`.
+    fn read(s: &str, skip_err: bool) -> Result<Self, String> {
+        let tokens = Self::tokenize(s);
+        Ok(Self {
+            inner: match skip_err {
+                true => {
+                    // filter out all erroneous marks
+                    tokens.into_iter()
+                        .filter_map(|f| {
+                            if f.is_ok() { Some(f.unwrap()) } else { None }
+                        })
+                        .collect()
+                }
+                false => if let Some(Err(e)) = tokens.iter().find(|f| { f.is_err() }) {
+                    return Err(e.clone())
+                } else {
+                    tokens.into_iter().map(|f| f.unwrap() ).collect()
+                }
+            }
+        })
+    }
+}
+
 impl std::fmt::Debug for VHDLTokenizer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for tk in &self.inner {
@@ -829,36 +956,6 @@ impl std::fmt::Debug for VHDLTokenizer {
         }
         Ok(())
     } 
-}
-
-/// Compares to string references `s0` and `s1` with case conversion.
-/// 
-/// Returns `true` if they are deemed equivalent without regarding case sensivity.
-fn cmp_ignore_case(s0: &str, s1: &str) -> bool {
-    if s0.len() != s1.len() { return false }
-    let mut s0 = s0.chars();
-    let mut s1 = s1.chars();
-    while let Some(c) = s0.next() {
-        if c.to_lowercase().cmp(s1.next().unwrap().to_lowercase()) != std::cmp::Ordering::Equal {
-            return false
-        }
-    }
-    true
-}
-
-/// Compares to string references `s0` and `s1` with only ascii case conversion.
-/// 
-/// Returns `true` if they are deemed equivalent without regarding ascii case sensivity.
-fn cmp_ascii_ignore_case(s0: &str, s1: &str) -> bool {
-    if s0.len() != s1.len() { return false }
-    let mut s0 = s0.chars();
-    let mut s1 = s1.chars();
-    while let Some(c) = s0.next() {
-        if c.to_ascii_lowercase() != s1.next().unwrap().to_ascii_lowercase() {
-            return false
-        }
-    }
-    true
 }
 
 mod char_set {
@@ -974,31 +1071,11 @@ mod char_set {
     }
 }
 
-/// Checks is a character `c` is within the given extended digit range set by `b`.
-/// 
-/// This function is useful for verifying the values of extended_digits in a based
-/// literal because 2 <= `b` <= 16 (VHDL-1987 LRM - current).
-fn in_range(b: usize, c: &char) -> bool {
-    let within_digit = (*c as usize) < char_set::ASCII_ZERO + b && (*c as usize) >= char_set::ASCII_ZERO;
-    if b <= 10 {
-        return within_digit
-    } else {
-        match b {
-            11 => within_digit || match c { 'a'..='a' | 'A'..='A' => true, _ => false },
-            12 => within_digit || match c { 'a'..='b' | 'A'..='B' => true, _ => false },
-            13 => within_digit || match c { 'a'..='c' | 'A'..='C' => true, _ => false },
-            14 => within_digit || match c { 'a'..='d' | 'A'..='D' => true, _ => false },
-            15 => within_digit || match c { 'a'..='e' | 'A'..='E' => true, _ => false },
-            16 => within_digit || match c { 'a'..='f' | 'A'..='F' => true, _ => false },
-            _ => panic!("invalid base (only 2-16)")
-        }
-    }
-}
-
 impl Tokenize for VHDLTokenizer {
     type TokenType = VHDLToken;
+    type Err = String;
 
-    fn tokenize(s: &str) -> Vec<Token<Self::TokenType>> {
+    fn tokenize(s: &str) -> Vec<Result<Token<Self::TokenType>, Self::Err>> {
         let mut train = TrainCar::new(s.chars());
         // store results here as we consume the characters
         let mut tokens = Vec::new();
@@ -1009,51 +1086,68 @@ impl Tokenize for VHDLTokenizer {
                 continue;
             }
             let tk_loc = train.locate().clone();
+            tokens.push(
             if char_set::is_letter(&c) {
-                // collect general identifier (@TODO or bit string literal)
-                let tk = consume_word(&mut train, c).unwrap(); 
-                tokens.push(Token::new(tk, tk_loc));
+                // collect general identifier
+                match consume_word(&mut train, c) {
+                    Ok(tk) => Ok(Token::new(tk, tk_loc)),
+                    Err(e) => Err(e)
+                }
 
             } else if c == char_set::BACKSLASH {
                 // collect extended identifier
-                let tk = consume_extended_identifier(&mut train).unwrap();
-                tokens.push(Token::new(tk, tk_loc));
+                match consume_extended_identifier(&mut train) {
+                    Ok(tk) => Ok(Token::new(tk, tk_loc)),
+                    Err(e) => Err(e)
+                }
 
             } else if c == char_set::DOUBLE_QUOTE {
                 // collect string literal
-                let tk = consume_str_lit(&mut train).unwrap();
-                tokens.push(Token::new(tk, tk_loc));
+                match consume_str_lit(&mut train) {
+                    Ok(tk) => Ok(Token::new(tk, tk_loc)),
+                    Err(e) => Err(e)
+                }
 
             } else if c == char_set::SINGLE_QUOTE {
                 // collect character literal
-                let tk = consume_char_lit(&mut train).unwrap();
-                tokens.push(Token::new(tk, tk_loc));
-
+                match consume_char_lit(&mut train) {
+                    Ok(tk) => Ok(Token::new(tk, tk_loc)),
+                    Err(e) => Err(e)
+                }
+        
             } else if char_set::is_digit(&c) {
                 // collect decimal literal (or bit string literal or based literal)
-                let tk = consume_numeric(&mut train, c).unwrap();
-                tokens.push(Token::new(tk, tk_loc));
+                match consume_numeric(&mut train, c) {
+                    Ok(tk) => Ok(Token::new(tk, tk_loc)),
+                    Err(e) => Err(e)
+                }
 
             } else if c == char_set::DASH && train.peek().is_some() && train.peek().unwrap() == &char_set::DASH {    
                 // collect a single-line comment           
-                let tk = consume_comment(&mut train).unwrap();
-                tokens.push(Token::new(tk, tk_loc));
+                match consume_comment(&mut train) {
+                    Ok(tk) => Ok(Token::new(tk, tk_loc)),
+                    Err(e) => Err(e)
+                }
 
             } else if c == char_set::FWDSLASH && train.peek().is_some() && train.peek().unwrap() == &char_set::STAR {
                 // collect delimited (multi-line) comment
-                let tk = consume_delim_comment(&mut train).unwrap();
-                tokens.push(Token::new(tk, tk_loc));
+                match consume_delim_comment(&mut train) {
+                    Ok(tk) => Ok(Token::new(tk, tk_loc)),
+                    Err(e) => Err(e)
+                }
 
             } else {
                 // collect delimiter
-                let tk = collect_delimiter(&mut train, Some(c)).unwrap();
-                tokens.push(Token::new(tk, tk_loc));
-            }
+                match collect_delimiter(&mut train, Some(c)) {
+                    Ok(tk) => Ok(Token::new(tk, tk_loc)),
+                    Err(e) => Err(e)
+                }
+            });
         }
         // push final EOF token
         let mut tk_loc = train.locate().clone();
         tk_loc.next_col();
-        tokens.push(Token::new(VHDLToken::EOF,  tk_loc));
+        tokens.push(Ok(Token::new(VHDLToken::EOF,  tk_loc)));
         tokens
     }
 }
@@ -1076,7 +1170,7 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
             // gather more integers (must exist)
             let fraction = consume_value_pattern(train, None, char_set::is_digit)?;
             if fraction.is_empty() {
-                return Err(String::from("cannot have trailing decimal point"))
+                return Err(String::from("cannot have trailing decimal point")) // train.locate().clone(), 
             // append to number
             } else {
                 number.push_str(&fraction);
@@ -1089,10 +1183,18 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
             };
         // * based_literal (can begin with '#' or ':')
         } else if c == &char_set::HASH || c == &char_set::COLON {
+            // verify 2 <= number <= 16
+            let base = interpret_integer(&number);
+            if base < 2 || base > 16 {
+                return Err(String::from("based literal must have base of at least 2 and at most 16"))
+            }
             based_delim = Some(*c);
             number.push(train.consume().unwrap());
-            // gather first base integers
-            let base_integers = consume_value_pattern(train, None, char_set::is_extended_digit)?;
+            // gather initial extended digits
+            // select the `eval` fn to evaluate digits
+            let eval = based_integer::as_fn(base);
+            let base_integers = consume_value_pattern(train, None, eval)?;
+
             number.push_str(&base_integers);
             // stil expecting another token
             if let Some(c_next) = train.consume() {
@@ -1103,24 +1205,28 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
                 } else if c_next == char_set::DOT {
                     number.push(c_next);
                     // gather more integers (must exist)
-                    let fraction = consume_value_pattern(train, None, char_set::is_extended_digit)?;
-                    if fraction.is_empty() {
-                        return Err(String::from("cannot have trailing decimal point"))
-                    // append to number
-                    } else {
-                        number.push_str(&fraction);
-                    }
-                    // make sure there is a closing HASH
+                    let fraction = consume_value_pattern(train, None, eval)?;
+                    number.push_str(&fraction);
+                    // make sure there is a closing character '#' or ':'
                     if let Some(c_next_next) = train.consume() {
+                        // did not find the closing character '#' or ':'
                         if c_next_next != based_delim.unwrap() {
                             return Err(String::from("expecting closing '#' but found something else"))
                         }
+                        if fraction.is_empty() {
+                            return Err(String::from("expecting an integer after the dot"))
+                        }
                         number.push(c_next_next);
+                    // there is no more characters left to consume
                     } else {
+                        if fraction.is_empty() {
+                            return Err(String::from("expecting an integer after the dot"))
+                        }
                         return Err(String::from("expecting closing '#'"))
                     }
+                // an unknown character
                 } else {
-                    return Err(String::from("expecting closing '#'"))
+                    return Err(String::from("expecting closing '#' but got something else"))
                 }
                 // update c if there is another token to grab!
                 c = if let Some(c_next_next) = train.peek() {
@@ -1128,6 +1234,7 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
                 } else {
                     return Ok(VHDLToken::AbstLiteral(AbstLiteral::Based(number)))
                 }
+            // there is no more characters to consume
             } else {
                 return Err(String::from("expecting closing '#'"))
             }
@@ -1433,6 +1540,32 @@ mod test {
     use super::*;
 
     #[test]
+    fn interpret_int() {
+        let contents = "16";
+        assert_eq!(interpret_integer(&contents), 16);
+
+        let contents = "1_6";
+        assert_eq!(interpret_integer(&contents), 16);
+
+        let contents = "50_000_000";
+        assert_eq!(interpret_integer(&contents), 50_000_000);
+    }
+
+    #[test]
+    #[should_panic]
+    fn interpret_int_with_other_chars() {
+        let contents = "16a";
+        interpret_integer(&contents);
+    }
+
+    #[test]
+    #[should_panic]
+    fn interpret_int_with_no_leading_digit() {
+        let contents = "";
+        interpret_integer(&contents);
+    }
+
+    #[test]
     fn lex_partial_bit_str() {
         let words = "b\"1010\"more text";
         let mut tc = TrainCar::new(words.chars());
@@ -1489,10 +1622,10 @@ mod test {
         let c0 = tc.consume().unwrap();
         assert_eq!(consume_numeric(&mut tc, c0).unwrap(), VHDLToken::AbstLiteral(AbstLiteral::Decimal("6.023E+24".to_owned())));
 
-        let contents = "2#6.023#E+24";
+        let contents = "7#6.023#E+24";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
-        assert_eq!(consume_numeric(&mut tc, c0).unwrap(), VHDLToken::AbstLiteral(AbstLiteral::Based("2#6.023#E+24".to_owned())));
+        assert_eq!(consume_numeric(&mut tc, c0).unwrap(), VHDLToken::AbstLiteral(AbstLiteral::Based("7#6.023#E+24".to_owned())));
 
         let contents = "16#F.FF#E+2";
         let mut tc = TrainCar::new(contents.chars());
@@ -1509,6 +1642,12 @@ mod test {
         let c0 = tc.consume().unwrap();
         assert_eq!(consume_numeric(&mut tc, c0).unwrap(), VHDLToken::AbstLiteral(AbstLiteral::Based("016#0FF#".to_owned())));
 
+        let contents = "1_6#1E.1f1# -- comment";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_numeric(&mut tc, c0).unwrap(), VHDLToken::AbstLiteral(AbstLiteral::Based("1_6#1E.1f1#".to_owned())));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), " -- comment");
+
         // '#' can be replaced by ':' if done in both occurences - VHDL-1993 LRM p180
         let contents = "016:0FF:";
         let mut tc = TrainCar::new(contents.chars());
@@ -1519,6 +1658,54 @@ mod test {
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(consume_numeric(&mut tc, c0).is_err(), true);
+    }
+
+    #[test] 
+    fn based_literal_base_out_of_range() {
+        let contents = "1#0123456789AaBbCcDdEeFfGg#";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_numeric(&mut tc, c0).is_err(), true);
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "#0123456789AaBbCcDdEeFfGg#");
+
+        let contents = "17#0123456789AaBbCcDdEeFfGg#";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_numeric(&mut tc, c0).is_err(), true);
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "#0123456789AaBbCcDdEeFfGg#");
+    }
+
+    #[test]
+    fn based_literal_digit_out_of_range() {
+        let contents = "2#0123456789AaBbCcDdEeFfGg#";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_numeric(&mut tc, c0).is_err(), true);
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "3456789AaBbCcDdEeFfGg#");
+
+        let contents = "9#0123456789AaBbCcDdEeFfGg#";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_numeric(&mut tc, c0).is_err(), true);
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "AaBbCcDdEeFfGg#");
+
+        let contents = "1_0#0123456789AaBbCcDdEeFfGg#";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_numeric(&mut tc, c0).is_err(), true);
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "aBbCcDdEeFfGg#");
+
+        let contents = "11#0123456789AaBbCcDdEeFfGg#";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_numeric(&mut tc, c0).is_err(), true);
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "bCcDdEeFfGg#");
+
+        let contents = "16#0123456789AaBbCcDdEeFfGg#";
+        let mut tc = TrainCar::new(contents.chars());
+        let c0 = tc.consume().unwrap();
+        assert_eq!(consume_numeric(&mut tc, c0).is_err(), true);
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "g#");
     }
 
     #[test]
@@ -1780,7 +1967,7 @@ delimited-line comment. Look at all the space! ".to_owned())));
 entity fa is end entity;";
             let tokens: Vec<VHDLToken> = VHDLTokenizer::tokenize(s)
                 .into_iter()
-                .map(|f| { f.take() })
+                .map(|f| { f.unwrap().take() })
                 .collect();
             assert_eq!(tokens, vec![
                 Entity,
@@ -1799,7 +1986,7 @@ entity fa is end entity;";
             use crate::core::vhdl::*;
             let s = "\
 -- here is a vhdl single-line comment!";
-            let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s);
+            let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();
             assert_eq!(tokens, vec![
                 Token::new(Comment(vhdl::Comment::Single(" here is a vhdl single-line comment!".to_owned())), Position(1, 1)),
                 Token::new(EOF, Position(1, 39)),
@@ -1813,7 +2000,7 @@ entity fa is end entity;";
             let s = "\
 /* here is a vhdl 
     delimited-line comment. Look at all the space! */";
-            let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s);
+            let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();;
             assert_eq!(tokens, vec![
                 Token::new(Comment(vhdl::Comment::Delimited(" here is a vhdl 
     delimited-line comment. Look at all the space! ".to_owned())), Position(1, 1)),
@@ -1827,7 +2014,7 @@ entity fa is end entity;";
             use crate::core::vhdl::*;
             let s = "\
 signal magic_num : std_logic := '1';";
-            let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s);
+            let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();;
             assert_eq!(tokens, vec![
                 Token::new(Signal, Position(1, 1)),
                 Token::new(Identifier(vhdl::Identifier::Basic("magic_num".to_owned())), Position(1, 8)),
@@ -1847,7 +2034,7 @@ signal magic_num : std_logic := '1';";
 entity fa is end entity;";
             let tokens: Vec<Position> = VHDLTokenizer::tokenize(s)
                 .into_iter()
-                .map(|f| { f.locate().clone() })
+                .map(|f| { f.unwrap().locate().clone() })
                 .collect();
             assert_eq!(tokens, vec![
                 Position(1, 1),  // 1:1 keyword: entity
@@ -2008,7 +2195,7 @@ entity fa is end entity;";
 
         #[test]
         #[ignore]
-        fn nor_gate_design_code() {
+        fn playground_code() {
             let s = "\
 -- design file for a nor_gate
 library ieee;
@@ -2026,6 +2213,8 @@ entity nor_gate is
 end entity nor_gate;
 
 architecture rtl of nor_gate is
+    constant GO_ADDR_MMAP:integer:=2#0001_1100.001e#E14;
+    constant freq_hz : unsigned := 50_000_000;
     signal   MAGIC_NUM_3 : bit_vector(3 downto 0) := 0sx\"\"
     constant MAGIC_NUM_1 : integer := 2#10101#; -- test constants against tokenizer
     constant MAGIC_NUM_2 : std_logic_vector(7 downto 0) := 0; --8x\"11\";
@@ -2033,10 +2222,9 @@ begin
     c <= a nor \\In\\;
 
 end architecture rtl;";
-            let vhdl = VHDLTokenizer::tokenize(&s);
-            let vhdl = VHDLTokenizer { inner: vhdl };
+            let vhdl = VHDLTokenizer::read(&s, false).unwrap();
             println!("{:?}", vhdl);
-            todo!()
+            panic!("manually inspect token list")
         }
     }
 

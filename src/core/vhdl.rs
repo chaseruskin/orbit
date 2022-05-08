@@ -1,42 +1,9 @@
-//! VHDL tokenizer
-use std::iter::Peekable;
 use std::str::FromStr;
-
-trait Tokenize {
-    type TokenType;
-    type Err;
-    fn tokenize(s: &str) -> Vec<Result<Token<Self::TokenType>, TokenError<Self::Err>>> where <Self as Tokenize>::Err: std::fmt::Display;
-}
-
-/// Compares to string references `s0` and `s1` with case conversion.
-/// 
-/// Returns `true` if they are deemed equivalent without regarding case sensivity.
-fn cmp_ignore_case(s0: &str, s1: &str) -> bool {
-    if s0.len() != s1.len() { return false }
-    let mut s0 = s0.chars();
-    let mut s1 = s1.chars();
-    while let Some(c) = s0.next() {
-        if c.to_lowercase().cmp(s1.next().unwrap().to_lowercase()) != std::cmp::Ordering::Equal {
-            return false
-        }
-    }
-    true
-}
-
-/// Compares to string references `s0` and `s1` with only ascii case conversion.
-/// 
-/// Returns `true` if they are deemed equivalent without regarding ascii case sensivity.
-fn cmp_ascii_ignore_case(s0: &str, s1: &str) -> bool {
-    if s0.len() != s1.len() { return false }
-    let mut s0 = s0.chars();
-    let mut s1 = s1.chars();
-    while let Some(c) = s0.next() {
-        if c.to_ascii_lowercase() != s1.next().unwrap().to_ascii_lowercase() {
-            return false
-        }
-    }
-    true
-}
+use crate::core::lexer;
+use crate::core::lexer::TrainCar;
+use crate::core::lexer::Tokenize;
+use std::fmt::Display;
+use crate::util::strcmp;
 
 /// Transforms a VHDL integer `s` into a real unsigned number to be used in rust code.
 /// 
@@ -53,76 +20,6 @@ fn interpret_integer(s: &str) -> usize {
     number.parse::<usize>().expect("integer can only contain 0..=9 or underline '_'")
 }
 
-#[derive(Debug, PartialEq, Clone)]
-/// (Line, Col)
-struct Position(usize, usize);
-
-impl Position {
-    /// Creates a new `Position` struct as line 1, col 0.
-    fn new() -> Self {
-        Position(1, 0)
-    }
-
-    /// Increments the column counter by 1.
-    fn next_col(&mut self) {
-        self.1 += 1;
-    }   
-
-    /// Increments the column counter by 1. If the current char `c` is a newline,
-    /// it will then drop down to the next line.
-    fn step(&mut self, c: &char) {
-        self.next_col();
-        if c == &'\n' {
-            self.next_line();
-        }
-    }
-
-    /// Increments the line counter by 1.
-    /// 
-    /// Also resets the column counter to 0.
-    fn next_line(&mut self) {
-        self.0 += 1;
-        self.1 = 0;
-    }
-
-    /// Access the line (`.0`) number.
-    fn line(&self) -> usize {
-        self.0
-    }
-
-    /// Access the col (`.1`) number.
-    fn col(&self) -> usize {
-        self.1
-    }
-}
-
-impl std::fmt::Display for Position {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}:{}", self.0, self.1)
-    }
-}
-
-#[derive(Debug, PartialEq)]
-struct TokenError<T: std::fmt::Display> {
-    position: Position,
-    err: T,
-}
-
-impl<T: std::fmt::Display> std::fmt::Display for TokenError<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {}", self.position, self.err)
-    }
-}
-
-impl<T: std::fmt::Display> TokenError<T> {
-    fn new(err: T, loc: Position) -> Self {
-        Self {
-            position: loc,
-            err: err
-        }
-    }
-}
-
 #[derive(Debug, PartialEq)]
 enum VHDLTokenError {
     Any(String),
@@ -131,49 +28,13 @@ enum VHDLTokenError {
     MissingClosingAndGot(char, char),
 }
 
-impl std::fmt::Display for VHDLTokenError {
+impl Display for VHDLTokenError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", match self {
-            Self::Any(s)     => s.to_string(),
+            Self::Any(s) => s.to_string(),
             Self::Invalid(c) => format!("invalid character '{}' ", c),
             _ => todo!("write error message!")
         })
-    }
-}
-
-#[derive(Debug, PartialEq)]
-struct Token<T> {
-    position: Position,
-    ttype: T,
-}
-
-impl<T> Token<T> {
-    /// Reveals the token type.
-    fn unwrap(&self) -> &T {
-        &self.ttype
-    }
-
-    /// Transforms the token into its type.
-    fn take(self) -> T {
-        self.ttype
-    }
-
-    /// Returns the position in the file where the token was captured.
-    fn locate(&self) -> &Position {
-        &self.position
-    }
-
-    /// Creates a new token.
-    fn new(ttype: T, loc: Position) -> Self {
-        Self {
-            position: loc,
-            ttype: ttype,
-        }
-    }
-
-    /// References the inner token type.
-    fn as_ref(&self) -> &T {
-        &self.ttype
     }
 }
 
@@ -221,49 +82,7 @@ enum BaseSpec {
     B, O, X, UB, UO, UX, SB, SO, SX, D
 }
 
-pub mod based_integer {
-    /// Transforms the base `n` into its character validiation function.
-    /// 
-    /// The output is used to verify extended digits in a based_literal.
-    pub fn as_fn(n: usize) -> fn(c: &char) -> bool {
-        match n {
-            2  => is_base_2,
-            3  => is_base_3,
-            4  => is_base_4,
-            5  => is_base_5,
-            6  => is_base_6,
-            7  => is_base_7,
-            8  => is_base_8,
-            9  => is_base_9,
-            10 => is_base_10,
-            11 => is_base_11,
-            12 => is_base_12,
-            13 => is_base_13,
-            14 => is_base_14,
-            15 => is_base_15,
-            16 => is_base_16,
-            _ => panic!("base `n` must be at least 2 and at most 16")
-        }
-    }
-
-    pub fn is_base_2(c: &char)  -> bool { match c { '0'..='1' => true, _ => false, } }
-    pub fn is_base_3(c: &char)  -> bool { match c { '0'..='2' => true, _ => false, } }
-    pub fn is_base_4(c: &char)  -> bool { match c { '0'..='3' => true, _ => false, } }
-    pub fn is_base_5(c: &char)  -> bool { match c { '0'..='4' => true, _ => false, } }
-    pub fn is_base_6(c: &char)  -> bool { match c { '0'..='5' => true, _ => false, } }
-    pub fn is_base_7(c: &char)  -> bool { match c { '0'..='6' => true, _ => false, } }
-    pub fn is_base_8(c: &char)  -> bool { match c { '0'..='7' => true, _ => false, } }
-    pub fn is_base_9(c: &char)  -> bool { match c { '0'..='8' => true, _ => false, } }
-    pub fn is_base_10(c: &char) -> bool { match c { '0'..='9' => true, _ => false, } }
-    pub fn is_base_11(c: &char) -> bool { match c { '0'..='9' | 'a'..='a' | 'A'..='A' => true, _ => false, } }
-    pub fn is_base_12(c: &char) -> bool { match c { '0'..='9' | 'a'..='b' | 'A'..='B' => true, _ => false, } }
-    pub fn is_base_13(c: &char) -> bool { match c { '0'..='9' | 'a'..='c' | 'A'..='C' => true, _ => false, } }
-    pub fn is_base_14(c: &char) -> bool { match c { '0'..='9' | 'a'..='d' | 'A'..='D' => true, _ => false, } }
-    pub fn is_base_15(c: &char) -> bool { match c { '0'..='9' | 'a'..='e' | 'A'..='E' => true, _ => false, } }
-    pub fn is_base_16(c: &char) -> bool { match c { '0'..='9' | 'a'..='f' | 'A'..='F' => true, _ => false, } }
-}
-
-impl std::str::FromStr for BaseSpec {
+impl FromStr for BaseSpec {
     type Err = VHDLTokenError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
@@ -305,6 +124,8 @@ enum Identifier {
     Extended(String),
 }
 
+impl std::cmp::Eq for Identifier {}
+
 impl Identifier {
     // Returns the reference to the inner `String` struct.
     fn as_str(&self) -> &str {
@@ -323,8 +144,6 @@ impl Identifier {
     }
 }
 
-impl std::cmp::Eq for Identifier {}
-
 impl std::cmp::PartialEq for Identifier {
     fn eq(&self, other: &Self) -> bool {
         // instantly not equal if not they are not of same type
@@ -334,7 +153,7 @@ impl std::cmp::PartialEq for Identifier {
             self.as_str() == other.as_str()
         // compare without case sensitivity
         } else {
-            cmp_ignore_case(self.as_str(), other.as_str())
+            strcmp::cmp_ignore_case(self.as_str(), other.as_str())
         }
     }
 
@@ -343,7 +162,7 @@ impl std::cmp::PartialEq for Identifier {
     }
 }
 
-impl std::fmt::Display for Identifier {
+impl Display for Identifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Basic(id) => write!(f, "{}", id),
@@ -841,7 +660,7 @@ impl Keyword {
     }
 }
 
-impl std::fmt::Display for Keyword {
+impl Display for Keyword {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_str())
     }
@@ -892,13 +711,13 @@ impl Delimiter {
     }
 }
 
-impl std::fmt::Display for Delimiter {
+impl Display for Delimiter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_str())
     }
 }
 
-impl std::fmt::Display for VHDLToken {
+impl Display for VHDLToken {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", match self {
             Self::Comment(note) => note.as_str(),
@@ -916,7 +735,7 @@ impl std::fmt::Display for VHDLToken {
 
 #[derive(PartialEq)]
 struct VHDLTokenizer {
-    inner: Vec<Token<VHDLToken>>,
+    inner: Vec<lexer::Token<VHDLToken>>,
 }
 
 impl VHDLTokenizer {
@@ -929,7 +748,7 @@ impl VHDLTokenizer {
     /// 
     /// If `skip_err` is true, it will silently omit erroneous parsing from the
     /// final vector and guarantee to be `Ok`.
-    fn read(s: &str, skip_err: bool) -> Result<Self, &TokenError<VHDLTokenError>> {
+    fn read(s: &str, skip_err: bool) -> Result<Self, &lexer::TokenError<VHDLTokenError>> {
         let tokens = Self::tokenize(s);
         Ok(Self {
             inner: match skip_err {
@@ -958,6 +777,48 @@ impl std::fmt::Debug for VHDLTokenizer {
         }
         Ok(())
     } 
+}
+
+mod based_integer {
+    /// Transforms the base `n` into its character validiation function.
+    /// 
+    /// The output is used to verify extended digits in a VHDL based_literal token.
+    pub fn as_fn(n: usize) -> fn(c: &char) -> bool {
+        match n {
+            2  => is_base_2,
+            3  => is_base_3,
+            4  => is_base_4,
+            5  => is_base_5,
+            6  => is_base_6,
+            7  => is_base_7,
+            8  => is_base_8,
+            9  => is_base_9,
+            10 => is_base_10,
+            11 => is_base_11,
+            12 => is_base_12,
+            13 => is_base_13,
+            14 => is_base_14,
+            15 => is_base_15,
+            16 => is_base_16,
+            _ => panic!("base `n` must be at least 2 and at most 16")
+        }
+    }
+
+    pub fn is_base_2(c: &char)  -> bool { match c { '0'..='1' => true, _ => false, } }
+    pub fn is_base_3(c: &char)  -> bool { match c { '0'..='2' => true, _ => false, } }
+    pub fn is_base_4(c: &char)  -> bool { match c { '0'..='3' => true, _ => false, } }
+    pub fn is_base_5(c: &char)  -> bool { match c { '0'..='4' => true, _ => false, } }
+    pub fn is_base_6(c: &char)  -> bool { match c { '0'..='5' => true, _ => false, } }
+    pub fn is_base_7(c: &char)  -> bool { match c { '0'..='6' => true, _ => false, } }
+    pub fn is_base_8(c: &char)  -> bool { match c { '0'..='7' => true, _ => false, } }
+    pub fn is_base_9(c: &char)  -> bool { match c { '0'..='8' => true, _ => false, } }
+    pub fn is_base_10(c: &char) -> bool { match c { '0'..='9' => true, _ => false, } }
+    pub fn is_base_11(c: &char) -> bool { match c { '0'..='9' | 'a'..='a' | 'A'..='A' => true, _ => false, } }
+    pub fn is_base_12(c: &char) -> bool { match c { '0'..='9' | 'a'..='b' | 'A'..='B' => true, _ => false, } }
+    pub fn is_base_13(c: &char) -> bool { match c { '0'..='9' | 'a'..='c' | 'A'..='C' => true, _ => false, } }
+    pub fn is_base_14(c: &char) -> bool { match c { '0'..='9' | 'a'..='d' | 'A'..='D' => true, _ => false, } }
+    pub fn is_base_15(c: &char) -> bool { match c { '0'..='9' | 'a'..='e' | 'A'..='E' => true, _ => false, } }
+    pub fn is_base_16(c: &char) -> bool { match c { '0'..='9' | 'a'..='f' | 'A'..='F' => true, _ => false, } }
 }
 
 mod char_set {
@@ -1076,17 +937,18 @@ impl Tokenize for VHDLTokenizer {
     type TokenType = VHDLToken;
     type Err = VHDLTokenError;
 
-    fn tokenize(s: &str) -> Vec<Result<Token<Self::TokenType>, TokenError<Self::Err>>> {
+    fn tokenize(s: &str) -> Vec<Result<lexer::Token<Self::TokenType>, lexer::TokenError<Self::Err>>> {
+        use lexer::{Token, TokenError};
+
         let mut train = TrainCar::new(s.chars());
         // store results here as we consume the characters
         let mut tokens: Vec<Result<Token<Self::TokenType>, TokenError<Self::Err>>> = Vec::new();
         // consume every character (lexical analysis)
         while let Some(c) = train.consume() {
             // skip over whitespace
-            if char_set::is_separator(&c) {
-                continue;
-            }
+            if char_set::is_separator(&c) { continue; }
             let tk_loc = train.locate().clone();
+            // build a token
             tokens.push(
             if char_set::is_letter(&c) {
                 // collect general identifier
@@ -1094,42 +956,36 @@ impl Tokenize for VHDLTokenizer {
                     Ok(tk) => Ok(Token::new(tk, tk_loc)),
                     Err(e) => Err(TokenError::new(e, train.locate().clone()))
                 }
-
             } else if c == char_set::BACKSLASH {
                 // collect extended identifier
                 match Self::TokenType::consume_extended_identifier(&mut train) {
                     Ok(tk) => Ok(Token::new(tk, tk_loc)),
                     Err(e) => Err(TokenError::new(e, train.locate().clone()))
                 }
-
             } else if c == char_set::DOUBLE_QUOTE {
                 // collect string literal
                 match Self::TokenType::consume_str_lit(&mut train) {
                     Ok(tk) => Ok(Token::new(tk, tk_loc)),
                     Err(e) => Err(TokenError::new(e, train.locate().clone()))
                 }
-
             } else if c == char_set::SINGLE_QUOTE && tokens.last().is_some() && tokens.last().unwrap().as_ref().is_ok() && tokens.last().unwrap().as_ref().unwrap().as_ref().is_delimiter() {
                 // collect character literal
                 match Self::TokenType::consume_char_lit(&mut train) {
                     Ok(tk) => Ok(Token::new(tk, tk_loc)),
                     Err(e) => Err(TokenError::new(e, train.locate().clone()))
                 }
-        
             } else if char_set::is_digit(&c) {
                 // collect decimal literal (or bit string literal or based literal)
                 match Self::TokenType::consume_numeric(&mut train, c) {
                     Ok(tk) => Ok(Token::new(tk, tk_loc)),
                     Err(e) => Err(TokenError::new(e, train.locate().clone()))
                 }
-
             } else if c == char_set::DASH && train.peek().is_some() && train.peek().unwrap() == &char_set::DASH {    
                 // collect a single-line comment           
                 match Self::TokenType::consume_comment(&mut train) {
                     Ok(tk) => Ok(Token::new(tk, tk_loc)),
                     Err(e) => Err(TokenError::new(e, train.locate().clone()))
                 }
-
             } else if c == char_set::FWDSLASH && train.peek().is_some() && train.peek().unwrap() == &char_set::STAR {
                 // collect delimited (multi-line) comment
                 match Self::TokenType::consume_delim_comment(&mut train) {
@@ -1140,7 +996,6 @@ impl Tokenize for VHDLTokenizer {
                         Err(TokenError::new(e, tk_loc)) 
                     }
                 }
-
             } else {
                 // collect delimiter
                 match Self::TokenType::collect_delimiter(&mut train, Some(c)) {
@@ -1296,7 +1151,7 @@ impl VHDLToken {
         }
     }
 
-    /// Captures VHDL Tokens: keywords and basic identifiers.
+    /// Captures VHDL Tokens: keywords, basic identifiers, and regular bit string literals.
     /// 
     /// Assumes the first `letter` char was the last char consumed before the function call.
     fn consume_word(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Result<VHDLToken, VHDLTokenError> {
@@ -1579,46 +1434,10 @@ impl VHDLToken {
     }
 }
 
-/// Helps keep the current position in the contents as the characters are consumed.
-struct TrainCar<T> where T: Iterator<Item=char> {
-    contents: Peekable<T>,
-    loc: Position,
-}
-
-impl<T> TrainCar<T> where T: Iterator<Item=char> {
-    fn consume(&mut self) -> Option<char> {
-        if let Some(c) = self.contents.next() {
-            self.loc.step(&c);
-            Some(c)
-        } else {
-            None
-        }
-    }
-
-    fn peek(&mut self) -> Option<&char> {
-        self.contents.peek()
-    }
-
-    fn new(s: T) -> Self {
-        Self {
-            loc: Position::new(),
-            contents: s.peekable(),
-        }
-    }
-
-    fn as_ref(&self) -> &Peekable<T> {
-        &self.contents
-    }
-
-    /// Access the position of the first remainig character.
-    fn locate(&self) -> &Position {
-        &self.loc
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::core::lexer::*;
 
     #[test]
     fn interpret_int() {
@@ -1694,8 +1513,8 @@ foo <= std_logic_vector'('a','b','c');";
         let mut tc = TrainCar::new(words.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_word(&mut tc, c0), Ok(VHDLToken::BitStrLiteral(BitStrLiteral("b\"1010\"".to_owned()))));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "more text");
-        assert_eq!(tc.locate(), &Position(1, 7));
+        assert_eq!(tc.peekable().clone().collect::<String>(), "more text");
+        assert_eq!(tc.locate(), &Position::place(1, 7));
 
         // invalid base specifier in any language standard
         let words = "z\"1010\"more text";
@@ -1710,15 +1529,15 @@ foo <= std_logic_vector'('a','b','c');";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap(); // already determined first digit
         assert_eq!(VHDLToken::consume_numeric(&mut tc, c0).unwrap(), VHDLToken::BitStrLiteral(BitStrLiteral("10b\"10_1001_1111\"".to_owned())));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
-        assert_eq!(tc.locate(), &Position(1, 17));
+        assert_eq!(tc.peekable().clone().collect::<String>(), ";");
+        assert_eq!(tc.locate(), &Position::place(1, 17));
 
         let contents = "12SX\"F-\";";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap(); // already determined first digit
         assert_eq!(VHDLToken::consume_numeric(&mut tc, c0).unwrap(), VHDLToken::BitStrLiteral(BitStrLiteral("12SX\"F-\"".to_owned())));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
-        assert_eq!(tc.locate(), &Position(1, 8));
+        assert_eq!(tc.peekable().clone().collect::<String>(), ";");
+        assert_eq!(tc.locate(), &Position::place(1, 8));
     }
 
     #[test]
@@ -1727,13 +1546,13 @@ foo <= std_logic_vector'('a','b','c');";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap(); // already determined first digit
         assert_eq!(VHDLToken::consume_numeric(&mut tc, c0).unwrap(), VHDLToken::AbstLiteral(AbstLiteral::Decimal("32".to_owned())));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), ")");
+        assert_eq!(tc.peekable().clone().collect::<String>(), ")");
 
         let contents = "32_000;";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_numeric(&mut tc, c0).unwrap(), VHDLToken::AbstLiteral(AbstLiteral::Decimal("32_000".to_owned())));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
+        assert_eq!(tc.peekable().clone().collect::<String>(), ";");
 
         let contents = "0.456";
         let mut tc = TrainCar::new(contents.chars());
@@ -1769,7 +1588,7 @@ foo <= std_logic_vector'('a','b','c');";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_numeric(&mut tc, c0).unwrap(), VHDLToken::AbstLiteral(AbstLiteral::Based("1_6#1E.1f1#".to_owned())));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), " -- comment");
+        assert_eq!(tc.peekable().clone().collect::<String>(), " -- comment");
 
         // '#' can be replaced by ':' if done in both occurences - VHDL-1993 LRM p180
         let contents = "016:0FF:";
@@ -1789,13 +1608,13 @@ foo <= std_logic_vector'('a','b','c');";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_numeric(&mut tc, c0).is_err(), true);
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "#0123456789AaBbCcDdEeFfGg#");
+        assert_eq!(tc.peekable().clone().collect::<String>(), "#0123456789AaBbCcDdEeFfGg#");
 
         let contents = "17#0123456789AaBbCcDdEeFfGg#";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_numeric(&mut tc, c0).is_err(), true);
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "#0123456789AaBbCcDdEeFfGg#");
+        assert_eq!(tc.peekable().clone().collect::<String>(), "#0123456789AaBbCcDdEeFfGg#");
     }
 
     #[test]
@@ -1804,31 +1623,31 @@ foo <= std_logic_vector'('a','b','c');";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_numeric(&mut tc, c0).is_err(), true);
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "3456789AaBbCcDdEeFfGg#");
+        assert_eq!(tc.peekable().clone().collect::<String>(), "3456789AaBbCcDdEeFfGg#");
 
         let contents = "9#0123456789AaBbCcDdEeFfGg#";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_numeric(&mut tc, c0).is_err(), true);
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "AaBbCcDdEeFfGg#");
+        assert_eq!(tc.peekable().clone().collect::<String>(), "AaBbCcDdEeFfGg#");
 
         let contents = "1_0#0123456789AaBbCcDdEeFfGg#";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_numeric(&mut tc, c0).is_err(), true);
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "aBbCcDdEeFfGg#");
+        assert_eq!(tc.peekable().clone().collect::<String>(), "aBbCcDdEeFfGg#");
 
         let contents = "11#0123456789AaBbCcDdEeFfGg#";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_numeric(&mut tc, c0).is_err(), true);
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "bCcDdEeFfGg#");
+        assert_eq!(tc.peekable().clone().collect::<String>(), "bCcDdEeFfGg#");
 
         let contents = "16#0123456789AaBbCcDdEeFfGg#";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_numeric(&mut tc, c0).is_err(), true);
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "g#");
+        assert_eq!(tc.peekable().clone().collect::<String>(), "g#");
     }
 
     #[test]
@@ -1838,8 +1657,8 @@ foo <= std_logic_vector'('a','b','c');";
         let mut tc = TrainCar::new(contents.chars());
         tc.consume(); // already determined first dash
         assert_eq!(VHDLToken::consume_comment(&mut tc).unwrap(), VHDLToken::Comment(Comment::Single("here is a vhdl comment".to_owned())));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
-        assert_eq!(tc.locate(), &Position(1, 24));
+        assert_eq!(tc.peekable().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position::place(1, 24));
 
         let contents = "\
 --here is a vhdl comment
@@ -1847,8 +1666,8 @@ entity fa is end entity;";
         let mut tc = TrainCar::new(contents.chars());
         tc.consume(); // already determined first dash
         assert_eq!(VHDLToken::consume_comment(&mut tc).unwrap(), VHDLToken::Comment(Comment::Single("here is a vhdl comment".to_owned())));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "entity fa is end entity;");
-        assert_eq!(tc.locate(), &Position(2, 0));
+        assert_eq!(tc.peekable().clone().collect::<String>(), "entity fa is end entity;");
+        assert_eq!(tc.locate(), &Position::place(2, 0));
     }
 
     #[test]
@@ -1860,8 +1679,8 @@ delimited-line comment. Look at all the space! */;";
         tc.consume();
         assert_eq!(VHDLToken::consume_delim_comment(&mut tc).unwrap(), VHDLToken::Comment(Comment::Delimited(" here is a vhdl 
 delimited-line comment. Look at all the space! ".to_owned())));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
-        assert_eq!(tc.locate(), &Position(2, 49));
+        assert_eq!(tc.peekable().clone().collect::<String>(), ";");
+        assert_eq!(tc.locate(), &Position::place(2, 49));
 
         let contents = "/* here is a vhdl comment";
         let mut tc = TrainCar::new(contents.chars());
@@ -1874,8 +1693,8 @@ delimited-line comment. Look at all the space! ".to_owned())));
         let contents = "1'";
         let mut tc = TrainCar::new(contents.chars());
         assert_eq!(VHDLToken::consume_char_lit(&mut tc).unwrap(), VHDLToken::CharLiteral(Character("1".to_owned())));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
-        assert_eq!(tc.locate(), &Position(1, 2));
+        assert_eq!(tc.peekable().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position::place(1, 2));
 
         let contents = "12'";
         let mut tc = TrainCar::new(contents.chars());
@@ -1888,21 +1707,21 @@ delimited-line comment. Look at all the space! ".to_owned())));
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_exponent(&mut tc, c0).unwrap(), "E+24");
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
-        assert_eq!(tc.locate(), &Position(1, 4));
+        assert_eq!(tc.peekable().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position::place(1, 4));
 
         let contents = "e6;";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_exponent(&mut tc, c0).unwrap(), "e6");
-        assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
-        assert_eq!(tc.locate(), &Position(1, 2));
+        assert_eq!(tc.peekable().clone().collect::<String>(), ";");
+        assert_eq!(tc.locate(), &Position::place(1, 2));
 
         let contents = "e-12;";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_exponent(&mut tc, c0).unwrap(), "e-12");
-        assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
+        assert_eq!(tc.peekable().clone().collect::<String>(), ";");
 
         // negative test cases
         let contents = "e-;";
@@ -1928,21 +1747,21 @@ delimited-line comment. Look at all the space! ".to_owned())));
         // testing using digit prod. rule "graphic"
         let mut tc = TrainCar::new(contents.chars());
         assert_eq!(VHDLToken::consume_value_pattern(&mut tc, None, char_set::is_graphic).unwrap(), "");
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
-        assert_eq!(tc.locate(), &Position(1, 0));
+        assert_eq!(tc.peekable().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position::place(1, 0));
 
         let contents = "234";
         // testing using digit prod. rule "integer"
         let mut tc = TrainCar::new(contents.chars());
         assert_eq!(VHDLToken::consume_value_pattern(&mut tc, None, char_set::is_digit).unwrap(), "234");
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
-        assert_eq!(tc.locate(), &Position(1, 3));
+        assert_eq!(tc.peekable().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position::place(1, 3));
 
         let contents = "1_2_345 ";
         let mut tc = TrainCar::new(contents.chars());
         assert_eq!(VHDLToken::consume_value_pattern(&mut tc, None, char_set::is_digit).unwrap(), "1_2_345");
-        assert_eq!(tc.as_ref().clone().collect::<String>(), " ");
-        assert_eq!(tc.locate(), &Position(1, 7));
+        assert_eq!(tc.peekable().clone().collect::<String>(), " ");
+        assert_eq!(tc.locate(), &Position::place(1, 7));
 
         let contents = "23__4";
         let mut tc = TrainCar::new(contents.chars());
@@ -1973,22 +1792,22 @@ delimited-line comment. Look at all the space! ".to_owned())));
         let mut tc = TrainCar::new(words.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_word(&mut tc, c0).unwrap(), VHDLToken::Keyword(Keyword::Entity));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), " is");
-        assert_eq!(tc.locate(), &Position(1, 6));
+        assert_eq!(tc.peekable().clone().collect::<String>(), " is");
+        assert_eq!(tc.locate(), &Position::place(1, 6));
 
         let words = "std_logic_1164.all;";
         let mut tc = TrainCar::new(words.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_word(&mut tc, c0).unwrap(), VHDLToken::Identifier(Identifier::Basic("std_logic_1164".to_owned())));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), ".all;");
-        assert_eq!(tc.locate(), &Position(1, 14));
+        assert_eq!(tc.peekable().clone().collect::<String>(), ".all;");
+        assert_eq!(tc.locate(), &Position::place(1, 14));
 
         let words = "ready_OUT<=";
         let mut tc = TrainCar::new(words.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_word(&mut tc, c0).unwrap(), VHDLToken::Identifier(Identifier::Basic("ready_OUT".to_owned())));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "<=");
-        assert_eq!(tc.locate(), &Position(1, 9));
+        assert_eq!(tc.peekable().clone().collect::<String>(), "<=");
+        assert_eq!(tc.locate(), &Position::place(1, 9));
     }
 
     #[test]
@@ -1997,15 +1816,15 @@ delimited-line comment. Look at all the space! ".to_owned())));
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_literal(&mut tc, &c0).unwrap(), " go Gators! ");
-        assert_eq!(tc.as_ref().clone().collect::<String>(), " ");
-        assert_eq!(tc.locate(), &Position(1, 14));
+        assert_eq!(tc.peekable().clone().collect::<String>(), " ");
+        assert_eq!(tc.locate(), &Position::place(1, 14));
 
         let contents = "\" go \"\"to\"\"\" ";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_literal(&mut tc, &c0).unwrap(), " go \"to\"");
-        assert_eq!(tc.as_ref().clone().collect::<String>(), " ");
-        assert_eq!(tc.locate(), &Position(1, 12));
+        assert_eq!(tc.peekable().clone().collect::<String>(), " ");
+        assert_eq!(tc.locate(), &Position::place(1, 12));
 
         let contents = "\"go ";
         let mut tc = TrainCar::new(contents.chars());
@@ -2019,20 +1838,20 @@ delimited-line comment. Look at all the space! ".to_owned())));
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_literal(&mut tc, &c0).unwrap(), "Setup time is too short");
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "more text");
-        assert_eq!(tc.locate(), &Position(1, 25));
+        assert_eq!(tc.peekable().clone().collect::<String>(), "more text");
+        assert_eq!(tc.locate(), &Position::place(1, 25));
 
         let contents = "\"\"\"\"\"\"";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_literal(&mut tc, &c0).unwrap(), "\"\"");
-        assert_eq!(tc.locate(), &Position(1, 6));
+        assert_eq!(tc.locate(), &Position::place(1, 6));
 
         let contents = "\" go \"\"gators\"\" from UF! \"";
         let mut tc = TrainCar::new(contents.chars());
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_literal(&mut tc, &c0).unwrap(), " go \"gators\" from UF! ");
-        assert_eq!(tc.locate(), &Position(1, 26));
+        assert_eq!(tc.locate(), &Position::place(1, 26));
 
         let contents = "\\VHDL\\";
         let mut tc = TrainCar::new(contents.chars());
@@ -2044,39 +1863,7 @@ delimited-line comment. Look at all the space! ".to_owned())));
         let c0 = tc.consume().unwrap();
         assert_eq!(VHDLToken::consume_literal(&mut tc, &c0).unwrap(), "a\\b");
         // verify the stream is left in the correct state
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "more text afterward");
-    }
-
-    #[test]
-    fn ignore_case_cmp() {
-        let s0 = "ABC";
-        let s1 = "abc";
-        assert_eq!(cmp_ignore_case(s0, s1), true);
-        assert_eq!(cmp_ascii_ignore_case(s0, s1), true);
-
-        // negative case: different lengths
-        let s0 = "ABCD";
-        let s1 = "abc";
-        assert_eq!(cmp_ignore_case(s0, s1), false);
-        assert_eq!(cmp_ascii_ignore_case(s0, s1), false);
-
-        // negative case: different letter order
-        let s0 = "cba";
-        let s1 = "abc";
-        assert_eq!(cmp_ignore_case(s0, s1), false);
-        assert_eq!(cmp_ascii_ignore_case(s0, s1), false);
-
-        // VHDL-2008 LRM p226
-        let s0 = "ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ";
-        let s1 = "abcdefghijklmnopqrstuvwxyzàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþ";
-        assert_eq!(cmp_ignore_case(s0, s1), true);
-        assert_eq!(cmp_ascii_ignore_case(s0, s1), false);
-
-        // these 2 letters do not have upper-case equivalents
-        let s0 = "ß";
-        let s1 = "ÿ";
-        assert_eq!(cmp_ignore_case(s0, s1), false);
-        assert_eq!(cmp_ascii_ignore_case(s0, s1), false);
+        assert_eq!(tc.peekable().clone().collect::<String>(), "more text afterward");
     }
 
     #[test]
@@ -2104,8 +1891,8 @@ entity fa is end entity;";
 -- here is a vhdl single-line comment!";
         let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();
         assert_eq!(tokens, vec![
-            Token::new(VHDLToken::Comment(Comment::Single(" here is a vhdl single-line comment!".to_owned())), Position(1, 1)),
-            Token::new(VHDLToken::EOF, Position(1, 39)),
+            Token::new(VHDLToken::Comment(Comment::Single(" here is a vhdl single-line comment!".to_owned())), Position::place(1, 1)),
+            Token::new(VHDLToken::EOF, Position::place(1, 39)),
         ]);
     }
 
@@ -2117,8 +1904,8 @@ entity fa is end entity;";
         let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();
         assert_eq!(tokens, vec![
             Token::new(VHDLToken::Comment(Comment::Delimited(" here is a vhdl 
-    delimited-line comment. Look at all the space! ".to_owned())), Position(1, 1)),
-            Token::new(VHDLToken::EOF, Position(2, 54)),
+    delimited-line comment. Look at all the space! ".to_owned())), Position::place(1, 1)),
+            Token::new(VHDLToken::EOF, Position::place(2, 54)),
         ]);
     }
 
@@ -2128,14 +1915,14 @@ entity fa is end entity;";
 signal magic_num : std_logic := '1';";
         let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();
         assert_eq!(tokens, vec![
-            Token::new(VHDLToken::Keyword(Keyword::Signal), Position(1, 1)),
-            Token::new(VHDLToken::Identifier(Identifier::Basic("magic_num".to_owned())), Position(1, 8)),
-            Token::new(VHDLToken::Delimiter(Delimiter::Colon), Position(1, 18)),
-            Token::new(VHDLToken::Identifier(Identifier::Basic("std_logic".to_owned())), Position(1, 20)),
-            Token::new(VHDLToken::Delimiter(Delimiter::VarAssign), Position(1, 30)),
-            Token::new(VHDLToken::CharLiteral(Character("1".to_owned())), Position(1, 33)),
-            Token::new(VHDLToken::Delimiter(Delimiter::Terminator), Position(1, 36)),
-            Token::new(VHDLToken::EOF, Position(1, 37)),
+            Token::new(VHDLToken::Keyword(Keyword::Signal), Position::place(1, 1)),
+            Token::new(VHDLToken::Identifier(Identifier::Basic("magic_num".to_owned())), Position::place(1, 8)),
+            Token::new(VHDLToken::Delimiter(Delimiter::Colon), Position::place(1, 18)),
+            Token::new(VHDLToken::Identifier(Identifier::Basic("std_logic".to_owned())), Position::place(1, 20)),
+            Token::new(VHDLToken::Delimiter(Delimiter::VarAssign), Position::place(1, 30)),
+            Token::new(VHDLToken::CharLiteral(Character("1".to_owned())), Position::place(1, 33)),
+            Token::new(VHDLToken::Delimiter(Delimiter::Terminator), Position::place(1, 36)),
+            Token::new(VHDLToken::EOF, Position::place(1, 37)),
         ]);
     }
 
@@ -2149,13 +1936,13 @@ entity fa is end entity;";
             .map(|f| { f.unwrap().locate().clone() })
             .collect();
         assert_eq!(tokens, vec![
-            Position(1, 1),  // 1:1 keyword: entity
-            Position(1, 8),  // 1:8 basic identifier: fa
-            Position(1, 11), // 1:11 keyword: is
-            Position(1, 14), // 1:14 keyword: end
-            Position(1, 18), // 1:18 keyword: entity
-            Position(1, 24), // 1:24 delimiter: ;
-            Position(1, 25), // 1:25 eof
+            Position::place(1, 1),  // 1:1 keyword: entity
+            Position::place(1, 8),  // 1:8 basic identifier: fa
+            Position::place(1, 11), // 1:11 keyword: is
+            Position::place(1, 14), // 1:14 keyword: end
+            Position::place(1, 18), // 1:18 keyword: entity
+            Position::place(1, 24), // 1:24 delimiter: ;
+            Position::place(1, 25), // 1:25 eof
         ]);  
     }
 
@@ -2164,26 +1951,26 @@ entity fa is end entity;";
         let contents = "&";
         let mut tc = TrainCar::new(contents.chars());
         assert_eq!(VHDLToken::collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::Ampersand)));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
-        assert_eq!(tc.locate(), &Position(1, 1));
+        assert_eq!(tc.peekable().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position::place(1, 1));
 
         let contents = "?";
         let mut tc = TrainCar::new(contents.chars());
         assert_eq!(VHDLToken::collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::Question)));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
-        assert_eq!(tc.locate(), &Position(1, 1));
+        assert_eq!(tc.peekable().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position::place(1, 1));
 
         let contents = "< MAX_COUNT";
         let mut tc = TrainCar::new(contents.chars());
         assert_eq!(VHDLToken::collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::Lt)));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), " MAX_COUNT");
-        assert_eq!(tc.locate(), &Position(1, 1));
+        assert_eq!(tc.peekable().clone().collect::<String>(), " MAX_COUNT");
+        assert_eq!(tc.locate(), &Position::place(1, 1));
 
         let contents = ");";
         let mut tc = TrainCar::new(contents.chars());
         assert_eq!(VHDLToken::collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::ParenR)));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
-        assert_eq!(tc.locate(), &Position(1, 1));
+        assert_eq!(tc.peekable().clone().collect::<String>(), ";");
+        assert_eq!(tc.locate(), &Position::place(1, 1));
     }
 
     #[test]
@@ -2191,8 +1978,8 @@ entity fa is end entity;";
         let contents = "fa";
         let mut tc = TrainCar::new(contents.chars());
         assert_eq!(VHDLToken::collect_delimiter(&mut tc, None).is_err(), true);
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "a");
-        assert_eq!(tc.locate(), &Position(1, 1));
+        assert_eq!(tc.peekable().clone().collect::<String>(), "a");
+        assert_eq!(tc.locate(), &Position::place(1, 1));
     }
 
     #[test]
@@ -2200,14 +1987,14 @@ entity fa is end entity;";
         let contents = "<=";
         let mut tc = TrainCar::new(contents.chars());
         assert_eq!(VHDLToken::collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::SigAssign)));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
-        assert_eq!(tc.locate(), &Position(1, 2));
+        assert_eq!(tc.peekable().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position::place(1, 2));
 
         let contents = "**WIDTH";
         let mut tc = TrainCar::new(contents.chars());
         assert_eq!(VHDLToken::collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::DoubleStar)));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "WIDTH");
-        assert_eq!(tc.locate(), &Position(1, 2));
+        assert_eq!(tc.peekable().clone().collect::<String>(), "WIDTH");
+        assert_eq!(tc.locate(), &Position::place(1, 2));
     }
 
     #[test]
@@ -2215,14 +2002,14 @@ entity fa is end entity;";
         let contents = "<=>";
         let mut tc = TrainCar::new(contents.chars());
         assert_eq!(VHDLToken::collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::SigAssoc)));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
-        assert_eq!(tc.locate(), &Position(1, 3));
+        assert_eq!(tc.peekable().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position::place(1, 3));
 
         let contents = "?/= MAGIC_NUM";
         let mut tc = TrainCar::new(contents.chars());
         assert_eq!(VHDLToken::collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::MatchNE)));
-        assert_eq!(tc.as_ref().clone().collect::<String>(), " MAGIC_NUM");
-        assert_eq!(tc.locate(), &Position(1, 3));
+        assert_eq!(tc.peekable().clone().collect::<String>(), " MAGIC_NUM");
+        assert_eq!(tc.locate(), &Position::place(1, 3));
     }
 
     #[test]
@@ -2327,23 +2114,5 @@ end architecture rtl; /* long comment */";
         let vhdl = VHDLTokenizer::read(&s, false).unwrap();
         println!("{:?}", vhdl);
         panic!("manually inspect token list")
-    }
-
-    mod position {
-        use super::*;
-
-        #[test]
-        fn moving_position() {
-            let mut pos = Position::new();
-            assert_eq!(pos, Position(1, 0));
-            pos.next_col();
-            assert_eq!(pos, Position(1, 1));
-            pos.next_col();
-            assert_eq!(pos, Position(1, 2));
-            pos.next_line();
-            assert_eq!(pos, Position(2, 0));
-            pos.next_line();
-            assert_eq!(pos, Position(3, 0));
-        }
     }
 }

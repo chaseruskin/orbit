@@ -5,8 +5,8 @@ use std::str::FromStr;
 trait Tokenize {
     type TokenType;
     type Err;
-    fn tokenize(s: &str) -> Vec<Result<Token<Self::TokenType>, Self::Err>>;
-} 
+    fn tokenize(s: &str) -> Vec<Result<Token<Self::TokenType>, TokenError<Self::Err>>> where <Self as Tokenize>::Err: std::fmt::Display;
+}
 
 /// Compares to string references `s0` and `s1` with case conversion.
 /// 
@@ -99,6 +99,47 @@ impl Position {
 impl std::fmt::Display for Position {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}:{}", self.0, self.1)
+    }
+}
+
+#[derive(Debug, PartialEq)]
+struct TokenError<T: std::fmt::Display> {
+    position: Position,
+    err: T,
+}
+
+// impl<T: std::fmt::Display + std::fmt::Debug> std::error::Error for TokenError<T> {}
+
+impl<T: std::fmt::Display> std::fmt::Display for TokenError<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} {}", self.position, self.err)
+    }
+}
+
+impl<T: std::fmt::Display> TokenError<T> {
+    fn new(err: T, loc: &Position) -> Self {
+        Self {
+            position: loc.clone(),
+            err: err
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+enum VHDLTokenError {
+    Any(String),
+    Invalid(String),
+    MissingAndEmpty(char),
+    MissingClosingAndGot(char, char),
+}
+
+impl std::fmt::Display for VHDLTokenError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            Self::Any(s)     => s.to_string(),
+            Self::Invalid(c) => format!("invalid character '{}' ", c),
+            _ => todo!("write error message!")
+        })
     }
 }
 
@@ -229,20 +270,20 @@ pub mod based_integer {
 }
 
 impl std::str::FromStr for BaseSpec {
-    type Err = String;
+    type Err = VHDLTokenError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s.to_ascii_lowercase().as_str() {
-            "b"  => Self::B,
-            "o"  => Self::O,
-            "x"  => Self::X,
-            "ub" => Self::UB,
-            "uo" => Self::UO,
-            "ux" => Self::UX,
-            "sb" => Self::SB,
-            "so" => Self::SO,
-            "sx" => Self::SX,
-            "d"  => Self::D,
-            _ => return Err(String::from("invalid base specifier"))
+        Ok(match s {
+            "b" | "B"  => Self::B,
+            "o" | "O"  => Self::O,
+            "x" | "X"  => Self::X,
+            "ub" | "uB" | "Ub" | "UB" => Self::UB,
+            "uo" | "uO" | "Uo" | "UO" => Self::UO,
+            "ux" | "uX" | "Ux" | "UX" => Self::UX,
+            "sb" | "sB" | "Sb" | "SB" => Self::SB,
+            "so" | "sO" | "So" | "SO" => Self::SO,
+            "sx" | "sX" | "Sx" | "SX" => Self::SX,
+            "d" | "D"  => Self::D,
+            _ => return Err(Self::Err::Any(format!("invalid base specifier '{}'", s)))
         })
     }
 }
@@ -341,7 +382,7 @@ enum VHDLToken {
     StrLiteral(String),             // (String)
     BitStrLiteral(BitStrLiteral),   // (String)
     EOF,
-    // --- delimiters
+    // --- delimiters ---
     Ampersand,      // &
     SingleQuote,    // '
     ParenL,         // (
@@ -380,132 +421,132 @@ enum VHDLToken {
     MatchGTE,       // ?>=
     DoubleLT,       // <<
     DoubleGT,       // >>
-    // --- keywords
-    Abs,
-    Access,
-    After,
-    Alias,
-    All,
-    And,
-    Architecture,
-    Array,
-    Assert,
+    // --- keywords ---
+    Abs,            // VHDL-1987 LRM - current 
+    Access,         // VHDL-1987 LRM - current
+    After,          // VHDL-1987 LRM - current
+    Alias,          // VHDL-1987 LRM - current
+    All,            // VHDL-1987 LRM - current
+    And,            // VHDL-1987 LRM - current
+    Architecture,   // VHDL-1987 LRM - current
+    Array,          // VHDL-1987 LRM - current
+    Assert,         // VHDL-1987 LRM - current
     Assume,
-    // AssumeGuarantee is omitted from VHDL-2019 LRM
-    Attribute,
-    Begin,
-    Block,
-    Body,
-    Buffer,
-    Bus,
-    Case, 
-    Component,
-    Configuration,
-    Constant, 
+    // AssumeGuarantee "assume_guarantee" is omitted from VHDL-2019 LRM
+    Attribute,      // VHDL-1987 LRM - current
+    Begin,          // VHDL-1987 LRM - current
+    Block,          // VHDL-1987 LRM - current
+    Body,           // VHDL-1987 LRM - current
+    Buffer,         // VHDL-1987 LRM - current
+    Bus,            // VHDL-1987 LRM - current
+    Case,           // VHDL-1987 LRM - current
+    Component,      // VHDL-1987 LRM - current
+    Configuration,  // VHDL-1987 LRM - current
+    Constant,       // VHDL-1987 LRM - current
     Context,
     Cover,
     Default,
-    Disconnect, 
-    Downto,
-    Else, 
-    Elsif,
-    End,
-    Entity, 
-    Exit,
+    Disconnect,     // VHDL-1987 LRM - current
+    Downto,         // VHDL-1987 LRM - current
+    Else,           // VHDL-1987 LRM - current
+    Elsif,          // VHDL-1987 LRM - current
+    End,            // VHDL-1987 LRM - current
+    Entity,         // VHDL-1987 LRM - current
+    Exit,           // VHDL-1987 LRM - current
     Fairness,
-    File,
-    For, 
+    File,           // VHDL-1987 LRM - current
+    For,            // VHDL-1987 LRM - current
     Force,
-    Function,
-    Generate, 
-    Generic, 
+    Function,       // VHDL-1987 LRM - current
+    Generate,       // VHDL-1987 LRM - current
+    Generic,        // VHDL-1987 LRM - current
     Group, 
-    Guarded,
-    If,
+    Guarded,        // VHDL-1987 LRM - current
+    If,             // VHDL-1987 LRM - current
     Impure, 
-    In, 
+    In,             // VHDL-1987 LRM - current
     Inertial, 
-    Inout, 
-    Is,
-    Label, 
-    Library, 
-    Linkage, 
-    Literal, 
-    Loop,
-    Map,
-    Mod,
-    Nand,
-    New, 
-    Next, 
-    Nor, 
-    Not, 
-    Null,
-    Of,
-    On,
-    Open,
-    Or, 
-    Others, 
-    Out,
-    Package, 
+    Inout,          // VHDL-1987 LRM - current
+    Is,             // VHDL-1987 LRM - current
+    Label,          // VHDL-1987 LRM - current
+    Library,        // VHDL-1987 LRM - current
+    Linkage,        // VHDL-1987 LRM - current
+    Literal,  
+    Loop,           // VHDL-1987 LRM - current
+    Map,            // VHDL-1987 LRM - current
+    Mod,            // VHDL-1987 LRM - current
+    Nand,           // VHDL-1987 LRM - current
+    New,            // VHDL-1987 LRM - current
+    Next,           // VHDL-1987 LRM - current
+    Nor,            // VHDL-1987 LRM - current
+    Not,            // VHDL-1987 LRM - current
+    Null,           // VHDL-1987 LRM - current
+    Of,             // VHDL-1987 LRM - current
+    On,             // VHDL-1987 LRM - current
+    Open,           // VHDL-1987 LRM - current
+    Or,             // VHDL-1987 LRM - current
+    Others,         // VHDL-1987 LRM - current
+    Out,            // VHDL-1987 LRM - current
+    Package,        // VHDL-1987 LRM - current
     Parameter, 
-    Port, 
+    Port,           // VHDL-1987 LRM - current
     Postponed, 
     Private,
-    Procedure, 
-    Process, 
+    Procedure,      // VHDL-1987 LRM - current
+    Process,        // VHDL-1987 LRM - current
     Property, 
     Protected, 
     Pure,
-    Range,
-    Record,
-    Register,
+    Range,          // VHDL-1987 LRM - current
+    Record,         // VHDL-1987 LRM - current
+    Register,       // VHDL-1987 LRM - current
     Reject,
     Release,
-    Rem,
-    Report,
+    Rem,            // VHDL-1987 LRM - current
+    Report,         // VHDL-1987 LRM - current
     Restrict, 
-    // RestrictGuarantee is omitted from VHDL-2019 LRM
-    Return,
+    // RestrictGuarantee "restrict_guarantee" is omitted from VHDL-2019 LRM
+    Return,         // VHDL-1987 LRM - current
     Rol, 
     Ror,
-    Select, 
+    Select,         // VHDL-1987 LRM - current
     Sequence, 
-    Severity,
-    Signal, 
+    Severity,       // VHDL-1987 LRM - current
+    Signal,         // VHDL-1987 LRM - current
     Shared, 
     Sla,
     Sll,
     Sra,
     Srl, 
     Strong, 
-    Subtype,
-    Then,
-    To, 
-    Transport, 
-    Type,
+    Subtype,        // VHDL-1987 LRM - current
+    Then,           // VHDL-1987 LRM - current
+    To,             // VHDL-1987 LRM - current
+    Transport,      // VHDL-1987 LRM - current
+    Type,           // VHDL-1987 LRM - current
     Unaffected, 
-    Units,
-    Until,
-    Use,
-    Variable, 
+    Units,          // VHDL-1987 LRM - current
+    Until,          // VHDL-1987 LRM - current
+    Use,            // VHDL-1987 LRM - current
+    Variable,       // VHDL-1987 LRM - current
     View,
     Vmode, 
     Vpkg,
     Vprop, 
     Vunit,
-    Wait, 
-    When, 
-    While, 
-    With,
+    Wait,           // VHDL-1987 LRM - current
+    When,           // VHDL-1987 LRM - current
+    While,          // VHDL-1987 LRM - current
+    With,           // VHDL-1987 LRM - current
     Xnor, 
-    Xor,
+    Xor,            // VHDL-1987 LRM - current
 }
 
 /// Walks through the possible interpretations for capturing a VHDL delimiter.
 /// 
 /// If it successfully finds a valid VHDL delimiter, it will move the `loc` the number
 /// of characters it consumed.
-fn collect_delimiter(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<char>) -> Result<VHDLToken, String> {
+fn collect_delimiter(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<char>) -> Result<VHDLToken, VHDLTokenError> {
     // delimiter will have at most 3 characters
     let mut delim = String::with_capacity(3);
     if let Some(c) = c0 { delim.push(c); };
@@ -563,7 +604,7 @@ fn collect_delimiter(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<
 
 impl VHDLToken {
     /// Attempts to match the given string of characters `s` to a VHDL delimiter.
-    fn match_delimiter(s: &str) -> Result<Self, String> {
+    fn match_delimiter(s: &str) -> Result<Self, VHDLTokenError> {
         Ok(match s {
             "&"     => Self::Ampersand,    
             "'"     => Self::SingleQuote,  
@@ -603,7 +644,7 @@ impl VHDLToken {
             "?>="   => Self::MatchGTE,       
             "<<"    => Self::DoubleLT,       
             ">>"    => Self::DoubleGT,       
-            _ => return Err(format!("invalid character: {}", s)),
+            _ => return Err(VHDLTokenError::Invalid(s.to_string())),
         })
     }
 
@@ -909,13 +950,6 @@ struct VHDLTokenizer {
     inner: Vec<Token<VHDLToken>>,
 }
 
-#[derive(Debug)]
-struct VHDLTokenError(Position, String);
-
-#[derive(Debug)]
-enum TokenError {
-
-}
 
 impl VHDLTokenizer {
     /// Creates a new `VHDLTokenizer` struct.
@@ -927,7 +961,7 @@ impl VHDLTokenizer {
     /// 
     /// If `skip_err` is true, it will silently omit erroneous parsing from the
     /// final vector and guarantee to be `Ok`.
-    fn read(s: &str, skip_err: bool) -> Result<Self, String> {
+    fn read(s: &str, skip_err: bool) -> Result<Self, &TokenError<VHDLTokenError>> {
         let tokens = Self::tokenize(s);
         Ok(Self {
             inner: match skip_err {
@@ -940,7 +974,7 @@ impl VHDLTokenizer {
                         .collect()
                 }
                 false => if let Some(Err(e)) = tokens.iter().find(|f| { f.is_err() }) {
-                    return Err(e.clone())
+                    todo!("error: {}", e)
                 } else {
                     tokens.into_iter().map(|f| f.unwrap() ).collect()
                 }
@@ -959,7 +993,6 @@ impl std::fmt::Debug for VHDLTokenizer {
 }
 
 mod char_set {
-    pub const ASCII_ZERO: usize = '0' as usize;
     pub const DOUBLE_QUOTE: char = '\"';
     pub const BACKSLASH: char = '\\';
     pub const STAR: char = '*';
@@ -1073,9 +1106,9 @@ mod char_set {
 
 impl Tokenize for VHDLTokenizer {
     type TokenType = VHDLToken;
-    type Err = String;
+    type Err = VHDLTokenError;
 
-    fn tokenize(s: &str) -> Vec<Result<Token<Self::TokenType>, Self::Err>> {
+    fn tokenize(s: &str) -> Vec<Result<Token<Self::TokenType>, TokenError<Self::Err>>> {
         let mut train = TrainCar::new(s.chars());
         // store results here as we consume the characters
         let mut tokens = Vec::new();
@@ -1091,56 +1124,60 @@ impl Tokenize for VHDLTokenizer {
                 // collect general identifier
                 match consume_word(&mut train, c) {
                     Ok(tk) => Ok(Token::new(tk, tk_loc)),
-                    Err(e) => Err(e)
+                    Err(e) => Err(TokenError::new(e, train.locate()))
                 }
 
             } else if c == char_set::BACKSLASH {
                 // collect extended identifier
                 match consume_extended_identifier(&mut train) {
                     Ok(tk) => Ok(Token::new(tk, tk_loc)),
-                    Err(e) => Err(e)
+                    Err(e) => Err(TokenError::new(e, train.locate()))
                 }
 
             } else if c == char_set::DOUBLE_QUOTE {
                 // collect string literal
                 match consume_str_lit(&mut train) {
                     Ok(tk) => Ok(Token::new(tk, tk_loc)),
-                    Err(e) => Err(e)
+                    Err(e) => Err(TokenError::new(e, train.locate()))
                 }
 
             } else if c == char_set::SINGLE_QUOTE {
                 // collect character literal
                 match consume_char_lit(&mut train) {
                     Ok(tk) => Ok(Token::new(tk, tk_loc)),
-                    Err(e) => Err(e)
+                    Err(e) => Err(TokenError::new(e, train.locate()))
                 }
         
             } else if char_set::is_digit(&c) {
                 // collect decimal literal (or bit string literal or based literal)
                 match consume_numeric(&mut train, c) {
                     Ok(tk) => Ok(Token::new(tk, tk_loc)),
-                    Err(e) => Err(e)
+                    Err(e) => Err(TokenError::new(e, train.locate()))
                 }
 
             } else if c == char_set::DASH && train.peek().is_some() && train.peek().unwrap() == &char_set::DASH {    
                 // collect a single-line comment           
                 match consume_comment(&mut train) {
                     Ok(tk) => Ok(Token::new(tk, tk_loc)),
-                    Err(e) => Err(e)
+                    Err(e) => Err(TokenError::new(e, train.locate()))
                 }
 
             } else if c == char_set::FWDSLASH && train.peek().is_some() && train.peek().unwrap() == &char_set::STAR {
                 // collect delimited (multi-line) comment
                 match consume_delim_comment(&mut train) {
                     Ok(tk) => Ok(Token::new(tk, tk_loc)),
-                    Err(e) => Err(e)
+                    Err(e) => {
+                        let mut tk_loc = train.locate().clone();
+                        tk_loc.next_col();
+                        Err(TokenError::new(e, &tk_loc)) // +1 col if error for alignment
+                    }
                 }
 
             } else {
                 // collect delimiter
                 match collect_delimiter(&mut train, Some(c)) {
                     Ok(tk) => Ok(Token::new(tk, tk_loc)),
-                    Err(e) => Err(e)
+                    Err(e) => Err(TokenError::new(e, train.locate()))
                 }
             });
         }
@@ -1159,7 +1196,7 @@ impl Tokenize for VHDLTokenizer {
 /// decimal literal, based_literal, and bit_string_literals.
 /// 
 /// Assumes the incoming char `c0` was last char consumed as it a digit `0..=9`.
-fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Result<VHDLToken, String> {
+fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Result<VHDLToken, VHDLTokenError> {
     let mut based_delim: Option<char> = None;
     let mut number = consume_value_pattern(train, Some(c0), char_set::is_digit)?;
     // check if the next char should be included
@@ -1170,7 +1207,7 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
             // gather more integers (must exist)
             let fraction = consume_value_pattern(train, None, char_set::is_digit)?;
             if fraction.is_empty() {
-                return Err(String::from("cannot have trailing decimal point")) // train.locate().clone(), 
+                return Err(VHDLTokenError::Any(String::from("cannot have trailing decimal point")))
             // append to number
             } else {
                 number.push_str(&fraction);
@@ -1186,7 +1223,7 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
             // verify 2 <= number <= 16
             let base = interpret_integer(&number);
             if base < 2 || base > 16 {
-                return Err(String::from("based literal must have base of at least 2 and at most 16"))
+                return Err(VHDLTokenError::Any(String::from("based literal must have base of at least 2 and at most 16")))
             }
             based_delim = Some(*c);
             number.push(train.consume().unwrap());
@@ -1211,22 +1248,22 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
                     if let Some(c_next_next) = train.consume() {
                         // did not find the closing character '#' or ':'
                         if c_next_next != based_delim.unwrap() {
-                            return Err(String::from("expecting closing '#' but found something else"))
+                            return Err(VHDLTokenError::Any(String::from("expecting closing '#' but found something else")))
                         }
                         if fraction.is_empty() {
-                            return Err(String::from("expecting an integer after the dot"))
+                            return Err(VHDLTokenError::Any(String::from("expecting an integer after the dot")))
                         }
                         number.push(c_next_next);
                     // there is no more characters left to consume
                     } else {
                         if fraction.is_empty() {
-                            return Err(String::from("expecting an integer after the dot"))
+                            return Err(VHDLTokenError::Any(String::from("expecting an integer after the dot")))
                         }
-                        return Err(String::from("expecting closing '#'"))
+                        return Err(VHDLTokenError::Any(String::from("expecting closing '#'")))
                     }
                 // an unknown character
                 } else {
-                    return Err(String::from("expecting closing '#' but got something else"))
+                    return Err(VHDLTokenError::Any(String::from("expecting closing '#' but got something else")))
                 }
                 // update c if there is another token to grab!
                 c = if let Some(c_next_next) = train.peek() {
@@ -1236,7 +1273,7 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
                 }
             // there is no more characters to consume
             } else {
-                return Err(String::from("expecting closing '#'"))
+                return Err(VHDLTokenError::Any(String::from("expecting closing '#'")))
             }
         // * bit string literal
         } else if c != &'e' && c != &'E' && char_set::is_letter(&c) {
@@ -1253,7 +1290,7 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
             BaseSpec::from_str(&base_spec)?;
             // force double quote to be next
             if train.peek().is_none() || train.peek().unwrap() != &char_set::DOUBLE_QUOTE {
-                return Err(String::from("expecting opening quote character for bit string literal"))
+                return Err(VHDLTokenError::Any(String::from("expecting opening quote character for bit string literal")))
             }
             // append base_specifier
             number.push_str(&base_spec);
@@ -1280,7 +1317,7 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
 /// Captures VHDL Tokens: keywords and basic identifiers.
 /// 
 /// Assumes the first `letter` char was the last char consumed before the function call.
-fn consume_word(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Result<VHDLToken, String> {
+fn consume_word(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Result<VHDLToken, VHDLTokenError> {
     let mut word = consume_value_pattern(train, Some(c0), char_set::is_letter_or_digit)?;
     match VHDLToken::match_keyword(&word) {
         Some(keyword) => Ok(keyword),
@@ -1307,13 +1344,13 @@ fn consume_word(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Res
 /// that a bit string literal is allowed to have no characters within the " ".
 /// - bit_string_literal ::= \[ integer ] base_specifier " \[ bit_value ] "
 /// - bit_value ::= graphic_character { [ underline ] graphic_character } 
-fn consume_bit_str_literal(train: &mut TrainCar<impl Iterator<Item=char>>, s0: String) -> Result<VHDLToken, String> {
+fn consume_bit_str_literal(train: &mut TrainCar<impl Iterator<Item=char>>, s0: String) -> Result<VHDLToken, VHDLTokenError> {
     let mut literal = s0;
     // consume bit_value (all graphic characters except the double quote " char)
     let bit_value = consume_value_pattern(train, None, char_set::is_graphic_and_not_double_quote)?;
     // verify the next character is the closing double quote " char
     if train.peek().is_none() || train.peek().unwrap() != &char_set::DOUBLE_QUOTE {
-        return Err(String::from("expecting closing double quote for bit string literal"))
+        return Err(VHDLTokenError::Any(String::from("expecting closing double quote for bit string literal")))
     }
     literal.push_str(&bit_value);
     // accept the closing " char
@@ -1325,23 +1362,23 @@ fn consume_bit_str_literal(train: &mut TrainCar<impl Iterator<Item=char>>, s0: S
 /// 
 /// This function allows for an empty result to be returned as `Ok`.
 /// - A ::= A { \[ underline ] A }
-fn consume_value_pattern(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<char>, eval: fn(&char) -> bool) -> Result<String, String> {
+fn consume_value_pattern(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<char>, eval: fn(&char) -> bool) -> Result<String, VHDLTokenError> {
         let mut car = if let Some(c) = c0 { String::from(c) } else { String::new() };
         while let Some(c) = train.peek() {
             if eval(&c) == true {
                 car.push(train.consume().unwrap());
             } else if c == &char_set::UNDERLINE {
-                if car.is_empty() == true { return Err(String::from("expecting a digit before underline")) }
+                if car.is_empty() == true { return Err(VHDLTokenError::Any(String::from("expecting a digit before underline"))) }
                 car.push(train.consume().unwrap());
                 // a digit must proceed the underline
                 if let Some(c_next) = train.consume() {
                     if eval(&c_next) == false {
-                        return Err(String::from("expecting a digit to follow underline"))
+                        return Err(VHDLTokenError::Any(String::from("expecting a digit to follow underline")))
                     } else {
                         car.push(c_next);
                     }
                 } else {
-                    return Err(String::from("expecting a digit"))
+                    return Err(VHDLTokenError::Any(String::from("expecting a digit")))
                 }
             } else {
                 break;
@@ -1354,18 +1391,18 @@ fn consume_value_pattern(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Opt
 ///
 /// Assumes the previous function has already peeked and determined the next char is 'E' as `c0`.
 /// - exponent ::= E \[ + ] integer | E – integer  
-fn consume_exponent(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Result<String, String> {
+fn consume_exponent(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Result<String, VHDLTokenError> {
     // start with 'E'
     let mut expon = String::from(c0);
     // check for sign
     let sign = if let Some(c1) = train.consume() {
         if c1 != char_set::PLUS && c1 != char_set::DASH && char_set::is_digit(&c1) == false {
-            return Err(String::from("expecting +, -, or a digit"))
+            return Err(VHDLTokenError::Any(String::from("expecting +, -, or a digit")))
         } else {
             c1
         }
     } else {
-        return Err(String::from("expecting +, -, or digit but got nothing"))
+        return Err(VHDLTokenError::Any(String::from("expecting +, -, or digit but got nothing")))
     };
     // determine if c0 was a digit 
     let c0 = if char_set::is_digit(&sign) == true {
@@ -1377,7 +1414,7 @@ fn consume_exponent(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) ->
     };
     let value = consume_value_pattern(train, c0, char_set::is_digit)?;
     if value.is_empty() {
-        Err(String::from("expecting an integer exponent value but got nothing"))
+        Err(VHDLTokenError::Any(String::from("expecting an integer exponent value but got nothing")))
     } else {
         expon.push_str(&value);
         Ok(expon)
@@ -1388,10 +1425,10 @@ fn consume_exponent(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) ->
 /// 
 /// Errors if the identifier is empty.
 /// train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<char>) -> Result<String, String> {
-fn consume_extended_identifier(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VHDLToken, String> { 
+fn consume_extended_identifier(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VHDLToken, VHDLTokenError> { 
     let id = consume_literal(train, &char_set::BACKSLASH)?;
     if id.is_empty() { 
-        Err(String::from("extended identifier cannot be empty")) 
+        Err(VHDLTokenError::Any(String::from("extended identifier cannot be empty")))
     } else {
         Ok(VHDLToken::Identifier(Identifier::Extended(id)))
     }
@@ -1403,11 +1440,11 @@ fn consume_extended_identifier(train: &mut TrainCar<impl Iterator<Item=char>>) -
 /// An escape is allowed by double placing the `br`, i.e. """hello"" world".
 /// Assumes the first token to parse in the stream is not the `br` character.
 /// Allows for zero or more characters in result and chars must be graphic.
-fn consume_literal(train: &mut TrainCar<impl Iterator<Item=char>>, br: &char) -> Result<String, String> { 
+fn consume_literal(train: &mut TrainCar<impl Iterator<Item=char>>, br: &char) -> Result<String, VHDLTokenError> { 
         let mut result = String::new();
         while let Some(c) = train.consume() {
             // verify it is a graphic character
-            if char_set::is_graphic(&c) == false { return Err(String::from("invalid character in literal")) }
+            if char_set::is_graphic(&c) == false { return Err(VHDLTokenError::Any(String::from("invalid character in literal"))) }
             // detect escape sequence
             if br == &c {
                 match train.peek() {
@@ -1421,26 +1458,27 @@ fn consume_literal(train: &mut TrainCar<impl Iterator<Item=char>>, br: &char) ->
             } 
             result.push(c);
         }
-        Err(String::from("expecting closing delimiter"))
+        Err(VHDLTokenError::Any(String::from("expecting closing delimiter")))
 }
 
 /// Captures a character literal according to VHDL-2018 LRM p231. 
 /// 
 /// Assumes the first single quote '\'' was the last char consumed.
-fn consume_char_lit(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VHDLToken, String> {
+fn consume_char_lit(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VHDLToken, VHDLTokenError> {
     let mut char_lit = String::with_capacity(1);
     if let Some(c) = train.consume() {
         // verify the character is a graphic character
-        if char_set::is_graphic(&c) == false { return Err(String::from("char not graphic")) }
+        if char_set::is_graphic(&c) == false { return Err(VHDLTokenError::Any(String::from("char not graphic"))) }
         // add to the struct
         char_lit.push(c);
-        // expect a closing single-quote 
+        // expect a closing single-quote @TODO handle attribute case name'attribute
         if let Some(c) = train.consume() {
+            // return 
             if c != char_set::SINGLE_QUOTE {
-                return Err(String::from("expecting a single quote but got something else"))
+                return Err(VHDLTokenError::Any(String::from("expecting a single quote but got something else")))
             }
         } else {
-            return Err(String::from("expecting a single quote but got none"))
+            return Err(VHDLTokenError::Any(String::from("expecting a single quote but got none")))
         }
     }
     Ok(VHDLToken::CharLiteral(Character(char_lit)))
@@ -1449,7 +1487,7 @@ fn consume_char_lit(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VH
 /// Captures a string literal.
 /// 
 /// Assumes the first double quote '\"' was the last char consumed before entering the function.
-fn consume_str_lit(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VHDLToken, String> {
+fn consume_str_lit(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VHDLToken, VHDLTokenError> {
     let value = consume_literal(train, &char_set::DOUBLE_QUOTE)?;
     Ok(VHDLToken::StrLiteral(value))
 }
@@ -1458,7 +1496,7 @@ fn consume_str_lit(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VHD
 /// 
 /// Assumes the opening '/' char was the last char consumed before entering the function.
 /// Also assumes the next char is '*'.
-fn consume_delim_comment(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VHDLToken, String> {
+fn consume_delim_comment(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VHDLToken, VHDLTokenError> {
     // skip over opening '*'
     train.consume().expect("assumes '*' exists");
     let mut note = String::new();
@@ -1475,14 +1513,14 @@ fn consume_delim_comment(train: &mut TrainCar<impl Iterator<Item=char>>) -> Resu
         }
         note.push(c);
     }
-    Err(String::from("missing closing delimiter */"))
+    Err(VHDLTokenError::Any(String::from("missing closing delimiter */")))
 }
 
 /// Collects a single-line comment (all characters after a `--` up until end-of-line).
 /// 
 /// Assumes the opening '-' was the last char consumed before entering the function.
 /// Also assumes the next char is '-'.
-fn consume_comment(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VHDLToken, String> { 
+fn consume_comment(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VHDLToken, VHDLTokenError> { 
     // skip over second '-'
     train.consume(); 
     // consume characters to form the comment
@@ -2201,7 +2239,7 @@ entity fa is end entity;";
 library ieee;
 use ieee.std_logic_1164.all;
 
-entity nor_gate is 
+entity nor_gate is $ -- error on this line
     generic(
         N: positive
     );
@@ -2213,15 +2251,15 @@ entity nor_gate is
 end entity nor_gate;
 
 architecture rtl of nor_gate is
-    constant GO_ADDR_MMAP:integer:=2#0001_1100.001e#E14;
+    constant GO_ADDR_MMAP:integer:=2#001_1100.001#E14;
     constant freq_hz : unsigned := 50_000_000;
-    signal   MAGIC_NUM_3 : bit_vector(3 downto 0) := 0sx\"\"
+    signal   MAGIC_NUM_3 : bit_vector(3 downto 0) := 0sc\"\"
     constant MAGIC_NUM_1 : integer := 2#10101#; -- test constants against tokenizer
-    constant MAGIC_NUM_2 : std_logic_vector(7 downto 0) := 0; --8x\"11\";
+    constant MAGIC_NUM_2 : std_logic_vector(7 downto 0) := 0 -- 8c\"11\";
 begin
     c <= a nor \\In\\;
 
-end architecture rtl;";
+end architecture rtl; /* long comment */";
             let vhdl = VHDLTokenizer::read(&s, false).unwrap();
             println!("{:?}", vhdl);
             panic!("manually inspect token list")

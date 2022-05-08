@@ -2090,229 +2090,226 @@ delimited-line comment. Look at all the space! ".to_owned())));
         assert_eq!(cmp_ascii_ignore_case(s0, s1), false);
     }
 
-    mod vhdl {
-        use super::*;
-
-        #[test]
-        fn easy_tokens() {
-            let s = "\
+    #[test]
+    fn lex_tokens() {
+        let s = "\
 entity fa is end entity;";
-            let tokens: Vec<VHDLToken> = VHDLTokenizer::tokenize(s)
-                .into_iter()
-                .map(|f| { f.unwrap().take() })
-                .collect();
-            assert_eq!(tokens, vec![
-                VHDLToken::Keyword(Keyword::Entity),
-                VHDLToken::Identifier(Identifier::Basic("fa".to_owned())),
-                VHDLToken::Keyword(Keyword::Is),
-                VHDLToken::Keyword(Keyword::End),
-                VHDLToken::Keyword(Keyword::Entity),
-                VHDLToken::Delimiter(Delimiter::Terminator),
-                VHDLToken::EOF,
-            ]);
-        }
+        let tokens: Vec<VHDLToken> = VHDLTokenizer::tokenize(s)
+            .into_iter()
+            .map(|f| { f.unwrap().take() })
+            .collect();
+        assert_eq!(tokens, vec![
+            VHDLToken::Keyword(Keyword::Entity),
+            VHDLToken::Identifier(Identifier::Basic("fa".to_owned())),
+            VHDLToken::Keyword(Keyword::Is),
+            VHDLToken::Keyword(Keyword::End),
+            VHDLToken::Keyword(Keyword::Entity),
+            VHDLToken::Delimiter(Delimiter::Terminator),
+            VHDLToken::EOF,
+        ]);
+    }
 
-        #[test]
-        fn lex_comment_token() {
-            let s = "\
+    #[test]
+    fn lex_comment_token() {
+        let s = "\
 -- here is a vhdl single-line comment!";
-            let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();
-            assert_eq!(tokens, vec![
-                Token::new(VHDLToken::Comment(Comment::Single(" here is a vhdl single-line comment!".to_owned())), Position(1, 1)),
-                Token::new(VHDLToken::EOF, Position(1, 39)),
-            ]);
-        }
+        let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();
+        assert_eq!(tokens, vec![
+            Token::new(VHDLToken::Comment(Comment::Single(" here is a vhdl single-line comment!".to_owned())), Position(1, 1)),
+            Token::new(VHDLToken::EOF, Position(1, 39)),
+        ]);
+    }
 
-        #[test]
-        fn lex_comment_token_delim() {
-            let s = "\
+    #[test]
+    fn lex_comment_token_delim() {
+        let s = "\
 /* here is a vhdl 
     delimited-line comment. Look at all the space! */";
-            let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();
-            assert_eq!(tokens, vec![
-                Token::new(VHDLToken::Comment(Comment::Delimited(" here is a vhdl 
+        let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();
+        assert_eq!(tokens, vec![
+            Token::new(VHDLToken::Comment(Comment::Delimited(" here is a vhdl 
     delimited-line comment. Look at all the space! ".to_owned())), Position(1, 1)),
-                Token::new(VHDLToken::EOF, Position(2, 54)),
-            ]);
-        }
+            Token::new(VHDLToken::EOF, Position(2, 54)),
+        ]);
+    }
 
-        #[test]
-        fn lex_char_literal() {
-            let s = "\
+    #[test]
+    fn lex_vhdl_line() {
+        let s = "\
 signal magic_num : std_logic := '1';";
-            let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();
-            assert_eq!(tokens, vec![
-                Token::new(VHDLToken::Keyword(Keyword::Signal), Position(1, 1)),
-                Token::new(VHDLToken::Identifier(Identifier::Basic("magic_num".to_owned())), Position(1, 8)),
-                Token::new(VHDLToken::Delimiter(Delimiter::Colon), Position(1, 18)),
-                Token::new(VHDLToken::Identifier(Identifier::Basic("std_logic".to_owned())), Position(1, 20)),
-                Token::new(VHDLToken::Delimiter(Delimiter::VarAssign), Position(1, 30)),
-                Token::new(VHDLToken::CharLiteral(Character("1".to_owned())), Position(1, 33)),
-                Token::new(VHDLToken::Delimiter(Delimiter::Terminator), Position(1, 36)),
-                Token::new(VHDLToken::EOF, Position(1, 37)),
-            ]);
-        }
+        let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();
+        assert_eq!(tokens, vec![
+            Token::new(VHDLToken::Keyword(Keyword::Signal), Position(1, 1)),
+            Token::new(VHDLToken::Identifier(Identifier::Basic("magic_num".to_owned())), Position(1, 8)),
+            Token::new(VHDLToken::Delimiter(Delimiter::Colon), Position(1, 18)),
+            Token::new(VHDLToken::Identifier(Identifier::Basic("std_logic".to_owned())), Position(1, 20)),
+            Token::new(VHDLToken::Delimiter(Delimiter::VarAssign), Position(1, 30)),
+            Token::new(VHDLToken::CharLiteral(Character("1".to_owned())), Position(1, 33)),
+            Token::new(VHDLToken::Delimiter(Delimiter::Terminator), Position(1, 36)),
+            Token::new(VHDLToken::EOF, Position(1, 37)),
+        ]);
+    }
 
-        #[test]
-        fn easy_locations() {
-            use crate::core::vhdl::*;
-            let s = "\
+    #[test]
+    fn locate_tokens() {
+        use crate::core::vhdl::*;
+        let s = "\
 entity fa is end entity;";
-            let tokens: Vec<Position> = VHDLTokenizer::tokenize(s)
-                .into_iter()
-                .map(|f| { f.unwrap().locate().clone() })
-                .collect();
-            assert_eq!(tokens, vec![
-                Position(1, 1),  // 1:1 keyword: entity
-                Position(1, 8),  // 1:8 basic identifier: fa
-                Position(1, 11), // 1:11 keyword: is
-                Position(1, 14), // 1:14 keyword: end
-                Position(1, 18), // 1:18 keyword: entity
-                Position(1, 24), // 1:24 delimiter: ;
-                Position(1, 25), // 1:25 eof
-            ]);  
-        }
+        let tokens: Vec<Position> = VHDLTokenizer::tokenize(s)
+            .into_iter()
+            .map(|f| { f.unwrap().locate().clone() })
+            .collect();
+        assert_eq!(tokens, vec![
+            Position(1, 1),  // 1:1 keyword: entity
+            Position(1, 8),  // 1:8 basic identifier: fa
+            Position(1, 11), // 1:11 keyword: is
+            Position(1, 14), // 1:14 keyword: end
+            Position(1, 18), // 1:18 keyword: entity
+            Position(1, 24), // 1:24 delimiter: ;
+            Position(1, 25), // 1:25 eof
+        ]);  
+    }
 
-        #[test]
-        fn lex_delimiter_single() {
-            let contents = "&";
-            let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::Ampersand)));
-            assert_eq!(tc.as_ref().clone().collect::<String>(), "");
-            assert_eq!(tc.locate(), &Position(1, 1));
+    #[test]
+    fn lex_delimiter_single() {
+        let contents = "&";
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::Ampersand)));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position(1, 1));
 
-            let contents = "?";
-            let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::Question)));
-            assert_eq!(tc.as_ref().clone().collect::<String>(), "");
-            assert_eq!(tc.locate(), &Position(1, 1));
+        let contents = "?";
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::Question)));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position(1, 1));
 
-            let contents = "< MAX_COUNT";
-            let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::Lt)));
-            assert_eq!(tc.as_ref().clone().collect::<String>(), " MAX_COUNT");
-            assert_eq!(tc.locate(), &Position(1, 1));
+        let contents = "< MAX_COUNT";
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::Lt)));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), " MAX_COUNT");
+        assert_eq!(tc.locate(), &Position(1, 1));
 
-            let contents = ");";
-            let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::ParenR)));
-            assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
-            assert_eq!(tc.locate(), &Position(1, 1));
-        }
+        let contents = ");";
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::ParenR)));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
+        assert_eq!(tc.locate(), &Position(1, 1));
+    }
 
-        #[test]
-        fn lex_delimiter_none() {
-            let contents = "fa";
-            let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None).is_err(), true);
-            assert_eq!(tc.as_ref().clone().collect::<String>(), "a");
-            assert_eq!(tc.locate(), &Position(1, 1));
-        }
+    #[test]
+    fn lex_delimiter_none() {
+        let contents = "fa";
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(collect_delimiter(&mut tc, None).is_err(), true);
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "a");
+        assert_eq!(tc.locate(), &Position(1, 1));
+    }
 
-        #[test]
-        fn lex_delimiter_double() {
-            let contents = "<=";
-            let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::SigAssign)));
-            assert_eq!(tc.as_ref().clone().collect::<String>(), "");
-            assert_eq!(tc.locate(), &Position(1, 2));
+    #[test]
+    fn lex_delimiter_double() {
+        let contents = "<=";
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::SigAssign)));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position(1, 2));
 
-            let contents = "**WIDTH";
-            let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::DoubleStar)));
-            assert_eq!(tc.as_ref().clone().collect::<String>(), "WIDTH");
-            assert_eq!(tc.locate(), &Position(1, 2));
-        }
+        let contents = "**WIDTH";
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::DoubleStar)));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "WIDTH");
+        assert_eq!(tc.locate(), &Position(1, 2));
+    }
 
-        #[test]
-        fn lex_delimiter_triple() {
-            let contents = "<=>";
-            let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::SigAssoc)));
-            assert_eq!(tc.as_ref().clone().collect::<String>(), "");
-            assert_eq!(tc.locate(), &Position(1, 3));
+    #[test]
+    fn lex_delimiter_triple() {
+        let contents = "<=>";
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::SigAssoc)));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), "");
+        assert_eq!(tc.locate(), &Position(1, 3));
 
-            let contents = "?/= MAGIC_NUM";
-            let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::MatchNE)));
-            assert_eq!(tc.as_ref().clone().collect::<String>(), " MAGIC_NUM");
-            assert_eq!(tc.locate(), &Position(1, 3));
-        }
+        let contents = "?/= MAGIC_NUM";
+        let mut tc = TrainCar::new(contents.chars());
+        assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::MatchNE)));
+        assert_eq!(tc.as_ref().clone().collect::<String>(), " MAGIC_NUM");
+        assert_eq!(tc.locate(), &Position(1, 3));
+    }
 
-        #[test]
-        fn match_delimiter() {
-            let word = "<=";
-            assert_eq!(VHDLToken::match_delimiter(word), Ok(VHDLToken::Delimiter(Delimiter::SigAssign)));
+    #[test]
+    fn match_delimiter() {
+        let word = "<=";
+        assert_eq!(VHDLToken::match_delimiter(word), Ok(VHDLToken::Delimiter(Delimiter::SigAssign)));
 
-            let word = "-";
-            assert_eq!(VHDLToken::match_delimiter(word), Ok(VHDLToken::Delimiter(Delimiter::Dash)));
+        let word = "-";
+        assert_eq!(VHDLToken::match_delimiter(word), Ok(VHDLToken::Delimiter(Delimiter::Dash)));
 
-            let word = "<=>";
-            assert_eq!(VHDLToken::match_delimiter(word), Ok(VHDLToken::Delimiter(Delimiter::SigAssoc)));
+        let word = "<=>";
+        assert_eq!(VHDLToken::match_delimiter(word), Ok(VHDLToken::Delimiter(Delimiter::SigAssoc)));
 
-            let word = "^";
-            assert_eq!(VHDLToken::match_delimiter(word).is_err(), true);
+        let word = "^";
+        assert_eq!(VHDLToken::match_delimiter(word).is_err(), true);
 
-            let word = "entity";
-            assert_eq!(VHDLToken::match_delimiter(word).is_err(), true);
-        }
+        let word = "entity";
+        assert_eq!(VHDLToken::match_delimiter(word).is_err(), true);
+    }
 
-        #[test]
-        fn match_reserved_idenifier() {
-            let word = "END";
-            assert_eq!(Keyword::match_keyword(word), Some(Keyword::End));
+    #[test]
+    fn match_reserved_idenifier() {
+        let word = "END";
+        assert_eq!(Keyword::match_keyword(word), Some(Keyword::End));
 
-            let word = "EnTITY";
-            assert_eq!(Keyword::match_keyword(word), Some(Keyword::Entity));
+        let word = "EnTITY";
+        assert_eq!(Keyword::match_keyword(word), Some(Keyword::Entity));
 
-            let word = "entitys";
-            assert_eq!(Keyword::match_keyword(word), None);
+        let word = "entitys";
+        assert_eq!(Keyword::match_keyword(word), None);
 
-            let word = "<=";
-            assert_eq!(Keyword::match_keyword(word), None);
-        }
+        let word = "<=";
+        assert_eq!(Keyword::match_keyword(word), None);
+    }
 
-        #[test]
-        fn is_sep() {
-            let c = ' '; // space
-            assert_eq!(char_set::is_separator(&c), true);
+    #[test]
+    fn is_separator() {
+        let c = ' '; // space
+        assert_eq!(char_set::is_separator(&c), true);
 
-            let c = '\u{00A0}'; // nbsp
-            assert_eq!(char_set::is_separator(&c), true);
+        let c = '\u{00A0}'; // nbsp
+        assert_eq!(char_set::is_separator(&c), true);
 
-            let c = '\t'; // horizontal tab
-            assert_eq!(char_set::is_separator(&c), true);
+        let c = '\t'; // horizontal tab
+        assert_eq!(char_set::is_separator(&c), true);
 
-            let c = '\n'; // new-line
-            assert_eq!(char_set::is_separator(&c), true);
+        let c = '\n'; // new-line
+        assert_eq!(char_set::is_separator(&c), true);
 
-            let c = 'c';  // negative case: ascii char
-            assert_eq!(char_set::is_separator(&c), false);
-        }
-        
-        #[test]
-        fn eq_identifiers() {
-            let id0 = Identifier::Basic("fa".to_owned());
-            let id1 = Identifier::Basic("Fa".to_owned());
-            assert_eq!(id0, id1);
+        let c = 'c';  // negative case: ascii char
+        assert_eq!(char_set::is_separator(&c), false);
+    }
+    
+    #[test]
+    fn identifier_equality() {
+        let id0 = Identifier::Basic("fa".to_owned());
+        let id1 = Identifier::Basic("Fa".to_owned());
+        assert_eq!(id0, id1);
 
-            let id0 = Identifier::Basic("fa".to_owned());
-            let id1 = Identifier::Basic("Full_adder".to_owned());
-            assert_ne!(id0, id1);
+        let id0 = Identifier::Basic("fa".to_owned());
+        let id1 = Identifier::Basic("Full_adder".to_owned());
+        assert_ne!(id0, id1);
 
-            let id0 = Identifier::Basic("VHDL".to_owned());    // written as: VHDL
-            let id1 = Identifier::Extended("VHDL".to_owned()); // written as: \VHDL\
-            assert_ne!(id0, id1);
+        let id0 = Identifier::Basic("VHDL".to_owned());    // written as: VHDL
+        let id1 = Identifier::Extended("VHDL".to_owned()); // written as: \VHDL\
+        assert_ne!(id0, id1);
 
-            let id0 = Identifier::Extended("vhdl".to_owned()); // written as: \vhdl\
-            let id1 = Identifier::Extended("VHDL".to_owned()); // written as: \VHDL\
-            assert_ne!(id0, id1);
-        }
+        let id0 = Identifier::Extended("vhdl".to_owned()); // written as: \vhdl\
+        let id1 = Identifier::Extended("VHDL".to_owned()); // written as: \VHDL\
+        assert_ne!(id0, id1);
+    }
 
-        #[test]
-        #[ignore]
-        fn playground_code() {
-            let s = "\
+    #[test]
+    #[ignore]
+    fn playground_code() {
+        let s = "\
 -- design file for a nor_gate
 library ieee;
 use ieee.std_logic_1164.all;
@@ -2338,10 +2335,9 @@ begin
     c <= a nor \\In\\;
 
 end architecture rtl; /* long comment */";
-            let vhdl = VHDLTokenizer::read(&s, false).unwrap();
-            println!("{:?}", vhdl);
-            panic!("manually inspect token list")
-        }
+        let vhdl = VHDLTokenizer::read(&s, false).unwrap();
+        println!("{:?}", vhdl);
+        panic!("manually inspect token list")
     }
 
     mod position {

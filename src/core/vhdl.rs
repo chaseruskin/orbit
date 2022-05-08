@@ -1004,7 +1004,10 @@ impl Tokenize for VHDLTokenizer {
         let mut tokens = Vec::new();
         // consume every character (lexical analysis)
         while let Some(c) = train.consume() {
-
+            // skip over whitespace
+            if char_set::is_separator(&c) {
+                continue;
+            }
             let tk_loc = train.locate().clone();
             if char_set::is_letter(&c) {
                 // collect general identifier (@TODO or bit string literal)
@@ -1041,7 +1044,7 @@ impl Tokenize for VHDLTokenizer {
                 let tk = consume_delim_comment(&mut train).unwrap();
                 tokens.push(Token::new(tk, tk_loc));
 
-            } else if char_set::is_separator(&c) == false {
+            } else {
                 // collect delimiter
                 let tk = collect_delimiter(&mut train, Some(c)).unwrap();
                 tokens.push(Token::new(tk, tk_loc));
@@ -1050,7 +1053,7 @@ impl Tokenize for VHDLTokenizer {
         // push final EOF token
         let mut tk_loc = train.locate().clone();
         tk_loc.next_col();
-        tokens.push(Token::new(VHDLToken::EOF,  tk_loc.clone()));
+        tokens.push(Token::new(VHDLToken::EOF,  tk_loc));
         tokens
     }
 }
@@ -1064,14 +1067,14 @@ impl Tokenize for VHDLTokenizer {
 /// Assumes the incoming char `c0` was last char consumed as it a digit `0..=9`.
 fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Result<VHDLToken, String> {
     let mut based_delim: Option<char> = None;
-    let mut number = consume_integer(train, Some(c0), char_set::is_digit)?;
+    let mut number = consume_value_pattern(train, Some(c0), char_set::is_digit)?;
     // check if the next char should be included
     if let Some(mut c) = train.peek() {
         // * decimal_literal
         if c == &char_set::DOT {
             number.push(train.consume().unwrap());
             // gather more integers (must exist)
-            let fraction = consume_integer(train, None, char_set::is_digit)?;
+            let fraction = consume_value_pattern(train, None, char_set::is_digit)?;
             if fraction.is_empty() {
                 return Err(String::from("cannot have trailing decimal point"))
             // append to number
@@ -1089,7 +1092,7 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
             based_delim = Some(*c);
             number.push(train.consume().unwrap());
             // gather first base integers
-            let base_integers = consume_integer(train, None, char_set::is_extended_digit)?;
+            let base_integers = consume_value_pattern(train, None, char_set::is_extended_digit)?;
             number.push_str(&base_integers);
             // stil expecting another token
             if let Some(c_next) = train.consume() {
@@ -1100,7 +1103,7 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
                 } else if c_next == char_set::DOT {
                     number.push(c_next);
                     // gather more integers (must exist)
-                    let fraction = consume_integer(train, None, char_set::is_extended_digit)?;
+                    let fraction = consume_value_pattern(train, None, char_set::is_extended_digit)?;
                     if fraction.is_empty() {
                         return Err(String::from("cannot have trailing decimal point"))
                     // append to number
@@ -1131,7 +1134,14 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
         // * bit string literal
         } else if c != &'e' && c != &'E' && char_set::is_letter(&c) {
             // gather letters
-            let base_spec = consume_integer(train, None, char_set::is_letter)?;
+            let mut base_spec = String::from(train.consume().unwrap());
+            while let Some(c_next) = train.peek() {
+                if char_set::is_letter(c_next) == true {
+                    base_spec.push(train.consume().unwrap());
+                } else {
+                    break;
+                }
+            }
             // verify valid base specifier
             BaseSpec::from_str(&base_spec)?;
             // force double quote to be next
@@ -1164,7 +1174,7 @@ fn consume_numeric(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> 
 /// 
 /// Assumes the first `letter` char was the last char consumed before the function call.
 fn consume_word(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Result<VHDLToken, String> {
-    let mut word = consume_integer(train, Some(c0), char_set::is_letter_or_digit)?;
+    let mut word = consume_value_pattern(train, Some(c0), char_set::is_letter_or_digit)?;
     match VHDLToken::match_keyword(&word) {
         Some(keyword) => Ok(keyword),
         None => {
@@ -1193,7 +1203,7 @@ fn consume_word(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) -> Res
 fn consume_bit_str_literal(train: &mut TrainCar<impl Iterator<Item=char>>, s0: String) -> Result<VHDLToken, String> {
     let mut literal = s0;
     // consume bit_value (all graphic characters except the double quote " char)
-    let bit_value = consume_integer(train, None, char_set::is_graphic_and_not_double_quote)?;
+    let bit_value = consume_value_pattern(train, None, char_set::is_graphic_and_not_double_quote)?;
     // verify the next character is the closing double quote " char
     if train.peek().is_none() || train.peek().unwrap() != &char_set::DOUBLE_QUOTE {
         return Err(String::from("expecting closing double quote for bit string literal"))
@@ -1205,8 +1215,10 @@ fn consume_bit_str_literal(train: &mut TrainCar<impl Iterator<Item=char>>, s0: S
 }
 
 /// Captures the generic pattern production rule by passing a fn as `eval` to compare.
+/// 
+/// This function allows for an empty result to be returned as `Ok`.
 /// - A ::= A { \[ underline ] A }
-fn consume_integer(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<char>, eval: fn(&char) -> bool) -> Result<String, String> {
+fn consume_value_pattern(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<char>, eval: fn(&char) -> bool) -> Result<String, String> {
         let mut car = if let Some(c) = c0 { String::from(c) } else { String::new() };
         while let Some(c) = train.peek() {
             if eval(&c) == true {
@@ -1256,7 +1268,7 @@ fn consume_exponent(train: &mut TrainCar<impl Iterator<Item=char>>, c0: char) ->
         expon.push(sign);
         None
     };
-    let value = consume_integer(train, c0, char_set::is_digit)?;
+    let value = consume_value_pattern(train, c0, char_set::is_digit)?;
     if value.is_empty() {
         Err(String::from("expecting an integer exponent value but got nothing"))
     } else {
@@ -1605,44 +1617,44 @@ delimited-line comment. Look at all the space! ".to_owned())));
         let contents = "";
         // testing using digit prod. rule "graphic"
         let mut tc = TrainCar::new(contents.chars());
-        assert_eq!(consume_integer(&mut tc, None, char_set::is_graphic).unwrap(), "");
+        assert_eq!(consume_value_pattern(&mut tc, None, char_set::is_graphic).unwrap(), "");
         assert_eq!(tc.as_ref().clone().collect::<String>(), "");
         assert_eq!(tc.locate(), &Position(1, 0));
 
         let contents = "234";
         // testing using digit prod. rule "integer"
         let mut tc = TrainCar::new(contents.chars());
-        assert_eq!(consume_integer(&mut tc, None, char_set::is_digit).unwrap(), "234");
+        assert_eq!(consume_value_pattern(&mut tc, None, char_set::is_digit).unwrap(), "234");
         assert_eq!(tc.as_ref().clone().collect::<String>(), "");
         assert_eq!(tc.locate(), &Position(1, 3));
 
         let contents = "1_2_345 ";
         let mut tc = TrainCar::new(contents.chars());
-        assert_eq!(consume_integer(&mut tc, None, char_set::is_digit).unwrap(), "1_2_345");
+        assert_eq!(consume_value_pattern(&mut tc, None, char_set::is_digit).unwrap(), "1_2_345");
         assert_eq!(tc.as_ref().clone().collect::<String>(), " ");
         assert_eq!(tc.locate(), &Position(1, 7));
 
         let contents = "23__4";
         let mut tc = TrainCar::new(contents.chars());
-        assert_eq!(consume_integer(&mut tc, None, char_set::is_digit).is_err(), true); // double underscore
+        assert_eq!(consume_value_pattern(&mut tc, None, char_set::is_digit).is_err(), true); // double underscore
 
         let contents = "_24";
         let mut tc = TrainCar::new(contents.chars());
-        assert_eq!(consume_integer(&mut tc, None, char_set::is_digit).is_err(), true); // leading underscore
+        assert_eq!(consume_value_pattern(&mut tc, None, char_set::is_digit).is_err(), true); // leading underscore
 
         let contents = "_23_4";
         let mut tc = TrainCar::new(contents.chars());
-        assert_eq!(consume_integer(&mut tc, Some('1'), char_set::is_digit).is_ok(), true); 
+        assert_eq!(consume_value_pattern(&mut tc, Some('1'), char_set::is_digit).is_ok(), true); 
 
         // testing using extended_digit prod. rule "based_integer"
         let contents = "abcd_FFFF_0021";
         let mut tc = TrainCar::new(contents.chars());
-        assert_eq!(consume_integer(&mut tc, None, char_set::is_extended_digit).unwrap(), "abcd_FFFF_0021");
+        assert_eq!(consume_value_pattern(&mut tc, None, char_set::is_extended_digit).unwrap(), "abcd_FFFF_0021");
 
         // testing using graphic_char prod. rule "bit_value"
         let contents = "XXXX_01LH_F--1";
         let mut tc = TrainCar::new(contents.chars());
-        assert_eq!(consume_integer(&mut tc, None, char_set::is_graphic).unwrap(), "XXXX_01LH_F--1");
+        assert_eq!(consume_value_pattern(&mut tc, None, char_set::is_graphic).unwrap(), "XXXX_01LH_F--1");
     }
 
     #[test]

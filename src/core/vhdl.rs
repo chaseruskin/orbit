@@ -108,8 +108,6 @@ struct TokenError<T: std::fmt::Display> {
     err: T,
 }
 
-// impl<T: std::fmt::Display + std::fmt::Debug> std::error::Error for TokenError<T> {}
-
 impl<T: std::fmt::Display> std::fmt::Display for TokenError<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} {}", self.position, self.err)
@@ -628,16 +626,7 @@ impl Keyword {
 }
 
 #[derive(Debug, PartialEq)]
-enum VHDLToken {
-    Comment(Comment),               // (String) 
-    Identifier(Identifier),         // (String) ...can be general or extended (case-sensitive) identifier
-    AbstLiteral(AbstLiteral),       // (String)
-    CharLiteral(Character),         // (String)
-    StrLiteral(String),             // (String)
-    BitStrLiteral(BitStrLiteral),   // (String)
-    Keyword(Keyword),
-    EOF,
-    // --- delimiters ---
+enum Delimiter {
     Ampersand,      // &
     SingleQuote,    // '
     ParenL,         // (
@@ -676,6 +665,19 @@ enum VHDLToken {
     MatchGTE,       // ?>=
     DoubleLT,       // <<
     DoubleGT,       // >>
+}
+
+#[derive(Debug, PartialEq)]
+enum VHDLToken {
+    Comment(Comment),               // (String) 
+    Identifier(Identifier),         // (String) ...can be general or extended (case-sensitive) identifier
+    AbstLiteral(AbstLiteral),       // (String)
+    CharLiteral(Character),         // (String)
+    StrLiteral(String),             // (String)
+    BitStrLiteral(BitStrLiteral),   // (String)
+    Keyword(Keyword),
+    Delimiter(Delimiter),
+    EOF,
 }
 
 /// Walks through the possible interpretations for capturing a VHDL delimiter.
@@ -738,55 +740,10 @@ fn collect_delimiter(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<
     VHDLToken::match_delimiter(&delim)
 }
 
-impl VHDLToken {
-    /// Checks if the current token type `self` is a delimiter.
-    fn is_delimiter(&self) -> bool {
-        match self {
-            Self::Ampersand     => true,
-            Self::SingleQuote   => true,
-            Self::ParenL        => true,
-            Self::ParenR        => true,
-            Self::Star          => true,
-            Self::Plus          => true,
-            Self::Comma         => true,
-            Self::Dash          => true,
-            Self::Dot           => true,
-            Self::FwdSlash      => true,
-            Self::Colon         => true,
-            Self::Terminator    => true,
-            Self::Lt            => true,
-            Self::Eq            => true,
-            Self::Gt            => true,
-            Self::BackTick      => true,
-            Self::Pipe          => true,
-            Self::BrackL        => true,
-            Self::BrackR        => true,
-            Self::Question      => true,
-            Self::AtSymbol      => true,
-            Self::Arrow         => true,
-            Self::DoubleStar    => true,
-            Self::VarAssign     => true,
-            Self::Inequality    => true,
-            Self::GTE           => true,
-            Self::SigAssign     => true,
-            Self::Box           => true,
-            Self::SigAssoc      => true,
-            Self::CondConv      => true,
-            Self::MatchEQ       => true,
-            Self::MatchNE       => true,
-            Self::MatchLT       => true,
-            Self::MatchLTE      => true,
-            Self::MatchGT       => true,
-            Self::MatchGTE      => true,
-            Self::DoubleLT      => true,
-            Self::DoubleGT      => true,
-            _ => false,
-        }
-    }
-
+impl Delimiter {
     /// Attempts to match the given string of characters `s` to a VHDL delimiter.
-    fn match_delimiter(s: &str) -> Result<Self, VHDLTokenError> {
-        Ok(match s {
+    fn transform(s: &str) -> Option<Self> {
+        Some(match s {
             "&"     => Self::Ampersand,    
             "'"     => Self::SingleQuote,  
             "("     => Self::ParenL,       
@@ -825,8 +782,25 @@ impl VHDLToken {
             "?>="   => Self::MatchGTE,       
             "<<"    => Self::DoubleLT,       
             ">>"    => Self::DoubleGT,       
-            _ => return Err(VHDLTokenError::Invalid(s.to_string())),
+            _ => return None,
         })
+    }
+}
+
+impl VHDLToken {
+    /// Checks if the current token type `self` is a delimiter.
+    fn is_delimiter(&self) -> bool {
+        match self {
+            Self::Delimiter(_) => true,
+            _ => false,
+        }
+    }
+
+    fn match_delimiter(s: &str) -> Result<Self, VHDLTokenError> {
+        match Delimiter::transform(s) {
+            Some(d) => Ok(VHDLToken::Delimiter(d)),
+            None => Err(VHDLTokenError::Invalid(s.to_string()))
+        }
     }
 }
 
@@ -959,18 +933,9 @@ impl std::fmt::Display for Keyword {
     }
 }
 
-impl std::fmt::Display for VHDLToken {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            Self::Comment(note) => note.as_str(),
-            Self::Identifier(id) => id.as_str(),
-            Self::AbstLiteral(a) => a.as_str(),
-            Self::CharLiteral(c) => c.as_str(),
-            Self::StrLiteral(s) => s.as_str(),
-            Self::BitStrLiteral(b) => b.as_str(),
-            Self::Keyword(kw) => kw.as_str(),
-            Self::EOF           => "EOF",
-            // --- delimiters
+impl Delimiter {
+    fn as_str(&self) -> &str {
+        match self {
             Self::Ampersand     => "&",
             Self::SingleQuote   => "'",
             Self::ParenL        => "(",
@@ -1009,8 +974,29 @@ impl std::fmt::Display for VHDLToken {
             Self::MatchGTE      => "?>=",
             Self::DoubleLT      => "<<",
             Self::DoubleGT      => ">>",
-        };
-        write!(f, "{}", s)
+        }
+    }
+}
+
+impl std::fmt::Display for Delimiter {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl std::fmt::Display for VHDLToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            Self::Comment(note) => note.as_str(),
+            Self::Identifier(id) => id.as_str(),
+            Self::AbstLiteral(a) => a.as_str(),
+            Self::CharLiteral(c) => c.as_str(),
+            Self::StrLiteral(s) => s.as_str(),
+            Self::BitStrLiteral(b) => b.as_str(),
+            Self::Keyword(kw) => kw.as_str(),
+            Self::Delimiter(d) => d.as_str(),
+            Self::EOF => "EOF",
+        })
     }
 }
 
@@ -1018,7 +1004,6 @@ impl std::fmt::Display for VHDLToken {
 struct VHDLTokenizer {
     inner: Vec<Token<VHDLToken>>,
 }
-
 
 impl VHDLTokenizer {
     /// Creates a new `VHDLTokenizer` struct.
@@ -1682,17 +1667,17 @@ foo <= std_logic_vector'('a','b','c');";
             .collect();
         assert_eq!(tokens, vec![
             VHDLToken::Identifier(Identifier::Basic("foo".to_owned())),
-            VHDLToken::SigAssign,
+            VHDLToken::Delimiter(Delimiter::SigAssign),
             VHDLToken::Identifier(Identifier::Basic("std_logic_vector".to_owned())),
-            VHDLToken::SingleQuote,
-            VHDLToken::ParenL,
+            VHDLToken::Delimiter(Delimiter::SingleQuote),
+            VHDLToken::Delimiter(Delimiter::ParenL),
             VHDLToken::CharLiteral(Character("a".to_owned())),
-            VHDLToken::Comma,
+            VHDLToken::Delimiter(Delimiter::Comma),
             VHDLToken::CharLiteral(Character("b".to_owned())),
-            VHDLToken::Comma,
+            VHDLToken::Delimiter(Delimiter::Comma),
             VHDLToken::CharLiteral(Character("c".to_owned())),
-            VHDLToken::ParenR,
-            VHDLToken::Terminator,
+            VHDLToken::Delimiter(Delimiter::ParenR),
+            VHDLToken::Delimiter(Delimiter::Terminator),
             VHDLToken::EOF,
         ]);
 
@@ -1703,13 +1688,13 @@ foo <= std_logic_vector'('a','b','c');";
             .map(|f| { f.unwrap().take() })
             .collect();
         assert_eq!(tokens, vec![
-            VHDLToken::ParenL,
+            VHDLToken::Delimiter(Delimiter::ParenL),
             VHDLToken::Identifier(Identifier::Basic("clk".to_owned())),
-            VHDLToken::SingleQuote,
+            VHDLToken::Delimiter(Delimiter::SingleQuote),
             VHDLToken::Identifier(Identifier::Basic("event".to_owned())),
-            VHDLToken::Eq,
+            VHDLToken::Delimiter(Delimiter::Eq),
             VHDLToken::CharLiteral(Character("1".to_owned())),
-            VHDLToken::ParenR,
+            VHDLToken::Delimiter(Delimiter::ParenR),
             VHDLToken::EOF,
         ]);
     }
@@ -2122,52 +2107,48 @@ entity fa is end entity;";
                 VHDLToken::Keyword(Keyword::Is),
                 VHDLToken::Keyword(Keyword::End),
                 VHDLToken::Keyword(Keyword::Entity),
-                VHDLToken::Terminator,
+                VHDLToken::Delimiter(Delimiter::Terminator),
                 VHDLToken::EOF,
             ]);
         }
 
         #[test]
-        fn comment_token() {
-            use super::VHDLToken::*;
-            use crate::core::vhdl::*;
+        fn lex_comment_token() {
             let s = "\
 -- here is a vhdl single-line comment!";
             let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();
             assert_eq!(tokens, vec![
-                Token::new(Comment(vhdl::Comment::Single(" here is a vhdl single-line comment!".to_owned())), Position(1, 1)),
-                Token::new(EOF, Position(1, 39)),
+                Token::new(VHDLToken::Comment(Comment::Single(" here is a vhdl single-line comment!".to_owned())), Position(1, 1)),
+                Token::new(VHDLToken::EOF, Position(1, 39)),
             ]);
         }
 
         #[test]
-        fn comment_token_delim() {
-            use super::VHDLToken::*;
-            use crate::core::vhdl::*;
+        fn lex_comment_token_delim() {
             let s = "\
 /* here is a vhdl 
     delimited-line comment. Look at all the space! */";
             let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();
             assert_eq!(tokens, vec![
-                Token::new(Comment(vhdl::Comment::Delimited(" here is a vhdl 
+                Token::new(VHDLToken::Comment(Comment::Delimited(" here is a vhdl 
     delimited-line comment. Look at all the space! ".to_owned())), Position(1, 1)),
-                Token::new(EOF, Position(2, 54)),
+                Token::new(VHDLToken::EOF, Position(2, 54)),
             ]);
         }
 
         #[test]
-        fn char_literal() {
+        fn lex_char_literal() {
             let s = "\
 signal magic_num : std_logic := '1';";
             let tokens: Vec<Token<VHDLToken>> = VHDLTokenizer::tokenize(s).into_iter().map(|f| f.unwrap()).collect();
             assert_eq!(tokens, vec![
                 Token::new(VHDLToken::Keyword(Keyword::Signal), Position(1, 1)),
                 Token::new(VHDLToken::Identifier(Identifier::Basic("magic_num".to_owned())), Position(1, 8)),
-                Token::new(VHDLToken::Colon, Position(1, 18)),
+                Token::new(VHDLToken::Delimiter(Delimiter::Colon), Position(1, 18)),
                 Token::new(VHDLToken::Identifier(Identifier::Basic("std_logic".to_owned())), Position(1, 20)),
-                Token::new(VHDLToken::VarAssign, Position(1, 30)),
+                Token::new(VHDLToken::Delimiter(Delimiter::VarAssign), Position(1, 30)),
                 Token::new(VHDLToken::CharLiteral(Character("1".to_owned())), Position(1, 33)),
-                Token::new(VHDLToken::Terminator, Position(1, 36)),
+                Token::new(VHDLToken::Delimiter(Delimiter::Terminator), Position(1, 36)),
                 Token::new(VHDLToken::EOF, Position(1, 37)),
             ]);
         }
@@ -2193,36 +2174,34 @@ entity fa is end entity;";
         }
 
         #[test]
-        fn read_delimiter_single() {
-            use super::VHDLToken::*;
-
+        fn lex_delimiter_single() {
             let contents = "&";
             let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Ok(Ampersand));
+            assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::Ampersand)));
             assert_eq!(tc.as_ref().clone().collect::<String>(), "");
             assert_eq!(tc.locate(), &Position(1, 1));
 
             let contents = "?";
             let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Ok(Question));
+            assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::Question)));
             assert_eq!(tc.as_ref().clone().collect::<String>(), "");
             assert_eq!(tc.locate(), &Position(1, 1));
 
             let contents = "< MAX_COUNT";
             let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Ok(Lt));
+            assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::Lt)));
             assert_eq!(tc.as_ref().clone().collect::<String>(), " MAX_COUNT");
             assert_eq!(tc.locate(), &Position(1, 1));
 
             let contents = ");";
             let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Ok(ParenR));
+            assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::ParenR)));
             assert_eq!(tc.as_ref().clone().collect::<String>(), ";");
             assert_eq!(tc.locate(), &Position(1, 1));
         }
 
         #[test]
-        fn read_delimiter_none() {
+        fn lex_delimiter_none() {
             let contents = "fa";
             let mut tc = TrainCar::new(contents.chars());
             assert_eq!(collect_delimiter(&mut tc, None).is_err(), true);
@@ -2231,51 +2210,45 @@ entity fa is end entity;";
         }
 
         #[test]
-        fn read_delimiter_double() {
-            use super::VHDLToken::*;
-
+        fn lex_delimiter_double() {
             let contents = "<=";
             let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Ok(SigAssign));
+            assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::SigAssign)));
             assert_eq!(tc.as_ref().clone().collect::<String>(), "");
             assert_eq!(tc.locate(), &Position(1, 2));
 
             let contents = "**WIDTH";
             let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Ok(DoubleStar));
+            assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::DoubleStar)));
             assert_eq!(tc.as_ref().clone().collect::<String>(), "WIDTH");
             assert_eq!(tc.locate(), &Position(1, 2));
         }
 
         #[test]
-        fn read_delimiter_triple() {
-            use super::VHDLToken::*;
-
+        fn lex_delimiter_triple() {
             let contents = "<=>";
             let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Ok(SigAssoc));
+            assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::SigAssoc)));
             assert_eq!(tc.as_ref().clone().collect::<String>(), "");
             assert_eq!(tc.locate(), &Position(1, 3));
 
             let contents = "?/= MAGIC_NUM";
             let mut tc = TrainCar::new(contents.chars());
-            assert_eq!(collect_delimiter(&mut tc, None), Ok(MatchNE));
+            assert_eq!(collect_delimiter(&mut tc, None), Ok(VHDLToken::Delimiter(Delimiter::MatchNE)));
             assert_eq!(tc.as_ref().clone().collect::<String>(), " MAGIC_NUM");
             assert_eq!(tc.locate(), &Position(1, 3));
         }
 
         #[test]
         fn match_delimiter() {
-            use super::VHDLToken::*;
-
             let word = "<=";
-            assert_eq!(VHDLToken::match_delimiter(word), Ok(SigAssign));
+            assert_eq!(VHDLToken::match_delimiter(word), Ok(VHDLToken::Delimiter(Delimiter::SigAssign)));
 
             let word = "-";
-            assert_eq!(VHDLToken::match_delimiter(word), Ok(Dash));
+            assert_eq!(VHDLToken::match_delimiter(word), Ok(VHDLToken::Delimiter(Delimiter::Dash)));
 
             let word = "<=>";
-            assert_eq!(VHDLToken::match_delimiter(word), Ok(SigAssoc));
+            assert_eq!(VHDLToken::match_delimiter(word), Ok(VHDLToken::Delimiter(Delimiter::SigAssoc)));
 
             let word = "^";
             assert_eq!(VHDLToken::match_delimiter(word).is_err(), true);
@@ -2358,7 +2331,7 @@ end entity nor_gate;
 architecture rtl of nor_gate is
     constant GO_ADDR_MMAP:integer:=2#001_1100.001#E14;
     constant freq_hz : unsigned := 50_000_000;
-    signal   MAGIC_NUM_3 : bit_vector(3 downto 0) := 0sc\"\"
+    signal   MAGIC_NUM_3 : bit_vector(3 downto 0) := 0sx\"\"
     constant MAGIC_NUM_1 : integer := 2#10101#; -- test constants against tokenizer
     constant MAGIC_NUM_2 : std_logic_vector(7 downto 0) := 0 -- 8c\"11\";
 begin

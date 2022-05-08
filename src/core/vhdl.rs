@@ -172,6 +172,11 @@ impl<T> Token<T> {
             ttype: ttype,
         }
     }
+
+    /// References the inner token type.
+    fn as_ref(&self) -> &T {
+        &self.ttype
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -603,6 +608,51 @@ fn collect_delimiter(train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<
 }
 
 impl VHDLToken {
+    /// Checks if the current token type `self` is a delimiter.
+    fn is_delimiter(&self) -> bool {
+        match self {
+            Self::Ampersand     => true,
+            Self::SingleQuote   => true,
+            Self::ParenL        => true,
+            Self::ParenR        => true,
+            Self::Star          => true,
+            Self::Plus          => true,
+            Self::Comma         => true,
+            Self::Dash          => true,
+            Self::Dot           => true,
+            Self::FwdSlash      => true,
+            Self::Colon         => true,
+            Self::Terminator    => true,
+            Self::Lt            => true,
+            Self::Eq            => true,
+            Self::Gt            => true,
+            Self::BackTick      => true,
+            Self::Pipe          => true,
+            Self::BrackL        => true,
+            Self::BrackR        => true,
+            Self::Question      => true,
+            Self::AtSymbol      => true,
+            Self::Arrow         => true,
+            Self::DoubleStar    => true,
+            Self::VarAssign     => true,
+            Self::Inequality    => true,
+            Self::GTE           => true,
+            Self::SigAssign     => true,
+            Self::Box           => true,
+            Self::SigAssoc      => true,
+            Self::CondConv      => true,
+            Self::MatchEQ       => true,
+            Self::MatchNE       => true,
+            Self::MatchLT       => true,
+            Self::MatchLTE      => true,
+            Self::MatchGT       => true,
+            Self::MatchGTE      => true,
+            Self::DoubleLT      => true,
+            Self::DoubleGT      => true,
+            _ => false,
+        }
+    }
+
     /// Attempts to match the given string of characters `s` to a VHDL delimiter.
     fn match_delimiter(s: &str) -> Result<Self, VHDLTokenError> {
         Ok(match s {
@@ -1111,7 +1161,7 @@ impl Tokenize for VHDLTokenizer {
     fn tokenize(s: &str) -> Vec<Result<Token<Self::TokenType>, TokenError<Self::Err>>> {
         let mut train = TrainCar::new(s.chars());
         // store results here as we consume the characters
-        let mut tokens = Vec::new();
+        let mut tokens: Vec<Result<Token<Self::TokenType>, TokenError<Self::Err>>> = Vec::new();
         // consume every character (lexical analysis)
         while let Some(c) = train.consume() {
             // skip over whitespace
@@ -1141,7 +1191,7 @@ impl Tokenize for VHDLTokenizer {
                     Err(e) => Err(TokenError::new(e, train.locate()))
                 }
 
-            } else if c == char_set::SINGLE_QUOTE {
+            } else if c == char_set::SINGLE_QUOTE && tokens.last().is_some() && tokens.last().unwrap().as_ref().is_ok() && tokens.last().unwrap().as_ref().unwrap().as_ref().is_delimiter() {
                 // collect character literal
                 match consume_char_lit(&mut train) {
                     Ok(tk) => Ok(Token::new(tk, tk_loc)),
@@ -1604,7 +1654,6 @@ mod test {
     }
 
     #[test]
-    #[ignore]
     fn single_quote_as_delimiter() {
         let contents = "\
 foo <= std_logic_vector'('a','b','c');";

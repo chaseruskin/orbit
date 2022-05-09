@@ -21,7 +21,7 @@ fn interpret_integer(s: &str) -> usize {
 }
 
 #[derive(Debug)]
-enum Identifier {
+pub enum Identifier {
     Basic(String),
     Extended(String),
 }
@@ -1287,47 +1287,81 @@ impl BaseSpec {
     }
 }
 
+#[derive(Debug, PartialEq)]
+struct VHDLElement(Result<lexer::Token<VHDLToken>, lexer::TokenError<VHDLTokenError>>);
+
+impl VHDLElement {
+    /// Checks if the element is a particular keyword `kw`.
+    fn match_keyword(&self, kw: Keyword) -> bool {
+        if self.0.is_err() { return false }
+        if let VHDLToken::Keyword(r) = self.0.as_ref().unwrap().as_ref() {
+            r == &kw
+        } else {
+            false
+        }
+    }
+
+    /// Accesses the underlying `Identifier`, if one exists.
+    fn get_identifier(&self) -> Option<&Identifier> {
+        if self.0.is_err() { return None }
+        if let VHDLToken::Identifier(id) = self.0.as_ref().unwrap().as_ref() {
+            Some(id)
+        } else {
+            None
+        }
+    }
+}
+
 #[derive(PartialEq)]
 struct VHDLTokenizer {
-    inner: Vec<lexer::Token<VHDLToken>>,
+    tokens: Vec<VHDLElement>,
 }
 
 impl VHDLTokenizer {
     /// Creates a new `VHDLTokenizer` struct.
     fn new() -> Self {
-        Self { inner: Vec::new(), }
+        Self { tokens: Vec::new(), }
     }
 
     /// Generates a `VHDLTokenizer` struct from source code `s`.
     /// 
     /// If `skip_err` is true, it will silently omit erroneous parsing from the
     /// final vector and guarantee to be `Ok`.
-    fn read(s: &str, skip_err: bool) -> Result<Self, &lexer::TokenError<VHDLTokenError>> {
-        let tokens = Self::tokenize(s);
-        Ok(Self {
-            inner: match skip_err {
-                true => {
-                    // filter out all erroneous marks
-                    tokens.into_iter()
-                        .filter_map(|f| {
-                            if f.is_ok() { Some(f.unwrap()) } else { None }
-                        })
-                        .collect()
-                }
-                false => if let Some(Err(e)) = tokens.iter().find(|f| { f.is_err() }) {
-                    todo!("error: {}", e)
-                } else {
-                    tokens.into_iter().map(|f| f.unwrap() ).collect()
+    fn from_source_code(s: &str) -> Self {
+        Self { tokens: Self::tokenize(s).into_iter().map(|f| VHDLElement(f) ).collect() }
+    }
+
+    /// Finds all entities declared in the elements.
+    fn find_entities(&self) -> Vec<String> {
+        let mut iter = self.tokens.iter().peekable();
+        let mut entities = Vec::new();
+        let mut previous_token: Option<&VHDLElement> = None;
+        while let Some(elem) = iter.next() {
+            // encounter an identifier
+            if let Some(id) = elem.get_identifier() {
+                // verify the previous token was keyword 'entity'
+                if let Some(pt) = previous_token {
+                    if pt.match_keyword(Keyword::Entity) == true {
+                        // verify the next token is keyword 'is'
+                        if let Some(nt) = iter.peek() {
+                            if nt.match_keyword(Keyword::Is) == true {
+                                // add to the entity list
+                                entities.push(id.to_string());
+                            }
+                        }
+                    }
                 }
             }
-        })
+            previous_token = Some(elem);
+        }
+        entities
     }
 }
 
 impl std::fmt::Debug for VHDLTokenizer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for tk in &self.inner {
-            write!(f, "{}\t{:?}\n", tk.locate(), tk.unwrap())?
+        for tk in &self.tokens {
+            write!(f, "{}\t{:?}\n", tk.0.as_ref().unwrap().locate(), tk.0.as_ref().unwrap())?
         }
         Ok(())
     } 
@@ -1924,7 +1958,6 @@ signal magic_num : std_logic := '1';";
 
     #[test]
     fn locate_tokens() {
-        use crate::core::vhdl::*;
         let s = "\
 entity fa is end entity;";
         let tokens: Vec<Position> = VHDLTokenizer::tokenize(s)
@@ -2086,7 +2119,7 @@ entity fa is end entity;";
 library ieee;
 use ieee.std_logic_1164.all;
 
-entity nor_gate is $ -- error on this line
+entity \\nor_gate\\ is --$ -- error on this line
     generic(
         N: positive
     );
@@ -2107,8 +2140,9 @@ begin
     c <= a nor \\In\\;
 
 end architecture rtl; /* long comment */";
-        let vhdl = VHDLTokenizer::read(&s, false).unwrap();
+        let vhdl = VHDLTokenizer::from_source_code(&s);
         println!("{:?}", vhdl);
+        println!("{:?}", vhdl.find_entities());
         panic!("manually inspect token list")
     }
 }

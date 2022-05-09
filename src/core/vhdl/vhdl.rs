@@ -1310,11 +1310,44 @@ impl VHDLElement {
             None
         }
     }
+
+    /// Checks if the element is a particular delimiter `d`.
+    fn match_delimiter(&self, d: Delimiter) -> bool {
+        if self.0.is_err() { return false }
+        if let VHDLToken::Delimiter(r) = self.0.as_ref().unwrap().as_ref() {
+            r == &d
+        } else {
+            false
+        }
+    }
+
+    fn get_comment(&self) -> Option<&Comment> {
+        if self.0.is_err() { return None }
+        if let VHDLToken::Comment(cmt) = self.0.as_ref().unwrap().as_ref() {
+            Some(cmt)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(PartialEq)]
 struct VHDLTokenizer {
     tokens: Vec<VHDLElement>,
+}
+
+struct VHDLStatement {
+    surface: Vec<VHDLToken>,
+    nested: Box<Vec<VHDLStatement>>
+}
+
+impl VHDLStatement {
+    fn new() -> Self {
+        Self {
+            surface: Vec::new(),
+            nested: Box::new(Vec::new()),
+        }
+    }
 }
 
 impl VHDLTokenizer {
@@ -1329,6 +1362,80 @@ impl VHDLTokenizer {
     /// final vector and guarantee to be `Ok`.
     fn from_source_code(s: &str) -> Self {
         Self { tokens: Self::tokenize(s).into_iter().map(|f| VHDLElement(f) ).collect() }
+    }
+
+    /// Finds instantiated units declared in the elements.
+    fn find_instantiations(&self) -> Vec<String> {
+        todo!()
+    }
+
+    /// Forms statements based on finding the ';' delimiter.
+    fn group_by_statements(&self) -> Vec<Vec<&lexer::Token<VHDLToken>>> {
+        let mut statements = Vec::new();
+        let mut current_stmt = Vec::new();
+        let stmt = VHDLStatement::new();
+
+        // find first ';' delimiter
+        let mut iter = self.tokens.iter();
+        while let Some(token) = iter.next() {
+            let token = token.0.as_ref().unwrap();
+            // skip comments
+            if let VHDLToken::Comment(_) = token.as_ref() {
+                continue;
+            }
+            if &VHDLToken::Delimiter(Delimiter::Terminator) == token.as_ref() {
+                statements.push(current_stmt);
+                current_stmt = Vec::new();
+            // enter a nested statement
+            } else if &VHDLToken::Keyword(Keyword::Is) == token.as_ref() {
+                
+            } else {
+                // close previous statement
+                current_stmt.push(token);   
+            }
+        }
+        statements
+    }
+
+    /// Finds all architectures
+    fn find_architectures(&self) -> Vec<(String, String)> {
+        let mut iter = self.tokens.iter().peekable();
+        let mut entities = Vec::new();
+        let mut previous_token: Option<&VHDLElement> = None;
+        while let Some(elem) = iter.next() {
+            let mut arch_name: Option<String> = None;
+            // encounter an identifier
+            if let Some(id) = elem.get_identifier() {
+                // verify the previous token was keyword 'entity'
+                if let Some(pt) = previous_token {
+                    if pt.match_keyword(Keyword::Architecture) == true {
+                        // verify the next token is keyword 'is'
+                        if let Some(nt) = iter.peek() {
+                            if nt.match_keyword(Keyword::Of) == true {
+                                // remember the architecture name
+                                iter.next();
+                                arch_name = Some(id.to_string());
+                            }
+                        }
+                    }
+                }
+            }
+            if let Some(arch) = arch_name {
+                if let Some(elem) = iter.peek() {
+                    if let Some(ent_id) = elem.get_identifier() {
+                        iter.next();
+                        if let Some(nt) = iter.peek() {
+                            if nt.match_keyword(Keyword::Is) == true {
+                                entities.push((arch, ent_id.to_string()));
+                                iter.next();
+                            }
+                        }
+                    }
+                }
+            }
+            previous_token = Some(elem);
+        }
+        entities
     }
 
     /// Finds all entities declared in the elements.
@@ -1347,6 +1454,7 @@ impl VHDLTokenizer {
                             if nt.match_keyword(Keyword::Is) == true {
                                 // add to the entity list
                                 entities.push(id.to_string());
+                                iter.next();
                             }
                         }
                     }
@@ -2142,7 +2250,12 @@ begin
 end architecture rtl; /* long comment */";
         let vhdl = VHDLTokenizer::from_source_code(&s);
         println!("{:?}", vhdl);
-        println!("{:?}", vhdl.find_entities());
+        println!("{:#?}", vhdl.find_entities());
+        println!("{:#?}", vhdl.find_architectures());
+
+        for stmt in vhdl.group_by_statements() {
+            println!("{:?}", stmt)
+        }
         panic!("manually inspect token list")
     }
 }

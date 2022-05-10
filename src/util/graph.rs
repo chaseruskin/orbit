@@ -152,6 +152,22 @@ impl Graph {
         true
     }
 
+    /// Performs depth-first search algorithm starting from the `target` node.
+    pub fn depth_first_search(&self, target: NodeIndex) -> Vec<NodeIndex> {
+        let mut traversal = Vec::new();
+        // add target to the list
+        traversal.push(target);
+        // select predecessors
+        let mut tunnels: Box<dyn Iterator<Item=usize>> = Box::new(self.predecessors(target));
+        while let Some(n) = tunnels.next() {
+            // select node
+            traversal.push(n);
+            // add its predecessors to list to process (in front of current nodes to process)
+            tunnels = Box::new(self.predecessors(n).chain(tunnels));
+        }
+        traversal
+    }
+
     /// Performs topological sort to give in-order nodes to perform given tasks
     /// based upon dependencies.
     pub fn topological_sort(&self) -> Vec<NodeIndex> {
@@ -185,6 +201,19 @@ impl Graph {
             order.push(current);
         }
         order
+    }
+
+    /// Performs topological sort on the entire graph and then only selects the
+    /// minimal number of affected nodes needed process up to `target`.
+    pub fn minimal_topological_sort(&self, target: NodeIndex) -> Vec<NodeIndex> {
+        // order the nodes
+        let total_order = self.topological_sort();
+        // collect number of nodes a part of the partial tree starting from `target`
+        let effected_nodes: HashSet<usize> = self.depth_first_search(target).into_iter().collect();
+        // filter out all nodes not in the hashset
+        total_order.into_iter()
+            .filter(|f| { effected_nodes.contains(f) == true })
+            .collect()
     }
 }
 
@@ -247,6 +276,36 @@ mod test {
         g
     }
 
+    /// Creates an example binary tree with height = 2. Edges are directed up indicating
+    /// the child is a dependency to the parent.
+    ///
+    ///         n0
+    ///        /  \
+    ///     n1     n4
+    ///    /  \   /  \
+    /// n2   n3 n5   n6
+    fn binary_tree() -> Graph {
+        // create binary tree
+        let mut g = Graph::new();
+        let n0 = g.add_node();
+        let n1 = g.add_node();
+        let n2 = g.add_node();
+        let n3 = g.add_node();
+        let n4 = g.add_node();
+        let n5 = g.add_node();
+        let n6 = g.add_node();
+        // level 1
+        g.add_edge(n1, n0);
+        g.add_edge(n4, n0);
+        // level 2 - L
+        g.add_edge(n2, n1);
+        g.add_edge(n3, n1);
+        // level 2 - R
+        g.add_edge(n5, n4); // n5 -> n4
+        g.add_edge(n6, n4); // n6 -> n4
+        g
+    }
+
     #[test]
     fn is_cyclic() {
         let mut g = basic_graph();
@@ -258,6 +317,9 @@ mod test {
         let mut g = basic_graph();
         g.add_edge(2, 0);
         assert_eq!(g.is_cyclic(), true);
+
+        let g = binary_tree();
+        assert_eq!(g.is_cyclic(), false);
     }
 
     #[test]
@@ -268,6 +330,9 @@ mod test {
         let n0 = g.add_node();
         g.add_edge(n0, 0);
         assert_eq!(g.topological_sort(), vec![4, 0, 1, 3, 2]);
+        
+        let g = binary_tree();
+        assert_eq!(g.topological_sort(), vec![2, 3, 1, 5, 6, 4, 0]);
     }
 
     #[test]
@@ -333,6 +398,16 @@ mod test {
     }
 
     #[test]
+    fn min_top_sort() {
+        let g = binary_tree();
+        assert_eq!(g.minimal_topological_sort(0), vec![2, 3, 1, 5, 6, 4, 0]);
+
+        assert_eq!(g.minimal_topological_sort(1), vec![2, 3, 1]);
+
+        assert_eq!(g.minimal_topological_sort(4), vec![5, 6, 4]);
+    }
+
+    #[test]
     fn has_edge() {
         let mut g = Graph::new();
         let n0 = g.add_node();
@@ -346,6 +421,22 @@ mod test {
         assert_eq!(g.has_edge(n1, n2), false);
         g.add_edge(n1, n2);
         assert_eq!(g.has_edge(n1, n2), true);
+    }
+
+    #[test]
+    fn dfs() {
+        let g = binary_tree();
+        // from top node
+        assert_eq!(g.depth_first_search(0), vec![0, 4, 6, 5, 1, 3, 2]);
+
+        // from intermediate node
+        assert_eq!(g.depth_first_search(1), vec![1, 3, 2]);
+
+        // from intermediate node
+        assert_eq!(g.depth_first_search(4), vec![4, 6, 5]);
+
+        // from leaf node
+        assert_eq!(g.depth_first_search(6), vec![6]);
     }
 }
 

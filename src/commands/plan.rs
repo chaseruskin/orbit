@@ -40,15 +40,92 @@ impl Command for Plan {
     }
 }
 
+use crate::core::vhdl::parser;
+use crate::util::graph::Graph;
+use std::collections::HashMap;
+use std::collections::HashSet;
+
+#[derive(Debug, PartialEq)]
+struct HashNode {
+    index: usize,
+    files: HashSet<String>,
+}
+
+impl HashNode {
+    fn index(&self) -> usize {
+        self.index
+    }
+    
+    fn new(index: usize, file: String) -> Self {
+        let mut set = HashSet::new();
+        set.insert(file);
+        Self {
+            index: index,
+            files: set,
+        }
+    }
+
+    fn add_file(&mut self, file: String) {
+        self.files.insert(file);
+    }
+}
+
 impl Plan {
     fn run(&self, build_dir: &str) -> () {
         let mut build_path = std::env::current_dir().unwrap();
         build_path.push(build_dir);
         // gather filesets
         let files = crate::core::fileset::gather_current_files();
+
+        let mut g = Graph::new();
+        // entity identifier, HashNode
+        let mut map = HashMap::<String, HashNode>::new();
+        // read all files
+        let mut archs = Vec::new();
+        for f in &files {
+            if f.ends_with(".vhd") == true {
+                let contents = std::fs::read_to_string(f).unwrap();
+                let symbols = parser::VHDLParser::read(&contents).into_symbols();
+                // add all entities to a graph
+                let mut iter = symbols.into_iter().filter_map(|f| {
+                    match f {
+                        parser::VHDLSymbol::Entity(_) => Some(f.get_iden().to_string()),
+                        parser::VHDLSymbol::Architecture(arch) => {
+                            archs.push(arch);
+                            None
+                        }
+                        _ => None,
+                    }
+                });
+                while let Some(e) = iter.next() {
+                    let index = g.add_node();
+                    map.insert(e.to_string(), HashNode::new(index, f.to_string()));
+                }
+            }
+        }
+
+        // go through all architectures and make the connections
+        let mut archs = archs.into_iter();
+        while let Some(arch) = archs.next() {
+            // link to the owner
+            // map.get_mut(&arch.entity().to_string()).unwrap().add_file(file)
+            // create edges
+            for dep in &arch.edges() {
+                g.add_edge(map.get(dep).unwrap().index(), map.get(&arch.entity().to_string()).unwrap().index());
+            }
+        }
+
+        // sort
+        let order = g.topological_sort();
+        println!("{:?}", order);
+        println!("{:?}", map);
+
         // @TODO remove and properly include only-necessary in-order hdl files
         let vhdl_rtl_files = crate::core::fileset::collect_vhdl_files(&files, false);
         let vhdl_sim_files = crate::core::fileset::collect_vhdl_files(&files, true);
+        
+
+
         // store data in blueprint TSV format
         let mut blueprint_data = String::new();
 

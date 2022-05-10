@@ -47,7 +47,7 @@ impl<T: Display> Display for SymbolError<T> {
 }
 
 #[derive(Debug, PartialEq)]
-enum VHDLSymbol {
+pub enum VHDLSymbol {
     Entity(Entity),
     /// name, entity
     Architecture(Architecture),
@@ -56,7 +56,7 @@ enum VHDLSymbol {
 }
 
 impl VHDLSymbol {
-    fn get_iden(&self) -> &Identifier {
+    pub fn get_iden(&self) -> &Identifier {
         match self {
             Self::Entity(e) => &e.name,
             Self::Architecture(a) => &a.name,
@@ -79,26 +79,44 @@ impl std::fmt::Display for VHDLSymbol {
 }
 
 #[derive(Debug, PartialEq)]
-struct Architecture {
+pub struct Architecture {
     name: Identifier,
     owner: Identifier,
     dependencies: Vec<Identifier>,
 }
 
+impl Architecture {
+    pub fn name(&self) -> &Identifier {
+        &self.name
+    }
+
+    pub fn entity(&self) -> &Identifier {
+        &self.owner
+    }
+
+    pub fn edges(&self) -> Vec<String> {
+        let mut edges = Vec::new();
+        for dep in &self.dependencies {
+            edges.push(dep.to_string());
+        }
+        edges
+    }
+}
+
 #[derive(Debug, PartialEq)]
-struct Configuration {
+pub struct Configuration {
     name: Identifier,
     owner: Identifier,
 }
 
 #[derive(Debug, PartialEq)]
-struct Entity {
+pub struct Entity {
     name: Identifier,
     architectures: Vec<Architecture>,
 }
 
 #[derive(Debug, PartialEq)]
-struct VHDLParser {
+pub struct VHDLParser {
     symbols: Vec<Symbol<VHDLSymbol>>,
 }
 
@@ -151,14 +169,14 @@ impl Parse<VHDLToken> for VHDLParser {
 
 impl VHDLParser {
 
-    fn read(s: &str) -> Self {
+    pub fn read(s: &str) -> Self {
         let symbols = VHDLParser::parse(VHDLTokenizer::from_source_code(&s).into_tokens());
         Self {
             symbols: symbols.into_iter().filter_map(|f| { if f.is_ok() { Some(f.unwrap()) } else { None } }).collect()
         }
     }
 
-    fn into_symbols(self) -> Vec<VHDLSymbol> {
+    pub fn into_symbols(self) -> Vec<VHDLSymbol> {
         self.symbols.into_iter().map(|f| f.take()).collect()
     }
 
@@ -306,11 +324,10 @@ impl VHDLSymbol {
                 return statement
             // extra keywords to help break up statements early
             } else if t.as_type().check_keyword(&Keyword::Generate) || 
-                t.as_type().check_keyword(&Keyword::Begin) {
-                statement.0.push(t);
-                return statement
-            } else if statement.0.first().is_some() && statement.0.first().unwrap().as_type().check_keyword(&Keyword::When) &&
-                t.as_type().check_delimiter(&Delimiter::Arrow) {
+                t.as_type().check_keyword(&Keyword::Begin) || 
+                (statement.0.first().is_some() && statement.0.first().unwrap().as_type().check_keyword(&Keyword::When) &&
+                t.as_type().check_delimiter(&Delimiter::Arrow)) {
+                // add the breaking token to the statement before exiting
                 statement.0.push(t);
                 return statement
             } else {
@@ -519,6 +536,47 @@ mod test {
     use super::*;
 
     #[test]
+    fn parse_component() {
+        // ends with 'end component nor_gate;' Statement
+        let s = "\
+component nor_gate is end component nor_gate;
+
+signal ready: std_logic;";
+        let mut tokens = VHDLTokenizer::from_source_code(&s).into_tokens().into_iter().peekable();
+        let comp = VHDLSymbol::parse_component(&mut tokens);
+        assert_eq!(comp.to_string(), "nor_gate");
+        assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::Signal));
+        
+        // ends with 'end;' statement
+        let s = "\
+component nor_gate end;
+
+signal ready: std_logic;";
+        let mut tokens = VHDLTokenizer::from_source_code(&s).into_tokens().into_iter().peekable();
+        let comp = VHDLSymbol::parse_component(&mut tokens);
+        assert_eq!(comp.to_string(), "nor_gate");
+        assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::Signal));
+
+        // ends with 'end component nor_gate;' statement
+        let s = "\
+-- declare DUT component
+component nor_gate 
+    generic( N: positive );
+    port(
+        a: in  std_logic_vector(N-1 downto 0);
+        b: in  std_logic_vector(N-1 downto 0);
+        c: out std_logic_vector(N-1 downto 0)
+    );
+end component nor_gate;
+
+signal ready: std_logic;";
+        let mut tokens = VHDLTokenizer::from_source_code(&s).into_tokens().into_iter().peekable();
+        let comp = VHDLSymbol::parse_component(&mut tokens);
+        assert_eq!(comp.to_string(), "nor_gate");
+        assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::Signal));
+    }
+
+    #[test]
     fn compose_statement() {
         let s = "a : in std_logic_vector(3 downto 0);";
         let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
@@ -550,6 +608,11 @@ mod test {
             &VHDLToken::AbstLiteral(AbstLiteral::Decimal("0".to_owned())),
             &VHDLToken::Delimiter(Delimiter::ParenR),
         ]);
+
+        let s = "process(all) is begin end process;";
+        let mut tokens = VHDLTokenizer::from_source_code(&s).into_tokens().into_iter().peekable();
+        let _ = VHDLSymbol::compose_statement(&mut tokens);
+        assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::End));
     }
 
     #[test]

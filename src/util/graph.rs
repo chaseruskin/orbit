@@ -152,6 +152,22 @@ impl Graph {
         true
     }
 
+    /// Determines which node has zero outgoing edges as the 'root' node.
+    /// 
+    /// Returns a list of possible roots (potentially zero) as an err if there is
+    /// not just a definite single root.
+    pub fn find_root(&self) -> Result<NodeIndex, Vec<NodeIndex>> {
+        // grab a list of all nodes that have zero outgoing edges
+        let roots: Vec<NodeIndex> = self.vertices.iter().enumerate().filter_map(|(i, n)| {
+            if n.first_outgoing_edge.is_none() { Some(i) } else { None }
+        }).collect();
+        // check how many roots were detected
+        match roots.len() {
+            1 => Ok(*roots.first().unwrap()),
+            _ => Err(roots)
+        }
+    }
+
     /// Performs depth-first search algorithm starting from the `target` node.
     pub fn depth_first_search(&self, target: NodeIndex) -> Vec<NodeIndex> {
         let mut traversal = Vec::new();
@@ -295,11 +311,11 @@ mod test {
         let n5 = g.add_node();
         let n6 = g.add_node();
         // level 1
-        g.add_edge(n1, n0);
-        g.add_edge(n4, n0);
+        g.add_edge(n1, n0); // n1 -> n0
+        g.add_edge(n4, n0); // n4 -> n0
         // level 2 - L
-        g.add_edge(n2, n1);
-        g.add_edge(n3, n1);
+        g.add_edge(n2, n1); // n2 -> n1
+        g.add_edge(n3, n1); // n3 -> n1
         // level 2 - R
         g.add_edge(n5, n4); // n5 -> n4
         g.add_edge(n6, n4); // n6 -> n4
@@ -359,6 +375,22 @@ mod test {
         assert_eq!(g.edge_count(), 2);
         // do not allow self-loops
         assert_eq!(g.add_edge(n0, n0), false);
+    }
+
+    #[test]
+    fn find_root() {
+        let mut g = binary_tree();
+        assert_eq!(g.find_root(), Ok(0));
+
+        // add a second possible root to the tree
+        let n7 = g.add_node();
+        g.add_edge(4, n7);
+        assert_eq!(g.find_root(), Err(vec![0, 7]));
+
+        // add edges between the two known roots: n0 and n7
+        g.add_edge(0, n7);
+        g.add_edge(n7,0);
+        assert_eq!(g.find_root(), Err(vec![]));
     }
 
     #[test]

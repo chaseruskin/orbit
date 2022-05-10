@@ -128,8 +128,17 @@ impl Plan {
         println!("{:?}", map);
 
         // detect the top-level
-        let top = g.find_root().expect("multiple toplevels (or zero) are possible");
+        let top = if let Some(t) = &self.top {
+            match map.get(t) {
+                Some(node) => node.index(),
+                None => panic!("no entity named {}", t)
+            }
+        } else {
+            g.find_root().expect("multiple toplevels (or zero) are possible")
+        };
+
         let top_name = inverse_map[top].to_string();
+
         std::env::set_var("ORBIT_TOP", &top_name);
         std::env::set_var("ORBIT_BENCH", &top_name);
         

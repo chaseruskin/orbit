@@ -14,6 +14,20 @@ pub struct Symbol<T> {
     stype: T,
 }
 
+impl<T> Symbol<T> {
+    /// Creates a new token.
+    pub fn new(stype: T) -> Self {
+        Self {
+            stype: stype,
+        }
+    }
+
+    pub fn take(self) -> T {
+        self.stype
+    }
+}
+
+
 #[derive(Debug, PartialEq)]
 pub struct SymbolError<T: Display> {
     err: T,
@@ -34,8 +48,53 @@ impl<T: Display> Display for SymbolError<T> {
 
 #[derive(Debug, PartialEq)]
 enum VHDLSymbol {
-    Entity,
-    Architecture
+    Entity(Entity),
+    /// name, entity
+    Architecture(Architecture),
+    Package(Identifier),
+    Configuration(Configuration),
+}
+
+impl VHDLSymbol {
+    fn get_iden(&self) -> &Identifier {
+        match self {
+            Self::Entity(e) => &e.name,
+            Self::Architecture(a) => &a.name,
+            Self::Package(p) => &p,
+            Self::Configuration(c) => &c.name,
+        }
+    }
+}
+
+impl std::fmt::Display for VHDLSymbol {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            Self::Entity(e) => format!("entity {}", &e.name),
+            Self::Architecture(a) => format!("architecture {} for entity {}", &a.name, &a.owner),
+            Self::Package(p) => format!("package {}", &p),
+            Self::Configuration(c) => format!("configuration {} for entity {}", &c.name, &c.owner),
+        };
+        write!(f, "{}", s)
+    }
+}
+
+#[derive(Debug, PartialEq)]
+struct Architecture {
+    name: Identifier,
+    owner: Identifier,
+    dependencies: Vec<Identifier>,
+}
+
+#[derive(Debug, PartialEq)]
+struct Configuration {
+    name: Identifier,
+    owner: Identifier,
+}
+
+#[derive(Debug, PartialEq)]
+struct Entity {
+    name: Identifier,
+    architectures: Vec<Architecture>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -48,10 +107,11 @@ use crate::core::vhdl::vhdl::*;
 impl Parse<VHDLToken> for VHDLParser {
     type SymbolType = VHDLSymbol;
     type Err = String;
-
+    
     fn parse(tokens: Vec<Token<VHDLToken>>) -> Vec<Result<Symbol<Self::SymbolType>, SymbolError<Self::Err>>>
         where <Self as Parse<VHDLToken>>::Err: Display {
-        
+            
+        let mut symbols = Vec::new();
         let mut tokens = tokens.into_iter().peekable();
 
         while let Some(t) = tokens.next() {
@@ -59,36 +119,49 @@ impl Parse<VHDLToken> for VHDLParser {
             if t.as_ref().check_keyword(&Keyword::Entity) {
                 let name = VHDLSymbol::parse_entity(&mut tokens);
                 println!("!!!! INFO: detected primary design unit entity \"{}\"", name);
+                symbols.push(Ok(Symbol::new(VHDLSymbol::Entity(Entity { name: name, architectures: Vec::new() }))));
             // create architecture symbol
             } else if t.as_ref().check_keyword(&Keyword::Architecture) {
-                let (arch, entity) = VHDLSymbol::parse_architecture(&mut tokens);
-                println!("!!!! INFO: detected architecture \"{}\" for entity \"{}\"", arch, entity);
+                let arch = VHDLSymbol::parse_architecture(&mut tokens);
+                println!("{}", arch);
+                symbols.push(Ok(Symbol::new(arch)));
             // create configuration symbol
             } else if t.as_ref().check_keyword(&Keyword::Configuration) {
-                let (config, entity) = VHDLSymbol::parse_architecture(&mut tokens);
-                println!("!!!! INFO: detected configuration \"{}\" for entity \"{}\"", config, entity);
+                let config = VHDLSymbol::parse_configuration(&mut tokens);
+                println!("{}", config);
+                symbols.push(Ok(Symbol::new(config)));
             // create package symbol
             } else if t.as_ref().check_keyword(&Keyword::Package) {
-                let pack = if &VHDLToken::Keyword(Keyword::Body) == tokens.peek().unwrap().as_type() {
-                    // take the 'body' keyword
-                    tokens.next();
-                    VHDLSymbol::parse_entity(&mut tokens)
-                } else {
-                    VHDLSymbol::parse_entity(&mut tokens)
-                };
+                let pack = VHDLSymbol::route_package_parse(&mut tokens);
                 println!("!!!! INFO: detected package \"{}\"", pack);
-            // otherwise take a statement (probably by mistake/errors in user's vhdl code)
+                symbols.push(Ok(Symbol::new(pack)));
+            // otherwise take a statement (probably by mistake/errors in user's vhdl code or as of now an error in my code)
             } else {
                 let mut stmt: Statement = Statement::new();
                 stmt.0.push(t);
                 stmt.0.append(&mut VHDLSymbol::compose_statement(&mut tokens).0);
                 println!("global statement: {:?}", stmt);
             }
-
         }
         // detect entity keyword
-        todo!()
+        // println!("{:#?}", symbols);
+        symbols
     }
+}
+
+impl VHDLParser {
+
+    fn read(s: &str) -> Self {
+        let symbols = VHDLParser::parse(VHDLTokenizer::from_source_code(&s).into_tokens());
+        Self {
+            symbols: symbols.into_iter().filter_map(|f| { if f.is_ok() { Some(f.unwrap()) } else { None } }).collect()
+        }
+    }
+
+    fn into_symbols(self) -> Vec<VHDLSymbol> {
+        self.symbols.into_iter().map(|f| f.take()).collect()
+    }
+
 }
 
 use std::iter::Peekable;
@@ -123,20 +196,49 @@ impl Statement {
 }
 
 impl VHDLSymbol {
+
     fn parse_entity<I>(tokens: &mut Peekable<I>) -> Identifier 
     where I: Iterator<Item=Token<VHDLToken>>  {
         // take entity name
         let entity_name = tokens.next().take().unwrap().take();
         println!("*--- unit {}", entity_name);
-        VHDLSymbol::parse_declaration(tokens);
+        VHDLSymbol::parse_primary_declaration(tokens);
         match entity_name {
             VHDLToken::Identifier(id) => id,
             _ => panic!("expected an identifier")
         }
     }
 
+    fn parse_package<I>(tokens: &mut Peekable<I>) -> VHDLSymbol 
+    where I: Iterator<Item=Token<VHDLToken>>  {
+        // take entity name
+        let pack_name = tokens.next().take().unwrap().take();
+        println!("*--- unit {}", pack_name);
+        VHDLSymbol::parse_primary_declaration(tokens);
+        VHDLSymbol::Package(match pack_name {
+            VHDLToken::Identifier(id) => id,
+            _ => panic!("expected an identifier")
+        })
+    }
+
+    fn parse_package_body<I>(tokens: &mut Peekable<I>) -> Identifier 
+    where I: Iterator<Item=Token<VHDLToken>>  {
+        // take the 'body' keyword
+        tokens.next();
+        // take package name
+        let pack_name = tokens.next().take().unwrap().take();
+        println!("*--- package {}", pack_name);
+        // take 'is' keyword
+        tokens.next();
+        VHDLSymbol::parse_body(tokens, &Self::is_subprogram);
+        match pack_name {
+            VHDLToken::Identifier(id) => id,
+            _ => panic!("expected an identifier")
+        }
+    }
+
     /// Detects identifiers instantiated in the architecture statement sections.
-    /// Assumes the next token to consume is the COLON delimiter.
+    /// Assumes the next token to consume is the COLON ':' delimiter.
     fn parse_instantiation(statement: Statement) -> Option<Identifier> {
         let mut tokens = statement.0.into_iter();
         // force identifier
@@ -160,16 +262,34 @@ impl VHDLSymbol {
         }
     }
 
-    fn parse_architecture<I>(tokens: &mut Peekable<I>) -> (Identifier, Identifier) 
+    fn parse_configuration<I>(tokens: &mut Peekable<I>) -> VHDLSymbol 
+        where I: Iterator<Item=Token<VHDLToken>>  {
+        let config_name = match tokens.next().take().unwrap().take() {
+            VHDLToken::Identifier(id) => id,
+            _ => panic!("expected an identifier")
+        };
+        let entity_name = VHDLSymbol::parse_owner_design_unit(tokens);
+        VHDLSymbol::parse_primary_declaration(tokens);
+        VHDLSymbol::Configuration(Configuration {
+            name: config_name,
+            owner: entity_name,
+        })
+    }
+
+    fn parse_architecture<I>(tokens: &mut Peekable<I>) -> VHDLSymbol 
         where I: Iterator<Item=Token<VHDLToken>>  {
         let arch_name = match tokens.next().take().unwrap().take() {
             VHDLToken::Identifier(id) => id,
             _ => panic!("expected an identifier")
         };
-        let entity_name = VHDLSymbol::parse_primary_design_unit(tokens);
+        let entity_name = VHDLSymbol::parse_owner_design_unit(tokens);
         println!("*--- unit {}", arch_name);
-        VHDLSymbol::parse_declaration(tokens);
-        (arch_name, entity_name)
+
+        VHDLSymbol::Architecture(Architecture {
+            name: arch_name,
+            owner: entity_name,
+            dependencies: VHDLSymbol::parse_primary_declaration(tokens),
+        })
     }
 
     /// Parses together a series of tokens into a single `Statement`.
@@ -200,7 +320,7 @@ impl VHDLSymbol {
         Statement::new()
     }
 
-    fn parse_primary_design_unit<I>(tokens: &mut Peekable<I>) -> Identifier
+    fn parse_owner_design_unit<I>(tokens: &mut Peekable<I>) -> Identifier
     where I: Iterator<Item=Token<VHDLToken>>  {
         // force taking the 'of' keyword
         if tokens.next().unwrap().as_type().check_keyword(&Keyword::Of) == false {
@@ -213,7 +333,17 @@ impl VHDLSymbol {
         }
     }
 
-    fn parse_declaration<I>(tokens: &mut Peekable<I>) -> Vec<Statement>
+    /// @TODO ?
+    fn parse_subprogram<I>(_: &mut Peekable<I>) -> Vec<Statement>
+    where I: Iterator<Item=Token<VHDLToken>>  {
+
+        vec![]
+    }
+
+    /// Consumes tokens after `IS` until finding `BEGIN` or `END`.
+    /// 
+    /// Assumes the next token to consume is `IS` and throws it away.
+    fn parse_primary_declaration<I>(tokens: &mut Peekable<I>) -> Vec<Identifier>
         where I: Iterator<Item=Token<VHDLToken>>  {
         println!("*--- declaration section");
         // force taking the 'is' keyword
@@ -222,13 +352,24 @@ impl VHDLSymbol {
         }
         while let Some(t) = tokens.peek() {
             if t.as_type().check_keyword(&Keyword::Begin) {
-                Self::parse_body(tokens);
-                break;
+                tokens.next();
+                return Self::parse_body(tokens, &Self::is_closer);
+                // break;
             } else if t.as_type().check_keyword(&Keyword::End) {
                 let stmt = Self::compose_statement(tokens);
                 println!("{:?}", stmt);
-                if Self::is_closer(stmt) { break; }
-            // compose a statement @TODO handle recursion for detecting subprogram calls such as 'function' keyword
+                if Self::is_closer(&stmt) { 
+                    break; 
+                }
+            // find component names (could be in package)
+            } else if t.as_type().check_keyword(&Keyword::Component) {
+                let comp_name = Self::parse_component(tokens);
+                println!("**** INFO: Found component: \"{}\"", comp_name);
+            } else if t.as_type().check_keyword(&Keyword::Package) {
+                tokens.next();
+                let pack_name = Self::parse_entity(tokens);
+                println!("**** INFO: detected nested package \"{}\"", pack_name);
+            // build statements
             } else {
                 let stmt = Self::compose_statement(tokens);
                 println!("{:?}", stmt);
@@ -237,11 +378,11 @@ impl VHDLSymbol {
         Vec::new()
     }
 
-    fn is_closer(stmt: Statement) -> bool {
+    fn is_closer(stmt: &Statement) -> bool {
         let keyword = if let Some(t) = stmt.0.get(1) {
             t.as_type()
         } else {
-            return false // @TODO make sure "end;" will end up being valid
+            return true // @TODO make sure "end;" will end up being valid
         };
         match keyword {
             // list mandatory keywords expected after the 'end' keyword
@@ -256,31 +397,119 @@ impl VHDLSymbol {
         }
     }
 
-    /// Parses a body, expecting the first token to be the BEGIN keyword.
-    /// 
-    /// Builds statements until finds the END keyword statement
-    fn parse_body<I>(tokens: &mut Peekable<I>) -> Vec<Statement>
-        where I: Iterator<Item=Token<VHDLToken>>  {
-        println!("*--- statement section");
-        // force taking the 'begin' keyword
-        if tokens.next().unwrap().as_type().check_keyword(&Keyword::Begin) == false{
-            panic!("expecting 'begin' keyword")
+    fn is_subprogram(stmt: &Statement) -> bool {
+        let keyword = if let Some(t) = stmt.0.get(1) {
+            t.as_type()
+        } else {
+            return true // @TODO make sure "end;" will end up being valid
+        };
+        match keyword {
+            // list mandatory keywords expected after the 'end' keyword
+            VHDLToken::Keyword(kw) => match kw {
+                Keyword::Loop | Keyword::Generate | Keyword::Process |
+                Keyword::Postponed | Keyword::If | Keyword::Block | 
+                Keyword::Protected | Keyword::Record | Keyword::Case | 
+                Keyword::Component | Keyword::For => false,
+                _ => true,
+            },
+            _ => true,
         }
+    }
+
+    /// Checks if the keyword indicates a subprogram statement.
+    fn enter_subprogram(kw: &Keyword) -> bool {
+        match kw {
+            Keyword::Function | Keyword::Procedure | Keyword::Impure | 
+            Keyword::Pure => true,
+            _ => false,
+        }
+    }
+
+    /// Parses a component, consumeing the tokens `COMPONENT` until the end.
+    /// 
+    /// Assumes the first token to consume is `COMPONENT`.
+    fn parse_component<I>(tokens: &mut Peekable<I>) -> Identifier
+    where I: Iterator<Item=Token<VHDLToken>>  {
+        if tokens.next().unwrap().as_type().check_keyword(&Keyword::Component) == false {
+            panic!("assumes first token is COMPONENT keyword");
+        }
+        // take component name
+        let comp_name = tokens.next().take().unwrap().take();
+        println!("*--- found component {}", comp_name);
+        // take 'is' keyword (optional)
+        if tokens.peek().unwrap().as_type().check_keyword(&Keyword::Is) {
+            tokens.next();
+        }
+        // @TODO collect port names and generic names until hitting 'END'
         while let Some(t) = tokens.peek() {
             if t.as_type().check_keyword(&Keyword::End) {
                 let stmt = Self::compose_statement(tokens);
                 println!("{:?}", stmt);
-                if Self::is_closer(stmt) { break; }
+                break; 
+            } else {
+                let stmt = Self::compose_statement(tokens);
+                println!("{:?}", stmt);
+            }
+        }
+        match comp_name {
+            VHDLToken::Identifier(id) => id,
+            _ => panic!("expected an identifier")
+        }
+    }
+
+    fn route_package_parse<I>(tokens: &mut Peekable<I>) -> VHDLSymbol
+    where I: Iterator<Item=Token<VHDLToken>> {
+        VHDLSymbol::Package(if &VHDLToken::Keyword(Keyword::Body) == tokens.peek().unwrap().as_type() {
+            VHDLSymbol::parse_package_body(tokens)
+        } else {
+            VHDLSymbol::parse_entity(tokens)
+        })
+    }
+
+    /// Parses a body, consuming tokens from `BEGIN` until `END`.
+    /// 
+    /// Builds statements and stops after finding the `END` keyword statement. If
+    /// the `END` keyword statement is detected, it will have to pass the `eval_exit`
+    /// function to properly exit scope. Assumes the last token consumed was `BEGIN`.
+    fn parse_body<I>(tokens: &mut Peekable<I>, eval_exit: &dyn Fn(&Statement) -> bool) -> Vec<Identifier>
+        where I: Iterator<Item=Token<VHDLToken>>  {
+        // collect component names
+        let mut deps = Vec::new();
+        println!("*--- statement section");
+        while let Some(t) = tokens.peek() {
+            if t.as_type().check_keyword(&Keyword::End) {
+                let stmt = Self::compose_statement(tokens);
+                println!("{:?}", stmt);
+                if eval_exit(&stmt) == true { 
+                    break; 
+                }
+            // enter a subprogram
+            } else if t.as_type().check_keyword(&Keyword::Function) || t.as_type().check_keyword(&Keyword::Begin) {
+                let stmt = Self::compose_statement(tokens);
+                println!("ENTERING SUBPROGRAM {:?}", stmt);
+                Self::parse_body(tokens, &Self::is_subprogram);
+                println!("EXITING SUBPROGRAM");
+            // find component names (could be in package)
+            } else if t.as_type().check_keyword(&Keyword::Component) {
+                let comp_name = Self::parse_component(tokens);
+                println!("**** INFO: Found component: \"{}\"", comp_name);
+            // find packages 
+            } else if t.as_type().check_keyword(&Keyword::Package) {
+                tokens.next();
+                let symbol = Self::route_package_parse(tokens);
+                println!("**** INFO: Detected nested package \"{}\"", symbol);
+            // build statements
             } else {
                 let stmt = Self::compose_statement(tokens);
                 println!("{:?}", stmt);
                 // check if statement is an instantiation
                 if let Some(inst) = Self::parse_instantiation(stmt) {
                     println!("**** INFO: Detected dependency \"{}\"", inst);
+                    deps.push(inst);
                 }
             }
         }
-        Vec::new()
+        deps
     }
 }
 
@@ -369,10 +598,7 @@ component nor_gate
 	);
 end component nor_gate;
 begin 
-	DUT : 
-    
-    
-    nor_gate 
+	DUT : component nor_gate 
     generic map     (
 		N   => N
 	) port map(
@@ -390,6 +616,18 @@ attribute FOREIGN of F: function is \"implementation-dependent information\";
 
 end package P;
 
+package outer is
+    package inner is 
+        component some_component is
+        end component;
+    end package;
+end package;
+
+entity X is
+port (P1, P2: inout BIT); constant Delay: TIME := 1 ms;
+begin
+CheckTiming (P1, P2, 2*Delay); end X ;
+
 package TimeConstants is 
 constant tPLH : Time := 9 ns;
 constant tPHL : Time := 10 ns;
@@ -400,6 +638,10 @@ constant tPZH : Time := 8 ns;
 end TimeConstants ;
 
 package body TriState is
+
+    package ent is 
+
+    end;
     function BitVal (Value: Tri) return Bit is
         constant Bits : Bit_Vector := \"0100\"; 
     begin
@@ -450,24 +692,27 @@ end architecture;
 
 architecture rtl of complex_multiplier is
 begin
-mult_structure : case implementation generate when single_cycle =>
-signal real_pp1, real_pp2 : ...;
-...
-begin
-real_mult1 : component multiplier
-port map ( ... ); ...
-end;
-when multicycle =>
-signal real_pp1, real_pp2 : ...;
-...
-begin
-mult : component multiplier
-port map ( ... );
-end;
-when pipelined => mult1 : component multiplier
-port map ( ... );
-end;
-end generate mutl_structure;
+
+    mult_structure : case implementation generate 
+        when single_cycle => 
+            signal real_pp1, real_pp2 : ...;
+            ...;
+            begin
+                real_mult1 : component multiplier
+                    port map ( ... ); 
+            end;
+        when multicycle =>
+            signal real_pp1, real_pp2 : ...;
+            ...;
+            begin
+                mult : component multiplier
+                    port map ( ... );
+            end;
+        when pipelined => 
+            mult1 : component multiplier
+                port map ( ... );
+    end generate mutl_structure;
+
 end architecture rtl;
 ";
         let _ = VHDLParser::parse(VHDLTokenizer::from_source_code(&s).into_tokens());

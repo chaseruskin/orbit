@@ -141,6 +141,24 @@ pub fn collect_vhdl_files(files: &[String], is_sim: bool) -> Vec<&String> {
     }).collect()
 }
 
+/// Checks against file patterns if the file is an rtl file.
+pub fn is_rtl(file: &str) -> bool {
+    let match_opts = glob::MatchOptions {
+        case_sensitive: false,
+        require_literal_separator: false,
+        require_literal_leading_dot: false,
+    };
+
+    let p1 = glob::Pattern::new("*.vhd").unwrap();
+    let p2 = glob::Pattern::new("*.vhdl").unwrap();
+
+    let tb1 = glob::Pattern::new("tb_*").unwrap();
+    let tb2 = glob::Pattern::new("*_tb.*").unwrap();
+
+    (p1.matches_with(file, match_opts) == true || p2.matches_with(file, match_opts) == true) && 
+        tb1.matches_with(file, match_opts) == false && tb2.matches_with(file, match_opts) == false
+}
+
 /// Recursively walks the current directory and ignores files defined in a .gitignore file.
 /// 
 /// Returns the resulting list of filepath strings. This function silently skips result errors

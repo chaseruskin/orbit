@@ -80,18 +80,20 @@ impl Plan {
         let mut g = Graph::new();
         // entity identifier, HashNode
         let mut map = HashMap::<String, HashNode>::new();
+        // store map key at the node index @TODO move into the edge data in graph
+        let mut inverse_map = Vec::<String>::new();
         // read all files
-        let mut archs = Vec::new();
-        for f in &files {
-            if f.ends_with(".vhd") == true {
-                let contents = std::fs::read_to_string(f).unwrap();
+        let mut archs: Vec<(parser::Architecture, String)> = Vec::new();
+        for source_file in &files {
+            if source_file.ends_with(".vhd") == true {
+                let contents = std::fs::read_to_string(&source_file).unwrap();
                 let symbols = parser::VHDLParser::read(&contents).into_symbols();
                 // add all entities to a graph
                 let mut iter = symbols.into_iter().filter_map(|f| {
                     match f {
                         parser::VHDLSymbol::Entity(_) => Some(f.get_iden().to_string()),
                         parser::VHDLSymbol::Architecture(arch) => {
-                            archs.push(arch);
+                            archs.push((arch, source_file.to_string()));
                             None
                         }
                         _ => None,
@@ -99,16 +101,18 @@ impl Plan {
                 });
                 while let Some(e) = iter.next() {
                     let index = g.add_node();
-                    map.insert(e.to_string(), HashNode::new(index, f.to_string()));
+                    inverse_map.push(e.to_string());
+                    map.insert(e.to_string(), HashNode::new(index, source_file.to_string()));
                 }
             }
         }
 
         // go through all architectures and make the connections
         let mut archs = archs.into_iter();
-        while let Some(arch) = archs.next() {
-            // link to the owner
-            // map.get_mut(&arch.entity().to_string()).unwrap().add_file(file)
+        while let Some((arch, file)) = archs.next() {
+            // link to the owner and add architecture's source file
+            let entity_node = map.get_mut(&arch.entity().to_string()).unwrap();
+            entity_node.add_file(file);
             // create edges
             for dep in &arch.edges() {
                 g.add_edge(map.get(dep).unwrap().index(), map.get(&arch.entity().to_string()).unwrap().index());
@@ -120,11 +124,23 @@ impl Plan {
         println!("{:?}", order);
         println!("{:?}", map);
 
-        // @TODO remove and properly include only-necessary in-order hdl files
-        let vhdl_rtl_files = crate::core::fileset::collect_vhdl_files(&files, false);
-        let vhdl_sim_files = crate::core::fileset::collect_vhdl_files(&files, true);
+        // detect the top-level
+        let top = g.find_root().expect("multiple toplevels (or zero) are possible");
+        let top_name = inverse_map[top].to_string();
+        std::env::set_var("ORBIT_TOP", &top_name);
+        std::env::set_var("ORBIT_BENCH", &top_name);
         
+        // compute minimal topological ordering
+        let min_order = g.minimal_topological_sort(top);
 
+        let mut file_order = Vec::new();
+        for i in &min_order {
+            // access the node key
+            let key = &inverse_map[*i];
+            // access the files associated with this key
+            let mut v: Vec<&String> = map.get(key).as_ref().unwrap().files.iter().collect();
+            file_order.append(&mut v);
+        }
 
         // store data in blueprint TSV format
         let mut blueprint_data = String::new();
@@ -138,12 +154,15 @@ impl Plan {
                 }
             }
         }
-        for f in vhdl_rtl_files {
-            blueprint_data += &format!("VHDL-RTL\twork\t{}\n", f);
+
+        for file in file_order {
+            if crate::core::fileset::is_rtl(&file) == true {
+                blueprint_data += &format!("VHDL-RTL\twork\t{}\n", file);
+            } else {
+                blueprint_data += &format!("VHDL-SIM\twork\t{}\n", file);
+            }
         }
-        for f in vhdl_sim_files {
-            blueprint_data += &format!("VHDL-SIM\twork\t{}\n", f);
-        }
+
         // create a output build directorie(s) if they do not exist
         if std::path::PathBuf::from(build_dir).exists() == false {
             std::fs::create_dir_all(build_dir).expect("could not create build dir");
@@ -157,7 +176,7 @@ impl Plan {
         // create environment variables to .env file
         let env_path = build_path.join(".env");
         let mut env_file = std::fs::File::create(&env_path).expect("could not create .env file");
-        let contents = format!("ORBIT_TOP={}\nORBIT_BENCH={}\n", &self.top.as_ref().unwrap_or(&String::new()), &self.bench.as_ref().unwrap_or(&String::new()));
+        let contents = format!("ORBIT_TOP={}\nORBIT_BENCH={}\n", &self.top.as_ref().unwrap_or(&top_name), &self.bench.as_ref().unwrap_or(&top_name));
         // write the data
         env_file.write_all(contents.as_bytes()).expect("failed to write data to .env file");
 

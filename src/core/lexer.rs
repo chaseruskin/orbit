@@ -9,15 +9,14 @@ pub trait Tokenize {
         where <Self as Tokenize>::Err: Display;
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token<T> {
     position: Position,
     ttype: T,
 }
 
 impl<T> Token<T> {
-    /// Reveals the token type.
-    pub fn unwrap(&self) -> &T {
+    pub fn as_type(&self) -> &T {
         &self.ttype
     }
 

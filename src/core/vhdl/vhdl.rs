@@ -74,7 +74,7 @@ impl Display for Identifier {
 }
 
 #[derive(Debug, PartialEq)]
-enum Comment {
+pub enum Comment {
     Single(String),
     Delimited(String),
 }
@@ -89,7 +89,7 @@ impl Comment {
 }
 
 #[derive(Debug, PartialEq)]
-struct Character(String);
+pub struct Character(String);
 
 impl Character {
     fn new(c: char) -> Self {
@@ -102,7 +102,7 @@ impl Character {
 }
 
 #[derive(Debug, PartialEq)]
-struct BitStrLiteral(String);
+pub struct BitStrLiteral(String);
 
 impl BitStrLiteral {
     /// Returns the reference to the inner `String` struct.
@@ -112,7 +112,7 @@ impl BitStrLiteral {
 }
 
 #[derive(Debug, PartialEq)]
-enum AbstLiteral {
+pub enum AbstLiteral {
     Decimal(String),
     Based(String),
 }
@@ -127,7 +127,7 @@ impl AbstLiteral {
 }
 
 #[derive(Debug, PartialEq)]
-enum Keyword {
+pub enum Keyword {
     Abs,            // VHDL-1987 LRM - current 
     Access,         // VHDL-1987 LRM - current
     After,          // VHDL-1987 LRM - current
@@ -503,7 +503,7 @@ impl Display for Keyword {
 }
 
 #[derive(Debug, PartialEq)]
-enum Delimiter {
+pub enum Delimiter {
     Ampersand,      // &
     SingleQuote,    // '
     ParenL,         // (
@@ -641,7 +641,7 @@ impl Display for Delimiter {
 }
 
 #[derive(Debug, PartialEq)]
-enum VHDLToken {
+pub enum VHDLToken {
     Comment(Comment),               // (String) 
     Identifier(Identifier),         // (String) ...can be general or extended (case-sensitive) identifier
     AbstLiteral(AbstLiteral),       // (String)
@@ -1290,179 +1290,81 @@ impl BaseSpec {
 #[derive(Debug, PartialEq)]
 struct VHDLElement(Result<lexer::Token<VHDLToken>, lexer::TokenError<VHDLTokenError>>);
 
-impl VHDLElement {
-    /// Checks if the element is a particular keyword `kw`.
-    fn match_keyword(&self, kw: Keyword) -> bool {
-        if self.0.is_err() { return false }
-        if let VHDLToken::Keyword(r) = self.0.as_ref().unwrap().as_ref() {
-            r == &kw
-        } else {
-            false
-        }
-    }
-
-    /// Accesses the underlying `Identifier`, if one exists.
-    fn get_identifier(&self) -> Option<&Identifier> {
-        if self.0.is_err() { return None }
-        if let VHDLToken::Identifier(id) = self.0.as_ref().unwrap().as_ref() {
-            Some(id)
-        } else {
-            None
-        }
-    }
-
-    /// Checks if the element is a particular delimiter `d`.
-    fn match_delimiter(&self, d: Delimiter) -> bool {
-        if self.0.is_err() { return false }
-        if let VHDLToken::Delimiter(r) = self.0.as_ref().unwrap().as_ref() {
-            r == &d
-        } else {
-            false
-        }
-    }
-
-    fn get_comment(&self) -> Option<&Comment> {
-        if self.0.is_err() { return None }
-        if let VHDLToken::Comment(cmt) = self.0.as_ref().unwrap().as_ref() {
-            Some(cmt)
-        } else {
-            None
-        }
-    }
-}
-
 #[derive(PartialEq)]
-struct VHDLTokenizer {
+pub struct VHDLTokenizer {
     tokens: Vec<VHDLElement>,
-}
-
-struct VHDLStatement {
-    surface: Vec<VHDLToken>,
-    nested: Box<Vec<VHDLStatement>>
-}
-
-impl VHDLStatement {
-    fn new() -> Self {
-        Self {
-            surface: Vec::new(),
-            nested: Box::new(Vec::new()),
-        }
-    }
 }
 
 impl VHDLTokenizer {
     /// Creates a new `VHDLTokenizer` struct.
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self { tokens: Vec::new(), }
     }
 
     /// Generates a `VHDLTokenizer` struct from source code `s`.
     /// 
-    /// If `skip_err` is true, it will silently omit erroneous parsing from the
+    /// @TODO If `skip_err` is true, it will silently omit erroneous parsing from the
     /// final vector and guarantee to be `Ok`.
-    fn from_source_code(s: &str) -> Self {
+    pub fn from_source_code(s: &str) -> Self {
         Self { tokens: Self::tokenize(s).into_iter().map(|f| VHDLElement(f) ).collect() }
     }
 
-    /// Finds instantiated units declared in the elements.
-    fn find_instantiations(&self) -> Vec<String> {
-        todo!()
-    }
-
-    /// Forms statements based on finding the ';' delimiter.
-    fn group_by_statements(&self) -> Vec<Vec<&lexer::Token<VHDLToken>>> {
-        let mut statements = Vec::new();
-        let mut current_stmt = Vec::new();
-        let stmt = VHDLStatement::new();
-
-        // find first ';' delimiter
-        let mut iter = self.tokens.iter();
-        while let Some(token) = iter.next() {
-            let token = token.0.as_ref().unwrap();
-            // skip comments
-            if let VHDLToken::Comment(_) = token.as_ref() {
-                continue;
-            }
-            if &VHDLToken::Delimiter(Delimiter::Terminator) == token.as_ref() {
-                statements.push(current_stmt);
-                current_stmt = Vec::new();
-            // enter a nested statement
-            } else if &VHDLToken::Keyword(Keyword::Is) == token.as_ref() {
-                
-            } else {
-                // close previous statement
-                current_stmt.push(token);   
-            }
-        }
-        statements
-    }
-
-    /// Finds all architectures
-    fn find_architectures(&self) -> Vec<(String, String)> {
-        let mut iter = self.tokens.iter().peekable();
-        let mut entities = Vec::new();
-        let mut previous_token: Option<&VHDLElement> = None;
-        while let Some(elem) = iter.next() {
-            let mut arch_name: Option<String> = None;
-            // encounter an identifier
-            if let Some(id) = elem.get_identifier() {
-                // verify the previous token was keyword 'entity'
-                if let Some(pt) = previous_token {
-                    if pt.match_keyword(Keyword::Architecture) == true {
-                        // verify the next token is keyword 'is'
-                        if let Some(nt) = iter.peek() {
-                            if nt.match_keyword(Keyword::Of) == true {
-                                // remember the architecture name
-                                iter.next();
-                                arch_name = Some(id.to_string());
-                            }
-                        }
+    /// Transforms the list of results into a list of tokens, silently skipping over
+    /// errors.
+    pub fn into_tokens(self) -> Vec<lexer::Token<VHDLToken>> {
+        self.tokens.into_iter().filter_map(|f| {
+            match f.0 {
+                Ok(t) => {
+                    // skip comments
+                    if let &VHDLToken::Comment(_) = t.as_ref() {
+                        None
+                    } else {
+                        Some(t)
                     }
                 }
+                Err(_) => None,
             }
-            if let Some(arch) = arch_name {
-                if let Some(elem) = iter.peek() {
-                    if let Some(ent_id) = elem.get_identifier() {
-                        iter.next();
-                        if let Some(nt) = iter.peek() {
-                            if nt.match_keyword(Keyword::Is) == true {
-                                entities.push((arch, ent_id.to_string()));
-                                iter.next();
-                            }
-                        }
-                    }
-                }
-            }
-            previous_token = Some(elem);
+        } ).collect()
+    }
+}
+
+impl VHDLToken {
+    /// Checks if the element is a particular keyword `kw`.
+    pub fn check_keyword(&self, kw: &Keyword) -> bool {
+        match self {
+            VHDLToken::Keyword(r) => r == kw,
+            _ => false,
         }
-        entities
     }
 
-    /// Finds all entities declared in the elements.
-    fn find_entities(&self) -> Vec<String> {
-        let mut iter = self.tokens.iter().peekable();
-        let mut entities = Vec::new();
-        let mut previous_token: Option<&VHDLElement> = None;
-        while let Some(elem) = iter.next() {
-            // encounter an identifier
-            if let Some(id) = elem.get_identifier() {
-                // verify the previous token was keyword 'entity'
-                if let Some(pt) = previous_token {
-                    if pt.match_keyword(Keyword::Entity) == true {
-                        // verify the next token is keyword 'is'
-                        if let Some(nt) = iter.peek() {
-                            if nt.match_keyword(Keyword::Is) == true {
-                                // add to the entity list
-                                entities.push(id.to_string());
-                                iter.next();
-                            }
-                        }
-                    }
-                }
-            }
-            previous_token = Some(elem);
+    pub fn is_eof(&self) -> bool {
+        match self {
+            VHDLToken::EOF => true,
+            _ => false,
         }
-        entities
+    }
+
+    /// Accesses the underlying `Identifier`, if one exists.
+    pub fn get_identifier(&self) -> Option<&Identifier> {
+        match self {
+            VHDLToken::Identifier(id) => Some(id),
+            _ => None,
+        }
+    }
+
+    /// Checks if the element is a particular delimiter `d`.
+    pub fn check_delimiter(&self, d: &Delimiter) -> bool {
+        match self {
+            VHDLToken::Delimiter(r) => r == d,
+            _ => false,
+        }
+    }
+
+    pub fn get_comment(&self) -> Option<&Comment> {
+        match self {
+            VHDLToken::Comment(r) => Some(r),
+            _ => None,
+        }
     }
 }
 
@@ -1555,7 +1457,7 @@ impl Tokenize for VHDLTokenizer {
 }
 
 #[derive(Debug, PartialEq)]
-enum VHDLTokenError {
+pub enum VHDLTokenError {
     Any(String),
     Invalid(String),
     MissingAndEmpty(char),
@@ -2250,12 +2152,6 @@ begin
 end architecture rtl; /* long comment */";
         let vhdl = VHDLTokenizer::from_source_code(&s);
         println!("{:?}", vhdl);
-        println!("{:#?}", vhdl.find_entities());
-        println!("{:#?}", vhdl.find_architectures());
-
-        for stmt in vhdl.group_by_statements() {
-            println!("{:?}", stmt)
-        }
         panic!("manually inspect token list")
     }
 }

@@ -115,7 +115,10 @@ impl Plan {
             entity_node.add_file(file);
             // create edges
             for dep in &arch.edges() {
-                g.add_edge(map.get(dep).unwrap().index(), map.get(&arch.entity().to_string()).unwrap().index());
+                // verify the dep exists
+                if let Some(node) = map.get(dep) {
+                    g.add_edge(node.index(), map.get(&arch.entity().to_string()).unwrap().index());
+                }
             }
         }
 

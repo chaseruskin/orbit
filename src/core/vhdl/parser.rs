@@ -211,6 +211,15 @@ impl std::fmt::Debug for Statement {
     }
 }
 
+impl std::fmt::Display for Statement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for t in &self.0 {
+            write!(f, "{} ", t.as_ref().to_string())?
+        }
+        Ok(())
+    }
+}
+
 struct Node {
     sym: VHDLSymbol,
     childern: Box<Vec<Node>>,
@@ -375,48 +384,56 @@ impl VHDLSymbol {
     fn parse_interface_list<I>(tokens: &mut Peekable<I>) -> Vec<Statement>
     where I: Iterator<Item=Token<VHDLToken>>  {
         // expect the opening '('
-        if tokens.next().unwrap().as_type().check_keyword(&Keyword::Is) == false {
+        if tokens.next().unwrap().as_type().check_delimiter(&Delimiter::ParenL) == false {
             panic!("expecting '(' delimiter")
         }
         // collect statements until finding the ')', END, BEGIN, or PORT.
         let mut statements = Vec::new();
         while let Some(t) = tokens.peek() {
             if t.as_type().check_delimiter(&Delimiter::ParenR) || t.as_type().check_keyword(&Keyword::End) ||
-                t.as_type().check_keyword(&Keyword::Begin) {
+                t.as_type().check_keyword(&Keyword::Begin) || t.as_type().check_keyword(&Keyword::Port) {
                     break;
             // collect statements
             } else {
                 statements.push(Self::compose_statement(tokens));
             }
         }
+        println!("{:?}", statements);
         statements
+    }
+
+    fn parse_entity_declaration<I>(tokens: &mut Peekable<I>) -> Vec<Identifier>
+        where I: Iterator<Item=Token<VHDLToken>> {
+        todo!()
     }
 
     /// Consumes tokens after `IS` until finding `BEGIN` or `END`.
     /// 
     /// Assumes the next token to consume is `IS` and throws it away.
     fn parse_primary_declaration<I>(tokens: &mut Peekable<I>) -> Vec<Identifier>
-        where I: Iterator<Item=Token<VHDLToken>>  {
+        where I: Iterator<Item=Token<VHDLToken>> {
         println!("*--- declaration section");
         // force taking the 'is' keyword
         if tokens.next().unwrap().as_type().check_keyword(&Keyword::Is) == false {
             panic!("expecting 'is' keyword")
         }
         while let Some(t) = tokens.peek() {
+            // stop the declaration section and enter a statement section
             if t.as_type().check_keyword(&Keyword::Begin) {
                 tokens.next();
                 return Self::parse_body(tokens, &Self::is_closer);
-                // break;
+            // the declaration is over and there is no statement section
             } else if t.as_type().check_keyword(&Keyword::End) {
                 let stmt = Self::compose_statement(tokens);
                 println!("{:?}", stmt);
                 if Self::is_closer(&stmt) { 
                     break; 
                 }
-            // find component names (could be in package)
+            // find component names (could be in package or architecture declaration)
             } else if t.as_type().check_keyword(&Keyword::Component) {
                 let comp_name = Self::parse_component(tokens);
                 println!("**** INFO: Found component: \"{}\"", comp_name);
+            // find a nested package
             } else if t.as_type().check_keyword(&Keyword::Package) {
                 tokens.next();
                 let pack_name = Self::parse_entity(tokens);
@@ -571,19 +588,51 @@ mod test {
     use super::*;
 
     #[test]
-    fn parse_ports() {
+    fn parse_ports_both() {
         let s = "\
-nor_gate is 
-generic( N: positive );
+generic ( N: positive );
 port(
     a: in  std_logic_vector(N-1 downto 0);
     b: in  std_logic_vector(N-1 downto 0);
     c: out std_logic_vector(N-1 downto 0)
 );
-end entity nor_gate;";
+end;";
         let mut tokens = VHDLTokenizer::from_source_code(&s).into_tokens().into_iter().peekable();
-        let entity = VHDLSymbol::parse_entity(&mut tokens);
-        todo!()
+        tokens.next(); // take GENERIC
+        let generics = VHDLSymbol::parse_interface_list(&mut tokens);
+        // convert to strings for easier verification
+        let generics: Vec<String> = generics.into_iter().map(|m| m.to_string()).collect();
+        assert_eq!(generics, vec![
+            "N : positive ) ",
+        ]);
+        // take PORT
+        tokens.next();
+        let ports = VHDLSymbol::parse_interface_list(&mut tokens);
+         // convert to strings for easier verification
+        let ports: Vec<String> = ports.into_iter().map(|m| m.to_string()).collect();
+        assert_eq!(ports, vec![
+            "a : in std_logic_vector ( N - 1 downto 0 ) ",
+            "b : in std_logic_vector ( N - 1 downto 0 ) ",
+            "c : out std_logic_vector ( N - 1 downto 0 ) ) ",
+        ]);
+        assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::End));
+    }
+
+    #[test]
+    fn parse_generics_only() {
+        let s = "\
+generic ( N: positive );
+begin
+end;";
+        let mut tokens = VHDLTokenizer::from_source_code(&s).into_tokens().into_iter().peekable();
+        tokens.next(); // take GENERIC
+        let generics = VHDLSymbol::parse_interface_list(&mut tokens);
+        // convert to strings for easier verification
+        let generics: Vec<String> = generics.into_iter().map(|m| m.to_string()).collect();
+        assert_eq!(generics, vec![
+            "N : positive ) ",
+        ]);
+        assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::Begin));
     }
 
     #[test]

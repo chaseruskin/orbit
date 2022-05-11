@@ -112,7 +112,20 @@ pub struct Configuration {
 #[derive(Debug, PartialEq)]
 pub struct Entity {
     name: Identifier,
+    ports: Vec<Statement>,
+    generics: Vec<Statement>,
     architectures: Vec<Architecture>,
+}
+
+impl Entity {
+    fn new() -> Self {
+        Self { 
+            name: Identifier::new(),
+            ports: Vec::new(), 
+            generics: Vec::new(), 
+            architectures: Vec::new(),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -137,7 +150,7 @@ impl Parse<VHDLToken> for VHDLParser {
             if t.as_ref().check_keyword(&Keyword::Entity) {
                 let name = VHDLSymbol::parse_entity(&mut tokens);
                 println!("!!!! INFO: detected primary design unit entity \"{}\"", name);
-                symbols.push(Ok(Symbol::new(VHDLSymbol::Entity(Entity { name: name, architectures: Vec::new() }))));
+                symbols.push(Ok(Symbol::new(VHDLSymbol::Entity(Entity { name: name, architectures: Vec::new(), ports: Vec::new(), generics: Vec::new() }))));
             // create architecture symbol
             } else if t.as_ref().check_keyword(&Keyword::Architecture) {
                 let arch = VHDLSymbol::parse_architecture(&mut tokens);
@@ -357,6 +370,28 @@ impl VHDLSymbol {
         vec![]
     }
 
+    /// Returns a list of interface items as `Statements`. Assumes the last token
+    /// consumed was either GENERIC or PORT keywords and stops at the closing ')'.
+    fn parse_interface_list<I>(tokens: &mut Peekable<I>) -> Vec<Statement>
+    where I: Iterator<Item=Token<VHDLToken>>  {
+        // expect the opening '('
+        if tokens.next().unwrap().as_type().check_keyword(&Keyword::Is) == false {
+            panic!("expecting '(' delimiter")
+        }
+        // collect statements until finding the ')', END, BEGIN, or PORT.
+        let mut statements = Vec::new();
+        while let Some(t) = tokens.peek() {
+            if t.as_type().check_delimiter(&Delimiter::ParenR) || t.as_type().check_keyword(&Keyword::End) ||
+                t.as_type().check_keyword(&Keyword::Begin) {
+                    break;
+            // collect statements
+            } else {
+                statements.push(Self::compose_statement(tokens));
+            }
+        }
+        statements
+    }
+
     /// Consumes tokens after `IS` until finding `BEGIN` or `END`.
     /// 
     /// Assumes the next token to consume is `IS` and throws it away.
@@ -534,6 +569,22 @@ impl VHDLSymbol {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn parse_ports() {
+        let s = "\
+nor_gate is 
+generic( N: positive );
+port(
+    a: in  std_logic_vector(N-1 downto 0);
+    b: in  std_logic_vector(N-1 downto 0);
+    c: out std_logic_vector(N-1 downto 0)
+);
+end entity nor_gate;";
+        let mut tokens = VHDLTokenizer::from_source_code(&s).into_tokens().into_iter().peekable();
+        let entity = VHDLSymbol::parse_entity(&mut tokens);
+        todo!()
+    }
 
     #[test]
     fn parse_component() {

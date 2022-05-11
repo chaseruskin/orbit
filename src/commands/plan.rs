@@ -137,6 +137,8 @@ impl Plan {
             g.find_root().expect("multiple toplevels (or zero) are possible")
         };
 
+        // @TODO detect if there is a single existing testbench for the top
+
         let top_name = inverse_map[top].to_string();
 
         std::env::set_var("ORBIT_TOP", &top_name);

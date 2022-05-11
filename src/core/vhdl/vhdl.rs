@@ -29,6 +29,10 @@ pub enum Identifier {
 impl std::cmp::Eq for Identifier {}
 
 impl Identifier {
+    pub fn new() -> Self {
+        Self::Basic(String::new())
+    }
+
     // Returns the reference to the inner `String` struct.
     fn as_str(&self) -> &str {
         match self {

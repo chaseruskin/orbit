@@ -379,8 +379,10 @@ impl VHDLSymbol {
         vec![]
     }
 
-    /// Returns a list of interface items as `Statements`. Assumes the last token
-    /// consumed was either GENERIC or PORT keywords and stops at the closing ')'.
+    /// Returns a list of interface items as `Statements`. 
+    /// 
+    /// Assumes the last token consumed was either GENERIC or PORT keywords and
+    /// stops at the last statement in the respective list.
     fn parse_interface_list<I>(tokens: &mut Peekable<I>) -> Vec<Statement>
     where I: Iterator<Item=Token<VHDLToken>>  {
         // expect the opening '('
@@ -388,16 +390,27 @@ impl VHDLSymbol {
             panic!("expecting '(' delimiter")
         }
         // collect statements until finding the ')', END, BEGIN, or PORT.
-        let mut statements = Vec::new();
+        let mut statements: Vec<Statement> = Vec::new();
         while let Some(t) = tokens.peek() {
             if t.as_type().check_delimiter(&Delimiter::ParenR) || t.as_type().check_keyword(&Keyword::End) ||
                 t.as_type().check_keyword(&Keyword::Begin) || t.as_type().check_keyword(&Keyword::Port) {
+                    // if the statement did not close on finding PARENR, remove it from last statement
+                    if t.as_type().check_delimiter(&Delimiter::ParenR) == false {
+                        let index = statements.len()-1;
+                        let last_statement = statements.get_mut(index).unwrap();
+                        let r = last_statement.0.pop().expect("expecting closing ')'");
+                        if r.as_type().check_delimiter(&Delimiter::ParenR) == false {
+                            panic!("expecting closing ')' but got {}", r.as_type())
+                        }
+                        // count PARENL and PARENR to make sure they are balanced
+                    }
                     break;
             // collect statements
             } else {
                 statements.push(Self::compose_statement(tokens));
             }
         }
+        
         println!("{:?}", statements);
         statements
     }
@@ -494,7 +507,7 @@ impl VHDLSymbol {
         }
     }
 
-    /// Parses a component, consumeing the tokens `COMPONENT` until the end.
+    /// Parses a component declaration, consuming the tokens `COMPONENT` until the end.
     /// 
     /// Assumes the first token to consume is `COMPONENT`.
     fn parse_component<I>(tokens: &mut Peekable<I>) -> Identifier
@@ -514,7 +527,17 @@ impl VHDLSymbol {
             if t.as_type().check_keyword(&Keyword::End) {
                 let stmt = Self::compose_statement(tokens);
                 println!("{:?}", stmt);
-                break; 
+                break;
+            // collect generic statements
+            } else if t.as_type().check_keyword(&Keyword::Generic) {
+                // take the GENERIC token
+                tokens.next();
+                let generics = Self::parse_interface_list(tokens);
+            // collect ports
+            } else if t.as_type().check_keyword(&Keyword::Port) {
+                // take the PORT token
+                tokens.next();
+                let ports = Self::parse_interface_list(tokens);
             } else {
                 let stmt = Self::compose_statement(tokens);
                 println!("{:?}", stmt);
@@ -603,7 +626,7 @@ end;";
         // convert to strings for easier verification
         let generics: Vec<String> = generics.into_iter().map(|m| m.to_string()).collect();
         assert_eq!(generics, vec![
-            "N : positive ) ",
+            "N : positive ",
         ]);
         // take PORT
         tokens.next();
@@ -613,7 +636,7 @@ end;";
         assert_eq!(ports, vec![
             "a : in std_logic_vector ( N - 1 downto 0 ) ",
             "b : in std_logic_vector ( N - 1 downto 0 ) ",
-            "c : out std_logic_vector ( N - 1 downto 0 ) ) ",
+            "c : out std_logic_vector ( N - 1 downto 0 ) ",
         ]);
         assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::End));
     }
@@ -630,7 +653,7 @@ end;";
         // convert to strings for easier verification
         let generics: Vec<String> = generics.into_iter().map(|m| m.to_string()).collect();
         assert_eq!(generics, vec![
-            "N : positive ) ",
+            "N : positive ",
         ]);
         assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::Begin));
     }

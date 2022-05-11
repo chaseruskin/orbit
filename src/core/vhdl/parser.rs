@@ -249,16 +249,43 @@ impl VHDLSymbol {
         }
     }
 
-    fn parse_package<I>(tokens: &mut Peekable<I>) -> VHDLSymbol 
+    /// Parses a package declaration, from the <package> IS to the END keyword.
+    /// 
+    /// Assumes the last consumed token was PACKAGE keyword and the next token
+    /// is the identifier for the package name.
+    fn parse_package_declaration<I>(tokens: &mut Peekable<I>) -> VHDLSymbol 
     where I: Iterator<Item=Token<VHDLToken>>  {
-        // take entity name
+        // take package name
         let pack_name = tokens.next().take().unwrap().take();
+        // take the IS keyword
+        if tokens.next().take().unwrap().as_type().check_keyword(&Keyword::Is) == false {
+            panic!("expecting keyword IS")
+        }
+        // @TODO check if there is a generic clause
+
+        // compose the declarative items
+        while let Some(t) = tokens.peek() {
+            // @TODO check for package declarations
+
+            // grab component declarations
+            if t.as_type().check_keyword(&Keyword::Component) {
+                let comp = Self::parse_component(tokens);
+                println!("component declared: {}", comp);
+            }
+        }
+
         println!("*--- unit {}", pack_name);
         VHDLSymbol::parse_primary_declaration(tokens);
         VHDLSymbol::Package(match pack_name {
             VHDLToken::Identifier(id) => id,
             _ => panic!("expected an identifier")
         })
+    }
+
+    fn compose_name<I>(tokens: &mut Peekable<I>) -> Vec<Identifier> 
+    where I: Iterator<Item=Token<VHDLToken>>  {
+
+        todo!()
     }
 
     fn parse_package_body<I>(tokens: &mut Peekable<I>) -> Identifier 

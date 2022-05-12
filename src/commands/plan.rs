@@ -71,6 +71,8 @@ impl HashNode {
     }
 }
 
+use crate::core::vhdl::vhdl::Identifier;
+
 impl Plan {
     fn run(&self, build_dir: &str) -> () {
         let mut build_path = std::env::current_dir().unwrap();
@@ -80,9 +82,9 @@ impl Plan {
 
         let mut g = Graph::new();
         // entity identifier, HashNode
-        let mut map = HashMap::<String, HashNode>::new();
+        let mut map = HashMap::<Identifier, HashNode>::new();
         // store map key at the node index @TODO move into the edge data in graph
-        let mut inverse_map = Vec::<String>::new();
+        let mut inverse_map = Vec::<Identifier>::new();
         // read all files
         let mut archs: Vec<(parser::Architecture, String)> = Vec::new();
         for source_file in &files {
@@ -92,7 +94,7 @@ impl Plan {
                 // add all entities to a graph
                 let mut iter = symbols.into_iter().filter_map(|f| {
                     match f {
-                        parser::VHDLSymbol::Entity(_) => Some(f.get_iden().to_string()),
+                        parser::VHDLSymbol::Entity(_) => Some(f.get_iden().clone()),
                         parser::VHDLSymbol::Architecture(arch) => {
                             archs.push((arch, source_file.to_string()));
                             None
@@ -102,8 +104,8 @@ impl Plan {
                 });
                 while let Some(e) = iter.next() {
                     let index = g.add_node();
-                    inverse_map.push(e.to_string());
-                    map.insert(e.to_string(), HashNode::new(index, source_file.to_string()));
+                    inverse_map.push(e.clone());
+                    map.insert(e.clone(), HashNode::new(index, source_file.to_string()));
                 }
             }
         }
@@ -112,13 +114,13 @@ impl Plan {
         let mut archs = archs.into_iter();
         while let Some((arch, file)) = archs.next() {
             // link to the owner and add architecture's source file
-            let entity_node = map.get_mut(&arch.entity().to_string()).unwrap();
+            let entity_node = map.get_mut(&arch.entity()).unwrap();
             entity_node.add_file(file);
             // create edges
-            for dep in &arch.edges() {
+            for dep in arch.edges() {
                 // verify the dep exists
                 if let Some(node) = map.get(dep) {
-                    g.add_edge(node.index(), map.get(&arch.entity().to_string()).unwrap().index());
+                    g.add_edge(node.index(), map.get(arch.entity()).unwrap().index());
                 }
             }
         }
@@ -130,7 +132,7 @@ impl Plan {
 
         // detect the top-level
         let top = if let Some(t) = &self.top {
-            match map.get(t) {
+            match map.get(&Identifier::Basic(t.clone())) {
                 Some(node) => node.index(),
                 None => panic!("no entity named {}", t)
             }

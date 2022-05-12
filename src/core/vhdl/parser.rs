@@ -89,6 +89,18 @@ impl std::fmt::Display for VHDLSymbol {
 #[derive(Debug, PartialEq)]
 struct SelectedName(Vec<Identifier>);
 
+impl SelectedName {
+
+    /// Returns the final identifier in the chain.
+    fn get_suffix(&self) -> &Identifier {
+        self.0.last().unwrap()
+    }
+
+    fn take_suffix(mut self) -> Identifier {
+        self.0.pop().unwrap()
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum ContextClause {
     LibraryClause,
@@ -117,12 +129,8 @@ impl Architecture {
         &self.owner
     }
 
-    pub fn edges(&self) -> Vec<String> {
-        let mut edges = Vec::new();
-        for dep in &self.dependencies {
-            edges.push(dep.to_string());
-        }
-        edges
+    pub fn edges(&self) -> &Vec<Identifier> {
+        &self.dependencies
     }
 }
 
@@ -393,20 +401,27 @@ impl VHDLSymbol {
     }
 
     /// Detects identifiers instantiated in the architecture statement sections.
-    /// Assumes the next token to consume is the COLON ':' delimiter.
+    /// 
+    /// Assumes the next token to consume is instance name of the instantiation and
+    /// the token to follow is the COLON ':' delimiter.
     fn parse_instantiation(statement: Statement) -> Option<Identifier> {
-        let mut tokens = statement.0.into_iter();
-        // force identifier
+        let mut tokens = statement.0.into_iter().peekable();
+        // force identifier (instance name)
         tokens.next()?.take().get_identifier()?;
         // force colon
         if tokens.next()?.take().check_delimiter(&Delimiter::Colon) == false { return None };
         // check what is instantiated
-        match tokens.next()?.take() {
-            VHDLToken::Identifier(id) => Some(id),
+        match tokens.peek()?.as_type() {
+            VHDLToken::Identifier(_) => {
+                Some(Self::compose_name(&mut tokens).take_suffix())
+            }
             VHDLToken::Keyword(kw) => {
-                if kw == Keyword::Component || kw == Keyword::Entity || kw == Keyword::Configuration {
-                    match tokens.next()?.take() {
-                        VHDLToken::Identifier(id) => Some(id),
+                if kw == &Keyword::Component || kw == &Keyword::Entity || kw == &Keyword::Configuration {
+                    tokens.next();
+                    match tokens.peek()?.as_type() {
+                        VHDLToken::Identifier(_) => {
+                            Some(Self::compose_name(&mut tokens).take_suffix())
+                        },
                         _ => None,
                     }
                 } else {

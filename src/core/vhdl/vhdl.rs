@@ -20,10 +20,22 @@ fn interpret_integer(s: &str) -> usize {
     number.parse::<usize>().expect("integer can only contain 0..=9 or underline '_'")
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Identifier {
     Basic(String),
     Extended(String),
+}
+
+use std::hash::Hasher;
+use std::hash::Hash;
+
+impl Hash for Identifier {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            Self::Basic(id) => { id.to_lowercase().hash(state) },
+            Self::Extended(id) => { id.hash(state) }
+        }
+    }
 }
 
 impl std::cmp::Eq for Identifier {}

@@ -48,11 +48,15 @@ impl<T: Display> Display for SymbolError<T> {
 
 #[derive(Debug, PartialEq)]
 pub enum VHDLSymbol {
+    ContextClause(ContextClause),
+    // primary units
     Entity(Entity),
-    /// name, entity
-    Architecture(Architecture),
     Package(Identifier),
     Configuration(Configuration),
+    // @TODO context clause
+    // secondary units
+    Architecture(Architecture),
+    PackageBody,
 }
 
 impl VHDLSymbol {
@@ -61,7 +65,9 @@ impl VHDLSymbol {
             Self::Entity(e) => &e.name,
             Self::Architecture(a) => &a.name,
             Self::Package(p) => &p,
+            Self::PackageBody => panic!("package body has no identifier"),
             Self::Configuration(c) => &c.name,
+            Self::ContextClause(_) => panic!("context clause has no id")
         }
     }
 }
@@ -70,12 +76,29 @@ impl std::fmt::Display for VHDLSymbol {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
             Self::Entity(e) => format!("entity {}", &e.name),
+            Self::PackageBody => format!("package body!"),
             Self::Architecture(a) => format!("architecture {} for entity {}", &a.name, &a.owner),
             Self::Package(p) => format!("package {}", &p),
             Self::Configuration(c) => format!("configuration {} for entity {}", &c.name, &c.owner),
+            Self::ContextClause(_) => format!("context clause"),
         };
         write!(f, "{}", s)
     }
+}
+
+#[derive(Debug, PartialEq)]
+struct SelectedName(Vec<Identifier>);
+
+#[derive(Debug, PartialEq)]
+pub enum ContextClause {
+    LibraryClause,
+    UseClause(UseClause),
+    // @TODO Context_reference
+}
+
+#[derive(Debug, PartialEq)]
+pub struct UseClause {
+    imports: Vec<SelectedName>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -181,7 +204,6 @@ impl Parse<VHDLToken> for VHDLParser {
 }
 
 impl VHDLParser {
-
     pub fn read(s: &str) -> Self {
         let symbols = VHDLParser::parse(VHDLTokenizer::from_source_code(&s).into_tokens());
         Self {
@@ -282,10 +304,39 @@ impl VHDLSymbol {
         })
     }
 
-    fn compose_name<I>(tokens: &mut Peekable<I>) -> Vec<Identifier> 
+    /// Collects identifiers into a single vector, stopping at a non-identifier token.
+    /// 
+    /// Assumes the first token to consume is an identifier, and continues to collect
+    /// if the next token is a DOT delimiter.
+    fn compose_name<I>(tokens: &mut Peekable<I>) -> SelectedName
     where I: Iterator<Item=Token<VHDLToken>>  {
+        let mut selected_name = Vec::new();
+        // take first token as identifier
+        let tk_id = tokens.next().expect("expecting name after '.'");
+        if let Some(id) = tk_id.take().take_identifier() {
+            selected_name.push(id);
+        }
+        while let Some(t) = tokens.peek() {
+            // consume DOT and expect next identifier
+            if t.as_type().check_delimiter(&Delimiter::Dot) {
+                // consume DOT
+                tokens.next();
+                // expect identifier or bail
+                let tk_id = tokens.next().expect("expecting name after '.'");
 
-        todo!()
+                if tk_id.as_type().check_keyword(&Keyword::All) {
+                    // @TODO remember in `name` struct that all was used.
+                    break;
+                } else if let Some(id) = tk_id.take().take_identifier() {
+                    selected_name.push(id);
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+        SelectedName(selected_name)
     }
 
     fn parse_package_body<I>(tokens: &mut Peekable<I>) -> Identifier 
@@ -343,8 +394,28 @@ impl VHDLSymbol {
         })
     }
 
+    /// Consumes tokens after the USE keyword.
+    /// 
+    /// Assumes the last token consumed was USE and composes a statement of imports.
+    fn parse_use_clause<I>(tokens: &mut Peekable<I>) -> UseClause 
+        where I: Iterator<Item=Token<VHDLToken>> {
+        // collect first selected_name
+        let mut imports = Vec::new();
+        imports.push(Self::compose_name(tokens));
+        while let Some(t) = tokens.next() {
+            // take the comma, then next selected name
+            if t.as_type().check_delimiter(&Delimiter::Comma) {
+                imports.push(Self::compose_name(tokens));
+            }
+            if t.as_type().check_delimiter(&Delimiter::Terminator) {
+                break;
+            }
+        }
+        UseClause { imports: imports }
+    }
+
     fn parse_architecture<I>(tokens: &mut Peekable<I>) -> VHDLSymbol 
-        where I: Iterator<Item=Token<VHDLToken>>  {
+        where I: Iterator<Item=Token<VHDLToken>> {
         let arch_name = match tokens.next().take().unwrap().take() {
             VHDLToken::Identifier(id) => id,
             _ => panic!("expected an identifier")
@@ -632,10 +703,54 @@ impl VHDLSymbol {
     }
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn parse_use_clause() {
+        let s = "use eel4712c.pkg1, eel4712c.pkg2; entity";
+        let mut tokens = VHDLTokenizer::from_source_code(&s).into_tokens().into_iter().peekable();
+        // take USE
+        tokens.next();
+        let using_imports = VHDLSymbol::parse_use_clause(&mut tokens);
+        assert_eq!(using_imports, UseClause { 
+            imports: vec![
+                SelectedName(vec![
+                    Identifier::Basic("eel4712c".to_owned()),
+                    Identifier::Basic("pkg1".to_owned()),
+                ]),
+                SelectedName(vec![
+                    Identifier::Basic("eel4712c".to_owned()),
+                    Identifier::Basic("pkg2".to_owned()),
+                ]),
+        ]});
+        assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::Entity));
+    }
+
+    #[test]
+    fn parse_simple_name() {
+        let s = "eel4712c.nor_gate port";
+        let mut tokens = VHDLTokenizer::from_source_code(&s).into_tokens().into_iter().peekable();
+        let sel_name = VHDLSymbol::compose_name(&mut tokens);
+        assert_eq!(sel_name, SelectedName(vec![
+            Identifier::Basic("eel4712c".to_owned()),
+            Identifier::Basic("nor_gate".to_owned()),
+        ]));
+        assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::Port));
+    }
+
+    #[test]
+    fn parse_simple_name_with_all() {
+        // @TODO signify within a 'name' struct that the all keyword was used
+        let s = "eel4712c.all +";
+        let mut tokens = VHDLTokenizer::from_source_code(&s).into_tokens().into_iter().peekable();
+        let sel_name = VHDLSymbol::compose_name(&mut tokens);
+        assert_eq!(sel_name, SelectedName(vec![
+            Identifier::Basic("eel4712c".to_owned()),
+        ]));
+        assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Delimiter(Delimiter::Plus));
+    }
 
     #[test]
     fn parse_ports_both() {

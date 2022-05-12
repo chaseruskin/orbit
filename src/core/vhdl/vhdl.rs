@@ -674,6 +674,14 @@ impl Display for VHDLToken {
 }
 
 impl VHDLToken {
+    /// Takes the identifier from the token.
+    pub fn take_identifier(self) -> Option<Identifier> {
+        match self {
+            Self::Identifier(i) => Some(i),
+            _ => None,
+        }
+    }
+
     /// Checks if the current token type `self` is a delimiter.
     fn is_delimiter(&self) -> bool {
         match self {

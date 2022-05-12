@@ -151,6 +151,21 @@ impl Entity {
     }
 }
 
+/* 
+    @NOTE In order to detect if a package was used, the best bet is to just 
+    iterate through the the tokens and collect all simple names, i.e. 
+    library.name.name. , then try check against the data structure if the name 
+    matches anywhere. If so, then it is considered a reference and is needed in 
+    that design.
+*/
+
+/* 
+    @NOTE To check instantiations, check for all identifiers against the
+    list of known public identifiers from external API.
+
+    Example: given a ip with public primary design units: adder, adder_pkg
+*/
+
 #[derive(Debug, PartialEq)]
 pub struct VHDLParser {
     symbols: Vec<Symbol<VHDLSymbol>>,
@@ -287,17 +302,33 @@ impl VHDLSymbol {
 
         // compose the declarative items
         while let Some(t) = tokens.peek() {
-            // @TODO check for package declarations
-
+            // check for nested package declarations
+            if t.as_type().check_keyword(&Keyword::Package) {
+                // consume PACKAGE keyword
+                tokens.next();
+                // parse nested package declaration
+                Self::parse_package_declaration(tokens);
+                // @TODO store nested packages
             // grab component declarations
-            if t.as_type().check_keyword(&Keyword::Component) {
+            } else if t.as_type().check_keyword(&Keyword::Component) {
                 let comp = Self::parse_component(tokens);
                 println!("component declared: {}", comp);
+            // grab USE clause
+            } else if t.as_type().check_keyword(&Keyword::Use) {
+                // consume USE keyword
+                tokens.next();
+                Self::parse_use_clause(tokens);
+                // @TODO store use clauses to check if an external api was called
+            } else if t.as_type().check_keyword(&Keyword::End) {
+                Self::compose_statement(tokens);
+                break;
+            } else {
+                Self::compose_statement(tokens);
             }
         }
 
         println!("*--- unit {}", pack_name);
-        VHDLSymbol::parse_primary_declaration(tokens);
+        // VHDLSymbol::parse_primary_declaration(tokens);
         VHDLSymbol::Package(match pack_name {
             VHDLToken::Identifier(id) => id,
             _ => panic!("expected an identifier")
@@ -339,6 +370,10 @@ impl VHDLSymbol {
         SelectedName(selected_name)
     }
 
+    /// Parses a package body, taking BODY keyword up until the END keyword.
+    /// 
+    /// Package declarations within this scope can be ignored because their visibility
+    /// is not reached outside of the body.
     fn parse_package_body<I>(tokens: &mut Peekable<I>) -> Identifier 
     where I: Iterator<Item=Token<VHDLToken>>  {
         // take the 'body' keyword
@@ -346,8 +381,10 @@ impl VHDLSymbol {
         // take package name
         let pack_name = tokens.next().take().unwrap().take();
         println!("*--- package {}", pack_name);
-        // take 'is' keyword
-        tokens.next();
+        // take the IS keyword
+        if tokens.next().take().unwrap().as_type().check_keyword(&Keyword::Is) == false {
+            panic!("expecting keyword IS")
+        }
         VHDLSymbol::parse_body(tokens, &Self::is_subprogram);
         match pack_name {
             VHDLToken::Identifier(id) => id,
@@ -649,11 +686,11 @@ impl VHDLSymbol {
 
     fn route_package_parse<I>(tokens: &mut Peekable<I>) -> VHDLSymbol
     where I: Iterator<Item=Token<VHDLToken>> {
-        VHDLSymbol::Package(if &VHDLToken::Keyword(Keyword::Body) == tokens.peek().unwrap().as_type() {
-            VHDLSymbol::parse_package_body(tokens)
+        if &VHDLToken::Keyword(Keyword::Body) == tokens.peek().unwrap().as_type() {
+            VHDLSymbol::Package(VHDLSymbol::parse_package_body(tokens))
         } else {
-            VHDLSymbol::parse_entity(tokens)
-        })
+            VHDLSymbol::parse_package_declaration(tokens)
+        }
     }
 
     /// Parses a body, consuming tokens from `BEGIN` until `END`.

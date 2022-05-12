@@ -43,12 +43,11 @@ impl Command for Plan {
 use crate::core::vhdl::parser;
 use crate::util::graph::Graph;
 use std::collections::HashMap;
-use std::collections::HashSet;
 
 #[derive(Debug, PartialEq)]
 struct HashNode {
     index: usize,
-    files: HashSet<String>,
+    files: Vec<String>,
 }
 
 impl HashNode {
@@ -57,8 +56,8 @@ impl HashNode {
     }
     
     fn new(index: usize, file: String) -> Self {
-        let mut set = HashSet::new();
-        set.insert(file);
+        let mut set = Vec::new();
+        set.push(file);
         Self {
             index: index,
             files: set,
@@ -66,7 +65,9 @@ impl HashNode {
     }
 
     fn add_file(&mut self, file: String) {
-        self.files.insert(file);
+        if self.files.contains(&file) == false {
+            self.files.push(file);
+        }
     }
 }
 

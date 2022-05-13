@@ -393,7 +393,7 @@ impl VHDLSymbol {
         if tokens.next().take().unwrap().as_type().check_keyword(&Keyword::Is) == false {
             panic!("expecting keyword IS")
         }
-        VHDLSymbol::parse_body(tokens, &Self::is_subprogram);
+        VHDLSymbol::parse_body(tokens, &Self::is_primary_ending);
         match pack_name {
             VHDLToken::Identifier(id) => id,
             _ => panic!("expected an identifier")
@@ -584,12 +584,12 @@ impl VHDLSymbol {
             // stop the declaration section and enter a statement section
             if t.as_type().check_keyword(&Keyword::Begin) {
                 tokens.next();
-                return Self::parse_body(tokens, &Self::is_closer);
+                return Self::parse_body(tokens, &Self::is_primary_ending);
             // the declaration is over and there is no statement section
             } else if t.as_type().check_keyword(&Keyword::End) {
                 let stmt = Self::compose_statement(tokens);
                 println!("{:?}", stmt);
-                if Self::is_closer(&stmt) { 
+                if Self::is_primary_ending(&stmt) { 
                     break; 
                 }
             // find component names (could be in package or architecture declaration)
@@ -610,33 +610,18 @@ impl VHDLSymbol {
         Vec::new()
     }
 
-    fn is_closer(stmt: &Statement) -> bool {
+    /// Checks if the statement is a valid primary unit END statement.
+    /// 
+    /// Rejects inferior END statements that require an explicit keyword to following
+    /// the END keyword. Primary END statements follow: `END [keyword] [identifier];`.
+    fn is_primary_ending(stmt: &Statement) -> bool {
         let keyword = if let Some(t) = stmt.0.get(1) {
             t.as_type()
         } else {
             return true // @TODO make sure "end;" will end up being valid
         };
         match keyword {
-            // list mandatory keywords expected after the 'end' keyword
-            VHDLToken::Keyword(kw) => match kw {
-                Keyword::Loop | Keyword::Generate | Keyword::Process |
-                Keyword::Postponed | Keyword::If | Keyword::Block | 
-                Keyword::Protected | Keyword::Record | Keyword::Case | 
-                Keyword::Component | Keyword::For => false,
-                _ => true,
-            },
-            _ => true,
-        }
-    }
-
-    fn is_subprogram(stmt: &Statement) -> bool {
-        let keyword = if let Some(t) = stmt.0.get(1) {
-            t.as_type()
-        } else {
-            return true // @TODO make sure "end;" will end up being valid
-        };
-        match keyword {
-            // list mandatory keywords expected after the 'end' keyword
+            // list mandatory keywords expected after the 'end' keyword for non-primary endings
             VHDLToken::Keyword(kw) => match kw {
                 Keyword::Loop | Keyword::Generate | Keyword::Process |
                 Keyword::Postponed | Keyword::If | Keyword::Block | 
@@ -729,7 +714,7 @@ impl VHDLSymbol {
             } else if t.as_type().check_keyword(&Keyword::Function) || t.as_type().check_keyword(&Keyword::Begin) {
                 let stmt = Self::compose_statement(tokens);
                 println!("ENTERING SUBPROGRAM {:?}", stmt);
-                Self::parse_body(tokens, &Self::is_subprogram);
+                Self::parse_body(tokens, &Self::is_primary_ending);
                 println!("EXITING SUBPROGRAM");
             // find component names (could be in package)
             } else if t.as_type().check_keyword(&Keyword::Component) {
@@ -891,6 +876,40 @@ signal ready: std_logic;";
         let comp = VHDLSymbol::parse_component(&mut tokens);
         assert_eq!(comp.to_string(), "nor_gate");
         assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::Signal));
+    }
+
+    use crate::core::lexer::Position;
+
+    #[test]
+    fn is_primary_ending() {
+        // 'case' is not a primary ending
+        let stmt = Statement(vec![
+            Token::new(VHDLToken::Keyword(Keyword::End), Position::new()),
+            Token::new(VHDLToken::Keyword(Keyword::Case), Position::new()),
+            Token::new(VHDLToken::Identifier(Identifier::Basic("case_label".to_owned())), Position::new()),
+        ]);
+        assert_eq!(VHDLSymbol::is_primary_ending(&stmt), false);
+
+        // primary endings can omit keyword and identifier label
+        let stmt = Statement(vec![
+            Token::new(VHDLToken::Keyword(Keyword::End), Position::new()),
+        ]);
+        assert_eq!(VHDLSymbol::is_primary_ending(&stmt), true);
+
+        // primary endings can include their keyword
+        let stmt = Statement(vec![
+            Token::new(VHDLToken::Keyword(Keyword::End), Position::new()),
+            Token::new(VHDLToken::Keyword(Keyword::Architecture), Position::new()),
+            Token::new(VHDLToken::Identifier(Identifier::Basic("architecture_name".to_owned())), Position::new()),
+        ]);
+        assert_eq!(VHDLSymbol::is_primary_ending(&stmt), true);
+
+        // primary endings can have their keyword omitted and also include the identifier label
+        let stmt = Statement(vec![
+            Token::new(VHDLToken::Keyword(Keyword::End), Position::new()),
+            Token::new(VHDLToken::Identifier(Identifier::Basic("architecture_name".to_owned())), Position::new()),
+        ]);
+        assert_eq!(VHDLSymbol::is_primary_ending(&stmt), true);
     }
 
     #[test]

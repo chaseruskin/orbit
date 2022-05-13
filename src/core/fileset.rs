@@ -164,7 +164,7 @@ pub fn is_rtl(file: &str) -> bool {
 /// Returns the resulting list of filepath strings. This function silently skips result errors
 /// while walking.
 pub fn gather_current_files() -> Vec<String> {
-    Walk::new(std::env::current_dir().unwrap()).filter_map(|result| {
+    let mut files: Vec<String> = Walk::new(std::env::current_dir().unwrap()).filter_map(|result| {
         match result {
             Ok(entry) => {
                 if entry.path().is_file() {
@@ -175,7 +175,10 @@ pub fn gather_current_files() -> Vec<String> {
             },
             Err(_) => None,
         }
-    }).collect()
+    }).collect();
+    // sort the fileset for reproductibility purposes
+    files.sort();
+    files
 }
 
 #[cfg(test)]

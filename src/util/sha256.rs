@@ -13,6 +13,37 @@ pub struct Sha256Hash {
     digest: [u32; 8]
 }
 
+impl Sha256Hash {
+    /// Creates a new blank hash filled with all 0's.
+    pub fn new() -> Self {
+        Self {
+            digest: [0; 8]
+        }
+    }
+
+    /// Creates a new hash filled with `digest`.
+    pub fn from_u32s(digest: [u32; 8]) -> Self {
+        Self {
+            digest: digest
+        }
+    }
+
+    /// Transforms the digest, which is 8 32-bit values, into a series of 32 8-bit
+    /// values.
+    pub fn into_bytes(self) -> [u8; 32] {
+        let mut bytes: [u8; 32] = [1; 32];
+        // split every integer into 4 bytes
+        let mut index = 0;
+        for i in 0..8 {
+            for j in (0..4).rev() {
+                bytes[index] = (self.digest[i] >> j*8) as u8;
+                index += 1; 
+            }
+        }
+        bytes
+    }
+}
+
 impl FromStr for Sha256Hash {
     type Err = Sha256Error;
 
@@ -186,6 +217,20 @@ impl From<ParseIntError> for Sha256Error {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn into_bytes() {
+        let sum = Sha256Hash { 
+            digest: [0x1010f0f0, 0xaabbccdd, 0x33223322, 0x44554455, 
+                0x98989898, 0xabcdef01, 0xfedcba98, 0x54637281,
+        ]};
+
+        assert_eq!(sum.into_bytes(), [
+            0x10, 0x10, 0xf0, 0xf0, 0xaa, 0xbb, 0xcc, 0xdd, 0x33, 0x22, 0x33, 0x22, 0x44,
+            0x55, 0x44, 0x55, 0x98, 0x98, 0x98, 0x98, 0xab, 0xcd, 0xef, 0x01, 0xfe, 0xdc,
+            0xba, 0x98, 0x54, 0x63, 0x72, 0x81
+        ]);
+    }
 
     #[test]
     fn it_works() {

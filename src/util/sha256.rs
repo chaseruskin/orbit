@@ -31,7 +31,7 @@ impl Sha256Hash {
     /// Transforms the digest, which is 8 32-bit values, into a series of 32 8-bit
     /// values.
     pub fn into_bytes(self) -> [u8; 32] {
-        let mut bytes: [u8; 32] = [1; 32];
+        let mut bytes: [u8; 32] = [0; 32];
         // split every integer into 4 bytes
         let mut index = 0;
         for i in 0..8 {
@@ -47,7 +47,7 @@ impl Sha256Hash {
 impl FromStr for Sha256Hash {
     type Err = Sha256Error;
 
-    // todo: design better error handling
+    // @TODO design better error handling
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() != 64 {
             return Err(Sha256Error::BadLen(s.len()));

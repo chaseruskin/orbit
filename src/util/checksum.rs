@@ -12,8 +12,8 @@ fn checksum(files: &[String]) -> sha256::Sha256Hash {
     let mut filename_bytes = Vec::<u8>::new();
     // perform a hash on contents
     for file in files {
-        let bytes = std::fs::read(&file).expect("failed to read as bytes");
-        final_bytes.append(&mut sha256::compute_sha256(&bytes).into_bytes().to_vec());
+        let bytes = std::fs::read_to_string(&file).expect("failed to read as bytes");
+        final_bytes.append(&mut sha256::compute_sha256(&bytes.as_bytes()).into_bytes().to_vec());
         filename_bytes.append(&mut file.as_bytes().to_vec());
     }
     // perform hash on filenames

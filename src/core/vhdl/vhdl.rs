@@ -62,6 +62,59 @@ impl Identifier {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum IdentifierError {
+    Empty,
+    InvalidFirstChar(char),
+    CharsAfterDelimiter(String),
+}
+
+impl std::error::Error for IdentifierError {}
+
+impl std::fmt::Display for IdentifierError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Empty => write!(f, "empty identifier"),
+            Self::CharsAfterDelimiter(s) => write!(f, "characters \'{}\' found following closing extended backslash, ", s),
+            Self::InvalidFirstChar(c) => write!(f, "first character must be letter but found \'{}\'", c),
+        }
+    }
+}
+
+impl FromStr for Identifier {
+    type Err = IdentifierError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut chars = TrainCar::new(s.chars());
+        match chars.consume() {
+            // check what type of identifier it is
+            Some(c) => Ok(
+                match c {
+                    '\\' => {
+                        let result = Self::Extended(VHDLToken::consume_literal(&mut chars, &char_set::BACKSLASH).unwrap());
+                        // gather remaining characters
+                        let mut rem = String::new();
+                        while let Some(c) = chars.consume() {
+                            rem.push(c);
+                        }
+                        match rem.is_empty() {
+                            true => result,
+                            false => return Err(Self::Err::CharsAfterDelimiter(rem)),
+                        }
+                    }
+                    _ => {
+                        // verify the first character was a letter
+                        match char_set::is_letter(&c) { 
+                            true => Self::Basic(VHDLToken::consume_value_pattern(&mut chars, Some(c), char_set::is_letter_or_digit).unwrap()),
+                            false => return Err(Self::Err::InvalidFirstChar(c)),
+                        } 
+                    }
+                }),
+            None => Err(Self::Err::Empty)
+        }
+    }
+}
+
 impl std::cmp::PartialEq for Identifier {
     fn eq(&self, other: &Self) -> bool {
         // instantly not equal if not they are not of same type
@@ -879,7 +932,6 @@ impl VHDLToken {
     /// Captures an extended identifier token.
     /// 
     /// Errors if the identifier is empty.
-    /// train: &mut TrainCar<impl Iterator<Item=char>>, c0: Option<char>) -> Result<String, String> {
     fn consume_extended_identifier(train: &mut TrainCar<impl Iterator<Item=char>>) -> Result<VHDLToken, VHDLTokenError> { 
         let id = Self::consume_literal(train, &char_set::BACKSLASH)?;
         if id.is_empty() { 
@@ -1094,24 +1146,24 @@ impl VHDLToken {
     /// Assumes the first token to parse in the stream is not the `br` character.
     /// Allows for zero or more characters in result and chars must be graphic.
     fn consume_literal(train: &mut TrainCar<impl Iterator<Item=char>>, br: &char) -> Result<String, VHDLTokenError> { 
-            let mut result = String::new();
-            while let Some(c) = train.consume() {
-                // verify it is a graphic character
-                if char_set::is_graphic(&c) == false { return Err(VHDLTokenError::Any(String::from("invalid character in literal"))) }
-                // detect escape sequence
-                if br == &c {
-                    match train.peek() {
-                        Some(c_next) => if br == c_next {
-                            train.consume(); // skip over escape character
-                        } else {
-                            return Ok(result);
-                        }
-                        None => return Ok(result),
+        let mut result = String::new();
+        while let Some(c) = train.consume() {
+            // verify it is a graphic character
+            if char_set::is_graphic(&c) == false { return Err(VHDLTokenError::Any(String::from("invalid character in literal"))) }
+            // detect escape sequence
+            if br == &c {
+                match train.peek() {
+                    Some(c_next) => if br == c_next {
+                        train.consume(); // skip over escape character
+                    } else {
+                        return Ok(result);
                     }
-                } 
-                result.push(c);
-            }
-            Err(VHDLTokenError::Any(String::from("expecting closing delimiter")))
+                    None => return Ok(result),
+                }
+            } 
+            result.push(c);
+        }
+        Err(VHDLTokenError::Any(String::from("expecting closing delimiter")))
     }
 }
 
@@ -1502,6 +1554,19 @@ impl Display for VHDLTokenError {
 mod test {
     use super::*;
     use crate::core::lexer::*;
+
+    #[test]
+    fn iden_from_str() {
+        let iden = "top_level";
+        assert_eq!(Identifier::from_str(&iden).unwrap(), Identifier::Basic("top_level".to_owned()));
+
+        let iden = "\\Top_LEVEL\\";
+        assert_eq!(Identifier::from_str(&iden).unwrap(), Identifier::Extended("Top_LEVEL".to_owned()));
+
+        // extra characters after closing
+        let iden = "\\Top_\\LEVEL\\";
+        assert_eq!(Identifier::from_str(&iden).is_err(), true);
+    }
 
     #[test]
     fn interpret_int() {

@@ -11,8 +11,8 @@ use crate::core::fileset::Fileset;
 #[derive(Debug, PartialEq)]
 pub struct Plan {
     plugin: Option<String>,
-    bench: Option<String>,
-    top: Option<String>,
+    bench: Option<Identifier>,
+    top: Option<Identifier>,
     build_dir: Option<String>,
     filesets: Option<Vec<Fileset>>
 }
@@ -24,10 +24,10 @@ impl Command for Plan {
         c.goto_ip_path()?;
         // set top-level environment variables (@TODO verify these are valid toplevels to be set!)
         if let Some(t) = &self.top {
-            std::env::set_var("ORBIT_TOP", t);
+            std::env::set_var("ORBIT_TOP", t.to_string());
         }
         if let Some(b) = &self.bench {
-            std::env::set_var("ORBIT_BENCH", b);
+            std::env::set_var("ORBIT_BENCH", b.to_string());
         }
         // determine the build directory
         let b_dir = if let Some(dir) = &self.build_dir {
@@ -132,7 +132,7 @@ impl Plan {
 
         // detect the top-level
         let top = if let Some(t) = &self.top {
-            match map.get(&Identifier::Basic(t.clone())) {
+            match map.get(&t) {
                 Some(node) => node.index(),
                 None => panic!("no entity named {}", t)
             }
@@ -142,10 +142,10 @@ impl Plan {
 
         // @TODO detect if there is a single existing testbench for the top
 
-        let top_name = inverse_map[top].to_string();
+        let top_name = &inverse_map[top];
 
-        std::env::set_var("ORBIT_TOP", &top_name);
-        std::env::set_var("ORBIT_BENCH", &top_name);
+        std::env::set_var("ORBIT_TOP", &top_name.to_string());
+        std::env::set_var("ORBIT_BENCH", &top_name.to_string());
         
         // compute minimal topological ordering
         let min_order = g.minimal_topological_sort(top);

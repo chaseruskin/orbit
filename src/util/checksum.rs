@@ -39,6 +39,15 @@ mod test {
         assert_eq!(sum1, sha256::Sha256Hash::from_u32s([1192313984, 1124899892, 
             4096760620, 1419010557, 2999754695, 3953725091, 4055090036, 1661318102]));
 
+        // modifying a file name results in a different hash
+        let files = vec![
+            "test/data/file1.txt".to_owned(),
+            "test/data/file2.txt".to_owned(),
+            "test/data/file3copy.txt".to_owned(), // same contents as file3.txt
+        ];
+        assert_eq!(std::fs::read("test/data/file3.txt").unwrap(), std::fs::read("test/data/file3copy.txt").unwrap(), "file3 and file3copy must have same contents");
+        assert_ne!(checksum(&files), sum1);
+
         // taking away a file results in a different hash
         let files = vec![
             "test/data/file1.txt".to_owned(),
@@ -46,6 +55,7 @@ mod test {
         ];
         let sum2 = checksum(&files);
         assert_ne!(sum2, sum1);
+
 
         // adding a file results in a different hash
         let files = vec![

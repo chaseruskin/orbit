@@ -44,7 +44,7 @@ impl Topic {
             New => manuals::new::MANUAL,
             Plan => manuals::plan::MANUAL,
             Build => manuals::build::MANUAL,
-            Launch => manuals::build::MANUAL,
+            Launch => manuals::launch::MANUAL,
         }
     }
 }

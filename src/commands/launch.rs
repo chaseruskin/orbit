@@ -30,13 +30,17 @@ impl std::str::FromStr for VersionField {
 #[derive(Debug, PartialEq)]
 pub struct Launch {
     next: Option<VersionField>,
+    ready: bool,
+    message: Option<String>,
 }
 
 impl FromCli for Launch {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.set_help(HELP);
         let command = Ok(Launch {
+            ready: cli.check_flag(Flag::new("ready"))?,
             next: cli.check_option(Optional::new("next").value("version"))?,
+            message: cli.check_option(Optional::new("message"))?,
         });
         command
     }
@@ -45,12 +49,14 @@ impl FromCli for Launch {
 impl Command for Launch {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, _: &Context) -> Result<(), Self::Err> {
+        // make sure it is run from an ip directory
         self.run()
     }
 }
 
 impl Launch {
     fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+        
         todo!()
     }
 }
@@ -62,9 +68,9 @@ Usage:
     orbit launch [options]
 
 Options:
-    --ready              actually perform the operation
+    --ready              proceed with the launch process
     --next <version>     semver version or 'major', 'minor', or 'patch'
-    --message <message>  message to apply to the commit for --next
+    --message <message>  message to apply to the commit when using '--next'
 
 Use 'orbit help launch' to learn more about the command.
 ";

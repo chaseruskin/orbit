@@ -42,8 +42,8 @@ def main():
                     continue
                 elif len(line) == 1:
                     continue
-                # ensure quotes are preserved
-                transform_line = transform_line.replace('\"', '\\"')
+                # ensure quotes are preserved and remove single backslashes
+                transform_line = transform_line.replace('\\', '').replace('\"', '\\"')
                 transform += transform_line
             pass
 

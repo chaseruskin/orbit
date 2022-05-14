@@ -3,7 +3,9 @@ use crate::util::sha256;
 /// Given a list of files, compute a single sha256 digest to encapsulate the
 /// entire directory state.
 /// 
-/// Assumes the filepaths are already sorted before entering this function.
+/// Assumes the filepaths are already sorted before entering this function. It
+/// provides a cross-compatible mode for computing a sha256 over a series of 
+/// files by removing \r carriage return bytes from windows system file reads.
 fn checksum(files: &[String]) -> sha256::Sha256Hash {
     // determine the amount of bytes required
     let total_hashes = files.len() + 1;
@@ -58,7 +60,6 @@ mod test {
         ];
         let sum2 = checksum(&files);
         assert_ne!(sum2, sum1);
-
 
         // adding a file results in a different hash
         let files = vec![

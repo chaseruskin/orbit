@@ -77,6 +77,7 @@ use crate::commands::search::Search;
 use crate::commands::plan::Plan;
 use crate::commands::build::Build;
 use crate::commands::edit::Edit;
+use crate::commands::launch::Launch;
 
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
@@ -86,6 +87,7 @@ enum OrbitSubcommand {
     Plan(Plan),
     Build(Build),
     Edit(Edit),
+    Launch(Launch),
 }
 
 impl FromCli for OrbitSubcommand {
@@ -97,6 +99,7 @@ impl FromCli for OrbitSubcommand {
             "plan",
             "build",
             "edit",
+            "launch",
         ])?.as_ref() {
             "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
             "new" => Ok(OrbitSubcommand::New(New::from_cli(cli)?)),
@@ -119,6 +122,7 @@ impl Command for OrbitSubcommand {
             OrbitSubcommand::Help(c) => c.exec(context),
             OrbitSubcommand::New(c) => c.exec(context),
             OrbitSubcommand::Edit(c) => c.exec(context),
+            OrbitSubcommand::Launch(c) => c.exec(context),
         }
     }
 }
@@ -138,6 +142,7 @@ Commands:
     tree            view the dependency graph
     plan            generate a blueprint file
     build           execute a plugin
+    launch          release a new ip version
     search          browse the ip catalog 
 
 Options:

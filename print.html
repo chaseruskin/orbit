@@ -546,19 +546,31 @@ should read the data from the blueprint, and then process the data
 <h2 id="name-4"><a class="header" href="#name-4"><strong>NAME</strong></a></h2>
 <p>launch - release an ip's next version </p>
 <h2 id="synopsis-4"><a class="header" href="#synopsis-4"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit launch [options] &lt;version&gt;
+<pre><code>orbit launch [options]
 </code></pre>
 <h2 id="description-4"><a class="header" href="#description-4"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will tag the current commit as a new version. By default, it
-will perform a dry run of the launch process to verify the procedure will 
-run with no errors. To actually perform a launch, include the '--ready'
-flag.</p>
+<p>This command will perform a series of checks against the current ip to 
+verify it is able to release a new version and the tag the latest git 
+commit with the next version number. </p>
+<p>By default, it will only perform a dry run of the launch process to verify 
+the procedure will run with no errors. To proceed with a launch to tag the
+latest commit, include the '--ready' flag.</p>
+<p>The next version it will release is the one defined in the Orbit.toml 
+manifest file. You can also set the next version on the command-line by 
+using the '--next &lt;version&gt;' option. If this option is used, then a new git
+commit will be created by Orbit to save the version change it makes to the 
+Orbit.toml. To write a custom message for this commit, include the 
+'--message &lt;message&gt;' option.</p>
 <h2 id="options-4"><a class="header" href="#options-4"><strong>OPTIONS</strong></a></h2>
 <p><code>--ready</code><br />
       perform a real run through the launch process</p>
+<p><code>--next &lt;version&gt;</code><br />
+      declare the next version or 'major', 'minor', or 'patch' increment</p>
+<p><code>--message &lt;message&gt;</code><br />
+      override the default Orbit commit message when using '--next'</p>
 <h2 id="examples-4"><a class="header" href="#examples-4"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit launch 1.0.0
-orbit launch 1.0.0 --ready
+<pre><code>orbit launch --next 1.0.0
+orbit launch --next major --ready
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="glossary"><a class="header" href="#glossary">Glossary</a></h1>
 

@@ -10,9 +10,9 @@ use std::fmt::Display;
 
 type VerNum = u16;
 
-// :todo: make `minor` and `patch` fields optional?
+// @TODO make `minor` and `patch` fields optional?
 
-#[derive(Debug, PartialEq, PartialOrd)]
+#[derive(Debug, PartialEq, PartialOrd, Clone)]
 pub struct Version {
     major: VerNum, 
     minor: VerNum,
@@ -85,7 +85,7 @@ impl FromStr for Version {
 
         let mut levels = s.split_terminator('.')
             .map(|p| { p.parse::<VerNum>() });
-        // :todo: handle invalid parses internally to return what level gave invalid digit?
+        // @TODO handle invalid parses internally to return what level gave invalid digit?
         Ok(Version {
             major: if let Some(v) = levels.next() {
                 v?

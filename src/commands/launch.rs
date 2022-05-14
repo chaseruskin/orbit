@@ -1,7 +1,7 @@
 use crate::Command;
 use crate::FromCli;
 use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Flag, Optional};
+use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::core::version::Version;
@@ -78,12 +78,12 @@ impl Command for Launch {
 
         // grab the version defined in the manifest
         let mut manifest = Manifest::load(c.get_ip_path().unwrap().to_path_buf().join("Orbit.toml"))?;
-        let prev_version = manifest.get_doc()["ip"]["version"].as_str().unwrap();
+        let prev_version = Version::from_str(manifest.get_doc()["ip"]["version"].as_str().unwrap()).unwrap();
 
         // at this point it is safe to assume it is a version because manifest will check that
-        let mut version = Version::from_str(prev_version).unwrap();
+        let mut version = prev_version.clone();
         
-        println!("already defined version: {}", version);
+        // println!("already defined version: {}", version);
         // check if we applied --next
         let overwrite = if let Some(ver) = &self.next {
             match ver {
@@ -96,31 +96,36 @@ impl Command for Launch {
                         .patch(v.get_patch())
                 }
             }
+            println!("info: raising {} --> {}", prev_version, version);
             // update the manifest and add a new commit to the git repository
             manifest.get_mut_doc()["ip"]["version"] = toml_edit::value(version.to_string());
             true
         } else {
+            println!("info: setting {}", version);
             false
         };
-
-        println!("next version: {}", version);
-        let ver_str = version.to_string();
-        // check if a tag exists for this version
-        let tags = repo.tag_names(Some("[0-9]*.[0-9]*.[0-9]*"))?;
-        let result = tags.iter()
-            .filter_map(|f| f )
-            .find(|f| { f == &ver_str });
         
-        // the version already exists under a tag
-        if let Some(r) = result {
-            return Err(AnyError(format!("version \'{}\' is already released", r)))?;
-        }
+        // @TODO report if there are unsaved changes in the working directory/staging index?
 
+        let ver_str = version.to_string();
+        {
+            // check if a tag exists for this version
+            let tags = repo.tag_names(Some("[0-9]*.[0-9]*.[0-9]*"))?;
+            let result = tags.iter()
+                .filter_map(|f| f )
+                .find(|f| { f == &ver_str });
+            
+            // the version already exists under a tag
+            if let Some(r) = result {
+                return Err(AnyError(format!("version \'{}\' is already released", r)))?;
+            }
+        }
+        
         // verify the manifest is committed (not in staging or working directory if not overwriting)
         if overwrite == false {
             let st = repo.status_file(&std::path::PathBuf::from("Orbit.toml"))?;
             if st.is_empty() {
-                println!("manifest checks out okay")
+                println!("info: manifest is in clean state")
             } else {
                 return Err(AnyError(format!("manifest Orbit.toml is dirty; move changes out of working directory or staging index to enter a clean state")))?
             }
@@ -128,8 +133,17 @@ impl Command for Launch {
 
         let message = match &self.message {
             Some(m) => m.to_owned(),
-            None => format!("releases version {}", ver_str),
+            None => format!("releases version {}", version),
         };
+
+        println!("info: create new commit ... {}", match overwrite {
+            true => "yes",
+            false => "no",
+        });
+       
+        if overwrite == true {
+            println!("info: future commit message \"{}\"", message)
+        }
 
         // verify git things
 
@@ -166,7 +180,7 @@ impl Command for Launch {
 
             // update the HEAD reference
             repo.tag_lightweight(&ver_str, &marked_commit.as_object(), false)?;
-            println!("info: released version {}", ver_str);
+            println!("info: released version {}", version);
         } else {
             println!("info: version {} is ready for launch\n\nhint: include '--ready' flag to proceed", ver_str);
         }

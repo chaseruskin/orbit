@@ -21,6 +21,9 @@ DESCRIPTION
     commit will be created by Orbit to save the version change it makes to the 
     Orbit.toml. To write a custom message for this commit, include the 
     '--message <message>' option.
+     
+    The '--next <version>' option will go off of the previous version defined
+    in the Orbit.toml manifest to determine the next increment. 
 
 OPTIONS
     --ready  

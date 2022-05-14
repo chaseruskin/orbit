@@ -107,6 +107,7 @@ impl FromCli for OrbitSubcommand {
             "plan" => Ok(OrbitSubcommand::Plan(Plan::from_cli(cli)?)),
             "build" => Ok(OrbitSubcommand::Build(Build::from_cli(cli)?)),
             "edit" => Ok(OrbitSubcommand::Edit(Edit::from_cli(cli)?)),
+            "launch" => Ok(OrbitSubcommand::Launch(Launch::from_cli(cli)?)),
             _ => panic!("an unimplemented command was passed through!")
         }
     }

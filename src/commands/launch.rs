@@ -70,6 +70,10 @@ impl Command for Launch {
         // verify the repository has at least one commit
         let latest_commit = find_last_commit(&repo)?;
 
+        if self.message.is_some() && self.next.is_none() {
+            return Err(CliError::BrokenRule(format!("option --message is only allowed when using option --next")))?
+        }
+
         // @TODO verify the repository is up-to-date (git remote update, git remote fetch?)
 
         // grab the version defined in the manifest
@@ -112,23 +116,41 @@ impl Command for Launch {
             return Err(AnyError(format!("version \'{}\' is already released", r)))?;
         }
 
+        // verify the manifest is committed (not in staging or working directory if not overwriting)
+        if overwrite == false {
+            let st = repo.status_file(&std::path::PathBuf::from("Orbit.toml"))?;
+            if st.is_empty() {
+                println!("manifest checks out okay")
+            } else {
+                return Err(AnyError(format!("manifest Orbit.toml is dirty; move changes out of working directory or staging index to enter a clean state")))?
+            }
+        }
+
         let message = match &self.message {
             Some(m) => m.to_owned(),
             None => format!("releases version {}", ver_str),
         };
 
+        // verify git things
+
+        // verify Orbit.toml to staging area
+        let mut index = repo.index()?;
+        index.add_path(&std::path::PathBuf::from("Orbit.toml"))?;
+
+        // verify a signature exists
+        let signature = repo.signature()?;
+
         // tag if ready
         if self.ready == true {
-            // @TODO investigate what did not actually commit to repo (but moved to staging)
             let marked_commit = if overwrite == true {
                 // save the manifest
                 manifest.save()?;
-                // add Orbit.toml to staging area
-                let mut index = repo.index()?;
+                // add manifest to staging
                 index.add_path(&std::path::PathBuf::from("Orbit.toml"))?;
+                // source: https://github.com/rust-lang/git2-rs/issues/561
+                index.write()?;
                 // create new commit
-                let oid = index.write_tree()?;
-                let signature = repo.signature()?;
+                let oid = index.write_tree().unwrap();
                 let tree = repo.find_tree(oid)?;
                 repo.commit(Some("HEAD"),
                     &signature,
@@ -136,7 +158,7 @@ impl Command for Launch {
                     &message,
                     &tree,
                     &[&latest_commit])?;
-                // update latest commit
+                // update latest commit to attach with tag
                 find_last_commit(&repo)?
             } else {
                 latest_commit

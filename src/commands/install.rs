@@ -90,24 +90,49 @@ impl Command for Install {
         // get the root path to the manifest
         let mut ip_root = ip_manifest.get_path().clone();
         ip_root.pop();
-        // @TODO find the specified version for the specified ip
-        let version = "0.0.0";
-        let repo = Repository::open(&ip_root)?;
 
-        let tags = repo.tag_names(None)?;
-        let mut latest_version: Option<Version> = None;
-        for tag in tags.iter().filter_map(|f| {
-            if let Some(s) = f {
-                match Version::from_str(s) {
-                    Ok(v) => Some(v),
-                    Err(_) => None,
-                }
-            } else {
-                None
-            }
-        }) {
-            // logic here
+        // gather all version tags matching the version given on command-line
+        let tags = {
+            // this ver_str is needed to keep lifetime of &str for pattern
+            #[allow(unused_assignments)] 
+            let mut ver_str = String::new();
+            let version_pattern: Option<&str> = match &self.ip.version {
+                InstallVersion::Specific(v) => {
+                    ver_str = v.to_string();
+                    Some(&ver_str)
+                },
+                InstallVersion::Latest => None,
+            };
+            let repo = Repository::open(&ip_root)?;
+            // find the highest fitting version
+            repo.tag_names(version_pattern)?
         };
+
+        // find the specified version for the given ip
+        let mut latest_version: Option<Version> = None;
+        tags.into_iter()
+            .filter_map(|f| {
+                if let Some(s) = f {
+                    match Version::from_str(s) {
+                        Ok(v) => Some(v),
+                        Err(_) => None,
+                    }
+                } else {
+                    None
+                }
+            })
+            .for_each(|tag| {
+                if latest_version.is_none() || &tag > latest_version.as_ref().unwrap() {
+                    latest_version = Some(tag);
+                }
+            });
+
+        if let Some(ver) = &latest_version {
+            println!("detected version {}", ver) 
+        } else {
+            panic!("no verison found for {:?}", self.ip.version);
+        }
+        let version = latest_version.unwrap();
 
         // perform sha256 on the directory after collecting all files
         std::env::set_current_dir(&ip_root)?;

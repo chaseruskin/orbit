@@ -176,6 +176,8 @@ pub fn gather_current_files(path: &std::path::PathBuf) -> Vec<String> {
             },
             Err(_) => None,
         }
+    }).map(|f| {
+        f.replace("\\", "/")
     }).collect();
     // sort the fileset for reproductibility purposes
     files.sort();

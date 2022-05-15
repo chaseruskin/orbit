@@ -78,6 +78,9 @@ impl FromCli for Install {
     }
 }
 
+use git2::Repository;
+use std::str::FromStr;
+
 impl Command for Install {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
@@ -89,16 +92,37 @@ impl Command for Install {
         ip_root.pop();
         // @TODO find the specified version for the specified ip
         let version = "0.0.0";
+        let repo = Repository::open(&ip_root)?;
+
+        let tags = repo.tag_names(None)?;
+        let mut latest_version: Option<Version> = None;
+        for tag in tags.iter().filter_map(|f| {
+            if let Some(s) = f {
+                match Version::from_str(s) {
+                    Ok(v) => Some(v),
+                    Err(_) => None,
+                }
+            } else {
+                None
+            }
+        }) {
+            // logic here
+        };
+
         // perform sha256 on the directory after collecting all files
-        // @TODO must use '.' as current directory when gathering files for consistent checksum
-        let ip_files = crate::core::fileset::gather_current_files(&ip_root);
+        std::env::set_current_dir(&ip_root)?;
+        // must use '.' as current directory when gathering files for consistent checksum
+        // @TODO generate cross-platform filepath names (resolve backslash vs. forwardslash)
+        let ip_files = crate::core::fileset::gather_current_files(&std::path::PathBuf::from("."));
         let checksum = crate::util::checksum::checksum(&ip_files);
         println!("checksum: {}", checksum);
         // @TODO use luhn algorithm to condense remaining digits in sha256 for directory name
 
         // use checksum to create new directory slot
         let cache_slot_name = format!("{}-{}-{}", ip_manifest.as_pkgid().get_name(), version, checksum.to_string().get(0..10).unwrap());
-        std::fs::create_dir(&c.get_cache_path().join(cache_slot_name))?;
+        Repository::clone(&ip_root.to_str().unwrap(), &c.get_cache_path().join(&cache_slot_name))?;
+        
+        std::fs::create_dir(&c.get_cache_path().join(&cache_slot_name))?;
         // @TODO copy contents into cache_slot
         self.run()
     }

@@ -72,4 +72,15 @@ mod test {
         assert_ne!(sum3, sum1);
         assert_ne!(sum3, sum2);
     }
+
+    #[test]
+    fn from_filesystem() {
+        let test_files = crate::core::fileset::gather_current_files(&std::path::PathBuf::from("./test/data"));
+        println!("{:?}", test_files);
+        let checksum = crate::util::checksum::checksum(&test_files);
+        assert_eq!(checksum, sha256::Sha256Hash::from_u32s(
+            [551432240, 315521459, 446693861, 2042545862, 
+            440250692, 3275642584, 47734004, 1928840553]
+        ));
+    }
 }

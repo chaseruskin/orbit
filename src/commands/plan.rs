@@ -78,7 +78,7 @@ impl Plan {
         let mut build_path = std::env::current_dir().unwrap();
         build_path.push(build_dir);
         // gather filesets
-        let files = crate::core::fileset::gather_current_files();
+        let files = crate::core::fileset::gather_current_files(&std::env::current_dir().unwrap());
 
         let mut g = Graph::new();
         // entity identifier, HashNode

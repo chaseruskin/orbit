@@ -51,30 +51,38 @@ impl Command for Edit {
 }
 
 use crate::util::overdetsys;
+use crate::core::manifest::Manifest;
+
+/// Given a partial/full ip specification `ip_spec`, sift through the manifests
+/// for a possible determined unique solution.
+pub fn find_ip<'a>(ip_spec: &PkgId, manifests: &'a [manifest::Manifest]) -> Result<&'a Manifest, AnyError> {
+    // try to find ip name
+    let space: Vec<Vec<PkgPart>> = manifests.iter().map(|f| { f.as_pkgid().into_full_vec().unwrap() }).collect();
+    let result = match overdetsys::solve(space, ip_spec.iter()) {
+        Ok(r) => r,
+        Err(e) => match e {
+            overdetsys::OverDetSysError::NoSolution => Err(AnyError(format!("no ip as '{}' exists", ip_spec)))?,
+            overdetsys::OverDetSysError::Ambiguous(set) => {
+                // assemble error message
+                let mut set = set.into_iter().map(|f| PkgId::from_vec(f) );
+                let mut content = String::new();
+                while let Some(s) = set.next() {
+                    content.push_str(&format!("    {}\n", s.to_string()));
+                }
+                Err(AnyError(format!("ambiguous ip '{}' yields multiple solutions:\n{}", ip_spec, content)))?
+            }
+        }
+    };
+
+    let full_ip = PkgId::from_vec(result);
+    // find the full ip name among the manifests to get the path
+    Ok(manifests.iter().find(|f| { full_ip == f.as_pkgid() }).unwrap())
+}
 
 impl Edit {
     fn run(&self, manifests: &[manifest::Manifest], editor: &str) -> Result<(), Box<dyn std::error::Error>> {
-        // try to find ip name
-        let space: Vec<Vec<PkgPart>> = manifests.iter().map(|f| { f.as_pkgid().into_full_vec().unwrap() }).collect();
-        let result = match overdetsys::solve(space, self.ip.iter()) {
-            Ok(r) => r,
-            Err(e) => match e {
-                overdetsys::OverDetSysError::NoSolution => Err(AnyError(format!("no ip as '{}' exists", self.ip)))?,
-                overdetsys::OverDetSysError::Ambiguous(set) => {
-                    // assemble error message
-                    let mut set = set.into_iter().map(|f| PkgId::from_vec(f) );
-                    let mut content = String::new();
-                    while let Some(s) = set.next() {
-                        content.push_str(&format!("    {}\n", s.to_string()));
-                    }
-                    Err(AnyError(format!("ambiguous ip '{}' yields multiple solutions:\n{}", self.ip, content)))?
-                }
-            }
-        };
-
-        let full_ip = PkgId::from_vec(result);
         // find the full ip name among the manifests to get the path
-        let result = manifests.iter().find(|f| { full_ip == f.as_pkgid() }).unwrap();
+        let result = find_ip(&self.ip, &manifests)?;
         let mut root = result.get_path().to_owned();
         root.pop();
         // perform the process

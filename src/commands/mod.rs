@@ -7,3 +7,4 @@ mod plan;
 mod build;
 mod edit;
 mod launch;
+mod install;

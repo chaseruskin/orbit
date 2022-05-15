@@ -78,6 +78,7 @@ use crate::commands::plan::Plan;
 use crate::commands::build::Build;
 use crate::commands::edit::Edit;
 use crate::commands::launch::Launch;
+use crate::commands::install::Install;
 
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
@@ -88,6 +89,7 @@ enum OrbitSubcommand {
     Build(Build),
     Edit(Edit),
     Launch(Launch),
+    Install(Install),
 }
 
 impl FromCli for OrbitSubcommand {
@@ -100,6 +102,7 @@ impl FromCli for OrbitSubcommand {
             "build",
             "edit",
             "launch",
+            "install",
         ])?.as_ref() {
             "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
             "new" => Ok(OrbitSubcommand::New(New::from_cli(cli)?)),
@@ -108,6 +111,7 @@ impl FromCli for OrbitSubcommand {
             "build" => Ok(OrbitSubcommand::Build(Build::from_cli(cli)?)),
             "edit" => Ok(OrbitSubcommand::Edit(Edit::from_cli(cli)?)),
             "launch" => Ok(OrbitSubcommand::Launch(Launch::from_cli(cli)?)),
+            "install" => Ok(OrbitSubcommand::Install(Install::from_cli(cli)?)),
             _ => panic!("an unimplemented command was passed through!")
         }
     }
@@ -120,6 +124,7 @@ impl Command for OrbitSubcommand {
             OrbitSubcommand::Search(c) => c.exec(context),
             OrbitSubcommand::Plan(c) => c.exec(context),
             OrbitSubcommand::Build(c) => c.exec(context),
+            OrbitSubcommand::Install(c) => c.exec(context),
             OrbitSubcommand::Help(c) => c.exec(context),
             OrbitSubcommand::New(c) => c.exec(context),
             OrbitSubcommand::Edit(c) => c.exec(context),
@@ -145,6 +150,7 @@ Commands:
     build           execute a plugin
     launch          release a new ip version
     search          browse the ip catalog 
+    install         store an immutable reference to an ip
 
 Options:
     --version       print version information and exit

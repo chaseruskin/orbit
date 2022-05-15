@@ -19,6 +19,7 @@ enum Topic {
     Build,
     Launch,
     Edit,
+    Install,
 }
 
 impl std::str::FromStr for Topic {
@@ -30,6 +31,7 @@ impl std::str::FromStr for Topic {
             "build" => Self::Build,
             "launch" => Self::Launch,
             "edit" => Self::Edit,
+            "install" => Self::Install,
             _ => return Err(AnyError(format!("topic '{}' not found", s)))
         })
     }
@@ -45,6 +47,7 @@ impl Topic {
             Plan => manuals::plan::MANUAL,
             Build => manuals::build::MANUAL,
             Launch => manuals::launch::MANUAL,
+            Install => manuals::install::MANUAL,
         }
     }
 }

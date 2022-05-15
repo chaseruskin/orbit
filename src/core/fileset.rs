@@ -159,12 +159,12 @@ pub fn is_rtl(file: &str) -> bool {
         tb1.matches_with(file, match_opts) == false && tb2.matches_with(file, match_opts) == false
 }
 
-/// Recursively walks the current directory and ignores files defined in a .gitignore file.
+/// Recursively walks the given `path` and ignores files defined in a .gitignore file.
 /// 
 /// Returns the resulting list of filepath strings. This function silently skips result errors
 /// while walking.
-pub fn gather_current_files() -> Vec<String> {
-    let mut files: Vec<String> = Walk::new(std::env::current_dir().unwrap()).filter_map(|result| {
+pub fn gather_current_files(path: &std::path::PathBuf) -> Vec<String> {
+    let mut files: Vec<String> = Walk::new(path).filter_map(|result| {
         match result {
             Ok(entry) => {
                 if entry.path().is_file() {

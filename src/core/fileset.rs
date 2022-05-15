@@ -169,7 +169,7 @@ pub fn gather_current_files(path: &std::path::PathBuf) -> Vec<String> {
             Ok(entry) => {
                 if entry.path().is_file() {
                     // replace double backslash \\ with single forward slash /
-                    Some(entry.into_path().display().to_string().replace("\\\\", "/"))
+                    Some(entry.into_path().display().to_string().replace(r"\\", "/"))
                 } else {
                     None
                 }

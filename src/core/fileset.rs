@@ -162,13 +162,14 @@ pub fn is_rtl(file: &str) -> bool {
 /// Recursively walks the given `path` and ignores files defined in a .gitignore file.
 /// 
 /// Returns the resulting list of filepath strings. This function silently skips result errors
-/// while walking.
+/// while walking. The collected set of paths are also standardized to use forward slashes '/'.
 pub fn gather_current_files(path: &std::path::PathBuf) -> Vec<String> {
     let mut files: Vec<String> = Walk::new(path).filter_map(|result| {
         match result {
             Ok(entry) => {
                 if entry.path().is_file() {
-                    Some(entry.into_path().display().to_string())
+                    // replace double backslash \\ with single forward slash /
+                    Some(entry.into_path().display().to_string().replace("\\\\", "/"))
                 } else {
                     None
                 }

@@ -168,16 +168,14 @@ pub fn gather_current_files(path: &std::path::PathBuf) -> Vec<String> {
         match result {
             Ok(entry) => {
                 if entry.path().is_file() {
-                    // replace double backslash \\ with single forward slash /
-                    Some(entry.into_path().display().to_string().replace(r"\\", "/"))
+                    // replace backslash \ with single forward slash /
+                    Some(entry.into_path().display().to_string().replace(r"\", "/"))
                 } else {
                     None
                 }
             },
             Err(_) => None,
         }
-    }).map(|f| {
-        f.replace("\\", "/")
     }).collect();
     // sort the fileset for reproductibility purposes
     files.sort();

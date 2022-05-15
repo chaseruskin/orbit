@@ -1,7 +1,7 @@
 use crate::Command;
 use crate::FromCli;
 use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Flag, Optional};
+use crate::interface::arg::Positional; // Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::core::pkgid::PkgId;
@@ -49,12 +49,11 @@ impl std::str::FromStr for IpSpecVersion {
     type Err = AnyError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some((pkgid_str, ver_str)) = s.rsplit_once('@') {
-
             Ok(Self {
                 spec: PkgId::from_str(pkgid_str)?,
                 version: InstallVersion::from_str(ver_str)?,
             })
-        // if did not find a '@' symbol, 
+        // if did not find a '@' symbol, default to latest
         } else {
             Ok(Self {
                 spec: PkgId::from_str(s)?,
@@ -63,7 +62,6 @@ impl std::str::FromStr for IpSpecVersion {
         }
     }
 }
-
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
@@ -89,10 +87,19 @@ impl Command for Install {
         // get the root path to the manifest
         let mut ip_root = ip_manifest.get_path().clone();
         ip_root.pop();
+        // @TODO find the specified version for the specified ip
+        let version = "0.0.0";
         // perform sha256 on the directory after collecting all files
+        // @TODO must use '.' as current directory when gathering files for consistent checksum
         let ip_files = crate::core::fileset::gather_current_files(&ip_root);
         let checksum = crate::util::checksum::checksum(&ip_files);
         println!("checksum: {}", checksum);
+        // @TODO use luhn algorithm to condense remaining digits in sha256 for directory name
+
+        // use checksum to create new directory slot
+        let cache_slot_name = format!("{}-{}-{}", ip_manifest.as_pkgid().get_name(), version, checksum.to_string().get(0..10).unwrap());
+        std::fs::create_dir(&c.get_cache_path().join(cache_slot_name))?;
+        // @TODO copy contents into cache_slot
         self.run()
     }
 }

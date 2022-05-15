@@ -81,6 +81,11 @@ impl Context {
         Ok(self)
     }
 
+    /// Accesses the cache directory.
+    pub fn get_cache_path(&self) -> &std::path::PathBuf {
+        &self.cache_path
+    }
+
     /// Configures and reads data from the settings object to return a `Settings` struct
     /// in the `Context`. The settings file `s` must be directly under `$ORBIT_HOME`.
     pub fn settings(mut self, s: &str) -> Result<Context, ContextError> {

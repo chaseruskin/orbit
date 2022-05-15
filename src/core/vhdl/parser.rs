@@ -565,7 +565,7 @@ impl VHDLSymbol {
         statements
     }
 
-    fn parse_entity_declaration<I>(tokens: &mut Peekable<I>) -> Vec<Identifier>
+    fn parse_entity_declaration<I>(_tokens: &mut Peekable<I>) -> Vec<Identifier>
         where I: Iterator<Item=Token<VHDLToken>> {
         todo!()
     }
@@ -667,12 +667,12 @@ impl VHDLSymbol {
             } else if t.as_type().check_keyword(&Keyword::Generic) {
                 // take the GENERIC token
                 tokens.next();
-                let generics = Self::parse_interface_list(tokens);
+                let _generics = Self::parse_interface_list(tokens);
             // collect ports
             } else if t.as_type().check_keyword(&Keyword::Port) {
                 // take the PORT token
                 tokens.next();
-                let ports = Self::parse_interface_list(tokens);
+                let _ports = Self::parse_interface_list(tokens);
             } else {
                 let stmt = Self::compose_statement(tokens);
                 println!("{:?}", stmt);

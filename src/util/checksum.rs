@@ -6,26 +6,32 @@ use crate::util::sha256;
 /// Assumes the filepaths are already sorted before entering this function. It
 /// provides a cross-compatible mode for computing a sha256 over a series of 
 /// files by removing \r carriage return bytes from windows system file reads.
+/// This function also skips binary files (not intended for reading) by detecting
+/// if a NUL character appears in the byte vector.
 pub fn checksum(files: &[String]) -> sha256::Sha256Hash {
     // determine the amount of bytes required
     let total_hashes = files.len() + 1;
-    let mut final_bytes = Vec::<u8>::with_capacity(total_hashes*32);
+    let mut total_bytes = Vec::<u8>::with_capacity(total_hashes*32);
     
     let mut filename_bytes = Vec::<u8>::new();
+    // use a single vector to keep allocated capacity throughout rounds
+    let mut bytes = Vec::new();
     // perform a hash on contents
     for file in files {
+        bytes.clear();
+        bytes.append(&mut std::fs::read(&file).expect("failed to read as bytes"));
+        // detect and skip binary-encoded files (.pdf, .jpg, etc.) by reading NUL char
+        if bytes.contains(&0x00) == true { continue; }
         // @NOTE windows uses \r\n for newlines, compared to unix systems using just \n
-        let bytes: Vec<u8> = std::fs::read(&file).expect("failed to read as bytes").into_iter().filter(|f| {
-            f != &0x0d // \r is 0X0D
-        }).collect();
-        final_bytes.append(&mut sha256::compute_sha256(&bytes).into_bytes().to_vec());
+        bytes = bytes.into_iter().filter(|f| f != &0x0d ).collect::<Vec<u8>>();
+        total_bytes.append(&mut sha256::compute_sha256(&bytes).into_bytes().to_vec());
         filename_bytes.append(&mut file.as_bytes().to_vec());
     }
     // perform hash on filenames
-    final_bytes.append(&mut sha256::compute_sha256(&filename_bytes).into_bytes().to_vec());
+    total_bytes.append(&mut sha256::compute_sha256(&filename_bytes).into_bytes().to_vec());
 
     // perform hash on all hashes
-    sha256::compute_sha256(&final_bytes)
+    sha256::compute_sha256(&total_bytes)
 }
 
 #[cfg(test)]

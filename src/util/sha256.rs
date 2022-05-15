@@ -94,7 +94,7 @@ pub fn compute_sha256(s: &[u8]) -> Sha256Hash {
             bytes[block_length-1-i] = (bit_length >> (8*i)) as u8;
         }
     }   
-    assert_eq!(bytes.len() % 64, 0); // 512 bits -> 64 bytes
+    // assert_eq!(bytes.len() % 64, 0); // 512 bits -> 64 bytes
 
     // [2] initialize hash values
     let mut hashes: [u32; 8] = [

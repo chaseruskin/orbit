@@ -134,10 +134,17 @@ impl Command for Install {
         }
         let version = latest_version.unwrap();
 
+        // move into temporary directory to compute checksum for the tagged version
+        let temp = tempfile::tempdir()?;
+        let repo = Repository::clone(&ip_root.to_str().unwrap(), &temp)?;
+        // get the tag
+        let obj = repo.revparse_single(version.to_string().as_ref())?;
+        // checkout code at the tag's marked timestamp
+        repo.checkout_tree(&obj, None)?;
+
         // perform sha256 on the directory after collecting all files
-        std::env::set_current_dir(&ip_root)?;
+        std::env::set_current_dir(&temp)?;
         // must use '.' as current directory when gathering files for consistent checksum
-        // @TODO generate cross-platform filepath names (resolve backslash vs. forwardslash)
         let ip_files = crate::core::fileset::gather_current_files(&std::path::PathBuf::from("."));
         let checksum = crate::util::checksum::checksum(&ip_files);
         println!("checksum: {}", checksum);
@@ -145,10 +152,11 @@ impl Command for Install {
 
         // use checksum to create new directory slot
         let cache_slot_name = format!("{}-{}-{}", ip_manifest.as_pkgid().get_name(), version, checksum.to_string().get(0..10).unwrap());
-        Repository::clone(&ip_root.to_str().unwrap(), &c.get_cache_path().join(&cache_slot_name))?;
-        
-        std::fs::create_dir(&c.get_cache_path().join(&cache_slot_name))?;
-        // @TODO copy contents into cache_slot
+        let cache_slot = c.get_cache_path().join(&cache_slot_name);
+        std::fs::create_dir(&cache_slot)?;
+        // move contents into cache slot
+        std::fs::rename(temp, &cache_slot)?;
+
         self.run()
     }
 }

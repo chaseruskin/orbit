@@ -165,6 +165,11 @@ impl Entity {
     pub fn is_testbench(&self) -> bool {
         self.ports.is_empty()
     }
+
+    /// Accesses the entity's identifier.
+    pub fn get_name(&self) -> &Identifier {
+        &self.name
+    }
 }
 
 /* 
@@ -288,12 +293,13 @@ impl Statement {
 }
 
 impl VHDLSymbol {
-
+    /// Parses an `Entity` primary design unit from the entity's identifier to
+    /// the END closing statement.
     fn parse_entity<I>(tokens: &mut Peekable<I>) -> VHDLSymbol 
     where I: Iterator<Item=Token<VHDLToken>>  {
         // take entity name
         let entity_name = tokens.next().take().unwrap().take();
-        println!("*--- unit {}", entity_name);
+        // println!("*--- unit {}", entity_name);
         let (generics, ports) = VHDLSymbol::parse_entity_declaration(tokens);
         VHDLSymbol::Entity(
             Entity { 

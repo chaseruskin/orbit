@@ -80,18 +80,20 @@ impl Plan {
         // gather filesets
         let files = crate::core::fileset::gather_current_files(&std::env::current_dir().unwrap());
 
+        // @TODO refactor graph and hold onto entity structs rather than just their identifier
         let mut g = Graph::new();
         // entity identifier, HashNode
         let mut map = HashMap::<Identifier, HashNode>::new();
         // store map key at the node index @TODO move into the edge data in graph
         let mut inverse_map = Vec::<Identifier>::new();
-        // read all files
+
         let mut archs: Vec<(parser::Architecture, String)> = Vec::new();
+        // read all files
         for source_file in &files {
-            if source_file.ends_with(".vhd") == true {
+            if crate::core::fileset::is_vhdl(source_file) == true {
                 let contents = std::fs::read_to_string(&source_file).unwrap();
                 let symbols = parser::VHDLParser::read(&contents).into_symbols();
-                // add all entities to a graph
+                // add all entities to a graph and store architectures for later analysis
                 let mut iter = symbols.into_iter().filter_map(|f| {
                     match f {
                         parser::VHDLSymbol::Entity(_) => Some(f.get_iden().clone()),

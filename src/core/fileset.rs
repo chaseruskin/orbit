@@ -141,6 +141,16 @@ pub fn collect_vhdl_files(files: &[String], is_sim: bool) -> Vec<&String> {
     }).collect()
 }
 
+/// Checks if the `file` is a VHDL file (ending with .vhd or .vhdl).
+pub fn is_vhdl(file: &str) -> bool {
+    if let Some((_, ending)) = file.rsplit_once('.') {
+        crate::util::strcmp::cmp_ascii_ignore_case(ending, "vhd") ||
+        crate::util::strcmp::cmp_ascii_ignore_case(ending, "vhdl")
+    } else {
+        false
+    }
+}
+
 /// Checks against file patterns if the file is an rtl file.
 pub fn is_rtl(file: &str) -> bool {
     let match_opts = glob::MatchOptions {
@@ -185,6 +195,30 @@ pub fn gather_current_files(path: &std::path::PathBuf) -> Vec<String> {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn detect_vhdl_files() {
+        let s = "filename.vhd";
+        assert_eq!(is_vhdl(s), true);
+
+        let s = "filename.VHD";
+        assert_eq!(is_vhdl(s), true);
+
+        let s = "filename.VHdL";
+        assert_eq!(is_vhdl(s), true);
+
+        let s = "filename.vhdl";
+        assert_eq!(is_vhdl(s), true);
+
+        let s = "filename.v";
+        assert_eq!(is_vhdl(s), false);
+
+        let s = "filename";
+        assert_eq!(is_vhdl(s), false);
+
+        let s = "filename.sv";
+        assert_eq!(is_vhdl(s), false);
+    }
 
     #[test]
     fn fset_from_str() {

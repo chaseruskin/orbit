@@ -672,7 +672,7 @@ impl VHDLSymbol {
             } else if t.as_type().check_keyword(&Keyword::Package) {
                 tokens.next();
                 let pack_name = Self::route_package_parse(tokens);
-                println!("**** INFO: detected nested package \"{}\"", pack_name);;
+                println!("**** INFO: detected nested package \"{}\"", pack_name);
             // build statements to throw away
             } else {
                 let _stmt = Self::compose_statement(tokens);

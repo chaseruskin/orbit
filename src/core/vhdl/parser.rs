@@ -75,7 +75,7 @@ impl VHDLSymbol {
 impl std::fmt::Display for VHDLSymbol {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            Self::Entity(e) => format!("entity {}", &e.name),
+            Self::Entity(e) => format!("entity {} {{ generics={:?} ports={:?} }}", &e.name, e.generics, e.ports),
             Self::PackageBody => format!("package body!"),
             Self::Architecture(a) => format!("architecture {} for entity {}", &a.name, &a.owner),
             Self::Package(p) => format!("package {}", &p),
@@ -149,13 +149,21 @@ pub struct Entity {
 }
 
 impl Entity {
-    fn new() -> Self {
+    /// Returns a new blank `Entity` struct.
+    pub fn new() -> Self {
         Self { 
             name: Identifier::new(),
             ports: Vec::new(), 
             generics: Vec::new(), 
             architectures: Vec::new(),
         }
+    }
+
+    /// Checks if the current `Entity` is a testbench.
+    /// 
+    /// This is determined by checking if the ports list is empty.
+    pub fn is_testbench(&self) -> bool {
+        self.ports.is_empty()
     }
 }
 
@@ -194,9 +202,9 @@ impl Parse<VHDLToken> for VHDLParser {
         while let Some(t) = tokens.next() {
             // create entity symbol
             if t.as_ref().check_keyword(&Keyword::Entity) {
-                let name = VHDLSymbol::parse_entity(&mut tokens);
-                println!("!!!! INFO: detected primary design unit entity \"{}\"", name);
-                symbols.push(Ok(Symbol::new(VHDLSymbol::Entity(Entity { name: name, architectures: Vec::new(), ports: Vec::new(), generics: Vec::new() }))));
+                let ent = VHDLSymbol::parse_entity(&mut tokens);
+                println!("!!!! INFO: detected {}", ent);
+                symbols.push(Ok(Symbol::new(ent)));
             // create architecture symbol
             } else if t.as_ref().check_keyword(&Keyword::Architecture) {
                 let arch = VHDLSymbol::parse_architecture(&mut tokens);
@@ -210,7 +218,7 @@ impl Parse<VHDLToken> for VHDLParser {
             // create package symbol
             } else if t.as_ref().check_keyword(&Keyword::Package) {
                 let pack = VHDLSymbol::route_package_parse(&mut tokens);
-                println!("!!!! INFO: detected package \"{}\"", pack);
+                println!("!!!! INFO: detected {}", pack);
                 symbols.push(Ok(Symbol::new(pack)));
             // otherwise take a statement (probably by mistake/errors in user's vhdl code or as of now an error in my code)
             } else {
@@ -220,7 +228,6 @@ impl Parse<VHDLToken> for VHDLParser {
                 println!("global statement: {:?}", stmt);
             }
         }
-        // detect entity keyword
         // println!("{:#?}", symbols);
         symbols
     }
@@ -282,16 +289,22 @@ impl Statement {
 
 impl VHDLSymbol {
 
-    fn parse_entity<I>(tokens: &mut Peekable<I>) -> Identifier 
+    fn parse_entity<I>(tokens: &mut Peekable<I>) -> VHDLSymbol 
     where I: Iterator<Item=Token<VHDLToken>>  {
         // take entity name
         let entity_name = tokens.next().take().unwrap().take();
         println!("*--- unit {}", entity_name);
-        VHDLSymbol::parse_primary_declaration(tokens);
-        match entity_name {
-            VHDLToken::Identifier(id) => id,
-            _ => panic!("expected an identifier")
-        }
+        let (generics, ports) = VHDLSymbol::parse_entity_declaration(tokens);
+        VHDLSymbol::Entity(
+            Entity { 
+                name: match entity_name {
+                        VHDLToken::Identifier(id) => id,
+                        _ => panic!("expected an identifier")
+                },
+                architectures: Vec::new(),
+                generics: generics,
+                ports: ports,
+        })
     }
 
     /// Parses a package declaration, from the <package> IS to the END keyword.
@@ -336,7 +349,6 @@ impl VHDLSymbol {
         }
 
         println!("*--- unit {}", pack_name);
-        // VHDLSymbol::parse_primary_declaration(tokens);
         VHDLSymbol::Package(match pack_name {
             VHDLToken::Identifier(id) => id,
             _ => panic!("expected an identifier")
@@ -509,6 +521,9 @@ impl VHDLSymbol {
         Statement::new()
     }
 
+    /// Parses the OF keyword and then returns the following IDENTIFIER.
+    /// 
+    /// The Identifier should correspond to the architecture's entity name.
     fn parse_owner_design_unit<I>(tokens: &mut Peekable<I>) -> Identifier
     where I: Iterator<Item=Token<VHDLToken>>  {
         // force taking the 'of' keyword
@@ -542,22 +557,29 @@ impl VHDLSymbol {
         // collect statements until finding the ')', END, BEGIN, or PORT.
         let mut statements: Vec<Statement> = Vec::new();
         while let Some(t) = tokens.peek() {
-            if t.as_type().check_delimiter(&Delimiter::ParenR) || t.as_type().check_keyword(&Keyword::End) ||
-                t.as_type().check_keyword(&Keyword::Begin) || t.as_type().check_keyword(&Keyword::Port) {
-                    // if the statement did not close on finding PARENR, remove it from last statement
-                    if t.as_type().check_delimiter(&Delimiter::ParenR) == false {
+            if let Some(stmt) = statements.last() {
+                if stmt.0.last().unwrap().as_type().check_delimiter(&Delimiter::ParenR) {
+                    let balance = stmt.0.iter().fold(0, |acc, x| {
+                        if x.as_type().check_delimiter(&Delimiter::ParenL) { acc + 1 }
+                        else if x.as_type().check_delimiter(&Delimiter::ParenR) { acc - 1 }
+                        else { acc }
+                    });
+                    if balance == -1 {
                         let index = statements.len()-1;
+                        // pop off and exit
                         let last_statement = statements.get_mut(index).unwrap();
-                        let r = last_statement.0.pop().expect("expecting closing ')'");
-                        if r.as_type().check_delimiter(&Delimiter::ParenR) == false {
-                            panic!("expecting closing ')' but got {}", r.as_type())
-                        }
-                        // count PARENL and PARENR to make sure they are balanced
+                        last_statement.0.pop().expect("expecting closing ')'");
+                        break;
                     }
+                }
+            }
+            if t.as_type().check_delimiter(&Delimiter::ParenR) {
+                    Self::compose_statement(tokens);
                     break;
             // collect statements
             } else {
                 statements.push(Self::compose_statement(tokens));
+                println!("{}", statements.last().unwrap());
             }
         }
         
@@ -565,9 +587,59 @@ impl VHDLSymbol {
         statements
     }
 
-    fn parse_entity_declaration<I>(_tokens: &mut Peekable<I>) -> Vec<Identifier>
+    /// Consumes tokens after `IS` until finding `BEGIN` or `END`.
+    /// 
+    /// Assumes the next token to consume is `IS` and throws it away. This will
+    /// search for interface lists found after GENERIC and PORT keywords.
+    fn parse_entity_declaration<I>(tokens: &mut Peekable<I>) -> (Vec<Statement>, Vec<Statement>)
         where I: Iterator<Item=Token<VHDLToken>> {
-        todo!()
+        println!("*--- declaration section");
+        // force taking the 'is' keyword
+        if tokens.next().unwrap().as_type().check_keyword(&Keyword::Is) == false {
+            panic!("expecting 'is' keyword")
+        }
+        // check entity_header before entering entity declarative part
+        // check for generics
+        if tokens.peek().is_none() { panic!("expecting END keyword") }
+        let generics = if tokens.peek().unwrap().as_type().check_keyword(&Keyword::Generic) {
+            tokens.next();
+            Self::parse_interface_list(tokens)
+        } else {
+            Vec::new()
+        };
+        // check for ports
+        if tokens.peek().is_none() { panic!("expecting END keyword") }
+        let ports = if tokens.peek().unwrap().as_type().check_keyword(&Keyword::Port) {
+            tokens.next();
+            Self::parse_interface_list(tokens)
+        } else {
+            Vec::new()
+        };
+
+        while let Some(t) = tokens.peek() {
+            // stop the declaration section and enter a statement section
+            if t.as_type().check_keyword(&Keyword::Begin) {
+                tokens.next();
+                Self::parse_body(tokens, &Self::is_primary_ending);
+                break;
+            // the declaration is over and there is no statement section
+            } else if t.as_type().check_keyword(&Keyword::End) {
+                let stmt = Self::compose_statement(tokens);
+                if Self::is_primary_ending(&stmt) { 
+                    break; 
+                }
+            // find a nested package (throw away for now)
+            } else if t.as_type().check_keyword(&Keyword::Package) {
+                tokens.next();
+                let pack_name = Self::route_package_parse(tokens);
+                println!("**** INFO: detected nested package \"{}\"", pack_name);
+            // build statements to throw away
+            } else {
+                let _stmt = Self::compose_statement(tokens);
+                // println!("{:?}", stmt);
+            } 
+        }
+        (generics, ports)
     }
 
     /// Consumes tokens after `IS` until finding `BEGIN` or `END`.
@@ -575,7 +647,7 @@ impl VHDLSymbol {
     /// Assumes the next token to consume is `IS` and throws it away.
     fn parse_primary_declaration<I>(tokens: &mut Peekable<I>) -> Vec<Identifier>
         where I: Iterator<Item=Token<VHDLToken>> {
-        println!("*--- declaration section");
+        // println!("*--- declaration section");
         // force taking the 'is' keyword
         if tokens.next().unwrap().as_type().check_keyword(&Keyword::Is) == false {
             panic!("expecting 'is' keyword")
@@ -588,7 +660,7 @@ impl VHDLSymbol {
             // the declaration is over and there is no statement section
             } else if t.as_type().check_keyword(&Keyword::End) {
                 let stmt = Self::compose_statement(tokens);
-                println!("{:?}", stmt);
+                // println!("{:?}", stmt);
                 if Self::is_primary_ending(&stmt) { 
                     break; 
                 }
@@ -599,13 +671,13 @@ impl VHDLSymbol {
             // find a nested package
             } else if t.as_type().check_keyword(&Keyword::Package) {
                 tokens.next();
-                let pack_name = Self::parse_entity(tokens);
-                println!("**** INFO: detected nested package \"{}\"", pack_name);
-            // build statements
+                let pack_name = Self::route_package_parse(tokens);
+                println!("**** INFO: detected nested package \"{}\"", pack_name);;
+            // build statements to throw away
             } else {
-                let stmt = Self::compose_statement(tokens);
-                println!("{:?}", stmt);
-            }
+                let _stmt = Self::compose_statement(tokens);
+                // println!("{:?}", stmt);
+            } 
         }
         Vec::new()
     }
@@ -684,6 +756,8 @@ impl VHDLSymbol {
         }
     }
 
+    /// Routes the parsing to either package body or package declaration,
+    /// depending on the next token being BODY keyword or identifier.
     fn route_package_parse<I>(tokens: &mut Peekable<I>) -> VHDLSymbol
     where I: Iterator<Item=Token<VHDLToken>> {
         if &VHDLToken::Keyword(Keyword::Body) == tokens.peek().unwrap().as_type() {
@@ -766,6 +840,23 @@ mod test {
     }
 
     #[test]
+    fn compose_statement_2() {
+        let s = "P1, P2: inout BIT); constant Delay: TIME := 1 ms;";
+        let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
+        let mut iter = tokens.into_iter().peekable();
+        assert_eq!(VHDLSymbol::compose_statement(&mut iter).as_types(), vec![
+            &VHDLToken::Identifier(Identifier::Basic("P1".to_owned())),
+            &VHDLToken::Delimiter(Delimiter::Comma),
+            &VHDLToken::Identifier(Identifier::Basic("P2".to_owned())),
+            &VHDLToken::Delimiter(Delimiter::Colon),
+            &VHDLToken::Keyword(Keyword::Inout),
+            &VHDLToken::Identifier(Identifier::Basic("BIT".to_owned())),
+            &VHDLToken::Delimiter(Delimiter::ParenR),
+        ]);
+        assert_eq!(iter.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::Constant));
+    }
+
+    #[test]
     fn parse_simple_name() {
         let s = "eel4712c.nor_gate port";
         let mut tokens = VHDLTokenizer::from_source_code(&s).into_tokens().into_iter().peekable();
@@ -787,6 +878,21 @@ mod test {
             Identifier::Basic("eel4712c".to_owned()),
         ]));
         assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Delimiter(Delimiter::Plus));
+    }
+
+    #[test]
+    fn parse_port_interface_difficult_ending() {
+        let s = "\
+port (P1, P2: inout BIT); 
+constant Delay: TIME := 1 ms;";
+        let mut tokens = VHDLTokenizer::from_source_code(&s).into_tokens().into_iter().peekable();
+        tokens.next(); // take PORT
+        let ports = VHDLSymbol::parse_interface_list(&mut tokens);
+        let ports: Vec<String> = ports.into_iter().map(|m| m.to_string()).collect();
+        assert_eq!(ports, vec![
+            "P1 , P2 : inout BIT ",
+        ]);
+        assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::Constant));
     }
 
     #[test]
@@ -927,7 +1033,6 @@ signal ready: std_logic;";
             &VHDLToken::Keyword(Keyword::Downto),
             &VHDLToken::AbstLiteral(AbstLiteral::Decimal("0".to_owned())),
             &VHDLToken::Delimiter(Delimiter::ParenR),
-            // @TODO include terminator in statement?
         ]);
 
         let s = "a : in std_logic_vector(3 downto 0); ready: out std_logic);";
@@ -952,7 +1057,7 @@ signal ready: std_logic;";
     }
 
     #[test]
-    #[ignore]
+    // #[ignore]
     fn parse_basic() {
         let s = "\
 -- design file for a nor_gate
@@ -1023,7 +1128,8 @@ package outer is
 end package;
 
 entity X is
-port (P1, P2: inout BIT); constant Delay: TIME := 1 ms;
+port (P1, P2: inout BIT); 
+constant Delay: TIME := 1 ms;
 begin
 CheckTiming (P1, P2, 2*Delay); end X ;
 

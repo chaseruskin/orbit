@@ -130,13 +130,14 @@ impl Plan {
         println!("{:?}", order);
         println!("{:?}", map);
 
-        // detect the top-level
+        // determine the top-level node index
         let top = if let Some(t) = &self.top {
             match map.get(&t) {
                 Some(node) => node.index(),
                 None => panic!("no entity named {}", t)
             }
         } else {
+            // only allow tops that have ports (not testbenches)
             g.find_root().expect("multiple toplevels (or zero) are possible")
         };
 

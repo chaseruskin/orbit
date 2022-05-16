@@ -50,21 +50,28 @@ impl Command for Build {
                 }
             }
         }
-        self.run()
+        // try to find plugin matching `command` name under the `alias`
+        let plug = c.get_plugins().get(&self.command);
+        self.run(plug)
     }
 }
 
+use crate::core::plugin::Plugin;
 use std::process::Stdio;
 
 impl Build {
-    fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
-
-        let mut proc = std::process::Command::new(&self.command)
-            .args(&self.args)
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .spawn()?;
-        let _ = proc.wait()?;
+    fn run(&self, plug: Option<&Plugin>) -> Result<(), Box<dyn std::error::Error>> {
+        // if there is a match run with the plugin then run it
+        if let Some(p) = plug {
+            p.execute(&self.args)?;
+        } else {
+            let mut proc = std::process::Command::new(&self.command)
+                .args(&self.args)
+                .stdout(Stdio::inherit())
+                .stderr(Stdio::inherit())
+                .spawn()?;
+            let _ = proc.wait()?;
+        }
         Ok(())
     }
 }

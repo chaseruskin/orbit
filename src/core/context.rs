@@ -1,6 +1,9 @@
 use std::path;
 use std::env;
 use toml_edit::Document;
+use std::collections::HashMap;
+use crate::core::plugin::Plugin;
+use crate::core::plugin::FromToml;
 
 pub struct Context {
     home_path: path::PathBuf,
@@ -9,6 +12,7 @@ pub struct Context {
     dev_path: Option<path::PathBuf>,
     build_dir: String,
     config: Document,
+    plugins: HashMap<String, Plugin>,
     pub force: bool,
 }
 
@@ -21,6 +25,7 @@ impl Context {
             cache_path: cache,
             ip_path: None,
             dev_path: None,
+            plugins: HashMap::new(),
             config: Document::new(),
             build_dir: String::new(),
             force: false,
@@ -100,10 +105,41 @@ impl Context {
             Ok(d) => d,
             Err(er) => return Err(ContextError(er.to_string()))
         };
-        // :todo: also look within every path along current directory for a /.orbit/config.toml file to load
+        // @TODO also look within every path along current directory for a /.orbit/config.toml file to load
 
-        // :todo: dynamically set from environment variables from configuration data
+        // @TODO dynamically set from environment variables from configuration data
+        
+        // load all plugins
+        let arr = if let Some(arr) = self.config.get("plugin") {
+            match arr {
+                toml_edit::Item::ArrayOfTables(aot) => aot,
+                _ => return Err(ContextError(format!("{} plugin expects to be array of tables", cfg_path.display())))
+            }
+        } else {
+            return Ok(self);
+        };
+
+        self.plugins = match Self::load_plugins(&self.home_path, &arr) {
+            Ok(p) => p,
+            Err(e) => return Err(ContextError(e.to_string())),
+        };
         Ok(self)
+    }
+
+    /// Accesses the plugins in a map with `alias` as the keys.
+    pub fn get_plugins(&self) -> &HashMap<String, Plugin> {
+        &self.plugins
+    }
+
+    /// Iterates through an array of tables to define all plugins.
+    fn load_plugins(root: &std::path::PathBuf, arr_of_tbl: &toml_edit::ArrayOfTables) -> Result<HashMap<String, Plugin>, Box<dyn std::error::Error>> {
+        let mut hmap = HashMap::new();
+        for tbl in arr_of_tbl {
+            let plug = Plugin::from_toml(tbl)?
+                .resolve_all_paths(&root);
+            hmap.insert(plug.alias().to_owned(), plug);
+        }
+        Ok(hmap)
     }
 
     /// Determines the orbit ip development path.

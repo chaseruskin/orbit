@@ -6,3 +6,4 @@ pub mod ip;
 pub mod fileset;
 pub mod vhdl;
 pub mod lexer;
+pub mod plugin;

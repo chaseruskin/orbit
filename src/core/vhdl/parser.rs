@@ -1057,7 +1057,7 @@ signal ready: std_logic;";
     }
 
     #[test]
-    // #[ignore]
+    #[ignore]
     fn parse_basic() {
         let s = "\
 -- design file for a nor_gate

@@ -137,7 +137,7 @@ impl Display for Identifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Basic(id) => write!(f, "{}", id),
-            Self::Extended(id) => write!(f, "{}", id),
+            Self::Extended(id) => write!(f, "\\{}\\", id.replace('\\', r#"\\"#)),
         }
     }
 }

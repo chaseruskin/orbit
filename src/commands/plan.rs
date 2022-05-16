@@ -47,6 +47,7 @@ use std::collections::HashMap;
 #[derive(Debug, PartialEq)]
 struct HashNode {
     index: usize,
+    entity: parser::Entity,
     files: Vec<String>,
 }
 
@@ -55,10 +56,11 @@ impl HashNode {
         self.index
     }
     
-    fn new(index: usize, file: String) -> Self {
+    fn new(entity: parser::Entity, index: usize, file: String) -> Self {
         let mut set = Vec::new();
         set.push(file);
         Self {
+            entity: entity,
             index: index,
             files: set,
         }
@@ -90,13 +92,13 @@ impl Plan {
         let mut archs: Vec<(parser::Architecture, String)> = Vec::new();
         // read all files
         for source_file in &files {
-            if crate::core::fileset::is_vhdl(source_file) == true {
+            if crate::core::fileset::is_vhdl(&source_file) == true {
                 let contents = std::fs::read_to_string(&source_file).unwrap();
                 let symbols = parser::VHDLParser::read(&contents).into_symbols();
                 // add all entities to a graph and store architectures for later analysis
                 let mut iter = symbols.into_iter().filter_map(|f| {
                     match f {
-                        parser::VHDLSymbol::Entity(_) => Some(f.get_iden().clone()),
+                        parser::VHDLSymbol::Entity(e) => Some(e),
                         parser::VHDLSymbol::Architecture(arch) => {
                             archs.push((arch, source_file.to_string()));
                             None
@@ -106,8 +108,8 @@ impl Plan {
                 });
                 while let Some(e) = iter.next() {
                     let index = g.add_node();
-                    inverse_map.push(e.clone());
-                    map.insert(e.clone(), HashNode::new(index, source_file.to_string()));
+                    inverse_map.push(e.get_name().clone());
+                    map.insert(e.get_name().clone(), HashNode::new(e, index, source_file.to_string()));
                 }
             }
         }
@@ -132,26 +134,46 @@ impl Plan {
         println!("{:?}", order);
         println!("{:?}", map);
 
-        // determine the top-level node index
-        let top = if let Some(t) = &self.top {
+        let bench = if let Some(t) = &self.bench {
             match map.get(&t) {
-                Some(node) => node.index(),
+                Some(node) => {
+                    if node.entity.is_testbench() == false {
+                        panic!("entity {} is not a testbench and cannot be bench; please use --top", t)
+                    }
+                    node.index()
+                },
                 None => panic!("no entity named {}", t)
             }
         } else {
-            // only allow tops that have ports (not testbenches)
-            g.find_root().expect("multiple toplevels (or zero) are possible")
+            // filter to display tops that have ports (not testbenches)
+            g.find_root().expect("multiple testbenchs (or zero) are possible")
+        };
+
+        // determine the top-level node index
+        let top = if let Some(t) = &self.top {
+            match map.get(&t) {
+                Some(node) => {
+                    if node.entity.is_testbench() == true {
+                        panic!("entity {} is a testbench and cannot be top; please use --bench", t)
+                    }
+                    node.index()
+                },
+                None => panic!("no entity named {}", t)
+            }
+        } else {
+            Self::detect_top(&g, Some(bench))
         };
 
         // @TODO detect if there is a single existing testbench for the top
 
         let top_name = &inverse_map[top];
+        let bench_name = &inverse_map[bench];
 
         std::env::set_var("ORBIT_TOP", &top_name.to_string());
-        std::env::set_var("ORBIT_BENCH", &top_name.to_string());
+        std::env::set_var("ORBIT_BENCH", &bench_name.to_string());
         
         // compute minimal topological ordering
-        let min_order = g.minimal_topological_sort(top);
+        let min_order = g.minimal_topological_sort(bench);
 
         let mut file_order = Vec::new();
         for i in &min_order {
@@ -202,6 +224,23 @@ impl Plan {
 
         // create a blueprint file
         println!("info: Blueprint created at: {}", blueprint_path.display());
+    }
+
+    /// Given a `graph` and optionally a `bench`, detect the index corresponding
+    /// to the top.
+    /// 
+    /// This function looks and checks if there is a single predecessor to the
+    /// `bench` node.
+    fn detect_top(graph: &Graph, bench: Option<usize>) -> usize {
+        if let Some(b) = bench {
+            match graph.in_degree(b) {
+                0 => panic!("no entities are tested in the testbench"),
+                1 => graph.predecessors(b).next().unwrap(),
+                _ => panic!("multiple tops are detected from testbench")
+            }
+        } else {
+            todo!("find toplevel node that is not a bench")
+        }
     }
 }
 

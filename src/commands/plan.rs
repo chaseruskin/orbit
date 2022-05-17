@@ -169,6 +169,7 @@ impl Plan {
                         if let Some(b) = first_bench {
                             // try to detect second bench
                             bench = match callers.find(|f| map.get(&inverse_map[*f]).unwrap().entity.is_testbench() ) {
+                                // @TODO show all testbenches not just 2 (use filter and match on length of collected vector)
                                 Some(c) => panic!("top entity has multiple testbenches:\n\t{}\n\t{}", map.get(&inverse_map[b]).unwrap().entity.get_name(), map.get(&inverse_map[c]).unwrap().entity.get_name()),
                                 None => Some(b),
                             };

@@ -95,7 +95,7 @@ impl Plan {
         build_path.push(build_dir);
         
         // check if to clean the directory
-        if self.clean == true {
+        if self.clean == true && std::path::Path::exists(&build_path) == true {
             std::fs::remove_dir_all(&build_path)?;
         }
 

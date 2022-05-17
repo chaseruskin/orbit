@@ -135,26 +135,21 @@ impl Plan {
             }
         }
 
-        // sort
-        let order = g.topological_sort();
-        println!("{:?}", order);
-        println!("{:?}", map);
-
         let mut bench = if let Some(t) = &self.bench {
             match map.get(&t) {
                 Some(node) => {
                     if node.entity.is_testbench() == false {
                         panic!("entity {} is not a testbench and cannot be bench; please use --top", t)
                     }
-                    node.index()
+                    Some(node.index())
                 },
-                None => panic!("no entity named {}", t)
+                None => panic!("no testbench entity named {}", t)
             }
         } else if self.top.is_none() {
             // filter to display tops that have ports (not testbenches)
-            g.find_root().expect("multiple testbenchs (or zero) are possible")
+            Some(g.find_root().expect("multiple testbenchs (or zero) are possible"))
         } else {
-            0 // still could possibly be found by top level is top is some
+            None // still could possibly be found by top level is top is some
         };
 
         // determine the top-level node index
@@ -167,11 +162,16 @@ impl Plan {
                     let n = node.index();
                     // try to detect top level testbench
                     if self.bench.is_none() {
-                        // find if there is 1 successor for top
-                        if g.out_degree(n) == 1 {
-                            bench = g.successors(n).next().unwrap();
-                        } else {
-                            panic!("multiple testbenches detected for {}", node.entity.get_name())
+                        let mut callers = g.successors(n);
+                        // check if only 1 is a testbench
+                        let first_bench = callers.find(|f| map.get(&inverse_map[*f]).unwrap().entity.is_testbench() );
+                        // detect if there is a single existing testbench for the top
+                        if let Some(b) = first_bench {
+                            // try to detect second bench
+                            bench = match callers.find(|f| map.get(&inverse_map[*f]).unwrap().entity.is_testbench() ) {
+                                Some(c) => panic!("top entity has multiple testbenches:\n\t{}\n\t{}", map.get(&inverse_map[b]).unwrap().entity.get_name(), map.get(&inverse_map[c]).unwrap().entity.get_name()),
+                                None => Some(b),
+                            };
                         }
                     }
                     n
@@ -179,21 +179,27 @@ impl Plan {
                 None => panic!("no entity named {}", t)
             }
         } else {
-            Self::detect_top(&g, Some(bench))
+            Self::detect_top(&g, bench)
         };
         // enable immutability
         let bench = bench;
 
-        // @TODO detect if there is a single existing testbench for the top
-
         let top_name = &inverse_map[top];
-        let bench_name = &inverse_map[bench];
+        let bench_name = if let Some(n) = bench {
+            inverse_map[n].to_string()
+        } else {
+            String::new()
+        };
 
         std::env::set_var("ORBIT_TOP", &top_name.to_string());
         std::env::set_var("ORBIT_BENCH", &bench_name.to_string());
-        
+
+        let highest_point = match bench {
+            Some(b) => b,
+            None => top
+        };
         // compute minimal topological ordering
-        let min_order = g.minimal_topological_sort(bench);
+        let min_order = g.minimal_topological_sort(highest_point);
 
         let mut file_order = Vec::new();
         for i in &min_order {
@@ -237,6 +243,7 @@ impl Plan {
             }
         }
 
+        // collect in-order hdl data
         for file in file_order {
             if crate::core::fileset::is_rtl(&file) == true {
                 blueprint_data += &format!("VHDL-RTL\twork\t{}\n", file);

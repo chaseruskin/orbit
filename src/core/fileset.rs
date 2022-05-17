@@ -111,6 +111,34 @@ impl Fileset {
     pub fn get_pattern(&self) -> &glob::Pattern {
         &self.pattern
     }
+
+    /// Loads a fileset from a toml key/value pair
+    pub fn from_toml(key: toml_edit::Key, val: toml_edit::Value) -> Self {
+        Self {
+            name: key.to_string(),
+            pattern: glob::Pattern::new(val.as_str().unwrap()).unwrap(),
+        }
+    }
+
+    /// Creates format for blueprint.tsv file.
+    /// 
+    /// The format goes FILESET_NAME\tFILE_NAME\tFILE_PATH
+    pub fn to_blueprint_string(&self, file: &str) -> String {
+        let filename = {
+            // removes root path
+            let filenode = if let Some((_, node)) = file.rsplit_once('/') {
+                node
+            } else {
+                file
+            };
+            // removes file extenstion
+            match filenode.rsplit_once('.') {
+                Some((name, _)) => name,
+                None => filenode
+            }
+        };
+        format!("{}\t{}\t{}\n", self.name, filename, file)
+    }
 }
 
 /// Finds the VHDL files for the proper fileset among the list of available `files`.
@@ -195,6 +223,16 @@ pub fn gather_current_files(path: &std::path::PathBuf) -> Vec<String> {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn to_blueprint_string() {
+        let fset = Fileset::new().name("vhdl").pattern("*.sv").unwrap();
+        let filepath = "c:/users/chase/develop/project/adder.sv";
+        assert_eq!(fset.to_blueprint_string(&filepath), format!("VHDL\tadder\t{}\n", filepath));
+
+        let filepath = "FILE2.sv";
+        assert_eq!(fset.to_blueprint_string(&filepath), format!("VHDL\tFILE2\t{}\n", filepath));
+    }
 
     #[test]
     fn detect_vhdl_files() {

@@ -35,8 +35,14 @@ impl Command for Plan {
         } else {
             c.get_build_dir()
         };
+        // find plugin filesets
+        let plug_fset = if let Some(plug) = &self.plugin {
+            Some(c.get_plugins().get(plug).expect(&format!("plugin {} does not exist", plug)).filesets())
+        } else {
+            None
+        };
         // @TODO pass in the current IP struct
-        Ok(self.run(b_dir))
+        Ok(self.run(b_dir, plug_fset))
     }
 }
 
@@ -76,7 +82,7 @@ impl HashNode {
 use crate::core::vhdl::vhdl::Identifier;
 
 impl Plan {
-    fn run(&self, build_dir: &str) -> () {
+    fn run(&self, build_dir: &str, plug_filesets: Option<&Vec<Fileset>>) -> () {
         let mut build_path = std::env::current_dir().unwrap();
         build_path.push(build_dir);
         // gather filesets
@@ -211,6 +217,26 @@ impl Plan {
             }
         }
 
+        // collect data for the given plugin
+        if let Some(fsets) = plug_filesets {
+            // define pattern matching settings
+            let match_opts = glob::MatchOptions {
+                case_sensitive: false,
+                require_literal_separator: false,
+                require_literal_leading_dot: false,
+            };
+            // iterate through every collected file
+            for file in &files {
+                // check against every defined fileset for the plugin
+                for fset in fsets {
+                    if fset.get_pattern().matches_with(file, match_opts) == true {
+                        // add to blueprint
+                        blueprint_data += &fset.to_blueprint_string(file);
+                    }
+                }
+            }
+        }
+
         for file in file_order {
             if crate::core::fileset::is_rtl(&file) == true {
                 blueprint_data += &format!("VHDL-RTL\twork\t{}\n", file);
@@ -281,7 +307,7 @@ Usage:
 Options:
     --top <unit>            override auto-detected toplevel entity
     --bench <tb>            override auto-detected toplevel testbench
-    --plugin <plugin>       collect filesets defined for this plugin
+    --plugin <plugin>       collect filesets defined for a plugin
     --build-dir <dir>       set the output build directory
     --fileset <key=glob>... set an additional fileset
     --all                   include all found HDL files

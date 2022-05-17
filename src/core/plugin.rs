@@ -1,3 +1,6 @@
+use std::process::Stdio;
+use crate::core::fileset::Fileset;
+
 pub trait FromToml {
     type Err;
 
@@ -10,7 +13,7 @@ pub struct Plugin {
     command: String,
     args: Vec<String>,
     summary: Option<String>,
-    // @TODO capture filesets
+    filesets: Vec<Fileset>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -34,8 +37,6 @@ impl std::fmt::Display for PluginError {
     }
 }
 
-use std::process::Stdio;
-
 impl Plugin {
     /// Creates a new `Plugin` struct.
     pub fn new() -> Self {
@@ -44,6 +45,7 @@ impl Plugin {
             command: String::new(), 
             args: Vec::new(),
             summary: None,
+            filesets: Vec::new(),
         }
     }
 
@@ -61,6 +63,11 @@ impl Plugin {
     /// Accesses the plugin's `alias`.
     pub fn alias(&self) -> &String {
         &self.alias
+    }
+
+    /// Accesses the plugin's `filesets`.
+    pub fn filesets(&self) -> &Vec<Fileset> {
+        &self.filesets
     }
 
     /// Applies the `resolve_path` fn to the `command` and all `args`.
@@ -117,6 +124,21 @@ impl FromToml for Plugin {
                 Some(val.as_str().unwrap().to_string())
             } else { 
                 None 
+            },
+            filesets: {
+                if let Some(inner_table) = table.get("fileset") {
+                    // grab every key and value to transform into a fileset
+                    let inner_table = inner_table.as_table_like().expect("fileset must be a table");
+                    let mut iter = inner_table.iter();
+                    let mut filesets = Vec::new();
+                    while let Some((key, value)) = iter.next() {
+                        let value = value.as_str().unwrap(); 
+                        filesets.push(Fileset::new().name(key).pattern(value).unwrap())
+                    }
+                    filesets
+                } else {
+                    Vec::new()
+                }
             }
         })
         // @TODO verify there are no extra keys
@@ -134,7 +156,8 @@ mod test {
             summary: None,
             alias: String::new(), 
             command: String::new(), 
-            args: Vec::new()
+            args: Vec::new(),
+            filesets: Vec::new(),
         });
     }
 
@@ -154,6 +177,7 @@ mod test {
 alias = "ghdl"
 command = "python"
 args = ["orbit-ghdl.py"]
+fileset.py-model = "*_mdl.py"
 "#;
         let doc = toml.parse::<toml_edit::Document>().unwrap();
         let plug = Plugin::from_toml(&doc["plugin"].as_array_of_tables().unwrap().get(0).unwrap()).unwrap();
@@ -163,7 +187,10 @@ args = ["orbit-ghdl.py"]
             command: String::from("python"), 
             args: vec![
                 "orbit-ghdl.py".to_string()
-            ]
+            ],
+            filesets: vec![
+                Fileset::new().name("py-model").pattern("*_mdl.py").unwrap(),
+            ],
         });
     }
 }

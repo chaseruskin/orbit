@@ -338,7 +338,7 @@ impl VHDLSymbol {
                 // @TODO store nested packages
             // grab component declarations
             } else if t.as_type().check_keyword(&Keyword::Component) {
-                let comp = Self::parse_component(tokens);
+                let _comp = Self::parse_component(tokens);
                 // println!("component declared: {}", comp);
             // grab USE clause
             } else if t.as_type().check_keyword(&Keyword::Use) {
@@ -637,7 +637,7 @@ impl VHDLSymbol {
             // find a nested package (throw away for now)
             } else if t.as_type().check_keyword(&Keyword::Package) {
                 tokens.next();
-                let pack_name = Self::route_package_parse(tokens);
+                let _pack_name = Self::route_package_parse(tokens);
                 // println!("**** INFO: detected nested package \"{}\"", pack_name);
             // build statements to throw away
             } else {
@@ -672,12 +672,12 @@ impl VHDLSymbol {
                 }
             // find component names (could be in package or architecture declaration)
             } else if t.as_type().check_keyword(&Keyword::Component) {
-                let comp_name = Self::parse_component(tokens);
+                let _comp_name = Self::parse_component(tokens);
                 // println!("**** INFO: Found component: \"{}\"", comp_name);
             // find a nested package
             } else if t.as_type().check_keyword(&Keyword::Package) {
                 tokens.next();
-                let pack_name = Self::route_package_parse(tokens);
+                let _pack_name = Self::route_package_parse(tokens);
                 // println!("**** INFO: detected nested package \"{}\"", pack_name);
             // build statements to throw away
             } else {
@@ -738,7 +738,7 @@ impl VHDLSymbol {
         // @TODO collect port names and generic names until hitting 'END'
         while let Some(t) = tokens.peek() {
             if t.as_type().check_keyword(&Keyword::End) {
-                let stmt = Self::compose_statement(tokens);
+                let _stmt = Self::compose_statement(tokens);
                 // println!("{:?}", stmt);
                 break;
             // collect generic statements
@@ -752,7 +752,7 @@ impl VHDLSymbol {
                 tokens.next();
                 let _ports = Self::parse_interface_list(tokens);
             } else {
-                let stmt = Self::compose_statement(tokens);
+                let _stmt = Self::compose_statement(tokens);
                 // println!("{:?}", stmt);
             }
         }
@@ -782,36 +782,36 @@ impl VHDLSymbol {
         where I: Iterator<Item=Token<VHDLToken>>  {
         // collect component names
         let mut deps = Vec::new();
-        println!("*--- statement section");
+        // println!("*--- statement section");
         while let Some(t) = tokens.peek() {
             if t.as_type().check_keyword(&Keyword::End) {
                 let stmt = Self::compose_statement(tokens);
-                println!("{:?}", stmt);
+                // println!("{:?}", stmt);
                 if eval_exit(&stmt) == true { 
                     break; 
                 }
             // enter a subprogram
             } else if t.as_type().check_keyword(&Keyword::Function) || t.as_type().check_keyword(&Keyword::Begin) {
-                let stmt = Self::compose_statement(tokens);
-                println!("ENTERING SUBPROGRAM {:?}", stmt);
+                let _stmt = Self::compose_statement(tokens);
+                // println!("ENTERING SUBPROGRAM {:?}", stmt);
                 Self::parse_body(tokens, &Self::is_primary_ending);
-                println!("EXITING SUBPROGRAM");
+                // println!("EXITING SUBPROGRAM");
             // find component names (could be in package)
             } else if t.as_type().check_keyword(&Keyword::Component) {
-                let comp_name = Self::parse_component(tokens);
-                println!("**** INFO: Found component: \"{}\"", comp_name);
+                let _comp_name = Self::parse_component(tokens);
+                // println!("**** INFO: Found component: \"{}\"", comp_name);
             // find packages 
             } else if t.as_type().check_keyword(&Keyword::Package) {
                 tokens.next();
-                let symbol = Self::route_package_parse(tokens);
-                println!("**** INFO: Detected nested package \"{}\"", symbol);
+                let _symbol = Self::route_package_parse(tokens);
+                // println!("**** INFO: Detected nested package \"{}\"", symbol);
             // build statements
             } else {
                 let stmt = Self::compose_statement(tokens);
-                println!("{:?}", stmt);
+                // println!("{:?}", stmt);
                 // check if statement is an instantiation
                 if let Some(inst) = Self::parse_instantiation(stmt) {
-                    println!("**** INFO: Detected dependency \"{}\"", inst);
+                    println!("info: detected dependency \"{}\"", inst);
                     deps.push(inst);
                 }
             }

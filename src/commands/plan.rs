@@ -151,7 +151,7 @@ impl Plan {
             match map.get(&t) {
                 Some(node) => {
                     if node.entity.is_testbench() == false {
-                        return Err(AnyError(format!("entity {} is not a testbench and cannot be bench; please use --top", t)))?
+                        return Err(AnyError(format!("entity \'{}\' is not a testbench and cannot be bench; please use --top", t)))?
                     }
                     Some(node.index())
                 },
@@ -159,7 +159,25 @@ impl Plan {
             }
         } else if self.top.is_none() {
             // filter to display tops that have ports (not testbenches)
-            Some(g.find_root().expect("multiple testbenchs (or zero) are possible"))
+            match g.find_root() {
+                Ok(n) => Some(n),
+                Err(e) => {
+                    match e.len() {
+                        0 => None,
+                        _ => {
+                            // gather all identifier names
+                            let mut testbenches = e
+                                .into_iter()
+                                .map(|f| { g.get_node(f).unwrap() });
+                            let mut err_msg = String::from("multiple testbenches were found:\n");
+                            while let Some(tb) = testbenches.next() {
+                                err_msg.push_str(&format!("\t{}\n", tb));
+                            }
+                            return Err(AnyError(err_msg))?;
+                        }
+                    }   
+                }
+            }
         } else {
             None // still could possibly be found by top level is top is some
         };
@@ -169,23 +187,31 @@ impl Plan {
             match map.get(&t) {
                 Some(node) => {
                     if node.entity.is_testbench() == true {
-                        return Err(AnyError(format!("entity {} is a testbench and cannot be top; please use --bench", t)))?
+                        return Err(AnyError(format!("entity \'{}\' is a testbench and cannot be top; please use --bench", t)))?
                     }
                     let n = node.index();
                     // try to detect top level testbench
-                    if self.bench.is_none() {
-                        let mut callers = g.successors(n);
+                    if bench.is_none() {
                         // check if only 1 is a testbench
-                        let first_bench = callers.find(|f| map.get(&g.get_node(*f).unwrap()).unwrap().entity.is_testbench() );
-                        // detect if there is a single existing testbench for the top
-                        if let Some(b) = first_bench {
-                            // try to detect second bench
-                            bench = match callers.find(|f| map.get(&g.get_node(*f).unwrap()).unwrap().entity.is_testbench() ) {
-                                // @TODO show all testbenches not just 2 (use filter and match on length of collected vector)
-                                Some(c) => panic!("top entity has multiple testbenches:\n\t{}\n\t{}", map.get(&g.get_node(b).unwrap()).unwrap().entity.get_name(), map.get(&g.get_node(c).unwrap()).unwrap().entity.get_name()),
-                                None => Some(b),
-                            };
-                        }
+                        let benches: Vec<usize> =  g.successors(n)
+                            .filter(|f| map.get(&g.get_node(*f).unwrap()).unwrap().entity.is_testbench() )
+                            .collect();
+
+                        bench = match benches.len() {
+                            0 => None,
+                            1 => Some(*benches.first().unwrap()),
+                            _ => {
+                                // gather all identifier names
+                                let mut testbenches = benches
+                                    .into_iter()
+                                    .map(|f| { g.get_node(f).unwrap() });
+                                let mut err_msg = String::from("multiple testbenches were found:\n");
+                                while let Some(tb) = testbenches.next() {
+                                    err_msg.push_str(&format!("\t{}\n", tb));
+                                }
+                                return Err(AnyError(err_msg))?;
+                            }
+                        };
                     }
                     n
                 },

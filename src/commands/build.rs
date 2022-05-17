@@ -82,16 +82,19 @@ impl Build {
     fn run(&self, plug: Option<&Plugin>) -> Result<(), Box<dyn std::error::Error>> {
         // if there is a match run with the plugin then run it
         if let Some(p) = plug {
-            p.execute(&self.args)?;
+            p.execute(&self.args)
         } else {
             let mut proc = std::process::Command::new(&self.command)
                 .args(&self.args)
                 .stdout(Stdio::inherit())
                 .stderr(Stdio::inherit())
                 .spawn()?;
-            let _ = proc.wait()?;
+            let exit_code = proc.wait()?;
+            match exit_code.code() {
+                Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { Ok(()) },
+                None =>  Err(AnyError(format!("terminated by signal")))?
+            }
         }
-        Ok(())
     }
 }
 

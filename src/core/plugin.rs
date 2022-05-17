@@ -37,6 +37,8 @@ impl std::fmt::Display for PluginError {
     }
 }
 
+use crate::util::anyerror::AnyError;
+
 impl Plugin {
     /// Creates a new `Plugin` struct.
     pub fn new() -> Self {
@@ -56,8 +58,11 @@ impl Plugin {
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
             .spawn()?;
-        let _ = proc.wait()?;
-        Ok(())
+        let exit_code = proc.wait()?;
+        match exit_code.code() {
+            Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { Ok(()) },
+            None =>  Err(AnyError(format!("terminated by signal")))?
+        }
     }
 
     /// Accesses the plugin's `alias`.

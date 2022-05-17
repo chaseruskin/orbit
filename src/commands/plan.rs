@@ -134,7 +134,7 @@ impl Plan {
         println!("{:?}", order);
         println!("{:?}", map);
 
-        let bench = if let Some(t) = &self.bench {
+        let mut bench = if let Some(t) = &self.bench {
             match map.get(&t) {
                 Some(node) => {
                     if node.entity.is_testbench() == false {
@@ -144,9 +144,11 @@ impl Plan {
                 },
                 None => panic!("no entity named {}", t)
             }
-        } else {
+        } else if self.top.is_none() {
             // filter to display tops that have ports (not testbenches)
             g.find_root().expect("multiple testbenchs (or zero) are possible")
+        } else {
+            0 // still could possibly be found by top level is top is some
         };
 
         // determine the top-level node index
@@ -156,13 +158,25 @@ impl Plan {
                     if node.entity.is_testbench() == true {
                         panic!("entity {} is a testbench and cannot be top; please use --bench", t)
                     }
-                    node.index()
+                    let n = node.index();
+                    // try to detect top level testbench
+                    if self.bench.is_none() {
+                        // find if there is 1 successor for top
+                        if g.out_degree(n) == 1 {
+                            bench = g.successors(n).next().unwrap();
+                        } else {
+                            panic!("multiple testbenches detected for {}", node.entity.get_name())
+                        }
+                    }
+                    n
                 },
                 None => panic!("no entity named {}", t)
             }
         } else {
             Self::detect_top(&g, Some(bench))
         };
+        // enable immutability
+        let bench = bench;
 
         // @TODO detect if there is a single existing testbench for the top
 
@@ -218,7 +232,7 @@ impl Plan {
         // create environment variables to .env file
         let env_path = build_path.join(".env");
         let mut env_file = std::fs::File::create(&env_path).expect("could not create .env file");
-        let contents = format!("ORBIT_TOP={}\nORBIT_BENCH={}\n", &self.top.as_ref().unwrap_or(&top_name), &self.bench.as_ref().unwrap_or(&top_name));
+        let contents = format!("ORBIT_TOP={}\nORBIT_BENCH={}\n", &top_name, &bench_name);
         // write the data
         env_file.write_all(contents.as_bytes()).expect("failed to write data to .env file");
 

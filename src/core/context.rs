@@ -12,7 +12,7 @@ pub struct Context {
     dev_path: Option<path::PathBuf>,
     build_dir: String,
     config: Document,
-    plugins: HashMap<String, Plugin>,
+    plugins: HashMap<String, Plugin>, // @IDEA optionally move hashmap out of context and create it from fn to allow dynamic loading
     pub force: bool,
 }
 

@@ -35,6 +35,25 @@ impl Command for Build {
         if blueprint_file.exists() == false {
             return Err(Box::new(AnyError(format!("no blueprint file to build from; consider running 'orbit plan'"))))
         }
+
+        // read config.toml for setting any env variables
+        if let Some(env_table) = c.get_config().get("env") {
+            if let Some(table) = env_table.as_table() {
+                let mut table = table.iter();
+                while let Some((key, val)) = table.next() {
+                    if let Some(val) = val.as_str() {
+                        // perform proper env key formatting
+                        let key = format!("ORBIT_ENV_{}", key.to_ascii_uppercase().replace('-', "_"));
+                        std::env::set_var(key, val);
+                    } else {
+                        panic!("key 'env.{}' must have string value", key)
+                    }
+                }
+            } else {
+                panic!("key 'env' must be a table")
+            }
+        }
+
         // read the .env file
         let env_file = c.get_ip_path().unwrap().join(c.get_build_dir()).join(".env");
         if env_file.exists() == true {

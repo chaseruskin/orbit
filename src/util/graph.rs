@@ -5,7 +5,8 @@ use std::collections::HashSet;
 type NodeIndex = usize;
 
 #[derive(Debug, PartialEq)]
-struct NodeData { 
+struct NodeData<V> { 
+    node: V,
     first_outgoing_edge: Option<EdgeIndex>,
     first_incoming_edge: Option<EdgeIndex>,
 }
@@ -13,33 +14,34 @@ struct NodeData {
 type EdgeIndex = usize;
 
 #[derive(Debug, PartialEq)]
-struct EdgeData { 
+struct EdgeData<E> { 
+    edge: E,
     source: NodeIndex,
-    target: NodeIndex, 
+    target: NodeIndex,
     next_outgoing_edge: Option<EdgeIndex>,
     next_incoming_edge: Option<EdgeIndex>,
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Graph {
-    vertices: Vec<NodeData>,
-    edges: Vec<EdgeData>,
+pub struct Graph<V, E> {
+    vertices: Vec<NodeData<V>>,
+    edges: Vec<EdgeData<E>>,
 }
 
-impl std::fmt::Display for Graph {
+impl<V, E> std::fmt::Display for Graph<V, E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (i, data) in self.vertices.iter().enumerate() {
-            write!(f, "n{} {:?} {:?}\n", i, data.first_outgoing_edge, data.first_incoming_edge)?
+            write!(f, "i:{} out:{:?} in:{:?}\n", i, data.first_outgoing_edge, data.first_incoming_edge)?
         }
         write!(f, "\n")?;
         for (i, data) in self.edges.iter().enumerate() {
-            write!(f, "e{} n{} s{} {:?} {:?}\n", i, data.target, data.source, data.next_outgoing_edge, data.next_incoming_edge)?
+            write!(f, "i:{}, t:{} s:{} out:{:?} in:{:?}\n", i, data.target, data.source, data.next_outgoing_edge, data.next_incoming_edge)?
         }
         Ok(())
     }
 }
 
-impl Graph {
+impl<V, E> Graph<V, E> {
     /// Creates an empty `Graph` struct.
     pub fn new() -> Self {
         Self {
@@ -59,9 +61,10 @@ impl Graph {
     /// Adds a new node to the graph.
     /// 
     /// Returns the `NodeIndex` to remember the node.
-    pub fn add_node(&mut self) -> NodeIndex {
+    pub fn add_node(&mut self, node: V) -> NodeIndex {
         let index = self.vertices.len();
         self.vertices.push(NodeData { 
+            node: node,
             first_outgoing_edge: None,
             first_incoming_edge: None,
         });
@@ -84,11 +87,16 @@ impl Graph {
         self.edges.len()
     }
 
+    /// Accesses the node data label behind the `node` index.
+    pub fn get_node(&self, node: NodeIndex) -> Option<&V> {
+        Some(&self.vertices.get(node)?.node)
+    }
+
     /// Adds a new edge to the graph from `source` to `target`.
     /// 
     /// Returns true if the edge insertion was successful. Returns false if the edge
     /// relationship already exists or the edge is a self-loop.
-    pub fn add_edge(&mut self, source: NodeIndex, target: NodeIndex) -> bool {
+    pub fn add_edge(&mut self, source: NodeIndex, target: NodeIndex, cost: E) -> bool {
         // do not allow duplicate edges or self-loops
         if self.has_edge(source, target) == true || source == target { return false }
 
@@ -98,6 +106,7 @@ impl Graph {
             let node_data = &mut self.vertices[source];
             self.edges.push(EdgeData { 
                 source: source,
+                edge: cost,
                 target: target, 
                 next_outgoing_edge: node_data.first_outgoing_edge,
                 next_incoming_edge: None,
@@ -124,13 +133,13 @@ impl Graph {
     }
 
     /// Creates an iterator over the incoming nodes to the `target` source.
-    pub fn predecessors(&self, target: NodeIndex) -> Predecessors {
+    pub fn predecessors(&self, target: NodeIndex) -> Predecessors<V, E> {
         let first_incoming_edge = self.vertices[target].first_incoming_edge;
         Predecessors { graph: self, current_edge_index: first_incoming_edge }
     }
 
     /// Creates an iterator over the outgoing nodes from the `source` node.
-    pub fn successors(&self, source: NodeIndex) -> Successors {
+    pub fn successors(&self, source: NodeIndex) -> Successors<V, E> {
         let first_outgoing_edge = self.vertices[source].first_outgoing_edge;
         Successors { graph: self, current_edge_index: first_outgoing_edge }
     }
@@ -233,12 +242,12 @@ impl Graph {
     }
 }
 
-pub struct Predecessors<'graph> {
-    graph: &'graph Graph,
+pub struct Predecessors<'graph, V, E> {
+    graph: &'graph Graph<V, E>,
     current_edge_index: Option<EdgeIndex>
 }
 
-impl<'graph> Iterator for Predecessors<'graph> {
+impl<'graph, V, E> Iterator for Predecessors<'graph, V, E> {
     type Item = NodeIndex;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -253,12 +262,12 @@ impl<'graph> Iterator for Predecessors<'graph> {
     }
 }
 
-pub struct Successors<'graph> {
-    graph: &'graph Graph,
+pub struct Successors<'graph, V, E> {
+    graph: &'graph Graph<V, E>,
     current_edge_index: Option<EdgeIndex>,
 }
 
-impl<'graph> Iterator for Successors<'graph> {
+impl<'graph, V, E> Iterator for Successors<'graph, V, E> {
     type Item = NodeIndex;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -279,16 +288,16 @@ mod test {
     
     /// Creates basic graph illustrated in this blog post:
     /// - source: http://smallcultfollowing.com/babysteps/blog/2015/04/06/modeling-graphs-in-rust-using-vector-indices/
-    fn basic_graph() -> Graph {
+    fn basic_graph() -> Graph<(), ()> {
         let mut g = Graph::new();
-        let n0 = g.add_node();
-        let n1 = g.add_node();
-        let n2 = g.add_node();
-        let n3 = g.add_node();
-        g.add_edge(n0, n1);
-        g.add_edge(n1, n2);
-        g.add_edge(n0, n3);
-        g.add_edge(n3, n2);
+        let n0 = g.add_node(());
+        let n1 = g.add_node(());
+        let n2 = g.add_node(());
+        let n3 = g.add_node(());
+        g.add_edge(n0, n1, ());
+        g.add_edge(n1, n2, ());
+        g.add_edge(n0, n3, ());
+        g.add_edge(n3, n2, ());
         g
     }
 
@@ -300,25 +309,25 @@ mod test {
     ///     n1     n4
     ///    /  \   /  \
     /// n2   n3 n5   n6
-    fn binary_tree() -> Graph {
+    fn binary_tree() -> Graph<(), ()> {
         // create binary tree
         let mut g = Graph::new();
-        let n0 = g.add_node();
-        let n1 = g.add_node();
-        let n2 = g.add_node();
-        let n3 = g.add_node();
-        let n4 = g.add_node();
-        let n5 = g.add_node();
-        let n6 = g.add_node();
+        let n0 = g.add_node(());
+        let n1 = g.add_node(());
+        let n2 = g.add_node(());
+        let n3 = g.add_node(());
+        let n4 = g.add_node(());
+        let n5 = g.add_node(());
+        let n6 = g.add_node(());
         // level 1
-        g.add_edge(n1, n0); // n1 -> n0
-        g.add_edge(n4, n0); // n4 -> n0
+        g.add_edge(n1, n0, ()); // n1 -> n0
+        g.add_edge(n4, n0, ()); // n4 -> n0
         // level 2 - L
-        g.add_edge(n2, n1); // n2 -> n1
-        g.add_edge(n3, n1); // n3 -> n1
+        g.add_edge(n2, n1, ()); // n2 -> n1
+        g.add_edge(n3, n1, ()); // n3 -> n1
         // level 2 - R
-        g.add_edge(n5, n4); // n5 -> n4
-        g.add_edge(n6, n4); // n6 -> n4
+        g.add_edge(n5, n4, ()); // n5 -> n4
+        g.add_edge(n6, n4, ()); // n6 -> n4
         g
     }
 
@@ -327,11 +336,11 @@ mod test {
         let mut g = basic_graph();
         assert_eq!(g.is_cyclic(), false);
         // add in edge to make cycle
-        g.add_edge(1, 0);
+        g.add_edge(1, 0, ());
         assert_eq!(g.is_cyclic(), true);
 
         let mut g = basic_graph();
-        g.add_edge(2, 0);
+        g.add_edge(2, 0, ());
         assert_eq!(g.is_cyclic(), true);
 
         let g = binary_tree();
@@ -343,8 +352,8 @@ mod test {
         let mut g = basic_graph();
         assert_eq!(g.topological_sort(), vec![0, 1, 3, 2]);
 
-        let n0 = g.add_node();
-        g.add_edge(n0, 0);
+        let n0 = g.add_node(());
+        g.add_edge(n0, 0, ());
         assert_eq!(g.topological_sort(), vec![4, 0, 1, 3, 2]);
         
         let g = binary_tree();
@@ -353,9 +362,9 @@ mod test {
 
     #[test]
     fn add_node() {
-        let mut g = Graph::new();
+        let mut g: Graph<(), ()> = Graph::new();
         assert_eq!(g.node_count(), 0);
-        g.add_node();
+        g.add_node(());
         assert_eq!(g.node_count(), 1);
     }
 
@@ -363,18 +372,18 @@ mod test {
     fn add_edge() {
         let mut g = Graph::new();
         assert_eq!(g.edge_count(), 0);
-        let n0 = g.add_node();
-        let n1 = g.add_node();
+        let n0 = g.add_node(());
+        let n1 = g.add_node(());
         assert_eq!(g.edge_count(), 0);
-        assert_eq!(g.add_edge(n0, n1), true);
+        assert_eq!(g.add_edge(n0, n1, ()), true);
         assert_eq!(g.edge_count(), 1);
-        assert_eq!(g.add_edge(n1, n0), true);
+        assert_eq!(g.add_edge(n1, n0, ()), true);
         assert_eq!(g.edge_count(), 2);
         // do not allow duplicate edges
-        assert_eq!(g.add_edge(n1, n0), false);
+        assert_eq!(g.add_edge(n1, n0, ()), false);
         assert_eq!(g.edge_count(), 2);
         // do not allow self-loops
-        assert_eq!(g.add_edge(n0, n0), false);
+        assert_eq!(g.add_edge(n0, n0, ()), false);
     }
 
     #[test]
@@ -383,13 +392,13 @@ mod test {
         assert_eq!(g.find_root(), Ok(0));
 
         // add a second possible root to the tree
-        let n7 = g.add_node();
-        g.add_edge(4, n7);
+        let n7 = g.add_node(());
+        g.add_edge(4, n7, ());
         assert_eq!(g.find_root(), Err(vec![0, 7]));
 
         // add edges between the two known roots: n0 and n7
-        g.add_edge(0, n7);
-        g.add_edge(n7,0);
+        g.add_edge(0, n7, ());
+        g.add_edge(n7,0, ());
         assert_eq!(g.find_root(), Err(vec![]));
     }
 
@@ -440,18 +449,35 @@ mod test {
     }
 
     #[test]
+    fn get_node() {
+        let mut g = Graph::<&str, usize>::new();
+        let a = g.add_node("a");
+        let b = g.add_node("b");
+        let c = g.add_node("c");
+
+        g.add_edge(a, b, 3);
+        g.add_edge(a, c, 10);
+        g.add_edge(b, c, 8);
+
+        assert_eq!(g.get_node(a).unwrap(), &"a");
+        assert_eq!(g.get_node(b).unwrap(), &"b");
+
+        assert_eq!(g.get_node(100), None);
+    }
+
+    #[test]
     fn has_edge() {
         let mut g = Graph::new();
-        let n0 = g.add_node();
-        let n1 = g.add_node();
-        let n2 = g.add_node();
+        let n0 = g.add_node(());
+        let n1 = g.add_node(());
+        let n2 = g.add_node(());
         assert_eq!(g.has_edge(n0, n1), false);
-        g.add_edge(n0, n1);
+        g.add_edge(n0, n1, ());
         assert_eq!(g.has_edge(n0, n1), true);
         assert_eq!(g.has_edge(n1, n0), false);
 
         assert_eq!(g.has_edge(n1, n2), false);
-        g.add_edge(n1, n2);
+        g.add_edge(n1, n2, ());
         assert_eq!(g.has_edge(n1, n2), true);
     }
 
@@ -480,7 +506,7 @@ use std::cmp::Eq;
 struct HashGraph<V: Hash + Eq> {
     table: HashMap<usize, V>,
     // data: Vec<V>,
-    inner: Graph,
+    inner: Graph<V, ()>,
 }
 
 // @IDEA look up a node by its key, access its value
@@ -495,8 +521,8 @@ impl<V> HashGraph<V> where V: Hash + Eq {
     }
 
     pub fn add_node(&mut self, node: V) -> NodeIndex {
-        let marker = self.inner.add_node();
-        self.table.insert(marker, node);
+        let marker = self.inner.add_node(node);
+        // self.table.insert(marker, node);
         // self.map.insert(self.get_vertex(marker), marker);
         marker
     }
@@ -516,7 +542,7 @@ impl<V> HashGraph<V> where V: Hash + Eq {
     // }
 
     pub fn add_edge_by_index(&mut self, source: NodeIndex, target: NodeIndex) -> bool {
-        self.inner.add_edge(source, target)
+        self.inner.add_edge(source, target, ())
     }
 
     pub fn topological_sort(&self) -> Vec<&V> {

@@ -95,12 +95,10 @@ impl Plan {
         // gather filesets
         let files = crate::core::fileset::gather_current_files(&std::env::current_dir().unwrap());
 
-        // @TODO refactor graph and hold onto entity structs rather than just their identifier
-        let mut g = Graph::new();
-        // entity identifier, HashNode
+        // @TODO wrap graph in a hashgraph implementation
+        let mut g: Graph<Identifier, ()> = Graph::new();
+        // entity identifier, HashNode (hash-node holds entity structs)
         let mut map = HashMap::<Identifier, HashNode>::new();
-        // store map key at the node index @TODO move into the edge data in graph
-        let mut inverse_map = Vec::<Identifier>::new();
 
         let mut archs: Vec<(parser::Architecture, String)> = Vec::new();
         // read all files
@@ -120,8 +118,7 @@ impl Plan {
                     }
                 });
                 while let Some(e) = iter.next() {
-                    let index = g.add_node();
-                    inverse_map.push(e.get_name().clone());
+                    let index = g.add_node(e.get_name().clone());
                     map.insert(e.get_name().clone(), HashNode::new(e, index, source_file.to_string()));
                 }
             }
@@ -137,7 +134,7 @@ impl Plan {
             for dep in arch.edges() {
                 // verify the dep exists
                 if let Some(node) = map.get(dep) {
-                    g.add_edge(node.index(), map.get(arch.entity()).unwrap().index());
+                    g.add_edge(node.index(), map.get(arch.entity()).unwrap().index(), ());
                 }
             }
         }
@@ -171,13 +168,13 @@ impl Plan {
                     if self.bench.is_none() {
                         let mut callers = g.successors(n);
                         // check if only 1 is a testbench
-                        let first_bench = callers.find(|f| map.get(&inverse_map[*f]).unwrap().entity.is_testbench() );
+                        let first_bench = callers.find(|f| map.get(&g.get_node(*f).unwrap()).unwrap().entity.is_testbench() );
                         // detect if there is a single existing testbench for the top
                         if let Some(b) = first_bench {
                             // try to detect second bench
-                            bench = match callers.find(|f| map.get(&inverse_map[*f]).unwrap().entity.is_testbench() ) {
+                            bench = match callers.find(|f| map.get(&g.get_node(*f).unwrap()).unwrap().entity.is_testbench() ) {
                                 // @TODO show all testbenches not just 2 (use filter and match on length of collected vector)
-                                Some(c) => panic!("top entity has multiple testbenches:\n\t{}\n\t{}", map.get(&inverse_map[b]).unwrap().entity.get_name(), map.get(&inverse_map[c]).unwrap().entity.get_name()),
+                                Some(c) => panic!("top entity has multiple testbenches:\n\t{}\n\t{}", map.get(&g.get_node(b).unwrap()).unwrap().entity.get_name(), map.get(&g.get_node(c).unwrap()).unwrap().entity.get_name()),
                                 None => Some(b),
                             };
                         }
@@ -192,15 +189,15 @@ impl Plan {
         // enable immutability
         let bench = bench;
 
-        let top_name = &inverse_map[top];
+        let top_name = g.get_node(top).unwrap().to_string();
         let bench_name = if let Some(n) = bench {
-            inverse_map[n].to_string()
+            g.get_node(n).unwrap().to_string()
         } else {
             String::new()
         };
 
-        std::env::set_var("ORBIT_TOP", &top_name.to_string());
-        std::env::set_var("ORBIT_BENCH", &bench_name.to_string());
+        std::env::set_var("ORBIT_TOP", &top_name);
+        std::env::set_var("ORBIT_BENCH", &bench_name);
 
         let highest_point = match bench {
             Some(b) => b,
@@ -212,7 +209,7 @@ impl Plan {
         let mut file_order = Vec::new();
         for i in &min_order {
             // access the node key
-            let key = &inverse_map[*i];
+            let key = g.get_node(*i).unwrap();
             // access the files associated with this key
             let mut v: Vec<&String> = map.get(key).as_ref().unwrap().files.iter().collect();
             file_order.append(&mut v);
@@ -287,7 +284,7 @@ impl Plan {
     /// 
     /// This function looks and checks if there is a single predecessor to the
     /// `bench` node.
-    fn detect_top(graph: &Graph, bench: Option<usize>) -> usize {
+    fn detect_top(graph: &Graph<Identifier, ()>, bench: Option<usize>) -> usize {
         if let Some(b) = bench {
             match graph.in_degree(b) {
                 0 => panic!("no entities are tested in the testbench"),

@@ -1,7 +1,7 @@
 use crate::Command;
 use crate::FromCli;
 use crate::interface::cli::Cli;
-use crate::interface::arg::Optional;
+use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use std::ffi::OsString;
@@ -13,6 +13,7 @@ pub struct Plan {
     plugin: Option<String>,
     bench: Option<Identifier>,
     top: Option<Identifier>,
+    clean: bool,
     build_dir: Option<String>,
     filesets: Option<Vec<Fileset>>
 }
@@ -42,7 +43,7 @@ impl Command for Plan {
             None
         };
         // @TODO pass in the current IP struct
-        Ok(self.run(b_dir, plug_fset))
+        self.run(b_dir, plug_fset)
     }
 }
 
@@ -82,9 +83,15 @@ impl HashNode {
 use crate::core::vhdl::vhdl::Identifier;
 
 impl Plan {
-    fn run(&self, build_dir: &str, plug_filesets: Option<&Vec<Fileset>>) -> () {
+    fn run(&self, build_dir: &str, plug_filesets: Option<&Vec<Fileset>>) -> Result<(), Box<dyn std::error::Error>> {
         let mut build_path = std::env::current_dir().unwrap();
         build_path.push(build_dir);
+        
+        // check if to clean the directory
+        if self.clean == true {
+            std::fs::remove_dir_all(&build_path)?;
+        }
+
         // gather filesets
         let files = crate::core::fileset::gather_current_files(&std::env::current_dir().unwrap());
 
@@ -272,6 +279,7 @@ impl Plan {
 
         // create a blueprint file
         println!("info: Blueprint created at: {}", blueprint_path.display());
+        Ok(())
     }
 
     /// Given a `graph` and optionally a `bench`, detect the index corresponding
@@ -297,6 +305,7 @@ impl FromCli for Plan {
         cli.set_help(HELP);
         let command = Ok(Plan {
             top: cli.check_option(Optional::new("top").value("unit"))?,
+            clean: cli.check_flag(Flag::new("clean"))?,
             bench: cli.check_option(Optional::new("bench").value("tb"))?,
             plugin: cli.check_option(Optional::new("plugin"))?,
             build_dir: cli.check_option(Optional::new("build-dir").value("dir"))?,
@@ -318,6 +327,7 @@ Options:
     --plugin <plugin>       collect filesets defined for a plugin
     --build-dir <dir>       set the output build directory
     --fileset <key=glob>... set an additional fileset
+    --clean                 remove all files from the build directory
     --all                   include all found HDL files
 
 Use 'orbit help plan' to learn more about the command.

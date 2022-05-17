@@ -498,59 +498,37 @@ mod test {
     }
 }
 
+// @TODO @UNDER-CONSTRUCTION
+
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::cmp::Eq;
 
 #[derive(Debug, PartialEq)]
-struct HashGraph<V: Hash + Eq> {
-    table: HashMap<usize, V>,
-    // data: Vec<V>,
-    inner: Graph<V, ()>,
+struct HashGraph<'a, V: Hash + Eq, E> {
+    table: HashMap<&'a V, NodeIndex>,
+    inner: Graph<&'a V, E>,
 }
 
+use std::borrow::Borrow;
 // @IDEA look up a node by its key, access its value
 
-impl<V> HashGraph<V> where V: Hash + Eq {
+impl<'a, V, E> HashGraph<'a, V, E> where V: Hash + Eq {
     pub fn new() -> Self {
         Self {
-            // map: HashMap::new(),
             table: HashMap::new(),
             inner: Graph::new(),
         }
     }
 
-    pub fn add_node(&mut self, node: V) -> NodeIndex {
-        let marker = self.inner.add_node(node);
-        // self.table.insert(marker, node);
-        // self.map.insert(self.get_vertex(marker), marker);
-        marker
+    pub fn get_node<T: Hash + Eq>(&self, n: &'a T) -> NodeIndex 
+    where &'a V: Borrow<T> {
+        *self.table.get(n).unwrap()
     }
 
-    // pub fn get_vertex_index(&self, vertex: &V) -> NodeIndex {
-    //     *self.map.get(vertex).unwrap()
-    // }
-
-    pub fn get_vertex(&self, node: NodeIndex) -> &V {
-        self.table.get(&node).unwrap()
-    }
-
-    // pub fn add_edge(&mut self, source: &V, target: &V) -> bool {
-    //     let s0 = self.map.get(source).unwrap();
-    //     let s1 = self.map.get(target).unwrap();
-    //     self.inner.add_edge(*s0, *s1)
-    // }
-
-    pub fn add_edge_by_index(&mut self, source: NodeIndex, target: NodeIndex) -> bool {
-        self.inner.add_edge(source, target, ())
-    }
-
-    pub fn topological_sort(&self) -> Vec<&V> {
-        self.inner.topological_sort()
-            .into_iter()
-            .map(|f| {
-                self.table.get(&f).unwrap()
-            }).collect()
+    pub fn add_node(&mut self, n: &'a V) -> () {
+        let index = self.inner.add_node(n);
+        self.table.insert(self.inner.get_node(index).unwrap(), index);
     }
 }
 
@@ -560,8 +538,13 @@ mod hg_test {
 
     #[test]
     fn it_works() {
-        let mut g = HashGraph::<String>::new();
-        g.add_node(String::from("hello world!"));
-        g.add_node(String::from("hello world!"));
+        let mut g = HashGraph::<String, usize>::new();
+
+        let id0 = String::from("A");
+        let id1 = String::from("B");
+        g.add_node(&id0);
+        g.add_node(&id1);
+
+        assert_eq!(g.get_node(&id0), 0);
     }
 }

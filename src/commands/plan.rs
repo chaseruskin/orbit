@@ -49,6 +49,7 @@ impl Command for Plan {
 
 use crate::core::vhdl::parser;
 use crate::util::graph::Graph;
+use crate::util::anyerror::AnyError;
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
@@ -80,6 +81,12 @@ impl HashNode {
     }
 }
 
+#[derive(Debug, PartialEq)]
+struct ArchitectureFile {
+    architecture: parser::Architecture,
+    file: String,
+}
+
 use crate::core::vhdl::vhdl::Identifier;
 
 impl Plan {
@@ -100,7 +107,7 @@ impl Plan {
         // entity identifier, HashNode (hash-node holds entity structs)
         let mut map = HashMap::<Identifier, HashNode>::new();
 
-        let mut archs: Vec<(parser::Architecture, String)> = Vec::new();
+        let mut archs: Vec<ArchitectureFile> = Vec::new();
         // read all files
         for source_file in &files {
             if crate::core::fileset::is_vhdl(&source_file) == true {
@@ -111,7 +118,7 @@ impl Plan {
                     match f {
                         parser::VHDLSymbol::Entity(e) => Some(e),
                         parser::VHDLSymbol::Architecture(arch) => {
-                            archs.push((arch, source_file.to_string()));
+                            archs.push(ArchitectureFile{ architecture: arch, file: source_file.to_string() });
                             None
                         }
                         _ => None,
@@ -119,22 +126,23 @@ impl Plan {
                 });
                 while let Some(e) = iter.next() {
                     let index = g.add_node(e.get_name().clone());
-                    map.insert(e.get_name().clone(), HashNode::new(e, index, source_file.to_string()));
+                    let hn = HashNode::new(e, index, source_file.to_string());
+                    map.insert(g.get_node(index).unwrap().clone(), hn);
                 }
             }
         }
 
         // go through all architectures and make the connections
         let mut archs = archs.into_iter();
-        while let Some((arch, file)) = archs.next() {
+        while let Some(af) = archs.next() {
             // link to the owner and add architecture's source file
-            let entity_node = map.get_mut(&arch.entity()).unwrap();
-            entity_node.add_file(file);
+            let entity_node = map.get_mut(&af.architecture.entity()).unwrap();
+            entity_node.add_file(af.file);
             // create edges
-            for dep in arch.edges() {
+            for dep in af.architecture.edges() {
                 // verify the dep exists
                 if let Some(node) = map.get(dep) {
-                    g.add_edge(node.index(), map.get(arch.entity()).unwrap().index(), ());
+                    g.add_edge(node.index(), map.get(af.architecture.entity()).unwrap().index(), ());
                 }
             }
         }
@@ -143,11 +151,11 @@ impl Plan {
             match map.get(&t) {
                 Some(node) => {
                     if node.entity.is_testbench() == false {
-                        panic!("entity {} is not a testbench and cannot be bench; please use --top", t)
+                        return Err(AnyError(format!("entity {} is not a testbench and cannot be bench; please use --top", t)))?
                     }
                     Some(node.index())
                 },
-                None => panic!("no testbench entity named {}", t)
+                None => return Err(AnyError(format!("no entity named \'{}\'", t)))?
             }
         } else if self.top.is_none() {
             // filter to display tops that have ports (not testbenches)
@@ -161,7 +169,7 @@ impl Plan {
             match map.get(&t) {
                 Some(node) => {
                     if node.entity.is_testbench() == true {
-                        panic!("entity {} is a testbench and cannot be top; please use --bench", t)
+                        return Err(AnyError(format!("entity {} is a testbench and cannot be top; please use --bench", t)))?
                     }
                     let n = node.index();
                     // try to detect top level testbench
@@ -181,7 +189,7 @@ impl Plan {
                     }
                     n
                 },
-                None => panic!("no entity named {}", t)
+                None => return Err(AnyError(format!("no entity named \'{}\'", t)))?
             }
         } else {
             Self::detect_top(&g, bench)

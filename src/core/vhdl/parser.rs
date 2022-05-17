@@ -208,29 +208,29 @@ impl Parse<VHDLToken> for VHDLParser {
             // create entity symbol
             if t.as_ref().check_keyword(&Keyword::Entity) {
                 let ent = VHDLSymbol::parse_entity(&mut tokens);
-                println!("!!!! INFO: detected {}", ent);
+                println!("info: detected {}", ent);
                 symbols.push(Ok(Symbol::new(ent)));
             // create architecture symbol
             } else if t.as_ref().check_keyword(&Keyword::Architecture) {
                 let arch = VHDLSymbol::parse_architecture(&mut tokens);
-                println!("{}", arch);
+                println!("info: detected {}", arch);
                 symbols.push(Ok(Symbol::new(arch)));
             // create configuration symbol
             } else if t.as_ref().check_keyword(&Keyword::Configuration) {
                 let config = VHDLSymbol::parse_configuration(&mut tokens);
-                println!("{}", config);
+                println!("info: detected {}", config);
                 symbols.push(Ok(Symbol::new(config)));
             // create package symbol
             } else if t.as_ref().check_keyword(&Keyword::Package) {
                 let pack = VHDLSymbol::route_package_parse(&mut tokens);
-                println!("!!!! INFO: detected {}", pack);
+                println!("info: detected {}", pack);
                 symbols.push(Ok(Symbol::new(pack)));
             // otherwise take a statement (probably by mistake/errors in user's vhdl code or as of now an error in my code)
             } else {
                 let mut stmt: Statement = Statement::new();
                 stmt.0.push(t);
                 stmt.0.append(&mut VHDLSymbol::compose_statement(&mut tokens).0);
-                println!("global statement: {:?}", stmt);
+                // println!("global statement: {:?}", stmt);
             }
         }
         // println!("{:#?}", symbols);
@@ -339,7 +339,7 @@ impl VHDLSymbol {
             // grab component declarations
             } else if t.as_type().check_keyword(&Keyword::Component) {
                 let comp = Self::parse_component(tokens);
-                println!("component declared: {}", comp);
+                // println!("component declared: {}", comp);
             // grab USE clause
             } else if t.as_type().check_keyword(&Keyword::Use) {
                 // consume USE keyword
@@ -354,7 +354,7 @@ impl VHDLSymbol {
             }
         }
 
-        println!("*--- unit {}", pack_name);
+        // println!("*--- unit {}", pack_name);
         VHDLSymbol::Package(match pack_name {
             VHDLToken::Identifier(id) => id,
             _ => panic!("expected an identifier")
@@ -406,7 +406,7 @@ impl VHDLSymbol {
         tokens.next();
         // take package name
         let pack_name = tokens.next().take().unwrap().take();
-        println!("*--- package {}", pack_name);
+        // println!("*--- package {}", pack_name);
         // take the IS keyword
         if tokens.next().take().unwrap().as_type().check_keyword(&Keyword::Is) == false {
             panic!("expecting keyword IS")
@@ -491,7 +491,7 @@ impl VHDLSymbol {
             _ => panic!("expected an identifier")
         };
         let entity_name = VHDLSymbol::parse_owner_design_unit(tokens);
-        println!("*--- unit {}", arch_name);
+        // println!("*--- unit {}", arch_name);
 
         VHDLSymbol::Architecture(Architecture {
             name: arch_name,
@@ -585,11 +585,11 @@ impl VHDLSymbol {
             // collect statements
             } else {
                 statements.push(Self::compose_statement(tokens));
-                println!("{}", statements.last().unwrap());
+                // println!("{}", statements.last().unwrap());
             }
         }
         
-        println!("{:?}", statements);
+        // println!("{:?}", statements);
         statements
     }
 
@@ -599,7 +599,7 @@ impl VHDLSymbol {
     /// search for interface lists found after GENERIC and PORT keywords.
     fn parse_entity_declaration<I>(tokens: &mut Peekable<I>) -> (Vec<Statement>, Vec<Statement>)
         where I: Iterator<Item=Token<VHDLToken>> {
-        println!("*--- declaration section");
+        // println!("*--- declaration section");
         // force taking the 'is' keyword
         if tokens.next().unwrap().as_type().check_keyword(&Keyword::Is) == false {
             panic!("expecting 'is' keyword")
@@ -638,7 +638,7 @@ impl VHDLSymbol {
             } else if t.as_type().check_keyword(&Keyword::Package) {
                 tokens.next();
                 let pack_name = Self::route_package_parse(tokens);
-                println!("**** INFO: detected nested package \"{}\"", pack_name);
+                // println!("**** INFO: detected nested package \"{}\"", pack_name);
             // build statements to throw away
             } else {
                 let _stmt = Self::compose_statement(tokens);
@@ -673,12 +673,12 @@ impl VHDLSymbol {
             // find component names (could be in package or architecture declaration)
             } else if t.as_type().check_keyword(&Keyword::Component) {
                 let comp_name = Self::parse_component(tokens);
-                println!("**** INFO: Found component: \"{}\"", comp_name);
+                // println!("**** INFO: Found component: \"{}\"", comp_name);
             // find a nested package
             } else if t.as_type().check_keyword(&Keyword::Package) {
                 tokens.next();
                 let pack_name = Self::route_package_parse(tokens);
-                println!("**** INFO: detected nested package \"{}\"", pack_name);
+                // println!("**** INFO: detected nested package \"{}\"", pack_name);
             // build statements to throw away
             } else {
                 let _stmt = Self::compose_statement(tokens);
@@ -730,7 +730,7 @@ impl VHDLSymbol {
         }
         // take component name
         let comp_name = tokens.next().take().unwrap().take();
-        println!("*--- found component {}", comp_name);
+        // println!("*--- found component {}", comp_name);
         // take 'is' keyword (optional)
         if tokens.peek().unwrap().as_type().check_keyword(&Keyword::Is) {
             tokens.next();
@@ -739,7 +739,7 @@ impl VHDLSymbol {
         while let Some(t) = tokens.peek() {
             if t.as_type().check_keyword(&Keyword::End) {
                 let stmt = Self::compose_statement(tokens);
-                println!("{:?}", stmt);
+                // println!("{:?}", stmt);
                 break;
             // collect generic statements
             } else if t.as_type().check_keyword(&Keyword::Generic) {
@@ -753,7 +753,7 @@ impl VHDLSymbol {
                 let _ports = Self::parse_interface_list(tokens);
             } else {
                 let stmt = Self::compose_statement(tokens);
-                println!("{:?}", stmt);
+                // println!("{:?}", stmt);
             }
         }
         match comp_name {

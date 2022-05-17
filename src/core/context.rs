@@ -143,6 +143,20 @@ impl Context {
         Ok(self)
     }
 
+    /// Attempts to get the value of behind a key.
+    /// 
+    /// Dots are used to split among multiple `get` function calls. Panics if
+    /// an invalid key path is passed.
+    fn get_value_as_str<'a>(doc: &'a Document, key_path: &str) -> Option<&'a str> {
+        let keys: Vec<&str> = key_path.split_terminator('.').collect();
+        let mut keys_iter = keys.iter();
+        let mut table = doc.get(keys_iter.next().expect("passed in empty key"))?;
+        while let Some(key) = keys_iter.next() {
+            table = table.get(key)?;
+        }
+        table.as_str()
+    }
+
     /// Determines the orbit ip development path.
     /// 
     /// First checks if the environment already has ORBIT_PATH set, otherwise it
@@ -153,10 +167,13 @@ impl Context {
         self.dev_path = Some(std::path::PathBuf::from(match std::env::var(s) {
             Ok(v) => v,
             Err(_) => {
-                // @TODO use current directory if the key-value pair is not there
-                let path = self.get_config().get("core").unwrap().get("path").unwrap().as_str().unwrap();
+                // use current directory if the key-value pair is not there
+                let path = match Self::get_value_as_str(self.get_config(), "core.path") {
+                    Some(p) => p.to_owned(),
+                    None => std::env::current_dir().unwrap().display().to_string(),
+                };
                 std::env::set_var(s, &path);
-                path.to_owned()
+                path
             }
         }));
         // verify the orbit path exists and is a directory

@@ -4,4 +4,6 @@ pub mod build;
 pub mod launch;
 pub mod plan;
 pub mod edit;
+pub mod tree;
 pub mod install;
+pub mod search;

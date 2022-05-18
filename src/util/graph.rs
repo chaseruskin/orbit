@@ -308,7 +308,7 @@ impl Twig {
 impl std::fmt::Display for Twig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut space = String::with_capacity(self.level()*3);
-        for i in 0..self.level() {
+        for i in 1..self.level() {
             if i+self.nested() >= self.level() {
                 space.push_str("│  ");
             } else {
@@ -316,8 +316,12 @@ impl std::fmt::Display for Twig {
             }
         }
         match self {
-            Self::EndLeaf(_, _) => write!(f, "{}└─", space),
-            Self::MidBranch(_, _) => write!(f, "{}├─", space),
+            Self::EndLeaf(i, j) => if i == &0 && j == &0 {
+                write!(f, "")
+            } else {
+                write!(f, "{}└─ ", space)
+            }
+            Self::MidBranch(_, _) => write!(f, "{}├─ ", space),
         }
     }
 }
@@ -377,7 +381,7 @@ mod test {
             (MidBranch(2, 0), 3), (EndLeaf(2, 0), 2), (EndLeaf(3, 0), 4), 
             (MidBranch(4, 0), 6), (EndLeaf(4, 0), 5)]);
         // for i in tree {
-        //     println!("{} {}", i.0, i.1);
+        //     println!("{}{}", i.0, i.1);
         // }
         // panic!()
     }

@@ -93,7 +93,11 @@ impl Command for Launch {
                 VersionField::Version(v) => {
                     version = version.major(v.get_major())
                         .minor(v.get_minor())
-                        .patch(v.get_patch())
+                        .patch(v.get_patch());
+                    // verify version will be larger than the current version
+                    if prev_version >= version {
+                        return Err(AnyError(format!("set version {} is not greater than current version {}", version, prev_version)))?
+                    }
                 }
             }
             println!("info: raising {} --> {}", prev_version, version);

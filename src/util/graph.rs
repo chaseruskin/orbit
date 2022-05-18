@@ -240,6 +240,86 @@ impl<V, E> Graph<V, E> {
             .filter(|f| { effected_nodes.contains(f) == true })
             .collect()
     }
+
+    /// Recursively generates the in-order top-down list of nodes to print with their
+    /// corresponding twig style and level of indentation.
+    fn recurse_treeview(&self, target: NodeIndex, level: Twig) -> Vec<(Twig, NodeIndex)> {
+        let mut traversal = Vec::new();
+        // add target to the list
+        traversal.push((level, target));
+        // select predecessors
+        let mut tunnels = self.predecessors(target).peekable();
+        while let Some(n) = tunnels.next() {
+            // determine how many intermediate branches are needed to hit node
+            let level_nested = match level {
+                Twig::MidBranch(_, nested) => nested+1,
+                Twig::EndLeaf(_, _) => 0,
+            };
+            // determine if there are more branches at this same level to mark as corner or fork
+            let twig_type = match tunnels.peek() {
+                Some(_) => Twig::MidBranch(level.level()+1, level_nested),
+                None => Twig::EndLeaf(level.level()+1, level_nested),
+            };
+            traversal.append(&mut self.recurse_treeview(n, twig_type));
+        }
+        traversal
+    }
+
+    /// Creates the in-order top-down list of nodes to display with their
+    /// corresponding indentation depth and twig style.
+    pub fn treeview(&self, target: NodeIndex) -> Vec<(Twig, NodeIndex)> {
+        self.recurse_treeview(target, Twig::EndLeaf(0, 0))
+    }
+
+    /// Removes duplicate branches from the treeview and replaces them with labels.
+    pub fn compress_treeview(&self, _tree: &Vec<(Twig, NodeIndex)>) -> Vec<(Twig, NodeIndex)> {
+        todo!()
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum Twig {
+    /// (levels idented, levels nested)
+    EndLeaf(usize, usize), 
+    /// (levels idented, levels nested)
+    MidBranch(usize, usize),
+}
+
+impl Twig {
+    /// Accesses the level of indentation for the current node. 
+    /// 
+    /// This represents the node's depth in the tree.
+    pub fn level(&self) -> usize {
+        match self {
+            Self::EndLeaf(lvl, _) => *lvl,
+            Self::MidBranch(lvl, _) => *lvl,
+        }
+    }
+
+    /// Accesses the number of intermediate branches the node is nested within.
+    pub fn nested(&self) -> usize {
+        match self {
+            Self::EndLeaf(_, nest) => *nest,
+            Self::MidBranch(_, nest) => *nest,
+        }
+    }
+}
+
+impl std::fmt::Display for Twig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut space = String::with_capacity(self.level()*3);
+        for i in 0..self.level() {
+            if i+self.nested() >= self.level() {
+                space.push_str("│  ");
+            } else {
+                space.push_str("   ");
+            }
+        }
+        match self {
+            Self::EndLeaf(_, _) => write!(f, "{}└─", space),
+            Self::MidBranch(_, _) => write!(f, "{}├─", space),
+        }
+    }
 }
 
 pub struct Predecessors<'graph, V, E> {
@@ -285,6 +365,23 @@ impl<'graph, V, E> Iterator for Successors<'graph, V, E> {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn treeview() {
+        use Twig::*;
+        let mut g= binary_tree();
+        g.add_edge(4, 2, ());
+        let tree = g.treeview(0);
+        assert_eq!(tree, vec![(EndLeaf(0, 0), 0), (MidBranch(1, 0), 4), 
+            (MidBranch(2, 1), 6), (EndLeaf(2, 1), 5), (EndLeaf(1, 0), 1), 
+            (MidBranch(2, 0), 3), (EndLeaf(2, 0), 2), (EndLeaf(3, 0), 4), 
+            (MidBranch(4, 0), 6), (EndLeaf(4, 0), 5)]);
+        // for i in tree {
+        //     println!("{} {}", i.0, i.1);
+        // }
+        // panic!()
+    }
+
     
     /// Creates basic graph illustrated in this blog post:
     /// - source: http://smallcultfollowing.com/babysteps/blog/2015/04/06/modeling-graphs-in-rust-using-vector-indices/

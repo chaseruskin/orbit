@@ -208,22 +208,22 @@ impl Parse<VHDLToken> for VHDLParser {
             // create entity symbol
             if t.as_ref().check_keyword(&Keyword::Entity) {
                 let ent = VHDLSymbol::parse_entity(&mut tokens);
-                println!("info: detected {}", ent);
+                // println!("info: detected {}", ent);
                 symbols.push(Ok(Symbol::new(ent)));
             // create architecture symbol
             } else if t.as_ref().check_keyword(&Keyword::Architecture) {
                 let arch = VHDLSymbol::parse_architecture(&mut tokens);
-                println!("info: detected {}", arch);
+                // println!("info: detected {}", arch);
                 symbols.push(Ok(Symbol::new(arch)));
             // create configuration symbol
             } else if t.as_ref().check_keyword(&Keyword::Configuration) {
                 let config = VHDLSymbol::parse_configuration(&mut tokens);
-                println!("info: detected {}", config);
+                // println!("info: detected {}", config);
                 symbols.push(Ok(Symbol::new(config)));
             // create package symbol
             } else if t.as_ref().check_keyword(&Keyword::Package) {
                 let pack = VHDLSymbol::route_package_parse(&mut tokens);
-                println!("info: detected {}", pack);
+                // println!("info: detected {}", pack);
                 symbols.push(Ok(Symbol::new(pack)));
             // otherwise take a statement (probably by mistake/errors in user's vhdl code or as of now an error in my code)
             } else {
@@ -811,7 +811,7 @@ impl VHDLSymbol {
                 // println!("{:?}", stmt);
                 // check if statement is an instantiation
                 if let Some(inst) = Self::parse_instantiation(stmt) {
-                    println!("info: detected dependency \"{}\"", inst);
+                    // println!("info: detected dependency \"{}\"", inst);
                     deps.push(inst);
                 }
             }

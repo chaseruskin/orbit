@@ -241,34 +241,29 @@ impl<V, E> Graph<V, E> {
             .collect()
     }
 
-    /// Recursively generates the in-order top-down list of nodes to print with their
+    /// Recursively generates the in-order y-down list of nodes to print with their
     /// corresponding twig style and level of indentation.
     fn recurse_treeview(&self, target: NodeIndex, level: Twig) -> Vec<(Twig, NodeIndex)> {
         let mut traversal = Vec::new();
         // add target to the list
-        traversal.push((level, target));
+        traversal.push((level.clone(), target));
         // select predecessors
         let mut tunnels = self.predecessors(target).peekable();
         while let Some(n) = tunnels.next() {
-            // determine how many intermediate branches are needed to hit node
-            let level_nested = match level {
-                Twig::MidBranch(_, nested) => nested+1,
-                Twig::EndLeaf(_, _) => 0,
-            };
-            // determine if there are more branches at this same level to mark as corner or fork
+            // remember the order and parent branch type
             let twig_type = match tunnels.peek() {
-                Some(_) => Twig::MidBranch(level.level()+1, level_nested),
-                None => Twig::EndLeaf(level.level()+1, level_nested),
+                Some(_) => Twig::MidBranch(Some(Box::new(level.clone()))),
+                None => Twig::EndLeaf(Some(Box::new(level.clone()))),
             };
             traversal.append(&mut self.recurse_treeview(n, twig_type));
         }
         traversal
     }
 
-    /// Creates the in-order top-down list of nodes to display with their
+    /// Creates the in-order y-down list of nodes to display with their
     /// corresponding indentation depth and twig style.
     pub fn treeview(&self, target: NodeIndex) -> Vec<(Twig, NodeIndex)> {
-        self.recurse_treeview(target, Twig::EndLeaf(0, 0))
+        self.recurse_treeview(target, Twig::EndLeaf(None))
     }
 
     /// Removes duplicate branches from the treeview and replaces them with labels.
@@ -277,51 +272,46 @@ impl<V, E> Graph<V, E> {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Twig {
-    /// (levels idented, levels nested)
-    EndLeaf(usize, usize), 
-    /// (levels idented, levels nested)
-    MidBranch(usize, usize),
+    EndLeaf(Option<Box<Twig>>), 
+    MidBranch(Option<Box<Twig>>),
 }
 
 impl Twig {
-    /// Accesses the level of indentation for the current node. 
-    /// 
-    /// This represents the node's depth in the tree.
-    pub fn level(&self) -> usize {
+    /// Accesses what type of node was the parent to the current `self`.
+    pub fn get_upper(&self) -> Option<&Twig> {
         match self {
-            Self::EndLeaf(lvl, _) => *lvl,
-            Self::MidBranch(lvl, _) => *lvl,
-        }
-    }
-
-    /// Accesses the number of intermediate branches the node is nested within.
-    pub fn nested(&self) -> usize {
-        match self {
-            Self::EndLeaf(_, nest) => *nest,
-            Self::MidBranch(_, nest) => *nest,
+            Self::EndLeaf(e) => e.as_deref(),
+            Self::MidBranch(e) => e.as_deref(),
         }
     }
 }
 
 impl std::fmt::Display for Twig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut space = String::with_capacity(self.level()*3);
-        for i in 1..self.level() {
-            if i+self.nested() >= self.level() {
-                space.push_str("│  ");
-            } else {
-                space.push_str("   ");
+        // determine the spacing leading up the node in the tree
+        let space: String = {
+            let mut space = String::new();
+            let mut x = self;
+            while let Some(n) = x.get_upper() {
+                match n {
+                    Self::EndLeaf(q) => if q.is_some() { space.push_str("   ") },
+                    Self::MidBranch(q) => if q.is_some() { space.push_str("  │") },
+                }
+                x = n;
             }
-        }
+            // reverse the characters around because twig chains need to be rewinded through recursion
+            space.chars().rev().collect()
+        };
+
         match self {
-            Self::EndLeaf(i, j) => if i == &0 && j == &0 {
+            Self::EndLeaf(m) => if m.is_none() {
                 write!(f, "")
             } else {
                 write!(f, "{}└─ ", space)
             }
-            Self::MidBranch(_, _) => write!(f, "{}├─ ", space),
+            Self::MidBranch(_) => write!(f, "{}├─ ", space),
         }
     }
 }
@@ -370,20 +360,78 @@ impl<'graph, V, E> Iterator for Successors<'graph, V, E> {
 mod test {
     use super::*;
 
+    /// Transforms a tree into a string for easier verification.
+    fn tree_to_string(t: &Vec<(Twig, usize)>) -> String {
+        let mut display = String::new();
+        for node in t {
+            display.push_str(&format!("{}{}\n", node.0, node.1));
+        }
+        display
+    }
+
     #[test]
     fn treeview() {
-        use Twig::*;
         let mut g= binary_tree();
         g.add_edge(4, 2, ());
         let tree = g.treeview(0);
-        assert_eq!(tree, vec![(EndLeaf(0, 0), 0), (MidBranch(1, 0), 4), 
-            (MidBranch(2, 1), 6), (EndLeaf(2, 1), 5), (EndLeaf(1, 0), 1), 
-            (MidBranch(2, 0), 3), (EndLeaf(2, 0), 2), (EndLeaf(3, 0), 4), 
-            (MidBranch(4, 0), 6), (EndLeaf(4, 0), 5)]);
-        // for i in tree {
-        //     println!("{}{}", i.0, i.1);
-        // }
-        // panic!()
+        assert_eq!(tree_to_string(&tree), "\
+0
+├─ 4
+│  ├─ 6
+│  └─ 5
+└─ 1
+   ├─ 3
+   └─ 2
+      └─ 4
+         ├─ 6
+         └─ 5
+");
+    }
+
+    #[test]
+    fn treeview_hard() {
+        let mut graph = Graph::<(), ()>::new();
+        let z = graph.add_node(());
+        let y = graph.add_node(());
+        let a = graph.add_node(()); 
+        let b = graph.add_node(()); 
+        let c = graph.add_node(()); 
+        let d = graph.add_node(()); 
+        let e = graph.add_node(()); 
+        let f = graph.add_node(()); 
+        let g = graph.add_node(()); 
+        let h = graph.add_node(()); 
+
+        graph.add_edge(y, z, ());
+
+        graph.add_edge(a, y, ());
+        graph.add_edge(b, y, ());
+        graph.add_edge(d, y, ());
+        graph.add_edge(c, y, ());
+
+        graph.add_edge(e, c, ());
+        graph.add_edge(f, c, ());
+
+        graph.add_edge(g, d, ());
+        graph.add_edge(g, b, ());
+
+        graph.add_edge(h, g, ());
+
+        let tree = graph.treeview(z);
+        assert_eq!(tree_to_string(&tree), "\
+0
+└─ 1
+   ├─ 4
+   │  ├─ 7
+   │  └─ 6
+   ├─ 5
+   │  └─ 8
+   │     └─ 9
+   ├─ 3
+   │  └─ 8
+   │     └─ 9
+   └─ 2
+");
     }
 
     
@@ -540,7 +588,7 @@ mod test {
     }
 
     #[test]
-    fn min_top_sort() {
+    fn min_y_sort() {
         let g = binary_tree();
         assert_eq!(g.minimal_topological_sort(0), vec![2, 3, 1, 5, 6, 4, 0]);
 
@@ -585,7 +633,7 @@ mod test {
     #[test]
     fn dfs() {
         let g = binary_tree();
-        // from top node
+        // from y node
         assert_eq!(g.depth_first_search(0), vec![0, 4, 6, 5, 1, 3, 2]);
 
         // from intermediate node

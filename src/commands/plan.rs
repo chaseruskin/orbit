@@ -7,6 +7,7 @@ use crate::core::context::Context;
 use std::ffi::OsString;
 use std::io::Write;
 use crate::core::fileset::Fileset;
+use crate::core::vhdl::vhdl::Identifier;
 
 #[derive(Debug, PartialEq)]
 pub struct Plan {
@@ -53,14 +54,14 @@ use crate::util::anyerror::AnyError;
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
-struct HashNode {
+pub struct HashNode {
     index: usize,
     entity: parser::Entity,
     files: Vec<String>,
 }
 
 impl HashNode {
-    fn index(&self) -> usize {
+    pub fn index(&self) -> usize {
         self.index
     }
     
@@ -87,29 +88,17 @@ struct ArchitectureFile {
     file: String,
 }
 
-use crate::core::vhdl::vhdl::Identifier;
-
 impl Plan {
-    fn run(&self, build_dir: &str, plug_filesets: Option<&Vec<Fileset>>) -> Result<(), Box<dyn std::error::Error>> {
-        let mut build_path = std::env::current_dir().unwrap();
-        build_path.push(build_dir);
-        
-        // check if to clean the directory
-        if self.clean == true && std::path::Path::exists(&build_path) == true {
-            std::fs::remove_dir_all(&build_path)?;
-        }
 
-        // gather filesets
-        let files = crate::core::fileset::gather_current_files(&std::env::current_dir().unwrap());
-
+    pub fn build_graph(files: &Vec<String>) -> (Graph<Identifier, ()>, HashMap<Identifier, HashNode>) {
         // @TODO wrap graph in a hashgraph implementation
-        let mut g: Graph<Identifier, ()> = Graph::new();
+        let mut graph: Graph<Identifier, ()> = Graph::new();
         // entity identifier, HashNode (hash-node holds entity structs)
         let mut map = HashMap::<Identifier, HashNode>::new();
 
         let mut archs: Vec<ArchitectureFile> = Vec::new();
         // read all files
-        for source_file in &files {
+        for source_file in files {
             if crate::core::fileset::is_vhdl(&source_file) == true {
                 let contents = std::fs::read_to_string(&source_file).unwrap();
                 let symbols = parser::VHDLParser::read(&contents).into_symbols();
@@ -125,9 +114,9 @@ impl Plan {
                     }
                 });
                 while let Some(e) = iter.next() {
-                    let index = g.add_node(e.get_name().clone());
+                    let index = graph.add_node(e.get_name().clone());
                     let hn = HashNode::new(e, index, source_file.to_string());
-                    map.insert(g.get_node(index).unwrap().clone(), hn);
+                    map.insert(graph.get_node(index).unwrap().clone(), hn);
                 }
             }
         }
@@ -142,10 +131,26 @@ impl Plan {
             for dep in af.architecture.edges() {
                 // verify the dep exists
                 if let Some(node) = map.get(dep) {
-                    g.add_edge(node.index(), map.get(af.architecture.entity()).unwrap().index(), ());
+                    graph.add_edge(node.index(), map.get(af.architecture.entity()).unwrap().index(), ());
                 }
             }
         }
+        (graph, map)
+    }
+
+    fn run(&self, build_dir: &str, plug_filesets: Option<&Vec<Fileset>>) -> Result<(), Box<dyn std::error::Error>> {
+        let mut build_path = std::env::current_dir().unwrap();
+        build_path.push(build_dir);
+        
+        // check if to clean the directory
+        if self.clean == true && std::path::Path::exists(&build_path) == true {
+            std::fs::remove_dir_all(&build_path)?;
+        }
+
+        // gather filesets
+        let files = crate::core::fileset::gather_current_files(&std::env::current_dir().unwrap());
+        // build graph and map storage
+        let (g, map) = Self::build_graph(&files);
 
         let mut bench = if let Some(t) = &self.bench {
             match map.get(&t) {

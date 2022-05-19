@@ -79,6 +79,7 @@ use crate::commands::build::Build;
 use crate::commands::edit::Edit;
 use crate::commands::launch::Launch;
 use crate::commands::install::Install;
+use crate::commands::tree::Tree;
 
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
@@ -90,6 +91,7 @@ enum OrbitSubcommand {
     Edit(Edit),
     Launch(Launch),
     Install(Install),
+    Tree(Tree),
 }
 
 impl FromCli for OrbitSubcommand {
@@ -103,6 +105,7 @@ impl FromCli for OrbitSubcommand {
             "edit",
             "launch",
             "install",
+            "tree",
         ])?.as_ref() {
             "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
             "new" => Ok(OrbitSubcommand::New(New::from_cli(cli)?)),
@@ -112,6 +115,7 @@ impl FromCli for OrbitSubcommand {
             "edit" => Ok(OrbitSubcommand::Edit(Edit::from_cli(cli)?)),
             "launch" => Ok(OrbitSubcommand::Launch(Launch::from_cli(cli)?)),
             "install" => Ok(OrbitSubcommand::Install(Install::from_cli(cli)?)),
+            "tree" => Ok(OrbitSubcommand::Tree(Tree::from_cli(cli)?)),
             _ => panic!("an unimplemented command was passed through!")
         }
     }
@@ -129,6 +133,7 @@ impl Command for OrbitSubcommand {
             OrbitSubcommand::New(c) => c.exec(context),
             OrbitSubcommand::Edit(c) => c.exec(context),
             OrbitSubcommand::Launch(c) => c.exec(context),
+            OrbitSubcommand::Tree(c) => c.exec(context),
         }
     }
 }

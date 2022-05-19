@@ -8,3 +8,4 @@ mod build;
 mod edit;
 mod launch;
 mod install;
+mod tree;

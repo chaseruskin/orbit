@@ -29,6 +29,9 @@ unambiguous.
  
 `--format <fmt>`  
       Select how to display entity names: 'long' or 'short'
+ 
+`--ascii`  
+      Restricts characters to original 128 ascii set
 
 ## __EXAMPLES__
 

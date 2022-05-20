@@ -30,6 +30,7 @@ pub struct Tree {
     root: Option<Identifier>,
     compress: bool,
     format: Option<IdentifierFormat>,
+    ascii: bool,
 }
 
 impl FromCli for Tree {
@@ -38,6 +39,7 @@ impl FromCli for Tree {
         let command = Ok(Tree {
             root: cli.check_option(Optional::new("root").value("entity"))?,
             compress: cli.check_flag(Flag::new("compress"))?,
+            ascii: cli.check_flag(Flag::new("ascii"))?,
             format: cli.check_option(Optional::new("format").value("fmt"))?,
         });
         command
@@ -85,9 +87,30 @@ impl Tree {
 
         let tree = graph.treeview(n);
         for twig in &tree {
-            println!("{}{}", twig.0, graph.get_node(twig.1).unwrap());
+            let branch_str = match self.ascii {
+                true => Self::to_ascii(&twig.0.to_string()),
+                false => twig.0.to_string(),
+            };
+            println!("{}{}", branch_str, graph.get_node(twig.1).unwrap());
         }
         Ok(())
+    }
+
+    /// Converts the original treeview text from using extended ascii characters
+    /// to orginal ascii characters.
+    fn to_ascii(s: &str) -> String {
+        let mut transform = String::with_capacity(s.len());
+        let mut chars = s.chars();
+        while let Some(c) = chars.next() {
+            match c {
+                '─' => transform.push('-'),
+                '│' => transform.push('|'),
+                '├' => transform.push('+'),
+                '└' => transform.push('\\'),
+                _ => transform.push(c),
+            }
+        }
+        transform
     }
 }
 
@@ -102,6 +125,7 @@ Options:
     --compress          replace duplicate branches with a label marking
     --all               include all possible roots in tree
     --format <fmt>      select how to display entity names: 'long' or 'short'
+    --ascii             use chars from the original 128 ascii set
 
 Use 'orbit help tree' to learn more about the command.
 ";

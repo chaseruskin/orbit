@@ -433,7 +433,20 @@ mod test {
    └─ 2
 ");
     }
-
+/* --ascii version
+0
+\─ 1
+   +─ 4
+   |  +─ 7
+   |  \- 6
+   +─ 5
+   |  \─ 8
+   |     \─ 9
+   +─ 3
+   |  \─ 8
+   |     \─ 9
+   \─ 2
+*/
     
     /// Creates basic graph illustrated in this blog post:
     /// - source: http://smallcultfollowing.com/babysteps/blog/2015/04/06/modeling-graphs-in-rust-using-vector-indices/

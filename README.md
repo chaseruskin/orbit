@@ -17,4 +17,4 @@ See [CONTRIBUTING](./CONTRIBUTING.md).
 
 ## License
 
-This project, which refers to all source code files created under this repository, is currently licensed under the open-source copyleft GPLv3 license. See [LICENSE](./LICENSE).
+This project, which refers to all source code files created under this repository, is currently licensed under the open-source copyleft GPL-3.0 license. See [LICENSE](./LICENSE).

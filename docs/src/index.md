@@ -10,7 +10,7 @@ The following documentation will be mainly divided into 4 sections:
 4. [Reference](./5_reference/0_reference.md) - technical information
 
 ## About the Project
-The project is open-source under the MIT license and is available on [GitHub](https://github.com/c-rus/orbit).
+The project is open-source under the GPL-3.0 license and is available on [GitHub](https://github.com/c-rus/orbit).
 
 ## About the Documentation
 Documentation system and methodology is inspired by [Divio](https://documentation.divio.com).

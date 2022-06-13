@@ -1,5 +1,7 @@
 # /workflows
 
+GitHub CI/CD scripts.
+
 - `build.yml`: calls cargo build and cargo test for main orbit executable
 
 - `check-release.yml`: passes a parameter given value if Cargo.toml version field is new

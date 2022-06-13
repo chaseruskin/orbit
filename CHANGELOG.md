@@ -13,7 +13,11 @@ pipeline to list only the current verion's changes with every release.
 
 # Changelog
 
-## 0.x.x - unreleased
+## 0.1.1
+
+### Bug Fixes
+
+- `--upgrade` flag now properly searches for correct binary dependent on operating system during zip extraction
 
 ## 0.1.0
 

@@ -276,7 +276,7 @@ impl Orbit {
         let temp_dir = tempfile::tempdir()?;
         zip_archive.extract(&temp_dir)?;
 
-        let exe_ext = if std::env::consts::EXE_EXTENSION.is_empty() == false { "" } else { ".exe" };
+        let exe_ext = if std::env::consts::EXE_EXTENSION.is_empty() == true { "" } else { ".exe" };
 
         // verify the path to the new executable exists before renaming current binary
         let temp_exe_path = temp_dir.path().join(&format!("orbit-{}-{}/bin/orbit{}", &latest, &target, &exe_ext));

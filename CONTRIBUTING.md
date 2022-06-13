@@ -2,11 +2,17 @@
 
 ## Writing code
 
-todo
+Code should be modular components limited in scope to perform a single operation. When applicable, tests should accompany functional blocks of code to verify the code behaves as intended. Comments should describe what a particular function does, any assumptions outside the code's scope, and any possible errors to take caution for.
 
 ## Writing documentation
 
-todo 
+The Book of Orbit is kept in `docs/src`. There are four main sections to write:
+1. _tutorials_ - for users to get their hands dirty and learn by doing
+2. _user guide_ - how to do common and popular tasks
+3. _topic guide_ - general information about how the program works
+4. _reference_ - detailed and exact information
+
+Original man pages for orbit subcommands are written in `docs/src/6_commands/`. The `rsmangen.py` script converts the formatted .md file into a nicer Rust string literal for a .rs file saved in `src/commands/manuals/`.
 
 ## Releasing a new version of orbit
 

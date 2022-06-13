@@ -46,7 +46,8 @@ def extract_latest_released_version(tags: str) -> str:
     Assumes all tags are already available in the current git repository.'''
     tags = tags.strip()
     characters = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.']
-    # find first valid tag
+    # find highest valid tag
+    highest_ver = '0.0.0'
     for tag in tags.splitlines():
         # remove leading 'v'
         if tag.lower().startswith('v'):
@@ -59,9 +60,13 @@ def extract_latest_released_version(tags: str) -> str:
             if c not in characters:
                 break
         else:
-            return tag
+            if is_new_version_higher(highest_ver, tag):
+                highest_ver = tag
     # found zero tags
-    return None
+    if highest_ver == '0.0.0':
+        return None
+    else:
+        return highest_ver
 
 
 def main():
@@ -106,6 +111,8 @@ class Test(unittest.TestCase):
         self.assertEqual(is_new_version_higher('1.99.99', '2.0.0'), True)
         # larger major value (leading zeros in string)
         self.assertEqual(is_new_version_higher('01.0.0', '02.0.0'), True)
+        # same values
+        self.assertEqual(is_new_version_higher('0.1.1', '0.1.1'), False)
         pass
 
 
@@ -136,14 +143,14 @@ va.b.c
 V2.0.0
 v3.0.0
 """
-        self.assertEqual(extract_latest_released_version(tags), '2.0.0')
+        self.assertEqual(extract_latest_released_version(tags), '3.0.0')
 
         tags = """
 abcd
 1.0.0.
-00.123456789.00
+02.123456789.00
 """
-        self.assertEqual(extract_latest_released_version(tags), '00.123456789.00')
+        self.assertEqual(extract_latest_released_version(tags), '02.123456789.00')
         pass
 
 

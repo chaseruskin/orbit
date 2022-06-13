@@ -6,3 +6,15 @@
 ## The HDL package manager
 
 Orbit is the package manager for Hardware Description Languages (HDL).
+
+## Documentation
+
+Read the [Book of Orbit](https://c-rus.github.io/orbit/).
+
+## Contributing
+
+See [CONTRIBUTING](./CONTRIBUTING.md).
+
+## License
+
+This project, which refers to all source code files created under this repository, is currently licensed under the open-source copyleft GPLv3 license. See [LICENSE](./LICENSE).

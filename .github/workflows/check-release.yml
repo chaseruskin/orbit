@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       ready: ${{ steps.ready.outputs.ready }}
-      version: ${{ steps.ready.outputs.version }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v2

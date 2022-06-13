@@ -25,7 +25,10 @@ jobs:
     - name: Display filesystem contents
       run: ls -R
 
-    - name: Generate release notes
+    - name: Validate release notes
+      run: ./tools/autocl.py ${{ inputs.version }}
+
+    - name: Write release notes
       run: echo "$(./tools/autocl.py ${{ inputs.version }})" > ./RELEASE_NOTES.md
 
     - name: Tag commit as version

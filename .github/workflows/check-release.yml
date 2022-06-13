@@ -4,10 +4,10 @@ on:
     outputs:
       ready:
         description: 'Auto-release conditional indicator'
-        value: ${{ jobs.parameters.outputs.ready }}
+        value: ${{ jobs.check-release.outputs.ready }}
       version:
         description: 'Version to release'
-        value: ${{ jobs.parameters.outputs.version }}
+        value: ${{ jobs.check-release.outputs.version }}
 
 jobs:
   check-release:

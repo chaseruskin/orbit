@@ -40,7 +40,7 @@ jobs:
     - name: Upload releases
       uses: ncipollo/release-action@v1
       with:
-        artifacts: '**/orbit-*.zip,**/checksum.txt'
+        artifacts: '**/orbit-*.zip,**/orbit-*-checksums.txt'
         bodyFile: ./RELEASE_NOTES.md
         token: ${{ secrets.GITHUB_TOKEN }}
         tag: ${{ inputs.version }}

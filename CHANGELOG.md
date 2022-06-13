@@ -13,6 +13,8 @@ pipeline to list only the current verion's changes with every release.
 
 # Changelog
 
+## 0.x.x - unreleased
+
 ## 0.1.0
 
 ### Features

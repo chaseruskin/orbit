@@ -170,6 +170,33 @@ impl Entity {
     pub fn get_name(&self) -> &Identifier {
         &self.name
     }
+
+    // Access the signal list
+    pub fn get_signals(&self) -> Vec<String> {
+        let mut sigs = Vec::with_capacity(self.ports.len());
+        for st_port in &self.ports {
+            sigs.push(String::from("signal ")+&st_port.to_string()+";");
+        }
+        sigs
+    }
+
+    /// Parses an `Entity` primary design unit from the entity's identifier to
+    /// the END closing statement.
+    fn from_tokens<I>(tokens: &mut Peekable<I>) -> Self 
+    where I: Iterator<Item=Token<VHDLToken>> {
+        // take entity name
+        let entity_name = tokens.next().take().unwrap().take();
+        let (generics, ports) = VHDLSymbol::parse_entity_declaration(tokens);
+        Entity { 
+            name: match entity_name {
+                    VHDLToken::Identifier(id) => id,
+                    _ => panic!("expected an identifier")
+            },
+            architectures: Vec::new(),
+            generics: generics,
+            ports: ports,
+        }
+    }
 }
 
 /* 
@@ -259,16 +286,42 @@ use std::iter::Peekable;
 #[derive(PartialEq)]
 struct Statement(Vec<Token<VHDLToken>>);
 
-impl std::fmt::Debug for Statement {
+impl std::fmt::Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for t in &self.0 {
-            write!(f, "{} ", t.as_ref().to_string())?
+        // determine which delimiters to not add trailing spaces to
+        let is_spaced_token = |d: &Delimiter| {
+            match d {
+                Delimiter::ParenL | Delimiter::ParenR => false,
+                _ => true,
+            }
+        };
+        // iterate through the tokens
+        let mut iter = self.0.iter().peekable();
+        while let Some(t) = iter.next() {
+            let trailing_space = match t.as_ref() {
+                VHDLToken::Delimiter(d) => is_spaced_token(d),
+                _ => {
+                    // make sure the next token is not a tight token (no-spaced)
+                    if let Some(m) = iter.peek() {
+                        match m.as_ref() {
+                            VHDLToken::Delimiter(d) => is_spaced_token(d),
+                            _ => true
+                        }
+                    } else {
+                        true
+                    }
+                }
+            };
+            write!(f, "{}", t.as_ref().to_string())?;
+            if trailing_space == true && iter.peek().is_some() {
+                write!(f, " ")?
+            }
         }
         Ok(())
     }
 }
 
-impl std::fmt::Display for Statement {
+impl std::fmt::Debug for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for t in &self.0 {
             write!(f, "{} ", t.as_ref().to_string())?
@@ -297,20 +350,7 @@ impl VHDLSymbol {
     /// the END closing statement.
     fn parse_entity<I>(tokens: &mut Peekable<I>) -> VHDLSymbol 
     where I: Iterator<Item=Token<VHDLToken>>  {
-        // take entity name
-        let entity_name = tokens.next().take().unwrap().take();
-        // println!("*--- unit {}", entity_name);
-        let (generics, ports) = VHDLSymbol::parse_entity_declaration(tokens);
-        VHDLSymbol::Entity(
-            Entity { 
-                name: match entity_name {
-                        VHDLToken::Identifier(id) => id,
-                        _ => panic!("expected an identifier")
-                },
-                architectures: Vec::new(),
-                generics: generics,
-                ports: ports,
-        })
+        VHDLSymbol::Entity(Entity::from_tokens(tokens))
     }
 
     /// Parses a package declaration, from the <package> IS to the END keyword.
@@ -896,7 +936,7 @@ constant Delay: TIME := 1 ms;";
         let ports = VHDLSymbol::parse_interface_list(&mut tokens);
         let ports: Vec<String> = ports.into_iter().map(|m| m.to_string()).collect();
         assert_eq!(ports, vec![
-            "P1 , P2 : inout BIT ",
+            "P1 , P2 : inout BIT",
         ]);
         assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::Constant));
     }
@@ -917,7 +957,7 @@ end;";
         // convert to strings for easier verification
         let generics: Vec<String> = generics.into_iter().map(|m| m.to_string()).collect();
         assert_eq!(generics, vec![
-            "N : positive ",
+            "N : positive",
         ]);
         // take PORT
         tokens.next();
@@ -925,9 +965,9 @@ end;";
          // convert to strings for easier verification
         let ports: Vec<String> = ports.into_iter().map(|m| m.to_string()).collect();
         assert_eq!(ports, vec![
-            "a : in std_logic_vector ( N - 1 downto 0 ) ",
-            "b : in std_logic_vector ( N - 1 downto 0 ) ",
-            "c : out std_logic_vector ( N - 1 downto 0 ) ",
+            "a : in std_logic_vector(N - 1 downto 0)",
+            "b : in std_logic_vector(N - 1 downto 0)",
+            "c : out std_logic_vector(N - 1 downto 0)",
         ]);
         assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::End));
     }
@@ -944,7 +984,7 @@ end;";
         // convert to strings for easier verification
         let generics: Vec<String> = generics.into_iter().map(|m| m.to_string()).collect();
         assert_eq!(generics, vec![
-            "N : positive ",
+            "N : positive",
         ]);
         assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::Begin));
     }
@@ -1025,6 +1065,25 @@ signal ready: std_logic;";
     }
 
     #[test]
+    fn entity() {
+        let s = "\
+nor_gate is
+    generic(
+        N: positive
+    );
+    port(
+        a: in  std_logic_vector(N-1 downto 0);
+        b: in  std_logic_vector(N-1 downto 0);
+        c: out std_logic_vector(N-1 downto 0)
+    );
+end entity nor_gate;";
+        let mut tokens = VHDLTokenizer::from_source_code(&s).into_tokens().into_iter().peekable();
+        let _ = Entity::from_tokens(&mut tokens);
+
+        // @TODO write signals from ports
+    }
+
+    #[test]
     fn compose_statement() {
         let s = "a : in std_logic_vector(3 downto 0);";
         let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
@@ -1060,6 +1119,15 @@ signal ready: std_logic;";
         let mut tokens = VHDLTokenizer::from_source_code(&s).into_tokens().into_iter().peekable();
         let _ = VHDLSymbol::compose_statement(&mut tokens);
         assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::End));
+    }
+
+    #[test]
+    fn print_statement() {
+        let s = "a : in std_logic_vector ( 3 downto 0);";
+        let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
+        let mut iter = tokens.into_iter().peekable();
+        let st = VHDLSymbol::compose_statement(&mut iter);
+        assert_eq!(st.to_string(), "a : in std_logic_vector(3 downto 0)");
     }
 
     #[test]

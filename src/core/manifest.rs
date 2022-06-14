@@ -16,7 +16,7 @@ use glob::glob;
 /// Finds all Manifest files available in the provided path
 pub fn find_dev_manifests(path: &std::path::PathBuf) -> Result<Vec<Manifest>, Box<dyn std::error::Error>> {
     let mut result = Vec::new();
-    // walk the ORBIT_PATH directory @TODO recursively walk directories until hitting first 'Orbit.toml' file.
+    // walk the ORBIT_PATH directory @TODO recursively walk inner directories until hitting first 'Orbit.toml' file.
     for entry in glob(&path.join("**/Orbit.toml").display().to_string()).expect("Failed to read glob pattern") {
         let e = entry?;
         // read ip_spec from each manifest

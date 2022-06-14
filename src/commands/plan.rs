@@ -156,7 +156,7 @@ impl Plan {
             match map.get(&t) {
                 Some(node) => {
                     if node.entity.is_testbench() == false {
-                        return Err(AnyError(format!("entity \'{}\' is not a testbench and cannot be bench; please use --top", t)))?
+                        return Err(AnyError(format!("entity \'{}\' is not a testbench and cannot be bench; use --top", t)))?
                     }
                     Some(node.index())
                 },
@@ -192,7 +192,7 @@ impl Plan {
             match map.get(&t) {
                 Some(node) => {
                     if node.entity.is_testbench() == true {
-                        return Err(AnyError(format!("entity \'{}\' is a testbench and cannot be top; please use --bench", t)))?
+                        return Err(AnyError(format!("entity \'{}\' is a testbench and cannot be top; use --bench", t)))?
                     }
                     let n = node.index();
                     // try to detect top level testbench

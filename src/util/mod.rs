@@ -6,3 +6,4 @@ pub mod overdetsys;
 pub mod strcmp;
 pub mod graph;
 pub mod checksum;
+pub mod exepath;

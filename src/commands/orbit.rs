@@ -172,6 +172,7 @@ use std::str::FromStr;
 use std::io::Write;
 use zip;
 use tempfile;
+use crate::util::exepath::get_exe_path;
 
 impl Orbit {
 
@@ -323,14 +324,5 @@ impl std::fmt::Display for UpgradeError {
             Self::UnsupportedTarget(t) => write!(f, "no pre-compiled binaries exist for the current target {}", t),
             Self::NoReleasesFound => write!(f, "no releases were found"),
         }
-    }
-}
-
-use std::path::PathBuf;
-
-fn get_exe_path() -> Result<PathBuf, Box::<dyn std::error::Error>> {
-    match env::current_exe() {    
-        Ok(exe_path) => Ok(std::fs::canonicalize(exe_path)?),
-        Err(e) => Err(Box::new(e)),
     }
 }

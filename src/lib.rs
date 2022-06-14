@@ -2,7 +2,7 @@
 
 mod interface;
 mod commands;
-mod util;
+pub mod util;
 mod core;
 
 use crate::interface::cli::*;

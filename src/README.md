@@ -6,6 +6,8 @@ Source code for the orbit project.
 
 - `/core`: backend logic and main system components
 
+- `/installer`: code for additional executable to help user set up orbit
+
 - `/interface`: frontend code for command-line interaction
 
 - `/util`: small, reusable code pieces to solve generic problems

@@ -13,6 +13,20 @@ pipeline to list only the current verion's changes with every release.
 
 # Changelog
 
+## 0.1.2
+
+### Features
+
+- an installer program is included with the orbit project when downloading a precompiled binary
+
+### Fixes
+
+- windows-style endings (`\r\n`) supported when given interactive prompts
+
+### Documentation
+
+- adds a simple README included with the orbit project for distribution
+
 ## 0.1.1
 
 ### Bug Fixes

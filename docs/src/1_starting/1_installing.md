@@ -2,13 +2,13 @@
 
 There are two main methods for getting orbit running on your system: downloading a precompiled binary or using cargo.
 
-## 1. Downloading a precompiled binary
+## 1. Using a precompiled binary
 
 1.  Visit Orbit's [releases](https://github.com/c-rus/orbit/releases) page on Github to find all official releases. 
 2. Download the binary for your architecture and operating system.
-3. Place the Orbit executable (`orbit` for unix and `orbit.exe` for windows) in a location recognized by the PATH environment variable.
+3. Install Orbit. Either run the provided `install` executable or follow the manual instructions for placing the Orbit executable (`orbit` for unix and `orbit.exe` for windows) in a location recognized by the PATH environment variable.
 
-There are multiple ways to accomplish step 3. The following outlines one way depending on the user's operating system. 
+There are multiple solutions to accomplish step 3. The following outlines one way to manually install orbit depending on the user's operating system. 
 
 ### Unix
 1. Open a terminal to where Orbit was downloaded.
@@ -46,7 +46,7 @@ $ cargo install --git https://github.com/c-rus/orbit.git --tag <VERSION>
 
 This will build the `orbit` binary and place it a path already set in the PATH environment variable.
 
-## Checking Orbit is installed correctly
+## Checking if Orbit is installed correctly
 
 To verify orbit is working correctly on your system, open a new terminal and run:
 ```

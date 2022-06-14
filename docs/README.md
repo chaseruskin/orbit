@@ -6,6 +6,8 @@ Safehouse of information for the orbit project.
 
 - `/manuals`: language references, helpful paper resources
 
+- `/pack`: documentation to provide in the deployed package
+
 - `/papers`: in-depth ideas
 
 - `/src`: orbit book pages for GitHub Pages through mdbook

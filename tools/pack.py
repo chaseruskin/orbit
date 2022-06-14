@@ -49,14 +49,14 @@ def main():
     os.mkdir(root)
 
     # append '.exe' to grab windows executable
-    bin = '/'+project+exe()
+    bin = '/'+project+exe(target)
 
     # place binary in bin/
     pack(root, './target/release'+bin, '/bin/'+bin)
     # place license at root
     pack(root, './LICENSE', '/LICENSE')
     # place installer at root
-    pack(root, './target/release/install'+exe(), '/install'+exe())
+    pack(root, './target/release/install'+exe(target), '/install'+exe(target))
 
     # compress data
     shutil.make_archive(pkg, 'zip', os.path.dirname(root), base_dir=pkg)

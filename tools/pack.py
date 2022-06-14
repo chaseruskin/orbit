@@ -26,6 +26,13 @@ def pack(root: str, src: str, dst: str) -> None:
         exit('error: '+src+' does not exist in current filesystem')
 
 
+def exe(target: str) -> str:
+    if target.lower().count('windows') == True: 
+        return '.exe'
+    else:
+        return ''
+
+
 def main():
     global project
     if len(sys.argv) != 2:
@@ -41,14 +48,15 @@ def main():
         shutil.rmtree(root)
     os.mkdir(root)
 
-    bin = '/'+project 
     # append '.exe' to grab windows executable
-    if target.lower().count('windows') == True: bin += '.exe'
+    bin = '/'+project+exe()
 
     # place binary in bin/
     pack(root, './target/release'+bin, '/bin/'+bin)
     # place license at root
     pack(root, './LICENSE', '/LICENSE')
+    # place installer at root
+    pack(root, './target/release/install'+exe(), '/install'+exe())
 
     # compress data
     shutil.make_archive(pkg, 'zip', os.path.dirname(root), base_dir=pkg)

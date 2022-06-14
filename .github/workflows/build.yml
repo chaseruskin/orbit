@@ -36,11 +36,14 @@ jobs:
           echo "TARGET=$(./tools/target-triple.exe)" >> $GITHUB_ENV
           echo "VERSION=$(python ./tools/evalver.py --version)" >> $GITHUB_ENV
 
-      - name: Build
+      - name: Build orbit binary
         run: cargo build --release
 
       - name: Test
         run: cargo test
+
+      - name: Build installer binary
+        run: cargo build --bin install --release
 
       - name: Package and compress binary executable
         run: python ./tools/pack.py ${{ env.VERSION }}-${{ env.TARGET }}

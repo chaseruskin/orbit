@@ -33,7 +33,7 @@ also specify what file to config by adding `--file` option.
 
 -----
 
-### `fetch`
+### `fetch` / `get`
 
 SYNOPSIS: `orbit fetch [options] <ip>::<unit>`
 
@@ -46,6 +46,10 @@ Grab the unit and place ip project data into Orbit.dep file for reprod. build. I
 - `--signals, -s` : return vhdl signal connection code
 - `--about` : return file's top comment header block
 - `--crude` : return the exact syntax and formatting of entity declaration section
+
+Idea: possibly have a second command such as `add` that will actually add it to `[dependencies]` section of manifest. So there would two levels/types of this command, one for strictly "browsing"/"trying"/"exploring" and one for taking action. This could also be accomplished with a flag.
+
+- `--peek`, `-p` : do not add to `[dependencies]` section
 
 Examples:
 ``` vhdl
@@ -116,6 +120,14 @@ Examples:
 orbit search ks-tech.. 
 orbit search gates --topic simple --topic edu -A
 ```
+
+-----
+
+### `audit`
+
+SYNOPSIS: `orbit audit [options]`
+
+Verifies all checksums match between the lock file and the current machine's cache.
 
 -----
 

@@ -139,7 +139,7 @@ impl Command for OrbitSubcommand {
 }
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-// :todo: check for additional data such as the commit being used
+// @TODO check for additional data such as the commit being used
 
 const HELP: &str = "\
 Orbit is a tool for hdl package management.
@@ -174,6 +174,12 @@ use zip;
 use tempfile;
 
 impl Orbit {
+
+    /// Returns current machine's target as \<arch>-\<os>
+    fn target_triple() -> String {
+        format!("{}-{}", std::env::consts::ARCH, std::env::consts::OS)
+    }
+
     #[tokio::main]
     async fn upgrade(&self) -> Result<String, Box<dyn std::error::Error>> {
         // check for stale versions at the current executable's path
@@ -232,7 +238,7 @@ impl Orbit {
         }
 
         // store user's target
-        let target = format!("{}-{}", std::env::consts::ARCH, std::env::consts::OS);
+        let target = Orbit::target_triple();
         
         let checksums = String::from_utf8(res.bytes().await?.to_vec())?;
         let pkg = format!("orbit-{}-{}.zip", &latest, &target);

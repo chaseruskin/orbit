@@ -1,10 +1,14 @@
 use colored::*;
 
+#[allow(unused_must_use)]
 fn main() -> () {
     match install() {
         Ok(()) => (),
         Err(e) => eprintln!("{} {}", "error:".red().bold(), e)
     }
+    // allow user to see final messages before closing the window
+    poll_response("press enter to exit ");
+    ()
 }
 
 fn install() -> Result<(), Box<dyn std::error::Error>> {
@@ -41,6 +45,14 @@ fn unix() -> Result<(), Box<dyn std::error::Error>> {
     let path = PathBuf::from("/usr/local/bin");
     let path = installation_path(path)?;
 
+    let dest = path.join("orbit");
+
+    // check if a file named "orbit" already exists
+    if dest.exists() == true && prompt(&format!("file {} already exists; is it okay to replace it", dest.display()))? == false {
+        println!("cancelled installation");
+        return Ok(())
+    }
+
     // 3. ask user for permission 
     match prompt("Install")? {
         true => {
@@ -53,8 +65,6 @@ fn unix() -> Result<(), Box<dyn std::error::Error>> {
             println!("cancelled installation")
         }
     };
-    // allow user to see final messages before closing the window
-    poll_response("press enter to exit ")?;
     Ok(())
 }
 
@@ -78,16 +88,25 @@ fn windows() -> Result<(), Box<dyn std::error::Error>> {
     let path = std::path::PathBuf::from(std::env::var("LOCALAPPDATA")?).join("Programs");
     let path = installation_path(path)?;
 
+    let dest = path.join("orbit");
+            
+    // check if a folder named "orbit" already exists
+    if dest.exists() == true && prompt(&format!("directory {} already exists; is it okay to replace it", dest.display()))? == false {
+        println!("cancelled installation");
+        return Ok(())
+    }
+
     // 3. ask user for permission
     match prompt("Install")? {
         true => {
             // 4a. copy the binary to the location
             let options = fs_extra::dir::CopyOptions::new();
             fs_extra::dir::copy(&contents, &path, &options)?;
+            // remove old folder called 'orbit'
+            std::fs::remove_dir_all(dest)?;
             // rename original folder name to 'orbit'
             std::fs::rename(contents.file_name().unwrap(), "orbit")?;
             println!("successfully installed orbit");
-
             println!("{} add {} to the user PATH variable to call `orbit` from the command-line", "tip:".blue().bold(), path.join("orbit/bin").display());
         }
         false => {
@@ -95,40 +114,34 @@ fn windows() -> Result<(), Box<dyn std::error::Error>> {
             println!("cancelled installation")
         }
     }
-    // allow user to see final messages before closing the window
-    poll_response("press enter to exit ")?;
     Ok(())
-}
-
-#[cfg(test)]
-mod test {
-
-    #[test]
-    fn names() {
-        let n = std::path::PathBuf::from("c:/users/chase/orbit-1.0.0/");
-        assert_eq!(n.file_name().unwrap(), "orbit-1.0.0");
-
-        let n = std::path::PathBuf::from("c:/users/chase/orbit-1.0.0");
-        assert_eq!(n.file_name().unwrap(), "orbit-1.0.0");
-    }
 }
 
 use std::path::PathBuf;
 use fs_extra;
 
-fn installation_path(path: PathBuf) -> Result<PathBuf, Error> {
+fn installation_path(path: PathBuf) -> Result<PathBuf, Box<dyn std::error::Error>> {
     println!("default installation path: {}", path.display());
     let path = match poll_response("enter installation path or press enter to continue: ")? {
         Some(r) => PathBuf::from(r),
         None => path,
     };
-    println!("set installation path: {}", path.display());
-    Ok(path)
+    // verify path exists
+    match path.exists() {
+        true => {
+            println!("set installation path: {}", path.display());
+            Ok(path)
+        }
+        false => {
+            Err(InstallError::PathDNE(path))?
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
 enum InstallError {
     UnknownFamily,
+    PathDNE(PathBuf),
 }
 
 impl std::error::Error for InstallError {}
@@ -138,16 +151,11 @@ use std::fmt::Display;
 impl Display for InstallError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
         match self {
-            Self::UnknownFamily => write!(f, "unknown family (did not detect unix or windows)")
+            Self::PathDNE(p) => write!(f, "path {:?} does not exist", p),
+            Self::UnknownFamily => write!(f, "unknown family (did not detect unix or windows)"),
         }
     }
 }
-
-const HEADER: &str = "\
-------------------------------------------------------------
-::              ORBIT INSTALLATION PROGRAM                ::
-------------------------------------------------------------
-";
 
 use std::io;
 use std::io::Write;
@@ -168,4 +176,23 @@ fn capture_response(input: &mut (impl Read + std::io::BufRead)) -> Result<String
     let mut buffer: String = String::new();
     input.read_line(&mut buffer)?;
     Ok(buffer.trim_end().to_string())
+}
+
+const HEADER: &str = "\
+------------------------------------------------------------
+::              ORBIT INSTALLATION PROGRAM                ::
+------------------------------------------------------------
+";
+
+#[cfg(test)]
+mod test {
+
+    #[test]
+    fn names() {
+        let n = std::path::PathBuf::from("c:/users/chase/orbit-1.0.0/");
+        assert_eq!(n.file_name().unwrap(), "orbit-1.0.0");
+
+        let n = std::path::PathBuf::from("c:/users/chase/orbit-1.0.0");
+        assert_eq!(n.file_name().unwrap(), "orbit-1.0.0");
+    }
 }

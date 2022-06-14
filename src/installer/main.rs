@@ -35,7 +35,7 @@ fn unix() -> Result<(), Box<dyn std::error::Error>> {
 
     // 1. compute installation size
     let megabytes = fs_extra::dir::get_size(&contents)? as f32 / 1000000 as f32;
-    println!("Installation size: {:.2} MB", megabytes);
+    println!("installation size: {:.2} MB", megabytes);
 
     // 2. configure installation destination
     let path = PathBuf::from("/usr/local/bin");
@@ -46,13 +46,15 @@ fn unix() -> Result<(), Box<dyn std::error::Error>> {
         true => {
             // 4a. copy the binary to the location
             std::fs::copy(contents, path.join("orbit"))?;
-            println!("Successfully installed orbit");
+            println!("successfully installed orbit");
         }
         false => {
             // 4b. cancel installation
-            println!("Cancelled installation")
+            println!("cancelled installation")
         }
     };
+    // allow user to see final messages before closing the window
+    poll_response("press enter to exit ")?;
     Ok(())
 }
 
@@ -63,14 +65,14 @@ fn windows() -> Result<(), Box<dyn std::error::Error>> {
     // gather path for what will be installed
     let contents = {
         let mut root = get_exe_path()?;
-        // remove file to get parent directory
+        // get base directory from where installer exists
         root.pop();
         root
     };
 
     // 1. compute installation size
     let megabytes = fs_extra::dir::get_size(&contents)? as f32 / 1000000 as f32;
-    println!("Installation size: {:.2} MB", megabytes);
+    println!("installation size: {:.2} MB", megabytes);
 
     // 2. configure installation destination
     let path = std::path::PathBuf::from(std::env::var("LOCALAPPDATA")?).join("Programs");
@@ -82,28 +84,45 @@ fn windows() -> Result<(), Box<dyn std::error::Error>> {
             // 4a. copy the binary to the location
             let options = fs_extra::dir::CopyOptions::new();
             fs_extra::dir::copy(&contents, &path, &options)?;
-            println!("Successfully installed orbit");
+            // rename original folder name to 'orbit'
+            std::fs::rename(contents.file_name().unwrap(), "orbit")?;
+            println!("successfully installed orbit");
 
-            println!("Tip: Add {} to the user PATH variable to call `orbit` from the command-line", path.join("orbit/bin").display())
+            println!("{} add {} to the user PATH variable to call `orbit` from the command-line", "tip:".blue().bold(), path.join("orbit/bin").display());
         }
         false => {
             // 4b. cancel installation
-            println!("Cancelled installation")
+            println!("cancelled installation")
         }
     }
+    // allow user to see final messages before closing the window
+    poll_response("press enter to exit ")?;
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+
+    #[test]
+    fn names() {
+        let n = std::path::PathBuf::from("c:/users/chase/orbit-1.0.0/");
+        assert_eq!(n.file_name().unwrap(), "orbit-1.0.0");
+
+        let n = std::path::PathBuf::from("c:/users/chase/orbit-1.0.0");
+        assert_eq!(n.file_name().unwrap(), "orbit-1.0.0");
+    }
 }
 
 use std::path::PathBuf;
 use fs_extra;
 
 fn installation_path(path: PathBuf) -> Result<PathBuf, Error> {
-    println!("Default installation path: {}", path.display());
-    let path = match set_variable("Enter installation path or press enter to continue:")? {
+    println!("default installation path: {}", path.display());
+    let path = match poll_response("enter installation path or press enter to continue: ")? {
         Some(r) => PathBuf::from(r),
         None => path,
     };
-    println!("Set installation path: {}", path.display());
+    println!("set installation path: {}", path.display());
     Ok(path)
 }
 
@@ -131,9 +150,11 @@ const HEADER: &str = "\
 ";
 
 use std::io;
+use std::io::Write;
 
-fn set_variable(msg: &str) -> Result<Option<String>, Error> {
-    println!("{}", msg);
+fn poll_response(msg: &str) -> Result<Option<String>, Error> {
+    print!("{}", msg);
+    std::io::stdout().flush()?;
     let resp = capture_response(&mut io::stdin().lock())?;
     Ok(match resp.trim().is_empty() {
         true => None,
@@ -146,5 +167,5 @@ use std::io::{Error, Read};
 fn capture_response(input: &mut (impl Read + std::io::BufRead)) -> Result<String, Error> {
     let mut buffer: String = String::new();
     input.read_line(&mut buffer)?;
-    Ok(buffer[0..buffer.len()-1].to_string())
+    Ok(buffer.trim_end().to_string())
 }

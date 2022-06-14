@@ -28,7 +28,6 @@ fn check_for_response(input: &mut (impl Read + std::io::BufRead)) -> Result<bool
     }
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;

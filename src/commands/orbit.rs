@@ -232,6 +232,7 @@ impl Orbit {
         }
 
         // download the list of checksums
+        println!("info: downloading update...");
         let sum_url = format!("{0}/download/{1}/orbit-{1}-checksums.txt", &base_url, &latest);
         let res = reqwest::get(&sum_url).await?;
         if res.status() != 200 {
@@ -275,6 +276,7 @@ impl Orbit {
         };
 
         // unzip the bytes and put file in temporary file
+        println!("info: installing update...");
         let mut temp_file = tempfile::tempfile()?;
         temp_file.write_all(&body_bytes)?;
         let mut zip_archive = zip::ZipArchive::new(temp_file)?;

@@ -57,6 +57,8 @@ def main():
     pack(root, './LICENSE', '/LICENSE')
     # place installer at root
     pack(root, './target/release/install'+exe(target), '/install'+exe(target))
+    # place readme at root
+    pack(root, "./docs/pack/README.txt", "/README.txt")
 
     # compress data
     shutil.make_archive(pkg, 'zip', os.path.dirname(root), base_dir=pkg)

@@ -2,6 +2,7 @@ use toml_edit::Document;
 use std::path;
 use std::error::Error;
 use crate::core::pkgid::PkgId;
+use crate::util::anyerror::AnyError;
 
 pub struct Manifest {
     // track where the file loads/stores from
@@ -32,6 +33,23 @@ impl Manifest {
         }
     }
 
+    /// Checks if the manifest has the `ip` table and contains the minimum required keys: `vendor`, `library`,
+    /// `name`, `version`.
+    pub fn has_bare_min(&self) -> Result<(), AnyError> {
+        if self.get_doc().contains_table("ip") == false {
+            return Err(AnyError(format!("missing 'ip' table")))
+        } else if self.get_doc()["ip"].as_table().unwrap().contains_key("vendor") == false {
+            return Err(AnyError(format!("missing required key 'vendor' in table 'ip'")))
+        } else if self.get_doc()["ip"].as_table().unwrap().contains_key("library") == false {
+            return Err(AnyError(format!("missing required key 'library' in table 'ip'")))
+        } else if self.get_doc()["ip"].as_table().unwrap().contains_key("name") == false {
+            return Err(AnyError(format!("missing required key 'name' in table 'ip'")))
+        } else if self.get_doc()["ip"].as_table().unwrap().contains_key("version") == false {
+            return Err(AnyError(format!("missing required key 'version' in table 'ip'")))
+        }
+        Ok(())
+    }
+
     pub fn new() -> Self {
         Self {
             path: path::PathBuf::new(),
@@ -39,14 +57,22 @@ impl Manifest {
         }
     }
 
-    /// Loads data from file as a `Manifest` struct.
+    /// Loads data from file as a `Manifest` struct. 
+    /// 
+    /// Errors on parsing errors for toml and errors on any particular rules for
+    /// manifest formatting/required keys.
     pub fn load(path: path::PathBuf) -> Result<Self, Box<dyn Error>>{
         // load data from file
         let contents = std::fs::read_to_string(&path)?;
-        Ok(Self {
+        let m = Self {
             path: path,
             document: contents.parse::<Document>()?,
-        })
+        };
+        // verify bare minimum keys exist for 'ip' table
+        match m.has_bare_min() {
+            Ok(()) => Ok(m),
+            Err(e) => return Err(AnyError(format!("manifest {:?} {}", m.get_path(), e)))?
+        }
     }
 
     /// Stores data to file from `Manifest` struct.
@@ -96,5 +122,34 @@ mod test {
         let m = tempfile::NamedTempFile::new().unwrap();
         let manifest = Manifest::create(m.path().to_path_buf());
         assert_eq!(manifest.document.to_string(), BARE_MANIFEST);
+    }
+
+    #[test]
+    fn bare_min_valid() {
+        // has all keys and 'ip' table
+        let m = tempfile::NamedTempFile::new().unwrap();
+        let manifest = Manifest::create(m.path().to_path_buf());
+        assert_eq!(manifest.has_bare_min().unwrap(), ());
+
+        // missing all required fields
+        let manifest = Manifest {
+            path: tempfile::NamedTempFile::new().unwrap().path().to_path_buf(),
+            document: "\
+[ip]
+".parse::<Document>().unwrap()
+        };
+        assert_eq!(manifest.has_bare_min().is_err(), true);
+
+        // missing 'version' key
+        let manifest = Manifest {
+            path: tempfile::NamedTempFile::new().unwrap().path().to_path_buf(),
+            document: "\
+[ip]
+vendor = \"v\"
+library = \"l\"
+name = \"n\"
+".parse::<Document>().unwrap()
+        };
+        assert_eq!(manifest.has_bare_min().is_err(), true);
     }
 }

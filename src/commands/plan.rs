@@ -187,6 +187,7 @@ impl Plan {
             let mut map = HashMap::<Identifier, GraphNode>::new();
     
             let mut archs: Vec<ArchitectureFile> = Vec::new();
+            let mut bodies: Vec<parser::PackageBody> = Vec::new();
             // read all files
             for source_file in files {
                 if crate::core::fileset::is_vhdl(&source_file) == true {
@@ -201,6 +202,11 @@ impl Plan {
                                 archs.push(ArchitectureFile{ architecture: arch, file: source_file.to_string() });
                                 None
                             }
+                            // package body are usually in same design file as package
+                            parser::VHDLSymbol::PackageBody(pb) => {
+                                bodies.push(pb);
+                                None
+                            }
                             // @TODO link package body's to package declarations
                             _ => None,
                         }
@@ -211,6 +217,16 @@ impl Plan {
                         let hn = GraphNode::new(e, index, source_file.to_string());
                         map.insert(graph.get_node(index).unwrap().clone(), hn);
                     }
+                }
+            }
+            
+            // go through all package bodies and update package dependencies
+            let mut bodies = bodies.into_iter();
+            while let Some(pb) = bodies.next() {
+                // verify the package exists
+                if let Some(p_node) = map.get_mut(pb.get_owner()) {
+                    // link to package owner by adding refs
+                    p_node.du.add_refs(&mut pb.take_refs());
                 }
             }
     

@@ -77,6 +77,14 @@ impl PackageBody {
     pub fn get_refs(&self) -> Vec<&ResReference> {
         self.refs.iter().map(|f| f).collect()
     }
+
+    pub fn get_owner(&self) -> &Identifier {
+        &self.owner
+    }
+
+    pub fn take_refs(self) -> Vec<ResReference> {
+        self.refs
+    }
 }
 
 impl Display for PackageBody {

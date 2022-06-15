@@ -144,6 +144,10 @@ impl<V, E> Graph<V, E> {
         Successors { graph: self, current_edge_index: first_outgoing_edge }
     }
 
+    pub fn iter(&self) -> IterGraph<V, E> {
+        IterGraph { graph: self, current_node_index: 0 }
+    }
+
     /// Checks if the graph has zero nodes.
     pub fn is_empty(&self) -> bool {
         self.node_count() == 0
@@ -312,6 +316,25 @@ impl std::fmt::Display for Twig {
                 write!(f, "{}└─ ", space)
             }
             Self::MidBranch(_) => write!(f, "{}├─ ", space),
+        }
+    }
+}
+
+pub struct IterGraph<'graph, V, E> {
+    graph: &'graph Graph<V, E>,
+    current_node_index: NodeIndex,
+}
+
+impl<'graph, V, E> Iterator for IterGraph<'graph, V, E> {
+    type Item = &'graph V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current_node_index >= self.graph.vertices.len() {
+            None
+        } else {
+            let n = Some(&self.graph.vertices[self.current_node_index].node);
+            self.current_node_index += 1;
+            n
         }
     }
 }

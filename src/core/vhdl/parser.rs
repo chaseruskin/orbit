@@ -53,6 +53,13 @@ pub struct Package {
     refs: Vec<ResReference>,
 }
 
+impl Package {
+    /// Accesses the references for the entity.
+    pub fn get_refs(&self) -> Vec<&ResReference> {
+        self.refs.iter().map(|f| f).collect()
+    }
+}
+
 impl Display for Package {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.name)
@@ -63,6 +70,13 @@ impl Display for Package {
 pub struct PackageBody {
     owner: Identifier,
     refs: Vec<ResReference>,
+}
+
+impl PackageBody {
+    /// Accesses the references for the entity.
+    pub fn get_refs(&self) -> Vec<&ResReference> {
+        self.refs.iter().map(|f| f).collect()
+    }
 }
 
 impl Display for PackageBody {
@@ -85,14 +99,22 @@ pub enum VHDLSymbol {
 }
 
 impl VHDLSymbol {
-    pub fn get_iden(&self) -> &Identifier {
+    pub fn get_iden(&self) -> Option<&Identifier> {
         match self {
-            Self::Entity(e) => &e.name,
-            Self::Architecture(a) => &a.name,
-            Self::Package(p) => &p.name,
-            Self::PackageBody(pb) => panic!("package body has no identifier"),
-            Self::Configuration(c) => &c.name,
-            Self::ContextClause(_) => panic!("context clause has no id")
+            Self::Entity(e) => Some(&e.name),
+            Self::Architecture(a) => Some(&a.name),
+            Self::Package(p) => Some(&p.name),
+            Self::PackageBody(_) => None,
+            Self::Configuration(c) => Some(&c.name),
+            Self::ContextClause(_) => todo!("capture context id")
+        }
+    }
+
+    /// Attempts to reference inner entity.
+    pub fn as_entity(&self) -> Option<&Entity> {
+        match self {
+            Self::Entity(e) => Some(e),
+            _ => None
         }
     }
 
@@ -105,6 +127,16 @@ impl VHDLSymbol {
             _ => (),
         }
         refs.clear();
+    }
+
+    pub fn get_refs(&self) -> Vec<&ResReference> {
+        match self {
+            Self::Entity(e) => e.get_refs(),
+            Self::Architecture(a) => a.get_refs(),
+            Self::Package(p) => p.get_refs(),
+            Self::PackageBody(pb) => pb.get_refs(),
+            _ => vec![]
+        }
     }
 }
 
@@ -144,6 +176,39 @@ pub struct ResReference {
     suffix: Identifier,
 }
 
+impl Display for ResReference {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}", self.prefix, self.suffix)
+    }
+}
+
+use std::str::FromStr;
+
+impl ResReference {
+    pub fn get_suffix(&self) -> &Identifier {
+        &self.suffix
+    }
+
+    pub fn get_prefix(&self) -> &Identifier {
+        &self.prefix
+    }
+
+    fn new() -> Self {
+        ResReference { 
+            prefix: Identifier::new(), 
+            suffix: Identifier::new() 
+        }
+    }
+
+    /// Creates a reference from a single identifier and makes the prefix=`work`.
+    fn from_owner(owner: Identifier) -> Self {
+        ResReference { 
+            prefix: Identifier::from_str("work").unwrap(), 
+            suffix: owner 
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum ContextClause {
     LibraryClause,
@@ -175,6 +240,11 @@ impl Architecture {
 
     pub fn edges(&self) -> &Vec<Identifier> {
         &self.dependencies
+    }
+
+    /// Accesses the references for the entity.
+    pub fn get_refs(&self) -> Vec<&ResReference> {
+        self.refs.iter().map(|f| f).collect()
     }
 }
 

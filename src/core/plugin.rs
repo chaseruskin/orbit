@@ -16,6 +16,12 @@ pub struct Plugin {
     filesets: Vec<Fileset>,
 }
 
+impl std::fmt::Display for Plugin {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}- {}", self.alias, self.summary.as_ref().unwrap_or(&String::new()))
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum PluginError {
     MissingAlias,

@@ -15,6 +15,7 @@ pub struct Plan {
     bench: Option<Identifier>,
     top: Option<Identifier>,
     clean: bool,
+    list: bool,
     build_dir: Option<String>,
     filesets: Option<Vec<Fileset>>
 }
@@ -22,8 +23,17 @@ pub struct Plan {
 impl Command for Plan {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+        // display plugin list and exit
+        if self.list == true {
+            for plug in c.get_plugins() {
+                println!("{}", plug.1)
+            }
+            return Ok(())
+        }
+        
         // check that user is in an IP directory
         c.goto_ip_path()?;
+
         // set top-level environment variables (@TODO verify these are valid toplevels to be set!)
         if let Some(t) = &self.top {
             std::env::set_var("ORBIT_TOP", t.to_string());
@@ -219,7 +229,7 @@ impl Plan {
                     }
                 }
             }
-            
+
             // go through all package bodies and update package dependencies
             let mut bodies = bodies.into_iter();
             while let Some(pb) = bodies.next() {
@@ -475,6 +485,7 @@ impl FromCli for Plan {
         let command = Ok(Plan {
             top: cli.check_option(Optional::new("top").value("unit"))?,
             clean: cli.check_flag(Flag::new("clean"))?,
+            list: cli.check_flag(Flag::new("list"))?,
             bench: cli.check_option(Optional::new("bench").value("tb"))?,
             plugin: cli.check_option(Optional::new("plugin"))?,
             build_dir: cli.check_option(Optional::new("build-dir").value("dir"))?,
@@ -497,6 +508,7 @@ Options:
     --build-dir <dir>       set the output build directory
     --fileset <key=glob>... set an additional fileset
     --clean                 remove all files from the build directory
+    --list                  view available plugins
     --all                   include all found HDL files
 
 Use 'orbit help plan' to learn more about the command.

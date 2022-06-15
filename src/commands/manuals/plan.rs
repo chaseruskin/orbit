@@ -37,6 +37,9 @@ OPTIONS
     --clean  
       Removes all files from the build directory before planning
       
+    --list  
+      Display all available plugins and exit
+     
     --all  
       Ignore any design hierarchy and include all hdl files
       

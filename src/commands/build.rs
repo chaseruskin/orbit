@@ -22,6 +22,9 @@ impl FromCli for Build {
             args: cli.check_remainder()?,
         });
         command
+        // @TODO remember plugin name as env variable on plan command
+        // so it does not have to be re-entered by user (plugin becomes an option
+        // on command-line)
     }
 }
 

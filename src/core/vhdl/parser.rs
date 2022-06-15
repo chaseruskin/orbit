@@ -869,7 +869,10 @@ impl VHDLSymbol {
             // stop the declaration section and enter a statement section
             if t.as_type().check_keyword(&Keyword::Begin) {
                 tokens.next();
-                return Self::parse_body(tokens, &Self::is_primary_ending);
+                // combine refs from declaration and from body
+                let (ids, mut body_refs) = Self::parse_body(tokens, &Self::is_primary_ending);
+                refs.append(&mut body_refs);
+                return (ids, refs)
             // the declaration is over and there is no statement section
             } else if t.as_type().check_keyword(&Keyword::End) {
                 let stmt = Self::compose_statement(tokens);
@@ -1003,7 +1006,7 @@ impl VHDLSymbol {
             // enter a subprogram
             } else if t.as_type().check_keyword(&Keyword::Function) || t.as_type().check_keyword(&Keyword::Begin) {
                 let _stmt = Self::compose_statement(tokens);
-                // println!("ENTERING SUBPROGRAM {:?}", stmt);
+                // println!("ENTERING SUBPROGRAM {:?}", _stmt);
                 let mut inner = Self::parse_body(tokens, &Self::is_primary_ending);
                 refs.append(&mut inner.1);
                 // println!("EXITING SUBPROGRAM");
@@ -1018,14 +1021,15 @@ impl VHDLSymbol {
                 // println!("**** INFO: Detected nested package \"{}\"", symbol);
             // build statements
             } else {
-                let stmt = Self::compose_statement(tokens);
+                let mut stmt = Self::compose_statement(tokens);
                 // println!("{:?}", stmt);
+                refs.append(&mut stmt.1);
                 // check if statement is an instantiation
                 if let Some(inst) = Self::parse_instantiation(stmt) {
                     // println!("info: detected dependency \"{}\"", inst);
                     deps.push(inst);
                 }
-                // refs.append(&mut stmt.take_refs()); @TODO
+                
             }
         }
         (deps, refs)

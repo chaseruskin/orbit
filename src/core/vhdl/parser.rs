@@ -47,16 +47,41 @@ impl<T: Display> Display for SymbolError<T> {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct Package {
+    name: Identifier,
+    body: Option<PackageBody>,
+    refs: Vec<ResReference>,
+}
+
+impl Display for Package {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct PackageBody {
+    owner: Identifier,
+    refs: Vec<ResReference>,
+}
+
+impl Display for PackageBody {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "package body for {}", self.owner)
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub enum VHDLSymbol {
     ContextClause(ContextClause),
     // primary units
     Entity(Entity),
-    Package(Identifier),
+    Package(Package),
     Configuration(Configuration),
     // @TODO context clause
     // secondary units
     Architecture(Architecture),
-    PackageBody,
+    PackageBody(PackageBody),
 }
 
 impl VHDLSymbol {
@@ -64,11 +89,22 @@ impl VHDLSymbol {
         match self {
             Self::Entity(e) => &e.name,
             Self::Architecture(a) => &a.name,
-            Self::Package(p) => &p,
-            Self::PackageBody => panic!("package body has no identifier"),
+            Self::Package(p) => &p.name,
+            Self::PackageBody(pb) => panic!("package body has no identifier"),
             Self::Configuration(c) => &c.name,
             Self::ContextClause(_) => panic!("context clause has no id")
         }
+    }
+
+    pub fn add_refs(&mut self, refs: &mut Vec<ResReference>) {
+        match self {
+            Self::Entity(e) => e.refs.append(refs),
+            Self::Architecture(a) => a.refs.append(refs),
+            Self::Package(p) => p.refs.append(refs),
+            Self::PackageBody(pb) => pb.refs.append(refs),
+            _ => (),
+        }
+        refs.clear();
     }
 }
 
@@ -76,7 +112,7 @@ impl std::fmt::Display for VHDLSymbol {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
             Self::Entity(e) => format!("entity {} {{ generics={:?} ports={:?} }}", &e.name, e.generics, e.ports),
-            Self::PackageBody => format!("package body!"),
+            Self::PackageBody(pb) => format!("package body- {}", pb),
             Self::Architecture(a) => format!("architecture {} for entity {}", &a.name, &a.owner),
             Self::Package(p) => format!("package {}", &p),
             Self::Configuration(c) => format!("configuration {} for entity {}", &c.name, &c.owner),
@@ -90,7 +126,6 @@ impl std::fmt::Display for VHDLSymbol {
 struct SelectedName(Vec<Identifier>);
 
 impl SelectedName {
-
     /// Returns the final identifier in the chain.
     fn get_suffix(&self) -> &Identifier {
         self.0.last().unwrap()
@@ -99,6 +134,14 @@ impl SelectedName {
     fn take_suffix(mut self) -> Identifier {
         self.0.pop().unwrap()
     }
+}
+
+/// A `ResReference` is a pattern in the code that catches <library>.<package>. We
+/// assume the pattern can be found anywhere.
+#[derive(Debug, PartialEq)]
+pub struct ResReference {
+    prefix: Identifier,
+    suffix: Identifier,
 }
 
 #[derive(Debug, PartialEq)]
@@ -118,6 +161,7 @@ pub struct Architecture {
     name: Identifier,
     owner: Identifier,
     dependencies: Vec<Identifier>,
+    refs: Vec<ResReference>,
 }
 
 impl Architecture {
@@ -146,6 +190,7 @@ pub struct Entity {
     ports: Vec<Statement>,
     generics: Vec<Statement>,
     architectures: Vec<Architecture>,
+    refs: Vec<ResReference>,
 }
 
 impl Entity {
@@ -156,6 +201,7 @@ impl Entity {
             ports: Vec::new(), 
             generics: Vec::new(), 
             architectures: Vec::new(),
+            refs: Vec::new(),
         }
     }
 
@@ -169,6 +215,11 @@ impl Entity {
     /// Accesses the entity's identifier.
     pub fn get_name(&self) -> &Identifier {
         &self.name
+    }
+
+    /// Accesses the references for the entity.
+    pub fn get_refs(&self) -> Vec<&ResReference> {
+        self.refs.iter().map(|f| f).collect()
     }
 
     // Access the signal list
@@ -195,6 +246,7 @@ impl Entity {
             architectures: Vec::new(),
             generics: generics,
             ports: ports,
+            refs: Vec::new(),
         }
     }
 }
@@ -231,15 +283,19 @@ impl Parse<VHDLToken> for VHDLParser {
         let mut symbols = Vec::new();
         let mut tokens = tokens.into_iter().peekable();
 
+        let mut global_refs = Vec::new();
+
         while let Some(t) = tokens.next() {
             // create entity symbol
             if t.as_ref().check_keyword(&Keyword::Entity) {
-                let ent = VHDLSymbol::parse_entity(&mut tokens);
+                let mut ent = VHDLSymbol::parse_entity(&mut tokens);
+                ent.add_refs(&mut global_refs);
                 // println!("info: detected {}", ent);
                 symbols.push(Ok(Symbol::new(ent)));
             // create architecture symbol
             } else if t.as_ref().check_keyword(&Keyword::Architecture) {
-                let arch = VHDLSymbol::parse_architecture(&mut tokens);
+                let mut arch = VHDLSymbol::parse_architecture(&mut tokens);
+                arch.add_refs(&mut global_refs);
                 // println!("info: detected {}", arch);
                 symbols.push(Ok(Symbol::new(arch)));
             // create configuration symbol
@@ -249,15 +305,19 @@ impl Parse<VHDLToken> for VHDLParser {
                 symbols.push(Ok(Symbol::new(config)));
             // create package symbol
             } else if t.as_ref().check_keyword(&Keyword::Package) {
-                let pack = VHDLSymbol::route_package_parse(&mut tokens);
+                let mut pack = VHDLSymbol::route_package_parse(&mut tokens);
+                pack.add_refs(&mut global_refs);
                 // println!("info: detected {}", pack);
                 symbols.push(Ok(Symbol::new(pack)));
             // otherwise take a statement (probably by mistake/errors in user's vhdl code or as of now an error in my code)
             } else {
                 let mut stmt: Statement = Statement::new();
                 stmt.0.push(t);
-                stmt.0.append(&mut VHDLSymbol::compose_statement(&mut tokens).0);
-                // println!("global statement: {:?}", stmt);
+                let mut res = VHDLSymbol::compose_statement(&mut tokens);
+                stmt.0.append(&mut res.0);
+                // println!("global statement: {:?}", stmt.0);
+                global_refs.append(&mut res.take_refs());
+                // println!("global refs: {:?}", global_refs);
             }
         }
         // println!("{:#?}", symbols);
@@ -284,7 +344,7 @@ use std::iter::Peekable;
 /// A `Statement` is a vector of tokens, similiar to how a `String` is a vector
 /// of characters.
 #[derive(PartialEq)]
-struct Statement(Vec<Token<VHDLToken>>);
+struct Statement(Vec<Token<VHDLToken>>, Vec<ResReference>);
 
 impl std::fmt::Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -330,18 +390,24 @@ impl std::fmt::Debug for Statement {
     }
 }
 
-struct Node {
-    sym: VHDLSymbol,
-    childern: Box<Vec<Node>>,
-}
-
 impl Statement {
     fn new() -> Self {
-        Self(Vec::new())
+        Self(Vec::new(), Vec::new())
     }
 
+    /// References the tokens as VHDLTokens
     fn as_types(&self) -> Vec<&VHDLToken> {
         self.0.iter().map(|f| f.as_type() ).collect()
+    }
+
+    /// Accesses the resource references.
+    fn get_refs(&self) -> Vec<&ResReference> {
+        self.1.iter().map(|f| f).collect()
+    }
+
+    /// Transforms into only resource references.
+    fn take_refs(self) -> Vec<ResReference> {
+        self.1
     }
 }
 
@@ -395,9 +461,13 @@ impl VHDLSymbol {
         }
 
         // println!("*--- unit {}", pack_name);
-        VHDLSymbol::Package(match pack_name {
-            VHDLToken::Identifier(id) => id,
-            _ => panic!("expected an identifier")
+        VHDLSymbol::Package(Package {
+            name: match pack_name {
+                VHDLToken::Identifier(id) => id,
+                _ => panic!("expected an identifier")
+            },
+            refs: Vec::new(),
+            body: None,
         })
     }
 
@@ -440,7 +510,7 @@ impl VHDLSymbol {
     /// 
     /// Package declarations within this scope can be ignored because their visibility
     /// is not reached outside of the body.
-    fn parse_package_body<I>(tokens: &mut Peekable<I>) -> Identifier 
+    fn parse_package_body<I>(tokens: &mut Peekable<I>) -> PackageBody 
     where I: Iterator<Item=Token<VHDLToken>>  {
         // take the 'body' keyword
         tokens.next();
@@ -452,9 +522,12 @@ impl VHDLSymbol {
             panic!("expecting keyword IS")
         }
         VHDLSymbol::parse_body(tokens, &Self::is_primary_ending);
-        match pack_name {
-            VHDLToken::Identifier(id) => id,
-            _ => panic!("expected an identifier")
+        PackageBody {
+            owner: match pack_name {
+                VHDLToken::Identifier(id) => id,
+                _ => panic!("expected an identifier")
+            },
+            refs: Vec::new(),
         }
     }
 
@@ -533,10 +606,12 @@ impl VHDLSymbol {
         let entity_name = VHDLSymbol::parse_owner_design_unit(tokens);
         // println!("*--- unit {}", arch_name);
 
+        let (deps, refs) =  VHDLSymbol::parse_primary_declaration(tokens);
         VHDLSymbol::Architecture(Architecture {
             name: arch_name,
             owner: entity_name,
-            dependencies: VHDLSymbol::parse_primary_declaration(tokens),
+            dependencies: deps,
+            refs: refs,
         })
     }
 
@@ -561,7 +636,28 @@ impl VHDLSymbol {
                 statement.0.push(t);
                 return statement
             } else {
+                // check for resource references
+                let mut took_dot: Option<Token<VHDLToken>> = None;
+                if let Some(id) = t.as_type().get_identifier() {
+                    // check if next token is a 'dot' delimiter
+                    if tokens.peek().is_some() && tokens.peek().unwrap().as_type().check_delimiter(&Delimiter::Dot) {
+                        took_dot = tokens.next();
+                        if tokens.peek().is_some() {
+                            if let Some(id2) = tokens.peek().unwrap().as_type().get_identifier() {
+                                // store the resource reference
+                                // println!("{} {}", id, id2);
+                                statement.1.push(ResReference {
+                                    prefix: id.clone(),
+                                    suffix: id2.clone(),
+                                });
+                            }
+                        }
+                    }
+                }
                 statement.0.push(t);
+                if let Some(dot) = took_dot {
+                    statement.0.push(dot);
+                }
             }
         }
         Statement::new()
@@ -691,13 +787,14 @@ impl VHDLSymbol {
     /// Consumes tokens after `IS` until finding `BEGIN` or `END`.
     /// 
     /// Assumes the next token to consume is `IS` and throws it away.
-    fn parse_primary_declaration<I>(tokens: &mut Peekable<I>) -> Vec<Identifier>
+    fn parse_primary_declaration<I>(tokens: &mut Peekable<I>) -> (Vec<Identifier>, Vec<ResReference>)
         where I: Iterator<Item=Token<VHDLToken>> {
         // println!("*--- declaration section");
         // force taking the 'is' keyword
         if tokens.next().unwrap().as_type().check_keyword(&Keyword::Is) == false {
             panic!("expecting 'is' keyword")
         }
+        let mut refs = Vec::new();
         while let Some(t) = tokens.peek() {
             // stop the declaration section and enter a statement section
             if t.as_type().check_keyword(&Keyword::Begin) {
@@ -721,11 +818,13 @@ impl VHDLSymbol {
                 // println!("**** INFO: detected nested package \"{}\"", pack_name);
             // build statements to throw away
             } else {
-                let _stmt = Self::compose_statement(tokens);
+                let stmt = Self::compose_statement(tokens);
+                // add resource references
+                refs.append(&mut stmt.take_refs());
                 // println!("{:?}", stmt);
             } 
         }
-        Vec::new()
+        (Vec::new(), refs)
     }
 
     /// Checks if the statement is a valid primary unit END statement.
@@ -807,7 +906,7 @@ impl VHDLSymbol {
     fn route_package_parse<I>(tokens: &mut Peekable<I>) -> VHDLSymbol
     where I: Iterator<Item=Token<VHDLToken>> {
         if &VHDLToken::Keyword(Keyword::Body) == tokens.peek().unwrap().as_type() {
-            VHDLSymbol::Package(VHDLSymbol::parse_package_body(tokens))
+            VHDLSymbol::PackageBody(VHDLSymbol::parse_package_body(tokens))
         } else {
             VHDLSymbol::parse_package_declaration(tokens)
         }
@@ -818,13 +917,14 @@ impl VHDLSymbol {
     /// Builds statements and stops after finding the `END` keyword statement. If
     /// the `END` keyword statement is detected, it will have to pass the `eval_exit`
     /// function to properly exit scope. Assumes the last token consumed was `BEGIN`.
-    fn parse_body<I>(tokens: &mut Peekable<I>, eval_exit: &dyn Fn(&Statement) -> bool) -> Vec<Identifier>
-        where I: Iterator<Item=Token<VHDLToken>>  {
+    fn parse_body<I>(tokens: &mut Peekable<I>, eval_exit: &dyn Fn(&Statement) -> bool) -> (Vec<Identifier>, Vec<ResReference>)
+        where I: Iterator<Item=Token<VHDLToken>> {
         // collect component names
         let mut deps = Vec::new();
+        let mut refs = Vec::new();
         // println!("*--- statement section");
         while let Some(t) = tokens.peek() {
-            if t.as_type().check_keyword(&Keyword::End) {
+            if t.as_type().check_keyword(&Keyword::End) == true {
                 let stmt = Self::compose_statement(tokens);
                 // println!("{:?}", stmt);
                 if eval_exit(&stmt) == true { 
@@ -834,7 +934,8 @@ impl VHDLSymbol {
             } else if t.as_type().check_keyword(&Keyword::Function) || t.as_type().check_keyword(&Keyword::Begin) {
                 let _stmt = Self::compose_statement(tokens);
                 // println!("ENTERING SUBPROGRAM {:?}", stmt);
-                Self::parse_body(tokens, &Self::is_primary_ending);
+                let mut inner = Self::parse_body(tokens, &Self::is_primary_ending);
+                refs.append(&mut inner.1);
                 // println!("EXITING SUBPROGRAM");
             // find component names (could be in package)
             } else if t.as_type().check_keyword(&Keyword::Component) {
@@ -854,9 +955,10 @@ impl VHDLSymbol {
                     // println!("info: detected dependency \"{}\"", inst);
                     deps.push(inst);
                 }
+                // refs.append(&mut stmt.take_refs()); @TODO
             }
         }
-        deps
+        (deps, refs)
     }
 }
 
@@ -1039,13 +1141,13 @@ signal ready: std_logic;";
             Token::new(VHDLToken::Keyword(Keyword::End), Position::new()),
             Token::new(VHDLToken::Keyword(Keyword::Case), Position::new()),
             Token::new(VHDLToken::Identifier(Identifier::Basic("case_label".to_owned())), Position::new()),
-        ]);
+        ], vec![]);
         assert_eq!(VHDLSymbol::is_primary_ending(&stmt), false);
 
         // primary endings can omit keyword and identifier label
         let stmt = Statement(vec![
             Token::new(VHDLToken::Keyword(Keyword::End), Position::new()),
-        ]);
+        ], vec![]);
         assert_eq!(VHDLSymbol::is_primary_ending(&stmt), true);
 
         // primary endings can include their keyword
@@ -1053,14 +1155,14 @@ signal ready: std_logic;";
             Token::new(VHDLToken::Keyword(Keyword::End), Position::new()),
             Token::new(VHDLToken::Keyword(Keyword::Architecture), Position::new()),
             Token::new(VHDLToken::Identifier(Identifier::Basic("architecture_name".to_owned())), Position::new()),
-        ]);
+        ], vec![]);
         assert_eq!(VHDLSymbol::is_primary_ending(&stmt), true);
 
         // primary endings can have their keyword omitted and also include the identifier label
         let stmt = Statement(vec![
             Token::new(VHDLToken::Keyword(Keyword::End), Position::new()),
             Token::new(VHDLToken::Identifier(Identifier::Basic("architecture_name".to_owned())), Position::new()),
-        ]);
+        ], vec![]);
         assert_eq!(VHDLSymbol::is_primary_ending(&stmt), true);
     }
 
@@ -1081,6 +1183,34 @@ end entity nor_gate;";
         let _ = Entity::from_tokens(&mut tokens);
 
         // @TODO write signals from ports
+    }
+
+    use std::str::FromStr;
+
+    #[test]
+    fn resource_refs() {
+        let s = "a : in std_logic_vector(3 downto 0) := work.pack1.p1;";
+        let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
+        let mut iter = tokens.into_iter().peekable();
+        assert_eq!(VHDLSymbol::compose_statement(&mut iter).get_refs(), vec![
+            &ResReference { prefix: Identifier::from_str("work").unwrap(), suffix: Identifier::from_str("pack1").unwrap()},
+            &ResReference { prefix: Identifier::from_str("pack1").unwrap(), suffix: Identifier::from_str("p1").unwrap()},
+        ]);
+
+        let s = "use work.package_name;";
+        let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
+        let mut iter = tokens.into_iter().peekable();
+        assert_eq!(VHDLSymbol::compose_statement(&mut iter).get_refs(), vec![
+            &ResReference { prefix: Identifier::from_str("work").unwrap(), suffix: Identifier::from_str("package_name").unwrap()},
+        ]);
+
+        let s = "use MKS.MEASUREMENTS, STD.STANDARD;";
+        let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
+        let mut iter = tokens.into_iter().peekable();
+        assert_eq!(VHDLSymbol::compose_statement(&mut iter).get_refs(), vec![
+            &ResReference { prefix: Identifier::from_str("MKS").unwrap(), suffix: Identifier::from_str("MEASUREMENTS").unwrap()},
+            &ResReference { prefix: Identifier::from_str("STD").unwrap(), suffix: Identifier::from_str("STANDARD").unwrap()},
+        ]);
     }
 
     #[test]

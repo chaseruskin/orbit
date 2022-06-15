@@ -88,6 +88,19 @@ struct ArchitectureFile {
     file: String,
 }
 
+#[derive(Debug, PartialEq)]
+struct PackageFile {
+    package: parser::Package,
+    file: String,
+}
+
+#[derive(Debug, PartialEq)]
+struct DesignUnit {
+    name: Identifier,
+    deps: Vec<parser::ResReference>,
+    file: String,
+}
+
 impl Plan {
 
     pub fn build_graph(files: &Vec<String>) -> (Graph<Identifier, ()>, HashMap<Identifier, HashNode>) {
@@ -97,6 +110,7 @@ impl Plan {
         let mut map = HashMap::<Identifier, HashNode>::new();
 
         let mut archs: Vec<ArchitectureFile> = Vec::new();
+        let mut packs: Vec<PackageFile> = Vec::new();
         // read all files
         for source_file in files {
             if crate::core::fileset::is_vhdl(&source_file) == true {
@@ -110,16 +124,24 @@ impl Plan {
                             archs.push(ArchitectureFile{ architecture: arch, file: source_file.to_string() });
                             None
                         }
+                        parser::VHDLSymbol::Package(pack) => {
+                            packs.push(PackageFile{ package: pack, file: source_file.to_string() });
+                            None
+                        }
+                        // @TODO link package body's to package declarations
                         _ => None,
                     }
                 });
                 while let Some(e) = iter.next() {
+                    println!("entity external calls: {:?}", e.get_refs());
                     let index = graph.add_node(e.get_name().clone());
                     let hn = HashNode::new(e, index, source_file.to_string());
                     map.insert(graph.get_node(index).unwrap().clone(), hn);
                 }
             }
         }
+
+        println!("packages--- {:?}", packs);
 
         // go through all architectures and make the connections
         let mut archs = archs.into_iter();

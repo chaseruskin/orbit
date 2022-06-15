@@ -80,6 +80,7 @@ use crate::commands::edit::Edit;
 use crate::commands::launch::Launch;
 use crate::commands::install::Install;
 use crate::commands::tree::Tree;
+use crate::commands::get::Get;
 
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
@@ -92,6 +93,7 @@ enum OrbitSubcommand {
     Launch(Launch),
     Install(Install),
     Tree(Tree),
+    Get(Get),
 }
 
 impl FromCli for OrbitSubcommand {
@@ -105,8 +107,10 @@ impl FromCli for OrbitSubcommand {
             "edit",
             "launch",
             "install",
+            "get",
             "tree",
         ])?.as_ref() {
+            "get" => Ok(OrbitSubcommand::Get(Get::from_cli(cli)?)),
             "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
             "new" => Ok(OrbitSubcommand::New(New::from_cli(cli)?)),
             "search" => Ok(OrbitSubcommand::Search(Search::from_cli(cli)?)),
@@ -125,6 +129,7 @@ impl Command for OrbitSubcommand {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, context: &Context) -> Result<(), Self::Err> {
         match self {
+            OrbitSubcommand::Get(c) => c.exec(context),
             OrbitSubcommand::Search(c) => c.exec(context),
             OrbitSubcommand::Plan(c) => c.exec(context),
             OrbitSubcommand::Build(c) => c.exec(context),
@@ -150,6 +155,7 @@ Usage:
 Commands:
     new             create a new ip
     edit            open an ip in a text editor
+    get             fetch an entity
     tree            view the dependency graph
     plan            generate a blueprint file
     build           execute a plugin

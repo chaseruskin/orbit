@@ -9,3 +9,4 @@ mod edit;
 mod launch;
 mod install;
 mod tree;
+mod get;

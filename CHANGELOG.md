@@ -13,6 +13,24 @@ pipeline to list only the current verion's changes with every release.
 
 # Changelog
 
+## 0.1.3
+
+### Features
+
+- enhances plugin display list using `orbit plan --list`
+
+- supports graph building with in-order references to packages during `plan` command
+
+- adds more progress messages to `--upgrade` action
+
+- reads ip found in cache during `search` command
+
+### Bug Fixes
+
+- running `plan` with no `--top` and no `--bench` while having it auto-detect only a top does not result in an error
+
+- nicer error mesage for identifier not found during `tree` command
+
 ## 0.1.2
 
 ### Features

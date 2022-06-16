@@ -25,8 +25,9 @@ impl Command for Plan {
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // display plugin list and exit
         if self.list == true {
+            println!("Plugins:");
             for plug in c.get_plugins() {
-                println!("{}", plug.1)
+                println!("    {}", plug.1)
             }
             return Ok(())
         }

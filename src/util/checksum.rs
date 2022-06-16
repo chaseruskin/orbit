@@ -42,36 +42,36 @@ mod test {
     fn it_works() {
         // use list of files
         let files = vec![
-            "test/data/file1.txt".to_owned(),
-            "test/data/file2.txt".to_owned(),
-            "test/data/file3.txt".to_owned(),
+            "test/data/poems/file1.txt".to_owned(),
+            "test/data/poems/file2.txt".to_owned(),
+            "test/data/poems/file3.txt".to_owned(),
         ];
         let sum1 = checksum(&files);
-        assert_eq!(sum1, sha256::Sha256Hash::from_u32s([1192313984, 1124899892, 
-            4096760620, 1419010557, 2999754695, 3953725091, 4055090036, 1661318102]));
+        assert_eq!(sum1, sha256::Sha256Hash::from_u32s([1718982118, 254082069, 
+            508009284, 32432774, 2717127149, 3577719663, 1242553992, 2516139792]));
 
         // modifying a file name results in a different hash
         let files = vec![
-            "test/data/file1.txt".to_owned(),
-            "test/data/file2.txt".to_owned(),
-            "test/data/file3copy.txt".to_owned(), // same contents as file3.txt
+            "test/data/poems/file1.txt".to_owned(),
+            "test/data/poems/file2.txt".to_owned(),
+            "test/data/poems/file3copy.txt".to_owned(), // same contents as file3.txt
         ];
-        assert_eq!(std::fs::read("test/data/file3.txt").unwrap(), std::fs::read("test/data/file3copy.txt").unwrap(), "file3 and file3copy must have same contents");
+        assert_eq!(std::fs::read("test/data/poems/file3.txt").unwrap(), std::fs::read("test/data/poems/file3copy.txt").unwrap(), "file3 and file3copy must have same contents");
         assert_ne!(checksum(&files), sum1);
 
         // taking away a file results in a different hash
         let files = vec![
-            "test/data/file1.txt".to_owned(),
-            "test/data/file2.txt".to_owned(),
+            "test/data/poems/file1.txt".to_owned(),
+            "test/data/poems/file2.txt".to_owned(),
         ];
         let sum2 = checksum(&files);
         assert_ne!(sum2, sum1);
 
         // adding a file results in a different hash
         let files = vec![
-            "test/data/file1.txt".to_owned(),
-            "test/data/file2.txt".to_owned(),
-            "test/data/file3.txt".to_owned(),
+            "test/data/poems/file1.txt".to_owned(),
+            "test/data/poems/file2.txt".to_owned(),
+            "test/data/poems/file3.txt".to_owned(),
             "Cargo.toml".to_owned(),
         ];
         let sum3 = checksum(&files);
@@ -81,12 +81,12 @@ mod test {
 
     #[test]
     fn from_filesystem() {
-        let test_files = crate::core::fileset::gather_current_files(&std::path::PathBuf::from("./test/data"));
+        let test_files = crate::core::fileset::gather_current_files(&std::path::PathBuf::from("./test/data/poems"));
         println!("{:?}", test_files);
         let checksum = crate::util::checksum::checksum(&test_files);
         assert_eq!(checksum, sha256::Sha256Hash::from_u32s(
-            [551432240, 315521459, 446693861, 2042545862, 
-            440250692, 3275642584, 47734004, 1928840553]
+            [762221720, 1571212626, 3405968886, 1767585163, 
+            1738287015, 2809264080, 2646720659, 4068866077]
         ));
     }
 }

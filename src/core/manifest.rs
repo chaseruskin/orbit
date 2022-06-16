@@ -82,6 +82,8 @@ impl Manifest {
     }
 
     /// Creates a new `PkgId` from the fields of the manifest document.
+    /// 
+    /// Assumes the manifest document contains a table 'ip' with the necessary keys.
     pub fn as_pkgid(&self) -> PkgId {
         PkgId::new().vendor(self.get_doc()["ip"]["vendor"].as_str().unwrap()).unwrap()
             .library(self.get_doc()["ip"]["library"].as_str().unwrap()).unwrap()

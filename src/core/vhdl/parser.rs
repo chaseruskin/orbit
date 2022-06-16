@@ -118,8 +118,16 @@ impl VHDLSymbol {
         }
     }
 
-    /// Attempts to reference inner entity.
+    /// Attempts to reference the inner entity struct.
     pub fn as_entity(&self) -> Option<&Entity> {
+        match self {
+            Self::Entity(e) => Some(e),
+            _ => None
+        }
+    }
+
+    /// Attempts to transform into the inner entity struct.
+    pub fn into_entity(self) -> Option<Entity> {
         match self {
             Self::Entity(e) => Some(e),
             _ => None

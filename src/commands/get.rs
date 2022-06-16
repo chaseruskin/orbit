@@ -64,19 +64,37 @@ impl FromCli for Get {
     }
 }
 
+use crate::core::ip;
+use crate::core::manifest;
+use crate::core::vhdl::parser::Parse;
+use crate::core::vhdl;
+use crate::core::vhdl::parser;
+use crate::core::vhdl::vhdl::VHDLTokenizer;
+
 impl Command for Get {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // must be in an IP if omitting the pkgid
-        if self.entity_path.ip.is_none() {
-            c.goto_ip_path()?
-        }
+        let path = if self.entity_path.ip.is_none() {
+            c.goto_ip_path()?;
+            c.get_ip_path().unwrap().clone()
+        } else {
+            // grab installed ip
+            let installed_ip = manifest::find_dev_manifests(c.get_cache_path())?;
+            // find all manifests? and prioritize installed manifests over others but to help with errors/confusion
+            let manifest = ip::find_ip(&self.entity_path.ip.as_ref().unwrap(), &installed_ip)?;
+            println!("{}", manifest.as_pkgid());
+            manifest.get_path().clone()
+        };
         // find the IP (@IDEA have flag to indicate if to use the in-dev version vs. cache?)
         // $ orbit get gates:nor_gate --edition latest --edition 1.0.0 --edition dev
-        
+        println!("{:?}", path.parent().unwrap());
         // get the directory where the IP lives
-        todo!("find the ip");
         // collect all hdl files and parse them
+        let ent = Self::fetch_entity(&self.entity_path.entity, &path.parent().unwrap().to_path_buf())?;
+
+        println!("{:?}", ent);
+        Ok(())
         // todo!("collect the hdl files for parsing");
         // get the VHDLSymbol list and find the entity matching the provided name
         // todo!("get the VHDL symbols and find matching entity");
@@ -88,6 +106,25 @@ impl Command for Get {
 impl Get {
     fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
         todo!()
+    }
+
+    /// Parses through the vhdl files and returns a desired entity struct.
+    fn fetch_entity(iden: &Identifier, ip_path: &std::path::PathBuf) -> Result<parser::Entity, Box<dyn std::error::Error>> {
+        let files = crate::core::fileset::gather_current_files(ip_path);
+        for f in files {
+            // lex and parse
+            if crate::core::fileset::is_vhdl(&f) == true {
+                let text = std::fs::read_to_string(f)?;
+                let req_ent: Option<parser::Entity> = vhdl::parser::VHDLParser::parse(VHDLTokenizer::from_source_code(&text).into_tokens())
+                    .into_iter()
+                    .filter_map(|r| if r.is_ok() { r.unwrap().take().into_entity() } else { None })
+                    .find(|p| p.get_name() == iden);
+                if let Some(e) = req_ent {
+                    return Ok(e)
+                }
+            }
+        }
+        panic!("entity '{}' does not exist in this ip", iden);
     }
 }
 
@@ -109,3 +146,18 @@ Options:
 
 Use 'orbit help get' to learn more about the command.
 ";
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    use std::str::FromStr;
+
+    #[test]
+    #[ignore]
+    fn fetch_entity() {
+        let ent = Get::fetch_entity(&Identifier::from_str("or_gate").unwrap(), &std::path::PathBuf::from("./test/data/gates")).unwrap();
+        panic!("inspect")
+    }
+}

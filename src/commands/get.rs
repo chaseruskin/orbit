@@ -20,7 +20,7 @@ impl std::str::FromStr for EntityPath {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some((ip, ent)) = s.split_once(':') {
             Ok(Self {
-                ip: Some(PkgId::from_str(ip)?),
+                ip: { if ip.is_empty() { None } else { Some(PkgId::from_str(ip)?) } },
                 entity: Identifier::from_str(ent)?,
             })
         } else {
@@ -46,6 +46,7 @@ pub struct Get {
     instance: bool,
     architectures: bool,
     info: bool,
+    // --edition flag? to specify what version (because --version is taken)
 }
 
 impl FromCli for Get {
@@ -65,8 +66,22 @@ impl FromCli for Get {
 
 impl Command for Get {
     type Err = Box<dyn std::error::Error>;
-    fn exec(&self, _: &Context) -> Result<(), Self::Err> {
-        self.run()
+    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+        // must be in an IP if omitting the pkgid
+        if self.entity_path.ip.is_none() {
+            c.goto_ip_path()?
+        }
+        // find the IP (@IDEA have flag to indicate if to use the in-dev version vs. cache?)
+        // $ orbit get gates:nor_gate --edition latest --edition 1.0.0 --edition dev
+        
+        // get the directory where the IP lives
+        todo!("find the ip");
+        // collect all hdl files and parse them
+        // todo!("collect the hdl files for parsing");
+        // get the VHDLSymbol list and find the entity matching the provided name
+        // todo!("get the VHDL symbols and find matching entity");
+
+        // self.run()
     }
 }
 

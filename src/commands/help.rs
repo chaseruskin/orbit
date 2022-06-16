@@ -22,6 +22,7 @@ enum Topic {
     Install,
     Tree,
     Search,
+    Get,
 }
 
 impl std::str::FromStr for Topic {
@@ -36,6 +37,7 @@ impl std::str::FromStr for Topic {
             "edit" => Self::Edit,
             "install" => Self::Install,
             "tree" => Self::Tree,
+            "get" => Self::Get,
             _ => return Err(AnyError(format!("topic '{}' not found", s)))
         })
     }
@@ -46,6 +48,7 @@ impl Topic {
     fn as_manual(&self) -> &str {
         use Topic::*;
         match &self {
+            Get => manuals::get::MANUAL,
             Tree => manuals::tree::MANUAL,
             Edit => manuals::edit::MANUAL,
             New => manuals::new::MANUAL,
@@ -98,11 +101,12 @@ Args:
     <topic>         a listed topic or any orbit subcommand
 
 Topics:
-    cfg             learn about .cfg files
+    toml            learn about .toml files
     cache           learn about orbit's caching system
-    manifest        learn about the orbit.cfg file
+    manifest        learn about the Orbit.toml file
     template        learn about templates
     blueprint       learn about generating a pre-build data file
+    vendor          learn about hosting multiple ip together
 
 Use 'orbit help --list' to see all available topics.
 ";

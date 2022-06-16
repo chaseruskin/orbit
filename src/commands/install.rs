@@ -86,7 +86,7 @@ impl Command for Install {
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // gather all manifests
         let manifests = crate::core::manifest::find_dev_manifests(c.get_development_path().as_ref().unwrap())?;
-        let ip_manifest = crate::commands::edit::find_ip(&self.ip.spec, &manifests)?;
+        let ip_manifest = crate::core::ip::find_ip(&self.ip.spec, &manifests)?;
         // get the root path to the manifest
         let mut ip_root = ip_manifest.get_path().clone();
         ip_root.pop();

@@ -44,6 +44,8 @@ pub struct Get {
     signals: bool,
     component: bool,
     instance: bool,
+    architectures: bool,
+    info: bool,
 }
 
 impl FromCli for Get {
@@ -53,6 +55,8 @@ impl FromCli for Get {
             signals: cli.check_flag(Flag::new("signals").switch('s'))?,
             component: cli.check_flag(Flag::new("component").switch('c'))?,
             instance: cli.check_flag(Flag::new("instance").switch('i'))?,
+            architectures: cli.check_flag(Flag::new("architecture").switch('a'))?,
+            info: cli.check_flag(Flag::new("info"))?,
             entity_path: cli.require_positional(Positional::new("entity"))?,
         });
         command
@@ -76,15 +80,17 @@ const HELP: &str = "\
 Quick help sentence about command.
 
 Usage:
-    orbit get [options] <entity>
+    orbit get [options] <entity-path>
 
 Args:
-    <entity>            entity path 
+    <entity-path>       pkgid and entity identifier
 
 Options:
     --component, -c     print component declaration
     --signals,   -s     print signal declarations
     --instance,  -i     print instantation
+    --info              access code file's header comment
+    --architecture, -a  print available architectures
 
 Use 'orbit help get' to learn more about the command.
 ";

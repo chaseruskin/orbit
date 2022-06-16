@@ -18,31 +18,62 @@ impl Command for Search {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         let dev_path = c.get_development_path().unwrap();
-        self.run(dev_path)
+        let cache_path = c.get_cache_path();
+        self.run(dev_path, cache_path)
     }
 }
 
+use std::collections::BTreeMap;
+
 impl Search {
-    fn run(&self, dev_path: &std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-        let ips = crate::core::manifest::find_dev_manifests(dev_path)?;
-        println!("{}", Self::fmt_table(ips));
+    fn run(&self, dev_path: &std::path::PathBuf, cache_path: &std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+        let mut pkg_map: BTreeMap<PkgId, (bool, bool, bool)> = BTreeMap::new();
+
+        let default = !(self.cached || self.developing || self.available);
+
+        // collect development IP
+        if default || self.developing {
+            crate::core::manifest::find_dev_manifests(dev_path)?
+            .into_iter()
+            .for_each(|f| {
+                pkg_map.insert(f.as_pkgid(), (true, false, false));
+            });
+        }
+        
+        // collect installed IP
+        if default || self.cached {
+            crate::core::manifest::find_dev_manifests(cache_path)?
+            .into_iter()
+            .for_each(|f| {
+                let pkg = f.as_pkgid();
+                if let Some(pair) = pkg_map.get_mut(&pkg) {
+                    *pair = (pair.0, true, pair.2);
+                } else {
+                    pkg_map.insert(pkg, (false, true, false));
+                }
+            });
+        }
+        
+        println!("{}", Self::fmt_table(pkg_map));
         Ok(())
-        // find all ip installed in cache
 
         // walk vendor directory to find all ip manifest available
     }
 
-    fn fmt_table(catalog: Vec<crate::core::manifest::Manifest>) -> String {
+    fn fmt_table(catalog: BTreeMap<PkgId, (bool, bool, bool)>) -> String {
         let header = format!("\
 {:<15}{:<15}{:<20}{:<9}
 {:->15}{4:->15}{4:->20}{4:->9}\n", 
             "Vendor", "Library", "Name", "Status", " ");
         let mut body = String::new();
-        for ip in catalog {
-            body.push_str(&format!("{:<15}{:<15}{:<20}\n", 
-                ip.get_doc()["ip"]["vendor"].as_str().unwrap(),
-                ip.get_doc()["ip"]["library"].as_str().unwrap(),
-                ip.get_doc()["ip"]["name"].as_str().unwrap(),
+        for (ip, status) in catalog {
+            body.push_str(&format!("{:<15}{:<15}{:<20}{:<2}{:<2}{:<2}\n", 
+                ip.get_vendor().as_ref().unwrap().to_string(),
+                ip.get_library().as_ref().unwrap().to_string(),
+                ip.get_name().to_string(),
+                { if status.0 { "D" } else { "" } },
+                { if status.1 { "I" } else { "" } },
+                { if status.2 { "A" } else { "" } },
             ));
         }
         header + &body
@@ -85,7 +116,7 @@ mod test {
 
     #[test]
     fn fmt_table() {
-        let t = Search::fmt_table(vec![]);
+        let t = Search::fmt_table(BTreeMap::new());
         let table = "\
 Vendor         Library        Name                Status   
 -------------- -------------- ------------------- -------- 

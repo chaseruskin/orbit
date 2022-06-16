@@ -7,7 +7,7 @@ use std::str::FromStr;
 use std::error::Error;
 use std::fmt::Display;
 
-#[derive(Debug)]
+#[derive(Debug, PartialOrd)]
 pub struct PkgPart(String);
 
 impl PkgPart {
@@ -76,11 +76,40 @@ impl std::fmt::Display for PkgPart {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, PartialOrd)]
 pub struct PkgId {
     vendor: Option<PkgPart>,
     library: Option<PkgPart>,
     name: PkgPart
+}
+
+impl Eq for PkgId {}
+
+use std::hash::Hash;
+
+impl Ord for PkgId {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering { 
+        let r = self.vendor.as_ref().unwrap().0.cmp(&other.vendor.as_ref().unwrap().0);
+        match r {
+            std::cmp::Ordering::Equal => {
+                let s = self.library.as_ref().unwrap().0.cmp(&other.library.as_ref().unwrap().0);
+                match s {
+                    std::cmp::Ordering::Equal => self.name.0.cmp(&other.name.0),
+                    _ => s,
+                }
+            }
+            _ => r
+        }
+    }
+}
+
+impl Hash for PkgId {
+    fn hash<H>(&self, state: &mut H) where H: std::hash::Hasher { 
+        // must have a complete pkgid
+        self.vendor.as_ref().unwrap().0.hash(state);
+        self.library.as_ref().unwrap().0.hash(state);
+        self.name.0.hash(state);
+    }
 }
 
 #[derive(Debug, PartialEq)]

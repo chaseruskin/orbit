@@ -213,12 +213,11 @@ impl Plan {
                                 archs.push(ArchitectureFile{ architecture: arch, file: source_file.to_string() });
                                 None
                             }
-                            // package body are usually in same design file as package
+                            // package bodies are usually in same design file as package
                             parser::VHDLSymbol::PackageBody(pb) => {
                                 bodies.push(pb);
                                 None
                             }
-                            // @TODO link package body's to package declarations
                             _ => None,
                         }
                     });
@@ -287,6 +286,7 @@ impl Plan {
         // build full graph (all primary design units) and map storage
         let (g, map) = Self::build_full_graph(&files);
 
+        let mut natural_top: Option<usize> = None;
         let mut bench = if let Some(t) = &self.bench {
             match map.get(&t) {
                 Some(node) => {
@@ -304,7 +304,19 @@ impl Plan {
         } else if self.top.is_none() {
             // filter to display tops that have ports (not testbenches)
             match g.find_root() {
-                Ok(n) => Some(n),
+                Ok(n) => {
+                    // verify the root is a testbench
+                    if let Some(ent) = map.get(g.get_node(n).unwrap()).unwrap().du.as_entity() {
+                        if ent.is_testbench() == true {
+                            Some(n)
+                        } else {
+                            natural_top = Some(n);
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                },
                 Err(e) => {
                     match e.len() {
                         0 => None,
@@ -366,7 +378,11 @@ impl Plan {
                 None => return Err(AnyError(format!("no entity named \'{}\'", t)))?
             }
         } else {
-            Self::detect_top(&g, &map, bench)
+            if let Some(nt) = natural_top {
+                nt
+            } else {
+                Self::detect_top(&g, &map, bench)?
+            }
         };
         // enable immutability
         let bench = bench;
@@ -466,12 +482,12 @@ impl Plan {
     /// 
     /// This function looks and checks if there is a single predecessor to the
     /// `bench` node.
-    fn detect_top(graph: &Graph<Identifier, ()>, map: &HashMap<Identifier, GraphNode>, bench: Option<usize>) -> usize {
+    fn detect_top(graph: &Graph<Identifier, ()>, map: &HashMap<Identifier, GraphNode>, bench: Option<usize>) -> Result<usize, AnyError> {
         if let Some(b) = bench {
             let entities: Vec<(usize, &parser::Entity)> = graph.predecessors(b).filter_map(|f| if let Some(e) = map.get(graph.get_node(f).unwrap()).unwrap().du.as_entity() { Some((f, e)) } else { None }).collect();
             match entities.len() {
                 0 => panic!("no entities are tested in the testbench"),
-                1 => entities[0].0,
+                1 => Ok(entities[0].0),
                 _ => panic!("multiple entities are tested in testbench")
             }
         } else {

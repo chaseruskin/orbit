@@ -64,7 +64,12 @@ impl Tree {
         let (graph, map) = Plan::build_graph(&files);
 
         let n = if let Some(ent) = &self.root {
-            map.get(&ent).unwrap().index()
+            // check if the identifier exists in the entity graph
+            if let Some(id) = map.get(&ent) {
+                id.index()
+            } else {
+                return Err(AnyError(format!("entity '{}' does not exist in the current ip", ent)))?
+            }
         } else {
             match graph.find_root() {
                 Ok(n) => n,

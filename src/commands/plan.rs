@@ -7,7 +7,7 @@ use crate::core::context::Context;
 use std::ffi::OsString;
 use std::io::Write;
 use crate::core::fileset::Fileset;
-use crate::core::vhdl::vhdl::Identifier;
+use crate::core::vhdl::token::Identifier;
 
 #[derive(Debug, PartialEq)]
 pub struct Plan {
@@ -59,7 +59,7 @@ impl Command for Plan {
     }
 }
 
-use crate::core::vhdl::parser;
+use crate::core::vhdl::symbol;
 use crate::util::graph::Graph;
 use crate::util::anyerror::AnyError;
 use std::collections::HashMap;
@@ -67,7 +67,7 @@ use std::collections::HashMap;
 #[derive(Debug, PartialEq)]
 pub struct HashNode {
     index: usize,
-    entity: parser::Entity,
+    entity: symbol::Entity,
     files: Vec<String>,
 }
 
@@ -76,7 +76,7 @@ impl HashNode {
         self.index
     }
     
-    fn new(entity: parser::Entity, index: usize, file: String) -> Self {
+    fn new(entity: symbol::Entity, index: usize, file: String) -> Self {
         let mut set = Vec::new();
         set.push(file);
         Self {
@@ -95,25 +95,13 @@ impl HashNode {
 
 #[derive(Debug, PartialEq)]
 struct ArchitectureFile {
-    architecture: parser::Architecture,
+    architecture: symbol::Architecture,
     file: String,
-}
-
-#[derive(Debug, PartialEq)]
-struct PackageFile {
-    package: parser::Package,
-    file: String,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct DesignUnit {
-    name: Identifier,
-    deps: Vec<parser::ResReference>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct GraphNode {
-    du: parser::VHDLSymbol,
+    sym: symbol::VHDLSymbol,
     index: usize,
     files: Vec<String>,
 }
@@ -123,11 +111,11 @@ impl GraphNode {
         self.index
     }
     
-    fn new(du: parser::VHDLSymbol, index: usize, file: String) -> Self {
+    fn new(sym: symbol::VHDLSymbol, index: usize, file: String) -> Self {
         let mut set = Vec::with_capacity(1);
         set.push(file);
         Self {
-            du: du,
+            sym: sym,
             index: index,
             files: set,
         }
@@ -153,12 +141,12 @@ impl Plan {
         for source_file in files {
             if crate::core::fileset::is_vhdl(&source_file) == true {
                 let contents = std::fs::read_to_string(&source_file).unwrap();
-                let symbols = parser::VHDLParser::read(&contents).into_symbols();
+                let symbols = symbol::VHDLParser::read(&contents).into_symbols();
                 // add all entities to a graph and store architectures for later analysis
                 let mut iter = symbols.into_iter().filter_map(|f| {
                     match f {
-                        parser::VHDLSymbol::Entity(e) => Some(e),
-                        parser::VHDLSymbol::Architecture(arch) => {
+                        symbol::VHDLSymbol::Entity(e) => Some(e),
+                        symbol::VHDLSymbol::Architecture(arch) => {
                             archs.push(ArchitectureFile{ architecture: arch, file: source_file.to_string() });
                             None
                         }
@@ -198,23 +186,23 @@ impl Plan {
             let mut map = HashMap::<Identifier, GraphNode>::new();
     
             let mut archs: Vec<ArchitectureFile> = Vec::new();
-            let mut bodies: Vec<parser::PackageBody> = Vec::new();
+            let mut bodies: Vec<symbol::PackageBody> = Vec::new();
             // read all files
             for source_file in files {
                 if crate::core::fileset::is_vhdl(&source_file) == true {
                     let contents = std::fs::read_to_string(&source_file).unwrap();
-                    let symbols = parser::VHDLParser::read(&contents).into_symbols();
+                    let symbols = symbol::VHDLParser::read(&contents).into_symbols();
                     // add all entities to a graph and store architectures for later analysis
                     let mut iter = symbols.into_iter().filter_map(|f| {
                         match f {
-                            parser::VHDLSymbol::Entity(_) => Some(f),
-                            parser::VHDLSymbol::Package(_) => Some(f),
-                            parser::VHDLSymbol::Architecture(arch) => {
+                            symbol::VHDLSymbol::Entity(_) => Some(f),
+                            symbol::VHDLSymbol::Package(_) => Some(f),
+                            symbol::VHDLSymbol::Architecture(arch) => {
                                 archs.push(ArchitectureFile{ architecture: arch, file: source_file.to_string() });
                                 None
                             }
                             // package bodies are usually in same design file as package
-                            parser::VHDLSymbol::PackageBody(pb) => {
+                            symbol::VHDLSymbol::PackageBody(pb) => {
                                 bodies.push(pb);
                                 None
                             }
@@ -222,8 +210,8 @@ impl Plan {
                         }
                     });
                     while let Some(e) = iter.next() {
-                       // println!("entity external calls: {:?}", e.get_refs());
-                        let index = graph.add_node(e.get_iden().unwrap().clone());
+                        // println!("entity external calls: {:?}", e.get_refs());
+                        let index = graph.add_node(e.as_iden().unwrap().clone());
                         let hn = GraphNode::new(e, index, source_file.to_string());
                         map.insert(graph.get_node(index).unwrap().clone(), hn);
                     }
@@ -236,7 +224,7 @@ impl Plan {
                 // verify the package exists
                 if let Some(p_node) = map.get_mut(pb.get_owner()) {
                     // link to package owner by adding refs
-                    p_node.du.add_refs(&mut pb.take_refs());
+                    p_node.sym.add_refs(&mut pb.take_refs());
                 }
             }
     
@@ -262,7 +250,7 @@ impl Plan {
             }
         // go through all nodes and make the connections
         for (_, unit) in map.iter() {
-            for dep in unit.du.get_refs() {
+            for dep in unit.sym.get_refs() {
                 // verify the dep exists
                 if let Some(node) = map.get(dep.get_suffix()) {
                     graph.add_edge(node.index(), unit.index(), ());
@@ -290,7 +278,7 @@ impl Plan {
         let mut bench = if let Some(t) = &self.bench {
             match map.get(&t) {
                 Some(node) => {
-                    if let Some(e) = node.du.as_entity() {
+                    if let Some(e) = node.sym.as_entity() {
                         if e.is_testbench() == false {
                             return Err(AnyError(format!("entity \'{}\' is not a testbench and cannot be bench; use --top", t)))?
                         }
@@ -306,7 +294,7 @@ impl Plan {
             match g.find_root() {
                 Ok(n) => {
                     // verify the root is a testbench
-                    if let Some(ent) = map.get(g.get_node(n).unwrap()).unwrap().du.as_entity() {
+                    if let Some(ent) = map.get(g.get_node(n).unwrap()).unwrap().sym.as_entity() {
                         if ent.is_testbench() == true {
                             Some(n)
                         } else {
@@ -342,7 +330,7 @@ impl Plan {
         let top = if let Some(t) = &self.top {
             match map.get(&t) {
                 Some(node) => {
-                    if let Some(e) = node.du.as_entity() {
+                    if let Some(e) = node.sym.as_entity() {
                         if e.is_testbench() == true {
                             return Err(AnyError(format!("entity \'{}\' is a testbench and cannot be top; use --bench", t)))?
                         }
@@ -354,7 +342,7 @@ impl Plan {
                     if bench.is_none() {
                         // check if only 1 is a testbench
                         let benches: Vec<usize> =  g.successors(n)
-                            .filter(|f| map.get(&g.get_node(*f).unwrap()).unwrap().du.as_entity().unwrap().is_testbench() )
+                            .filter(|f| map.get(&g.get_node(*f).unwrap()).unwrap().sym.as_entity().unwrap().is_testbench() )
                             .collect();
 
                         bench = match benches.len() {
@@ -484,7 +472,12 @@ impl Plan {
     /// `bench` node.
     fn detect_top(graph: &Graph<Identifier, ()>, map: &HashMap<Identifier, GraphNode>, bench: Option<usize>) -> Result<usize, AnyError> {
         if let Some(b) = bench {
-            let entities: Vec<(usize, &parser::Entity)> = graph.predecessors(b).filter_map(|f| if let Some(e) = map.get(graph.get_node(f).unwrap()).unwrap().du.as_entity() { Some((f, e)) } else { None }).collect();
+            let entities: Vec<(usize, &symbol::Entity)> = graph.predecessors(b)
+                .filter_map(|f| {
+                    if let Some(e) = map.get(graph.get_node(f).unwrap()).unwrap().sym.as_entity() { 
+                        Some((f, e)) } else { None }
+                    })
+                .collect();
             match entities.len() {
                 0 => panic!("no entities are tested in the testbench"),
                 1 => Ok(entities[0].0),

@@ -1,3 +1,3 @@
-pub mod vhdl;
+pub mod token;
+pub mod interface;
 pub mod symbol;
-pub mod parser;

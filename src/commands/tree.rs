@@ -5,7 +5,7 @@ use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::commands::plan::Plan;
-use crate::core::vhdl::vhdl::Identifier;
+use crate::core::vhdl::token::Identifier;
 use crate::util::anyerror::AnyError;
 
 #[derive(Debug, PartialEq)]

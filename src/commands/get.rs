@@ -4,7 +4,7 @@ use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Flag};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
-use crate::core::vhdl::vhdl::{Identifier, IdentifierError};
+use crate::core::vhdl::token::{Identifier, IdentifierError};
 use crate::core::pkgid::PkgId;
 use crate::util::anyerror::AnyError;
 
@@ -66,10 +66,10 @@ impl FromCli for Get {
 
 use crate::core::ip;
 use crate::core::manifest;
-use crate::core::vhdl::parser::Parse;
+use crate::core::parser::Parse;
 use crate::core::vhdl;
-use crate::core::vhdl::parser;
-use crate::core::vhdl::vhdl::VHDLTokenizer;
+use crate::core::vhdl::symbol;
+use crate::core::vhdl::token::VHDLTokenizer;
 
 impl Command for Get {
     type Err = Box<dyn std::error::Error>;
@@ -109,13 +109,13 @@ impl Get {
     }
 
     /// Parses through the vhdl files and returns a desired entity struct.
-    fn fetch_entity(iden: &Identifier, ip_path: &std::path::PathBuf) -> Result<parser::Entity, Box<dyn std::error::Error>> {
+    fn fetch_entity(iden: &Identifier, ip_path: &std::path::PathBuf) -> Result<symbol::Entity, Box<dyn std::error::Error>> {
         let files = crate::core::fileset::gather_current_files(ip_path);
         for f in files {
             // lex and parse
             if crate::core::fileset::is_vhdl(&f) == true {
                 let text = std::fs::read_to_string(f)?;
-                let req_ent: Option<parser::Entity> = vhdl::parser::VHDLParser::parse(VHDLTokenizer::from_source_code(&text).into_tokens())
+                let req_ent: Option<symbol::Entity> = vhdl::symbol::VHDLParser::parse(VHDLTokenizer::from_source_code(&text).into_tokens())
                     .into_iter()
                     .filter_map(|r| if r.is_ok() { r.unwrap().take().into_entity() } else { None })
                     .find(|p| p.get_name() == iden);
@@ -157,7 +157,7 @@ mod test {
     #[test]
     #[ignore]
     fn fetch_entity() {
-        let ent = Get::fetch_entity(&Identifier::from_str("or_gate").unwrap(), &std::path::PathBuf::from("./test/data/gates")).unwrap();
+        let _ = Get::fetch_entity(&Identifier::from_str("or_gate").unwrap(), &std::path::PathBuf::from("./test/data/gates")).unwrap();
         panic!("inspect")
     }
 }

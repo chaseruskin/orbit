@@ -38,7 +38,7 @@ impl Command for Edit {
                     val
                 } else {
                     // try the config.toml
-                    if c.get_config().contains_table("core") && c.get_config().contains_key("editor") {
+                    if c.get_config().contains_table("core") && c.get_config()["core"].as_table().unwrap().contains_key("editor") {
                         if let Some(e) = c.get_config()["core"]["editor"].as_str() {
                             e.to_owned()
                         } else {

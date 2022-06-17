@@ -83,15 +83,14 @@ impl Command for Get {
             let installed_ip = manifest::find_dev_manifests(c.get_cache_path())?;
             // find all manifests? and prioritize installed manifests over others but to help with errors/confusion
             let manifest = ip::find_ip(&self.entity_path.ip.as_ref().unwrap(), &installed_ip)?;
-            println!("{}", manifest.as_pkgid());
-            manifest.get_path().clone()
+            // println!("{}", manifest.as_pkgid());
+            manifest.get_path().parent().unwrap().to_path_buf()
         };
         // find the IP (@IDEA have flag to indicate if to use the in-dev version vs. cache?)
         // $ orbit get gates:nor_gate --edition latest --edition 1.0.0 --edition dev
-        println!("{:?}", path.parent().unwrap());
         // get the directory where the IP lives
         // collect all hdl files and parse them
-        let ent = Self::fetch_entity(&self.entity_path.entity, &path.parent().unwrap().to_path_buf())?;
+        let ent = Self::fetch_entity(&self.entity_path.entity, &path)?;
 
         println!("{:?}", ent);
         Ok(())

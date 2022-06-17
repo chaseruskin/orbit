@@ -8,6 +8,7 @@ CHANGELOG_MERGE.md
 init.sh
 rc.bash
 install.sh
+install.ps1
 
 /tools/target-triple.exe
 

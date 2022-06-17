@@ -11,6 +11,8 @@
 - [User Guide](./3_user/0_user.md)
 
 - [Topic Guide](./4_topic/0_topic.md)
+    - [IP](./4_topic/1_ip.md)
+    - [Orbit.toml](./4_topic/2_orbittoml.md)
 
 - [Reference](./5_reference/0_reference.md)
     - [Packages](./5_reference/1_packages.md)

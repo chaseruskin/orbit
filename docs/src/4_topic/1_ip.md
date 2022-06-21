@@ -16,7 +16,7 @@ Here is an example IP directory structure:
 ## IP Levels
 
 An IP can exist at three different levels:
-- developing: the IP is in-progress mutable and its location on disk is known (IP_PATH)
+- developing: the IP is in-progress mutable and its location on disk is known (DEV_PATH)
 - installed: the IP is immutable and its location on disk is abstracted away from the user (CACHE)
 - available: the IP is not stored on disk but has the ability to be pulled from a remote repository
 

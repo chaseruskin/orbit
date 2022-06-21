@@ -46,7 +46,7 @@ impl Orbit {
                 .settings("config.toml")?
                 .current_ip_dir("ORBIT_IP_PATH")?
                 .build_dir("ORBIT_BUILD_DIR")?
-                .development_path("ORBIT_PATH")?
+                .development_path("ORBIT_DEV_PATH")?
                 .retain_options(self.force);
             // pass the context to the given command
             c.exec(&context)

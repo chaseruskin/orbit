@@ -20,29 +20,29 @@ DESCRIPTION
 
 OPTIONS
     --top <unit>  
-      The top level entity to explicitly define
+          The top level entity to explicitly define
       
     --bench <tb>  
-      The top level testbench to explicitly define
+          The top level testbench to explicitly define
        
-    --plugin <plugin>  
-      A plugin to refer to gather its declared filesets
+    --plugin <alias>  
+          A plugin to refer to gather its declared filesets
      
     --build-dir <dir>  
-      The relative directory to place the blueprint.tsv file
+          The relative directory to place the blueprint.tsv file
      
     --filset <key=glob>...  
-      A glob-style pattern identified by a name to add into the blueprint    
+          A glob-style pattern identified by a name to add into the blueprint    
      
     --clean  
-      Removes all files from the build directory before planning
+          Removes all files from the build directory before planning
       
     --list  
-      Display all available plugins and exit
+          Display all available plugins and exit
      
     --all  
-      Ignore any design hierarchy and include all hdl files
-      
+          Ignore any design hierarchy and include all hdl files
+          
 
 EXAMPLES
     orbit plan --top top_level --fileset PIN-PLAN=\"*.board\"

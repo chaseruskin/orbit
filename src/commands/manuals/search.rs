@@ -11,13 +11,13 @@ DESCRIPTION
 
 OPTIONS
     --cache, -c  
-      Filter for ip installed to the cache
+          Filter for ip installed to the cache
      
     --develop, -d  
-      Filter for ip in-development within the orbit path
+          Filter for ip in-development within the orbit path
      
     --available, -a  
-      Filter for ip available via registries
+          Filter for ip available via registries
 
 EXAMPLES
     orbit search --develop --cache --available

@@ -17,22 +17,22 @@ DESCRIPTION
 
 OPTIONS
     <entity-path>  
-      The pkgid and entity identifier to request [pkgid:]<entity>
+          The pkgid and entity identifier to request [pkgid:]<entity>
      
     --component, -c  
-      Display the component declaration
+          Display the component declaration
      
     --signals, -s  
-      Display the corresponding signal declarations
+          Display the corresponding signal declarations
      
     --instance, -i  
-      Display the instance declaration
+          Display the instance declaration
      
     --info  
-      Display the code file's initial comment header block
+          Display the code file's initial comment header block
      
     --architecture, -a
-      Display a list of available architectures
+          Display a list of available architectures
 
 EXAMPLES
     orbit get ks-tech.rary.gates:nor_gate -csi

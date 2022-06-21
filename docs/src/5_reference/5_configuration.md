@@ -14,11 +14,12 @@ include = [
 
 [core]
 path = "c:/users/kepler/hdl" # path to find and store IP in-development
+editor = "c:/users/kepler/appdata/local/programs/vscode/code"
 user = "kepler"
 
 ```
 
-## orbit.toml
+## Orbit.toml
 
 This is the manifest file for all valid Orbit IP packages. 
 

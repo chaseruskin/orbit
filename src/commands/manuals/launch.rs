@@ -27,13 +27,13 @@ DESCRIPTION
 
 OPTIONS
     --ready  
-      perform a real run through the launch process
+          perform a real run through the launch process
      
     --next <version>  
-      declare the next version or 'major', 'minor', or 'patch' increment
+          declare the next version or 'major', 'minor', or 'patch' increment
      
     --message <message>  
-      override the default Orbit commit message when using '--next'
+          override the default Orbit commit message when using '--next'
 
 EXAMPLES
     orbit launch --next 1.0.0

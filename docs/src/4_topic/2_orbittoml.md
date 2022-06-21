@@ -1,6 +1,8 @@
 # Orbit.toml
 
-`Orbit.toml` is the manifest file that tells Orbit that a folder is an IP.
+`Orbit.toml` is the manifest file that tells Orbit that a folder is an IP. 
+
+> __NOTE:__ The name must preserve case sensitivity and exactly match the spelling "Orbit.toml".
 
 Here is a minimal example manifest:
 ``` toml

@@ -13,19 +13,19 @@ DESCRIPTION
 
 OPTIONS
     --root <entity>  
-      Top-level entity identifier to mark as the root node
+          Top-level entity identifier to mark as the root node
      
     --compress  
-      Replace duplicate branches with a label marking
+          Replace duplicate branches with a label marking
      
     --all  
-      Include all possible roots in hierarchical tree
+          Include all possible roots in hierarchical tree
      
     --format <fmt>  
-      Select how to display entity names: 'long' or 'short'
+          Select how to display entity names: 'long' or 'short'
      
     --ascii  
-      Restricts characters to original 128 ascii set
+          Restricts characters to original 128 ascii set
 
 EXAMPLES
     orbit tree --root nor_gate

@@ -514,7 +514,7 @@ Usage:
 Options:
     --top <unit>            override auto-detected toplevel entity
     --bench <tb>            override auto-detected toplevel testbench
-    --plugin <plugin>       collect filesets defined for a plugin
+    --plugin <alias>        collect filesets defined for a plugin
     --build-dir <dir>       set the output build directory
     --fileset <key=glob>... set an additional fileset
     --clean                 remove all files from the build directory

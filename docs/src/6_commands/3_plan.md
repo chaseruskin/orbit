@@ -31,7 +31,7 @@ be set during any following calls to the 'build' command.
 `--bench <tb>`  
       The top level testbench to explicitly define
    
-`--plugin <plugin>`  
+`--plugin <alias>`  
       A plugin to refer to gather its declared filesets
  
 `--build-dir <dir>`  

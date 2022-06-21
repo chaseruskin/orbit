@@ -12,10 +12,10 @@ DESCRIPTION
 
 OPTIONS
     --path <path>@[version]...  
-      Filesystem path to the ip
+          Filesystem path to the ip
      
     --git <url>@[version]...  
-      Url to git remote repository for the ip
+          Url to git remote repository for the ip
 
 EXAMPLES
     orbit install ks-tech.rary.gates@1.0.0

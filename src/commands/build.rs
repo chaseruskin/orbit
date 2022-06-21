@@ -3,14 +3,16 @@ use std::io::Read;
 use crate::Command;
 use crate::FromCli;
 use crate::interface::cli::Cli;
-use crate::interface::arg::Positional;
+use crate::interface::arg::{Optional, Flag};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 
 #[derive(Debug, PartialEq)]
 pub struct Build {
-    command: String,
+    alias: Option<String>,
+    list: bool,
+    command: Option<String>,
     args: Vec<String>,
 }
 
@@ -18,7 +20,9 @@ impl FromCli for Build {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.set_help(HELP);
         let command = Ok(Build {
-            command: cli.require_positional(Positional::new("command"))?,
+            alias: cli.check_option(Optional::new("plugin").value("alias"))?,
+            list: cli.check_flag(Flag::new("list"))?,
+            command: cli.check_option(Optional::new("command").value("cmd"))?,
             args: cli.check_remainder()?,
         });
         command
@@ -31,6 +35,10 @@ impl FromCli for Build {
 impl Command for Build {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+        // verify only 1 option is provided
+        if self.command.is_some() && self.alias.is_some() {
+            return Err(AnyError(format!("cannot execute both a plugin and command")))?
+        }
         // verify running from an IP directory
         c.goto_ip_path()?;
         // verify a blueprint file exists at build directory
@@ -73,7 +81,15 @@ impl Command for Build {
             }
         }
         // try to find plugin matching `command` name under the `alias`
-        let plug = c.get_plugins().get(&self.command);
+        let plug = if let Some(a) = &self.alias {
+            match c.get_plugins().get(a) {
+                Some(p) => Some(p),
+                None => return Err(AnyError(format!("no plugin named '{}'", a)))?,
+            }
+        } else {
+            None
+        };
+
         self.run(plug)
     }
 }
@@ -86,8 +102,8 @@ impl Build {
         // if there is a match run with the plugin then run it
         if let Some(p) = plug {
             p.execute(&self.args)
-        } else {
-            let mut proc = std::process::Command::new(&self.command)
+        } else if let Some(cmd) = &self.command {
+            let mut proc = std::process::Command::new(cmd)
                 .args(&self.args)
                 .stdout(Stdio::inherit())
                 .stderr(Stdio::inherit())
@@ -97,6 +113,8 @@ impl Build {
                 Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { Ok(()) },
                 None =>  Err(AnyError(format!("terminated by signal")))?
             }
+        } else {
+            Ok(())
         }
     }
 }
@@ -105,12 +123,12 @@ const HELP: &str = "\
 Execute a backend tool/workflow.
 
 Usage:
-    orbit build [options] <command> [--] [args]...
-
-Args:
-    <command>           process to run in orbit
+    orbit build [options] [--] [args]...
 
 Options:
+    --plugin <alias>    plugin to execute
+    --command <cmd>     command to execute
+    --list              view available plugins
     -- args...          arguments to pass to the requested command
 
 Use 'orbit help build' to learn more about the command.

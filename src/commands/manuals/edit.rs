@@ -20,10 +20,10 @@ DESCRIPTION
 
 OPTIONS
     <ip>  
-      The PKGID to look up the ip under ORBIT_PATH.
+          The PKGID to look up the ip under ORBIT_PATH.
       
     --editor <cmd>  
-      The command to open the requested text-editor.
+          The command to open the requested text-editor.
 
 EXAMPLES
     orbit edit ks-tech.rary.gates --editor=code

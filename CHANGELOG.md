@@ -13,6 +13,22 @@ pipeline to list only the current verion's changes with every release.
 
 # Changelog
 
+## 0.1.4
+
+### Fixes
+
+- improves vhdl symbol detection for parsing functions and procedures 
+
+- resolves path issue for `get` command on current ip
+
+- properly checks config.toml file with 'core' table before searching it
+
+- ensures `core.editor` exists for edit command
+
+### Documentation
+
+- adds topics for ip and manifest
+
 ## 0.1.3
 
 ### Features

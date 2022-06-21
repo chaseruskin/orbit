@@ -174,6 +174,11 @@ impl Entity {
         sigs
     }
 
+    // 
+    pub fn to_component_code(&self) -> String {
+        todo!();
+    }
+
     /// Parses an `Entity` primary design unit from the entity's identifier to
     /// the END closing statement.
     fn from_tokens<I>(tokens: &mut Peekable<I>) -> Self 

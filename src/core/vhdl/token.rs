@@ -747,6 +747,14 @@ impl VHDLToken {
         }
     }
 
+    /// Casts into a keyword.
+    pub fn as_keyword(&self) -> Option<&Keyword> {
+        match self {
+            Self::Keyword(kw) => Some(kw),
+            _ => None,
+        }
+    }
+
     /// Checks if the current token type `self` is a delimiter.
     fn is_delimiter(&self) -> bool {
         match self {

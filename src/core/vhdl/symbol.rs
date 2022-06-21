@@ -603,7 +603,7 @@ impl VHDLSymbol {
             _ => panic!("expected an identifier")
         };
         let entity_name = VHDLSymbol::parse_owner_design_unit(tokens);
-        VHDLSymbol::parse_primary_declaration(tokens);
+        VHDLSymbol::parse_declaration(tokens, &Self::is_primary_ending);
         VHDLSymbol::Configuration(Configuration {
             name: config_name,
             owner: entity_name,
@@ -639,13 +639,40 @@ impl VHDLSymbol {
         let entity_name = VHDLSymbol::parse_owner_design_unit(tokens);
         // println!("*--- unit {}", arch_name);
 
-        let (deps, refs) =  VHDLSymbol::parse_primary_declaration(tokens);
+        let (deps, refs) =  VHDLSymbol::parse_declaration(tokens, &Self::is_primary_ending);
         VHDLSymbol::Architecture(Architecture {
             name: arch_name,
             owner: entity_name,
             dependencies: deps,
             refs: refs,
         })
+    }
+
+    /// Checks if the statement `stmt` is the code to enter a valid sub-declaration section.
+    fn is_sub_declaration(stmt: &Statement) -> bool {
+        let first = match stmt.0.first() {
+            Some(tk) => tk.as_ref(),
+            None => return false
+        };
+        // verify first keyword
+        if let Some(keyword) = first.as_keyword() {
+            match keyword {
+                Keyword::Function | Keyword::Procedure => (),
+                _ => return false,
+            }
+        } else {
+            return false
+        };
+        // verify last keyword is BEGIN
+        let last = match stmt.0.last() {
+            Some(tk) => tk.as_ref(),
+            None => return false,
+        };
+        if let Some(keyword) = last.as_keyword() {
+            keyword == &Keyword::Begin
+        } else {
+            false
+        }
     }
 
     /// Parses together a series of tokens into a single `Statement`.
@@ -712,11 +739,11 @@ impl VHDLSymbol {
         }
     }
 
-    /// @TODO ?
-    fn parse_subprogram<I>(_: &mut Peekable<I>) -> Vec<Statement>
+    /// Parses a subprogram header, stopping at first occurence of IS or BEGIN keyword
+    fn parse_subprogram_header<I>(tokens: &mut Peekable<I>) -> ()
     where I: Iterator<Item=Token<VHDLToken>>  {
-
-        vec![]
+        // optionally take
+        todo!("implement");
     }
 
     /// Returns a list of interface items as `Statements`. 
@@ -817,10 +844,37 @@ impl VHDLSymbol {
         (generics, ports)
     }
 
+    /// Checks if the keyword `kw` is a potential start to a subprogram.
+    fn is_subprogram(kw: &Keyword) -> bool {
+        match kw {
+            Keyword::Function | Keyword::Procedure | Keyword::Pure | Keyword::Impure => true,
+            _ => false,
+        }
+    }
+
+    /// Parses through a subprogram (procedure or function).
+    fn parse_subprogram<I>(tokens: &mut Peekable<I>) -> Vec<ResReference>
+    where I: Iterator<Item=Token<VHDLToken>> {
+        while let Some(t) = tokens.peek() {
+            // determine when to branch to declaration section or body section
+            if t.as_type().check_keyword(&Keyword::Is) {
+                Self::parse_declaration(tokens, &Self::is_sub_ending);
+                break;
+            } else if t.as_type().check_delimiter(&Delimiter::Terminator) {
+                break;
+            } else {
+                // println!("IN SUB: {:?}", t);
+                tokens.next();
+            }
+        }
+        // @TODO capture references from declaration and body sections
+        vec![]
+    }
+
     /// Consumes tokens after `IS` until finding `BEGIN` or `END`.
     /// 
     /// Assumes the next token to consume is `IS` and throws it away.
-    fn parse_primary_declaration<I>(tokens: &mut Peekable<I>) -> (Vec<Identifier>, Vec<ResReference>)
+    fn parse_declaration<I>(tokens: &mut Peekable<I>, eval_exit: &dyn Fn(&Statement) -> bool) -> (Vec<Identifier>, Vec<ResReference>)
         where I: Iterator<Item=Token<VHDLToken>> {
         // println!("*--- declaration section");
         // force taking the 'is' keyword
@@ -828,19 +882,23 @@ impl VHDLSymbol {
             panic!("expecting 'is' keyword")
         }
         let mut refs = Vec::new();
+        let mut ids = Vec::new();
         while let Some(t) = tokens.peek() {
+            // println!("{:?}", t);
             // stop the declaration section and enter a statement section
             if t.as_type().check_keyword(&Keyword::Begin) {
                 tokens.next();
                 // combine refs from declaration and from body
-                let (ids, mut body_refs) = Self::parse_body(tokens, &Self::is_primary_ending);
+                let (mut body_ids, mut body_refs) = Self::parse_body(tokens, &Self::is_primary_ending);
                 refs.append(&mut body_refs);
-                return (ids, refs)
+                ids.append(&mut body_ids);
+                // STOP READING TOKENS
+                break;
             // the declaration is over and there is no statement section
             } else if t.as_type().check_keyword(&Keyword::End) {
                 let stmt = Self::compose_statement(tokens);
                 // println!("{:?}", stmt);
-                if Self::is_primary_ending(&stmt) { 
+                if eval_exit(&stmt) { 
                     break; 
                 }
             // find component names (could be in package or architecture declaration)
@@ -852,15 +910,18 @@ impl VHDLSymbol {
                 tokens.next();
                 let _pack_name = Self::route_package_parse(tokens);
                 // println!("**** INFO: detected nested package \"{}\"", pack_name);
+            // detect subprograms
+            } else if t.as_type().as_keyword().is_some() && Self::is_subprogram(t.as_type().as_keyword().unwrap()) == true {
+                Self::parse_subprogram(tokens);
             // build statements to throw away
             } else {
                 let stmt = Self::compose_statement(tokens);
                 // add resource references
+                // println!("st {:?}", stmt);
                 refs.append(&mut stmt.take_refs());
-                // println!("{:?}", stmt);
-            } 
+            }
         }
-        (Vec::new(), refs)
+        (ids, refs)
     }
 
     /// Checks if the statement is a valid primary unit END statement.
@@ -871,7 +932,7 @@ impl VHDLSymbol {
         let keyword = if let Some(t) = stmt.0.get(1) {
             t.as_type()
         } else {
-            return true // @TODO make sure "end;" will end up being valid
+            return true // only having "end;" is valid
         };
         match keyword {
             // list mandatory keywords expected after the 'end' keyword for non-primary endings
@@ -884,6 +945,13 @@ impl VHDLSymbol {
             },
             _ => true,
         }
+    }
+
+    /// Checks if the statement is a valid non-primary unit END statement.
+    /// 
+    /// This is the negation of `is_primary_ending`.
+    fn is_sub_ending(stmt: &Statement) -> bool {
+        !Self::is_primary_ending(stmt)
     }
 
     /// Checks if the keyword indicates a subprogram statement.
@@ -970,7 +1038,7 @@ impl VHDLSymbol {
             } else if t.as_type().check_keyword(&Keyword::Function) || t.as_type().check_keyword(&Keyword::Begin) {
                 let _stmt = Self::compose_statement(tokens);
                 // println!("ENTERING SUBPROGRAM {:?}", _stmt);
-                let mut inner = Self::parse_body(tokens, &Self::is_primary_ending);
+                let mut inner = Self::parse_body(tokens, &Self::is_sub_ending);
                 refs.append(&mut inner.1);
                 // println!("EXITING SUBPROGRAM");
             // find component names (could be in package)
@@ -995,6 +1063,7 @@ impl VHDLSymbol {
                 
             }
         }
+        // println!("{:?}", deps);
         (deps, refs)
     }
 }
@@ -1300,7 +1369,7 @@ end entity nor_gate;";
     #[test]
     #[ignore]
     fn parse_basic() {
-        let s = "\
+      let s = "\
 -- design file for a nor_gate
 library ieee;
 use ieee.std_logic_1164.all;

@@ -285,7 +285,10 @@
 </ul>
 <p>Supportive files are the files needed within particular HDL workflows. This is a very generic term because there are a lot of different workflows, some require constraints files, python scripts, text files, configuration files, etc.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbittoml"><a class="header" href="#orbittoml">Orbit.toml</a></h1>
-<p><code>Orbit.toml</code> is the manifest file that tells Orbit that a folder is an IP.</p>
+<p><code>Orbit.toml</code> is the manifest file that tells Orbit that a folder is an IP. </p>
+<blockquote>
+<p><strong>NOTE:</strong> The name must preserve case sensitivity and exactly match the spelling &quot;Orbit.toml&quot;.</p>
+</blockquote>
 <p>Here is a minimal example manifest:</p>
 <pre><code class="language-toml">[ip]
 vendor  = &quot;ks-tech&quot;
@@ -503,10 +506,11 @@ precedence:
 
 [core]
 path = &quot;c:/users/kepler/hdl&quot; # path to find and store IP in-development
+editor = &quot;c:/users/kepler/appdata/local/programs/vscode/code&quot;
 user = &quot;kepler&quot;
 
 </code></pre>
-<h2 id="orbittoml-1"><a class="header" href="#orbittoml-1">orbit.toml</a></h2>
+<h2 id="orbittoml-1"><a class="header" href="#orbittoml-1">Orbit.toml</a></h2>
 <p>This is the manifest file for all valid Orbit IP packages. </p>
 <p>Here is a very minimal and basic example manifest file:</p>
 <pre><code class="language-toml">[ip]
@@ -609,7 +613,7 @@ be set during any following calls to the 'build' command.</p>
       The top level entity to explicitly define</p>
 <p><code>--bench &lt;tb&gt;</code><br />
       The top level testbench to explicitly define</p>
-<p><code>--plugin &lt;plugin&gt;</code><br />
+<p><code>--plugin &lt;alias&gt;</code><br />
       A plugin to refer to gather its declared filesets</p>
 <p><code>--build-dir &lt;dir&gt;</code><br />
       The relative directory to place the blueprint.tsv file</p>
@@ -629,16 +633,20 @@ be set during any following calls to the 'build' command.</p>
 <h2 id="name-4"><a class="header" href="#name-4"><strong>NAME</strong></a></h2>
 <p>build - execute a plugin/backend tool flow</p>
 <h2 id="synopsis-4"><a class="header" href="#synopsis-4"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit build [options] &lt;plugin&gt; [--] [args]...
+<pre><code>orbit build [options] [--] [args]...
 </code></pre>
 <h2 id="description-4"><a class="header" href="#description-4"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will call a user-defined command (plugin). A plugin should
+<p>This command will call a user-defined command or plugin. A plugin should
 typically require a blueprint.tsv to be generated. The command also
-should read the data from the blueprint, and then process the data 
+should read the data from the blueprint, and then process that data
 (synthesis, simulation, etc.).</p>
 <h2 id="options-4"><a class="header" href="#options-4"><strong>OPTIONS</strong></a></h2>
+<p><code>--plugin &lt;alias&gt;</code><br />
+      Plugin to execute</p>
+<p><code>--command &lt;cmd&gt;</code>     
+      Command to execute</p>
 <p><code>-- args...</code><br />
-      Arguments to pass to the requested command</p>
+      Arguments to pass to the requested plugin</p>
 <h2 id="examples-4"><a class="header" href="#examples-4"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit build xsim -- --waves
 </code></pre>

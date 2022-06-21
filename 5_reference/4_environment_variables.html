@@ -163,10 +163,16 @@
 <p>Orbit also sets environment variables during runtime so a plugin has access to runtime information. </p>
 <ul>
 <li>
-<p><code>ORBIT_PATH</code> - path to locate in-development IP. Unless explicitly set, Orbit will set this value to the path found as <code>core.path</code> set in config.toml.</p>
+<p><code>ORBIT_DEV_PATH</code> - path to locate mutable in-development IP. Unless explicitly set, Orbit will set this value to the path found as <code>core.path</code> set in config.toml.</p>
 </li>
 <li>
 <p><code>ORBIT_BUILD_DIR</code> - directory to place the <code>blueprint.tsv</code> file relative to the current IP path. Default is <code>build</code> unless set as <code>core.build-dir</code> in config.toml.</p>
+</li>
+<li>
+<p><code>ORBIT_IP_PATH</code> - path to the IP that is detected under the current working directory. If its not immediately detected at the current directory, it will continue to search the parent directory until it finds a <code>Orbit.toml</code> manifest file.</p>
+</li>
+<li>
+<p><code>ORBIT_PLUGIN</code> - last referenced plugin from the planning phase</p>
 </li>
 <li>
 <p><code>ORBIT_TOP</code> - toplevel design unit identifier</p>

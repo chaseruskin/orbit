@@ -9,10 +9,15 @@
 - [Tutorials](./2_tutorials/0_tutorials.md)
 
 - [User Guide](./3_user/0_user.md)
+    - [Develop IP](./3_user/1_develop_ip.md)
+    - [Use IP](./3_user/2_use_ip.md)
+    - [Share IP](./3_user/3_share_ip.md)
+    - [Use Vendors](./3_user/4_make_vendors.md)
 
 - [Topic Guide](./4_topic/0_topic.md)
     - [IP](./4_topic/1_ip.md)
     - [Orbit.toml](./4_topic/2_orbittoml.md)
+    - [Vendors](./4_topic/3_vendors.md)
 
 - [Reference](./5_reference/0_reference.md)
     - [Packages](./5_reference/1_packages.md)

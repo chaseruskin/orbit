@@ -25,6 +25,8 @@ The following keys are accepted under the `ip` table:
 
 - `version`: semantic version for current status
 
+- `repository`: remote repository git url
+
 > __NOTE:__ The `vendor`, `library`, and `name` keys combined together to create the IP PKGID.
 
 ## Dependencies

@@ -8,3 +8,4 @@ pub mod tree;
 pub mod install;
 pub mod search;
 pub mod get;
+pub mod init;

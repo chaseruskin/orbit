@@ -23,6 +23,7 @@ enum Topic {
     Tree,
     Search,
     Get,
+    Init,
 }
 
 impl std::str::FromStr for Topic {
@@ -38,6 +39,7 @@ impl std::str::FromStr for Topic {
             "install" => Self::Install,
             "tree" => Self::Tree,
             "get" => Self::Get,
+            "init" => Self::Init,
             _ => return Err(AnyError(format!("topic '{}' not found", s)))
         })
     }
@@ -57,6 +59,7 @@ impl Topic {
             Build => manuals::build::MANUAL,
             Launch => manuals::launch::MANUAL,
             Install => manuals::install::MANUAL,
+            Init => manuals::init::MANUAL,
         }
     }
 }

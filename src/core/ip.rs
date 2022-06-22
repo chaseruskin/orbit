@@ -23,6 +23,8 @@ impl Ip {
         // create all directories if the do not exist
         std::fs::create_dir_all(&path)?;
 
+        // @TODO issue warning if the path it was placed is outside of DEV_PATH or if DEV_PATH is not set
+
         Ok(Self {
             path: path,
             manifest: IpManifest::new(),

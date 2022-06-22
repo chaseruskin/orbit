@@ -10,3 +10,4 @@ mod launch;
 mod install;
 mod tree;
 mod get;
+mod init;

@@ -81,6 +81,7 @@ use crate::commands::launch::Launch;
 use crate::commands::install::Install;
 use crate::commands::tree::Tree;
 use crate::commands::get::Get;
+use crate::commands::init::Init;
 
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
@@ -94,6 +95,7 @@ enum OrbitSubcommand {
     Install(Install),
     Tree(Tree),
     Get(Get),
+    Init(Init),
 }
 
 impl FromCli for OrbitSubcommand {
@@ -108,6 +110,7 @@ impl FromCli for OrbitSubcommand {
             "launch",
             "install",
             "get",
+            "init",
             "tree",
         ])?.as_ref() {
             "get" => Ok(OrbitSubcommand::Get(Get::from_cli(cli)?)),
@@ -117,6 +120,7 @@ impl FromCli for OrbitSubcommand {
             "plan" => Ok(OrbitSubcommand::Plan(Plan::from_cli(cli)?)),
             "build" => Ok(OrbitSubcommand::Build(Build::from_cli(cli)?)),
             "edit" => Ok(OrbitSubcommand::Edit(Edit::from_cli(cli)?)),
+            "init" => Ok(OrbitSubcommand::Init(Init::from_cli(cli)?)),
             "launch" => Ok(OrbitSubcommand::Launch(Launch::from_cli(cli)?)),
             "install" => Ok(OrbitSubcommand::Install(Install::from_cli(cli)?)),
             "tree" => Ok(OrbitSubcommand::Tree(Tree::from_cli(cli)?)),
@@ -139,6 +143,7 @@ impl Command for OrbitSubcommand {
             OrbitSubcommand::Edit(c) => c.exec(context),
             OrbitSubcommand::Launch(c) => c.exec(context),
             OrbitSubcommand::Tree(c) => c.exec(context),
+            OrbitSubcommand::Init(c) => c.exec(context),
         }
     }
 }
@@ -154,6 +159,7 @@ Usage:
 
 Commands:
     new             create a new ip
+    init            initialize an ip from an existing project
     edit            open an ip in a text editor
     get             fetch an entity
     tree            view the dependency graph

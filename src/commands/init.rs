@@ -1,7 +1,7 @@
 use crate::Command;
 use crate::FromCli;
 use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Flag, Optional, Arg};
+use crate::interface::arg::{Positional, Optional, Arg};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
@@ -52,7 +52,7 @@ impl Command for Init {
 }
 
 impl Init {
-    fn run(&self, root: &std::path::PathBuf, home: &std::path::PathBuf, force: bool) -> Result<(), Box<dyn std::error::Error>> {
+    fn run(&self, root: &std::path::PathBuf, home: &std::path::PathBuf, _: bool) -> Result<(), Box<dyn std::error::Error>> {
         // create ip stemming from ORBIT_PATH with default /VENDOR/LIBRARY/NAME
         let ip_path = if self.rel_path.is_none() {
             root.join(self.ip.get_vendor().as_ref().unwrap())

@@ -7,7 +7,6 @@ use crate::core::pkgid;
 use crate::interface::arg::Arg;
 use crate::core::context::Context;
 use std::error::Error;
-use crate::core::pkgid::PkgId;
 use crate::util::anyerror::AnyError;
 use crate::core::ip::Ip;
 use crate::commands::search::Search;

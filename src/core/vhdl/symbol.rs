@@ -745,7 +745,7 @@ impl VHDLSymbol {
     }
 
     /// Parses a subprogram header, stopping at first occurence of IS or BEGIN keyword
-    fn parse_subprogram_header<I>(tokens: &mut Peekable<I>) -> ()
+    fn parse_subprogram_header<I>(_: &mut Peekable<I>) -> ()
     where I: Iterator<Item=Token<VHDLToken>>  {
         // optionally take
         todo!("implement");

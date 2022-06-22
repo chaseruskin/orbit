@@ -1,3 +1,5 @@
+use std::env::temp_dir;
+
 use crate::Command;
 use crate::FromCli;
 use crate::interface::cli::Cli;
@@ -47,12 +49,12 @@ impl Command for Init {
 
         // get dev path join with options
         let path = c.get_development_path().unwrap();
-        self.run(path, c.get_home_path(), c.force)
+        self.run(path, c.force)
     }
 }
 
 impl Init {
-    fn run(&self, root: &std::path::PathBuf, home: &std::path::PathBuf, _: bool) -> Result<(), Box<dyn std::error::Error>> {
+    fn run(&self, root: &std::path::PathBuf, _: bool) -> Result<(), Box<dyn std::error::Error>> {
         // create ip stemming from ORBIT_PATH with default /VENDOR/LIBRARY/NAME
         let ip_path = if self.rel_path.is_none() {
             root.join(self.ip.get_vendor().as_ref().unwrap())
@@ -81,7 +83,7 @@ impl Init {
 
         // clone if given a git url
         if let Some(url) = &self.repo {
-            Self::clone(url, &ip_path, home)?;
+            Self::clone(url, &ip_path)?;
         }
 
         // create a manifest at the ip path
@@ -105,12 +107,8 @@ impl Init {
     /// 
     /// This function uses the actual git command in order to bypass a lot of issues with using libgit with
     /// private repositories.
-    pub fn clone(url: &str, dest: &std::path::PathBuf, home: &std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-        let tmp_path = home.join("tmp");
-        if std::path::Path::exists(&tmp_path) == true {
-            std::fs::remove_dir_all(&tmp_path)?
-        }
-        std::fs::create_dir(&tmp_path)?;
+    pub fn clone(url: &str, dest: &std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+        let tmp_path = tempfile::tempdir()?;
         // @TODO allow user to have env variable to specify how to call git in config.toml
         let mut proc = std::process::Command::new("git").args(["clone", url]).current_dir(&tmp_path).spawn()?;
         let exit_code = proc.wait()?;
@@ -121,17 +119,17 @@ impl Init {
                 return Err(AnyError(format!("terminated by signal")))?
             }
         };
+        // create the directories
+        std::fs::create_dir_all(&dest)?;
 
         // there should only be one directory in the tmp/ folder
         for entry in std::fs::read_dir(&tmp_path)? {
-            match std::fs::rename(entry.as_ref().unwrap().path(), &dest) {
-                Ok(()) => (),
-                Err(e) => {
-                    std::fs::remove_dir_all(&tmp_path)?;
-                    return Err(e)?
-                }
-            }
-            std::fs::remove_dir_all(&tmp_path)?;
+            // copy contents into cache slot
+            let options = fs_extra::dir::CopyOptions::new();
+            let mut from_paths = Vec::new();
+            from_paths.push(entry.unwrap().path());
+            // copy rather than rename because of windows issues
+            fs_extra::copy_items(&from_paths, &dest, &options)?;
             break;
         }
         Ok(())

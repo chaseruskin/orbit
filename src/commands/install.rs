@@ -153,18 +153,24 @@ impl Command for Install {
         // use checksum to create new directory slot
         let cache_slot_name = format!("{}-{}-{}", ip_manifest.as_pkgid().get_name(), version, checksum.to_string().get(0..10).unwrap());
         let cache_slot = c.get_cache_path().join(&cache_slot_name);
+        if std::path::Path::exists(&cache_slot) == true {
+            return Err(AnyError(format!("IP {} version {} is already installed", ip_manifest.as_pkgid(), version)))?
+        }
         std::fs::create_dir(&cache_slot)?;
-        // move contents into cache slot
-        std::fs::rename(temp, &cache_slot)?;
-
+        // copy contents into cache slot
+        let options = fs_extra::dir::CopyOptions::new();
+        let mut from_paths = Vec::new();
+        from_paths.push(temp.path().to_path_buf());
+        // copy rather than rename because of windows issues
+        fs_extra::copy_items(&from_paths, &cache_slot, &options)?;
         self.run()
     }
 }
 
 impl Install {
     fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
-        
-        todo!()
+        // todo!()
+        Ok(())
     }
 }
 

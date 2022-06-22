@@ -10,7 +10,7 @@ DESCRIPTION
     This command will search for all ip defined by Orbit in 3 locations.
 
 OPTIONS
-    --cache, -c  
+    --install, -i  
           Filter for ip installed to the cache
      
     --develop, -d  

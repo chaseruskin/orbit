@@ -139,7 +139,7 @@ impl FromCli for Search {
         cli.set_help(HELP);
         let command = Ok(Search {
             ip: cli.check_positional(Positional::new("ip"))?,
-            cached: cli.check_flag(Flag::new("cache").switch('c'))?,
+            cached: cli.check_flag(Flag::new("install").switch('i'))?,
             developing: cli.check_flag(Flag::new("develop").switch('d'))?,
             available: cli.check_flag(Flag::new("available").switch('a'))?,
         });
@@ -157,7 +157,7 @@ Args:
     <ip>                a partially qualified pkgid to lookup ip
 
 Options:
-    --cache, -c         filter for ip installed to cache
+    --install, -i       filter for ip installed to cache
     --develop, -d       filter for ip in-development
     --available, -a     filter for ip available from vendors
 

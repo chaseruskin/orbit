@@ -13,6 +13,16 @@ pipeline to list only the current verion's changes with every release.
 
 # Changelog
 
+## 0.1.6
+
+### Fixes
+- copying directories now goes to correct level for `init` and `install` commands
+- fixes issue with install failing on windows due to files being used by other processes
+
+### Changes
+- search command uses `--install, -i` rather than `--cache, -c` to show installed IP
+- displays clearer error message if an IP is already installed
+
 ## 0.1.5
 
 ### Features

@@ -160,7 +160,12 @@ impl Command for Install {
         // copy contents into cache slot
         let options = fs_extra::dir::CopyOptions::new();
         let mut from_paths = Vec::new();
-        from_paths.push(temp.path().to_path_buf());
+        for dir_entry in std::fs::read_dir(temp.path())? {
+            match dir_entry {
+                Ok(d) => from_paths.push(d.path()),
+                Err(_) => (),
+            }
+        }
         // copy rather than rename because of windows issues
         fs_extra::copy_items(&from_paths, &cache_slot, &options)?;
         self.run()

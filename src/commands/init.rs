@@ -1,5 +1,3 @@
-use std::env::temp_dir;
-
 use crate::Command;
 use crate::FromCli;
 use crate::interface::cli::Cli;
@@ -125,9 +123,15 @@ impl Init {
         // there should only be one directory in the tmp/ folder
         for entry in std::fs::read_dir(&tmp_path)? {
             // copy contents into cache slot
+            let temp = entry.unwrap().path();
             let options = fs_extra::dir::CopyOptions::new();
             let mut from_paths = Vec::new();
-            from_paths.push(entry.unwrap().path());
+            for dir_entry in std::fs::read_dir(temp)? {
+                match dir_entry {
+                    Ok(d) => from_paths.push(d.path()),
+                    Err(_) => (),
+                }
+            }
             // copy rather than rename because of windows issues
             fs_extra::copy_items(&from_paths, &dest, &options)?;
             break;

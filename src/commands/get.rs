@@ -80,11 +80,11 @@ impl Command for Get {
             c.get_ip_path().unwrap().clone()
         } else {
             // grab installed ip
-            let installed_ip = manifest::find_dev_manifests(c.get_cache_path())?;
+            let installed_ip = manifest::IpManifest::detect_all(c.get_cache_path())?;
             // find all manifests? and prioritize installed manifests over others but to help with errors/confusion
             let manifest = ip::find_ip(&self.entity_path.ip.as_ref().unwrap(), &installed_ip)?;
             // println!("{}", manifest.as_pkgid());
-            manifest.get_path().parent().unwrap().to_path_buf()
+            manifest.0.get_path().parent().unwrap().to_path_buf()
         };
         // find the IP (@IDEA have flag to indicate if to use the in-dev version vs. cache?)
         // $ orbit get gates:nor_gate --edition latest --edition 1.0.0 --edition dev

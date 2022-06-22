@@ -1,15 +1,15 @@
-use crate::core::manifest::Manifest;
+use crate::core::manifest::IpManifest;
 use std::error::Error;
 use crate::core::pkgid::PkgId;
 use git2::Repository;
 
 /// An IP is a package that Orbit tracks
-pub struct IP {
+pub struct Ip {
     path: std::path::PathBuf,
-    manifest: Manifest,
+    manifest: IpManifest,
 }
 
-impl IP {
+impl Ip {
     pub fn new(path: std::path::PathBuf, force: bool) -> Result<Self, Box<dyn Error>> {
         if std::path::Path::exists(&path) == true {
             // remove the entire existing directory
@@ -25,19 +25,22 @@ impl IP {
 
         Ok(Self {
             path: path,
-            manifest: Manifest::new(),
+            manifest: IpManifest::new(),
         })
     }
 
+    /// Creates a new manifest and writes it to disk at the `path`.
+    /// 
+    /// Assumes the `pkgid` is fully qualified.
     pub fn create_manifest(mut self, pkgid: &PkgId) -> Result<Self, Box<dyn Error>> {
-        // create a new manifest
-        self.manifest = Manifest::create(self.path.join("Orbit.toml"));
+        // initialize a new manifest
+        self.manifest = IpManifest::init(self.path.join(manifest::IP_MANIFEST_FILE));
         // fill in fields
-        self.manifest.get_mut_doc()["ip"]["name"] = toml_edit::value(pkgid.get_name());
-        self.manifest.get_mut_doc()["ip"]["library"] = toml_edit::value(pkgid.get_library().as_ref().unwrap());
-        self.manifest.get_mut_doc()["ip"]["vendor"] = toml_edit::value(pkgid.get_vendor().as_ref().unwrap());
+        self.manifest.0.write("ip", "name", pkgid.get_name());
+        self.manifest.0.write("ip", "library", pkgid.get_library().as_ref().unwrap());
+        self.manifest.0.write("ip", "vendor", pkgid.get_vendor().as_ref().unwrap());
         // save the manifest
-        self.manifest.save()?;
+        self.manifest.0.save()?;
 
         // create an empty git repository
         Repository::init(&self.path)?;
@@ -57,7 +60,7 @@ use crate::util::anyerror::AnyError;
 
 /// Given a partial/full ip specification `ip_spec`, sift through the manifests
 /// for a possible determined unique solution.
-pub fn find_ip<'a>(ip_spec: &PkgId, manifests: &'a [manifest::Manifest]) -> Result<&'a Manifest, AnyError> {
+pub fn find_ip<'a>(ip_spec: &PkgId, manifests: &'a [manifest::IpManifest]) -> Result<&'a IpManifest, AnyError> {
     // try to find ip name
     let space: Vec<Vec<PkgPart>> = manifests.iter().map(|f| { f.as_pkgid().into_full_vec().unwrap() }).collect();
     let result = match overdetsys::solve(space, ip_spec.iter()) {

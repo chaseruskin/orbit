@@ -28,7 +28,7 @@ impl FromCli for Edit {
 impl Command for Edit {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
-        let manifests = manifest::find_dev_manifests(c.get_development_path().as_ref().unwrap())?;
+        let manifests = manifest::IpManifest::detect_all(c.get_development_path().as_ref().unwrap())?;
         // determine editor
         let sel_editor = match &self.editor {
             // first check if cli arg is empty
@@ -57,10 +57,10 @@ impl Command for Edit {
 use crate::core::ip;
 
 impl Edit {
-    fn run(&self, manifests: &[manifest::Manifest], editor: &str) -> Result<(), Box<dyn std::error::Error>> {
+    fn run(&self, manifests: &[manifest::IpManifest], editor: &str) -> Result<(), Box<dyn std::error::Error>> {
         // find the full ip name among the manifests to get the path
         let result = ip::find_ip(&self.ip, &manifests)?;
-        let mut root = result.get_path().to_owned();
+        let mut root = result.0.get_path().to_owned();
         root.pop();
         // perform the process
         let _ = std::process::Command::new(editor)

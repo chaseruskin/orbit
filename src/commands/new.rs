@@ -8,7 +8,7 @@ use crate::interface::arg::Arg;
 use crate::core::context::Context;
 use std::error::Error;
 use crate::util::anyerror::AnyError;
-use crate::core::ip::IP;
+use crate::core::ip::Ip;
 
 #[derive(Debug, PartialEq)]
 pub struct New {
@@ -54,7 +54,7 @@ impl New {
             }
         }
 
-        let ip = IP::new(ip_path, force)?.create_manifest(&self.ip)?;
+        let ip = Ip::new(ip_path, force)?.create_manifest(&self.ip)?;
         println!("info: new ip created at {}", ip.get_path().display());
         Ok(())
     }

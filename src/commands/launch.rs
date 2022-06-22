@@ -47,7 +47,7 @@ impl FromCli for Launch {
 }
 
 use git2::Repository;
-use crate::core::manifest::Manifest;
+use crate::core::manifest;
 use std::str::FromStr;
 use crate::util::anyerror::AnyError;
 
@@ -77,8 +77,8 @@ impl Command for Launch {
         // @TODO verify the repository is up-to-date (git remote update, git remote fetch?)
 
         // grab the version defined in the manifest
-        let mut manifest = Manifest::load(c.get_ip_path().unwrap().to_path_buf().join("Orbit.toml"))?;
-        let prev_version = Version::from_str(manifest.get_doc()["ip"]["version"].as_str().unwrap()).unwrap();
+        let mut manifest = manifest::IpManifest::from_path(c.get_ip_path().unwrap().to_path_buf().join(manifest::IP_MANIFEST_FILE))?;
+        let prev_version = Version::from_str(&manifest.0.read_as_str("ip", "version").unwrap())?;
 
         // at this point it is safe to assume it is a version because manifest will check that
         let mut version = prev_version.clone();
@@ -102,7 +102,7 @@ impl Command for Launch {
             }
             println!("info: raising {} --> {}", prev_version, version);
             // update the manifest and add a new commit to the git repository
-            manifest.get_mut_doc()["ip"]["version"] = toml_edit::value(version.to_string());
+            manifest.0.write("ip", "version", version.to_string());
             true
         } else {
             println!("info: setting {}", version);
@@ -162,7 +162,7 @@ impl Command for Launch {
         if self.ready == true {
             let marked_commit = if overwrite == true {
                 // save the manifest
-                manifest.save()?;
+                manifest.0.save()?;
                 // add manifest to staging
                 index.add_path(&std::path::PathBuf::from("Orbit.toml"))?;
                 // source: https://github.com/rust-lang/git2-rs/issues/561

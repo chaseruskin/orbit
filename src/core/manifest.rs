@@ -3,7 +3,10 @@ use std::path;
 use std::error::Error;
 use crate::core::pkgid::PkgId;
 use crate::util::anyerror::AnyError;
+use std::path::PathBuf;
+use glob::glob;
 
+#[derive(Debug)]
 pub struct Manifest {
     // track where the file loads/stores from
     path: path::PathBuf, 
@@ -11,45 +14,50 @@ pub struct Manifest {
     document: Document
 }
 
-use glob::glob;
-
-/// Finds all Manifest files available in the provided path.
-pub fn find_dev_manifests(path: &std::path::PathBuf) -> Result<Vec<Manifest>, Box<dyn std::error::Error>> {
-    let mut result = Vec::new();
-    // walk the ORBIT_PATH directory @TODO recursively walk inner directories until hitting first 'Orbit.toml' file.
-    for entry in glob(&path.join("**/Orbit.toml").display().to_string()).expect("Failed to read glob pattern") {
-        let e = entry?;
-        // read ip_spec from each manifest
-        result.push(Manifest::load(e)?);
-    }
-    Ok(result)
-}
-
 impl Manifest {
-    pub fn create(path: path::PathBuf) -> Self {
-        Self {
-            path: path,
-            document: BARE_MANIFEST.parse::<Document>().unwrap(),
+    /// Finds all Manifest files available in the provided path `path`.
+    /// 
+    /// Errors if on filesystem problems.
+    pub fn detect_all(path: &std::path::PathBuf, name: &str) -> Result<Vec<Manifest>, Box<dyn std::error::Error>> {
+        let mut result = Vec::new();
+        // walk the ORBIT_PATH directory @TODO recursively walk inner directories until hitting first 'Orbit.toml' file.
+        for entry in glob(&path.join(format!("**/{}", name)).display().to_string()).expect("Failed to read glob pattern") {
+            let e = entry?;
+            // read ip_spec from each manifest
+            result.push(Manifest::from_path(e)?);
+        }
+        Ok(result)
+    }
+
+    /// Reads from the file at `path` and parses into a valid toml document for a `Manifest` struct. 
+    pub fn from_path(path: PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self {
+            // load the data as a string
+            document: std::fs::read_to_string(&path)?.parse::<Document>()?,
+            path: path,     
+        })
+    }
+
+    /// Edits the .toml document at the `table`.`key` with `value`.
+    /// 
+    pub fn write<T>(&mut self, table: &str, key: &str, value: T) -> ()
+    where toml_edit::Value: From<T> {
+        self.document[table][key] = toml_edit::value(value);
+    }
+
+    /// Reads a value from the manifest file.
+    /// 
+    /// If the key does not exist, it will return `None`. Assumes the key already is a string if it does
+    /// exist.
+    pub fn read_as_str(&self, table: &str, key: &str) -> Option<String> {
+        if let Some(item) = self.document[table].get(key) {
+            Some(item.as_str().unwrap().to_string())
+        } else {
+            None
         }
     }
 
-    /// Checks if the manifest has the `ip` table and contains the minimum required keys: `vendor`, `library`,
-    /// `name`, `version`.
-    pub fn has_bare_min(&self) -> Result<(), AnyError> {
-        if self.get_doc().contains_table("ip") == false {
-            return Err(AnyError(format!("missing 'ip' table")))
-        } else if self.get_doc()["ip"].as_table().unwrap().contains_key("vendor") == false {
-            return Err(AnyError(format!("missing required key 'vendor' in table 'ip'")))
-        } else if self.get_doc()["ip"].as_table().unwrap().contains_key("library") == false {
-            return Err(AnyError(format!("missing required key 'library' in table 'ip'")))
-        } else if self.get_doc()["ip"].as_table().unwrap().contains_key("name") == false {
-            return Err(AnyError(format!("missing required key 'name' in table 'ip'")))
-        } else if self.get_doc()["ip"].as_table().unwrap().contains_key("version") == false {
-            return Err(AnyError(format!("missing required key 'version' in table 'ip'")))
-        }
-        Ok(())
-    }
-
+    /// Creates a new empty `Manifest` struct.
     pub fn new() -> Self {
         Self {
             path: path::PathBuf::new(),
@@ -57,37 +65,10 @@ impl Manifest {
         }
     }
 
-    /// Loads data from file as a `Manifest` struct. 
-    /// 
-    /// Errors on parsing errors for toml and errors on any particular rules for
-    /// manifest formatting/required keys.
-    pub fn load(path: path::PathBuf) -> Result<Self, Box<dyn Error>>{
-        // load data from file
-        let contents = std::fs::read_to_string(&path)?;
-        let m = Self {
-            path: path,
-            document: contents.parse::<Document>()?,
-        };
-        // verify bare minimum keys exist for 'ip' table
-        match m.has_bare_min() {
-            Ok(()) => Ok(m),
-            Err(e) => return Err(AnyError(format!("manifest {:?} {}", m.get_path(), e)))?
-        }
-    }
-
     /// Stores data to file from `Manifest` struct.
     pub fn save(&self) -> Result<(), Box<dyn Error>> {
         std::fs::write(&self.path, self.document.to_string())?;
         Ok(())
-    }
-
-    /// Creates a new `PkgId` from the fields of the manifest document.
-    /// 
-    /// Assumes the manifest document contains a table 'ip' with the necessary keys.
-    pub fn as_pkgid(&self) -> PkgId {
-        PkgId::new().vendor(self.get_doc()["ip"]["vendor"].as_str().unwrap()).unwrap()
-            .library(self.get_doc()["ip"]["library"].as_str().unwrap()).unwrap()
-            .name(self.get_doc()["ip"]["name"].as_str().unwrap()).unwrap()
     }
 
     pub fn get_doc(&self) -> &Document {
@@ -100,6 +81,84 @@ impl Manifest {
 
     pub fn get_mut_doc(&mut self) -> &mut Document {
         &mut self.document
+    }
+}
+
+pub const IP_MANIFEST_FILE: &str = "Orbit.toml";
+
+#[derive(Debug)]
+pub struct IpManifest(pub Manifest);
+
+impl IpManifest {
+    /// Creates an empty `IpManifest` struct.
+    pub fn new() -> Self {
+        IpManifest(Manifest::new())
+    }
+
+    /// Finds all IP manifest files along the provided path `path`.
+    /// 
+    /// Wraps Manifest::detect_all.
+    pub fn detect_all(path: &PathBuf) -> Result<Vec<Self>, Box<dyn std::error::Error>> {
+        Ok(Manifest::detect_all(path, IP_MANIFEST_FILE)?.into_iter().map(|f| IpManifest(f)).collect())
+    }
+
+    /// Creates a new minimal IP manifest for `path`.
+    /// 
+    /// Does not actually write the data to `path`. Use the `fn save` to write to disk.
+    pub fn init(path: path::PathBuf) -> Self {
+        Self(Manifest {
+            path: path,
+            document: BARE_MANIFEST.parse::<Document>().unwrap(),
+        })
+    }
+
+    /// Creates a new `PkgId` from the fields of the manifest document.
+    /// 
+    /// Assumes the manifest document contains a table 'ip' with the necessary keys.
+    pub fn as_pkgid(&self) -> PkgId {
+        PkgId::new().vendor(self.0.get_doc()["ip"]["vendor"].as_str().unwrap()).unwrap()
+            .library(self.0.get_doc()["ip"]["library"].as_str().unwrap()).unwrap()
+            .name(self.0.get_doc()["ip"]["name"].as_str().unwrap()).unwrap()
+    }
+
+    /// Loads data from file as a `Manifest` struct. 
+    /// 
+    /// Errors on parsing errors for toml and errors on any particular rules for
+    /// manifest formatting/required keys.
+    fn from_manifest(m: Manifest) -> Result<Self, Box<dyn Error>> {
+        let ip = IpManifest(m);
+        // verify bare minimum keys exist for 'ip' table
+        match ip.has_bare_min() {
+            Ok(()) => Ok(ip),
+            Err(e) => return Err(AnyError(format!("manifest {:?} {}", ip.0.get_path(), e)))?
+        }
+    }
+
+    /// Loads an `IpManifest` from `path`.
+    pub fn from_path(path: PathBuf) -> Result<Self, Box<dyn Error>> {
+        Ok(Self(Manifest::from_path(path)?))
+    }
+
+    /// Checks if the manifest has the `ip` table and contains the minimum required keys: `vendor`, `library`,
+    /// `name`, `version`.
+    pub fn has_bare_min(&self) -> Result<(), AnyError> {
+        if self.0.get_doc().contains_table("ip") == false {
+            return Err(AnyError(format!("missing 'ip' table")))
+        } else if self.0.get_doc()["ip"].as_table().unwrap().contains_key("vendor") == false {
+            return Err(AnyError(format!("missing required key 'vendor' in table 'ip'")))
+        } else if self.0.get_doc()["ip"].as_table().unwrap().contains_key("library") == false {
+            return Err(AnyError(format!("missing required key 'library' in table 'ip'")))
+        } else if self.0.get_doc()["ip"].as_table().unwrap().contains_key("name") == false {
+            return Err(AnyError(format!("missing required key 'name' in table 'ip'")))
+        } else if self.0.get_doc()["ip"].as_table().unwrap().contains_key("version") == false {
+            return Err(AnyError(format!("missing required key 'version' in table 'ip'")))
+        }
+        Ok(())
+    }
+
+    /// Gets the remote repository value, if any.
+    pub fn get_repository(&self) -> Option<String> {
+        self.0.read_as_str("ip", "repository")
     }
 }
 
@@ -122,28 +181,28 @@ mod test {
     #[test]
     fn new() {
         let m = tempfile::NamedTempFile::new().unwrap();
-        let manifest = Manifest::create(m.path().to_path_buf());
-        assert_eq!(manifest.document.to_string(), BARE_MANIFEST);
+        let manifest = IpManifest::init(m.path().to_path_buf());
+        assert_eq!(manifest.0.document.to_string(), BARE_MANIFEST);
     }
 
     #[test]
     fn bare_min_valid() {
         // has all keys and 'ip' table
         let m = tempfile::NamedTempFile::new().unwrap();
-        let manifest = Manifest::create(m.path().to_path_buf());
+        let manifest = IpManifest::init(m.path().to_path_buf());
         assert_eq!(manifest.has_bare_min().unwrap(), ());
 
         // missing all required fields
-        let manifest = Manifest {
+        let manifest = IpManifest(Manifest {
             path: tempfile::NamedTempFile::new().unwrap().path().to_path_buf(),
             document: "\
 [ip]
 ".parse::<Document>().unwrap()
-        };
+        });
         assert_eq!(manifest.has_bare_min().is_err(), true);
 
         // missing 'version' key
-        let manifest = Manifest {
+        let manifest = IpManifest(Manifest {
             path: tempfile::NamedTempFile::new().unwrap().path().to_path_buf(),
             document: "\
 [ip]
@@ -151,7 +210,35 @@ vendor = \"v\"
 library = \"l\"
 name = \"n\"
 ".parse::<Document>().unwrap()
-        };
+        });
         assert_eq!(manifest.has_bare_min().is_err(), true);
+    }
+
+
+    mod vendor {
+        use super::*;
+        use crate::core::vendor::VendorManifest;
+        use std::str::FromStr;
+        
+        #[test]
+        fn read_index() {
+            let doc = "\
+[vendor]
+name = \"ks-tech\"
+
+[index]
+rary.gates = \"url1\"
+memory.ram = \"url2\"
+    ";
+            let manifest = VendorManifest(Manifest {
+                path: tempfile::NamedTempFile::new().unwrap().path().to_path_buf(),
+                document: doc.parse::<Document>().unwrap()
+            });
+
+            assert_eq!(manifest.read_index(), vec![
+                PkgId::from_str("ks-tech.rary.gates").unwrap(), 
+                PkgId::from_str("ks-tech.memory.ram").unwrap()
+            ]);
+        }
     }
 }

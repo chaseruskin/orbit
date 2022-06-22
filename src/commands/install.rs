@@ -85,10 +85,10 @@ impl Command for Install {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // gather all manifests
-        let manifests = crate::core::manifest::find_dev_manifests(c.get_development_path().as_ref().unwrap())?;
+        let manifests = crate::core::manifest::IpManifest::detect_all(c.get_development_path().as_ref().unwrap())?;
         let ip_manifest = crate::core::ip::find_ip(&self.ip.spec, &manifests)?;
         // get the root path to the manifest
-        let mut ip_root = ip_manifest.get_path().clone();
+        let mut ip_root = ip_manifest.0.get_path().clone();
         ip_root.pop();
 
         // gather all version tags matching the version given on command-line

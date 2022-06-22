@@ -86,6 +86,14 @@ impl Context {
         Ok(self)
     }
 
+
+    /// Returns the path to search for vendors.
+    /// 
+    /// Currently only returns ORBIT_HOME/vendor.
+    pub fn get_vendor_path(&self) -> std::path::PathBuf {
+        self.home_path.join("vendor").to_path_buf()
+    }
+
     /// Accesses the cache directory.
     pub fn get_cache_path(&self) -> &std::path::PathBuf {
         &self.cache_path

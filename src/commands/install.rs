@@ -8,7 +8,7 @@ use crate::core::pkgid::PkgId;
 use crate::core::version::Version;
 use crate::util::anyerror::AnyError;
 use crate::core::pkgid::PkgIdError;
-use crate::core::version::VersionError;
+use crate::core::version::{PartialVersion, VersionError};
 
 #[derive(Debug, PartialEq)]
 struct IpSpecVersion {
@@ -19,7 +19,7 @@ struct IpSpecVersion {
 #[derive(Debug, PartialEq)]
 enum InstallVersion {
     Latest,
-    Specific(Version),
+    Specific(PartialVersion),
 }
 
 impl std::str::FromStr for InstallVersion {
@@ -28,7 +28,7 @@ impl std::str::FromStr for InstallVersion {
         if crate::util::strcmp::cmp_ascii_ignore_case(s, "latest") {
             Ok(Self::Latest)
         } else {
-            Ok(Self::Specific(Version::from_str(s)?))
+            Ok(Self::Specific(PartialVersion::from_str(s)?))
         }
     }
 }

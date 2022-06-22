@@ -10,6 +10,115 @@ use std::fmt::Display;
 
 type VerNum = u16;
 
+/// Checks if a partial version `self` umbrellas the full version `ver`.
+pub fn is_compatible(pv: &PartialVersion, ver: &Version) -> bool {
+    if pv.major != ver.major { return false }
+
+    match pv.minor {
+        Some(m) => {
+            if m == ver.minor {
+                match pv.patch {
+                    Some(p) => p == ver.patch,
+                    None => true,
+                }
+            } else {
+                false
+            }
+        }
+        None => true,
+    }
+}
+
+#[derive(Debug, PartialEq, PartialOrd, Clone)]
+pub struct PartialVersion {
+    major: VerNum,
+    minor: Option<VerNum>,
+    patch: Option<VerNum>,
+}
+
+impl PartialVersion {
+    pub fn new() -> Self {
+        PartialVersion { major: 0, minor: None, patch: None }
+    }
+
+    /// Returns the highest compatible version from the list of versions.
+    /// 
+    /// Returns `None` if the list is empty or there are zero that meet the
+    /// criteria.
+    pub fn find_highest<'a>(&self, vers: &'a [Version]) -> Option<&'a Version> {
+        let mut highest = None;
+        vers.iter().for_each(|v| {
+            if is_compatible(self, v) == true && (highest.is_none() || highest.unwrap() < v) {
+                highest = Some(v);
+            }
+        });
+        highest
+    }
+
+    /// Checks if there are 3 specified version numbers.
+    pub fn is_fully_qualified(&self) -> bool {
+        self.minor.is_some() && self.patch.is_some()
+    }
+}
+
+impl Display for PartialVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.major)?;
+        if let Some(m) = self.minor {
+            write!(f, ".{}", m)?;
+            if let Some(p) = self.patch {
+                write!(f, ".{}", p)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl From<PartialVersion> for Version {
+    fn from(pv: PartialVersion) -> Self { 
+        Self { 
+            major: pv.major, 
+            minor: pv.minor.unwrap_or(0), 
+            patch: pv.patch.unwrap_or(0) 
+        }
+    }
+}
+
+impl FromStr for PartialVersion {
+    type Err = VersionError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> { 
+        use VersionError::*;
+
+        let s = s.trim();
+        if s.is_empty() { return Err(EmptyVersion); }
+
+        let mut levels = s.split_terminator('.')
+            .map(|p| { p.parse::<VerNum>() });
+        // @TODO handle invalid parses internally to return what level gave invalid digit?
+        Ok(PartialVersion {
+            major: if let Some(v) = levels.next() {
+                v?
+            } else {
+                return Err(VersionError::MissingMajor);
+            }, 
+            minor: if let Some(v) = levels.next() {
+                Some(v?)
+            } else {
+                None
+            }, 
+            patch: if let Some(v) = levels.next() {
+                if levels.next().is_some() {
+                    return Err(VersionError::ExtraLevels(3+levels.count()));
+                }
+                Some(v?)
+            } else {
+                None
+            }, 
+        })
+    }
+}
+
 // @TODO make `minor` and `patch` fields optional?
 
 #[derive(Debug, PartialEq, PartialOrd, Clone)]
@@ -152,6 +261,82 @@ impl From<ParseIntError> for VersionError {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    mod partial_ver {
+        use super::*;
+
+        #[test]
+        fn is_compat() {
+            let pv = PartialVersion { major: 1, minor: None, patch: None };
+            let v = Version { major: 1, minor: 2, patch: 3 };
+            assert_eq!(is_compatible(&pv, &v), true);
+
+            let v = Version { major: 2, minor: 1, patch: 3 };
+            assert_eq!(is_compatible(&pv, &v), false);
+
+            let pv = PartialVersion { major: 2, minor: Some(1), patch: None };
+            let v = Version { major: 2, minor: 2, patch: 3 };
+            assert_eq!(is_compatible(&pv, &v), false);
+
+            let v = Version { major: 2, minor: 1, patch: 3 };
+            assert_eq!(is_compatible(&pv, &v), true);
+
+            let v = Version { major: 9, minor: 1, patch: 3 };
+            assert_eq!(is_compatible(&pv, &v), false);
+
+            let pv = PartialVersion { major: 2, minor: Some(1), patch: Some(3) };
+            let v = Version { major: 2, minor: 1, patch: 3 };
+            assert_eq!(is_compatible(&pv, &v), true);
+        }
+
+        #[test]
+        fn display() {
+            let pv = PartialVersion { major: 1, minor: None, patch: None };
+            assert_eq!(pv.to_string(), "1");
+
+            let pv = PartialVersion { major: 1, minor: Some(2), patch: None };
+            assert_eq!(pv.to_string(), "1.2");
+
+            let pv = PartialVersion { major: 1, minor: Some(2), patch: Some(3) };
+            assert_eq!(pv.to_string(), "1.2.3");
+        }
+
+        #[test]
+        fn find_highest() {
+            let pv = PartialVersion { major: 1, minor: None, patch: None };
+            let versions = vec![
+                Version::new().major(2).minor(1).patch(1),
+                Version::new().major(4).minor(2).patch(5),
+                Version::new().major(7).minor(9).patch(1),
+                Version::new().major(1).minor(2).patch(5),
+                Version::new().major(1).minor(3).patch(4),
+                Version::new().major(1).minor(0).patch(0),
+            ];
+            assert_eq!(pv.find_highest(&versions), Some(&Version::new().major(1).minor(3).patch(4)));
+
+            let pv = PartialVersion { major: 4, minor: Some(3), patch: None };
+            assert_eq!(pv.find_highest(&versions), None);
+        }
+
+        #[test]
+        fn from_str() {
+            // valid cases
+            let v = PartialVersion::from_str("1.2.3").unwrap();
+            assert_eq!(v, PartialVersion {
+                major: 1, 
+                minor: Some(2), 
+                patch: Some(3),
+            });
+            assert_eq!(v.is_fully_qualified(), true);
+            let v = PartialVersion::from_str("19.4").unwrap();
+            assert_eq!(v, PartialVersion {
+                major: 19,
+                minor: Some(4),
+                patch: None,
+            });
+            assert_eq!(v.is_fully_qualified(), false);
+        }
+    }
 
     #[test]
     fn new() {

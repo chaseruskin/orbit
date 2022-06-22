@@ -131,6 +131,25 @@ Verifies all checksums match between the lock file and the current machine's cac
 
 -----
 
+### `peek`
+
+SYNOPSIS: `orbit peek [options] <primary-design-unit>`
+
+Inspect an hdl file.
+
+This command allows developers to read more into dependency code. If the requested unit is within the current development IP, it will open the actual file. If the requested file to fetch is from an immutable IP, it will open a temporary copy of the file to prevent a user from accidently modifying the contents and breaking reproducibility.
+
+OPTIONS:
+   `--editor <editor>`: specify the editor to open it with
+
+
+Examples:
+```
+orbit peek gates:nor_gate
+```
+
+-----
+
 ## Roadmap
 
 Next command should be `query`. This will set up for future commands and force

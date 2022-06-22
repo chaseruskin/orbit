@@ -10,6 +10,9 @@ pub struct Ip {
 }
 
 impl Ip {
+    /// Creates a new IP at the `path`
+    /// 
+    /// A manifest is created one level within `path`.
     pub fn new(path: std::path::PathBuf, force: bool) -> Result<Self, Box<dyn Error>> {
         if std::path::Path::exists(&path) == true {
             // remove the entire existing directory

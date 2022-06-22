@@ -14,6 +14,10 @@ impl PkgPart {
     pub fn new() -> Self {
         PkgPart(String::new())
     }
+
+    pub fn to_normal(&self) -> PkgPart {
+        PkgPart(self.0.replace('-', "_").to_lowercase())
+    }
 }
 
 impl AsRef<std::path::Path> for PkgPart {
@@ -62,7 +66,7 @@ impl std::cmp::PartialEq for PkgPart {
     /// insensitive string parts. Different than `==` operator. Converting '-' 
     /// to '_' is also applied.
     fn eq(&self, other: &Self) -> bool {
-        self.0.replace('-', "_").to_lowercase() == other.0.replace('-', "_").to_lowercase()
+        self.to_normal().0 == other.to_normal().0
     }
 
     fn ne(&self, other: &Self) -> bool {
@@ -106,9 +110,9 @@ impl Ord for PkgId {
 impl Hash for PkgId {
     fn hash<H>(&self, state: &mut H) where H: std::hash::Hasher { 
         // must have a complete pkgid
-        self.vendor.as_ref().unwrap().0.hash(state);
-        self.library.as_ref().unwrap().0.hash(state);
-        self.name.0.hash(state);
+        self.vendor.as_ref().unwrap().to_normal().0.hash(state);
+        self.library.as_ref().unwrap().to_normal().0.hash(state);
+        self.name.to_normal().0.hash(state);
     }
 }
 

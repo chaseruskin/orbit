@@ -25,7 +25,43 @@ impl Command for Search {
     }
 }
 
+use std::collections::HashSet;
+
 impl Search {
+    /// Collects all `pkgid` in the user's universe: dev_path, cache, and availability through vendors.
+    pub fn all_pkgid(dev_path: &std::path::PathBuf, cache_path: &std::path::PathBuf, vendor_path: &std::path::PathBuf) -> Result<HashSet<PkgId>, Box<dyn std::error::Error>> {
+        let mut set: HashSet<PkgId> = HashSet::new();
+
+        // collect development IP
+        crate::core::manifest::IpManifest::detect_all(dev_path)?
+            .into_iter()
+            .for_each(|f| {
+                set.insert(f.as_pkgid());
+            });
+        
+        // collect cached IP
+        crate::core::manifest::IpManifest::detect_all(cache_path)?
+            .into_iter()
+            .for_each(|f| {
+                set.insert(f.as_pkgid());
+            });
+
+        // collect available IP
+        crate::core::vendor::VendorManifest::detect_all(vendor_path)?
+            .into_iter()
+            .for_each(|f| {
+                // read off the index table
+                f.read_index()
+                    .into_iter()
+                    .for_each(|pkg| {
+                        set.insert(pkg);
+                    });
+                });
+        
+        Ok(set)
+    }
+
+
     fn run(&self, dev_path: &std::path::PathBuf, cache_path: &std::path::PathBuf, vendor_path: &std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         let mut pkg_map: BTreeMap<PkgId, (bool, bool, bool)> = BTreeMap::new();
 

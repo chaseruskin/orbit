@@ -9,6 +9,7 @@ use crate::core::context::Context;
 use std::error::Error;
 use crate::util::anyerror::AnyError;
 use crate::core::ip::Ip;
+use crate::commands::search::Search;
 
 #[derive(Debug, PartialEq)]
 pub struct New {
@@ -21,9 +22,19 @@ impl Command for New {
     fn exec(&self, context: &Context) -> Result<(), Self::Err> {
         // extra validation for a new IP spec to contain all fields (V.L.N)
         if let Err(e) = self.ip.fully_qualified() {
-            return Err(Box::new(CliError::BadType(Arg::Positional(Positional::new("ip")), e.to_string())));
+            return Err(CliError::BadType(Arg::Positional(Positional::new("ip")), e.to_string()))?
         }
         let root = context.get_development_path().unwrap();
+
+        // verify the pkgid is not taken
+        let ips = Search::all_pkgid(
+            context.get_development_path().unwrap(), 
+            context.get_cache_path(), 
+            &context.get_vendor_path())?;
+        if ips.contains(&self.ip) == true {
+            return Err(AnyError(format!("ip pkgid '{}' already taken", self.ip)))?
+        }
+
         // only pass in necessary variables from context
         self.run(root, context.force)
     }
@@ -39,8 +50,7 @@ impl New {
         } else {
             root.join(self.rel_path.as_ref().unwrap())
         };
-        // @TODO verify the IP_SPEC is not already taken (is unique)
-
+        
         // verify the ip would exist alone on this path (cannot nest IPs)
         {
             // go to the very tip existing component of the path specified

@@ -6,6 +6,7 @@ use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::core::pkgid::PkgId;
+use crate::commands::search::Search;
 
 #[derive(Debug, PartialEq)]
 pub struct Init {
@@ -33,6 +34,19 @@ impl Command for Init {
         if let Err(e) = self.ip.fully_qualified() {
             return Err(Box::new(CliError::BadType(Arg::Positional(Positional::new("ip")), e.to_string())));
         }
+
+        // verify the pkgid is not taken
+        let ips = Search::all_pkgid(
+            c.get_development_path().unwrap(), 
+            c.get_cache_path(), 
+            &c.get_vendor_path())?;
+        if ips.contains(&self.ip) == true {
+            return Err(AnyError(format!("ip pkgid '{}' already taken", self.ip)))?
+        }
+
+        // get dev path join with options
+        let path = c.get_development_path().unwrap();
+
         self.run()
     }
 }

@@ -10,6 +10,18 @@ pub struct Ip {
 }
 
 impl Ip {
+    /// Create an `Ip` located at `path` as its root.
+    pub fn from_path(path: std::path::PathBuf) -> Self {
+        Self {
+            path: path,
+            manifest: IpManifest::new(),
+        }
+    }
+
+    pub fn into_manifest(self) -> IpManifest {
+        self.manifest
+    }
+
     /// Creates a new IP at the `path`
     /// 
     /// A manifest is created one level within `path`.

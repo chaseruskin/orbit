@@ -7,6 +7,7 @@ use crate::core::pkgid;
 use crate::interface::arg::Arg;
 use crate::core::context::Context;
 use std::error::Error;
+use crate::core::pkgid::PkgId;
 use crate::util::anyerror::AnyError;
 use crate::core::ip::Ip;
 use crate::commands::search::Search;
@@ -50,7 +51,7 @@ impl New {
         } else {
             root.join(self.rel_path.as_ref().unwrap())
         };
-        
+
         // verify the ip would exist alone on this path (cannot nest IPs)
         {
             // go to the very tip existing component of the path specified

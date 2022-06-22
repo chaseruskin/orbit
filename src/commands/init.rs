@@ -7,12 +7,13 @@ use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::core::pkgid::PkgId;
 use crate::commands::search::Search;
+use crate::core::ip::Ip;
 
 #[derive(Debug, PartialEq)]
 pub struct Init {
     ip: PkgId,
     repo: Option<String>,
-    path: Option<std::path::PathBuf>,
+    rel_path: Option<std::path::PathBuf>,
 }
 
 impl FromCli for Init {
@@ -20,8 +21,8 @@ impl FromCli for Init {
         cli.set_help(HELP);
         let command = Ok(Init {
             repo: cli.check_option(Optional::new("git").value("repo"))?,
-            path: cli.check_option(Optional::new("path"))?,
-            ip: cli.require_positional(Positional::new(""))?,
+            rel_path: cli.check_option(Optional::new("path"))?,
+            ip: cli.require_positional(Positional::new("ip"))?,
         });
         command
     }
@@ -46,13 +47,93 @@ impl Command for Init {
 
         // get dev path join with options
         let path = c.get_development_path().unwrap();
-
-        self.run()
+        self.run(path, c.get_home_path(), c.force)
     }
 }
 
 impl Init {
-    fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn run(&self, root: &std::path::PathBuf, home: &std::path::PathBuf, force: bool) -> Result<(), Box<dyn std::error::Error>> {
+        // create ip stemming from ORBIT_PATH with default /VENDOR/LIBRARY/NAME
+        let ip_path = if self.rel_path.is_none() {
+            root.join(self.ip.get_vendor().as_ref().unwrap())
+                .join(self.ip.get_library().as_ref().unwrap())
+                .join(self.ip.get_name())
+        } else {
+            root.join(self.rel_path.as_ref().unwrap())
+        };
+
+        if std::path::Path::exists(&ip_path) == true {
+            return Err(AnyError(format!("failed to create new ip because directory '{}' already exists", ip_path.display())))?
+        }
+
+        // verify the ip would exist alone on this path (cannot nest IPs)
+        {
+            // go to the very tip existing component of the path specified
+            let mut path_clone = ip_path.clone();
+            while path_clone.exists() == false {
+                path_clone.pop();
+            }
+            // verify there are no current IPs living on this path
+            if let Some(other_path) = Context::find_ip_path(&path_clone) {
+                return Err(Box::new(AnyError(format!("an IP already exists at path {}", other_path.display()))))
+            }
+        }
+
+        // clone if given a git url
+        if let Some(url) = &self.repo {
+            Self::clone(url, &ip_path, home)?;
+        }
+
+        // create a manifest at the ip path
+        let ip = Ip::from_path(ip_path).create_manifest(&self.ip)?;
+
+        // if there was a repository then add it as remote
+        if let Some(url) = &self.repo {
+            // must be remote link if not on filesystem
+            if std::path::Path::exists(&std::path::PathBuf::from(url)) == false {
+                // write 'repository' key
+                let mut ip = ip.into_manifest();
+                ip.0.write("ip", "repository", url);
+                ip.0.save()?;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Clones a repository `url` to `dest`.
+    /// 
+    /// This function uses the actual git command in order to bypass a lot of issues with using libgit with
+    /// private repositories.
+    pub fn clone(url: &str, dest: &std::path::PathBuf, home: &std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+        let tmp_path = home.join("tmp");
+        if std::path::Path::exists(&tmp_path) == true {
+            std::fs::remove_dir_all(&tmp_path)?
+        }
+        std::fs::create_dir(&tmp_path)?;
+        // @TODO allow user to have env variable to specify how to call git in config.toml
+        let mut proc = std::process::Command::new("git").args(["clone", url]).current_dir(&tmp_path).spawn()?;
+        let exit_code = proc.wait()?;
+        match exit_code.code() {
+            Some(num) => if num != 0 { std::fs::remove_dir_all(&tmp_path)?; Err(AnyError(format!("exited with error code: {}", num)))? } else { () },
+            None => {
+                std::fs::remove_dir_all(&tmp_path)?;
+                return Err(AnyError(format!("terminated by signal")))?
+            }
+        };
+
+        // there should only be one directory in the tmp/ folder
+        for entry in std::fs::read_dir(&tmp_path)? {
+            match std::fs::rename(entry.as_ref().unwrap().path(), &dest) {
+                Ok(()) => (),
+                Err(e) => {
+                    std::fs::remove_dir_all(&tmp_path)?;
+                    return Err(e)?
+                }
+            }
+            std::fs::remove_dir_all(&tmp_path)?;
+            break;
+        }
         Ok(())
     }
 }

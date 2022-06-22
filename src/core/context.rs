@@ -212,6 +212,11 @@ impl Context {
     pub fn get_ip_path(&self) -> Option<&path::PathBuf> {
         self.ip_path.as_ref()
     }
+    
+    /// Access the home path.
+    pub fn get_home_path(&self) -> &path::PathBuf {
+        &self.home_path
+    }
 
     /// Determines if the directory is within a current IP and sets the proper
     /// runtime environment variable.

@@ -5,6 +5,7 @@ use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::core::version::Version;
+use crate::core::extgit::ExtGit;
 
 #[derive(Debug, PartialEq)]
 enum VersionField {
@@ -74,8 +75,6 @@ impl Command for Launch {
             return Err(CliError::BrokenRule(format!("option --message is only allowed when using option --next")))?
         }
 
-        // @TODO verify the repository is up-to-date (git remote update, git remote fetch?)
-
         // grab the version defined in the manifest
         let mut manifest = manifest::IpManifest::from_path(c.get_ip_path().unwrap().to_path_buf().join(manifest::IP_MANIFEST_FILE))?;
         let prev_version = Version::from_str(&manifest.0.read_as_str("ip", "version").unwrap())?;
@@ -108,8 +107,35 @@ impl Command for Launch {
             println!("info: setting {}", version);
             false
         };
-        
+
         // @TODO report if there are unsaved changes in the working directory/staging index?
+
+        // verify the repository's HEAD is up-to-date (git remote update)
+        println!("info: updating git repository remotes...");
+        let extgit = ExtGit::new().command(None).path(c.get_ip_path().unwrap().clone());
+        extgit.remote_update()?;
+
+        let b = git2::Branch::wrap(repo.head()?);
+        let local_name = b.name()?.unwrap().to_string();
+        println!("info: on local git branch '{}'", local_name);
+
+        let up_b = match b.upstream() {
+            Ok(r) => Some(r),
+            Err(_) => None,
+        };
+
+        let push = if let Some(remote_branch) = up_b {
+            let remote_name = remote_branch.name()?.unwrap().to_string();
+            // report if the upstream branch does not match with the local branch
+            if b.into_reference() != remote_branch.into_reference() {
+                return Err(AnyError(format!("git repository's local branch '{}' is not in sync with remote upstream branch '{}'", local_name, remote_name)))?
+            } else {
+                true
+            }
+        } else {
+            false
+        };
+        println!("info: pushing to a remote branch ... {}", {if push { "yes" } else { "no" }});
 
         let ver_str = version.to_string();
         {
@@ -184,6 +210,12 @@ impl Command for Launch {
 
             // update the HEAD reference
             repo.tag_lightweight(&ver_str, &marked_commit.as_object(), false)?;
+
+            // push to remotes
+            if push == true {
+                extgit.push()?;
+            }
+
             println!("info: released version {}", version);
         } else {
             println!("info: version {} is ready for launch\n\nhint: include '--ready' flag to proceed", ver_str);

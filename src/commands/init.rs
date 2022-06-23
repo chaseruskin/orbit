@@ -8,6 +8,7 @@ use crate::util::anyerror::AnyError;
 use crate::core::pkgid::PkgId;
 use crate::commands::search::Search;
 use crate::core::ip::Ip;
+use crate::core::extgit::ExtGit;
 
 #[derive(Debug, PartialEq)]
 pub struct Init {
@@ -81,7 +82,7 @@ impl Init {
 
         // clone if given a git url
         if let Some(url) = &self.repo {
-            Self::clone(url, &ip_path)?;
+            ExtGit::new().command(None).clone(url, &ip_path)?;
         }
 
         // create a manifest at the ip path
@@ -96,45 +97,6 @@ impl Init {
                 ip.0.write("ip", "repository", url);
                 ip.0.save()?;
             }
-        }
-
-        Ok(())
-    }
-
-    /// Clones a repository `url` to `dest`.
-    /// 
-    /// This function uses the actual git command in order to bypass a lot of issues with using libgit with
-    /// private repositories.
-    pub fn clone(url: &str, dest: &std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-        let tmp_path = tempfile::tempdir()?;
-        // @TODO allow user to have env variable to specify how to call git in config.toml
-        let mut proc = std::process::Command::new("git").args(["clone", url]).current_dir(&tmp_path).spawn()?;
-        let exit_code = proc.wait()?;
-        match exit_code.code() {
-            Some(num) => if num != 0 { std::fs::remove_dir_all(&tmp_path)?; Err(AnyError(format!("exited with error code: {}", num)))? } else { () },
-            None => {
-                std::fs::remove_dir_all(&tmp_path)?;
-                return Err(AnyError(format!("terminated by signal")))?
-            }
-        };
-        // create the directories
-        std::fs::create_dir_all(&dest)?;
-
-        // there should only be one directory in the tmp/ folder
-        for entry in std::fs::read_dir(&tmp_path)? {
-            // copy contents into cache slot
-            let temp = entry.unwrap().path();
-            let options = fs_extra::dir::CopyOptions::new();
-            let mut from_paths = Vec::new();
-            for dir_entry in std::fs::read_dir(temp)? {
-                match dir_entry {
-                    Ok(d) => from_paths.push(d.path()),
-                    Err(_) => (),
-                }
-            }
-            // copy rather than rename because of windows issues
-            fs_extra::copy_items(&from_paths, &dest, &options)?;
-            break;
         }
         Ok(())
     }

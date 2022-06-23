@@ -191,5 +191,5 @@ Args:
 Options:
     N/A
 
-Use 'orbit help template' to learn more about the command.
+Use 'orbit help install' to learn more about the command.
 ";

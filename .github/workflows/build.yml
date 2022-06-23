@@ -42,7 +42,9 @@ jobs:
 
       - name: Build orbit binary for linux
         if: ${{ runner.os == 'Linux' }}
-        run: cargo build --release --target x86_64-unknown-linux-musl
+        run: |
+          rustup target add x86_64-unknown-linux-musl
+          cargo build --release --target x86_64-unknown-linux-musl
 
       - name: Test
         run: cargo test

@@ -90,6 +90,10 @@ impl Command for Build {
             None
         };
 
+        if plug.is_none() && self.command.is_none() {
+            return Err(AnyError(format!("pass a plugin or a command for building")))?
+        }
+
         self.run(plug)
     }
 }

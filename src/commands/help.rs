@@ -24,6 +24,7 @@ enum Topic {
     Search,
     Get,
     Init,
+    Query,
 }
 
 impl std::str::FromStr for Topic {
@@ -40,6 +41,7 @@ impl std::str::FromStr for Topic {
             "tree" => Self::Tree,
             "get" => Self::Get,
             "init" => Self::Init,
+            "query" => Self::Query,
             _ => return Err(AnyError(format!("topic '{}' not found", s)))
         })
     }
@@ -50,6 +52,7 @@ impl Topic {
     fn as_manual(&self) -> &str {
         use Topic::*;
         match &self {
+            Query => manuals::query::MANUAL,
             Get => manuals::get::MANUAL,
             Tree => manuals::tree::MANUAL,
             Edit => manuals::edit::MANUAL,

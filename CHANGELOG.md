@@ -13,6 +13,16 @@ pipeline to list only the current verion's changes with every release.
 
 # Changelog
 
+## 0.1.7
+
+### Changes
+- `launch` now checks against remote upstream branch to verify its in sync before approving
+- `build` is forced to either have a plugin or command passed into cli to run
+
+### Documentation
+- adds first steps and plugins pages
+- adds query command manual page
+
 ## 0.1.6
 
 ### Fixes

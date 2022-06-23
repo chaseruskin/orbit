@@ -26,8 +26,8 @@ jobs:
           profile: minimal
           toolchain: stable
 
-      - name: Enable Cargo caching
-        uses: Swatinem/rust-cache@v1
+      # - name: Enable Cargo caching
+      #   uses: Swatinem/rust-cache@v1
 
       - name: Identify target triple and current version
         shell: bash

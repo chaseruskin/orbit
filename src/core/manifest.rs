@@ -5,6 +5,7 @@ use crate::core::pkgid::PkgId;
 use crate::util::anyerror::AnyError;
 use std::path::PathBuf;
 use glob::glob;
+use std::str::FromStr;
 
 #[derive(Debug)]
 pub struct Manifest {
@@ -156,6 +157,26 @@ impl IpManifest {
         Ok(())
     }
 
+    /// Collects all direct dependency IP from the `[dependencies]` table.
+    /// 
+    /// Errors if there is an invalid entry in the table.
+    pub fn get_dependencies(&self) -> Result<Vec<PkgId>, Box<dyn std::error::Error>> {
+        let mut deps = Vec::new();
+        // check if the table exists and return early if does not
+        if self.0.get_doc().contains_table("dependencies") == false {
+            return Ok(deps)
+        }
+        // traverse three tables deep to retrieve V.L.N
+        for v in self.0.get_doc().get("dependencies").unwrap().as_table().unwrap() {
+            for l in v.1.as_table().unwrap() {
+                for n in l.1.as_table().unwrap() {
+                    deps.push(PkgId::from_str(&format!("{}.{}.{}", v.0, l.0, n.0))?);
+                }
+            }
+        }
+        Ok(deps)
+    }
+
     /// Gets the remote repository value, if any.
     pub fn get_repository(&self) -> Option<String> {
         self.0.read_as_str("ip", "repository")
@@ -177,6 +198,7 @@ vendor  = \"\"
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::str::FromStr;
 
     #[test]
     fn new() {
@@ -212,6 +234,44 @@ name = \"n\"
 ".parse::<Document>().unwrap()
         });
         assert_eq!(manifest.has_bare_min().is_err(), true);
+    }
+
+    #[test]
+    fn get_deps() {
+        // empty table
+        let manifest = IpManifest(Manifest {
+            path: tempfile::NamedTempFile::new().unwrap().path().to_path_buf(),
+            document: "\
+[dependencies]
+".parse::<Document>().unwrap()
+        });
+        assert_eq!(manifest.get_dependencies().unwrap(), vec![]);
+
+        // no `dependencies` table
+        let manifest = IpManifest(Manifest {
+            path: tempfile::NamedTempFile::new().unwrap().path().to_path_buf(),
+            document: "\
+[ip]
+name = \"gates\"
+".parse::<Document>().unwrap()
+        });
+        assert_eq!(manifest.get_dependencies().unwrap(), vec![]);
+
+        // `dependencies` table with entries
+        let manifest = IpManifest(Manifest {
+            path: tempfile::NamedTempFile::new().unwrap().path().to_path_buf(),
+            document: "\
+[dependencies]
+ks_tech.rary.gates = \"1.0.0\"
+ks_tech.util.toolbox = \"2\"
+c_rus.eel4712c.lab1 = \"4.2\"
+".parse::<Document>().unwrap()
+        });
+        assert_eq!(manifest.get_dependencies().unwrap(), vec![
+            PkgId::from_str("ks_tech.rary.gates").unwrap(),
+            PkgId::from_str("ks_tech.util.toolbox").unwrap(),
+            PkgId::from_str("c_rus.eel4712c.lab1").unwrap(),
+        ]);
     }
 
 

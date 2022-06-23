@@ -35,6 +35,9 @@
     - [orbit launch](./6_commands/2_launch.md)
     - [orbit search](./6_commands/8_search.md)
     - [orbit install](./6_commands/6_install.md)
+    - [orbit get](./6_commands/9_get.md)
+    - [orbit init](./6_commands/10_init.md)
+    - [orbit query](./6_commands/11_query.md)
 
 
 - [Appendix: Glossary](./glossary.md)

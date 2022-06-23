@@ -70,8 +70,8 @@ impl ExtGit {
     /// 
     /// Runs the command: `git remote update`.
     pub fn remote_update(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let status = std::process::Command::new(&self.command).args(["remote", "update"]).current_dir(&self.root).status()?;
-        match status.code() {
+        let output = std::process::Command::new(&self.command).args(["remote", "update"]).current_dir(&self.root).output()?;
+        match output.status.code() {
             Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { () },
             None => return Err(AnyError(format!("terminated by signal")))?,
         };
@@ -82,14 +82,20 @@ impl ExtGit {
     /// 
     /// Runs the command: `git push` and `git push --tags`.
     pub fn push(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let status = std::process::Command::new(&self.command).args(["push"]).current_dir(&self.root).status()?;
-        match status.code() {
+        let output = std::process::Command::new(&self.command)
+            .args(["push"])
+            .current_dir(&self.root)
+            .output()?; // hide output from reaching stdout by using .output()
+        match output.status.code() {
             Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { () },
             None => return Err(AnyError(format!("terminated by signal")))?,
         };
         // push tags
-        let status = std::process::Command::new(&self.command).args(["push", "--tags"]).current_dir(&self.root).status()?;
-        match status.code() {
+        let output = std::process::Command::new(&self.command)
+            .args(["push", "--tags"])
+            .current_dir(&self.root)
+            .output()?;
+        match output.status.code() {
             Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { () },
             None => return Err(AnyError(format!("terminated by signal")))?,
         };

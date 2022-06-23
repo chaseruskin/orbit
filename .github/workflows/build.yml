@@ -9,7 +9,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-18.04, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Fetch repository
@@ -37,14 +37,7 @@ jobs:
           echo "VERSION=$(python ./tools/evalver.py --version)" >> $GITHUB_ENV
 
       - name: Build orbit binary
-        if: ${{ runner.os != 'Linux' }}
         run: cargo build --release
-
-      - name: Build orbit binary for linux
-        if: ${{ runner.os == 'Linux' }}
-        run: |
-          rustup target add x86_64-unknown-linux-musl
-          cargo build --release --target x86_64-unknown-linux-musl
 
       - name: Test
         run: cargo test

@@ -7,12 +7,14 @@
     - [Upgrading](./1_starting/2_upgrading.md)
 
 - [Tutorials](./2_tutorials/0_tutorials.md)
+    - [First Steps](./2_tutorials/1_first.md)
 
 - [User Guide](./3_user/0_user.md)
     - [Develop IP](./3_user/1_develop_ip.md)
     - [Use IP](./3_user/2_use_ip.md)
     - [Share IP](./3_user/3_share_ip.md)
     - [Use Vendors](./3_user/4_make_vendors.md)
+    - [Create Plugins](./3_user/5_creating_plugins.md)
 
 - [Topic Guide](./4_topic/0_topic.md)
     - [IP](./4_topic/1_ip.md)

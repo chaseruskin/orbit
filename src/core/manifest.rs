@@ -1,10 +1,9 @@
 use toml_edit::Document;
 use std::path;
+use std::path::PathBuf;
 use std::error::Error;
 use crate::core::pkgid::PkgId;
 use crate::util::anyerror::AnyError;
-use std::path::PathBuf;
-use glob::glob;
 use std::str::FromStr;
 
 #[derive(Debug)]
@@ -15,17 +14,58 @@ pub struct Manifest {
     document: Document
 }
 
+/// Takes an iterative approach to iterating through directories to find a file
+/// matching `name`.
+/// 
+/// Stops descending the directories upon finding first match of `name`. The match
+/// must be case-sensitive.
+fn find_file(path: &PathBuf, name: &str) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+    // list of directories to continue to process
+    let mut to_process: Vec<PathBuf> = Vec::new();
+    let mut result = Vec::new();
+    // start at base path
+    if path.is_dir() {
+        to_process.push(path.to_path_buf());
+    // only look at file and exit
+    } else if path.is_file() && path.file_name().unwrap() == name {
+        return Ok(vec![path.to_path_buf()])
+    }
+    // process next directory to read
+    while let Some(entry) = to_process.pop() {
+        // needs to look for more clues deeper in the filesystem
+        if entry.is_dir() {
+            let mut next_to_process = Vec::new();
+            let mut found_file = false;
+            // iterate through all next-level directories for potential future processing
+            for e in std::fs::read_dir(entry)? {
+                let e = e?;
+                if e.file_name().as_os_str() == name {
+                    result.push(e.path());
+                    found_file = true;
+                    break;
+                } else if e.file_type().unwrap().is_dir() == true {
+                    next_to_process.push(e.path());
+                }
+            }
+            // add next-level directories to process
+            if found_file == false {
+                to_process.append(&mut next_to_process);
+            }
+        }
+    }
+    Ok(result)
+}
+
 impl Manifest {
     /// Finds all Manifest files available in the provided path `path`.
     /// 
     /// Errors if on filesystem problems.
     pub fn detect_all(path: &std::path::PathBuf, name: &str) -> Result<Vec<Manifest>, Box<dyn std::error::Error>> {
         let mut result = Vec::new();
-        // walk the ORBIT_PATH directory @TODO recursively walk inner directories until hitting first 'Orbit.toml' file.
-        for entry in glob(&path.join(format!("**/{}", name)).display().to_string()).expect("Failed to read glob pattern") {
-            let e = entry?;
+        // walk the ORBIT_PATH directory @TODO recursively walk inner directories until hitting first 'Orbit.toml' file
+        for entry in find_file(&path, &name)? {
             // read ip_spec from each manifest
-            result.push(Manifest::from_path(e)?);
+            result.push(Manifest::from_path(entry)?);
         }
         Ok(result)
     }

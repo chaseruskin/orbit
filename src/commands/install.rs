@@ -150,7 +150,7 @@ impl Command for Install {
         std::env::set_current_dir(&temp)?;
         // must use '.' as current directory when gathering files for consistent checksum
         let ip_files = crate::core::fileset::gather_current_files(&std::path::PathBuf::from("."));
-        println!("{:?}", ip_files);
+        // println!("{:?}", ip_files);
         let checksum = crate::util::checksum::checksum(&ip_files);
         println!("checksum: {}", checksum);
         // @TODO use luhn algorithm to condense remaining digits in sha256 for directory name

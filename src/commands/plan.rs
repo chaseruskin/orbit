@@ -8,6 +8,7 @@ use std::ffi::OsString;
 use std::io::Write;
 use crate::core::fileset::Fileset;
 use crate::core::vhdl::token::Identifier;
+use crate::core::plugin::Plugin;
 
 #[derive(Debug, PartialEq)]
 pub struct Plan {
@@ -25,10 +26,7 @@ impl Command for Plan {
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // display plugin list and exit
         if self.list == true {
-            println!("Plugins:");
-            for plug in c.get_plugins() {
-                println!("    {}", plug.1)
-            }
+            println!("{}", Plugin::list_plugins(&c.get_plugins().values().into_iter().collect::<Vec<&Plugin>>()));
             return Ok(())
         }
         

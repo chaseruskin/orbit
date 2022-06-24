@@ -57,6 +57,15 @@ impl Plugin {
         }
     }
 
+    /// Creates a string to display a list of plugins.
+    pub fn list_plugins(plugs: &[&Plugin]) -> String {
+        let mut list = String::from("Plugins:\n");
+        for plug in plugs {
+            list += &format!("    {}", plug);
+        }
+        list
+    }
+
     /// Runs the given `command` with the set `args` for the plugin.
     pub fn execute(&self, extra_args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
         let mut proc = std::process::Command::new(&self.command)

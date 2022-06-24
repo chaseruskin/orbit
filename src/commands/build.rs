@@ -7,6 +7,7 @@ use crate::interface::arg::{Optional, Flag};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
+use crate::core::plugin::Plugin;
 
 #[derive(Debug, PartialEq)]
 pub struct Build {
@@ -35,6 +36,12 @@ impl FromCli for Build {
 impl Command for Build {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+        // display plugin list and exit
+        if self.list == true {
+            println!("{}", Plugin::list_plugins(&c.get_plugins().values().into_iter().collect::<Vec<&Plugin>>()));
+            return Ok(())
+        }
+
         // verify only 1 option is provided
         if self.command.is_some() && self.alias.is_some() {
             return Err(AnyError(format!("cannot execute both a plugin and command")))?
@@ -98,7 +105,6 @@ impl Command for Build {
     }
 }
 
-use crate::core::plugin::Plugin;
 use std::process::Stdio;
 
 impl Build {

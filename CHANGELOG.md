@@ -13,6 +13,19 @@ pipeline to list only the current verion's changes with every release.
 
 # Changelog
 
+## 0.1.8
+
+### Changes
+- improves ip manifest detection in filesystem traversal
+- improves checksum generation and stores a local checksum file in its cache slot for internal reference
+
+### Fixes
+- `init` command works properly using existing paths and current working dir
+- `build` command properly displays plugins with `--list`
+
+### Documentation
+- `init` manual accurately reflects its action
+
 ## 0.1.7
 
 ### Changes

@@ -65,7 +65,7 @@ impl Search {
         Ok(set)
     }
 
-    fn assemble_universe(&self, paths: Highway) -> () {
+    fn assemble_universe(&self, _paths: Highway) -> () {
 
     }
 

@@ -24,6 +24,15 @@ enum InstallVersion {
     Specific(PartialVersion),
 }
 
+impl std::fmt::Display for InstallVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Latest => write!(f, "latest"),
+            Self::Specific(v) => write!(f, "{}", v),
+        }
+    }
+}
+
 impl std::str::FromStr for InstallVersion {
     type Err = VersionError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -113,7 +122,7 @@ impl Command for Install {
         if let Some(ver) = &latest_version {
             println!("detected version {}", ver) 
         } else {
-            panic!("no verison found for {:?}", self.ip.version);
+            return Err(AnyError(format!("no version is available under {}", self.ip.version)))?
         }
         let version = latest_version.unwrap();
 

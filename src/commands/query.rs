@@ -29,7 +29,7 @@ impl FromCli for Query {
 
 impl Command for Query {
     type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+    fn exec(&self, _c: &Context) -> Result<(), Self::Err> {
         // collect all ip in the user's universe to see if ip exists
         if self.tags == true {
             println!("{}", format_version_table((None, vec![], vec![])));

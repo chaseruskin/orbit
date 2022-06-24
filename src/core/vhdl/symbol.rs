@@ -4,7 +4,7 @@ use crate::core::lexer::*;
 
 #[derive(Debug, PartialEq)]
 pub enum VHDLSymbol {
-    ContextClause(ContextClause),
+    Context(Context),
     // primary units
     Entity(Entity),
     Package(Package),
@@ -24,7 +24,7 @@ impl VHDLSymbol {
             Self::Package(p) => Some(&p.name),
             Self::PackageBody(_) => None,
             Self::Configuration(c) => Some(&c.name),
-            Self::ContextClause(_) => todo!("capture context id")
+            Self::Context(_) => todo!("capture context id")
         }
     }
 
@@ -74,7 +74,7 @@ impl std::fmt::Display for VHDLSymbol {
             Self::Architecture(a) => format!("architecture {} for entity {}", &a.name, &a.owner),
             Self::Package(p) => format!("package {}", &p),
             Self::Configuration(c) => format!("configuration {} for entity {}", &c.name, &c.owner),
-            Self::ContextClause(_) => format!("context clause"),
+            Self::Context(_) => format!("context clause"),
         };
         write!(f, "{}", s)
     }
@@ -227,7 +227,7 @@ impl Architecture {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum ContextClause {
+pub enum Context {
     LibraryClause,
     UseClause(UseClause),
     // @TODO Context_reference

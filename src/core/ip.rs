@@ -5,6 +5,7 @@ use git2::Repository;
 
 /// An IP is a package that Orbit tracks
 pub struct Ip {
+    /// the root directory of the project (Orbit.toml location)
     path: std::path::PathBuf,
     manifest: IpManifest,
 }
@@ -20,6 +21,13 @@ impl Ip {
 
     pub fn into_manifest(self) -> IpManifest {
         self.manifest
+    }
+
+
+    pub fn collect_units(&self) -> Vec<PrimaryUnit> {
+        // collect all files
+        let files = crate::core::fileset::gather_current_files(&self.path);
+        primaryunit::collect_units(&files)
     }
 
     /// Creates a new IP at the `path`
@@ -74,6 +82,8 @@ use crate::util::overdetsys;
 use crate::core::manifest;
 use crate::core::pkgid::PkgPart;
 use crate::util::anyerror::AnyError;
+
+use super::vhdl::primaryunit::{PrimaryUnit, self};
 
 /// Given a partial/full ip specification `ip_spec`, sift through the manifests
 /// for a possible determined unique solution.

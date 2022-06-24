@@ -129,7 +129,7 @@ impl FromStr for PartialVersion {
 
 // @TODO make `minor` and `patch` fields optional?
 
-#[derive(Debug, PartialEq, PartialOrd, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Clone, Ord, Eq)]
 pub struct Version {
     major: VerNum, 
     minor: VerNum,

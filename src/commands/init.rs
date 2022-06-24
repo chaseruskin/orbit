@@ -46,25 +46,34 @@ impl Command for Init {
             return Err(AnyError(format!("ip pkgid '{}' already taken", self.ip)))?
         }
 
-        // get dev path join with options
-        let path = c.get_development_path().unwrap();
-        self.run(path, c.force)
+        let path = std::env::current_dir()?;
+        self.run(&path, c.force)
     }
 }
 
 impl Init {
+    /// Initializes a project at an exising path.
+    /// 
+    /// Note the path must exist unless cloning from a git repository.
     fn run(&self, root: &std::path::PathBuf, _: bool) -> Result<(), Box<dyn std::error::Error>> {
-        // create ip stemming from ORBIT_PATH with default /VENDOR/LIBRARY/NAME
-        let ip_path = if self.rel_path.is_none() {
-            root.join(self.ip.get_vendor().as_ref().unwrap())
-                .join(self.ip.get_library().as_ref().unwrap())
-                .join(self.ip.get_name())
+        let ip_path = if let Some(extra_path) = &self.rel_path {
+            if extra_path.is_relative() {
+                root.join(extra_path)
+            } else {
+                root.to_path_buf()
+            }
         } else {
-            root.join(self.rel_path.as_ref().unwrap())
+            root.to_path_buf()
         };
 
-        if std::path::Path::exists(&ip_path) == true {
-            return Err(AnyError(format!("failed to create new ip because directory '{}' already exists", ip_path.display())))?
+        // the path must exist if not cloning from a repository
+        if std::path::Path::exists(&ip_path) == false && self.repo.is_none() {
+            return Err(AnyError(format!("failed to initialize ip because directory '{}' does not exist", ip_path.display())))?
+        }
+
+        // cannot clone into a non-empty directory
+        if self.repo.is_some() && ip_path.is_dir() && std::fs::read_dir(&ip_path)?.count() > 0 {
+            return Err(AnyError(format!("failed to initialize ip because directory '{}' is not empty to clone repository into", ip_path.display())))?
         }
 
         // verify the ip would exist alone on this path (cannot nest IPs)
@@ -76,7 +85,7 @@ impl Init {
             }
             // verify there are no current IPs living on this path
             if let Some(other_path) = Context::find_ip_path(&path_clone) {
-                return Err(Box::new(AnyError(format!("an IP already exists at path {}", other_path.display()))))
+                return Err(Box::new(AnyError(format!("an ip already exists at path {}", other_path.display()))))
             }
         }
 

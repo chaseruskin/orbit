@@ -1,5 +1,6 @@
 use crate::Command;
 use crate::FromCli;
+use crate::core::vhdl::primaryunit::PrimaryUnit;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;

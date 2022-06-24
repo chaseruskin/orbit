@@ -13,12 +13,11 @@ orbit init [options] <ip>
 ## __DESCRIPTION__
 
 This command will initialize an existing directory/project into a IP
-recognized by Orbit. 
-
-if the `--git` option is combined with `--path`, then the project will be
-cloned to the specified path. 
-
-If ORBIT_DEV_PATH is set, then path will be relative to the ORBIT_DEV_PATH.
+recognized by Orbit. By default, the current working directory will be
+initialized.
+  
+If the `--git` option is combined with `--path`, then the project will be
+cloned to the specified path. This path must either not exist or be empty. 
 
 ## __OPTIONS__
 

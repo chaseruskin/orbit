@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::Command;
 use crate::FromCli;
 use crate::interface::cli::Cli;
@@ -50,17 +52,24 @@ impl Command for Edit {
                 }
             }
         };
-        self.run(&manifests, &sel_editor)
+        self.run(manifests, &sel_editor)
     }
 }
 
 use crate::core::ip;
 
 impl Edit {
-    fn run(&self, manifests: &[manifest::IpManifest], editor: &str) -> Result<(), Box<dyn std::error::Error>> {
+    fn run(&self, manifests: Vec<manifest::IpManifest>, editor: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let ids: Vec<PkgId> = manifests.iter().map(|f| f.as_pkgid()).collect();
         // find the full ip name among the manifests to get the path
-        let result = ip::find_ip(&self.ip, &manifests)?;
-        let mut root = result.0.get_path().to_owned();
+        let result = ip::find_ip(&self.ip, ids.iter().collect())?;
+        // @TODO improve over simple for-loop
+        let mut root = PathBuf::new();
+        for man in manifests {
+            if &man.as_pkgid() == result {
+                root = man.0.get_path().to_owned()
+            }
+        }
         root.pop();
         // perform the process
         let _ = std::process::Command::new(editor)

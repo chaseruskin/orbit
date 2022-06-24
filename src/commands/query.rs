@@ -10,6 +10,8 @@ use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 
+use super::search;
+
 #[derive(Debug, PartialEq)]
 pub struct Query {
     ip: PkgId,
@@ -29,7 +31,13 @@ impl FromCli for Query {
 
 impl Command for Query {
     type Err = Box<dyn std::error::Error>;
-    fn exec(&self, _c: &Context) -> Result<(), Self::Err> {
+    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+        // collect all manifests
+        let universe = search::Search::all_pkgid((c.get_development_path().unwrap(), c.get_cache_path(), &c.get_vendor_path()))?;
+        let target = crate::core::ip::find_ip(&self.ip, universe.keys().into_iter().collect())?;
+        //let dev_ip = 
+        // find the ip
+
         // collect all ip in the user's universe to see if ip exists
         if self.tags == true {
             println!("{}", format_version_table((None, vec![], vec![])));

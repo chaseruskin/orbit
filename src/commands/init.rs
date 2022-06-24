@@ -42,7 +42,7 @@ impl Command for Init {
             (c.get_development_path().unwrap(), 
             c.get_cache_path(), 
             &c.get_vendor_path()))?;
-        if ips.contains(&self.ip) == true {
+        if ips.contains_key(&self.ip) == true {
             return Err(AnyError(format!("ip pkgid '{}' already taken", self.ip)))?
         }
 

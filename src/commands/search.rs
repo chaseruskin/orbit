@@ -1,5 +1,6 @@
 use crate::Command;
 use crate::FromCli;
+use crate::core::ip::Ip;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Flag};
 use crate::interface::errors::CliError;
@@ -25,29 +26,36 @@ impl Command for Search {
     }
 }
 
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::path::PathBuf;
+use crate::core::manifest::IpManifest;
 
 /// Bundles the 3 levels: DEV_PATH, CACHE, and VENDORS
 type Highway<'a> = (&'a PathBuf, &'a PathBuf, &'a PathBuf);
 
+type IpNode = (Option<IpManifest>, Vec<IpManifest>, Vec<IpManifest>);
+
 impl Search {
     /// Collects all `pkgid` in the user's universe: dev_path, cache, and availability through vendors.
-    pub fn all_pkgid(paths: Highway) -> Result<HashSet<PkgId>, Box<dyn std::error::Error>> {
-        let mut set: HashSet<PkgId> = HashSet::new();
+    pub fn all_pkgid(paths: Highway) -> Result<HashMap<PkgId, IpNode>, Box<dyn std::error::Error>> {
+        let mut set: HashMap<PkgId, IpNode> = HashMap::new();
 
         // collect development IP
         crate::core::manifest::IpManifest::detect_all(paths.0)?
             .into_iter()
             .for_each(|f| {
-                set.insert(f.as_pkgid());
+                set.insert(f.as_pkgid(), (Some(f), vec![], vec![]));
             });
         
         // collect cached IP
         crate::core::manifest::IpManifest::detect_all(paths.1)?
             .into_iter()
             .for_each(|f| {
-                set.insert(f.as_pkgid());
+                if let Some(entry) = set.get_mut(&f.as_pkgid()) {
+                    entry.1.push(f);
+                } else {
+                    set.insert(f.as_pkgid(), (None, vec![f], vec![]));
+                }
             });
 
         // collect available IP
@@ -58,17 +66,17 @@ impl Search {
                 f.read_index()
                     .into_iter()
                     .for_each(|pkg| {
-                        set.insert(pkg);
-                    });
+                    if let Some(entry) = set.get_mut(&pkg) {
+                        // entry.1.push(Ip::from_manifest(pkg));
+                        // @TODO find manifests in vendor dir
+                    } else {
+                         // @TODO find manifests in vendor dir
+                        // set.insert(pkg.as_pkgid(), (None, vec![Ip::from_manifest(f)], vec![]));
+                    }})
                 });
         
         Ok(set)
     }
-
-    fn assemble_universe(&self, _paths: Highway) -> () {
-
-    }
-
 
     fn run(&self, paths: Highway) -> Result<(), Box<dyn std::error::Error>> {
         let mut pkg_map: BTreeMap<PkgId, (bool, bool, bool)> = BTreeMap::new();

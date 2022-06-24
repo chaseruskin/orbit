@@ -91,14 +91,16 @@ impl FromCli for Install {
 
 use git2::Repository;
 use std::str::FromStr;
+use crate::commands::search::Search;
 
 impl Command for Install {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // @TODO gather all manifests from all 3 levels
-        let manifests = crate::core::manifest::IpManifest::detect_all(c.get_development_path().as_ref().unwrap())?;
-        let ip_manifest = crate::core::ip::find_ip(&self.ip.spec, &manifests)?;
+        let universe = Search::all_pkgid((c.get_development_path().unwrap(), c.get_cache_path(), &c.get_vendor_path()))?;
+        let target = crate::core::ip::find_ip(&self.ip.spec, universe.keys().into_iter().collect())?;
         // @ TODO gather all possible versions found for this IP
+        let ip_manifest = &universe.get(target).as_ref().unwrap().0.as_ref().unwrap();
 
         // get the root path to the manifest
         let mut ip_root = ip_manifest.0.get_path().clone();

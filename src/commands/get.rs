@@ -70,6 +70,7 @@ use crate::core::parser::Parse;
 use crate::core::vhdl;
 use crate::core::vhdl::symbol;
 use crate::core::vhdl::token::VHDLTokenizer;
+use crate::commands::search::Search;
 
 impl Command for Get {
     type Err = Box<dyn std::error::Error>;
@@ -80,11 +81,16 @@ impl Command for Get {
             c.get_ip_path().unwrap().clone()
         } else {
             // grab installed ip
-            let installed_ip = manifest::IpManifest::detect_all(c.get_cache_path())?;
+            let universe = Search::all_pkgid((c.get_development_path().unwrap(), c.get_cache_path(), &c.get_vendor_path()))?;
+            let target = crate::core::ip::find_ip(&self.entity_path.ip.as_ref().unwrap(), universe.keys().into_iter().collect())?;
+            
             // find all manifests? and prioritize installed manifests over others but to help with errors/confusion
-            let manifest = ip::find_ip(&self.entity_path.ip.as_ref().unwrap(), &installed_ip)?;
+            let manifest = &universe.get(target).unwrap().1;
+
+            // @TODO determine version to grab
+
             // println!("{}", manifest.as_pkgid());
-            manifest.0.get_path().parent().unwrap().to_path_buf()
+            manifest.first().unwrap().0.get_path().parent().unwrap().to_path_buf()
         };
         // find the IP (@IDEA have flag to indicate if to use the in-dev version vs. cache?)
         // $ orbit get gates:nor_gate --edition latest --edition 1.0.0 --edition dev

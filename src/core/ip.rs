@@ -11,7 +11,16 @@ pub struct Ip {
 }
 
 impl Ip {
-    /// Create an `Ip` located at `path` as its root.
+    /// Creates an `Ip` from a manifest.
+    pub fn from_manifest(manifest: IpManifest) -> Self {
+        Self { 
+            path: manifest.0.get_path().as_path().parent().unwrap().to_path_buf(), 
+            manifest: manifest 
+        }
+    }
+
+
+    /// Creates an `Ip` located at `path` as its root.
     pub fn from_path(path: std::path::PathBuf) -> Self {
         Self {
             path: path,
@@ -23,7 +32,7 @@ impl Ip {
         self.manifest
     }
 
-
+    /// Gathers the list of primary design units for the current ip.
     pub fn collect_units(&self) -> Vec<PrimaryUnit> {
         // collect all files
         let files = crate::core::fileset::gather_current_files(&self.path);
@@ -87,9 +96,9 @@ use super::vhdl::primaryunit::{PrimaryUnit, self};
 
 /// Given a partial/full ip specification `ip_spec`, sift through the manifests
 /// for a possible determined unique solution.
-pub fn find_ip<'a>(ip_spec: &PkgId, manifests: &'a [manifest::IpManifest]) -> Result<&'a IpManifest, AnyError> {
+pub fn find_ip<'a, 'b>(ip_spec: &'b PkgId, universe: Vec<&'a PkgId>) -> Result<PkgId, AnyError> {
     // try to find ip name
-    let space: Vec<Vec<PkgPart>> = manifests.iter().map(|f| { f.as_pkgid().into_full_vec().unwrap() }).collect();
+    let space: Vec<Vec<PkgPart>> = universe.iter().map(|f| { f.into_full_vec().unwrap() }).collect();
     let result = match overdetsys::solve(space, ip_spec.iter()) {
         Ok(r) => r,
         Err(e) => match e {
@@ -108,7 +117,7 @@ pub fn find_ip<'a>(ip_spec: &PkgId, manifests: &'a [manifest::IpManifest]) -> Re
 
     let full_ip = PkgId::from_vec(result);
     // find the full ip name among the manifests to get the path
-    Ok(manifests.iter().find(|f| { full_ip == f.as_pkgid() }).unwrap())
+    Ok(universe.iter().find(|&&f| { full_ip == f }).unwrap().clone())
 }
 
 #[derive(Debug)]

@@ -95,35 +95,14 @@ impl Command for Install {
         let mut ip_root = ip_manifest.0.get_path().clone();
         ip_root.pop();
 
-        // gather all version tags matching the version given on command-line
-        let tags = {
-            // this ver_str is needed to keep lifetime of &str for pattern
-            #[allow(unused_assignments)] 
-            let mut ver_str = String::new();
-            let version_pattern: Option<&str> = match &self.ip.version {
-                InstallVersion::Specific(v) => {
-                    ver_str = v.to_pattern_string();
-                    Some(&ver_str)
-                },
-                InstallVersion::Latest => None,
-            };
-            let repo = Repository::open(&ip_root)?;
-            // find the highest fitting version
-            repo.tag_names(version_pattern)?
-        };
-
+        let repo = Repository::open(&ip_root)?;
         // find the specified version for the given ip
         let mut latest_version: Option<Version> = None;
-        tags.into_iter()
-            .filter_map(|f| {
-                if let Some(s) = f {
-                    match Version::from_str(s) {
-                        Ok(v) => Some(v),
-                        Err(_) => None,
-                    }
-                } else {
-                    None
-                }
+        gather_version_tags(&repo)?
+            .into_iter()
+            .filter(|f| match &self.ip.version {
+                InstallVersion::Specific(v) => crate::core::version::is_compatible(v, f),
+                InstallVersion::Latest => true,
             })
             .for_each(|tag| {
                 if latest_version.is_none() || &tag > latest_version.as_ref().unwrap() {
@@ -153,7 +132,6 @@ impl Command for Install {
         // println!("{:?}", ip_files);
         let checksum = crate::util::checksum::checksum(&ip_files);
         println!("checksum: {}", checksum);
-        // @TODO use luhn algorithm to condense remaining digits in sha256 for directory name
 
         // use checksum to create new directory slot
         let cache_slot_name = format!("{}-{}-{}", ip_manifest.as_pkgid().get_name(), version, checksum.to_string().get(0..10).unwrap());
@@ -185,6 +163,19 @@ impl Command for Install {
         std::fs::write(&cache_slot.join(crate::core::fileset::ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
         self.run()
     }
+}
+
+/// Collects all version tags from the given `repo` repository.
+fn gather_version_tags(repo: &Repository) -> Result<Vec<Version>, Box<dyn std::error::Error>> {
+    let tags = repo.tag_names(Some("*.*.*"))?;
+    Ok(tags.into_iter()
+        .filter_map(|f| {
+            match Version::from_str(f?) {
+                Ok(v) => Some(v),
+                Err(_) => None,
+            }
+        })
+        .collect())
 }
 
 impl Install {

@@ -21,33 +21,37 @@ impl Command for Search {
         let dev_path = c.get_development_path().unwrap();
         let cache_path = c.get_cache_path();
         let vendor_path = c.get_vendor_path();
-        self.run(dev_path, cache_path, &vendor_path)
+        self.run((dev_path, cache_path, &vendor_path))
     }
 }
 
 use std::collections::HashSet;
+use std::path::PathBuf;
+
+/// Bundles the 3 levels: DEV_PATH, CACHE, and VENDORS
+type Highway<'a> = (&'a PathBuf, &'a PathBuf, &'a PathBuf);
 
 impl Search {
     /// Collects all `pkgid` in the user's universe: dev_path, cache, and availability through vendors.
-    pub fn all_pkgid(dev_path: &std::path::PathBuf, cache_path: &std::path::PathBuf, vendor_path: &std::path::PathBuf) -> Result<HashSet<PkgId>, Box<dyn std::error::Error>> {
+    pub fn all_pkgid(paths: Highway) -> Result<HashSet<PkgId>, Box<dyn std::error::Error>> {
         let mut set: HashSet<PkgId> = HashSet::new();
 
         // collect development IP
-        crate::core::manifest::IpManifest::detect_all(dev_path)?
+        crate::core::manifest::IpManifest::detect_all(paths.0)?
             .into_iter()
             .for_each(|f| {
                 set.insert(f.as_pkgid());
             });
         
         // collect cached IP
-        crate::core::manifest::IpManifest::detect_all(cache_path)?
+        crate::core::manifest::IpManifest::detect_all(paths.1)?
             .into_iter()
             .for_each(|f| {
                 set.insert(f.as_pkgid());
             });
 
         // collect available IP
-        crate::core::vendor::VendorManifest::detect_all(vendor_path)?
+        crate::core::vendor::VendorManifest::detect_all(paths.2)?
             .into_iter()
             .for_each(|f| {
                 // read off the index table
@@ -61,15 +65,19 @@ impl Search {
         Ok(set)
     }
 
+    fn assemble_universe(&self, paths: Highway) -> () {
 
-    fn run(&self, dev_path: &std::path::PathBuf, cache_path: &std::path::PathBuf, vendor_path: &std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+    }
+
+
+    fn run(&self, paths: Highway) -> Result<(), Box<dyn std::error::Error>> {
         let mut pkg_map: BTreeMap<PkgId, (bool, bool, bool)> = BTreeMap::new();
 
         let default = !(self.cached || self.developing || self.available);
 
         // collect development IP
         if default || self.developing {
-            crate::core::manifest::IpManifest::detect_all(dev_path)?
+            crate::core::manifest::IpManifest::detect_all(paths.0)?
             .into_iter()
             .for_each(|f| {
                 pkg_map.insert(f.as_pkgid(), (true, false, false));
@@ -78,7 +86,7 @@ impl Search {
         
         // collect installed IP
         if default || self.cached {
-            crate::core::manifest::IpManifest::detect_all(cache_path)?
+            crate::core::manifest::IpManifest::detect_all(paths.1)?
             .into_iter()
             .for_each(|f| {
                 let pkg = f.as_pkgid();
@@ -92,7 +100,7 @@ impl Search {
 
         // collect available IP
         if default || self.available {
-            crate::core::vendor::VendorManifest::detect_all(vendor_path)?
+            crate::core::vendor::VendorManifest::detect_all(paths.2)?
                 .into_iter()
                 .for_each(|f| {
                     // read off the index table
@@ -110,8 +118,6 @@ impl Search {
         
         println!("{}", Self::fmt_table(pkg_map));
         Ok(())
-
-        // walk vendor directory to find all ip manifest available
     }
 
     fn fmt_table(catalog: BTreeMap<PkgId, (bool, bool, bool)>) -> String {

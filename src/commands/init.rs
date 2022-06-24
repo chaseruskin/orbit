@@ -39,9 +39,9 @@ impl Command for Init {
 
         // verify the pkgid is not taken
         let ips = Search::all_pkgid(
-            c.get_development_path().unwrap(), 
+            (c.get_development_path().unwrap(), 
             c.get_cache_path(), 
-            &c.get_vendor_path())?;
+            &c.get_vendor_path()))?;
         if ips.contains(&self.ip) == true {
             return Err(AnyError(format!("ip pkgid '{}' already taken", self.ip)))?
         }

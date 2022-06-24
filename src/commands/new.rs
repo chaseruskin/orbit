@@ -28,9 +28,9 @@ impl Command for New {
 
         // verify the pkgid is not taken
         let ips = Search::all_pkgid(
-            context.get_development_path().unwrap(), 
+            (context.get_development_path().unwrap(), 
             context.get_cache_path(), 
-            &context.get_vendor_path())?;
+            &context.get_vendor_path()))?;
         if ips.contains(&self.ip) == true {
             return Err(AnyError(format!("ip pkgid '{}' already taken", self.ip)))?
         }

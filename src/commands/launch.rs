@@ -41,7 +41,7 @@ impl FromCli for Launch {
         let command = Ok(Launch {
             ready: cli.check_flag(Flag::new("ready"))?,
             next: cli.check_option(Optional::new("next").value("version"))?,
-            message: cli.check_option(Optional::new("message"))?,
+            message: cli.check_option(Optional::new("message").switch('m'))?,
         });
         command
     }
@@ -238,9 +238,9 @@ Usage:
     orbit launch [options]
 
 Options:
-    --ready              proceed with the launch process
-    --next <version>     semver version or 'major', 'minor', or 'patch'
-    --message <message>  message to apply to the commit when using '--next'
+    --ready                 proceed with the launch process
+    --next <version>        semver version or 'major', 'minor', or 'patch'
+    --message, -m <message> message to apply to the commit when using '--next'
 
 Use 'orbit help launch' to learn more about the command.
 ";

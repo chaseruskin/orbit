@@ -38,7 +38,7 @@ in the Orbit.toml manifest to determine the next increment.
 `--next <version>`  
       declare the next version or 'major', 'minor', or 'patch' increment
  
-`--message <message>`  
+`--message, -m <message>`  
       override the default Orbit commit message when using '--next'
 
 ## __EXAMPLES__

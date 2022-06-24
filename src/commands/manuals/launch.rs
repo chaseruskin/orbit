@@ -32,7 +32,7 @@ OPTIONS
     --next <version>  
           declare the next version or 'major', 'minor', or 'patch' increment
      
-    --message <message>  
+    --message, -m <message>  
           override the default Orbit commit message when using '--next'
 
 EXAMPLES

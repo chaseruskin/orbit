@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use ignore::Walk;
+use ignore::WalkBuilder;
 
 #[derive(Debug, PartialEq)]
 pub struct Fileset {
@@ -197,12 +197,23 @@ pub fn is_rtl(file: &str) -> bool {
         tb1.matches_with(file, match_opts) == false && tb2.matches_with(file, match_opts) == false
 }
 
+pub const ORBIT_SUM_FILE: &str = ".orbit-checksum";
+
 /// Recursively walks the given `path` and ignores files defined in a .gitignore file.
 /// 
 /// Returns the resulting list of filepath strings. This function silently skips result errors
 /// while walking. The collected set of paths are also standardized to use forward slashes '/'.
+/// 
+/// Ignores ORBIT_SUM_FILE and the .git directory.
 pub fn gather_current_files(path: &std::path::PathBuf) -> Vec<String> {
-    let mut files: Vec<String> = Walk::new(path).filter_map(|result| {
+    let m = WalkBuilder::new(path)
+        .hidden(false)
+        .git_ignore(true)
+        .filter_entry(|p| {
+            if p.file_name() == ORBIT_SUM_FILE || p.file_name() == ".git" { false } else { true }
+        })
+        .build();
+    let mut files: Vec<String> = m.filter_map(|result| {
         match result {
             Ok(entry) => {
                 if entry.path().is_file() {

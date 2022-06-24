@@ -59,6 +59,14 @@ impl PartialVersion {
     pub fn is_fully_qualified(&self) -> bool {
         self.minor.is_some() && self.patch.is_some()
     }
+
+    /// Returns the partial version as a glob-style pattern.
+    pub fn to_pattern_string(&self) -> String {
+        format!("{}.{}.{}", 
+            self.major, 
+            { if self.minor.is_some() { self.minor.unwrap().to_string() } else { "*".to_string() } }, 
+            { if self.patch.is_some() { self.patch.unwrap().to_string() } else { "*".to_string() } })
+    }
 }
 
 impl Display for PartialVersion {

@@ -9,6 +9,8 @@ use crate::core::version::Version;
 use crate::util::anyerror::AnyError;
 use crate::core::pkgid::PkgIdError;
 use crate::core::version::{PartialVersion, VersionError};
+use crate::util::sha256;
+use crate::util::sha256::Sha256Hash;
 
 #[derive(Debug, PartialEq)]
 struct IpSpecVersion {
@@ -84,9 +86,11 @@ use std::str::FromStr;
 impl Command for Install {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
-        // gather all manifests
+        // @TODO gather all manifests from all 3 levels
         let manifests = crate::core::manifest::IpManifest::detect_all(c.get_development_path().as_ref().unwrap())?;
         let ip_manifest = crate::core::ip::find_ip(&self.ip.spec, &manifests)?;
+        // @ TODO gather all possible versions found for this IP
+
         // get the root path to the manifest
         let mut ip_root = ip_manifest.0.get_path().clone();
         ip_root.pop();
@@ -98,7 +102,7 @@ impl Command for Install {
             let mut ver_str = String::new();
             let version_pattern: Option<&str> = match &self.ip.version {
                 InstallVersion::Specific(v) => {
-                    ver_str = v.to_string();
+                    ver_str = v.to_pattern_string();
                     Some(&ver_str)
                 },
                 InstallVersion::Latest => None,
@@ -146,6 +150,7 @@ impl Command for Install {
         std::env::set_current_dir(&temp)?;
         // must use '.' as current directory when gathering files for consistent checksum
         let ip_files = crate::core::fileset::gather_current_files(&std::path::PathBuf::from("."));
+        println!("{:?}", ip_files);
         let checksum = crate::util::checksum::checksum(&ip_files);
         println!("checksum: {}", checksum);
         // @TODO use luhn algorithm to condense remaining digits in sha256 for directory name
@@ -154,7 +159,15 @@ impl Command for Install {
         let cache_slot_name = format!("{}-{}-{}", ip_manifest.as_pkgid().get_name(), version, checksum.to_string().get(0..10).unwrap());
         let cache_slot = c.get_cache_path().join(&cache_slot_name);
         if std::path::Path::exists(&cache_slot) == true {
-            return Err(AnyError(format!("IP {} version {} is already installed", ip_manifest.as_pkgid(), version)))?
+            // verify the installed version is valid
+            if let Some(sha) = Self::get_checksum_proof(&cache_slot) {
+                if sha == checksum {
+                    return Err(AnyError(format!("IP {} version {} is already installed", ip_manifest.as_pkgid(), version)))?
+                }
+            }
+            println!("info: reinstalling due to bad checksum");
+            // blow directory up for re-install
+            std::fs::remove_dir_all(&cache_slot)?;
         }
         std::fs::create_dir(&cache_slot)?;
         // copy contents into cache slot
@@ -168,11 +181,34 @@ impl Command for Install {
         }
         // copy rather than rename because of windows issues
         fs_extra::copy_items(&from_paths, &cache_slot, &options)?;
+        // write the checksum to the directory
+        std::fs::write(&cache_slot.join(crate::core::fileset::ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
         self.run()
     }
 }
 
 impl Install {
+    /// Gets the already calculated checksum from an installed IP from '.orbit-checksum'..
+    /// 
+    /// Returns `None` if the file does not exist, is unable to read into a string, or
+    /// if the sha cannot be parsed.
+    fn get_checksum_proof(p: &std::path::PathBuf) -> Option<Sha256Hash> {
+        let sum_file = p.join(crate::core::fileset::ORBIT_SUM_FILE);
+        if std::path::Path::exists(&sum_file) == false {
+            None
+        } else {
+            match std::fs::read_to_string(&sum_file) {
+                Ok(text) => {
+                    match sha256::Sha256Hash::from_str(&text) {
+                        Ok(sha) => Some(sha),
+                        Err(_) => None,
+                    }
+                }
+                Err(_) => None,
+            }
+        }
+    }
+
     fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
         // todo!()
         Ok(())

@@ -99,8 +99,8 @@ impl Command for Install {
         // @TODO gather all manifests from all 3 levels
         let universe = Search::all_pkgid((c.get_development_path().unwrap(), c.get_cache_path(), &c.get_vendor_path()))?;
         let target = crate::core::ip::find_ip(&self.ip.spec, universe.keys().into_iter().collect())?;
-        // @ TODO gather all possible versions found for this IP
-        let ip_manifest = &universe.get(target).as_ref().unwrap().0.as_ref().unwrap();
+        // @TODO gather all possible versions found for this IP
+        let ip_manifest = &universe.get(&target).as_ref().unwrap().0.as_ref().unwrap();
 
         // get the root path to the manifest
         let mut ip_root = ip_manifest.0.get_path().clone();

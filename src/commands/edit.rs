@@ -66,7 +66,7 @@ impl Edit {
         // @TODO improve over simple for-loop
         let mut root = PathBuf::new();
         for man in manifests {
-            if &man.as_pkgid() == result {
+            if man.as_pkgid() == result {
                 root = man.0.get_path().to_owned()
             }
         }

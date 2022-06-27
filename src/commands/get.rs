@@ -85,7 +85,7 @@ impl Command for Get {
             let target = crate::core::ip::find_ip(&self.entity_path.ip.as_ref().unwrap(), universe.keys().into_iter().collect())?;
             
             // find all manifests? and prioritize installed manifests over others but to help with errors/confusion
-            let manifest = &universe.get(target).unwrap().1;
+            let manifest = &universe.get(&target).unwrap().1;
 
             // @TODO determine version to grab
 

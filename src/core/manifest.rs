@@ -5,6 +5,7 @@ use std::error::Error;
 use crate::core::pkgid::PkgId;
 use crate::util::anyerror::AnyError;
 use std::str::FromStr;
+use crate::core::version::Version;
 
 #[derive(Debug)]
 pub struct Manifest {
@@ -130,6 +131,16 @@ pub const IP_MANIFEST_FILE: &str = "Orbit.toml";
 #[derive(Debug)]
 pub struct IpManifest(pub Manifest);
 
+
+impl std::fmt::Display for IpManifest {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "\
+ip: {}
+summary: {}
+version: {}", self.as_pkgid(), self.get_summary().unwrap_or(""), self.into_version())
+    }
+}
+
 impl IpManifest {
     /// Creates an empty `IpManifest` struct.
     pub fn new() -> Self {
@@ -160,6 +171,19 @@ impl IpManifest {
         PkgId::new().vendor(self.0.get_doc()["ip"]["vendor"].as_str().unwrap()).unwrap()
             .library(self.0.get_doc()["ip"]["library"].as_str().unwrap()).unwrap()
             .name(self.0.get_doc()["ip"]["name"].as_str().unwrap()).unwrap()
+    }
+
+    /// Creates a new `Version` struct from the `version` field.
+    pub fn into_version(&self) -> Version {
+        // @TODO error handling
+        Version::from_str(self.0.get_doc()["ip"]["version"].as_str().unwrap()).unwrap()
+    }
+
+    /// Accesses the summary string.
+    /// 
+    /// Returns `None` if the field does not exist or cannot cast to a str.
+    pub fn get_summary(&self) -> Option<&str> {
+        self.0.get_doc()["ip"].get("summary")?.as_str()
     }
 
     /// Loads data from file as a `Manifest` struct. 

@@ -7,7 +7,7 @@ use std::str::FromStr;
 use std::error::Error;
 use std::fmt::Display;
 
-#[derive(Debug, PartialOrd)]
+#[derive(Debug, PartialOrd, Clone)]
 pub struct PkgPart(String);
 
 impl PkgPart {
@@ -197,9 +197,17 @@ impl PkgId {
     /// Transforms into a complete `Vec`.
     /// 
     /// Errors if the PkgId is not fully qualified.
-    pub fn into_full_vec(self) -> Result<Vec<PkgPart>, PkgIdError> {
+    pub fn into_full_vec(&self) -> Result<Vec<PkgPart>, PkgIdError> {
         self.fully_qualified()?;
-        Ok(vec![self.name, self.library.unwrap(), self.vendor.unwrap()])
+        Ok(vec![self.name.clone(), self.library.as_ref().unwrap().clone(), self.vendor.as_ref().unwrap().clone()])
+    }
+
+    /// Borrows the `PkgId` as a complete `Vec`.
+    /// 
+    /// Errors if the PkgId is not fully qualified.
+    pub fn as_full_vec(&self) -> Result<Vec<&PkgPart>, PkgIdError> {
+        self.fully_qualified()?;
+        Ok(vec![&self.name, self.library.as_ref().unwrap(), self.vendor.as_ref().unwrap()])
     }
 
     /// Transform a vector of `PkgPart` parts into a `PkgId`.
@@ -209,8 +217,7 @@ impl PkgId {
             library: Some(vec.remove(0)),
             vendor: Some(vec.remove(0)),
         }
-    }
-    
+    } 
 }
 
 impl Display for PkgId {

@@ -36,7 +36,7 @@ impl Ip {
     pub fn collect_units(&self) -> Vec<PrimaryUnit> {
         // collect all files
         let files = crate::core::fileset::gather_current_files(&self.path);
-        primaryunit::collect_units(&files)
+        primaryunit::collect_units(&files).into_iter().map(|e| e.0).collect()
     }
 
     /// Creates a new IP at the `path`
@@ -96,9 +96,11 @@ use super::vhdl::primaryunit::{PrimaryUnit, self};
 
 /// Given a partial/full ip specification `ip_spec`, sift through the manifests
 /// for a possible determined unique solution.
-pub fn find_ip<'a, 'b>(ip_spec: &'b PkgId, universe: Vec<&'a PkgId>) -> Result<PkgId, AnyError> {
+/// 
+/// Note: Currently clones each id, possibly look for faster implemtenation avoiding clone.
+pub fn find_ip(ip_spec: &PkgId, universe: Vec<&PkgId>) -> Result<PkgId, AnyError> {
     // try to find ip name
-    let space: Vec<Vec<PkgPart>> = universe.iter().map(|f| { f.into_full_vec().unwrap() }).collect();
+    let space: Vec<Vec<PkgPart>> = universe.into_iter().map(|f| { f.into_full_vec().unwrap() }).collect();
     let result = match overdetsys::solve(space, ip_spec.iter()) {
         Ok(r) => r,
         Err(e) => match e {
@@ -114,10 +116,7 @@ pub fn find_ip<'a, 'b>(ip_spec: &'b PkgId, universe: Vec<&'a PkgId>) -> Result<P
             }
         }
     };
-
-    let full_ip = PkgId::from_vec(result);
-    // find the full ip name among the manifests to get the path
-    Ok(universe.iter().find(|&&f| { full_ip == f }).unwrap().clone())
+    Ok(PkgId::from_vec(result))
 }
 
 #[derive(Debug)]

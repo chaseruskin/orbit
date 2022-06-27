@@ -8,7 +8,7 @@ use crate::core::pkgid::PkgId;
 use crate::core::version::Version;
 use crate::util::anyerror::AnyError;
 use crate::core::pkgid::PkgIdError;
-use crate::core::version::{PartialVersion, VersionError};
+use crate::core::version::{VersionError, AnyVersion};
 use crate::util::sha256;
 use crate::util::sha256::Sha256Hash;
 
@@ -16,36 +16,6 @@ use crate::util::sha256::Sha256Hash;
 struct IpSpecVersion {
     spec: PkgId,
     version: AnyVersion,
-}
-
-#[derive(Debug, PartialEq)]
-enum AnyVersion {
-    Latest,
-    Dev,
-    Specific(PartialVersion),
-}
-
-impl std::fmt::Display for AnyVersion {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Dev => write!(f, "dev"),
-            Self::Latest => write!(f, "latest"),
-            Self::Specific(v) => write!(f, "{}", v),
-        }
-    }
-}
-
-impl std::str::FromStr for AnyVersion {
-    type Err = VersionError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if crate::util::strcmp::cmp_ascii_ignore_case(s, "latest") {
-            Ok(Self::Latest)
-        } else if crate::util::strcmp::cmp_ascii_ignore_case(s, "dev") {
-            Ok(Self::Dev)
-        } else {    
-            Ok(Self::Specific(PartialVersion::from_str(s)?))
-        }
-    }
 }
 
 impl From<PkgIdError> for AnyError {
@@ -127,25 +97,9 @@ impl Command for Install {
         let repo = Repository::open(&ip_root)?;
         // find the specified version for the given ip
         let mut latest_version: Option<Version> = None;
-        gather_version_tags(&repo)?
-            .into_iter()
-            .filter(|f| match &version {
-                AnyVersion::Specific(v) => crate::core::version::is_compatible(v, f),
-                AnyVersion::Latest => true,
-                _ => panic!("dev version cannot be filtered")
-            })
-            .for_each(|tag| {
-                if latest_version.is_none() || &tag > latest_version.as_ref().unwrap() {
-                    latest_version = Some(tag);
-                }
-            });
-
-        if let Some(ver) = &latest_version {
-            println!("detected version {}", ver) 
-        } else {
-            return Err(AnyError(format!("ip '{}' has no version available as {}\n\nTo see all versions try `orbit query {} --tags`", target, version, target)))?
-        }
-        let version = latest_version.unwrap();
+        let space = gather_version_tags(&repo)?;
+        let version = get_target_version(&version, &space, &target)?;
+        println!("detected version {}", version);
 
         // move into temporary directory to compute checksum for the tagged version
         let temp = tempfile::tempdir()?;
@@ -192,6 +146,32 @@ impl Command for Install {
         // write the checksum to the directory
         std::fs::write(&cache_slot.join(crate::core::fileset::ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
         self.run()
+    }
+}
+
+/// Finds the most compatible version matching `ver` among the possible `space`.
+/// 
+/// Errors if no version was found.
+pub fn get_target_version<'a>(ver: &AnyVersion, space: &'a Vec<Version>, target: &PkgId) -> Result<&'a Version, AnyError> {
+    // find the specified version for the given ip
+    let mut latest_version: Option<&Version> = None;
+    space.into_iter()
+    .filter(|f| match &ver {
+        AnyVersion::Specific(v) => crate::core::version::is_compatible(v, f),
+        AnyVersion::Latest => true,
+        _ => panic!("dev version cannot be filtered")
+    })
+    .for_each(|tag| {
+        if latest_version.is_none() || &tag > latest_version.as_ref().unwrap() {
+            latest_version = Some(tag);
+        }
+    });
+    match latest_version {
+        Some(v) => Ok(v),
+        None => Err(AnyError(format!("\
+ip '{}' has no version available as {}
+
+To see all versions try `orbit query {} --tags`", target, ver, target))),
     }
 }
 

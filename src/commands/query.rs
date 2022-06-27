@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use crate::Command;
 use crate::FromCli;
 use crate::core::pkgid::PkgId;
-use crate::core::version::PartialVersion;
+use crate::core::version::AnyVersion;
 use crate::core::version::Version;
 use crate::core::vhdl::primaryunit::PrimaryUnit;
 use crate::interface::cli::Cli;
@@ -19,7 +19,7 @@ pub struct Query {
     ip: PkgId,
     tags: bool,
     units: bool,
-    version: Option<PartialVersion>,
+    version: Option<AnyVersion>,
 }
 
 impl FromCli for Query {
@@ -64,11 +64,11 @@ impl Command for Query {
         }
 
         // @TODO find must compatible version with the partial version
-        let v = self.version.as_ref().unwrap();
+        let v = self.version.as_ref().unwrap_or(&AnyVersion::Latest);
 
-        let soln = v.find_highest(&inst_ver).expect("no match for partial version");
+        let version = crate::commands::install::get_target_version(v, &inst_ver, &target)?;
 
-        let ip = inventory.1.into_iter().find(|f| &f.into_version() == soln).unwrap();
+        let ip = inventory.1.into_iter().find(|f| &f.into_version() == version).unwrap();
 
         let ip = Ip::from_manifest(ip);
 
@@ -77,6 +77,8 @@ impl Command for Query {
             println!("{}", format_units_table(units));
             return Ok(())
         }
+
+        println!("{}", ip.into_manifest());
 
         self.run()
     }

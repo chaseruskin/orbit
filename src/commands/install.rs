@@ -88,7 +88,7 @@ impl FromCli for Install {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.set_help(HELP);
         let command = Ok(Install {
-            version: cli.check_option(Optional::new("ver"))?,
+            version: cli.check_option(Optional::new("ver").switch('v'))?,
             ip: cli.require_positional(Positional::new("ip"))?,
         });
         command
@@ -143,7 +143,7 @@ impl Command for Install {
         if let Some(ver) = &latest_version {
             println!("detected version {}", ver) 
         } else {
-            return Err(AnyError(format!("ip {} no version is available as {}", target, version)))?
+            return Err(AnyError(format!("ip '{}' has no version available as {}\n\nTo see all versions try `orbit query {} --tags`", target, version, target)))?
         }
         let version = latest_version.unwrap();
 

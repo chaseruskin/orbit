@@ -10,7 +10,6 @@ use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
-use crate::util::anyerror::AnyError;
 use crate::core::ip::Ip;
 
 use super::search;
@@ -159,12 +158,10 @@ Args:
     <ip>               the pkgid to request data about
 
 Options:
-    --tags
-    --range <version:version>
-    --install, -i <version>
-    --available, -a <version>
-    --develop, -d,
-    --units
+    --tags                      display the list of possible versions
+    --range <version:version>   narrow the displayed version list
+    --ver, -v <version>         select a particular existing ip version
+    --units                     display primary design units within an ip
 
 Use 'orbit help query' to learn more about the command.
 ";

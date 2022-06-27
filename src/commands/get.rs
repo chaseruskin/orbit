@@ -64,8 +64,6 @@ impl FromCli for Get {
     }
 }
 
-use crate::core::ip;
-use crate::core::manifest;
 use crate::core::parser::Parse;
 use crate::core::vhdl;
 use crate::core::vhdl::symbol;

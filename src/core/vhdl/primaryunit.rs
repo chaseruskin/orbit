@@ -50,7 +50,7 @@ pub fn collect_units(files: &Vec<String>) -> HashMap<PrimaryUnit, String> {
             let contents = std::fs::read_to_string(&source_file).unwrap();
             let symbols = VHDLParser::read(&contents).into_symbols();
             // transform into primary design units
-            let iter = symbols.into_iter().filter_map(|f| {
+            symbols.into_iter().filter_map(|f| {
                 let name = f.as_iden()?.clone();
                 match f {
                     VHDLSymbol::Entity(_) => Some(PrimaryUnit::Entity(Unit{ name: name })),

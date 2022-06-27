@@ -1,6 +1,5 @@
 use crate::Command;
 use crate::FromCli;
-use crate::core::ip::Ip;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Flag};
 use crate::interface::errors::CliError;
@@ -66,7 +65,7 @@ impl Search {
                 f.read_index()
                     .into_iter()
                     .for_each(|pkg| {
-                    if let Some(entry) = set.get_mut(&pkg) {
+                    if let Some(_) = set.get_mut(&pkg) {
                         // entry.1.push(Ip::from_manifest(pkg));
                         // @TODO find manifests in vendor dir
                     } else {

@@ -1,7 +1,7 @@
 use crate::Command;
 use crate::FromCli;
 use crate::interface::cli::Cli;
-use crate::interface::arg::Positional; // Flag, Optional};
+use crate::interface::arg::{Positional, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::core::pkgid::PkgId;
@@ -15,30 +15,34 @@ use crate::util::sha256::Sha256Hash;
 #[derive(Debug, PartialEq)]
 struct IpSpecVersion {
     spec: PkgId,
-    version: InstallVersion,
+    version: AnyVersion,
 }
 
 #[derive(Debug, PartialEq)]
-enum InstallVersion {
+enum AnyVersion {
     Latest,
+    Dev,
     Specific(PartialVersion),
 }
 
-impl std::fmt::Display for InstallVersion {
+impl std::fmt::Display for AnyVersion {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Dev => write!(f, "dev"),
             Self::Latest => write!(f, "latest"),
             Self::Specific(v) => write!(f, "{}", v),
         }
     }
 }
 
-impl std::str::FromStr for InstallVersion {
+impl std::str::FromStr for AnyVersion {
     type Err = VersionError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if crate::util::strcmp::cmp_ascii_ignore_case(s, "latest") {
             Ok(Self::Latest)
-        } else {
+        } else if crate::util::strcmp::cmp_ascii_ignore_case(s, "dev") {
+            Ok(Self::Dev)
+        } else {    
             Ok(Self::Specific(PartialVersion::from_str(s)?))
         }
     }
@@ -62,13 +66,13 @@ impl std::str::FromStr for IpSpecVersion {
         if let Some((pkgid_str, ver_str)) = s.rsplit_once('@') {
             Ok(Self {
                 spec: PkgId::from_str(pkgid_str)?,
-                version: InstallVersion::from_str(ver_str)?,
+                version: AnyVersion::from_str(ver_str)?,
             })
         // if did not find a '@' symbol, default to latest
         } else {
             Ok(Self {
                 spec: PkgId::from_str(s)?,
-                version: InstallVersion::Latest,
+                version: AnyVersion::Latest,
             })
         }
     }
@@ -76,14 +80,16 @@ impl std::str::FromStr for IpSpecVersion {
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
-    ip: IpSpecVersion,
+    ip: PkgId,
+    version: Option<AnyVersion>,
 }
 
 impl FromCli for Install {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.set_help(HELP);
         let command = Ok(Install {
-            ip: cli.require_positional(Positional::new("ip[@version]"))?,
+            version: cli.check_option(Optional::new("ver"))?,
+            ip: cli.require_positional(Positional::new("ip"))?,
         });
         command
     }
@@ -96,9 +102,21 @@ use crate::commands::search::Search;
 impl Command for Install {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+        // verify user is not requesting the dev version to be installed
+        let version = match &self.version {
+            Some(v) => {
+                if v == &AnyVersion::Dev {
+                    return Err(AnyError(format!("{}", "a dev version cannot be installed to the cache")))?
+                } else {
+                    v
+                }
+            },
+            None => &AnyVersion::Latest
+        };
+
         // @TODO gather all manifests from all 3 levels
         let universe = Search::all_pkgid((c.get_development_path().unwrap(), c.get_cache_path(), &c.get_vendor_path()))?;
-        let target = crate::core::ip::find_ip(&self.ip.spec, universe.keys().into_iter().collect())?;
+        let target = crate::core::ip::find_ip(&self.ip, universe.keys().into_iter().collect())?;
         // @TODO gather all possible versions found for this IP
         let ip_manifest = &universe.get(&target).as_ref().unwrap().0.as_ref().unwrap();
 
@@ -111,9 +129,10 @@ impl Command for Install {
         let mut latest_version: Option<Version> = None;
         gather_version_tags(&repo)?
             .into_iter()
-            .filter(|f| match &self.ip.version {
-                InstallVersion::Specific(v) => crate::core::version::is_compatible(v, f),
-                InstallVersion::Latest => true,
+            .filter(|f| match &version {
+                AnyVersion::Specific(v) => crate::core::version::is_compatible(v, f),
+                AnyVersion::Latest => true,
+                _ => panic!("dev version cannot be filtered")
             })
             .for_each(|tag| {
                 if latest_version.is_none() || &tag > latest_version.as_ref().unwrap() {
@@ -124,7 +143,7 @@ impl Command for Install {
         if let Some(ver) = &latest_version {
             println!("detected version {}", ver) 
         } else {
-            return Err(AnyError(format!("no version is available under {}", self.ip.version)))?
+            return Err(AnyError(format!("ip {} no version is available as {}", target, version)))?
         }
         let version = latest_version.unwrap();
 
@@ -149,7 +168,7 @@ impl Command for Install {
         let cache_slot = c.get_cache_path().join(&cache_slot_name);
         if std::path::Path::exists(&cache_slot) == true {
             // verify the installed version is valid
-            if let Some(sha) = Self::get_checksum_proof(&cache_slot) {
+            if let Some(sha) = Self::get_checksum_proof(&cache_slot, 0) {
                 if sha == checksum {
                     return Err(AnyError(format!("IP {} version {} is already installed", ip_manifest.as_pkgid(), version)))?
                 }
@@ -190,18 +209,22 @@ fn gather_version_tags(repo: &Repository) -> Result<Vec<Version>, Box<dyn std::e
 }
 
 impl Install {
-    /// Gets the already calculated checksum from an installed IP from '.orbit-checksum'..
+    /// Gets the already calculated checksum from an installed IP from '.orbit-checksum'.
+    /// 
+    /// This fn can return the different levels of the check-sum, whether its the dynamic
+    /// SHA (level 1) or the original SHA (level 0).
     /// 
     /// Returns `None` if the file does not exist, is unable to read into a string, or
     /// if the sha cannot be parsed.
-    fn get_checksum_proof(p: &std::path::PathBuf) -> Option<Sha256Hash> {
+    fn get_checksum_proof(p: &std::path::PathBuf, level: u8) -> Option<Sha256Hash> {
         let sum_file = p.join(crate::core::fileset::ORBIT_SUM_FILE);
         if std::path::Path::exists(&sum_file) == false {
             None
         } else {
             match std::fs::read_to_string(&sum_file) {
                 Ok(text) => {
-                    match sha256::Sha256Hash::from_str(&text) {
+                    let mut sums = text.split_terminator('\n').skip(level.into());
+                    match sha256::Sha256Hash::from_str(&sums.next().expect("level was out of bounds")) {
                         Ok(sha) => Some(sha),
                         Err(_) => None,
                     }
@@ -218,16 +241,17 @@ impl Install {
 }
 
 const HELP: &str = "\
-Quick help sentence about command.
+Places an immutable version of an ip to the cache for dependency usage.
 
 Usage:
-    orbit install [options] <ip[@version]>
+    orbit install [options] <ip>
 
 Args:
-    <ip[@version]>    ip spec along with optional version tag
+    <ip>    ip spec along with optional version tag
 
 Options:
-    N/A
+    --ver, -v <version>     version to install
+    --force                 install regardless of cache slot occupancy
 
 Use 'orbit help install' to learn more about the command.
 ";

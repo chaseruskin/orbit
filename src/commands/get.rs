@@ -141,6 +141,7 @@ Args:
     <entity-path>       pkgid and entity identifier
 
 Options:
+    --ver, -v <version> ip version to use
     --component, -c     print component declaration
     --signals,   -s     print signal declarations
     --instance,  -i     print instantation

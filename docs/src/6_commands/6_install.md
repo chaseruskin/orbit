@@ -7,7 +7,7 @@ install - store an immutable reference to an ip
 ## __SYNOPSIS__
 
 ```
-orbit install [options] <ip>@[version]...
+orbit install [options] <ip>
 ```
 
 ## __DESCRIPTION__
@@ -17,15 +17,18 @@ By default, the specified version is the 'latest' released version.
 
 ## __OPTIONS__
 
-`--path <path>@[version]...`  
+`--ver, -v <version>`  
+      Version to install
+ 
+`--path <path>`  
       Filesystem path to the ip
  
-`--git <url>@[version]...`  
+`--git <url>`  
       Url to git remote repository for the ip
 
 ## __EXAMPLES__
 
 ```
-orbit install ks-tech.rary.gates@1.0.0
-orbit install --git https://github.com/c-rus/gates.git@latest
+orbit install ks-tech.rary.gates --ver 1.0.0
+orbit install --git https://github.com/c-rus/gates.git -v latest
 ```

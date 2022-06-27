@@ -156,23 +156,22 @@ more information about any given IP. By default, it will return the
 <p>Since IP can exist at 3 different levels, the default IP manifest to return
 data about is the latest installed version. If there is none, it will try
 the latest available version, and then the development version, if those 
-exist.</p>
+exist. </p>
+<p>The <code>--version</code> option can accept a partial or full verion value, the word
+'latest', or 'dev'. Latest will point to the user's highest known version,
+while 'dev' will point to the IP in the DEV_PATH.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;ip&gt;</code><br />
       The fully specified pkgid for the ip</p>
 <p><code>--tags</code><br />
       Return a list of versions and where they are located</p>
-<p><code>--install, -i &lt;version&gt;</code><br />
-      Extract data from a manifest stored in the cache at <version></p>
-<p><code>--available, -a &lt;version&gt;</code><br />
-      Extract data from a manifest stored in a vendor at <version></p>
-<p><code>--develop, -d</code><br />
-      Extract data from a manifest stored on DEV_PATH</p>
+<p><code>--ver, -v &lt;version&gt;</code><br />
+      Extract data from a particular version</p>
 <p><code>--units</code><br />
       List the available primary design units within the IP</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit query ks-tech.rary.gates --tags
-orbit query util.toolbox -i 1.2.3 --units
+orbit query util.toolbox -v 1.2.3 --units
 </code></pre>
 
                     </main>

@@ -36,6 +36,9 @@ jobs:
           echo "TARGET=$(./tools/target-triple.exe)" >> $GITHUB_ENV
           echo "VERSION=$(python ./tools/evalver.py --version)" >> $GITHUB_ENV
 
+      - name: Update manual pages
+        run: python ./tools/rsmangen.py
+
       - name: Build orbit binary
         run: cargo build --release
 

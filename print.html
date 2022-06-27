@@ -858,19 +858,21 @@ orbit launch --next major --ready
 <h2 id="name-7"><a class="header" href="#name-7"><strong>NAME</strong></a></h2>
 <p>install - store an immutable reference to an ip</p>
 <h2 id="synopsis-7"><a class="header" href="#synopsis-7"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit install [options] &lt;ip&gt;@[version]...
+<pre><code>orbit install [options] &lt;ip&gt;
 </code></pre>
 <h2 id="description-7"><a class="header" href="#description-7"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will get move an ip's project folder to the user defined cache.
 By default, the specified version is the 'latest' released version.</p>
 <h2 id="options-7"><a class="header" href="#options-7"><strong>OPTIONS</strong></a></h2>
-<p><code>--path &lt;path&gt;@[version]...</code><br />
+<p><code>--ver, -v &lt;version&gt;</code><br />
+      Version to install</p>
+<p><code>--path &lt;path&gt;</code><br />
       Filesystem path to the ip</p>
-<p><code>--git &lt;url&gt;@[version]...</code><br />
+<p><code>--git &lt;url&gt;</code><br />
       Url to git remote repository for the ip</p>
 <h2 id="examples-7"><a class="header" href="#examples-7"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit install ks-tech.rary.gates@1.0.0
-orbit install --git https://github.com/c-rus/gates.git@latest
+<pre><code>orbit install ks-tech.rary.gates --ver 1.0.0
+orbit install --git https://github.com/c-rus/gates.git -v latest
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-get"><a class="header" href="#orbit-get"><strong>orbit get</strong></a></h1>
 <h2 id="name-8"><a class="header" href="#name-8"><strong>NAME</strong></a></h2>

@@ -168,8 +168,20 @@ impl Entity {
     }
 
     // Generates VHDL component code from the entity.
-    pub fn into_component(&self) -> Component {
-        todo!()
+    pub fn into_component(&self) -> String {
+        let mut result = String::from("component ");
+        result.push_str(&self.get_name().to_string());
+
+        if self.generics.0.len() > 0 {
+            result.push_str("\ngeneric ");
+            result.push_str(&self.generics.0.to_interface_part_string());
+        }
+        if self.ports.0.len() > 0 {
+            result.push_str("\nport ");
+            result.push_str(&self.ports.0.to_interface_part_string());
+        }
+        result.push_str("\nend component;\n");
+        result
     }
 
     /// Generates VHDL signal declaration code from the entity data.

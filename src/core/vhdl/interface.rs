@@ -150,18 +150,20 @@ fn tokens_to_string(tokens: &Vec<VHDLToken>) -> String {
             result.push_str(" ");
         }
     }
-    result.trim_end().to_string()
+    result
 }
 
 impl InterfaceDeclaration {
-    fn into_port_string(&self) -> String {
-        format!("{} : {} {} {} {}", 
+    fn into_interface_string(&self, offset: usize) -> String {
+        format!("{}{5:<width$}: {}{}{} {}", 
             self.identifier, 
-            self.mode.as_ref().unwrap_or(&Keyword::In), 
+            { if self.mode.is_none() && self.initial_keyword.is_some() && self.initial_keyword.as_ref().unwrap() == &Keyword::Signal { "in ".to_owned() } else if self.mode.is_some() { self.mode.as_ref().unwrap().to_string() + " " } else { "".to_owned() } }, 
             tokens_to_string(&self.datatype.0),
             { if self.bus_present { "bus" } else { "" } },
-            { if self.expr.is_some() { tokens_to_string(&self.expr.as_ref().unwrap().0) } else { "".to_string() }},
-        )
+            { if self.expr.is_some() { self.expr.as_ref().unwrap().to_string() } else { "".to_string() }},
+            " ",
+            width=offset-self.identifier.len()+1,
+        ).trim_end().to_string()
     }
 
     /// Creates a declaration string to be copied into architecture declaration parts.
@@ -292,6 +294,20 @@ impl InterfaceDeclarations {
 
     pub fn new() -> Self {
         Self(Vec::new())
+    }
+
+    /// Creates the body of the component list of interface connections.
+    pub fn to_interface_part_string(&self) -> String {
+        // auto-align by first finding longest offset needed
+        let offset = self.longest_identifier();
+        let mut result = String::from("(\n");
+        for port in &self.0 {
+            if port != self.0.first().unwrap() {
+                result.push_str(";\n")
+            }
+            result.push_str(&format!("    {}", port.into_interface_string(offset)));
+        }
+        result + "\n);"
     }
 
     pub fn to_declaration_part_string(&self, def_keyword: Keyword) -> String {

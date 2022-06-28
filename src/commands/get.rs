@@ -109,6 +109,12 @@ impl Get {
         // collect all hdl files and parse them
         let ent = Self::fetch_entity(&self.entity_path.entity, &ip)?;
 
+        // display component declaration
+        if self.component == true {
+            println!("{}", ent.into_component());
+        }
+
+        // display signal declarations
         if self.signals == true {
             let constants = ent.into_constants();
             if constants.is_empty() == false {
@@ -129,7 +135,8 @@ impl Get {
             true => None,
             false => lib
         };
-        // display the instantiation code
+
+        // display instantiation code
         if self.instance == true {
             println!("{}", ent.into_instance("uX", lib));
         }

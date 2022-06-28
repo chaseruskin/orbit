@@ -96,7 +96,6 @@ impl Command for Install {
 
         let repo = Repository::open(&ip_root)?;
         // find the specified version for the given ip
-        let mut latest_version: Option<Version> = None;
         let space = gather_version_tags(&repo)?;
         let version = get_target_version(&version, &space, &target)?;
         println!("detected version {}", version);
@@ -171,7 +170,7 @@ pub fn get_target_version<'a>(ver: &AnyVersion, space: &'a Vec<Version>, target:
         None => Err(AnyError(format!("\
 ip '{}' has no version available as {}
 
-To see all versions try `orbit query {} --tags`", target, ver, target))),
+To see all versions try `orbit probe {} --tags`", target, ver, target))),
     }
 }
 

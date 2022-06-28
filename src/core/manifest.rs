@@ -135,10 +135,15 @@ pub struct IpManifest(pub Manifest);
 impl std::fmt::Display for IpManifest {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "\
-ip: {}
+ip:      {}
 summary: {}
-version: {}", self.as_pkgid(), self.get_summary().unwrap_or(""), self.into_version())
-    }
+version: {}
+size:    {:.2} MB", 
+self.as_pkgid(), 
+self.get_summary().unwrap_or(""), 
+self.into_version(),
+crate::util::filesystem::compute_size(&self.0.get_path().parent().unwrap(), crate::util::filesystem::Unit::MegaBytes).unwrap()
+    )}
 }
 
 impl IpManifest {

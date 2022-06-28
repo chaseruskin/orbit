@@ -22,7 +22,7 @@ fn install() -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-use orbit::util::exepath::get_exe_path;
+use orbit::util::filesystem::get_exe_path;
 use orbit::util::prompt::prompt;
 
 /// unix installation steps
@@ -81,7 +81,7 @@ fn windows() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // 1. compute installation size
-    let megabytes = fs_extra::dir::get_size(&contents)? as f32 / 1000000 as f32;
+    let megabytes = orbit::util::filesystem::compute_size(&contents, orbit::util::filesystem::Unit::MegaBytes)?;
     println!("installation size: {:.2} MB", megabytes);
 
     // 2. configure installation destination

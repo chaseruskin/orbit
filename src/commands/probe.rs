@@ -15,17 +15,17 @@ use crate::core::ip::Ip;
 use super::search;
 
 #[derive(Debug, PartialEq)]
-pub struct Query {
+pub struct Probe {
     ip: PkgId,
     tags: bool,
     units: bool,
     version: Option<AnyVersion>,
 }
 
-impl FromCli for Query {
+impl FromCli for Probe {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.set_help(HELP);
-        let command = Ok(Query {
+        let command = Ok(Probe {
             tags: cli.check_flag(Flag::new("tags"))?,
             units: cli.check_flag(Flag::new("units"))?,
             version: cli.check_option(Optional::new("ver").switch('v'))?,
@@ -35,7 +35,7 @@ impl FromCli for Query {
     }
 }
 
-impl Command for Query {
+impl Command for Probe {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // collect all manifests
@@ -84,7 +84,7 @@ impl Command for Query {
     }
 }
 
-impl Query {
+impl Probe {
     fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }
@@ -151,10 +151,10 @@ fn format_version_table(table: VersionTable) -> String {
 }
 
 const HELP: &str = "\
-Probe information about an ip
+Access information about an ip
 
 Usage:
-    orbit query [options] <ip>
+    orbit probe [options] <ip>
 
 Args:
     <ip>               the pkgid to request data about

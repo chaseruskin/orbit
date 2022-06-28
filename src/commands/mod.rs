@@ -9,6 +9,6 @@ mod edit;
 mod launch;
 mod install;
 mod tree;
-mod query;
+mod probe;
 mod get;
 mod init;

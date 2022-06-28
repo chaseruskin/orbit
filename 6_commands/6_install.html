@@ -147,12 +147,22 @@
 <h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>
 <p>install - store an immutable reference to an ip</p>
 <h2 id="synopsis"><a class="header" href="#synopsis"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit install [options] &lt;ip&gt;
+<pre><code>orbit install [options]
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will get move an ip's project folder to the user defined cache.
-By default, the specified version is the 'latest' released version.</p>
+By default, the specified version is the 'latest' released version orbit can
+identify.</p>
+<p>An ip can be installed from multiple locations. A common method is to
+reference the ip with its pkgid if it is already in your ip catalog. Another
+method is to install by providing the remote git repository url to clone.
+A third method is to provide the local filesystem path to the ip.</p>
+<p>The version is the &quot;snapshot&quot; of the ip's state during that time of
+development. Versions are recognized by git tags following the semver
+specification (major.minor.patch).</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
+<p><code>--ip &lt;ip&gt;</code><br />
+      PkgID to access an orbit ip to install</p>
 <p><code>--ver, -v &lt;version&gt;</code><br />
       Version to install</p>
 <p><code>--path &lt;path&gt;</code><br />

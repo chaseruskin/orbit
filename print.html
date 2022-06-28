@@ -858,12 +858,22 @@ orbit launch --next major --ready
 <h2 id="name-7"><a class="header" href="#name-7"><strong>NAME</strong></a></h2>
 <p>install - store an immutable reference to an ip</p>
 <h2 id="synopsis-7"><a class="header" href="#synopsis-7"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit install [options] &lt;ip&gt;
+<pre><code>orbit install [options]
 </code></pre>
 <h2 id="description-7"><a class="header" href="#description-7"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will get move an ip's project folder to the user defined cache.
-By default, the specified version is the 'latest' released version.</p>
+By default, the specified version is the 'latest' released version orbit can
+identify.</p>
+<p>An ip can be installed from multiple locations. A common method is to
+reference the ip with its pkgid if it is already in your ip catalog. Another
+method is to install by providing the remote git repository url to clone.
+A third method is to provide the local filesystem path to the ip.</p>
+<p>The version is the &quot;snapshot&quot; of the ip's state during that time of
+development. Versions are recognized by git tags following the semver
+specification (major.minor.patch).</p>
 <h2 id="options-7"><a class="header" href="#options-7"><strong>OPTIONS</strong></a></h2>
+<p><code>--ip &lt;ip&gt;</code><br />
+      PkgID to access an orbit ip to install</p>
 <p><code>--ver, -v &lt;version&gt;</code><br />
       Version to install</p>
 <p><code>--path &lt;path&gt;</code><br />
@@ -951,6 +961,10 @@ and 'dev' will point to the IP in the DEV_PATH.</p>
       Extract data from a particular version</p>
 <p><code>--units</code><br />
       List the available primary design units within the IP</p>
+<p><code>--changes</code><br />
+      View the CHANGELOG</p>
+<p><code>--readme</code><br />
+      View the README</p>
 <h2 id="examples-10"><a class="header" href="#examples-10"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit probe ks-tech.rary.gates --tags
 orbit probe util.toolbox -v 1.2.3 --units

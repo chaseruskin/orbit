@@ -20,7 +20,7 @@ fn interpret_integer(s: &str) -> usize {
     number.parse::<usize>().expect("integer can only contain 0..=9 or underline '_'")
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialOrd, Ord)]
 pub enum Identifier {
     Basic(String),
     Extended(String),

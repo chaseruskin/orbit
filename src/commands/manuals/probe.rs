@@ -31,6 +31,12 @@ OPTIONS
      
     --units  
           List the available primary design units within the IP
+     
+    --changes  
+          View the CHANGELOG
+     
+    --readme  
+          View the README
 
 EXAMPLES
     orbit probe ks-tech.rary.gates --tags

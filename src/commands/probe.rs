@@ -23,6 +23,8 @@ pub struct Probe {
     tags: bool,
     units: bool,
     version: Option<AnyVersion>,
+    changelog: bool,
+    readme: bool,
 }
 
 impl FromCli for Probe {
@@ -31,6 +33,8 @@ impl FromCli for Probe {
         let command = Ok(Probe {
             tags: cli.check_flag(Flag::new("tags"))?,
             units: cli.check_flag(Flag::new("units"))?,
+            changelog: cli.check_flag(Flag::new("changes"))?,
+            readme: cli.check_flag(Flag::new("readme"))?,
             version: cli.check_option(Optional::new("ver").switch('v'))?,
             ip: cli.require_positional(Positional::new("ip"))?,
         });
@@ -179,6 +183,8 @@ Options:
     --range <version:version>   narrow the displayed version list
     --ver, -v <version>         select a particular existing ip version
     --units                     display primary design units within an ip
+    --changes                   view the changelog
+    --readme                    view the readme
 
 Use 'orbit help query' to learn more about the command.
 ";

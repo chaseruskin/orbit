@@ -37,6 +37,12 @@ and 'dev' will point to the IP in the DEV_PATH.
  
 `--units`  
       List the available primary design units within the IP
+ 
+`--changes`  
+      View the CHANGELOG
+ 
+`--readme`  
+      View the README
 
 ## __EXAMPLES__
 

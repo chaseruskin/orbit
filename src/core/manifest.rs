@@ -72,7 +72,12 @@ impl Manifest {
     }
 
     /// Reads from the file at `path` and parses into a valid toml document for a `Manifest` struct. 
+    /// 
+    /// Errors if the file does not exist or the TOML parsing fails.
     pub fn from_path(path: PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
+        if std::path::Path::exists(&path) == false {
+            return Err(AnyError(format!("missing manifest file {:?}", path)))?
+        }
         Ok(Self {
             // load the data as a string
             document: std::fs::read_to_string(&path)?.parse::<Document>()?,

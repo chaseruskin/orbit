@@ -9,4 +9,4 @@ pub mod install;
 pub mod search;
 pub mod get;
 pub mod init;
-pub mod query;
+pub mod probe;

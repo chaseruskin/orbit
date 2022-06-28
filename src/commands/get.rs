@@ -9,8 +9,8 @@ use crate::interface::arg::{Positional, Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::core::vhdl::token::{Identifier, IdentifierError};
-use crate::core::pkgid::PkgId;
-use crate::util::anyerror::AnyError;
+use crate::core::pkgid::{PkgIdError, PkgId};
+use crate::util::anyerror::{AnyError, Fault};
 
 /// The complete V.L.N:IDENTIFIER to pinpoint a particular VHDL symbol.
 #[derive(Debug, PartialEq)]
@@ -30,13 +30,19 @@ impl std::str::FromStr for EntityPath {
             })
         } else {
             // require the ':' for consistency
-            return Err(AnyError(format!("missing ':' separator")))
+            return Err(AnyError(format!("missing ':' separator")))?
         }
     }
 }
 
 impl From<IdentifierError> for AnyError {
     fn from(e: IdentifierError) -> Self { 
+        AnyError(e.to_string())
+    }
+}
+
+impl From<PkgIdError> for AnyError {
+    fn from(e: PkgIdError) -> Self { 
         AnyError(e.to_string())
     }
 }
@@ -73,7 +79,6 @@ use crate::core::vhdl;
 use crate::core::vhdl::symbol;
 use crate::core::vhdl::token::VHDLTokenizer;
 use crate::commands::search::Search;
-use crate::util::anyerror::Fault;
 
 impl Command for Get {
     type Err = Box<dyn std::error::Error>;

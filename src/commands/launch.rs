@@ -132,6 +132,17 @@ impl Command for Launch {
 
         let push = if let Some(remote_branch) = up_b {
             let remote_name = remote_branch.name()?.unwrap().to_string();
+
+            // check if a repository field matches the remote url
+            let raw_remotes = repo.remotes()?;
+            let remotes: Vec<&str> = raw_remotes.into_iter().filter_map(|f| f).collect();
+            if remotes.len() > 0 && manifest.get_repository().is_none() {
+                let rem = repo.find_remote(remotes.first().unwrap()).unwrap();
+                if let Some(url) = rem.url() {
+                    return Err(AnyError(format!("Orbit.toml manifest is missing repository entry\n\nAdd `repository = \"{}\"` to the [ip] table in Orbit.toml", url)))?
+                }
+            }
+
             // report if the upstream branch does not match with the local branch
             if b.into_reference() != remote_branch.into_reference() {
                 return Err(AnyError(format!("git repository's local branch '{}' is not in sync with remote upstream branch '{}'", local_name, remote_name)))?
@@ -141,6 +152,7 @@ impl Command for Launch {
         } else {
             false
         };
+
         println!("info: pushing to a remote branch ... {}", {if push { "yes" } else { "no" }});
 
         let ver_str = version.to_string();

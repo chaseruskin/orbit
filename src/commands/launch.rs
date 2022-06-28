@@ -48,6 +48,7 @@ impl FromCli for Launch {
 }
 
 use git2::Repository;
+use colored::Colorize;
 use crate::core::manifest;
 use std::str::FromStr;
 use crate::util::anyerror::AnyError;
@@ -72,7 +73,12 @@ impl Command for Launch {
         let latest_commit = find_last_commit(&repo)?;
 
         if self.message.is_some() && self.next.is_none() {
-            return Err(CliError::BrokenRule(format!("option --message is only allowed when using option --next")))?
+            return Err(CliError::BrokenRule(format!("option '{}' is only allowed when using option {}", "--message".yellow(), "--next".yellow())))?
+        }
+
+        // verify the manifest is checked into version control
+        if repo.is_path_ignored("Orbit.toml")? {
+            return Err(AnyError(format!("manifest 'Orbit.toml' is ignored by version control")))?
         }
 
         // grab the version defined in the manifest

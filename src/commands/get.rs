@@ -79,14 +79,14 @@ impl Command for Get {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // must be in an IP if omitting the pkgid
-        let ip = if self.entity_path.ip.is_none() {
+        let (ip, is_self) = if self.entity_path.ip.is_none() {
             c.goto_ip_path()?;
             
             // error if a version is specified and its referencing the self IP
             if self.version.is_some() {
                 return Err(AnyError(format!("cannot specify a version '{}' when referencing the current ip", "--ver".yellow())))?
             }
-            Ip::init_from_path(c.get_ip_path().unwrap().clone())?
+            (Ip::init_from_path(c.get_ip_path().unwrap().clone())?, true)
         } else {
             // grab installed ip
             let mut universe = Search::all_pkgid((c.get_development_path().unwrap(), c.get_cache_path(), &c.get_vendor_path()))?;
@@ -97,19 +97,43 @@ impl Command for Get {
 
             // @TODO determine version to grab
             let v = self.version.as_ref().unwrap_or(&AnyVersion::Latest);
-            crate::commands::probe::select_ip_from_version(&target, &v, inventory)?
+            (crate::commands::probe::select_ip_from_version(&target, &v, inventory)?, false)
         };
         
-        self.run(ip)
+        self.run(ip, is_self)
     }
 }
 
 impl Get {
-    fn run(&self, ip: Ip) -> Result<(), Fault> {
+    fn run(&self, ip: Ip, is_self: bool) -> Result<(), Fault> {
         // collect all hdl files and parse them
         let ent = Self::fetch_entity(&self.entity_path.entity, &ip)?;
 
-        println!("{:?}", ent);
+        if self.signals == true {
+            let constants = ent.into_constants();
+            if constants.is_empty() == false {
+                println!("{}", constants);
+            }
+            let signals = ent.into_signals();
+            if signals.is_empty() == false {
+                println!("{}", signals);
+            }
+        }  
+        // make the library reference the current working ip 'work' if its internal
+        let lib = match is_self {
+            true => Some(String::from("work")),
+            false => Some(ip.get_manifest().as_pkgid().get_library().as_ref().unwrap().to_string().replace("-", "_"))
+        };
+        // only display the direct entity instantiation code if not providing component code
+        let lib = match self.component {
+            true => None,
+            false => lib
+        };
+        // display the instantiation code
+        if self.instance == true {
+            println!("{}", ent.into_instance("uX", lib));
+        }
+
         Ok(())
     }
 

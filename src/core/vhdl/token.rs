@@ -60,6 +60,13 @@ impl Identifier {
             Self::Basic(_) => false,
         }
     }
+
+    pub fn len(&self) -> usize {
+        match self {
+            Self::Basic(id) => id.len(),
+            Self::Extended(id) => id.len() + 2 + (id.chars().filter(|c| c == &'\\' ).count())
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -142,7 +149,7 @@ impl Display for Identifier {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Comment {
     Single(String),
     Delimited(String),
@@ -157,7 +164,7 @@ impl Comment {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Character(String);
 
 impl Character {
@@ -170,7 +177,7 @@ impl Character {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct BitStrLiteral(String);
 
 impl BitStrLiteral {
@@ -180,7 +187,7 @@ impl BitStrLiteral {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum AbstLiteral {
     Decimal(String),
     Based(String),
@@ -195,7 +202,7 @@ impl AbstLiteral {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Keyword {
     Abs,            // VHDL-1987 LRM - current 
     Access,         // VHDL-1987 LRM - current
@@ -571,7 +578,7 @@ impl Display for Keyword {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Delimiter {
     Ampersand,      // &
     SingleQuote,    // '
@@ -709,7 +716,7 @@ impl Display for Delimiter {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum VHDLToken {
     Comment(Comment),               // (String) 
     Identifier(Identifier),         // (String) ...can be general or extended (case-sensitive) identifier
@@ -743,6 +750,14 @@ impl VHDLToken {
     pub fn take_identifier(self) -> Option<Identifier> {
         match self {
             Self::Identifier(i) => Some(i),
+            _ => None,
+        }
+    }
+
+    /// Takes the keyword from the token.
+    pub fn take_keyword(self) -> Option<Keyword> {
+        match self {
+            Self::Keyword(kw) => Some(kw),
             _ => None,
         }
     }
@@ -2200,9 +2215,10 @@ entity fa is end entity;";
     }
     
     #[test]
-    fn identifier_equality() {
+    fn identifier_equality_and_len() {
         let id0 = Identifier::Basic("fa".to_owned());
         let id1 = Identifier::Basic("Fa".to_owned());
+        assert_eq!(id1.len(), 2);
         assert_eq!(id0, id1);
 
         let id0 = Identifier::Basic("fa".to_owned());
@@ -2216,6 +2232,13 @@ entity fa is end entity;";
         let id0 = Identifier::Extended("vhdl".to_owned()); // written as: \vhdl\
         let id1 = Identifier::Extended("VHDL".to_owned()); // written as: \VHDL\
         assert_ne!(id0, id1);
+        assert_eq!(id1.len(), 6);
+
+        let id0 = Identifier::Extended("I\\D".to_owned()); // written as: \I\\D\
+        assert_eq!(id0.len(), 6);
+        
+        let id0 = Identifier::from_str("\\I\\\\DEN\\").unwrap(); // written as: \I\\D\
+        assert_eq!(id0.len(), 8);
     }
 
     #[test]

@@ -130,19 +130,21 @@ impl Display for PackageBody {
 #[derive(Debug, PartialEq)]
 pub struct Entity {
     name: Identifier,
-    ports: Vec<Statement>,
-    generics: Vec<Statement>,
+    ports: Ports,
+    generics: Generics,
     architectures: Vec<Architecture>,
     refs: Vec<ResReference>,
 }
+
+use crate::core::vhdl::interface::*;
 
 impl Entity {
     /// Returns a new blank `Entity` struct.
     pub fn new() -> Self {
         Self { 
             name: Identifier::new(),
-            ports: Vec::new(), 
-            generics: Vec::new(), 
+            ports: Ports::new(), 
+            generics: Generics::new(), 
             architectures: Vec::new(),
             refs: Vec::new(),
         }
@@ -165,18 +167,46 @@ impl Entity {
         self.refs.iter().map(|f| f).collect()
     }
 
-    // Access the signal list
-    pub fn get_signals(&self) -> Vec<String> {
-        let mut sigs = Vec::with_capacity(self.ports.len());
-        for st_port in &self.ports {
-            sigs.push(String::from("signal ")+&st_port.to_string()+";");
-        }
-        sigs
+    // Generates VHDL component code from the entity.
+    pub fn into_component(&self) -> Component {
+        todo!()
     }
 
-    // 
-    pub fn to_component_code(&self) -> String {
-        todo!();
+    /// Generates VHDL signal declaration code from the entity data.
+    pub fn into_signals(&self) -> String {
+        self.ports.0.to_declaration_part_string(Keyword::Signal)
+    }
+
+    /// Generates VHDL constant declaration code from the entity data.
+    pub fn into_constants(&self) -> String {
+        self.generics.0.to_declaration_part_string(Keyword::Constant)
+    }
+
+    /// Generates VHDL instantiation code from the entity data.
+    pub fn into_instance(&self, inst: &str, library: Option<String>) -> String {
+        let prefix = match library {
+            Some(lib) => lib.to_owned() + ".",
+            None => "".to_owned()
+        };
+        let mut result = String::from(format!("{} : {}{}", inst, prefix, self.get_name()));
+        if self.generics.0.len() > 0 {
+            result.push_str(" generic ");
+            result.push_str(&self.generics.0.to_instantiation_part())
+        }
+        if self.ports.0.len() > 0 {
+            result.push_str(" port ");
+            result.push_str(&self.ports.0.to_instantiation_part())
+        }
+        result.push(';');
+        result
+    }
+
+    /// Generates list of available architectures.
+    /// 
+    /// Note: This fn must be ran after linking entities and architectures in the
+    /// current ip.
+    pub fn get_architectures(&self) -> Architectures {
+        todo!()
     }
 
     /// Parses an `Entity` primary design unit from the entity's identifier to
@@ -186,14 +216,25 @@ impl Entity {
         // take entity name
         let entity_name = tokens.next().take().unwrap().take();
         let (generics, ports) = VHDLSymbol::parse_entity_declaration(tokens);
+
+        let generics = generics
+            .into_iter()
+            .map(|f| f.0 )
+            .collect::<Vec<Vec<Token<VHDLToken>>>>();
+
+        let ports = ports
+            .into_iter()
+            .map(|f| f.0 )
+            .collect::<Vec<Vec<Token<VHDLToken>>>>();
+
         Entity { 
             name: match entity_name {
                     VHDLToken::Identifier(id) => id,
                     _ => panic!("expected an identifier")
             },
             architectures: Vec::new(),
-            generics: generics,
-            ports: ports,
+            generics: Generics(InterfaceDeclarations::from_double_listed_tokens(generics)),
+            ports: Ports(InterfaceDeclarations::from_double_listed_tokens(ports)),
             refs: Vec::new(),
         }
     }

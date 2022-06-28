@@ -13,6 +13,23 @@ pipeline to list only the current verion's changes with every release.
 
 # Changelog
 
+## 0.2.0
+
+### Features
+- view component declarations, signal declarations, and instantiation code using the `get` command
+- version can be specified for `probe` command
+
+### Changes
+- `query` command is now the `probe` command- still functions the same
+- improves interface with using the `install` command and entering arguments
+
+### Fixes
+- verifies Orbit.toml is not ignored by git
+- adds nicer error message with suggestion when no installation version is found
+
+### Documentation
+- adds -m for launch and fixes man page formatting
+
 ## 0.1.8
 
 ### Changes

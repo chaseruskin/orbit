@@ -11,3 +11,5 @@ impl std::fmt::Display for AnyError {
         write!(f, "{}", self.0)
     }
 }
+
+pub type Fault = Box<dyn std::error::Error>;

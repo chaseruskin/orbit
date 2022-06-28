@@ -1,13 +1,18 @@
+use colored::Colorize;
+
 use crate::Command;
 use crate::FromCli;
+use crate::core::ip::Ip;
+use crate::core::version::AnyVersion;
 use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Flag};
+use crate::interface::arg::{Positional, Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::core::vhdl::token::{Identifier, IdentifierError};
 use crate::core::pkgid::PkgId;
 use crate::util::anyerror::AnyError;
 
+/// The complete V.L.N:IDENTIFIER to pinpoint a particular VHDL symbol.
 #[derive(Debug, PartialEq)]
 struct EntityPath {
     ip: Option<PkgId>,
@@ -24,10 +29,8 @@ impl std::str::FromStr for EntityPath {
                 entity: Identifier::from_str(ent)?,
             })
         } else {
-            Ok(Self {
-                ip: None,
-                entity: Identifier::from_str(s)?,
-            })
+            // require the ':' for consistency
+            return Err(AnyError(format!("missing ':' separator")))
         }
     }
 }
@@ -45,8 +48,8 @@ pub struct Get {
     component: bool,
     instance: bool,
     architectures: bool,
+    version: Option<AnyVersion>,
     info: bool,
-    // --edition flag? to specify what version (because --version is taken)
 }
 
 impl FromCli for Get {
@@ -57,6 +60,7 @@ impl FromCli for Get {
             component: cli.check_flag(Flag::new("component").switch('c'))?,
             instance: cli.check_flag(Flag::new("instance").switch('i'))?,
             architectures: cli.check_flag(Flag::new("architecture").switch('a'))?,
+            version: cli.check_option(Optional::new("ver").switch('v'))?,
             info: cli.check_flag(Flag::new("info"))?,
             entity_path: cli.require_positional(Positional::new("entity"))?,
         });
@@ -69,51 +73,49 @@ use crate::core::vhdl;
 use crate::core::vhdl::symbol;
 use crate::core::vhdl::token::VHDLTokenizer;
 use crate::commands::search::Search;
+use crate::util::anyerror::Fault;
 
 impl Command for Get {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // must be in an IP if omitting the pkgid
-        let path = if self.entity_path.ip.is_none() {
+        let ip = if self.entity_path.ip.is_none() {
             c.goto_ip_path()?;
-            c.get_ip_path().unwrap().clone()
+            
+            // error if a version is specified and its referencing the self IP
+            if self.version.is_some() {
+                return Err(AnyError(format!("cannot specify a version '{}' when referencing the current ip", "--ver".yellow())))?
+            }
+            Ip::init_from_path(c.get_ip_path().unwrap().clone())?
         } else {
             // grab installed ip
-            let universe = Search::all_pkgid((c.get_development_path().unwrap(), c.get_cache_path(), &c.get_vendor_path()))?;
+            let mut universe = Search::all_pkgid((c.get_development_path().unwrap(), c.get_cache_path(), &c.get_vendor_path()))?;
             let target = crate::core::ip::find_ip(&self.entity_path.ip.as_ref().unwrap(), universe.keys().into_iter().collect())?;
             
-            // find all manifests? and prioritize installed manifests over others but to help with errors/confusion
-            let manifest = &universe.get(&target).unwrap().1;
+            // find all manifests and prioritize installed manifests over others but to help with errors/confusion
+            let inventory = universe.remove(&target).unwrap().1;
 
             // @TODO determine version to grab
-
-            // println!("{}", manifest.as_pkgid());
-            manifest.first().unwrap().0.get_path().parent().unwrap().to_path_buf()
+            let v = self.version.as_ref().unwrap_or(&AnyVersion::Latest);
+            crate::commands::probe::select_ip_from_version(&target, &v, inventory)?
         };
-        // find the IP (@IDEA have flag to indicate if to use the in-dev version vs. cache?)
-        // $ orbit get gates:nor_gate --edition latest --edition 1.0.0 --edition dev
-        // get the directory where the IP lives
-        // collect all hdl files and parse them
-        let ent = Self::fetch_entity(&self.entity_path.entity, &path)?;
-
-        println!("{:?}", ent);
-        Ok(())
-        // todo!("collect the hdl files for parsing");
-        // get the VHDLSymbol list and find the entity matching the provided name
-        // todo!("get the VHDL symbols and find matching entity");
-
-        // self.run()
+        
+        self.run(ip)
     }
 }
 
 impl Get {
-    fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
-        todo!()
+    fn run(&self, ip: Ip) -> Result<(), Fault> {
+        // collect all hdl files and parse them
+        let ent = Self::fetch_entity(&self.entity_path.entity, &ip)?;
+
+        println!("{:?}", ent);
+        Ok(())
     }
 
     /// Parses through the vhdl files and returns a desired entity struct.
-    fn fetch_entity(iden: &Identifier, ip_path: &std::path::PathBuf) -> Result<symbol::Entity, Box<dyn std::error::Error>> {
-        let files = crate::core::fileset::gather_current_files(ip_path);
+    fn fetch_entity(iden: &Identifier, ip: &Ip) -> Result<symbol::Entity, Box<dyn std::error::Error>> {
+        let files = crate::core::fileset::gather_current_files(ip.get_path());
         for f in files {
             // lex and parse
             if crate::core::fileset::is_vhdl(&f) == true {
@@ -127,7 +129,7 @@ impl Get {
                 }
             }
         }
-        panic!("entity '{}' does not exist in this ip", iden);
+        Err(AnyError(format!("entity '{}' is not found in ip '{}'", iden, ip.get_manifest().as_pkgid())))?
     }
 }
 
@@ -152,16 +154,16 @@ Use 'orbit help get' to learn more about the command.
 ";
 
 
-#[cfg(test)]
-mod test {
-    use super::*;
+// #[cfg(test)]
+// mod test {
+//     // use super::*;
 
-    use std::str::FromStr;
+//     // use std::str::FromStr;
 
-    #[test]
-    #[ignore]
-    fn fetch_entity() {
-        let _ = Get::fetch_entity(&Identifier::from_str("or_gate").unwrap(), &std::path::PathBuf::from("./test/data/gates")).unwrap();
-        panic!("inspect")
-    }
-}
+//     // #[test]
+//     // #[ignore]
+//     // fn fetch_entity() {
+//     //     let _ = Get::fetch_entity(&Identifier::from_str("or_gate").unwrap(), &std::path::PathBuf::from("./test/data/gates")).unwrap();
+//     //     panic!("inspect")
+//     // }
+// }

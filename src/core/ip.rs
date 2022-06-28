@@ -19,13 +19,20 @@ impl Ip {
         }
     }
 
-
     /// Creates an `Ip` located at `path` as its root.
     pub fn from_path(path: std::path::PathBuf) -> Self {
         Self {
             path: path,
             manifest: IpManifest::new(),
         }
+    }
+
+    /// Initializes an `Ip` located at `path` as its root.
+    pub fn init_from_path(path: std::path::PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self {
+            manifest: IpManifest::from_path(path.join(manifest::IP_MANIFEST_FILE).to_path_buf())?,
+            path: path,
+        })
     }
 
     pub fn into_manifest(self) -> IpManifest {
@@ -84,6 +91,10 @@ impl Ip {
 
     pub fn get_path(&self) -> &std::path::PathBuf {
         &self.path
+    }
+
+    pub fn get_manifest(&self) -> &IpManifest {
+        &self.manifest
     }
 }
 

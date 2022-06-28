@@ -36,10 +36,25 @@ impl std::fmt::Display for PrimaryUnit {
     }
 }
 
-#[derive(Debug, PartialEq, Hash, Eq)]
+#[derive(Debug)]
 pub struct Unit {
     name: Identifier,
+    symbol: VHDLSymbol
 }
+
+impl std::hash::Hash for Unit {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+    }
+}
+
+impl PartialEq for Unit {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
+}
+
+impl Eq for Unit {}
 
 use std::collections::HashMap;
 
@@ -50,13 +65,13 @@ pub fn collect_units(files: &Vec<String>) -> HashMap<PrimaryUnit, String> {
             let contents = std::fs::read_to_string(&source_file).unwrap();
             let symbols = VHDLParser::read(&contents).into_symbols();
             // transform into primary design units
-            symbols.into_iter().filter_map(|f| {
-                let name = f.as_iden()?.clone();
-                match f {
-                    VHDLSymbol::Entity(_) => Some(PrimaryUnit::Entity(Unit{ name: name })),
-                    VHDLSymbol::Package(_) => Some(PrimaryUnit::Package(Unit{ name: name})),
-                    VHDLSymbol::Configuration(_) => Some(PrimaryUnit::Configuration(Unit{ name: name })),
-                    VHDLSymbol::Context(_) => Some(PrimaryUnit::Context(Unit{ name: name, })),
+            symbols.into_iter().filter_map(|sym| {
+                let name = sym.as_iden()?.clone();
+                match sym {
+                    VHDLSymbol::Entity(_) => Some(PrimaryUnit::Entity(Unit{ name: name, symbol: sym })),
+                    VHDLSymbol::Package(_) => Some(PrimaryUnit::Package(Unit{ name: name, symbol: sym })),
+                    VHDLSymbol::Configuration(_) => Some(PrimaryUnit::Configuration(Unit{ name: name, symbol: sym })),
+                    VHDLSymbol::Context(_) => Some(PrimaryUnit::Context(Unit{ name: name, symbol: sym })),
                     _ => None,
                 }
             }).for_each(|e| {

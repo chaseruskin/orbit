@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::Command;
 use crate::FromCli;
+use crate::core::manifest::IpManifest;
 use crate::core::pkgid::PkgId;
 use crate::core::version::AnyVersion;
 use crate::core::version::Version;
@@ -11,6 +12,8 @@ use crate::interface::arg::{Positional, Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
+use crate::util::anyerror::AnyError;
+use crate::util::anyerror::Fault;
 
 use super::search;
 
@@ -36,7 +39,7 @@ impl FromCli for Probe {
 }
 
 impl Command for Probe {
-    type Err = Box<dyn std::error::Error>;
+    type Err = Fault;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // collect all manifests
         let mut universe = search::Search::all_pkgid((
@@ -63,14 +66,18 @@ impl Command for Probe {
             return Ok(())
         }
 
-        // @TODO find must compatible version with the partial version
+        // find most compatible version with the partial version
         let v = self.version.as_ref().unwrap_or(&AnyVersion::Latest);
-
-        let version = crate::commands::install::get_target_version(v, &inst_ver, &target)?;
-
-        let ip = inventory.1.into_iter().find(|f| &f.into_version() == version).unwrap();
-
-        let ip = Ip::from_manifest(ip);
+        let ip = match v {
+            AnyVersion::Dev => {
+                // take the manifest from the DEV_PATH
+                match inventory.0 {
+                    Some(i) => Ip::from_manifest(i),
+                    None => return Err(AnyError(format!("ip '{}' is not found on the development path", target)))?
+                }
+            },
+            _ => select_ip_from_version(&target, &v, inventory.1)?
+        };
 
         if self.units == true {
             let units = ip.collect_units();
@@ -85,21 +92,29 @@ impl Command for Probe {
 }
 
 impl Probe {
-    fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn run(&self) -> Result<(), Fault> {
         Ok(())
     }
+}
+
+/// Creates an IP from an ID `target` and version `v` within the given `inventory` of manifests.
+pub fn select_ip_from_version(target: &PkgId, v: &AnyVersion, inventory: Vec<IpManifest>) -> Result<Ip, Fault>  {
+    let inst_ver: Vec<Version> = inventory.iter().map(|f| f.into_version()).collect();
+    let version = crate::commands::install::get_target_version(v, &inst_ver, &target)?;
+    let ip = inventory.into_iter().find(|f| &f.into_version() == version).unwrap();
+    Ok(Ip::from_manifest(ip))
 }
 
 /// Creates a string for to display the primary design units for the particular ip.
 fn format_units_table(table: Vec<PrimaryUnit>) -> String {
     let header = format!("\
-{:<20}{:<12}{:<9}
-{:->20}{3:->12}{3:->9}\n",
+{:<30}{:<12}{:<9}
+{:->30}{3:->12}{3:->9}\n",
                 "Identifier", "Unit", "Public", " ");
     let mut body = String::new();
 
     for unit in table {
-        body.push_str(&format!("{:<20}{:<12}{:<2}\n", 
+        body.push_str(&format!("{:<30}{:<12}{:<2}\n", 
             unit.as_iden().unwrap().to_string(), 
             unit.to_string(), 
             "y"));

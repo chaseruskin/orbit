@@ -794,15 +794,21 @@ be set during any following calls to the 'build' command.</p>
 typically require a blueprint.tsv to be generated. The command also
 should read the data from the blueprint, and then process that data
 (synthesis, simulation, etc.).</p>
+<p>If the previous plan command accepted a plugin option, then Orbit remembers
+for future build commands. It will be the default plugin to use if no
+<code>--plugin</code> or <code>--command</code> is entered for the given command.</p>
 <h2 id="options-4"><a class="header" href="#options-4"><strong>OPTIONS</strong></a></h2>
 <p><code>--plugin &lt;alias&gt;</code><br />
       Plugin to execute</p>
 <p><code>--command &lt;cmd&gt;</code>     
       Command to execute</p>
+<p><code>--list</code>     
+      View available plugins</p>
 <p><code>-- args...</code><br />
       Arguments to pass to the requested plugin</p>
 <h2 id="examples-4"><a class="header" href="#examples-4"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit build xsim -- --waves
+<pre><code>orbit build --plugin xsim -- --waves
+orbit build --command python -- ./tools/synth.py --part x70
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-launch"><a class="header" href="#orbit-launch"><strong>orbit launch</strong></a></h1>
 <h2 id="name-5"><a class="header" href="#name-5"><strong>NAME</strong></a></h2>

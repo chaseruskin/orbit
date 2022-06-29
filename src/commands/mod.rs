@@ -11,4 +11,5 @@ mod install;
 mod tree;
 mod probe;
 mod get;
+mod env;
 mod init;

@@ -10,3 +10,4 @@ pub mod search;
 pub mod get;
 pub mod init;
 pub mod probe;
+pub mod env;

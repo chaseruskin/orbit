@@ -25,12 +25,14 @@ enum Topic {
     Get,
     Init,
     Probe,
+    Env,
 }
 
 impl std::str::FromStr for Topic {
     type Err = AnyError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
+            "env" => Self::Env,
             "new" => Self::New,
             "plan" => Self::Plan,
             "build" => Self::Build,
@@ -52,6 +54,7 @@ impl Topic {
     fn as_manual(&self) -> &str {
         use Topic::*;
         match &self {
+            Env => manuals::env::MANUAL,
             Probe => manuals::probe::MANUAL,
             Get => manuals::get::MANUAL,
             Tree => manuals::tree::MANUAL,

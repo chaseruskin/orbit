@@ -3,6 +3,7 @@ use crate::FromCli;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Positional};
 use crate::interface::errors::CliError;
+use crate::util::environment;
 use crate::util::prompt;
 use crate::core::context::Context;
 
@@ -41,12 +42,12 @@ impl Orbit {
         } else if let Some(c) = &self.command {
             // set up the context (ignores the context passed in)
             let context = Context::new()
-                .home("ORBIT_HOME")?
-                .cache("ORBIT_CACHE")?
+                .home(environment::ORBIT_HOME)?
+                .cache(environment::ORBIT_CACHE)?
                 .settings("config.toml")?
-                .current_ip_dir("ORBIT_IP_PATH")?
-                .build_dir("ORBIT_BUILD_DIR")?
-                .development_path("ORBIT_DEV_PATH")?
+                .current_ip_dir(environment::ORBIT_IP_PATH)?
+                .build_dir(environment::ORBIT_BUILD_DIR)?
+                .development_path(environment::ORBIT_DEV_PATH)?
                 .retain_options(self.force);
             // pass the context to the given command
             c.exec(&context)
@@ -83,6 +84,7 @@ use crate::commands::tree::Tree;
 use crate::commands::get::Get;
 use crate::commands::init::Init;
 use crate::commands::probe::Probe;
+use crate::commands::env::Env;
 
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
@@ -98,6 +100,7 @@ enum OrbitSubcommand {
     Get(Get),
     Init(Init),
     Probe(Probe),
+    Env(Env),
 }
 
 impl FromCli for OrbitSubcommand {
@@ -116,6 +119,7 @@ impl FromCli for OrbitSubcommand {
             "tree",
             "probe",
             "b",
+            "env",
         ])?.as_ref() {
             "get" => Ok(OrbitSubcommand::Get(Get::from_cli(cli)?)),
             "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
@@ -129,6 +133,7 @@ impl FromCli for OrbitSubcommand {
             "install" => Ok(OrbitSubcommand::Install(Install::from_cli(cli)?)),
             "tree" => Ok(OrbitSubcommand::Tree(Tree::from_cli(cli)?)),
             "probe" => Ok(OrbitSubcommand::Probe(Probe::from_cli(cli)?)),
+            "env" => Ok(OrbitSubcommand::Env(Env::from_cli(cli)?)),
             _ => panic!("an unimplemented command was passed through!")
         }
     }
@@ -150,6 +155,7 @@ impl Command for OrbitSubcommand {
             OrbitSubcommand::Tree(c) => c.exec(context),
             OrbitSubcommand::Init(c) => c.exec(context),
             OrbitSubcommand::Probe(c) => c.exec(context),
+            OrbitSubcommand::Env(c) => c.exec(context),
         }
     }
 }
@@ -175,6 +181,7 @@ Commands:
     launch          release a new ip version
     search          browse the ip catalog 
     install         store an immutable reference to an ip
+    env             print Orbit environment information
 
 Options:
     --version       print version information and exit

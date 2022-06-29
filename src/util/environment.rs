@@ -1,5 +1,4 @@
 use crate::util::anyerror::Fault;
-use std::collections::HashSet;
 use std::hash::Hash;
 use std::io::Write;
 use std::io::Read;
@@ -10,6 +9,18 @@ pub struct EnvVar { key: String, value: String }
 impl PartialEq for EnvVar {
     fn eq(&self, other: &Self) -> bool {
         self.key == other.key
+    }
+}
+
+impl Ord for EnvVar {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.key.cmp(&other.key)
+    }
+}
+
+impl PartialOrd for EnvVar {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.key.partial_cmp(&other.key)
     }
 }
 
@@ -63,7 +74,7 @@ impl std::fmt::Display for EnvVar {
 /// 
 /// Silently skips text lines that do not have proper delimiter `=` between key and value.
 pub fn load_environment(root: &std::path::PathBuf) -> Result<Environment, Fault> {
-    let mut envs = HashSet::new();
+    let mut env = Environment::new();
     // read the .env file
     let env_file = root.join(".env");
     if env_file.exists() == true {
@@ -75,11 +86,11 @@ pub fn load_environment(root: &std::path::PathBuf) -> Result<Environment, Fault>
             let result = line.split_once('=');
             // set env variables
             if let Some((name, value)) = result {
-                envs.insert(EnvVar::new().key(name).value(value));
+                env.insert(EnvVar::new().key(name).value(value));
             }
         }
     }
-    Ok(Environment(envs))
+    Ok(env)
 }
 
 /// Sets a set of environment variables, consuming the list.
@@ -101,14 +112,16 @@ pub fn save_environment(env: &Environment, root: &std::path::PathBuf) -> Result<
     Ok(())
 }
 
-use std::collections::hash_set::Iter;
-use std::collections::hash_set::IntoIter;
+use std::collections::btree_set::Iter;
+use std::collections::btree_set::IntoIter;
 
-pub struct Environment(HashSet<EnvVar>);
+use std::collections::btree_set::BTreeSet;
+
+pub struct Environment(BTreeSet<EnvVar>);
 
 impl Environment {
     pub fn new() -> Self {
-        Self(HashSet::new())
+        Self(BTreeSet::new())
     }
 
     pub fn insert(&mut self, var: EnvVar) -> bool {
@@ -124,7 +137,7 @@ impl Environment {
     }
 
     pub fn from_vec(vec: Vec<EnvVar>) -> Self {
-        let mut inner = HashSet::new();
+        let mut inner = BTreeSet::new();
         vec.into_iter().for_each(|e| { inner.insert(e); () } );
         Self(inner)
     }
@@ -139,4 +152,9 @@ pub const ORBIT_PLUGIN: &str = "ORBIT_PLUGIN";
 pub const ORBIT_TOP: &str = "ORBIT_TOP";
 pub const ORBIT_BENCH: &str = "ORBIT_BENCH";
 pub const ORBIT_BUILD_DIR: &str = "ORBIT_BUILD_DIR";
+pub const ORBIT_CACHE: &str = "ORBIT_CACHE";
+pub const ORBIT_HOME: &str = "ORBIT_HOME";
+pub const ORBIT_IP_PATH: &str = "ORBIT_IP_PATH";
+pub const ORBIT_DEV_PATH: &str = "ORBIT_DEV_PATH";
+
 pub const ORBIT_ENV_PREFIX: &str = "ORBIT_ENV_";

@@ -39,6 +39,7 @@
     - [orbit install](./6_commands/6_install.md)
     - [orbit get](./6_commands/9_get.md)
     - [orbit init](./6_commands/10_init.md)
-    - [orbit query](./6_commands/11_probe.md)
+    - [orbit probe](./6_commands/11_probe.md)
+    - [orbit env](./6_commands/12_env.md)
 
 - [Appendix: Glossary](./glossary.md)

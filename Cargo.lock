@@ -818,7 +818,7 @@ dependencies = [
 
 [[package]]
 name = "orbit"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "colored",
  "fs_extra",

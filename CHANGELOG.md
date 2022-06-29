@@ -9,9 +9,26 @@ Any section under a version must begin wtih 3 pound symbols '###'.
 
 This is important for the auto-changelog extraction occuring during the CI/CD 
 pipeline to list only the current verion's changes with every release. 
+
+Add `- unreleased` along the next future version to prevent CI/CD from triggering release mechanism.
 -->
 
 # Changelog
+
+## 0.2.1 - unreleased
+
+### Features
+- print environment information with `env` command
+- allows `b` as shortcut to `build` command
+- `plan` command now saves the plugin it was called with (if any). In this case the next future calls to `build` can opt out of specifying a plugin to default to the one used during the previous `plan`.
+
+### Changes
+- install accepts multiple methods to install from (--path, --git, --ip)
+- `launch` checks if a remote repository is entered in the manifest if the git repository for that ip has one
+
+### Fixes
+- `probe --units` now displays units in alphabetical order
+- `--list` for printing plugins now adds in newlines between every plugin
 
 ## 0.2.0
 

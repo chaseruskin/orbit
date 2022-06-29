@@ -76,12 +76,13 @@ impl Command for Build {
         // load from .env file
         let envs = crate::util::environment::load_environment(&c.get_ip_path().unwrap().join(c.get_build_dir()))?;
 
-        // check if ORBIT_PLUGIN was set
+        // check if ORBIT_PLUGIN was set and no command option was set
         let alias = match &self.alias {
             Some(n) => Some(n.as_str()),
             None => {
                 if let Some(plug) = envs.get(environment::ORBIT_PLUGIN) {
-                    Some(plug.get_value())
+                    // verify there was no command option to override default plugin call
+                    if self.command.is_none() { Some(plug.get_value()) } else { None }
                 } else {
                     None
                 }

@@ -61,7 +61,7 @@ impl Plugin {
     pub fn list_plugins(plugs: &[&Plugin]) -> String {
         let mut list = String::from("Plugins:\n");
         for plug in plugs {
-            list += &format!("    {}", plug);
+            list += &format!("    {}\n", plug);
         }
         list
     }

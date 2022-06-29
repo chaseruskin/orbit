@@ -11,6 +11,10 @@ DESCRIPTION
     typically require a blueprint.tsv to be generated. The command also
     should read the data from the blueprint, and then process that data
     (synthesis, simulation, etc.).
+      
+    If the previous plan command accepted a plugin option, then Orbit remembers
+    for future build commands. It will be the default plugin to use if no
+    --plugin or --command is entered for the given command.
 
 OPTIONS
     --plugin <alias>  
@@ -18,10 +22,14 @@ OPTIONS
      
     --command <cmd>     
           Command to execute
+      
+    --list     
+          View available plugins
      
     -- args...  
           Arguments to pass to the requested plugin
 
 EXAMPLES
-    orbit build xsim -- --waves
+    orbit build --plugin xsim -- --waves
+    orbit build --command python -- ./tools/synth.py --part x70
 ";

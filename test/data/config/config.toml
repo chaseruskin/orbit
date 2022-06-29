@@ -1,0 +1,12 @@
+include = [
+    "additional/config.toml"
+]
+
+
+[core]
+editor = "code"
+path = "base/path"
+
+
+[[plugin]]
+alias = "vivado"

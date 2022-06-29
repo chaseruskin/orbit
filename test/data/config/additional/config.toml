@@ -1,0 +1,13 @@
+[core]
+editor = "vim"
+path = "some/other/path"
+
+build-dir = "build"
+
+
+[[plugin]]
+alias = "xsim"
+
+
+[[template]]
+path = "some/path2"

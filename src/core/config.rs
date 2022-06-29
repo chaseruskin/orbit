@@ -1,6 +1,187 @@
-use toml_edit::Document;
+use toml_edit::{Document, ArrayOfTables};
+use std::path::PathBuf;
+use crate::util::anyerror::{AnyError, Fault};
 
-struct Config {
-    core_path: std::Path::Pathbuf,
+pub struct Config {
+    root: PathBuf,
     document: Document,
+    includes: Vec<Box<Config>>,
+}
+
+impl Config {
+    /// Creates a new empty `Config` struct.
+    pub fn new() -> Self {
+        Self {
+            root: PathBuf::new(),
+            document: Document::new(),
+            includes: Vec::new(),
+        }
+    }
+
+    /// Initializes a configuration file from `path`.
+    /// 
+    /// Creates the file if it does not exist. Assumes the file is .toml file.
+    pub fn from_path(p: &PathBuf) -> Result<Self, Fault> {
+        if p.exists() == false {
+            std::fs::File::create(&p)?;
+        }
+        let contents = std::fs::read_to_string(p)?;
+        Ok(Self {
+            root: p.parent().unwrap().to_path_buf(), 
+            document: contents.parse::<Document>()?,
+            includes: Vec::new() 
+        })
+    }
+
+    pub fn get_doc(&self) -> &Document {
+        &self.document
+    }
+
+    /// Adds Configurations from the `include` key.
+    /// 
+    /// Ignores configuration files that does not exist.
+    pub fn include(mut self) -> Result<Self, Fault> {
+        // detect the include entry
+        if self.document.contains_key("include") == false {
+            return Ok(self)
+        }
+        let config_paths: Vec<PathBuf> = self.document.get("include")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .into_iter()
+            .filter_map(|f| f.as_str())
+            .map(|f| PathBuf::from(f))
+            // resolve paths with root
+            .map(|f| if f.is_relative() { self.root.join(f) } else { f })
+            .collect();
+        for file in &config_paths {
+            self.includes.push(Box::new(Config::from_path(file)?));
+        }
+        Ok(self)
+    }
+
+    /// Tries to visit a value at `table.key`.
+    /// 
+    /// If `table` is `None`, it will assume its a global-level key/item.
+    /// 
+    /// Returns `None` if unable to reach a value.
+    fn access(&self, table: Option<&str>, key: &str) -> Option<&toml_edit::Item> {
+        match table {
+            Some(t) => self.get_doc().get(t)?.as_table()?.get(key),
+            None => self.get_doc().get(key),
+        }
+    }
+
+    /// Gathers all values assigned to the `table.key` entry in configuration.
+    /// 
+    /// Errors if the entry exists, but is not a string.
+    /// Returns `Vec::new()` if the entry does not exist anywhere.
+    pub fn collect_as_str<'a>(&'a self, table: &str, key: &str) -> Result<Vec<&'a str>, Fault> {
+        let mut values: Vec<&str> = Vec::new();
+        for inc in &self.includes {
+            match inc.access(Some(table), key) {
+                Some(item) => {
+                    // update the value as the list continues
+                    if let Some(s) = item.as_str() {
+                       values.push(s);
+                    } else {
+                        return Err(AnyError(format!("expecting string value for {}", key)))?
+                    }
+                }
+                None => (),
+            }
+        }
+        // access on current configuration
+        match self.access(Some(table), key) {
+            Some(item) => {
+                // update the value as the list continues
+                if let Some(s) = item.as_str() {
+                   values.push(s);
+                } else {
+                    return Err(AnyError(format!("expecting string value for {}", key)))?
+                }
+            }
+            None => (),
+        }
+        Ok(values)
+    }
+
+    /// Gathers all values assigned under a given `Array` entry in configuration.
+    /// 
+    /// The list is given with priority items first (base configurations), then
+    /// extra included items to follow.
+    /// 
+    /// Errors if the entry exists, but is not an array.
+    /// Returns `Vec::new()` if the entry does not exist anywhere.
+    pub fn collect_as_array_of_tables<'a>(&'a self, key: &str) -> Result<Vec<&ArrayOfTables>, Fault> {
+        let mut values: Vec<&ArrayOfTables> = Vec::new();
+        for inc in &self.includes {
+            match inc.access(None, key) {
+                Some(item) => {
+                    // update the value as the list continues
+                    if let Some(s) = item.as_array_of_tables() {
+                       values.push(s);
+                    } else {
+                        return Err(AnyError(format!("expecting array of tables value for {}", key)))?
+                    }
+                }
+                None => (),
+            }
+        }
+        // access on current configuration
+        match self.access(None, key) {
+            Some(item) => {
+                // update the value as the list continues
+                if let Some(s) = item.as_array_of_tables() {
+                   values.push(s);
+                } else {
+                    return Err(AnyError(format!("expecting array value for {}", key)))?
+                }
+            }
+            None => (),
+        }
+        Ok(values.into_iter().rev().collect())
+    }
+
+    /// Takes the last value.
+    pub fn get_as_str(&self, table: &str, key: &str) -> Result<Option<&str>, Fault> {
+        let mut values = self.collect_as_str(table, key)?;
+        Ok(match values.len() {
+            0 => None,
+            _ => Some(values.remove(values.len()-1))
+        })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn access_includes() {
+        let cfg = Config::from_path(&PathBuf::from("./test/data/config/config.toml"))
+            .unwrap()
+            .include().unwrap();
+
+        // available in both configurations
+        assert_eq!(cfg.collect_as_str("core", "editor").unwrap(), vec!["vim", "code"]);
+        assert_eq!(cfg.get_as_str("core", "editor").unwrap(), Some("code"));
+        // not available in any configuration
+        assert_eq!(cfg.get_as_str("core", "user").unwrap(), None);
+        // only seen in include's configuration
+        assert_eq!(cfg.get_as_str("core", "build-dir").unwrap(), Some("build"));
+    }
+
+    #[test]
+    fn collect_all_top_level_arrays() {
+        let cfg = Config::from_path(&PathBuf::from("./test/data/config/config.toml"))
+            .unwrap()
+            .include().unwrap();
+
+        // seen in both configuration files
+        assert_eq!(cfg.collect_as_array_of_tables("plugin").unwrap().len(), 2);
+        // only seen in include's configuration
+        assert_eq!(cfg.collect_as_array_of_tables("template").unwrap().len(), 1);
+    }
 }

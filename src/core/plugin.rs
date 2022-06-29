@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::process::Stdio;
 use crate::core::fileset::Fileset;
 
@@ -95,23 +96,27 @@ impl Plugin {
     /// Assumes `root` is the parent directory to the config.toml file that
     /// created this `Plugin` struct.
     pub fn resolve_all_paths(mut self, root: &std::path::PathBuf) -> Self {
-        self.command = resolve_path(&root, self.command).unwrap();
-        self.args = self.args.into_iter().map(|f| resolve_path(&root, f).unwrap() ).collect();
+        self.command = resolve_rel_path(&root, self.command);
+        self.args = self.args.into_iter().map(|f| resolve_rel_path(&root, f) ).collect();
         self
     }
 }
 
-/// Resolves the path into a full path if given relative to some `root` path.
+/// Resolves a relative path into a full path if given relative to some `root` path.
 /// 
 /// This function is helpful for resolving full paths in plugin arguments,
 /// config.toml includes, and template paths.
-fn resolve_path(root: &std::path::PathBuf, s: String) -> Result<String, Box<dyn std::error::Error>> {
+fn resolve_rel_path(root: &std::path::PathBuf, s: String) -> String {
     let resolved_path = root.join(&s);
     if std::path::Path::exists(&resolved_path) == true {
-        // write out full path
-        Ok(resolved_path.display().to_string())
+        if PathBuf::from(&s).is_relative() == true {
+            // write out full path
+            resolved_path.display().to_string()
+        } else {
+            s
+        }
     } else {
-        Ok(s)
+        s
     }
 }
 
@@ -185,9 +190,13 @@ mod test {
     fn resolve_path_simple() {
         let rel_root = std::env::current_dir().unwrap();
         // expands relative path to full path
-        assert_eq!(resolve_path(&rel_root, String::from("src/lib.rs")).unwrap(), rel_root.join("src/lib.rs").display().to_string());
+        assert_eq!(resolve_rel_path(&rel_root, String::from("src/lib.rs")), rel_root.join("src/lib.rs").display().to_string());
+        // expands relative path to full path
+        assert_eq!(resolve_rel_path(&rel_root, String::from("./src/lib.rs")), rel_root.join("./src/lib.rs").display().to_string());
         // no file or directory named 'orbit' at the relative root
-        assert_eq!(resolve_path(&rel_root, String::from("orbit")).unwrap(), String::from("orbit"));
+        assert_eq!(resolve_rel_path(&rel_root, String::from("orbit")), String::from("orbit"));
+        // not relative
+        assert_eq!(resolve_rel_path(&rel_root, String::from("/src")), String::from("/src"));
     }
 
     #[test]

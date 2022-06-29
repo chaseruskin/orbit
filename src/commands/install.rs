@@ -7,7 +7,7 @@ use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::core::pkgid::PkgId;
 use crate::core::version::Version;
-use crate::util::anyerror::AnyError;
+use crate::util::anyerror::{AnyError, Fault};
 use crate::core::version::AnyVersion;
 use crate::util::sha256;
 use crate::util::sha256::Sha256Hash;
@@ -17,7 +17,7 @@ pub struct Install {
     ip: Option<PkgId>,
     path: Option<std::path::PathBuf>,
     git: Option<String>,
-    version: Option<AnyVersion>,
+    version: AnyVersion,
 }
 
 impl FromCli for Install {
@@ -26,7 +26,7 @@ impl FromCli for Install {
         let command = Ok(Install {
             git: cli.check_option(Optional::new("git").value("url"))?,
             path: cli.check_option(Optional::new("path"))?,
-            version: cli.check_option(Optional::new("ver").switch('v'))?,
+            version: cli.check_option(Optional::new("ver").switch('v'))?.unwrap_or(AnyVersion::Latest),
             ip: cli.check_option(Optional::new("ip"))?,
         });
         command
@@ -44,17 +44,11 @@ impl Command for Install {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // verify user is not requesting the dev version to be installed
-        let version = match &self.version {
-            Some(v) => {
-                if v == &AnyVersion::Dev {
-                    return Err(AnyError(format!("{}", "a dev version cannot be installed to the cache")))?
-                } else {
-                    v
-                }
-            },
-            None => &AnyVersion::Latest
+        match &self.version {
+            AnyVersion::Dev => return Err(AnyError(format!("{}", "a dev version cannot be installed to the cache")))?,
+            _ => ()
         };
-
+        // let temporary directory exist for lifetime of install in case of using it
         let tempdir = tempdir()?;
 
         // get to the repository (root path)
@@ -85,62 +79,9 @@ impl Command for Install {
         } else {
             return Err(AnyError(format!("select an option to install from '{}', '{}', or '{}'", "--ip".yellow(), "--git".yellow(), "--path".yellow())))?
         };
-        let target = ip.get_manifest().as_pkgid();
 
-        let repo = Repository::open(&ip.get_path())?;
-        // find the specified version for the given ip
-        let space = gather_version_tags(&repo)?;
-        let version = get_target_version(&version, &space, &target)?;
-        println!("detected version {}", version);
-
-        // move into temporary directory to compute checksum for the tagged version
-        let temp = tempfile::tempdir()?;
-        let repo = Repository::clone(&ip.get_path().to_str().unwrap(), &temp)?;
-        // get the tag
-        let obj = repo.revparse_single(version.to_string().as_ref())?;
-        // checkout code at the tag's marked timestamp
-        repo.checkout_tree(&obj, None)?;
-
-        // @TODO throw repository into the store/ for future use
-
-        // perform sha256 on the directory after collecting all files
-        std::env::set_current_dir(&temp)?;
-
-        // must use '.' as current directory when gathering files for consistent checksum
-        let ip_files = crate::core::fileset::gather_current_files(&std::path::PathBuf::from("."));
-        // println!("{:?}", ip_files);
-        let checksum = crate::util::checksum::checksum(&ip_files);
-        println!("checksum: {}", checksum);
-
-        // use checksum to create new directory slot
-        let cache_slot_name = format!("{}-{}-{}", target.get_name(), version, checksum.to_string().get(0..10).unwrap());
-        let cache_slot = c.get_cache_path().join(&cache_slot_name);
-        if std::path::Path::exists(&cache_slot) == true {
-            // verify the installed version is valid
-            if let Some(sha) = Self::get_checksum_proof(&cache_slot, 0) {
-                if sha == checksum {
-                    return Err(AnyError(format!("IP {} version {} is already installed", target, version)))?
-                }
-            }
-            println!("info: reinstalling due to bad checksum");
-            // blow directory up for re-install
-            std::fs::remove_dir_all(&cache_slot)?;
-        }
-        std::fs::create_dir(&cache_slot)?;
-        // copy contents into cache slot
-        let options = fs_extra::dir::CopyOptions::new();
-        let mut from_paths = Vec::new();
-        for dir_entry in std::fs::read_dir(temp.path())? {
-            match dir_entry {
-                Ok(d) => if d.file_name() != ".git" || d.file_type()?.is_dir() != true { from_paths.push(d.path()) },
-                Err(_) => (),
-            }
-        }
-        // copy rather than rename because of windows issues
-        fs_extra::copy_items(&from_paths, &cache_slot, &options)?;
-        // write the checksum to the directory
-        std::fs::write(&cache_slot.join(crate::core::fileset::ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
-        self.run()
+        // enter action
+        self.run(&ip, c.get_cache_path(), c.force)
     }
 }
 
@@ -170,7 +111,9 @@ To see all versions try `orbit probe {} --tags`", target, ver, target))),
     }
 }
 
-/// Collects all version tags from the given `repo` repository.
+/// Collects all version git tags from the given `repo` repository.
+/// 
+/// The tags must follow semver `[0-9]*.[0-9]*.[0-9]*` specification.
 fn gather_version_tags(repo: &Repository) -> Result<Vec<Version>, Box<dyn std::error::Error>> {
     let tags = repo.tag_names(Some("*.*.*"))?;
     Ok(tags.into_iter()
@@ -209,9 +152,77 @@ impl Install {
         }
     }
 
-    fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
-        // todo!()
+    /// Installs the `ip` with particular partial `version` to the `cache_root`.
+    /// It will reinstall if it finds the original installation has a mismatching checksum.
+    /// 
+    /// Errors if the ip is already installed unless `force` is true.
+    pub fn install(ip: &Ip, version: &AnyVersion, cache_root: &std::path::PathBuf, force: bool) -> Result<(), Fault> {
+
+        let target = ip.get_manifest().as_pkgid();
+
+        let repo = Repository::open(&ip.get_path())?;
+        // find the specified version for the given ip
+        let space = gather_version_tags(&repo)?;
+        let version = get_target_version(&version, &space, &target)?;
+        println!("detected version {}", version);
+
+        // move into temporary directory to compute checksum for the tagged version
+        let temp = tempfile::tempdir()?;
+        let repo = Repository::clone(&ip.get_path().to_str().unwrap(), &temp)?;
+        // get the tag
+        let obj = repo.revparse_single(version.to_string().as_ref())?;
+        // checkout code at the tag's marked timestamp
+        repo.checkout_tree(&obj, None)?;
+
+        // @TODO throw repository into the store/ for future use
+
+        // perform sha256 on the directory after collecting all files
+        std::env::set_current_dir(&temp)?;
+
+        // must use '.' as current directory when gathering files for consistent checksum
+        let ip_files = crate::core::fileset::gather_current_files(&std::path::PathBuf::from("."));
+        
+        let checksum = crate::util::checksum::checksum(&ip_files);
+        println!("checksum: {}", checksum);
+
+        // use checksum to create new directory slot
+        let cache_slot_name = format!("{}-{}-{}", target.get_name(), version, checksum.to_string().get(0..10).unwrap());
+        let cache_slot = cache_root.join(&cache_slot_name);
+        if std::path::Path::exists(&cache_slot) == true {
+            // check if we should proceed with force regardless if the installation is valid
+            if force == true {
+                std::fs::remove_dir_all(&cache_slot)?;
+            } else {
+                // verify the installed version is valid
+                if let Some(sha) = Self::get_checksum_proof(&cache_slot, 0) {
+                    if sha == checksum {
+                        return Err(AnyError(format!("IP {} version {} is already installed", target, version)))?
+                    }
+                }
+                println!("info: reinstalling due to bad checksum");
+                // blow directory up for re-install
+                std::fs::remove_dir_all(&cache_slot)?;
+            }
+        }
+        std::fs::create_dir(&cache_slot)?;
+        // copy contents into cache slot
+        let options = fs_extra::dir::CopyOptions::new();
+        let mut from_paths = Vec::new();
+        for dir_entry in std::fs::read_dir(temp.path())? {
+            match dir_entry {
+                Ok(d) => if d.file_name() != ".git" || d.file_type()?.is_dir() != true { from_paths.push(d.path()) },
+                Err(_) => (),
+            }
+        }
+        // copy rather than rename because of windows issues
+        fs_extra::copy_items(&from_paths, &cache_slot, &options)?;
+        // write the checksum to the directory
+        std::fs::write(&cache_slot.join(crate::core::fileset::ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
         Ok(())
+    }
+
+    fn run(&self, ip: &Ip, cache_root: &std::path::PathBuf, force: bool) -> Result<(), Fault> {
+        Self::install(&ip, &self.version, &cache_root, force)
     }
 }
 

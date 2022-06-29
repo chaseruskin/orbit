@@ -1,5 +1,4 @@
-use std::io::Read;
-
+use crate::util::environment::{EnvVar, Environment};
 use crate::Command;
 use crate::FromCli;
 use crate::interface::cli::Cli;
@@ -8,6 +7,7 @@ use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::core::plugin::Plugin;
+use crate::util::environment;
 
 #[derive(Debug, PartialEq)]
 pub struct Build {
@@ -54,15 +54,15 @@ impl Command for Build {
             return Err(Box::new(AnyError(format!("no blueprint file to build from; consider running 'orbit plan'"))))
         }
 
+        let mut envs = Environment::new();
+
         // read config.toml for setting any env variables
         if let Some(env_table) = c.get_config().get("env") {
             if let Some(table) = env_table.as_table() {
                 let mut table = table.iter();
                 while let Some((key, val)) = table.next() {
                     if let Some(val) = val.as_str() {
-                        // perform proper env key formatting
-                        let key = format!("ORBIT_ENV_{}", key.to_ascii_uppercase().replace('-', "_"));
-                        std::env::set_var(key, val);
+                        envs.insert(EnvVar::new().key(&format!("{}{}", environment::ORBIT_ENV_PREFIX, key)).value(val));
                     } else {
                         panic!("key 'env.{}' must have string value", key)
                     }
@@ -71,24 +71,24 @@ impl Command for Build {
                 panic!("key 'env' must be a table")
             }
         }
+        crate::util::environment::set_environment(envs);
 
-        // read the .env file
-        let env_file = c.get_ip_path().unwrap().join(c.get_build_dir()).join(".env");
-        if env_file.exists() == true {
-            let mut file = std::fs::File::open(env_file).expect("failed to open .env file");
-            let mut contents = String::new();
-            file.read_to_string(&mut contents).expect("failed to read contents");
-            // transform into environment variables
-            for line in contents.split_terminator('\n') {
-                let result = line.split_once('=');
-                // set env variables
-                if let Some((name, value)) = result {
-                    std::env::set_var(name, value);
+        // load from .env file
+        let envs = crate::util::environment::load_environment(&c.get_ip_path().unwrap().join(c.get_build_dir()))?;
+
+        // check if ORBIT_PLUGIN was set
+        let alias = match &self.alias {
+            Some(n) => Some(n.as_str()),
+            None => {
+                if let Some(plug) = envs.get(environment::ORBIT_PLUGIN) {
+                    Some(plug.get_value())
+                } else {
+                    None
                 }
             }
-        }
+        };
         // try to find plugin matching `command` name under the `alias`
-        let plug = if let Some(a) = &self.alias {
+        let plug = if let Some(a) = alias {
             match c.get_plugins().get(a) {
                 Some(p) => Some(p),
                 None => return Err(AnyError(format!("no plugin named '{}'", a)))?,
@@ -96,6 +96,8 @@ impl Command for Build {
         } else {
             None
         };
+
+        crate::util::environment::set_environment(envs);
 
         if plug.is_none() && self.command.is_none() {
             return Err(AnyError(format!("pass a plugin or a command for building")))?

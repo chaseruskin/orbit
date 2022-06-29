@@ -7,3 +7,4 @@ pub mod strcmp;
 pub mod graph;
 pub mod checksum;
 pub mod filesystem;
+pub mod environment;

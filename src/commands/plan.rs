@@ -1,6 +1,7 @@
 use crate::Command;
 use crate::FromCli;
 use crate::interface::cli::Cli;
+use crate::util::environment::EnvVar;
 use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
@@ -9,6 +10,7 @@ use std::io::Write;
 use crate::core::fileset::Fileset;
 use crate::core::vhdl::token::Identifier;
 use crate::core::plugin::Plugin;
+use crate::util::environment;
 
 #[derive(Debug, PartialEq)]
 pub struct Plan {
@@ -35,10 +37,10 @@ impl Command for Plan {
 
         // set top-level environment variables (@TODO verify these are valid toplevels to be set!)
         if let Some(t) = &self.top {
-            std::env::set_var("ORBIT_TOP", t.to_string());
+            std::env::set_var(environment::ORBIT_TOP, t.to_string());
         }
         if let Some(b) = &self.bench {
-            std::env::set_var("ORBIT_BENCH", b.to_string());
+            std::env::set_var(environment::ORBIT_BENCH, b.to_string());
         }
         // determine the build directory
         let b_dir = if let Some(dir) = &self.build_dir {
@@ -48,7 +50,7 @@ impl Command for Plan {
         };
         // find plugin filesets
         let plug_fset = if let Some(plug) = &self.plugin {
-            Some(c.get_plugins().get(plug).expect(&format!("plugin {} does not exist", plug)).filesets())
+            Some(c.get_plugins().get(plug).expect(&format!("plugin {} does not exist", plug)))
         } else {
             None
         };
@@ -101,7 +103,7 @@ struct ArchitectureFile {
 pub struct GraphNode {
     sym: symbol::VHDLSymbol,
     index: usize,
-    files: Vec<String>,
+    files: Vec<String>, // must use a vector to retain file order in blueprint
 }
 
 impl GraphNode {
@@ -258,7 +260,7 @@ impl Plan {
         (graph, map)
     }
 
-    fn run(&self, build_dir: &str, plug_filesets: Option<&Vec<Fileset>>) -> Result<(), Box<dyn std::error::Error>> {
+    fn run(&self, build_dir: &str, plug: Option<&Plugin>) -> Result<(), Box<dyn std::error::Error>> {
         let mut build_path = std::env::current_dir().unwrap();
         build_path.push(build_dir);
         
@@ -380,8 +382,8 @@ impl Plan {
             String::new()
         };
 
-        std::env::set_var("ORBIT_TOP", &top_name);
-        std::env::set_var("ORBIT_BENCH", &bench_name);
+        std::env::set_var(environment::ORBIT_TOP, &top_name);
+        std::env::set_var(environment::ORBIT_BENCH, &bench_name);
 
         let highest_point = match bench {
             Some(b) => b,
@@ -413,7 +415,8 @@ impl Plan {
         }
 
         // collect data for the given plugin
-        if let Some(fsets) = plug_filesets {
+        if let Some(p) = plug {
+            let fsets = p.filesets();
             // define pattern matching settings
             let match_opts = glob::MatchOptions {
                 case_sensitive: false,
@@ -445,6 +448,7 @@ impl Plan {
         if std::path::PathBuf::from(build_dir).exists() == false {
             std::fs::create_dir_all(build_dir).expect("could not create build dir");
         }
+
         // create the blueprint file
         let blueprint_path = build_path.join("blueprint.tsv");
         let mut blueprint_file = std::fs::File::create(&blueprint_path).expect("could not create blueprint.tsv file");
@@ -452,11 +456,16 @@ impl Plan {
         blueprint_file.write_all(blueprint_data.as_bytes()).expect("failed to write data to blueprint");
         
         // create environment variables to .env file
-        let env_path = build_path.join(".env");
-        let mut env_file = std::fs::File::create(&env_path).expect("could not create .env file");
-        let contents = format!("ORBIT_TOP={}\nORBIT_BENCH={}\n", &top_name, &bench_name);
-        // write the data
-        env_file.write_all(contents.as_bytes()).expect("failed to write data to .env file");
+        let mut envs = environment::Environment::from_vec(vec![
+            EnvVar::new().key(environment::ORBIT_TOP).value(&top_name), 
+            EnvVar::new().key(environment::ORBIT_BENCH).value(&bench_name)
+        ]);
+        // conditionally set the plugin used to plan
+        match plug {
+            Some(p) => { envs.insert(EnvVar::new().key(environment::ORBIT_PLUGIN).value(&p.alias())); () },
+            None => (),
+        };
+        crate::util::environment::save_environment(&envs, &build_path)?;
 
         // create a blueprint file
         println!("info: Blueprint created at: {}", blueprint_path.display());

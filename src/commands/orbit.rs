@@ -115,13 +115,14 @@ impl FromCli for OrbitSubcommand {
             "init",
             "tree",
             "probe",
+            "b",
         ])?.as_ref() {
             "get" => Ok(OrbitSubcommand::Get(Get::from_cli(cli)?)),
             "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
             "new" => Ok(OrbitSubcommand::New(New::from_cli(cli)?)),
             "search" => Ok(OrbitSubcommand::Search(Search::from_cli(cli)?)),
             "plan" => Ok(OrbitSubcommand::Plan(Plan::from_cli(cli)?)),
-            "build" => Ok(OrbitSubcommand::Build(Build::from_cli(cli)?)),
+      "b" | "build" => Ok(OrbitSubcommand::Build(Build::from_cli(cli)?)),
             "edit" => Ok(OrbitSubcommand::Edit(Edit::from_cli(cli)?)),
             "init" => Ok(OrbitSubcommand::Init(Init::from_cli(cli)?)),
             "launch" => Ok(OrbitSubcommand::Launch(Launch::from_cli(cli)?)),
@@ -170,7 +171,7 @@ Commands:
     get             fetch an entity
     tree            view the dependency graph
     plan            generate a blueprint file
-    build           execute a plugin
+    build, b        execute a plugin
     launch          release a new ip version
     search          browse the ip catalog 
     install         store an immutable reference to an ip

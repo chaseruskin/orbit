@@ -103,11 +103,21 @@ impl Context {
     /// Configures and reads data from the settings object to return a `Settings` struct
     /// in the `Context`. 
     /// 
-    /// The settings file `name` must be directly under `$ORBIT_HOME`.
+    /// The settings file `name` must be directly under `$ORBIT_HOME`. It also
+    /// checks for a local configuration as `name` under a .orbit/ directory if
+    /// the command is invoked from within an ip directory.
+    /// 
+    /// Note: the `self.ip_path` must already be determined before invocation.
     pub fn settings(mut self, name: &str) -> Result<Context, Fault> {
         // initialize and load the global configuration
-        self.config = Config::from_path(&self.home_path.join(name))?
+        let cfg = Config::from_path(&self.home_path.join(name))?
             .include()?;
+
+        self.config = if let Some(ip_dir) = self.get_ip_path() {
+            cfg.local(&ip_dir.join(".orbit").join(name))?
+        } else {
+            cfg
+        };
         // @TODO also look within every path along current directory for a /.orbit/config.toml file to load (local configuration) 
         
         // @TODO dynamically set from environment variables from configuration data

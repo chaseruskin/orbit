@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use colored::*;
 use crate::Command;
 use crate::FromCli;
@@ -8,11 +10,25 @@ use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 
 #[derive(Debug, PartialEq)]
+pub struct Entry(String, String);
+
+impl FromStr for Entry {
+    type Err = AnyError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // split on first '=' sign
+        match s.split_once('=') {
+            Some(e) => Ok(Entry(e.0.to_owned(), e.1.to_owned())),
+            None => Err(AnyError(format!("missing '=' separator")))
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Config {
     global: bool,
     local: bool,
-    append: Vec<String>,
-    set: Vec<String>,
+    append: Vec<Entry>,
+    set: Vec<Entry>,
     unset: Vec<String>,
 }
 
@@ -55,7 +71,13 @@ impl Command for Config {
 
 impl Config {
     fn run(&self, cfg: &mut config::Config) -> Result<(), Box<dyn std::error::Error>> {
-        Ok(())
+        for entry in &self.append {
+            if entry.0 == "include" {
+                cfg.append_include(&entry.1)
+            }
+        }
+
+        cfg.write()
     }
 }
 

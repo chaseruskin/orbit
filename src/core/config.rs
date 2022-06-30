@@ -1,4 +1,4 @@
-use toml_edit::{Document, ArrayOfTables, Item};
+use toml_edit::{Document, ArrayOfTables, Item, Array, Value};
 use std::path::PathBuf;
 use crate::util::anyerror::{AnyError, Fault};
 
@@ -6,6 +6,7 @@ pub struct Config {
     root: PathBuf,
     document: Document,
     includes: Vec<Box<Config>>,
+    local: Option<Box<Config>>,
 }
 
 impl Config {
@@ -15,24 +16,37 @@ impl Config {
             root: PathBuf::new(),
             document: Document::new(),
             includes: Vec::new(),
+            local: None,
         }
     }
 
-    /// Initializes a configuration file from `path`.
+    /// Initializes a configuration file from `file`.
     /// 
     /// Creates the file if it does not exist. Assumes the file is .toml file.
-    pub fn from_path(p: &PathBuf) -> Result<Self, Fault> {
-        if p.exists() == false {
+    pub fn from_path(file: &PathBuf) -> Result<Self, Fault> {
+        if file.exists() == false {
             // create all missing intermediate directories as well 
-            std::fs::create_dir_all(p.parent().unwrap())?;
-            std::fs::File::create(&p)?;
+            std::fs::create_dir_all(file.parent().unwrap())?;
+            std::fs::File::create(&file)?;
         }
-        let contents = std::fs::read_to_string(p)?;
+        let contents = std::fs::read_to_string(file)?;
         Ok(Self {
-            root: p.parent().unwrap().to_path_buf(), 
+            root: file.parent().unwrap().to_path_buf(), 
             document: contents.parse::<Document>()?,
-            includes: Vec::new() 
+            includes: Vec::new(),
+            local: None,
         })
+    }
+
+    /// Updates the configuration to see if there is a local project-based configuration
+    /// to track.
+    /// 
+    /// Keeps `self.local` set to `None` if the file `file` does not exist.
+    pub fn local(mut self, file: &PathBuf) -> Result<Self, Fault> {
+        if file.exists() == true {
+            self.local = Some(Box::new(Self::from_path(&file)?));
+        }
+        Ok(self)
     }
 
     /// References the .toml `Document` struct.
@@ -67,6 +81,25 @@ impl Config {
             self.includes.push(Box::new(Config::from_path(file)?));
         }
         Ok(self)
+    }
+
+    /// Adds a new value to the `include` entry.
+    /// 
+    /// Automatically creates the new key if it does not exist.
+    pub fn append_include(&mut self, item: &str) -> () {
+        if self.document.contains_key("include") == false {
+            self.document.insert("include", Item::Value(Value::Array(Array::new())));
+        }
+        self.document["include"].as_array_mut().unwrap().push(item);
+    } 
+
+    /// Writes the `document` to the `path`.
+    /// 
+    /// Uses CONFIG_FILE as the filename to save to.
+    pub fn write(&mut self) -> Result<(), Fault> {
+        let contents = self.document.to_string();
+        std::fs::write(self.get_root().join(CONFIG_FILE), contents)?;
+        Ok(())
     }
 
     /// Gathers all values assigned to the `table.key` entry in configuration.
@@ -118,6 +151,7 @@ impl Config {
     /// Errors if the entry exists, but is not an item that evaluates true with `eval`.
     fn collect_as_item<'a>(&'a self, table: Option<&str>, key: &str, eval: &dyn Fn(&Item) -> bool) -> Result<Vec<(&Item, &PathBuf)>, Fault> {
         let mut values: Vec<(&Item, &PathBuf)> = Vec::new();
+
         for inc in &self.includes {
             match inc.access(table, key) {
                 Some(item) => {
@@ -142,6 +176,20 @@ impl Config {
                 }
             }
             None => (),
+        }
+        // access on local configuration
+        if let Some(cfg) = &self.local {
+            match cfg.access(table, key) {
+                Some(item) => {
+                    // update the value as the list continues
+                    if eval(item) {
+                       values.push((item, cfg.get_root()));
+                    } else {
+                        return Err(AnyError(format!("expecting different value for {}", key)))?
+                    }
+                }
+                None => (),
+            }
         }
         Ok(values)
     }

@@ -44,8 +44,8 @@ impl Orbit {
             let context = Context::new()
                 .home(environment::ORBIT_HOME)?
                 .cache(environment::ORBIT_CACHE)?
+                .current_ip_dir(environment::ORBIT_IP_PATH)? // must come before .settings() call
                 .settings(crate::core::config::CONFIG_FILE)?
-                .current_ip_dir(environment::ORBIT_IP_PATH)?
                 .build_dir(environment::ORBIT_BUILD_DIR)?
                 .development_path(environment::ORBIT_DEV_PATH)?
                 .retain_options(self.force);

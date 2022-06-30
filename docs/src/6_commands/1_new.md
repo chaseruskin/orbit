@@ -13,10 +13,10 @@ orbit new [options] <ip>
 ## __DESCRIPTION__
 
 This command will create a new IP package. The default destination path is
-`$ORBIT_PATH/<vendor>/<library>/<name>`. If the ORBIT_PATH environment
-variable is not set nor is the `core.path` key in the config.toml, Orbit
-will use the command's relative path to create the corresponding
-directories.
+`$ORBIT_DEV_PATH/<vendor>/<library>/<name>`. If the ORBIT_DEV_PATH 
+environment variable is not set and `core.path` entry is absent from 
+configuration, Orbit will use the directory where the command was invoked as
+the base path.
 
 ## __OPTIONS__
 
@@ -25,9 +25,13 @@ directories.
   
 `--path <path>`  
       Specify the destination path
+  
+`--template <alias>`  
+      Specify a configured template to copy
 
 ## __EXAMPLES__
 
 ```
-orbit new space-tech.rary.gates
+orbit new ks-tech.rary.gates
+orbit new ks-tech.rary.common --template base --path common
 ```

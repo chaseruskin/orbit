@@ -13,3 +13,4 @@ mod probe;
 mod get;
 mod env;
 mod init;
+mod config;

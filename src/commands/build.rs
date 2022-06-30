@@ -57,7 +57,7 @@ impl Command for Build {
         let mut envs = Environment::new();
 
         // read config.toml for setting any env variables
-        if let Some(env_table) = c.get_config().get("env") {
+        if let Some(env_table) = c.get_config().get_doc().get("env") {
             if let Some(table) = env_table.as_table() {
                 let mut table = table.iter();
                 while let Some((key, val)) = table.next() {

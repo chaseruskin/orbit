@@ -23,6 +23,8 @@ impl Config {
     /// Creates the file if it does not exist. Assumes the file is .toml file.
     pub fn from_path(p: &PathBuf) -> Result<Self, Fault> {
         if p.exists() == false {
+            // create all missing intermediate directories as well 
+            std::fs::create_dir_all(p.parent().unwrap())?;
             std::fs::File::create(&p)?;
         }
         let contents = std::fs::read_to_string(p)?;
@@ -144,6 +146,8 @@ impl Config {
         Ok(values)
     }
 }
+
+pub const CONFIG_FILE: &str = "config.toml";
 
 #[cfg(test)]
 mod test {

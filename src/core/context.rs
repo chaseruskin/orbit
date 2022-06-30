@@ -159,13 +159,13 @@ impl Context {
     /// First checks if the environment already has ORBIT_PATH set, otherwise it
     /// will look for the value found in the config file. If no development path
     /// is set, it will use the current directory.
-    pub fn development_path(mut self, s: &str) -> Result<Context, ContextError> {
+    pub fn development_path(mut self, s: &str) -> Result<Context, Fault> {
         // an explicit environment variable takes precedence over config file data
         self.dev_path = Some(std::path::PathBuf::from(match std::env::var(s) {
             Ok(v) => v,
             Err(_) => {
                 // use current directory if the key-value pair is not there
-                let path = match Self::get_value_as_str(self.get_config(), "core.path") {
+                let path = match self.get_config().get_as_str("core", "path")? {
                     Some(p) => p.to_owned(),
                     None => std::env::current_dir().unwrap().display().to_string(),
                 };
@@ -175,9 +175,9 @@ impl Context {
         }));
         // verify the orbit path exists and is a directory
         if self.dev_path.as_ref().unwrap().exists() == false {
-            return Err(ContextError(format!("orbit path '{}' does not exist", self.dev_path.as_ref().unwrap().display())));
+            return Err(ContextError(format!("orbit path '{}' does not exist", self.dev_path.as_ref().unwrap().display())))?
         } else if self.dev_path.as_ref().unwrap().is_dir() == false {
-            return Err(ContextError(format!("orbit path '{}' is not a directory", self.dev_path.as_ref().unwrap().display())));
+            return Err(ContextError(format!("orbit path '{}' is not a directory", self.dev_path.as_ref().unwrap().display())))?
         }
         Ok(self)
     }
@@ -188,8 +188,12 @@ impl Context {
     }
 
     /// Access the configuration data.
-    pub fn get_config(&self) -> &Document {
-        &self.config.get_doc()
+    pub fn get_config(&self) -> &Config {
+        &self.config
+    }
+
+    pub fn get_config_mut(&mut self) -> &mut Config {
+        &mut self.config
     }
 
     /// Access the build directory data.

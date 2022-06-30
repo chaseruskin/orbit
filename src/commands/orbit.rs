@@ -44,7 +44,7 @@ impl Orbit {
             let context = Context::new()
                 .home(environment::ORBIT_HOME)?
                 .cache(environment::ORBIT_CACHE)?
-                .settings("config.toml")?
+                .settings(crate::core::config::CONFIG_FILE)?
                 .current_ip_dir(environment::ORBIT_IP_PATH)?
                 .build_dir(environment::ORBIT_BUILD_DIR)?
                 .development_path(environment::ORBIT_DEV_PATH)?
@@ -85,6 +85,7 @@ use crate::commands::get::Get;
 use crate::commands::init::Init;
 use crate::commands::probe::Probe;
 use crate::commands::env::Env;
+use crate::commands::config::Config;
 
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
@@ -101,6 +102,7 @@ enum OrbitSubcommand {
     Init(Init),
     Probe(Probe),
     Env(Env),
+    Config(Config),
 }
 
 impl FromCli for OrbitSubcommand {
@@ -120,6 +122,7 @@ impl FromCli for OrbitSubcommand {
             "probe",
             "b",
             "env",
+            "config",
         ])?.as_ref() {
             "get" => Ok(OrbitSubcommand::Get(Get::from_cli(cli)?)),
             "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
@@ -134,6 +137,7 @@ impl FromCli for OrbitSubcommand {
             "tree" => Ok(OrbitSubcommand::Tree(Tree::from_cli(cli)?)),
             "probe" => Ok(OrbitSubcommand::Probe(Probe::from_cli(cli)?)),
             "env" => Ok(OrbitSubcommand::Env(Env::from_cli(cli)?)),
+            "config" => Ok(OrbitSubcommand::Config(Config::from_cli(cli)?)),
             _ => panic!("an unimplemented command was passed through!")
         }
     }
@@ -156,6 +160,7 @@ impl Command for OrbitSubcommand {
             OrbitSubcommand::Init(c) => c.exec(context),
             OrbitSubcommand::Probe(c) => c.exec(context),
             OrbitSubcommand::Env(c) => c.exec(context),
+            OrbitSubcommand::Config(c) => c.exec(context),
         }
     }
 }
@@ -182,6 +187,7 @@ Commands:
     search          browse the ip catalog 
     install         store an immutable reference to an ip
     env             print Orbit environment information
+    config          modify configuration values
 
 Options:
     --version       print version information and exit
@@ -201,12 +207,20 @@ use tempfile;
 use crate::util::filesystem::get_exe_path;
 
 impl Orbit {
-
-    /// Returns current machine's target as \<arch>-\<os>
+    /// Returns current machine's target as `<arch>-<os>`.
     fn target_triple() -> String {
         format!("{}-{}", std::env::consts::ARCH, std::env::consts::OS)
     }
 
+    /// Runs a process to check for an updated version of Orbit on GitHub to install.
+    /// 
+    /// Steps it follows:  
+    /// 1. Removes any old version existing in executables' current folder
+    /// 2. Gets website data from GitHub releases page to check for latest version
+    /// 3. If new version, download checksum file and search for a compatible platform
+    /// 4. Download compatible platform zip file and verify checksum matches
+    /// 5. Unzip the file and replace the Orbit executable in-place.
+    /// 6. Rename the old executable as `orbit-<version>`.
     #[tokio::main]
     async fn upgrade(&self) -> Result<String, Box<dyn std::error::Error>> {
         // check for stale versions at the current executable's path

@@ -20,6 +20,7 @@
     - [IP](./4_topic/1_ip.md)
     - [Orbit.toml](./4_topic/2_orbittoml.md)
     - [Vendors](./4_topic/3_vendors.md)
+    - [Templates](./4_topic/4_template.md)
 
 - [Reference](./5_reference/0_reference.md)
     - [Packages](./5_reference/1_packages.md)

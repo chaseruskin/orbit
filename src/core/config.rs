@@ -151,7 +151,7 @@ impl Config {
     /// Errors if the entry exists, but is not an item that evaluates true with `eval`.
     fn collect_as_item<'a>(&'a self, table: Option<&str>, key: &str, eval: &dyn Fn(&Item) -> bool) -> Result<Vec<(&Item, &PathBuf)>, Fault> {
         let mut values: Vec<(&Item, &PathBuf)> = Vec::new();
-
+        // collect all included (3rd-party) configuration data
         for inc in &self.includes {
             match inc.access(table, key) {
                 Some(item) => {

@@ -144,6 +144,7 @@ impl Context {
             for tbl in arr_tbl {
                 let plug = Plugin::from_toml(tbl)?
                     .resolve_all_paths(&root); // resolve paths from that config file's parent directory
+                // will kick out previous values so last item in array has highest precedence
                 self.plugins.insert(plug.alias().to_owned(), plug);
             }
         }

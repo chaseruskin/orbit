@@ -151,17 +151,20 @@
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will create a new IP package. The default destination path is
-<code>$ORBIT_PATH/&lt;vendor&gt;/&lt;library&gt;/&lt;name&gt;</code>. If the ORBIT_PATH environment
-variable is not set nor is the <code>core.path</code> key in the config.toml, Orbit
-will use the command's relative path to create the corresponding
-directories.</p>
+<code>$ORBIT_DEV_PATH/&lt;vendor&gt;/&lt;library&gt;/&lt;name&gt;</code>. If the ORBIT_DEV_PATH 
+environment variable is not set and <code>core.path</code> entry is absent from 
+configuration, Orbit will use the directory where the command was invoked as
+the base path.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--force</code><br />
       Removes the destination directory if it already exists</p>
 <p><code>--path &lt;path&gt;</code><br />
       Specify the destination path</p>
+<p><code>--template &lt;alias&gt;</code><br />
+      Specify a configured template to copy</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit new space-tech.rary.gates
+<pre><code>orbit new ks-tech.rary.gates
+orbit new ks-tech.rary.common --template base --path common
 </code></pre>
 
                     </main>

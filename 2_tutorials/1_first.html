@@ -146,90 +146,24 @@
                         <h1 id="first-steps"><a class="header" href="#first-steps">First Steps</a></h1>
 <p>Before diving into Orbit, there are a few things to do to make it a more useful experience.</p>
 <h2 id="initial-configurations"><a class="header" href="#initial-configurations">Initial Configurations</a></h2>
-<p>Orbit works well when you have a single path where you would like to keep all projects. This path is called the DEV_PATH. You can set this in the <code>config.toml</code> file under the user's <code>.orbit/</code> folder. </p>
+<p>Orbit works well when you have a single path where you would like to keep all projects. This path is called the DEV_PATH. You can set this in the <code>config.toml</code> file under the user's <code>.orbit/</code> folder. You can also set this on the command-line.</p>
+<pre><code>$ orbit config --global --set core.path=&quot;path/to/keep/my/projects&quot;
+</code></pre>
 <p>Orbit also can open these projects and various other files through certain commands, so you can set a default editor to open projects and files.</p>
+<pre><code>$ orbit config --global --set core.editor=&quot;code&quot;
+</code></pre>
 <p><em>config.toml</em></p>
 <pre><code class="language-toml">[core]
-path = &quot;path/to/folder&quot;         # folder to store all projects under development
-editor = &quot;path/to/executable&quot;   # executable/script that can open files/folders
+path = &quot;path/to/keep/my/projects&quot; # folder to store all projects under development
+editor = &quot;code&quot; # executable/script that can open files/folders
 
 </code></pre>
 <h2 id="seeking-help"><a class="header" href="#seeking-help">Seeking Help</a></h2>
-<p>Orbit is a package manager and development tool. With learning new tools there is always a learning curve. Orbit tries to make it less intimidating to use by offering help and information in a variety of ways. To see a list of common commands and options, just run <code>orbit</code> with no arguments.</p>
-<pre><code>$ orbit
-Orbit is a tool for hdl package management.
-
-Usage:
-    orbit [options] [command]
-
-Commands:
-    new             create a new ip
-    init            initialize an ip from an existing project
-    edit            open an ip in a text editor
-    get             fetch an entity
-    tree            view the dependency graph
-    plan            generate a blueprint file
-    build           execute a plugin
-    launch          release a new ip version
-    search          browse the ip catalog
-    install         store an immutable reference to an ip
-
-Options:
-    --version       print version information and exit
-    --upgrade       check for the latest orbit binary
-    --force         bypass interactive prompts
-    --help, -h      print help information
-
-Use 'orbit help &lt;command&gt;' for more information about a command.
-</code></pre>
-<p>The <code>-h, --help</code> flag is useful to read the quick help summary of a subcommand. If you need more information, the <code>help</code> command displays manual pages about subcommands and topics.</p>
-<pre><code>$ orbit help plan
-NAME
-    plan - generate a blueprint file
-
-SYNOPSIS
-    orbit plan [options]
-
-DESCRIPTION
-    This command will set up the current ip for build processes. It will collect
-    all necessary files according to their defined fileset into the
-    blueprint.tsv file.
-
-    By default, the top level unit and testbench are auto-detected according to
-    the current design heirarchy. If there is ambiguity, it will ask the user to
-    select one of the possibilities when not set as options.
-
-    The top level unit and top level testbench will be stored in a .env file to
-    be set during any following calls to the 'build' command.
-
-OPTIONS
-    --top &lt;unit&gt;
-          The top level entity to explicitly define
-
-    --bench &lt;tb&gt;
-          The top level testbench to explicitly define
-
-    --plugin &lt;alias&gt;
-          A plugin to refer to gather its declared filesets
-
-    --build-dir &lt;dir&gt;
-          The relative directory to place the blueprint.tsv file
-
-    --filset &lt;key=glob&gt;...
-          A glob-style pattern identified by a name to add into the blueprint
-
-    --clean
-          Removes all files from the build directory before planning
-
-    --list
-          Display all available plugins and exit
-
-    --all
-          Ignore any design hierarchy and include all hdl files
-          
-EXAMPLES
-    orbit plan --top top_level --fileset PIN-PLAN=&quot;*.board&quot;
-</code></pre>
+<p>Orbit is a package manager and development tool. With learning new tools there is always a learning curve. Orbit tries to make it less intimidating to use by offering help and information in a variety of ways. </p>
+<p>To see a list of common commands and options, just use <code>orbit</code> with no arguments.</p>
+<p>To view quick summaries on commands, use <code>-h, --help</code> flags.</p>
+<p>To view more detailed manual pages and information, use <code>orbit help</code>.</p>
+<p>Complete documentation can be found on this current website.</p>
 
                     </main>
 

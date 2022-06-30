@@ -11,3 +11,4 @@ pub mod plugin;
 pub mod vendor;
 pub mod config;
 pub mod extgit;
+pub mod template;

@@ -1,11 +1,6 @@
 use std::process::Stdio;
 use crate::core::fileset::Fileset;
-
-pub trait FromToml {
-    type Err;
-
-    fn from_toml(doc: &toml_edit::Table) -> Result<Self, Self::Err> where Self: Sized;
-}
+use crate::core::config::FromToml;
 
 #[derive(Debug, PartialEq)]
 pub struct Plugin {
@@ -18,7 +13,7 @@ pub struct Plugin {
 
 impl std::fmt::Display for Plugin {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:<12}{}", self.alias, self.summary.as_ref().unwrap_or(&String::new()))
+        write!(f, "{:<16}{}", self.alias, self.summary.as_ref().unwrap_or(&String::new()))
     }
 }
 

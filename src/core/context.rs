@@ -3,7 +3,7 @@ use std::env;
 use toml_edit::Document;
 use std::collections::HashMap;
 use crate::core::plugin::Plugin;
-use crate::core::plugin::FromToml;
+use crate::core::config::FromToml;
 use crate::core::config::Config;
 use crate::util::anyerror::Fault;
 

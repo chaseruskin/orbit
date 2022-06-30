@@ -2,6 +2,12 @@ use toml_edit::{Document, ArrayOfTables, Item, Array, Value};
 use std::path::PathBuf;
 use crate::util::anyerror::{AnyError, Fault};
 
+pub trait FromToml {
+    type Err;
+    /// Parses a toml table into a struct.
+    fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err> where Self: Sized;
+}
+
 pub struct Config {
     root: PathBuf,
     document: Document,

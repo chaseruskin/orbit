@@ -1,4 +1,4 @@
-use toml_edit::{Document, ArrayOfTables};
+use toml_edit::{Document, ArrayOfTables, Item};
 use std::path::PathBuf;
 use crate::util::anyerror::{AnyError, Fault};
 
@@ -33,8 +33,14 @@ impl Config {
         })
     }
 
+    /// References the .toml `Document` struct.
     pub fn get_doc(&self) -> &Document {
         &self.document
+    }
+
+    /// References the root directory where the file is located.
+    pub fn get_root(&self) -> &PathBuf {
+        &self.root
     }
 
     /// Adds Configurations from the `include` key.
@@ -52,13 +58,41 @@ impl Config {
             .into_iter()
             .filter_map(|f| f.as_str())
             .map(|f| PathBuf::from(f))
-            // resolve paths with root
+            // resolve paths with root (@TODO error on bad paths?)
             .map(|f| if f.is_relative() { self.root.join(f) } else { f })
             .collect();
         for file in &config_paths {
             self.includes.push(Box::new(Config::from_path(file)?));
         }
         Ok(self)
+    }
+
+    /// Gathers all values assigned to the `table.key` entry in configuration.
+    /// 
+    /// Errors if the entry exists, but is not a string.
+    /// Returns `Vec::new()` if the entry does not exist anywhere.
+    pub fn collect_as_str<'a>(&'a self, table: &str, key: &str) -> Result<Vec<&'a str>, Fault> {
+        Ok(self.collect_as_item(Some(table), key, &Item::is_str)?.into_iter().map(|f| f.0.as_str().unwrap()).collect())
+    }
+
+    /// Gathers all values assigned under a given `Array` entry in configuration.
+    /// 
+    /// The list is given with priority items first (base configurations), then
+    /// extra included items to follow.
+    /// 
+    /// Errors if the entry exists, but is not an array.
+    /// Returns `Vec::new()` if the entry does not exist anywhere.
+    pub fn collect_as_array_of_tables<'a>(&'a self, key: &str) -> Result<Vec<(&ArrayOfTables, &PathBuf)>, Fault> {
+        Ok(self.collect_as_item(None, key, &Item::is_array_of_tables)?.into_iter().map(|f| (f.0.as_array_of_tables().unwrap(), f.1)).collect())
+    }
+
+    /// Takes the last value.
+    pub fn get_as_str(&self, table: &str, key: &str) -> Result<Option<&str>, Fault> {
+        let mut values = self.collect_as_str(table, key)?;
+        Ok(match values.len() {
+            0 => None,
+            _ => Some(values.remove(values.len()-1))
+        })
     }
 
     /// Tries to visit a value at `table.key`.
@@ -73,84 +107,41 @@ impl Config {
         }
     }
 
-    /// Gathers all values assigned to the `table.key` entry in configuration.
+    /// Gathers all values assigned to the `table.key` entry in configuration that
+    /// match with the `eval` fn.
     /// 
-    /// Errors if the entry exists, but is not a string.
-    /// Returns `Vec::new()` if the entry does not exist anywhere.
-    pub fn collect_as_str<'a>(&'a self, table: &str, key: &str) -> Result<Vec<&'a str>, Fault> {
-        let mut values: Vec<&str> = Vec::new();
+    /// The result is safe to unwrap as the evaluated struct. Returns `Vec::new()` if
+    /// the entry does not exist anywhere.
+    /// 
+    /// Errors if the entry exists, but is not an item that evaluates true with `eval`.
+    fn collect_as_item<'a>(&'a self, table: Option<&str>, key: &str, eval: &dyn Fn(&Item) -> bool) -> Result<Vec<(&Item, &PathBuf)>, Fault> {
+        let mut values: Vec<(&Item, &PathBuf)> = Vec::new();
         for inc in &self.includes {
-            match inc.access(Some(table), key) {
+            match inc.access(table, key) {
                 Some(item) => {
                     // update the value as the list continues
-                    if let Some(s) = item.as_str() {
-                       values.push(s);
+                    if eval(item) {
+                       values.push((item, inc.get_root()));
                     } else {
-                        return Err(AnyError(format!("expecting string value for {}", key)))?
+                        return Err(AnyError(format!("expecting different value for {}", key)))?
                     }
                 }
                 None => (),
             }
         }
         // access on current configuration
-        match self.access(Some(table), key) {
+        match self.access(table, key) {
             Some(item) => {
                 // update the value as the list continues
-                if let Some(s) = item.as_str() {
-                   values.push(s);
+                if eval(item) {
+                   values.push((item, self.get_root()));
                 } else {
-                    return Err(AnyError(format!("expecting string value for {}", key)))?
+                    return Err(AnyError(format!("expecting different value for {}", key)))?
                 }
             }
             None => (),
         }
         Ok(values)
-    }
-
-    /// Gathers all values assigned under a given `Array` entry in configuration.
-    /// 
-    /// The list is given with priority items first (base configurations), then
-    /// extra included items to follow.
-    /// 
-    /// Errors if the entry exists, but is not an array.
-    /// Returns `Vec::new()` if the entry does not exist anywhere.
-    pub fn collect_as_array_of_tables<'a>(&'a self, key: &str) -> Result<Vec<&ArrayOfTables>, Fault> {
-        let mut values: Vec<&ArrayOfTables> = Vec::new();
-        for inc in &self.includes {
-            match inc.access(None, key) {
-                Some(item) => {
-                    // update the value as the list continues
-                    if let Some(s) = item.as_array_of_tables() {
-                       values.push(s);
-                    } else {
-                        return Err(AnyError(format!("expecting array of tables value for {}", key)))?
-                    }
-                }
-                None => (),
-            }
-        }
-        // access on current configuration
-        match self.access(None, key) {
-            Some(item) => {
-                // update the value as the list continues
-                if let Some(s) = item.as_array_of_tables() {
-                   values.push(s);
-                } else {
-                    return Err(AnyError(format!("expecting array value for {}", key)))?
-                }
-            }
-            None => (),
-        }
-        Ok(values.into_iter().rev().collect())
-    }
-
-    /// Takes the last value.
-    pub fn get_as_str(&self, table: &str, key: &str) -> Result<Option<&str>, Fault> {
-        let mut values = self.collect_as_str(table, key)?;
-        Ok(match values.len() {
-            0 => None,
-            _ => Some(values.remove(values.len()-1))
-        })
     }
 }
 
@@ -183,5 +174,16 @@ mod test {
         assert_eq!(cfg.collect_as_array_of_tables("plugin").unwrap().len(), 2);
         // only seen in include's configuration
         assert_eq!(cfg.collect_as_array_of_tables("template").unwrap().len(), 1);
+    }
+
+    #[test]
+    fn collect_items() {
+        let cfg = Config::from_path(&PathBuf::from("./test/data/config/config.toml"))
+            .unwrap()
+            .include().unwrap();
+
+        let items: Vec<&str> = cfg.collect_as_item(Some("core"), "editor", &Item::is_str)
+            .unwrap().into_iter().map(|f| f.0.as_str().unwrap()).collect();
+        assert_eq!(items, vec!["vim", "code"]);
     }
 }

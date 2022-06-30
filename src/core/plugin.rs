@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use std::process::Stdio;
 use crate::core::fileset::Fileset;
 
@@ -96,27 +95,9 @@ impl Plugin {
     /// Assumes `root` is the parent directory to the config.toml file that
     /// created this `Plugin` struct.
     pub fn resolve_all_paths(mut self, root: &std::path::PathBuf) -> Self {
-        self.command = resolve_rel_path(&root, self.command);
-        self.args = self.args.into_iter().map(|f| resolve_rel_path(&root, f) ).collect();
+        self.command = crate::util::filesystem::resolve_rel_path(&root, self.command);
+        self.args = self.args.into_iter().map(|f|  crate::util::filesystem::resolve_rel_path(&root, f) ).collect();
         self
-    }
-}
-
-/// Resolves a relative path into a full path if given relative to some `root` path.
-/// 
-/// This function is helpful for resolving full paths in plugin arguments,
-/// config.toml includes, and template paths.
-fn resolve_rel_path(root: &std::path::PathBuf, s: String) -> String {
-    let resolved_path = root.join(&s);
-    if std::path::Path::exists(&resolved_path) == true {
-        if PathBuf::from(&s).is_relative() == true {
-            // write out full path
-            resolved_path.display().to_string()
-        } else {
-            s
-        }
-    } else {
-        s
     }
 }
 
@@ -184,19 +165,6 @@ mod test {
             args: Vec::new(),
             filesets: Vec::new(),
         });
-    }
-
-    #[test]
-    fn resolve_path_simple() {
-        let rel_root = std::env::current_dir().unwrap();
-        // expands relative path to full path
-        assert_eq!(resolve_rel_path(&rel_root, String::from("src/lib.rs")), rel_root.join("src/lib.rs").display().to_string());
-        // expands relative path to full path
-        assert_eq!(resolve_rel_path(&rel_root, String::from("./src/lib.rs")), rel_root.join("./src/lib.rs").display().to_string());
-        // no file or directory named 'orbit' at the relative root
-        assert_eq!(resolve_rel_path(&rel_root, String::from("orbit")), String::from("orbit"));
-        // not relative
-        assert_eq!(resolve_rel_path(&rel_root, String::from("/src")), String::from("/src"));
     }
 
     #[test]

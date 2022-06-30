@@ -4,6 +4,8 @@ use toml_edit::Document;
 use std::collections::HashMap;
 use crate::core::plugin::Plugin;
 use crate::core::plugin::FromToml;
+use crate::core::config::Config;
+use crate::util::anyerror::Fault;
 
 pub struct Context {
     home_path: path::PathBuf,
@@ -11,7 +13,7 @@ pub struct Context {
     ip_path: Option<path::PathBuf>,
     dev_path: Option<path::PathBuf>,
     build_dir: String,
-    config: Document,
+    config: Config,
     plugins: HashMap<String, Plugin>, // @IDEA optionally move hashmap out of context and create it from fn to allow dynamic loading
     pub force: bool,
 }
@@ -26,7 +28,7 @@ impl Context {
             ip_path: None,
             dev_path: None,
             plugins: HashMap::new(),
-            config: Document::new(),
+            config: Config::new(),
             build_dir: String::new(),
             force: false,
         }
@@ -86,7 +88,6 @@ impl Context {
         Ok(self)
     }
 
-
     /// Returns the path to search for vendors.
     /// 
     /// Currently only returns ORBIT_HOME/vendor.
@@ -100,30 +101,24 @@ impl Context {
     }
 
     /// Configures and reads data from the settings object to return a `Settings` struct
-    /// in the `Context`. The settings file `s` must be directly under `$ORBIT_HOME`.
-    pub fn settings(mut self, s: &str) -> Result<Context, ContextError> {
-        // create the settings file if does not exist
-        let cfg_path = self.home_path.join(s);
-        if path::Path::exists(&cfg_path) == false {
-            std::fs::write(&cfg_path, "").expect("failed to create settings file");
-        }
-        let toml = std::fs::read_to_string(&cfg_path).expect("could not read string");
-        let doc = toml.parse::<Document>();
-        self.config = match doc {
-            Ok(d) => d,
-            Err(er) => return Err(ContextError(er.to_string()))
-        };
-        // @TODO also look within every path along current directory for a /.orbit/config.toml file to load
-
+    /// in the `Context`. 
+    /// 
+    /// The settings file `name` must be directly under `$ORBIT_HOME`.
+    pub fn settings(mut self, name: &str) -> Result<Context, Fault> {
+        // initialize and load the global configuration
+        self.config = Config::from_path(&self.home_path.join(name))?
+            .include()?;
+        // @TODO also look within every path along current directory for a /.orbit/config.toml file to load (local configuration) 
+        
         // @TODO dynamically set from environment variables from configuration data
 
         // load plugins
-        self = match self.plugins() {
-            Ok(s) => s,
-            Err(e) => return Err(ContextError(e.to_string())),
-        };
+        match self.plugins() {
+            Ok(s) => Ok(s),
+            Err(e) => Err(ContextError(e.to_string()))?,
+        }
 
-        Ok(self)
+        // @TODO load templates
     }
 
     /// Accesses the plugins in a map with `alias` as the keys.
@@ -133,20 +128,14 @@ impl Context {
 
     /// Iterates through an array of tables to define all plugins.
     fn plugins(mut self) -> Result<Context, Box<dyn std::error::Error>> {
-        let cfg_path = self.home_path.join("config.toml");
-        let arr_of_tbl = if let Some(arr) = self.config.get("plugin") {
-            match arr {
-                toml_edit::Item::ArrayOfTables(aot) => aot,
-                _ => return Err(ContextError(format!("{} plugin expects to be array of tables", cfg_path.display())))?
-            }
-        } else {
-            return Ok(self)
-        };
+        let plugs = self.config.collect_as_array_of_tables("plugin")?;
 
-        for tbl in arr_of_tbl {
-            let plug = Plugin::from_toml(tbl)?
-                .resolve_all_paths(&self.home_path); // resolve paths from the config file's parent directory
-            self.plugins.insert(plug.alias().to_owned(), plug);
+        for (arr_tbl, root) in plugs {
+            for tbl in arr_tbl {
+                let plug = Plugin::from_toml(tbl)?
+                    .resolve_all_paths(&root); // resolve paths from that config file's parent directory
+                self.plugins.insert(plug.alias().to_owned(), plug);
+            }
         }
         Ok(self)
     }
@@ -200,7 +189,7 @@ impl Context {
 
     /// Access the configuration data.
     pub fn get_config(&self) -> &Document {
-        &self.config
+        &self.config.get_doc()
     }
 
     /// Access the build directory data.
@@ -285,9 +274,6 @@ impl Context {
         Ok(self)
     }
 }
-
-
-
 
 #[derive(Debug)]
 pub struct ContextError(String);

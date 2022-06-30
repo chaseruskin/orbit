@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.2.2
+
+### Features
+- the home config file (located at ORBIT_HOME) can now include other config files on your machine with the `include` key (value is a a list of strings)
+
 ## 0.2.1
 
 ### Features

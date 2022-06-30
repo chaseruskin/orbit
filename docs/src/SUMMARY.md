@@ -42,5 +42,6 @@
     - [orbit init](./6_commands/10_init.md)
     - [orbit probe](./6_commands/11_probe.md)
     - [orbit env](./6_commands/12_env.md)
+    - [orbit config](./6_commands/13_config.md)
 
 - [Appendix: Glossary](./glossary.md)

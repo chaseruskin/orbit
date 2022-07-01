@@ -16,6 +16,12 @@ pub struct Template {
     ignores: Vec<String>,
 }
 
+impl std::fmt::Display for Template {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:<16}{}", self.alias, self.summary.as_ref().unwrap_or(&String::new()))
+    }
+}
+
 impl FromToml for Template {
     type Err = TemplateError;
 
@@ -137,6 +143,15 @@ impl Template {
     pub fn resolve_root_path(mut self, root: &std::path::PathBuf) -> Self {
         self.root = crate::util::filesystem::resolve_rel_path(&root, self.root);
         self
+    }
+
+    /// Creates a string to display a list of templates.
+    pub fn list_templates(temps: &[&Template]) -> String {
+        let mut list = String::from("Templates:\n");
+        for temp in temps {
+            list += &format!("    {}\n", temp);
+        }
+        list
     }
 
     pub fn alias(&self) -> &String {

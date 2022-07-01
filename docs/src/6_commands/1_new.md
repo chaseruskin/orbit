@@ -28,6 +28,9 @@ the base path.
   
 `--template <alias>`  
       Specify a configured template to copy
+ 
+`--list`  
+      View available templates
 
 ## __EXAMPLES__
 

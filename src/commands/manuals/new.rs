@@ -22,6 +22,9 @@ OPTIONS
       
     --template <alias>  
           Specify a configured template to copy
+     
+    --list  
+          View available templates
 
 EXAMPLES
     orbit new ks-tech.rary.gates

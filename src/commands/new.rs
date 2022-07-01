@@ -1,7 +1,7 @@
 use crate::Command;
 use crate::FromCli;
 use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Optional};
+use crate::interface::arg::{Positional, Optional, Flag};
 use crate::interface::errors::CliError;
 use crate::core::pkgid;
 use crate::interface::arg::Arg;
@@ -18,15 +18,17 @@ pub struct New {
     ip: pkgid::PkgId,
     rel_path: Option<std::path::PathBuf>,
     template: Option<String>,
+    list: bool,
 }
 
 impl FromCli for New {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.set_help(HELP);
         let command = Ok(New {
-            ip: cli.require_positional(Positional::new("ip"))?,
             rel_path: cli.check_option(Optional::new("path"))?,
+            list: cli.check_flag(Flag::new("list"))?,
             template: cli.check_option(Optional::new("template").value("alias"))?,
+            ip: cli.require_positional(Positional::new("ip"))?,
         });
         command
     }
@@ -35,6 +37,12 @@ impl FromCli for New {
 impl Command for New {
     type Err = Box<dyn Error>;
     fn exec(&self, context: &Context) -> Result<(), Self::Err> {
+        // view templates
+        if self.list == true {
+            println!("{}", Template::list_templates(&context.get_templates().values().into_iter().collect::<Vec<&Template>>()));
+            return Ok(())
+        }
+
         // extra validation for a new IP spec to contain all fields (V.L.N)
         if let Err(e) = self.ip.fully_qualified() {
             return Err(CliError::BadType(Arg::Positional(Positional::new("ip")), e.to_string()))?
@@ -119,6 +127,7 @@ Args:
 Options:
     --path <path>       set the destination directory
     --template <alias>  specify a template to import
+    --list              view available templates
 
 Use 'orbit help new' to read more about the command.
 ";

@@ -146,7 +146,7 @@
                         <h1 id="develop-ip"><a class="header" href="#develop-ip">Develop IP</a></h1>
 <h2 id="creating-a-new-ip-from-scratch"><a class="header" href="#creating-a-new-ip-from-scratch">Creating a new IP from scratch</a></h2>
 <ol>
-<li>Run:</li>
+<li>Create a new directory and import a template project:</li>
 </ol>
 <pre><code>$ orbit new &lt;ip&gt; --template &lt;alias&gt;
 </code></pre>
@@ -157,7 +157,7 @@
 <p>Change directories to the project's root</p>
 </li>
 <li>
-<p>Run:</p>
+<p>Initialize an existing directory to be an IP:</p>
 </li>
 </ol>
 <pre><code>$ orbit init &lt;ip&gt;
@@ -167,13 +167,13 @@
 </blockquote>
 <h3 id="remote-project"><a class="header" href="#remote-project">Remote project</a></h3>
 <ol>
-<li>Run:</li>
+<li>Initialize a remote git repository as an IP on your local machine:</li>
 </ol>
 <pre><code>$ orbit init &lt;ip&gt; --git &lt;url&gt;
 </code></pre>
 <h2 id="editing-an-ip"><a class="header" href="#editing-an-ip">Editing an IP</a></h2>
 <p>If the IP is recognized on the ORBIT_DEV_PATH, Orbit can open a text editor to the project for you. </p>
-<p>Run:</p>
+<p>Open an IP found on the ORBIT_DEV_PATH:</p>
 <pre><code>$ orbit edit &lt;ip&gt; --editor &lt;editor&gt;
 </code></pre>
 <p>Only projects labeled under development are allowed to be opened for editing.</p>
@@ -183,6 +183,7 @@
 </code></pre>
 <h2 id="planning-a-design"><a class="header" href="#planning-a-design">Planning a design</a></h2>
 <p>Orbit will collect the list of necessary files for you to build and execute a workflow. This command must be ran from within the current working IP.</p>
+<p>Collect filesets defined for a plugin and write to a blueprint file:</p>
 <pre><code>$ orbit plan --plugin &lt;alias&gt;
 </code></pre>
 <p>A build directory is created and along with a blueprint.tsv file. The build directory changes frequently and is not to be edited by the user.</p>

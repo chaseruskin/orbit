@@ -11,6 +11,7 @@
 
 - [User Guide](./3_user/0_user.md)
     - [Develop IP](./3_user/1_develop_ip.md)
+    - [Exploring IP](./3_user/6_exploring_ip.md)
     - [Use IP](./3_user/2_use_ip.md)
     - [Share IP](./3_user/3_share_ip.md)
     - [Use Vendors](./3_user/4_make_vendors.md)

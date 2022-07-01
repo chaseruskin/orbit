@@ -74,9 +74,26 @@ impl Config {
         for entry in &self.append {
             if entry.0 == "include" {
                 cfg.append_include(&entry.1)
+            } else {
+                return Err(AnyError(format!("unsupported key '{}' cannot be appended", entry.0)))?
             }
         }
-
+        for entry in &self.set {
+            // split by dots to get table.key (silently ignores improper parsing)
+            if let Some((table, key)) = entry.0.split_once('.') {
+                cfg.set(table, key, &entry.1)
+            } else {
+                return Err(AnyError(format!("unsupported key '{}' cannot be set", entry.0)))?
+            }
+        }
+        for key in &self.unset {
+            // split by dots to get table.key (silently ignores improper parsing)
+            if let Some((table, key)) = key.split_once('.') {
+                cfg.unset(table, key)?
+            } else {
+                return Err(AnyError(format!("unsupported key '{}' cannot be set", key)))?
+            }
+        }
         cfg.write()
     }
 }

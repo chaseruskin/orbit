@@ -11,3 +11,4 @@ pub mod get;
 pub mod init;
 pub mod probe;
 pub mod env;
+pub mod config;

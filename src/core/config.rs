@@ -1,4 +1,4 @@
-use toml_edit::{Document, ArrayOfTables, Item, Array, Value};
+use toml_edit::{Document, ArrayOfTables, Item, Array, Value, Table, Formatted};
 use std::path::PathBuf;
 use crate::util::anyerror::{AnyError, Fault};
 
@@ -98,6 +98,41 @@ impl Config {
         }
         self.document["include"].as_array_mut().unwrap().push(item);
     } 
+
+    /// Sets a value for the given entry in the toml document.
+    /// 
+    /// Creates parent table and/or key if does not exist.
+    pub fn set(&mut self, table: &str, key: &str, value: &str) -> () {
+        // create table if it does not exist
+        if self.document.contains_key(table) == false {
+            self.document.insert(table, Item::Table(Table::new()));
+        }
+        // create key if it does not exist
+        let table = self.document.get_mut(table).unwrap().as_table_mut().unwrap();
+        if table.contains_key(key) == false {
+            table.insert(key, Item::Value(Value::String(Formatted::<String>::new(value.to_string()))));
+        }
+    } 
+
+    /// Removes an entry from the toml document.
+    /// 
+    /// Errors if the entry does not exist.
+    pub fn unset(&mut self, table: &str, key: &str) -> Result<(), Fault> {
+        if self.document.contains_key(table) == false {
+            return Err(AnyError(format!("key '{}.{}' does not exist in configuration", table, key)))?
+        }
+        // remnove the key if it does exist
+        let toml_table = self.document.get_mut(table).unwrap().as_table_mut().unwrap();
+        match toml_table.contains_key(key) {
+            true => {
+                toml_table.remove(key);
+                Ok(())
+            },
+            false => {
+                Err(AnyError(format!("key '{}.{}' does not exist in configuration", table, key)))?
+            }
+        }
+    }
 
     /// Writes the `document` to the `path`.
     /// 

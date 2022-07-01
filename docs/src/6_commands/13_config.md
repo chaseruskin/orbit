@@ -17,6 +17,10 @@ default, it will modify the user's config located at $ORBIT_HOME.
 
 To access an entry (key/value pair), use dots (`.`) to delimit between 
 intermediate table identifiers and the final key identifier. 
+ 
+The command modifies the document in three steps. The first modification is it
+iterates through all `--append` values. Then, it will insert all `--set`
+values. Lastly, it will remove all `--unset` entries.
 
 ## __OPTIONS__
 

@@ -1,7 +1,7 @@
 # Develop IP
 
 ## Creating a new IP from scratch
-1. Run:
+1. Create a new directory and import a template project:
 ```
 $ orbit new <ip> --template <alias>
 ```
@@ -11,7 +11,7 @@ $ orbit new <ip> --template <alias>
 ### Local project
 1. Change directories to the project's root
 
-2. Run:
+2. Initialize an existing directory to be an IP:
 ```
 $ orbit init <ip>
 ```
@@ -19,7 +19,7 @@ $ orbit init <ip>
 > __Note:__ Make sure that the ip is within the ORBIT_DEV_PATH if wanting to be able to detect it when using other Orbit commands.
 
 ### Remote project
-1. Run:
+1. Initialize a remote git repository as an IP on your local machine:
 ```
 $ orbit init <ip> --git <url>
 ```
@@ -28,7 +28,7 @@ $ orbit init <ip> --git <url>
 
 If the IP is recognized on the ORBIT_DEV_PATH, Orbit can open a text editor to the project for you. 
 
-Run:
+Open an IP found on the ORBIT_DEV_PATH:
 ```
 $ orbit edit <ip> --editor <editor>
 ```
@@ -46,6 +46,7 @@ $ orbit tree --root <entity>
 
 Orbit will collect the list of necessary files for you to build and execute a workflow. This command must be ran from within the current working IP.
 
+Collect filesets defined for a plugin and write to a blueprint file:
 ```
 $ orbit plan --plugin <alias>
 ```

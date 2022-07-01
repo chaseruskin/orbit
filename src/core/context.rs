@@ -6,6 +6,7 @@ use crate::core::plugin::Plugin;
 use crate::core::config::FromToml;
 use crate::core::config::Config;
 use crate::util::anyerror::Fault;
+use crate::core::template::Template;
 
 pub struct Context {
     home_path: path::PathBuf,
@@ -15,6 +16,7 @@ pub struct Context {
     build_dir: String,
     config: Config,
     plugins: HashMap<String, Plugin>, // @IDEA optionally move hashmap out of context and create it from fn to allow dynamic loading
+    templates: HashMap<String, Template>,
     pub force: bool,
 }
 
@@ -28,6 +30,7 @@ impl Context {
             ip_path: None,
             dev_path: None,
             plugins: HashMap::new(),
+            templates: HashMap::new(),
             config: Config::new(),
             build_dir: String::new(),
             force: false,
@@ -113,22 +116,17 @@ impl Context {
         let cfg = Config::from_path(&self.home_path.join(name))?
             .include()?;
 
+        // if in ip, also look along current directory for a /.orbit/config.toml file to load (local configuration) 
         self.config = if let Some(ip_dir) = self.get_ip_path() {
             cfg.local(&ip_dir.join(".orbit").join(name))?
         } else {
             cfg
         };
-        // @TODO also look within every path along current directory for a /.orbit/config.toml file to load (local configuration) 
-        
+
         // @TODO dynamically set from environment variables from configuration data
 
-        // load plugins
-        match self.plugins() {
-            Ok(s) => Ok(s),
-            Err(e) => Err(ContextError(e.to_string()))?,
-        }
-
-        // @TODO load templates
+        // load plugins and templates
+        self.plugins()?.templates()
     }
 
     /// Accesses the plugins in a map with `alias` as the keys.
@@ -137,7 +135,7 @@ impl Context {
     }
 
     /// Iterates through an array of tables to define all plugins.
-    fn plugins(mut self) -> Result<Context, Box<dyn std::error::Error>> {
+    fn plugins(mut self) -> Result<Context, Fault> {
         let plugs = self.config.collect_as_array_of_tables("plugin")?;
 
         for (arr_tbl, root) in plugs {
@@ -146,6 +144,25 @@ impl Context {
                     .resolve_all_paths(&root); // resolve paths from that config file's parent directory
                 // will kick out previous values so last item in array has highest precedence
                 self.plugins.insert(plug.alias().to_owned(), plug);
+            }
+        }
+        Ok(self)
+    }
+
+    /// References the templates in a map with `alias` as the keys.
+    pub fn get_templates(&self) -> &HashMap<String, Template> {
+        &self.templates
+    }
+
+    /// Iterates through the array of tables to define all templates.
+    fn templates(mut self) -> Result<Context, Fault> {
+        let temps = self.config.collect_as_array_of_tables("template")?;
+
+        for (arr_tbl, root) in temps {
+            for tbl in arr_tbl {
+                let template = Template::from_toml(tbl)?
+                    .resolve_root_path(&root);
+                self.templates.insert(template.alias().to_owned(), template);
             }
         }
         Ok(self)

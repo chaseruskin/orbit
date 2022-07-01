@@ -50,7 +50,10 @@ impl Command for Plan {
         };
         // find plugin filesets
         let plug_fset = if let Some(plug) = &self.plugin {
-            Some(c.get_plugins().get(plug).expect(&format!("plugin {} does not exist", plug)))
+            match c.get_plugins().get(plug) {
+                Some(p) => Some(p),
+                None => return Err(AnyError(format!("plugin '{}' does not exist", plug)))?,
+            }
         } else {
             None
         };

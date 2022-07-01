@@ -10,11 +10,26 @@ use std::error::Error;
 use crate::util::anyerror::AnyError;
 use crate::core::ip::Ip;
 use crate::commands::search::Search;
+use crate::core::template::Template;
+use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
 pub struct New {
     ip: pkgid::PkgId,
     rel_path: Option<std::path::PathBuf>,
+    template: Option<String>,
+}
+
+impl FromCli for New {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
+        cli.set_help(HELP);
+        let command = Ok(New {
+            ip: cli.require_positional(Positional::new("ip"))?,
+            rel_path: cli.check_option(Optional::new("path"))?,
+            template: cli.check_option(Optional::new("template").value("alias"))?,
+        });
+        command
+    }
 }
 
 impl Command for New {
@@ -35,13 +50,23 @@ impl Command for New {
             return Err(AnyError(format!("ip pkgid '{}' already taken", self.ip)))?
         }
 
+        // verify the template exists
+        let template = if let Some(alias) = &self.template {
+            match context.get_templates().get(alias) {
+                Some(t) => Some(t),
+                None => return Err(AnyError(format!("template '{}' does not exist", alias)))?
+            }
+        } else {
+            None
+        };
+
         // only pass in necessary variables from context
-        self.run(root, context.force)
+        self.run(root, context.force, template)
     }
 }
 
 impl New {
-    fn run(&self, root: &std::path::PathBuf, force: bool) -> Result<(), Box<dyn Error>> {
+    fn run(&self, root: &std::path::PathBuf, force: bool, template: Option<&Template>) -> Result<(), Box<dyn Error>> {
         // create ip stemming from ORBIT_PATH with default /VENDOR/LIBRARY/NAME
         let ip_path = if self.rel_path.is_none() {
             root.join(self.ip.get_vendor().as_ref().unwrap())
@@ -60,24 +85,25 @@ impl New {
             }
             // verify there are no current IPs living on this path
             if let Some(other_path) = Context::find_ip_path(&path_clone) {
-                return Err(Box::new(AnyError(format!("an IP already exists at path {}", other_path.display()))))
+                return Err(AnyError(format!("an IP already exists at path {}", other_path.display())))?
             }
         }
 
         let ip = Ip::new(ip_path, force)?.create_manifest(&self.ip)?;
+
+        // import template if found
+        if let Some(t) = template {
+            // create hashmap to store variables
+            let mut vars = HashMap::new();
+            vars.insert("orbit.ip.name".to_owned(), self.ip.get_name().to_string());
+            vars.insert("orbit.ip.library".to_owned(), self.ip.get_library().as_ref().unwrap().to_string());
+            vars.insert("orbit.ip.vendor".to_owned(), self.ip.get_library().as_ref().unwrap().to_string());
+            vars.insert("orbit.ip".to_owned(), self.ip.to_string());
+            t.import(ip.get_path(), &vars)?;
+        }
+        
         println!("info: new ip created at {}", ip.get_path().display());
         Ok(())
-    }
-}
-
-impl FromCli for New {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
-        let command = Ok(New {
-            ip: cli.require_positional(Positional::new("ip"))?,
-            rel_path: cli.check_option(Optional::new("path"))?,
-        });
-        command
     }
 }
 
@@ -88,11 +114,11 @@ Usage:
     orbit new [options] <ip>
 
 Args:
-    <ip>                the V.L.N for the new package
+    <ip>                the V.L.N for the new package (pkgid)
 
 Options:
     --path <path>       set the destination directory
-    --template <key>    specify a template to copy
+    --template <alias>  specify a template to import
 
 Use 'orbit help new' to read more about the command.
 ";

@@ -154,6 +154,9 @@
 default, it will modify the user's config located at $ORBIT_HOME.</p>
 <p>To access an entry (key/value pair), use dots (<code>.</code>) to delimit between 
 intermediate table identifiers and the final key identifier. </p>
+<p>The command modifies the document in three steps. The first modification is it
+iterates through all <code>--append</code> values. Then, it will insert all <code>--set</code>
+values. Lastly, it will remove all <code>--unset</code> entries.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--global</code><br />
       Access the settings to the home configuration file</p>

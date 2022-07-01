@@ -15,6 +15,19 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.3.0
+
+### Features
+- `config` command: modify some configuration values directly from the command-line
+- supports local config.toml files in current working ip
+- templates: reusable directories with variable substitution support to import boilerplate files for new projects
+- adds `--list` flag to new command to view usable templates
+
+### Documentation
+- updates initial setup and new command pages
+- adds config man page to index
+- updates configuration page
+
 ## 0.2.2
 
 ### Features

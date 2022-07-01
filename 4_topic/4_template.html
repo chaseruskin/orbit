@@ -145,6 +145,50 @@
                     <main>
                         <h1 id="templates"><a class="header" href="#templates">Templates</a></h1>
 <p>Templates help you start a project faster.</p>
+<p>Here is an example template stored in a configuration file:</p>
+<p><em>config.toml</em></p>
+<pre><code class="language-toml">[[template]]
+alias = &quot;main&quot;
+path = &quot;template/&quot;
+summary = &quot;standard project structure with rtl and sim folders&quot;
+ignore = [
+    &quot;extra/&quot;
+]
+</code></pre>
+<p>Templates are paths to a directory on your local filesystem that can be copied when creating a new IP with <code>orbit new</code>. </p>
+<p>Orbit automatically will omit copying a <code>.git</code> folder and a <code>Orbit.toml</code> file from the template's root directory. You can specify additional ignore rules with the template configuration's <code>ignore</code> entry.</p>
+<h2 id="variable-substitution"><a class="header" href="#variable-substitution">Variable Substitution</a></h2>
+<p>Templates support variable subsitution for more customized importing per project. Orbit searches for a double bracket notation <code>{{ }}</code> to signify a variable. Variables can exist in the filepath name or the file's contents.</p>
+<h3 id="example"><a class="header" href="#example">Example</a></h3>
+<p>Assume the given variables defined by Orbit:</p>
+<pre><code>orbit.ip = ks-tech.rary.gates
+orbit.ip.name = gates
+orbit.user = Kepler
+</code></pre>
+<p>Then variable transformation would apply like so:</p>
+<p>Original template filepath:</p>
+<pre><code>rtl/{{orbit.ip.name}}.vhd
+</code></pre>
+<p>Imported filepath:</p>
+<pre><code>rtl/gates.vhd
+</code></pre>
+<p>Original template file contents:</p>
+<pre><code class="language-vhdl">--! project: {{ orbit.ip }}
+--! author: {{ orbit.user }}
+entity {{ orbit.ip.name }} is
+
+end entity;
+</code></pre>
+<p>Imported file contents:</p>
+<pre><code class="language-vhdl">--! project: ks-tech.rary.gates
+--! author: Kepler
+entity gates is
+
+end entity;
+</code></pre>
+<blockquote>
+<p><strong>Note:</strong> Any variable that is not recognized by Orbit has its text left as-is and is not transformed.</p>
+</blockquote>
 
                     </main>
 

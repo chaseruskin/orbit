@@ -13,6 +13,8 @@ pub struct Ip {
 
 impl Ip {
     /// Creates an `Ip` from a manifest.
+    /// 
+    /// The manifest must already be for an existing IP.
     pub fn from_manifest(manifest: IpManifest) -> Self {
         Self { 
             path: manifest.0.get_path().as_path().parent().unwrap().to_path_buf(), 

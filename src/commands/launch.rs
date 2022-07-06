@@ -1,5 +1,7 @@
 use crate::Command;
 use crate::FromCli;
+use crate::core::ip::Ip;
+use crate::core::store::Store;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;
@@ -63,6 +65,7 @@ fn find_last_commit(repo: &Repository) -> Result<git2::Commit, git2::Error> {
 
 impl Command for Launch {
     type Err = Box<dyn std::error::Error>;
+
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // make sure it is run from an ip directory
         c.goto_ip_path()?;
@@ -233,6 +236,10 @@ impl Command for Launch {
             if push == true {
                 extgit.push()?;
             }
+
+            // store the repository
+            let store = Store::new(c.get_store_path());
+            store.store(&Ip::from_manifest(manifest))?;
 
             println!("info: released version {}", version);
         } else {

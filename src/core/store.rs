@@ -14,9 +14,17 @@ impl<'a> Store<'a> {
     }
 
     /// Stashes the `repo` for the `ip` into the .orbit/store folder.
+    /// 
+    /// It will completely replace the existing store slot or create a new one.
+    /// Assumes the `ip` is not located within the store.
     pub fn store(&self, ip: &Ip) -> Result<PathBuf, Fault> {
         let id_dir = ip.get_manifest().as_pkgid().into_hash().to_string();
         let store_ip_dir = self.root.join(&id_dir);
+        // force removal of the existing directory
+        if store_ip_dir.exists() == true {
+            std::fs::remove_dir_all(&store_ip_dir)?;
+        }
+        // create new directory to store
         std::fs::create_dir(&store_ip_dir)?;
         // clone the repository to the store location
         Repository::clone(&ip.get_path().to_str().unwrap(), &store_ip_dir)?;

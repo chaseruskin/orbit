@@ -35,6 +35,7 @@ impl FromCli for Install {
 
 use colored::Colorize;
 use git2::Repository;
+use git2::build::CheckoutBuilder;
 use tempfile::tempdir;
 use crate::core::store::Store;
 use std::str::FromStr;
@@ -170,12 +171,6 @@ impl Install {
     pub fn install(ip: &Ip, version: &AnyVersion, cache_root: &std::path::PathBuf, force: bool, store: Store) -> Result<(), Fault> {
         let target = ip.get_manifest().as_pkgid();
 
-        let repo = Repository::open(&ip.get_path())?;
-        // find the specified version for the given ip
-        let space = gather_version_tags(&repo)?;
-        let version = get_target_version(&version, &space, &target)?;
-        println!("detected version {}", version);
-
         // move into stored directory to compute checksum for the tagged version
         let temp = match store.is_stored(&target) {
             true => ip.get_path().clone(),
@@ -184,10 +179,19 @@ impl Install {
         };
         let repo = Repository::open(&temp)?;
 
+        // find the specified version for the given ip
+        let space = gather_version_tags(&repo)?;
+        let version = get_target_version(&version, &space, &target)?;
+        println!("detected version {}", version);
+
         // get the tag
         let obj = repo.revparse_single(version.to_string().as_ref())?;
+
+        // configure checkout options
+        let mut cb = CheckoutBuilder::new();
+        cb.force();
         // checkout code at the tag's marked timestamp
-        repo.checkout_tree(&obj, None)?;
+        repo.checkout_tree(&obj, Some(&mut cb))?;
 
         // perform sha256 on the directory after collecting all files
         std::env::set_current_dir(&temp)?;

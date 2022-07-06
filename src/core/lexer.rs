@@ -112,6 +112,17 @@ impl Position {
     pub fn col(&self) -> usize {
         self.1
     }
+
+    /// Appends the position by adding lines and setting column.
+    pub fn fast_forward(&mut self, other: &Position) {
+        if other.0 > 1 {
+            self.0 += other.0;
+        }
+        match other.0 > 1 {
+            true => self.1 = other.1,   // set column
+            false => self.1 += other.1, // add column
+        }
+    }
 }
 
 impl std::fmt::Display for Position {

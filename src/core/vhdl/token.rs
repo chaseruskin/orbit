@@ -1,5 +1,7 @@
+use std::fmt::Debug;
 use std::str::FromStr;
 use crate::core::lexer;
+use crate::core::lexer::Position;
 use crate::core::lexer::TrainCar;
 use crate::core::lexer::Tokenize;
 use std::fmt::Display;
@@ -50,6 +52,14 @@ impl Identifier {
         match self {
             Self::Basic(id) => id.as_ref(),
             Self::Extended(id) => id.as_ref(),
+        }
+    }
+
+    /// Modifies the ending of the identifier with `ext` and writes as a String
+    pub fn into_extension(&self, ext: &str) -> Identifier {
+        match self {
+            Self::Basic(s) => Self::Basic(s.clone() + ext),
+            Self::Extended(s) => Self::Extended(s.clone() + ext)
         }
     }
 
@@ -162,6 +172,35 @@ impl Comment {
             Self::Delimited(note) => note.as_ref(),
         }
     }
+
+    /// Computes the ending position the cursor ends up in.
+    pub fn ending_position(&self) -> Position {
+        // begin with counting the opening delimiters (-- or /*)
+        let mut pos = Position::place(1, 2);
+        let mut chars = self.as_str().chars();
+        while let Some(c) = chars.next() {
+            if char_set::is_newline(&c) == true {
+                pos.next_line();
+            } else {
+                pos.next_col();
+            }
+        }
+        match self {
+            Self::Single(_) => (),
+            // increment to handle the closing delimiters */
+            Self::Delimited(_) => { pos.next_col(); pos.next_col(); }
+        }
+        pos
+    }
+}
+
+impl Display for Comment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Single(c) => write!(f, "--{}", c),
+            Self::Delimited(c) => write!(f, "/*{}*/", c),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -177,6 +216,12 @@ impl Character {
     }
 }
 
+impl std::fmt::Display for Character {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "'{}'", self.0)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct BitStrLiteral(String);
 
@@ -184,6 +229,12 @@ impl BitStrLiteral {
     /// Returns the reference to the inner `String` struct.
     fn as_str(&self) -> &str {
         &self.0.as_ref()
+    }
+}
+
+impl std::fmt::Display for BitStrLiteral {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -199,6 +250,15 @@ impl AbstLiteral {
             Self::Decimal(val) => val.as_ref(),
             Self::Based(val) => val.as_ref(),
         }
+    }
+}
+
+impl std::fmt::Display for AbstLiteral {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            Self::Decimal(val) => val,
+            Self::Based(val) => val,
+        })
     }
 }
 
@@ -732,15 +792,15 @@ pub enum VHDLToken {
 impl Display for VHDLToken {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", match self {
-            Self::Comment(note) => note.as_str(),
-            Self::Identifier(id) => id.as_str(),
-            Self::AbstLiteral(a) => a.as_str(),
-            Self::CharLiteral(c) => c.as_str(),
-            Self::StrLiteral(s) => s.as_str(),
-            Self::BitStrLiteral(b) => b.as_str(),
-            Self::Keyword(kw) => kw.as_str(),
-            Self::Delimiter(d) => d.as_str(),
-            Self::EOF => "EOF",
+            Self::Comment(note) => note.to_string(),
+            Self::Identifier(id) => id.to_string(),
+            Self::AbstLiteral(a) => a.to_string(),
+            Self::CharLiteral(c) => c.to_string(),
+            Self::StrLiteral(s) => format!("\"{}\"", s),
+            Self::BitStrLiteral(b) => b.to_string(),
+            Self::Keyword(kw) => kw.to_string(),
+            Self::Delimiter(d) => d.to_string(),
+            Self::EOF => String::new(),
         })
     }
 }
@@ -1410,21 +1470,34 @@ impl VHDLTokenizer {
 
     /// Transforms the list of results into a list of tokens, silently skipping over
     /// errors.
+    /// 
+    /// This `fn` also filters out `Comment`s. To include `Comment` tokens, see
+    /// `into_tokens_all`.
     pub fn into_tokens(self) -> Vec<lexer::Token<VHDLToken>> {
         self.tokens.into_iter().filter_map(|f| {
             match f.0 {
                 Ok(t) => {
-                    // skip comments
-                    if let &VHDLToken::Comment(_) = t.as_ref() {
-                        None
-                    } else {
-                        Some(t)
+                    match t.as_ref() {
+                        VHDLToken::Comment(_) => None,
+                        _ => Some(t),
                     }
                 }
                 Err(_) => None,
             }
         } ).collect()
     }
+
+    /// Transforms the list of results into a list of tokens, silently skipping over
+    /// errors.
+    pub fn into_tokens_all(self) -> Vec<lexer::Token<VHDLToken>> {
+        self.tokens.into_iter().filter_map(|f| {
+            match f.0 {
+                Ok(t) => Some(t),
+                Err(_) => None,
+            }
+        }).collect()
+    }
+
 }
 
 impl VHDLToken {
@@ -2239,6 +2312,17 @@ entity fa is end entity;";
         
         let id0 = Identifier::from_str("\\I\\\\DEN\\").unwrap(); // written as: \I\\D\
         assert_eq!(id0.len(), 8);
+    }
+
+    #[test]
+    fn comment_ending_pos() {
+        let comment = Comment::Delimited("gators".to_string());
+        assert_eq!(comment.ending_position(), Position::place(1, 10));
+        let comment = Comment::Single("gators".to_string());
+        assert_eq!(comment.ending_position(), Position::place(1, 8));
+
+        let comment = Comment::Delimited("gators\n".to_string());
+        assert_eq!(comment.ending_position(), Position::place(2, 2));
     }
 
     #[test]

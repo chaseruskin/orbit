@@ -4,6 +4,7 @@ use crate::core::pkgid::PkgId;
 use git2::Repository;
 
 /// An IP is a package that Orbit tracks
+#[derive(Debug)]
 pub struct Ip {
     /// the root directory of the project (Orbit.toml location)
     path: std::path::PathBuf,

@@ -36,7 +36,7 @@ impl FromCli for Install {
 use colored::Colorize;
 use git2::Repository;
 use tempfile::tempdir;
-use std::path::PathBuf;
+use crate::core::store::Store;
 use std::str::FromStr;
 use crate::commands::search::Search;
 use crate::core::extgit::ExtGit;
@@ -52,6 +52,8 @@ impl Command for Install {
         // let temporary directory exist for lifetime of install in case of using it
         let tempdir = tempdir()?;
 
+        let store = Store::new(c.get_store_path());
+
         // get to the repository (root path)
         let ip = if let Some(ip) = &self.ip {
             // gather all manifests from all 3 levels
@@ -61,15 +63,11 @@ impl Command for Install {
             let mut inventory = universe.remove(&target).take().unwrap();
 
             // check the store/ for the repository
-            if let Some(project) = as_stored(&target, &c.get_store_path()) {
+            if let Some(project) = store.as_stored(&target)? {
                 project
             // use repository found on DEV_PATH
             } else if let Some(m) = inventory.0.take() {
-                let project = Ip::from_manifest(m);
-
-                // store it
-                store(&project, &c.get_store_path())?;
-                project
+                Ip::from_manifest(m)
             // @TODO clone from remote repository if exists (from AVAILABLE)
             } else {
                 // check out vendor-level for repo
@@ -94,27 +92,7 @@ impl Command for Install {
         };
 
         // enter action
-        self.run(&ip, c.get_cache_path(), c.force)
-    }
-}
-
-/// Stashes the `repo` for the `ip` into the .orbit/store folder.
-fn store(ip: &Ip, store: &PathBuf) -> Result<(), Fault> {
-    let id = ip.get_manifest().as_pkgid().into_hash();
-    std::fs::create_dir(&store.join(id.to_string()))?;
-    // clone the repository to the store location
-    todo!("clone the repository to the store location")
-}
-
-/// Checks if the current ip is already placed in the Orbit store.
-fn as_stored(ip: &PkgId, store: &PathBuf) -> Option<Ip> {
-    // @TODO implement
-    let store_ip_dir = store.join(ip.into_hash().to_string());
-    if std::path::Path::exists(&store_ip_dir) == false {
-        None
-    } else {
-        // grab the ip manifest there
-        Some(Ip::from_path(store_ip_dir))
+        self.run(&ip, c.get_cache_path(), c.force, store)
     }
 }
 
@@ -189,8 +167,7 @@ impl Install {
     /// It will reinstall if it finds the original installation has a mismatching checksum.
     /// 
     /// Errors if the ip is already installed unless `force` is true.
-    pub fn install(ip: &Ip, version: &AnyVersion, cache_root: &std::path::PathBuf, force: bool) -> Result<(), Fault> {
-
+    pub fn install(ip: &Ip, version: &AnyVersion, cache_root: &std::path::PathBuf, force: bool, store: Store) -> Result<(), Fault> {
         let target = ip.get_manifest().as_pkgid();
 
         let repo = Repository::open(&ip.get_path())?;
@@ -199,15 +176,18 @@ impl Install {
         let version = get_target_version(&version, &space, &target)?;
         println!("detected version {}", version);
 
-        // move into temporary directory to compute checksum for the tagged version
-        let temp = tempfile::tempdir()?;
-        let repo = Repository::clone(&ip.get_path().to_str().unwrap(), &temp)?;
+        // move into stored directory to compute checksum for the tagged version
+        let temp = match store.is_stored(&target) {
+            true => ip.get_path().clone(),
+            // throw repository into the store/ for future use
+            false => store.store(&ip)?,
+        };
+        let repo = Repository::open(&temp)?;
+
         // get the tag
         let obj = repo.revparse_single(version.to_string().as_ref())?;
         // checkout code at the tag's marked timestamp
         repo.checkout_tree(&obj, None)?;
-
-        // @TODO throw repository into the store/ for future use
 
         // perform sha256 on the directory after collecting all files
         std::env::set_current_dir(&temp)?;
@@ -241,21 +221,21 @@ impl Install {
         // copy contents into cache slot
         let options = fs_extra::dir::CopyOptions::new();
         let mut from_paths = Vec::new();
-        for dir_entry in std::fs::read_dir(temp.path())? {
+        for dir_entry in std::fs::read_dir(temp)? {
             match dir_entry {
                 Ok(d) => if d.file_name() != ".git" || d.file_type()?.is_dir() != true { from_paths.push(d.path()) },
                 Err(_) => (),
             }
         }
-        // copy rather than rename because of windows issues
+        // note: copy rather than rename because of windows issues
         fs_extra::copy_items(&from_paths, &cache_slot, &options)?;
         // write the checksum to the directory
         std::fs::write(&cache_slot.join(crate::core::fileset::ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
         Ok(())
     }
 
-    fn run(&self, ip: &Ip, cache_root: &std::path::PathBuf, force: bool) -> Result<(), Fault> {
-        Self::install(&ip, &self.version, &cache_root, force)
+    fn run(&self, ip: &Ip, cache_root: &std::path::PathBuf, force: bool, store: Store) -> Result<(), Fault> {
+        Self::install(&ip, &self.version, &cache_root, force, store)
     }
 }
 

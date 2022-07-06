@@ -41,6 +41,7 @@ impl Command for Env {
             EnvVar::new().key(environment::ORBIT_BUILD_DIR).value(c.get_build_dir()),
             EnvVar::new().key(environment::ORBIT_DEV_PATH).value(c.get_development_path().unwrap_or(&PathBuf::new()).to_str().unwrap()),
             EnvVar::new().key(environment::ORBIT_IP_PATH).value(c.get_ip_path().unwrap_or(&PathBuf::new()).to_str().unwrap()),
+            EnvVar::new().key(environment::ORBIT_STORE).value(c.get_store_path().to_str().unwrap()),
             EnvVar::new().key("EDITOR").value(&std::env::var("EDITOR").unwrap_or(String::new())),
             EnvVar::new().key("NO_COLOR").value(&std::env::var("NO_COLOR").unwrap_or(String::new())),
         ]);

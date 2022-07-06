@@ -1,18 +1,27 @@
 use std::path;
 use std::env;
+use std::path::PathBuf;
 use toml_edit::Document;
 use std::collections::HashMap;
 use crate::core::plugin::Plugin;
 use crate::core::config::FromToml;
 use crate::core::config::Config;
+use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::core::template::Template;
 
 pub struct Context {
+    /// holds behind-the-scenes internal Orbit operations
     home_path: path::PathBuf,
+    /// holds installed immutable tags of git repositories
     cache_path: path::PathBuf,
+    /// the parent path to the current ip Orbit.toml file
     ip_path: Option<path::PathBuf>,
+    /// holds in-development mutable ip projects
     dev_path: Option<path::PathBuf>,
+    /// holds installed immutable git repositories to pull versions from into cache
+    store_path: path::PathBuf, 
+    /// temporary throwaway directory     
     build_dir: String,
     config: Config,
     plugins: HashMap<String, Plugin>, // @IDEA optionally move hashmap out of context and create it from fn to allow dynamic loading
@@ -24,9 +33,11 @@ impl Context {
     pub fn new() -> Context {
         let home = std::env::temp_dir();
         let cache = home.join("cache");
+        let store = home.join("store");
         Context { 
             home_path: home,
             cache_path: cache,
+            store_path: store,
             ip_path: None,
             dev_path: None,
             plugins: HashMap::new(),
@@ -65,42 +76,68 @@ impl Context {
         // verify the environment variable is set
         env::set_var(key, &self.home_path);
         Ok(self)
-    }   
+    }
+
+    /// Sets the store directory. If it was set from `var`, it assumes the path
+    /// exists. If setting by default (within HOME), it assumes HOME is already existing.
+    pub fn store(mut self, key: &str) -> Result<Context, Fault> {
+        self.store_path = self.folder(key, "store")?;
+        Ok(self)
+    }
+
+    /// Returns an existing filesystem path to be used under `key`.
+    /// 
+    /// Uses `key`'s value if already explicitly set and will set the environment
+    /// variable accordingly.
+    fn folder(&self, key: &str, folder: &str) -> Result<PathBuf, Fault> {
+        // prioritize explicit variable setting
+        let dir = if let Ok(s) = env::var(key) {
+            let ep = PathBuf::from(s);
+            // verify the path exists
+            if ep.exists() == false {
+                return Err(AnyError(format!("directory {} does not exist for {}", ep.display(), key)))?
+            }
+            // verify the path is a directory
+            if ep.is_dir() == false {
+                return Err(AnyError(format!("{} must be a filesystem directory", key)))?
+            }
+            ep
+        // proceed with default
+        } else {
+            let ep = self.home_path.join(&folder);
+            // create the directory if does not exist
+            if ep.exists() == false {
+                std::fs::create_dir(&ep).expect(&format!("failed to create .orbit/{} directory", folder));
+            }
+            ep
+        };
+        // set the environment variable
+        env::set_var(key, &dir);
+        Ok(dir)
+    }
 
     /// Sets the cache directory. If it was set from `var`, it assumes the path
     /// exists. If setting by default (within HOME), it assumes HOME is already existing.
-    pub fn cache(mut self, key: &str) -> Result<Context, ContextError> {
-        self.cache_path = if let Ok(s) = env::var(key) {
-            let cp = std::path::PathBuf::from(s);
-            // do not allow a nonexistent directory to be set for cache path
-            if path::Path::exists(&cp) == false {
-                return Err(ContextError(format!("directory {} does not exist for ORBIT_CACHE", cp.display())))
-            }
-            cp
-        // proceed with default
-        } else {
-            let cp = self.home_path.join("cache");
-            // create the directory if does not exist
-            if path::Path::exists(&cp) == false {
-                std::fs::create_dir(&cp).expect("failed to create .orbit/cache directory");
-            }
-            cp
-        };
-        // verify the environment variable is set
-        env::set_var(key, &self.cache_path);
+    pub fn cache(mut self, key: &str) -> Result<Context, Fault> {
+        self.cache_path = self.folder(key, "cache")?;
         Ok(self)
     }
 
     /// Returns the path to search for vendors.
     /// 
     /// Currently only returns ORBIT_HOME/vendor.
-    pub fn get_vendor_path(&self) -> std::path::PathBuf {
+    pub fn get_vendor_path(&self) -> PathBuf {
         self.home_path.join("vendor").to_path_buf()
     }
 
-    /// Accesses the cache directory.
-    pub fn get_cache_path(&self) -> &std::path::PathBuf {
+    /// References the cache directory.
+    pub fn get_cache_path(&self) -> &PathBuf {
         &self.cache_path
+    }
+
+    /// References the store directory.
+    pub fn get_store_path(&self) -> &PathBuf {
+        &self.store_path
     }
 
     /// Configures and reads data from the settings object to return a `Settings` struct

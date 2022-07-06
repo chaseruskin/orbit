@@ -15,6 +15,20 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.3.1
+
+## Features
+- adds --verbose flag to build command
+- stores repositories into store/ to be used to checkout specific installation versions into cache
+
+### Documentation
+- revises develop ip page
+- writes developing ip page
+- writes template page
+- updates initial setup and new command pages
+- adds config man page to index
+- updates configuration page
+
 ## 0.3.0
 
 ### Features

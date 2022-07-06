@@ -17,7 +17,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## 0.3.1
 
-## Features
+### Features
 - adds --verbose flag to build command
 - stores repositories into store/ to be used to checkout specific installation versions into cache
 

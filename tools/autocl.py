@@ -91,7 +91,7 @@ def main():
         info = extract_recent_version_changes(contents)
 
         if len(info) == 0:
-            exit('error: document changes before releasing version '+current_version)
+            exit('error: document all changes before releasing version '+current_version)
 
         print(info)
     pass

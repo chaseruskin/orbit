@@ -71,6 +71,36 @@ impl PartialVersion {
         PartialVersion { major: 0, minor: None, patch: None }
     }
 
+    pub fn major(mut self, m: VerNum) -> Self {
+        self.major = m;
+        self
+    }
+
+    pub fn minor(mut self, m: VerNum) -> Self {
+        self.minor = Some(m);
+        self
+    }
+
+    pub fn patch(mut self, m: VerNum) -> Self {
+        self.patch = Some(m);
+        self
+    }
+
+    /// Checks if `other` version is within the same domain as the `self`.
+    /// 
+    /// This means either version can fulfill the same requirements, where one may
+    /// be implicitly higher or stricter.
+    pub fn in_domain(&self, other: &PartialVersion) -> bool {
+        if self.major != other.major {
+            return false
+        }
+        if self.minor.is_some() && other.minor.is_some() && other.minor.unwrap() != self.minor.unwrap() {
+            return false
+        }
+
+        other.patch.is_none() || self.patch.is_none() || other.patch.unwrap() == self.patch.unwrap() 
+    }
+
     /// Returns the highest compatible version from the list of versions.
     /// 
     /// Returns `None` if the list is empty or there are zero that meet the
@@ -489,5 +519,33 @@ mod test {
     fn to_str() {
         let v = Version { major: 20, minor: 4, patch: 7 };
         assert_eq!(v.to_string(), "20.4.7");
+    }
+
+    #[test]
+    fn partial_ver_cmp() {
+        let v0 = PartialVersion::new().major(1);
+        let v1 = PartialVersion::new().major(1).minor(5);
+        assert_eq!(v0.in_domain(&v1), true);
+        assert_eq!(v1.in_domain(&v0), true);
+
+        let v0 = PartialVersion::new().major(1).minor(1);
+        let v1 = PartialVersion::new().major(1).minor(0);
+        assert_eq!(v0.in_domain(&v1), false);
+        assert_eq!(v1.in_domain(&v0), false);
+
+        let v0 = PartialVersion::new().major(2).minor(1).patch(3);
+        let v1 = PartialVersion::new().major(1).minor(0).patch(4);
+        assert_eq!(v0.in_domain(&v1), false);
+        assert_eq!(v1.in_domain(&v0), false);
+
+        let v0 = PartialVersion::new().major(1).minor(0).patch(4);
+        let v1 = PartialVersion::new().major(1).minor(0).patch(4);
+        assert_eq!(v0.in_domain(&v1), true);
+        assert_eq!(v1.in_domain(&v0), true);
+
+        let v0 = PartialVersion::new().major(1);
+        let v1 = PartialVersion::new().major(1).minor(2).patch(4);
+        assert_eq!(v0.in_domain(&v1), true);
+        assert_eq!(v1.in_domain(&v0), true);
     }
 }

@@ -13,3 +13,4 @@ pub mod config;
 pub mod extgit;
 pub mod template;
 pub mod store;
+pub mod resolver;

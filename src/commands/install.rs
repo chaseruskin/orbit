@@ -36,6 +36,7 @@ impl FromCli for Install {
 use colored::Colorize;
 use git2::Repository;
 use tempfile::tempdir;
+use std::path::PathBuf;
 use std::str::FromStr;
 use crate::commands::search::Search;
 use crate::core::extgit::ExtGit;
@@ -59,13 +60,25 @@ impl Command for Install {
             // gather all possible versions found for this IP
             let mut inventory = universe.remove(&target).take().unwrap();
 
-            // @TODO check the store/ for the repository
+            // check the store/ for the repository
+            if let Some(project) = as_stored(&target, &c.get_store_path()) {
+                project
+            // use repository found on DEV_PATH
+            } else if let Some(m) = inventory.0.take() {
+                let project = Ip::from_manifest(m);
 
-            // use DEV_PATH repository
-            if let Some(m) = inventory.0.take() {
-                Ip::from_manifest(m)
-            // try to clone from remote repository if exists
+                // store it
+                store(&project, &c.get_store_path())?;
+                project
+            // @TODO clone from remote repository if exists (from AVAILABLE)
             } else {
+                // check out vendor-level for repo
+
+                // check out install-level for repo
+
+                // check out dev-level for repo
+
+                // store it
                 todo!("clone from repository")
             }
         } else if let Some(url) = &self.git {
@@ -82,6 +95,26 @@ impl Command for Install {
 
         // enter action
         self.run(&ip, c.get_cache_path(), c.force)
+    }
+}
+
+/// Stashes the `repo` for the `ip` into the .orbit/store folder.
+fn store(ip: &Ip, store: &PathBuf) -> Result<(), Fault> {
+    let id = ip.get_manifest().as_pkgid().into_hash();
+    std::fs::create_dir(&store.join(id.to_string()))?;
+    // clone the repository to the store location
+    todo!("clone the repository to the store location")
+}
+
+/// Checks if the current ip is already placed in the Orbit store.
+fn as_stored(ip: &PkgId, store: &PathBuf) -> Option<Ip> {
+    // @TODO implement
+    let store_ip_dir = store.join(ip.into_hash().to_string());
+    if std::path::Path::exists(&store_ip_dir) == false {
+        None
+    } else {
+        // grab the ip manifest there
+        Some(Ip::from_path(store_ip_dir))
     }
 }
 

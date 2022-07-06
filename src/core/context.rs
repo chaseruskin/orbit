@@ -85,6 +85,13 @@ impl Context {
         Ok(self)
     }
 
+    /// Sets the cache directory. If it was set from `var`, it assumes the path
+    /// exists. If setting by default (within HOME), it assumes HOME is already existing.
+    pub fn cache(mut self, key: &str) -> Result<Context, Fault> {
+        self.cache_path = self.folder(key, "cache")?;
+        Ok(self)
+    }
+
     /// Returns an existing filesystem path to be used under `key`.
     /// 
     /// Uses `key`'s value if already explicitly set and will set the environment
@@ -114,13 +121,6 @@ impl Context {
         // set the environment variable
         env::set_var(key, &dir);
         Ok(dir)
-    }
-
-    /// Sets the cache directory. If it was set from `var`, it assumes the path
-    /// exists. If setting by default (within HOME), it assumes HOME is already existing.
-    pub fn cache(mut self, key: &str) -> Result<Context, Fault> {
-        self.cache_path = self.folder(key, "cache")?;
-        Ok(self)
     }
 
     /// Returns the path to search for vendors.

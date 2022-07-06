@@ -136,6 +136,9 @@ impl<'a> Iterator for PkgIdIter<'a> {
     }
 }
 
+use std::collections::hash_map::DefaultHasher;
+use std::hash::Hasher;
+
 impl PkgId {
     pub fn new() -> Self {
         PkgId {
@@ -143,6 +146,12 @@ impl PkgId {
             library: None,
             name: PkgPart::new(),
         }
+    }
+
+    pub fn into_hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish()
     }
 
     pub fn iter(&self) -> PkgIdIter {

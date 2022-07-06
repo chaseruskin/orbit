@@ -15,6 +15,7 @@ pub struct Build {
     list: bool,
     command: Option<String>,
     args: Vec<String>,
+    verbose: bool,
 }
 
 impl FromCli for Build {
@@ -23,6 +24,7 @@ impl FromCli for Build {
         let command = Ok(Build {
             alias: cli.check_option(Optional::new("plugin").value("alias"))?,
             list: cli.check_flag(Flag::new("list"))?,
+            verbose: cli.check_flag(Flag::new("verbose"))?,
             command: cli.check_option(Optional::new("command").value("cmd"))?,
             args: cli.check_remainder()?,
         });
@@ -114,8 +116,12 @@ impl Build {
     fn run(&self, plug: Option<&Plugin>) -> Result<(), Box<dyn std::error::Error>> {
         // if there is a match run with the plugin then run it
         if let Some(p) = plug {
-            p.execute(&self.args)
+            p.execute(&self.args, self.verbose)
         } else if let Some(cmd) = &self.command {
+            if self.verbose == true {
+                let s = self.args.iter().fold(String::new(), |x, y| { x + "\"" + &y + "\" " });
+                println!("running: {} {}", cmd, s);
+            }
             let mut proc = std::process::Command::new(cmd)
                 .args(&self.args)
                 .stdout(Stdio::inherit())
@@ -142,6 +148,7 @@ Options:
     --plugin <alias>    plugin to execute
     --command <cmd>     command to execute
     --list              view available plugins
+    --verbose           display the command being executed
     -- args...          arguments to pass to the requested command
 
 Use 'orbit help build' to learn more about the command.

@@ -62,7 +62,12 @@ impl Plugin {
     }
 
     /// Runs the given `command` with the set `args` for the plugin.
-    pub fn execute(&self, extra_args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn execute(&self, extra_args: &[String], verbose: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let args = [&self.args, extra_args].concat();
+        if verbose == true {
+            let s = args.iter().fold(String::new(), |x, y| { x + "\"" + &y + "\" " });
+            println!("running: {} {}", self.command, s);
+        }
         let mut proc = std::process::Command::new(&self.command)
             .args([&self.args, extra_args].concat())
             .stdout(Stdio::inherit())

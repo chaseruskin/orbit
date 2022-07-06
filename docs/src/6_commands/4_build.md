@@ -32,6 +32,9 @@ for future build commands. It will be the default plugin to use if no
 `--list`     
       View available plugins
  
+`--verbose`     
+      Display the command being executed
+ 
 `-- args...`  
       Arguments to pass to the requested plugin
 

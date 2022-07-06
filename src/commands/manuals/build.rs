@@ -26,6 +26,9 @@ OPTIONS
     --list     
           View available plugins
      
+    --verbose     
+          Display the command being executed
+     
     -- args...  
           Arguments to pass to the requested plugin
 

@@ -275,8 +275,11 @@ impl FromToml for DependencyTable {
         let mut map = HashMap::new();
         // traverse three tables deep to retrieve V.L.N
         for (vendor, v_item) in table.iter() {
-            for (library, l_item) in v_item.as_table().unwrap() {
-                for (name, n_item) in l_item.as_table().unwrap() {
+            let mut switch = true;
+            for (library, l_item) in v_item.as_table().unwrap_or(&toml_edit::Table::default()) {
+                switch = true;
+                for (name, n_item) in l_item.as_table().unwrap_or(&toml_edit::Table::default()) {
+                    switch = false;
                     let pkgid = PkgId::new().name(name)?.library(library)?.vendor(vendor)?; 
                     // create version
                     let version = match n_item.as_str() {
@@ -286,7 +289,9 @@ impl FromToml for DependencyTable {
                     // insert into lut
                     map.insert(pkgid, version);
                 }
+                if switch == true { return Err(AnyError(format!("incomplete ip identifier {}.{}.", vendor, library)))? }
             }
+            if switch == true { return Err(AnyError(format!("incomplete ip identifier {}.", vendor)))? }
         }
         Ok(Self(map))
     }

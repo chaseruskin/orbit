@@ -68,38 +68,25 @@ use crate::util::anyerror::AnyError;
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
-pub struct HashNode {
-    index: usize,
-    entity: symbol::Entity,
-    files: Vec<String>,
-}
-
-impl HashNode {
-    pub fn index(&self) -> usize {
-        self.index
-    }
-    
-    fn new(entity: symbol::Entity, index: usize, file: String) -> Self {
-        let mut set = Vec::new();
-        set.push(file);
-        Self {
-            entity: entity,
-            index: index,
-            files: set,
-        }
-    }
-
-    fn add_file(&mut self, file: String) {
-        if self.files.contains(&file) == false {
-            self.files.push(file);
-        }
-    }
-}
-
-#[derive(Debug, PartialEq)]
-struct ArchitectureFile {
+pub struct ArchitectureFile {
     architecture: symbol::Architecture,
     file: String,
+}
+
+impl ArchitectureFile {
+    pub fn new(arch: symbol::Architecture, file: &str) -> Self {
+        Self { architecture: arch, file: file.to_owned() }
+    }
+
+    /// References the architecture struct.
+    pub fn get_architecture(&self) -> &symbol::Architecture {
+        &self.architecture
+    }
+
+    /// References the file.
+    pub fn get_file(&self) -> &String {
+        &self.file
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -132,57 +119,8 @@ impl GraphNode {
 }
 
 impl Plan {
-
-    pub fn build_graph(files: &Vec<String>) -> (Graph<Identifier, ()>, HashMap<Identifier, HashNode>) {
-        // @TODO wrap graph in a hashgraph implementation
-        let mut graph: Graph<Identifier, ()> = Graph::new();
-        // entity identifier, HashNode (hash-node holds entity structs)
-        let mut map = HashMap::<Identifier, HashNode>::new();
-
-        let mut archs: Vec<ArchitectureFile> = Vec::new();
-        // read all files
-        for source_file in files {
-            if crate::core::fileset::is_vhdl(&source_file) == true {
-                let contents = std::fs::read_to_string(&source_file).unwrap();
-                let symbols = symbol::VHDLParser::read(&contents).into_symbols();
-                // add all entities to a graph and store architectures for later analysis
-                let mut iter = symbols.into_iter().filter_map(|f| {
-                    match f {
-                        symbol::VHDLSymbol::Entity(e) => Some(e),
-                        symbol::VHDLSymbol::Architecture(arch) => {
-                            archs.push(ArchitectureFile{ architecture: arch, file: source_file.to_string() });
-                            None
-                        }
-                        _ => None,
-                    }
-                });
-                while let Some(e) = iter.next() {
-                    let index = graph.add_node(e.get_name().clone());
-                    let hn = HashNode::new(e, index, source_file.to_string());
-                    map.insert(graph.get_node(index).unwrap().clone(), hn);
-                }
-            }
-        }
-
-        // go through all architectures and make the connections
-        let mut archs = archs.into_iter();
-        while let Some(af) = archs.next() {
-            // link to the owner and add architecture's source file
-            let entity_node = map.get_mut(&af.architecture.entity()).unwrap();
-            entity_node.add_file(af.file);
-            // create edges
-            for dep in af.architecture.edges() {
-                // verify the dep exists
-                if let Some(node) = map.get(dep) {
-                    graph.add_edge(node.index(), map.get(af.architecture.entity()).unwrap().index(), ());
-                }
-            }
-        }
-        (graph, map)
-    }
-
     /// Builds a graph of design units. Used for planning.
-    pub fn build_full_graph(files: &Vec<String>) -> (Graph<Identifier, ()>, HashMap<Identifier, GraphNode>) {
+    fn build_full_graph(files: &Vec<String>) -> (Graph<Identifier, ()>, HashMap<Identifier, GraphNode>) {
             // @TODO wrap graph in a hashgraph implementation
             let mut graph: Graph<Identifier, ()> = Graph::new();
             // entity identifier, HashNode (hash-node holds entity structs)

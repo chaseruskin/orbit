@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.3.2
+
+### Fixes
+- fixes edge-case checksum bugs
+
 ## 0.3.1
 
 ### Features

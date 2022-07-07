@@ -6,7 +6,8 @@ RELEASE_NOTES.md
 CHANGELOG_MERGE.md
 
 init.sh
-init.ps1
+start.ps1
+open-ip.ps1
 rc.bash
 install.sh
 install.ps1

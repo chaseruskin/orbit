@@ -3,6 +3,8 @@
 //! Topic: Cryptology & Hashing
 //! Abstract:
 //!     Implements the SHA-256 algorithm (found under the SHA-2 group).
+//! Interactive Resource: 
+//!     https://sha256algorithm.com/
 
 use std::num::ParseIntError;
 use std::str::FromStr;
@@ -76,25 +78,29 @@ pub fn compute_sha256(s: &[u8]) -> Sha256Hash {
     // convert the string into bytes
     let mut bytes = s.to_vec();
     // compute the input bytes total length to store in 8 bytes
-    let bit_length: u64 = (bytes.len() as u64) * 8;
+    let message_len: u64 = (bytes.len() as u64) * 8;
     // append a single '1' as 1000 0000 (0x80)
     bytes.push(128);
     
     // small boost if vector has not already reserved enough space for adding another chunk
     bytes.reserve(64 - (bytes.len() % 64));
-    // add a new byte to force create a new chunk to fit data's length at end
-    if bytes.len() % 64 == 0 { bytes.push(0); }
+
     // pad with zeros until data is a multiple of 512 -> 64 bytes
-    while bytes.len() % 64 != 0 { bytes.push(0); }
+    let zero_cnt_bytes = {
+        let zero_cnt = 512 - ((bytes.len()*8 + 64) % 512);
+        if zero_cnt == 512 { 0 } else { zero_cnt }
+    } / 8;
+
+    for _ in 0..zero_cnt_bytes { bytes.push(0); }
+    
     // append 64 bits to the end, where 64 bits represent integer length of original input in binary
     {
-        let block_length = bytes.len();
-        for i in 0..8 {
-            // big-endian
-            bytes[block_length-1-i] = (bit_length >> (8*i)) as u8;
+        // store as big-endian
+        for i in (0..8).rev() {
+            bytes.push((message_len >> (8*i)) as u8);
         }
     }   
-    // assert_eq!(bytes.len() % 64, 0); // 512 bits -> 64 bytes
+    assert_eq!(bytes.len() % 64, 0); // 512 bits -> 64 bytes
 
     // [2] initialize hash values
     let mut hashes: [u32; 8] = [
@@ -312,10 +318,21 @@ An interview.".as_bytes()),
         assert_eq!(compute_sha256("This sentence will have 63 bytes, to force the algorithm to be-".as_bytes()),
             Sha256Hash::from_str("8c91268f847af008383bd04a43d5937de99594f957d64c1f2816aa7cba833929").unwrap()
         );
+
+        assert_eq!(compute_sha256("This sentence will have 63 bytes, to force the algorith".as_bytes()),
+            Sha256Hash::from_str("461343e6a222a43ac38073130191c865cf18ee2df0b7998ba6518ba7c57a3b87").unwrap()
+        );
     
         assert_eq!(compute_sha256("Go Gators!".as_bytes()),
             Sha256Hash::from_str("9771f8214e6f7fefe33686f88b977aa839e1b69f0d7d937c4cb8401082bd37db").unwrap()
         );
+    }
+
+    #[test]
+    fn package_zip() {
+        let body_bytes = std::fs::read("./test/data/orbit-pkg.zip").unwrap();
+        let sum = compute_sha256(&body_bytes);
+        assert_eq!(sum, Sha256Hash::from_str("adcbb89b2a4b08bf0f2c1170129e8c41f5b7c255ec51e0f3d23e6b11da35e904").unwrap())
     }
 
     #[test]

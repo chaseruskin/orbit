@@ -330,7 +330,7 @@ An interview.".as_bytes()),
 
     #[test]
     fn package_zip() {
-        let body_bytes = std::fs::read("./test/data/orbit-pkg.zip").unwrap();
+        let body_bytes = std::fs::read("./test/data/archive.zip").unwrap();
         let sum = compute_sha256(&body_bytes);
         assert_eq!(sum, Sha256Hash::from_str("adcbb89b2a4b08bf0f2c1170129e8c41f5b7c255ec51e0f3d23e6b11da35e904").unwrap())
     }

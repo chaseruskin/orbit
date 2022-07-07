@@ -5,6 +5,7 @@ use crate::interface::arg::{Positional, Flag};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::core::pkgid::PkgId;
+use crate::util::anyerror::Fault;
 use std::collections::BTreeMap;
 
 #[derive(Debug, PartialEq)]
@@ -36,24 +37,24 @@ type IpNode = (Option<IpManifest>, Vec<IpManifest>, Vec<IpManifest>);
 
 impl Search {
     /// Collects all `pkgid` in the user's universe: dev_path, cache, and availability through vendors.
-    pub fn all_pkgid(paths: Highway) -> Result<HashMap<PkgId, IpNode>, Box<dyn std::error::Error>> {
+    pub fn all_pkgid<'a>(paths: Highway) -> Result<HashMap<PkgId, IpNode>, Fault> {
         let mut set: HashMap<PkgId, IpNode> = HashMap::new();
 
         // collect development IP
         crate::core::manifest::IpManifest::detect_all(paths.0)?
             .into_iter()
             .for_each(|f| {
-                set.insert(f.as_pkgid(), (Some(f), vec![], vec![]));
+                set.insert(f.get_pkgid().clone(), (Some(f), vec![], vec![]));
             });
         
         // collect cached IP
         crate::core::manifest::IpManifest::detect_all(paths.1)?
             .into_iter()
             .for_each(|f| {
-                if let Some(entry) = set.get_mut(&f.as_pkgid()) {
+                if let Some(entry) = set.get_mut(&f.get_pkgid()) {
                     entry.1.push(f);
                 } else {
-                    set.insert(f.as_pkgid(), (None, vec![f], vec![]));
+                    set.insert(f.get_pkgid().clone(), (None, vec![f], vec![]));
                 }
             });
 
@@ -87,7 +88,7 @@ impl Search {
             crate::core::manifest::IpManifest::detect_all(paths.0)?
             .into_iter()
             .for_each(|f| {
-                pkg_map.insert(f.as_pkgid(), (true, false, false));
+                pkg_map.insert(f.into_pkgid(), (true, false, false));
             });
         }
         
@@ -96,7 +97,7 @@ impl Search {
             crate::core::manifest::IpManifest::detect_all(paths.1)?
             .into_iter()
             .for_each(|f| {
-                let pkg = f.as_pkgid();
+                let pkg = f.into_pkgid();
                 if let Some(pair) = pkg_map.get_mut(&pkg) {
                     *pair = (pair.0, true, pair.2);
                 } else {

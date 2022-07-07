@@ -103,8 +103,8 @@ impl Init {
             if std::path::Path::exists(&std::path::PathBuf::from(url)) == false {
                 // write 'repository' key
                 let mut ip = ip.into_manifest();
-                ip.0.write("ip", "repository", url);
-                ip.0.save()?;
+                ip.get_manifest_mut().write("ip", "repository", url);
+                ip.get_manifest_mut().save()?;
             }
         }
         Ok(())

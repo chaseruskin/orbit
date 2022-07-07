@@ -1,13 +1,14 @@
-use toml_edit::Document;
+use toml_edit::{Document};
+use std::collections::HashMap;
 use std::path;
 use std::path::PathBuf;
 use std::error::Error;
 use crate::core::pkgid::PkgId;
-use crate::util::anyerror::AnyError;
+use crate::util::anyerror::{AnyError, Fault};
 use std::str::FromStr;
 use crate::core::version::Version;
 
-use super::resolver::mvs::IpSpec;
+use super::config::{FromToml, FromTomlError};
 use super::version::AnyVersion;
 
 #[derive(Debug)]
@@ -90,7 +91,7 @@ impl Manifest {
 
     /// Edits the .toml document at the `table`.`key` with `value`.
     /// 
-    pub fn write<T>(&mut self, table: &str, key: &str, value: T) -> ()
+    pub fn write<T: ToString>(&mut self, table: &str, key: &str, value: T) -> ()
     where toml_edit::Value: From<T> {
         self.document[table][key] = toml_edit::value(value);
     }
@@ -137,66 +138,212 @@ impl Manifest {
 pub const IP_MANIFEST_FILE: &str = "Orbit.toml";
 
 #[derive(Debug)]
-pub struct IpManifest(pub Manifest);
+pub struct IpManifest{ 
+    manifest: Manifest,
+    ip: IpToml,
+}
 
+#[derive(Debug)]
+pub struct IpToml {
+    ip: Ip,
+    deps: DependencyTable,
+}
+
+impl IpToml {
+    pub fn new() -> Self {
+        Self { ip: Ip::new(), deps: DependencyTable::new() }
+    }
+}
 
 impl std::fmt::Display for IpManifest {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "\
-ip:      {}
-summary: {}
-version: {}
-size:    {:.2} MB", 
-self.as_pkgid(), 
-self.get_summary().unwrap_or(""), 
-self.into_version(),
-crate::util::filesystem::compute_size(&self.0.get_path().parent().unwrap(), crate::util::filesystem::Unit::MegaBytes).unwrap()
+ip:         {}
+summary:    {}
+version:    {}
+repository: {}
+size:       {:.2} MB", 
+self.get_pkgid(), 
+self.get_summary().unwrap_or(&"".to_string()), 
+self.get_version(),
+self.get_repository().unwrap_or(&"".to_string()),
+crate::util::filesystem::compute_size(&self.manifest.get_path().parent().unwrap(), crate::util::filesystem::Unit::MegaBytes).unwrap()
     )}
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Ip {
+    name: PkgId,
+    version: Version,
+    repository: Option<String>,
+    summary: Option<String>,
+    changelog: Option<String>,
+    readme: Option<String>,
+}
+
+impl Ip {
+    pub fn new() -> Self {
+        Self { 
+            name: PkgId::new(), 
+            version: Version::new(), 
+            repository: None, 
+            summary: None, 
+            changelog: None, 
+            readme: None
+        }
+    }
+
+    pub fn get_repository(&self) -> Option<&String> {
+        self.repository.as_ref()
+    }
+
+    pub fn get_version(&self) -> &Version {
+        &self.version
+    }
+
+    pub fn get_pkgid(&self) -> &PkgId {
+        &self.name
+    }
+
+    pub fn get_summary(&self) -> Option<&String> {
+        self.summary.as_ref()
+    }
+}
+
+impl FromToml for Ip {
+    type Err = Fault;
+
+    fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err> where Self: Sized {
+        Ok(Self {
+            name: {
+                let name: String = Self::require(table, "name")?;
+                let library: String = Self::require(table, "library")?;
+                let vendor: String = Self::require(table, "vendor")?;
+                PkgId::new().name(&name)?.library(&library)?.vendor(&vendor)?
+            },
+            version: Self::require(table, "version")?,
+            repository: Self::get(table, "repository")?,
+            summary: Self::get(table, "summary")?,
+            changelog: Self::get(table, "changelog")?,
+            readme: Self::get(table, "readme")?,
+        })
+    }
+}
+
+impl FromToml for IpToml {
+    type Err = Fault;
+
+    fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err> where Self: Sized {
+        // grab the ip table
+        let ip = if let Some(item) = table.get("ip") {
+            match item.as_table() {
+                Some(tbl) => Ip::from_toml(tbl)?,
+                None => panic!("expects `ip` to be a toml table")
+            }
+        } else {
+            panic!("missing table `ip`")
+        };
+        // grab the dependencies table
+        let dt = if let Some(item) = table.get("dependencies") {
+            match item.as_table() {
+                Some(tbl) => DependencyTable::from_toml(tbl)?,
+                None => panic!("expects `dependencies` to be a toml table")
+            }
+        } else {
+            DependencyTable::new()
+        };
+        Ok(Self {
+            ip: ip,
+            deps: dt,
+        })
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct DependencyTable(HashMap<PkgId, AnyVersion>);
+
+impl DependencyTable {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+}
+
+impl FromToml for DependencyTable {
+    type Err = Fault;
+    
+    fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err> where Self: Sized {
+        let mut map = HashMap::new();
+        // traverse three tables deep to retrieve V.L.N
+        for (vendor, v_item) in table.iter() {
+            for (library, l_item) in v_item.as_table().unwrap() {
+                for (name, n_item) in l_item.as_table().unwrap() {
+                    let pkgid = PkgId::new().name(name)?.library(library)?.vendor(vendor)?; 
+                    // create version
+                    let version = match n_item.as_str() {
+                        Some(s) => AnyVersion::from_str(s)?,
+                        None => return Err(FromTomlError::ExpectingString(format!("{}.{}.{}", vendor, library, name)))?
+                    };
+                    // insert into lut
+                    map.insert(pkgid, version);
+                }
+            }
+        }
+        Ok(Self(map))
+    }
 }
 
 impl IpManifest {
     /// Creates an empty `IpManifest` struct.
     pub fn new() -> Self {
-        IpManifest(Manifest::new())
+        IpManifest {
+            manifest: Manifest::new(),
+            ip: IpToml::new(),
+        }
     }
 
     /// Finds all IP manifest files along the provided path `path`.
     /// 
     /// Wraps Manifest::detect_all.
     pub fn detect_all(path: &PathBuf) -> Result<Vec<Self>, Box<dyn std::error::Error>> {
-        Ok(Manifest::detect_all(path, IP_MANIFEST_FILE)?.into_iter().map(|f| IpManifest(f)).collect())
+        Manifest::detect_all(path, IP_MANIFEST_FILE)?.into_iter().map(|f| IpManifest::from_manifest(f)).collect()
     }
 
     /// Creates a new minimal IP manifest for `path`.
     /// 
     /// Does not actually write the data to `path`. Use the `fn save` to write to disk.
     pub fn init(path: path::PathBuf) -> Self {
-        Self(Manifest {
-            path: path,
-            document: BARE_MANIFEST.parse::<Document>().unwrap(),
-        })
+        let toml = BARE_MANIFEST.parse::<Document>().unwrap();
+        Self { 
+            ip: FromToml::from_toml(&toml.as_table()).unwrap(),
+            manifest: Manifest {
+                path: path,
+                document: toml,
+            },
+        }
     }
 
-    /// Creates a new `PkgId` from the fields of the manifest document.
-    /// 
-    /// Assumes the manifest document contains a table 'ip' with the necessary keys.
-    pub fn as_pkgid(&self) -> PkgId {
-        PkgId::new().vendor(self.0.get_doc()["ip"]["vendor"].as_str().unwrap()).unwrap()
-            .library(self.0.get_doc()["ip"]["library"].as_str().unwrap()).unwrap()
-            .name(self.0.get_doc()["ip"]["name"].as_str().unwrap()).unwrap()
+    pub fn get_pkgid(&self) -> &PkgId {
+        &self.ip.ip.get_pkgid()
     }
 
-    /// Creates a new `Version` struct from the `version` field.
-    pub fn into_version(&self) -> Version {
-        // @TODO error handling
-        Version::from_str(self.0.get_doc()["ip"]["version"].as_str().unwrap()).unwrap()
+    pub fn into_pkgid(self) -> PkgId {
+        self.ip.ip.name
     }
 
-    /// Accesses the summary string.
-    /// 
-    /// Returns `None` if the field does not exist or cannot cast to a str.
-    pub fn get_summary(&self) -> Option<&str> {
-        self.0.get_doc()["ip"].get("summary")?.as_str()
+    pub fn get_version(&self) -> &Version {
+        &self.ip.ip.get_version()
+    }
+
+    pub fn get_summary(&self) -> Option<&String> {
+        self.ip.ip.get_summary()
+    }
+
+    pub fn get_manifest_mut(&mut self) -> &mut Manifest {
+        &mut self.manifest
+    }
+
+    pub fn get_manifest(&self) -> &Manifest {
+        &self.manifest
     }
 
     /// Loads data from file as a `Manifest` struct. 
@@ -204,62 +351,24 @@ impl IpManifest {
     /// Errors on parsing errors for toml and errors on any particular rules for
     /// manifest formatting/required keys.
     fn from_manifest(m: Manifest) -> Result<Self, Box<dyn Error>> {
-        let ip = IpManifest(m);
-        // verify bare minimum keys exist for 'ip' table
-        match ip.has_bare_min() {
-            Ok(()) => Ok(ip),
-            Err(e) => return Err(AnyError(format!("manifest {:?} {}", ip.0.get_path(), e)))?
-        }
+        Ok(IpManifest { ip: IpToml::from_toml(&m.get_doc().as_table())?, manifest: m, })
     }
 
     /// Loads an `IpManifest` from `path`.
     pub fn from_path(path: PathBuf) -> Result<Self, Box<dyn Error>> {
-        Ok(Self(Manifest::from_path(path)?))
+        let man = Manifest::from_path(path)?;
+        Ok(Self {
+            ip: IpToml::from_toml(man.get_doc().as_table())?,
+            manifest: man,
+        })
     }
 
-    /// Checks if the manifest has the `ip` table and contains the minimum required keys: `vendor`, `library`,
-    /// `name`, `version`.
-    pub fn has_bare_min(&self) -> Result<(), AnyError> {
-        if self.0.get_doc().contains_table("ip") == false {
-            return Err(AnyError(format!("missing 'ip' table")))
-        } else if self.0.get_doc()["ip"].as_table().unwrap().contains_key("vendor") == false {
-            return Err(AnyError(format!("missing required key 'vendor' in table 'ip'")))
-        } else if self.0.get_doc()["ip"].as_table().unwrap().contains_key("library") == false {
-            return Err(AnyError(format!("missing required key 'library' in table 'ip'")))
-        } else if self.0.get_doc()["ip"].as_table().unwrap().contains_key("name") == false {
-            return Err(AnyError(format!("missing required key 'name' in table 'ip'")))
-        } else if self.0.get_doc()["ip"].as_table().unwrap().contains_key("version") == false {
-            return Err(AnyError(format!("missing required key 'version' in table 'ip'")))
-        }
-        Ok(())
+    pub fn get_dependencies(&self) -> &DependencyTable {
+        &self.ip.deps
     }
 
-    /// Collects all direct dependency IP from the `[dependencies]` table.
-    /// 
-    /// Errors if there is an invalid entry in the table.
-    pub fn get_dependencies(&self) -> Result<Vec<IpSpec>, Box<dyn std::error::Error>> {
-        let mut deps = Vec::new();
-        // check if the table exists and return early if does not
-        if self.0.get_doc().contains_table("dependencies") == false {
-            return Ok(deps)
-        }
-        // traverse three tables deep to retrieve V.L.N
-        for v in self.0.get_doc().get("dependencies").unwrap().as_table().unwrap() {
-            for l in v.1.as_table().unwrap() {
-                for n in l.1.as_table().unwrap() {
-                    let spec = IpSpec::new(
-                        PkgId::new().name(n.0)?.library(l.0)?.vendor(v.0)?, 
-                        AnyVersion::from_str(n.1.as_str().unwrap())?);
-                    deps.push(spec);
-                }
-            }
-        }
-        Ok(deps)
-    }
-
-    /// Gets the remote repository value, if any.
-    pub fn get_repository(&self) -> Option<String> {
-        self.0.read_as_str("ip", "repository")
+    pub fn get_repository(&self) -> Option<&String> {
+        self.ip.ip.get_repository()
     }
 }
 
@@ -285,74 +394,64 @@ mod test {
     fn new() {
         let m = tempfile::NamedTempFile::new().unwrap();
         let manifest = IpManifest::init(m.path().to_path_buf());
-        assert_eq!(manifest.0.document.to_string(), BARE_MANIFEST);
+        assert_eq!(manifest.manifest.document.to_string(), BARE_MANIFEST);
     }
 
     #[test]
-    fn bare_min_valid() {
-        // has all keys and 'ip' table
-        let m = tempfile::NamedTempFile::new().unwrap();
-        let manifest = IpManifest::init(m.path().to_path_buf());
-        assert_eq!(manifest.has_bare_min().unwrap(), ());
-
-        // missing all required fields
-        let manifest = IpManifest(Manifest {
-            path: tempfile::NamedTempFile::new().unwrap().path().to_path_buf(),
-            document: "\
+    fn from_toml() {
+        let toml_code = r#"
 [ip]
-".parse::<Document>().unwrap()
-        });
-        assert_eq!(manifest.has_bare_min().is_err(), true);
+"#;
+        // missing all required fields
+        let manifest = Manifest {
+            path: tempfile::NamedTempFile::new().unwrap().path().to_path_buf(),
+            document: toml_code.parse::<Document>().unwrap()
+        };
+        assert_eq!(IpManifest::from_manifest(manifest).is_err(), true);
 
         // missing 'version' key
-        let manifest = IpManifest(Manifest {
-            path: tempfile::NamedTempFile::new().unwrap().path().to_path_buf(),
-            document: "\
+        let toml_code = r#"
 [ip]
-vendor = \"v\"
-library = \"l\"
-name = \"n\"
-".parse::<Document>().unwrap()
-        });
-        assert_eq!(manifest.has_bare_min().is_err(), true);
+vendor = "v"
+library = "l"
+name = "n"
+"#;
+        // missing all required fields
+        let manifest = Manifest {
+            path: tempfile::NamedTempFile::new().unwrap().path().to_path_buf(),
+            document: toml_code.parse::<Document>().unwrap()
+        };
+        assert_eq!(IpManifest::from_manifest(manifest).is_err(), true);
     }
 
     #[test]
-    fn get_deps() {
-        // empty table
-        let manifest = IpManifest(Manifest {
-            path: tempfile::NamedTempFile::new().unwrap().path().to_path_buf(),
-            document: "\
-[dependencies]
-".parse::<Document>().unwrap()
-        });
-        assert_eq!(manifest.get_dependencies().unwrap(), vec![]);
-
-        // no `dependencies` table
-        let manifest = IpManifest(Manifest {
-            path: tempfile::NamedTempFile::new().unwrap().path().to_path_buf(),
-            document: "\
+    fn deps() {
+        // empty `dependencies` table
+        let toml_code = r#"
 [ip]
-name = \"gates\"
-".parse::<Document>().unwrap()
-        });
-        assert_eq!(manifest.get_dependencies().unwrap(), vec![]);
+name = "gates"
+
+[dependencies]
+"#;
+        // empty table
+        let doc = toml_code.parse::<Document>().unwrap();
+        assert_eq!(DependencyTable::from_toml(doc.as_table().get("dependencies").unwrap().as_table().unwrap()).unwrap(), DependencyTable::new());
 
         // `dependencies` table with entries
-        let manifest = IpManifest(Manifest {
-            path: tempfile::NamedTempFile::new().unwrap().path().to_path_buf(),
-            document: "\
-[dependencies]
-ks_tech.rary.gates = \"1.0.0\"
-ks_tech.util.toolbox = \"2\"
-c_rus.eel4712c.lab1 = \"4.2\"
-".parse::<Document>().unwrap()
-        });
-        assert_eq!(manifest.get_dependencies().unwrap(), vec![
-            IpSpec::new(PkgId::from_str("ks_tech.rary.gates").unwrap(), AnyVersion::Specific(PartialVersion::new().major(1).minor(0).patch(0))),
-            IpSpec::new(PkgId::from_str("ks_tech.util.toolbox").unwrap(),  AnyVersion::Specific(PartialVersion::new().major(2))),
-            IpSpec::new(PkgId::from_str("c_rus.eel4712c.lab1").unwrap(),  AnyVersion::Specific(PartialVersion::new().major(4).minor(2))),
-        ]);
+        let toml_code = r#"
+[dependencies] 
+ks-tech.rary.gates = "1.0.0"
+ks-tech.util.toolbox = "2"
+c-rus.eel4712c.lab1 = "4.2"
+"#;
+        // empty table
+        let doc = toml_code.parse::<Document>().unwrap();
+        let mut map = HashMap::new();
+        map.insert(PkgId::from_str("ks-tech.rary.gates").unwrap(), AnyVersion::Specific(PartialVersion::new().major(1).minor(0).patch(0)));
+        map.insert(PkgId::from_str("ks-tech.util.toolbox").unwrap(),  AnyVersion::Specific(PartialVersion::new().major(2)));
+        map.insert(PkgId::from_str("c-rus.eel4712c.lab1").unwrap(),  AnyVersion::Specific(PartialVersion::new().major(4).minor(2)));
+
+        assert_eq!(DependencyTable::from_toml(doc.as_table().get("dependencies").unwrap().as_table().unwrap()).unwrap(), DependencyTable(map));
     }
 
 

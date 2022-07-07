@@ -95,7 +95,8 @@ impl Command for Get {
         } else {
             // grab installed ip
             let mut universe = Search::all_pkgid((c.get_development_path().unwrap(), c.get_cache_path(), &c.get_vendor_path()))?;
-            let target = crate::core::ip::find_ip(&self.entity_path.ip.as_ref().unwrap(), universe.keys().into_iter().collect())?;
+            let ids = universe.keys().map(|f| { f }).collect();
+            let target = crate::core::ip::find_ip(&self.entity_path.ip.as_ref().unwrap(), ids)?;
             
             // find all manifests and prioritize installed manifests over others but to help with errors/confusion
             let inventory = universe.remove(&target).unwrap().1;
@@ -133,7 +134,7 @@ impl Get {
         // make the library reference the current working ip 'work' if its internal
         let lib = match is_self {
             true => Some(String::from("work")),
-            false => Some(ip.get_manifest().as_pkgid().get_library().as_ref().unwrap().to_string().replace("-", "_"))
+            false => Some(ip.get_manifest().get_pkgid().get_library().as_ref().unwrap().to_string().replace("-", "_"))
         };
         // only display the direct entity instantiation code if not providing component code
         let lib = match self.component {
@@ -165,7 +166,7 @@ impl Get {
                 }
             }
         }
-        Err(AnyError(format!("entity '{}' is not found in ip '{}'", iden, ip.get_manifest().as_pkgid())))?
+        Err(AnyError(format!("entity '{}' is not found in ip '{}'", iden, ip.get_manifest().get_pkgid())))?
     }
 }
 

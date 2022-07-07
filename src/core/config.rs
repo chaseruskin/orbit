@@ -6,6 +6,57 @@ pub trait FromToml {
     type Err;
     /// Parses a toml table into a struct.
     fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err> where Self: Sized;
+
+    /// Attempts to deserialize an entry in a table from a `String` to `T`.
+    /// 
+    /// An `Ok` result is safe to unwrap if `require` is true.
+    /// 
+    /// Errors if the entry is not a string or the entry failed to parse.
+    fn get<T: std::str::FromStr>(table: &toml_edit::Table, s: &str) -> Result<Option<T>, FromTomlError>
+    where <T as std::str::FromStr>::Err: std::error::Error {
+        let result = match table.get(s) {
+            Some(item) => {
+                match item.as_str() {
+                    Some(i) => i.parse::<T>(),
+                    None => return Err(FromTomlError::ExpectingString(s.to_owned()))?
+                }
+            },
+            None => return Ok(None),
+        };
+        match result {
+            Ok(r) => Ok(Some(r)),
+            Err(e) => Err(FromTomlError::BadParse(s.to_string(), e.to_string()))
+        } 
+    }
+
+    /// Ensures a value is taken and the entry exists, otherwise it throws an error.
+    fn require<T: std::str::FromStr>(table: &toml_edit::Table, s: &str) -> Result<T, FromTomlError>
+    where <T as std::str::FromStr>::Err: std::error::Error {
+        match Self::get(table, s)? {
+            Some(value) => Ok(value),
+            None => Err(FromTomlError::MissingEntry(s.to_owned()))?,
+        }
+    }
+
+}
+
+#[derive(Debug)]
+pub enum FromTomlError {
+    MissingEntry(String),
+    ExpectingString(String),
+    BadParse(String, String),
+}
+
+impl std::error::Error for FromTomlError {}
+
+impl std::fmt::Display for FromTomlError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::ExpectingString(key) => write!(f, "key '{}' expects a toml string", key),
+            Self::MissingEntry(key) => write!(f, "missing required key '{}'", key),
+            Self::BadParse(key, value) => write!(f, "failed to parse value '{}' for key '{}'", value, key),
+        }
+    }
 }
 
 pub struct Config {

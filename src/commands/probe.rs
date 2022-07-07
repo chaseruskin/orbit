@@ -50,19 +50,19 @@ impl Command for Probe {
             c.get_development_path().unwrap(), 
             c.get_cache_path(), 
             &c.get_vendor_path()))?;
-        let ids: Vec<&PkgId> = universe.keys().into_iter().collect();
+        let ids = universe.keys().map(|f| { f }).collect();
         let target = crate::core::ip::find_ip(&self.ip, ids)?;
 
         // ips under this key
         let inventory = universe.remove(&target).unwrap();
 
         let dev_ver = match &inventory.0 {
-            Some(ip) => Some(ip.into_version()),
+            Some(ip) => Some(ip.get_version()),
             None => None,
         };
 
-        let inst_ver: Vec<Version> = inventory.1.iter().map(|f| f.into_version()).collect();
-        let avl_ver: Vec<Version> = inventory.2.iter().map(|f| f.into_version()).collect();
+        let inst_ver: Vec<&Version> = inventory.1.iter().map(|f| f.get_version()).collect();
+        let avl_ver: Vec<&Version> = inventory.2.iter().map(|f| f.get_version()).collect();
         
         // collect all ip in the user's universe to see if ip exists
         if self.tags == true {
@@ -103,9 +103,9 @@ impl Probe {
 
 /// Creates an IP from an ID `target` and version `v` within the given `inventory` of manifests.
 pub fn select_ip_from_version(target: &PkgId, v: &AnyVersion, inventory: Vec<IpManifest>) -> Result<Ip, Fault>  {
-    let inst_ver: Vec<Version> = inventory.iter().map(|f| f.into_version()).collect();
+    let inst_ver: Vec<&Version> = inventory.iter().map(|f| f.get_version()).collect();
     let version = crate::commands::install::get_target_version(v, &inst_ver, &target)?;
-    let ip = inventory.into_iter().find(|f| &f.into_version() == version).unwrap();
+    let ip = inventory.into_iter().find(|f| f.get_version() == &version).unwrap();
     Ok(Ip::from_manifest(ip))
 }
 
@@ -130,7 +130,7 @@ fn format_units_table(table: Vec<PrimaryUnit>) -> String {
 }
 
 /// Tracks the dev version, installed versions, and available versions
-type VersionTable = (Option<Version>, Vec<Version>, Vec<Version>);
+type VersionTable<'a> = (Option<&'a Version>, Vec<&'a Version>, Vec<&'a Version>);
 
 /// Creates a string for a version table for the particular ip.
 fn format_version_table(table: VersionTable) -> String {
@@ -139,7 +139,7 @@ fn format_version_table(table: VersionTable) -> String {
 {:->15}{2:->9}\n",
                 "Version", "Status", " ");
     // create a hashset of all available versions to form a list
-    let mut btmap = BTreeMap::<Version, (bool, bool, bool)>::new();
+    let mut btmap = BTreeMap::<&Version, (bool, bool, bool)>::new();
     // log what version the dev ip is at
     if let Some(v) = table.0 {
         btmap.insert(v, (true, false, false));

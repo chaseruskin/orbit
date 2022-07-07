@@ -59,7 +59,8 @@ impl Command for Install {
         let ip = if let Some(ip) = &self.ip {
             // gather all manifests from all 3 levels
             let mut universe = Search::all_pkgid((c.get_development_path().unwrap(), c.get_cache_path(), &c.get_vendor_path()))?;
-            let target = crate::core::ip::find_ip(&ip, universe.keys().into_iter().collect())?;
+            let ids = universe.keys().map(|f| { f }).collect();;
+            let target = crate::core::ip::find_ip(&ip, ids)?;
             // gather all possible versions found for this IP
             let mut inventory = universe.remove(&target).take().unwrap();
 
@@ -100,7 +101,7 @@ impl Command for Install {
 /// Finds the most compatible version matching `ver` among the possible `space`.
 /// 
 /// Errors if no version was found.
-pub fn get_target_version<'a>(ver: &AnyVersion, space: &'a Vec<Version>, target: &PkgId) -> Result<&'a Version, AnyError> {
+pub fn get_target_version<'a>(ver: &AnyVersion, space: &'a Vec<&Version>, target: &PkgId) -> Result<Version, AnyError> {
     // find the specified version for the given ip
     let mut latest_version: Option<&Version> = None;
     space.into_iter()
@@ -110,12 +111,12 @@ pub fn get_target_version<'a>(ver: &AnyVersion, space: &'a Vec<Version>, target:
         _ => panic!("dev version cannot be filtered")
     })
     .for_each(|tag| {
-        if latest_version.is_none() || &tag > latest_version.as_ref().unwrap() {
+        if latest_version.is_none() || *tag > latest_version.as_ref().unwrap() {
             latest_version = Some(tag);
         }
     });
     match latest_version {
-        Some(v) => Ok(v),
+        Some(v) => Ok(v.clone()),
         None => Err(AnyError(format!("\
 ip '{}' has no version available as {}
 
@@ -169,7 +170,7 @@ impl Install {
     /// 
     /// Errors if the ip is already installed unless `force` is true.
     pub fn install(ip: &Ip, version: &AnyVersion, cache_root: &std::path::PathBuf, force: bool, store: Store) -> Result<(), Fault> {
-        let target = ip.get_manifest().as_pkgid();
+        let target = ip.get_manifest().get_pkgid();
 
         // move into stored directory to compute checksum for the tagged version
         let temp = match store.is_stored(&target) {
@@ -181,7 +182,8 @@ impl Install {
 
         // find the specified version for the given ip
         let space = gather_version_tags(&repo)?;
-        let version = get_target_version(&version, &space, &target)?;
+        let version_space: Vec<&Version> = space.iter().collect();
+        let version = get_target_version(&version, &version_space, &target)?;
         println!("detected version {}", version);
 
         // get the tag

@@ -55,14 +55,14 @@ use crate::core::ip;
 
 impl Edit {
     fn run(&self, manifests: Vec<manifest::IpManifest>, editor: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let ids: Vec<PkgId> = manifests.iter().map(|f| f.as_pkgid()).collect();
+        let ids: Vec<&PkgId> = manifests.iter().map(|f| f.get_pkgid()).collect();
         // find the full ip name among the manifests to get the path
-        let result = ip::find_ip(&self.ip, ids.iter().collect())?;
+        let result = ip::find_ip(&self.ip, ids)?;
         // @TODO improve over simple for-loop
         let mut root = PathBuf::new();
         for man in manifests {
-            if man.as_pkgid() == result {
-                root = man.0.get_path().to_owned()
+            if man.get_pkgid() == &result {
+                root = man.get_manifest().get_path().to_owned()
             }
         }
         root.pop();

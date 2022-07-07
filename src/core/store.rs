@@ -18,7 +18,7 @@ impl<'a> Store<'a> {
     /// It will completely replace the existing store slot or create a new one.
     /// Assumes the `ip` is not located within the store.
     pub fn store(&self, ip: &Ip) -> Result<PathBuf, Fault> {
-        let id_dir = ip.get_manifest().as_pkgid().into_hash().to_string();
+        let id_dir = ip.get_manifest().get_pkgid().into_hash().to_string();
         let store_ip_dir = self.root.join(&id_dir);
         // force removal of the existing directory
         if store_ip_dir.exists() == true {

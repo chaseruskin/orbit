@@ -80,7 +80,7 @@ impl std::fmt::Display for PkgPart {
     }
 }
 
-#[derive(Debug, PartialEq, PartialOrd)]
+#[derive(Debug, PartialEq, PartialOrd, Clone)]
 pub struct PkgId {
     vendor: Option<PkgPart>,
     library: Option<PkgPart>,

@@ -7,7 +7,7 @@ use crate::util::graph::Graph;
 use crate::core::ip::Ip;
 
 fn build_graph(target: &Ip) -> Result<Graph<Module<PkgId>, Ip>, Fault> {
-    let _ = target.get_manifest().get_dependencies()?;
+    let _ = target.get_manifest().get_dependencies();
 
     todo!();
 }

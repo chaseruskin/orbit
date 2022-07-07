@@ -135,14 +135,14 @@ impl Plan {
             &c.get_vendor_path()))?;
         
         // grab all dependencies
-        let direct_deps = target.get_manifest().get_dependencies()?;
+        let direct_deps = target.get_manifest().get_dependencies();
         // verify all exist in the universe
-        for spec in &direct_deps {
-            match universe.contains_key(spec.get_pkgid()) {
-                true => (),
-                false => return Err(AnyError(format!("unknown ip: {}", spec.get_pkgid())))?
-            }
-        }
+        // for spec in &direct_deps {
+        //     match universe.contains_key(spec.get_pkgid()) {
+        //         true => (),
+        //         false => return Err(AnyError(format!("unknown ip: {}", spec.get_pkgid())))?
+        //     }
+        // }
         todo!()
     }
 

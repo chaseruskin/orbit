@@ -1,6 +1,7 @@
 use crate::Command;
 use crate::FromCli;
 use crate::core::ip::Ip;
+use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::store::Store;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Optional};
@@ -86,7 +87,7 @@ impl Command for Launch {
 
         // grab the version defined in the manifest
         let mut manifest = manifest::IpManifest::from_path(c.get_ip_path().unwrap().to_path_buf().join(manifest::IP_MANIFEST_FILE))?;
-        let prev_version = Version::from_str(&manifest.0.read_as_str("ip", "version").unwrap())?;
+        let prev_version = manifest.get_version();
 
         // at this point it is safe to assume it is a version because manifest will check that
         let mut version = prev_version.clone();
@@ -103,14 +104,14 @@ impl Command for Launch {
                         .minor(v.get_minor())
                         .patch(v.get_patch());
                     // verify version will be larger than the current version
-                    if prev_version >= version {
+                    if prev_version >= &version {
                         return Err(AnyError(format!("set version {} is not greater than current version {}", version, prev_version)))?
                     }
                 }
             }
             println!("info: raising {} --> {}", prev_version, version);
             // update the manifest and add a new commit to the git repository
-            manifest.0.write("ip", "version", version.to_string());
+            manifest.get_manifest_mut().write("ip", "version", version.to_string());
             true
         } else {
             println!("info: setting {}", version);
@@ -142,7 +143,7 @@ impl Command for Launch {
             if remotes.len() > 0 && manifest.get_repository().is_none() {
                 let rem = repo.find_remote(remotes.first().unwrap()).unwrap();
                 if let Some(url) = rem.url() {
-                    return Err(AnyError(format!("Orbit.toml manifest is missing repository entry\n\nAdd `repository = \"{}\"` to the [ip] table in Orbit.toml", url)))?
+                    return Err(AnyError(format!("manifest {1} is missing repository entry\n\nAdd `repository = \"{}\"` to the [ip] table in {1}", url, IP_MANIFEST_FILE)))?
                 }
             }
 
@@ -174,11 +175,11 @@ impl Command for Launch {
         
         // verify the manifest is committed (not in staging or working directory if not overwriting)
         if overwrite == false {
-            let st = repo.status_file(&std::path::PathBuf::from("Orbit.toml"))?;
+            let st = repo.status_file(&std::path::PathBuf::from(IP_MANIFEST_FILE))?;
             if st.is_empty() {
                 println!("info: manifest is in clean state")
             } else {
-                return Err(AnyError(format!("manifest Orbit.toml is dirty; move changes out of working directory or staging index to enter a clean state")))?
+                return Err(AnyError(format!("manifest {} is dirty; move changes out of working directory or staging index to enter a clean state", IP_MANIFEST_FILE)))?
             }
         }
 
@@ -200,7 +201,7 @@ impl Command for Launch {
 
         // verify Orbit.toml to staging area
         let mut index = repo.index()?;
-        index.add_path(&std::path::PathBuf::from("Orbit.toml"))?;
+        index.add_path(&std::path::PathBuf::from(IP_MANIFEST_FILE))?;
 
         // verify a signature exists
         let signature = repo.signature()?;
@@ -209,9 +210,9 @@ impl Command for Launch {
         if self.ready == true {
             let marked_commit = if overwrite == true {
                 // save the manifest
-                manifest.0.save()?;
+                manifest.get_manifest_mut().save()?;
                 // add manifest to staging
-                index.add_path(&std::path::PathBuf::from("Orbit.toml"))?;
+                index.add_path(&std::path::PathBuf::from(IP_MANIFEST_FILE))?;
                 // source: https://github.com/rust-lang/git2-rs/issues/561
                 index.write()?;
                 // create new commit

@@ -17,7 +17,7 @@ impl Ip {
     /// The manifest must already be for an existing IP.
     pub fn from_manifest(manifest: IpManifest) -> Self {
         Self { 
-            path: manifest.0.get_path().as_path().parent().unwrap().to_path_buf(), 
+            path: manifest.get_manifest().get_path().as_path().parent().unwrap().to_path_buf(), 
             manifest: manifest 
         }
     }
@@ -80,11 +80,11 @@ impl Ip {
         // initialize a new manifest
         self.manifest = IpManifest::init(self.path.join(manifest::IP_MANIFEST_FILE));
         // fill in fields
-        self.manifest.0.write("ip", "name", pkgid.get_name());
-        self.manifest.0.write("ip", "library", pkgid.get_library().as_ref().unwrap());
-        self.manifest.0.write("ip", "vendor", pkgid.get_vendor().as_ref().unwrap());
+        self.manifest.get_manifest_mut().write("ip", "name", pkgid.get_name());
+        self.manifest.get_manifest_mut().write("ip", "library", pkgid.get_library().as_ref().unwrap());
+        self.manifest.get_manifest_mut().write("ip", "vendor", pkgid.get_vendor().as_ref().unwrap());
         // save the manifest
-        self.manifest.0.save()?;
+        self.manifest.get_manifest_mut().save()?;
 
         // create an empty git repository
         Repository::init(&self.path)?;

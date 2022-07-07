@@ -1,6 +1,8 @@
 use std::str::FromStr;
 use ignore::WalkBuilder;
 
+use super::resolver::lockfile;
+
 #[derive(Debug, PartialEq)]
 pub struct Fileset {
     name: String,
@@ -210,7 +212,10 @@ pub fn gather_current_files(path: &std::path::PathBuf) -> Vec<String> {
         .hidden(false)
         .git_ignore(true)
         .filter_entry(|p| {
-            if p.file_name() == ORBIT_SUM_FILE || p.file_name() == ".git" { false } else { true }
+            match p.file_name().to_str().unwrap() {
+                ORBIT_SUM_FILE | ".git" | lockfile::IP_LOCK_FILE => false,
+                _ => true,
+            }
         })
         .build();
     let mut files: Vec<String> = m.filter_map(|result| {

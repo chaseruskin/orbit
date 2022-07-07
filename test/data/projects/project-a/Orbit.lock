@@ -1,0 +1,5 @@
+[[ip]]
+name = "ks-tech.rary.project-a"
+version = "0.2.0"
+sum = "590ac7f66a6a0f450db23e8c69d086b3bd192369ff560a0b960fa296056d4750"
+source = "git.url/1"

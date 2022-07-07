@@ -7,8 +7,8 @@ use crate::util::anyerror::AnyError;
 use std::str::FromStr;
 use crate::core::version::Version;
 
-use super::resolver::mvs::Module;
-use super::version::PartialVersion;
+use super::resolver::mvs::IpSpec;
+use super::version::AnyVersion;
 
 #[derive(Debug)]
 pub struct Manifest {
@@ -237,7 +237,7 @@ impl IpManifest {
     /// Collects all direct dependency IP from the `[dependencies]` table.
     /// 
     /// Errors if there is an invalid entry in the table.
-    pub fn get_dependencies(&self) -> Result<Vec<Module<PkgId>>, Box<dyn std::error::Error>> {
+    pub fn get_dependencies(&self) -> Result<Vec<IpSpec>, Box<dyn std::error::Error>> {
         let mut deps = Vec::new();
         // check if the table exists and return early if does not
         if self.0.get_doc().contains_table("dependencies") == false {
@@ -247,10 +247,10 @@ impl IpManifest {
         for v in self.0.get_doc().get("dependencies").unwrap().as_table().unwrap() {
             for l in v.1.as_table().unwrap() {
                 for n in l.1.as_table().unwrap() {
-                    let module = Module::new(
-                        PkgId::from_str(&format!("{}.{}.{}", v.0, l.0, n.0))?, 
-                        PartialVersion::from_str(n.1.as_str().unwrap())?);
-                    deps.push(module);
+                    let spec = IpSpec::new(
+                        PkgId::new().name(n.0)?.library(l.0)?.vendor(v.0)?, 
+                        AnyVersion::from_str(n.1.as_str().unwrap())?);
+                    deps.push(spec);
                 }
             }
         }
@@ -277,6 +277,7 @@ vendor  = \"\"
 
 #[cfg(test)]
 mod test {
+    use crate::core::version::PartialVersion;
     use super::*;
     use std::str::FromStr;
 
@@ -348,9 +349,9 @@ c_rus.eel4712c.lab1 = \"4.2\"
 ".parse::<Document>().unwrap()
         });
         assert_eq!(manifest.get_dependencies().unwrap(), vec![
-            Module::new(PkgId::from_str("ks_tech.rary.gates").unwrap(), PartialVersion::new().major(1).minor(0).patch(0)),
-            Module::new(PkgId::from_str("ks_tech.util.toolbox").unwrap(), PartialVersion::new().major(2)),
-            Module::new(PkgId::from_str("c_rus.eel4712c.lab1").unwrap(), PartialVersion::new().major(4).minor(2)),
+            IpSpec::new(PkgId::from_str("ks_tech.rary.gates").unwrap(), AnyVersion::Specific(PartialVersion::new().major(1).minor(0).patch(0))),
+            IpSpec::new(PkgId::from_str("ks_tech.util.toolbox").unwrap(),  AnyVersion::Specific(PartialVersion::new().major(2))),
+            IpSpec::new(PkgId::from_str("c_rus.eel4712c.lab1").unwrap(),  AnyVersion::Specific(PartialVersion::new().major(4).minor(2))),
         ]);
     }
 

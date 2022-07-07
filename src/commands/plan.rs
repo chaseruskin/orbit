@@ -1,6 +1,8 @@
 use crate::Command;
 use crate::FromCli;
+use crate::core::ip::Ip;
 use crate::interface::cli::Cli;
+use crate::util::anyerror::Fault;
 use crate::util::environment::EnvVar;
 use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;
@@ -67,6 +69,8 @@ use crate::util::graph::Graph;
 use crate::util::anyerror::AnyError;
 use std::collections::HashMap;
 
+use super::search;
+
 #[derive(Debug, PartialEq)]
 pub struct ArchitectureFile {
     architecture: symbol::Architecture,
@@ -119,6 +123,29 @@ impl GraphNode {
 }
 
 impl Plan {
+
+    /// Constructs an entire list of dependencies required for the current design.
+    /// 
+    /// Errors if a dependency is not known in the user's universe.
+    fn collect_dependencies(target: &Ip, c: &Context) -> Result<(), Fault> {
+        // collect all manifests
+        let universe = search::Search::all_pkgid((
+            c.get_development_path().unwrap(), 
+            c.get_cache_path(), 
+            &c.get_vendor_path()))?;
+        
+        // grab all dependencies
+        let direct_deps = target.get_manifest().get_dependencies()?;
+        // verify all exist in the universe
+        for spec in &direct_deps {
+            match universe.contains_key(spec.get_pkgid()) {
+                true => (),
+                false => return Err(AnyError(format!("unknown ip: {}", spec.get_pkgid())))?
+            }
+        }
+        todo!()
+    }
+
     /// Builds a graph of design units. Used for planning.
     fn build_full_graph(files: &Vec<String>) -> (Graph<Identifier, ()>, HashMap<Identifier, GraphNode>) {
             // @TODO wrap graph in a hashgraph implementation

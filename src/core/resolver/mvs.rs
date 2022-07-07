@@ -1,9 +1,34 @@
 //! minimum version selection algorithm
 
+use crate::core::pkgid::PkgId;
+use crate::core::version::AnyVersion;
 use crate::core::{version::PartialVersion};
 use crate::util::graph::Graph;
 use std::collections::{HashMap};
 use std::hash::Hash;
+
+/// Complete ip specification.
+#[derive(Debug, PartialEq)]
+pub struct IpSpec {
+    id: PkgId,
+    version: AnyVersion
+}
+
+impl IpSpec {
+    pub fn new(id: PkgId, version: AnyVersion) -> Self {
+        Self { id: id, version: version }
+    }
+
+    /// References the spec's PKGID.
+    pub fn get_pkgid(&self) -> &PkgId {
+        &self.id
+    }
+
+    /// References the spec's version.
+    pub fn get_version(&self) -> &AnyVersion {
+        &self.version
+    }
+}
 
 #[derive(PartialEq, Debug)]
 pub struct Module<T: Eq + Hash + std::fmt::Debug> {

@@ -1,0 +1,7 @@
+[ip]
+name = "project-b"
+library = "rary"
+vendor = "ks-tech"
+version = "0.3.0"
+
+[dependencies]

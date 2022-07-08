@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 use crate::util::anyerror::Fault;
-use super::{ip::Ip, pkgid::PkgId};
+use super::{pkgid::PkgId, manifest::{IP_MANIFEST_FILE, IpManifest}};
 use git2::Repository;
 
 #[derive(Debug, PartialEq)]
@@ -17,8 +17,8 @@ impl<'a> Store<'a> {
     /// 
     /// It will completely replace the existing store slot or create a new one.
     /// Assumes the `ip` is not located within the store.
-    pub fn store(&self, ip: &Ip) -> Result<PathBuf, Fault> {
-        let id_dir = ip.get_manifest().get_pkgid().into_hash().to_string();
+    pub fn store(&self, ip: &IpManifest) -> Result<PathBuf, Fault> {
+        let id_dir = ip.get_pkgid().into_hash().to_string();
         let store_ip_dir = self.root.join(&id_dir);
         // force removal of the existing directory
         if store_ip_dir.exists() == true {
@@ -27,18 +27,18 @@ impl<'a> Store<'a> {
         // create new directory to store
         std::fs::create_dir(&store_ip_dir)?;
         // clone the repository to the store location
-        Repository::clone(&ip.get_path().to_str().unwrap(), &store_ip_dir)?;
+        Repository::clone(&ip.get_root().to_str().unwrap(), &store_ip_dir)?;
         Ok(store_ip_dir)
     }
 
     /// Tries to access the current ip already placed in the Orbit store.
-    pub fn as_stored(&self, ip: &PkgId) -> Result<Option<Ip>, Fault> {
+    pub fn as_stored(&self, ip: &PkgId) -> Result<Option<IpManifest>, Fault> {
         let store_ip_dir = self.root.join(ip.into_hash().to_string());
         if std::path::Path::exists(&store_ip_dir) == false {
             Ok(None)
         } else {
             // grab the ip manifest there
-            Ok(Some(Ip::init_from_path(store_ip_dir)?))
+            Ok(Some(IpManifest::from_path(store_ip_dir.join(IP_MANIFEST_FILE))?))
         }
     }
 

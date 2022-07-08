@@ -1,10 +1,10 @@
 use std::{collections::HashMap, path::PathBuf};
 use crate::util::anyerror::Fault;
 
-use super::{pkgid::PkgId, manifest::IpManifest, version::Version};
+use super::{pkgid::PkgId, manifest::IpManifest, version::Version, store::Store};
 
 #[derive(Debug)]
-pub struct Catalog(HashMap<PkgId, IpLevel>);
+pub struct Catalog<'a>(HashMap<PkgId, IpLevel>, Option<Store<'a>>);
 
 
 #[derive(Debug)]
@@ -56,9 +56,15 @@ impl IpLevel {
     }
 }
 
-impl Catalog {
+impl<'a> Catalog<'a> {
     pub fn new() -> Self {
-        Self(HashMap::new())
+        Self(HashMap::new(), None)
+    }
+
+    /// Sets the store.
+    pub fn store(mut self, path: &'a PathBuf) -> Self {
+        self.1 = Some(Store::new(path));
+        self
     }
 
     /// Searches the `path` for IP under development.

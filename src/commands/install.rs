@@ -1,6 +1,8 @@
 use crate::Command;
 use crate::FromCli;
-use crate::core::ip::Ip;
+use crate::core::catalog::Catalog;
+use crate::core::manifest::IP_MANIFEST_FILE;
+use crate::core::manifest::IpManifest;
 use crate::interface::cli::Cli;
 use crate::interface::arg::Optional;
 use crate::interface::errors::CliError;
@@ -39,7 +41,6 @@ use git2::build::CheckoutBuilder;
 use tempfile::tempdir;
 use crate::core::store::Store;
 use std::str::FromStr;
-use crate::commands::search::Search;
 use crate::core::extgit::ExtGit;
 
 impl Command for Install {
@@ -57,21 +58,25 @@ impl Command for Install {
 
         // get to the repository (root path)
         let ip = if let Some(ip) = &self.ip {
-            // gather all manifests from all 3 levels
-            let mut universe = Search::all_pkgid((c.get_development_path().unwrap(), c.get_cache_path(), &c.get_vendor_path()))?;
-            let ids = universe.keys().map(|f| { f }).collect();
-            let target = crate::core::ip::find_ip(&ip, ids)?;
+            // gather the catalog (all manifests)
+            let mut catalog = Catalog::new()
+                .store(c.get_store_path())
+                .development(c.get_development_path().unwrap())?
+                .installations(c.get_cache_path())?
+                .available(&&c.get_vendor_path())?;
+            let ids = catalog.inner().keys().map(|f| { f }).collect();
+
+            let target = crate::core::ip::find_ip(ip, ids)?;
             // gather all possible versions found for this IP
-            let mut inventory = universe.remove(&target).take().unwrap();
+            let status = catalog.inner_mut().remove(&target).take().unwrap();
 
             // check the store/ for the repository
-            if let Some(project) = store.as_stored(&target)? {
-                project
-            // use repository found on DEV_PATH
-            } else if let Some(m) = inventory.0.take() {
-                Ip::from_manifest(m)
+            if let Some(ip) = store.as_stored(&target)? {
+                ip
             // @TODO clone from remote repository if exists (from AVAILABLE)
-            } else {
+            } else if status.is_installed() || status.is_available() {
+                // check a manifest for a repository
+
                 // check out vendor-level for repo
 
                 // check out install-level for repo
@@ -80,15 +85,21 @@ impl Command for Install {
 
                 // store it
                 todo!("clone from repository")
+            // last resort: use repository from DEV_PATH
+            } else if let Some(_ip) = status.get_dev().take() {
+                
+                todo!()
+            } else {
+                panic!("ip is unable to be installed")
             }
         } else if let Some(url) = &self.git {
             // clone from remote repository
             let path = tempdir.path().to_path_buf();
             ExtGit::new().command(None).clone(url, &path)?;
-            Ip::init_from_path(path)?
+            IpManifest::from_path(path.join(IP_MANIFEST_FILE))?
         } else if let Some(path) = &self.path {
             // traverse filesystem
-            Ip::init_from_path(path.to_path_buf())?
+            IpManifest::from_path(path.join(IP_MANIFEST_FILE))?
         } else {
             return Err(AnyError(format!("select an option to install from '{}', '{}', or '{}'", "--ip".yellow(), "--git".yellow(), "--path".yellow())))?
         };
@@ -169,12 +180,12 @@ impl Install {
     /// It will reinstall if it finds the original installation has a mismatching checksum.
     /// 
     /// Errors if the ip is already installed unless `force` is true.
-    pub fn install(ip: &Ip, version: &AnyVersion, cache_root: &std::path::PathBuf, force: bool, store: Store) -> Result<(), Fault> {
-        let target = ip.get_manifest().get_pkgid();
+    pub fn install(ip: &IpManifest, version: &AnyVersion, cache_root: &std::path::PathBuf, force: bool, store: Store) -> Result<(), Fault> {
+        let target = ip.get_pkgid();
 
         // move into stored directory to compute checksum for the tagged version
         let temp = match store.is_stored(&target) {
-            true => ip.get_path().clone(),
+            true => ip.get_manifest().get_path().clone(),
             // throw repository into the store/ for future use
             false => store.store(&ip)?,
         };
@@ -240,7 +251,7 @@ impl Install {
         Ok(())
     }
 
-    fn run(&self, ip: &Ip, cache_root: &std::path::PathBuf, force: bool, store: Store) -> Result<(), Fault> {
+    fn run(&self, ip: &IpManifest, cache_root: &std::path::PathBuf, force: bool, store: Store) -> Result<(), Fault> {
         Self::install(&ip, &self.version, &cache_root, force, store)
     }
 }

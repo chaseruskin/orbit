@@ -96,6 +96,7 @@ impl Command for Get {
         } else {
             // gather the catalog (all manifests)
             let mut catalog = Catalog::new()
+                .store(c.get_store_path())
                 .development(c.get_development_path().unwrap())?
                 .installations(c.get_cache_path())?
                 .available(&&c.get_vendor_path())?;

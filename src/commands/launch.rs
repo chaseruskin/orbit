@@ -1,6 +1,5 @@
 use crate::Command;
 use crate::FromCli;
-use crate::core::ip::Ip;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::store::Store;
 use crate::interface::cli::Cli;
@@ -239,7 +238,7 @@ impl Command for Launch {
 
             // store the repository
             let store = Store::new(c.get_store_path());
-            store.store(&Ip::from_manifest(manifest))?;
+            store.store(&manifest)?;
 
             println!("info: released version {}", version);
         } else {

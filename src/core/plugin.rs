@@ -38,7 +38,7 @@ impl std::fmt::Display for PluginError {
     }
 }
 
-use crate::util::anyerror::AnyError;
+use crate::util::anyerror::{AnyError, Fault};
 
 impl Plugin {
     /// Creates a new `Plugin` struct.
@@ -102,35 +102,23 @@ impl Plugin {
 }
 
 impl FromToml for Plugin {
-    type Err = PluginError;
+    type Err = Fault;
 
     fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err>
     where Self: Sized {
         Ok(Self {
-            alias: if let Some(val) = table.get("alias") {
-                val.as_str().unwrap().to_string()
-            } else {
-                return Err(Self::Err::MissingAlias)
-            },
-            command: if let Some(val) = table.get("command") {
-                val.as_str().unwrap().to_string()
-            } else {
-                return Err(Self::Err::MissingCommand)
-            },
+            alias: Self::require(table, "alias")?,
+            command: Self::require(table, "command")?,
             args: if let Some(args) = table.get("args") {
                 if args.is_array() == false {
-                    return Err(Self::Err::ArgsNotArray)
+                    return Err(PluginError::ArgsNotArray)?
                 } else {
                     args.as_array().unwrap().into_iter().map(|f| f.as_str().unwrap().to_owned() ).collect()
-                } 
+                }
             } else {
                 Vec::new()
             },
-            summary: if let Some(val) = table.get("summary") {
-                Some(val.as_str().unwrap().to_string())
-            } else { 
-                None 
-            },
+            summary: Self::get(table, "summary")?,
             filesets: {
                 if let Some(inner_table) = table.get("fileset") {
                     // grab every key and value to transform into a fileset

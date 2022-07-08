@@ -10,8 +10,8 @@ type VarLUT = HashMap<String, String>;
 
 #[derive(Debug, PartialEq)]
 pub struct Template {
-    alias: String, // required
-    root: String, // required
+    alias: String,
+    root: String,
     summary: Option<String>,
     ignores: Vec<String>,
 }
@@ -23,49 +23,24 @@ impl std::fmt::Display for Template {
 }
 
 impl FromToml for Template {
-    type Err = TemplateError;
+    type Err = Fault;
 
     fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err> where Self: Sized {
-        // take alias entry
-        let alias = match table.get("alias") {
-            Some(i) => match i.as_str() {
-                Some(s) => s,
-                None => return Err(TemplateError::EntryNotString("alias".to_owned()))
-            }
-            None => return Err(TemplateError::MissingAlias)
-        };
-        // take path entry
-        let path = match table.get("path") {
-            Some(i) => match i.as_str() {
-                Some(s) => s,
-                None => return Err(TemplateError::EntryNotString("path".to_owned()))
-            }
-            None => return Err(TemplateError::MissingPath)
-        };
-        // take summary entry
-        let summary = match table.get("summary") {
-            Some(i) => match i.as_str() {
-                Some(s) => Some(s.to_owned()),
-                None => return Err(TemplateError::EntryNotString("summary".to_owned()))
-            }
-            None => None,
-        };
-        // take ignores entries
-        let ignore_list = match table.get("ignore") {
-            Some(i) => match i.as_array() {
-                Some(arr) => arr.into_iter()
-                    .filter_map(|f| f.as_str() )
-                    .map(|f| f.to_owned())
-                    .collect(),
-                None => return Err(TemplateError::IgnoresNotArray),
-            }
-            None => Vec::new(),
-        };
         Ok(Template {
-            alias: alias.to_string(),
-            root: path.to_string(),
-            summary: summary,
-            ignores: ignore_list,
+            alias: Self::require(table, "alias")?,
+            root: Self::require(table, "path")?,
+            summary: Self::get(table, "summary")?,
+            // take ignore entries
+            ignores: match table.get("ignore") {
+                Some(i) => match i.as_array() {
+                    Some(arr) => arr.into_iter()
+                        .filter_map(|f| f.as_str() )
+                        .map(|f| f.to_owned())
+                        .collect(),
+                    None => return Err(TemplateError::IgnoresNotArray)?,
+                }
+                None => Vec::new(),
+            },
         })
     }
 }

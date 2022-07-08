@@ -9,6 +9,9 @@ use crate::core::config::Config;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::core::template::Template;
+use crate::util::filesystem::normalize_path;
+
+use super::config::CONFIG_FILE;
 
 pub struct Context {
     /// holds behind-the-scenes internal Orbit operations
@@ -177,8 +180,10 @@ impl Context {
 
         for (arr_tbl, root) in plugs {
             for tbl in arr_tbl {
-                let plug = Plugin::from_toml(tbl)?
-                    .resolve_all_paths(&root); // resolve paths from that config file's parent directory
+                let plug = match Plugin::from_toml(tbl) {
+                    Ok(r) => r.resolve_all_paths(&root), // resolve paths from that config file's parent directory
+                    Err(e) => return Err(AnyError(format!("configuration {}: plugin {}", normalize_path(root.join(CONFIG_FILE)).display(), e)))?
+                };
                 // will kick out previous values so last item in array has highest precedence
                 self.plugins.insert(plug.alias().to_owned(), plug);
             }
@@ -197,8 +202,10 @@ impl Context {
 
         for (arr_tbl, root) in temps {
             for tbl in arr_tbl {
-                let template = Template::from_toml(tbl)?
-                    .resolve_root_path(&root);
+                let template = match Template::from_toml(tbl) {
+                    Ok(r) => r.resolve_root_path(&root),
+                    Err(e) => return Err(AnyError(format!("configuration {}: template {}", normalize_path(root.join(CONFIG_FILE)).display(), e)))?
+                };
                 self.templates.insert(template.alias().to_owned(), template);
             }
         }
@@ -221,9 +228,12 @@ impl Context {
 
     /// Determines the orbit ip development path.
     /// 
-    /// First checks if the environment already has ORBIT_PATH set, otherwise it
+    /// First checks if the environment already has ORBIT_DEV_PATH set, otherwise it
     /// will look for the value found in the config file. If no development path
     /// is set, it will use the current directory.
+    /// 
+    /// Note: Stange behavior where `edit` with vscode captures current ENV variables
+    /// into new window to prevent reading config for things like ORBIT_DEV_PATH.
     pub fn development_path(mut self, s: &str) -> Result<Context, Fault> {
         // an explicit environment variable takes precedence over config file data
         self.dev_path = Some(std::path::PathBuf::from(match std::env::var(s) {

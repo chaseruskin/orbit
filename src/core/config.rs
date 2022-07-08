@@ -1,6 +1,6 @@
 use toml_edit::{Document, ArrayOfTables, Item, Array, Value, Table, Formatted};
 use std::path::PathBuf;
-use crate::util::anyerror::{AnyError, Fault};
+use crate::util::{anyerror::{AnyError, Fault}, filesystem::normalize_path};
 
 pub trait FromToml {
     type Err;
@@ -199,7 +199,7 @@ impl Config {
     /// Errors if the entry exists, but is not a string.
     /// Returns `Vec::new()` if the entry does not exist anywhere.
     pub fn collect_as_str<'a>(&'a self, table: &str, key: &str) -> Result<Vec<&'a str>, Fault> {
-        Ok(self.collect_as_item(Some(table), key, &Item::is_str)?.into_iter().map(|f| f.0.as_str().unwrap()).collect())
+        Ok(self.collect_as_item(Some(table), key, &Item::is_str, "string")?.into_iter().map(|f| f.0.as_str().unwrap()).collect())
     }
 
     /// Gathers all values assigned under a given `Array` entry in configuration.
@@ -210,7 +210,7 @@ impl Config {
     /// Errors if the entry exists, but is not an array.
     /// Returns `Vec::new()` if the entry does not exist anywhere.
     pub fn collect_as_array_of_tables<'a>(&'a self, key: &str) -> Result<Vec<(&ArrayOfTables, &PathBuf)>, Fault> {
-        Ok(self.collect_as_item(None, key, &Item::is_array_of_tables)?.into_iter().map(|f| (f.0.as_array_of_tables().unwrap(), f.1)).collect())
+        Ok(self.collect_as_item(None, key, &Item::is_array_of_tables, "array of tables")?.into_iter().map(|f| (f.0.as_array_of_tables().unwrap(), f.1)).collect())
     }
 
     /// Takes the last value.
@@ -241,7 +241,7 @@ impl Config {
     /// the entry does not exist anywhere.
     /// 
     /// Errors if the entry exists, but is not an item that evaluates true with `eval`.
-    fn collect_as_item<'a>(&'a self, table: Option<&str>, key: &str, eval: &dyn Fn(&Item) -> bool) -> Result<Vec<(&Item, &PathBuf)>, Fault> {
+    fn collect_as_item<'a>(&'a self, table: Option<&str>, key: &str, eval: &dyn Fn(&Item) -> bool, item_name: &str) -> Result<Vec<(&Item, &PathBuf)>, Fault> {
         let mut values: Vec<(&Item, &PathBuf)> = Vec::new();
         // collect all included (3rd-party) configuration data
         for inc in &self.includes {
@@ -251,7 +251,9 @@ impl Config {
                     if eval(item) {
                        values.push((item, inc.get_root()));
                     } else {
-                        return Err(AnyError(format!("expecting different value for {}", key)))?
+                        return Err(ConfigError::BadItem(format!("{}", normalize_path(self.get_root().join(CONFIG_FILE)).display()), 
+                            item_name.to_owned(), format!("{}{}", { if table.is_some() { table.unwrap().to_string() + "." } else { "".to_string() } }, 
+                            key.to_owned())))?
                     }
                 }
                 None => (),
@@ -264,7 +266,9 @@ impl Config {
                 if eval(item) {
                    values.push((item, self.get_root()));
                 } else {
-                    return Err(AnyError(format!("expecting different value for {}", key)))?
+                    return Err(ConfigError::BadItem(format!("{}", normalize_path(self.get_root().join(CONFIG_FILE)).display()), 
+                        item_name.to_owned(), format!("{}{}", { if table.is_some() { table.unwrap().to_string() + "." } else { "".to_string() } }, 
+                        key.to_owned())))?
                 }
             }
             None => (),
@@ -277,13 +281,31 @@ impl Config {
                     if eval(item) {
                        values.push((item, cfg.get_root()));
                     } else {
-                        return Err(AnyError(format!("expecting different value for {}", key)))?
+                        return Err(ConfigError::BadItem(format!("{}", normalize_path(self.get_root().join(CONFIG_FILE)).display()), 
+                            item_name.to_owned(), format!("{}{}", { if table.is_some() { table.unwrap().to_string() + "." } else { "".to_string() } }, 
+                            key.to_owned())))?
                     }
                 }
                 None => (),
             }
         }
         Ok(values)
+    }
+}
+
+#[derive(Debug)]
+pub enum ConfigError {
+    /// (file, item, key)
+    BadItem(String, String, String),
+}
+
+impl std::error::Error for ConfigError {}
+
+impl std::fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::BadItem(file, item, key) => write!(f, "configuration {}: expecting toml {} for key '{}'", file, item, key),
+        }
     }
 }
 
@@ -326,7 +348,7 @@ mod test {
             .unwrap()
             .include().unwrap();
 
-        let items: Vec<&str> = cfg.collect_as_item(Some("core"), "editor", &Item::is_str)
+        let items: Vec<&str> = cfg.collect_as_item(Some("core"), "editor", &Item::is_str, "string")
             .unwrap().into_iter().map(|f| f.0.as_str().unwrap()).collect();
         assert_eq!(items, vec!["vim", "code"]);
     }

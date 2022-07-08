@@ -267,6 +267,10 @@ impl DependencyTable {
     pub fn new() -> Self {
         Self(HashMap::new())
     }
+
+    pub fn inner(&self) -> &HashMap<PkgId, AnyVersion> {
+        &self.0
+    }
 }
 
 impl FromToml for DependencyTable {

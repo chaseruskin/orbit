@@ -1,6 +1,10 @@
 use crate::Command;
 use crate::FromCli;
 use crate::core::ip::Ip;
+use crate::core::manifest::IP_MANIFEST_FILE;
+use crate::core::manifest::IpManifest;
+use crate::core::manifest::IpToml;
+use crate::core::pkgid::PkgId;
 use crate::interface::cli::Cli;
 use crate::util::anyerror::Fault;
 use crate::util::environment::EnvVar;
@@ -13,6 +17,8 @@ use crate::core::fileset::Fileset;
 use crate::core::vhdl::token::Identifier;
 use crate::core::plugin::Plugin;
 use crate::util::environment;
+
+type Catalog = HashMap<PkgId, (Option<IpManifest>, Vec<IpManifest>, Vec<IpManifest>)>;
 
 #[derive(Debug, PartialEq)]
 pub struct Plan {
@@ -37,6 +43,15 @@ impl Command for Plan {
         // check that user is in an IP directory
         c.goto_ip_path()?;
 
+        // create the ip manifest
+        let target_ip = IpManifest::from_path(c.get_ip_path().unwrap().join(IP_MANIFEST_FILE))?;
+
+        // gather the catalog
+        let catalog = search::Search::all_pkgid((
+            c.get_development_path().unwrap(), 
+            c.get_cache_path(), 
+            &c.get_vendor_path()))?;
+
         // set top-level environment variables (@TODO verify these are valid toplevels to be set!)
         if let Some(t) = &self.top {
             std::env::set_var(environment::ORBIT_TOP, t.to_string());
@@ -59,8 +74,8 @@ impl Command for Plan {
         } else {
             None
         };
-        // @TODO pass in the current IP struct
-        self.run(b_dir, plug_fset)
+
+        self.run(target_ip, b_dir, plug_fset, catalog)
     }
 }
 
@@ -122,27 +137,54 @@ impl GraphNode {
     }
 }
 
+#[derive(Debug)]
+pub enum PlanError {
+    BadTestbench(Identifier),
+    BadTop(Identifier),
+    BadEntity(Identifier),
+    UnknownUnit(Identifier),
+    UnknownEntity(Identifier),
+    Ambiguous(String, Vec<Identifier>),
+    Empty,
+}
+
+impl std::error::Error for PlanError {}
+
+impl std::fmt::Display for PlanError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::UnknownEntity(id) => write!(f, "no entity named '{}' in the current ip", id),
+            Self::Empty => write!(f, "no entities found"),
+            Self::BadEntity(id) => write!(f, "primary design unit '{}' is not an entity", id),
+            Self::BadTestbench(id) => write!(f, "entity '{}' is not a testbench and cannot be bench; use --top", id),
+            Self::BadTop(id) => write!(f, "entity '{}' is a testbench and cannot be top; use --bench", id),
+            Self::UnknownUnit(id) => write!(f, "no primary design unit named '{}' in the current ip", id),
+            Self::Ambiguous(name, tbs) => write!(f, "multiple {} were found:\n {}", name, tbs.iter().fold(String::new(), |sum, x| {
+                sum + &format!("\t{}\n", x)
+            })),
+        }
+    }
+}
+
 impl Plan {
 
     /// Constructs an entire list of dependencies required for the current design.
     /// 
     /// Errors if a dependency is not known in the user's universe.
-    fn collect_dependencies(target: &Ip, c: &Context) -> Result<(), Fault> {
+    fn collect_dependencies(target: &IpManifest, catalog: &Catalog) -> Result<(), Fault> {
         // collect all manifests
-        let universe = search::Search::all_pkgid((
-            c.get_development_path().unwrap(), 
-            c.get_cache_path(), 
-            &c.get_vendor_path()))?;
         
         // grab all dependencies
-        let direct_deps = target.get_manifest().get_dependencies();
+        let direct_deps = target.get_dependencies();
         // verify all exist in the universe
-        // for spec in &direct_deps {
-        //     match universe.contains_key(spec.get_pkgid()) {
-        //         true => (),
-        //         false => return Err(AnyError(format!("unknown ip: {}", spec.get_pkgid())))?
-        //     }
-        // }
+        for dep in direct_deps.inner() {
+            match catalog.contains_key(dep.0) {
+                true => {
+                    println!("found dependent ip: {}", dep.0)
+                },
+                false => return Err(AnyError(format!("unknown ip: {}", dep.0)))?
+            }
+        }
         todo!()
     }
 
@@ -211,11 +253,13 @@ impl Plan {
                 }
                 // add edges for reference calls
                 for dep in af.architecture.get_refs() {
+                    // verify the dependency exists
                     if let Some(node) = map.get(dep.get_suffix()) {
                         graph.add_edge(node.index(), map.get(af.architecture.entity()).unwrap().index(), ());
                     }
                 }
             }
+
         // go through all nodes and make the connections
         for (_, unit) in map.iter() {
             for dep in unit.sym.get_refs() {
@@ -225,10 +269,11 @@ impl Plan {
                 }
             }
         }
+        
         (graph, map)
     }
 
-    fn run(&self, build_dir: &str, plug: Option<&Plugin>) -> Result<(), Box<dyn std::error::Error>> {
+    fn run(&self, target: IpManifest, build_dir: &str, plug: Option<&Plugin>, catalog: Catalog) -> Result<(), Box<dyn std::error::Error>> {
         let mut build_path = std::env::current_dir().unwrap();
         build_path.push(build_dir);
         
@@ -248,18 +293,19 @@ impl Plan {
                 Some(node) => {
                     if let Some(e) = node.sym.as_entity() {
                         if e.is_testbench() == false {
-                            return Err(AnyError(format!("entity \'{}\' is not a testbench and cannot be bench; use --top", t)))?
+                            return Err(PlanError::BadTestbench(t.clone()))?
                         }
                         Some(node.index())
                     } else {
-                        return Err(AnyError(format!("\'{}\' is not an entity so it cannot be bench", t)))?
+                        return Err(PlanError::BadEntity(t.clone()))?
                     }
                 },
-                None => return Err(AnyError(format!("no entity named \'{}\'", t)))?
+                None => return Err(PlanError::UnknownEntity(t.clone()))?
             }
         } else if self.top.is_none() {
             // filter to display tops that have ports (not testbenches)
             match g.find_root() {
+                // only detected a single root
                 Ok(n) => {
                     // verify the root is a testbench
                     if let Some(ent) = map.get(g.get_node(n).unwrap()).unwrap().sym.as_entity() {
@@ -276,17 +322,7 @@ impl Plan {
                 Err(e) => {
                     match e.len() {
                         0 => None,
-                        _ => {
-                            // gather all identifier names
-                            let mut testbenches = e
-                                .into_iter()
-                                .map(|f| { g.get_node(f).unwrap() });
-                            let mut err_msg = String::from("multiple testbenches were found:\n");
-                            while let Some(tb) = testbenches.next() {
-                                err_msg.push_str(&format!("\t{}\n", tb));
-                            }
-                            return Err(AnyError(err_msg))?;
-                        }
+                        _ => return Err(PlanError::Ambiguous("testbenches".to_string(), e.into_iter().map(|f| { g.get_node(f).unwrap().clone() }).collect()))?,
                     }   
                 }
             }
@@ -300,10 +336,10 @@ impl Plan {
                 Some(node) => {
                     if let Some(e) = node.sym.as_entity() {
                         if e.is_testbench() == true {
-                            return Err(AnyError(format!("entity \'{}\' is a testbench and cannot be top; use --bench", t)))?
+                            return Err(PlanError::BadTop(t.clone()))?
                         }
                     } else {
-                        return Err(AnyError(format!("\'{}\' is not an entity so it cannot be top", t)))?
+                        return Err(PlanError::BadEntity(t.clone()))?
                     }
                     let n = node.index();
                     // try to detect top level testbench
@@ -312,26 +348,15 @@ impl Plan {
                         let benches: Vec<usize> =  g.successors(n)
                             .filter(|f| map.get(&g.get_node(*f).unwrap()).unwrap().sym.as_entity().unwrap().is_testbench() )
                             .collect();
-
                         bench = match benches.len() {
                             0 => None,
                             1 => Some(*benches.first().unwrap()),
-                            _ => {
-                                // gather all identifier names
-                                let mut testbenches = benches
-                                    .into_iter()
-                                    .map(|f| { g.get_node(f).unwrap() });
-                                let mut err_msg = String::from("multiple testbenches were found:\n");
-                                while let Some(tb) = testbenches.next() {
-                                    err_msg.push_str(&format!("\t{}\n", tb));
-                                }
-                                return Err(AnyError(err_msg))?;
-                            }
+                            _ => return Err(PlanError::Ambiguous("testbenches".to_string(), benches.into_iter().map(|f| { g.get_node(f).unwrap().clone() }).collect()))?,
                         };
                     }
                     n
                 },
-                None => return Err(AnyError(format!("no entity named \'{}\'", t)))?
+                None => return Err(PlanError::UnknownEntity(t.clone()))?
             }
         } else {
             if let Some(nt) = natural_top {
@@ -349,6 +374,11 @@ impl Plan {
         } else {
             String::new()
         };
+
+        // @TODO [!] build graph again but with entire set of all files available from all depdendencies
+
+        let m = Self::collect_dependencies(&target, &catalog)?;
+
 
         std::env::set_var(environment::ORBIT_TOP, &top_name);
         std::env::set_var(environment::ORBIT_BENCH, &bench_name);

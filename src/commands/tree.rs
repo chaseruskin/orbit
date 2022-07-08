@@ -70,24 +70,16 @@ impl Tree {
             if let Some(id) = map.get(&ent) {
                 id.index()
             } else {
-                return Err(AnyError(format!("entity '{}' does not exist in the current ip", ent)))?
+                return Err(PlanError::UnknownEntity(ent.clone()))?
             }
         } else {
             match graph.find_root() {
                 Ok(n) => n,
                 Err(e) => match e.len() {
-                    0 => return Err(AnyError(format!("no entities found")))?,
+                    0 => return Err(PlanError::Empty)?,
                     1 => *e.first().unwrap(),
-                    _ => {
-                        // gather all identifier names
-                        let mut roots = e.into_iter()
-                            .map(|f| { graph.get_node(f).unwrap() });
-                        let mut err_msg = String::from("multiple roots were found:\n");
-                        while let Some(r) = roots.next() {
-                            err_msg.push_str(&format!("\t{}\n", r));
-                        }
-                        return Err(AnyError(err_msg))?;
-                    }
+                    _ => return Err(PlanError::Ambiguous("roots".to_string(), e.into_iter().map(|f| { graph.get_node(f).unwrap().clone() }).collect()))?
+                    
                 }
             }
         };
@@ -173,6 +165,7 @@ impl Tree {
 use crate::core::vhdl::symbol;
 
 use super::plan::ArchitectureFile;
+use super::plan::PlanError;
 
 #[derive(Debug, PartialEq)]
 pub struct HashNode {

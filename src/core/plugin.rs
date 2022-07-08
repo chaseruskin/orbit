@@ -69,7 +69,7 @@ impl Plugin {
             println!("running: {} {}", self.command, s);
         }
         let mut proc = std::process::Command::new(&self.command)
-            .args([&self.args, extra_args].concat())
+            .args(&args)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
             .spawn()?;

@@ -7,6 +7,7 @@ use crate::core::pkgid::PkgId;
 use crate::util::anyerror::{AnyError, Fault};
 use std::str::FromStr;
 use crate::core::version::Version;
+use crate::util::filesystem::normalize_path;
 
 use super::config::{FromToml, FromTomlError};
 use super::version::AnyVersion;
@@ -289,9 +290,9 @@ impl FromToml for DependencyTable {
                     // insert into lut
                     map.insert(pkgid, version);
                 }
-                if switch == true { return Err(AnyError(format!("incomplete ip identifier {}.{}.", vendor, library)))? }
+                if switch == true { return Err(AnyError(format!("partial ip pkgid key '{}.{}.' in dependencies table", vendor, library)))? }
             }
-            if switch == true { return Err(AnyError(format!("incomplete ip identifier {}.", vendor)))? }
+            if switch == true { return Err(AnyError(format!("partial ip pkgid key '{}.' in dependencies table", vendor)))? }
         }
         Ok(Self(map))
     }
@@ -356,14 +357,14 @@ impl IpManifest {
     /// Errors on parsing errors for toml and errors on any particular rules for
     /// manifest formatting/required keys.
     fn from_manifest(m: Manifest) -> Result<Self, Box<dyn Error>> {
-        Ok(IpManifest { ip: IpToml::from_toml(&m.get_doc().as_table())?, manifest: m, })
+        Ok(IpManifest { ip: Self::wrap_toml(&m, IpToml::from_toml(&m.get_doc().as_table()))?, manifest: m, })
     }
 
     /// Loads an `IpManifest` from `path`.
     pub fn from_path(path: PathBuf) -> Result<Self, Box<dyn Error>> {
         let man = Manifest::from_path(path)?;
         Ok(Self {
-            ip: IpToml::from_toml(man.get_doc().as_table())?,
+            ip: Self::wrap_toml(&man, IpToml::from_toml(man.get_doc().as_table()))?,
             manifest: man,
         })
     }
@@ -374,6 +375,13 @@ impl IpManifest {
 
     pub fn get_repository(&self) -> Option<&String> {
         self.ip.ip.get_repository()
+    }
+
+    fn wrap_toml<T, E: std::fmt::Display>(m: &Manifest, r: Result<T, E>) -> Result<T, impl std::error::Error> {
+        match r {
+            Ok(t) => Ok(t),
+            Err(e) => Err(AnyError(format!("manifest {}: {}", normalize_path(m.get_path().clone()).display(), e))),
+        }
     }
 }
 

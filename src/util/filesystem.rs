@@ -1,5 +1,7 @@
 use fs_extra;
-use std::path::Path;
+use std::ffi::OsStr;
+use std::path::{Path, Component};
+use home::home_dir;
 
 pub enum Unit {
     MegaBytes,
@@ -24,6 +26,8 @@ where P: AsRef<Path> {
 
 use std::path::PathBuf;
 use std::env;
+
+use super::anyerror::Fault;
 
 /// Attempts to return the executable's path.
 pub fn get_exe_path() -> Result<PathBuf, Box::<dyn std::error::Error>> {
@@ -51,6 +55,71 @@ pub fn resolve_rel_path(root: &std::path::PathBuf, s: String) -> String {
     }
 }
 
+/// This function resolves common filesystem standards into a standardized path format.
+/// 
+/// It expands leading '~' to be the user's home directory, or expands leading '.' to the
+/// current directory. It also handles back-tracking '..' and intermediate current directory '.'
+/// notations.
+pub fn normalize_path(p: std::path::PathBuf) -> std::path::PathBuf {
+    // break the path into parts
+    let mut parts = p.components();
+
+    let mut result = Vec::<String>::new();
+    // check first part for home path '~' and relative path '.'
+    if let Some(root) = parts.next() {
+        if root.as_os_str() == OsStr::new("~") {
+            match home_dir() {
+                Some(home) => for c in home.components() { 
+                    match c {
+                        Component::RootDir => (),
+                        _ => result.push(String::from(c.as_os_str().to_str().unwrap())),
+                    }
+                },
+                None => result.push(String::from(root.as_os_str().to_str().unwrap())),
+            }
+        } else if root.as_os_str() == OsStr::new(".") {
+            for c in std::env::current_dir().unwrap().components() {
+                match c {
+                    Component::RootDir => (),
+                    _ => result.push(String::from(c.as_os_str().to_str().unwrap())),
+                }
+            }
+        } else if root.as_os_str() == OsStr::new("..") {
+            for c in std::env::current_dir().unwrap().components() {
+                match c {
+                    Component::RootDir => (),
+                    _ => result.push(String::from(c.as_os_str().to_str().unwrap())),
+                }
+            }
+            result.pop();
+        } else {
+            result.push(String::from(root.as_os_str().to_str().unwrap()))
+        }
+    }
+    // push remaining components
+    while let Some(part) = parts.next() {
+        match part {
+            Component::RootDir => (),
+            _ => {
+                if part.as_os_str() == OsStr::new("..") {
+                    result.pop();
+                } else if part.as_os_str() != OsStr::new(".") {
+                    result.push(String::from(part.as_os_str().to_str().unwrap()));
+                }
+            }
+        }
+    }
+    // assemble new path
+    let mut first = true;
+    let normal_path = if p.starts_with("/") || p.starts_with("\\") { 
+        String::from("/")
+    } else {
+        String::new()
+    };
+    PathBuf::from(result.into_iter().fold(normal_path, |x, y| if first == true { first = false; x + &y } else { x + "/" + &y }))
+    // @TODO add some fail-safe where if the final path does not exist then return the original path?
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -66,5 +135,20 @@ mod test {
         assert_eq!(resolve_rel_path(&rel_root, String::from("orbit")), String::from("orbit"));
         // not relative
         assert_eq!(resolve_rel_path(&rel_root, String::from("/src")), String::from("/src"));
+    }
+
+    #[test]
+    fn normalize() {
+        let p = PathBuf::from("~/.orbit/plugins/a.txt");
+        assert_eq!(normalize_path(p), PathBuf::from(home_dir().unwrap().join(".orbit/plugins/a.txt").to_str().unwrap().replace("\\", "/")));
+
+        let p = PathBuf::from("/home/.././b.txt");
+        assert_eq!(normalize_path(p), PathBuf::from("/b.txt"));
+
+        let p = PathBuf::from("/home\\c.txt");
+        assert_eq!(normalize_path(p), PathBuf::from("/home/c.txt"));
+
+        let p = PathBuf::from("./b.txt");
+        assert_eq!(normalize_path(p), PathBuf::from(std::env::current_dir().unwrap().join("b.txt").to_str().unwrap().replace("\\", "/")));
     }
 }

@@ -185,7 +185,7 @@ impl Install {
 
         // move into stored directory to compute checksum for the tagged version
         let temp = match store.is_stored(&target) {
-            true => ip.get_manifest().get_path().clone(),
+            true => ip.get_root(),
             // throw repository into the store/ for future use
             false => store.store(&ip)?,
         };
@@ -225,11 +225,16 @@ impl Install {
             } else {
                 // verify the installed version is valid
                 if let Some(sha) = Self::get_checksum_proof(&cache_slot, 0) {
+                    // recompute the checksum on the cache installation
+                    std::env::set_current_dir(&cache_slot)?;
+                    let ip_files = crate::core::fileset::gather_current_files(&std::path::PathBuf::from("."));
+                    let checksum = crate::util::checksum::checksum(&ip_files);
+                    std::env::set_current_dir(&temp)?;
                     if sha == checksum {
-                        return Err(AnyError(format!("IP {} version {} is already installed", target, version)))?
+                        return Err(AnyError(format!("ip '{}' as version '{}' is already installed", target, version)))?
                     }
                 }
-                println!("info: reinstalling due to bad checksum");
+                println!("info: reinstalling ip '{}' as version '{}' due to bad checksum", target, version);
                 // blow directory up for re-install
                 std::fs::remove_dir_all(&cache_slot)?;
             }

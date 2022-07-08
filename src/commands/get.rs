@@ -105,11 +105,21 @@ impl Command for Get {
             
             // find all manifests and prioritize installed manifests over others but to help with errors/confusion
             let status = catalog.inner_mut().remove(&target).unwrap();
-            let installs = status.get_installations();
 
-            // @TODO determine version to grab
+            // determine version to grab
             let v = self.version.as_ref().unwrap_or(&AnyVersion::Latest);
-            self.run(crate::commands::probe::select_ip_from_version(&target, &v, &installs)?, false)
+            let ip = match v {
+                AnyVersion::Dev => status.get_dev(),
+                _ => status.get_install(v)
+            };
+            if ip.is_none() {
+                // check if the ip is available for more helpful error message
+                return match status.get_available(v) {
+                    Some(_) => Err(AnyError(format!("ip '{}' is not installed but is available; if you want to use any unit from it try installing the ip", target))),
+                    None => Err(AnyError(format!("ip '{}' is not found as version '{}'", target, v)))
+                }?
+            }
+            self.run(ip.unwrap(), false)
         }
     }
 }

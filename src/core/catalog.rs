@@ -1,11 +1,10 @@
 use std::{collections::HashMap, path::PathBuf};
 use crate::util::anyerror::Fault;
 
-use super::{pkgid::PkgId, manifest::IpManifest, version::Version, store::Store};
+use super::{pkgid::PkgId, manifest::IpManifest, version::{Version, AnyVersion}, store::Store};
 
 #[derive(Debug)]
 pub struct Catalog<'a>(HashMap<PkgId, IpLevel>, Option<Store<'a>>);
-
 
 #[derive(Debug)]
 pub struct IpLevel {
@@ -31,10 +30,6 @@ impl IpLevel {
         self.available.push(m);    
     }
 
-    pub fn get_dev(&self) -> Option<&IpManifest> {
-        self.dev.as_ref()
-    }
-
     pub fn get_installations(&self) -> &Vec<IpManifest> {
         &self.installs
     }
@@ -49,6 +44,60 @@ impl IpLevel {
 
     pub fn is_installed(&self) -> bool {
         self.installs.is_empty() == false
+    }
+
+    /// Returns the manifest found on the DEV_PATH.
+    pub fn get_dev(&self) -> Option<&IpManifest> {
+        self.dev.as_ref()
+    }
+
+    /// Returns the manifest with the most compatible version fitting `version`.
+    pub fn get_install(&self, version: &AnyVersion) -> Option<&IpManifest> {
+        Self::get_target_version(version, self.get_installations())
+    }
+
+    /// Returns the manifest with the most compatible version fitting `version`.
+    pub fn get_available(&self, version: &AnyVersion) -> Option<&IpManifest> {
+        Self::get_target_version(version, self.get_availability())
+    }
+
+    /// References the ip matching the most compatible version `version`.
+    /// 
+    /// A `dev` version is only searched at the DEV_PATH. Any other version is
+    /// first sought for in the cache installations, and if not found then searched
+    /// for in the availability space.
+    pub fn get(&self, version: &AnyVersion) -> Option<&IpManifest> {
+        match version {
+            AnyVersion::Dev => self.get_dev(),
+            _ => {
+                match self.get_install(version) {
+                    Some(ip) => Some(ip),
+                    None => self.get_available(version)
+                }
+            }
+        }
+    }
+
+    /// Finds the most compatible version matching `target` among the possible `space`.
+    /// 
+    /// Returns `None` if no compatible version was found.
+    /// 
+    /// Panics if a development version is entered as `target`.
+    fn get_target_version<'a>(target: &AnyVersion, space: &'a Vec<IpManifest>) -> Option<&'a IpManifest> {
+        // find the specified version for the given ip
+        let mut latest_version: Option<&IpManifest> = None;
+        space.iter()
+            .filter(|ip| match &target {
+                AnyVersion::Specific(v) => crate::core::version::is_compatible(v, ip.get_version()),
+                AnyVersion::Latest => true,
+                _ => panic!("dev version cannot be filtered")
+            })
+            .for_each(|ip| {
+                if latest_version.is_none() || ip.get_version() > latest_version.as_ref().unwrap().get_version() {
+                    latest_version = Some(ip);
+                }
+            });
+        latest_version
     }
 
     pub fn is_developing(&self) -> bool {
@@ -94,13 +143,6 @@ impl<'a> Catalog<'a> {
     /// 
     /// Searches the cache/store, availability space, and development space.
     pub fn get_possible_versions(&self, _: &PkgId) -> Vec<Version> {
-        todo!();
-    }
-
-    /// Find a matching manifest for the requested `pkgid` and `version`.
-    /// 
-    /// Looks in the cache/store and the availability space.
-    fn find() {
         todo!();
     }
 

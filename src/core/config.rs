@@ -45,6 +45,7 @@ pub enum FromTomlError {
     MissingEntry(String),
     ExpectingString(String),
     BadParse(String, String),
+    ExpectingStringArray(String),
 }
 
 impl std::error::Error for FromTomlError {}
@@ -55,6 +56,7 @@ impl std::fmt::Display for FromTomlError {
             Self::ExpectingString(key) => write!(f, "key '{}' expects a toml string", key),
             Self::MissingEntry(key) => write!(f, "missing required key '{}'", key),
             Self::BadParse(key, value) => write!(f, "failed to parse value '{}' for key '{}'", value, key),
+            Self::ExpectingStringArray(key) => write!(f, "key '{}' expects an array of strings", key),
         }
     }
 }

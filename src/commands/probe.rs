@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
-use crate::core::manifest::IpManifest;
+use crate::core::catalog::IpLevel;
 use crate::core::pkgid::PkgId;
 use crate::core::version::AnyVersion;
 use crate::core::version::Version;
@@ -56,31 +56,18 @@ impl Command for Probe {
         // ips under this key
         let status = catalog.inner_mut().remove(&target).unwrap();
 
-        let dev_ver = match status.get_dev() {
-            Some(ip) => Some(ip.get_version()),
-            None => None,
-        };
-
-        let inst_ver: Vec<&Version> = status.get_installations().iter().map(|f| f.get_version()).collect();
-        let avl_ver: Vec<&Version> = status.get_availability().iter().map(|f| f.get_version()).collect();
-        
         // collect all ip in the user's universe to see if ip exists
         if self.tags == true {
-            println!("{}", format_version_table((dev_ver, inst_ver, avl_ver)));
+            println!("{}", format_version_table(status));
             return Ok(())
         }
 
         // find most compatible version with the partial version
         let v = self.version.as_ref().unwrap_or(&AnyVersion::Latest);
-        let ip = match v {
-            AnyVersion::Dev => {
-                // take the manifest from the DEV_PATH
-                match status.get_dev() {
-                    Some(i) => i,
-                    None => return Err(AnyError(format!("ip '{}' is not found on the development path", target)))?
-                }
-            },
-            _ => select_ip_from_version(&target, &v, status.get_installations())?
+
+        let ip = match status.get(v) {
+            Some(i) => i,
+            None => Err(AnyError(format!("ip '{}' is not found as version '{}'", target, v)))?
         };
 
         if self.units == true {
@@ -100,14 +87,6 @@ impl Probe {
     }
 }
 
-/// Creates an IP from an ID `target` and version `v` within the given `inventory` of manifests.
-pub fn select_ip_from_version<'a>(target: &PkgId, v: &AnyVersion, inventory: &'a Vec<IpManifest>) -> Result<&'a IpManifest, Fault>  {
-    let inst_ver: Vec<&Version> = inventory.iter().map(|f| f.get_version()).collect();
-    let version = crate::commands::install::get_target_version(v, &inst_ver, &target)?;
-    let ip = inventory.into_iter().find(|f| f.get_version() == &version).unwrap();
-    Ok(ip)
-}
-
 /// Creates a string for to display the primary design units for the particular ip.
 fn format_units_table(table: Vec<PrimaryUnit>) -> String {
     let header = format!("\
@@ -124,15 +103,11 @@ fn format_units_table(table: Vec<PrimaryUnit>) -> String {
             unit.to_string(), 
             "y"));
     }
-
     header + &body
 }
 
-/// Tracks the dev version, installed versions, and available versions
-type VersionTable<'a> = (Option<&'a Version>, Vec<&'a Version>, Vec<&'a Version>);
-
 /// Creates a string for a version table for the particular ip.
-fn format_version_table(table: VersionTable) -> String {
+fn format_version_table(table: IpLevel) -> String {
     let header = format!("\
 {:<15}{:<9}
 {:->15}{2:->9}\n",
@@ -140,21 +115,21 @@ fn format_version_table(table: VersionTable) -> String {
     // create a hashset of all available versions to form a list
     let mut btmap = BTreeMap::<&Version, (bool, bool, bool)>::new();
     // log what version the dev ip is at
-    if let Some(v) = table.0 {
-        btmap.insert(v, (true, false, false));
+    if let Some(ip) = table.get_dev() {
+        btmap.insert(ip.get_version(), (true, false, false));
     }
     // log the installation versions
-    for v in table.1 {
-        match btmap.get_mut(&v) {
+    for ip in table.get_installations() {
+        match btmap.get_mut(&ip.get_version()) {
             Some(entry) => entry.1 = true,
-            None => { btmap.insert(v, (false, true, false)); () },
+            None => { btmap.insert(ip.get_version(), (false, true, false)); () },
         }
     }
     // log the available versions
-    for v in table.2 {
-        match btmap.get_mut(&v) {
+    for ip in table.get_availability() {
+        match btmap.get_mut(&ip.get_version()) {
             Some(entry) => entry.1 = true,
-            None => { btmap.insert(v, (false, false, true)); () },
+            None => { btmap.insert(ip.get_version(), (false, false, true)); () },
         } 
     }
     // create body text

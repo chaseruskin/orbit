@@ -12,6 +12,7 @@ use crate::util::filesystem::normalize_path;
 use super::config::{FromToml, FromTomlError};
 use super::version::AnyVersion;
 use super::vhdl::primaryunit::PrimaryUnit;
+use super::vhdl::token::{Identifier, IdentifierError};
 
 #[derive(Debug)]
 pub struct Manifest {
@@ -181,6 +182,7 @@ pub struct Ip {
     summary: Option<String>,
     changelog: Option<String>,
     readme: Option<String>,
+    units: Option<Vec<Identifier>>,
 }
 
 impl Ip {
@@ -191,7 +193,8 @@ impl Ip {
             repository: None, 
             summary: None, 
             changelog: None, 
-            readme: None
+            readme: None,
+            units: None,
         }
     }
 
@@ -228,6 +231,19 @@ impl FromToml for Ip {
             summary: Self::get(table, "summary")?,
             changelog: Self::get(table, "changelog")?,
             readme: Self::get(table, "readme")?,
+            units: match table.get("units") {
+                Some(i) => match i.as_array() {
+                    Some(arr) => {
+                        let result: Result<Vec<_>, IdentifierError> = arr.into_iter()
+                            .filter_map(|f| f.as_str() )
+                            .map(|f| f.to_owned().parse::<Identifier>() )
+                            .collect();
+                        Some(result?)
+                    }
+                    None => return Err(FromTomlError::ExpectingStringArray("units".to_owned()))?,
+                }
+                None => None,
+            },
         })
     }
 }
@@ -240,16 +256,16 @@ impl FromToml for IpToml {
         let ip = if let Some(item) = table.get("ip") {
             match item.as_table() {
                 Some(tbl) => Ip::from_toml(tbl)?,
-                None => panic!("expects `ip` to be a toml table")
+                None => return Err(AnyError(format!("expects key 'ip' to be a toml table")))?
             }
         } else {
-            panic!("missing table `ip`")
+            return Err(FromTomlError::MissingEntry("ip".to_string()))?
         };
         // grab the dependencies table
         let dt = if let Some(item) = table.get("dependencies") {
             match item.as_table() {
                 Some(tbl) => DependencyTable::from_toml(tbl)?,
-                None => panic!("expects `dependencies` to be a toml table")
+                None => return Err(AnyError(format!("expects key 'dependencies' to be a toml table")))?
             }
         } else {
             DependencyTable::new()
@@ -313,6 +329,8 @@ impl IpManifest {
     }
 
     /// Gathers the list of primary design units for the current ip.
+    /// 
+    /// If the manifest has an toml entry for `units`, it will return that list rather than go through files.
     pub fn collect_units(&self) -> Vec<PrimaryUnit> {
         // collect all files
         let files = crate::core::fileset::gather_current_files(&self.get_manifest().get_path().parent().unwrap().to_path_buf());

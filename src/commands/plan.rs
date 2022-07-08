@@ -163,10 +163,9 @@ impl std::fmt::Display for PlanError {
 }
 
 impl Plan {
-
     /// Constructs an entire list of dependencies required for the current design.
     /// 
-    /// Errors if a dependency is not known in the user's universe.
+    /// Errors if a dependency is not known in the user's catalog.
     fn collect_dependencies(target: &IpManifest, catalog: &Catalog) -> Result<(), Fault> {
         // grab all dependencies
         let direct_deps = target.get_dependencies();

@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use ignore;
 use ignore::overrides::OverrideBuilder;
 
-use super::config::FromToml;
+use super::config::{FromToml, FromTomlError};
 
 type VarLUT = HashMap<String, String>;
 
@@ -37,7 +37,7 @@ impl FromToml for Template {
                         .filter_map(|f| f.as_str() )
                         .map(|f| f.to_owned())
                         .collect(),
-                    None => return Err(TemplateError::IgnoresNotArray)?,
+                    None => return Err(FromTomlError::ExpectingStringArray("ignore".to_owned()))?,
                 }
                 None => Vec::new(),
             },
@@ -152,7 +152,6 @@ pub enum TemplateError {
     MissingAlias,
     MissingPath,
     UnknownKey(String),
-    IgnoresNotArray,
 }
 
 impl std::error::Error for TemplateError {}
@@ -164,7 +163,6 @@ impl std::fmt::Display for TemplateError {
             Self::MissingAlias => write!(f, "key 'alias' holding a string is required for a template"),
             Self::MissingPath => write!(f, "key 'path' holding a string is required for a template"),
             Self::UnknownKey(k) => write!(f, "unknown key '{}' skipped in template array of tables", k),
-            Self::IgnoresNotArray => write!(f, "key 'ignore' expects an array of strings"),
         }
     }
 }

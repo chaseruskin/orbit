@@ -92,7 +92,7 @@ pub fn normalize_path(p: std::path::PathBuf) -> PathBuf {
     }
     // assemble new path
     let mut first = true;
-    PathBuf::from(result.into_iter().fold(String::new(), |x, y| if first == true { first = false; x + &y } else { x + "/" + &y }))
+    PathBuf::from(result.into_iter().fold(String::new(), |x, y| if first == true { first = false; x + &y } else { x + "/" + &y }).replace("\\", "/").replace("//", "/"))
     // @TODO add some fail-safe where if the final path does not exist then return the original path?
 }
 

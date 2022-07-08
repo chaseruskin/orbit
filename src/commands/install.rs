@@ -59,7 +59,7 @@ impl Command for Install {
         let ip = if let Some(ip) = &self.ip {
             // gather all manifests from all 3 levels
             let mut universe = Search::all_pkgid((c.get_development_path().unwrap(), c.get_cache_path(), &c.get_vendor_path()))?;
-            let ids = universe.keys().map(|f| { f }).collect();;
+            let ids = universe.keys().map(|f| { f }).collect();
             let target = crate::core::ip::find_ip(&ip, ids)?;
             // gather all possible versions found for this IP
             let mut inventory = universe.remove(&target).take().unwrap();

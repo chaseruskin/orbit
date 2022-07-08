@@ -1,10 +1,9 @@
 use crate::Command;
 use crate::FromCli;
-use crate::core::ip::Ip;
+use crate::core::catalog::Catalog;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::IpManifest;
-use crate::core::manifest::IpToml;
-use crate::core::pkgid::PkgId;
+use crate::core::resolver::mvs::IpSpec;
 use crate::interface::cli::Cli;
 use crate::util::anyerror::Fault;
 use crate::util::environment::EnvVar;
@@ -17,8 +16,6 @@ use crate::core::fileset::Fileset;
 use crate::core::vhdl::token::Identifier;
 use crate::core::plugin::Plugin;
 use crate::util::environment;
-
-type Catalog = HashMap<PkgId, (Option<IpManifest>, Vec<IpManifest>, Vec<IpManifest>)>;
 
 #[derive(Debug, PartialEq)]
 pub struct Plan {
@@ -47,10 +44,10 @@ impl Command for Plan {
         let target_ip = IpManifest::from_path(c.get_ip_path().unwrap().join(IP_MANIFEST_FILE))?;
 
         // gather the catalog
-        let catalog = search::Search::all_pkgid((
-            c.get_development_path().unwrap(), 
-            c.get_cache_path(), 
-            &c.get_vendor_path()))?;
+        let catalog = Catalog::new()
+            .development(c.get_development_path().unwrap())?
+            .installations(c.get_cache_path())?
+            .available(&&c.get_vendor_path())?;
 
         // set top-level environment variables (@TODO verify these are valid toplevels to be set!)
         if let Some(t) = &self.top {
@@ -83,8 +80,6 @@ use crate::core::vhdl::symbol;
 use crate::util::graph::Graph;
 use crate::util::anyerror::AnyError;
 use std::collections::HashMap;
-
-use super::search;
 
 #[derive(Debug, PartialEq)]
 pub struct ArchitectureFile {
@@ -172,13 +167,11 @@ impl Plan {
     /// 
     /// Errors if a dependency is not known in the user's universe.
     fn collect_dependencies(target: &IpManifest, catalog: &Catalog) -> Result<(), Fault> {
-        // collect all manifests
-        
         // grab all dependencies
         let direct_deps = target.get_dependencies();
         // verify all exist in the universe
         for dep in direct_deps.inner() {
-            match catalog.contains_key(dep.0) {
+            match catalog.inner().contains_key(dep.0) {
                 true => {
                     println!("found dependent ip: {}", dep.0)
                 },
@@ -186,6 +179,23 @@ impl Plan {
             }
         }
         todo!()
+    }
+
+    fn construct_rough_build_list(node: &IpManifest, catalog: &Catalog) -> Result<Vec<IpSpec>, Fault> {
+        let mut result = Vec::new();
+        let deps = node.get_dependencies();
+        for dep in deps.inner() {
+            match catalog.inner().contains_key(dep.0) {
+                true => {
+                    result.push(IpSpec::new(dep.0.clone(), dep.1.clone()));
+                    // find this IP to read its dependencies
+                    //catalog.find()
+                    println!("found dependent ip: {}", dep.0)
+                },
+                false => return Err(AnyError(format!("unknown ip: {}", dep.0)))?
+            }
+        }
+        Ok(result)
     }
 
     /// Builds a graph of design units. Used for planning.
@@ -376,8 +386,7 @@ impl Plan {
         };
 
         // @TODO [!] build graph again but with entire set of all files available from all depdendencies
-
-        let m = Self::collect_dependencies(&target, &catalog)?;
+        Self::collect_dependencies(&target, &catalog)?;
 
 
         std::env::set_var(environment::ORBIT_TOP, &top_name);

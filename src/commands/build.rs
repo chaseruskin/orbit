@@ -8,7 +8,6 @@ use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::core::plugin::Plugin;
 use crate::util::environment;
-use crate::util::filesystem::normalize_path;
 
 #[derive(Debug, PartialEq)]
 pub struct Build {

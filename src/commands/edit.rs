@@ -1,13 +1,11 @@
-use std::path::PathBuf;
-
 use crate::Command;
 use crate::FromCli;
+use crate::core::catalog::Catalog;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::core::pkgid::PkgId;
-use crate::core::manifest;
 use crate::util::anyerror::AnyError;
 
 #[derive(Debug, PartialEq)]
@@ -30,7 +28,9 @@ impl FromCli for Edit {
 impl Command for Edit {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
-        let manifests = manifest::IpManifest::detect_all(c.get_development_path().as_ref().unwrap())?;
+        // collect manifest from DEV_PATH
+        let catalog = Catalog::new()
+            .development(c.get_development_path().as_ref().unwrap())?;
         // determine editor
         let sel_editor = match &self.editor {
             // first check if cli arg is empty
@@ -47,28 +47,22 @@ impl Command for Edit {
                 }
             }
         };
-        self.run(manifests, &sel_editor)
+        self.run(&catalog, &sel_editor)
     }
 }
 
 use crate::core::ip;
 
 impl Edit {
-    fn run(&self, manifests: Vec<manifest::IpManifest>, editor: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let ids: Vec<&PkgId> = manifests.iter().map(|f| f.get_pkgid()).collect();
+    fn run(&self, catalog: &Catalog, editor: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let ids: Vec<&PkgId> = catalog.inner().keys().map(|f| f).collect();
         // find the full ip name among the manifests to get the path
         let result = ip::find_ip(&self.ip, ids)?;
-        // @TODO improve over simple for-loop
-        let mut root = PathBuf::new();
-        for man in manifests {
-            if man.get_pkgid() == &result {
-                root = man.get_manifest().get_path().to_owned()
-            }
-        }
-        root.pop();
+
+        let ip = catalog.inner().get(&result).unwrap().get_dev().unwrap();
         // perform the process
         let _ = std::process::Command::new(editor)
-            .args(&[root.display().to_string()])
+            .args(&[ip.get_root().display().to_string()])
             .spawn()?;
     
         Ok(())

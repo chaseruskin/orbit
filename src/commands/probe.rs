@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::Command;
 use crate::FromCli;
+use crate::core::catalog::Catalog;
 use crate::core::manifest::IpManifest;
 use crate::core::pkgid::PkgId;
 use crate::core::version::AnyVersion;
@@ -11,11 +12,8 @@ use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
-use crate::core::ip::Ip;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
-
-use super::search;
 
 #[derive(Debug, PartialEq)]
 pub struct Probe {
@@ -45,24 +43,25 @@ impl FromCli for Probe {
 impl Command for Probe {
     type Err = Fault;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
-        // collect all manifests
-        let mut universe = search::Search::all_pkgid((
-            c.get_development_path().unwrap(), 
-            c.get_cache_path(), 
-            &c.get_vendor_path()))?;
-        let ids = universe.keys().map(|f| { f }).collect();
+
+        // gather the catalog (all manifests)
+        let mut catalog = Catalog::new()
+            .development(c.get_development_path().unwrap())?
+            .installations(c.get_cache_path())?
+            .available(&&c.get_vendor_path())?;
+
+        let ids = catalog.inner().keys().map(|f| { f }).collect();
         let target = crate::core::ip::find_ip(&self.ip, ids)?;
-
         // ips under this key
-        let inventory = universe.remove(&target).unwrap();
+        let status = catalog.inner_mut().remove(&target).unwrap();
 
-        let dev_ver = match &inventory.0 {
+        let dev_ver = match status.get_dev() {
             Some(ip) => Some(ip.get_version()),
             None => None,
         };
 
-        let inst_ver: Vec<&Version> = inventory.1.iter().map(|f| f.get_version()).collect();
-        let avl_ver: Vec<&Version> = inventory.2.iter().map(|f| f.get_version()).collect();
+        let inst_ver: Vec<&Version> = status.get_installations().iter().map(|f| f.get_version()).collect();
+        let avl_ver: Vec<&Version> = status.get_availability().iter().map(|f| f.get_version()).collect();
         
         // collect all ip in the user's universe to see if ip exists
         if self.tags == true {
@@ -75,12 +74,12 @@ impl Command for Probe {
         let ip = match v {
             AnyVersion::Dev => {
                 // take the manifest from the DEV_PATH
-                match inventory.0 {
-                    Some(i) => Ip::from_manifest(i),
+                match status.get_dev() {
+                    Some(i) => i,
                     None => return Err(AnyError(format!("ip '{}' is not found on the development path", target)))?
                 }
             },
-            _ => select_ip_from_version(&target, &v, inventory.1)?
+            _ => select_ip_from_version(&target, &v, status.get_installations())?
         };
 
         if self.units == true {
@@ -89,8 +88,7 @@ impl Command for Probe {
             return Ok(())
         }
 
-        println!("{}", ip.into_manifest());
-
+        println!("{}", ip);
         self.run()
     }
 }
@@ -102,11 +100,11 @@ impl Probe {
 }
 
 /// Creates an IP from an ID `target` and version `v` within the given `inventory` of manifests.
-pub fn select_ip_from_version(target: &PkgId, v: &AnyVersion, inventory: Vec<IpManifest>) -> Result<Ip, Fault>  {
+pub fn select_ip_from_version<'a>(target: &PkgId, v: &AnyVersion, inventory: &'a Vec<IpManifest>) -> Result<&'a IpManifest, Fault>  {
     let inst_ver: Vec<&Version> = inventory.iter().map(|f| f.get_version()).collect();
     let version = crate::commands::install::get_target_version(v, &inst_ver, &target)?;
     let ip = inventory.into_iter().find(|f| f.get_version() == &version).unwrap();
-    Ok(Ip::from_manifest(ip))
+    Ok(ip)
 }
 
 /// Creates a string for to display the primary design units for the particular ip.

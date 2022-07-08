@@ -1,5 +1,7 @@
 use crate::Command;
 use crate::FromCli;
+use crate::core::catalog::Catalog;
+use crate::core::catalog::IpLevel;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Flag};
 use crate::interface::errors::CliError;
@@ -79,56 +81,29 @@ impl Search {
     }
 
     fn run(&self, paths: Highway) -> Result<(), Box<dyn std::error::Error>> {
-        let mut pkg_map: BTreeMap<PkgId, (bool, bool, bool)> = BTreeMap::new();
-
         let default = !(self.cached || self.developing || self.available);
+        let mut catalog = Catalog::new();
 
         // collect development IP
-        if default || self.developing {
-            crate::core::manifest::IpManifest::detect_all(paths.0)?
-            .into_iter()
-            .for_each(|f| {
-                pkg_map.insert(f.into_pkgid(), (true, false, false));
-            });
-        }
+        if default || self.developing { catalog = catalog.development(paths.0)?; }
         
         // collect installed IP
-        if default || self.cached {
-            crate::core::manifest::IpManifest::detect_all(paths.1)?
-            .into_iter()
-            .for_each(|f| {
-                let pkg = f.into_pkgid();
-                if let Some(pair) = pkg_map.get_mut(&pkg) {
-                    *pair = (pair.0, true, pair.2);
-                } else {
-                    pkg_map.insert(pkg, (false, true, false));
-                }
-            });
-        }
+        if default || self.cached { catalog = catalog.installations(paths.1)?; }
 
         // collect available IP
-        if default || self.available {
-            crate::core::vendor::VendorManifest::detect_all(paths.2)?
-                .into_iter()
-                .for_each(|f| {
-                    // read off the index table
-                    f.read_index()
-                        .into_iter()
-                        .for_each(|pkg| {
-                            if let Some(pair) = pkg_map.get_mut(&pkg) {
-                                *pair = (pair.0, pair.1, true);
-                            } else {
-                                pkg_map.insert(pkg, (false, false, true));
-                            }
-                        });
-                });
-        }
+        if default || self.available { catalog = catalog.available(paths.2)?; }
         
-        println!("{}", Self::fmt_table(pkg_map));
+        // transform into a BTreeMap for alphabetical ordering
+        let mut tree = BTreeMap::new();
+        catalog.inner().into_iter().for_each(|(key, status)| {
+            // @TODO provide a filter by name if user entered a pkgid to search
+            tree.insert(key, status);
+        });
+        println!("{}", Self::fmt_table(tree));
         Ok(())
     }
 
-    fn fmt_table(catalog: BTreeMap<PkgId, (bool, bool, bool)>) -> String {
+    fn fmt_table(catalog: BTreeMap<&PkgId, &IpLevel>) -> String {
         let header = format!("\
 {:<15}{:<15}{:<20}{:<9}
 {:->15}{4:->15}{4:->20}{4:->9}\n", 
@@ -139,9 +114,9 @@ impl Search {
                 ip.get_vendor().as_ref().unwrap().to_string(),
                 ip.get_library().as_ref().unwrap().to_string(),
                 ip.get_name().to_string(),
-                { if status.0 { "D" } else { "" } },
-                { if status.1 { "I" } else { "" } },
-                { if status.2 { "A" } else { "" } },
+                { if status.is_developing() { "D" } else { "" } },
+                { if status.is_installed() { "I" } else { "" } },
+                { if status.is_available() { "A" } else { "" } },
             ));
         }
         header + &body

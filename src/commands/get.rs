@@ -2,7 +2,9 @@ use colored::Colorize;
 
 use crate::Command;
 use crate::FromCli;
-use crate::core::ip::Ip;
+use crate::core::catalog::Catalog;
+use crate::core::manifest::IP_MANIFEST_FILE;
+use crate::core::manifest::IpManifest;
 use crate::core::version::AnyVersion;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Flag, Optional};
@@ -78,40 +80,41 @@ use crate::core::parser::Parse;
 use crate::core::vhdl;
 use crate::core::vhdl::symbol;
 use crate::core::vhdl::token::VHDLTokenizer;
-use crate::commands::search::Search;
 
 impl Command for Get {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // must be in an IP if omitting the pkgid
-        let (ip, is_self) = if self.entity_path.ip.is_none() {
+        if self.entity_path.ip.is_none() {
             c.goto_ip_path()?;
             
             // error if a version is specified and its referencing the self IP
             if self.version.is_some() {
                 return Err(AnyError(format!("cannot specify a version '{}' when referencing the current ip", "--ver".yellow())))?
             }
-            (Ip::init_from_path(c.get_ip_path().unwrap().clone())?, true)
+            self.run(&IpManifest::from_path(c.get_ip_path().unwrap().join(IP_MANIFEST_FILE))?, true)
         } else {
-            // grab installed ip
-            let mut universe = Search::all_pkgid((c.get_development_path().unwrap(), c.get_cache_path(), &c.get_vendor_path()))?;
-            let ids = universe.keys().map(|f| { f }).collect();
+            // gather the catalog (all manifests)
+            let mut catalog = Catalog::new()
+                .development(c.get_development_path().unwrap())?
+                .installations(c.get_cache_path())?
+                .available(&&c.get_vendor_path())?;
+            let ids = catalog.inner().keys().map(|f| { f }).collect();
             let target = crate::core::ip::find_ip(&self.entity_path.ip.as_ref().unwrap(), ids)?;
             
             // find all manifests and prioritize installed manifests over others but to help with errors/confusion
-            let inventory = universe.remove(&target).unwrap().1;
+            let status = catalog.inner_mut().remove(&target).unwrap();
+            let installs = status.get_installations();
 
             // @TODO determine version to grab
             let v = self.version.as_ref().unwrap_or(&AnyVersion::Latest);
-            (crate::commands::probe::select_ip_from_version(&target, &v, inventory)?, false)
-        };
-        
-        self.run(ip, is_self)
+            self.run(crate::commands::probe::select_ip_from_version(&target, &v, &installs)?, false)
+        }
     }
 }
 
 impl Get {
-    fn run(&self, ip: Ip, is_self: bool) -> Result<(), Fault> {
+    fn run(&self, ip: &IpManifest, is_self: bool) -> Result<(), Fault> {
         // collect all hdl files and parse them
         let ent = Self::fetch_entity(&self.entity_path.entity, &ip)?;
 
@@ -134,7 +137,7 @@ impl Get {
         // make the library reference the current working ip 'work' if its internal
         let lib = match is_self {
             true => Some(String::from("work")),
-            false => Some(ip.get_manifest().get_pkgid().get_library().as_ref().unwrap().to_string().replace("-", "_"))
+            false => Some(ip.get_pkgid().get_library().as_ref().unwrap().to_string().replace("-", "_"))
         };
         // only display the direct entity instantiation code if not providing component code
         let lib = match self.component {
@@ -151,8 +154,8 @@ impl Get {
     }
 
     /// Parses through the vhdl files and returns a desired entity struct.
-    fn fetch_entity(iden: &Identifier, ip: &Ip) -> Result<symbol::Entity, Box<dyn std::error::Error>> {
-        let files = crate::core::fileset::gather_current_files(ip.get_path());
+    fn fetch_entity(iden: &Identifier, ip: &IpManifest) -> Result<symbol::Entity, Box<dyn std::error::Error>> {
+        let files = crate::core::fileset::gather_current_files(&ip.get_root());
         for f in files {
             // lex and parse
             if crate::core::fileset::is_vhdl(&f) == true {
@@ -166,7 +169,7 @@ impl Get {
                 }
             }
         }
-        Err(AnyError(format!("entity '{}' is not found in ip '{}'", iden, ip.get_manifest().get_pkgid())))?
+        Err(AnyError(format!("entity '{}' is not found in ip '{}'", iden, ip.get_pkgid())))?
     }
 }
 

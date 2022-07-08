@@ -45,7 +45,6 @@ impl<T: Eq + Hash + std::fmt::Debug> Module<T> {
     }
 }
 
-
 /// Traverses the graph
 // fn collect_requirement_list(target: Graph<_, _>) -> Vec<Module<_>> {
 //     todo!();

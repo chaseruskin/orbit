@@ -11,6 +11,7 @@ use crate::util::filesystem::normalize_path;
 
 use super::config::{FromToml, FromTomlError};
 use super::version::AnyVersion;
+use super::vhdl::primaryunit::PrimaryUnit;
 
 #[derive(Debug)]
 pub struct Manifest {
@@ -309,6 +310,17 @@ impl IpManifest {
             manifest: Manifest::new(),
             ip: IpToml::new(),
         }
+    }
+
+    /// Gathers the list of primary design units for the current ip.
+    pub fn collect_units(&self) -> Vec<PrimaryUnit> {
+        // collect all files
+        let files = crate::core::fileset::gather_current_files(&self.get_manifest().get_path().parent().unwrap().to_path_buf());
+        crate::core::vhdl::primaryunit::collect_units(&files).into_iter().map(|e| e.0).collect()
+    }
+
+    pub fn get_root(&self) -> std::path::PathBuf {
+        self.get_manifest().get_path().parent().unwrap().to_path_buf()
     }
 
     /// Finds all IP manifest files along the provided path `path`.

@@ -53,7 +53,6 @@ impl FromCli for Launch {
 use git2::Repository;
 use colored::Colorize;
 use crate::core::manifest;
-use std::str::FromStr;
 use crate::util::anyerror::AnyError;
 
 /// Retrieves the latest commit in the current repository using git2 API.

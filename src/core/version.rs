@@ -29,7 +29,7 @@ pub fn is_compatible(pv: &PartialVersion, ver: &Version) -> bool {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum AnyVersion {
     Latest,
     Dev,

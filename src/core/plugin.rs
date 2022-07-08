@@ -96,7 +96,9 @@ impl Plugin {
     /// created this `Plugin` struct.
     pub fn resolve_all_paths(mut self, root: &std::path::PathBuf) -> Self {
         self.command = crate::util::filesystem::resolve_rel_path(&root, self.command);
-        self.args = self.args.into_iter().map(|f|  crate::util::filesystem::resolve_rel_path(&root, f) ).collect();
+        self.args = self.args.into_iter()
+            .map(|f|  crate::util::filesystem::resolve_rel_path(&root, f) )
+            .collect();
         self
     }
 }

@@ -60,6 +60,9 @@ pub fn resolve_rel_path(root: &std::path::PathBuf, s: String) -> String {
 /// It expands leading '~' to be the user's home directory, or expands leading '.' to the
 /// current directory. It also handles back-tracking '..' and intermediate current directory '.'
 /// notations.
+/// 
+/// This function is mainly used for display purposes back to the user and is not safe to use
+/// for converting filepaths within logic.
 pub fn normalize_path(p: std::path::PathBuf) -> std::path::PathBuf {
     // break the path into parts
     let mut parts = p.components();
@@ -69,10 +72,17 @@ pub fn normalize_path(p: std::path::PathBuf) -> std::path::PathBuf {
     if let Some(root) = parts.next() {
         if root.as_os_str() == OsStr::new("~") {
             match home_dir() {
-                Some(home) => for c in home.components() { 
-                    match c {
-                        Component::RootDir => (),
-                        _ => result.push(String::from(c.as_os_str().to_str().unwrap())),
+                Some(home) => {
+                    let mut comps = home.components();
+                    // always accept the first component
+                    if let Some(r) = comps.next() {
+                        result.push(String::from(r.as_os_str().to_str().unwrap()))
+                    }
+                    while let Some(c) = comps.next() { 
+                        match c {
+                            Component::RootDir => (),
+                            _ => result.push(String::from(c.as_os_str().to_str().unwrap())),
+                        }
                     }
                 },
                 None => result.push(String::from(root.as_os_str().to_str().unwrap())),

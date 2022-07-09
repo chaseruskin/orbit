@@ -3,7 +3,7 @@ use crate::FromCli;
 use crate::core::catalog::Catalog;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::IpManifest;
-use crate::core::resolver::mvs::IpSpec;
+use crate::core::pkgid::PkgPart;
 use crate::interface::cli::Cli;
 use crate::util::anyerror::Fault;
 use crate::util::environment::EnvVar;
@@ -166,36 +166,41 @@ impl Plan {
     /// Constructs an entire list of dependencies required for the current design.
     /// 
     /// Errors if a dependency is not known in the user's catalog.
-    fn collect_dependencies(target: &IpManifest, catalog: &Catalog) -> Result<(), Fault> {
-        // grab all dependencies
-        let direct_deps = target.get_dependencies();
-        // verify all exist in the universe
-        for dep in direct_deps.inner() {
-            match catalog.inner().contains_key(dep.0) {
-                true => {
-                    println!("found dependent ip: {}", dep.0)
-                },
-                false => return Err(AnyError(format!("unknown ip: {}", dep.0)))?
-            }
-        }
-        todo!()
-    }
-
-    fn construct_rough_build_list(node: &IpManifest, catalog: &Catalog) -> Result<Vec<IpSpec>, Fault> {
+    fn construct_rough_build_list<'a>(target: &'a IpManifest, catalog: &'a Catalog) -> Result<Vec<&'a IpManifest>, Fault> {
         let mut result = Vec::new();
-        let deps = node.get_dependencies();
-        for dep in deps.inner() {
-            match catalog.inner().contains_key(dep.0) {
-                true => {
-                    result.push(IpSpec::new(dep.0.clone(), dep.1.clone()));
-                    // find this IP to read its dependencies
-                    //catalog.find()
-                    println!("found dependent ip: {}", dep.0)
-                },
-                false => return Err(AnyError(format!("unknown ip: {}", dep.0)))?
+        let mut processing = vec![target];
+
+        while let Some(ip) = processing.pop() {
+            let deps = ip.get_dependencies();
+            for (pkgid, version) in deps.inner() {
+                match catalog.inner().get(pkgid) {
+                    Some(status) => {
+                        // find this IP to read its dependencies
+                        match status.get_install(version) {
+                            Some(dep) => {
+                                processing.push(dep)
+                            },
+                            None => panic!("ip is not installed"),
+                        }
+                        println!("found dependent ip: {}", pkgid);
+                        result.push(ip);
+                    },
+                    None => return Err(AnyError(format!("unknown ip: {}", pkgid)))?
+                }
             }
         }
         Ok(result)
+    }
+
+    /// Transforms the list of required `Ip` into list of all the available files.
+    fn assemble_all_files<'a>(ips: Vec<&'a IpManifest>) -> Vec<(&'a PkgPart, String)> {
+        let mut files = Vec::new();
+        ips.iter().map(|f| { (f.get_pkgid().get_library().as_ref().unwrap(), f)}).for_each(|(lib, ip)| {
+            crate::core::fileset::gather_current_files(&ip.get_root()).into_iter().for_each(|f| {
+                files.push((lib, f));
+            })
+        });
+        files
     }
 
     /// Builds a graph of design units. Used for planning.
@@ -293,9 +298,9 @@ impl Plan {
         }
 
         // gather filesets
-        let files = crate::core::fileset::gather_current_files(&std::env::current_dir().unwrap());
+        let current_files = crate::core::fileset::gather_current_files(&std::env::current_dir().unwrap());
         // build full graph (all primary design units) and map storage
-        let (g, map) = Self::build_full_graph(&files);
+        let (g, map) = Self::build_full_graph(&current_files);
 
         let mut natural_top: Option<usize> = None;
         let mut bench = if let Some(t) = &self.bench {
@@ -385,19 +390,26 @@ impl Plan {
             String::new()
         };
 
-        // @TODO [!] build graph again but with entire set of all files available from all depdendencies
-        Self::collect_dependencies(&target, &catalog)?;
-
-
-        std::env::set_var(environment::ORBIT_TOP, &top_name);
-        std::env::set_var(environment::ORBIT_BENCH, &bench_name);
-
         let highest_point = match bench {
             Some(b) => b,
             None => top
         };
+
+        let highest_iden = g.get_node(highest_point).unwrap();
+
+        // @TODO [!] build graph again but with entire set of all files available from all depdendencies
+        let build_list = Self::construct_rough_build_list(&target, &catalog)?;
+        let files = Self::assemble_all_files(build_list);
+        let files = files.into_iter().map(|f| f.1).collect(); // @FIXME
+        let (g, map) = Self::build_full_graph(&files);
+
+        std::env::set_var(environment::ORBIT_TOP, &top_name);
+        std::env::set_var(environment::ORBIT_BENCH, &bench_name);
+
+        let min_order = g.minimal_topological_sort(map.get(highest_iden).unwrap().index());
+
         // compute minimal topological ordering
-        let min_order = g.minimal_topological_sort(highest_point);
+        // OG let min_order = g.minimal_topological_sort(highest_point);
 
         let mut file_order = Vec::new();
         for i in &min_order {
@@ -414,7 +426,7 @@ impl Plan {
         // use command-line set filesets
         if let Some(fsets) = &self.filesets {
             for fset in fsets {
-                let data = fset.collect_files(&files);
+                let data = fset.collect_files(&current_files);
                 for f in data {
                     blueprint_data += &format!("{}\t{}\t{}\n", fset.get_name(), std::path::PathBuf::from(f).file_stem().unwrap_or(&OsString::new()).to_str().unwrap(), f);
                 }
@@ -434,16 +446,22 @@ impl Plan {
             for file in &files {
                 // check against every defined fileset for the plugin
                 for fset in fsets {
-                    if fset.get_pattern().matches_with(file, match_opts) == true {
+                    if fset.get_pattern().matches_with(&file, match_opts) == true {
                         // add to blueprint
-                        blueprint_data += &fset.to_blueprint_string(file);
+                        blueprint_data += &fset.to_blueprint_string(&file);
                     }
                 }
             }
         }
 
+        // @TODO allow full_graph() to accept a (PkgPart, String) tuple to add library to graph nodes
         // collect in-order hdl data
         for file in file_order {
+            // let lib = if current_files.contains(&file) == true {
+            //     "work"
+            // } else {
+            //     "work"
+            // };
             if crate::core::fileset::is_rtl(&file) == true {
                 blueprint_data += &format!("VHDL-RTL\twork\t{}\n", file);
             } else {

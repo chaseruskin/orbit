@@ -10,6 +10,38 @@ Orbit is the package manager for Hardware Description Languages (HDL).
 
 Read the [Book of Orbit](https://c-rus.github.io/orbit/).
 
+```
+Orbit is a tool for hdl package management.
+
+Usage:
+    orbit [options] [command]
+
+Commands:
+    new             create a new ip
+    init            initialize an ip from an existing project
+    edit            open an ip in a text editor
+    probe           access information about an ip
+    get             fetch an entity
+    tree            view the dependency graph
+    plan            generate a blueprint file
+    build, b        execute a plugin
+    launch          release a new ip version
+    search          browse the ip catalog
+    install         store an immutable reference to an ip
+    env             print Orbit environment information
+    config          modify configuration values
+
+Options:
+    --version       print version information and exit
+    --upgrade       check for the latest orbit binary
+    --force         bypass interactive prompts
+    --help, -h      print help information
+
+Use 'orbit help <command>' for more information about a command.
+
+```
+
+
 ## Contributing
 
 See [CONTRIBUTING](./CONTRIBUTING.md).

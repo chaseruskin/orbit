@@ -328,7 +328,7 @@ impl SelectedName {
 
 /// A `ResReference` is a pattern in the code that catches <library>.<package>. We
 /// assume the pattern can be found anywhere.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ResReference {
     prefix: Identifier,
     suffix: Identifier,

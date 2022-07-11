@@ -2,9 +2,10 @@
 
 use crate::core::pkgid::PkgId;
 use crate::core::version::AnyVersion;
+use crate::core::vhdl::token::Identifier;
 use crate::core::{version::PartialVersion};
 use crate::util::graph::Graph;
-use std::collections::{HashMap};
+use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
 /// Complete ip specification.
@@ -97,5 +98,27 @@ mod test {
             Module::new("D", PartialVersion::new().major(1).minor(4)),
             Module::new("E", PartialVersion::new().major(1).minor(2)),
         ]);
+    }
+}
+
+
+/// `IdenSet` is a `HashSet` that continually gets updated as more ip are bundled
+/// into the dependency graph.
+/// 
+/// Its purpose is to spot when an ip is required to undergo Dynamic Symbol Transformation (DST).
+#[derive(Debug)]
+pub struct IdenSet(HashSet<Identifier>);
+
+impl IdenSet {
+    pub fn new() -> Self {
+        Self(HashSet::new())
+    }
+
+    pub fn contains(&self, value: &Identifier) -> bool {
+        self.0.contains(value)
+    }
+
+    pub fn insert(&mut self, value: Identifier) -> bool {
+        self.0.insert(value)
     }
 }

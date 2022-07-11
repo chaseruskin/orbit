@@ -4,12 +4,14 @@ use crate::core::catalog::Catalog;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::IpManifest;
 use crate::core::pkgid::PkgPart;
+use crate::core::vhdl::symbol::ResReference;
 use crate::interface::cli::Cli;
 use crate::util::anyerror::Fault;
 use crate::util::environment::EnvVar;
 use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
+use crate::util::graphmap::GraphMap;
 use std::ffi::OsString;
 use std::io::Write;
 use std::str::FromStr;
@@ -79,9 +81,7 @@ impl Command for Plan {
 }
 
 use crate::core::vhdl::symbol;
-use crate::util::graph::Graph;
 use crate::util::anyerror::AnyError;
-use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
 pub struct ArchitectureFile<'a> {
@@ -108,21 +108,15 @@ impl<'a> ArchitectureFile<'a> {
 #[derive(Debug, PartialEq)]
 pub struct GraphNode<'a> {
     sym: symbol::VHDLSymbol,
-    index: usize,
     files: Vec<&'a IpFileNode<'a>>, // must use a vector to retain file order in blueprint
 }
 
 impl<'a> GraphNode<'a> {
-    pub fn index(&self) -> usize {
-        self.index
-    }
-    
-    fn new(sym: symbol::VHDLSymbol, index: usize, file: &'a IpFileNode) -> Self {
+    fn new(sym: symbol::VHDLSymbol, file: &'a IpFileNode) -> Self {
         let mut set = Vec::with_capacity(1);
         set.push(file);
         Self {
             sym: sym,
-            index: index,
             files: set,
         }
     }
@@ -131,6 +125,19 @@ impl<'a> GraphNode<'a> {
         if self.files.contains(&ipf) == false {
             self.files.push(ipf);
         }
+    }
+
+    /// References the VHDL symbol
+    fn get_symbol(&self) -> &symbol::VHDLSymbol {
+        &self.sym
+    }
+
+    fn get_symbol_mut(&mut self) -> &mut symbol::VHDLSymbol {
+        &mut self.sym
+    }
+
+    fn get_associated_files(&self) -> &Vec<&'a IpFileNode<'a>> {
+        &self.files
     }
 }
 
@@ -190,6 +197,8 @@ impl Plan {
     }
 
     /// Follow the Minimum Version Selection (MVS) algorithm to resolve dependencies.
+    /// 
+    /// MVS uses the "oldest allowed version" when selecting among packages with the same identifier.
     pub fn resolve_dependencies<'a>(target: &'a IpManifest, catalog: &'a Catalog) -> Result<Vec<&'a IpManifest>, Fault> {
         let rough_build = Self::construct_rough_build_list(target, catalog)?;
         Ok(rough_build)
@@ -207,11 +216,8 @@ impl Plan {
     }
 
     /// Builds a graph of design units. Used for planning.
-    fn build_full_graph<'a>(files: &'a Vec<IpFileNode>) -> (Graph<Identifier, ()>, HashMap<Identifier, GraphNode<'a>>) {
-            // @TODO wrap graph in a hashgraph implementation
-            let mut graph: Graph<Identifier, ()> = Graph::new();
-            // entity identifier, HashNode (hash-node holds entity structs)
-            let mut map = HashMap::<Identifier, GraphNode>::new();
+    fn build_full_graph<'a>(files: &'a Vec<IpFileNode>) -> GraphMap<Identifier, GraphNode<'a>, ()> {
+            let mut graph_map: GraphMap<Identifier, GraphNode, ()> = GraphMap::new();
     
             let mut archs: Vec<ArchitectureFile> = Vec::new();
             let mut bodies: Vec<symbol::PackageBody> = Vec::new();
@@ -221,27 +227,26 @@ impl Plan {
                     let contents = std::fs::read_to_string(&source_file.file).unwrap();
                     let symbols = symbol::VHDLParser::read(&contents).into_symbols();
                     // add all entities to a graph and store architectures for later analysis
-                    let mut iter = symbols.into_iter().filter_map(|f| {
-                        match f {
-                            symbol::VHDLSymbol::Entity(_) => Some(f),
-                            symbol::VHDLSymbol::Package(_) => Some(f),
-                            symbol::VHDLSymbol::Architecture(arch) => {
-                                archs.push(ArchitectureFile{ architecture: arch, file: source_file });
-                                None
+                    let mut iter = symbols.into_iter()
+                        .filter_map(|f| {
+                            match f {
+                                symbol::VHDLSymbol::Entity(_) => Some(f),
+                                symbol::VHDLSymbol::Package(_) => Some(f),
+                                symbol::VHDLSymbol::Architecture(arch) => {
+                                    archs.push(ArchitectureFile{ architecture: arch, file: source_file });
+                                    None
+                                }
+                                // package bodies are usually in same design file as package
+                                symbol::VHDLSymbol::PackageBody(pb) => {
+                                    bodies.push(pb);
+                                    None
+                                }
+                                _ => None,
                             }
-                            // package bodies are usually in same design file as package
-                            symbol::VHDLSymbol::PackageBody(pb) => {
-                                bodies.push(pb);
-                                None
-                            }
-                            _ => None,
-                        }
-                    });
+                        });
                     while let Some(e) = iter.next() {
-                        // println!("entity external calls: {:?}", e.get_refs());
-                        let index = graph.add_node(e.as_iden().unwrap().clone());
-                        let hn = GraphNode::new(e, index, source_file);
-                        map.insert(graph.get_node(index).unwrap().clone(), hn);
+                        // add entities into the graph
+                        graph_map.add_node(e.as_iden().unwrap().clone(), GraphNode::new(e, source_file));
                     }
                 }
             }
@@ -250,9 +255,9 @@ impl Plan {
             let mut bodies = bodies.into_iter();
             while let Some(pb) = bodies.next() {
                 // verify the package exists
-                if let Some(p_node) = map.get_mut(pb.get_owner()) {
+                if let Some(p_node) = graph_map.get_node_by_key_mut(pb.get_owner()) {
                     // link to package owner by adding refs
-                    p_node.sym.add_refs(&mut pb.take_refs());
+                    p_node.as_ref_mut().get_symbol_mut().add_refs(&mut pb.take_refs());
                 }
             }
     
@@ -260,37 +265,30 @@ impl Plan {
             let mut archs = archs.into_iter();
             while let Some(af) = archs.next() {
                 // link to the owner and add architecture's source file
-                let entity_node = map.get_mut(&af.architecture.entity()).unwrap();
-                entity_node.add_file(af.file);
+                let entity_node = graph_map.get_node_by_key_mut(&af.architecture.entity()).unwrap();
+                entity_node.as_ref_mut().add_file(af.file);
                 // create edges
                 for dep in af.architecture.edges() {
-                    // verify the dep exists
-                    if let Some(node) = map.get(dep) {
-                        graph.add_edge(node.index(), map.get(af.architecture.entity()).unwrap().index(), ());
-                    }
+                    graph_map.add_edge_by_key(dep, af.architecture.entity(), ());
                 }
                 // add edges for reference calls
                 for dep in af.architecture.get_refs() {
-                    // verify the dependency exists
-                    if let Some(node) = map.get(dep.get_suffix()) {
-                        graph.add_edge(node.index(), map.get(af.architecture.entity()).unwrap().index(), ());
-                    }
+                    // note: verify the dependency exists (occurs within function)
+                    graph_map.add_edge_by_key(dep.get_suffix(), af.architecture.entity(), ());
                 }
             }
 
         // go through all nodes and make the connections
-        for (_, unit) in map.iter() {
-            for dep in unit.sym.get_refs() {
-                // verify the dep exists
-                if let Some(node) = map.get(dep.get_suffix()) {
-                    graph.add_edge(node.index(), unit.index(), ());
-                }
+        let idens: Vec<Identifier> = graph_map.get_map().into_iter().map(|(k, _)| { k.clone() }).collect();
+        for iden in idens {
+            let references: Vec<ResReference> = graph_map.get_node_by_key(&iden).unwrap().as_ref().get_symbol().get_refs().into_iter().map(|rr| rr.clone() ).collect();
+            for dep in &references {
+                    // verify the dep exists
+                    graph_map.add_edge_by_key(dep.get_suffix(), &iden, ());
             }
         }
-        
-        (graph, map)
+        graph_map
     }
-
 
     /// Runs the backend logic for creating a blueprint file (planning a design).
     fn run(&self, target: IpManifest, build_dir: &str, plug: Option<&Plugin>, catalog: Catalog) -> Result<(), Fault> {
@@ -308,13 +306,13 @@ impl Plan {
             .into_iter()
             .map(|f| { IpFileNode { file: f, ip: &target }}).collect();
         // build full graph (all primary design units) and map storage
-        let (g, map) = Self::build_full_graph(&current_ip_nodes);
+        let graph_map = Self::build_full_graph(&current_ip_nodes);
 
         let mut natural_top: Option<usize> = None;
         let mut bench = if let Some(t) = &self.bench {
-            match map.get(&t) {
+            match graph_map.get_node_by_key(&t) {
                 Some(node) => {
-                    if let Some(e) = node.sym.as_entity() {
+                    if let Some(e) = node.as_ref().get_symbol().as_entity() {
                         if e.is_testbench() == false {
                             return Err(PlanError::BadTestbench(t.clone()))?
                         }
@@ -327,15 +325,15 @@ impl Plan {
             }
         } else if self.top.is_none() {
             // filter to display tops that have ports (not testbenches)
-            match g.find_root() {
+            match graph_map.find_root() {
                 // only detected a single root
                 Ok(n) => {
                     // verify the root is a testbench
-                    if let Some(ent) = map.get(g.get_node(n).unwrap()).unwrap().sym.as_entity() {
+                    if let Some(ent) = n.as_ref().get_symbol().as_entity() {
                         if ent.is_testbench() == true {
-                            Some(n)
+                            Some(n.index())
                         } else {
-                            natural_top = Some(n);
+                            natural_top = Some(n.index());
                             None
                         }
                     } else {
@@ -345,7 +343,7 @@ impl Plan {
                 Err(e) => {
                     match e.len() {
                         0 => None,
-                        _ => return Err(PlanError::Ambiguous("testbenches".to_string(), e.into_iter().map(|f| { g.get_node(f).unwrap().clone() }).collect()))?,
+                        _ => return Err(PlanError::Ambiguous("testbenches".to_string(), e.into_iter().map(|f| { f.as_ref().get_symbol().as_iden().unwrap().clone() }).collect()))?,
                     }   
                 }
             }
@@ -355,9 +353,9 @@ impl Plan {
 
         // determine the top-level node index
         let top = if let Some(t) = &self.top {
-            match map.get(&t) {
+            match graph_map.get_node_by_key(&t) {
                 Some(node) => {
-                    if let Some(e) = node.sym.as_entity() {
+                    if let Some(e) = node.as_ref().get_symbol().as_entity() {
                         if e.is_testbench() == true {
                             return Err(PlanError::BadTop(t.clone()))?
                         }
@@ -368,13 +366,13 @@ impl Plan {
                     // try to detect top level testbench
                     if bench.is_none() {
                         // check if only 1 is a testbench
-                        let benches: Vec<usize> =  g.successors(n)
-                            .filter(|f| map.get(&g.get_node(*f).unwrap()).unwrap().sym.as_entity().unwrap().is_testbench() )
+                        let benches: Vec<usize> =  graph_map.get_graph().successors(n)
+                            .filter(|f| graph_map.get_node_by_index(*f).unwrap().as_ref().get_symbol().as_entity().unwrap().is_testbench() )
                             .collect();
                         bench = match benches.len() {
                             0 => None,
                             1 => Some(*benches.first().unwrap()),
-                            _ => return Err(PlanError::Ambiguous("testbenches".to_string(), benches.into_iter().map(|f| { g.get_node(f).unwrap().clone() }).collect()))?,
+                            _ => return Err(PlanError::Ambiguous("testbenches".to_string(), benches.into_iter().map(|f| { graph_map.get_key_by_index(f).unwrap().clone() }).collect()))?,
                         };
                     }
                     n
@@ -385,15 +383,15 @@ impl Plan {
             if let Some(nt) = natural_top {
                 nt
             } else {
-                Self::detect_top(&g, &map, bench)?
+                Self::detect_top(&graph_map, bench)?
             }
         };
         // enable immutability
         let bench = bench;
 
-        let top_name = g.get_node(top).unwrap().to_string();
+        let top_name = graph_map.get_node_by_index(top).unwrap().as_ref().get_symbol().as_iden().unwrap().to_string();
         let bench_name = if let Some(n) = bench {
-            g.get_node(n).unwrap().to_string()
+            graph_map.get_key_by_index(n).unwrap().to_string()
         } else {
             String::new()
         };
@@ -403,29 +401,27 @@ impl Plan {
             None => top
         };
 
-        let highest_iden = g.get_node(highest_point).unwrap();
+        let highest_iden = graph_map.get_key_by_index(highest_point).unwrap();
 
         // [!] build graph again but with entire set of all files available from all depdendencies
         let build_list = Self::resolve_dependencies(&target, &catalog)?;
         let files = Self::assemble_all_files(build_list);
-        let (g, map) = Self::build_full_graph(&files);
+        let graph_map = Self::build_full_graph(&files);
+        // transfer identifier over the full graph
+        let highest_point = graph_map.get_node_by_key(highest_iden).unwrap().index();
 
         std::env::set_var(environment::ORBIT_TOP, &top_name);
         std::env::set_var(environment::ORBIT_BENCH, &bench_name);
 
-        let min_order = g.minimal_topological_sort(map.get(highest_iden).unwrap().index());
-
         // compute minimal topological ordering
-        // OG let min_order = g.minimal_topological_sort(highest_point);
+        let min_order = graph_map.get_graph().minimal_topological_sort(highest_point);
 
         let mut file_order = Vec::new();
         for i in &min_order {
             // access the node key
-            let key = g.get_node(*i).unwrap();
+            let ipfs = graph_map.get_node_by_index(*i).unwrap().as_ref().get_associated_files();
             // access the files associated with this key
-            let v = &map.get(key).unwrap().files;
-            let mut v2: Vec<&IpFileNode> = v.into_iter().map(|i| *i).collect();
-            file_order.append(&mut v2);
+            file_order.append(&mut ipfs.into_iter().map(|i| *i).collect());
         }
 
         // store data in blueprint TSV format
@@ -510,11 +506,11 @@ impl Plan {
     /// 
     /// This function looks and checks if there is a single predecessor to the
     /// `bench` node.
-    fn detect_top(graph: &Graph<Identifier, ()>, map: &HashMap<Identifier, GraphNode>, bench: Option<usize>) -> Result<usize, AnyError> {
+    fn detect_top<'a>(graph_map: &GraphMap<Identifier, GraphNode<'a>, ()>, bench: Option<usize>) -> Result<usize, AnyError> {
         if let Some(b) = bench {
-            let entities: Vec<(usize, &symbol::Entity)> = graph.predecessors(b)
+            let entities: Vec<(usize, &symbol::Entity)> = graph_map.get_graph().predecessors(b)
                 .filter_map(|f| {
-                    if let Some(e) = map.get(graph.get_node(f).unwrap()).unwrap().sym.as_entity() { 
+                    if let Some(e) = graph_map.get_node_by_index(f).unwrap().as_ref().get_symbol().as_entity() { 
                         Some((f, e)) } else { None }
                     })
                 .collect();

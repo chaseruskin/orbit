@@ -1,7 +1,6 @@
 use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
-use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::IpManifest;
 use crate::core::pkgid::PkgPart;
 use crate::core::vhdl::symbol::ResReference;
@@ -44,7 +43,7 @@ impl Command for Plan {
         c.goto_ip_path()?;
 
         // create the ip manifest
-        let target_ip = IpManifest::from_path(c.get_ip_path().unwrap().join(IP_MANIFEST_FILE))?;
+        let target_ip = IpManifest::from_path(c.get_ip_path().unwrap())?;
 
         // gather the catalog
         let catalog = Catalog::new()

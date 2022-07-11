@@ -3,7 +3,6 @@ use colored::Colorize;
 use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
-use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::IpManifest;
 use crate::core::version::AnyVersion;
 use crate::interface::cli::Cli;
@@ -92,7 +91,7 @@ impl Command for Get {
             if self.version.is_some() {
                 return Err(AnyError(format!("cannot specify a version '{}' when referencing the current ip", "--ver".yellow())))?
             }
-            self.run(&IpManifest::from_path(c.get_ip_path().unwrap().join(IP_MANIFEST_FILE))?, true)
+            self.run(&IpManifest::from_path(c.get_ip_path().unwrap())?, true)
         } else {
             // gather the catalog (all manifests)
             let mut catalog = Catalog::new()

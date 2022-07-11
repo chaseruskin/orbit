@@ -1,7 +1,6 @@
 use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
-use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::IpManifest;
 use crate::interface::cli::Cli;
 use crate::interface::arg::Optional;
@@ -96,10 +95,10 @@ impl Command for Install {
             // clone from remote repository
             let path = tempdir.path().to_path_buf();
             ExtGit::new().command(None).clone(url, &path)?;
-            IpManifest::from_path(path.join(IP_MANIFEST_FILE))?
+            IpManifest::from_path(&path)?
         } else if let Some(path) = &self.path {
             // traverse filesystem
-            IpManifest::from_path(path.join(IP_MANIFEST_FILE))?
+            IpManifest::from_path(&path)?
         } else {
             return Err(AnyError(format!("select an option to install from '{}', '{}', or '{}'", "--ip".yellow(), "--git".yellow(), "--path".yellow())))?
         };

@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 use crate::util::anyerror::Fault;
-use super::{pkgid::PkgId, manifest::{IP_MANIFEST_FILE, IpManifest}};
+use super::{pkgid::PkgId, manifest::IpManifest};
 use git2::Repository;
 
 #[derive(Debug, PartialEq)]
@@ -38,7 +38,7 @@ impl<'a> Store<'a> {
             Ok(None)
         } else {
             // grab the ip manifest there
-            Ok(Some(IpManifest::from_path(store_ip_dir.join(IP_MANIFEST_FILE))?))
+            Ok(Some(IpManifest::from_path(&store_ip_dir)?))
         }
     }
 

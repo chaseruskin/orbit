@@ -88,7 +88,7 @@ impl Command for Launch {
         }
 
         // grab the version defined in the manifest
-        let mut manifest = manifest::IpManifest::from_path(c.get_ip_path().unwrap().to_path_buf().join(manifest::IP_MANIFEST_FILE))?;
+        let mut manifest = manifest::IpManifest::from_path(c.get_ip_path().as_ref().unwrap())?;
         let prev_version = manifest.get_version();
 
         // at this point it is safe to assume it is a version because manifest will check that

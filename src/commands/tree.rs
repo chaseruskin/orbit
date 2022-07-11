@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
-use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::IpManifest;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Optional};
@@ -58,7 +57,7 @@ impl Command for Tree {
         c.goto_ip_path()?;
 
         // get the ip manifest
-        let ip = IpManifest::from_path(c.get_ip_path().unwrap().join(IP_MANIFEST_FILE))?;
+        let ip = IpManifest::from_path(c.get_ip_path().unwrap())?;
 
         // gather the catalog
         let catalog = Catalog::new()

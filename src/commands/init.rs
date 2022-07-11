@@ -1,5 +1,6 @@
 use crate::Command;
 use crate::FromCli;
+use crate::core::manifest::IpManifest;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Optional, Arg};
 use crate::interface::errors::CliError;
@@ -7,7 +8,6 @@ use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::core::pkgid::PkgId;
 use crate::commands::search::Search;
-use crate::core::ip::Ip;
 use crate::core::extgit::ExtGit;
 
 #[derive(Debug, PartialEq)]
@@ -95,14 +95,13 @@ impl Init {
         }
 
         // create a manifest at the ip path
-        let ip = Ip::from_path(ip_path).create_manifest(&self.ip)?;
+        let mut ip = IpManifest::from_path(&ip_path)?;
 
         // if there was a repository then add it as remote
         if let Some(url) = &self.repo {
             // must be remote link if not on filesystem
             if std::path::Path::exists(&std::path::PathBuf::from(url)) == false {
                 // write 'repository' key
-                let mut ip = ip.into_manifest();
                 ip.get_manifest_mut().write("ip", "repository", url);
                 ip.get_manifest_mut().save()?;
             }

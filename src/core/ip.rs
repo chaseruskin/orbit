@@ -33,7 +33,7 @@ impl Ip {
     /// Initializes an `Ip` located at `path` as its root.
     pub fn init_from_path(path: std::path::PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
         Ok(Self {
-            manifest: IpManifest::from_path(path.join(manifest::IP_MANIFEST_FILE).to_path_buf())?,
+            manifest: IpManifest::from_path(&path)?,
             path: path,
         })
     }

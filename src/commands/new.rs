@@ -79,7 +79,7 @@ impl Command for New {
             let dt = chrono::offset::Local::now(); 
             let fmt: &str = context.get_config().get_as_str("core", "date-fmt")?.unwrap_or("%Y-%m-%d");
             dt.format(fmt).to_string() 
-        }));
+        })); 
 
         // only pass in necessary variables from context
         self.run(root, context.force, template, &vars)
@@ -117,7 +117,8 @@ impl New {
             // create hashmap to store variables
             t.import(ip.get_path(), &lut)?;
         }
-        
+
+        // @TODO issue warning if the ip path is outside of the dev path or dev path is not set
         println!("info: new ip created at {}", ip.get_path().display());
         Ok(())
     }

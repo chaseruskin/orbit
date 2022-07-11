@@ -404,9 +404,12 @@ impl IpManifest {
         Ok(IpManifest { ip: Self::wrap_toml(&m, IpToml::from_toml(&m.get_doc().as_table()))?, manifest: m, })
     }
 
-    /// Loads an `IpManifest` from `path`.
-    pub fn from_path(path: PathBuf) -> Result<Self, Box<dyn Error>> {
-        let man = Manifest::from_path(path)?;
+    /// Loads an existing `IpManifest` from `path` by reading it as a TOML file. 
+    /// 
+    /// Assumes `path` is the root of the ip project. The `IP_MANIFEST_FILE` is assumed
+    /// to be on located directly within the `path`.
+    pub fn from_path(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
+        let man = Manifest::from_path(path.join(IP_MANIFEST_FILE))?;
         Ok(Self {
             ip: Self::wrap_toml(&man, IpToml::from_toml(man.get_doc().as_table()))?,
             manifest: man,

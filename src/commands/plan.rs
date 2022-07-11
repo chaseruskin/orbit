@@ -12,6 +12,7 @@ use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use std::ffi::OsString;
 use std::io::Write;
+use std::str::FromStr;
 use crate::core::fileset::Fileset;
 use crate::core::vhdl::token::Identifier;
 use crate::core::plugin::Plugin;
@@ -83,13 +84,13 @@ use crate::util::anyerror::AnyError;
 use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
-pub struct ArchitectureFile {
+pub struct ArchitectureFile<'a> {
     architecture: symbol::Architecture,
-    file: String,
+    file: &'a IpFileNode<'a>,
 }
 
-impl ArchitectureFile {
-    pub fn new(arch: symbol::Architecture, file: &str) -> Self {
+impl<'a> ArchitectureFile<'a> {
+    pub fn new(arch: symbol::Architecture, file: &'a IpFileNode<'a>) -> Self {
         Self { architecture: arch, file: file.to_owned() }
     }
 
@@ -98,25 +99,25 @@ impl ArchitectureFile {
         &self.architecture
     }
 
-    /// References the file.
-    pub fn get_file(&self) -> &String {
+    /// References the ip file node.
+    pub fn get_file(&self) -> &'a IpFileNode<'a> {
         &self.file
     }
 }
 
 #[derive(Debug, PartialEq)]
-pub struct GraphNode {
+pub struct GraphNode<'a> {
     sym: symbol::VHDLSymbol,
     index: usize,
-    files: Vec<String>, // must use a vector to retain file order in blueprint
+    files: Vec<&'a IpFileNode<'a>>, // must use a vector to retain file order in blueprint
 }
 
-impl GraphNode {
+impl<'a> GraphNode<'a> {
     pub fn index(&self) -> usize {
         self.index
     }
     
-    fn new(sym: symbol::VHDLSymbol, index: usize, file: String) -> Self {
+    fn new(sym: symbol::VHDLSymbol, index: usize, file: &'a IpFileNode) -> Self {
         let mut set = Vec::with_capacity(1);
         set.push(file);
         Self {
@@ -126,39 +127,35 @@ impl GraphNode {
         }
     }
 
-    fn add_file(&mut self, file: String) {
-        if self.files.contains(&file) == false {
-            self.files.push(file);
+    fn add_file(&mut self, ipf: &'a IpFileNode) {
+        if self.files.contains(&ipf) == false {
+            self.files.push(ipf);
         }
     }
 }
 
-#[derive(Debug)]
-pub enum PlanError {
-    BadTestbench(Identifier),
-    BadTop(Identifier),
-    BadEntity(Identifier),
-    UnknownUnit(Identifier),
-    UnknownEntity(Identifier),
-    Ambiguous(String, Vec<Identifier>),
-    Empty,
+#[derive(Debug, PartialEq)]
+pub struct IpFileNode<'a> {
+    file: String,
+    ip: &'a IpManifest
 }
 
-impl std::error::Error for PlanError {}
+impl<'a> IpFileNode<'a> {
+    pub fn new(file: String, ip: &'a IpManifest) -> Self {
+        Self { file: file, ip: ip }
+    }
 
-impl std::fmt::Display for PlanError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::UnknownEntity(id) => write!(f, "no entity named '{}' in the current ip", id),
-            Self::Empty => write!(f, "no entities found"),
-            Self::BadEntity(id) => write!(f, "primary design unit '{}' is not an entity", id),
-            Self::BadTestbench(id) => write!(f, "entity '{}' is not a testbench and cannot be bench; use --top", id),
-            Self::BadTop(id) => write!(f, "entity '{}' is a testbench and cannot be top; use --bench", id),
-            Self::UnknownUnit(id) => write!(f, "no primary design unit named '{}' in the current ip", id),
-            Self::Ambiguous(name, tbs) => write!(f, "multiple {} were found:\n {}", name, tbs.iter().fold(String::new(), |sum, x| {
-                sum + &format!("\t{}\n", x)
-            })),
-        }
+    pub fn get_file(&self) -> &str {
+        &self.file
+    }
+
+    pub fn get_ip_manifest(&self) -> &IpManifest {
+        &self.ip
+    }
+
+    /// References the library identifier from the ip's pkgid.
+    pub fn get_library(&self) -> &PkgPart {
+        &self.ip.get_pkgid().get_library().as_ref().unwrap()
     }
 }
 
@@ -167,7 +164,7 @@ impl Plan {
     /// 
     /// Errors if a dependency is not known in the user's catalog.
     fn construct_rough_build_list<'a>(target: &'a IpManifest, catalog: &'a Catalog) -> Result<Vec<&'a IpManifest>, Fault> {
-        let mut result = Vec::new();
+        let mut result = vec![target];
         let mut processing = vec![target];
 
         while let Some(ip) = processing.pop() {
@@ -192,19 +189,25 @@ impl Plan {
         Ok(result)
     }
 
+    /// Follow the Minimum Version Selection (MVS) algorithm to resolve dependencies.
+    pub fn resolve_dependencies<'a>(target: &'a IpManifest, catalog: &'a Catalog) -> Result<Vec<&'a IpManifest>, Fault> {
+        let rough_build = Self::construct_rough_build_list(target, catalog)?;
+        Ok(rough_build)
+    }
+
     /// Transforms the list of required `Ip` into list of all the available files.
-    fn assemble_all_files<'a>(ips: Vec<&'a IpManifest>) -> Vec<(&'a PkgPart, String)> {
+    pub fn assemble_all_files<'a>(ips: Vec<&'a IpManifest>) -> Vec<IpFileNode> {
         let mut files = Vec::new();
-        ips.iter().map(|f| { (f.get_pkgid().get_library().as_ref().unwrap(), f)}).for_each(|(lib, ip)| {
+        ips.iter().for_each(|ip| {
             crate::core::fileset::gather_current_files(&ip.get_root()).into_iter().for_each(|f| {
-                files.push((lib, f));
+                files.push(IpFileNode { file: f, ip: ip });
             })
         });
         files
     }
 
     /// Builds a graph of design units. Used for planning.
-    fn build_full_graph(files: &Vec<String>) -> (Graph<Identifier, ()>, HashMap<Identifier, GraphNode>) {
+    fn build_full_graph<'a>(files: &'a Vec<IpFileNode>) -> (Graph<Identifier, ()>, HashMap<Identifier, GraphNode<'a>>) {
             // @TODO wrap graph in a hashgraph implementation
             let mut graph: Graph<Identifier, ()> = Graph::new();
             // entity identifier, HashNode (hash-node holds entity structs)
@@ -214,8 +217,8 @@ impl Plan {
             let mut bodies: Vec<symbol::PackageBody> = Vec::new();
             // read all files
             for source_file in files {
-                if crate::core::fileset::is_vhdl(&source_file) == true {
-                    let contents = std::fs::read_to_string(&source_file).unwrap();
+                if crate::core::fileset::is_vhdl(&source_file.file) == true {
+                    let contents = std::fs::read_to_string(&source_file.file).unwrap();
                     let symbols = symbol::VHDLParser::read(&contents).into_symbols();
                     // add all entities to a graph and store architectures for later analysis
                     let mut iter = symbols.into_iter().filter_map(|f| {
@@ -223,7 +226,7 @@ impl Plan {
                             symbol::VHDLSymbol::Entity(_) => Some(f),
                             symbol::VHDLSymbol::Package(_) => Some(f),
                             symbol::VHDLSymbol::Architecture(arch) => {
-                                archs.push(ArchitectureFile{ architecture: arch, file: source_file.to_string() });
+                                archs.push(ArchitectureFile{ architecture: arch, file: source_file });
                                 None
                             }
                             // package bodies are usually in same design file as package
@@ -237,7 +240,7 @@ impl Plan {
                     while let Some(e) = iter.next() {
                         // println!("entity external calls: {:?}", e.get_refs());
                         let index = graph.add_node(e.as_iden().unwrap().clone());
-                        let hn = GraphNode::new(e, index, source_file.to_string());
+                        let hn = GraphNode::new(e, index, source_file);
                         map.insert(graph.get_node(index).unwrap().clone(), hn);
                     }
                 }
@@ -288,7 +291,9 @@ impl Plan {
         (graph, map)
     }
 
-    fn run(&self, target: IpManifest, build_dir: &str, plug: Option<&Plugin>, catalog: Catalog) -> Result<(), Box<dyn std::error::Error>> {
+
+    /// Runs the backend logic for creating a blueprint file (planning a design).
+    fn run(&self, target: IpManifest, build_dir: &str, plug: Option<&Plugin>, catalog: Catalog) -> Result<(), Fault> {
         let mut build_path = std::env::current_dir().unwrap();
         build_path.push(build_dir);
         
@@ -299,8 +304,11 @@ impl Plan {
 
         // gather filesets
         let current_files = crate::core::fileset::gather_current_files(&std::env::current_dir().unwrap());
+        let current_ip_nodes = current_files
+            .into_iter()
+            .map(|f| { IpFileNode { file: f, ip: &target }}).collect();
         // build full graph (all primary design units) and map storage
-        let (g, map) = Self::build_full_graph(&current_files);
+        let (g, map) = Self::build_full_graph(&current_ip_nodes);
 
         let mut natural_top: Option<usize> = None;
         let mut bench = if let Some(t) = &self.bench {
@@ -397,10 +405,9 @@ impl Plan {
 
         let highest_iden = g.get_node(highest_point).unwrap();
 
-        // @TODO [!] build graph again but with entire set of all files available from all depdendencies
-        let build_list = Self::construct_rough_build_list(&target, &catalog)?;
+        // [!] build graph again but with entire set of all files available from all depdendencies
+        let build_list = Self::resolve_dependencies(&target, &catalog)?;
         let files = Self::assemble_all_files(build_list);
-        let files = files.into_iter().map(|f| f.1).collect(); // @FIXME
         let (g, map) = Self::build_full_graph(&files);
 
         std::env::set_var(environment::ORBIT_TOP, &top_name);
@@ -416,14 +423,16 @@ impl Plan {
             // access the node key
             let key = g.get_node(*i).unwrap();
             // access the files associated with this key
-            let mut v: Vec<&String> = map.get(key).as_ref().unwrap().files.iter().collect();
-            file_order.append(&mut v);
+            let v = &map.get(key).unwrap().files;
+            let mut v2: Vec<&IpFileNode> = v.into_iter().map(|i| *i).collect();
+            file_order.append(&mut v2);
         }
 
         // store data in blueprint TSV format
         let mut blueprint_data = String::new();
 
         // use command-line set filesets
+        let current_files: Vec<String> = current_ip_nodes.into_iter().map(|f| f.file).collect();
         if let Some(fsets) = &self.filesets {
             for fset in fsets {
                 let data = fset.collect_files(&current_files);
@@ -442,8 +451,8 @@ impl Plan {
                 require_literal_separator: false,
                 require_literal_leading_dot: false,
             };
-            // iterate through every collected file
-            for file in &files {
+            // iterate through every collected file (from the current ip)
+            for file in &current_files {
                 // check against every defined fileset for the plugin
                 for fset in fsets {
                     if fset.get_pattern().matches_with(&file, match_opts) == true {
@@ -454,18 +463,17 @@ impl Plan {
             }
         }
 
-        // @TODO allow full_graph() to accept a (PkgPart, String) tuple to add library to graph nodes
         // collect in-order hdl data
         for file in file_order {
-            // let lib = if current_files.contains(&file) == true {
-            //     "work"
-            // } else {
-            //     "work"
-            // };
-            if crate::core::fileset::is_rtl(&file) == true {
-                blueprint_data += &format!("VHDL-RTL\twork\t{}\n", file);
+            let lib = if current_files.contains(&file.file) == true {
+                PkgPart::from_str("work").unwrap()
             } else {
-                blueprint_data += &format!("VHDL-SIM\twork\t{}\n", file);
+                file.get_library().to_normal() // converts '-' to '_' for VHDL rules compatibility
+            };
+            if crate::core::fileset::is_rtl(&file.file) == true {
+                blueprint_data += &format!("VHDL-RTL\t{}\t{}\n", lib, file.file);
+            } else {
+                blueprint_data += &format!("VHDL-SIM\t{}\t{}\n", lib, file.file);
             }
         }
 
@@ -534,6 +542,35 @@ impl FromCli for Plan {
             filesets: cli.check_option_all(Optional::new("fileset").value("key=glob"))?,
         });
         command
+    }
+}
+
+#[derive(Debug)]
+pub enum PlanError {
+    BadTestbench(Identifier),
+    BadTop(Identifier),
+    BadEntity(Identifier),
+    UnknownUnit(Identifier),
+    UnknownEntity(Identifier),
+    Ambiguous(String, Vec<Identifier>),
+    Empty,
+}
+
+impl std::error::Error for PlanError {}
+
+impl std::fmt::Display for PlanError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::UnknownEntity(id) => write!(f, "no entity named '{}' in the current ip", id),
+            Self::Empty => write!(f, "no entities found"),
+            Self::BadEntity(id) => write!(f, "primary design unit '{}' is not an entity", id),
+            Self::BadTestbench(id) => write!(f, "entity '{}' is not a testbench and cannot be bench; use --top", id),
+            Self::BadTop(id) => write!(f, "entity '{}' is a testbench and cannot be top; use --bench", id),
+            Self::UnknownUnit(id) => write!(f, "no primary design unit named '{}' in the current ip", id),
+            Self::Ambiguous(name, tbs) => write!(f, "multiple {} were found:\n {}", name, tbs.iter().fold(String::new(), |sum, x| {
+                sum + &format!("\t{}\n", x)
+            })),
+        }
     }
 }
 

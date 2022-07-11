@@ -146,7 +146,17 @@ pub struct IpManifest{
     ip: IpToml,
 }
 
-#[derive(Debug)]
+impl PartialEq for IpManifest {
+    fn eq(&self, other: &Self) -> bool {
+        self.ip == other.ip
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        self.ip != other.ip
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct IpToml {
     ip: Ip,
     deps: DependencyTable,

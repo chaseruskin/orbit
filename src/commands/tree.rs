@@ -2,6 +2,9 @@ use std::collections::HashMap;
 
 use crate::Command;
 use crate::FromCli;
+use crate::core::catalog::Catalog;
+use crate::core::manifest::IP_MANIFEST_FILE;
+use crate::core::manifest::IpManifest;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;
@@ -54,16 +57,29 @@ impl Command for Tree {
         // go to the ip directory
         c.goto_ip_path()?;
 
-        self.run()
+        // get the ip manifest
+        let ip = IpManifest::from_path(c.get_ip_path().unwrap().join(IP_MANIFEST_FILE))?;
+
+        // gather the catalog
+        let catalog = Catalog::new()
+            .store(c.get_store_path())
+            .development(c.get_development_path().unwrap())?
+            .installations(c.get_cache_path())?
+            .available(&&c.get_vendor_path())?;
+
+        self.run(ip, catalog)
     }
 }
 
 impl Tree {
-    fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn run(&self, target: IpManifest, catalog: Catalog) -> Result<(), Box<dyn std::error::Error>> {
         // gather all files
-        let files = crate::core::fileset::gather_current_files(&std::env::current_dir().unwrap());
-        // build the graph
-        let (graph, map) = Self::build_graph(&files);
+        let current_files: Vec<IpFileNode> = crate::core::fileset::gather_current_files(&std::env::current_dir().unwrap())
+            .into_iter()
+            .map(|f| IpFileNode::new(f, &target)).collect();
+
+        // build the shallow graph
+        let (graph, map) = Self::build_graph(&current_files);
 
         let n = if let Some(ent) = &self.root {
             // check if the identifier exists in the entity graph
@@ -79,10 +95,19 @@ impl Tree {
                     0 => return Err(PlanError::Empty)?,
                     1 => *e.first().unwrap(),
                     _ => return Err(PlanError::Ambiguous("roots".to_string(), e.into_iter().map(|f| { graph.get_node(f).unwrap().clone() }).collect()))?
-                    
                 }
             }
         };
+
+        // build graph again but with entire set of all files available from all depdendencies
+        let build_list = Plan::resolve_dependencies(&target, &catalog)?;
+        let files = Plan::assemble_all_files(build_list);
+        // remember the identifier to index transform to complete graph
+        let iden = graph.get_node(n).unwrap();
+        // build the complete graph
+        let (graph, map) = Self::build_graph(&files);
+        // transform the shallow's index number to the new graph's index number
+        let n = map.get(iden).unwrap().index();
 
         let tree = graph.treeview(n);
         for twig in &tree {
@@ -90,7 +115,7 @@ impl Tree {
                 true => Self::to_ascii(&twig.0.to_string()),
                 false => twig.0.to_string(),
             };
-            println!("{}{}", branch_str, graph.get_node(twig.1).unwrap());
+            println!("{}{}", branch_str, map.get(graph.get_node(twig.1).unwrap()).unwrap().display(self.format.as_ref().unwrap_or(&IdentifierFormat::Short)));            
         }
         Ok(())
     }
@@ -113,7 +138,7 @@ impl Tree {
     }
 
 
-    fn build_graph(files: &Vec<String>) -> (Graph<Identifier, ()>, HashMap<Identifier, HashNode>) {
+    fn build_graph<'a>(files: &'a Vec<IpFileNode>) -> (Graph<Identifier, ()>, HashMap<Identifier, HashNode<'a>>) {
         // @TODO wrap graph in a hashgraph implementation
         let mut graph: Graph<Identifier, ()> = Graph::new();
         // entity identifier, HashNode (hash-node holds entity structs)
@@ -122,15 +147,15 @@ impl Tree {
         let mut archs: Vec<ArchitectureFile> = Vec::new();
         // read all files
         for source_file in files {
-            if crate::core::fileset::is_vhdl(&source_file) == true {
-                let contents = std::fs::read_to_string(&source_file).unwrap();
+            if crate::core::fileset::is_vhdl(&source_file.get_file()) == true {
+                let contents = std::fs::read_to_string(&source_file.get_file()).unwrap();
                 let symbols = symbol::VHDLParser::read(&contents).into_symbols();
                 // add all entities to a graph and store architectures for later analysis
                 let mut iter = symbols.into_iter().filter_map(|f| {
                     match f {
                         symbol::VHDLSymbol::Entity(e) => Some(e),
                         symbol::VHDLSymbol::Architecture(arch) => {
-                            archs.push(ArchitectureFile::new(arch, &source_file));
+                            archs.push(ArchitectureFile::new(arch, source_file));
                             None
                         }
                         _ => None,
@@ -138,7 +163,7 @@ impl Tree {
                 });
                 while let Some(e) = iter.next() {
                     let index = graph.add_node(e.get_name().clone());
-                    let hn = HashNode::new(e, index, source_file.to_string());
+                    let hn = HashNode::new(e, index, source_file);
                     map.insert(graph.get_node(index).unwrap().clone(), hn);
                 }
             }
@@ -149,7 +174,7 @@ impl Tree {
         while let Some(af) = archs.next() {
             // link to the owner and add architecture's source file
             let entity_node = map.get_mut(&af.get_architecture().entity()).unwrap();
-            entity_node.add_file(af.get_file().to_string());
+            entity_node.add_file(af.get_file());
             // create edges
             for dep in af.get_architecture().edges() {
                 // verify the dep exists
@@ -165,21 +190,23 @@ impl Tree {
 use crate::core::vhdl::symbol;
 
 use super::plan::ArchitectureFile;
+use super::plan::IpFileNode;
+use super::plan::Plan;
 use super::plan::PlanError;
 
 #[derive(Debug, PartialEq)]
-pub struct HashNode {
+pub struct HashNode<'a> {
     index: usize,
     entity: symbol::Entity,
-    files: Vec<String>,
+    files: Vec<&'a IpFileNode<'a>>,
 }
 
-impl HashNode {
+impl<'a> HashNode<'a> {
     pub fn index(&self) -> usize {
         self.index
     }
     
-    fn new(entity: symbol::Entity, index: usize, file: String) -> Self {
+    fn new(entity: symbol::Entity, index: usize, file: &'a IpFileNode<'a>) -> Self {
         let mut set = Vec::new();
         set.push(file);
         Self {
@@ -189,9 +216,19 @@ impl HashNode {
         }
     }
 
-    fn add_file(&mut self, file: String) {
+    fn add_file(&mut self, file: &'a IpFileNode<'a>) {
         if self.files.contains(&file) == false {
             self.files.push(file);
+        }
+    }
+
+    fn display(&self, fmt: &IdentifierFormat) -> String {
+        match fmt {
+            IdentifierFormat::Long => {
+                let ip = self.files.first().unwrap().get_ip_manifest();
+                format!("{}  [{} {}]", self.entity.get_name(), ip.get_pkgid(), ip.get_version())
+            }
+            IdentifierFormat::Short => format!("{}", self.entity.get_name()),
         }
     }
 }

@@ -1,4 +1,4 @@
-use toml_edit::{Document};
+use toml_edit::{Document, Table};
 use std::collections::HashMap;
 use std::path;
 use std::path::PathBuf;
@@ -13,14 +13,6 @@ use super::config::{FromToml, FromTomlError};
 use super::version::AnyVersion;
 use super::vhdl::primaryunit::PrimaryUnit;
 use super::vhdl::token::{Identifier, IdentifierError};
-
-#[derive(Debug)]
-pub struct Manifest {
-    // track where the file loads/stores from
-    path: path::PathBuf, 
-    // maintain the data
-    document: Document
-}
 
 /// Takes an iterative approach to iterating through directories to find a file
 /// matching `name`.
@@ -64,24 +56,27 @@ fn find_file(path: &PathBuf, name: &str) -> Result<Vec<PathBuf>, Box<dyn std::er
     Ok(result)
 }
 
+#[derive(Debug)]
+pub struct Manifest {
+    // track where the file loads/stores from
+    path: path::PathBuf, 
+    // maintain the data
+    document: Document
+}
+
 impl Manifest {
-    /// Finds all Manifest files available in the provided path `path`.
-    /// 
-    /// Errors if on filesystem problems.
-    pub fn detect_all(path: &std::path::PathBuf, name: &str) -> Result<Vec<Manifest>, Box<dyn std::error::Error>> {
-        let mut result = Vec::new();
-        // walk the ORBIT_PATH directory @TODO recursively walk inner directories until hitting first 'Orbit.toml' file
-        for entry in find_file(&path, &name)? {
-            // read ip_spec from each manifest
-            result.push(Manifest::from_path(entry)?);
+    /// Creates a new empty `Manifest` struct.
+    pub fn new() -> Self {
+        Self {
+            path: path::PathBuf::new(),
+            document: Document::new(),
         }
-        Ok(result)
     }
 
     /// Reads from the file at `path` and parses into a valid toml document for a `Manifest` struct. 
     /// 
     /// Errors if the file does not exist or the TOML parsing fails.
-    pub fn from_path(path: PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn from_path(path: PathBuf) -> Result<Self, Fault> {
         if std::path::Path::exists(&path) == false {
             return Err(AnyError(format!("missing manifest file {:?}", path)))?
         }
@@ -92,11 +87,17 @@ impl Manifest {
         })
     }
 
-    /// Edits the .toml document at the `table`.`key` with `value`.
+    /// Finds all Manifest files available in the provided path `path`.
     /// 
-    pub fn write<T: ToString>(&mut self, table: &str, key: &str, value: T) -> ()
-    where toml_edit::Value: From<T> {
-        self.document[table][key] = toml_edit::value(value);
+    /// Errors if on filesystem problems.
+    pub fn detect_all(path: &std::path::PathBuf, name: &str) -> Result<Vec<Manifest>, Fault> {
+        let mut result = Vec::new();
+        // walk the ORBIT_PATH directory @TODO recursively walk inner directories until hitting first 'Orbit.toml' file
+        for entry in find_file(&path, &name)? {
+            // read ip_spec from each manifest
+            result.push(Manifest::from_path(entry)?);
+        }
+        Ok(result)
     }
 
     /// Reads a value from the manifest file.
@@ -111,22 +112,17 @@ impl Manifest {
         }
     }
 
-    /// Creates a new empty `Manifest` struct.
-    pub fn new() -> Self {
-        Self {
-            path: path::PathBuf::new(),
-            document: Document::new(),
-        }
+    /// Edits the .toml document at the `table`.`key` with `value`.
+    /// 
+    pub fn write<T: ToString>(&mut self, table: &str, key: &str, value: T) -> ()
+    where toml_edit::Value: From<T> {
+        self.document[table][key] = toml_edit::value(value);
     }
 
     /// Stores data to file from `Manifest` struct.
     pub fn save(&self) -> Result<(), Box<dyn Error>> {
         std::fs::write(&self.path, self.document.to_string())?;
         Ok(())
-    }
-
-    pub fn get_doc(&self) -> &Document {
-        &self.document
     }
 
     pub fn get_path(&self) -> &path::PathBuf {
@@ -136,9 +132,14 @@ impl Manifest {
     pub fn get_mut_doc(&mut self) -> &mut Document {
         &mut self.document
     }
+
+    pub fn get_doc(&self) -> &Document {
+        &self.document
+    }
 }
 
 pub const IP_MANIFEST_FILE: &str = "Orbit.toml";
+const DEPENDENCIES_KEY: &str = "dependencies";
 
 #[derive(Debug)]
 pub struct IpManifest{ 
@@ -298,6 +299,15 @@ impl DependencyTable {
     pub fn inner(&self) -> &HashMap<PkgId, AnyVersion> {
         &self.0
     }
+
+    pub fn inner_mut(&mut self) -> &mut HashMap<PkgId, AnyVersion> {
+        &mut self.0
+    }
+
+    pub fn insert(&mut self, pkg: PkgId, ver: AnyVersion) -> Option<AnyVersion> {
+        // overwrite the existing key
+        self.0.insert(pkg, ver)
+    }
 }
 
 impl FromToml for DependencyTable {
@@ -370,6 +380,29 @@ impl IpManifest {
                 document: toml,
             },
         }
+    }
+
+    /// Updates the dependencies table.
+    pub fn insert_dependency(&mut self, pkgid: PkgId, ver: AnyVersion) -> Option<AnyVersion> {
+        if self.get_manifest().get_doc().as_table().contains_table(DEPENDENCIES_KEY) == false {
+            self.get_manifest_mut().get_mut_doc()[DEPENDENCIES_KEY] = toml_edit::Item::Table(Table::new());
+        }
+        let prev_value = self.ip.deps.inner_mut().remove(&pkgid);
+        self.get_manifest_mut().get_mut_doc()
+            [DEPENDENCIES_KEY]
+            [&pkgid.get_vendor().as_ref().unwrap().to_string()]
+            [&pkgid.get_library().as_ref().unwrap().to_string()]
+            [&pkgid.get_name().to_string()] = toml_edit::value(&ver.to_string());
+
+        self.get_manifest_mut().get_mut_doc()
+            [DEPENDENCIES_KEY]
+            [&pkgid.get_vendor().as_ref().unwrap().to_string()].as_inline_table_mut().map(|f| f.set_dotted(true));
+
+        self.get_manifest_mut().get_mut_doc()
+            [DEPENDENCIES_KEY]
+            [&pkgid.get_vendor().as_ref().unwrap().to_string()]
+            [&pkgid.get_library().as_ref().unwrap().to_string()].as_inline_table_mut().map(|f| f.set_dotted(true));
+        prev_value
     }
 
     pub fn get_pkgid(&self) -> &PkgId {

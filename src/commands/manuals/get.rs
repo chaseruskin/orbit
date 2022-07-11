@@ -15,7 +15,10 @@ DESCRIPTION
     for the requested unit. 
      
     If the --instance flag is used without the --component flag, it will
-    display the direct instantiation style code (VHDL-93 feature).
+    display the direct instantiation style code (VHDL-93 feature).  
+     
+    By default the ip associated with the target entity is added under the 
+    current ip's dependency table.
 
 OPTIONS
     <entity-path>  
@@ -35,6 +38,9 @@ OPTIONS
      
     --architecture, -a
           Display a list of available architectures
+     
+    --peek
+          Do not add the target ip to the current dependency table
 
 EXAMPLES
     orbit get ks-tech.rary.gates:nor_gate -csi

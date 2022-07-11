@@ -57,6 +57,7 @@ pub struct Get {
     architectures: bool,
     version: Option<AnyVersion>,
     info: bool,
+    peek: bool,
 }
 
 impl FromCli for Get {
@@ -69,6 +70,7 @@ impl FromCli for Get {
             architectures: cli.check_flag(Flag::new("architecture").switch('a'))?,
             version: cli.check_option(Optional::new("ver").switch('v'))?,
             info: cli.check_flag(Flag::new("info"))?,
+            peek: cli.check_flag(Flag::new("peek"))?,
             entity_path: cli.require_positional(Positional::new("entity"))?,
         });
         command
@@ -82,7 +84,7 @@ use crate::core::vhdl::token::VHDLTokenizer;
 
 impl Command for Get {
     type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+    fn exec(&self, c: &Context) -> Result<(), Self::Err> {    
         // must be in an IP if omitting the pkgid
         if self.entity_path.ip.is_none() {
             c.goto_ip_path()?;
@@ -91,7 +93,7 @@ impl Command for Get {
             if self.version.is_some() {
                 return Err(AnyError(format!("cannot specify a version '{}' when referencing the current ip", "--ver".yellow())))?
             }
-            self.run(&IpManifest::from_path(c.get_ip_path().unwrap())?, true)
+            self.run(&IpManifest::from_path(c.get_ip_path().unwrap())?, true, None) // do not add self to requirements
         } else {
             // gather the catalog (all manifests)
             let mut catalog = Catalog::new()
@@ -118,15 +120,27 @@ impl Command for Get {
                     None => Err(AnyError(format!("ip '{}' is not found as version '{}'", target, v)))
                 }?
             }
-            self.run(ip.unwrap(), false)
+
+            let current_ip = match c.goto_ip_path() {
+                Ok(_) => Some(IpManifest::from_path(c.get_ip_path().unwrap())?),
+                Err(_) => None,
+            };
+            
+            self.run(ip.unwrap(), false, if self.peek == true { None } else { current_ip })
         }
     }
 }
 
 impl Get {
-    fn run(&self, ip: &IpManifest, is_self: bool) -> Result<(), Fault> {
+    fn run(&self, ip: &IpManifest, is_self: bool, current_ip: Option<IpManifest>) -> Result<(), Fault> {
         // collect all hdl files and parse them
         let ent = Self::fetch_entity(&self.entity_path.entity, &ip)?;
+
+        // add to dependency list if within a ip
+        if let Some(mut cur_ip) = current_ip {
+            cur_ip.insert_dependency(ip.get_pkgid().clone(), self.version.as_ref().unwrap_or(&AnyVersion::Latest).clone());
+            cur_ip.get_manifest_mut().save()?;
+        }
 
         // display component declaration
         if self.component == true {
@@ -199,6 +213,7 @@ Options:
     --instance,  -i     print instantation
     --info              access code file's header comment
     --architecture, -a  print available architectures
+    --peek              do not add the ip to the dependency table
 
 Use 'orbit help get' to learn more about the command.
 ";

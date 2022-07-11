@@ -54,9 +54,8 @@ impl<T: Eq + Hash + std::fmt::Debug> Module<T> {
 // Modules are unique.
 
 // step 1: compute a minimal requirement list
-fn compute_minimal_requirement_list<T: Eq + Hash + std::fmt::Debug>(build_list: Vec<Module<T>>) -> Vec<Module<T>> {
-    let mut result = Vec::new();
-    result
+fn compute_minimal_requirement_list<T: Eq + Hash + std::fmt::Debug>(_: Vec<Module<T>>) -> Vec<Module<T>> {
+    todo!()
 }
 
 #[cfg(test)]

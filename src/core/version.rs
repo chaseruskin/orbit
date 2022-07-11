@@ -249,6 +249,10 @@ impl Version {
     pub fn get_patch(&self) -> VerNum {
         self.patch
     }
+
+    pub fn to_partial_version(&self) -> PartialVersion {
+        PartialVersion::new().major(self.major).minor(self.minor).patch(self.patch)
+    }
 }
 
 impl FromStr for Version {

@@ -1,7 +1,10 @@
 use crate::Command;
 use crate::FromCli;
+use crate::commands::install::Install;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::store::Store;
+use crate::core::version::AnyVersion;
+use crate::core::version::PartialVersion;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;
@@ -35,6 +38,7 @@ pub struct Launch {
     next: Option<VersionField>,
     ready: bool,
     message: Option<String>,
+    no_install: bool,
 }
 
 impl FromCli for Launch {
@@ -44,6 +48,7 @@ impl FromCli for Launch {
             ready: cli.check_flag(Flag::new("ready"))?,
             next: cli.check_option(Optional::new("next").value("version"))?,
             message: cli.check_option(Optional::new("message").switch('m'))?,
+            no_install: cli.check_flag(Flag::new("no-install"))?,
         });
         command
     }
@@ -195,6 +200,11 @@ impl Command for Launch {
             println!("info: future commit message \"{}\"", message)
         }
 
+        println!("info: installing to cache ... {}", match self.no_install {
+            true => "no",
+            false => "yes",
+        });
+
         // verify git things
 
         // verify Orbit.toml to staging area
@@ -236,11 +246,16 @@ impl Command for Launch {
                 extgit.push()?;
             }
 
+            println!("info: released version {}", version);
+
             // store the repository
             let store = Store::new(c.get_store_path());
             store.store(&manifest)?;
 
-            println!("info: released version {}", version);
+            // perform installation to the cache
+            if self.no_install == false {
+                Install::install(&manifest, &AnyVersion::Specific(version.to_partial_version()), c.get_cache_path(), true, store)?;
+            }
         } else {
             println!("info: version {} is ready for launch\n\nhint: include '--ready' flag to proceed", ver_str);
         }
@@ -265,6 +280,7 @@ Options:
     --ready                 proceed with the launch process
     --next <version>        semver version or 'major', 'minor', or 'patch'
     --message, -m <message> message to apply to the commit when using '--next'
+    --no-install            skip installing newly launched version
 
 Use 'orbit help launch' to learn more about the command.
 ";

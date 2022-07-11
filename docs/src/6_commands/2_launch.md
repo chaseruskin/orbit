@@ -40,6 +40,9 @@ in the Orbit.toml manifest to determine the next increment.
  
 `--message, -m <message>`  
       override the default Orbit commit message when using '--next'
+ 
+`--no-install`  
+      skip installing the newly launched version to the cache
 
 ## __EXAMPLES__
 

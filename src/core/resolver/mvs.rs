@@ -4,8 +4,7 @@ use crate::core::pkgid::PkgId;
 use crate::core::version::AnyVersion;
 use crate::core::vhdl::token::Identifier;
 use crate::core::{version::PartialVersion};
-use crate::util::graph::Graph;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashSet};
 use std::hash::Hash;
 
 /// Complete ip specification.

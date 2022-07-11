@@ -4,7 +4,6 @@ use crate::commands::install::Install;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::store::Store;
 use crate::core::version::AnyVersion;
-use crate::core::version::PartialVersion;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;

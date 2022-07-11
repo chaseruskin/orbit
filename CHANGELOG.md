@@ -15,6 +15,23 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.3.3
+
+### Features
+- new config.toml entry: `core.user` (used for template variable `{{ orbit.user }}` )
+- new config.toml entry: `core.date-fmt` (used for template variable `{{ orbit.date }}` )
+- launch command now installs by default
+- initial support for external dependencies in plan and tree commands
+- tree command now supports `--format long` option to display full pkgid with every entity
+
+### Fixes
+- config --set now properly overwrites existing value
+- entity direct instantiation now contains missing 'entity' keyword
+- better error handling for toml deserialization
+
+### Documentation
+- updates config.toml entry references for date-fmt and user
+
 ## 0.3.2
 
 ### Fixes

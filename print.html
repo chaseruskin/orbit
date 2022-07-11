@@ -1125,6 +1125,8 @@ paste into the current project.</p>
 for the requested unit. </p>
 <p>If the <code>--instance</code> flag is used without the <code>--component</code> flag, it will
 display the direct instantiation style code (VHDL-93 feature).</p>
+<p>By default the ip associated with the target entity is added under the 
+current ip's dependency table.</p>
 <h2 id="options-8"><a class="header" href="#options-8"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;entity-path&gt;</code><br />
       The pkgid and entity identifier to request [pkgid:]<entity></p>
@@ -1138,6 +1140,8 @@ display the direct instantiation style code (VHDL-93 feature).</p>
       Display the code file's initial comment header block</p>
 <p><code>--architecture, -a</code>
       Display a list of available architectures</p>
+<p><code>--peek</code>
+      Do not add the target ip to the current dependency table</p>
 <h2 id="examples-8"><a class="header" href="#examples-8"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit get ks-tech.rary.gates:nor_gate -csi
 </code></pre>

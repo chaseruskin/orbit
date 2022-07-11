@@ -162,9 +162,8 @@ impl Config {
         }
         // create key if it does not exist
         let table = self.document.get_mut(table).unwrap().as_table_mut().unwrap();
-        if table.contains_key(key) == false {
-            table.insert(key, Item::Value(Value::String(Formatted::<String>::new(value.to_string()))));
-        }
+        // insert/overwrite into the table
+        table.insert(key, Item::Value(Value::String(Formatted::<String>::new(value.to_string()))));
     } 
 
     /// Removes an entry from the toml document.

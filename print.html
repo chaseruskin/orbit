@@ -799,6 +799,25 @@ editor = &quot;code&quot;
 build-dir = &quot;target&quot;
 # ...
 </code></pre>
+<h3 id="coreuser--string"><a class="header" href="#coreuser--string"><code>core.user</code> : <em>string</em></a></h3>
+<ul>
+<li>your name</li>
+<li>useful for template variable substitution</li>
+</ul>
+<pre><code class="language-toml">[core]
+user = &quot;Kepler [KST-001]&quot;
+# ...
+</code></pre>
+<h3 id="coredate-fmt--string"><a class="header" href="#coredate-fmt--string"><code>core.date-fmt</code> : <em>string</em></a></h3>
+<ul>
+<li>date formatting for template variable substitution</li>
+<li>default is <code>&quot;%Y-%m-%d&quot;</code></li>
+<li>see chrono's <a href="https://docs.rs/chrono/0.4.19/chrono/format/strftime/index.html#specifiers">documentation</a> for complete list of formatting specifiers</li>
+</ul>
+<pre><code class="language-toml">[core]
+date-fmt = &quot;%B %e, %Y&quot; # July 8, 2001
+# ...
+</code></pre>
 <h3 id="plugin--array-of-tables"><a class="header" href="#plugin--array-of-tables"><code>[[plugin]]</code> : <em>array of tables</em></a></h3>
 <ul>
 <li><code>alias</code> : <em>string</em> 

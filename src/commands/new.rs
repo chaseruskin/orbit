@@ -1,13 +1,11 @@
 use crate::Command;
 use crate::FromCli;
-use crate::core::config::Config;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Optional, Flag};
 use crate::interface::errors::CliError;
 use crate::core::pkgid;
 use crate::interface::arg::Arg;
 use crate::core::context::Context;
-use std::alloc::Layout;
 use std::error::Error;
 use crate::util::anyerror::AnyError;
 use crate::core::ip::Ip;
@@ -77,7 +75,11 @@ impl Command for New {
         vars.insert("orbit.ip.vendor".to_owned(), self.ip.get_library().as_ref().unwrap().to_string());
         vars.insert("orbit.ip".to_owned(), self.ip.to_string());
         vars.insert("orbit.user".to_owned(), context.get_config().get_as_str("core", "user")?.unwrap_or("").to_string());
-        vars.insert("orbit.date".to_owned(), format!("{:?}", { let dt = chrono::offset::Local::now(); dt.format("%Y-%m-%d").to_string() }));
+        vars.insert("orbit.date".to_owned(), format!("{:?}", { 
+            let dt = chrono::offset::Local::now(); 
+            let fmt: &str = context.get_config().get_as_str("core", "date-fmt")?.unwrap_or("%Y-%m-%d");
+            dt.format(fmt).to_string() 
+        }));
 
         // only pass in necessary variables from context
         self.run(root, context.force, template, &vars)

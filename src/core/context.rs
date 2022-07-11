@@ -26,8 +26,6 @@ pub struct Context {
     store_path: path::PathBuf, 
     /// temporary throwaway directory     
     build_dir: String,
-    /// user to be used in template variable substitution
-    user: String, 
     config: Config,
     plugins: HashMap<String, Plugin>, // @IDEA optionally move hashmap out of context and create it from fn to allow dynamic loading
     templates: HashMap<String, Template>,
@@ -50,7 +48,6 @@ impl Context {
             config: Config::new(),
             build_dir: String::new(),
             force: false,
-            user: String::new(),
         }
     }
 
@@ -167,9 +164,6 @@ impl Context {
         };
 
         // @TODO dynamically set from environment variables from configuration data
-
-        // load the user 
-        self.user = String::from(self.config.get_as_str("core", "user")?.unwrap_or(""));
 
         // load plugins and templates
         self.plugins()?.templates()

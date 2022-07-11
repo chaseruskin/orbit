@@ -84,6 +84,27 @@ build-dir = "target"
 # ...
 ```
 
+### `core.user` : _string_
+- your name
+- useful for template variable substitution
+
+``` toml
+[core]
+user = "Kepler [KST-001]"
+# ...
+```
+
+### `core.date-fmt` : _string_
+- date formatting for template variable substitution
+- default is `"%Y-%m-%d"`
+- see chrono's [documentation](https://docs.rs/chrono/0.4.19/chrono/format/strftime/index.html#specifiers) for complete list of formatting specifiers
+
+``` toml
+[core]
+date-fmt = "%B %e, %Y" # July 8, 2001
+# ...
+```
+
 ### `[[plugin]]` : _array of tables_
 - `alias` : _string_ 
     - plugin name to reference when invoking

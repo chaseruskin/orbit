@@ -123,10 +123,10 @@ impl Config {
     /// Ignores configuration files that does not exist.
     pub fn include(mut self) -> Result<Self, Fault> {
         // detect the include entry
-        if self.document.contains_key("include") == false {
+        if self.document.contains_key(INCLUDE_KEY) == false {
             return Ok(self)
         }
-        let config_paths: Vec<PathBuf> = self.document.get("include")
+        let config_paths: Vec<PathBuf> = self.document.get(INCLUDE_KEY)
             .unwrap()
             .as_array()
             .unwrap()
@@ -146,10 +146,10 @@ impl Config {
     /// 
     /// Automatically creates the new key if it does not exist.
     pub fn append_include(&mut self, item: &str) -> () {
-        if self.document.contains_key("include") == false {
-            self.document.insert("include", Item::Value(Value::Array(Array::new())));
+        if self.document.contains_key(INCLUDE_KEY) == false {
+            self.document.insert(INCLUDE_KEY, Item::Value(Value::Array(Array::new())));
         }
-        self.document["include"].as_array_mut().unwrap().push(item);
+        self.document[INCLUDE_KEY].as_array_mut().unwrap().push(item);
     } 
 
     /// Sets a value for the given entry in the toml document.
@@ -312,6 +312,7 @@ impl std::fmt::Display for ConfigError {
 }
 
 pub const CONFIG_FILE: &str = "config.toml";
+const INCLUDE_KEY: &str = "include";
 
 #[cfg(test)]
 mod test {

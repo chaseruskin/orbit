@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.3.5
+
+### Fixes
+- Orbit.toml is no longer needed on git main branch of an ip to install
+
 ## 0.3.4
 
 ### Fixes

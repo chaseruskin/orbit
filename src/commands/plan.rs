@@ -170,10 +170,11 @@ impl Plan {
     /// 
     /// Errors if a dependency is not known in the user's catalog.
     fn construct_rough_build_list<'a>(target: &'a IpManifest, catalog: &'a Catalog) -> Result<Vec<&'a IpManifest>, Fault> {
-        let mut result = vec![target];
+        let mut result = Vec::with_capacity(1);
         let mut processing = vec![target];
 
         while let Some(ip) = processing.pop() {
+            result.push(ip);
             let deps = ip.get_dependencies();
             for (pkgid, version) in deps.inner() {
                 match catalog.inner().get(pkgid) {
@@ -186,7 +187,6 @@ impl Plan {
                             None => panic!("ip is not installed"),
                         }
                         println!("found dependent ip: {}", pkgid);
-                        result.push(ip);
                     },
                     None => return Err(AnyError(format!("unknown ip: {}", pkgid)))?
                 }
@@ -347,7 +347,7 @@ impl Plan {
                 }
             }
         } else {
-            None // still could possibly be found by top level is top is some
+            None // still could possibly be found by top level if top is some
         };
 
         // determine the top-level node index
@@ -406,6 +406,7 @@ impl Plan {
         let build_list = Self::resolve_dependencies(&target, &catalog)?;
         let files = Self::assemble_all_files(build_list);
         let graph_map = Self::build_full_graph(&files);
+
         // transfer identifier over the full graph
         let highest_point = graph_map.get_node_by_key(highest_iden).unwrap().index();
 

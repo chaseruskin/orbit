@@ -15,6 +15,16 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.3.6
+
+### Features
+- prevents launch when dependency is from dev path
+- a lockfile `Orbit.lock` is written during plan command
+- reads `Orbit.lock` when current ip's lock entry matches manifest data to ensure all dependencies are pulled in
+
+### Fixes
+- url in blank `Orbit.toml` files points to the correct Orbit.toml help page
+
 ## 0.3.5
 
 ### Fixes

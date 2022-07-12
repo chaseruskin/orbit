@@ -105,6 +105,8 @@ impl Command for Install {
             return Err(AnyError(format!("select an option to install from '{}', '{}', or '{}'", "--ip".yellow(), "--git".yellow(), "--path".yellow())))?
         };
 
+        // @TODO copy ip root to a temporary directory
+
         // enter action
         self.run(&ip_root, c.get_cache_path(), c.force, store)
     }
@@ -177,6 +179,16 @@ impl Install {
         }
     }
 
+    fn checkout_tag_state(repo: &Repository, tag: &Version) -> Result<(), Fault> {
+        // get the tag
+        let obj = repo.revparse_single(tag.to_string().as_ref())?;
+        // configure checkout options
+        let mut cb = CheckoutBuilder::new();
+        cb.force();
+        // checkout code at the tag's marked timestamp
+        Ok(repo.checkout_tree(&obj, Some(&mut cb))?)
+    }
+
     /// Installs the `ip` with particular partial `version` to the `cache_root`.
     /// It will reinstall if it finds the original installation has a mismatching checksum.
     /// 
@@ -190,15 +202,7 @@ impl Install {
         let version = get_target_version(&version, &version_space)?;
 
         println!("detected version {}", version);
-
-        // get the tag
-        let obj = repo.revparse_single(version.to_string().as_ref())?;
-
-        // configure checkout options
-        let mut cb = CheckoutBuilder::new();
-        cb.force();
-        // checkout code at the tag's marked timestamp
-        repo.checkout_tree(&obj, Some(&mut cb))?;
+        Self::checkout_tag_state(&repo, &version)?;
 
         // make an ip manifest
         let ip = IpManifest::from_path(installation_path)?;
@@ -210,6 +214,9 @@ impl Install {
             // throw repository into the store/ for future use
             false => store.store(&ip)?,
         };
+
+        let repo = Repository::open(&temp)?;
+        Self::checkout_tag_state(&repo, &version)?;
     
         // perform sha256 on the directory after collecting all files
         std::env::set_current_dir(&temp)?;

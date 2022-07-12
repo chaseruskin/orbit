@@ -39,6 +39,7 @@ use git2::Repository;
 use git2::build::CheckoutBuilder;
 use tempfile::tempdir;
 use crate::core::store::Store;
+use std::path::PathBuf;
 use std::str::FromStr;
 use crate::core::extgit::ExtGit;
 
@@ -56,7 +57,7 @@ impl Command for Install {
         let store = Store::new(c.get_store_path());
 
         // get to the repository (root path)
-        let ip = if let Some(ip) = &self.ip {
+        let ip_root = if let Some(ip) = &self.ip {
             // gather the catalog (all manifests)
             let mut catalog = Catalog::new()
                 .store(c.get_store_path())
@@ -71,7 +72,8 @@ impl Command for Install {
 
             // check the store/ for the repository
             if let Some(ip) = store.as_stored(&target)? {
-                ip
+
+                ip.get_root()
             // @TODO clone from remote repository if exists (from AVAILABLE)
             } else if status.is_installed() || status.is_available() {
                 // check a manifest for a repository
@@ -95,23 +97,23 @@ impl Command for Install {
             // clone from remote repository
             let path = tempdir.path().to_path_buf();
             ExtGit::new().command(None).clone(url, &path)?;
-            IpManifest::from_path(&path)?
+            path
         } else if let Some(path) = &self.path {
             // traverse filesystem
-            IpManifest::from_path(&path)?
+            path.clone()
         } else {
             return Err(AnyError(format!("select an option to install from '{}', '{}', or '{}'", "--ip".yellow(), "--git".yellow(), "--path".yellow())))?
         };
 
         // enter action
-        self.run(&ip, c.get_cache_path(), c.force, store)
+        self.run(&ip_root, c.get_cache_path(), c.force, store)
     }
 }
 
 /// Finds the most compatible version matching `ver` among the possible `space`.
 /// 
 /// Errors if no version was found.
-pub fn get_target_version<'a>(ver: &AnyVersion, space: &'a Vec<&Version>, target: &PkgId) -> Result<Version, AnyError> {
+pub fn get_target_version<'a>(ver: &AnyVersion, space: &'a Vec<&Version>) -> Result<Version, AnyError> {
     // find the specified version for the given ip
     let mut latest_version: Option<&Version> = None;
     space.into_iter()
@@ -128,9 +130,9 @@ pub fn get_target_version<'a>(ver: &AnyVersion, space: &'a Vec<&Version>, target
     match latest_version {
         Some(v) => Ok(v.clone()),
         None => Err(AnyError(format!("\
-ip '{}' has no version available as {}
+ip has no version available as {}
 
-To see all versions try `orbit probe {} --tags`", target, ver, target))),
+To see all versions try `orbit probe <ip> --tags`", ver))),
     }
 }
 
@@ -179,21 +181,14 @@ impl Install {
     /// It will reinstall if it finds the original installation has a mismatching checksum.
     /// 
     /// Errors if the ip is already installed unless `force` is true.
-    pub fn install(ip: &IpManifest, version: &AnyVersion, cache_root: &std::path::PathBuf, force: bool, store: Store) -> Result<(), Fault> {
-        let target = ip.get_pkgid();
-
-        // move into stored directory to compute checksum for the tagged version
-        let temp = match store.is_stored(&target) {
-            true => ip.get_root(),
-            // throw repository into the store/ for future use
-            false => store.store(&ip)?,
-        };
-        let repo = Repository::open(&temp)?;
+    pub fn install(installation_path: &PathBuf, version: &AnyVersion, cache_root: &std::path::PathBuf, force: bool, store: Store) -> Result<(), Fault> {
+        let repo = Repository::open(&installation_path)?;
 
         // find the specified version for the given ip
         let space = gather_version_tags(&repo)?;
         let version_space: Vec<&Version> = space.iter().collect();
-        let version = get_target_version(&version, &version_space, &target)?;
+        let version = get_target_version(&version, &version_space)?;
+
         println!("detected version {}", version);
 
         // get the tag
@@ -205,6 +200,17 @@ impl Install {
         // checkout code at the tag's marked timestamp
         repo.checkout_tree(&obj, Some(&mut cb))?;
 
+        // make an ip manifest
+        let ip = IpManifest::from_path(installation_path)?;
+        let target = ip.get_pkgid();
+
+        // move into stored directory to compute checksum for the tagged version
+        let temp = match store.is_stored(&target) {
+            true => ip.get_root(),
+            // throw repository into the store/ for future use
+            false => store.store(&ip)?,
+        };
+    
         // perform sha256 on the directory after collecting all files
         std::env::set_current_dir(&temp)?;
 
@@ -255,8 +261,8 @@ impl Install {
         Ok(())
     }
 
-    fn run(&self, ip: &IpManifest, cache_root: &std::path::PathBuf, force: bool, store: Store) -> Result<(), Fault> {
-        Self::install(&ip, &self.version, &cache_root, force, store)
+    fn run(&self, installation_path: &PathBuf, cache_root: &std::path::PathBuf, force: bool, store: Store) -> Result<(), Fault> {
+        Self::install(&installation_path, &self.version, &cache_root, force, store)
     }
 }
 

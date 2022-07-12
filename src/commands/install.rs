@@ -3,6 +3,7 @@ use crate::FromCli;
 use crate::core::catalog::Catalog;
 use crate::core::manifest;
 use crate::core::manifest::IpManifest;
+use crate::core::version;
 use crate::interface::cli::Cli;
 use crate::interface::arg::Optional;
 use crate::interface::errors::CliError;
@@ -111,32 +112,6 @@ impl Command for Install {
     }
 }
 
-/// Finds the most compatible version matching `ver` among the possible `space`.
-/// 
-/// Errors if no version was found.
-pub fn get_target_version<'a>(ver: &AnyVersion, space: &'a Vec<&Version>) -> Result<Version, AnyError> {
-    // find the specified version for the given ip
-    let mut latest_version: Option<&Version> = None;
-    space.into_iter()
-    .filter(|f| match &ver {
-        AnyVersion::Specific(v) => crate::core::version::is_compatible(v, f),
-        AnyVersion::Latest => true,
-        _ => panic!("dev version cannot be filtered")
-    })
-    .for_each(|tag| {
-        if latest_version.is_none() || *tag > latest_version.as_ref().unwrap() {
-            latest_version = Some(tag);
-        }
-    });
-    match latest_version {
-        Some(v) => Ok(v.clone()),
-        None => Err(AnyError(format!("\
-ip has no version available as {}
-
-To see all versions try `orbit probe <ip> --tags`", ver))),
-    }
-}
-
 /// Collects all version git tags from the given `repo` repository.
 /// 
 /// The tags must follow semver `[0-9]*.[0-9]*.[0-9]*` specification.
@@ -176,13 +151,13 @@ impl Install {
     /// It will reinstall if it finds the original installation has a mismatching checksum.
     /// 
     /// Errors if the ip is already installed unless `force` is true.
-    pub fn install(installation_path: &PathBuf, version: &AnyVersion, cache_root: &std::path::PathBuf, force: bool, store: Store) -> Result<(), Fault> {
+    pub fn install(installation_path: &PathBuf, version: &AnyVersion, cache_root: &std::path::PathBuf, force: bool, store: &Store) -> Result<IpManifest, Fault> {
         let repo = Repository::open(&installation_path)?;
 
         // find the specified version for the given ip
         let space = gather_version_tags(&repo)?;
         let version_space: Vec<&Version> = space.iter().collect();
-        let version = get_target_version(&version, &version_space)?;
+        let version = version::get_target_version(&version, &version_space)?;
 
         println!("detected version {}", version);
         Self::checkout_tag_state(&repo, &version)?;
@@ -245,11 +220,12 @@ impl Install {
         fs_extra::copy_items(&from_paths, &cache_slot, &options)?;
         // write the checksum to the directory
         std::fs::write(&cache_slot.join(manifest::ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
-        Ok(())
+        Ok(IpManifest::from_path(&cache_slot)?)
     }
 
     fn run(&self, installation_path: &PathBuf, cache_root: &std::path::PathBuf, force: bool, store: Store) -> Result<(), Fault> {
-        Self::install(&installation_path, &self.version, &cache_root, force, store)
+        let _ = Self::install(&installation_path, &self.version, &cache_root, force, &store)?;
+        Ok(())
     }
 }
 

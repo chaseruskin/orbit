@@ -1,6 +1,6 @@
 use std::{str::FromStr, path::{PathBuf}};
 use toml_edit::Document;
-use crate::{util::{sha256::Sha256Hash, anyerror::{AnyError, Fault}}, core::{pkgid::PkgId, version::Version, config::FromToml, manifest::IpManifest}};
+use crate::{util::{sha256::Sha256Hash, anyerror::{AnyError, Fault}}, core::{pkgid::PkgId, version::{Version, AnyVersion, self}, config::FromToml, manifest::IpManifest}};
 
 #[derive(Debug)]
 pub struct LockFile(Vec<LockEntry>);
@@ -48,6 +48,15 @@ impl LockFile {
         self.0.iter().find(|&f| &f.name == target && &f.version == version )
     }
 
+    pub fn get_highest(&self, target: &PkgId, version: &AnyVersion) -> Option<&LockEntry> {
+        // collect all versions
+        let space: Vec<&Version> = self.0.iter().filter_map(|f| if &f.name == target { Some(&f.version) } else { None }).collect();
+        match version::get_target_version(&version, &space) {
+            Ok(v) => self.0.iter().find(|f| &f.name == target && f.version == v),
+            Err(_) => None
+        }
+    }
+
     fn len(&self) -> usize {
         self.0.len()
     }
@@ -78,6 +87,14 @@ impl From<&IpManifest> for LockEntry {
 impl LockEntry {
     pub fn get_sum(&self) -> Option<&Sha256Hash> {
         self.sum.as_ref()
+    }
+
+    pub fn get_source(&self) -> &str {
+        &self.source.0
+    }
+
+    pub fn get_version(&self) -> &Version {
+        &self.version
     }
 
     pub fn to_toml(&self, table: &mut toml_edit::Table) -> () {

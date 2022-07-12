@@ -261,7 +261,7 @@ impl Command for Launch {
 
             // perform installation to the cache
             if self.no_install == false {
-                Install::install(&manifest.get_root(), &AnyVersion::Specific(version.to_partial_version()), c.get_cache_path(), true, store)?;
+                Install::install(&manifest.get_root(), &AnyVersion::Specific(version.to_partial_version()), c.get_cache_path(), true, &store)?;
             }
         } else {
             println!("info: version {} is ready for launch\n\nhint: include '--ready' flag to proceed", ver_str);

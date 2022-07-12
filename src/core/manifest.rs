@@ -353,6 +353,11 @@ impl IpManifest {
         }
     }
 
+    /// Initializes a lock file from the manifest root path. 
+    pub fn into_lockfile(&self) -> Result<LockFile, Fault> {
+        LockFile::from_path(&self.get_root())
+    }
+
     /// Gathers the list of primary design units for the current ip.
     /// 
     /// If the manifest has an toml entry for `units`, it will return that list rather than go through files.
@@ -435,7 +440,10 @@ impl IpManifest {
         }
     }
 
-    /// Writes the build list to disk as IP_LOCK_FILE.
+    /// Saves the build list to disk as IP_LOCK_FILE.
+    /// 
+    /// The lock file helps fill in the missing pieces of the puzzle when a different
+    /// environment/machine is attempting to rebuild a project.
     pub fn write_lock(&self, build_list: &Vec<&IpManifest>) -> Result<(), Fault> {
         let lock_file = self.get_root().join(IP_LOCK_FILE);
         // remove any old stale lock file

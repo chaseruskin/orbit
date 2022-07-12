@@ -1,8 +1,12 @@
+use tempfile::tempdir;
+
 use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
+use crate::core::extgit;
 use crate::core::manifest::IpManifest;
 use crate::core::pkgid::PkgPart;
+use crate::core::version::AnyVersion;
 use crate::core::vhdl::symbol::ResReference;
 use crate::interface::cli::Cli;
 use crate::util::anyerror::Fault;
@@ -13,6 +17,7 @@ use crate::core::context::Context;
 use crate::util::graphmap::GraphMap;
 use std::ffi::OsString;
 use std::io::Write;
+use std::path::PathBuf;
 use std::str::FromStr;
 use crate::core::fileset::Fileset;
 use crate::core::vhdl::token::Identifier;
@@ -81,6 +86,8 @@ impl Command for Plan {
 
 use crate::core::vhdl::symbol;
 use crate::util::anyerror::AnyError;
+
+use super::install;
 
 #[derive(Debug, PartialEq)]
 pub struct ArchitectureFile<'a> {
@@ -169,9 +176,11 @@ impl Plan {
     /// Constructs an entire list of dependencies required for the current design.
     /// 
     /// Errors if a dependency is not known in the user's catalog.
-    fn construct_rough_build_list<'a>(target: &'a IpManifest, catalog: &'a Catalog) -> Result<Vec<&'a IpManifest>, Fault> {
+    fn construct_rough_build_list<'a>(target: &'a IpManifest, mut catalog: &'a Catalog<'a>) -> Result<Vec<&'a IpManifest>, Fault> {
         let mut result = Vec::with_capacity(1);
         let mut processing = vec![target];
+
+        let lock = target.into_lockfile()?;
 
         while let Some(ip) = processing.pop() {
             result.push(ip);
@@ -184,11 +193,46 @@ impl Plan {
                             Some(dep) => {
                                 processing.push(dep)
                             },
-                            None => panic!("ip is not installed"),
+                            // try to use the lock file to fill in missing pieces
+                            None => {
+                                if let Some(entry) = lock.get_highest(pkgid, version) {
+                                    // clone from the source
+                                    let temp = tempdir()?.as_ref().to_path_buf();
+                                    extgit::ExtGit::new().command(None).clone(entry.get_source(), &temp)?;
+                                    install::Install::install(&temp, &AnyVersion::Specific(entry.get_version().to_partial_version()), catalog.get_cache_path(), true, catalog.get_store())?;
+                                    // @TODO then verify the checksums match
+                                } else {
+                                    panic!("ip is not installed")
+                                }
+                            },
                         }
                         println!("found dependent ip: {}", pkgid);
                     },
-                    None => return Err(AnyError(format!("unknown ip: {}", pkgid)))?
+                    // try to use the lock file to fill in missing pieces
+                    None => {
+                        if let Some(entry) = lock.get_highest(pkgid, version) {
+                            // clone from the source
+                            let temp = tempdir()?.as_ref().to_path_buf();
+                            extgit::ExtGit::new().command(None).clone(entry.get_source(), &temp)?;
+                            let dep = install::Install::install(&temp, 
+                                &AnyVersion::Specific(entry.get_version().to_partial_version()), 
+                                catalog.get_cache_path(), 
+                                true, 
+                                catalog.get_store())?;
+                            // verify the checksums match
+                            if let Some(check) = entry.get_sum() {
+                                if check != &dep.get_checksum_proof(0).unwrap() {
+                                    panic!("checksums do not match!")
+                                }
+                            }
+                            // @TODO push to process
+                            // @FIX need to handle reference lifetime issue
+                            catalog.update_installations()
+                            // processing.push(&dep);
+                        } else {
+                            return Err(AnyError(format!("unknown ip: {}", pkgid)))?
+                        }
+                    }
                 }
             }
         }

@@ -8,6 +8,8 @@ use std::str::FromStr;
 use std::error::Error;
 use std::fmt::Display;
 
+use crate::util::anyerror::AnyError;
+
 type VerNum = u16;
 
 /// Checks if a partial version `self` umbrellas the full version `ver`.
@@ -26,6 +28,32 @@ pub fn is_compatible(pv: &PartialVersion, ver: &Version) -> bool {
             }
         }
         None => true,
+    }
+}
+
+/// Finds the most compatible version matching `ver` among the possible `space`.
+/// 
+/// Errors if no version was found.
+pub fn get_target_version<'a>(ver: &AnyVersion, space: &'a Vec<&Version>) -> Result<Version, AnyError> {
+    // find the specified version for the given ip
+    let mut latest_version: Option<&Version> = None;
+    space.into_iter()
+    .filter(|f| match &ver {
+        AnyVersion::Specific(v) => crate::core::version::is_compatible(v, f),
+        AnyVersion::Latest => true,
+        _ => panic!("dev version cannot be filtered")
+    })
+    .for_each(|tag| {
+        if latest_version.is_none() || *tag > latest_version.as_ref().unwrap() {
+            latest_version = Some(tag);
+        }
+    });
+    match latest_version {
+        Some(v) => Ok(v.clone()),
+        None => Err(AnyError(format!("\
+ip has no version available as {}
+
+To see all versions try `orbit probe <ip> --tags`", ver))),
     }
 }
 

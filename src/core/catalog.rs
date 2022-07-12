@@ -4,7 +4,7 @@ use crate::util::anyerror::Fault;
 use super::{pkgid::PkgId, manifest::IpManifest, version::{Version, AnyVersion}, store::Store};
 
 #[derive(Debug)]
-pub struct Catalog<'a>(HashMap<PkgId, IpLevel>, Option<Store<'a>>);
+pub struct Catalog<'a>(HashMap<PkgId, IpLevel>, Option<Store<'a>>, Option<&'a PathBuf>);
 
 #[derive(Debug)]
 pub struct IpLevel {
@@ -107,7 +107,7 @@ impl IpLevel {
 
 impl<'a> Catalog<'a> {
     pub fn new() -> Self {
-        Self(HashMap::new(), None)
+        Self(HashMap::new(), None, None)
     }
 
     /// Sets the store.
@@ -122,7 +122,8 @@ impl<'a> Catalog<'a> {
     }
 
     /// Searches the `path` for IP installed.
-    pub fn installations(self, path: &PathBuf) -> Result<Self, Fault> {
+    pub fn installations(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
+        self.2 = Some(&path);
         self.detect(path, &IpLevel::add_install)
     }
 
@@ -146,6 +147,10 @@ impl<'a> Catalog<'a> {
         todo!();
     }
 
+    pub fn update_installations(&self) -> () {
+        todo!()
+    }
+
     /// Finds all `Orbit.toml` manifest files (markings of an IP) within the provided `path`.
     /// 
     /// This function is generic enough to be used to catch ip at all 3 levels: dev, install, and available.
@@ -165,5 +170,13 @@ impl<'a> Catalog<'a> {
                 }
             });
         Ok(self)
+    }
+
+    pub fn get_store(&self) -> &Store {
+        self.1.as_ref().unwrap()
+    }
+
+    pub fn get_cache_path(&self) -> &PathBuf {
+        self.2.as_ref().unwrap()
     }
 }

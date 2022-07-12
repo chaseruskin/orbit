@@ -180,7 +180,7 @@ impl Plan {
                 match catalog.inner().get(pkgid) {
                     Some(status) => {
                         // find this IP to read its dependencies
-                        match status.get_install(version) {
+                        match status.get(version) {
                             Some(dep) => {
                                 processing.push(dep)
                             },

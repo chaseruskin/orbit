@@ -174,6 +174,14 @@ impl Command for Launch {
                 return Err(AnyError(format!("version \'{}\' is already released", r)))?;
             }
         }
+
+        // check there are zero dependencies from the DEV_PATH
+        if let Some(dep) = manifest.get_dependencies()
+                .inner()
+                .into_iter()
+                .find_map(|f| if f.1 == &AnyVersion::Dev { Some(f.0) } else { None }) {
+            return Err(AnyError(format!("direct dependency '{}' cannot come from a development state", dep)))?
+        }
         
         // verify the manifest is committed (not in staging or working directory if not overwriting)
         if overwrite == false {

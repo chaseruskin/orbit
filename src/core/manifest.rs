@@ -313,6 +313,17 @@ impl DependencyTable {
         // overwrite the existing key
         self.0.insert(pkg, ver)
     }
+
+    pub fn as_sorted_vec(&self) -> Vec<(&PkgId, &AnyVersion)> {
+        let mut deps: Vec<(&PkgId, &AnyVersion)> = self.0.iter().map(|f| { f }).collect();
+        // sort the dependencies
+        deps.sort_by(|x, y| { match x.0.cmp(&y.0) {
+            std::cmp::Ordering::Less => std::cmp::Ordering::Less,
+            std::cmp::Ordering::Equal => x.1.cmp(&y.1),
+            std::cmp::Ordering::Greater => std::cmp::Ordering::Greater,
+        } });
+        deps
+    }
 }
 
 impl FromToml for DependencyTable {
@@ -444,7 +455,9 @@ impl IpManifest {
     /// 
     /// The lock file helps fill in the missing pieces of the puzzle when a different
     /// environment/machine is attempting to rebuild a project.
-    pub fn write_lock(&self, build_list: &Vec<&IpManifest>) -> Result<(), Fault> {
+    /// 
+    /// Note: Internally, this function will sort the build into alphabetical order.
+    pub fn write_lock(&self, build_list: &mut Vec<&IpManifest>) -> Result<(), Fault> {
         let lock_file = self.get_root().join(IP_LOCK_FILE);
         // remove any old stale lock file
         if lock_file.exists() == true {
@@ -457,6 +470,13 @@ impl IpManifest {
         let mut toml = Document::new();
         toml["ip"] = toml_edit::Item::ArrayOfTables(ArrayOfTables::new());
         let lock_table = toml["ip"].as_array_of_tables_mut().unwrap();
+
+        // sort the build list by pkgid and then version
+        build_list.sort_by(|&x, &y| { match x.get_pkgid().cmp(y.get_pkgid()) {
+            std::cmp::Ordering::Less => std::cmp::Ordering::Less,
+            std::cmp::Ordering::Equal => x.get_version().cmp(y.get_version()),
+            std::cmp::Ordering::Greater => std::cmp::Ordering::Greater,
+        } });
         
         build_list.into_iter().for_each(|ip| {
             let mut table = Table::new();
@@ -533,7 +553,6 @@ impl IpManifest {
 
         Ok(ip_man)
     }
-
     
     /// Determines if a new .lock file needs to be generated for the current ip.
     /// 
@@ -552,6 +571,22 @@ impl IpManifest {
                 key == self.compute_checksum() 
             },
             None => false
+        }
+    }
+
+    /// Checks if needing to read off the lock file.
+    /// 
+    /// This determines if the lock file's data matches the Orbit.toml manifest data,
+    /// indicating it is safe to pull data from the lock file and no changes would be
+    /// made to the lock file.
+    pub fn can_use_lock(&self) -> bool {
+        match self.into_lockfile() {
+            Ok(lock) => match lock.get(self.get_pkgid(), self.get_version()) {
+                // okay to use the lock file if the entry is the same as manifest
+                Some(entry) => entry.matches_target(&LockEntry::from(self)),
+                None => return false,
+            }
+            Err(_) => return false,
         }
     }
 

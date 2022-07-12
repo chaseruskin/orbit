@@ -57,11 +57,11 @@ To see all versions try `orbit probe <ip> --tags`", ver))),
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Eq, Clone, PartialEq, Ord, PartialOrd)]
 pub enum AnyVersion {
-    Latest,
     Dev,
     Specific(PartialVersion),
+    Latest,
 }
 
 impl std::fmt::Display for AnyVersion {
@@ -87,7 +87,7 @@ impl std::str::FromStr for AnyVersion {
     }
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Clone, Eq, Ord)]
 pub struct PartialVersion {
     major: VerNum,
     minor: Option<VerNum>,

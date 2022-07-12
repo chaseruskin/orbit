@@ -17,7 +17,6 @@ use crate::core::context::Context;
 use crate::util::graphmap::GraphMap;
 use std::ffi::OsString;
 use std::io::Write;
-use std::path::PathBuf;
 use std::str::FromStr;
 use crate::core::fileset::Fileset;
 use crate::core::vhdl::token::Identifier;
@@ -51,11 +50,44 @@ impl Command for Plan {
         let target_ip = IpManifest::from_path(c.get_ip_path().unwrap())?;
 
         // gather the catalog
-        let catalog = Catalog::new()
+        let mut catalog = Catalog::new()
             .store(c.get_store_path())
             .development(c.get_development_path().unwrap())?
             .installations(c.get_cache_path())?
             .available(&&c.get_vendor_path())?;
+
+        // this code is only ran if the lock file matches the manifest
+        if target_ip.can_use_lock() == true {
+            // fill in the catalog with missing modules according the lock file if available
+            for entry in target_ip.into_lockfile()?.inner() {
+                if entry.get_name() == target_ip.get_pkgid() { continue }
+                let ver = AnyVersion::Specific(entry.get_version().to_partial_version());
+                // try to use the lock file to fill in missing pieces
+                match catalog.inner().get(entry.get_name()) {
+                    Some(status) => {
+                        // find this IP to read its dependencies
+                        match status.get(&ver) {
+                            // no action required
+                            Some(_) => (),
+                            // install
+                            None => {
+                                let temp = tempdir()?.as_ref().to_path_buf();
+                                extgit::ExtGit::new().command(None).clone(entry.get_source(), &temp)?;
+                                install::Install::install(&temp, &ver, c.get_cache_path(), true, catalog.get_store())?;
+                            }
+                        }
+                    }
+                    // install
+                    None => {
+                        let temp = tempdir()?.as_ref().to_path_buf();
+                        extgit::ExtGit::new().command(None).clone(entry.get_source(), &temp)?;
+                        install::Install::install(&temp, &ver, c.get_cache_path(), true, catalog.get_store())?;
+                    },
+                }
+            }
+            // recollect the installations for the catalog
+            catalog = catalog.installations(c.get_cache_path())?;
+        }
 
         // set top-level environment variables (@TODO verify these are valid toplevels to be set!)
         if let Some(t) = &self.top {
@@ -176,11 +208,9 @@ impl Plan {
     /// Constructs an entire list of dependencies required for the current design.
     /// 
     /// Errors if a dependency is not known in the user's catalog.
-    fn construct_rough_build_list<'a>(target: &'a IpManifest, mut catalog: &'a Catalog<'a>) -> Result<Vec<&'a IpManifest>, Fault> {
+    fn construct_rough_build_list<'a>(target: &'a IpManifest, catalog: &'a Catalog) -> Result<Vec<&'a IpManifest>, Fault> {
         let mut result = Vec::with_capacity(1);
         let mut processing = vec![target];
-
-        let lock = target.into_lockfile()?;
 
         while let Some(ip) = processing.pop() {
             result.push(ip);
@@ -194,45 +224,12 @@ impl Plan {
                                 processing.push(dep)
                             },
                             // try to use the lock file to fill in missing pieces
-                            None => {
-                                if let Some(entry) = lock.get_highest(pkgid, version) {
-                                    // clone from the source
-                                    let temp = tempdir()?.as_ref().to_path_buf();
-                                    extgit::ExtGit::new().command(None).clone(entry.get_source(), &temp)?;
-                                    install::Install::install(&temp, &AnyVersion::Specific(entry.get_version().to_partial_version()), catalog.get_cache_path(), true, catalog.get_store())?;
-                                    // @TODO then verify the checksums match
-                                } else {
-                                    panic!("ip is not installed")
-                                }
-                            },
+                            None => panic!("ip is not installed"),
                         }
                         println!("found dependent ip: {}", pkgid);
                     },
                     // try to use the lock file to fill in missing pieces
-                    None => {
-                        if let Some(entry) = lock.get_highest(pkgid, version) {
-                            // clone from the source
-                            let temp = tempdir()?.as_ref().to_path_buf();
-                            extgit::ExtGit::new().command(None).clone(entry.get_source(), &temp)?;
-                            let dep = install::Install::install(&temp, 
-                                &AnyVersion::Specific(entry.get_version().to_partial_version()), 
-                                catalog.get_cache_path(), 
-                                true, 
-                                catalog.get_store())?;
-                            // verify the checksums match
-                            if let Some(check) = entry.get_sum() {
-                                if check != &dep.get_checksum_proof(0).unwrap() {
-                                    panic!("checksums do not match!")
-                                }
-                            }
-                            // @TODO push to process
-                            // @FIX need to handle reference lifetime issue
-                            catalog.update_installations()
-                            // processing.push(&dep);
-                        } else {
-                            return Err(AnyError(format!("unknown ip: {}", pkgid)))?
-                        }
-                    }
+                    None => return Err(AnyError(format!("unknown ip: {}", pkgid)))?,
                 }
             }
         }
@@ -447,10 +444,10 @@ impl Plan {
         let highest_iden = graph_map.get_key_by_index(highest_point).unwrap();
 
         // [!] build graph again but with entire set of all files available from all depdendencies
-        let build_list = Self::resolve_dependencies(&target, &catalog)?;
+        let mut build_list = Self::resolve_dependencies(&target, &catalog)?;
 
         // [!] write the lock file
-        target.write_lock(&build_list)?;
+        target.write_lock(&mut build_list)?;
 
         let files = Self::assemble_all_files(build_list);
         let graph_map = Self::build_full_graph(&files);

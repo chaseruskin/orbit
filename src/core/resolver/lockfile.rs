@@ -1,6 +1,8 @@
 use std::{str::FromStr, path::{PathBuf}};
-use toml_edit::Document;
+use toml_edit::{Document, InlineTable, Formatted, Array};
 use crate::{util::{sha256::Sha256Hash, anyerror::{AnyError, Fault}}, core::{pkgid::PkgId, version::{Version, AnyVersion, self}, config::FromToml, manifest::IpManifest}};
+
+type Module = (PkgId, AnyVersion);
 
 #[derive(Debug)]
 pub struct LockFile(Vec<LockEntry>);
@@ -57,9 +59,13 @@ impl LockFile {
         }
     }
 
-    fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.0.len()
     }
+
+    pub fn inner(&self) -> &Vec<LockEntry> {
+        &self.0
+    } 
 }
 
 #[derive(Debug, PartialEq)]
@@ -71,6 +77,7 @@ pub struct LockEntry {
     version: Version,
     sum: Option<Sha256Hash>,
     source: Source,
+    dependencies: Option<Vec<Module>>,
 }
 
 impl From<&IpManifest> for LockEntry {
@@ -80,17 +87,52 @@ impl From<&IpManifest> for LockEntry {
             version: ip.get_version().clone(), 
             sum: Some(ip.get_checksum_proof(0).unwrap_or(ip.compute_checksum())), 
             source: Source(ip.get_repository().unwrap_or(&String::new()).to_string()),
+            dependencies: match ip.get_dependencies().inner().len() {
+                0 => None,
+                _ => Some({
+                    let mut result: Vec<(PkgId, AnyVersion)> = ip.get_dependencies()
+                        .inner()
+                        .into_iter()
+                        .map(|e| { (e.0.clone(), e.1.clone()) })
+                        .collect();
+                    result.sort_by(|x, y| { match x.0.cmp(&y.0) {
+                        std::cmp::Ordering::Less => std::cmp::Ordering::Less,
+                        std::cmp::Ordering::Equal => x.1.cmp(&y.1),
+                        std::cmp::Ordering::Greater => std::cmp::Ordering::Greater,
+                    } });
+                    result
+                }),
+            }
         }
     }
 }
 
 impl LockEntry {
+    /// Performs an equality check against a target entry `other`.
+    /// 
+    /// Ignores the checksum comparison because the target ip should not have its
+    /// checksum computed in the .lock file.
+    pub fn matches_target(&self, other: &LockEntry) -> bool {
+        self.get_name() == other.get_name() && 
+        self.get_version() == other.get_version() &&
+        self.get_source() == other.get_source() &&
+        self.get_deps() == other.get_deps()
+    }
+
+    pub fn get_deps(&self) -> Option<&Vec<Module>> {
+        self.dependencies.as_ref()
+    }
+
     pub fn get_sum(&self) -> Option<&Sha256Hash> {
         self.sum.as_ref()
     }
 
     pub fn get_source(&self) -> &str {
         &self.source.0
+    }
+
+    pub fn get_name(&self) -> &PkgId {
+        &self.name
     }
 
     pub fn get_version(&self) -> &Version {
@@ -104,6 +146,20 @@ impl LockEntry {
             table["sum"] = toml_edit::value(&sum.to_string());
         }
         table["source"] = toml_edit::value(&self.source.0);
+        if let Some(deps) = &self.dependencies {
+            table.insert("dependencies", toml_edit::Item::Value(toml_edit::Value::Array(Array::new())));
+            for entry in deps {
+                let mut inline = InlineTable::new();
+                // @TODO write newlines after each item?
+                inline.insert("name", toml_edit::Value::String(Formatted::new(entry.0.to_string())));
+                inline.insert("version", toml_edit::Value::String(Formatted::new(entry.1.to_string())));
+                inline.decor_mut().set_prefix("\n    ");
+                table["dependencies"].as_array_mut()
+                    .unwrap()
+                    .push_formatted(toml_edit::Value::InlineTable(inline));
+            }
+            table["dependencies"].as_array_mut().unwrap().set_trailing("\n");
+        }
     }
 }
 
@@ -119,42 +175,25 @@ impl FromToml for LockEntry {
                 None => None,
             },
             source: Source(table.get("source").unwrap().as_str().unwrap().to_owned()),
+            dependencies: {
+                match table.get("dependencies") {
+                    Some(item) => {
+                        let mut result: Vec<Module> = Vec::new();
+                        for entry in item.as_array().unwrap() {
+                            let entry = entry.as_inline_table().unwrap();
+                            result.push(
+                                (
+                                    PkgId::from_str(entry["name"].as_str().unwrap()).unwrap(),
+                                    AnyVersion::from_str(entry["version"].as_str().unwrap()).unwrap(),
+                                )
+                            );
+                        }
+                        Some(result)
+                    },
+                    None => None,
+                }
+            }
         })
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use toml_edit::Document;
-    use super::*;
-
-    #[test]
-    fn from_toml() {
-        let toml = r#"
-# This file is automatically generated by Orbit.
-# It is not intended for manual editing.
-
-[[ip]]
-name = "ks-tech.rary.gates"
-version = "0.1.0"
-sum = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-source = "git.url1"
-
-[[ip]]
-name = "ks-tech.util.toolbox"
-version = "1.2.3"
-sum = "f3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-source = "git.url2"
-
-"#;
-        let lock = LockFile::from_toml(toml.parse::<Document>().unwrap().as_table()).unwrap();
-        assert_eq!(lock.len(), 2);
-    }
-
-    #[test]
-    fn check_lock() {
-        let ip = IpManifest::from_path(&PathBuf::from("./test/data/projects/project-a/")).unwrap();
-        assert_eq!(ip.is_locked(), true);
     }
 }
 

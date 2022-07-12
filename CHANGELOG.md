@@ -15,6 +15,12 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.3.4
+
+### Fixes
+- installing with git works without having main branch being Orbit ip
+- reading deps from Orbit.toml now correctly travels to all dependencies
+
 ## 0.3.3
 
 ### Features

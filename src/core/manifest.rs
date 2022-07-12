@@ -405,6 +405,46 @@ impl IpManifest {
         prev_value
     }
 
+    /// Creates a new IP at the `path`.
+    /// 
+    /// A manifest is created one level within `path` as IP_MANIFEST_FILE.
+    /// Assumes the `pkgid` is fully qualified. Saves the manifest to disk.
+    pub fn create(path: std::path::PathBuf, pkgid: &PkgId, force: bool) -> Result<Self, Box<dyn Error>> {
+        if std::path::Path::exists(&path) == true {
+            // remove the entire existing directory
+            if force == true {
+                std::fs::remove_dir_all(&path)?;
+            // error if directories exist
+            } else {
+                return Err(Box::new(AnyError(format!("failed to create new ip because directory '{}' already exists", path.display()))))
+            }
+        }
+        // create all directories if the do not exist
+        std::fs::create_dir_all(&path)?;
+
+        // @TODO issue warning if the path it was placed is outside of DEV_PATH or if DEV_PATH is not set
+
+        let toml = BARE_MANIFEST.parse::<Document>().unwrap();
+        let mut ip_man = Self { 
+            ip: FromToml::from_toml(&toml.as_table()).unwrap(),
+            manifest: Manifest {
+                path: path,
+                document: toml,
+            },
+        };
+        // fill in fields
+        ip_man.get_manifest_mut().write("ip", "name", pkgid.get_name());
+        ip_man.get_manifest_mut().write("ip", "library", pkgid.get_library().as_ref().unwrap());
+        ip_man.get_manifest_mut().write("ip", "vendor", pkgid.get_vendor().as_ref().unwrap());
+        // save the manifest
+        ip_man.get_manifest_mut().save()?;
+
+        // create an empty git repository
+        git2::Repository::init(&ip_man.get_root())?;
+
+        Ok(ip_man)
+    }
+
     pub fn get_pkgid(&self) -> &PkgId {
         &self.ip.ip.get_pkgid()
     }

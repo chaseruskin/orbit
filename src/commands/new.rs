@@ -1,5 +1,6 @@
 use crate::Command;
 use crate::FromCli;
+use crate::core::manifest::IpManifest;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Optional, Flag};
 use crate::interface::errors::CliError;
@@ -8,7 +9,6 @@ use crate::interface::arg::Arg;
 use crate::core::context::Context;
 use std::error::Error;
 use crate::util::anyerror::AnyError;
-use crate::core::ip::Ip;
 use crate::commands::search::Search;
 use crate::core::template::Template;
 use std::collections::HashMap;
@@ -110,16 +110,17 @@ impl New {
             }
         }
 
-        let ip = Ip::new(ip_path, force)?.create_manifest(&self.ip)?;
+        let ip = IpManifest::create(ip_path, &self.ip, force)?;
+        let root = ip.get_root();
 
         // import template if found
         if let Some(t) = template {
             // create hashmap to store variables
-            t.import(ip.get_path(), &lut)?;
+            t.import(&root, &lut)?;
         }
 
         // @TODO issue warning if the ip path is outside of the dev path or dev path is not set
-        println!("info: new ip created at {}", ip.get_path().display());
+        println!("info: new ip created at {}", root.display());
         Ok(())
     }
 }

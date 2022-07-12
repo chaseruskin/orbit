@@ -404,6 +404,10 @@ impl Plan {
 
         // [!] build graph again but with entire set of all files available from all depdendencies
         let build_list = Self::resolve_dependencies(&target, &catalog)?;
+
+        // [!] write the lock file
+        target.write_lock(&build_list)?;
+
         let files = Self::assemble_all_files(build_list);
         let graph_map = Self::build_full_graph(&files);
 

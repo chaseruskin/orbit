@@ -1,6 +1,6 @@
 use std::{str::FromStr, path::{PathBuf}};
 use toml_edit::Document;
-use crate::{util::{sha256::Sha256Hash, anyerror::{AnyError, Fault}, checksum::checksum}, core::{pkgid::PkgId, version::Version, config::FromToml, manifest::IpManifest}};
+use crate::{util::{sha256::Sha256Hash, anyerror::{AnyError, Fault}}, core::{pkgid::PkgId, version::Version, config::FromToml, manifest::IpManifest}};
 
 #[derive(Debug)]
 pub struct LockFile(Vec<LockEntry>);
@@ -60,24 +60,33 @@ struct Source(String);
 pub struct LockEntry {
     name: PkgId,
     version: Version,
-    sum: Sha256Hash,
+    sum: Option<Sha256Hash>,
     source: Source,
 }
 
-impl From<IpManifest> for LockEntry {
-    fn from(ip: IpManifest) -> Self {
+impl From<&IpManifest> for LockEntry {
+    fn from(ip: &IpManifest) -> Self {
         Self {
             name: ip.get_pkgid().clone(), 
             version: ip.get_version().clone(), 
-            sum: checksum(&crate::util::filesystem::gather_current_files(&ip.get_root())), 
+            sum: Some(ip.get_checksum_proof(0).unwrap_or(ip.compute_checksum())), 
             source: Source(ip.get_repository().unwrap_or(&String::new()).to_string()),
         }
     }
 }
 
 impl LockEntry {
-    pub fn get_sum(&self) -> &Sha256Hash {
-        &self.sum
+    pub fn get_sum(&self) -> Option<&Sha256Hash> {
+        self.sum.as_ref()
+    }
+
+    pub fn to_toml(&self, table: &mut toml_edit::Table) -> () {
+        table["name"] = toml_edit::value(&self.name.to_string());
+        table["version"] = toml_edit::value(&self.version.to_string());
+        if let Some(sum) = self.get_sum() {
+            table["sum"] = toml_edit::value(&sum.to_string());
+        }
+        table["source"] = toml_edit::value(&self.source.0);
     }
 }
 
@@ -88,7 +97,10 @@ impl FromToml for LockEntry {
         Ok(Self {
             name: PkgId::from_str(table.get("name").unwrap().as_str().unwrap())?,
             version: Version::from_str(table.get("version").unwrap().as_str().unwrap())?,
-            sum: Sha256Hash::from_str(table.get("sum").unwrap().as_str().unwrap())?,
+            sum: match table.get("sum") {
+                Some(item) => Some(Sha256Hash::from_str(item.as_str().unwrap())?),
+                None => None,
+            },
             source: Source(table.get("source").unwrap().as_str().unwrap().to_owned()),
         })
     }

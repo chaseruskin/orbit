@@ -614,7 +614,7 @@ library = \"\"
 version = \"0.1.0\"
 vendor  = \"\"
 
-# To learn more about writing the manifest, see https://github.com/c-rus/orbit
+# To learn more about writing the manifest, see https://c-rus.github.io/orbit/4_topic/2_orbittoml.html
 
 [dependencies]
 ";

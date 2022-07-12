@@ -1,6 +1,7 @@
 use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
+use crate::core::manifest;
 use crate::core::manifest::IpManifest;
 use crate::interface::cli::Cli;
 use crate::interface::arg::Optional;
@@ -10,8 +11,6 @@ use crate::core::pkgid::PkgId;
 use crate::core::version::Version;
 use crate::util::anyerror::{AnyError, Fault};
 use crate::core::version::AnyVersion;
-use crate::util::sha256;
-use crate::util::sha256::Sha256Hash;
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
@@ -161,23 +160,7 @@ impl Install {
     /// 
     /// Returns `None` if the file does not exist, is unable to read into a string, or
     /// if the sha cannot be parsed.
-    fn get_checksum_proof(p: &std::path::PathBuf, level: u8) -> Option<Sha256Hash> {
-        let sum_file = p.join(crate::core::fileset::ORBIT_SUM_FILE);
-        if std::path::Path::exists(&sum_file) == false {
-            None
-        } else {
-            match std::fs::read_to_string(&sum_file) {
-                Ok(text) => {
-                    let mut sums = text.split_terminator('\n').skip(level.into());
-                    match sha256::Sha256Hash::from_str(&sums.next().expect("level was out of bounds")) {
-                        Ok(sha) => Some(sha),
-                        Err(_) => None,
-                    }
-                }
-                Err(_) => None,
-            }
-        }
-    }
+
 
     fn checkout_tag_state(repo: &Repository, tag: &Version) -> Result<(), Fault> {
         // get the tag
@@ -222,7 +205,7 @@ impl Install {
         std::env::set_current_dir(&temp)?;
 
         // must use '.' as current directory when gathering files for consistent checksum
-        let ip_files = crate::core::fileset::gather_current_files(&std::path::PathBuf::from("."));
+        let ip_files = crate::util::filesystem::gather_current_files(&std::path::PathBuf::from("."));
         
         let checksum = crate::util::checksum::checksum(&ip_files);
         println!("checksum: {}", checksum);
@@ -235,14 +218,11 @@ impl Install {
             if force == true {
                 std::fs::remove_dir_all(&cache_slot)?;
             } else {
+                let cached_ip = IpManifest::from_path(&cache_slot)?;
                 // verify the installed version is valid
-                if let Some(sha) = Self::get_checksum_proof(&cache_slot, 0) {
+                if let Some(sha) = cached_ip.get_checksum_proof(0) {
                     // recompute the checksum on the cache installation
-                    std::env::set_current_dir(&cache_slot)?;
-                    let ip_files = crate::core::fileset::gather_current_files(&std::path::PathBuf::from("."));
-                    let checksum = crate::util::checksum::checksum(&ip_files);
-                    std::env::set_current_dir(&temp)?;
-                    if sha == checksum {
+                    if sha == cached_ip.compute_checksum() {
                         return Err(AnyError(format!("ip '{}' as version '{}' is already installed", target, version)))?
                     }
                 }
@@ -264,7 +244,7 @@ impl Install {
         // note: copy rather than rename because of windows issues
         fs_extra::copy_items(&from_paths, &cache_slot, &options)?;
         // write the checksum to the directory
-        std::fs::write(&cache_slot.join(crate::core::fileset::ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
+        std::fs::write(&cache_slot.join(manifest::ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
         Ok(())
     }
 

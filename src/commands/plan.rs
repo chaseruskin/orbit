@@ -207,7 +207,7 @@ impl Plan {
     pub fn assemble_all_files<'a>(ips: Vec<&'a IpManifest>) -> Vec<IpFileNode> {
         let mut files = Vec::new();
         ips.iter().for_each(|ip| {
-            crate::core::fileset::gather_current_files(&ip.get_root()).into_iter().for_each(|f| {
+            crate::util::filesystem::gather_current_files(&ip.get_root()).into_iter().for_each(|f| {
                 files.push(IpFileNode { file: f, ip: ip });
             })
         });
@@ -300,7 +300,7 @@ impl Plan {
         }
 
         // gather filesets
-        let current_files = crate::core::fileset::gather_current_files(&std::env::current_dir().unwrap());
+        let current_files = crate::util::filesystem::gather_current_files(&std::env::current_dir().unwrap());
         let current_ip_nodes = current_files
             .into_iter()
             .map(|f| { IpFileNode { file: f, ip: &target }}).collect();

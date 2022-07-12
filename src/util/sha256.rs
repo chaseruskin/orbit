@@ -10,7 +10,7 @@ use std::num::ParseIntError;
 use std::str::FromStr;
 use std::fmt::Display;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Sha256Hash {
     digest: [u32; 8]
 }

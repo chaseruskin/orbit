@@ -1,41 +1,6 @@
 use std::{str::FromStr, path::{PathBuf}};
 use toml_edit::Document;
-use crate::{util::{sha256::Sha256Hash, anyerror::{AnyError, Fault}}, core::{pkgid::PkgId, version::Version, config::FromToml}};
-
-/// Determines if a new .lock file needs to be generated.
-/// 
-/// Returning `true` signifies the .lock file is up-to-date. Assumes the function
-/// is called from the ip's root directory.
-/// 
-/// Conditions for re-solving:
-/// - Orbit.lock does not exist at root IP directory level
-/// - Orbit.lock is missing current IP's checksum
-/// - Orbit.lock has an outdated checksum
-pub fn is_locked(target: &PkgId, version: &Version, file: &str) -> bool {
-    let lock_path = PathBuf::from(file);
-    // check that the file exists
-    if lock_path.exists() == false || lock_path.is_file() == false {
-        return false
-    }
-
-    // look up the checksum in the .lock file to compare
-    let lock = match LockFile::from_file(&lock_path) {
-        Ok(l) => l,
-        Err(_) => return false,
-    };
-    // verify the ip is in the .lock file
-    let entry = match lock.get(target, version) {
-        Some(it) => it,
-        None => return false,
-    };
-    // compute the checksum on the current ip
-    let ip_files = crate::core::fileset::gather_current_files(&{ if let Some(p) = lock_path.parent() { p.to_path_buf() } else { PathBuf::from(".") }});
-    let checksum = crate::util::checksum::checksum(&ip_files);
-    println!("{}", checksum);
-    println!("{}", entry.get_sum());
-    // verify the checksums match
-    &checksum == entry.get_sum()
-}
+use crate::{util::{sha256::Sha256Hash, anyerror::{AnyError, Fault}, checksum::checksum}, core::{pkgid::PkgId, version::Version, config::FromToml, manifest::IpManifest}};
 
 #[derive(Debug)]
 pub struct LockFile(Vec<LockEntry>);
@@ -64,11 +29,19 @@ impl FromToml for LockFile {
 }
 
 impl LockFile {
-    pub fn from_file(file: &PathBuf) -> Result<Self, Fault> {
-        // open file
-        let contents = std::fs::read_to_string(&file)?;
-        // parse toml syntax
-        Ok(Self::from_toml(contents.parse::<Document>()?.as_table())?)
+    /// Loads a lockfile from the `root` path.
+    /// 
+    /// If the file does not exist, then an empty lock entry list is returned.
+    pub fn from_path(root: &PathBuf) -> Result<Self, Fault> {
+        let lock_file = root.join(IP_LOCK_FILE);
+        if lock_file.exists() == true {
+            // open file
+            let contents = std::fs::read_to_string(&lock_file)?;
+            // parse toml syntax
+            Ok(Self::from_toml(contents.parse::<Document>()?.as_table())?)
+        } else {
+            Ok(Self(Vec::new()))
+        }
     }
 
     pub fn get(&self, target: &PkgId, version: &Version) -> Option<&LockEntry> {
@@ -81,10 +54,25 @@ impl LockFile {
 }
 
 #[derive(Debug, PartialEq)]
+struct Source(String);
+
+#[derive(Debug, PartialEq)]
 pub struct LockEntry {
     name: PkgId,
     version: Version,
-    sum: Sha256Hash
+    sum: Sha256Hash,
+    source: Source,
+}
+
+impl From<IpManifest> for LockEntry {
+    fn from(ip: IpManifest) -> Self {
+        Self {
+            name: ip.get_pkgid().clone(), 
+            version: ip.get_version().clone(), 
+            sum: checksum(&crate::util::filesystem::gather_current_files(&ip.get_root())), 
+            source: Source(ip.get_repository().unwrap_or(&String::new()).to_string()),
+        }
+    }
 }
 
 impl LockEntry {
@@ -101,6 +89,7 @@ impl FromToml for LockEntry {
             name: PkgId::from_str(table.get("name").unwrap().as_str().unwrap())?,
             version: Version::from_str(table.get("version").unwrap().as_str().unwrap())?,
             sum: Sha256Hash::from_str(table.get("sum").unwrap().as_str().unwrap())?,
+            source: Source(table.get("source").unwrap().as_str().unwrap().to_owned()),
         })
     }
 }
@@ -135,14 +124,8 @@ source = "git.url2"
 
     #[test]
     fn check_lock() {
-        let file = "./test/data/projects/project-a/".to_owned() + IP_LOCK_FILE;
-        assert_eq!(is_locked(
-            &PkgId::new()
-                .vendor("ks-tech").unwrap()
-                .library("rary").unwrap()
-                .name("project-a").unwrap(), 
-            &Version::new().major(0).minor(2).patch(0),
-        &file), true);
+        let ip = IpManifest::from_path(&PathBuf::from("./test/data/projects/project-a/")).unwrap();
+        assert_eq!(ip.is_locked(), true);
     }
 }
 

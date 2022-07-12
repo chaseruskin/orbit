@@ -179,7 +179,7 @@ impl Get {
 
     /// Parses through the vhdl files and returns a desired entity struct.
     fn fetch_entity(iden: &Identifier, ip: &IpManifest) -> Result<symbol::Entity, Box<dyn std::error::Error>> {
-        let files = crate::core::fileset::gather_current_files(&ip.get_root());
+        let files = crate::util::filesystem::gather_current_files(&ip.get_root());
         for f in files {
             // lex and parse
             if crate::core::fileset::is_vhdl(&f) == true {

@@ -81,7 +81,7 @@ mod test {
 
     #[test]
     fn from_filesystem() {
-        let test_files = crate::core::fileset::gather_current_files(&std::path::PathBuf::from("./test/data/poems"));
+        let test_files = crate::util::filesystem::gather_current_files(&std::path::PathBuf::from("./test/data/poems"));
         println!("{:?}", test_files);
         let checksum = crate::util::checksum::checksum(&test_files);
         assert_eq!(checksum, sha256::Sha256Hash::from_u32s(

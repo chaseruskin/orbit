@@ -1,7 +1,4 @@
 use std::str::FromStr;
-use ignore::WalkBuilder;
-
-use super::resolver::lockfile;
 
 #[derive(Debug, PartialEq)]
 pub struct Fileset {
@@ -197,43 +194,6 @@ pub fn is_rtl(file: &str) -> bool {
 
     (p1.matches_with(file, match_opts) == true || p2.matches_with(file, match_opts) == true) && 
         tb1.matches_with(file, match_opts) == false && tb2.matches_with(file, match_opts) == false
-}
-
-pub const ORBIT_SUM_FILE: &str = ".orbit-checksum";
-
-/// Recursively walks the given `path` and ignores files defined in a .gitignore file.
-/// 
-/// Returns the resulting list of filepath strings. This function silently skips result errors
-/// while walking. The collected set of paths are also standardized to use forward slashes '/'.
-/// 
-/// Ignores ORBIT_SUM_FILE and the .git directory.
-pub fn gather_current_files(path: &std::path::PathBuf) -> Vec<String> {
-    let m = WalkBuilder::new(path)
-        .hidden(false)
-        .git_ignore(true)
-        .filter_entry(|p| {
-            match p.file_name().to_str().unwrap() {
-                ORBIT_SUM_FILE | ".git" | lockfile::IP_LOCK_FILE => false,
-                _ => true,
-            }
-        })
-        .build();
-    let mut files: Vec<String> = m.filter_map(|result| {
-        match result {
-            Ok(entry) => {
-                if entry.path().is_file() {
-                    // replace backslash \ with single forward slash /
-                    Some(entry.into_path().display().to_string().replace(r"\", "/"))
-                } else {
-                    None
-                }
-            },
-            Err(_) => None,
-        }
-    }).collect();
-    // sort the fileset for reproductibility purposes
-    files.sort();
-    files
 }
 
 #[cfg(test)]

@@ -1,7 +1,43 @@
 use fs_extra;
+use ignore::WalkBuilder;
 use std::ffi::OsStr;
 use std::path::{Path, Component};
 use home::home_dir;
+
+/// Recursively walks the given `path` and ignores files defined in a .gitignore file.
+/// 
+/// Returns the resulting list of filepath strings. This function silently skips result errors
+/// while walking. The collected set of paths are also standardized to use forward slashes '/'.
+/// 
+/// Ignores ORBIT_SUM_FILE and the .git directory.
+pub fn gather_current_files(path: &std::path::PathBuf) -> Vec<String> {
+    let m = WalkBuilder::new(path)
+        .hidden(false)
+        .git_ignore(true)
+        .filter_entry(|p| {
+            match p.file_name().to_str().unwrap() {
+                manifest::ORBIT_SUM_FILE | ".git" | lockfile::IP_LOCK_FILE => false,
+                _ => true,
+            }
+        })
+        .build();
+    let mut files: Vec<String> = m.filter_map(|result| {
+        match result {
+            Ok(entry) => {
+                if entry.path().is_file() {
+                    // replace backslash \ with single forward slash /
+                    Some(entry.into_path().display().to_string().replace(r"\", "/"))
+                } else {
+                    None
+                }
+            },
+            Err(_) => None,
+        }
+    }).collect();
+    // sort the fileset for reproductibility purposes
+    files.sort();
+    files
+}
 
 pub enum Unit {
     MegaBytes,
@@ -26,6 +62,9 @@ where P: AsRef<Path> {
 
 use std::path::PathBuf;
 use std::env;
+
+use crate::core::manifest;
+use crate::core::resolver::lockfile;
 
 /// Attempts to return the executable's path.
 pub fn get_exe_path() -> Result<PathBuf, Box::<dyn std::error::Error>> {

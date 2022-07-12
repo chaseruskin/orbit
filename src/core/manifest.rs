@@ -4,7 +4,9 @@ use std::path;
 use std::path::PathBuf;
 use std::error::Error;
 use crate::core::pkgid::PkgId;
+use crate::core::resolver::lockfile::{LockFile, IP_LOCK_FILE};
 use crate::util::anyerror::{AnyError, Fault};
+use crate::util::sha256::{Sha256Hash, self};
 use std::str::FromStr;
 use crate::core::version::Version;
 use crate::util::filesystem::normalize_path;
@@ -140,6 +142,7 @@ impl Manifest {
 
 pub const IP_MANIFEST_FILE: &str = "Orbit.toml";
 const DEPENDENCIES_KEY: &str = "dependencies";
+pub const ORBIT_SUM_FILE: &str = ".orbit-checksum";
 
 #[derive(Debug)]
 pub struct IpManifest{ 
@@ -353,7 +356,7 @@ impl IpManifest {
     /// If the manifest has an toml entry for `units`, it will return that list rather than go through files.
     pub fn collect_units(&self) -> Vec<PrimaryUnit> {
         // collect all files
-        let files = crate::core::fileset::gather_current_files(&self.get_manifest().get_path().parent().unwrap().to_path_buf());
+        let files = crate::util::filesystem::gather_current_files(&self.get_manifest().get_path().parent().unwrap().to_path_buf());
         crate::core::vhdl::primaryunit::collect_units(&files).into_iter().map(|e| e.0).collect()
     }
 
@@ -379,6 +382,54 @@ impl IpManifest {
                 path: path,
                 document: toml,
             },
+        }
+    }
+
+    pub fn compute_checksum(&self) -> Sha256Hash {
+        let cd = std::env::current_dir().unwrap();
+        std::env::set_current_dir(&self.get_root()).unwrap();
+        let ip_files = crate::util::filesystem::gather_current_files(&PathBuf::from("."));
+        let checksum = crate::util::checksum::checksum(&ip_files);
+        std::env::set_current_dir(&cd).unwrap();
+        checksum
+    }
+
+    /// Loads checksum from ORBIT_SUM_FILE (.orbit-checksum).
+    pub fn get_checksum_proof(&self, level: u8) -> Option<Sha256Hash> {
+        let sum_file = self.get_root().join(ORBIT_SUM_FILE);
+        if sum_file.exists() == false {
+            None
+        } else {
+            match std::fs::read_to_string(&sum_file) {
+                Ok(text) => {
+                    let mut sums = text.split_terminator('\n').skip(level.into());
+                    match sha256::Sha256Hash::from_str(&sums.next().expect("level was out of bounds")) {
+                        Ok(sha) => Some(sha),
+                        Err(_) => None,
+                    }
+                }
+                Err(_) => None,
+            }
+        }
+    }
+
+    /// Attempts to load the ip's computed checksum from lockfile (Orbit.lock.)
+    pub fn load_checksum_from_lock(&self) -> Option<Sha256Hash> {
+        let lock_path = self.get_root().join(IP_LOCK_FILE);
+        // check that the file exists
+        if lock_path.exists() == false || lock_path.is_file() == false {
+            return None
+        }
+
+        // look up the checksum in the .lock file to compare
+        let lock = match LockFile::from_path(&self.get_root()) {
+            Ok(l) => l,
+            Err(_) => return None,
+        };
+        // verify the ip is in the .lock file
+        match lock.get(self.get_pkgid(), self.get_version()) {
+            Some(it) => Some(it.get_sum().clone()),
+            None => None,
         }
     }
 
@@ -443,6 +494,27 @@ impl IpManifest {
         git2::Repository::init(&ip_man.get_root())?;
 
         Ok(ip_man)
+    }
+
+    
+    /// Determines if a new .lock file needs to be generated for the current ip.
+    /// 
+    /// Returning `true` signifies the .lock file is up-to-date. Assumes the function
+    /// is called from the ip's root directory.
+    /// 
+    /// Conditions for re-solving:
+    /// - Orbit.lock does not exist at root IP directory level
+    /// - Orbit.lock is missing current IP's checksum
+    /// - Orbit.lock has an outdated checksum
+    pub fn is_locked(&self) -> bool {
+        match self.load_checksum_from_lock() {
+            // verify the checksums match
+            Some(key) => {
+                println!("{} = {}", key, self.compute_checksum());
+                key == self.compute_checksum() 
+            },
+            None => false
+        }
     }
 
     pub fn get_pkgid(&self) -> &PkgId {

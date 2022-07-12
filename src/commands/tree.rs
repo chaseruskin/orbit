@@ -73,7 +73,7 @@ impl Command for Tree {
 impl Tree {
     fn run(&self, target: IpManifest, catalog: Catalog) -> Result<(), Box<dyn std::error::Error>> {
         // gather all files
-        let current_files: Vec<IpFileNode> = crate::core::fileset::gather_current_files(&std::env::current_dir().unwrap())
+        let current_files: Vec<IpFileNode> = crate::util::filesystem::gather_current_files(&std::env::current_dir().unwrap())
             .into_iter()
             .map(|f| IpFileNode::new(f, &target)).collect();
 

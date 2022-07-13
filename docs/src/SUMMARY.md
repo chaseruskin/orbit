@@ -21,6 +21,7 @@
 - [Topic Guide](./4_topic/0_topic.md)
     - [IP](./4_topic/1_ip.md)
     - [Orbit.toml](./4_topic/2_orbittoml.md)
+    - [Orbit.lock](./4_topic/5_orbitlock.md)
     - [Vendors](./4_topic/3_vendors.md)
     - [Templates](./4_topic/4_template.md)
 

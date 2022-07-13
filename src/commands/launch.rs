@@ -124,7 +124,7 @@ impl Command for Launch {
 
         // verify the repository's HEAD is up-to-date (git remote update)
         println!("info: updating git repository remotes...");
-        let extgit = ExtGit::new().command(None).path(c.get_ip_path().unwrap().clone());
+        let extgit = ExtGit::new(None).path(c.get_ip_path().unwrap().clone());
         extgit.remote_update()?;
 
         let b = git2::Branch::wrap(repo.head()?);

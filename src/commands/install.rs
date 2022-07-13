@@ -96,7 +96,8 @@ impl Command for Install {
         } else if let Some(url) = &self.git {
             // clone from remote repository
             let path = tempdir.path().to_path_buf();
-            ExtGit::new().command(None).clone(url, &path)?;
+            println!("info: fetching repository ...");
+            ExtGit::new(None).clone(url, &path)?;
             path
         } else if let Some(path) = &self.path {
             // traverse filesystem

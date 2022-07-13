@@ -72,7 +72,8 @@ impl Command for Plan {
                             // install
                             None => {
                                 let temp = tempdir()?.as_ref().to_path_buf();
-                                extgit::ExtGit::new().command(None).clone(entry.get_source(), &temp)?;
+                                println!("info: fetching {} repository ...", entry.get_name());
+                                extgit::ExtGit::new(None).clone(entry.get_source(), &temp)?;
                                 install::Install::install(&temp, &ver, c.get_cache_path(), true, catalog.get_store())?;
                             }
                         }
@@ -80,7 +81,8 @@ impl Command for Plan {
                     // install
                     None => {
                         let temp = tempdir()?.as_ref().to_path_buf();
-                        extgit::ExtGit::new().command(None).clone(entry.get_source(), &temp)?;
+                        println!("info: fetching {} repository ...", entry.get_name());
+                        extgit::ExtGit::new(None).clone(entry.get_source(), &temp)?;
                         install::Install::install(&temp, &ver, c.get_cache_path(), true, catalog.get_store())?;
                     },
                 }

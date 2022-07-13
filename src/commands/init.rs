@@ -91,7 +91,7 @@ impl Init {
 
         // clone if given a git url
         if let Some(url) = &self.repo {
-            ExtGit::new().command(None).clone(url, &ip_path)?;
+            ExtGit::new(None).clone(url, &ip_path)?;
         }
 
         // create a manifest at the ip path

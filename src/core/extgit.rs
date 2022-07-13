@@ -1,7 +1,5 @@
 use std::path::PathBuf;
 
-use crate::util::anyerror::AnyError;
-
 /// A series of git commands necessary to run through subprocesses rather than libgit2 bindings.
 pub struct ExtGit {
     command: String,
@@ -10,19 +8,13 @@ pub struct ExtGit {
 
 impl ExtGit {
     /// Creates an empty `ExtGit` struct.
-    pub fn new() -> Self {
+    /// 
+    /// By default, if `cmd` is `None` then `self.command` is set to "git".
+    pub fn new(cmd: Option<&str>) -> Self {
         Self {
-            command: String::new(),
+            command: cmd.unwrap_or("git").to_string(),
             root: PathBuf::new(),
         }
-    }
-
-    /// Sets the command for calling git through processes.
-    /// 
-    /// By `s` is `None`, the command assumes git is on path and is simply `git`.
-    pub fn command(mut self, s: Option<String>) -> Self {
-        self.command = s.unwrap_or("git".to_string());
-        self
     }
 
     /// Sets the directory from where to call `git`.
@@ -38,11 +30,14 @@ impl ExtGit {
     pub fn clone(&self, url: &str, dest: &std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         let tmp_path = tempfile::tempdir()?;
 
-        let mut proc = std::process::Command::new(&self.command).args(["clone", url]).current_dir(&tmp_path).spawn()?;
-        let exit_code = proc.wait()?;
-        match exit_code.code() {
-            Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { () },
-            None => return Err(AnyError(format!("terminated by signal")))?,
+        let proc = std::process::Command::new(&self.command)
+            .args(["clone", url])
+            .current_dir(&tmp_path)
+            .output()?;
+
+        match proc.status.code() {
+            Some(num) => if num != 0 { Err(ExtGitError::NonZeroCode(num, proc.stderr))? } else { () },
+            None => return Err(ExtGitError::SigTermination)?,
         };
         // create the directories
         std::fs::create_dir_all(&dest)?;
@@ -70,10 +65,13 @@ impl ExtGit {
     /// 
     /// Runs the command: `git remote update`.
     pub fn remote_update(&self) -> Result<(), Box<dyn std::error::Error>> {
-        let output = std::process::Command::new(&self.command).args(["remote", "update"]).current_dir(&self.root).output()?;
+        let output = std::process::Command::new(&self.command)
+            .args(["remote", "update"])
+            .current_dir(&self.root)
+            .output()?;
         match output.status.code() {
-            Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { () },
-            None => return Err(AnyError(format!("terminated by signal")))?,
+            Some(num) => if num != 0 { Err(ExtGitError::NonZeroCode(num, output.stderr))? } else { () },
+            None => return Err(ExtGitError::SigTermination)?,
         };
         Ok(())
     }
@@ -87,8 +85,8 @@ impl ExtGit {
             .current_dir(&self.root)
             .output()?; // hide output from reaching stdout by using .output()
         match output.status.code() {
-            Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { () },
-            None => return Err(AnyError(format!("terminated by signal")))?,
+            Some(num) => if num != 0 { Err(ExtGitError::NonZeroCode(num, output.stderr))? } else { () },
+            None => return Err(ExtGitError::SigTermination)?,
         };
         // push tags
         let output = std::process::Command::new(&self.command)
@@ -96,9 +94,27 @@ impl ExtGit {
             .current_dir(&self.root)
             .output()?;
         match output.status.code() {
-            Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { () },
-            None => return Err(AnyError(format!("terminated by signal")))?,
+            Some(num) => if num != 0 { Err(ExtGitError::NonZeroCode(num, output.stderr))? } else { () },
+            None => return Err(ExtGitError::SigTermination)?,
         };
         Ok(())
+    }
+}
+
+
+#[derive(Debug)]
+enum ExtGitError {
+    NonZeroCode(i32, Vec<u8>),
+    SigTermination,
+}
+
+impl std::error::Error for ExtGitError {}
+
+impl std::fmt::Display for ExtGitError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NonZeroCode(num, reason) => write!(f, "exited with error code: {} due to {}", num, String::from_utf8_lossy(reason)),
+            Self::SigTermination => write!(f, "terminated by signal"),
+        }
     }
 }

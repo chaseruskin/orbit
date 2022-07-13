@@ -18,6 +18,10 @@ impl PkgPart {
     pub fn to_normal(&self) -> PkgPart {
         PkgPart(self.0.replace('-', "_").to_lowercase())
     }
+
+    pub fn as_ref(&self) -> &str {
+        &self.0
+    }
 }
 
 impl AsRef<std::path::Path> for PkgPart {

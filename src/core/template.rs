@@ -1,12 +1,9 @@
 use crate::util::anyerror::Fault;
 use std::path::PathBuf;
-use std::collections::HashMap;
 use ignore;
 use ignore::overrides::OverrideBuilder;
 
-use super::config::{FromToml, FromTomlError};
-
-type VarLUT = HashMap<String, String>;
+use super::{config::{FromToml, FromTomlError}, variable::VariableTable};
 
 #[derive(Debug, PartialEq)]
 pub struct Template {
@@ -61,7 +58,7 @@ impl Template {
     /// Collects all paths to copy. Removes any paths that match with a
     /// pattern provided in the ignores list. Implicitly ignores `Orbit.toml`
     /// files and .git/ directories.
-    pub fn import(&self, dest: &PathBuf, vars: &VarLUT) -> Result<(), Fault> {
+    pub fn import(&self, dest: &PathBuf, vars: &VariableTable) -> Result<(), Fault> {
         std::env::set_current_dir(self.path())?;
         let mut overrides = OverrideBuilder::new(".");
         // add implicit ignores
@@ -180,7 +177,7 @@ impl TemplateFile {
     }
 
     /// Performs variable substitution on the file data
-    pub fn substitute(&self, code: &VarLUT) -> Result<(), Fault> {
+    pub fn substitute(&self, code: &VariableTable) -> Result<(), Fault> {
         // read the data
         let contents = std::fs::read_to_string(&self.0)?;
         // transform the data and write it to file
@@ -194,7 +191,7 @@ const R_VAR_DELIMITER: char = '}';
 
 /// Performs variable replacement on the given `text`, looking up variables in
 /// the `code` to swap with their values.
-fn substitute(text: String, code: &VarLUT) -> String {
+fn substitute(text: String, code: &VariableTable) -> String {
     let mut result = String::new();
     
     let mut chars = text.chars();
@@ -252,15 +249,14 @@ fn gather_variable<T: Iterator<Item=char>>(chars: &mut T, c0: char, c_n: char) -
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashMap;
     use super::*;
 
     /// Internal helper test `fn` to generate a sample code book for looking up variables.
-    fn create_code() -> HashMap<String, String> {
-        let mut code = HashMap::new();
-        code.insert("orbit.name".to_owned(), "gates".to_owned());
-        code.insert("orbit.library".to_owned(), "rary".to_owned());
-        code.insert("orbit.place".to_owned(), "bar".to_owned());
+    fn create_code() -> VariableTable {
+        let mut code = VariableTable::new();
+        code.add("orbit.name", "gates");
+        code.add("orbit.library", "rary");
+        code.add("orbit.place", "bar");
         code
     }
 

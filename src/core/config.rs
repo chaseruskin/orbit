@@ -1,5 +1,5 @@
 use toml_edit::{Document, ArrayOfTables, Item, Array, Value, Table, Formatted};
-use std::path::PathBuf;
+use std::{path::PathBuf, io::Write};
 use crate::util::{anyerror::{AnyError, Fault}, filesystem::normalize_path};
 
 pub trait FromToml {
@@ -86,7 +86,9 @@ impl Config {
         if file.exists() == false {
             // create all missing intermediate directories as well 
             std::fs::create_dir_all(file.parent().unwrap())?;
-            std::fs::File::create(&file)?;
+            let mut cfg = std::fs::File::create(&file)?;
+            // add header
+            cfg.write(CONFIG_HEADER.as_bytes())?;
         }
         let contents = std::fs::read_to_string(file)?;
         Ok(Self {
@@ -293,6 +295,8 @@ impl Config {
         Ok(values)
     }
 }
+
+const CONFIG_HEADER: &str = "To learn more about editing the configuration, see https://c-rus.github.io/orbit/5_reference/5_configuration.html#entries";
 
 #[derive(Debug)]
 pub enum ConfigError {

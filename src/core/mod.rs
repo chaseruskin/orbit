@@ -15,3 +15,4 @@ pub mod template;
 pub mod store;
 pub mod resolver;
 pub mod catalog;
+pub mod variable;

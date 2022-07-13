@@ -1,4 +1,4 @@
-use crate::util::environment::{EnvVar, Environment};
+use crate::util::environment::Environment;
 use crate::Command;
 use crate::FromCli;
 use crate::interface::cli::Cli;
@@ -29,9 +29,6 @@ impl FromCli for Build {
             args: cli.check_remainder()?,
         });
         command
-        // @TODO remember plugin name as env variable on plan command
-        // so it does not have to be re-entered by user (plugin becomes an option
-        // on command-line)
     }
 }
 
@@ -56,27 +53,11 @@ impl Command for Build {
             return Err(Box::new(AnyError(format!("no blueprint file to build from; consider running 'orbit plan'"))))
         }
 
-        let mut envs = Environment::new();
-
         // read config.toml for setting any env variables
-        if let Some(env_table) = c.get_config().get_doc().get("env") {
-            if let Some(table) = env_table.as_table() {
-                let mut table = table.iter();
-                while let Some((key, val)) = table.next() {
-                    if let Some(val) = val.as_str() {
-                        envs.insert(EnvVar::new().key(&format!("{}{}", environment::ORBIT_ENV_PREFIX, key)).value(val));
-                    } else {
-                        panic!("key 'env.{}' must have string value", key)
-                    }
-                }
-            } else {
-                panic!("key 'env' must be a table")
-            }
-        }
-        crate::util::environment::set_environment(envs);
+        Environment::from_config(c.get_config())?.initialize();
 
         // load from .env file
-        let envs = crate::util::environment::load_environment(&c.get_ip_path().unwrap().join(c.get_build_dir()))?;
+        let envs = Environment::from_env_file(&c.get_ip_path().unwrap().join(c.get_build_dir()))?;
 
         // check if ORBIT_PLUGIN was set and no command option was set
         let alias = match &self.alias {
@@ -100,7 +81,7 @@ impl Command for Build {
             None
         };
 
-        crate::util::environment::set_environment(envs);
+        envs.initialize();
 
         if plug.is_none() && self.command.is_none() {
             return Err(AnyError(format!("pass a plugin or a command for building")))?

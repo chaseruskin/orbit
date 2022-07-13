@@ -537,7 +537,7 @@ impl IpManifest {
         let mut ip_man = Self { 
             ip: FromToml::from_toml(&toml.as_table()).unwrap(),
             manifest: Manifest {
-                path: path,
+                path: path.join(IP_MANIFEST_FILE),
                 document: toml,
             },
         };
@@ -549,7 +549,7 @@ impl IpManifest {
         ip_man.get_manifest_mut().save()?;
 
         // create an empty git repository
-        git2::Repository::init(&ip_man.get_root())?;
+        git2::Repository::init(&path)?;
 
         Ok(ip_man)
     }

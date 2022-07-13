@@ -1,17 +1,18 @@
 use crate::Command;
 use crate::FromCli;
 use crate::core::manifest::IpManifest;
+use crate::core::variable::VariableTable;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Optional, Flag};
 use crate::interface::errors::CliError;
 use crate::core::pkgid;
 use crate::interface::arg::Arg;
 use crate::core::context::Context;
+use crate::util::environment::Environment;
 use std::error::Error;
 use crate::util::anyerror::AnyError;
 use crate::commands::search::Search;
 use crate::core::template::Template;
-use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
 pub struct New {
@@ -69,25 +70,17 @@ impl Command for New {
         };
 
         // load variables
-        let mut vars = HashMap::new();
-        vars.insert("orbit.ip.name".to_owned(), self.ip.get_name().to_string());
-        vars.insert("orbit.ip.library".to_owned(), self.ip.get_library().as_ref().unwrap().to_string());
-        vars.insert("orbit.ip.vendor".to_owned(), self.ip.get_library().as_ref().unwrap().to_string());
-        vars.insert("orbit.ip".to_owned(), self.ip.to_string());
-        vars.insert("orbit.user".to_owned(), context.get_config().get_as_str("core", "user")?.unwrap_or("").to_string());
-        vars.insert("orbit.date".to_owned(), format!("{:?}", { 
-            let dt = chrono::offset::Local::now(); 
-            let fmt: &str = context.get_config().get_as_str("core", "date-fmt")?.unwrap_or("%Y-%m-%d");
-            dt.format(fmt).to_string() 
-        })); 
-
+        let vars = VariableTable::new()
+            .load_context(&context)?
+            .load_pkgid(&self.ip)?
+            .load_environment(&Environment::from_config(context.get_config())?)?;
         // only pass in necessary variables from context
         self.run(root, context.force, template, &vars)
     }
 }
 
 impl New {
-    fn run(&self, root: &std::path::PathBuf, force: bool, template: Option<&Template>, lut: &HashMap<String, String>) -> Result<(), Box<dyn Error>> {
+    fn run(&self, root: &std::path::PathBuf, force: bool, template: Option<&Template>, lut: &VariableTable) -> Result<(), Box<dyn Error>> {
         // create ip stemming from ORBIT_PATH with default /VENDOR/LIBRARY/NAME
         let ip_path = if self.rel_path.is_none() {
             root.join(self.ip.get_vendor().as_ref().unwrap())

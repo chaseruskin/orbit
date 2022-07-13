@@ -1,3 +1,4 @@
+use crate::core::config::Config;
 use crate::util::anyerror::Fault;
 use std::hash::Hash;
 use std::io::Write;
@@ -56,6 +57,14 @@ impl EnvVar {
     pub fn get_value(&self) -> &str {
         &self.value
     }
+
+    /// Transforms the string format into a orbit variable format.
+    /// 
+    /// The rules are that the key's '_' become '.' and all letters become lowercase.
+    /// The value is left unmodified.
+    pub fn to_variable(&self) -> (String, String) {
+        (self.key.replace("_", ".").to_lowercase(), self.value.to_owned())
+    }
 }
 
 impl std::fmt::Debug for EnvVar {
@@ -70,35 +79,62 @@ impl std::fmt::Display for EnvVar {
     }
 }
 
-/// Sets environment variables from a '.env' file living at `root`.
-/// 
-/// Silently skips text lines that do not have proper delimiter `=` between key and value.
-pub fn load_environment(root: &std::path::PathBuf) -> Result<Environment, Fault> {
-    let mut env = Environment::new();
-    // read the .env file
-    let env_file = root.join(".env");
-    if env_file.exists() == true {
-        let mut file = std::fs::File::open(env_file).expect("failed to open .env file");
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).expect("failed to read contents");
-        // transform into environment variables
-        for line in contents.split_terminator('\n') {
-            let result = line.split_once('=');
-            // set env variables
-            if let Some((name, value)) = result {
-                env.insert(EnvVar::new().key(name).value(value));
+impl Environment {
+    /// Sets environment variables from a '.env' file living at `root`.
+    /// 
+    /// Silently skips text lines that do not have proper delimiter `=` between key and value.
+    pub fn from_env_file(root: &std::path::PathBuf) -> Result<Self, Fault> {
+        let mut env = Environment::new();
+        // read the .env file
+        let env_file = root.join(".env");
+        if env_file.exists() == true {
+            let mut file = std::fs::File::open(env_file).expect("failed to open .env file");
+            let mut contents = String::new();
+            file.read_to_string(&mut contents).expect("failed to read contents");
+            // transform into environment variables
+            for line in contents.split_terminator('\n') {
+                let result = line.split_once('=');
+                // set env variables
+                if let Some((name, value)) = result {
+                    env.insert(EnvVar::new().key(name).value(value));
+                }
             }
         }
+        Ok(env)
     }
-    Ok(env)
+
+    /// Loads an `Environment` struct from a `Config` document.
+    /// 
+    /// It searches the `[env]` table and collects all env variables.
+    pub fn from_config(config: &Config) -> Result<Self, Fault> {
+        let mut env = Environment::new();
+        // read config.toml for setting any env variables
+        if let Some(env_table) = config.get_doc().get("env") {
+            if let Some(table) = env_table.as_table() {
+                let mut table = table.iter();
+                while let Some((key, val)) = table.next() {
+                    if let Some(val) = val.as_str() {
+                        env.insert(EnvVar::new().key(&format!("{}{}", ORBIT_ENV_PREFIX, key)).value(val));
+                    } else {
+                        panic!("key 'env.{}' must have string value", key)
+                    }
+                }
+            } else {
+                panic!("key 'env' must be a table")
+            }
+        }
+        Ok(env)
+    }
+
+    /// Sets a set of environment variables, consuming the list.
+    pub fn initialize(self) -> () {
+        self.into_iter().for_each(|e| {
+            std::env::set_var(e.key, e.value)
+        });
+    }
 }
 
-/// Sets a set of environment variables, consuming the list.
-pub fn set_environment(envs: Environment) -> () {
-    envs.into_iter().for_each(|e| {
-        std::env::set_var(e.key, e.value)
-    });
-}
+
 
 /// Stores a list of `EnvVar` at root in a file named ".env".
 pub fn save_environment(env: &Environment, root: &std::path::PathBuf) -> Result<(), Fault> {
@@ -146,7 +182,6 @@ impl Environment {
         self.0.get(&EnvVar::new().key(key))
     }
 }
-
 
 pub const ORBIT_PLUGIN: &str = "ORBIT_PLUGIN";
 pub const ORBIT_TOP: &str = "ORBIT_TOP";

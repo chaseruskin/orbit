@@ -26,7 +26,7 @@ impl VariableTable {
             .unwrap_or("")
             .to_string());
         // date
-        self.0.insert("orbit.date".to_owned(), format!("{:?}", { 
+        self.0.insert("orbit.date".to_owned(), format!("{}", { 
             let dt = chrono::offset::Local::now(); 
             let fmt: &str = c.get_config().get_as_str("core", "date-fmt")?.unwrap_or("%Y-%m-%d");
             dt.format(fmt).to_string() 

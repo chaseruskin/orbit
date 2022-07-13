@@ -5,9 +5,10 @@
 - [Getting Started](./1_starting/0_starting.md)
     - [Installing](./1_starting/1_installing.md)
     - [Upgrading](./1_starting/2_upgrading.md)
+    - [First Steps](./2_tutorials/3_first_steps.md)
 
 - [Tutorials](./2_tutorials/0_tutorials.md)
-    - [First Steps](./2_tutorials/1_first.md)
+    - [First Project: Gates](./2_tutorials/1_first_project.md)
 
 - [User Guide](./3_user/0_user.md)
     - [Develop IP](./3_user/1_develop_ip.md)

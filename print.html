@@ -1155,15 +1155,18 @@ current ip's dependency table.</p>
 <p>This command will initialize an existing directory/project into a IP
 recognized by Orbit. By default, the current working directory will be
 initialized.</p>
-<p>If the <code>--git</code> option is combined with <code>--path</code>, then the project will be
-cloned to the specified path. This path must either not exist or be empty. </p>
+<p>The <code>--path</code> option can be combined with <code>--git</code>. Then the project will be
+cloned to the specified path. This path must either not exist or be empty.
+If it is provided as a relative path, then it will be appended to the 
+DEV_PATH. By default, <code>--git</code> will clone to the DEV_PATH under 
+<code>$ORBIT_DEV_PATH/&lt;vendor&gt;/&lt;library&gt;/&lt;name&gt;</code>.</p>
 <h2 id="options-9"><a class="header" href="#options-9"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;ip&gt;</code><br />
       The fully specified pkgid to name to the ip</p>
 <p><code>--git &lt;repo&gt;</code><br />
       A git repository to clone</p>
 <p><code>--path &lt;path&gt;</code><br />
-      A filesystem destination to initialize the ip</p>
+      A filesystem destination for a git repository initialization</p>
 <h2 id="examples-9"><a class="header" href="#examples-9"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit init ks-tech.rary.gates --git https://github.com/ks-tech/gates.git
 </code></pre>

@@ -83,8 +83,7 @@ impl Environment {
     /// Sets environment variables from a '.env' file living at `root`.
     /// 
     /// Silently skips text lines that do not have proper delimiter `=` between key and value.
-    pub fn from_env_file(root: &std::path::PathBuf) -> Result<Self, Fault> {
-        let mut env = Environment::new();
+    pub fn from_env_file(mut self, root: &std::path::PathBuf) -> Result<Self, Fault> {
         // read the .env file
         let env_file = root.join(".env");
         if env_file.exists() == true {
@@ -96,25 +95,24 @@ impl Environment {
                 let result = line.split_once('=');
                 // set env variables
                 if let Some((name, value)) = result {
-                    env.insert(EnvVar::new().key(name).value(value));
+                    self.insert(EnvVar::new().key(name).value(value));
                 }
             }
         }
-        Ok(env)
+        Ok(self)
     }
 
     /// Loads an `Environment` struct from a `Config` document.
     /// 
     /// It searches the `[env]` table and collects all env variables.
-    pub fn from_config(config: &Config) -> Result<Self, Fault> {
-        let mut env = Environment::new();
+    pub fn from_config(mut self, config: &Config) -> Result<Self, Fault> {
         // read config.toml for setting any env variables
         if let Some(env_table) = config.get_doc().get("env") {
             if let Some(table) = env_table.as_table() {
                 let mut table = table.iter();
                 while let Some((key, val)) = table.next() {
                     if let Some(val) = val.as_str() {
-                        env.insert(EnvVar::new().key(&format!("{}{}", ORBIT_ENV_PREFIX, key)).value(val));
+                        self.insert(EnvVar::new().key(&format!("{}{}", ORBIT_ENV_PREFIX, key)).value(val));
                     } else {
                         panic!("key 'env.{}' must have string value", key)
                     }
@@ -123,7 +121,7 @@ impl Environment {
                 panic!("key 'env' must be a table")
             }
         }
-        Ok(env)
+        Ok(self)
     }
 
     /// Sets a set of environment variables, consuming the list.

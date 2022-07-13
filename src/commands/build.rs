@@ -54,10 +54,13 @@ impl Command for Build {
         }
 
         // read config.toml for setting any env variables
-        Environment::from_config(c.get_config())?.initialize();
+        Environment::new()
+            .from_config(c.get_config())?
+            .initialize();
 
         // load from .env file
-        let envs = Environment::from_env_file(&c.get_ip_path().unwrap().join(c.get_build_dir()))?;
+        let envs = Environment::new()
+            .from_env_file(&c.get_ip_path().unwrap().join(c.get_build_dir()))?;
 
         // check if ORBIT_PLUGIN was set and no command option was set
         let alias = match &self.alias {

@@ -73,7 +73,7 @@ impl Command for New {
         let vars = VariableTable::new()
             .load_context(&context)?
             .load_pkgid(&self.ip)?
-            .load_environment(&Environment::from_config(context.get_config())?)?;
+            .load_environment(&Environment::new().from_config(context.get_config())?)?;
         // only pass in necessary variables from context
         self.run(root, context.force, template, &vars)
     }

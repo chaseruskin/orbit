@@ -9,7 +9,24 @@ pub struct Instance {
 }
 
 
-pub struct Architectures(Vec<super::symbol::Architecture>);
+#[derive(Debug)]
+pub struct Architectures<'a>(&'a Vec<super::symbol::Architecture>);
+
+impl<'a> Architectures<'a> {
+    pub fn new(archs: &'a Vec<super::symbol::Architecture>) -> Self {
+        Self(archs)
+    }
+}
+
+impl<'a> std::fmt::Display for Architectures<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Architectures:\n")?;
+        for arch in self.0 {
+            write!(f, "    {}\n", arch.name())?
+        }
+        Ok(())
+    }
+}
 
 
 // interface_signal_declaration ::=

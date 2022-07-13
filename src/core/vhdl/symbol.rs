@@ -44,6 +44,22 @@ impl VHDLSymbol {
         }
     }
 
+    /// Transforms `self` into architecture.
+    pub fn into_architecture(self) -> Option<Architecture> {
+        match self {
+            Self::Architecture(arch) => Some(arch),
+            _ => None,
+        }
+    }
+
+    /// Casts `self` to architecture.
+    pub fn as_architecture(&self) -> Option<&Architecture> {
+        match self {
+            Self::Architecture(arch) => Some(arch),
+            _ => None,
+        }
+    }
+
     pub fn add_refs(&mut self, refs: &mut Vec<ResReference>) {
         match self {
             Self::Entity(e) => e.refs.append(refs),
@@ -218,7 +234,11 @@ impl Entity {
     /// Note: This fn must be ran after linking entities and architectures in the
     /// current ip.
     pub fn get_architectures(&self) -> Architectures {
-        todo!()
+        Architectures::new(&self.architectures)
+    }
+
+    pub fn link_architecture(&mut self, arch: Architecture) -> () {
+        self.architectures.push(arch);
     }
 
     /// Parses an `Entity` primary design unit from the entity's identifier to
@@ -252,7 +272,7 @@ impl Entity {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Architecture {
     name: Identifier,
     owner: Identifier,

@@ -25,6 +25,10 @@ impl<T> Symbol<T> {
     pub fn take(self) -> T {
         self.stype
     }
+
+    pub fn as_ref(&self) -> &T {
+        &self.stype
+    }
 }
 
 #[derive(Debug, PartialEq)]

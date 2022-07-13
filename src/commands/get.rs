@@ -1,10 +1,11 @@
 use colored::Colorize;
-
 use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
 use crate::core::manifest::IpManifest;
+use crate::core::parser::Symbol;
 use crate::core::version::AnyVersion;
+use crate::core::vhdl::symbol::Architecture;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Flag, Optional};
 use crate::interface::errors::CliError;
@@ -142,6 +143,11 @@ impl Get {
             cur_ip.get_manifest_mut().save()?;
         }
 
+        // display architectures    
+        if self.architectures == true {
+            println!("{}", ent.get_architectures());
+        }
+
         // display component declaration
         if self.component == true {
             println!("{}", ent.into_component());
@@ -178,18 +184,42 @@ impl Get {
     }
 
     /// Parses through the vhdl files and returns a desired entity struct.
-    fn fetch_entity(iden: &Identifier, ip: &IpManifest) -> Result<symbol::Entity, Box<dyn std::error::Error>> {
+    fn fetch_entity(iden: &Identifier, ip: &IpManifest) -> Result<symbol::Entity, Fault> {
         let files = crate::util::filesystem::gather_current_files(&ip.get_root());
         for f in files {
             // lex and parse
             if crate::core::fileset::is_vhdl(&f) == true {
                 let text = std::fs::read_to_string(f)?;
-                let req_ent: Option<symbol::Entity> = vhdl::symbol::VHDLParser::parse(VHDLTokenizer::from_source_code(&text).into_tokens())
+                // store list of all architectures while iterating through all symbols
+                let mut architectures: Vec<Architecture> = Vec::new();
+                // pull all architectures
+                let units: Vec<Symbol<symbol::VHDLSymbol>> = vhdl::symbol::VHDLParser::parse(VHDLTokenizer::from_source_code(&text).into_tokens())
                     .into_iter()
-                    .filter_map(|r| if r.is_ok() { r.unwrap().take().into_entity() } else { None })
+                    .filter_map(|f| if f.is_ok() { 
+                        let unit = f.unwrap();
+                        match unit.as_ref().as_architecture() {
+                            Some(_) => {
+                                architectures.push(unit.take().into_architecture().unwrap());
+                                None 
+                            },
+                            None => Some(unit)
+                        }
+                    } else { None }
+                    ).collect();
+
+                // detect entity
+                let req_ent = units
+                    .into_iter() 
+                    .filter_map(|r| r.take().into_entity())
                     .find(|p| p.get_name() == iden);
-                if let Some(e) = req_ent {
-                    return Ok(e)
+
+                if let Some(mut entity) = req_ent {
+                    // find all architectures that match entity name/owner
+                    architectures.into_iter()
+                        .for_each(|arch| {
+                            if arch.entity() == entity.get_name() { entity.link_architecture(arch); }
+                        });
+                    return Ok(entity)
                 }
             }
         }

@@ -1,3 +1,5 @@
+use colored::Colorize;
+
 use crate::Command;
 use crate::FromCli;
 use crate::core::manifest::IpManifest;
@@ -37,6 +39,11 @@ impl Command for Init {
             return Err(Box::new(CliError::BadType(Arg::Positional(Positional::new("ip")), e.to_string())));
         }
 
+        // verify only --path can be used with --git
+        if self.rel_path.is_some() && self.repo.is_none() {
+            return Err(AnyError(format!("'{}' can only be used with '{}'", "--path".yellow(), "--git".yellow())))?
+        }
+
         // verify the pkgid is not taken
         let ips = Search::all_pkgid(
             (c.get_development_path().unwrap(), 
@@ -46,8 +53,27 @@ impl Command for Init {
             return Err(AnyError(format!("ip pkgid '{}' already taken", self.ip)))?
         }
 
-        let path = std::env::current_dir()?;
-        self.run(&path, c.force)
+        let path = match &self.repo {
+            None => std::env::current_dir()?,
+            Some(_) => {
+                match &self.rel_path {
+                    Some(extra_path) => {
+                        if extra_path.is_relative() {
+                            c.get_development_path().unwrap().join(extra_path)
+                        } else {
+                            extra_path.to_owned()
+                        }
+                    },
+                    None => {
+                        c.get_development_path().unwrap()
+                            .join(self.ip.get_vendor().as_ref().unwrap().as_ref())
+                            .join(self.ip.get_library().as_ref().unwrap().as_ref())
+                            .join(self.ip.get_name().as_ref())
+                    },
+                }
+            }
+        };
+        self.run(path, c.force)
     }
 }
 
@@ -55,17 +81,7 @@ impl Init {
     /// Initializes a project at an exising path.
     /// 
     /// Note the path must exist unless cloning from a git repository.
-    fn run(&self, root: &std::path::PathBuf, _: bool) -> Result<(), Box<dyn std::error::Error>> {
-        let ip_path = if let Some(extra_path) = &self.rel_path {
-            if extra_path.is_relative() {
-                root.join(extra_path)
-            } else {
-                root.to_path_buf()
-            }
-        } else {
-            root.to_path_buf()
-        };
-
+    fn run(&self, ip_path: std::path::PathBuf, _: bool) -> Result<(), Box<dyn std::error::Error>> {
         // the path must exist if not cloning from a repository
         if std::path::Path::exists(&ip_path) == false && self.repo.is_none() {
             return Err(AnyError(format!("failed to initialize ip because directory '{}' does not exist", ip_path.display())))?
@@ -91,11 +107,12 @@ impl Init {
 
         // clone if given a git url
         if let Some(url) = &self.repo {
-            ExtGit::new(None).clone(url, &ip_path)?;
+            ExtGit::new(None)
+                .clone(url, &ip_path)?;
         }
 
         // create a manifest at the ip path
-        let mut ip = IpManifest::from_path(&ip_path)?;
+        let mut ip = IpManifest::create(ip_path, &self.ip, false, true)?;
 
         // if there was a repository then add it as remote
         if let Some(url) = &self.repo {

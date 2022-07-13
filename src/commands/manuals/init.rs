@@ -11,8 +11,11 @@ DESCRIPTION
     recognized by Orbit. By default, the current working directory will be
     initialized.
       
-    If the --git option is combined with --path, then the project will be
-    cloned to the specified path. This path must either not exist or be empty. 
+    The --path option can be combined with --git. Then the project will be
+    cloned to the specified path. This path must either not exist or be empty.
+    If it is provided as a relative path, then it will be appended to the 
+    DEV_PATH. By default, --git will clone to the DEV_PATH under 
+    $ORBIT_DEV_PATH/<vendor>/<library>/<name>.
 
 OPTIONS
     <ip>  
@@ -22,7 +25,7 @@ OPTIONS
           A git repository to clone
      
     --path <path>  
-          A filesystem destination to initialize the ip
+          A filesystem destination for a git repository initialization
 
 EXAMPLES
     orbit init ks-tech.rary.gates --git https://github.com/ks-tech/gates.git

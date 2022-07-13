@@ -518,13 +518,13 @@ impl IpManifest {
     /// 
     /// A manifest is created one level within `path` as IP_MANIFEST_FILE.
     /// Assumes the `pkgid` is fully qualified. Saves the manifest to disk.
-    pub fn create(path: std::path::PathBuf, pkgid: &PkgId, force: bool) -> Result<Self, Box<dyn Error>> {
+    pub fn create(path: std::path::PathBuf, pkgid: &PkgId, force: bool, init: bool) -> Result<Self, Box<dyn Error>> {
         if std::path::Path::exists(&path) == true {
             // remove the entire existing directory
             if force == true {
                 std::fs::remove_dir_all(&path)?;
             // error if directories exist
-            } else {
+            } else if init == false {
                 return Err(Box::new(AnyError(format!("failed to create new ip because directory '{}' already exists", path.display()))))
             }
         }

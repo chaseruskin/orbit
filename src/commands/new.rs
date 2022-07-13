@@ -103,7 +103,7 @@ impl New {
             }
         }
 
-        let ip = IpManifest::create(ip_path, &self.ip, force)?;
+        let ip = IpManifest::create(ip_path, &self.ip, force, false)?;
         let root = ip.get_root();
 
         // import template if found

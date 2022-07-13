@@ -152,6 +152,16 @@ impl PkgId {
         }
     }
 
+    /// Checks if the `other` `PkgId` fits under current name.
+    /// 
+    /// Assumes `other` is fully qualified.
+    pub fn partial_match(&self, other: &PkgId) -> bool {
+        if self.name.as_ref().is_empty() == false && self.name != other.name { return false }
+        if self.library.is_some() && self.library.as_ref().unwrap().as_ref().is_empty() == false && self.library != other.library { return false }
+        if self.vendor.is_some() && self.vendor.as_ref().unwrap().as_ref().is_empty() == false && self.vendor != other.vendor { return false }
+        true
+    }
+
     pub fn into_hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         self.hash(&mut hasher);
@@ -565,4 +575,32 @@ mod test {
         let p1 = PkgId::from_str("rary.gates").unwrap();
         assert_eq!(p1.to_string(), "rary.gates");
     } 
+
+    #[test]
+    fn partial_match() {
+        let p1 = PkgId::from_str("ks-tech.rary.gates").unwrap();
+        // only by name
+        let p2 = PkgId::from_str("gates").unwrap();
+        assert_eq!(p2.partial_match(&p1), true);
+
+        // not equal
+        let p2 = PkgId::from_str("gate").unwrap();
+        assert_eq!(p2.partial_match(&p1), false);
+
+        // only by vendor
+        let p2 = PkgId::from_str("ks-tech..").unwrap();
+        assert_eq!(p2.partial_match(&p1), true);
+
+        // only by library
+        let p2 = PkgId::from_str(".rary.").unwrap();
+        assert_eq!(p2.partial_match(&p1), true);
+
+        // full pkgid
+        let p2 = PkgId::from_str("ks-tech.rary.gates").unwrap();
+        assert_eq!(p2.partial_match(&p1), true);
+
+        // vendor idenifier in wrong position
+        let p2 = PkgId::from_str("ks-tech").unwrap();
+        assert_eq!(p2.partial_match(&p1), false);
+    }
 }

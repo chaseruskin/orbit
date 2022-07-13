@@ -1,5 +1,6 @@
 use crate::Command;
 use crate::FromCli;
+use crate::core::catalog::Catalog;
 use crate::core::manifest::IpManifest;
 use crate::core::variable::VariableTable;
 use crate::interface::cli::Cli;
@@ -11,7 +12,6 @@ use crate::core::context::Context;
 use crate::util::environment::Environment;
 use std::error::Error;
 use crate::util::anyerror::AnyError;
-use crate::commands::search::Search;
 use crate::core::template::Template;
 
 #[derive(Debug, PartialEq)]
@@ -37,10 +37,10 @@ impl FromCli for New {
 
 impl Command for New {
     type Err = Box<dyn Error>;
-    fn exec(&self, context: &Context) -> Result<(), Self::Err> {
+    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // view templates
         if self.list == true {
-            println!("{}", Template::list_templates(&context.get_templates().values().into_iter().collect::<Vec<&Template>>()));
+            println!("{}", Template::list_templates(&c.get_templates().values().into_iter().collect::<Vec<&Template>>()));
             return Ok(())
         }
 
@@ -48,20 +48,22 @@ impl Command for New {
         if let Err(e) = self.ip.fully_qualified() {
             return Err(CliError::BadType(Arg::Positional(Positional::new("ip")), e.to_string()))?
         }
-        let root = context.get_development_path().unwrap();
+        let root = c.get_development_path().unwrap();
 
         // verify the pkgid is not taken
-        let ips = Search::all_pkgid(
-            (context.get_development_path().unwrap(), 
-            context.get_cache_path(), 
-            &context.get_vendor_path()))?;
-        if ips.contains_key(&self.ip) == true {
-            return Err(AnyError(format!("ip pkgid '{}' already taken", self.ip)))?
+        {
+            let catalog = Catalog::new()
+                .development(c.get_development_path().unwrap())?
+                .installations(c.get_cache_path())?
+                .available(&c.get_vendor_path())?;
+            if catalog.inner().contains_key(&self.ip) == true {
+                return Err(AnyError(format!("ip pkgid '{}' already taken", self.ip)))?
+            }
         }
 
         // verify the template exists
         let template = if let Some(alias) = &self.template {
-            match context.get_templates().get(alias) {
+            match c.get_templates().get(alias) {
                 Some(t) => Some(t),
                 None => return Err(AnyError(format!("template '{}' does not exist", alias)))?
             }
@@ -71,11 +73,11 @@ impl Command for New {
 
         // load variables
         let vars = VariableTable::new()
-            .load_context(&context)?
+            .load_context(&c)?
             .load_pkgid(&self.ip)?
-            .load_environment(&Environment::new().from_config(context.get_config())?)?;
+            .load_environment(&Environment::new().from_config(c.get_config())?)?;
         // only pass in necessary variables from context
-        self.run(root, context.force, template, &vars)
+        self.run(root, c.force, template, &vars)
     }
 }
 

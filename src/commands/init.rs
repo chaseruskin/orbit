@@ -2,6 +2,7 @@ use colored::Colorize;
 
 use crate::Command;
 use crate::FromCli;
+use crate::core::catalog::Catalog;
 use crate::core::manifest::IpManifest;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Optional, Arg};
@@ -9,7 +10,6 @@ use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::core::pkgid::PkgId;
-use crate::commands::search::Search;
 use crate::core::extgit::ExtGit;
 
 #[derive(Debug, PartialEq)]
@@ -45,12 +45,14 @@ impl Command for Init {
         }
 
         // verify the pkgid is not taken
-        let ips = Search::all_pkgid(
-            (c.get_development_path().unwrap(), 
-            c.get_cache_path(), 
-            &c.get_vendor_path()))?;
-        if ips.contains_key(&self.ip) == true {
-            return Err(AnyError(format!("ip pkgid '{}' already taken", self.ip)))?
+        {
+            let catalog = Catalog::new()
+                .development(c.get_development_path().unwrap())?
+                .installations(c.get_cache_path())?
+                .available(&c.get_vendor_path())?;
+            if catalog.inner().contains_key(&self.ip) == true {
+                return Err(AnyError(format!("ip pkgid '{}' already taken", self.ip)))?
+            }
         }
 
         let path = match &self.repo {

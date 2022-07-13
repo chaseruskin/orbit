@@ -2,6 +2,8 @@
 
 There are two main methods for getting orbit running on your system: downloading a precompiled binary or using cargo.
 
+> __Reminder:__ By installing and using Orbit, you accept usage under its GPL-3.0 license.
+
 ## 1. Using a precompiled binary
 
 1.  Visit Orbit's [releases](https://github.com/c-rus/orbit/releases) page on Github to find all official releases. 

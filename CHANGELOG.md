@@ -15,6 +15,27 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.3.7
+
+### Features
+- `orbit env` displays environment variabels from config.toml
+- supports variable replacement in fileset patterns during `orbit plan`
+- displays architectures with --architecture flag in `orbit get`
+- filters search results by accepted pkgid ip arg for `orbit search`
+
+### Fixes
+- resolves bugs when using --git and --path together for `orbit init`
+- enhances array formatting when appending to include key using `orbit config`
+
+### Documentation
+- adds blueprint topic page
+- adds entries to glossary
+- adds disclaimer about license
+- grammar revisions
+- adds orbit.lock page
+- begins first tutorials page
+
+
 ## 0.3.6
 
 ### Features

@@ -45,6 +45,8 @@ impl Command for Env {
             EnvVar::new().key("EDITOR").value(&std::env::var("EDITOR").unwrap_or(String::new())),
             EnvVar::new().key("NO_COLOR").value(&std::env::var("NO_COLOR").unwrap_or(String::new())),
         ]).from_config(c.get_config())?;
+
+        // @TODO check if in an ip to add those variables
         
         self.run(env)
     }

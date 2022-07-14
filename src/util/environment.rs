@@ -1,4 +1,5 @@
 use crate::core::config::Config;
+use crate::core::manifest::IpManifest;
 use crate::util::anyerror::Fault;
 use std::hash::Hash;
 use std::io::Write;
@@ -102,6 +103,16 @@ impl Environment {
         Ok(self)
     }
 
+    /// Loads environment variables from a target IpManifest.
+    pub fn from_ip(mut self, ip: &IpManifest) -> Result<Self, Fault> {
+        self.insert(EnvVar::new().key("ORBIT_IP").value(&ip.get_pkgid().to_string()));
+        self.insert(EnvVar::new().key("ORBIT_IP_NAME").value(&ip.get_pkgid().get_name().to_string()));
+        self.insert(EnvVar::new().key("ORBIT_IP_VENDOR").value(&ip.get_pkgid().get_vendor().as_ref().unwrap().to_string()));
+        self.insert(EnvVar::new().key("ORBIT_IP_LIBRARY").value(&ip.get_pkgid().get_library().as_ref().unwrap().to_string()));
+        self.insert(EnvVar::new().key("ORBIT_IP_VERSION").value(&ip.get_version().to_string()));
+        Ok(self)
+    }
+
     /// Loads an `Environment` struct from a `Config` document.
     /// 
     /// It searches the `[env]` table and collects all env variables.
@@ -160,6 +171,11 @@ impl Environment {
 
     pub fn insert(&mut self, var: EnvVar) -> bool {
         self.0.insert(var)
+    }
+
+    pub fn add(mut self, var: EnvVar) -> Self {
+        self.0.insert(var);
+        self
     }
 
     pub fn iter(&self) -> Iter<'_, EnvVar> {

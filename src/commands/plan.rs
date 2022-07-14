@@ -593,7 +593,7 @@ impl FromCli for Plan {
     }
 }
 
-const BLUEPRINT_FILE: &str = "blueprint.tsv";
+pub const BLUEPRINT_FILE: &str = "blueprint.tsv";
 
 #[derive(Debug)]
 pub enum PlanError {

@@ -1,3 +1,5 @@
+use crate::core::manifest::IpManifest;
+use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
 use crate::Command;
 use crate::FromCli;
@@ -53,14 +55,19 @@ impl Command for Build {
             return Err(Box::new(AnyError(format!("no blueprint file to build from; consider running 'orbit plan'"))))
         }
 
-        // read config.toml for setting any env variables
         Environment::new()
+            // read config.toml for setting any env variables
             .from_config(c.get_config())?
+            // read ip manifest for env variables
+            .from_ip(&IpManifest::from_path(c.get_ip_path().unwrap())?)?
+            .add(EnvVar::new().key("ORBIT_BLUEPRINT").value(BLUEPRINT_FILE))
             .initialize();
 
         // load from .env file
         let envs = Environment::new()
             .from_env_file(&c.get_ip_path().unwrap().join(c.get_build_dir()))?;
+
+        
 
         // check if ORBIT_PLUGIN was set and no command option was set
         let alias = match &self.alias {
@@ -95,6 +102,8 @@ impl Command for Build {
 }
 
 use std::process::Stdio;
+
+use super::plan::BLUEPRINT_FILE;
 
 impl Build {
     fn run(&self, plug: Option<&Plugin>) -> Result<(), Box<dyn std::error::Error>> {

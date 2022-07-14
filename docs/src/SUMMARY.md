@@ -24,6 +24,7 @@
     - [Orbit.lock](./4_topic/5_orbitlock.md)
     - [Vendors](./4_topic/3_vendors.md)
     - [Templates](./4_topic/4_template.md)
+    - [Blueprint](./4_topic/6_blueprint.md)
 
 - [Reference](./5_reference/0_reference.md)
     - [Packages](./5_reference/1_packages.md)

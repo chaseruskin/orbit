@@ -135,8 +135,10 @@ impl Config {
             .into_iter()
             .filter_map(|f| f.as_str())
             .map(|f| PathBuf::from(f))
-            // resolve paths with root (@TODO error on bad paths?)
+            // resolve paths with root
             .map(|f| if f.is_relative() { self.root.join(f) } else { f })
+            // currently silently ignore bad paths
+            .filter(|f| f.exists()) 
             .collect();
         for file in &config_paths {
             self.includes.push(Box::new(Config::from_path(file)?));
@@ -148,10 +150,17 @@ impl Config {
     /// 
     /// Automatically creates the new key if it does not exist.
     pub fn append_include(&mut self, item: &str) -> () {
+        // verify the key/entry exists (make empty array)
         if self.document.contains_key(INCLUDE_KEY) == false {
             self.document.insert(INCLUDE_KEY, Item::Value(Value::Array(Array::new())));
         }
         self.document[INCLUDE_KEY].as_array_mut().unwrap().push(item);
+        // before neat formatting of an item on every line
+        self.document[INCLUDE_KEY].as_array_mut().unwrap().iter_mut().for_each(|f| {
+            f.decor_mut().set_prefix("\n    ");
+            f.decor_mut().set_suffix("");
+        });
+        self.document[INCLUDE_KEY].as_array_mut().unwrap().set_trailing("\n");
     } 
 
     /// Sets a value for the given entry in the toml document.

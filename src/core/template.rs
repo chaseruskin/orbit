@@ -191,7 +191,7 @@ const R_VAR_DELIMITER: char = '}';
 
 /// Performs variable replacement on the given `text`, looking up variables in
 /// the `code` to swap with their values.
-fn substitute(text: String, code: &VariableTable) -> String {
+pub fn substitute(text: String, code: &VariableTable) -> String {
     let mut result = String::new();
     
     let mut chars = text.chars();

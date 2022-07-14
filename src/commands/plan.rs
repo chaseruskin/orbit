@@ -7,6 +7,8 @@ use crate::core::extgit;
 use crate::core::manifest::IpManifest;
 use crate::core::pkgid::PkgPart;
 use crate::core::resolver::lockfile::LockEntry;
+use crate::core::template;
+use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
 use crate::core::vhdl::symbol::ResReference;
 use crate::interface::cli::Cli;
@@ -469,34 +471,42 @@ impl Plan {
         // store data in blueprint TSV format
         let mut blueprint_data = String::new();
 
-        // use command-line set filesets
-        let current_files: Vec<String> = current_ip_nodes.into_iter().map(|f| f.file).collect();
-        if let Some(fsets) = &self.filesets {
-            for fset in fsets {
-                let data = fset.collect_files(&current_files);
-                for f in data {
-                    blueprint_data += &fset.to_blueprint_string(f);
+        let current_files: Vec<String> = current_ip_nodes.into_iter()
+            .map(|f| f.file)
+            .collect();
+
+        {
+            let mut vtable = VariableTable::new();
+            vtable.add("orbit.bench", &bench_name);
+            vtable.add("orbit.top", &top_name);
+    
+            // use command-line set filesets
+            if let Some(fsets) = &self.filesets {
+                for fset in fsets {
+                    // perform variable substitution
+                    let fset = Fileset::new()
+                        .name(fset.get_name())
+                        .pattern(&template::substitute(fset.get_pattern().to_string(), &vtable))?;
+                    // match files
+                    fset.collect_files(&current_files).into_iter().for_each(|f| {
+                        blueprint_data += &fset.to_blueprint_string(f);
+                    });
                 }
             }
-        }
-
-        // collect data for the given plugin
-        if let Some(p) = plug {
-            let fsets = p.filesets();
-            // define pattern matching settings
-            let match_opts = glob::MatchOptions {
-                case_sensitive: false,
-                require_literal_separator: false,
-                require_literal_leading_dot: false,
-            };
-            // iterate through every collected file (from the current ip)
-            for file in &current_files {
+    
+            // collect data for the given plugin
+            if let Some(p) = plug {
+                let fsets = p.filesets();
                 // check against every defined fileset for the plugin
                 for fset in fsets {
-                    if fset.get_pattern().matches_with(&file, match_opts) == true {
-                        // add to blueprint
-                        blueprint_data += &fset.to_blueprint_string(&file);
-                    }
+                    // perform variable substitution
+                    let fset = Fileset::new()
+                        .name(fset.get_name())
+                        .pattern(&template::substitute(fset.get_pattern().to_string(), &vtable))?;
+                    // match files
+                    fset.collect_files(&current_files).into_iter().for_each(|f| {
+                        blueprint_data += &fset.to_blueprint_string(&f);
+                    });
                 }
             }
         }

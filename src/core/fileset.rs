@@ -73,7 +73,7 @@ impl Fileset {
 
     /// Set the `Fileset` glob-style pattern.
     pub fn pattern(mut self, p: &str) -> Result<Self, glob::PatternError>{
-        self.pattern = glob::Pattern::new(p)?;
+        self.pattern = glob::Pattern::new(&("**/".to_owned() + p))?;
         Ok(self)
     }
 
@@ -93,7 +93,7 @@ impl Fileset {
         };
 
         files.iter().filter_map(|f| {
-            if self.pattern.matches_with(f, match_opts) == true {
+            if self.pattern.matches_with(&f, match_opts) == true {
                 Some(f)
             } else {
                 None

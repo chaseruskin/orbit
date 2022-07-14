@@ -1,4 +1,10 @@
 use std::path::PathBuf;
+use git2::build::CheckoutBuilder;
+use git2::Repository;
+
+use crate::util::anyerror::Fault;
+
+use super::version::Version;
 
 /// A series of git commands necessary to run through subprocesses rather than libgit2 bindings.
 pub struct ExtGit {
@@ -27,7 +33,7 @@ impl ExtGit {
     /// 
     /// This function uses the actual git command in order to bypass a lot of issues with using libgit with
     /// private repositories.
-    pub fn clone(&self, url: &str, dest: &std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn clone(&self, url: &str, dest: &std::path::PathBuf) -> Result<(), Fault> {
         let tmp_path = tempfile::tempdir()?;
 
         let proc = std::process::Command::new(&self.command)
@@ -64,7 +70,7 @@ impl ExtGit {
     /// Updates a remote repository is up-to-date at `self.root`.
     /// 
     /// Runs the command: `git remote update`.
-    pub fn remote_update(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn remote_update(&self) -> Result<(), Fault> {
         let output = std::process::Command::new(&self.command)
             .args(["remote", "update"])
             .current_dir(&self.root)
@@ -79,7 +85,7 @@ impl ExtGit {
     /// Pushes to remote repository at `path`.
     /// 
     /// Runs the command: `git push` and `git push --tags`.
-    pub fn push(&self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn push(&self) -> Result<(), Fault> {
         let output = std::process::Command::new(&self.command)
             .args(["push"])
             .current_dir(&self.root)
@@ -98,6 +104,17 @@ impl ExtGit {
             None => return Err(ExtGitError::SigTermination)?,
         };
         Ok(())
+    }
+
+    /// Takes a repository `repo` and forces the checkout to be at the `tag` commit.
+    pub fn checkout_tag_state(repo: &Repository, tag: &Version) -> Result<(), Fault> {
+        // get the tag
+        let obj = repo.revparse_single(tag.to_string().as_ref())?;
+        // configure checkout options
+        let mut cb = CheckoutBuilder::new();
+        cb.force();
+        // checkout code at the tag's marked timestamp
+        Ok(repo.checkout_tree(&obj, Some(&mut cb))?)
     }
 }
 

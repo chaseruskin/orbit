@@ -6,6 +6,7 @@ use crate::core::catalog::Catalog;
 use crate::core::extgit;
 use crate::core::manifest::IpManifest;
 use crate::core::pkgid::PkgPart;
+use crate::core::resolver::lockfile::LockEntry;
 use crate::core::version::AnyVersion;
 use crate::core::vhdl::symbol::ResReference;
 use crate::interface::cli::Cli;
@@ -15,8 +16,8 @@ use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::util::graphmap::GraphMap;
-use std::ffi::OsString;
 use std::io::Write;
+use std::path::PathBuf;
 use std::str::FromStr;
 use crate::core::fileset::Fileset;
 use crate::core::vhdl::token::Identifier;
@@ -36,6 +37,7 @@ pub struct Plan {
 
 impl Command for Plan {
     type Err = Box<dyn std::error::Error>;
+
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // display plugin list and exit
         if self.list == true {
@@ -70,51 +72,34 @@ impl Command for Plan {
                             // no action required
                             Some(_) => (),
                             // install
-                            None => {
-                                let temp = tempdir()?.as_ref().to_path_buf();
-                                println!("info: fetching {} repository ...", entry.get_name());
-                                extgit::ExtGit::new(None).clone(entry.get_source(), &temp)?;
-                                install::Install::install(&temp, &ver, c.get_cache_path(), true, catalog.get_store())?;
-                            }
+                            None => Plan::install_from_lock_entry(&entry, &ver, &catalog, &c.get_cache_path())?,
                         }
                     }
                     // install
-                    None => {
-                        let temp = tempdir()?.as_ref().to_path_buf();
-                        println!("info: fetching {} repository ...", entry.get_name());
-                        extgit::ExtGit::new(None).clone(entry.get_source(), &temp)?;
-                        install::Install::install(&temp, &ver, c.get_cache_path(), true, catalog.get_store())?;
-                    },
+                    None => Plan::install_from_lock_entry(&entry, &ver, &catalog, &c.get_cache_path())?,
                 }
             }
-            // recollect the installations for the catalog
+            // recollect the installations to update the catalog
             catalog = catalog.installations(c.get_cache_path())?;
         }
 
-        // set top-level environment variables (@TODO verify these are valid toplevels to be set!)
-        if let Some(t) = &self.top {
-            std::env::set_var(environment::ORBIT_TOP, t.to_string());
-        }
-        if let Some(b) = &self.bench {
-            std::env::set_var(environment::ORBIT_BENCH, b.to_string());
-        }
-        // determine the build directory
-        let b_dir = if let Some(dir) = &self.build_dir {
-            dir
-        } else {
-            c.get_build_dir()
-        };
-        // find plugin filesets
-        let plug_fset = if let Some(plug) = &self.plugin {
-            match c.get_plugins().get(plug) {
-                Some(p) => Some(p),
-                None => return Err(AnyError(format!("plugin '{}' does not exist", plug)))?,
-            }
-        } else {
-            None
+        // determine the build directory (command-line arg overrides configuration setting)
+        let b_dir = match &self.build_dir {
+            Some(dir) => dir,
+            None => c.get_build_dir(),
         };
 
-        self.run(target_ip, b_dir, plug_fset, catalog)
+        // locate the plugin
+        let plugin = match &self.plugin {
+            // verify the plugin alias matches
+            Some(alias) => match c.get_plugins().get(alias) {
+                Some(p) => Some(p),
+                None => return Err(AnyError(format!("plugin '{}' does not exist", alias)))?,
+            },
+            None => None,
+        };
+
+        self.run(target_ip, b_dir, plugin, catalog)
     }
 }
 
@@ -207,6 +192,15 @@ impl<'a> IpFileNode<'a> {
 }
 
 impl Plan {
+    /// Clones the ip entry's repository to a temporary directory and then installs the appropriate version `ver`.
+    fn install_from_lock_entry(entry: &LockEntry, ver: &AnyVersion, catalog: &Catalog, cache: &PathBuf) -> Result<(), Fault> {
+        let temp = tempdir()?.as_ref().to_path_buf();
+        println!("info: fetching {} repository ...", entry.get_name());
+        extgit::ExtGit::new(None).clone(entry.get_source(), &temp)?;
+        install::Install::install(&temp, &ver, cache, true, catalog.get_store())?;
+        Ok(())
+    }
+
     /// Constructs an entire list of dependencies required for the current design.
     /// 
     /// Errors if a dependency is not known in the user's catalog.
@@ -332,8 +326,9 @@ impl Plan {
         graph_map
     }
 
-    /// Runs the backend logic for creating a blueprint file (planning a design).
+    /// Performs the backend logic for creating a blueprint file (planning a design).
     fn run(&self, target: IpManifest, build_dir: &str, plug: Option<&Plugin>, catalog: Catalog) -> Result<(), Fault> {
+        // create the build path to know where to begin storing files
         let mut build_path = std::env::current_dir().unwrap();
         build_path.push(build_dir);
         
@@ -353,6 +348,7 @@ impl Plan {
         let mut natural_top: Option<usize> = None;
         let mut bench = if let Some(t) = &self.bench {
             match graph_map.get_node_by_key(&t) {
+                // verify the unit is an entity that is a testbench
                 Some(node) => {
                     if let Some(e) = node.as_ref().get_symbol().as_entity() {
                         if e.is_testbench() == false {
@@ -397,6 +393,7 @@ impl Plan {
         let top = if let Some(t) = &self.top {
             match graph_map.get_node_by_key(&t) {
                 Some(node) => {
+                    // verify the unit is an entity that is not a testbench
                     if let Some(e) = node.as_ref().get_symbol().as_entity() {
                         if e.is_testbench() == true {
                             return Err(PlanError::BadTop(t.clone()))?
@@ -428,7 +425,7 @@ impl Plan {
                 Self::detect_top(&graph_map, bench)?
             }
         };
-        // enable immutability
+        // set immutability
         let bench = bench;
 
         let top_name = graph_map.get_node_by_index(top).unwrap().as_ref().get_symbol().as_iden().unwrap().to_string();
@@ -438,6 +435,7 @@ impl Plan {
             String::new()
         };
 
+        // determine which point is the upmost root 
         let highest_point = match bench {
             Some(b) => b,
             None => top
@@ -454,11 +452,8 @@ impl Plan {
         let files = Self::assemble_all_files(build_list);
         let graph_map = Self::build_full_graph(&files);
 
-        // transfer identifier over the full graph
+        // transfer identifier over to the full graph
         let highest_point = graph_map.get_node_by_key(highest_iden).unwrap().index();
-
-        std::env::set_var(environment::ORBIT_TOP, &top_name);
-        std::env::set_var(environment::ORBIT_BENCH, &bench_name);
 
         // compute minimal topological ordering
         let min_order = graph_map.get_graph().minimal_topological_sort(highest_point);
@@ -480,7 +475,7 @@ impl Plan {
             for fset in fsets {
                 let data = fset.collect_files(&current_files);
                 for f in data {
-                    blueprint_data += &format!("{}\t{}\t{}\n", fset.get_name(), std::path::PathBuf::from(f).file_stem().unwrap_or(&OsString::new()).to_str().unwrap(), f);
+                    blueprint_data += &fset.to_blueprint_string(f);
                 }
             }
         }
@@ -506,12 +501,12 @@ impl Plan {
             }
         }
 
-        // collect in-order hdl data
+        // collect in-order HDL file list
         for file in file_order {
-            let lib = if current_files.contains(&file.file) == true {
-                PkgPart::from_str("work").unwrap()
-            } else {
-                file.get_library().to_normal() // converts '-' to '_' for VHDL rules compatibility
+            let lib = match current_files.contains(&file.file) {
+                true => PkgPart::from_str("work").unwrap(),
+                // converts '-' to '_' for VHDL rules compatibility
+                false => file.get_library().to_normal(),
             };
             if crate::core::fileset::is_rtl(&file.file) == true {
                 blueprint_data += &format!("VHDL-RTL\t{}\t{}\n", lib, file.file);
@@ -525,9 +520,9 @@ impl Plan {
             std::fs::create_dir_all(build_dir).expect("could not create build dir");
         }
 
-        // create the blueprint file
-        let blueprint_path = build_path.join("blueprint.tsv");
-        let mut blueprint_file = std::fs::File::create(&blueprint_path).expect("could not create blueprint.tsv file");
+        // [!] create the blueprint file
+        let blueprint_path = build_path.join(BLUEPRINT_FILE);
+        let mut blueprint_file = std::fs::File::create(&blueprint_path).expect("could not create blueprint file");
         // write the data
         blueprint_file.write_all(blueprint_data.as_bytes()).expect("failed to write data to blueprint");
         
@@ -587,6 +582,8 @@ impl FromCli for Plan {
         command
     }
 }
+
+const BLUEPRINT_FILE: &str = "blueprint.tsv";
 
 #[derive(Debug)]
 pub enum PlanError {

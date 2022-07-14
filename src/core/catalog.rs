@@ -1,7 +1,7 @@
 use std::{collections::HashMap, path::PathBuf};
-use crate::util::anyerror::Fault;
+use crate::util::{anyerror::Fault, sha256::Sha256Hash};
 
-use super::{pkgid::PkgId, manifest::IpManifest, version::{Version, AnyVersion}, store::Store};
+use super::{pkgid::{PkgId, PkgPart}, manifest::IpManifest, version::{Version, AnyVersion}, store::Store};
 
 #[derive(Debug)]
 pub struct Catalog<'a>(HashMap<PkgId, IpLevel>, Option<Store<'a>>, Option<&'a PathBuf>);
@@ -121,6 +121,12 @@ impl<'a> Catalog<'a> {
         self.detect(path, &IpLevel::add_dev)
     }
 
+    /// Uses the cache slot name to check if the directory exists.
+    pub fn is_cached_slot(&self, target: &IpManifest) -> bool {
+        let _cache_slot = CacheSlot::form(target.get_pkgid().get_name(), target.get_version(), &Sha256Hash::new());
+        todo!()
+    }
+
     /// Searches the `path` for IP installed.
     pub fn installations(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
         self.2 = Some(&path);
@@ -178,5 +184,26 @@ impl<'a> Catalog<'a> {
 
     pub fn get_cache_path(&self) -> &PathBuf {
         self.2.as_ref().unwrap()
+    }
+}
+
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct CacheSlot(String);
+
+impl CacheSlot {
+    pub fn new() -> Self {
+        Self(String::new())
+    }
+
+    /// Combines the various components of a cache slot name into a `CacheSlot`.
+    pub fn form(name: &PkgPart, version: &Version, checksum: &Sha256Hash) -> Self {
+        Self(format!("{}-{}-{}", name, version, checksum.to_string().get(0..10).unwrap()))
+    }
+}
+
+impl AsRef<str> for CacheSlot {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
     }
 }

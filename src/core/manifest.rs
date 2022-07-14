@@ -403,6 +403,9 @@ impl IpManifest {
         }
     }
 
+    /// Computes the checksum on the root of the IP.
+    /// 
+    /// Changes the current working directory to the root for consistent computation.
     pub fn compute_checksum(&self) -> Sha256Hash {
         let cd = std::env::current_dir().unwrap();
         std::env::set_current_dir(&self.get_root()).unwrap();
@@ -412,7 +415,13 @@ impl IpManifest {
         checksum
     }
 
-    /// Loads checksum from ORBIT_SUM_FILE (.orbit-checksum).
+    /// Gets the already calculated checksum from an installed IP from '.orbit-checksum'.
+    /// 
+    /// This fn can return the different levels of the check-sum, whether its the dynamic
+    /// SHA (level 1) or the original SHA (level 0).
+    /// 
+    /// Returns `None` if the file does not exist, is unable to read into a string, or
+    /// if the sha cannot be parsed.
     pub fn get_checksum_proof(&self, level: u8) -> Option<Sha256Hash> {
         let sum_file = self.get_root().join(ORBIT_SUM_FILE);
         if sum_file.exists() == false {

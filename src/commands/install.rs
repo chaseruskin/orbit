@@ -1,5 +1,6 @@
 use crate::Command;
 use crate::FromCli;
+use crate::core::catalog::CacheSlot;
 use crate::core::catalog::Catalog;
 use crate::core::manifest;
 use crate::core::manifest::IpManifest;
@@ -36,7 +37,6 @@ impl FromCli for Install {
 
 use colored::Colorize;
 use git2::Repository;
-use git2::build::CheckoutBuilder;
 use tempfile::tempdir;
 use crate::core::store::Store;
 use std::path::PathBuf;
@@ -129,25 +129,6 @@ fn gather_version_tags(repo: &Repository) -> Result<Vec<Version>, Box<dyn std::e
 }
 
 impl Install {
-    /// Gets the already calculated checksum from an installed IP from '.orbit-checksum'.
-    /// 
-    /// This fn can return the different levels of the check-sum, whether its the dynamic
-    /// SHA (level 1) or the original SHA (level 0).
-    /// 
-    /// Returns `None` if the file does not exist, is unable to read into a string, or
-    /// if the sha cannot be parsed.
-
-
-    fn checkout_tag_state(repo: &Repository, tag: &Version) -> Result<(), Fault> {
-        // get the tag
-        let obj = repo.revparse_single(tag.to_string().as_ref())?;
-        // configure checkout options
-        let mut cb = CheckoutBuilder::new();
-        cb.force();
-        // checkout code at the tag's marked timestamp
-        Ok(repo.checkout_tree(&obj, Some(&mut cb))?)
-    }
-
     /// Installs the `ip` with particular partial `version` to the `cache_root`.
     /// It will reinstall if it finds the original installation has a mismatching checksum.
     /// 
@@ -161,7 +142,7 @@ impl Install {
         let version = version::get_target_version(&version, &version_space)?;
 
         println!("detected version {}", version);
-        Self::checkout_tag_state(&repo, &version)?;
+        ExtGit::checkout_tag_state(&repo, &version)?;
 
         // make an ip manifest
         let ip = IpManifest::from_path(installation_path)?;
@@ -175,7 +156,7 @@ impl Install {
         };
 
         let repo = Repository::open(&temp)?;
-        Self::checkout_tag_state(&repo, &version)?;
+        ExtGit::checkout_tag_state(&repo, &version)?;
     
         // perform sha256 on the directory after collecting all files
         std::env::set_current_dir(&temp)?;
@@ -187,8 +168,8 @@ impl Install {
         println!("checksum: {}", checksum);
 
         // use checksum to create new directory slot
-        let cache_slot_name = format!("{}-{}-{}", target.get_name(), version, checksum.to_string().get(0..10).unwrap());
-        let cache_slot = cache_root.join(&cache_slot_name);
+        let cache_slot_name = CacheSlot::form(target.get_name(), &version, &checksum);
+        let cache_slot = cache_root.join(&cache_slot_name.as_ref());
         if std::path::Path::exists(&cache_slot) == true {
             // check if we should proceed with force regardless if the installation is valid
             if force == true {

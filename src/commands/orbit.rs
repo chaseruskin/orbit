@@ -7,6 +7,7 @@ use crate::util::environment;
 use crate::util::prompt;
 use crate::core::context::Context;
 use crate::util::sha256::Sha256Hash;
+use std::env;
 
 #[derive(Debug, PartialEq)]
 pub struct Orbit {
@@ -23,9 +24,6 @@ impl Command for Orbit {
         self.run(context)
     }
 }
-
-use reqwest;
-use std::env;
 
 impl Orbit {
     fn run(&self, _: &Context) -> Result<(), Box<dyn std::error::Error>> {
@@ -88,6 +86,7 @@ use crate::commands::init::Init;
 use crate::commands::probe::Probe;
 use crate::commands::env::Env;
 use crate::commands::config::Config;
+use crate::commands::uninstall::Uninstall;
 
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
@@ -105,6 +104,7 @@ enum OrbitSubcommand {
     Probe(Probe),
     Env(Env),
     Config(Config),
+    Uninstall(Uninstall),
 }
 
 impl FromCli for OrbitSubcommand {
@@ -125,6 +125,7 @@ impl FromCli for OrbitSubcommand {
             "b",
             "env",
             "config",
+            "uninstall",
         ])?.as_ref() {
             "get" => Ok(OrbitSubcommand::Get(Get::from_cli(cli)?)),
             "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
@@ -140,6 +141,7 @@ impl FromCli for OrbitSubcommand {
             "probe" => Ok(OrbitSubcommand::Probe(Probe::from_cli(cli)?)),
             "env" => Ok(OrbitSubcommand::Env(Env::from_cli(cli)?)),
             "config" => Ok(OrbitSubcommand::Config(Config::from_cli(cli)?)),
+            "uninstall" => Ok(OrbitSubcommand::Uninstall(Uninstall::from_cli(cli)?)),
             _ => panic!("an unimplemented command was passed through!")
         }
     }
@@ -163,6 +165,7 @@ impl Command for OrbitSubcommand {
             OrbitSubcommand::Probe(c) => c.exec(context),
             OrbitSubcommand::Env(c) => c.exec(context),
             OrbitSubcommand::Config(c) => c.exec(context),
+            OrbitSubcommand::Uninstall(c) => c.exec(context),
         }
     }
 }
@@ -190,6 +193,7 @@ Commands:
     install         store an immutable reference to an ip
     env             print Orbit environment information
     config          modify configuration values
+    uninstall       remove an ip from the catalog
 
 Options:
     --version       print version information and exit
@@ -200,6 +204,7 @@ Options:
 Use 'orbit help <command>' for more information about a command.
 ";
 
+use reqwest;
 use crate::core::version;
 use crate::util::sha256;
 use std::str::FromStr;

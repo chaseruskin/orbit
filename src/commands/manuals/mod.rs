@@ -12,3 +12,4 @@ pub mod init;
 pub mod probe;
 pub mod env;
 pub mod config;
+pub mod uninstall;

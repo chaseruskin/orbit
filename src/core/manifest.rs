@@ -403,6 +403,12 @@ impl IpManifest {
         }
     }
 
+    /// Deletes the project and its files found at the root path.
+    pub fn remove(&self) -> Result<(), Fault> {
+        std::fs::remove_dir_all(self.get_root())?;
+        Ok(())
+    }
+
     /// Computes the checksum on the root of the IP.
     /// 
     /// Changes the current working directory to the root for consistent computation.

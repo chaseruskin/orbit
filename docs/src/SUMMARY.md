@@ -46,5 +46,6 @@
     - [orbit probe](./6_commands/11_probe.md)
     - [orbit env](./6_commands/12_env.md)
     - [orbit config](./6_commands/13_config.md)
-
+    - [orbit uninstall](./6_commands/14_uninstall.md)
+    
 - [Appendix: Glossary](./glossary.md)

@@ -27,6 +27,7 @@ enum Topic {
     Probe,
     Env,
     Config,
+    Uninstall,
 }
 
 impl std::str::FromStr for Topic {
@@ -46,6 +47,7 @@ impl std::str::FromStr for Topic {
             "init" => Self::Init,
             "probe" => Self::Probe,
             "config" => Self::Config,
+            "uninstall" => Self::Uninstall,
             _ => return Err(AnyError(format!("topic '{}' not found", s)))
         })
     }
@@ -69,6 +71,7 @@ impl Topic {
             Install => manuals::install::MANUAL,
             Init => manuals::init::MANUAL,
             Config => manuals::config::MANUAL,
+            Uninstall => manuals::uninstall::MANUAL,
         }
     }
 }

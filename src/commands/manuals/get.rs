@@ -24,6 +24,9 @@ OPTIONS
     <entity-path>  
           The pkgid and entity identifier to request [pkgid:]<entity>
      
+    --ver, -v <version>  
+          Version of ip to fetch
+     
     --component, -c  
           Display the component declaration
      

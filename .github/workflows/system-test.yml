@@ -17,12 +17,12 @@ jobs:
     - name: Download package
       uses: actions/download-artifact@v3
       with:
-        name: orbit-${{ inputs.version }}-x86_64-linux.zip
+        name: orbit-${{ inputs.version }}-x86_64-linux
 
     - name: Download checksums
       uses: actions/download-artifact@v3
       with:
-        name: orbit-${{ inputs.version }}-checksums.txt
+        name: orbit-${{ inputs.version }}-checksums
 
     - name: Verify contents
       run: |

@@ -51,7 +51,7 @@ Collect filesets defined for a plugin and write to a blueprint file:
 $ orbit plan --plugin <alias>
 ```
 
-A build directory is created and along with a blueprint.tsv file. The build directory changes frequently and is not to be edited by the user.
+A build directory is created and along with a blueprint.tsv file. The build directory changes frequently and is not to be checked into version control and should not be edited by the user.
 
 ## Building a design
 
@@ -59,5 +59,5 @@ Orbit allows you to configure and run customized workflows through plugins.
 
 Run a plugin and pass additional arguments to the plugin's command:
 ```
-$ orbit b --plugin <alias> -- [args]...
+$ orbit build --plugin <alias> -- [args]...
 ```

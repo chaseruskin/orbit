@@ -15,6 +15,18 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.3.10
+
+### Features
+- adds `orbit uninstall` command to remove ip from catalog (development and installations)
+- adds `--name` option to `orbit get` in setting the HDL instance's identifier
+
+### Fixes
+- verifies `--name` can only be paired with `--instance` on `orbit get`
+
+### Documentation
+- adds content to user guide pages
+
 ## 0.3.9
 
 ### Fixes

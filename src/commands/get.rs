@@ -88,7 +88,12 @@ use crate::core::vhdl::token::VHDLTokenizer;
 
 impl Command for Get {
     type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {    
+    fn exec(&self, c: &Context) -> Result<(), Self::Err> {  
+        // --name can only be used with --instance is set
+        if self.name.is_some() && self.instance == false {
+            return Err(AnyError(format!("'{}' can only be used with '{}'", "--name".yellow(), "--instance".yellow())))?
+        }
+
         // must be in an IP if omitting the pkgid
         if self.entity_path.ip.is_none() {
             c.goto_ip_path()?;

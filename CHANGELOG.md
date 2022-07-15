@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.3.8
+
+### Changes
+- adds computed and expected checksums during a failed upgrade with `--upgrade`
+
 ## 0.3.7
 
 ### Features

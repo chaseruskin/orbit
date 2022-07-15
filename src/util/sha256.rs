@@ -336,6 +336,14 @@ An interview.".as_bytes()),
     }
 
     #[test]
+    fn package_zip2() {
+        let body_bytes = std::fs::read("./test/data/archive2.zip").unwrap();
+        let sum = compute_sha256(&body_bytes);
+        println!("{}", sum.to_string());
+        assert_eq!(sum, Sha256Hash::from_str("cc8059fc610a3212cd23f48a1d9b709be8ab61ae1c9563dd4598e38e80bf3385").unwrap())
+    }
+
+    #[test]
     fn str_repr() {
         assert_eq!(
             compute_sha256(&[]).to_string(), 

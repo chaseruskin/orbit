@@ -6,6 +6,7 @@ use crate::interface::errors::CliError;
 use crate::util::environment;
 use crate::util::prompt;
 use crate::core::context::Context;
+use crate::util::sha256::Sha256Hash;
 
 #[derive(Debug, PartialEq)]
 pub struct Orbit {
@@ -313,7 +314,7 @@ impl Orbit {
         // verify the checksums match
         match sum == cert {
             true => println!("info: verified download"),
-            false =>  return Err(Box::new(UpgradeError::BadChecksum))?,
+            false =>  return Err(Box::new(UpgradeError::BadChecksum(sum, cert)))?,
         };
 
         // unzip the bytes and put file in temporary file
@@ -351,7 +352,7 @@ enum UpgradeError {
     FailedConnection(String, reqwest::StatusCode),
     FailedDownload(String, reqwest::StatusCode),
     NoReleasesFound,
-    BadChecksum,
+    BadChecksum(Sha256Hash, Sha256Hash),
     MissingExe,
 }
 
@@ -361,7 +362,7 @@ impl std::fmt::Display for UpgradeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
         match self {
             Self::MissingExe => write!(f, "failed to find the binary in the downloaded package"),
-            Self::BadChecksum => write!(f, "checksums did not match, please try again"),
+            Self::BadChecksum(computed, ideal) => write!(f, "checksums did not match, please try again\n\ncomputed: {}\nexpected: {}", computed, ideal),
             Self::FailedConnection(url, status) => write!(f, "connection failed\n\nurl: {}\nstatus: {}", url, status),
             Self::FailedDownload(url, status) => write!(f, "download failed\n\nurl: {}\nstatus: {}", url, status),
             Self::UnsupportedTarget(t) => write!(f, "no pre-compiled binaries exist for the current target {}", t),

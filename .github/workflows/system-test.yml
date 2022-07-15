@@ -29,8 +29,8 @@ jobs:
 
     - name: Install Orbit
       run: |
-        unzip -d ./orbit ./orbit-${{ inputs.version }}-x86_64-linux.zip
-        cp ./orbit/bin/orbit /usr/local/bin
+        unzip ./orbit-${{ inputs.version }}-x86_64-linux.zip
+        cp ./orbit-${{ inputs.version }}-x86_64-linux/bin/orbit /usr/local/bin
 
     - name: Test Orbit
       run: orbit --version

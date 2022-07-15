@@ -5,6 +5,7 @@ use crate::core::catalog::Catalog;
 use crate::core::manifest::IpManifest;
 use crate::core::parser::Symbol;
 use crate::core::version::AnyVersion;
+use crate::core::version::Version;
 use crate::core::vhdl::symbol::Architecture;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Flag, Optional};
@@ -59,6 +60,7 @@ pub struct Get {
     version: Option<AnyVersion>,
     info: bool,
     peek: bool,
+    name: Option<Identifier>,
 }
 
 impl FromCli for Get {
@@ -72,6 +74,7 @@ impl FromCli for Get {
             version: cli.check_option(Optional::new("ver").switch('v'))?,
             info: cli.check_flag(Flag::new("info"))?,
             peek: cli.check_flag(Flag::new("peek"))?,
+            name: cli.check_option(Optional::new("name").value("identifier"))?,
             entity_path: cli.require_positional(Positional::new("entity"))?,
         });
         command
@@ -135,7 +138,10 @@ impl Command for Get {
 impl Get {
     fn run(&self, ip: &IpManifest, is_self: bool, current_ip: Option<IpManifest>) -> Result<(), Fault> {
         // collect all hdl files and parse them
-        let ent = Self::fetch_entity(&self.entity_path.entity, &ip)?;
+        let ent = match Self::fetch_entity(&self.entity_path.entity, &ip) {
+            Ok(r) => r,
+            Err(e) => return Err(GetError::SuggestProbe(e.to_string(), ip.get_pkgid().clone(), self.version.as_ref().unwrap_or(&AnyVersion::Latest).clone()))?
+        };
 
         // add to dependency list if within a ip
         if let Some(mut cur_ip) = current_ip {
@@ -177,7 +183,11 @@ impl Get {
 
         // display instantiation code
         if self.instance == true {
-            println!("{}", ent.into_instance("uX", lib));
+            let name = match &self.name {
+                Some(iden) => iden.to_string(),
+                None => "uX".to_string(),
+            };
+            println!("{}", ent.into_instance(&name, lib));
         }
 
         Ok(())
@@ -223,7 +233,28 @@ impl Get {
                 }
             }
         }
-        Err(AnyError(format!("entity '{}' is not found in ip '{}'", iden, ip.get_pkgid())))?
+        Err(GetError::EntityNotFound(iden.clone(), ip.get_pkgid().clone(), ip.get_version().clone()))?
+    }
+}
+
+#[derive(Debug)]
+pub enum GetError {
+    EntityNotFound(Identifier, PkgId, Version),
+    SuggestProbe(String, PkgId, AnyVersion),
+}
+
+impl std::error::Error for GetError {}
+
+impl std::fmt::Display for GetError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::EntityNotFound(ent, pkg, ver) => {
+                write!(f, "entity '{0}' is not found in ip '{1}' under version '{2}'", ent, pkg, ver)
+            },
+            Self::SuggestProbe(err, pkg, ver) => {
+                write!(f, "{}\n\nTry `orbit probe {1} -v {2} --units` to see a list of primary design units", err, pkg, ver)
+            },
+        }
     }
 }
 
@@ -244,6 +275,7 @@ Options:
     --info              access code file's header comment
     --architecture, -a  print available architectures
     --peek              do not add the ip to the dependency table
+    --name <identifier> specific instance identifier
 
 Use 'orbit help get' to learn more about the command.
 ";

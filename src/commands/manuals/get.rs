@@ -41,6 +41,9 @@ OPTIONS
      
     --peek
           Do not add the target ip to the current dependency table
+     
+    --name <identifier>
+          Specific instance identifier
 
 EXAMPLES
     orbit get ks-tech.rary.gates:nor_gate -csi

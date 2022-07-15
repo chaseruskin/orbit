@@ -47,6 +47,9 @@ current ip's dependency table.
  
 `--peek`
       Do not add the target ip to the current dependency table
+ 
+`--name <identifier>`
+      Specific instance identifier
 
 ## __EXAMPLES__
 

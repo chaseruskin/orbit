@@ -305,7 +305,7 @@ impl Config {
     }
 }
 
-const CONFIG_HEADER: &str = "To learn more about editing the configuration, see https://c-rus.github.io/orbit/5_reference/5_configuration.html#entries";
+const CONFIG_HEADER: &str = "# To learn more about editing the configuration, see https://c-rus.github.io/orbit/5_reference/5_configuration.html#entries";
 
 #[derive(Debug)]
 pub enum ConfigError {

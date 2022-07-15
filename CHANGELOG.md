@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.3.9
+
+### Fixes
+- properly writes toml comment to initial config.toml
+
 ## 0.3.8
 
 ### Changes
@@ -39,7 +44,6 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - grammar revisions
 - adds orbit.lock page
 - begins first tutorials page
-
 
 ## 0.3.6
 

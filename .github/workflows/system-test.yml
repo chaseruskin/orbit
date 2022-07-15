@@ -25,9 +25,7 @@ jobs:
         name: orbit-${{ inputs.version }}-checksums
 
     - name: Verify contents
-      run: |
-        chmod +x ./tools/sumcheck.bash
-        ./tools/sumcheck.bash ${{ inputs.version }} x86_64-linux
+      run: grep $(sha256sum orbit-${{ inputs.version }}-x86_64-linux.zip) orbit-${{ inputs.version }}-checksums.txt
 
     - name: Install Orbit
       run: |

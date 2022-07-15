@@ -1,0 +1,38 @@
+name: system-test
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version released'
+        required: true
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Fetch repository
+      uses: actions/checkout@v2
+
+    - name: Download package
+      uses: actions/download-artifact@v3
+      with:
+        name: orbit-${{ inputs.version }}-x86_64-linux.zip
+
+    - name: Download checksums
+      uses: actions/download-artifact@v3
+      with:
+        name: orbit-${{ inputs.version }}-checksums.txt
+
+    - name: Verify contents
+      run: |
+        chmod +x ./tools/sumcheck.bash
+        ./tools/sumcheck.bash ${{ inputs.version }} x86_64-linux
+
+    - name: Install Orbit
+      run: |
+        unzip -d ./orbit ./orbit-${{ inputs.version }}-x86_64-linux.zip
+        cp ./orbit/bin/orbit /usr/local/bin
+
+    - name: Test Orbit
+      run: orbit --version

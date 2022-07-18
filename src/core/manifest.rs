@@ -186,12 +186,15 @@ ip:         {}
 summary:    {}
 version:    {}
 repository: {}
-size:       {:.2} MB", 
+size:       {:.2} MB
+dependencies:
+{}", 
 self.get_pkgid(), 
 self.get_summary().unwrap_or(&"".to_string()), 
 self.get_version(),
 self.get_repository().unwrap_or(&"".to_string()),
-crate::util::filesystem::compute_size(&self.manifest.get_path().parent().unwrap(), crate::util::filesystem::Unit::MegaBytes).unwrap()
+crate::util::filesystem::compute_size(&self.manifest.get_path().parent().unwrap(), crate::util::filesystem::Unit::MegaBytes).unwrap(),
+self.get_dependencies().to_string()
     )}
 }
 
@@ -300,6 +303,15 @@ impl FromToml for IpToml {
 
 #[derive(Debug, PartialEq)]
 pub struct DependencyTable(HashMap<PkgId, AnyVersion>);
+
+impl std::fmt::Display for DependencyTable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for pair in &self.0 {
+            write!(f, "    {} {}\n", pair.0, pair.1)?
+        }
+        Ok(())
+    }
+}
 
 impl DependencyTable {
     pub fn new() -> Self {

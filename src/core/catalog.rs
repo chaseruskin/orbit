@@ -61,6 +61,24 @@ impl IpLevel {
         Self::get_target_version(version, self.get_availability())
     }
 
+    /// Searches through all manifests for a repository to use for cloning.
+    pub fn try_repository(&self) -> Option<&String> {
+        // check all installations
+        for ip in &self.installs {
+            if ip.get_repository().is_some() {
+                return ip.get_repository()
+            }
+        }
+        // check all available
+        for ip in &self.available {
+            if ip.get_repository().is_some() {
+                return ip.get_repository()
+            }
+        }
+        // check dev
+        self.get_dev()?.get_repository()
+    }
+
     /// References the ip matching the most compatible version `version`.
     /// 
     /// A `dev` version is only searched at the DEV_PATH. Any other version is

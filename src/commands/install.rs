@@ -72,26 +72,16 @@ impl Command for Install {
 
             // check the store/ for the repository
             if let Some(ip) = store.as_stored(&target)? {
-
                 ip.get_root()
-            // @TODO clone from remote repository if exists (from AVAILABLE)
-            } else if status.is_installed() || status.is_available() {
-                // check a manifest for a repository
-
-                // check out vendor-level for repo
-
-                // check out install-level for repo
-
-                // check out dev-level for repo
-
-                // store it
-                todo!("clone from repository")
-            // last resort: use repository from DEV_PATH
-            } else if let Some(_ip) = status.get_dev().take() {
-                
-                todo!()
+            // clone from remote repository if exists
+            } else if let Some(url) = status.try_repository() {
+                let path = tempdir.path().to_path_buf();
+                println!("info: fetching repository ...");
+                ExtGit::new(None).clone(url, &path)?;
+                path
             } else {
-                panic!("ip is unable to be installed")
+                // @TODO last resort, clone the actual dev directory to a temp folder
+                panic!("no repository to access ip")
             }
         } else if let Some(url) = &self.git {
             // clone from remote repository
@@ -105,9 +95,6 @@ impl Command for Install {
         } else {
             return Err(AnyError(format!("select an option to install from '{}', '{}', or '{}'", "--ip".yellow(), "--git".yellow(), "--path".yellow())))?
         };
-
-        // @TODO copy ip root to a temporary directory
-
         // enter action
         self.run(&ip_root, c.get_cache_path(), c.force, store)
     }

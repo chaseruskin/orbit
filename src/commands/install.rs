@@ -145,14 +145,9 @@ impl Install {
 
         let repo = Repository::open(&temp)?;
         ExtGit::checkout_tag_state(&repo, &version)?;
-    
-        // perform sha256 on the directory after collecting all files
-        std::env::set_current_dir(&temp)?;
 
-        // must use '.' as current directory when gathering files for consistent checksum
-        let ip_files = crate::util::filesystem::gather_current_files(&std::path::PathBuf::from("."));
-        
-        let checksum = crate::util::checksum::checksum(&ip_files);
+        // perform sha256 on the temporary cloned directory 
+        let checksum = IpManifest::from_path(&temp).unwrap().compute_checksum();
         println!("checksum: {}", checksum);
 
         // use checksum to create new directory slot

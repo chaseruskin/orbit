@@ -65,7 +65,7 @@ impl Command for Probe {
         // find most compatible version with the partial version
         let v = self.version.as_ref().unwrap_or(&AnyVersion::Latest);
 
-        let ip = match status.get(v) {
+        let ip = match status.get(v, false) {
             Some(i) => i,
             None => Err(AnyError(format!("ip '{}' is not found as version '{}'", target, v)))?
         };

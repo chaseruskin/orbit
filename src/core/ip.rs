@@ -48,7 +48,7 @@ pub fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog) -> Result<Graph<
             match catalog.inner().get(pkgid) {
                 Some(status) => {
                     // find this IP to read its dependencies
-                    match status.get(version) {
+                    match status.get(version, true) {
                         Some(dep) => {
                             let s = g.add_node(dep);
                             g.add_edge(s, num, ());

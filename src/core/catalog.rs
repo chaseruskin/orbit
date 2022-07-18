@@ -84,13 +84,14 @@ impl IpLevel {
     /// A `dev` version is only searched at the DEV_PATH. Any other version is
     /// first sought for in the cache installations, and if not found then searched
     /// for in the availability space.
-    pub fn get(&self, version: &AnyVersion) -> Option<&IpManifest> {
+    /// Note: `usable` to `false` will not check available state
+    pub fn get(&self, version: &AnyVersion, usable: bool) -> Option<&IpManifest> {
         match version {
             AnyVersion::Dev => self.get_dev(),
             _ => {
                 match self.get_install(version) {
                     Some(ip) => Some(ip),
-                    None => self.get_available(version)
+                    None => if usable == false { self.get_available(version) } else { None }
                 }
             }
         }

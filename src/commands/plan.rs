@@ -71,7 +71,7 @@ impl Command for Plan {
                 match catalog.inner().get(entry.get_name()) {
                     Some(status) => {
                         // find this IP to read its dependencies
-                        match status.get(&ver) {
+                        match status.get(&ver, true) {
                             // no action required
                             Some(_) => (),
                             // install
@@ -224,7 +224,7 @@ impl Plan {
                 match catalog.inner().get(pkgid) {
                     Some(status) => {
                         // find this IP to read its dependencies
-                        match status.get(version) {
+                        match status.get(version, true) {
                             Some(dep) => {
                                 processing.push(dep)
                             },

@@ -15,6 +15,19 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.3.11
+
+### Features
+- adds `--disable-ssh` flag to `orbit plan` to convert ssh connections to ssh in lock file
+- displays direct dependencies in `orbit probe`
+- adds `--ip` flag to `orbit tree` to view IP-level dependency tree
+- implements basic vendor registry support in `config.toml`
+- ip can be installed from available state
+
+### Documentation
+- updates configuration page for vendor entry
+- updates vendors page
+
 ## 0.3.10
 
 ### Features

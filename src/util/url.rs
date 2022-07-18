@@ -1,7 +1,9 @@
 use std::{num::ParseIntError, str::FromStr};
-use super::{strcmp, anyerror::Fault};
+use url::ParseError;
 
-#[derive(Debug, PartialEq)]
+use super::strcmp;
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum Url {
     Https(Https),
     Ssh(Ssh),
@@ -17,20 +19,46 @@ impl Url {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum UrlError {
+    SshError(SshError),
+    HttpsError(ParseError)
+}
+
+impl std::error::Error for UrlError {}
+
+impl std::fmt::Display for UrlError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::SshError(e) => write!(f, "{}", e),
+            Self::HttpsError(e) => write!(f, "{}", e)
+        }
+    }
+}
+
 impl FromStr for Url {
-    type Err = Fault;
+    type Err = UrlError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // check for https:// base
         if let Some((base, _)) = s.split_once("://") {
             if strcmp::cmp_ascii_ignore_case(base, "https") || 
                 strcmp::cmp_ascii_ignore_case(base, "http") {
-                Ok(Self::Https(Https::from_str(s)?))
+                    match Https::from_str(s) {
+                        Ok(r) => Ok(Self::Https(r)),
+                        Err(e) => Err(Self::Err::HttpsError(e))
+                    }
             } else {
-                Ok(Self::Ssh(Ssh::from_str(s)?))
+                match Ssh::from_str(s) {
+                    Ok(r) => Ok(Self::Ssh(r)),
+                    Err(e) => Err(Self::Err::SshError(e))
+                }
             }
         } else {
-            Ok(Self::Ssh(Ssh::from_str(s)?))
+            match Ssh::from_str(s) {
+                Ok(r) => Ok(Self::Ssh(r)),
+                Err(e) => Err(Self::Err::SshError(e))
+            }
         }
     }
 }
@@ -62,7 +90,7 @@ impl std::fmt::Display for Https {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 /// SSH ::= [ssh://]<user>@<host>:[port]</path/to/repo> or {user}@<host>:<path/to/repo>
 pub struct Ssh {
     prefix: Option<String>,

@@ -62,7 +62,7 @@ impl IpLevel {
     }
 
     /// Searches through all manifests for a repository to use for cloning.
-    pub fn try_repository(&self) -> Option<&String> {
+    pub fn try_repository(&self) -> Option<&crate::util::url::Url> {
         // check all installations
         for ip in &self.installs {
             if ip.get_repository().is_some() {

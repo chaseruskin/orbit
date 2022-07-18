@@ -77,7 +77,8 @@ impl Command for Install {
             } else if let Some(url) = status.try_repository() {
                 let path = tempdir.path().to_path_buf();
                 println!("info: fetching repository ...");
-                ExtGit::new(None).clone(url, &path)?;
+                // @TODO add --disable ssh here
+                ExtGit::new(None).clone(&url.to_string(), &path)?;
                 path
             } else {
                 // @TODO last resort, clone the actual dev directory to a temp folder

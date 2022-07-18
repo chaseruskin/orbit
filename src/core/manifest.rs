@@ -8,6 +8,7 @@ use crate::core::pkgid::PkgId;
 use crate::core::resolver::lockfile::{LockFile, IP_LOCK_FILE};
 use crate::util::anyerror::{AnyError, Fault};
 use crate::util::sha256::{Sha256Hash, self};
+use crate::util::url::Url;
 use std::str::FromStr;
 use crate::core::version::Version;
 use crate::util::filesystem::normalize_path;
@@ -181,6 +182,10 @@ impl IpToml {
 
 impl std::fmt::Display for IpManifest {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let url = match self.get_repository() {
+            Some(r) => r.to_string(),
+            None => String::new(),
+        };  
         write!(f, "\
 ip:         {}
 summary:    {}
@@ -192,7 +197,7 @@ dependencies:
 self.get_pkgid(), 
 self.get_summary().unwrap_or(&"".to_string()), 
 self.get_version(),
-self.get_repository().unwrap_or(&"".to_string()),
+url,
 crate::util::filesystem::compute_size(&self.manifest.get_path().parent().unwrap(), crate::util::filesystem::Unit::MegaBytes).unwrap(),
 self.get_dependencies().to_string()
     )}
@@ -202,7 +207,7 @@ self.get_dependencies().to_string()
 pub struct Ip {
     name: PkgId,
     version: Version,
-    repository: Option<String>,
+    repository: Option<Url>,
     summary: Option<String>,
     changelog: Option<String>,
     readme: Option<String>,
@@ -222,7 +227,7 @@ impl Ip {
         }
     }
 
-    pub fn get_repository(&self) -> Option<&String> {
+    pub fn get_repository(&self) -> Option<&Url> {
         self.repository.as_ref()
     }
 
@@ -689,7 +694,7 @@ impl IpManifest {
         &self.ip.deps
     }
 
-    pub fn get_repository(&self) -> Option<&String> {
+    pub fn get_repository(&self) -> Option<&Url> {
         self.ip.ip.get_repository()
     }
 

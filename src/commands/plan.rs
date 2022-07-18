@@ -75,11 +75,11 @@ impl Command for Plan {
                             // no action required
                             Some(_) => (),
                             // install
-                            None => Plan::install_from_lock_entry(&entry, &ver, &catalog, &c.get_cache_path())?,
+                            None => Plan::install_from_lock_entry(&entry, &ver, &catalog, &c.get_cache_path(), self.disable_ssh)?,
                         }
                     }
                     // install
-                    None => Plan::install_from_lock_entry(&entry, &ver, &catalog, &c.get_cache_path())?,
+                    None => Plan::install_from_lock_entry(&entry, &ver, &catalog, &c.get_cache_path(), self.disable_ssh)?,
                 }
             }
             // recollect the installations to update the catalog
@@ -196,10 +196,16 @@ impl<'a> IpFileNode<'a> {
 
 impl Plan {
     /// Clones the ip entry's repository to a temporary directory and then installs the appropriate version `ver`.
-    fn install_from_lock_entry(entry: &LockEntry, ver: &AnyVersion, catalog: &Catalog, cache: &PathBuf) -> Result<(), Fault> {
+    fn install_from_lock_entry(entry: &LockEntry, ver: &AnyVersion, catalog: &Catalog, cache: &PathBuf, disable_ssh: bool) -> Result<(), Fault> {
         let temp = tempdir()?.as_ref().to_path_buf();
         println!("info: fetching {} repository ...", entry.get_name());
-        extgit::ExtGit::new(None).clone(entry.get_source(), &temp)?;
+        // check if to convert to https when disabling ssh
+        let url = entry.get_source().expect("missing source repository");
+        let url = match disable_ssh {
+            true => url.as_https().to_string(),
+            false => url.to_string()
+        };
+        extgit::ExtGit::new(None).clone(&url, &temp)?;
         install::Install::install(&temp, &ver, cache, true, catalog.get_store())?;
         Ok(())
     }

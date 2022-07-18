@@ -1,6 +1,7 @@
 use std::{str::FromStr, path::{PathBuf}};
 use toml_edit::{Document, InlineTable, Formatted, Array};
 use crate::{util::{sha256::Sha256Hash, anyerror::{AnyError, Fault}}, core::{pkgid::PkgId, version::{Version, AnyVersion, self}, config::FromToml, manifest::IpManifest}};
+use crate::util::url::Url;
 
 type Module = (PkgId, AnyVersion);
 
@@ -69,14 +70,17 @@ impl LockFile {
 }
 
 #[derive(Debug, PartialEq)]
-struct Source(String);
+enum Source {
+    Url(crate::util::url::Url),
+    Empty,
+}
 
 #[derive(Debug, PartialEq)]
 pub struct LockEntry {
     name: PkgId,
     version: Version,
     sum: Option<Sha256Hash>,
-    source: Source,
+    source: Option<crate::util::url::Url>,
     dependencies: Option<Vec<Module>>,
 }
 
@@ -86,7 +90,7 @@ impl From<&IpManifest> for LockEntry {
             name: ip.get_pkgid().clone(), 
             version: ip.get_version().clone(), 
             sum: Some(ip.get_checksum_proof(0).unwrap_or(ip.compute_checksum())), 
-            source: Source(ip.get_repository().unwrap_or(&String::new()).to_string()),
+            source: if ip.get_repository().is_some() { Some(ip.get_repository().unwrap().clone()) } else { None },
             dependencies: match ip.get_dependencies().inner().len() {
                 0 => None,
                 _ => Some({
@@ -127,8 +131,8 @@ impl LockEntry {
         self.sum.as_ref()
     }
 
-    pub fn get_source(&self) -> &str {
-        &self.source.0
+    pub fn get_source(&self) -> Option<&Url> {
+        self.source.as_ref()
     }
 
     pub fn get_name(&self) -> &PkgId {
@@ -145,7 +149,9 @@ impl LockEntry {
         if let Some(sum) = self.get_sum() {
             table["sum"] = toml_edit::value(&sum.to_string());
         }
-        table["source"] = toml_edit::value(&self.source.0);
+        if let Some(src) = self.get_source() {
+            table["source"] = toml_edit::value(src.to_string());
+        }
         if let Some(deps) = &self.dependencies {
             table.insert("dependencies", toml_edit::Item::Value(toml_edit::Value::Array(Array::new())));
             for entry in deps {
@@ -174,7 +180,7 @@ impl FromToml for LockEntry {
                 Some(item) => Some(Sha256Hash::from_str(item.as_str().unwrap())?),
                 None => None,
             },
-            source: Source(table.get("source").unwrap().as_str().unwrap().to_owned()),
+            source: if let Some(src) = table.get("source") { Some(Url::from_str(src.as_str().unwrap())?) } else { None },
             dependencies: {
                 match table.get("dependencies") {
                     Some(item) => {

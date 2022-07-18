@@ -1,6 +1,9 @@
+use crate::util::graph::Graph;
 use crate::util::overdetsys;
 use crate::core::pkgid::PkgPart;
-use crate::util::anyerror::AnyError;
+use crate::util::anyerror::{AnyError, Fault};
+use super::catalog::Catalog;
+use super::manifest::IpManifest;
 use super::pkgid::PkgId;
 
 /// Given a partial/full ip specification `ip_spec`, sift through the manifests
@@ -26,4 +29,39 @@ pub fn find_ip(ip_spec: &PkgId, universe: Vec<&PkgId>) -> Result<PkgId, AnyError
         }
     };
     Ok(PkgId::from_vec(result))
+}
+
+/// Constructs a graph at the IP-level.
+/// 
+/// Note: this function performs no reduction.
+pub fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog) -> Result<Graph<&'a IpManifest, ()>, Fault> {
+    // create empty graph
+    let mut g = Graph::new();
+    // construct iterative approach with lists
+    let t = g.add_node(root);
+    let mut processing = vec![(t, root)];
+
+    while let Some((num, ip)) = processing.pop() {
+        // read dependencies
+        let deps = ip.get_dependencies();
+        for (pkgid, version) in deps.inner() {
+            match catalog.inner().get(pkgid) {
+                Some(status) => {
+                    // find this IP to read its dependencies
+                    match status.get(version) {
+                        Some(dep) => {
+                            let s = g.add_node(dep);
+                            g.add_edge(s, num, ());
+                            processing.push((s, dep));
+                        },
+                        // try to use the lock file to fill in missing pieces
+                        None => panic!("ip is not installed"),
+                    }
+                },
+                // try to use the lock file to fill in missing pieces
+                None => return Err(AnyError(format!("unknown ip: {}", pkgid)))?,
+            }
+        }
+    }
+    Ok(g)
 }

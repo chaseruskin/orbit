@@ -194,6 +194,7 @@ impl Install {
 
     fn run(&self, installation_path: &PathBuf, cache_root: &std::path::PathBuf, force: bool, store: Store) -> Result<(), Fault> {
         let _ = Self::install(&installation_path, &self.version, &cache_root, force, &store)?;
+        // @TODO auto-install dependencies of the current ip as well
         Ok(())
     }
 }

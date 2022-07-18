@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
+use crate::core::ip;
 use crate::core::manifest::IpManifest;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Optional};
@@ -10,6 +11,7 @@ use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::core::vhdl::token::Identifier;
 use crate::util::anyerror::AnyError;
+use crate::util::anyerror::Fault;
 use crate::util::graph::Graph;
 
 #[derive(Debug, PartialEq)]
@@ -35,6 +37,7 @@ pub struct Tree {
     compress: bool,
     format: Option<IdentifierFormat>,
     ascii: bool,
+    ip: bool,
 }
 
 impl FromCli for Tree {
@@ -45,6 +48,7 @@ impl FromCli for Tree {
             compress: cli.check_flag(Flag::new("compress"))?,
             ascii: cli.check_flag(Flag::new("ascii"))?,
             format: cli.check_option(Optional::new("format").value("fmt"))?,
+            ip: cli.check_flag(Flag::new("ip"))?,
         });
         command
     }
@@ -65,13 +69,21 @@ impl Command for Tree {
             .development(c.get_development_path().unwrap())?
             .installations(c.get_cache_path())?
             .available(c.get_vendors())?;
-
+        
         self.run(ip, catalog)
     }
 }
 
 impl Tree {
-    fn run(&self, target: IpManifest, catalog: Catalog) -> Result<(), Box<dyn std::error::Error>> {
+    fn run(&self, target: IpManifest, catalog: Catalog) -> Result<(), Fault> {
+        match &self.ip {
+            true => self.run_ip_graph(target, catalog),
+            false => self.run_hdl_graph(target, catalog),
+        }
+    }
+
+    /// Construct and print the graph at an HDL-entity level.
+    fn run_hdl_graph(&self, target: IpManifest, catalog: Catalog) -> Result<(), Fault> {
         // gather all files
         let current_files: Vec<IpFileNode> = crate::util::filesystem::gather_current_files(&std::env::current_dir().unwrap())
             .into_iter()
@@ -115,6 +127,17 @@ impl Tree {
                 false => twig.0.to_string(),
             };
             println!("{}{}", branch_str, map.get(graph.get_node(twig.1).unwrap()).unwrap().display(self.format.as_ref().unwrap_or(&IdentifierFormat::Short)));            
+        }
+        Ok(())
+    }
+
+    /// Construct and print the graph at an IP dependency level.
+    fn run_ip_graph(&self, target: IpManifest, catalog: Catalog) -> Result<(), Fault> {
+        let ip_graph = ip::graph_ip(&target, &catalog)?;
+
+        let tree = ip_graph.treeview(0);
+        for twig in &tree {
+            println!("{}{}", twig.0, ip_graph.get_node(twig.1).unwrap().to_leaf_string());
         }
         Ok(())
     }
@@ -244,6 +267,7 @@ Options:
     --all               include all possible roots in tree
     --format <fmt>      select how to display entity names: 'long' or 'short'
     --ascii             use chars from the original 128 ascii set
+    --ip                view the ip-level dependency graph
 
 Use 'orbit help tree' to learn more about the command.
 ";

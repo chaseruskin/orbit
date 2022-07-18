@@ -668,6 +668,11 @@ impl IpManifest {
         })
     }
 
+    /// Creates a string for printing an ip manifest to during `orbit tree`. 
+    pub fn to_leaf_string(&self) -> String {
+        format!("{} {}", self.get_pkgid(), self.get_version())
+    }
+
     pub fn get_dependencies(&self) -> &DependencyTable {
         &self.ip.deps
     }

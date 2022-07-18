@@ -32,9 +32,13 @@ unambiguous.
  
 `--ascii`  
       Restricts characters to original 128 ascii set
+ 
+`--ip`  
+      View the ip-level dependency graph
 
 ## __EXAMPLES__
 
 ```
 orbit tree --root nor_gate
+orbit tree --ip
 ```

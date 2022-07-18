@@ -26,7 +26,11 @@ OPTIONS
      
     --ascii  
           Restricts characters to original 128 ascii set
+     
+    --ip  
+          View the ip-level dependency graph
 
 EXAMPLES
     orbit tree --root nor_gate
+    orbit tree --ip
 ";

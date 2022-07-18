@@ -42,6 +42,9 @@ OPTIONS
      
     --all  
           Ignore any design hierarchy and include all hdl files
+     
+    --disable-ssh  
+          Convert SSH to HTTPS urls when fetching external dependencies
           
 
 EXAMPLES

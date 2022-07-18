@@ -9,3 +9,4 @@ pub mod checksum;
 pub mod filesystem;
 pub mod environment;
 pub mod graphmap;
+pub mod url;

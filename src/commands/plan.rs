@@ -34,7 +34,8 @@ pub struct Plan {
     clean: bool,
     list: bool,
     build_dir: Option<String>,
-    filesets: Option<Vec<Fileset>>
+    filesets: Option<Vec<Fileset>>,
+    disable_ssh: bool,
 }
 
 impl Command for Plan {
@@ -588,6 +589,7 @@ impl FromCli for Plan {
             plugin: cli.check_option(Optional::new("plugin"))?,
             build_dir: cli.check_option(Optional::new("build-dir").value("dir"))?,
             filesets: cli.check_option_all(Optional::new("fileset").value("key=glob"))?,
+            disable_ssh: cli.check_flag(Flag::new("disable-ssh"))?,
         });
         command
     }
@@ -639,6 +641,7 @@ Options:
     --clean                 remove all files from the build directory
     --list                  view available plugins
     --all                   include all found HDL files
+    --disable-ssh           convert SSH repositories to HTTPS for dependencies
 
 Use 'orbit help plan' to learn more about the command.
 ";

@@ -48,6 +48,9 @@ be set during any following calls to the 'build' command.
  
 `--all`  
       Ignore any design hierarchy and include all hdl files
+ 
+`--disable-ssh`  
+      Convert SSH to HTTPS urls when fetching external dependencies
       
 ## __EXAMPLES__
 

@@ -155,3 +155,14 @@ alias  = "base"
 path   = "template/"
 ignore = ["extra/"]
 ```
+
+### `vendor.index` : _array of strings_
+- paths to vendor index files to load vendors
+- if the path is relative, it is relative to the `config.toml` file that defines it
+
+``` toml
+[vendor]
+index = [
+    'profile/ks-tech/vendor/index.toml'
+]
+```

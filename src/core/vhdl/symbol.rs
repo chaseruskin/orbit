@@ -24,7 +24,7 @@ impl VHDLSymbol {
             Self::Package(p) => Some(&p.name),
             Self::PackageBody(_) => None,
             Self::Configuration(c) => Some(&c.name),
-            Self::Context(_) => todo!("capture context id")
+            Self::Context(_) => todo!("capture context id"),
         }
     }
 

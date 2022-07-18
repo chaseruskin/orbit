@@ -1,4 +1,4 @@
-use toml_edit::{Document, Table, ArrayOfTables};
+use toml_edit::{Document, Table, ArrayOfTables, Array};
 use std::collections::HashMap;
 use std::io::Write;
 use std::path;
@@ -378,6 +378,13 @@ impl IpManifest {
         crate::core::vhdl::primaryunit::collect_units(&files).into_iter().map(|e| e.0).collect()
     }
 
+    /// Attempts to first read from units key entry if exists in toml file.
+    pub fn read_units(&self) -> Option<Vec<PrimaryUnit>> {
+        let entry = self.get_manifest().get_doc().get("ip")?.as_table()?.get("units")?.as_array()?;
+        Some(entry.into_iter()
+            .filter_map(|p| PrimaryUnit::from_toml(p.as_inline_table().unwrap())).collect())
+    }
+
     pub fn get_root(&self) -> std::path::PathBuf {
         self.get_manifest().get_path().parent().unwrap().to_path_buf()
     }
@@ -663,6 +670,23 @@ impl IpManifest {
             Err(e) => Err(AnyError(format!("manifest {}: {}", normalize_path(m.get_path().clone()).display(), e))),
         }
     }
+
+    /// Caches the result of collecting all the primary desgin units for the given package.
+    /// 
+    /// Writes the data to the toml file. Note, this function does not save the manifest data to file.
+    fn stash_units(&mut self) -> () {
+        // collect the units
+        let units = self.collect_units();
+        let doc = self.get_manifest_mut().get_mut_doc().as_table_mut();
+        doc.insert("units", toml_edit::Item::Value(toml_edit::Value::Array(Array::new())));
+        let arr = doc["units"].as_array_mut().unwrap();
+        // map the units into a serialized data format
+        for unit in &units {
+            arr.push(unit.to_toml());
+        }
+    }
+
+
 }
 
 const BARE_MANIFEST: &str = "\

@@ -1,3 +1,4 @@
+use toml_edit::InlineTable;
 use crate::core::vhdl::token::Identifier;
 
 use super::symbol::VHDLSymbol;
@@ -23,6 +24,30 @@ impl PrimaryUnit {
             Self::Configuration(u) => &u.name,
         })
     }
+
+    /// Serializes the data into a toml inline table
+    pub fn to_toml(&self) -> toml_edit::Value {
+        let mut item = toml_edit::Value::InlineTable(InlineTable::new());
+        let tbl = item.as_inline_table_mut().unwrap();
+        tbl.insert("identifier", toml_edit::value(&self.as_iden().unwrap().to_string()).into_value().unwrap());
+        tbl.insert("type", toml_edit::value(&self.to_string()).into_value().unwrap());
+        item
+    }
+
+    /// Deserializes the data from a toml inline table.
+    pub fn from_toml(tbl: &toml_edit::InlineTable) -> Option<Self> {
+        let unit = Unit {
+            name: Identifier::from_str(tbl.get("identifier")?.as_str()?).unwrap(), 
+            symbol: None 
+        };
+        Some(match tbl.get("type")?.as_str()? {
+            "entity" => Self::Entity(unit),
+            "package" => Self::Package(unit),
+            "context" => Self::Context(unit),
+            "configuration" => Self::Configuration(unit),
+            _ => return None,
+        })
+    }
 }
 
 impl std::fmt::Display for PrimaryUnit {
@@ -39,7 +64,7 @@ impl std::fmt::Display for PrimaryUnit {
 #[derive(Debug)]
 pub struct Unit {
     name: Identifier,
-    symbol: VHDLSymbol
+    symbol: Option<VHDLSymbol>
 }
 
 impl std::hash::Hash for Unit {
@@ -56,7 +81,7 @@ impl PartialEq for Unit {
 
 impl Eq for Unit {}
 
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 pub fn collect_units(files: &Vec<String>) -> HashMap<PrimaryUnit, String> {
     let mut result = HashMap::new();
@@ -68,10 +93,10 @@ pub fn collect_units(files: &Vec<String>) -> HashMap<PrimaryUnit, String> {
             symbols.into_iter().filter_map(|sym| {
                 let name = sym.as_iden()?.clone();
                 match sym {
-                    VHDLSymbol::Entity(_) => Some(PrimaryUnit::Entity(Unit{ name: name, symbol: sym })),
-                    VHDLSymbol::Package(_) => Some(PrimaryUnit::Package(Unit{ name: name, symbol: sym })),
-                    VHDLSymbol::Configuration(_) => Some(PrimaryUnit::Configuration(Unit{ name: name, symbol: sym })),
-                    VHDLSymbol::Context(_) => Some(PrimaryUnit::Context(Unit{ name: name, symbol: sym })),
+                    VHDLSymbol::Entity(_) => Some(PrimaryUnit::Entity(Unit{ name: name, symbol: Some(sym) })),
+                    VHDLSymbol::Package(_) => Some(PrimaryUnit::Package(Unit{ name: name, symbol: Some(sym) })),
+                    VHDLSymbol::Configuration(_) => Some(PrimaryUnit::Configuration(Unit{ name: name, symbol: Some(sym) })),
+                    VHDLSymbol::Context(_) => Some(PrimaryUnit::Context(Unit{ name: name, symbol: Some(sym) })),
                     _ => None,
                 }
             }).for_each(|e| {

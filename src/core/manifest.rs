@@ -775,32 +775,4 @@ c-rus.eel4712c.lab1 = "4.2"
 
         assert_eq!(DependencyTable::from_toml(doc.as_table().get("dependencies").unwrap().as_table().unwrap()).unwrap(), DependencyTable(map));
     }
-
-
-    mod vendor {
-        use super::*;
-        use crate::core::vendor::VendorManifest;
-        use std::str::FromStr;
-        
-        #[test]
-        fn read_index() {
-            let doc = "\
-[vendor]
-name = \"ks-tech\"
-
-[index]
-rary.gates = \"url1\"
-memory.ram = \"url2\"
-    ";
-            let manifest = VendorManifest(Manifest {
-                path: tempfile::NamedTempFile::new().unwrap().path().to_path_buf(),
-                document: doc.parse::<Document>().unwrap()
-            });
-
-            assert_eq!(manifest.read_index(), vec![
-                PkgId::from_str("ks-tech.rary.gates").unwrap(), 
-                PkgId::from_str("ks-tech.memory.ram").unwrap()
-            ]);
-        }
-    }
 }

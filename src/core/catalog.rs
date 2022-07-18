@@ -4,7 +4,7 @@ use crate::util::{anyerror::Fault, sha256::Sha256Hash};
 use super::{pkgid::{PkgId, PkgPart}, manifest::IpManifest, version::{Version, AnyVersion}, store::Store};
 
 #[derive(Debug)]
-pub struct Catalog<'a>(HashMap<PkgId, IpLevel>, Option<Store<'a>>, Option<&'a PathBuf>);
+pub struct Catalog<'a>(HashMap<PkgId, IpLevel>, Option<Store<'a>>, Option<&'a PathBuf> /*cache path */);
 
 #[derive(Debug)]
 pub struct IpLevel {

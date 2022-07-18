@@ -15,6 +15,7 @@ impl PkgPart {
         PkgPart(String::new())
     }
 
+    /// Normalizes the identifier by converting `-` to `_` and all lowercase letters.
     pub fn to_normal(&self) -> PkgPart {
         PkgPart(self.0.replace('-', "_").to_lowercase())
     }
@@ -113,9 +114,12 @@ impl Ord for PkgId {
 
 impl Hash for PkgId {
     fn hash<H>(&self, state: &mut H) where H: std::hash::Hasher { 
-        // must have a complete pkgid
-        self.vendor.as_ref().unwrap().to_normal().0.hash(state);
-        self.library.as_ref().unwrap().to_normal().0.hash(state);
+        if let Some(v) = &self.vendor {
+            v.to_normal().0.hash(state);
+        }
+        if let Some(l) = &self.library {
+            l.to_normal().0.hash(state);
+        }
         self.name.to_normal().0.hash(state);
     }
 }

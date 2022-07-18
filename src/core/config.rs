@@ -146,21 +146,34 @@ impl Config {
         Ok(self)
     }
 
+    fn append_list(table: &mut Table, key: &str, item: &str) -> () {
+        // verify the key/entry exists (make empty array)
+        if table.contains_key(key) == false {
+            table.insert(key, Item::Value(Value::Array(Array::new())));
+        }
+        table[key].as_array_mut().unwrap().push(item);
+        // before neat formatting of an item on every line
+        table[key].as_array_mut().unwrap().iter_mut().for_each(|f| {
+            f.decor_mut().set_prefix("\n    ");
+            f.decor_mut().set_suffix("");
+        });
+        table[key].as_array_mut().unwrap().set_trailing("\n");
+    }
+
+    /// Adds a new value to the `vendor.key` entry.
+    pub fn append_vendor_index(&mut self, item: &str) -> () {
+        if self.document.contains_key(VENDOR_KEY) == false {
+            self.document.insert(VENDOR_KEY, Item::Table(Table::new()));
+        }
+        let tbl = self.document.get_mut(VENDOR_KEY).unwrap().as_table_mut().unwrap();
+        Self::append_list(tbl, INDEX_KEY, item);
+    }
+
     /// Adds a new value to the `include` entry.
     /// 
     /// Automatically creates the new key if it does not exist.
     pub fn append_include(&mut self, item: &str) -> () {
-        // verify the key/entry exists (make empty array)
-        if self.document.contains_key(INCLUDE_KEY) == false {
-            self.document.insert(INCLUDE_KEY, Item::Value(Value::Array(Array::new())));
-        }
-        self.document[INCLUDE_KEY].as_array_mut().unwrap().push(item);
-        // before neat formatting of an item on every line
-        self.document[INCLUDE_KEY].as_array_mut().unwrap().iter_mut().for_each(|f| {
-            f.decor_mut().set_prefix("\n    ");
-            f.decor_mut().set_suffix("");
-        });
-        self.document[INCLUDE_KEY].as_array_mut().unwrap().set_trailing("\n");
+        Self::append_list(&mut self.document, INCLUDE_KEY, item);
     } 
 
     /// Sets a value for the given entry in the toml document.
@@ -214,7 +227,7 @@ impl Config {
         Ok(self.collect_as_item(Some(table), key, &Item::is_str, "string")?.into_iter().map(|f| f.0.as_str().unwrap()).collect())
     }
 
-    /// Gathers an array as strings.
+    /// Gathers an array as strings bundled with the root filepath the string orginated from.
     pub fn collect_as_array_of_str<'a>(&'a self, table: &str, key: &str) -> Result<Vec<(&'a str, &PathBuf)>, Fault> {
         let mut all_items = Vec::<(&str, &PathBuf)>::new();
         let arrays: Vec<(&Array, &PathBuf)> = self.collect_as_item(Some(table), key, &Item::is_array, "array")?.into_iter().map(|f| { (f.0.as_array().unwrap(), f.1) } ).collect();
@@ -337,6 +350,8 @@ impl std::fmt::Display for ConfigError {
 
 pub const CONFIG_FILE: &str = "config.toml";
 const INCLUDE_KEY: &str = "include";
+pub const VENDOR_KEY: &str = "vendor";
+pub const INDEX_KEY: &str = "index";
 
 #[cfg(test)]
 mod test {

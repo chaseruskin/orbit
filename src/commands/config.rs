@@ -71,12 +71,13 @@ impl Command for Config {
 
 impl Config {
     fn run(&self, cfg: &mut config::Config) -> Result<(), Box<dyn std::error::Error>> {
+        // check for list appending
         for entry in &self.append {
-            if entry.0 == "include" {
-                cfg.append_include(&entry.1)
-            } else {
-                return Err(AnyError(format!("unsupported key '{}' cannot be appended", entry.0)))?
-            }
+            match entry.0.as_ref() {
+                "include" => cfg.append_include(&entry.1),
+                "vendor.index" => cfg.append_vendor_index(&entry.1),
+                _ => return Err(AnyError(format!("unsupported key '{}' cannot be appended", entry.0)))?
+            };
         }
         for entry in &self.set {
             // split by dots to get table.key (silently ignores improper parsing)

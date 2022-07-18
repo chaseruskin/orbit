@@ -35,7 +35,6 @@ OPTIONS
      
     --disable-ssh  
           Convert SSH to HTTPS urls when fetching external dependencies
-     
 
 EXAMPLES
     orbit install ks-tech.rary.gates --ver 1.0.0

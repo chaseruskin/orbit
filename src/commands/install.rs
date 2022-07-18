@@ -168,6 +168,7 @@ impl Install {
                         return Err(AnyError(format!("ip '{}' as version '{}' is already installed", target, version)))?
                     }
                     // @FIXME- always reinstalls
+                    // @NOTE- bug appears to be gone 2022/7/18
                     // println!("{}\n{}", sha, cached_ip.compute_checksum());
                 }
                 println!("info: reinstalling ip '{}' as version '{}' due to bad checksum", target, version);

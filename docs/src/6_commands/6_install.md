@@ -41,7 +41,7 @@ specification (major.minor.patch).
  
 `--disable-ssh`  
       Convert SSH to HTTPS urls when fetching external dependencies
- 
+
 ## __EXAMPLES__
 
 ```

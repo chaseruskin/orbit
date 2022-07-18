@@ -575,41 +575,30 @@ ks-tech.util.toolbox = &quot;3.0.4&quot;
 <p>The vendor is the first identifier in an IP's PKGID. To store a </p>
 <p>A vendor is special type of directory that can indirectly point to a collection of IP. A vendor &quot;points&quot; to IP by storing the manifest files corresponding to each version of the IP.</p>
 <p>Once a vendor directory is initialized and set up, Orbit automatically handles the ability to refresh, use, and update the directory.</p>
-<h2 id="vendortoml"><a class="header" href="#vendortoml">vendor.toml</a></h2>
-<p>A vendor is recognized by Orbit with a <code>vendor.toml</code> file at the root of the vendor's directory.</p>
+<h2 id="indextoml"><a class="header" href="#indextoml">index.toml</a></h2>
+<p>A vendor is recognized by Orbit with a <code>index.toml</code> file at the root of the vendor's directory.</p>
 <pre><code class="language-toml">[vendor]
 name       = &quot;ks-tech&quot;
 summary    = &quot;in-house IP for space communications&quot;
 repository = &quot;&lt;repository-url&gt;&quot; # optional
-
-# ...
-</code></pre>
-<p>The <code>vendor.toml</code> file is also responsible for keeping track of all the IP it contains. The index is updated by Orbit when a new IP is launched for the first time with <code>orbit launch</code>.</p>
-<pre><code class="language-toml"># ...
-
-[index]
-rary.gates   = &quot;&lt;remote-repository-url&gt;&quot; 
-rary.math    = &quot;&lt;remote-repository-url&gt;&quot; 
-util.toolbox = &quot;&lt;remote-repository-url&gt;&quot; 
 </code></pre>
 <h2 id="tracking-ip"><a class="header" href="#tracking-ip">Tracking IP</a></h2>
 <p>In order for an IP to be tracked by a vendor, the IP's <code>vendor</code> field in the <code>Orbit.toml</code> file must match the <code>name</code> field in the <code>vendor.toml</code> file. The IP must also have a remote repository url stored in the <code>repository</code> field that can be shared and used to clone the repository to be tracked by an IP. A vendor itself does not require a remote repository url.</p>
-<p>vendor.toml</p>
+<p><em>index.toml</em></p>
 <pre><code class="language-toml">[vendor]
 name = &quot;ks-tech&quot;
-
-[index]
-rary.gates = &quot;&lt;remote-repository-url&gt;&quot;
+repository = &quot;&lt;remote-repository-for-ks-tech&gt;&quot;
 </code></pre>
-<p>Orbit.toml</p>
+<p><em>Orbit-0.2.3.toml</em></p>
 <pre><code class="language-toml">[ip]
-library = &quot;rary&quot;
 name    = &quot;gates&quot;
+library = &quot;rary&quot;
 vendor  = &quot;ks-tech&quot;     # matches `name` for the vendor from `vendor.toml`
 version = &quot;0.2.3&quot;
-repository = &quot;&lt;remote-repository-url&gt;&quot;
+repository = &quot;&lt;remote-repository-url-for-gates&gt;&quot;
 </code></pre>
-<p>The convention is to place vendors in a <code>vendor</code> folder at your ORBIT_HOME location. Orbit will automatically check if a folder called <code>vendor</code> exists and will search it for any <code>vendor.toml</code> files.</p>
+<p>The convention is to place vendors in a <code>vendor</code> folder at your ORBIT_HOME location. </p>
+<p>Orbit finds the available IP from within the root of a vendor directory by matching all files with <code>Orbit-*.toml</code> file names.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="templates"><a class="header" href="#templates">Templates</a></h1>
 <p>Templates help you start a project faster.</p>
 <p>Here is an example template stored in a configuration file:</p>

@@ -135,7 +135,7 @@ impl Context {
         // read off all the files in the vendor.index array
         let indices = self.config.collect_as_array_of_str("vendor", "index")?;
         for index in indices {
-            let r_path = filesystem::resolve_rel_path(self.get_home_path(), index.0.to_owned());
+            let r_path = filesystem::resolve_rel_path(index.1, index.0.to_owned());
             self.vendors.push(VendorManifest::from_path(&PathBuf::from(r_path))?);
         }
         Ok(self)

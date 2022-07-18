@@ -1,4 +1,4 @@
-use crate::{core::manifest::Manifest, util::anyerror::Fault};
+use crate::{core::manifest::Manifest, util::{anyerror::{Fault, AnyError}, filesystem::normalize_path}};
 use std::{path::PathBuf, collections::HashMap};
 use crate::core::pkgid::PkgId;
 use super::{pkgid::PkgPart, config::FromToml};
@@ -42,12 +42,11 @@ impl FromToml for IndexTable {
 #[derive(Debug, PartialEq)]
 pub struct VendorToml {
     vendor: Vendor,
-    index: IndexTable,
 }
 
 impl VendorToml {
     fn new() -> Self {
-        Self { vendor: Vendor::new(), index: IndexTable(HashMap::new()) }
+        Self { vendor: Vendor::new() }
     }
 }
 
@@ -57,7 +56,6 @@ impl FromToml for VendorToml {
     fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err> where Self: Sized {
         let vendor = Vendor::from_toml(table.get("vendor").unwrap().as_table().unwrap())?;
         Ok(Self {
-            index: IndexTable::from_toml(table.get("index").unwrap().as_table().unwrap())?.vendor(&vendor.name),
             vendor: vendor,
         })
     }
@@ -96,34 +94,12 @@ pub struct VendorManifest {
 pub const VENDOR_MANIFEST_FILE: &str = "index.toml";
 
 impl VendorManifest {
-    /// Reads off the entries of the index and converts them into `pkgids`.
-    pub fn read_index(&self) -> Vec<PkgId> {
-        let mut pkgs = Vec::new();
-        // iterate and read through the index table
-        let table = self.manifest.get_doc()["index"].as_table().unwrap();
-        let vendor_name = &self.get_name();
-        for j in table {
-            for k in table[j.0].as_table().unwrap() {
-                // create pkgids
-                pkgs.push(PkgId::new()
-                    .vendor(vendor_name).unwrap()
-                    .library(j.0).unwrap()
-                    .name(k.0).unwrap());
-            }
-        }
-        pkgs
-    }
-
     pub fn get_manifest(&self) -> &Manifest {
         &self.manifest
     }
 
     pub fn get_root(&self) -> PathBuf {
         self.manifest.get_path().parent().unwrap().to_path_buf()
-    }
-
-    pub fn get_index(&self) -> &IndexTable {
-        &self.vendor.index
     }
 
     /// Access the vendor's name
@@ -136,37 +112,15 @@ impl VendorManifest {
         // load the toml document
         let doc = Manifest::from_path(file.to_owned())?;
         Ok(Self {
-            vendor: VendorToml::from_toml(&doc.get_doc().as_table())?,
+            vendor:Self::wrap_toml(&doc, VendorToml::from_toml(&doc.get_doc().as_table()))?,
             manifest: doc,
         })
     }
-}
 
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use crate::core::vendor::VendorManifest;
-    use std::str::FromStr;
-    
-    #[test]
-    fn read_index() {
-        let doc = "\
-[vendor]
-name = \"ks-tech\"
-
-[index]
-rary.gates = \"url1\"
-memory.ram = \"url2\"
-";
-        let tmp = tempfile::NamedTempFile::new().unwrap().path().to_path_buf();
-        std::fs::write(&tmp, doc.as_bytes()).unwrap();
-        let manifest = VendorManifest::from_path(&tmp).unwrap();
-
-        let mut map = HashMap::new();
-        map.insert(PkgId::from_str("ks-tech.rary.gates").unwrap(), "url1".to_owned());
-        map.insert(PkgId::from_str("ks-tech.memory.ram").unwrap(), "url2".to_owned());
-
-        assert_eq!(manifest.get_index().0, map);
+    fn wrap_toml<T, E: std::fmt::Display>(m: &Manifest, r: Result<T, E>) -> Result<T, impl std::error::Error> {
+        match r {
+            Ok(t) => Ok(t),
+            Err(e) => Err(AnyError(format!("vendor {}: {}", normalize_path(m.get_path().clone()).display(), e))),
+        }
     }
 }

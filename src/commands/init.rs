@@ -49,7 +49,7 @@ impl Command for Init {
             let catalog = Catalog::new()
                 .development(c.get_development_path().unwrap())?
                 .installations(c.get_cache_path())?
-                .available(&c.get_vendor_path())?;
+                .available(c.get_vendors())?;
             if catalog.inner().contains_key(&self.ip) == true {
                 return Err(AnyError(format!("ip pkgid '{}' already taken", self.ip)))?
             }

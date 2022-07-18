@@ -49,7 +49,7 @@ impl Command for Probe {
             .store(c.get_store_path())
             .development(c.get_development_path().unwrap())?
             .installations(c.get_cache_path())?
-            .available(&&c.get_vendor_path())?;
+            .available(c.get_vendors())?;
 
         let ids = catalog.inner().keys().map(|f| { f }).collect();
         let target = crate::core::ip::find_ip(&self.ip, ids)?;
@@ -128,7 +128,7 @@ fn format_version_table(table: IpLevel) -> String {
     // log the available versions
     for ip in table.get_availability() {
         match btmap.get_mut(&ip.get_version()) {
-            Some(entry) => entry.1 = true,
+            Some(entry) => entry.2 = true,
             None => { btmap.insert(ip.get_version(), (false, false, true)); () },
         } 
     }

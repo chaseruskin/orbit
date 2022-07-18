@@ -64,7 +64,7 @@ impl Command for Tree {
             .store(c.get_store_path())
             .development(c.get_development_path().unwrap())?
             .installations(c.get_cache_path())?
-            .available(&&c.get_vendor_path())?;
+            .available(c.get_vendors())?;
 
         self.run(ip, catalog)
     }

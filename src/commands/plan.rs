@@ -58,7 +58,7 @@ impl Command for Plan {
             .store(c.get_store_path())
             .development(c.get_development_path().unwrap())?
             .installations(c.get_cache_path())?
-            .available(&&c.get_vendor_path())?;
+            .available(c.get_vendors())?;
 
         // this code is only ran if the lock file matches the manifest
         if target_ip.can_use_lock() == true {

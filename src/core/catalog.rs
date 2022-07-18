@@ -1,7 +1,7 @@
 use std::{collections::HashMap, path::PathBuf};
 use crate::util::{anyerror::Fault, sha256::Sha256Hash};
 
-use super::{pkgid::{PkgId, PkgPart}, manifest::IpManifest, version::{Version, AnyVersion}, store::Store};
+use super::{pkgid::{PkgId, PkgPart}, manifest::IpManifest, version::{Version, AnyVersion}, store::Store, vendor::VendorManifest};
 
 #[derive(Debug)]
 pub struct Catalog<'a>(HashMap<PkgId, IpLevel>, Option<Store<'a>>, Option<&'a PathBuf> /*cache path */);
@@ -118,7 +118,7 @@ impl<'a> Catalog<'a> {
 
     /// Searches the `path` for IP under development.
     pub fn development(self, path: &PathBuf) -> Result<Self, Fault> {
-        self.detect(path, &IpLevel::add_dev)
+        self.detect(path, &IpLevel::add_dev, false)
     }
 
     /// Uses the cache slot name to check if the directory exists.
@@ -130,12 +130,16 @@ impl<'a> Catalog<'a> {
     /// Searches the `path` for IP installed.
     pub fn installations(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
         self.2 = Some(&path);
-        self.detect(path, &IpLevel::add_install)
+        self.detect(path, &IpLevel::add_install, false)
     }
 
     /// Searches the `path` for IP available.
-    pub fn available(self, path: &PathBuf) -> Result<Self, Fault> {
-        self.detect(path, &IpLevel::add_available)
+    pub fn available(self, vendors: &Vec<VendorManifest>) -> Result<Self, Fault> {
+        let mut catalog = self;
+        for v in vendors {
+            catalog = catalog.detect(&v.get_root(), &IpLevel::add_available, true)?;
+        }
+        Ok(catalog)
     }
 
     pub fn inner(&self) -> &HashMap<PkgId, IpLevel> {
@@ -160,9 +164,11 @@ impl<'a> Catalog<'a> {
     /// Finds all `Orbit.toml` manifest files (markings of an IP) within the provided `path`.
     /// 
     /// This function is generic enough to be used to catch ip at all 3 levels: dev, install, and available.
-    fn detect(mut self, path: &PathBuf, add: &dyn Fn(&mut IpLevel, IpManifest) -> ()) -> Result<Self, Fault> {
-        crate::core::manifest::IpManifest::detect_all(path)?
-            .into_iter()
+    fn detect(mut self, path: &PathBuf, add: &dyn Fn(&mut IpLevel, IpManifest) -> (), is_pointers: bool) -> Result<Self, Fault> {
+        match is_pointers {
+            false => crate::core::manifest::IpManifest::detect_all(path),
+            true => crate::core::manifest::IpManifest::detect_available(path)
+        }?.into_iter()
             .for_each(|ip| {
                 match self.0.get_mut(&ip.get_pkgid()) {
                     Some(lvl) => add(lvl, ip),

@@ -34,7 +34,7 @@ impl Command for Uninstall {
         let catalog = Catalog::new()
             .development(c.get_development_path().unwrap())?
             .installations(c.get_cache_path())?
-            .available(&c.get_vendor_path())?;
+            .available(c.get_vendors())?;
         // find the target IP
         let ids = catalog.inner().keys().map(|f| { f }).collect();
         let target = crate::core::ip::find_ip(&self.ip, ids)?;

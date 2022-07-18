@@ -114,6 +114,14 @@ impl VendorManifest {
         pkgs
     }
 
+    pub fn get_manifest(&self) -> &Manifest {
+        &self.manifest
+    }
+
+    pub fn get_root(&self) -> PathBuf {
+        self.manifest.get_path().parent().unwrap().to_path_buf()
+    }
+
     pub fn get_index(&self) -> &IndexTable {
         &self.vendor.index
     }

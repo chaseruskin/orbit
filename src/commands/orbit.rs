@@ -48,6 +48,7 @@ impl Orbit {
                 .settings(crate::core::config::CONFIG_FILE)?
                 .build_dir(environment::ORBIT_BUILD_DIR)?
                 .development_path(environment::ORBIT_DEV_PATH)?
+                .read_vendors()?
                 .retain_options(self.force);
             // pass the context to the given command
             c.exec(&context)

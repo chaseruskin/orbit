@@ -109,7 +109,7 @@ impl Command for Get {
                 .store(c.get_store_path())
                 .development(c.get_development_path().unwrap())?
                 .installations(c.get_cache_path())?
-                .available(&&c.get_vendor_path())?;
+                .available(c.get_vendors())?;
             let ids = catalog.inner().keys().map(|f| { f }).collect();
             let target = crate::core::ip::find_ip(&self.entity_path.ip.as_ref().unwrap(), ids)?;
             

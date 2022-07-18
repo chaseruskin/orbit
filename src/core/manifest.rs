@@ -21,9 +21,13 @@ use super::vhdl::token::{Identifier, IdentifierError};
 /// Takes an iterative approach to iterating through directories to find a file
 /// matching `name`.
 /// 
+/// Note: `name` is become a glob-style pattern.
+/// 
 /// Stops descending the directories upon finding first match of `name`. The match
 /// must be case-sensitive.
 fn find_file(path: &PathBuf, name: &str) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+    // create a glob-style pattern
+    let pattern = glob::Pattern::new(name).unwrap();
     // list of directories to continue to process
     let mut to_process: Vec<PathBuf> = Vec::new();
     let mut result = Vec::new();
@@ -31,7 +35,7 @@ fn find_file(path: &PathBuf, name: &str) -> Result<Vec<PathBuf>, Box<dyn std::er
     if path.is_dir() {
         to_process.push(path.to_path_buf());
     // only look at file and exit
-    } else if path.is_file() && path.file_name().unwrap() == name {
+    } else if path.is_file() && pattern.matches(path.file_name().unwrap().to_str().unwrap()) {
         return Ok(vec![path.to_path_buf()])
     }
     // process next directory to read
@@ -43,7 +47,7 @@ fn find_file(path: &PathBuf, name: &str) -> Result<Vec<PathBuf>, Box<dyn std::er
             // iterate through all next-level directories for potential future processing
             for e in std::fs::read_dir(entry)? {
                 let e = e?;
-                if e.file_name().as_os_str() == name {
+                if pattern.matches(e.file_name().to_str().unwrap()) {
                     result.push(e.path());
                     found_file = true;
                     break;
@@ -143,6 +147,7 @@ impl Manifest {
 }
 
 pub const IP_MANIFEST_FILE: &str = "Orbit.toml";
+pub const IP_MANIFEST_PATTERN_FILE : &str = "Orbit-*.toml";
 const DEPENDENCIES_KEY: &str = "dependencies";
 pub const ORBIT_SUM_FILE: &str = ".orbit-checksum";
 
@@ -394,6 +399,13 @@ impl IpManifest {
     /// Wraps Manifest::detect_all.
     pub fn detect_all(path: &PathBuf) -> Result<Vec<Self>, Box<dyn std::error::Error>> {
         Manifest::detect_all(path, IP_MANIFEST_FILE)?.into_iter().map(|f| IpManifest::from_manifest(f)).collect()
+    }
+
+    /// Finds all IP manifest files along the provided path `path`.
+    /// 
+    /// Wraps Manifest::detect_all.
+    pub fn detect_available(path: &PathBuf) -> Result<Vec<Self>, Box<dyn std::error::Error>> {
+        Manifest::detect_all(path, IP_MANIFEST_PATTERN_FILE)?.into_iter().map(|f| IpManifest::from_manifest(f)).collect()
     }
 
     /// Creates a new minimal IP manifest for `path`.

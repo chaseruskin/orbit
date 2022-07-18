@@ -32,7 +32,7 @@ impl Command for Search {
         if default || self.cached { catalog = catalog.installations(c.get_cache_path())?; }
 
         // collect available IP
-        if default || self.available { catalog = catalog.available(&c.get_vendor_path())?; }
+        if default || self.available { catalog = catalog.available(c.get_vendors())?; }
 
         self.run(&catalog)
     }

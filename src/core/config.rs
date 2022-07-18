@@ -214,6 +214,18 @@ impl Config {
         Ok(self.collect_as_item(Some(table), key, &Item::is_str, "string")?.into_iter().map(|f| f.0.as_str().unwrap()).collect())
     }
 
+    /// Gathers an array as strings.
+    pub fn collect_as_array_of_str<'a>(&'a self, table: &str, key: &str) -> Result<Vec<(&'a str, &PathBuf)>, Fault> {
+        let mut all_items = Vec::<(&str, &PathBuf)>::new();
+        let arrays: Vec<(&Array, &PathBuf)> = self.collect_as_item(Some(table), key, &Item::is_array, "array")?.into_iter().map(|f| { (f.0.as_array().unwrap(), f.1) } ).collect();
+        for arr in arrays {
+            for item in arr.0 {
+                all_items.push((item.as_str().unwrap(), arr.1));
+            }
+        }
+        Ok(all_items)
+    }
+
     /// Gathers all values assigned under a given `Array` entry in configuration.
     /// 
     /// The list is given with priority items first (base configurations), then

@@ -9,9 +9,11 @@ use crate::core::config::Config;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::core::template::Template;
+use crate::util::filesystem;
 use crate::util::filesystem::normalize_path;
 
 use super::config::CONFIG_FILE;
+use super::vendor::VendorManifest;
 
 pub struct Context {
     /// holds behind-the-scenes internal Orbit operations
@@ -29,6 +31,7 @@ pub struct Context {
     config: Config,
     plugins: HashMap<String, Plugin>, // @IDEA optionally move hashmap out of context and create it from fn to allow dynamic loading
     templates: HashMap<String, Template>,
+    vendors: Vec<VendorManifest>,
     pub force: bool,
 }
 
@@ -48,6 +51,7 @@ impl Context {
             config: Config::new(),
             build_dir: String::new(),
             force: false,
+            vendors: Vec::new(),
         }
     }
 
@@ -126,11 +130,15 @@ impl Context {
         Ok(dir)
     }
 
-    /// Returns the path to search for vendors.
-    /// 
-    /// Currently only returns ORBIT_HOME/vendor.
-    pub fn get_vendor_path(&self) -> PathBuf {
-        self.home_path.join("vendor").to_path_buf()
+    /// Loads all vendor files.
+    pub fn read_vendors(mut self) -> Result<Self, Fault> {
+        // read off all the files in the vendor.index array
+        let indices = self.config.collect_as_array_of_str("vendor", "index")?;
+        for index in indices {
+            let r_path = filesystem::resolve_rel_path(self.get_home_path(), index.0.to_owned());
+            self.vendors.push(VendorManifest::from_path(&PathBuf::from(r_path))?);
+        }
+        Ok(self)
     }
 
     /// References the cache directory.
@@ -141,6 +149,11 @@ impl Context {
     /// References the store directory.
     pub fn get_store_path(&self) -> &PathBuf {
         &self.store_path
+    }
+
+    /// References the list of linked vendors.
+    pub fn get_vendors(&self) -> &Vec<VendorManifest> {
+        &self.vendors
     }
 
     /// Configures and reads data from the settings object to return a `Settings` struct

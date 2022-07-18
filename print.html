@@ -1030,6 +1030,16 @@ alias  = &quot;base&quot;
 path   = &quot;template/&quot;
 ignore = [&quot;extra/&quot;]
 </code></pre>
+<h3 id="vendorindex--array-of-strings"><a class="header" href="#vendorindex--array-of-strings"><code>vendor.index</code> : <em>array of strings</em></a></h3>
+<ul>
+<li>paths to vendor index files to load vendors</li>
+<li>if the path is relative, it is relative to the <code>config.toml</code> file that defines it</li>
+</ul>
+<pre><code class="language-toml">[vendor]
+index = [
+    'profile/ks-tech/vendor/index.toml'
+]
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="commands"><a class="header" href="#commands">Commands</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-new"><a class="header" href="#orbit-new"><strong>orbit new</strong></a></h1>
 <h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>

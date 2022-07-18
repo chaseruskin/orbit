@@ -15,6 +15,14 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.3.12
+
+### Features
+- adds `--disable-ssh` flag to `orbit install`
+
+### Fixes
+- properly computes checksum during install and reverts to original cwd
+
 ## 0.3.11
 
 ### Features

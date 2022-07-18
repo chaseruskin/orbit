@@ -39,6 +39,9 @@ specification (major.minor.patch).
 `--git <url>`  
       Url to git remote repository for the ip
  
+`--disable-ssh`  
+      Convert SSH to HTTPS urls when fetching external dependencies
+ 
 ## __EXAMPLES__
 
 ```

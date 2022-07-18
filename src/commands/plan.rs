@@ -199,13 +199,9 @@ impl Plan {
     fn install_from_lock_entry(entry: &LockEntry, ver: &AnyVersion, catalog: &Catalog, cache: &PathBuf, disable_ssh: bool) -> Result<(), Fault> {
         let temp = tempdir()?.as_ref().to_path_buf();
         println!("info: fetching {} repository ...", entry.get_name());
-        // check if to convert to https when disabling ssh
-        let url = entry.get_source().expect("missing source repository");
-        let url = match disable_ssh {
-            true => url.as_https().to_string(),
-            false => url.to_string()
-        };
-        extgit::ExtGit::new(None).clone(&url, &temp)?;
+  
+        extgit::ExtGit::new(None)
+            .clone(&entry.get_source().expect("missing source repository"), &temp, disable_ssh)?;
         install::Install::install(&temp, &ver, cache, true, catalog.get_store())?;
         Ok(())
     }

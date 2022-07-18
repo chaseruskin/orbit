@@ -33,11 +33,17 @@ impl ExtGit {
     /// 
     /// This function uses the actual git command in order to bypass a lot of issues with using libgit with
     /// private repositories.
-    pub fn clone(&self, url: &str, dest: &std::path::PathBuf) -> Result<(), Fault> {
+    /// 
+    /// The `disable_ssh` parameter will convert a url to HTTPS if given as SSH.
+    pub fn clone(&self, url: &crate::util::url::Url, dest: &std::path::PathBuf, disable_ssh: bool) -> Result<(), Fault> {
         let tmp_path = tempfile::tempdir()?;
-
+        // check if to convert to https when disabling ssh
+        let url = match disable_ssh {
+            true => url.as_https().to_string(),
+            false => url.to_string()
+        };
         let proc = std::process::Command::new(&self.command)
-            .args(["clone", url])
+            .args(["clone", &url])
             .current_dir(&tmp_path)
             .output()?;
 

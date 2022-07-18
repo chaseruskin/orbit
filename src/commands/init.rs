@@ -11,11 +11,12 @@ use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::core::pkgid::PkgId;
 use crate::core::extgit::ExtGit;
+use crate::util::url::Url;
 
 #[derive(Debug, PartialEq)]
 pub struct Init {
     ip: PkgId,
-    repo: Option<String>,
+    repo: Option<Url>,
     rel_path: Option<std::path::PathBuf>,
 }
 
@@ -110,7 +111,7 @@ impl Init {
         // clone if given a git url
         if let Some(url) = &self.repo {
             ExtGit::new(None)
-                .clone(url, &ip_path)?;
+                .clone(url, &ip_path, false)?;
         }
 
         // create a manifest at the ip path
@@ -118,12 +119,12 @@ impl Init {
 
         // if there was a repository then add it as remote
         if let Some(url) = &self.repo {
-            // must be remote link if not on filesystem
-            if std::path::Path::exists(&std::path::PathBuf::from(url)) == false {
+            // must be remote link if not on filesystem @TODO revisit with `Source` enum with `Path` variant
+            // if std::path::Path::exists(&std::path::PathBuf::from(url)) == false {
                 // write 'repository' key
-                ip.get_manifest_mut().write("ip", "repository", url);
+                ip.get_manifest_mut().write("ip", "repository", url.to_string());
                 ip.get_manifest_mut().save()?;
-            }
+            // }
         }
         Ok(())
     }

@@ -6,20 +6,22 @@ use crate::core::manifest;
 use crate::core::manifest::IpManifest;
 use crate::core::version;
 use crate::interface::cli::Cli;
-use crate::interface::arg::Optional;
+use crate::interface::arg::{Optional, Flag};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::core::pkgid::PkgId;
 use crate::core::version::Version;
 use crate::util::anyerror::{AnyError, Fault};
 use crate::core::version::AnyVersion;
+use crate::util::url::Url;
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
     ip: Option<PkgId>,
     path: Option<std::path::PathBuf>,
-    git: Option<String>,
+    git: Option<Url>,
     version: AnyVersion,
+    disable_ssh: bool,
 }
 
 impl FromCli for Install {
@@ -30,6 +32,7 @@ impl FromCli for Install {
             path: cli.check_option(Optional::new("path"))?,
             version: cli.check_option(Optional::new("ver").switch('v'))?.unwrap_or(AnyVersion::Latest),
             ip: cli.check_option(Optional::new("ip"))?,
+            disable_ssh: cli.check_flag(Flag::new("disable-ssh"))?,
         });
         command
     }
@@ -77,8 +80,7 @@ impl Command for Install {
             } else if let Some(url) = status.try_repository() {
                 let path = tempdir.path().to_path_buf();
                 println!("info: fetching repository ...");
-                // @TODO add --disable ssh here
-                ExtGit::new(None).clone(&url.to_string(), &path)?;
+                ExtGit::new(None).clone(&url, &path, self.disable_ssh)?;
                 path
             } else {
                 // @TODO last resort, clone the actual dev directory to a temp folder
@@ -88,7 +90,7 @@ impl Command for Install {
             // clone from remote repository
             let path = tempdir.path().to_path_buf();
             println!("info: fetching repository ...");
-            ExtGit::new(None).clone(url, &path)?;
+            ExtGit::new(None).clone(url, &path, self.disable_ssh)?;
             path
         } else if let Some(path) = &self.path {
             // traverse filesystem
@@ -165,8 +167,11 @@ impl Install {
                     if sha == cached_ip.compute_checksum() {
                         return Err(AnyError(format!("ip '{}' as version '{}' is already installed", target, version)))?
                     }
+                    // @FIXME- always reinstalls
+                    // println!("{}\n{}", sha, cached_ip.compute_checksum());
                 }
                 println!("info: reinstalling ip '{}' as version '{}' due to bad checksum", target, version);
+
                 // blow directory up for re-install
                 std::fs::remove_dir_all(&cache_slot)?;
             }
@@ -207,6 +212,7 @@ Options:
     --path <path>           local filesystem path to install from
     --git <url>             remote repository to clone
     --force                 install regardless of cache slot occupancy
+    --disable-ssh           convert SSH repositories to HTTPS for dependencies
 
 Use 'orbit help install' to learn more about the command.
 ";

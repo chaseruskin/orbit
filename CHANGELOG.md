@@ -15,6 +15,20 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.3.13
+
+### Features
+- adds support for publishing ip to vendors during `orbit launch`
+- vendor pre-publish and post-publish hooks
+- caches primary design unit data on ip when publishing to vendor
+- displays more env variables on `orbit env` when in an ip
+
+### Fixes
+- detecting manifests in vendors collects all in single directory
+
+### Documentation
+- updates vendors topics regarding hooks and configuration
+
 ## 0.3.12
 
 ### Features

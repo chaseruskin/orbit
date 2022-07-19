@@ -71,7 +71,10 @@ impl Command for Probe {
         };
 
         if self.units == true {
-            let units = ip.collect_units();
+            let units = match status.get(v, true).is_some() {
+                true => ip.collect_units(),
+                false => ip.read_units().unwrap_or(Vec::new()),
+            };
             println!("{}", format_units_table(units));
             return Ok(())
         }

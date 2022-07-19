@@ -84,9 +84,10 @@ impl Environment {
     /// Sets environment variables from a '.env' file living at `root`.
     /// 
     /// Silently skips text lines that do not have proper delimiter `=` between key and value.
+    /// This function will not add any environment variables if the file does not exist.
     pub fn from_env_file(mut self, root: &std::path::PathBuf) -> Result<Self, Fault> {
         // read the .env file
-        let env_file = root.join(".env");
+        let env_file = root.join(DOT_ENV_FILE);
         if env_file.exists() == true {
             let mut file = std::fs::File::open(env_file).expect("failed to open .env file");
             let mut contents = String::new();
@@ -118,7 +119,7 @@ impl Environment {
     /// It searches the `[env]` table and collects all env variables.
     pub fn from_config(mut self, config: &Config) -> Result<Self, Fault> {
         // read config.toml for setting any env variables
-        if let Some(env_table) = config.get_doc().get("env") {
+        if let Some(env_table) = config.get_doc().get(DOT_ENV_FILE) {
             if let Some(table) = env_table.as_table() {
                 let mut table = table.iter();
                 while let Some((key, val)) = table.next() {
@@ -208,3 +209,5 @@ pub const ORBIT_IP_PATH: &str = "ORBIT_IP_PATH";
 pub const ORBIT_DEV_PATH: &str = "ORBIT_DEV_PATH";
 
 pub const ORBIT_ENV_PREFIX: &str = "ORBIT_ENV_";
+
+pub const DOT_ENV_FILE: &str = ".env";

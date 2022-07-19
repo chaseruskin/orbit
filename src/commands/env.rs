@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use crate::Command;
 use crate::FromCli;
+use crate::core::manifest::IpManifest;
 use crate::interface::cli::Cli;
 use crate::interface::arg::Positional;
 use crate::interface::errors::CliError;
@@ -34,7 +35,7 @@ impl Command for Env {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // assemble environment information
-        let env = Environment::from_vec(vec![
+        let mut env = Environment::from_vec(vec![
             // @TODO context should own an `Environment` struct instead of this data transformation
             EnvVar::new().key(environment::ORBIT_HOME).value(c.get_home_path().to_str().unwrap()),
             EnvVar::new().key(environment::ORBIT_CACHE).value(c.get_cache_path().to_str().unwrap()),
@@ -47,6 +48,14 @@ impl Command for Env {
         ]).from_config(c.get_config())?;
 
         // @TODO check if in an ip to add those variables
+        if c.goto_ip_path().is_ok() {
+            // check ip
+            if let Ok(ip) = IpManifest::from_path(c.get_ip_path().unwrap()) {
+                env = env.from_ip(&ip)?;
+            }
+            // check the build directory
+            env = env.from_env_file( &std::path::PathBuf::from(c.get_build_dir()))?;
+        }
         
         self.run(env)
     }

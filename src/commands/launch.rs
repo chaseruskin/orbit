@@ -262,7 +262,7 @@ impl Command for Launch {
 
             // publish to vendor
             if let Some(reg) = registry {
-                reg.publish(&mut manifest)?;
+                reg.publish(&mut manifest, &version)?;
             }
 
             // store the repository

@@ -1,7 +1,7 @@
 use crate::{core::manifest::Manifest, util::{anyerror::{Fault, AnyError}, filesystem::normalize_path}};
 use std::{path::PathBuf, collections::HashMap};
 use crate::core::pkgid::PkgId;
-use super::{pkgid::PkgPart, config::FromToml, manifest::IpManifest};
+use super::{pkgid::PkgPart, config::FromToml, manifest::IpManifest, version::Version};
 use std::io::Write;
 
 #[derive(Debug, PartialEq)]
@@ -126,7 +126,7 @@ impl VendorManifest {
     }
 
     /// Copies the ip manifest into the vendor.
-    pub fn publish(&self, ip: &mut IpManifest) -> Result<(), Fault> {
+    pub fn publish(&self, ip: &mut IpManifest, next: &Version) -> Result<(), Fault> {
         // create the path to write to destination
         let pkgid = ip.get_pkgid();
 
@@ -140,7 +140,7 @@ impl VendorManifest {
         ip.stash_units();
 
         // write contents to new file location
-        let mut pub_file = std::fs::File::create(&pub_dir.join(format!("Orbit-{}.toml", ip.get_version())))?;
+        let mut pub_file = std::fs::File::create(&pub_dir.join(format!("Orbit-{}.toml", next)))?;
         pub_file.write(ip.get_manifest().get_doc().to_string().as_bytes())?;
         Ok(())
     }

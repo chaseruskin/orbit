@@ -24,9 +24,10 @@ use super::vhdl::token::{Identifier, IdentifierError};
 /// 
 /// Note: `name` is become a glob-style pattern.
 /// 
-/// Stops descending the directories upon finding first match of `name`. The match
-/// must be case-sensitive.
-fn find_file(path: &PathBuf, name: &str) -> Result<Vec<PathBuf>, Box<dyn std::error::Error>> {
+/// Stops descending the directories upon finding first match of `name`. 
+/// The match must be case-sensitive. If `is_exclusive` is `false`, then the directory
+/// with match will continued to be searched at that level and then re-track.
+fn find_file(path: &PathBuf, name: &str, is_exclusive: bool) -> Result<Vec<PathBuf>, Fault> {
     // create a glob-style pattern
     let pattern = glob::Pattern::new(name).unwrap();
     // list of directories to continue to process
@@ -51,7 +52,9 @@ fn find_file(path: &PathBuf, name: &str) -> Result<Vec<PathBuf>, Box<dyn std::er
                 if pattern.matches(e.file_name().to_str().unwrap()) {
                     result.push(e.path());
                     found_file = true;
-                    break;
+                    if is_exclusive == true {
+                        break;
+                    }
                 } else if e.file_type().unwrap().is_dir() == true {
                     next_to_process.push(e.path());
                 }
@@ -99,10 +102,10 @@ impl Manifest {
     /// Finds all Manifest files available in the provided path `path`.
     /// 
     /// Errors if on filesystem problems.
-    pub fn detect_all(path: &std::path::PathBuf, name: &str) -> Result<Vec<Manifest>, Fault> {
+    pub fn detect_all(path: &std::path::PathBuf, name: &str, is_exclusive: bool) -> Result<Vec<Manifest>, Fault> {
         let mut result = Vec::new();
         // walk the ORBIT_PATH directory @TODO recursively walk inner directories until hitting first 'Orbit.toml' file
-        for entry in find_file(&path, &name)? {
+        for entry in find_file(&path, &name, is_exclusive)? {
             // read ip_spec from each manifest
             result.push(Manifest::from_path(entry)?);
         }
@@ -415,14 +418,14 @@ impl IpManifest {
     /// 
     /// Wraps Manifest::detect_all.
     pub fn detect_all(path: &PathBuf) -> Result<Vec<Self>, Box<dyn std::error::Error>> {
-        Manifest::detect_all(path, IP_MANIFEST_FILE)?.into_iter().map(|f| IpManifest::from_manifest(f)).collect()
+        Manifest::detect_all(path, IP_MANIFEST_FILE, true)?.into_iter().map(|f| IpManifest::from_manifest(f)).collect()
     }
 
     /// Finds all IP manifest files along the provided path `path`.
     /// 
     /// Wraps Manifest::detect_all.
     pub fn detect_available(path: &PathBuf) -> Result<Vec<Self>, Box<dyn std::error::Error>> {
-        Manifest::detect_all(path, IP_MANIFEST_PATTERN_FILE)?.into_iter().map(|f| IpManifest::from_manifest(f)).collect()
+        Manifest::detect_all(path, IP_MANIFEST_PATTERN_FILE, false)?.into_iter().map(|f| IpManifest::from_manifest(f)).collect()
     }
 
     /// Creates a new minimal IP manifest for `path`.
@@ -711,13 +714,18 @@ impl IpManifest {
     pub fn stash_units(&mut self) -> () {
         // collect the units
         let units = self.collect_units();
-        let doc = self.get_manifest_mut().get_mut_doc().as_table_mut();
-        doc.insert("units", toml_edit::Item::Value(toml_edit::Value::Array(Array::new())));
-        let arr = doc["units"].as_array_mut().unwrap();
+        let tbl = self.get_manifest_mut().get_mut_doc()["ip"].as_table_mut().unwrap();
+        tbl.insert("units", toml_edit::Item::Value(toml_edit::Value::Array(Array::new())));
+        let arr = tbl["units"].as_array_mut().unwrap();
         // map the units into a serialized data format
         for unit in &units {
             arr.push(unit.to_toml());
         }
+        tbl["units"].as_array_mut().unwrap().iter_mut().for_each(|f| {
+            f.decor_mut().set_prefix("\n    ");
+            f.decor_mut().set_suffix("");
+        });
+        tbl["units"].as_array_mut().unwrap().set_trailing("\n");
     }
 
 

@@ -1,7 +1,8 @@
 use crate::{core::manifest::Manifest, util::{anyerror::{Fault, AnyError}, filesystem::normalize_path}};
 use std::{path::PathBuf, collections::HashMap};
 use crate::core::pkgid::PkgId;
-use super::{pkgid::PkgPart, config::FromToml};
+use super::{pkgid::PkgPart, config::FromToml, manifest::IpManifest};
+use std::io::Write;
 
 #[derive(Debug, PartialEq)]
 pub struct IndexTable(HashMap<PkgId, String>);
@@ -122,5 +123,30 @@ impl VendorManifest {
             Ok(t) => Ok(t),
             Err(e) => Err(AnyError(format!("vendor {}: {}", normalize_path(m.get_path().clone()).display(), e))),
         }
+    }
+
+    /// Copies the ip manifest into the vendor.
+    pub fn publish(&self, ip: &mut IpManifest) -> Result<(), Fault> {
+        // create the path to write to destination
+        let pkgid = ip.get_pkgid();
+
+        // create intermediate directories
+        let pub_dir = self.get_root()
+            .join(pkgid.get_library().as_ref().unwrap())
+            .join(pkgid.get_name());
+        std::fs::create_dir_all(&pub_dir)?;
+
+        // serialize unit data
+        ip.stash_units();
+
+        // write contents to new file location
+        let mut pub_file = std::fs::File::create(&pub_dir.join(format!("Orbit-{}.toml", ip.get_version())))?;
+        pub_file.write(ip.get_manifest().get_doc().to_string().as_bytes())?;
+        Ok(())
+    }
+
+    /// Pulls and pushes the underlying git repository, if it exists.
+    pub fn sync(&self) -> Result<(), Fault> {
+        todo!()
     }
 }

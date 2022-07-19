@@ -212,7 +212,12 @@ impl Command for Launch {
             false => "yes",
         });
 
-        // verify git things
+        // find the registry by using the vendor
+        let registry = c.get_vendors().get(manifest.get_pkgid().get_vendor().as_ref().unwrap());
+        let publish = registry.is_some() && manifest.get_repository().is_some() && push;
+        println!("info: publishing to registry ... {}", match publish { true => "yes", false => "no" });
+
+        // --- verify git things
 
         // verify Orbit.toml to staging area
         let mut index = repo.index()?;
@@ -254,6 +259,11 @@ impl Command for Launch {
             }
 
             println!("info: released version {}", version);
+
+            // publish to vendor
+            if let Some(reg) = registry {
+                reg.publish(&mut manifest)?;
+            }
 
             // store the repository
             let store = Store::new(c.get_store_path());

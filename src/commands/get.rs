@@ -134,7 +134,7 @@ impl Command for Get {
                 Ok(_) => Some(IpManifest::from_path(c.get_ip_path().unwrap())?),
                 Err(_) => None,
             };
-            
+
             self.run(ip.unwrap(), false, if self.peek == true { None } else { current_ip })
         }
     }
@@ -150,8 +150,11 @@ impl Get {
 
         // add to dependency list if within a ip
         if let Some(mut cur_ip) = current_ip {
-            cur_ip.insert_dependency(ip.get_pkgid().clone(), self.version.as_ref().unwrap_or(&AnyVersion::Latest).clone());
-            cur_ip.get_manifest_mut().save()?;
+            // verify it is the not the same package! 
+            if cur_ip.get_pkgid() != ip.get_pkgid() {
+                cur_ip.insert_dependency(ip.get_pkgid().clone(), self.version.as_ref().unwrap_or(&AnyVersion::Latest).clone());
+                cur_ip.get_manifest_mut().save()?;
+            }
         }
 
         // display architectures    

@@ -707,8 +707,8 @@ impl IpManifest {
 
     /// Caches the result of collecting all the primary desgin units for the given package.
     /// 
-    /// Writes the data to the toml file. Note, this function does not save the manifest data to file.
-    fn stash_units(&mut self) -> () {
+    /// Writes the data to the toml data structure. Note, this function does not save the manifest data to file.
+    pub fn stash_units(&mut self) -> () {
         // collect the units
         let units = self.collect_units();
         let doc = self.get_manifest_mut().get_mut_doc().as_table_mut();

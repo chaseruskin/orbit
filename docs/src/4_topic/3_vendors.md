@@ -2,11 +2,11 @@
 
 It can be hard to begin to keep track of all your IP that is available, especially among a team where different members are contributing to different projects. To streamline maintaining a list of the IP available, Orbit uses _vendors_.
 
-The vendor is the first identifier in an IP's PKGID. To store a 
+The vendor is the first identifier in an IP's PKGID. A _registry_ is a vendor that is an actual directory holding Orbit IP manifest files.
 
-A vendor is special type of directory that can indirectly point to a collection of IP. A vendor "points" to IP by storing the manifest files corresponding to each version of the IP.
+Registries are special types of directory that can indirectly point to a collection of IP. They "point" to IP by storing the manifest files corresponding to each version of the IP.
 
-Once a vendor directory is initialized and set up, Orbit automatically handles the ability to refresh, use, and update the directory.
+Once a vendor has a directory initialized and set up, Orbit automatically handles the ability to refresh, use, and update the registry.
 
 ## index.toml
 
@@ -42,4 +42,41 @@ repository = "<remote-repository-url-for-gates>"
 
 The convention is to place vendors in a `vendor` folder at your ORBIT_HOME location. 
 
-Orbit finds the available IP from within the root of a vendor directory by matching all files with `Orbit-*.toml` file names.
+Orbit finds the available IP from within the root of vendor directories by matching all files with `Orbit-*.toml` file names.
+
+## Hooks
+
+Orbit automates registry management. However, Orbit also gives you the flexibility in how to upload new releases with each registry.
+
+_index.toml_
+``` toml
+# ...
+[hook]
+pre-publish = "./pre-publish.hook"
+post-publish = "./post-publish.hook"
+```
+
+Hooks are a series of commands ran during a particular point in one of Orbit's underlying processes. In this case, the pre-publish hook is called __before__ Orbit places the new manifest copy into the registry. The post-publish hook is called __after__ Orbit places the new manifest copy into the registry.
+
+> __Note:__ Variable substitution is supported in hook files.
+
+### Examples 
+
+The following pre-publish hook file ensures the project does not have any unsaved changes before it refreshes the repository and checks out to a new branch for the specific launch.
+
+example: _pre-publish.hook_
+```
+git restore .
+git remote update
+git checkout -b {{ orbit.ip }}-{{ orbit.ip.version }}
+```
+
+The following post-publish hook file commits the newly created manifest copy and pushes it to a new remote branch before returning to its original branch.
+
+example: _post-publish.hook_
+```
+git add {{ orbit.ip.library }}/{{orbit.ip.name }}/Orbit-{{ orbit.ip.version }}.toml
+git commit -m "Adds {{ orbit.ip }} {{ orbit.ip.version }}"
+git push --set-upstream origin {{ orbit.ip }}-{{ orbit.ip.version }}
+git checkout -
+```

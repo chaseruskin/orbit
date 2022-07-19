@@ -418,6 +418,17 @@ ks-tech        rary           gates               D
 <p><strong>Note:</strong> By default, a successful <code>orbit launch</code> will also automatically install that new version into your orbit cache.</p>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="make-vendors"><a class="header" href="#make-vendors">Make Vendors</a></h1>
+<h2 id="registering-a-vendor"><a class="header" href="#registering-a-vendor">Registering a Vendor</a></h2>
+<ol>
+<li>Clone the repository to a known location:</li>
+</ol>
+<pre><code>$ git clone &lt;repository&gt; &quot;$(orbit env ORBIT_HOME)/vendor/&lt;name&gt;&quot;
+</code></pre>
+<ol start="2">
+<li>Link the vendor's configuration file to your vendor index:</li>
+</ol>
+<pre><code>$ orbit config --global --append vendor.index=&quot;$(orbit env ORBIT_HOME)/vendor/&lt;name&gt;/index.toml&quot;
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="create-plugins"><a class="header" href="#create-plugins">Create Plugins</a></h1>
 <p>A plugin is a command to execute a custom workflow during development.</p>
 <p>Plugins are defined in the <code>config.toml</code> file.</p>
@@ -572,9 +583,9 @@ ks-tech.util.toolbox = &quot;3.0.4&quot;
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="vendors-and-registries"><a class="header" href="#vendors-and-registries">Vendors and Registries</a></h1>
 <p>It can be hard to begin to keep track of all your IP that is available, especially among a team where different members are contributing to different projects. To streamline maintaining a list of the IP available, Orbit uses <em>vendors</em>.</p>
-<p>The vendor is the first identifier in an IP's PKGID. To store a </p>
-<p>A vendor is special type of directory that can indirectly point to a collection of IP. A vendor &quot;points&quot; to IP by storing the manifest files corresponding to each version of the IP.</p>
-<p>Once a vendor directory is initialized and set up, Orbit automatically handles the ability to refresh, use, and update the directory.</p>
+<p>The vendor is the first identifier in an IP's PKGID. A <em>registry</em> is a vendor that is an actual directory holding Orbit IP manifest files.</p>
+<p>Registries are special types of directory that can indirectly point to a collection of IP. They &quot;point&quot; to IP by storing the manifest files corresponding to each version of the IP.</p>
+<p>Once a vendor has a directory initialized and set up, Orbit automatically handles the ability to refresh, use, and update the registry.</p>
 <h2 id="indextoml"><a class="header" href="#indextoml">index.toml</a></h2>
 <p>A vendor is recognized by Orbit with a <code>index.toml</code> file at the root of the vendor's directory.</p>
 <pre><code class="language-toml">[vendor]
@@ -598,7 +609,33 @@ version = &quot;0.2.3&quot;
 repository = &quot;&lt;remote-repository-url-for-gates&gt;&quot;
 </code></pre>
 <p>The convention is to place vendors in a <code>vendor</code> folder at your ORBIT_HOME location. </p>
-<p>Orbit finds the available IP from within the root of a vendor directory by matching all files with <code>Orbit-*.toml</code> file names.</p>
+<p>Orbit finds the available IP from within the root of vendor directories by matching all files with <code>Orbit-*.toml</code> file names.</p>
+<h2 id="hooks"><a class="header" href="#hooks">Hooks</a></h2>
+<p>Orbit automates registry management. However, Orbit also gives you the flexibility in how to upload new releases with each registry.</p>
+<p><em>index.toml</em></p>
+<pre><code class="language-toml"># ...
+[hook]
+pre-publish = &quot;./pre-publish.hook&quot;
+post-publish = &quot;./post-publish.hook&quot;
+</code></pre>
+<p>Hooks are a series of commands ran during a particular point in one of Orbit's underlying processes. In this case, the pre-publish hook is called <strong>before</strong> Orbit places the new manifest copy into the registry. The post-publish hook is called <strong>after</strong> Orbit places the new manifest copy into the registry.</p>
+<blockquote>
+<p><strong>Note:</strong> Variable substitution is supported in hook files.</p>
+</blockquote>
+<h3 id="examples"><a class="header" href="#examples">Examples</a></h3>
+<p>The following pre-publish hook file ensures the project does not have any unsaved changes before it refreshes the repository and checks out to a new branch for the specific launch.</p>
+<p>example: <em>pre-publish.hook</em></p>
+<pre><code>git restore .
+git remote update
+git checkout -b {{ orbit.ip }}-{{ orbit.ip.version }}
+</code></pre>
+<p>The following post-publish hook file commits the newly created manifest copy and pushes it to a new remote branch before returning to its original branch.</p>
+<p>example: <em>post-publish.hook</em></p>
+<pre><code>git add {{ orbit.ip.library }}/{{orbit.ip.name }}/Orbit-{{ orbit.ip.version }}.toml
+git commit -m &quot;Adds {{ orbit.ip }} {{ orbit.ip.version }}&quot;
+git push --set-upstream origin {{ orbit.ip }}-{{ orbit.ip.version }}
+git checkout -
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="templates"><a class="header" href="#templates">Templates</a></h1>
 <p>Templates help you start a project faster.</p>
 <p>Here is an example template stored in a configuration file:</p>
@@ -1062,7 +1099,7 @@ the base path.</p>
       Specify a configured template to copy</p>
 <p><code>--list</code><br />
       View available templates</p>
-<h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-1"><a class="header" href="#examples-1"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit new ks-tech.rary.gates
 orbit new ks-tech.rary.common --template base --path common
 </code></pre>
@@ -1087,7 +1124,7 @@ example, if EDITOR=&quot;code&quot;, then the command orbit will execute is:
       The PKGID to look up the ip under ORBIT_PATH.</p>
 <p><code>--editor &lt;cmd&gt;</code><br />
       The command to open the requested text-editor.</p>
-<h2 id="examples-1"><a class="header" href="#examples-1"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-2"><a class="header" href="#examples-2"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit edit ks-tech.rary.gates --editor=code
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-tree"><a class="header" href="#orbit-tree"><strong>orbit tree</strong></a></h1>
@@ -1113,7 +1150,7 @@ unambiguous.</p>
       Restricts characters to original 128 ascii set</p>
 <p><code>--ip</code><br />
       View the ip-level dependency graph</p>
-<h2 id="examples-2"><a class="header" href="#examples-2"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-3"><a class="header" href="#examples-3"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit tree --root nor_gate
 orbit tree --ip
 </code></pre>
@@ -1152,7 +1189,7 @@ be set during any following calls to the 'build' command.</p>
 <p><code>--disable-ssh</code><br />
       Convert SSH to HTTPS urls when fetching external dependencies
       </p>
-<h2 id="examples-3"><a class="header" href="#examples-3"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-4"><a class="header" href="#examples-4"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit plan --top top_level --fileset PIN-PLAN=&quot;*.board&quot;
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-build"><a class="header" href="#orbit-build"><strong>orbit build</strong></a></h1>
@@ -1180,7 +1217,7 @@ for future build commands. It will be the default plugin to use if no
       Display the command being executed</p>
 <p><code>-- args...</code><br />
       Arguments to pass to the requested plugin</p>
-<h2 id="examples-4"><a class="header" href="#examples-4"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-5"><a class="header" href="#examples-5"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit build --plugin xsim -- --waves
 orbit build --command python -- ./tools/synth.py --part x70
 </code></pre>
@@ -1214,7 +1251,7 @@ in the Orbit.toml manifest to determine the next increment. </p>
       override the default Orbit commit message when using '--next'</p>
 <p><code>--no-install</code><br />
       skip installing the newly launched version to the cache</p>
-<h2 id="examples-5"><a class="header" href="#examples-5"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-6"><a class="header" href="#examples-6"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit launch --next 1.0.0
 orbit launch --next major --ready
 </code></pre>
@@ -1233,7 +1270,7 @@ orbit launch --next major --ready
       Filter for ip in-development within the orbit path</p>
 <p><code>--available, -a</code><br />
       Filter for ip available via registries</p>
-<h2 id="examples-6"><a class="header" href="#examples-6"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-7"><a class="header" href="#examples-7"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit search --develop --cache --available
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-install"><a class="header" href="#orbit-install"><strong>orbit install</strong></a></h1>
@@ -1264,7 +1301,7 @@ specification (major.minor.patch).</p>
       Url to git remote repository for the ip</p>
 <p><code>--disable-ssh</code><br />
       Convert SSH to HTTPS urls when fetching external dependencies</p>
-<h2 id="examples-7"><a class="header" href="#examples-7"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-8"><a class="header" href="#examples-8"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit install ks-tech.rary.gates --ver 1.0.0
 orbit install --git https://github.com/c-rus/gates.git -v latest
 </code></pre>
@@ -1303,7 +1340,7 @@ current ip's dependency table.</p>
       Do not add the target ip to the current dependency table</p>
 <p><code>--name &lt;identifier&gt;</code>
       Specific instance identifier</p>
-<h2 id="examples-8"><a class="header" href="#examples-8"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-9"><a class="header" href="#examples-9"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit get ks-tech.rary.gates:nor_gate -csi
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-init"><a class="header" href="#orbit-init"><strong>orbit init</strong></a></h1>
@@ -1328,7 +1365,7 @@ DEV_PATH. By default, <code>--git</code> will clone to the DEV_PATH under
       A git repository to clone</p>
 <p><code>--path &lt;path&gt;</code><br />
       A filesystem destination for a git repository initialization</p>
-<h2 id="examples-9"><a class="header" href="#examples-9"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-10"><a class="header" href="#examples-10"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit init ks-tech.rary.gates --git https://github.com/ks-tech/gates.git
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-probe"><a class="header" href="#orbit-probe"><strong>orbit probe</strong></a></h1>
@@ -1360,7 +1397,7 @@ and 'dev' will point to the IP in the DEV_PATH.</p>
       View the CHANGELOG</p>
 <p><code>--readme</code><br />
       View the README</p>
-<h2 id="examples-10"><a class="header" href="#examples-10"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-11"><a class="header" href="#examples-11"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit probe ks-tech.rary.gates --tags
 orbit probe util.toolbox -v 1.2.3 --units
 </code></pre>
@@ -1380,7 +1417,7 @@ it will print an empty line.</p>
 <h2 id="options-11"><a class="header" href="#options-11"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;key&gt;...</code><br />
       Environment variable keys to request to print</p>
-<h2 id="examples-11"><a class="header" href="#examples-11"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-12"><a class="header" href="#examples-12"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit env
 orbit env ORBIT_HOME
 orbit env ORBIT_DEV_PATH ORBIT_HOME
@@ -1410,7 +1447,7 @@ values. Lastly, it will remove all <code>--unset</code> entries.</p>
       Set the key with the value (integer, string, boolean)</p>
 <p><code>--unset &lt;key&gt;...</code><br />
       Remove the key's entry</p>
-<h2 id="examples-12"><a class="header" href="#examples-12"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-13"><a class="header" href="#examples-13"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit config --set core.path=&quot;C:/my/projects&quot; --set core.editor=&quot;code&quot;
 orbit config --append include=&quot;/profile/ks-tech&quot;
 orbit config --unset env.VIVADO_PATH --global
@@ -1429,7 +1466,7 @@ will delete the IP found on the DEV_PATH.</p>
       Access the settings to the home configuration file</p>
 <p><code>--force</code><br />
       Remove the ip regardless of conditions</p>
-<h2 id="examples-13"><a class="header" href="#examples-13"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-14"><a class="header" href="#examples-14"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit uninstall kepler.rary.gates -v dev
 orbit uninstall kepler.util.toolbox -v 2.1
 </code></pre>

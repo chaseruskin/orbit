@@ -145,9 +145,9 @@
                     <main>
                         <h1 id="vendors-and-registries"><a class="header" href="#vendors-and-registries">Vendors and Registries</a></h1>
 <p>It can be hard to begin to keep track of all your IP that is available, especially among a team where different members are contributing to different projects. To streamline maintaining a list of the IP available, Orbit uses <em>vendors</em>.</p>
-<p>The vendor is the first identifier in an IP's PKGID. To store a </p>
-<p>A vendor is special type of directory that can indirectly point to a collection of IP. A vendor &quot;points&quot; to IP by storing the manifest files corresponding to each version of the IP.</p>
-<p>Once a vendor directory is initialized and set up, Orbit automatically handles the ability to refresh, use, and update the directory.</p>
+<p>The vendor is the first identifier in an IP's PKGID. A <em>registry</em> is a vendor that is an actual directory holding Orbit IP manifest files.</p>
+<p>Registries are special types of directory that can indirectly point to a collection of IP. They &quot;point&quot; to IP by storing the manifest files corresponding to each version of the IP.</p>
+<p>Once a vendor has a directory initialized and set up, Orbit automatically handles the ability to refresh, use, and update the registry.</p>
 <h2 id="indextoml"><a class="header" href="#indextoml">index.toml</a></h2>
 <p>A vendor is recognized by Orbit with a <code>index.toml</code> file at the root of the vendor's directory.</p>
 <pre><code class="language-toml">[vendor]
@@ -171,7 +171,33 @@ version = &quot;0.2.3&quot;
 repository = &quot;&lt;remote-repository-url-for-gates&gt;&quot;
 </code></pre>
 <p>The convention is to place vendors in a <code>vendor</code> folder at your ORBIT_HOME location. </p>
-<p>Orbit finds the available IP from within the root of a vendor directory by matching all files with <code>Orbit-*.toml</code> file names.</p>
+<p>Orbit finds the available IP from within the root of vendor directories by matching all files with <code>Orbit-*.toml</code> file names.</p>
+<h2 id="hooks"><a class="header" href="#hooks">Hooks</a></h2>
+<p>Orbit automates registry management. However, Orbit also gives you the flexibility in how to upload new releases with each registry.</p>
+<p><em>index.toml</em></p>
+<pre><code class="language-toml"># ...
+[hook]
+pre-publish = &quot;./pre-publish.hook&quot;
+post-publish = &quot;./post-publish.hook&quot;
+</code></pre>
+<p>Hooks are a series of commands ran during a particular point in one of Orbit's underlying processes. In this case, the pre-publish hook is called <strong>before</strong> Orbit places the new manifest copy into the registry. The post-publish hook is called <strong>after</strong> Orbit places the new manifest copy into the registry.</p>
+<blockquote>
+<p><strong>Note:</strong> Variable substitution is supported in hook files.</p>
+</blockquote>
+<h3 id="examples"><a class="header" href="#examples">Examples</a></h3>
+<p>The following pre-publish hook file ensures the project does not have any unsaved changes before it refreshes the repository and checks out to a new branch for the specific launch.</p>
+<p>example: <em>pre-publish.hook</em></p>
+<pre><code>git restore .
+git remote update
+git checkout -b {{ orbit.ip }}-{{ orbit.ip.version }}
+</code></pre>
+<p>The following post-publish hook file commits the newly created manifest copy and pushes it to a new remote branch before returning to its original branch.</p>
+<p>example: <em>post-publish.hook</em></p>
+<pre><code>git add {{ orbit.ip.library }}/{{orbit.ip.name }}/Orbit-{{ orbit.ip.version }}.toml
+git commit -m &quot;Adds {{ orbit.ip }} {{ orbit.ip.version }}&quot;
+git push --set-upstream origin {{ orbit.ip }}-{{ orbit.ip.version }}
+git checkout -
+</code></pre>
 
                     </main>
 

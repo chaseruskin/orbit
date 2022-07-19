@@ -144,6 +144,17 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="make-vendors"><a class="header" href="#make-vendors">Make Vendors</a></h1>
+<h2 id="registering-a-vendor"><a class="header" href="#registering-a-vendor">Registering a Vendor</a></h2>
+<ol>
+<li>Clone the repository to a known location:</li>
+</ol>
+<pre><code>$ git clone &lt;repository&gt; &quot;$(orbit env ORBIT_HOME)/vendor/&lt;name&gt;&quot;
+</code></pre>
+<ol start="2">
+<li>Link the vendor's configuration file to your vendor index:</li>
+</ol>
+<pre><code>$ orbit config --global --append vendor.index=&quot;$(orbit env ORBIT_HOME)/vendor/&lt;name&gt;/index.toml&quot;
+</code></pre>
 
                     </main>
 

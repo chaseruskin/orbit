@@ -153,9 +153,9 @@ impl<'a> Catalog<'a> {
     }
 
     /// Searches the `path` for IP available.
-    pub fn available(self, vendors: &Vec<VendorManifest>) -> Result<Self, Fault> {
+    pub fn available(self, vendors: &HashMap<PkgPart, VendorManifest>) -> Result<Self, Fault> {
         let mut catalog = self;
-        for v in vendors {
+        for (_, v) in vendors {
             catalog = catalog.detect(&v.get_root(), &IpLevel::add_available, true)?;
         }
         Ok(catalog)

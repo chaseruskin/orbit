@@ -13,6 +13,7 @@ use crate::util::filesystem;
 use crate::util::filesystem::normalize_path;
 
 use super::config::CONFIG_FILE;
+use super::pkgid::PkgPart;
 use super::vendor::VendorManifest;
 
 pub struct Context {
@@ -31,7 +32,7 @@ pub struct Context {
     config: Config,
     plugins: HashMap<String, Plugin>, // @IDEA optionally move hashmap out of context and create it from fn to allow dynamic loading
     templates: HashMap<String, Template>,
-    vendors: Vec<VendorManifest>,
+    vendors: HashMap<PkgPart, VendorManifest>,
     pub force: bool,
 }
 
@@ -51,7 +52,7 @@ impl Context {
             config: Config::new(),
             build_dir: String::new(),
             force: false,
-            vendors: Vec::new(),
+            vendors: HashMap::new(),
         }
     }
 
@@ -136,7 +137,8 @@ impl Context {
         let indices = self.config.collect_as_array_of_str("vendor", "index")?;
         for index in indices {
             let r_path = filesystem::resolve_rel_path(index.1, index.0.to_owned());
-            self.vendors.push(VendorManifest::from_path(&PathBuf::from(r_path))?);
+            let vendor = VendorManifest::from_path(&PathBuf::from(r_path))?;
+            self.vendors.insert(vendor.get_name().clone(), vendor);
         }
         Ok(self)
     }
@@ -152,7 +154,7 @@ impl Context {
     }
 
     /// References the list of linked vendors.
-    pub fn get_vendors(&self) -> &Vec<VendorManifest> {
+    pub fn get_vendors(&self) -> &HashMap<PkgPart, VendorManifest> {
         &self.vendors
     }
 

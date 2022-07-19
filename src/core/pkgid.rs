@@ -7,7 +7,7 @@ use std::str::FromStr;
 use std::error::Error;
 use std::fmt::Display;
 
-#[derive(Debug, PartialOrd, Clone)]
+#[derive(Debug, PartialOrd, Clone, Eq, Hash)]
 pub struct PkgPart(String);
 
 impl PkgPart {

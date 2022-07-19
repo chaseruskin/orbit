@@ -102,9 +102,9 @@ impl VendorManifest {
         self.manifest.get_path().parent().unwrap().to_path_buf()
     }
 
-    /// Access the vendor's name
-    pub fn get_name(&self) -> String {
-        self.manifest.read_as_str("vendor", "name").unwrap()
+    /// References the vendor's name
+    pub fn get_name(&self) -> &PkgPart {
+        &self.vendor.vendor.name
     }
 
     /// Loads the manifest document from 

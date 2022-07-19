@@ -3,6 +3,7 @@ use crate::FromCli;
 use crate::commands::install::Install;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::store::Store;
+use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Optional};
@@ -10,6 +11,7 @@ use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::core::version::Version;
 use crate::core::extgit::ExtGit;
+use crate::util::environment::Environment;
 
 #[derive(Debug, PartialEq)]
 enum VersionField {
@@ -89,6 +91,13 @@ impl Command for Launch {
 
         // grab the version defined in the manifest
         let mut manifest = manifest::IpManifest::from_path(c.get_ip_path().as_ref().unwrap())?;
+
+        // load variables
+        let mut vars = VariableTable::new()
+            .load_context(&c)?
+            .load_pkgid(&manifest.get_pkgid())?
+            .load_environment(&Environment::new().from_config(c.get_config())?)?;
+
         let prev_version = manifest.get_version();
 
         // at this point it is safe to assume it is a version because manifest will check that
@@ -119,6 +128,8 @@ impl Command for Launch {
             println!("info: setting {}", version);
             false
         };
+
+        vars.add("orbit.ip.version", &version.to_string());
 
         // @TODO report if there are unsaved changes in the working directory/staging index?
 
@@ -262,7 +273,7 @@ impl Command for Launch {
 
             // publish to vendor
             if let Some(reg) = registry {
-                reg.publish(&mut manifest, &version)?;
+                reg.publish(&mut manifest, &version, vars)?;
             }
 
             // store the repository

@@ -1,7 +1,7 @@
-use crate::{core::manifest::Manifest, util::{anyerror::{Fault, AnyError}, filesystem::normalize_path}};
-use std::{path::PathBuf, collections::HashMap};
+use crate::{core::manifest::Manifest, util::{anyerror::{Fault, AnyError}, filesystem::{normalize_path, self}}};
+use std::{path::PathBuf, collections::HashMap, str::FromStr};
 use crate::core::pkgid::PkgId;
-use super::{pkgid::PkgPart, config::FromToml, manifest::IpManifest, version::Version};
+use super::{pkgid::PkgPart, config::FromToml, manifest::IpManifest, version::Version, hook::Hook, variable::{VariableTable}, template};
 use std::io::Write;
 
 #[derive(Debug, PartialEq)]
@@ -43,11 +43,12 @@ impl FromToml for IndexTable {
 #[derive(Debug, PartialEq)]
 pub struct VendorToml {
     vendor: Vendor,
+    hooks: HookTable,
 }
 
 impl VendorToml {
     fn new() -> Self {
-        Self { vendor: Vendor::new() }
+        Self { vendor: Vendor::new(), hooks: HookTable::new() }
     }
 }
 
@@ -55,9 +56,31 @@ impl FromToml for VendorToml {
     type Err = Fault;
 
     fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err> where Self: Sized {
-        let vendor = Vendor::from_toml(table.get("vendor").unwrap().as_table().unwrap())?;
         Ok(Self {
-            vendor: vendor,
+            vendor: Vendor::from_toml(table.get("vendor").unwrap().as_table().unwrap())?,
+            hooks: if let Some(tbl) = table.get("hook") { HookTable::from_toml(tbl.as_table().unwrap())? } else { HookTable::new() },
+        })
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct HookTable {
+    pre_publish: Option<String>,
+    post_publish: Option<String>,
+}
+
+impl HookTable {
+    pub fn new() -> Self {
+        Self { pre_publish: None, post_publish: None }
+    }
+}
+
+impl FromToml for HookTable {
+    type Err = Fault;
+    fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err> where Self: Sized {
+        Ok(Self {
+            pre_publish: Self::get(&table, "pre-publish")?,
+            post_publish: Self::get(&table, "post-publish")?,
         })
     }
 }
@@ -126,7 +149,12 @@ impl VendorManifest {
     }
 
     /// Copies the ip manifest into the vendor.
-    pub fn publish(&self, ip: &mut IpManifest, next: &Version) -> Result<(), Fault> {
+    pub fn publish(&self, ip: &mut IpManifest, next: &Version, vtable: VariableTable) -> Result<(), Fault> {
+        let cwd = std::env::current_dir()?;
+        std::env::set_current_dir(self.get_root())?;
+
+        self.pre_publish_hook(&vtable)?;
+
         // create the path to write to destination
         let pkgid = ip.get_pkgid();
 
@@ -140,8 +168,40 @@ impl VendorManifest {
         ip.stash_units();
 
         // write contents to new file location
-        let mut pub_file = std::fs::File::create(&pub_dir.join(format!("Orbit-{}.toml", next)))?;
-        pub_file.write(ip.get_manifest().get_doc().to_string().as_bytes())?;
+        {
+            let mut pub_file = std::fs::File::create(&pub_dir.join(format!("Orbit-{}.toml", next)))?;
+            pub_file.write(ip.get_manifest().get_doc().to_string().as_bytes())?;
+        }
+        
+        self.post_publish_hook(&vtable)?;
+
+        std::env::set_current_dir(cwd)?;
+        Ok(())
+    }
+
+    fn get_hook(&self, hook: &Option<String>, vtable: &VariableTable) -> Result<Option<Hook>, Fault> {
+        // check if the key is in manifest
+        let file = if let Some(h) = hook.as_ref() { h } else { return Ok(None) };
+        // check if file exists
+        let r_path = PathBuf::from(filesystem::resolve_rel_path(&self.get_root(), file.to_string()));
+        let contents = std::fs::read_to_string(r_path)?;
+        // perform variable replacement
+        Ok(Some(Hook::from_str(&template::substitute(contents, vtable)).unwrap()))
+    }
+
+    fn pre_publish_hook(&self, vtable: &VariableTable) -> Result<(), Fault>  {
+        let hook = self.get_hook(&self.vendor.hooks.pre_publish, vtable)?;
+        if let Some(h) = hook {
+            h.execute()?;
+        }
+        Ok(())
+    }
+
+    fn post_publish_hook(&self, vtable: &VariableTable) -> Result<(), Fault>  {
+        let hook = self.get_hook(&self.vendor.hooks.post_publish, vtable)?;
+        if let Some(h) = hook {
+            h.execute()?;
+        }
         Ok(())
     }
 

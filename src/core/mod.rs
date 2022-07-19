@@ -16,3 +16,4 @@ pub mod store;
 pub mod resolver;
 pub mod catalog;
 pub mod variable;
+pub mod hook;

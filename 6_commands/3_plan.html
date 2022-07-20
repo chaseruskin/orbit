@@ -176,10 +176,13 @@ be set during any following calls to the 'build' command.</p>
 <p><code>--all</code><br />
       Ignore any design hierarchy and include all hdl files</p>
 <p><code>--disable-ssh</code><br />
-      Convert SSH to HTTPS urls when fetching external dependencies
+      Convert SSH to HTTPS urls when fetching external dependencies</p>
+<p><code>--force</code><br />
+      Ignore reading the lock file
       </p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit plan --top top_level --fileset PIN-PLAN=&quot;*.board&quot;
+orbit plan --plugin vivado --clean --bench ram_tb
 </code></pre>
 
                     </main>

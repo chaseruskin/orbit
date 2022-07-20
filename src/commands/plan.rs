@@ -61,8 +61,8 @@ impl Command for Plan {
             .installations(c.get_cache_path())?
             .available(c.get_vendors())?;
 
-        // this code is only ran if the lock file matches the manifest
-        if target_ip.can_use_lock() == true {
+        // this code is only ran if the lock file matches the manifest and we aren't force to recompute
+        if target_ip.can_use_lock() == true && c.force == false {
             // fill in the catalog with missing modules according the lock file if available
             for entry in target_ip.into_lockfile()?.inner() {
                 if entry.get_name() == target_ip.get_pkgid() { continue }
@@ -644,6 +644,7 @@ Options:
     --list                  view available plugins
     --all                   include all found HDL files
     --disable-ssh           convert SSH repositories to HTTPS for dependencies
+    --force                 skip reading from the lock file
 
 Use 'orbit help plan' to learn more about the command.
 ";

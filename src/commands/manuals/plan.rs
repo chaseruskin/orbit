@@ -45,8 +45,12 @@ OPTIONS
      
     --disable-ssh  
           Convert SSH to HTTPS urls when fetching external dependencies
+     
+    --force  
+          Ignore reading the lock file
           
 
 EXAMPLES
     orbit plan --top top_level --fileset PIN-PLAN=\"*.board\"
+    orbit plan --plugin vivado --clean --bench ram_tb
 ";

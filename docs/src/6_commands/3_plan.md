@@ -51,9 +51,13 @@ be set during any following calls to the 'build' command.
  
 `--disable-ssh`  
       Convert SSH to HTTPS urls when fetching external dependencies
+ 
+`--force`  
+      Ignore reading the lock file
       
 ## __EXAMPLES__
 
 ```
 orbit plan --top top_level --fileset PIN-PLAN="*.board"
+orbit plan --plugin vivado --clean --bench ram_tb
 ```

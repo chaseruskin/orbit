@@ -93,15 +93,15 @@ impl Probe {
 /// Creates a string for to display the primary design units for the particular ip.
 fn format_units_table(table: Vec<PrimaryUnit>) -> String {
     let header = format!("\
-{:<32}{:<12}{:<9}
-{:->32}{3:->12}{3:->9}\n",
+{:<32}{:<14}{:<9}
+{:->32}{3:->14}{3:->9}\n",
                 "Identifier", "Unit", "Public", " ");
     let mut body = String::new();
 
     let mut table = table;
     table.sort_by(|a, b| a.as_iden().unwrap().cmp(b.as_iden().unwrap()));
     for unit in table {
-        body.push_str(&format!("{:<32}{:<12}{:<2}\n", 
+        body.push_str(&format!("{:<32}{:<14}{:<2}\n", 
             unit.as_iden().unwrap().to_string(), 
             unit.to_string(), 
             "y"));

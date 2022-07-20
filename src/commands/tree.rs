@@ -179,7 +179,11 @@ impl Tree {
                         symbol::VHDLSymbol::Architecture(arch) => {
                             archs.push(ArchitectureFile::new(arch, source_file));
                             None
-                        }
+                        },
+                        symbol::VHDLSymbol::Configuration(cfg) => {
+                            println!("{:?}", cfg);
+                            None
+                        },
                         _ => None,
                     }
                 });

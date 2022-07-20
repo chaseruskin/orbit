@@ -36,6 +36,14 @@ impl VHDLSymbol {
         }
     }
 
+    /// Casts `self` to configuration.
+    pub fn as_configuration(&self) -> Option<&Configuration> {
+        match self {
+            Self::Configuration(cfg) => Some(cfg),
+            _ => None,
+        }
+    }
+
     /// Transforms `self` to entity.
     pub fn into_entity(self) -> Option<Entity> {
         match self {
@@ -315,6 +323,27 @@ pub struct UseClause {
 pub struct Configuration {
     name: Identifier,
     owner: Identifier,
+    dependencies: Vec<Identifier>,
+    refs: Vec<ResReference>,
+}
+
+impl Configuration {
+    pub fn name(&self) -> &Identifier {
+        &self.name
+    }
+
+    pub fn entity(&self) -> &Identifier {
+        &self.owner
+    }
+
+    pub fn edges(&self) -> &Vec<Identifier> {
+        &self.dependencies
+    }
+
+    /// Accesses the references for the entity.
+    pub fn get_refs(&self) -> Vec<&ResReference> {
+        self.refs.iter().map(|f| f).collect()
+    }
 }
 
 /* 
@@ -642,6 +671,38 @@ impl VHDLSymbol {
         }
     }
 
+    /// Detects identifiers configured in the configuration statement section or architecture
+    /// declaration section.
+    /// 
+    /// Assumes the first token to consume is 'for' and there is a ':' token to follow.
+    fn parse_configuration_spec(statement: Statement) -> Option<Identifier> {
+        let mut tokens = statement.0.into_iter().peekable();
+        // force keyword 'for'
+        if tokens.next()?.take().check_keyword(&Keyword::For) == false { return None }
+        // take tokens until ':'
+        while let Some(tkn) = tokens.next() {
+            if tkn.as_ref().check_delimiter(&Delimiter::Colon) == true { break }
+        }
+        // take the component's name that is being replaced
+        tokens.next()?.take().get_identifier()?;
+
+        // take the keyword 'use'
+        if tokens.next()?.take().check_keyword(&Keyword::Use) == false { return None }
+        
+        // entity aspect
+        // entity_aspect ::=
+        //      entity entity_name [ ( architecture_identifier) ]
+        //      | configuration configuration_name
+        //      | open
+        if tokens.peek()?.as_ref().check_keyword(&Keyword::Entity) == true ||
+            tokens.peek()?.as_ref().check_keyword(&Keyword::Configuration) == true {
+                tokens.next().unwrap();
+            return Some(Self::compose_name(&mut tokens).take_suffix())
+        } else {
+            None
+        }
+    }
+
     /// Detects identifiers instantiated in the architecture statement sections.
     /// 
     /// Assumes the next token to consume is instance name of the instantiation and
@@ -681,11 +742,77 @@ impl VHDLSymbol {
             _ => panic!("expected an identifier")
         };
         let entity_name = VHDLSymbol::parse_owner_design_unit(tokens);
-        VHDLSymbol::parse_declaration(tokens, &Self::is_primary_ending);
+
+        // force taking the `is` keyword
+        if tokens.next().unwrap().as_type().check_keyword(&Keyword::Is) == false { panic!("expecting keyword 'is'") }
+
+        let mut ids = Vec::new();
+        // parse configuration section
+        while let Some(t) = tokens.peek() {
+            if t.as_type().check_keyword(&Keyword::End) {
+                let stmt = Self::compose_statement(tokens);
+                println!("{:?}", stmt);
+                if Self::is_primary_ending(&stmt) { 
+                    break; 
+                }
+            // enter a block configuration
+            } else if t.as_type().check_keyword(&Keyword::For) {
+                // take the 'for' keyword
+                tokens.next().unwrap();
+                ids.append(&mut Self::parse_block_configuration(tokens));
+            // @todo handle `use` clauses
+            } else {
+                let smt = Self::compose_statement(tokens);
+                println!("{:?}", smt);
+            }
+        }
+        // VHDLSymbol::parse_declaration(tokens, &Self::is_primary_ending);
         VHDLSymbol::Configuration(Configuration {
             name: config_name,
             owner: entity_name,
+            dependencies: ids,
+            refs: Vec::new(),
         })
+    }
+
+    fn parse_block_configuration<I>(tokens: &mut Peekable<I>) -> Vec<Identifier> 
+    where I: Iterator<Item=Token<VHDLToken>>  {
+        let mut ids = Vec::new();
+        // take the identifier
+        tokens.next().unwrap();
+        // if next token is '(', take until leveling out to ')'
+        if tokens.peek().unwrap().as_type().check_delimiter(&Delimiter::ParenL) {
+            tokens.next();
+            let mut balance = 1;
+            while let Some(t) = tokens.next() {
+                if t.as_ref().check_delimiter(&Delimiter::ParenL) == true {
+                    balance += 1;
+                } else if t.as_ref().check_delimiter(&Delimiter::ParenR) == true {
+                    balance -= 1;
+                }
+                if balance == 0 {
+                    break;
+                }
+            }   
+        }
+        while let Some(t) = tokens.peek() {
+            if t.as_type().check_keyword(&Keyword::End) {
+                let stmt = Self::compose_statement(tokens);
+                // exit the block configuration
+                if Self::is_sub_ending(&stmt) { 
+                    break; 
+                }
+            } else {
+                // take configuration specification by composing statement
+                let stmt = Self::compose_statement(tokens);
+                if let Some(iden) = Self::parse_configuration_spec(stmt) {
+                    ids.push(iden);
+                    // take next `end for`
+                    let _ending = Self::compose_statement(tokens);
+                }
+            }
+        }
+        ids
     }
 
     /// Consumes tokens after the USE keyword.
@@ -996,7 +1123,13 @@ impl VHDLSymbol {
                 let stmt = Self::compose_statement(tokens);
                 // add resource references
                 // println!("st {:?}", stmt);
-                refs.append(&mut stmt.take_refs());
+                let (tokens, mut resrefs) = (stmt.0, stmt.1);
+                // check if using a configuration specification
+                if let Some(iden) = Self::parse_configuration_spec(Statement(tokens, Vec::new())) {
+                    ids.push(iden);
+                } else {
+                    refs.append(&mut resrefs);
+                }
             }
         }
         (ids, refs)
@@ -1138,7 +1271,6 @@ impl VHDLSymbol {
                     // println!("info: detected dependency \"{}\"", inst);
                     deps.push(inst);
                 }
-                
             }
         }
         // println!("{:?}", deps);
@@ -1442,6 +1574,51 @@ end entity nor_gate;";
         let mut iter = tokens.into_iter().peekable();
         let st = VHDLSymbol::compose_statement(&mut iter);
         assert_eq!(st.to_string(), "a : in std_logic_vector(3 downto 0)");
+    }
+
+    #[test]
+    fn configuration() {
+        let s = r#"
+use work.all;
+
+configuration HA_Config of HA_Entity is
+    for HA_Arch
+        for HA_Inst : HA_Comp
+            use entity HA_Comp_Entity(HA_Comp_Arch_1);
+        end for;
+        use work.some_pkg.all;
+        for HA_Inst : HA_Comp
+            use entity HA_Comp_Entity2(HA_Comp_Arch_1);
+        end for;
+    end for;
+end HA_Config;    
+"#;
+        let symbols = VHDLParser::parse(VHDLTokenizer::from_source_code(&s).into_tokens());
+        assert_eq!(symbols.first().unwrap().as_ref().unwrap().as_ref().as_configuration().unwrap().edges(),
+            &vec![Identifier::Basic(String::from("HA_Comp_Entity")), Identifier::Basic(String::from("HA_Comp_Entity2"))]);
+    }
+
+    #[test]
+    fn configuration_spec() {
+        let s = r#"
+for L1: XOR_GATE use entity WORK.XOR_GATE(Behavior) -- or L1 = 'others' = 'L1, L2, ...' = 'all'
+        generic map (3 ns, 3 ns)
+        port map (I1 => I1, I2 => I2, O => O);    
+"#;
+        let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
+        let mut iter = tokens.into_iter().peekable();
+        let st = VHDLSymbol::compose_statement(&mut iter);
+        let iden = VHDLSymbol::parse_configuration_spec(st);
+        assert_eq!(iden.unwrap(), Identifier::Basic(String::from("XOR_GATE")));
+
+        let s = r#"
+for all: xor_gate use configuration cfg1;    
+"#;
+        let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
+        let mut iter = tokens.into_iter().peekable();
+        let st = VHDLSymbol::compose_statement(&mut iter);
+        let iden = VHDLSymbol::parse_configuration_spec(st);
+        assert_eq!(iden.unwrap(), Identifier::Basic(String::from("cfg1")));
     }
 
     #[test]

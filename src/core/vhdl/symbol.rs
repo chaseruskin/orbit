@@ -4,13 +4,12 @@ use crate::core::lexer::*;
 
 #[derive(Debug, PartialEq)]
 pub enum VHDLSymbol {
-    Context(Context),
-    // primary units
+    // primary design units
     Entity(Entity),
+    Context(Context),
     Package(Package),
     Configuration(Configuration),
-    // @TODO context clause
-    // secondary units
+    // secondary design units
     Architecture(Architecture),
     PackageBody(PackageBody),
 }
@@ -24,7 +23,7 @@ impl VHDLSymbol {
             Self::Package(p) => Some(&p.name),
             Self::PackageBody(_) => None,
             Self::Configuration(c) => Some(&c.name),
-            Self::Context(_) => todo!("capture context id"),
+            Self::Context(c) => Some(&c.name),
         }
     }
 
@@ -74,6 +73,7 @@ impl VHDLSymbol {
             Self::Architecture(a) => a.refs.append(refs),
             Self::Package(p) => p.refs.append(refs),
             Self::PackageBody(pb) => pb.refs.append(refs),
+            Self::Context(cx) => cx.refs.append(refs),
             _ => (),
         }
         refs.clear();
@@ -85,6 +85,7 @@ impl VHDLSymbol {
             Self::Architecture(a) => a.get_refs(),
             Self::Package(p) => p.get_refs(),
             Self::PackageBody(pb) => pb.get_refs(),
+            Self::Context(cx) => cx.get_refs(),
             _ => vec![]
         }
     }
@@ -98,7 +99,7 @@ impl std::fmt::Display for VHDLSymbol {
             Self::Architecture(a) => format!("architecture {} for entity {}", &a.name, &a.owner),
             Self::Package(p) => format!("package {}", &p),
             Self::Configuration(c) => format!("configuration {} for entity {}", &c.name, &c.owner),
-            Self::Context(_) => format!("context clause"),
+            Self::Context(c) => format!("context clause {}", &c.name),
         };
         write!(f, "{}", s)
     }
@@ -308,7 +309,26 @@ impl Architecture {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Context {
+pub struct Context {
+    name: Identifier,
+    refs: Vec<ResReference>,
+}
+
+impl Context {
+    /// Accesses the references for the entity.
+    pub fn get_refs(&self) -> Vec<&ResReference> {
+        self.refs.iter().map(|f| f).collect()
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ContextUsage {
+    ContextDeclaration(Context),
+    ContextReference(Vec<ResReference>),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ContextStatement {
     LibraryClause,
     UseClause(UseClause),
     // @TODO Context_reference
@@ -449,6 +469,18 @@ impl Parse<VHDLToken> for VHDLParser {
                 pack.add_refs(&mut global_refs);
                 // println!("info: detected {}", pack);
                 symbols.push(Ok(Symbol::new(pack)));
+            } else if t.as_ref().check_keyword(&Keyword::Context) {
+                match VHDLSymbol::parse_context(&mut tokens) {
+                    ContextUsage::ContextDeclaration(dec) => {
+                        let mut context = VHDLSymbol::Context(dec);
+                        println!("info: detected {}", context);
+                        context.add_refs(&mut global_refs);
+                        symbols.push(Ok(Symbol::new(context)));
+                    },
+                    ContextUsage::ContextReference(mut refs) => {
+                        global_refs.append(&mut refs);
+                    }
+                };
             // otherwise take a statement (probably by mistake/errors in user's vhdl code or as of now an error in my code)
             } else {
                 let mut stmt: Statement = Statement::new();
@@ -609,6 +641,53 @@ impl VHDLSymbol {
             refs: Vec::new(),
             body: None,
         })
+    }
+
+    /// Creates a `Context` struct for primary design unit: context.
+    /// 
+    /// Assumes the next token to consume is the context's identifier.
+    fn parse_context<I>(tokens: &mut Peekable<I>) -> ContextUsage
+    where I: Iterator<Item=Token<VHDLToken>>  {
+        // grab the identifier name
+        let iden = tokens.next().unwrap().take().take_identifier().unwrap();
+        // check the next token is the `is` keyword for declaration
+        if tokens.peek().unwrap().as_ref().check_keyword(&Keyword::Is) == true {
+            ContextUsage::ContextDeclaration(Context { name: iden, refs: Self::parse_context_declaration(tokens) })
+        // parse statement
+        } else {
+            let mut subtokens = vec![Token::new(VHDLToken::Identifier(iden), Position::new())];
+            while let Some(t) = tokens.next() {
+                if t.as_ref().check_delimiter(&Delimiter::Terminator) == true {
+                    subtokens.push(t);
+                    break;
+                }
+                subtokens.push(t);
+            }
+            let stmt = Self::compose_statement(&mut subtokens.into_iter().peekable());
+            ContextUsage::ContextReference(stmt.1)
+        }
+    }
+
+    /// Creates a `Context` struct for primary design unit: context.
+    /// 
+    /// Assumes the next token to consume is the keyword `IS`. Stops at the `end`.
+    fn parse_context_declaration<I>(tokens: &mut Peekable<I>) -> Vec<ResReference>
+    where I: Iterator<Item=Token<VHDLToken>>  {
+        let mut result = Vec::new();
+
+        while let Some(t) = tokens.next() {
+            let mut stmt = Self::compose_statement(tokens);
+
+            if t.as_ref().check_keyword(&Keyword::End) == true {
+                if Self::is_primary_ending(&stmt) == true {
+                    break;
+                }
+            } else {
+                // get references
+                result.append(&mut stmt.1);
+            }
+        }
+        result
     }
 
     /// Collects identifiers into a single vector, stopping at a non-identifier token.
@@ -834,6 +913,9 @@ impl VHDLSymbol {
         UseClause { imports: imports }
     }
 
+    /// Parses an secondary design unit: architecture.
+    /// 
+    /// Assumes the next token to consume is the architecture's identifier.
     fn parse_architecture<I>(tokens: &mut Peekable<I>) -> VHDLSymbol 
         where I: Iterator<Item=Token<VHDLToken>> {
         let arch_name = match tokens.next().take().unwrap().take() {

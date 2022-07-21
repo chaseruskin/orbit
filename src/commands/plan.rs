@@ -287,7 +287,7 @@ impl Plan {
                                     bodies.push(pb);
                                     None
                                 }
-                                _ => None,
+                                symbol::VHDLSymbol::Context(_) => Some(f),
                             }
                         });
                     while let Some(e) = iter.next() {

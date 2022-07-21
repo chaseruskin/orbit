@@ -74,7 +74,7 @@ impl VHDLSymbol {
             Self::Package(p) => p.refs.append(refs),
             Self::PackageBody(pb) => pb.refs.append(refs),
             Self::Context(cx) => cx.refs.append(refs),
-            _ => (),
+            Self::Configuration(cf) => cf.refs.append(refs),
         }
         refs.clear();
     }
@@ -86,7 +86,7 @@ impl VHDLSymbol {
             Self::Package(p) => p.get_refs(),
             Self::PackageBody(pb) => pb.get_refs(),
             Self::Context(cx) => cx.get_refs(),
-            _ => vec![]
+            Self::Configuration(cf) => cf.get_refs(),
         }
     }
 }
@@ -99,7 +99,7 @@ impl std::fmt::Display for VHDLSymbol {
             Self::Architecture(a) => format!("architecture {} for entity {}", &a.name, &a.owner),
             Self::Package(p) => format!("package {}", &p),
             Self::Configuration(c) => format!("configuration {} for entity {}", &c.name, &c.owner),
-            Self::Context(c) => format!("context clause {}", &c.name),
+            Self::Context(c) => format!("context {}", &c.name),
         };
         write!(f, "{}", s)
     }
@@ -473,7 +473,7 @@ impl Parse<VHDLToken> for VHDLParser {
                 match VHDLSymbol::parse_context(&mut tokens) {
                     ContextUsage::ContextDeclaration(dec) => {
                         let mut context = VHDLSymbol::Context(dec);
-                        println!("info: detected {}", context);
+                        // println!("info: detected {}", context);
                         context.add_refs(&mut global_refs);
                         symbols.push(Ok(Symbol::new(context)));
                     },

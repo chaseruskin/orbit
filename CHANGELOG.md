@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.3.14
+
+### Features
+- adds `--force` flag to `orbit plan` to skip reading a lock file
+
 ## 0.3.13
 
 ### Features

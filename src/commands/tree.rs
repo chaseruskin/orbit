@@ -1,10 +1,10 @@
 use std::collections::HashMap;
-
 use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
 use crate::core::ip;
 use crate::core::manifest::IpManifest;
+use crate::core::vhdl::subunit::SubUnit;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;
@@ -166,7 +166,7 @@ impl Tree {
         // entity identifier, HashNode (hash-node holds entity structs)
         let mut map = HashMap::<Identifier, HashNode>::new();
 
-        let mut archs: Vec<ArchitectureFile> = Vec::new();
+        let mut sub_nodes: Vec<SubUnitNode> = Vec::new();
         // read all files
         for source_file in files {
             if crate::core::fileset::is_vhdl(&source_file.get_file()) == true {
@@ -177,11 +177,11 @@ impl Tree {
                     match f {
                         symbol::VHDLSymbol::Entity(e) => Some(e),
                         symbol::VHDLSymbol::Architecture(arch) => {
-                            archs.push(ArchitectureFile::new(arch, source_file));
+                            sub_nodes.push(SubUnitNode::new(SubUnit::from_arch(arch), source_file));
                             None
                         },
                         symbol::VHDLSymbol::Configuration(cfg) => {
-                            println!("{:?}", cfg);
+                            sub_nodes.push(SubUnitNode::new(SubUnit::from_config(cfg), source_file));
                             None
                         },
                         _ => None,
@@ -196,16 +196,16 @@ impl Tree {
         }
 
         // go through all architectures and make the connections
-        let mut archs = archs.into_iter();
-        while let Some(af) = archs.next() {
+        let mut sub_nodes_iter = sub_nodes.into_iter();
+        while let Some(node) = sub_nodes_iter.next() {
             // link to the owner and add architecture's source file
-            let entity_node = map.get_mut(&af.get_architecture().entity()).unwrap();
-            entity_node.add_file(af.get_file());
+            let entity_node = map.get_mut(&node.get_sub().get_entity()).unwrap();
+            entity_node.add_file(node.get_file());
             // create edges
-            for dep in af.get_architecture().edges() {
+            for dep in node.get_sub().get_edges() {
                 // verify the dep exists
-                if let Some(node) = map.get(dep) {
-                    graph.add_edge(node.index(), map.get(af.get_architecture().entity()).unwrap().index(), ());
+                if let Some(n) = map.get(dep) {
+                    graph.add_edge(n.index(), map.get(node.get_sub().get_entity()).unwrap().index(), ());
                 }
             }
         }
@@ -215,7 +215,7 @@ impl Tree {
 
 use crate::core::vhdl::symbol;
 
-use super::plan::ArchitectureFile;
+use super::plan::SubUnitNode;
 use super::plan::IpFileNode;
 use super::plan::Plan;
 use super::plan::PlanError;

@@ -10,6 +10,7 @@ use crate::core::resolver::lockfile::LockEntry;
 use crate::core::template;
 use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
+use crate::core::vhdl::subunit::SubUnit;
 use crate::core::vhdl::symbol::ResReference;
 use crate::interface::cli::Cli;
 use crate::util::anyerror::Fault;
@@ -112,19 +113,19 @@ use crate::util::anyerror::AnyError;
 use super::install;
 
 #[derive(Debug, PartialEq)]
-pub struct ArchitectureFile<'a> {
-    architecture: symbol::Architecture,
+pub struct SubUnitNode<'a> {
+    sub: SubUnit,
     file: &'a IpFileNode<'a>,
 }
 
-impl<'a> ArchitectureFile<'a> {
-    pub fn new(arch: symbol::Architecture, file: &'a IpFileNode<'a>) -> Self {
-        Self { architecture: arch, file: file.to_owned() }
+impl<'a> SubUnitNode<'a> {
+    pub fn new(unit: SubUnit, file: &'a IpFileNode<'a>) -> Self {
+        Self { sub: unit, file: file }
     }
 
     /// References the architecture struct.
-    pub fn get_architecture(&self) -> &symbol::Architecture {
-        &self.architecture
+    pub fn get_sub(&self) -> &SubUnit {
+        &self.sub
     }
 
     /// References the ip file node.
@@ -260,7 +261,7 @@ impl Plan {
     fn build_full_graph<'a>(files: &'a Vec<IpFileNode>) -> GraphMap<Identifier, GraphNode<'a>, ()> {
             let mut graph_map: GraphMap<Identifier, GraphNode, ()> = GraphMap::new();
     
-            let mut archs: Vec<ArchitectureFile> = Vec::new();
+            let mut sub_nodes: Vec<SubUnitNode> = Vec::new();
             let mut bodies: Vec<symbol::PackageBody> = Vec::new();
             // read all files
             for source_file in files {
@@ -274,7 +275,11 @@ impl Plan {
                                 symbol::VHDLSymbol::Entity(_) => Some(f),
                                 symbol::VHDLSymbol::Package(_) => Some(f),
                                 symbol::VHDLSymbol::Architecture(arch) => {
-                                    archs.push(ArchitectureFile{ architecture: arch, file: source_file });
+                                    sub_nodes.push(SubUnitNode{ sub: SubUnit::from_arch(arch), file: source_file });
+                                    None
+                                }
+                                symbol::VHDLSymbol::Configuration(cfg) => {
+                                    sub_nodes.push(SubUnitNode { sub: SubUnit::from_config(cfg), file: source_file });
                                     None
                                 }
                                 // package bodies are usually in same design file as package
@@ -303,19 +308,19 @@ impl Plan {
             }
     
             // go through all architectures and make the connections
-            let mut archs = archs.into_iter();
-            while let Some(af) = archs.next() {
+            let mut sub_nodes_iter = sub_nodes.into_iter();
+            while let Some(node) = sub_nodes_iter.next() {
                 // link to the owner and add architecture's source file
-                let entity_node = graph_map.get_node_by_key_mut(&af.architecture.entity()).unwrap();
-                entity_node.as_ref_mut().add_file(af.file);
+                let entity_node = graph_map.get_node_by_key_mut(&node.sub.get_entity()).unwrap();
+                entity_node.as_ref_mut().add_file(node.file);
                 // create edges
-                for dep in af.architecture.edges() {
-                    graph_map.add_edge_by_key(dep, af.architecture.entity(), ());
+                for dep in node.sub.get_edges() {
+                    graph_map.add_edge_by_key(dep, node.sub.get_entity(), ());
                 }
                 // add edges for reference calls
-                for dep in af.architecture.get_refs() {
+                for dep in node.sub.get_refs() {
                     // note: verify the dependency exists (occurs within function)
-                    graph_map.add_edge_by_key(dep.get_suffix(), af.architecture.entity(), ());
+                    graph_map.add_edge_by_key(dep.get_suffix(), node.sub.get_entity(), ());
                 }
             }
 

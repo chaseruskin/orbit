@@ -15,6 +15,12 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.4.0
+
+### Features
+- adds support for detecting and connecting VHDL context design units in `orbit plan` for blueprint writing
+- adds support for detecting and connecting VHDL configuration design units in `orbit plan` for blueprint writing
+
 ## 0.3.14
 
 ### Features

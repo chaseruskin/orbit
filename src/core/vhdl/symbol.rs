@@ -751,7 +751,6 @@ impl VHDLSymbol {
         while let Some(t) = tokens.peek() {
             if t.as_type().check_keyword(&Keyword::End) {
                 let stmt = Self::compose_statement(tokens);
-                println!("{:?}", stmt);
                 if Self::is_primary_ending(&stmt) { 
                     break; 
                 }

@@ -13,7 +13,7 @@ pub mod config;
 pub mod extgit;
 pub mod template;
 pub mod store;
-pub mod resolver;
+pub mod lockfile;
 pub mod catalog;
 pub mod variable;
 pub mod hook;

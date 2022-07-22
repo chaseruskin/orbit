@@ -64,7 +64,7 @@ use std::path::PathBuf;
 use std::env;
 
 use crate::core::manifest;
-use crate::core::resolver::lockfile;
+use crate::core::lockfile;
 
 use super::anyerror::Fault;
 

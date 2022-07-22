@@ -7,7 +7,7 @@ use crate::core::extgit;
 use crate::core::ip::IpFileNode;
 use crate::core::manifest::IpManifest;
 use crate::core::pkgid::PkgPart;
-use crate::core::resolver::lockfile::LockEntry;
+use crate::core::lockfile::LockEntry;
 use crate::core::template;
 use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;

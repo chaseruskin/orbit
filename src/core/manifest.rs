@@ -5,7 +5,7 @@ use std::path;
 use std::path::PathBuf;
 use std::error::Error;
 use crate::core::pkgid::PkgId;
-use crate::core::resolver::lockfile::{LockFile, IP_LOCK_FILE};
+use crate::core::lockfile::{LockFile, IP_LOCK_FILE};
 use crate::util::anyerror::{AnyError, Fault};
 use crate::util::sha256::{Sha256Hash, self};
 use crate::util::url::Url;
@@ -14,7 +14,7 @@ use crate::core::version::Version;
 use crate::util::filesystem::normalize_path;
 
 use super::config::{FromToml, FromTomlError};
-use super::resolver::lockfile::LockEntry;
+use super::lockfile::LockEntry;
 use super::ip::IpSpec;
 use super::version::AnyVersion;
 use super::vhdl::primaryunit::PrimaryUnit;

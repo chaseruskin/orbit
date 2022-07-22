@@ -1,10 +1,14 @@
 use std::{collections::HashMap, path::PathBuf};
-use crate::util::{anyerror::Fault, sha256::Sha256Hash};
+use crate::{util::{anyerror::Fault, sha256::Sha256Hash}, core::manifest};
 
 use super::{pkgid::{PkgId, PkgPart}, manifest::IpManifest, version::{Version, AnyVersion}, store::Store, vendor::VendorManifest};
 
 #[derive(Debug)]
-pub struct Catalog<'a>(HashMap<PkgId, IpLevel>, Option<Store<'a>>, Option<&'a PathBuf> /*cache path */);
+pub struct Catalog<'a> {
+    inner: HashMap<PkgId, IpLevel>, 
+    store: Option<Store<'a>>, 
+    cache: Option<&'a PathBuf>,
+}
 
 #[derive(Debug)]
 pub struct IpLevel {
@@ -126,12 +130,16 @@ impl IpLevel {
 
 impl<'a> Catalog<'a> {
     pub fn new() -> Self {
-        Self(HashMap::new(), None, None)
+        Self {
+            inner: HashMap::new(), 
+            store: None, 
+            cache: None,
+        }
     }
 
     /// Sets the store.
     pub fn store(mut self, path: &'a PathBuf) -> Self {
-        self.1 = Some(Store::new(path));
+        self.store = Some(Store::new(path));
         self
     }
 
@@ -148,7 +156,7 @@ impl<'a> Catalog<'a> {
 
     /// Searches the `path` for IP installed.
     pub fn installations(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
-        self.2 = Some(&path);
+        self.cache = Some(&path);
         self.detect(path, &IpLevel::add_install, false)
     }
 
@@ -162,11 +170,11 @@ impl<'a> Catalog<'a> {
     }
 
     pub fn inner(&self) -> &HashMap<PkgId, IpLevel> {
-        &self.0
+        &self.inner
     }
 
     pub fn inner_mut(&mut self) -> &mut HashMap<PkgId, IpLevel> {
-        &mut self.0
+        &mut self.inner
     }
 
     /// Returns all possible versions found for the `target` ip.
@@ -176,7 +184,40 @@ impl<'a> Catalog<'a> {
         todo!();
     }
 
-    pub fn update_installations(&self) -> () {
+    /// Creates a ip manifest that underwent dynamic symbol transformation.
+    /// 
+    /// Returns the dst ip for reference.
+    pub fn install_dst(&self, source_ip: &IpManifest) -> IpManifest {
+        // compute the new checksum
+        let sum = source_ip.compute_checksum();
+        println!("{}", sum);
+
+        // determine the cache slot name
+        let cache_path = {
+            let cache_slot = CacheSlot::form(source_ip.get_pkgid().get_name(), source_ip.get_version(), &sum);
+            self.get_cache_path().join(cache_slot.0)
+        };
+
+        // check if already exists and return early with manifest if exists
+        if cache_path.exists() == true {
+            return IpManifest::from_path(&cache_path).unwrap()
+        }
+
+        // copy the source ip to the new location
+        crate::util::filesystem::copy(&source_ip.get_root(), &cache_path).unwrap();
+
+        let mut cached_ip = IpManifest::from_path(&cache_path).unwrap();
+        cached_ip.stash_units();
+        // write the new ORBIT_METADATA_FILE
+        cached_ip.write_metadata().unwrap();
+
+        // write the new ORBIT_CHECKSUM_FILE
+        std::fs::write(&cache_path.join(manifest::ORBIT_SUM_FILE), sum.to_string().as_bytes()).unwrap();
+
+        cached_ip
+    }
+
+    pub fn update_installations(&mut self) -> () {
         todo!()
     }
 
@@ -189,13 +230,13 @@ impl<'a> Catalog<'a> {
             true => crate::core::manifest::IpManifest::detect_available(path)
         }?.into_iter()
             .for_each(|ip| {
-                match self.0.get_mut(&ip.get_pkgid()) {
+                match self.inner.get_mut(&ip.get_pkgid()) {
                     Some(lvl) => add(lvl, ip),
                     None => { 
                         let pkgid = ip.get_pkgid().clone();
                         let mut lvl = IpLevel::new(); 
                         add(&mut lvl, ip); 
-                        self.0.insert(pkgid, lvl); 
+                        self.inner.insert(pkgid, lvl); 
                         ()
                     },
                 }
@@ -204,11 +245,11 @@ impl<'a> Catalog<'a> {
     }
 
     pub fn get_store(&self) -> &Store {
-        self.1.as_ref().unwrap()
+        self.store.as_ref().unwrap()
     }
 
     pub fn get_cache_path(&self) -> &PathBuf {
-        self.2.as_ref().unwrap()
+        self.cache.as_ref().unwrap()
     }
 }
 

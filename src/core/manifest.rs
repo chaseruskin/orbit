@@ -733,7 +733,7 @@ impl IpManifest {
 
     /// Creates a string for printing an ip manifest to during `orbit tree`. 
     pub fn to_leaf_string(&self) -> String {
-        format!("{} {}", self.get_pkgid(), self.get_version())
+        format!("{} {} {}", self.get_pkgid(), self.get_version(), self.compute_checksum())
     }
 
     pub fn get_dependencies(&self) -> &DependencyTable {
@@ -771,6 +771,20 @@ impl IpManifest {
         tbl["units"].as_array_mut().unwrap().set_trailing("\n");
     }
 
+
+    pub fn generate_dst_lut(&self) -> HashMap<Identifier, String> {
+        let units = self.read_units_from_metadata().unwrap();
+        let checksum = self.get_checksum_proof(0).unwrap();
+        // compose the lut for symbol transformation
+        let mut lut = HashMap::new();
+        units.into_iter().for_each(|f| {
+            lut.insert(
+                f.as_iden().unwrap().clone(), 
+                "_".to_string() + checksum.to_string().get(0..10).unwrap()
+            );
+        });
+        lut
+    }
 
 }
 

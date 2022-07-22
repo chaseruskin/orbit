@@ -7,7 +7,7 @@ mod plan;
 mod build;
 mod edit;
 mod launch;
-mod install;
+pub mod install;
 mod tree;
 mod probe;
 mod get;

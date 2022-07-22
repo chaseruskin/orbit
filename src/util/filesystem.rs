@@ -66,6 +66,8 @@ use std::env;
 use crate::core::manifest;
 use crate::core::resolver::lockfile;
 
+use super::anyerror::Fault;
+
 /// Attempts to return the executable's path.
 pub fn get_exe_path() -> Result<PathBuf, Box::<dyn std::error::Error>> {
     match env::current_exe() {    
@@ -90,6 +92,26 @@ pub fn resolve_rel_path(root: &std::path::PathBuf, s: String) -> String {
     } else {
         s
     }
+}
+
+/// Recursively copies files from `source` to `target` directory.
+/// 
+/// Assumes `target` directory does not already exist.
+pub fn copy(source: &PathBuf, target: &PathBuf) -> Result<(), Fault> {
+    // create missing directories to `target
+    std::fs::create_dir_all(&target)?;
+    // copy contents into cache slot
+    let options = fs_extra::dir::CopyOptions::new();
+    let mut from_paths = Vec::new();
+    for dir_entry in std::fs::read_dir(source)? {
+        match dir_entry {
+            Ok(d) => if d.file_name() != ".git" || d.file_type()?.is_dir() != true { from_paths.push(d.path()) },
+            Err(_) => (),
+        }
+    }
+    // note: copy rather than rename because of windows issues
+    fs_extra::copy_items(&from_paths, &target, &options)?;
+    Ok(())
 }
 
 /// This function resolves common filesystem standards into a standardized path format.

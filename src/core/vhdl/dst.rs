@@ -9,7 +9,7 @@ use super::token::{VHDLToken, Identifier};
 /// 
 /// Performs a swap on the identifiers (keys) and appends their extensions (values) to write to 
 /// new VHDL text.
-fn dyn_symbol_transform(tkns: &[Token<VHDLToken>], lut: &HashMap<Identifier, &str>) -> String {
+pub fn dyn_symbol_transform(tkns: &[Token<VHDLToken>], lut: &HashMap<Identifier, String>) -> String {
     let mut result = String::with_capacity(tkns.len());
     let mut tkns_iter = tkns.into_iter();
 
@@ -65,7 +65,7 @@ fn dyn_symbol_transform(tkns: &[Token<VHDLToken>], lut: &HashMap<Identifier, &st
         };
         offset = diff;
 
-        println!("text: {}, os: {}", text, offset);
+        // println!("text: {}, os: {}", text, offset);
 
         result.push_str(&text);
         // update position
@@ -84,8 +84,8 @@ mod test {
     fn simple() {
 
         let mut map = HashMap::new();
-        map.insert(Identifier::Basic(String::from("adder")), "_sha12345");
-        map.insert(Identifier::Extended(String::from("adder_tb")), "_sha12345");
+        map.insert(Identifier::Basic(String::from("adder")), "_sha12345".to_string());
+        map.insert(Identifier::Extended(String::from("adder_tb")), "_sha12345".to_string());
 
         let code: &str = r#"
 --! module: adder (name here is untouched)

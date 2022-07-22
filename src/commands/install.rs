@@ -177,18 +177,8 @@ impl Install {
                 std::fs::remove_dir_all(&cache_slot)?;
             }
         }
-        std::fs::create_dir(&cache_slot)?;
         // copy contents into cache slot
-        let options = fs_extra::dir::CopyOptions::new();
-        let mut from_paths = Vec::new();
-        for dir_entry in std::fs::read_dir(temp)? {
-            match dir_entry {
-                Ok(d) => if d.file_name() != ".git" || d.file_type()?.is_dir() != true { from_paths.push(d.path()) },
-                Err(_) => (),
-            }
-        }
-        // note: copy rather than rename because of windows issues
-        fs_extra::copy_items(&from_paths, &cache_slot, &options)?;
+        crate::util::filesystem::copy(&temp, &cache_slot)?;
         // write the checksum to the directory
         std::fs::write(&cache_slot.join(manifest::ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
         // write the metadata to the directory

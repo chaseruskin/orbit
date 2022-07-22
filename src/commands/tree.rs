@@ -133,7 +133,7 @@ impl Tree {
 
     /// Construct and print the graph at an IP dependency level.
     fn run_ip_graph(&self, target: IpManifest, catalog: Catalog) -> Result<(), Fault> {
-        let ip_graph = ip::graph_ip(&target, &catalog)?;
+        let ip_graph = ip::resolve_algo(&target, &catalog)?;
 
         let tree = ip_graph.get_graph().treeview(0);
         for twig in &tree {

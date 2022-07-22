@@ -73,6 +73,10 @@ impl<K: Eq + Hash + Clone, V, E> GraphMap<K, V, E> {
         &self.map
     }
 
+    pub fn get_map_mut(&mut self) -> &mut HashMap<K, Node<V>> {
+        &mut self.map
+    }
+
     pub fn find_root(&self) -> Result<&Node<V>, Vec<&Node<V>>> {
         match self.graph.find_root() {
             Ok(n) => Ok(self.map.get(self.graph.get_node(n).unwrap()).unwrap()),

@@ -154,6 +154,7 @@ pub const IP_MANIFEST_FILE: &str = "Orbit.toml";
 pub const IP_MANIFEST_PATTERN_FILE : &str = "Orbit-*.toml";
 const DEPENDENCIES_KEY: &str = "dependencies";
 pub const ORBIT_SUM_FILE: &str = ".orbit-checksum";
+pub const ORBIT_METADATA_FILE: &str = ".orbit-metadata";
 
 #[derive(Debug)]
 pub struct IpManifest{ 
@@ -394,13 +395,39 @@ impl IpManifest {
         LockFile::from_path(&self.get_root())
     }
 
+    pub fn read_units_from_metadata(&self) -> Option<Vec<PrimaryUnit>> {
+        let meta_file = self.get_root().join(ORBIT_METADATA_FILE);
+        if std::path::Path::exists(&meta_file) == true {
+            if let Ok(contents) = std::fs::read_to_string(&meta_file) {
+                if let Ok(toml) = contents.parse::<Document>() {
+                    let entry = toml.get("ip")?.as_table()?.get("units")?.as_array()?;
+                    Some(entry.into_iter()
+                        .filter_map(|p| PrimaryUnit::from_toml(p.as_inline_table().unwrap())).collect())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
     /// Gathers the list of primary design units for the current ip.
     /// 
     /// If the manifest has an toml entry for `units`, it will return that list rather than go through files.
     pub fn collect_units(&self) -> Vec<PrimaryUnit> {
-        // collect all files
-        let files = crate::util::filesystem::gather_current_files(&self.get_manifest().get_path().parent().unwrap().to_path_buf());
-        crate::core::vhdl::primaryunit::collect_units(&files).into_iter().map(|e| e.0).collect()
+        // try to read from metadata file
+        match self.read_units_from_metadata() {
+            // use precomputed result
+            Some(units) => units,
+            None => {
+                // collect all files
+                let files = crate::util::filesystem::gather_current_files(&self.get_manifest().get_path().parent().unwrap().to_path_buf());
+                crate::core::vhdl::primaryunit::collect_units(&files).into_iter().map(|e| e.0).collect()
+            }
+        }
     }
 
     /// Attempts to first read from units key entry if exists in toml file.
@@ -458,6 +485,16 @@ impl IpManifest {
         let checksum = crate::util::checksum::checksum(&ip_files);
         std::env::set_current_dir(&cd).unwrap();
         checksum
+    }
+
+    /// Writes a metadata file for internal usage within orbit.
+    pub fn write_metadata(&mut self) -> Result<(), Fault> {
+        // write units to document
+        self.stash_units();
+        // write the document to .orbit-metadata
+        let mut meta = std::fs::File::create(self.get_root().join(ORBIT_METADATA_FILE))?;
+        meta.write(self.get_manifest().get_doc().to_string().as_bytes())?;
+        Ok(())
     }
 
     /// Gets the already calculated checksum from an installed IP from '.orbit-checksum'.

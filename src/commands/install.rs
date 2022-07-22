@@ -191,7 +191,10 @@ impl Install {
         fs_extra::copy_items(&from_paths, &cache_slot, &options)?;
         // write the checksum to the directory
         std::fs::write(&cache_slot.join(manifest::ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
-        Ok(IpManifest::from_path(&cache_slot)?)
+        // write the metadata to the directory
+        let mut installed_ip = IpManifest::from_path(&cache_slot)?;
+        installed_ip.write_metadata()?;
+        Ok(installed_ip)
     }
 
     fn run(&self, installation_path: &PathBuf, cache_root: &std::path::PathBuf, force: bool, store: Store) -> Result<(), Fault> {

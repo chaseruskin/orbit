@@ -9,14 +9,14 @@ use home::home_dir;
 /// Returns the resulting list of filepath strings. This function silently skips result errors
 /// while walking. The collected set of paths are also standardized to use forward slashes '/'.
 /// 
-/// Ignores ORBIT_SUM_FILE and the .git directory.
+/// Ignores ORBIT_SUM_FILE, .git directory, ORBIT_METADATA_FILE, and IP_LOCK_FILE.
 pub fn gather_current_files(path: &std::path::PathBuf) -> Vec<String> {
     let m = WalkBuilder::new(path)
         .hidden(false)
         .git_ignore(true)
         .filter_entry(|p| {
             match p.file_name().to_str().unwrap() {
-                manifest::ORBIT_SUM_FILE | ".git" | lockfile::IP_LOCK_FILE => false,
+                manifest::ORBIT_SUM_FILE | ".git" | lockfile::IP_LOCK_FILE | manifest::ORBIT_METADATA_FILE => false,
                 _ => true,
             }
         })

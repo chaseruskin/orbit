@@ -1,4 +1,4 @@
-use toml_edit::{Document, Table, ArrayOfTables, Array};
+use toml_edit::{Document, Table, ArrayOfTables, Array, value};
 use std::collections::HashMap;
 use std::io::Write;
 use std::path;
@@ -732,8 +732,8 @@ impl IpManifest {
     }
 
     /// Creates a string for printing an ip manifest to during `orbit tree`. 
-    pub fn to_leaf_string(&self) -> String {
-        format!("{} {} {}", self.get_pkgid(), self.get_version(), self.compute_checksum())
+    pub fn to_ip_spec(&self) -> IpSpec {
+        IpSpec::new(self.get_pkgid().clone(), self.get_version().clone())
     }
 
     pub fn get_dependencies(&self) -> &DependencyTable {
@@ -784,6 +784,29 @@ impl IpManifest {
             );
         });
         lut
+    }
+
+    /// Checks the metadata file for a entry for `dynamic`.
+    pub fn is_dynamic(&self) -> bool {
+        let meta_path = self.get_root().join(ORBIT_METADATA_FILE);
+        let table = if std::path::Path::exists(&meta_path) == true {
+            let contents = std::fs::read_to_string(meta_path).unwrap();
+            contents.parse::<Document>().unwrap()
+        } else {
+            return false
+        };
+        match table.get("dynamic") {
+            Some(item) => match item.as_bool() {
+                Some(b) => b,
+                None => false,
+            },
+            None => false,
+        }
+    }
+
+    /// Adds to manifest file to set as dynamic.
+    pub fn set_as_dynamic(&mut self) -> () {
+        self.get_manifest_mut().get_mut_doc().as_table_mut()["dynamic"] = value(true);
     }
 
 }

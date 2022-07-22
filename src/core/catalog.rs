@@ -1,5 +1,5 @@
 use std::{collections::HashMap, path::PathBuf};
-use crate::{util::{anyerror::Fault, sha256::Sha256Hash}, core::manifest};
+use crate::util::{anyerror::Fault, sha256::Sha256Hash};
 
 use super::{pkgid::{PkgId, PkgPart}, manifest::IpManifest, version::{Version, AnyVersion}, store::Store, vendor::VendorManifest};
 
@@ -27,7 +27,10 @@ impl IpLevel {
     }
 
     pub fn add_install(&mut self, m: IpManifest) -> () {
-        self.installs.push(m);
+        // only add if not a DST
+        if m.is_dynamic() == false {
+            self.installs.push(m);
+        }
     }
 
     pub fn add_available(&mut self, m: IpManifest) -> () {
@@ -182,39 +185,6 @@ impl<'a> Catalog<'a> {
     /// Searches the cache/store, availability space, and development space.
     pub fn get_possible_versions(&self, _: &PkgId) -> Vec<Version> {
         todo!();
-    }
-
-    /// Creates a ip manifest that underwent dynamic symbol transformation.
-    /// 
-    /// Returns the dst ip for reference.
-    pub fn install_dst(&self, source_ip: &IpManifest) -> IpManifest {
-        // compute the new checksum
-        let sum = source_ip.compute_checksum();
-        println!("{}", sum);
-
-        // determine the cache slot name
-        let cache_path = {
-            let cache_slot = CacheSlot::form(source_ip.get_pkgid().get_name(), source_ip.get_version(), &sum);
-            self.get_cache_path().join(cache_slot.0)
-        };
-
-        // check if already exists and return early with manifest if exists
-        if cache_path.exists() == true {
-            return IpManifest::from_path(&cache_path).unwrap()
-        }
-
-        // copy the source ip to the new location
-        crate::util::filesystem::copy(&source_ip.get_root(), &cache_path).unwrap();
-
-        let mut cached_ip = IpManifest::from_path(&cache_path).unwrap();
-        cached_ip.stash_units();
-        // write the new ORBIT_METADATA_FILE
-        cached_ip.write_metadata().unwrap();
-
-        // write the new ORBIT_CHECKSUM_FILE
-        std::fs::write(&cache_path.join(manifest::ORBIT_SUM_FILE), sum.to_string().as_bytes()).unwrap();
-
-        cached_ip
     }
 
     pub fn update_installations(&mut self) -> () {

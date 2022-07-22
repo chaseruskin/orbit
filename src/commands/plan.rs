@@ -4,6 +4,7 @@ use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
 use crate::core::extgit;
+use crate::core::ip::IpFileNode;
 use crate::core::manifest::IpManifest;
 use crate::core::pkgid::PkgPart;
 use crate::core::resolver::lockfile::LockEntry;
@@ -170,31 +171,6 @@ impl<'a> GraphNode<'a> {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub struct IpFileNode<'a> {
-    file: String,
-    ip: &'a IpManifest
-}
-
-impl<'a> IpFileNode<'a> {
-    pub fn new(file: String, ip: &'a IpManifest) -> Self {
-        Self { file: file, ip: ip }
-    }
-
-    pub fn get_file(&self) -> &str {
-        &self.file
-    }
-
-    pub fn get_ip_manifest(&self) -> &IpManifest {
-        &self.ip
-    }
-
-    /// References the library identifier from the ip's pkgid.
-    pub fn get_library(&self) -> &PkgPart {
-        &self.ip.get_pkgid().get_library().as_ref().unwrap()
-    }
-}
-
 impl Plan {
     /// Clones the ip entry's repository to a temporary directory and then installs the appropriate version `ver`.
     fn install_from_lock_entry(entry: &LockEntry, ver: &AnyVersion, catalog: &Catalog, cache: &PathBuf, disable_ssh: bool) -> Result<(), Fault> {
@@ -251,7 +227,7 @@ impl Plan {
         let mut files = Vec::new();
         ips.iter().for_each(|ip| {
             crate::util::filesystem::gather_current_files(&ip.get_root()).into_iter().for_each(|f| {
-                files.push(IpFileNode { file: f, ip: ip });
+                files.push(IpFileNode::new(f, ip));
             })
         });
         files
@@ -265,8 +241,8 @@ impl Plan {
             let mut bodies: Vec<symbol::PackageBody> = Vec::new();
             // read all files
             for source_file in files {
-                if crate::core::fileset::is_vhdl(&source_file.file) == true {
-                    let contents = std::fs::read_to_string(&source_file.file).unwrap();
+                if crate::core::fileset::is_vhdl(&source_file.get_file()) == true {
+                    let contents = std::fs::read_to_string(&source_file.get_file()).unwrap();
                     let symbols = symbol::VHDLParser::read(&contents).into_symbols();
                     // add all entities to a graph and store architectures for later analysis
                     let mut iter = symbols.into_iter()
@@ -351,7 +327,7 @@ impl Plan {
         let current_files = crate::util::filesystem::gather_current_files(&std::env::current_dir().unwrap());
         let current_ip_nodes = current_files
             .into_iter()
-            .map(|f| { IpFileNode { file: f, ip: &target }}).collect();
+            .map(|f| { IpFileNode::new(f, &target) }).collect();
         // build full graph (all primary design units) and map storage
         let graph_map = Self::build_full_graph(&current_ip_nodes);
 
@@ -459,7 +435,8 @@ impl Plan {
         // [!] write the lock file
         target.write_lock(&mut build_list)?;
 
-        let files = Self::assemble_all_files(build_list);
+        let ip_graph = crate::core::ip::compute_final_ip_graph(&target, &catalog)?;
+        let files = crate::core::ip::build_ip_file_list(&ip_graph);
         let graph_map = Self::build_full_graph(&files);
 
         // transfer identifier over to the full graph
@@ -480,7 +457,7 @@ impl Plan {
         let mut blueprint_data = String::new();
 
         let current_files: Vec<String> = current_ip_nodes.into_iter()
-            .map(|f| f.file)
+            .map(|f| f.get_file().to_owned())
             .collect();
 
         {
@@ -521,15 +498,15 @@ impl Plan {
 
         // collect in-order HDL file list
         for file in file_order {
-            let lib = match current_files.contains(&file.file) {
+            let lib = match current_files.contains(file.get_file()) {
                 true => PkgPart::from_str("work").unwrap(),
                 // converts '-' to '_' for VHDL rules compatibility
                 false => file.get_library().to_normal(),
             };
-            if crate::core::fileset::is_rtl(&file.file) == true {
-                blueprint_data += &format!("VHDL-RTL\t{}\t{}\n", lib, file.file);
+            if crate::core::fileset::is_rtl(&file.get_file()) == true {
+                blueprint_data += &format!("VHDL-RTL\t{}\t{}\n", lib, file.get_file());
             } else {
-                blueprint_data += &format!("VHDL-SIM\t{}\t{}\n", lib, file.file);
+                blueprint_data += &format!("VHDL-SIM\t{}\t{}\n", lib, file.get_file());
             }
         }
 

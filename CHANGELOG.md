@@ -15,6 +15,13 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.5.0
+
+### Features
+- multiple versions of ip are allowed to be in the build graph* due to dynamic symbol transformation algorithm
+
+*an ip being used as two different versions is not allowed when both are direct dependencies to the current project
+
 ## 0.4.0
 
 ### Features

@@ -135,9 +135,9 @@ impl Tree {
     fn run_ip_graph(&self, target: IpManifest, catalog: Catalog) -> Result<(), Fault> {
         let ip_graph = ip::graph_ip(&target, &catalog)?;
 
-        let tree = ip_graph.treeview(0);
+        let tree = ip_graph.get_graph().treeview(0);
         for twig in &tree {
-            println!("{}{}", twig.0, ip_graph.get_node(twig.1).unwrap().to_leaf_string());
+            println!("{}{}", twig.0, ip_graph.get_node_by_index(twig.1).unwrap().as_ref().as_ip().to_leaf_string());
         }
         Ok(())
     }

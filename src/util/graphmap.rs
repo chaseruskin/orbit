@@ -31,9 +31,10 @@ impl<K: Eq + Hash + Clone, V, E> GraphMap<K, V, E> {
         Self { graph: Graph::new(), map: HashMap::new() }
     }
 
-    pub fn add_node(&mut self, key: K, value: V) -> Option<V> {
+    pub fn add_node(&mut self, key: K, value: V) -> usize {
         let iden = self.graph.add_node(key.clone());
-        Some(self.map.insert(key, Node(value, iden))?.take())
+        self.map.insert(key, Node(value, iden));
+        iden
     }
 
     pub fn add_edge_by_key(&mut self, source: &K, target: &K, cost: E) -> bool {
@@ -45,6 +46,10 @@ impl<K: Eq + Hash + Clone, V, E> GraphMap<K, V, E> {
             Some(i) => i.index(),
             None => return false,
         };
+        self.graph.add_edge(source, target, cost)
+    }
+
+    pub fn add_edge_by_index(&mut self, source: usize, target: usize, cost: E) -> bool {
         self.graph.add_edge(source, target, cost)
     }
 

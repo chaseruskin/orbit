@@ -15,6 +15,7 @@ use crate::util::filesystem::normalize_path;
 
 use super::config::{FromToml, FromTomlError};
 use super::resolver::lockfile::LockEntry;
+use super::ip::IpSpec;
 use super::version::AnyVersion;
 use super::vhdl::primaryunit::PrimaryUnit;
 use super::vhdl::token::{Identifier, IdentifierError};
@@ -412,6 +413,11 @@ impl IpManifest {
         } else {
             None
         }
+    }
+    
+    /// Clones into a new `IpSpec` struct.
+    pub fn into_ip_spec(&self) -> IpSpec {
+        IpSpec::new(self.get_pkgid().clone(), self.get_version().clone())
     }
 
     /// Gathers the list of primary design units for the current ip.

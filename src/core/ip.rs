@@ -44,11 +44,11 @@ pub fn find_ip(ip_spec: &PkgId, universe: Vec<&PkgId>) -> Result<PkgId, AnyError
 /// Constructs a graph at the IP-level.
 /// 
 /// Note: this function performs no reduction.
-fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphMap<IpSpec, DynState<'a>, ()>, Fault> {
+fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, Fault> {
     // create empty graph
     let mut g = GraphMap::new();
     // construct iterative approach with lists
-    let t = g.add_node(root.into_ip_spec(), DynState::Keep(root, None));
+    let t = g.add_node(root.into_ip_spec(), IpNode::new_keep(root));
     let mut processing = vec![(t, root)];
 
     let mut iden_set: HashSet<Identifier> = HashSet::new();
@@ -82,7 +82,7 @@ fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphM
                                         iden_set.insert(unit.as_iden().unwrap().clone());
                                     }
                                 }
-                                g.add_node(dep.into_ip_spec(), match dst { true => DynState::Alter(dep, None), false => DynState::Keep(dep, None) })
+                                g.add_node(dep.into_ip_spec(), match dst { true => IpNode::new_alter(dep), false => IpNode::new_keep(dep) })
                             };
                             g.add_edge_by_index(s, num, ());
                             processing.push((s, dep));
@@ -101,7 +101,7 @@ fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphM
 }
 
 
-pub fn compute_final_ip_graph<'a>(target: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphMap<IpSpec, DynState<'a>, ()>, Fault> {
+pub fn compute_final_ip_graph<'a>(target: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, Fault> {
     // collect rough outline of ip graph
     let mut rough_ip_graph = graph_ip(&target, &catalog)?;
     
@@ -155,7 +155,7 @@ pub fn compute_final_ip_graph<'a>(target: &'a IpManifest, catalog: &'a Catalog<'
 }
 
 /// Take the ip graph and create the entire space of VHDL files that could be used for the current design.
-pub fn build_ip_file_list<'a>(ip_graph: &'a GraphMap<IpSpec, DynState<'a>, ()>) -> Vec<IpFileNode<'a>> {
+pub fn build_ip_file_list<'a>(ip_graph: &'a GraphMap<IpSpec, IpNode<'a>, ()>) -> Vec<IpFileNode<'a>> {
     let mut files = Vec::new();
     ip_graph.get_map().iter().for_each(|(_, ip)| {
         crate::util::filesystem::gather_current_files(&ip.as_ref().as_ip().get_root())
@@ -169,39 +169,50 @@ pub fn build_ip_file_list<'a>(ip_graph: &'a GraphMap<IpSpec, DynState<'a>, ()>) 
 }
 
 #[derive(Debug, PartialEq)]
-pub enum DynState<'a> {
-    Keep(&'a IpManifest, Option<IpManifest>),
-    Alter(&'a IpManifest, Option<IpManifest>),
+pub struct IpNode<'a> {
+    dyn_state: DynState,
+    original: &'a IpManifest,
+    transform: Option<IpManifest>,
 }
 
-impl<'a> DynState<'a> {
+#[derive(Debug, PartialEq)]
+pub enum DynState {
+    Keep,
+    Alter
+}
+
+impl<'a> IpNode<'a> {
+
+    fn new_keep(og: &'a IpManifest) -> Self {
+        Self { dyn_state: DynState::Keep, original: og, transform: None }
+    }
+
+    fn new_alter(og: &'a IpManifest) -> Self {
+        Self { dyn_state: DynState::Alter, original: og, transform: None }
+    }
+
     /// References the internal `IpManifest` struct.
     /// 
     /// Favors the dynamic IP if it exists over the original IP.
     pub fn as_ip(&'a self) -> &'a IpManifest {
-        match self {
-            Self::Keep(ip, t) => {
-                if let Some(altered) = t {
-                    altered
-                } else {
-                    ip
-                }
-            },
-            Self::Alter(ip, t) => {
-                if let Some(altered) = t {
-                    altered
-                } else {
-                    ip
-                }
-            }
+        if let Some(altered) = &self.transform {
+            altered
+        } else {
+            &self.original
         }
+    }
+
+    /// References the underlying original `IpManifest` struct regardless if it has
+    /// a transform.
+    pub fn as_original_ip(&'a self) -> &'a IpManifest {
+        &self.original
     }
 
     /// Checks if an ip is a direct result requiring DST.
     fn is_direct_conflict(&self) -> bool {
-        match self {
-            Self::Keep(_, _) => false,
-            Self::Alter(_, _) => true,
+        match &self.dyn_state {
+            DynState::Alter => true,
+            DynState::Keep => false,
         }
     }
 
@@ -212,38 +223,32 @@ impl<'a> DynState<'a> {
     /// 
     /// Note: this function can only be applied ip that are already installed to the cache.
     fn dynamic_symbol_transform(&mut self, lut: &HashMap<Identifier, String>, cache_path: &PathBuf) -> () {
-        match self {
-            Self::Keep(ip, opt) | 
-            Self::Alter(ip, opt) => {
-                // create a temporary directory
-                let temp = tempdir().unwrap();
-                let temp_path = temp.path().to_path_buf();
-                // copy entire project folder to temporary directory
-                crate::util::filesystem::copy(&ip.get_root(), &temp_path, true).unwrap();
+        // create a temporary directory
+        let temp = tempdir().unwrap();
+        let temp_path = temp.path().to_path_buf();
+        // copy entire project folder to temporary directory
+        crate::util::filesystem::copy(&self.original.get_root(), &temp_path, true).unwrap();
 
-                // create the ip from the temporary dir
-                let temp_ip = IpManifest::from_path(&temp_path).unwrap();
+        // create the ip from the temporary dir
+        let temp_ip = IpManifest::from_path(&temp_path).unwrap();
 
-                // edit all vhdl files
-                let files = crate::util::filesystem::gather_current_files(&temp_path);
-                for file in &files {
-                    // perform dst on the data
-                    if crate::core::fileset::is_vhdl(&file) == true {
-                        // parse into tokens
-                        let vhdl_path = PathBuf::from(file);
-                        let code = std::fs::read_to_string(&vhdl_path).unwrap();
-                        let tokens = VHDLTokenizer::from_source_code(&code).into_tokens_all();
-                        // perform DYNAMIC SYMBOL TRANSFORM
-                        let transform = dst::dyn_symbol_transform(&tokens, &lut);
-                        // rewrite the file
-                        std::fs::write(&vhdl_path, transform).unwrap();
-                    }
-                }
-                // update the slot with a transformed IP manifest
-                let transformed_ip = install_dst(&temp_ip, &cache_path);
-                *opt = Some(transformed_ip);
-            },
+        // edit all vhdl files
+        let files = crate::util::filesystem::gather_current_files(&temp_path);
+        for file in &files {
+            // perform dst on the data
+            if crate::core::fileset::is_vhdl(&file) == true {
+                // parse into tokens
+                let vhdl_path = PathBuf::from(file);
+                let code = std::fs::read_to_string(&vhdl_path).unwrap();
+                let tokens = VHDLTokenizer::from_source_code(&code).into_tokens_all();
+                // perform DYNAMIC SYMBOL TRANSFORM
+                let transform = dst::dyn_symbol_transform(&tokens, &lut);
+                // rewrite the file
+                std::fs::write(&vhdl_path, transform).unwrap();
+            }
         }
+        // update the slot with a transformed IP manifest
+        self.transform = Some(install_dst(&temp_ip, &cache_path));
     }
 }
 
@@ -317,6 +322,6 @@ impl IpSpec {
 
 impl std::fmt::Display for IpSpec {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {}", self.0, self.1)
+        write!(f, "{} v{}", self.0, self.1)
     }
 }

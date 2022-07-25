@@ -135,12 +135,12 @@ impl<'a> SubUnitNode<'a> {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct GraphNode<'a> {
+pub struct HdlNode<'a> {
     sym: symbol::VHDLSymbol,
     files: Vec<&'a IpFileNode<'a>>, // must use a vector to retain file order in blueprint
 }
 
-impl<'a> GraphNode<'a> {
+impl<'a> HdlNode<'a> {
     fn new(sym: symbol::VHDLSymbol, file: &'a IpFileNode) -> Self {
         let mut set = Vec::with_capacity(1);
         set.push(file);
@@ -174,11 +174,10 @@ impl Plan {
     /// Clones the ip entry's repository to a temporary directory and then installs the appropriate version `ver`.
     fn install_from_lock_entry(entry: &LockEntry, ver: &AnyVersion, catalog: &Catalog, disable_ssh: bool) -> Result<(), Fault> {
         let temp = tempdir()?;
-        println!("info: fetching {} repository ...", entry.get_name());
-  
         // try to use the source
         let from = if let Some(source) = entry.get_source() {
             let temp = temp.as_ref().to_path_buf();
+            println!("info: fetching {} repository ...", entry.get_name());
             extgit::ExtGit::new(None)
                 .clone(source, &temp, disable_ssh)?;
             temp
@@ -199,59 +198,9 @@ impl Plan {
         } 
     }
 
-    /// Constructs an entire list of dependencies required for the current design.
-    /// 
-    /// Errors if a dependency is not known in the user's catalog.
-    fn construct_rough_build_list<'a>(target: &'a IpManifest, catalog: &'a Catalog) -> Result<Vec<&'a IpManifest>, Fault> {
-        let mut result = Vec::with_capacity(1);
-        let mut processing = vec![target];
-
-        while let Some(ip) = processing.pop() {
-            result.push(ip);
-            let deps = ip.get_dependencies();
-            for (pkgid, version) in deps.inner() {
-                match catalog.inner().get(pkgid) {
-                    Some(status) => {
-                        // find this IP to read its dependencies
-                        match status.get(version, true) {
-                            Some(dep) => {
-                                processing.push(dep)
-                            },
-                            // try to use the lock file to fill in missing pieces
-                            None => panic!("ip is not installed"),
-                        }
-                        println!("found dependent ip: {}", pkgid);
-                    },
-                    // try to use the lock file to fill in missing pieces
-                    None => return Err(AnyError(format!("unknown ip: {}", pkgid)))?,
-                }
-            }
-        }
-        Ok(result)
-    }
-
-    /// Follow the Minimum Version Selection (MVS) algorithm to resolve dependencies.
-    /// 
-    /// MVS uses the "oldest allowed version" when selecting among packages with the same identifier.
-    pub fn resolve_dependencies<'a>(target: &'a IpManifest, catalog: &'a Catalog) -> Result<Vec<&'a IpManifest>, Fault> {
-        let rough_build = Self::construct_rough_build_list(target, catalog)?;
-        Ok(rough_build)
-    }
-
-    /// Transforms the list of required `Ip` into list of all the available files.
-    pub fn assemble_all_files<'a>(ips: Vec<&'a IpManifest>) -> Vec<IpFileNode> {
-        let mut files = Vec::new();
-        ips.iter().for_each(|ip| {
-            crate::util::filesystem::gather_current_files(&ip.get_root()).into_iter().for_each(|f| {
-                files.push(IpFileNode::new(f, ip));
-            })
-        });
-        files
-    }
-
     /// Builds a graph of design units. Used for planning.
-    fn build_full_graph<'a>(files: &'a Vec<IpFileNode>) -> GraphMap<Identifier, GraphNode<'a>, ()> {
-            let mut graph_map: GraphMap<Identifier, GraphNode, ()> = GraphMap::new();
+    fn build_full_graph<'a>(files: &'a Vec<IpFileNode>) -> GraphMap<Identifier, HdlNode<'a>, ()> {
+            let mut graph_map: GraphMap<Identifier, HdlNode, ()> = GraphMap::new();
     
             let mut sub_nodes: Vec<SubUnitNode> = Vec::new();
             let mut bodies: Vec<symbol::PackageBody> = Vec::new();
@@ -266,6 +215,7 @@ impl Plan {
                             match f {
                                 symbol::VHDLSymbol::Entity(_) => Some(f),
                                 symbol::VHDLSymbol::Package(_) => Some(f),
+                                symbol::VHDLSymbol::Context(_) => Some(f),
                                 symbol::VHDLSymbol::Architecture(arch) => {
                                     sub_nodes.push(SubUnitNode{ sub: SubUnit::from_arch(arch), file: source_file });
                                     None
@@ -279,12 +229,11 @@ impl Plan {
                                     bodies.push(pb);
                                     None
                                 }
-                                symbol::VHDLSymbol::Context(_) => Some(f),
                             }
                         });
                     while let Some(e) = iter.next() {
-                        // add entities into the graph
-                        graph_map.add_node(e.as_iden().unwrap().clone(), GraphNode::new(e, source_file));
+                        // add primary design units into the graph
+                        graph_map.add_node(e.as_iden().unwrap().clone(), HdlNode::new(e, source_file));
                     }
                 }
             }
@@ -344,12 +293,12 @@ impl Plan {
         let current_ip_nodes = current_files
             .into_iter()
             .map(|f| { IpFileNode::new(f, &target) }).collect();
-        // build full graph (all primary design units) and map storage
-        let graph_map = Self::build_full_graph(&current_ip_nodes);
+        // build shallow graph (all primary design units)
+        let current_graph = Self::build_full_graph(&current_ip_nodes);
 
         let mut natural_top: Option<usize> = None;
         let mut bench = if let Some(t) = &self.bench {
-            match graph_map.get_node_by_key(&t) {
+            match current_graph.get_node_by_key(&t) {
                 // verify the unit is an entity that is a testbench
                 Some(node) => {
                     if let Some(e) = node.as_ref().get_symbol().as_entity() {
@@ -365,7 +314,7 @@ impl Plan {
             }
         } else if self.top.is_none() {
             // filter to display tops that have ports (not testbenches)
-            match graph_map.find_root() {
+            match current_graph.find_root() {
                 // only detected a single root
                 Ok(n) => {
                     // verify the root is a testbench
@@ -383,7 +332,7 @@ impl Plan {
                 Err(e) => {
                     match e.len() {
                         0 => None,
-                        _ => return Err(PlanError::Ambiguous("testbenches".to_string(), e.into_iter().map(|f| { f.as_ref().get_symbol().as_iden().unwrap().clone() }).collect()))?,
+                        _ => return Err(PlanError::Ambiguous("roots".to_string(), e.into_iter().map(|f| { f.as_ref().get_symbol().as_iden().unwrap().clone() }).collect()))?,
                     }   
                 }
             }
@@ -393,7 +342,7 @@ impl Plan {
 
         // determine the top-level node index
         let top = if let Some(t) = &self.top {
-            match graph_map.get_node_by_key(&t) {
+            match current_graph.get_node_by_key(&t) {
                 Some(node) => {
                     // verify the unit is an entity that is not a testbench
                     if let Some(e) = node.as_ref().get_symbol().as_entity() {
@@ -407,13 +356,13 @@ impl Plan {
                     // try to detect top level testbench
                     if bench.is_none() {
                         // check if only 1 is a testbench
-                        let benches: Vec<usize> =  graph_map.get_graph().successors(n)
-                            .filter(|f| graph_map.get_node_by_index(*f).unwrap().as_ref().get_symbol().as_entity().unwrap().is_testbench() )
+                        let benches: Vec<usize> =  current_graph.get_graph().successors(n)
+                            .filter(|f| current_graph.get_node_by_index(*f).unwrap().as_ref().get_symbol().as_entity().unwrap().is_testbench() )
                             .collect();
                         bench = match benches.len() {
                             0 => None,
                             1 => Some(*benches.first().unwrap()),
-                            _ => return Err(PlanError::Ambiguous("testbenches".to_string(), benches.into_iter().map(|f| { graph_map.get_key_by_index(f).unwrap().clone() }).collect()))?,
+                            _ => return Err(PlanError::Ambiguous("testbenches".to_string(), benches.into_iter().map(|f| { current_graph.get_key_by_index(f).unwrap().clone() }).collect()))?,
                         };
                     }
                     n
@@ -424,15 +373,15 @@ impl Plan {
             if let Some(nt) = natural_top {
                 nt
             } else {
-                Self::detect_top(&graph_map, bench)?
+                Self::detect_top(&current_graph, bench)?
             }
         };
         // set immutability
         let bench = bench;
 
-        let top_name = graph_map.get_node_by_index(top).unwrap().as_ref().get_symbol().as_iden().unwrap().to_string();
+        let top_name = current_graph.get_node_by_index(top).unwrap().as_ref().get_symbol().as_iden().unwrap().to_string();
         let bench_name = if let Some(n) = bench {
-            graph_map.get_key_by_index(n).unwrap().to_string()
+            current_graph.get_key_by_index(n).unwrap().to_string()
         } else {
             String::new()
         };
@@ -443,15 +392,20 @@ impl Plan {
             None => top
         };
 
-        let highest_iden = graph_map.get_key_by_index(highest_point).unwrap();
-
-        // [!] build graph again but with entire set of all files available from all depdendencies
-        let mut build_list = Self::resolve_dependencies(&target, &catalog)?;
-
-        // [!] write the lock file
-        target.write_lock(&mut build_list)?;
-
+        let highest_iden = current_graph.get_key_by_index(highest_point).unwrap();
+        // build entire ip graph and resolve with dynamic symbol transformation
         let ip_graph = crate::core::ip::compute_final_ip_graph(&target, &catalog)?;
+        
+        // [!] write the lock file
+        {
+            // create build list
+            let mut build_list: Vec<&IpManifest> = ip_graph.get_map()
+                .iter()
+                .map(|p| { p.1.as_ref().as_original_ip() })
+                .collect();
+            target.write_lock(&mut build_list)?;
+        }
+
         let files = crate::core::ip::build_ip_file_list(&ip_graph);
         let graph_map = Self::build_full_graph(&files);
 
@@ -559,7 +513,7 @@ impl Plan {
     /// 
     /// This function looks and checks if there is a single predecessor to the
     /// `bench` node.
-    fn detect_top<'a>(graph_map: &GraphMap<Identifier, GraphNode<'a>, ()>, bench: Option<usize>) -> Result<usize, AnyError> {
+    fn detect_top<'a>(graph_map: &GraphMap<Identifier, HdlNode<'a>, ()>, bench: Option<usize>) -> Result<usize, Fault> {
         if let Some(b) = bench {
             let entities: Vec<(usize, &symbol::Entity)> = graph_map.get_graph().predecessors(b)
                 .filter_map(|f| {
@@ -568,9 +522,9 @@ impl Plan {
                     })
                 .collect();
             match entities.len() {
-                0 => panic!("no entities are tested in the testbench"),
+                0 => Err(AnyError(format!("no entities are tested in the testbench")))?,
                 1 => Ok(entities[0].0),
-                _ => panic!("multiple entities are tested in testbench")
+                _ => Err(PlanError::Ambiguous("entities instantiated in the testbench".to_string(), entities.into_iter().map(|f| { graph_map.get_key_by_index(f.0).unwrap().clone() }).collect()))?
             }
         } else {
             todo!("find toplevel node that is not a bench")

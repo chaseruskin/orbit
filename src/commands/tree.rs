@@ -111,7 +111,7 @@ impl Tree {
         // build graph again but with entire set of all files available from all depdendencies
         let ip_graph = ip::compute_final_ip_graph(&target, &catalog)?;
         let files = ip::build_ip_file_list(&ip_graph);
-        // println!("{:?}", files.iter().map(|f| f.get_file()).collect::<Vec<&String>>());
+
         // remember the identifier to index transform to complete graph
         let iden = graph.get_key_by_index(n).unwrap();
         // build the complete graph
@@ -158,10 +158,10 @@ impl Tree {
         transform
     }
 
-
-    fn build_graph<'a>(files: &'a Vec<IpFileNode>) -> GraphMap<Identifier, HashNode<'a>, ()> {
+    /// Constructs a graph of the design heirarchy with entity nodes.
+    fn build_graph<'a>(files: &'a Vec<IpFileNode>) -> GraphMap<Identifier, EntityNode<'a>, ()> {
         // entity identifier, HashNode (hash-node holds entity structs)
-        let mut graph = GraphMap::<Identifier, HashNode, ()>::new();
+        let mut graph = GraphMap::<Identifier, EntityNode, ()>::new();
 
         let mut sub_nodes: Vec<SubUnitNode> = Vec::new();
         // read all files
@@ -185,7 +185,7 @@ impl Tree {
                     }
                 });
                 while let Some(e) = iter.next() {
-                    graph.add_node(e.get_name().clone(), HashNode::new(e, source_file));
+                    graph.add_node(e.get_name().clone(), EntityNode::new(e, source_file));
                 }
             }
         }
@@ -215,12 +215,12 @@ use super::plan::SubUnitNode;
 use super::plan::PlanError;
 
 #[derive(Debug, PartialEq)]
-pub struct HashNode<'a> {
+pub struct EntityNode<'a> {
     entity: symbol::Entity,
     files: Vec<&'a IpFileNode<'a>>,
 }
 
-impl<'a> HashNode<'a> {
+impl<'a> EntityNode<'a> {
     
     fn new(entity: symbol::Entity, file: &'a IpFileNode<'a>) -> Self {
         let mut set = Vec::new();

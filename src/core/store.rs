@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+
 use crate::util::{anyerror::Fault, filesystem};
 use super::{pkgid::PkgId, manifest::IpManifest};
 
@@ -28,14 +29,14 @@ impl<'a> Store<'a> {
         Ok(store_ip_dir)
     }
 
-    /// Tries to access the current ip already placed in the Orbit store.
-    pub fn as_stored(&self, ip: &PkgId) -> Result<Option<IpManifest>, Fault> {
+    /// Tries to access the current directory already placed in the Orbit store.
+    pub fn as_stored(&self, ip: &PkgId) -> Result<Option<PathBuf>, Fault> {
         let store_ip_dir = self.root.join(ip.into_hash().to_string());
         if std::path::Path::exists(&store_ip_dir) == false {
             Ok(None)
         } else {
             // grab the ip manifest there
-            Ok(Some(IpManifest::from_path(&store_ip_dir)?))
+            Ok(Some(store_ip_dir))
         }
     }
 

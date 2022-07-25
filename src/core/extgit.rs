@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::str::FromStr;
 use git2::build::CheckoutBuilder;
 use git2::Repository;
 
@@ -121,6 +122,21 @@ impl ExtGit {
         cb.force();
         // checkout code at the tag's marked timestamp
         Ok(repo.checkout_tree(&obj, Some(&mut cb))?)
+    }
+
+    /// Collects all version git tags from the given `repo` repository.
+    /// 
+    /// The tags must follow semver `[0-9]*.[0-9]*.[0-9]*` specification.
+    pub fn gather_version_tags(repo: &Repository) -> Result<Vec<Version>, Box<dyn std::error::Error>> {
+        let tags = repo.tag_names(Some("*.*.*"))?;
+        Ok(tags.into_iter()
+            .filter_map(|f| {
+                match Version::from_str(f?) {
+                    Ok(v) => Some(v),
+                    Err(_) => None,
+                }
+            })
+            .collect())
     }
 }
 

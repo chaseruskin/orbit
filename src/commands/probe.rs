@@ -1,9 +1,13 @@
 use std::collections::BTreeMap;
+use std::path::PathBuf;
+
+use git2::Repository;
 
 use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
 use crate::core::catalog::IpLevel;
+use crate::core::extgit::ExtGit;
 use crate::core::pkgid::PkgId;
 use crate::core::version::AnyVersion;
 use crate::core::version::Version;
@@ -58,7 +62,7 @@ impl Command for Probe {
 
         // collect all ip in the user's universe to see if ip exists
         if self.tags == true {
-            println!("{}", format_version_table(status));
+            println!("{}", format_version_table(status, catalog.get_store().as_stored(&target)?));
             return Ok(())
         }
 
@@ -110,7 +114,7 @@ fn format_units_table(table: Vec<PrimaryUnit>) -> String {
 }
 
 /// Creates a string for a version table for the particular ip.
-fn format_version_table(table: IpLevel) -> String {
+fn format_version_table(table: IpLevel, stored_path: Option<PathBuf>) -> String {
     let header = format!("\
 {:<15}{:<9}
 {:->15}{2:->9}\n",
@@ -135,6 +139,19 @@ fn format_version_table(table: IpLevel) -> String {
             None => { btmap.insert(ip.get_version(), (false, false, true)); () },
         } 
     }
+
+    let mut hidden_vers = Vec::new();
+    // log versions hidden in store
+    if let Some(path) = stored_path {
+        hidden_vers = ExtGit::gather_version_tags(&Repository::open(&path).unwrap()).unwrap();
+    }
+    for ver in &hidden_vers {
+        match btmap.get_mut(&ver) {
+            Some(_) => (),
+            None => { btmap.insert(&ver, (false, false, false)); () },
+        }
+    }
+
     // create body text
     let mut body = String::new();
     for (ver, status) in btmap.iter().rev() {

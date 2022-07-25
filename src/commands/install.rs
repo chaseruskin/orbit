@@ -43,7 +43,6 @@ use git2::Repository;
 use tempfile::tempdir;
 use crate::core::store::Store;
 use std::path::PathBuf;
-use std::str::FromStr;
 use crate::core::extgit::ExtGit;
 
 impl Command for Install {
@@ -74,8 +73,8 @@ impl Command for Install {
             let status = catalog.inner_mut().remove(&target).take().unwrap();
 
             // check the store/ for the repository
-            if let Some(ip) = store.as_stored(&target)? {
-                ip.get_root()
+            if let Some(root) = store.as_stored(&target)? {
+                root
             // clone from remote repository if exists
             } else if let Some(url) = status.try_repository() {
                 let path = tempdir.path().to_path_buf();
@@ -103,21 +102,6 @@ impl Command for Install {
     }
 }
 
-/// Collects all version git tags from the given `repo` repository.
-/// 
-/// The tags must follow semver `[0-9]*.[0-9]*.[0-9]*` specification.
-fn gather_version_tags(repo: &Repository) -> Result<Vec<Version>, Box<dyn std::error::Error>> {
-    let tags = repo.tag_names(Some("*.*.*"))?;
-    Ok(tags.into_iter()
-        .filter_map(|f| {
-            match Version::from_str(f?) {
-                Ok(v) => Some(v),
-                Err(_) => None,
-            }
-        })
-        .collect())
-}
-
 impl Install {
     /// Installs the `ip` with particular partial `version` to the `cache_root`.
     /// It will reinstall if it finds the original installation has a mismatching checksum.
@@ -127,7 +111,7 @@ impl Install {
         let repo = Repository::open(&installation_path)?;
 
         // find the specified version for the given ip
-        let space = gather_version_tags(&repo)?;
+        let space = ExtGit::gather_version_tags(&repo)?;
         let version_space: Vec<&Version> = space.iter().collect();
         let version = version::get_target_version(&version, &version_space)?;
 

@@ -21,7 +21,6 @@ use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::util::graphmap::GraphMap;
 use std::io::Write;
-use std::path::PathBuf;
 use std::str::FromStr;
 use crate::core::fileset::Fileset;
 use crate::core::vhdl::token::Identifier;
@@ -77,11 +76,11 @@ impl Command for Plan {
                             // no action required
                             Some(_) => (),
                             // install
-                            None => Plan::install_from_lock_entry(&entry, &ver, &catalog, &c.get_cache_path(), self.disable_ssh)?,
+                            None => Plan::install_from_lock_entry(&entry, &ver, &catalog, self.disable_ssh)?,
                         }
                     }
                     // install
-                    None => Plan::install_from_lock_entry(&entry, &ver, &catalog, &c.get_cache_path(), self.disable_ssh)?,
+                    None => Plan::install_from_lock_entry(&entry, &ver, &catalog, self.disable_ssh)?,
                 }
             }
             // recollect the installations to update the catalog
@@ -173,14 +172,31 @@ impl<'a> GraphNode<'a> {
 
 impl Plan {
     /// Clones the ip entry's repository to a temporary directory and then installs the appropriate version `ver`.
-    fn install_from_lock_entry(entry: &LockEntry, ver: &AnyVersion, catalog: &Catalog, cache: &PathBuf, disable_ssh: bool) -> Result<(), Fault> {
-        let temp = tempdir()?.as_ref().to_path_buf();
+    fn install_from_lock_entry(entry: &LockEntry, ver: &AnyVersion, catalog: &Catalog, disable_ssh: bool) -> Result<(), Fault> {
+        let temp = tempdir()?;
         println!("info: fetching {} repository ...", entry.get_name());
   
-        extgit::ExtGit::new(None)
-            .clone(&entry.get_source().expect("missing source repository"), &temp, disable_ssh)?;
-        install::Install::install(&temp, &ver, cache, true, catalog.get_store())?;
-        Ok(())
+        // try to use the source
+        let from = if let Some(source) = entry.get_source() {
+            let temp = temp.as_ref().to_path_buf();
+            extgit::ExtGit::new(None)
+                .clone(source, &temp, disable_ssh)?;
+            temp
+        // try to find an install path
+        } else {
+            install::fetch_install_path(entry.get_name(), &catalog, disable_ssh, &temp)?
+        };
+        let ip = install::Install::install(&from, &ver, catalog.get_cache_path(), true, catalog.get_store())?;
+
+        // verify the checksums align
+        match &ip.get_checksum_proof(0).unwrap() == entry.get_sum().unwrap() {
+            true => Ok(()),
+            false => {
+                // delete the entry from the cache slot
+                ip.remove()?;
+                Err(AnyError(format!("failed to install ip '{}' from lockfile due to differing checksums\n\ncomputed: {}\nexpected: {}", entry.get_name(), ip.get_checksum_proof(0).unwrap(), entry.get_sum().unwrap())))?
+            }
+        } 
     }
 
     /// Constructs an entire list of dependencies required for the current design.

@@ -40,6 +40,7 @@ impl FromCli for Install {
 
 use colored::Colorize;
 use git2::Repository;
+use tempfile::TempDir;
 use tempfile::tempdir;
 use crate::core::store::Store;
 use std::path::PathBuf;
@@ -54,40 +55,23 @@ impl Command for Install {
             _ => ()
         };
         // let temporary directory exist for lifetime of install in case of using it
-        let tempdir = tempdir()?;
+        let temp_dir = tempdir()?;
 
         let store = Store::new(c.get_store_path());
 
         // get to the repository (root path)
         let ip_root = if let Some(ip) = &self.ip {
             // gather the catalog (all manifests)
-            let mut catalog = Catalog::new()
+            let catalog = Catalog::new()
                 .store(c.get_store_path())
                 .development(c.get_development_path().unwrap())?
                 .installations(c.get_cache_path())?
                 .available(c.get_vendors())?;
-            let ids = catalog.inner().keys().map(|f| { f }).collect();
-
-            let target = crate::core::ip::find_ip(ip, ids)?;
-            // gather all possible versions found for this IP
-            let status = catalog.inner_mut().remove(&target).take().unwrap();
-
-            // check the store/ for the repository
-            if let Some(root) = store.as_stored(&target) {
-                root
-            // clone from remote repository if exists
-            } else if let Some(url) = status.try_repository() {
-                let path = tempdir.path().to_path_buf();
-                println!("info: fetching repository ...");
-                ExtGit::new(None).clone(&url, &path, self.disable_ssh)?;
-                path
-            } else {
-                // @TODO last resort, clone the actual dev directory to a temp folder
-                panic!("no repository to access ip")
-            }
+            // grab install path
+            fetch_install_path(ip, &catalog, self.disable_ssh, &temp_dir)?
         } else if let Some(url) = &self.git {
             // clone from remote repository
-            let path = tempdir.path().to_path_buf();
+            let path = temp_dir.path().to_path_buf();
             println!("info: fetching repository ...");
             ExtGit::new(None).clone(url, &path, self.disable_ssh)?;
             path
@@ -99,6 +83,29 @@ impl Command for Install {
         };
         // enter action
         self.run(&ip_root, c.get_cache_path(), c.force, store)
+    }
+}
+
+/// Grabs the root path to the repository to perform the installation on.
+pub fn fetch_install_path(ip: &PkgId, catalog: &Catalog, disable_ssh: bool, temp_dir: &TempDir) -> Result<PathBuf, Fault> {
+    let ids = catalog.inner().keys().map(|f| { f }).collect();
+
+    let target = crate::core::ip::find_ip(ip, ids)?;
+    // gather all possible versions found for this IP
+    let status = catalog.inner().get(&target).take().unwrap();
+
+    // check the store/ for the repository
+    if let Some(root) = catalog.get_store().as_stored(&target) {
+        Ok(root)
+    // clone from remote repository if exists
+    } else if let Some(url) = status.try_repository() {
+        let path = temp_dir.path().to_path_buf();
+        println!("info: fetching repository ...");
+        ExtGit::new(None).clone(&url, &path, disable_ssh)?;
+        Ok(path)
+    } else {
+        // @TODO last resort, clone the actual dev directory to a temp folder
+        panic!("no repository to access ip")
     }
 }
 

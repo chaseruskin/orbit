@@ -219,7 +219,7 @@ impl<'a> DynState<'a> {
                 let temp = tempdir().unwrap();
                 let temp_path = temp.path().to_path_buf();
                 // copy entire project folder to temporary directory
-                crate::util::filesystem::copy(&ip.get_root(), &temp_path).unwrap();
+                crate::util::filesystem::copy(&ip.get_root(), &temp_path, true).unwrap();
 
                 // create the ip from the temporary dir
                 let temp_ip = IpManifest::from_path(&temp_path).unwrap();
@@ -267,7 +267,7 @@ fn install_dst(source_ip: &IpManifest, root: &std::path::PathBuf) -> IpManifest 
     }
 
     // copy the source ip to the new location
-    crate::util::filesystem::copy(&source_ip.get_root(), &cache_path).unwrap();
+    crate::util::filesystem::copy(&source_ip.get_root(), &cache_path, true).unwrap();
 
     let mut cached_ip = IpManifest::from_path(&cache_path).unwrap();
     cached_ip.stash_units();

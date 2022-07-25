@@ -111,7 +111,7 @@ impl Tree {
         // build graph again but with entire set of all files available from all depdendencies
         let ip_graph = ip::compute_final_ip_graph(&target, &catalog)?;
         let files = ip::build_ip_file_list(&ip_graph);
-        println!("{:?}", files.iter().map(|f| f.get_file()).collect::<Vec<&String>>());
+        // println!("{:?}", files.iter().map(|f| f.get_file()).collect::<Vec<&String>>());
         // remember the identifier to index transform to complete graph
         let iden = graph.get_key_by_index(n).unwrap();
         // build the complete graph

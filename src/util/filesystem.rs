@@ -96,16 +96,22 @@ pub fn resolve_rel_path(root: &std::path::PathBuf, s: String) -> String {
 
 /// Recursively copies files from `source` to `target` directory.
 /// 
-/// Assumes `target` directory does not already exist.
-pub fn copy(source: &PathBuf, target: &PathBuf) -> Result<(), Fault> {
+/// Assumes `target` directory does not already exist. Ignores the `.git/` folder
+/// if `ignore_git` is set to `true`.
+pub fn copy(source: &PathBuf, target: &PathBuf, ignore_git: bool) -> Result<(), Fault> {
     // create missing directories to `target
     std::fs::create_dir_all(&target)?;
     // copy contents into cache slot
     let options = fs_extra::dir::CopyOptions::new();
     let mut from_paths = Vec::new();
+
     for dir_entry in std::fs::read_dir(source)? {
         match dir_entry {
-            Ok(d) => if d.file_name() != ".git" || d.file_type()?.is_dir() != true { from_paths.push(d.path()) },
+            // accept all folders and files (except .git/ when ignoring git)
+            Ok(d) => if d.file_name() != GIT_DIR || ignore_git == false {
+                // println!("copying: {:?}", d.path()); 
+                from_paths.push(d.path()) 
+            },
             Err(_) => (),
         }
     }
@@ -156,6 +162,8 @@ pub fn normalize_path(p: std::path::PathBuf) -> PathBuf {
     PathBuf::from(result.into_iter().fold(String::new(), |x, y| if first == true { first = false; x + &y } else { x + "/" + &y }).replace("\\", "/").replace("//", "/"))
     // @TODO add some fail-safe where if the final path does not exist then return the original path?
 }
+
+const GIT_DIR: &str = ".git";
 
 #[cfg(test)]
 mod test {

@@ -1,7 +1,6 @@
 use std::path::PathBuf;
-use crate::util::anyerror::Fault;
+use crate::util::{anyerror::Fault, filesystem};
 use super::{pkgid::PkgId, manifest::IpManifest};
-use git2::Repository;
 
 #[derive(Debug, PartialEq)]
 pub struct Store<'a> {
@@ -24,10 +23,8 @@ impl<'a> Store<'a> {
         if store_ip_dir.exists() == true {
             std::fs::remove_dir_all(&store_ip_dir)?;
         }
-        // create new directory to store
-        std::fs::create_dir(&store_ip_dir)?;
-        // clone the repository to the store location
-        Repository::clone(&ip.get_root().to_str().unwrap(), &store_ip_dir)?;
+        // copy the repository to the store location
+        filesystem::copy(&ip.get_root(), &store_ip_dir, false)?;
         Ok(store_ip_dir)
     }
 

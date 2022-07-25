@@ -178,7 +178,7 @@ impl Install {
             }
         }
         // copy contents into cache slot
-        crate::util::filesystem::copy(&temp, &cache_slot)?;
+        crate::util::filesystem::copy(&temp, &cache_slot, true)?;
         // write the checksum to the directory
         std::fs::write(&cache_slot.join(manifest::ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
         // write the metadata to the directory

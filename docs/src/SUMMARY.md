@@ -25,6 +25,7 @@
     - [Templates](./4_topic/4_template.md)
     - [Blueprint](./4_topic/6_blueprint.md)
     - [Dynamic Symbol Transformation](./4_topic/7_dst.md)
+    - [Conceptual Overview](./4_topic/8_concept.md)
 
 - [Reference](./5_reference/0_reference.md)
     - [Packages](./5_reference/1_packages.md)

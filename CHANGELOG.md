@@ -15,6 +15,25 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.5.1
+
+### Features
+- checks store for available versions of an ip during `orbit probe --tags`
+- improves installing dependencies from lockfile
+- displays warning when IP is initialized outside of DEV_PATH
+
+### Fixes
+- stores repos while maintaining origin remote
+- tweaks VHDL code formatting output on `orbit get`
+- improves filesystem copying operation with respecting .gitignore
+- returns error if ip listed more than once as direct dependency in current project
+
+### Documentation
+- adds concept overview page
+- updates orbit install example
+- updates env var page
+- adds topic page about dst
+
 ## 0.5.0
 
 ### Features

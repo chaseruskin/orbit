@@ -225,13 +225,15 @@ impl Entity {
             Some(lib) => String::from("entity ") + &lib + ".",
             None => "".to_owned()
         };
-        let mut result = String::from(format!("{} : {}{}", inst, prefix, self.get_name()));
+        let mut result = String::from(format!("{} : {}{}\n", inst, prefix, self.get_name()));
         if self.generics.0.len() > 0 {
-            result.push_str(" generic ");
+            result.push_str("generic ");
             result.push_str(&self.generics.0.to_instantiation_part())
         }
         if self.ports.0.len() > 0 {
-            result.push_str(" port ");
+            // add extra spacing
+            if self.generics.0.len() > 0 { result.push(' '); }
+            result.push_str("port ");
             result.push_str(&self.ports.0.to_instantiation_part())
         }
         result.push(';');

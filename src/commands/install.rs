@@ -153,7 +153,7 @@ impl Install {
             } else {
                 let cached_ip = IpManifest::from_path(&cache_slot)?;
                 // verify the installed version is valid
-                if let Some(sha) = cached_ip.get_checksum_proof(0) {
+                if let Some(sha) = cached_ip.read_checksum_proof() {
                     // recompute the checksum on the cache installation
                     if sha == cached_ip.compute_checksum() {
                         return Err(AnyError(format!("ip '{}' as version '{}' is already installed", target, version)))?

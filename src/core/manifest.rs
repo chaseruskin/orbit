@@ -509,20 +509,16 @@ impl IpManifest {
 
     /// Gets the already calculated checksum from an installed IP from '.orbit-checksum'.
     /// 
-    /// This fn can return the different levels of the check-sum, whether its the dynamic
-    /// SHA (level 1) or the original SHA (level 0).
-    /// 
     /// Returns `None` if the file does not exist, is unable to read into a string, or
     /// if the sha cannot be parsed.
-    pub fn get_checksum_proof(&self, level: u8) -> Option<Sha256Hash> {
+    pub fn read_checksum_proof(&self) -> Option<Sha256Hash> {
         let sum_file = self.get_root().join(ORBIT_SUM_FILE);
         if sum_file.exists() == false {
             None
         } else {
             match std::fs::read_to_string(&sum_file) {
                 Ok(text) => {
-                    let mut sums = text.split_terminator('\n').skip(level.into());
-                    match sha256::Sha256Hash::from_str(&sums.next().expect("level was out of bounds")) {
+                    match sha256::Sha256Hash::from_str(&text.trim()) {
                         Ok(sha) => Some(sha),
                         Err(_) => None,
                     }
@@ -798,7 +794,7 @@ impl IpManifest {
 
     pub fn generate_dst_lut(&self) -> HashMap<Identifier, String> {
         let units = self.read_units_from_metadata().unwrap();
-        let checksum = self.get_checksum_proof(0).unwrap();
+        let checksum = self.read_checksum_proof().unwrap();
         // compose the lut for symbol transformation
         let mut lut = HashMap::new();
         units.into_iter().for_each(|f| {

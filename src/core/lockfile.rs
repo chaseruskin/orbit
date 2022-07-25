@@ -89,7 +89,7 @@ impl From<&IpManifest> for LockEntry {
         Self {
             name: ip.get_pkgid().clone(), 
             version: ip.get_version().clone(), 
-            sum: Some(ip.get_checksum_proof(0).unwrap_or(ip.compute_checksum())), 
+            sum: Some(ip.read_checksum_proof().unwrap_or(ip.compute_checksum())), 
             source: if ip.get_repository().is_some() { Some(ip.get_repository().unwrap().clone()) } else { None },
             dependencies: match ip.get_dependencies().inner().len() {
                 0 => None,

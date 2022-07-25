@@ -189,12 +189,12 @@ impl Plan {
         let ip = install::Install::install(&from, &ver, catalog.get_cache_path(), true, catalog.get_store())?;
 
         // verify the checksums align
-        match &ip.get_checksum_proof(0).unwrap() == entry.get_sum().unwrap() {
+        match &ip.read_checksum_proof().unwrap() == entry.get_sum().unwrap() {
             true => Ok(()),
             false => {
                 // delete the entry from the cache slot
                 ip.remove()?;
-                Err(AnyError(format!("failed to install ip '{}' from lockfile due to differing checksums\n\ncomputed: {}\nexpected: {}", entry.get_name(), ip.get_checksum_proof(0).unwrap(), entry.get_sum().unwrap())))?
+                Err(AnyError(format!("failed to install ip '{}' from lockfile due to differing checksums\n\ncomputed: {}\nexpected: {}", entry.get_name(), ip.read_checksum_proof().unwrap(), entry.get_sum().unwrap())))?
             }
         } 
     }

@@ -64,3 +64,7 @@ entity_a
 It takes the symbol conflict, and produces a new unique symbol to use to disambiguate primary design units across projects. The original identifier is appended with the first 10 digits of the project version's checksum.
 
 Notice the symbol to be transformed is not the symbol used in the current project, so dynamic symbol transformation has no effect to the user and is kept abstracted away to Orbit. Direct dependencies are never chosen for dynamic symbol transformation.
+
+## Emphasis
+
+Dynamic symbol transformation circumvents a major issue in package management: dependency hell. As projects and their dependencies become more complex, Orbit continues to allow using different verisons of the same package. Conflicts in incompatible versions are avoided within the dependency graph. You can learn more about dependency hell [here](https://en.wikipedia.org/wiki/Dependency_hell).

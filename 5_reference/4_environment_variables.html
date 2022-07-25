@@ -153,6 +153,9 @@
 <p><code>ORBIT_CACHE</code> - directory where orbit caches installed IP. By default it is <code>$ORBIT_HOME/cache</code>.</p>
 </li>
 <li>
+<p><code>ORBIT_STORE</code> - directory where orbit saves IP git repositories. By default it is <code>$ORBIT_HOME/store</code>.</p>
+</li>
+<li>
 <p><code>NO_COLOR</code> - does not print colorized output when set to a value.</p>
 </li>
 <li>
@@ -180,7 +183,24 @@
 <li>
 <p><code>ORBIT_BENCH</code> - toplevel design's testbench identifier</p>
 </li>
+<li>
+<p><code>ORBIT_IP</code> - current working directory's ip PKGID</p>
+</li>
+<li>
+<p><code>ORBIT_IP_NAME</code> - name component of current working directory's ip PKGID</p>
+</li>
+<li>
+<p><code>ORBIT_IP_LIBRARY</code> - library component of current working directory's ip PKGID</p>
+</li>
+<li>
+<p><code>ORBIT_IP_VENDOR</code> - vendor component of current working directory's ip PKGID</p>
+</li>
+<li>
+<p><code>ORBIT_IP_VERSION</code> - specific version of current working directory's ip</p>
+</li>
 </ul>
+<h2 id="checking-the-environment"><a class="header" href="#checking-the-environment">Checking the environment</a></h2>
+<p>You can review the known environment variables within Orbit with <code>orbit env</code>.</p>
 <!--Note about environment variables vs. settings file vs. arguments
 
 precedence:

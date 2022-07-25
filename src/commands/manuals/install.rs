@@ -37,6 +37,6 @@ OPTIONS
           Convert SSH to HTTPS urls when fetching external dependencies
 
 EXAMPLES
-    orbit install ks-tech.rary.gates --ver 1.0.0
+    orbit install --ip ks-tech.rary.gates --ver 1.0.0
     orbit install --git https://github.com/c-rus/gates.git -v latest
 ";

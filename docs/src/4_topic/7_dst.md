@@ -68,3 +68,7 @@ Notice the symbol to be transformed is not the symbol used in the current projec
 ## Emphasis
 
 Dynamic symbol transformation circumvents a major issue in package management: dependency hell. As projects and their dependencies become more complex, Orbit continues to allow using different verisons of the same package. Conflicts in incompatible versions are avoided within the dependency graph. You can learn more about dependency hell [here](https://en.wikipedia.org/wiki/Dependency_hell).
+
+## Further Reading
+
+- https://stephencoakley.com/2019/04/24/how-rust-solved-dependency-hell

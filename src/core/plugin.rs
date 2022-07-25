@@ -19,9 +19,6 @@ impl std::fmt::Display for Plugin {
 
 #[derive(Debug, PartialEq)]
 pub enum PluginError {
-    MissingAlias,
-    MissingCommand,
-    UnknownKey(String),
     ArgsNotArray,
 }
 
@@ -30,9 +27,6 @@ impl std::error::Error for PluginError {}
 impl std::fmt::Display for PluginError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::MissingAlias => write!(f, "key 'alias' holding a string is required for a plugin"),
-            Self::MissingCommand => write!(f, "key 'command' holding a string is required for a plugin"),
-            Self::UnknownKey(k) => write!(f, "unknown key '{}' skipped in plugin array of tables", k),
             Self::ArgsNotArray => write!(f, "key 'args' expects an array of strings"),
         }
     }

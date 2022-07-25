@@ -100,7 +100,7 @@ impl<'a> Optional<'a> {
         &self.option
     }
 
-    pub fn get_pos_ref(&self) -> &Positional {
+    pub fn _get_pos_ref(&self) -> &Positional {
         &self.value
     }
 }
@@ -188,7 +188,7 @@ mod test {
         });
         assert_eq!(version.get_flag_ref().get_switch_ref(), Some(&'c'));
 
-        assert_eq!(version.get_pos_ref(), &Positional::new("rgb"));
+        assert_eq!(version._get_pos_ref(), &Positional::new("rgb"));
     }
 
     #[test]

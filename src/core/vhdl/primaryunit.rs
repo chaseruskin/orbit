@@ -4,7 +4,7 @@ use crate::core::vhdl::token::Identifier;
 use super::symbol::VHDLSymbol;
 use crate::core::vhdl::symbol::VHDLParser;
 
-#[derive(Debug, PartialEq, Hash, Eq)]
+#[derive(PartialEq, Hash, Eq)]
 pub enum PrimaryUnit {
     Entity(Unit),
     Package(Unit),
@@ -61,7 +61,7 @@ impl std::fmt::Display for PrimaryUnit {
     }
 }
 
-#[derive(Debug)]
+
 pub struct Unit {
     name: Identifier,
     symbol: Option<VHDLSymbol>

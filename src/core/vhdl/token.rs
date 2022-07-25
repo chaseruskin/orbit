@@ -206,16 +206,6 @@ impl Display for Comment {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Character(String);
 
-impl Character {
-    fn new(c: char) -> Self {
-        Self(String::from(c))
-    }
-
-    fn as_str(&self) -> &str {
-        &self.0.as_ref()
-    }
-}
-
 impl std::fmt::Display for Character {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "'{}'", self.0)
@@ -224,13 +214,6 @@ impl std::fmt::Display for Character {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct BitStrLiteral(String);
-
-impl BitStrLiteral {
-    /// Returns the reference to the inner `String` struct.
-    fn as_str(&self) -> &str {
-        &self.0.as_ref()
-    }
-}
 
 impl std::fmt::Display for BitStrLiteral {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -242,15 +225,6 @@ impl std::fmt::Display for BitStrLiteral {
 pub enum AbstLiteral {
     Decimal(String),
     Based(String),
-}
-
-impl AbstLiteral {
-    fn as_str(&self) -> &str {
-        match self {
-            Self::Decimal(val) => val.as_ref(),
-            Self::Based(val) => val.as_ref(),
-        }
-    }
 }
 
 impl std::fmt::Display for AbstLiteral {
@@ -1517,7 +1491,7 @@ impl VHDLToken {
     }
 
     /// Accesses the underlying `Identifier`, if one exists.
-    pub fn get_identifier(&self) -> Option<&Identifier> {
+    pub fn as_identifier(&self) -> Option<&Identifier> {
         match self {
             VHDLToken::Identifier(id) => Some(id),
             _ => None,
@@ -1532,7 +1506,7 @@ impl VHDLToken {
         }
     }
 
-    pub fn get_comment(&self) -> Option<&Comment> {
+    pub fn as_comment(&self) -> Option<&Comment> {
         match self {
             VHDLToken::Comment(r) => Some(r),
             _ => None,

@@ -144,27 +144,6 @@ impl Template {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum TemplateError {
-    EntryNotString(String),
-    MissingAlias,
-    MissingPath,
-    UnknownKey(String),
-}
-
-impl std::error::Error for TemplateError {}
-
-impl std::fmt::Display for TemplateError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::EntryNotString(k) => write!(f, "key '{}' expects a string", k),
-            Self::MissingAlias => write!(f, "key 'alias' holding a string is required for a template"),
-            Self::MissingPath => write!(f, "key 'path' holding a string is required for a template"),
-            Self::UnknownKey(k) => write!(f, "unknown key '{}' skipped in template array of tables", k),
-        }
-    }
-}
-
-#[derive(Debug, PartialEq)]
 pub struct TemplateFile(PathBuf);
 
 impl TemplateFile {

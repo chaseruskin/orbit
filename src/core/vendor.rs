@@ -1,44 +1,7 @@
 use crate::{core::manifest::Manifest, util::{anyerror::{Fault, AnyError}, filesystem::{normalize_path, self}}};
-use std::{path::PathBuf, collections::HashMap, str::FromStr};
-use crate::core::pkgid::PkgId;
+use std::{path::PathBuf, str::FromStr};
 use super::{pkgid::PkgPart, config::FromToml, manifest::IpManifest, version::Version, hook::Hook, variable::{VariableTable}, template};
 use std::io::Write;
-
-#[derive(Debug, PartialEq)]
-pub struct IndexTable(HashMap<PkgId, String>);
-
-impl IndexTable {
-    /// Updates the table with the registry's name.
-    fn vendor(self, iden: &PkgPart) -> Self {
-        let name = iden.as_ref();
-        let mut new_map = HashMap::new();
-        self.0.into_iter().map(|f| {
-            (f.0.vendor(name).unwrap(), f.1)
-        }).for_each(|entry| {
-            new_map.insert(entry.0, entry.1);
-        });
-        Self(new_map)
-    }
-}
-
-impl FromToml for IndexTable {
-    type Err = Fault;
-
-    fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err> where Self: Sized {
-        let mut pkgs = HashMap::new();
-        // iterate and read through the index table
-        for j in table {
-            for k in table[j.0].as_table().unwrap() {
-                // create pkgids
-                pkgs.insert(PkgId::new()
-                    .library(j.0).unwrap()
-                    .name(k.0).unwrap(), 
-                    k.1.as_str().unwrap().to_owned());
-            }
-        }
-        Ok(Self(pkgs))
-    }
-}
 
 #[derive(Debug, PartialEq)]
 pub struct VendorToml {

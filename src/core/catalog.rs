@@ -153,7 +153,7 @@ impl<'a> Catalog<'a> {
 
     /// Uses the cache slot name to check if the directory exists.
     pub fn is_cached_slot(&self, target: &IpManifest) -> bool {
-        let _cache_slot = CacheSlot::form(target.get_pkgid().get_name(), target.get_version(), &Sha256Hash::new());
+        let _cache_slot = CacheSlot::new(target.get_pkgid().get_name(), target.get_version(), &Sha256Hash::new());
         todo!()
     }
 
@@ -228,12 +228,8 @@ impl<'a> Catalog<'a> {
 pub struct CacheSlot(String);
 
 impl CacheSlot {
-    pub fn new() -> Self {
-        Self(String::new())
-    }
-
     /// Combines the various components of a cache slot name into a `CacheSlot`.
-    pub fn form(name: &PkgPart, version: &Version, checksum: &Sha256Hash) -> Self {
+    pub fn new(name: &PkgPart, version: &Version, checksum: &Sha256Hash) -> Self {
         Self(format!("{}-{}-{}", name, version, checksum.to_string().get(0..10).unwrap()))
     }
 }

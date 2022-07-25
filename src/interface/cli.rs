@@ -25,7 +25,7 @@ impl Token {
         }
     }
 
-    fn get_index_ref(&self) -> &usize {
+    fn _get_index_ref(&self) -> &usize {
         match self {
             Self::UnattachedArgument(i, _) => i,
             Self::AttachedArgument(i, _) => i,
@@ -47,7 +47,7 @@ pub struct Cli<'c> {
 }
 
 impl<'c> Cli<'c> {
-    pub fn new() -> Self {
+    pub fn _new() -> Self {
         Cli {
             tokens: Vec::new(),
             opt_store: HashMap::new(),

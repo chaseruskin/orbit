@@ -144,7 +144,7 @@ impl Install {
         println!("checksum: {}", checksum);
 
         // use checksum to create new directory slot
-        let cache_slot_name = CacheSlot::form(target.get_name(), &version, &checksum);
+        let cache_slot_name = CacheSlot::new(target.get_name(), &version, &checksum);
         let cache_slot = cache_root.join(&cache_slot_name.as_ref());
         if std::path::Path::exists(&cache_slot) == true {
             // check if we should proceed with force regardless if the installation is valid

@@ -1,14 +1,5 @@
 use super::token::Identifier;
 
-pub struct Component {
-
-}
-
-pub struct Instance {
-
-}
-
-
 #[derive(Debug)]
 pub struct Architectures<'a>(&'a Vec<super::symbol::Architecture>);
 
@@ -27,12 +18,8 @@ impl<'a> std::fmt::Display for Architectures<'a> {
         Ok(())
     }
 }
-
-
-// interface_signal_declaration ::=
-// [signal] identifier_list : [ mode ] subtype_indication [ bus ] [ := static_expression ]
-
-// identifier_list ::= identifier { , identifier }
+// @note: interface_signal_declaration ::= [signal] identifier_list : [ mode ] subtype_indication [ bus ] [ := static_expression ]
+// @note: identifier_list ::= identifier { , identifier }
 
 use crate::core::lexer;
 use crate::core::vhdl::token::{VHDLToken, Keyword, Delimiter};
@@ -46,14 +33,14 @@ impl IdentifierList {
     where I: Iterator<Item=lexer::Token<VHDLToken>> {
         let mut inner = Vec::new();
         // accept first identifier
-        inner.push(tokens.next().unwrap().as_ref().get_identifier().unwrap().clone());
+        inner.push(tokens.next().unwrap().as_ref().as_identifier().unwrap().clone());
         while let Some(tkn) = tokens.peek() {
             // continue on commas
             if tkn.as_ref().check_delimiter(&Delimiter::Comma) == true {
                 tokens.next();
             // collect more identifiers
-            } else if tkn.as_ref().get_identifier().is_some() {
-                inner.push(tokens.next().unwrap().as_ref().get_identifier().unwrap().clone());
+            } else if tkn.as_ref().as_identifier().is_some() {
+                inner.push(tokens.next().unwrap().as_ref().as_identifier().unwrap().clone());
             // break on non-identifier or comma
             } else {
                 break;
@@ -208,6 +195,10 @@ impl InterfaceDeclaration {
 pub struct InterfaceDeclarations(Vec<InterfaceDeclaration>);
 
 impl InterfaceDeclarations {
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+
     pub fn len(&self) -> usize {
         self.0.len()
     }
@@ -309,10 +300,6 @@ impl InterfaceDeclarations {
         Some(Self(signals))
     }
 
-    pub fn new() -> Self {
-        Self(Vec::new())
-    }
-
     /// Creates the body of the component list of interface connections.
     pub fn to_interface_part_string(&self) -> String {
         // auto-align by first finding longest offset needed
@@ -355,5 +342,5 @@ impl InterfaceDeclarations {
 
 #[cfg(test)]
 mod test {
-
+    // @todo
 }

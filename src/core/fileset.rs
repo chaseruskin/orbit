@@ -111,14 +111,6 @@ impl Fileset {
         &self.pattern
     }
 
-    /// Loads a fileset from a toml key/value pair
-    pub fn from_toml(key: toml_edit::Key, val: toml_edit::Value) -> Self {
-        Self {
-            name: key.to_string(),
-            pattern: glob::Pattern::new(val.as_str().unwrap()).unwrap(),
-        }
-    }
-
     /// Creates format for blueprint.tsv file.
     /// 
     /// The format goes FILESET_NAME\tFILE_NAME\tFILE_PATH
@@ -138,34 +130,6 @@ impl Fileset {
         };
         format!("{}\t{}\t{}\n", self.name, filename, file)
     }
-}
-
-/// Finds the VHDL files for the proper fileset among the list of available `files`.
-/// 
-/// Uses glob pattern matching to filter files.
-/// __Note__: This function is temporary workaround for avoiding trying to
-/// determine in-order dependency lists and files for current VHDL toplevel.
-pub fn collect_vhdl_files(files: &[String], is_sim: bool) -> Vec<&String> {
-    let match_opts = glob::MatchOptions {
-        case_sensitive: false,
-        require_literal_separator: false,
-        require_literal_leading_dot: false,
-    };
-    let p1 = glob::Pattern::new("*.vhd").unwrap();
-    let p2 = glob::Pattern::new("*.vhdl").unwrap();
-
-    let tb1 = glob::Pattern::new("tb_*").unwrap();
-    let tb2 = glob::Pattern::new("*_tb.*").unwrap();
-
-    files.iter().filter_map(|f| {
-        if (p1.matches_with(f, match_opts) == true || p2.matches_with(f, match_opts) == true) &&
-            ((is_sim == false && tb1.matches_with(f, match_opts) == false && tb2.matches_with(f, match_opts) == false) ||
-            (is_sim == true && (tb1.matches_with(f, match_opts) == true || tb2.matches_with(f, match_opts) == true))) {
-            Some(f)
-        } else {
-            None
-        }
-    }).collect()
 }
 
 /// Checks if the `file` is a VHDL file (ending with .vhd or .vhdl).
@@ -270,54 +234,5 @@ mod test {
 
         let s: &str = "vhdl_rtl";
         assert_eq!(Fileset::standardize_name(s), "VHDL-RTL");
-    }
-
-    #[test]
-    fn find_vhdl_rtl() {
-        let files: Vec<String> = vec![
-            "File.vhdl",
-            "file2.vhdl",
-            "file3.VHDL",
-            "file4.vhd",
-            "file.txt",
-            "tb_file.vhd",
-            "TB_file.vhdl",
-            "file.vh",
-            "file_tb.vhdl",
-            "file_Tb.vhd",
-            "other_tb_.vhd",
-        ].iter().map(|f| f.to_string()).collect();
-        let result = collect_vhdl_files(&files, false);
-        assert_eq!(result, vec![
-            "File.vhdl",
-            "file2.vhdl",
-            "file3.VHDL",
-            "file4.vhd",
-            "other_tb_.vhd",
-        ]);
-    }
-
-    #[test]
-    fn find_vhdl_sim() {
-        let files: Vec<String> = vec![
-            "File.vhdl",
-            "file2.vhdl",
-            "file3.VHDL",
-            "file4.vhd",
-            "file.txt",
-            "tb_file.vhd",
-            "TB_file.vhdl",
-            "file.vh",
-            "file_tb.VhdL",
-            "file_Tb.vhd",
-            "other_tb_.vhd",
-        ].iter().map(|f| f.to_string()).collect();
-        let result = collect_vhdl_files(&files, true);
-        assert_eq!(result, vec![
-            "tb_file.vhd", 
-            "TB_file.vhdl", 
-            "file_tb.VhdL", 
-            "file_Tb.vhd",
-        ]);
     }
 }

@@ -70,12 +70,6 @@ impl LockFile {
 }
 
 #[derive(Debug, PartialEq)]
-enum Source {
-    Url(crate::util::url::Url),
-    Empty,
-}
-
-#[derive(Debug, PartialEq)]
 pub struct LockEntry {
     name: PkgId,
     version: Version,

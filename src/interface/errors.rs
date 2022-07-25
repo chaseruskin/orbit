@@ -10,7 +10,6 @@ pub enum CliError<'a> {
     DuplicateOptions(Arg<'a>),
     ExpectingValue(Arg<'a>),
     UnexpectedValue(Arg<'a>, String),
-    OutOfContextArg(String),
     OutOfContextArgSuggest(String, String),
     UnexpectedArg(String),
     SuggestArg(String, String),
@@ -31,7 +30,6 @@ impl<'a> Display for CliError<'a> {
             SuggestArg(a, sug) => write!(f, "unknown argument '{}'\n\nDid you mean '{}'?", a.yellow(), sug.green()),
             SuggestSubcommand(a, sug) => write!(f, "unknown subcommand '{}'\n\nDid you mean '{}'?", a.yellow(), sug.green()),
             OutOfContextArgSuggest(o, cmd) => write!(f, "argument '{}' is unknown, or invalid in the current context\n\nMaybe move it after '{}'?{}", o.yellow(), cmd.green(), footer),
-            OutOfContextArg(o) => write!(f, "argument '{}' is unknown, or invalid in the current context{}", o.yellow(), footer),
             BadType(a, e) => write!(f, "argument '{}' did not process due to {}{}", a.to_string().yellow(), e, footer),
             MissingPositional(p, u) => {
                 // detect the usage statement to print from command's short help text

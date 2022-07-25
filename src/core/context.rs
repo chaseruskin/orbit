@@ -1,7 +1,6 @@
 use std::path;
 use std::env;
 use std::path::PathBuf;
-use toml_edit::Document;
 use std::collections::HashMap;
 use crate::core::plugin::Plugin;
 use crate::core::config::FromToml;
@@ -227,20 +226,6 @@ impl Context {
         Ok(self)
     }
 
-    /// Attempts to get the value of behind a key.
-    /// 
-    /// Dots are used to split among multiple `get` function calls. Panics if
-    /// an invalid key path is passed.
-    fn get_value_as_str<'a>(doc: &'a Document, key_path: &str) -> Option<&'a str> {
-        let keys: Vec<&str> = key_path.split_terminator('.').collect();
-        let mut keys_iter = keys.iter();
-        let mut table = doc.get(keys_iter.next().expect("passed in empty key"))?;
-        while let Some(key) = keys_iter.next() {
-            table = table.get(key)?;
-        }
-        table.as_str()
-    }
-
     /// Determines the orbit ip development path.
     /// 
     /// First checks if the environment already has ORBIT_DEV_PATH set, otherwise it
@@ -282,6 +267,7 @@ impl Context {
         &self.config
     }
 
+    /// Access the configuration data as mutable.
     pub fn get_config_mut(&mut self) -> &mut Config {
         &mut self.config
     }

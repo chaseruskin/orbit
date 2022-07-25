@@ -257,7 +257,7 @@ fn install_dst(source_ip: &IpManifest, root: &std::path::PathBuf) -> IpManifest 
 
     // determine the cache slot name
     let cache_path = {
-        let cache_slot = CacheSlot::form(source_ip.get_pkgid().get_name(), source_ip.get_version(), &sum);
+        let cache_slot = CacheSlot::new(source_ip.get_pkgid().get_name(), source_ip.get_version(), &sum);
         root.join(cache_slot.as_ref())
     };
 

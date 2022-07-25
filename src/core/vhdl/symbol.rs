@@ -765,7 +765,7 @@ impl VHDLSymbol {
             if tkn.as_ref().check_delimiter(&Delimiter::Colon) == true { break }
         }
         // take the component's name that is being replaced
-        tokens.next()?.take().get_identifier()?;
+        tokens.next()?.take().as_identifier()?;
 
         // take the keyword 'use'
         if tokens.next()?.take().check_keyword(&Keyword::Use) == false { return None }
@@ -791,7 +791,7 @@ impl VHDLSymbol {
     fn parse_instantiation(statement: Statement) -> Option<Identifier> {
         let mut tokens = statement.0.into_iter().peekable();
         // force identifier (instance name)
-        tokens.next()?.take().get_identifier()?;
+        tokens.next()?.take().as_identifier()?;
         // force colon
         if tokens.next()?.take().check_delimiter(&Delimiter::Colon) == false { return None };
         // check what is instantiated
@@ -986,12 +986,12 @@ impl VHDLSymbol {
             } else {
                 // check for resource references
                 let mut took_dot: Option<Token<VHDLToken>> = None;
-                if let Some(id) = t.as_type().get_identifier() {
+                if let Some(id) = t.as_type().as_identifier() {
                     // check if next token is a 'dot' delimiter
                     if tokens.peek().is_some() && tokens.peek().unwrap().as_type().check_delimiter(&Delimiter::Dot) {
                         took_dot = tokens.next();
                         if tokens.peek().is_some() {
-                            if let Some(id2) = tokens.peek().unwrap().as_type().get_identifier() {
+                            if let Some(id2) = tokens.peek().unwrap().as_type().as_identifier() {
                                 // store the resource reference
                                 // println!("{} {}", id, id2);
                                 statement.1.push(ResReference {

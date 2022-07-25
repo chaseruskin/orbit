@@ -99,24 +99,42 @@ pub fn resolve_rel_path(root: &std::path::PathBuf, s: String) -> String {
 /// Assumes `target` directory does not already exist. Ignores the `.git/` folder
 /// if `ignore_git` is set to `true`.
 pub fn copy(source: &PathBuf, target: &PathBuf, ignore_git: bool) -> Result<(), Fault> {
-    // create missing directories to `target
+    // create missing directories to `target`
     std::fs::create_dir_all(&target)?;
     // copy contents into cache slot
-    let options = fs_extra::dir::CopyOptions::new();
     let mut from_paths = Vec::new();
 
-    for dir_entry in std::fs::read_dir(source)? {
-        match dir_entry {
-            // accept all folders and files (except .git/ when ignoring git)
-            Ok(d) => if d.file_name() != GIT_DIR || ignore_git == false {
-                // println!("copying: {:?}", d.path()); 
-                from_paths.push(d.path()) 
-            },
-            Err(_) => (),
+    // respect .gitignore
+    for result in WalkBuilder::new(&source)
+        .hidden(false)
+        .filter_entry(move |f| (f.file_name() != GIT_DIR || ignore_git == false))
+        .build() {
+            match result {
+                Ok(entry) => {
+                    from_paths.push(entry.path().to_path_buf());
+                    // println!("copying: {:?}", entry.path());
+                },
+                Err(_) => (),
+            }
+    }
+
+    // create all missing directories
+    for from in from_paths.iter().filter(|f| f.is_dir()) {
+        // replace common `source` path with `target` path
+        let to = PathBuf::from(from.to_str().unwrap().replace(source.to_str().unwrap(), target.to_str().unwrap()));
+        std::fs::create_dir_all(&to)?;
+    }
+
+    // create all missing files
+    for from in from_paths.iter().filter(|f| f.is_file()) {
+        // grab the parent
+        if let Some(p) = from.parent() {
+            let to = PathBuf::from(p.to_str().unwrap().replace(source.to_str().unwrap(), target.to_str().unwrap()))
+                .join(from.file_name().unwrap());
+            std::fs::copy(from, to)?;
         }
     }
-    // note: copy rather than rename because of windows issues
-    fs_extra::copy_items(&from_paths, &target, &options)?;
+
     Ok(())
 }
 

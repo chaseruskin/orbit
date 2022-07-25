@@ -57,7 +57,14 @@ impl Command for Init {
         }
 
         let path = match &self.repo {
-            None => std::env::current_dir()?,
+            None => {
+                let p = std::env::current_dir()?;
+                // check if ip_path is within DEV_PATH
+                if p.starts_with(c.get_development_path().unwrap()) == false {
+                    println!("warning: initializing ip outside of DEV_PATH")
+                }
+                p
+            },
             Some(_) => {
                 match &self.rel_path {
                     Some(extra_path) => {
@@ -119,12 +126,9 @@ impl Init {
 
         // if there was a repository then add it as remote
         if let Some(url) = &self.repo {
-            // must be remote link if not on filesystem @TODO revisit with `Source` enum with `Path` variant
-            // if std::path::Path::exists(&std::path::PathBuf::from(url)) == false {
-                // write 'repository' key
-                ip.get_manifest_mut().write("ip", "repository", url.to_string());
-                ip.get_manifest_mut().save()?;
-            // }
+            // write 'repository' key
+            ip.get_manifest_mut().write("ip", "repository", url.to_string());
+            ip.get_manifest_mut().save()?;
         }
         Ok(())
     }

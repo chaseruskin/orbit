@@ -372,7 +372,9 @@ impl FromToml for DependencyTable {
                         None => return Err(FromTomlError::ExpectingString(format!("{}.{}.{}", vendor, library, name)))?
                     };
                     // insert into lut
-                    map.insert(pkgid, version);
+                    if let Some(prev) = map.insert(pkgid.clone(), version.clone()) {
+                        return Err(AnyError(format!("ip '{}' cannot be a direct dependency more than once\n\nUse only one of the listed versions: '{}' or '{}'", pkgid, version, prev)))?
+                    }
                 }
                 if switch == true { return Err(AnyError(format!("partial ip pkgid key '{}.{}.' in dependencies table", vendor, library)))? }
             }

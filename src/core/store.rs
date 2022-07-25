@@ -30,13 +30,11 @@ impl<'a> Store<'a> {
     }
 
     /// Tries to access the current directory already placed in the Orbit store.
-    pub fn as_stored(&self, ip: &PkgId) -> Result<Option<PathBuf>, Fault> {
+    pub fn as_stored(&self, ip: &PkgId) -> Option<PathBuf> {
         let store_ip_dir = self.root.join(ip.into_hash().to_string());
-        if std::path::Path::exists(&store_ip_dir) == false {
-            Ok(None)
-        } else {
-            // grab the ip manifest there
-            Ok(Some(store_ip_dir))
+        match std::path::Path::exists(&store_ip_dir) {
+            true => Some(store_ip_dir),
+            false => None,
         }
     }
 

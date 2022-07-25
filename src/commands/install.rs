@@ -73,7 +73,7 @@ impl Command for Install {
             let status = catalog.inner_mut().remove(&target).take().unwrap();
 
             // check the store/ for the repository
-            if let Some(root) = store.as_stored(&target)? {
+            if let Some(root) = store.as_stored(&target) {
                 root
             // clone from remote repository if exists
             } else if let Some(url) = status.try_repository() {

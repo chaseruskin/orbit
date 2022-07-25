@@ -8,6 +8,7 @@ use crate::FromCli;
 use crate::core::catalog::Catalog;
 use crate::core::catalog::IpLevel;
 use crate::core::extgit::ExtGit;
+use crate::core::manifest::IpManifest;
 use crate::core::pkgid::PkgId;
 use crate::core::version::AnyVersion;
 use crate::core::version::Version;
@@ -62,23 +63,36 @@ impl Command for Probe {
 
         // collect all ip in the user's universe to see if ip exists
         if self.tags == true {
-            println!("{}", format_version_table(status, catalog.get_store().as_stored(&target)?));
+            println!("{}", format_version_table(status, catalog.get_store().as_stored(&target)));
             return Ok(())
         }
 
         // find most compatible version with the partial version
         let v = self.version.as_ref().unwrap_or(&AnyVersion::Latest);
 
-        let ip = match status.get(v, false) {
+        let ip_opt = status.get(v, false);
+        let stored_ip = if ip_opt.is_none() {
+            IpManifest::from_store(catalog.get_store(), &target, &v).unwrap_or(None)
+        } else {
+            None
+        };
+
+        let ip = match ip_opt {
             Some(i) => i,
-            None => Err(AnyError(format!("ip '{}' is not found as version '{}'", target, v)))?
+            None => {
+                // try to create from store
+                if let Some(other) = &stored_ip {
+                    other
+                } else {
+                    return Err(AnyError(format!("ip '{}' is not found as version '{}'", target, v)))?
+                }
+            }
         };
 
         if self.units == true {
-            let units = match status.get(v, true).is_some() {
-                true => ip.collect_units(),
-                false => ip.read_units().unwrap_or(Vec::new()),
-            };
+            // default to try to read cached result of units before performing computation
+            let units = ip.read_units()
+                .unwrap_or(ip.collect_units());
             println!("{}", format_units_table(units));
             return Ok(())
         }

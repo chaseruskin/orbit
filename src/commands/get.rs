@@ -124,9 +124,11 @@ impl Command for Get {
             };
             if ip.is_none() {
                 // check if the ip is available for more helpful error message
-                return match status.get_available(v) {
-                    Some(_) => Err(AnyError(format!("ip '{}' is not installed but is available; if you want to use any unit from it try installing the ip", target))),
-                    None => Err(AnyError(format!("ip '{}' is not found as version '{}'", target, v)))
+                return match status.get_available(v).is_some() || IpManifest::from_store(catalog.get_store(), &target, v).unwrap_or(None).is_some() {
+                    true => Err(AnyError(format!("ip '{}' is not installed but is available; if you want to use any unit from it try installing the ip\n\nTry: `orbit install --ip {} -v {}`", target, target, v))),
+                    false => {
+                        Err(AnyError(format!("ip '{}' is not found as version '{}'", target, v)))
+                    }
                 }?
             }
 

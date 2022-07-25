@@ -14,8 +14,10 @@ use crate::core::version::Version;
 use crate::util::filesystem::normalize_path;
 
 use super::config::{FromToml, FromTomlError};
+use super::extgit::ExtGit;
 use super::lockfile::LockEntry;
 use super::ip::IpSpec;
+use super::store::Store;
 use super::version::AnyVersion;
 use super::vhdl::primaryunit::PrimaryUnit;
 use super::vhdl::token::{Identifier, IdentifierError};
@@ -731,6 +733,26 @@ impl IpManifest {
             ip: Self::wrap_toml(&man, IpToml::from_toml(man.get_doc().as_table()))?,
             manifest: man,
         })
+    }
+
+    /// Tries to load a manifest from the store.
+    pub fn from_store(store: &Store, pkgid: &PkgId, version: &AnyVersion) -> Result<Option<IpManifest>, Fault> {
+        let root = match store.as_stored(&pkgid) {
+            Some(r) => r,
+            None => return Ok(None),
+        };
+        // create the repository
+        let repo = git2::Repository::open(&root)?;
+        // verify the version exists
+        let space = ExtGit::gather_version_tags(&repo)?;
+        let target_ver = super::version::get_target_version(version, &space.iter().collect())?;
+        // checkout the selected version
+        ExtGit::checkout_tag_state(&repo, &target_ver)?;
+        // load the manifest
+        let ip = Self::from_path(&root)?;
+        // verify the package id's match because store could overwrite with hash collision
+        if ip.get_pkgid() != pkgid { return Ok(None) }
+        Ok(Some(ip))
     }
 
     /// Creates a string for printing an ip manifest to during `orbit tree`. 

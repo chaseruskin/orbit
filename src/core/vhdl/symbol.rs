@@ -116,6 +116,7 @@ impl std::fmt::Display for VHDLSymbol {
 #[derive(Debug, PartialEq)]
 pub struct Package {
     name: Identifier,
+    generics: Generics,
     body: Option<PackageBody>,
     refs: Vec<ResReference>,
 }
@@ -633,7 +634,40 @@ impl VHDLSymbol {
         if tokens.next().take().unwrap().as_type().check_keyword(&Keyword::Is) == false {
             panic!("expecting keyword IS")
         }
-        // @TODO check if there is a generic clause
+
+        // check if there is a NEW keyword to return instantiation
+        if tokens.peek().is_some() && tokens.peek().unwrap().as_type().check_keyword(&Keyword::New) == true {
+            // parse the statement to take the package instantiation line
+            let clause = Self::parse_statement(tokens);
+            println!("{:?}", clause.get_refs());
+            return VHDLSymbol::Package(Package {
+                name: match pack_name {
+                    VHDLToken::Identifier(id) => id,
+                    _ => panic!("expected an identifier")
+                },
+                generics: Generics::new(),
+                refs: clause.take_refs(),
+                body: None,
+            })
+        }
+
+        // check if there is a generic clause
+        let mut generics = if tokens.peek().is_some() && tokens.peek().unwrap().as_type().check_keyword(&Keyword::Generic) == true {
+            // take the GENERIC keyword token
+            tokens.next();
+            Self::parse_interface_list(tokens)
+        } else {
+            Vec::new()
+        };
+
+        // grab references from generic interface list
+        generics.iter_mut().for_each(|f| {
+            refs.append(f.get_refs_mut());
+        });
+
+        let generics = generics.into_iter()
+            .map(|f| f.0 )
+            .collect::<Vec<Vec<Token<VHDLToken>>>>();
 
         // compose the declarative items
         while let Some(t) = tokens.peek() {
@@ -672,6 +706,7 @@ impl VHDLSymbol {
                 VHDLToken::Identifier(id) => id,
                 _ => panic!("expected an identifier")
             },
+            generics: Generics(InterfaceDeclarations::from_double_listed_tokens(generics)),
             refs: refs,
             body: None,
         })
@@ -1327,18 +1362,17 @@ impl VHDLSymbol {
         if tokens.peek().unwrap().as_type().check_keyword(&Keyword::Is) {
             tokens.next();
         }
-        // @TODO collect port names and generic names until hitting 'END'
+        // collect port names and generic names until hitting 'END'
         while let Some(t) = tokens.peek() {
             if t.as_type().check_keyword(&Keyword::End) {
                 let _stmt = Self::parse_statement(tokens);
-                // println!("{:?}", stmt);
                 break;
-            // collect generic statements
+            // collect generic interface
             } else if t.as_type().check_keyword(&Keyword::Generic) {
                 // take the GENERIC token
                 tokens.next();
                 let _generics = Self::parse_interface_list(tokens);
-            // collect ports
+            // collect port interface
             } else if t.as_type().check_keyword(&Keyword::Port) {
                 // take the PORT token
                 tokens.next();

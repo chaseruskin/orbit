@@ -639,7 +639,7 @@ impl VHDLSymbol {
         if tokens.peek().is_some() && tokens.peek().unwrap().as_type().check_keyword(&Keyword::New) == true {
             // parse the statement to take the package instantiation line
             let clause = Self::parse_statement(tokens);
-            println!("{:?}", clause.get_refs());
+            // construct a new package
             return VHDLSymbol::Package(Package {
                 name: match pack_name {
                     VHDLToken::Identifier(id) => id,

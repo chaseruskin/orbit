@@ -27,6 +27,14 @@ impl VHDLSymbol {
         }
     }
 
+    /// Casts `self` to package.
+    pub fn as_package(&self) -> Option<&Package> {
+        match self {
+            Self::Package(p) => Some(p),
+            _ => None,
+        }
+    }
+
     /// Casts `self` to entity.
     pub fn as_entity(&self) -> Option<&Entity> {
         match self {
@@ -397,7 +405,7 @@ impl SelectedName {
     }
 }
 
-/// A `ResReference` is a pattern in the code that catches <library>.<package>. We
+/// A `ResReference` is a pattern in the code that catches `<library>.<primary-unit>`. We
 /// assume the pattern can be found anywhere.
 #[derive(Debug, PartialEq, Clone)]
 pub struct ResReference {
@@ -599,6 +607,8 @@ impl VHDLSymbol {
     /// is the identifier for the package name.
     fn parse_package_declaration<I>(tokens: &mut Peekable<I>) -> VHDLSymbol 
     where I: Iterator<Item=Token<VHDLToken>>  {
+
+        let mut refs = Vec::new();
         // take package name
         let pack_name = tokens.next().take().unwrap().take();
         // take the IS keyword
@@ -613,9 +623,12 @@ impl VHDLSymbol {
             if t.as_type().check_keyword(&Keyword::Package) {
                 // consume PACKAGE keyword
                 tokens.next();
-                // parse nested package declaration
-                Self::parse_package_declaration(tokens);
-                // @TODO store nested packages
+                // parse nested package declaration and grab references
+                let inner_pack = Self::parse_package_declaration(tokens);
+                refs.reserve(inner_pack.as_package().unwrap().get_refs().len());
+                inner_pack.as_package().unwrap().get_refs().into_iter().for_each(|r| {
+                    refs.push(r.clone());
+                });
             // grab component declarations
             } else if t.as_type().check_keyword(&Keyword::Component) {
                 let _comp = Self::parse_component(tokens);
@@ -630,7 +643,8 @@ impl VHDLSymbol {
                 Self::compose_statement(tokens);
                 break;
             } else {
-                Self::compose_statement(tokens);
+                let mut stmt = Self::compose_statement(tokens);
+                refs.append(&mut stmt.1);
             }
         }
 
@@ -640,7 +654,7 @@ impl VHDLSymbol {
                 VHDLToken::Identifier(id) => id,
                 _ => panic!("expected an identifier")
             },
-            refs: Vec::new(),
+            refs: refs,
             body: None,
         })
     }
@@ -742,13 +756,13 @@ impl VHDLSymbol {
         if tokens.next().take().unwrap().as_type().check_keyword(&Keyword::Is) == false {
             panic!("expecting keyword IS")
         }
-        VHDLSymbol::parse_body(tokens, &Self::is_primary_ending);
+        let (_, refs) = VHDLSymbol::parse_body(tokens, &Self::is_primary_ending);
         PackageBody {
             owner: match pack_name {
                 VHDLToken::Identifier(id) => id,
                 _ => panic!("expected an identifier")
             },
-            refs: Vec::new(),
+            refs: refs,
         }
     }
 
@@ -1200,6 +1214,7 @@ impl VHDLSymbol {
                 // println!("**** INFO: detected nested package \"{}\"", pack_name);
             // detect subprograms
             } else if t.as_type().as_keyword().is_some() && Self::is_subprogram(t.as_type().as_keyword().unwrap()) == true {
+                // println!("{}", "sub program");
                 Self::parse_subprogram(tokens);
             // build statements to throw away
             } else {
@@ -1330,8 +1345,9 @@ impl VHDLSymbol {
                 }
             // enter a subprogram
             } else if t.as_type().check_keyword(&Keyword::Function) || t.as_type().check_keyword(&Keyword::Begin) {
-                let _stmt = Self::compose_statement(tokens);
-                // println!("ENTERING SUBPROGRAM {:?}", _stmt);
+                let mut stmt = Self::compose_statement(tokens);
+                // println!("ENTERING SUBPROGRAM {:?}", stmt);
+                refs.append(&mut stmt.1);
                 let mut inner = Self::parse_body(tokens, &Self::is_sub_ending);
                 refs.append(&mut inner.1);
                 // println!("EXITING SUBPROGRAM");

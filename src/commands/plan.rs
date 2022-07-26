@@ -66,6 +66,7 @@ impl Command for Plan {
         if target_ip.can_use_lock() == true && c.force == false {
             // fill in the catalog with missing modules according the lock file if available
             for entry in target_ip.into_lockfile()?.inner() {
+                // skip the current project's ip entry
                 if entry.get_name() == target_ip.get_pkgid() { continue }
                 let ver = AnyVersion::Specific(entry.get_version().to_partial_version());
                 // try to use the lock file to fill in missing pieces

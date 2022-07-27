@@ -516,9 +516,6 @@ impl Parse<VHDLToken> for VHDLParser {
                 // update global references list
                 let mut clause = VHDLSymbol::parse_statement(&mut tokens);
                 global_refs.append(clause.get_refs_mut());
-                // clause.get_tokens_mut().append(res.get_tokens_mut());
-                // println!("global statement: {:?}", clause);
-                // println!("global refs: {:?}", global_refs);
             }
         }
         // println!("{:#?}", symbols);
@@ -702,18 +699,11 @@ impl VHDLSymbol {
             } else if t.as_type().check_keyword(&Keyword::Component) {
                 let _comp = Self::parse_component(tokens);
                 // println!("component declared: {}", comp);
-            // grab USE clause
-            } else if t.as_type().check_keyword(&Keyword::Use) {
-                // consume USE keyword
-                tokens.next();
-                Self::parse_use_clause(tokens);
-                // @TODO store use clauses to check if an external api was called
             } else if t.as_type().check_keyword(&Keyword::End) {
                 Self::parse_statement(tokens);
                 break;
             } else {
-                let mut stmt = Self::parse_statement(tokens);
-                refs.append(&mut stmt.1);
+                refs.append(&mut Self::parse_statement(tokens).take_refs());
             }
         }
 
@@ -780,6 +770,8 @@ impl VHDLSymbol {
     /// 
     /// Assumes the first token to consume is an identifier, and continues to collect
     /// if the next token is a DOT delimiter.
+    /// 
+    /// @dead_code
     fn compose_name<I>(tokens: &mut Peekable<I>) -> SelectedName
     where I: Iterator<Item=Token<VHDLToken>>  {
         let mut selected_name = Vec::new();
@@ -841,9 +833,7 @@ impl VHDLSymbol {
     /// 
     /// Assumes the first token to consume is 'for' and there is a ':' token to follow.
     fn parse_configuration_spec(statement: Statement) -> Option<Vec<CompoundIdentifier>> {
-        let mut tokens = statement.0;
-        tokens.push(Token::new(VHDLToken::Delimiter(Delimiter::Terminator), Position::new()));
-        let mut tokens = tokens.into_iter().peekable();
+        let mut tokens = Self::statement_to_tokens(statement).into_iter().peekable();
         // force keyword 'for'
         if tokens.next()?.take().check_keyword(&Keyword::For) == false { return None }
         // take tokens until ':'
@@ -863,23 +853,46 @@ impl VHDLSymbol {
         //      | open
         if tokens.peek()?.as_ref().check_keyword(&Keyword::Entity) == true ||
             tokens.peek()?.as_ref().check_keyword(&Keyword::Configuration) == true {
-                println!("{:?}", tokens.next().unwrap());
+                // take keyword ENTITY or CONFIGURATION
+                tokens.next();
             // take the compound identifiers
+            let solo_iden = tokens.peek().unwrap().as_type().as_identifier().unwrap().clone();
             let mut deps = Vec::new();
-            let solo_iden = match tokens.peek().unwrap().as_ref().as_identifier() {
-                Some(iden) => Some(iden.clone()),
-                None => None,
-            };
-            deps.append(&mut Self::parse_statement(&mut tokens).take_refs());
-            // add simple name if could not find any compound names
-            if deps.is_empty() == true {
-                if let Some(iden) = solo_iden {
-                    deps.push(CompoundIdentifier::new_minimal(iden));
-                }
-            }
+            Self::update_deps_from_statement(&mut deps, solo_iden, &mut tokens);
             Some(deps)
         } else {
             None
+        }
+    }
+
+    /// Transforms a single statement into a list of tokens.
+    /// 
+    /// Appends a terminator `;` to the end of the token list.
+    fn statement_to_tokens(clause: Statement) -> Vec<Token<VHDLToken>> {
+        let mut tokens = clause.0;
+        // adds terminating delimiter ';'
+        tokens.push(Token::new(VHDLToken::Delimiter(Delimiter::Terminator), Position::new()));
+        tokens
+    }
+
+    /// Updates a dependencies list `deps` by parsing the token stream.
+    /// 
+    /// Assumes the token stream is built from a single statement. Assumes the first token in the stream is an
+    /// indentifier that could be a dependency, if the first dependency detects is not a compound identifier with that matching suffix.
+    fn update_deps_from_statement<I>(deps: &mut Vec<CompoundIdentifier>, iden: Identifier, tokens: &mut Peekable<I>) -> ()
+    where I: Iterator<Item=Token<VHDLToken>> {
+        let mut more_deps = Self::parse_statement(tokens).take_refs();
+        match more_deps.is_empty() {
+            // add simple name if could not find any compound names
+            true => deps.push(CompoundIdentifier::new_minimal(iden)),
+            // add compound names
+            false => {
+                // check if the first dep has iden as the prefix to know if it needs to be added
+                if more_deps.first().unwrap().get_prefix().unwrap() != &iden {
+                    deps.push(CompoundIdentifier::new_minimal(iden))
+                }
+                deps.append(&mut more_deps)
+            },
         }
     }
 
@@ -888,9 +901,7 @@ impl VHDLSymbol {
     /// Assumes the next token to consume is instance name of the instantiation and
     /// the token to follow is the COLON ':' delimiter.
     fn parse_instantiation(statement: Statement) -> Option<Vec<CompoundIdentifier>> {
-        let mut tokens = statement.0;
-        tokens.push(Token::new(VHDLToken::Delimiter(Delimiter::Terminator), Position::new()));
-        let mut tokens = tokens.into_iter().peekable();
+        let mut tokens = Self::statement_to_tokens(statement).into_iter().peekable();
         // force identifier (instance name)
         tokens.next()?.take().as_identifier()?;
         // force colon
@@ -898,14 +909,9 @@ impl VHDLSymbol {
         // check what is instantiated
         match tokens.peek()?.as_type() {
             VHDLToken::Identifier(_) => {
-                // @todo: refactor (remove duplication)
                 let solo_iden = tokens.peek().unwrap().as_type().as_identifier().unwrap().clone();
                 let mut deps = Vec::new();
-                deps.append(&mut Self::parse_statement(&mut tokens).take_refs());
-                // add simple name if could not find any compound names
-                if deps.is_empty() == true {
-                    deps.push(CompoundIdentifier::new_minimal(solo_iden));
-                }
+                Self::update_deps_from_statement(&mut deps, solo_iden, &mut tokens);
                 Some(deps)
             }
             VHDLToken::Keyword(kw) => {
@@ -915,11 +921,7 @@ impl VHDLSymbol {
                         VHDLToken::Identifier(_) => {
                             let solo_iden = tokens.peek().unwrap().as_type().as_identifier().unwrap().clone();
                             let mut deps = Vec::new();
-                            deps.append(&mut Self::parse_statement(&mut tokens).take_refs());
-                            // add simple name if could not find any compound names
-                            if deps.is_empty() == true {
-                                deps.push(CompoundIdentifier::new_minimal(solo_iden));
-                            }
+                            Self::update_deps_from_statement(&mut deps, solo_iden, &mut tokens);
                             Some(deps)
                         },
                         _ => None,
@@ -943,7 +945,7 @@ impl VHDLSymbol {
         // force taking the `is` keyword
         if tokens.next().unwrap().as_type().check_keyword(&Keyword::Is) == false { panic!("expecting keyword 'is'") }
 
-        let mut ids = Vec::new();
+        let mut deps = Vec::new();
         let mut refs = Vec::new();
         // parse configuration section
         while let Some(t) = tokens.peek() {
@@ -956,7 +958,7 @@ impl VHDLSymbol {
             } else if t.as_type().check_keyword(&Keyword::For) {
                 // take the 'for' keyword
                 tokens.next().unwrap();
-                ids.append(&mut Self::parse_block_configuration(tokens));
+                deps.append(&mut Self::parse_block_configuration(tokens));
             // @todo handle `use` clauses
             } else {
                 let mut clause = Self::parse_statement(tokens);
@@ -967,7 +969,7 @@ impl VHDLSymbol {
         VHDLSymbol::Configuration(Configuration {
             name: config_name,
             owner: entity_name,
-            dependencies: ids,
+            dependencies: deps,
             refs: refs,
         })
     }
@@ -1015,6 +1017,8 @@ impl VHDLSymbol {
     /// Consumes tokens after the USE keyword.
     /// 
     /// Assumes the last token consumed was USE and composes a statement of imports.
+    /// 
+    /// @dead_code
     fn parse_use_clause<I>(tokens: &mut Peekable<I>) -> UseClause 
         where I: Iterator<Item=Token<VHDLToken>> {
         // collect first selected_name
@@ -1086,7 +1090,7 @@ impl VHDLSymbol {
     /// is reached before completing a statement, it is omitted and a blank
     /// statement is returned.
     fn parse_statement<I>(tokens: &mut Peekable<I>) -> Statement 
-        where I: Iterator<Item=Token<VHDLToken>>  {
+        where I: Iterator<Item=Token<VHDLToken>> {
 
         let mut clause = Statement::new();
         // traverse through token stream
@@ -1103,7 +1107,7 @@ impl VHDLSymbol {
                 clause.get_tokens_mut().push(t);
                 return clause
             } else {
-                // check for resource references
+                // check for compound identifiers as references to other design units
                 let mut took_dot: Option<Token<VHDLToken>> = None;
                 if let Some(id) = t.as_type().as_identifier() {
                     // check if next token is a 'dot' delimiter

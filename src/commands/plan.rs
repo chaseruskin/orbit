@@ -412,7 +412,7 @@ impl Plan {
 
         let top_name = current_graph.get_node_by_index(top).unwrap().as_ref().get_symbol().as_iden().unwrap().to_string();
         let bench_name = if let Some(n) = bench {
-            current_graph.get_key_by_index(n).unwrap().to_string()
+            current_graph.get_key_by_index(n).unwrap().get_suffix().to_string()
         } else {
             String::new()
         };

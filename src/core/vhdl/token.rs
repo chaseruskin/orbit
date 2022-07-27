@@ -50,8 +50,14 @@ impl From<&PkgPart> for Identifier {
 impl std::cmp::Eq for Identifier {}
 
 impl Identifier {
+    /// Creates an empty basic identifier.
     pub fn new() -> Self {
         Self::Basic(String::new())
+    }
+
+    /// Creates a new basic identifier for the working library: `work`.
+    pub fn new_working() -> Self {
+        Self::Basic(String::from("work"))
     }
 
     // Returns the reference to the inner `String` struct.

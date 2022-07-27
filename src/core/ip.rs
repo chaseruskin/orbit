@@ -48,7 +48,7 @@ fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphM
     // create empty graph
     let mut g = GraphMap::new();
     // construct iterative approach with lists
-    let t = g.add_node(root.into_ip_spec(), IpNode::new_keep(root));
+    let t = g.add_node(root.into_ip_spec(), IpNode::new_keep(root, Identifier::new_working()));
     let mut processing = vec![(t, root)];
 
     let mut iden_set: HashSet<Identifier> = HashSet::new();
@@ -82,7 +82,8 @@ fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphM
                                         iden_set.insert(unit.as_iden().unwrap().clone());
                                     }
                                 }
-                                g.add_node(dep.into_ip_spec(), match dst { true => IpNode::new_alter(dep), false => IpNode::new_keep(dep) })
+                                let lib = Identifier::from(dep.get_pkgid().get_library().as_ref().unwrap());
+                                g.add_node(dep.into_ip_spec(), match dst { true => IpNode::new_alter(dep, lib), false => IpNode::new_keep(dep, lib) })
                             };
                             g.add_edge_by_index(s, num, ());
                             processing.push((s, dep));
@@ -162,7 +163,7 @@ pub fn build_ip_file_list<'a>(ip_graph: &'a GraphMap<IpSpec, IpNode<'a>, ()>) ->
             .into_iter()
             .filter(|f| crate::core::fileset::is_vhdl(f) )
             .for_each(|f| {
-                files.push(IpFileNode { file: f, ip: ip.as_ref().as_ip() });
+                files.push(IpFileNode { file: f, ip: ip.as_ref().as_ip(), library: ip.as_ref().get_library().clone() });
             })
     });
     files
@@ -173,6 +174,7 @@ pub struct IpNode<'a> {
     dyn_state: DynState,
     original: &'a IpManifest,
     transform: Option<IpManifest>,
+    library: Identifier,
 }
 
 #[derive(Debug, PartialEq)]
@@ -182,13 +184,12 @@ pub enum DynState {
 }
 
 impl<'a> IpNode<'a> {
-
-    fn new_keep(og: &'a IpManifest) -> Self {
-        Self { dyn_state: DynState::Keep, original: og, transform: None }
+    fn new_keep(og: &'a IpManifest, lib: Identifier) -> Self {
+        Self { dyn_state: DynState::Keep, original: og, transform: None, library: lib }
     }
 
-    fn new_alter(og: &'a IpManifest) -> Self {
-        Self { dyn_state: DynState::Alter, original: og, transform: None }
+    fn new_alter(og: &'a IpManifest, lib: Identifier) -> Self {
+        Self { dyn_state: DynState::Alter, original: og, transform: None, library: lib }
     }
 
     /// References the internal `IpManifest` struct.
@@ -206,6 +207,10 @@ impl<'a> IpNode<'a> {
     /// a transform.
     pub fn as_original_ip(&'a self) -> &'a IpManifest {
         &self.original
+    }
+
+    fn get_library(&self) -> &Identifier {
+        &self.library
     }
 
     /// Checks if an ip is a direct result requiring DST.
@@ -289,12 +294,13 @@ fn install_dst(source_ip: &IpManifest, root: &std::path::PathBuf) -> IpManifest 
 #[derive(Debug, PartialEq)]
 pub struct IpFileNode<'a> {
     file: String,
+    library: Identifier,
     ip: &'a IpManifest
 }
 
 impl<'a> IpFileNode<'a> {
-    pub fn new(file: String, ip: &'a IpManifest) -> Self {
-        Self { file: file, ip: ip }
+    pub fn new(file: String, ip: &'a IpManifest, lib: Identifier) -> Self {
+        Self { file: file, ip: ip, library: lib }
     }
 
     pub fn get_file(&self) -> &String {
@@ -305,9 +311,9 @@ impl<'a> IpFileNode<'a> {
         &self.ip
     }
 
-    /// References the library identifier from the ip's pkgid.
-    pub fn get_library(&self) -> &PkgPart {
-        &self.ip.get_pkgid().get_library().as_ref().unwrap()
+    /// References the library identifier.
+    pub fn get_library(&self) -> &Identifier {
+        &self.library
     }
 }
 

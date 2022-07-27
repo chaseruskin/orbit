@@ -6,8 +6,6 @@ use crate::core::catalog::Catalog;
 use crate::core::extgit;
 use crate::core::ip::IpFileNode;
 use crate::core::manifest::IpManifest;
-use crate::core::pkgid::PkgId;
-use crate::core::pkgid::PkgPart;
 use crate::core::lockfile::LockEntry;
 use crate::core::template;
 use crate::core::variable::VariableTable;
@@ -23,7 +21,6 @@ use crate::core::context::Context;
 use crate::util::graphmap::GraphMap;
 use std::collections::HashMap;
 use std::io::Write;
-use std::str::FromStr;
 use crate::core::fileset::Fileset;
 use crate::core::vhdl::token::Identifier;
 use crate::core::plugin::Plugin;
@@ -202,7 +199,7 @@ impl Plan {
     }
 
     /// Builds a graph of design units. Used for planning.
-    fn build_full_graph<'a>(files: &'a Vec<IpFileNode>, target: &PkgId) -> GraphMap<CompoundIdentifier, HdlNode<'a>, ()> {
+    fn build_full_graph<'a>(files: &'a Vec<IpFileNode>) -> GraphMap<CompoundIdentifier, HdlNode<'a>, ()> {
             let mut graph_map: GraphMap<CompoundIdentifier, HdlNode, ()> = GraphMap::new();
     
             let mut sub_nodes: Vec<(Identifier, SubUnitNode)> = Vec::new();
@@ -214,11 +211,9 @@ impl Plan {
                 if crate::core::fileset::is_vhdl(&source_file.get_file()) == true {
                     let contents = std::fs::read_to_string(&source_file.get_file()).unwrap();
                     let symbols = symbol::VHDLParser::read(&contents).into_symbols();
-                    let lib = if target == source_file.get_ip_manifest().get_pkgid() {
-                        Identifier::Basic(String::from("work"))
-                    } else {
-                        Identifier::from(source_file.get_library())
-                    };
+
+                    let lib = source_file.get_library();
+
                     // add all entities to a graph and store architectures for later analysis
                     let mut iter = symbols.into_iter()
                         .filter_map(|f| {
@@ -321,11 +316,11 @@ impl Plan {
         let current_files = crate::util::filesystem::gather_current_files(&std::env::current_dir().unwrap());
         let current_ip_nodes = current_files
             .into_iter()
-            .map(|f| { IpFileNode::new(f, &target) }).collect();
+            .map(|f| { IpFileNode::new(f, &target, Identifier::new_working()) }).collect();
         // build shallow graph (all primary design units)
-        let current_graph = Self::build_full_graph(&current_ip_nodes, target.get_pkgid());
+        let current_graph = Self::build_full_graph(&current_ip_nodes);
 
-        let working_lib = Identifier::Basic(String::from("work"));
+        let working_lib = Identifier::new_working();
 
         let mut natural_top: Option<usize> = None;
         let mut bench = if let Some(t) = &self.bench {
@@ -438,7 +433,7 @@ impl Plan {
         }
 
         let files = crate::core::ip::build_ip_file_list(&ip_graph);
-        let graph_map = Self::build_full_graph(&files, target.get_pkgid());
+        let graph_map = Self::build_full_graph(&files);
 
         // transfer identifier over to the full graph
         let highest_point = graph_map.get_node_by_key(highest_iden).unwrap().index();
@@ -499,11 +494,7 @@ impl Plan {
 
         // collect in-order HDL file list
         for file in file_order {
-            let lib = match current_files.contains(file.get_file()) {
-                true => PkgPart::from_str("work").unwrap(),
-                // converts '-' to '_' for VHDL rules compatibility
-                false => file.get_library().to_normal(),
-            };
+            let lib = file.get_library();
             if crate::core::fileset::is_rtl(&file.get_file()) == true {
                 blueprint_data += &format!("VHDL-RTL\t{}\t{}\n", lib, file.get_file());
             } else {

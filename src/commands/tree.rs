@@ -6,7 +6,6 @@ use crate::core::catalog::Catalog;
 use crate::core::ip;
 use crate::core::ip::IpFileNode;
 use crate::core::manifest::IpManifest;
-use crate::core::pkgid::PkgId;
 use crate::core::vhdl::subunit::SubUnit;
 use crate::core::vhdl::symbol::CompoundIdentifier;
 use crate::interface::cli::Cli;
@@ -90,13 +89,12 @@ impl Tree {
         // gather all files
         let current_files: Vec<IpFileNode> = crate::util::filesystem::gather_current_files(&std::env::current_dir().unwrap())
             .into_iter()
-            .map(|f| IpFileNode::new(f, &target)).collect();
-
+            .map(|f| IpFileNode::new(f, &target, Identifier::new_working())).collect();
 
         let working_lib = Identifier::Basic(String::from("work"));
 
         // build the shallow graph
-        let graph = Self::build_graph(&current_files, target.get_pkgid());
+        let graph = Self::build_graph(&current_files);
         let n = if let Some(ent) = &self.root {
             // check if the identifier exists in the entity graph
             if let Some(id) = graph.get_node_by_key(&CompoundIdentifier::new(working_lib, ent.clone())) {
@@ -122,7 +120,7 @@ impl Tree {
         // remember the identifier to index transform to complete graph
         let iden = graph.get_key_by_index(n).unwrap();
         // build the complete graph
-        let graph = Self::build_graph(&files, target.get_pkgid());
+        let graph = Self::build_graph(&files);
         // transform the shallow's index number to the new graph's index number
         let n = graph.get_node_by_key(iden).unwrap().index();
 
@@ -166,7 +164,7 @@ impl Tree {
     }
 
     /// Constructs a graph of the design heirarchy with entity nodes.
-    fn build_graph<'a>(files: &'a Vec<IpFileNode>, target: &PkgId) -> GraphMap<CompoundIdentifier, EntityNode<'a>, ()> {
+    fn build_graph<'a>(files: &'a Vec<IpFileNode>) -> GraphMap<CompoundIdentifier, EntityNode<'a>, ()> {
         // entity identifier, HashNode (hash-node holds entity structs)
         let mut graph = GraphMap::<CompoundIdentifier, EntityNode, ()>::new();
 
@@ -179,11 +177,7 @@ impl Tree {
                 let contents = std::fs::read_to_string(&source_file.get_file()).unwrap();
                 let symbols = symbol::VHDLParser::read(&contents).into_symbols();
                 
-                let lib = if target == source_file.get_ip_manifest().get_pkgid() {
-                    Identifier::Basic(String::from("work"))
-                } else {
-                    Identifier::from(source_file.get_library())
-                };
+                let lib = source_file.get_library();
 
                 // add all entities to a graph and store architectures for later analysis
                 let mut iter = symbols.into_iter().filter_map(|f| {

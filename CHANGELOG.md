@@ -15,6 +15,17 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.5.2
+
+### Features
+- supports VHDL package generics and package instantiations
+
+### Changes
+- alters long formatting for `orbit tree` to be `<ip>:<entity> v<version>`
+- refactors graphing to only need to be built once during `orbit plan` and `orbit tree`
+- improves reference identifier detection in entity declarations and packages
+- improves ip graph building against false edge detection by checking if library names match from references
+
 ## 0.5.1
 
 ### Features

@@ -1,5 +1,6 @@
-use std::{hash::Hash, collections::HashMap};
-use super::graph::Graph;
+use std::{hash::Hash, collections::HashMap, iter::FromIterator};
+
+use super::graph::{Graph, SuccessorsGraphMap};
 
 pub struct GraphMap<K: Eq + Hash + Clone, V, E> {
     graph: Graph<K, E>,
@@ -35,6 +36,10 @@ impl<K: Eq + Hash + Clone, V, E> GraphMap<K, V, E> {
         let iden = self.graph.add_node(key.clone());
         self.map.insert(key, Node(value, iden));
         iden
+    }
+
+    pub fn has_node_by_key(&self, key: &K) -> bool {
+        self.map.contains_key(key)
     }
 
     pub fn add_edge_by_key(&mut self, source: &K, target: &K, cost: E) -> bool {
@@ -90,5 +95,57 @@ impl<K: Eq + Hash + Clone, V, E> GraphMap<K, V, E> {
 
     pub fn get_graph(&self) -> &Graph<K, E> {
         &self.graph
+    }
+
+    pub fn iter(&self) -> IterGraphMap<K, V, E> {
+        IterGraphMap { graph: &self, current_node_index: 0 }
+    }
+}
+
+type NodeIndex = usize;
+type EdgeIndex = usize;
+
+pub struct IterGraphMap<'graph, K: Eq + Hash + Clone, V, E> {
+    graph: &'graph GraphMap<K, V, E>,
+    current_node_index: NodeIndex,
+}
+
+impl<'graph, K: Eq + Hash + Clone, V, E> Iterator for IterGraphMap<'graph, K, V, E> {
+    type Item = (&'graph K, &'graph V, SuccessorsGraphMap<'graph, K, V, E>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current_node_index >= self.graph.get_graph().node_count() {
+            None
+        } else {
+            let key = self.graph.get_key_by_index(self.current_node_index).unwrap();
+            let value = &self.graph.get_node_by_key(&key).unwrap();
+
+            self.current_node_index += 1;
+            Some((key, value.as_ref(), self.graph.successors(value.index())))
+        }
+    }
+}
+
+impl<'graph, K: 'graph + Eq + Hash + Clone, V: 'graph, E: 'graph> FromIterator<(&'graph K, &'graph V, SuccessorsGraphMap<'graph, K, V, E>)> for GraphMap<&'graph K, &'graph V, &'graph E> {
+    fn from_iter<T: IntoIterator<Item = (&'graph K, &'graph V, SuccessorsGraphMap<'graph, K, V, E>)>>(iter: T) -> Self {
+        let mut graph: GraphMap<&K, &V, &E> = GraphMap::new();
+
+        let mut iter = iter.into_iter();
+        
+        while let Some((key, value, mut outgoing_neighbors)) = iter.next() {
+            // add missing node
+            if graph.has_node_by_key(&key) == false {
+                graph.add_node(key, value);
+            }
+            // add node's missing neighbors
+            while let Some((n_key, n_value, edge)) = outgoing_neighbors.next() {
+                if graph.has_node_by_key(&n_key) == false {
+                    graph.add_node(n_key, n_value);
+                }
+                // add edge connection between node and neighbor
+                graph.add_edge_by_key(&key,&n_key, edge);
+            }
+        }
+        graph
     }
 }

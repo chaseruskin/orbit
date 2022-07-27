@@ -2,6 +2,8 @@
 /// - source: http://smallcultfollowing.com/babysteps/blog/2015/04/06/modeling-graphs-in-rust-using-vector-indices/
 use std::collections::HashSet;
 
+use super::graphmap::GraphMap;
+
 type NodeIndex = usize;
 
 #[derive(Debug, PartialEq)]
@@ -69,6 +71,11 @@ impl<V, E> Graph<V, E> {
             first_incoming_edge: None,
         });
         index
+    }
+
+    /// Checks if a given `source` node is in the graph.
+    pub fn has_node(&self, source: NodeIndex) -> bool {
+        source < self.node_count()
     }
 
     /// Checks if a given `source` node is connected to the given `target` node.
@@ -273,6 +280,37 @@ impl<V, E> Graph<V, E> {
     /// Removes duplicate branches from the treeview and replaces them with labels.
     pub fn compress_treeview(&self, _tree: &Vec<(Twig, NodeIndex)>) -> Vec<(Twig, NodeIndex)> {
         todo!()
+    }
+}
+
+use std::hash::Hash;
+
+impl<K, V, E> GraphMap<K, V, E> where K: Eq + Hash + Clone {
+    /// Creates an iterator over the outgoing nodes from the `source` node.
+    pub fn successors(&self, source: NodeIndex) -> SuccessorsGraphMap<K, V, E> {
+        let first_outgoing_edge = self.get_graph().vertices[source].first_outgoing_edge;
+        SuccessorsGraphMap { graph: self, current_edge_index: first_outgoing_edge }
+    }
+}
+
+
+pub struct SuccessorsGraphMap<'graph, K: Eq + Hash + Clone, V, E> {
+    graph: &'graph GraphMap<K, V, E>,
+    current_edge_index: Option<EdgeIndex>,
+}
+
+impl<'graph, K: Eq + Hash + Clone, V, E> Iterator for SuccessorsGraphMap<'graph, K, V, E> {
+    type Item = (&'graph K, &'graph V, &'graph E);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.current_edge_index {
+            None => None,
+            Some(edge_num) => {
+                let edge = &self.graph.get_graph().edges[edge_num];
+                self.current_edge_index = edge.next_outgoing_edge;
+                Some((self.graph.get_key_by_index(edge.target).unwrap(), self.graph.get_node_by_index(edge.target).unwrap().as_ref(), &edge.edge))
+            }
+        }
     }
 }
 
@@ -546,11 +584,15 @@ mod test {
     }
 
     #[test]
-    fn add_node() {
+    fn add_node_and_has_node() {
         let mut g: Graph<(), ()> = Graph::new();
         assert_eq!(g.node_count(), 0);
+        assert_eq!(g.has_node(0), false);
+        assert_eq!(g.has_node(1), false);
         g.add_node(());
         assert_eq!(g.node_count(), 1);
+        assert_eq!(g.has_node(0), true);
+        assert_eq!(g.has_node(1), false);
     }
 
     #[test]

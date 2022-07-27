@@ -312,13 +312,11 @@ impl Plan {
             std::fs::remove_dir_all(&build_path)?;
         }
 
-        // gather filesets
-        let current_files = crate::util::filesystem::gather_current_files(&std::env::current_dir().unwrap());
-        let current_ip_nodes = current_files
-            .into_iter()
-            .map(|f| { IpFileNode::new(f, &target, Identifier::new_working()) }).collect();
-        // build shallow graph (all primary design units)
-        let current_graph = Self::build_full_graph(&current_ip_nodes);
+        // build entire ip graph and resolve with dynamic symbol transformation
+        let ip_graph = crate::core::ip::compute_final_ip_graph(&target, &catalog)?;
+
+        let files = crate::core::ip::build_ip_file_list(&ip_graph);
+        let current_graph = Self::build_full_graph(&files);
 
         let working_lib = Identifier::new_working();
 
@@ -340,9 +338,16 @@ impl Plan {
             }
         } else if self.top.is_none() {
             // filter to display tops that have ports (not testbenches)
-            match current_graph.find_root() {
+            // traverse subset of graph by filtering only for working library entities
+            let shallow_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> = current_graph.iter()
+                .filter(|f| match f.0.get_prefix() { 
+                    Some(iden) => iden == &working_lib, 
+                    None => false } )
+                .collect();
+            match shallow_graph.find_root() {
                 // only detected a single root
                 Ok(n) => {
+                    let n = current_graph.get_node_by_key(shallow_graph.get_key_by_index(n.index()).unwrap()).unwrap();
                     // verify the root is a testbench
                     if let Some(ent) = n.as_ref().get_symbol().as_entity() {
                         if ent.is_testbench() == true {
@@ -418,10 +423,6 @@ impl Plan {
             None => top
         };
 
-        let highest_iden = current_graph.get_key_by_index(highest_point).unwrap();
-        // build entire ip graph and resolve with dynamic symbol transformation
-        let ip_graph = crate::core::ip::compute_final_ip_graph(&target, &catalog)?;
-        
         // [!] write the lock file
         {
             // create build list
@@ -432,19 +433,13 @@ impl Plan {
             target.write_lock(&mut build_list)?;
         }
 
-        let files = crate::core::ip::build_ip_file_list(&ip_graph);
-        let graph_map = Self::build_full_graph(&files);
-
-        // transfer identifier over to the full graph
-        let highest_point = graph_map.get_node_by_key(highest_iden).unwrap().index();
-
         // compute minimal topological ordering
-        let min_order = graph_map.get_graph().minimal_topological_sort(highest_point);
+        let min_order = current_graph.get_graph().minimal_topological_sort(highest_point);
 
         let mut file_order = Vec::new();
         for i in &min_order {
             // access the node key
-            let ipfs = graph_map.get_node_by_index(*i).unwrap().as_ref().get_associated_files();
+            let ipfs = current_graph.get_node_by_index(*i).unwrap().as_ref().get_associated_files();
             // access the files associated with this key
             file_order.append(&mut ipfs.into_iter().map(|i| *i).collect());
         }
@@ -452,11 +447,12 @@ impl Plan {
         // store data in blueprint TSV format
         let mut blueprint_data = String::new();
 
-        let current_files: Vec<String> = current_ip_nodes.into_iter()
-            .map(|f| f.get_file().to_owned())
-            .collect();
-
+        // [!] collect user-defined filesets
         {
+            let current_files: Vec<String> = files.iter()
+                .map(|f| f.get_file().to_owned())
+                .collect();
+
             let mut vtable = VariableTable::new();
             vtable.add("orbit.bench", &bench_name);
             vtable.add("orbit.top", &top_name);
@@ -494,11 +490,10 @@ impl Plan {
 
         // collect in-order HDL file list
         for file in file_order {
-            let lib = file.get_library();
             if crate::core::fileset::is_rtl(&file.get_file()) == true {
-                blueprint_data += &format!("VHDL-RTL\t{}\t{}\n", lib, file.get_file());
+                blueprint_data += &format!("VHDL-RTL\t{}\t{}\n", file.get_library(), file.get_file());
             } else {
-                blueprint_data += &format!("VHDL-SIM\t{}\t{}\n", lib, file.get_file());
+                blueprint_data += &format!("VHDL-SIM\t{}\t{}\n", file.get_library(), file.get_file());
             }
         }
 

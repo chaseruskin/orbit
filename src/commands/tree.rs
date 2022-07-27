@@ -86,15 +86,14 @@ impl Tree {
 
     /// Construct and print the graph at an HDL-entity level.
     fn run_hdl_graph(&self, target: IpManifest, catalog: Catalog) -> Result<(), Fault> {
-        // gather all files
-        let current_files: Vec<IpFileNode> = crate::util::filesystem::gather_current_files(&std::env::current_dir().unwrap())
-            .into_iter()
-            .map(|f| IpFileNode::new(f, &target, Identifier::new_working())).collect();
-
         let working_lib = Identifier::Basic(String::from("work"));
 
-        // build the shallow graph
-        let graph = Self::build_graph(&current_files);
+        // build graph again but with entire set of all files available from all depdendencies
+        let ip_graph = ip::compute_final_ip_graph(&target, &catalog)?;
+        let files = ip::build_ip_file_list(&ip_graph);
+        // build the complete graph
+        let graph = Self::build_graph(&files);
+
         let n = if let Some(ent) = &self.root {
             // check if the identifier exists in the entity graph
             if let Some(id) = graph.get_node_by_key(&CompoundIdentifier::new(working_lib, ent.clone())) {
@@ -103,26 +102,21 @@ impl Tree {
                 return Err(PlanError::UnknownEntity(ent.clone()))?
             }
         } else {
-            match graph.get_graph().find_root() {
-                Ok(n) => n,
+            // traverse subset of graph by filtering only for working library entities
+            let shallow_graph: GraphMap<&CompoundIdentifier, &EntityNode, &()> = graph.iter()
+                .filter(|f| match f.0.get_prefix() { 
+                    Some(iden) => iden == &working_lib, 
+                    None => false } )
+                .collect();
+            match shallow_graph.find_root() {
+                Ok(n) => graph.get_node_by_key(shallow_graph.get_key_by_index(n.index()).unwrap()).unwrap().index(),
                 Err(e) => match e.len() {
                     0 => return Err(PlanError::Empty)?,
-                    1 => *e.first().unwrap(),
-                    _ => return Err(PlanError::Ambiguous("roots".to_string(), e.into_iter().map(|f| { graph.get_key_by_index(f).unwrap().get_suffix().clone() }).collect()))?
+                    1 => graph.get_node_by_key(shallow_graph.get_key_by_index(e.first().unwrap().index()).unwrap()).unwrap().index(),
+                    _ => return Err(PlanError::Ambiguous("roots".to_string(), e.into_iter().map(|f| { f.as_ref().entity.get_name().clone() }).collect()))?
                 }
             }
         };
-
-        // build graph again but with entire set of all files available from all depdendencies
-        let ip_graph = ip::compute_final_ip_graph(&target, &catalog)?;
-        let files = ip::build_ip_file_list(&ip_graph);
-
-        // remember the identifier to index transform to complete graph
-        let iden = graph.get_key_by_index(n).unwrap();
-        // build the complete graph
-        let graph = Self::build_graph(&files);
-        // transform the shallow's index number to the new graph's index number
-        let n = graph.get_node_by_key(iden).unwrap().index();
 
         let tree = graph.get_graph().treeview(n);
         for twig in &tree {

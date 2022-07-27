@@ -260,7 +260,7 @@ impl<'a> EntityNode<'a> {
         match fmt {
             IdentifierFormat::Long => {
                 let ip = self.files.first().unwrap().get_ip_manifest();
-                format!("{}  [{} {}]", self.entity.get_name(), ip.get_pkgid(), ip.get_version())
+                format!("{}:{} v{}", ip.get_pkgid(), self.entity.get_name(), ip.get_version())
             }
             IdentifierFormat::Short => format!("{}", self.entity.get_name()),
         }

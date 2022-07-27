@@ -1,10 +1,14 @@
+use std::collections::HashMap;
+
 use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
 use crate::core::ip;
 use crate::core::ip::IpFileNode;
 use crate::core::manifest::IpManifest;
+use crate::core::pkgid::PkgId;
 use crate::core::vhdl::subunit::SubUnit;
+use crate::core::vhdl::symbol::CompoundIdentifier;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;
@@ -88,11 +92,14 @@ impl Tree {
             .into_iter()
             .map(|f| IpFileNode::new(f, &target)).collect();
 
+
+        let working_lib = Identifier::Basic(String::from("work"));
+
         // build the shallow graph
-        let graph = Self::build_graph(&current_files);
+        let graph = Self::build_graph(&current_files, target.get_pkgid());
         let n = if let Some(ent) = &self.root {
             // check if the identifier exists in the entity graph
-            if let Some(id) = graph.get_node_by_key(&ent) {
+            if let Some(id) = graph.get_node_by_key(&CompoundIdentifier::new(working_lib, ent.clone())) {
                 id.index()
             } else {
                 return Err(PlanError::UnknownEntity(ent.clone()))?
@@ -103,7 +110,7 @@ impl Tree {
                 Err(e) => match e.len() {
                     0 => return Err(PlanError::Empty)?,
                     1 => *e.first().unwrap(),
-                    _ => return Err(PlanError::Ambiguous("roots".to_string(), e.into_iter().map(|f| { graph.get_key_by_index(f).unwrap().clone() }).collect()))?
+                    _ => return Err(PlanError::Ambiguous("roots".to_string(), e.into_iter().map(|f| { graph.get_key_by_index(f).unwrap().get_suffix().clone() }).collect()))?
                 }
             }
         };
@@ -115,7 +122,7 @@ impl Tree {
         // remember the identifier to index transform to complete graph
         let iden = graph.get_key_by_index(n).unwrap();
         // build the complete graph
-        let graph = Self::build_graph(&files);
+        let graph = Self::build_graph(&files, target.get_pkgid());
         // transform the shallow's index number to the new graph's index number
         let n = graph.get_node_by_key(iden).unwrap().index();
 
@@ -159,49 +166,67 @@ impl Tree {
     }
 
     /// Constructs a graph of the design heirarchy with entity nodes.
-    fn build_graph<'a>(files: &'a Vec<IpFileNode>) -> GraphMap<Identifier, EntityNode<'a>, ()> {
+    fn build_graph<'a>(files: &'a Vec<IpFileNode>, target: &PkgId) -> GraphMap<CompoundIdentifier, EntityNode<'a>, ()> {
         // entity identifier, HashNode (hash-node holds entity structs)
-        let mut graph = GraphMap::<Identifier, EntityNode, ()>::new();
+        let mut graph = GraphMap::<CompoundIdentifier, EntityNode, ()>::new();
 
-        let mut sub_nodes: Vec<SubUnitNode> = Vec::new();
+        let mut sub_nodes: Vec<(Identifier, SubUnitNode)> = Vec::new();
+        // store the (suffix, prefix) for all entities
+        let mut component_pairs: HashMap<Identifier, Identifier> = HashMap::new();
         // read all files
         for source_file in files {
             if crate::core::fileset::is_vhdl(&source_file.get_file()) == true {
                 let contents = std::fs::read_to_string(&source_file.get_file()).unwrap();
                 let symbols = symbol::VHDLParser::read(&contents).into_symbols();
+                
+                let lib = if target == source_file.get_ip_manifest().get_pkgid() {
+                    Identifier::Basic(String::from("work"))
+                } else {
+                    Identifier::from(source_file.get_library())
+                };
+
                 // add all entities to a graph and store architectures for later analysis
                 let mut iter = symbols.into_iter().filter_map(|f| {
                     match f {
-                        symbol::VHDLSymbol::Entity(e) => Some(e),
+                        symbol::VHDLSymbol::Entity(e) => {
+                            component_pairs.insert(e.get_name().clone(), lib.clone());
+                            Some(e)
+                        },
                         symbol::VHDLSymbol::Architecture(arch) => {
-                            sub_nodes.push(SubUnitNode::new(SubUnit::from_arch(arch), source_file));
+                            sub_nodes.push((lib.clone(), SubUnitNode::new(SubUnit::from_arch(arch), source_file)));
                             None
                         },
                         symbol::VHDLSymbol::Configuration(cfg) => {
-                            sub_nodes.push(SubUnitNode::new(SubUnit::from_config(cfg), source_file));
+                            sub_nodes.push((lib.clone(), SubUnitNode::new(SubUnit::from_config(cfg), source_file)));
                             None
                         },
                         _ => None,
                     }
                 });
                 while let Some(e) = iter.next() {
-                    graph.add_node(e.get_name().clone(), EntityNode::new(e, source_file));
+                    graph.add_node(CompoundIdentifier::new(lib.clone(), e.get_name().clone()), EntityNode::new(e, source_file));
                 }
             }
         }
 
         // go through all subunits and make the connections
         let mut sub_nodes_iter = sub_nodes.into_iter();
-        while let Some(node) = sub_nodes_iter.next() {
+        while let Some((lib, node)) = sub_nodes_iter.next() {
+
+            let node_name = CompoundIdentifier::new(lib, node.get_sub().get_entity().clone());
             // link to the owner and add subunit's source file
-            let entity_node = graph.get_node_by_key_mut(&node.get_sub().get_entity()).unwrap();
+            let entity_node = graph.get_node_by_key_mut(&node_name).unwrap();
             entity_node.as_ref_mut().add_file(node.get_file());
             // create edges
             for dep in node.get_sub().get_edges() {
-                // verify the dep exists
-                if graph.get_node_by_key(dep).is_some() {
-                    graph.add_edge_by_key(dep, node.get_sub().get_entity(), ());
-                }
+                // need to locate the key with a suffix matching `dep` if it was a component instantiation
+                if dep.get_prefix().is_none() {
+                    if let Some(lib) = component_pairs.get(dep.get_suffix()) {
+                        graph.add_edge_by_key(&CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone()), &node_name, ());
+                    }
+                } else {
+                    graph.add_edge_by_key(dep, &node_name, ());
+                };
             }
         }
         graph

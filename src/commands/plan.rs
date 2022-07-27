@@ -6,13 +6,14 @@ use crate::core::catalog::Catalog;
 use crate::core::extgit;
 use crate::core::ip::IpFileNode;
 use crate::core::manifest::IpManifest;
+use crate::core::pkgid::PkgId;
 use crate::core::pkgid::PkgPart;
 use crate::core::lockfile::LockEntry;
 use crate::core::template;
 use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
 use crate::core::vhdl::subunit::SubUnit;
-use crate::core::vhdl::symbol::ResReference;
+use crate::core::vhdl::symbol::CompoundIdentifier;
 use crate::interface::cli::Cli;
 use crate::util::anyerror::Fault;
 use crate::util::environment::EnvVar;
@@ -20,6 +21,7 @@ use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::util::graphmap::GraphMap;
+use std::collections::HashMap;
 use std::io::Write;
 use std::str::FromStr;
 use crate::core::fileset::Fileset;
@@ -200,50 +202,65 @@ impl Plan {
     }
 
     /// Builds a graph of design units. Used for planning.
-    fn build_full_graph<'a>(files: &'a Vec<IpFileNode>) -> GraphMap<Identifier, HdlNode<'a>, ()> {
-            let mut graph_map: GraphMap<Identifier, HdlNode, ()> = GraphMap::new();
+    fn build_full_graph<'a>(files: &'a Vec<IpFileNode>, target: &PkgId) -> GraphMap<CompoundIdentifier, HdlNode<'a>, ()> {
+            let mut graph_map: GraphMap<CompoundIdentifier, HdlNode, ()> = GraphMap::new();
     
-            let mut sub_nodes: Vec<SubUnitNode> = Vec::new();
-            let mut bodies: Vec<symbol::PackageBody> = Vec::new();
+            let mut sub_nodes: Vec<(Identifier, SubUnitNode)> = Vec::new();
+            let mut bodies: Vec<(Identifier, symbol::PackageBody)> = Vec::new();
+            // store the (suffix, prefix) for all entities
+            let mut component_pairs: HashMap<Identifier, Identifier> = HashMap::new();
             // read all files
             for source_file in files {
                 if crate::core::fileset::is_vhdl(&source_file.get_file()) == true {
                     let contents = std::fs::read_to_string(&source_file.get_file()).unwrap();
                     let symbols = symbol::VHDLParser::read(&contents).into_symbols();
+                    let lib = if target == source_file.get_ip_manifest().get_pkgid() {
+                        Identifier::Basic(String::from("work"))
+                    } else {
+                        Identifier::from(source_file.get_library())
+                    };
                     // add all entities to a graph and store architectures for later analysis
                     let mut iter = symbols.into_iter()
                         .filter_map(|f| {
                             match f {
-                                symbol::VHDLSymbol::Entity(_) => Some(f),
+                                symbol::VHDLSymbol::Entity(_) => {
+                                    component_pairs.insert(f.as_entity().unwrap().get_name().clone(), lib.clone());
+                                    Some(f)
+                                },
                                 symbol::VHDLSymbol::Package(_) => Some(f),
                                 symbol::VHDLSymbol::Context(_) => Some(f),
                                 symbol::VHDLSymbol::Architecture(arch) => {
-                                    sub_nodes.push(SubUnitNode{ sub: SubUnit::from_arch(arch), file: source_file });
+                                    sub_nodes.push((lib.clone(), SubUnitNode{ sub: SubUnit::from_arch(arch), file: source_file }));
                                     None
                                 }
                                 symbol::VHDLSymbol::Configuration(cfg) => {
-                                    sub_nodes.push(SubUnitNode { sub: SubUnit::from_config(cfg), file: source_file });
+                                    sub_nodes.push((lib.clone(), SubUnitNode { sub: SubUnit::from_config(cfg), file: source_file }));
                                     None
                                 }
                                 // package bodies are usually in same design file as package
                                 symbol::VHDLSymbol::PackageBody(pb) => {
-                                    bodies.push(pb);
+                                    bodies.push((lib.clone(), pb));
                                     None
                                 }
                             }
                         });
                     while let Some(e) = iter.next() {
                         // add primary design units into the graph
-                        graph_map.add_node(e.as_iden().unwrap().clone(), HdlNode::new(e, source_file));
+                        graph_map.add_node(
+                            CompoundIdentifier::new(
+                                Identifier::from(lib.clone()), 
+                                e.as_iden().unwrap().clone()), 
+                            HdlNode::new(e, source_file)
+                            );
                     }
                 }
             }
 
             // go through all package bodies and update package dependencies
             let mut bodies = bodies.into_iter();
-            while let Some(pb) = bodies.next() {
+            while let Some((lib, pb)) = bodies.next() {
                 // verify the package exists
-                if let Some(p_node) = graph_map.get_node_by_key_mut(pb.get_owner()) {
+                if let Some(p_node) = graph_map.get_node_by_key_mut(&CompoundIdentifier::new(lib, pb.get_owner().clone())) {
                     // link to package owner by adding refs
                     p_node.as_ref_mut().get_symbol_mut().add_refs(&mut pb.take_refs());
                 }
@@ -251,28 +268,39 @@ impl Plan {
     
             // go through all architectures and make the connections
             let mut sub_nodes_iter = sub_nodes.into_iter();
-            while let Some(node) = sub_nodes_iter.next() {
+            while let Some((lib, node)) = sub_nodes_iter.next() {
+
+                let node_name = CompoundIdentifier::new(lib, node.get_sub().get_entity().clone());
+        
                 // link to the owner and add architecture's source file
-                let entity_node = graph_map.get_node_by_key_mut(&node.sub.get_entity()).unwrap();
+                let entity_node = graph_map.get_node_by_key_mut(&node_name).unwrap();
                 entity_node.as_ref_mut().add_file(node.file);
                 // create edges
-                for dep in node.sub.get_edges() {
-                    graph_map.add_edge_by_key(dep, node.sub.get_entity(), ());
+                for dep in node.get_sub().get_edges() {
+                    // need to locate the key with a suffix matching `dep` if it was a component instantiation
+                    if dep.get_prefix().is_none() {
+                        if let Some(lib) = component_pairs.get(dep.get_suffix()) {
+                            graph_map.add_edge_by_key(&CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone()), &node_name, ());
+                        }
+                    } else {
+                        graph_map.add_edge_by_key(dep, &node_name, ());
+                    };
+                    
                 }
                 // add edges for reference calls
-                for dep in node.sub.get_refs() {
+                for dep in node.get_sub().get_refs() {
                     // note: verify the dependency exists (occurs within function)
-                    graph_map.add_edge_by_key(dep.get_suffix(), node.sub.get_entity(), ());
+                    graph_map.add_edge_by_key(dep, &node_name, ());
                 }
             }
 
         // go through all nodes and make the connections
-        let idens: Vec<Identifier> = graph_map.get_map().into_iter().map(|(k, _)| { k.clone() }).collect();
+        let idens: Vec<CompoundIdentifier> = graph_map.get_map().into_iter().map(|(k, _)| { k.clone() }).collect();
         for iden in idens {
-            let references: Vec<ResReference> = graph_map.get_node_by_key(&iden).unwrap().as_ref().get_symbol().get_refs().into_iter().map(|rr| rr.clone() ).collect();
+            let references: Vec<CompoundIdentifier> = graph_map.get_node_by_key(&iden).unwrap().as_ref().get_symbol().get_refs().into_iter().map(|rr| rr.clone() ).collect();
             for dep in &references {
                     // verify the dep exists
-                    graph_map.add_edge_by_key(dep.get_suffix(), &iden, ());
+                    graph_map.add_edge_by_key(dep, &iden, ());
             }
         }
         graph_map
@@ -295,11 +323,13 @@ impl Plan {
             .into_iter()
             .map(|f| { IpFileNode::new(f, &target) }).collect();
         // build shallow graph (all primary design units)
-        let current_graph = Self::build_full_graph(&current_ip_nodes);
+        let current_graph = Self::build_full_graph(&current_ip_nodes, target.get_pkgid());
+
+        let working_lib = Identifier::Basic(String::from("work"));
 
         let mut natural_top: Option<usize> = None;
         let mut bench = if let Some(t) = &self.bench {
-            match current_graph.get_node_by_key(&t) {
+            match current_graph.get_node_by_key(&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
                 // verify the unit is an entity that is a testbench
                 Some(node) => {
                     if let Some(e) = node.as_ref().get_symbol().as_entity() {
@@ -343,7 +373,7 @@ impl Plan {
 
         // determine the top-level node index
         let top = if let Some(t) = &self.top {
-            match current_graph.get_node_by_key(&t) {
+            match current_graph.get_node_by_key(&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
                 Some(node) => {
                     // verify the unit is an entity that is not a testbench
                     if let Some(e) = node.as_ref().get_symbol().as_entity() {
@@ -363,7 +393,7 @@ impl Plan {
                         bench = match benches.len() {
                             0 => None,
                             1 => Some(*benches.first().unwrap()),
-                            _ => return Err(PlanError::Ambiguous("testbenches".to_string(), benches.into_iter().map(|f| { current_graph.get_key_by_index(f).unwrap().clone() }).collect()))?,
+                            _ => return Err(PlanError::Ambiguous("testbenches".to_string(), benches.into_iter().map(|f| { current_graph.get_key_by_index(f).unwrap().get_suffix().clone() }).collect()))?,
                         };
                     }
                     n
@@ -408,7 +438,7 @@ impl Plan {
         }
 
         let files = crate::core::ip::build_ip_file_list(&ip_graph);
-        let graph_map = Self::build_full_graph(&files);
+        let graph_map = Self::build_full_graph(&files, target.get_pkgid());
 
         // transfer identifier over to the full graph
         let highest_point = graph_map.get_node_by_key(highest_iden).unwrap().index();
@@ -514,7 +544,7 @@ impl Plan {
     /// 
     /// This function looks and checks if there is a single predecessor to the
     /// `bench` node.
-    fn detect_top<'a>(graph_map: &GraphMap<Identifier, HdlNode<'a>, ()>, bench: Option<usize>) -> Result<usize, Fault> {
+    fn detect_top<'a>(graph_map: &GraphMap<CompoundIdentifier, HdlNode<'a>, ()>, bench: Option<usize>) -> Result<usize, Fault> {
         if let Some(b) = bench {
             let entities: Vec<(usize, &symbol::Entity)> = graph_map.get_graph().predecessors(b)
                 .filter_map(|f| {
@@ -525,7 +555,7 @@ impl Plan {
             match entities.len() {
                 0 => Err(AnyError(format!("no entities are tested in the testbench")))?,
                 1 => Ok(entities[0].0),
-                _ => Err(PlanError::Ambiguous("entities instantiated in the testbench".to_string(), entities.into_iter().map(|f| { graph_map.get_key_by_index(f.0).unwrap().clone() }).collect()))?
+                _ => Err(PlanError::Ambiguous("entities instantiated in the testbench".to_string(), entities.into_iter().map(|f| { graph_map.get_key_by_index(f.0).unwrap().get_suffix().clone() }).collect()))?
             }
         } else {
             todo!("find toplevel node that is not a bench")

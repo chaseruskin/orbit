@@ -4,6 +4,7 @@ use crate::core::lexer;
 use crate::core::lexer::Position;
 use crate::core::lexer::TrainCar;
 use crate::core::lexer::Tokenize;
+use crate::core::pkgid::PkgPart;
 use std::fmt::Display;
 use crate::util::strcmp;
 
@@ -30,13 +31,19 @@ pub enum Identifier {
 
 use std::hash::Hasher;
 use std::hash::Hash;
-// @TODO test
+// @todo: test
 impl Hash for Identifier {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             Self::Basic(id) => { id.to_lowercase().hash(state) },
             Self::Extended(id) => { id.hash(state) }
         }
+    }
+}
+
+impl From<&PkgPart> for Identifier {
+    fn from(part: &PkgPart) -> Self {
+        Identifier::Basic(part.to_normal().to_string())
     }
 }
 

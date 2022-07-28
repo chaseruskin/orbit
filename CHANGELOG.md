@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.5.3
+
+### Fixes
+- `orbit plan` correctly searches current ip's files for fileset collection
+
 ## 0.5.2
 
 ### Features

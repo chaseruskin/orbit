@@ -449,9 +449,7 @@ impl Plan {
 
         // [!] collect user-defined filesets
         {
-            let current_files: Vec<String> = files.iter()
-                .map(|f| f.get_file().to_owned())
-                .collect();
+            let current_files: Vec<String> = crate::util::filesystem::gather_current_files(&std::env::current_dir().unwrap());
 
             let mut vtable = VariableTable::new();
             vtable.add("orbit.bench", &bench_name);

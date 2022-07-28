@@ -88,11 +88,11 @@ fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphM
                             g.add_edge_by_index(s, num, ());
                             processing.push((s, dep));
                         },
-                        // try to use the lock file to fill in missing pieces
-                        None => panic!("ip is not installed"),
+                        // todo: try to use the lock file to fill in missing pieces
+                        None => return Err(AnyError(format!("ip '{} v{}' is not installed", pkgid, version)))?,
                     }
                 },
-                // try to use the lock file to fill in missing pieces
+                // todo: try to use the lock file to fill in missing pieces
                 None => return Err(AnyError(format!("unknown ip: {}", pkgid)))?,
             }
         }
@@ -106,7 +106,7 @@ pub fn compute_final_ip_graph<'a>(target: &'a IpManifest, catalog: &'a Catalog<'
     // collect rough outline of ip graph
     let mut rough_ip_graph = graph_ip(&target, &catalog)?;
     
-    // keep track of list of neighbors that must perform dst and their lookuptables to use after processing all direct impacts
+    // keep track of list of neighbors that must perform dst and their lookup-tables to use after processing all direct impacts
     let mut transforms = HashMap::<IpSpec, HashMap<Identifier, String>>::new();
 
     // iterate through the graph to find all DST nodes to create their replacements
@@ -128,15 +128,15 @@ pub fn compute_final_ip_graph<'a>(target: &'a IpManifest, catalog: &'a Catalog<'
                 let mut dependents = rough_ip_graph.get_graph().successors(index);
 
                 while let Some(i) = dependents.next() {
-                    // println!("neighbor {:?}", rough_ip_graph.get_key_by_index(i));
                     // remember units if true that a transform occurred on the direct conflict node
                     let lut = node.as_ref().as_ip().generate_dst_lut();
                     // determine the neighboring node's ip spec
                     let neighbor_key = rough_ip_graph.get_key_by_index(i).unwrap();
-                    // println!("{:?}", lut);
+                    
                     match transforms.get_mut(&neighbor_key) {
                         // update the hashmap for the key
-                        Some(entry) => lut.into_iter().for_each(|pair| { entry.insert(pair.0, pair.1); () }),
+                        Some(entry) => lut.into_iter()
+                            .for_each(|pair| { entry.insert(pair.0, pair.1); () }),
                         // create new entry with the lut
                         None => { transforms.insert(neighbor_key.clone(), lut); () },
                     }
@@ -261,9 +261,8 @@ impl<'a> IpNode<'a> {
 /// 
 /// Returns the DST ip for reference.
 fn install_dst(source_ip: &IpManifest, root: &std::path::PathBuf) -> IpManifest {
-    // compute the new checksum
+    // compute the new checksum on the new ip and its transformed hdl files
     let sum = source_ip.compute_checksum();
-    // println!("{}", sum);
 
     // determine the cache slot name
     let cache_path = {
@@ -278,14 +277,16 @@ fn install_dst(source_ip: &IpManifest, root: &std::path::PathBuf) -> IpManifest 
 
     // copy the source ip to the new location
     crate::util::filesystem::copy(&source_ip.get_root(), &cache_path, true).unwrap();
-
     let mut cached_ip = IpManifest::from_path(&cache_path).unwrap();
+
+    // cache results of primary design unit list
     cached_ip.stash_units();
+    // indicate this installation is dynamic in the metadata
     cached_ip.set_as_dynamic();
-    // write the new ORBIT_METADATA_FILE
+    // save and write the new metadata
     cached_ip.write_metadata().unwrap();
 
-    // write the new ORBIT_CHECKSUM_FILE
+    // write the new checksum file
     std::fs::write(&cache_path.join(manifest::ORBIT_SUM_FILE), sum.to_string().as_bytes()).unwrap();
 
     cached_ip

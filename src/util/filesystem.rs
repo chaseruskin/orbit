@@ -16,7 +16,7 @@ pub fn gather_current_files(path: &std::path::PathBuf) -> Vec<String> {
         .git_ignore(true)
         .filter_entry(|p| {
             match p.file_name().to_str().unwrap() {
-                manifest::ORBIT_SUM_FILE | ".git" | lockfile::IP_LOCK_FILE | manifest::ORBIT_METADATA_FILE => false,
+                manifest::ORBIT_SUM_FILE | GIT_DIR | lockfile::IP_LOCK_FILE | manifest::ORBIT_METADATA_FILE => false,
                 _ => true,
             }
         })

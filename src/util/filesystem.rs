@@ -94,6 +94,15 @@ pub fn resolve_rel_path(root: &std::path::PathBuf, s: String) -> String {
     }
 }
 
+pub fn remove_base(base: &PathBuf, full: &PathBuf) -> PathBuf {
+    let mut b_comps = base.iter();
+    let mut f_comps = full.iter();
+    todo!();
+    // while let Some(c) = b_comps.next() {
+        
+    // }
+}
+
 /// Recursively copies files from `source` to `target` directory.
 /// 
 /// Assumes `target` directory does not already exist. Ignores the `.git/` folder
@@ -211,5 +220,13 @@ mod test {
 
         let p = PathBuf::from("./d.txt");
         assert_eq!(normalize_path(p), PathBuf::from(std::env::current_dir().unwrap().join("d.txt").to_str().unwrap().replace("\\", "/")));
+    }
+
+    #[test]
+    #[ignore]
+    fn rem_base() {
+        let base = PathBuf::from("c:/users/kepler/projects");
+        let full = PathBuf::from("c:/users/kepler/projects/gates/src/and_gate.vhd");
+        assert_eq!(remove_base(&base, &full), PathBuf::from("gates/src/and_gate.vhd"))
     }
 }

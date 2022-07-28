@@ -92,7 +92,7 @@ impl Command for Probe {
         if self.units == true {
             // default to try to read cached result of units before performing computation
             let units = ip.read_units()
-                .unwrap_or(ip.collect_units());
+                .unwrap_or(ip.collect_units()?);
             println!("{}", format_units_table(units));
             return Ok(())
         }

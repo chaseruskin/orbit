@@ -1,5 +1,5 @@
 use toml_edit::InlineTable;
-use crate::core::vhdl::token::Identifier;
+use crate::{core::vhdl::token::Identifier, util::anyerror::{Fault, AnyError}};
 
 use super::symbol::VHDLSymbol;
 use crate::core::vhdl::symbol::VHDLParser;
@@ -83,14 +83,17 @@ impl Eq for Unit {}
 
 use std::{collections::HashMap, str::FromStr};
 
-pub fn collect_units(files: &Vec<String>) -> HashMap<PrimaryUnit, String> {
+pub fn collect_units(files: &Vec<String>) -> Result<HashMap<PrimaryUnit, String>, Fault> {
     let mut result = HashMap::new();
+    // iterate through all source files
     for source_file in files {
+        // only read the HDL files
         if crate::core::fileset::is_vhdl(&source_file) == true {
+            // parse text into VHDL symbols
             let contents = std::fs::read_to_string(&source_file).unwrap();
             let symbols = VHDLParser::read(&contents).into_symbols();
             // transform into primary design units
-            symbols.into_iter().filter_map(|sym| {
+            let units: Vec<PrimaryUnit> = symbols.into_iter().filter_map(|sym| {
                 let name = sym.as_iden()?.clone();
                 match sym {
                     VHDLSymbol::Entity(_) => Some(PrimaryUnit::Entity(Unit{ name: name, symbol: Some(sym) })),
@@ -99,10 +102,21 @@ pub fn collect_units(files: &Vec<String>) -> HashMap<PrimaryUnit, String> {
                     VHDLSymbol::Context(_) => Some(PrimaryUnit::Context(Unit{ name: name, symbol: Some(sym) })),
                     _ => None,
                 }
-            }).for_each(|e| {
-                result.insert(e, source_file.clone());
-            });
+            }).collect();
+            
+            for primary in units {
+                if let Some(dupe) = result.get(&primary) {
+                    return Err(AnyError(format!("duplicate primary design units identified as '{}'\n\nlocation 1: {}\nlocation 2: {}\n\n{}", primary.as_iden().unwrap(), source_file, dupe, HINT)))?;
+                }
+                result.insert(primary, source_file.clone());
+            }
         }
     }
-    result
+    Ok(result)
 }
+
+
+const HINT: &str = "hint: To resolve this error either
+    1) rename one of the units to a unique identifier
+    2) add one of the file paths to the .orbitignore file
+";

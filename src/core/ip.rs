@@ -53,7 +53,7 @@ fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphM
 
     let mut iden_set: HashSet<Identifier> = HashSet::new();
     // add root's identifiers
-    root.collect_units()
+    root.collect_units()?
         .into_iter()
         .for_each(|u| { iden_set.insert(u.as_iden().unwrap().clone()); } );
 
@@ -71,14 +71,14 @@ fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphM
                                 existing_node.index()
                             } else {
                                 // check if identifiers are already taken in graph
-                                let dst = dep.collect_units()
+                                let dst = dep.collect_units()?
                                     .into_iter()
                                     .find(|f| iden_set.contains(f.as_iden().unwrap()))
                                     .is_some();
                                 
                                 // update the hashset with the new unique non-taken identifiers
                                 if dst == false {
-                                    for unit in dep.collect_units() {
+                                    for unit in dep.collect_units()? {
                                         iden_set.insert(unit.as_iden().unwrap().clone());
                                     }
                                 }

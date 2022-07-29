@@ -97,10 +97,25 @@ pub fn resolve_rel_path(root: &std::path::PathBuf, s: String) -> String {
 pub fn remove_base(base: &PathBuf, full: &PathBuf) -> PathBuf {
     let mut b_comps = base.iter();
     let mut f_comps = full.iter();
-    todo!();
-    // while let Some(c) = b_comps.next() {
-        
-    // }
+    let mut result = PathBuf::new();
+
+    while let Some(c) = f_comps.next() {
+        match b_comps.next() {
+            Some(fc) => {
+                if c == fc { 
+                    continue; 
+                } else { 
+                    result = PathBuf::from(c); 
+                    break 
+                }
+            },
+            None => {
+                result = PathBuf::from(c);
+                break
+            }
+        }
+    }
+    result.join(f_comps.as_path())
 }
 
 /// Recursively copies files from `source` to `target` directory.
@@ -223,7 +238,6 @@ mod test {
     }
 
     #[test]
-    #[ignore]
     fn rem_base() {
         let base = PathBuf::from("c:/users/kepler/projects");
         let full = PathBuf::from("c:/users/kepler/projects/gates/src/and_gate.vhd");

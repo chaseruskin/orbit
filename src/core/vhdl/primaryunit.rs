@@ -81,7 +81,7 @@ impl PartialEq for Unit {
 
 impl Eq for Unit {}
 
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, str::FromStr, path::PathBuf};
 
 pub fn collect_units(files: &Vec<String>) -> Result<HashMap<PrimaryUnit, String>, Fault> {
     let mut result = HashMap::new();
@@ -106,7 +106,10 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<PrimaryUnit, String>
             
             for primary in units {
                 if let Some(dupe) = result.get(&primary) {
-                    return Err(AnyError(format!("duplicate primary design units identified as '{}'\n\nlocation 1: {}\nlocation 2: {}\n\n{}", primary.as_iden().unwrap(), source_file, dupe, HINT)))?;
+                    let current_dir = std::env::current_dir().unwrap();
+                    let location_1 = crate::util::filesystem::normalize_path(crate::util::filesystem::remove_base(&current_dir, &PathBuf::from(source_file)));
+                    let location_2 = crate::util::filesystem::normalize_path(crate::util::filesystem::remove_base(&current_dir, &PathBuf::from(dupe)));
+                    return Err(AnyError(format!("duplicate primary design units identified as '{}'\n\nlocation 1: {}\nlocation 2: {}\n\n{}", primary.as_iden().unwrap(), location_1.display(), location_2.display(), HINT)))?;
                 }
                 result.insert(primary, source_file.clone());
             }

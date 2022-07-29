@@ -3,8 +3,15 @@ use ignore::WalkBuilder;
 use std::ffi::OsStr;
 use std::path::{Path, Component};
 use home::home_dir;
+use std::path::PathBuf;
+use std::env;
 
-/// Recursively walks the given `path` and ignores files defined in a .gitignore file.
+use crate::core::manifest;
+use crate::core::lockfile;
+
+use super::anyerror::Fault;
+
+/// Recursively walks the given `path` and ignores files defined in a .gitignore file or .orbitignore files.
 /// 
 /// Returns the resulting list of filepath strings. This function silently skips result errors
 /// while walking. The collected set of paths are also standardized to use forward slashes '/'.
@@ -14,6 +21,7 @@ pub fn gather_current_files(path: &std::path::PathBuf) -> Vec<String> {
     let m = WalkBuilder::new(path)
         .hidden(false)
         .git_ignore(true)
+        .add_custom_ignore_filename(ORBIT_IGNORE_FILE)
         .filter_entry(|p| {
             match p.file_name().to_str().unwrap() {
                 manifest::ORBIT_SUM_FILE | GIT_DIR | lockfile::IP_LOCK_FILE | manifest::ORBIT_METADATA_FILE => false,
@@ -60,14 +68,6 @@ where P: AsRef<Path> {
     Ok(fs_extra::dir::get_size(&path)? as f32 / unit.value() as f32)
 }
 
-use std::path::PathBuf;
-use std::env;
-
-use crate::core::manifest;
-use crate::core::lockfile;
-
-use super::anyerror::Fault;
-
 /// Attempts to return the executable's path.
 pub fn get_exe_path() -> Result<PathBuf, Box::<dyn std::error::Error>> {
     match env::current_exe() {    
@@ -94,27 +94,30 @@ pub fn resolve_rel_path(root: &std::path::PathBuf, s: String) -> String {
     }
 }
 
+/// Removes common path components from `full` if they are found in `base` on
+/// the same iterations.
 pub fn remove_base(base: &PathBuf, full: &PathBuf) -> PathBuf {
     let mut b_comps = base.iter();
     let mut f_comps = full.iter();
-    let mut result = PathBuf::new();
 
-    while let Some(c) = f_comps.next() {
-        match b_comps.next() {
-            Some(fc) => {
-                if c == fc { 
-                    continue; 
-                } else { 
-                    result = PathBuf::from(c); 
-                    break 
+    let result = loop {
+        match f_comps.next() {
+            Some(full_c) => {
+                match b_comps.next() {
+                    Some(base_c) => {
+                        if full_c == base_c { 
+                            continue 
+                        } else {
+                            break PathBuf::from(full_c)
+                        }
+                    }
+                    None => break PathBuf::from(full_c)
                 }
-            },
-            None => {
-                result = PathBuf::from(c);
-                break
             }
+            None => break PathBuf::new()
         }
-    }
+    };
+    // append remaining components
     result.join(f_comps.as_path())
 }
 
@@ -125,39 +128,34 @@ pub fn remove_base(base: &PathBuf, full: &PathBuf) -> PathBuf {
 pub fn copy(source: &PathBuf, target: &PathBuf, ignore_git: bool) -> Result<(), Fault> {
     // create missing directories to `target`
     std::fs::create_dir_all(&target)?;
-    // copy contents into cache slot
+    // gather list of paths to copy
     let mut from_paths = Vec::new();
 
-    // respect .gitignore
+    // respect .gitignore by using `WalkBuilder`
     for result in WalkBuilder::new(&source)
         .hidden(false)
+        .git_ignore(true)
         .filter_entry(move |f| (f.file_name() != GIT_DIR || ignore_git == false))
         .build() {
             match result {
-                Ok(entry) => {
-                    from_paths.push(entry.path().to_path_buf());
-                    // println!("copying: {:?}", entry.path());
-                },
+                Ok(entry) => from_paths.push(entry.path().to_path_buf()),
                 Err(_) => (),
             }
     }
-
     // create all missing directories
     for from in from_paths.iter().filter(|f| f.is_dir()) {
         // replace common `source` path with `target` path
         let to = target.join(remove_base(&source, from));
         std::fs::create_dir_all(&to)?;
     }
-
     // create all missing files
     for from in from_paths.iter().filter(|f| f.is_file()) {
         // grab the parent
         if let Some(parent) = from.parent() {
             let to = target.join(remove_base(&source, &parent.to_path_buf())).join(from.file_name().unwrap());
-            std::fs::copy(from, to)?;
+            std::fs::copy(from, &to)?;
         }
     }
-
     Ok(())
 }
 
@@ -201,13 +199,16 @@ pub fn normalize_path(p: std::path::PathBuf) -> PathBuf {
     // assemble new path
     let mut first = true;
     PathBuf::from(result.into_iter().fold(String::new(), |x, y| if first == true { first = false; x + &y } else { x + "/" + &y }).replace("\\", "/").replace("//", "/"))
-    // @TODO add some fail-safe where if the final path does not exist then return the original path?
+    // @todo: add some fail-safe where if the final path does not exist then return the original path?
 }
 
 const GIT_DIR: &str = ".git";
+const ORBIT_IGNORE_FILE: &str = ".orbitignore";
 
 #[cfg(test)]
 mod test {
+    use tempfile::tempdir;
+
     use super::*;
     
     #[test]
@@ -240,6 +241,21 @@ mod test {
     fn rem_base() {
         let base = PathBuf::from("c:/users/kepler/projects");
         let full = PathBuf::from("c:/users/kepler/projects/gates/src/and_gate.vhd");
-        assert_eq!(remove_base(&base, &full), PathBuf::from("gates/src/and_gate.vhd"))
+        assert_eq!(remove_base(&base, &full), PathBuf::from("gates/src/and_gate.vhd"));
+
+        let base = PathBuf::from("c:/users/kepler/projects");
+        let full = PathBuf::from("c:/users/kepler/projects/");
+        assert_eq!(remove_base(&base, &full), PathBuf::new());
+
+        let base = PathBuf::from("");
+        let full = PathBuf::from("c:/users/kepler/projects/");
+        assert_eq!(remove_base(&base, &full), PathBuf::from("c:/users/kepler/projects/"));
+    }
+
+    #[test]
+    fn copy_all() {
+        let source = PathBuf::from("test/data/projects");
+        let target = tempdir().unwrap();
+        copy(&source, &target.as_ref().to_path_buf(), true).unwrap();
     }
 }

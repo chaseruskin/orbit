@@ -1,7 +1,10 @@
 use crate::Command;
 use crate::FromCli;
+use crate::commands::plan::Plan;
 use crate::core::catalog::CacheSlot;
 use crate::core::catalog::Catalog;
+use crate::core::ip;
+use crate::core::lockfile::LockFile;
 use crate::core::manifest;
 use crate::core::manifest::IpManifest;
 use crate::core::version;
@@ -14,6 +17,13 @@ use crate::core::version::Version;
 use crate::util::anyerror::{AnyError, Fault};
 use crate::core::version::AnyVersion;
 use crate::util::url::Url;
+use colored::Colorize;
+use git2::Repository;
+use tempfile::TempDir;
+use tempfile::tempdir;
+use crate::core::store::Store;
+use std::path::PathBuf;
+use crate::core::extgit::ExtGit;
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
@@ -38,14 +48,6 @@ impl FromCli for Install {
     }
 }
 
-use colored::Colorize;
-use git2::Repository;
-use tempfile::TempDir;
-use tempfile::tempdir;
-use crate::core::store::Store;
-use std::path::PathBuf;
-use crate::core::extgit::ExtGit;
-
 impl Command for Install {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
@@ -57,16 +59,16 @@ impl Command for Install {
         // let temporary directory exist for lifetime of install in case of using it
         let temp_dir = tempdir()?;
 
-        let store = Store::new(c.get_store_path());
+        // gather the catalog (all manifests)
+        let catalog = Catalog::new()
+            .store(c.get_store_path())
+            .development(c.get_development_path().unwrap())?
+            .installations(c.get_cache_path())?
+            .available(c.get_vendors())?;
 
         // get to the repository (root path)
         let ip_root = if let Some(ip) = &self.ip {
-            // gather the catalog (all manifests)
-            let catalog = Catalog::new()
-                .store(c.get_store_path())
-                .development(c.get_development_path().unwrap())?
-                .installations(c.get_cache_path())?
-                .available(c.get_vendors())?;
+
             // grab install path
             fetch_install_path(ip, &catalog, self.disable_ssh, &temp_dir)?
         } else if let Some(url) = &self.git {
@@ -82,7 +84,7 @@ impl Command for Install {
             return Err(AnyError(format!("select an option to install from '{}', '{}', or '{}'", "--ip".yellow(), "--git".yellow(), "--path".yellow())))?
         };
         // enter action
-        self.run(&ip_root, c.get_cache_path(), c.force, store)
+        self.run(&ip_root, &catalog, c.force)
     }
 }
 
@@ -110,23 +112,49 @@ pub fn fetch_install_path(ip: &PkgId, catalog: &Catalog, disable_ssh: bool, temp
 }
 
 impl Install {
-    /// Installs the `ip` with particular partial `version` to the `cache_root`.
-    /// It will reinstall if it finds the original installation has a mismatching checksum.
-    /// 
-    /// Errors if the ip is already installed unless `force` is true.
-    pub fn install(installation_path: &PathBuf, version: &AnyVersion, cache_root: &std::path::PathBuf, force: bool, store: &Store) -> Result<IpManifest, Fault> {
-        let repo = Repository::open(&installation_path)?;
+
+    pub fn install_from_lock_file(&self, lock: &LockFile, catalog: &Catalog) -> Result<(), Fault> {
+        // build entire dependency graph from lockfile
+        let graph = ip::graph_ip_from_lock(&lock)?;
+        // sort to topological ordering
+        let mut order = graph.get_graph().topological_sort();
+        // remove target ip from the list of intermediate installations
+        order.pop();
+
+        for i in order {
+            let entry = graph.get_node_by_index(i).unwrap().as_ref();
+            // check if already installed
+            match std::path::Path::exists(&catalog.get_cache_path().join(entry.to_cache_slot().as_ref())) {
+                true => println!("info: {} v{} already installed", entry.get_name(), entry.get_version()),
+                false => Plan::install_from_lock_entry(entry, &AnyVersion::Specific(entry.get_version().to_partial_version()), &catalog, self.disable_ssh)?,
+            }
+        }
+        Ok(())
+    }
+
+    /// Searches through a given root as a git repository to find a tagged commit
+    /// matching `version` with highest compatibility and contains a manifest.
+    fn detect_manifest(root: &PathBuf, version: &AnyVersion) -> Result<IpManifest, Fault>{
+        let repo = Repository::open(&root)?;
 
         // find the specified version for the given ip
         let space = ExtGit::gather_version_tags(&repo)?;
         let version_space: Vec<&Version> = space.iter().collect();
         let version = version::get_target_version(&version, &version_space)?;
 
-        println!("detected version {}", version);
         ExtGit::checkout_tag_state(&repo, &version)?;
 
         // make an ip manifest
-        let ip = IpManifest::from_path(installation_path)?;
+        Ok(IpManifest::from_path(&root)?)
+    }
+
+    /// Installs the `ip` with particular partial `version` to the `cache_root`.
+    /// It will reinstall if it finds the original installation has a mismatching checksum.
+    /// 
+    /// Errors if the ip is already installed unless `force` is true.
+    pub fn install(installation_path: &PathBuf, version: &AnyVersion, cache_root: &std::path::PathBuf, force: bool, store: &Store) -> Result<IpManifest, Fault> {
+        // make an ip manifest
+        let ip = Self::detect_manifest(&installation_path, &version)?;
         let target = ip.get_pkgid();
 
         // move into stored directory to compute checksum for the tagged version
@@ -135,13 +163,18 @@ impl Install {
             // throw repository into the store/ for future use
             false => store.store(&ip)?,
         };
+        // update version to be a specific complete spec
+        let version = ip.get_version();
 
         let repo = Repository::open(&temp)?;
         ExtGit::checkout_tag_state(&repo, &version)?;
 
+        let root = IpManifest::from_path(&temp).unwrap();
+        println!("info: installing {} v{} ...", root.get_pkgid(), root.get_version());
+
         // perform sha256 on the temporary cloned directory 
-        let checksum = IpManifest::from_path(&temp).unwrap().compute_checksum();
-        println!("checksum: {}", checksum);
+        let checksum = root.compute_checksum();
+        // println!("checksum: {}", checksum);
 
         // use checksum to create new directory slot
         let cache_slot_name = CacheSlot::new(target.get_name(), &version, &checksum);
@@ -158,9 +191,6 @@ impl Install {
                     if sha == cached_ip.compute_checksum() {
                         return Err(AnyError(format!("ip '{}' as version '{}' is already installed", target, version)))?
                     }
-                    // @FIXME- always reinstalls
-                    // @NOTE- bug appears to be gone 2022/7/18
-                    // println!("{}\n{}", sha, cached_ip.compute_checksum());
                 }
                 println!("info: reinstalling ip '{}' as version '{}' due to bad checksum", target, version);
 
@@ -178,9 +208,16 @@ impl Install {
         Ok(installed_ip)
     }
 
-    fn run(&self, installation_path: &PathBuf, cache_root: &std::path::PathBuf, force: bool, store: Store) -> Result<(), Fault> {
-        let _ = Self::install(&installation_path, &self.version, &cache_root, force, &store)?;
-        // @TODO auto-install dependencies of the current ip as well
+    fn run(&self, installation_path: &PathBuf, catalog: &Catalog, force: bool, ) -> Result<(), Fault> {
+        // check if there is a potential lockfile to use
+        if let Ok(manifest) = Self::detect_manifest(&installation_path, &self.version) {
+            if let Some(lock) = manifest.get_lockfile() {
+                Self::install_from_lock_file(&self, &lock, &catalog)?;
+            } else {
+                todo!("use catalog to try to resolve all installations?")
+            }
+        }
+        let _ = Self::install(&installation_path, &self.version, &catalog.get_cache_path(), force, &catalog.get_store())?;
         Ok(())
     }
 }

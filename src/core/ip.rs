@@ -10,6 +10,7 @@ use crate::util::overdetsys;
 use crate::core::pkgid::PkgPart;
 use crate::util::anyerror::{AnyError, Fault};
 use super::catalog::Catalog;
+use super::lockfile::{LockEntry, LockFile};
 use super::manifest::IpManifest;
 use super::pkgid::PkgId;
 use super::version::Version;
@@ -41,6 +42,27 @@ pub fn find_ip(ip_spec: &PkgId, universe: Vec<&PkgId>) -> Result<PkgId, AnyError
     Ok(PkgId::from_vec(result))
 }
 
+/// Constructs an ip-graph from a lockfile.
+pub fn graph_ip_from_lock(lock: &LockFile) -> Result<GraphMap<IpSpec, &LockEntry, ()>, Fault> {
+    let mut graph = GraphMap::new();
+    // add all vertices
+    lock.inner().iter().for_each(|f| {
+        graph.add_node(f.to_ip_spec(), f);
+    });
+    // add all edges
+    lock.inner().iter().for_each(|upper| {
+        // get list of dependencies
+        if let Some(deps) = upper.get_deps() {
+            for dep in deps {
+                // determine the most compatible entry for this dependency
+                let lower = lock.get_highest(&dep.0, &dep.1).unwrap();
+                graph.add_edge_by_key(&lower.to_ip_spec(), &upper.to_ip_spec(), ());
+            }
+        }
+    });
+    Ok(graph)
+}
+
 /// Constructs a graph at the IP-level.
 /// 
 /// Note: this function performs no reduction.
@@ -50,7 +72,7 @@ fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphM
     // construct iterative approach with lists
     let t = g.add_node(root.into_ip_spec(), IpNode::new_keep(root, Identifier::new_working()));
     let mut processing = vec![(t, root)];
-
+    
     let mut iden_set: HashSet<Identifier> = HashSet::new();
     // add root's identifiers
     root.collect_units(true)?

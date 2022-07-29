@@ -172,7 +172,7 @@ impl<'a> HdlNode<'a> {
 
 impl Plan {
     /// Clones the ip entry's repository to a temporary directory and then installs the appropriate version `ver`.
-    fn install_from_lock_entry(entry: &LockEntry, ver: &AnyVersion, catalog: &Catalog, disable_ssh: bool) -> Result<(), Fault> {
+    pub fn install_from_lock_entry(entry: &LockEntry, ver: &AnyVersion, catalog: &Catalog, disable_ssh: bool) -> Result<(), Fault> {
         let temp = tempdir()?;
         // try to use the source
         let from = if let Some(source) = entry.get_source() {

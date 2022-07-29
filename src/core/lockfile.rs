@@ -3,6 +3,8 @@ use toml_edit::{Document, InlineTable, Formatted, Array};
 use crate::{util::{sha256::Sha256Hash, anyerror::{AnyError, Fault}}, core::{pkgid::PkgId, version::{Version, AnyVersion, self}, config::FromToml, manifest::IpManifest}};
 use crate::util::url::Url;
 
+use super::{ip::IpSpec, catalog::CacheSlot};
+
 type Module = (PkgId, AnyVersion);
 
 #[derive(Debug)]
@@ -47,10 +49,12 @@ impl LockFile {
         }
     }
 
+    /// Returns an exact match of `target` and `version` from within the lockfile.
     pub fn get(&self, target: &PkgId, version: &Version) -> Option<&LockEntry> {
         self.0.iter().find(|&f| &f.name == target && &f.version == version )
     }
 
+    /// Returns the highest compatible version from the lockfile for the given `target`.
     pub fn get_highest(&self, target: &PkgId, version: &AnyVersion) -> Option<&LockEntry> {
         // collect all versions
         let space: Vec<&Version> = self.0.iter().filter_map(|f| if &f.name == target { Some(&f.version) } else { None }).collect();
@@ -137,6 +141,10 @@ impl LockEntry {
         &self.version
     }
 
+    pub fn to_cache_slot(&self) -> CacheSlot {
+        CacheSlot::new(self.get_name().get_name(), self.get_version(), self.get_sum().unwrap())
+    }
+
     pub fn to_toml(&self, table: &mut toml_edit::Table) -> () {
         table["name"] = toml_edit::value(&self.name.to_string());
         table["version"] = toml_edit::value(&self.version.to_string());
@@ -160,6 +168,10 @@ impl LockEntry {
             }
             table["dependencies"].as_array_mut().unwrap().set_trailing("\n");
         }
+    }
+
+    pub fn to_ip_spec(&self) -> IpSpec {
+        IpSpec::new(self.name.clone(), self.version.clone())
     }
 }
 

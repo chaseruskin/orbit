@@ -807,6 +807,14 @@ impl IpManifest {
         lut
     }
 
+    /// Attempts to load an existing lockfile from the ip's root.
+    pub fn get_lockfile(&self) -> Option<LockFile> {
+        match std::path::Path::exists(&self.get_root().join(IP_LOCK_FILE)) {
+            true => Some(LockFile::from_path(&self.get_root()).unwrap()),
+            false => None
+        }
+    }
+
     /// Checks the metadata file for a entry for `dynamic`.
     pub fn is_dynamic(&self) -> bool {
         let meta_path = self.get_root().join(ORBIT_METADATA_FILE);

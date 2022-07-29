@@ -1,6 +1,7 @@
 use crate::Command;
 use crate::FromCli;
 use crate::commands::install::Install;
+use crate::core::catalog::Catalog;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::store::Store;
 use crate::core::variable::VariableTable;
@@ -131,10 +132,23 @@ impl Command for Launch {
 
         vars.add("orbit.ip.version", &version.to_string());
 
-        // @TODO report if there are unsaved changes in the working directory/staging index?
+        // verify ip dependency graph (also checks for duplicate design unit identifiers)
+        println!("info: verifying ip dependency graph ...");
+        {
+            // gather the catalog
+            let catalog = Catalog::new()
+                .store(c.get_store_path())
+                .development(c.get_development_path().unwrap())?
+                .installations(c.get_cache_path())?
+                .available(c.get_vendors())?;
+            // build entire ip graph and resolve with dynamic symbol transformation
+            crate::core::ip::compute_final_ip_graph(&manifest, &catalog)?;
+        }
+
+        // @todo: report if there are unsaved changes in the working directory/staging index?
 
         // verify the repository's HEAD is up-to-date (git remote update)
-        println!("info: updating git repository remotes...");
+        println!("info: updating git repository remotes ...");
         let extgit = ExtGit::new(None).path(c.get_ip_path().unwrap().clone());
         extgit.remote_update()?;
 
@@ -209,7 +223,7 @@ impl Command for Launch {
             None => format!("releases version {}", version),
         };
 
-        println!("info: create new commit ... {}", match overwrite {
+        println!("info: create commit for manifest ... {}", match overwrite {
             true => "yes",
             false => "no",
         });

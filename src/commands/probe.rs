@@ -38,7 +38,7 @@ impl FromCli for Probe {
             units: cli.check_flag(Flag::new("units"))?,
             changelog: cli.check_flag(Flag::new("changes"))?,
             readme: cli.check_flag(Flag::new("readme"))?,
-            version: cli.check_option(Optional::new("variant").switch('v'))?,
+            version: cli.check_option(Optional::new("variant").switch('v').value("version"))?,
             ip: cli.require_positional(Positional::new("ip"))?,
         });
         command

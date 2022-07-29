@@ -76,7 +76,7 @@ impl FromCli for Get {
             component: cli.check_flag(Flag::new("component").switch('c'))?,
             instance: cli.check_flag(Flag::new("instance").switch('i'))?,
             architectures: cli.check_flag(Flag::new("architecture").switch('a'))?,
-            version: cli.check_option(Optional::new("variant").switch('v'))?,
+            version: cli.check_option(Optional::new("variant").switch('v').value("version"))?,
             info: cli.check_flag(Flag::new("info"))?,
             peek: cli.check_flag(Flag::new("peek"))?,
             name: cli.check_option(Optional::new("name").value("identifier"))?,

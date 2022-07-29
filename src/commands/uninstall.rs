@@ -21,7 +21,7 @@ impl FromCli for Uninstall {
         cli.set_help(HELP);
         let command = Ok(Uninstall {
             ip: cli.require_positional(Positional::new("ip"))?,
-            version: cli.check_option(Optional::new("variant").switch('v'))?.unwrap_or(AnyVersion::Dev),
+            version: cli.check_option(Optional::new("variant").switch('v').value("version"))?.unwrap_or(AnyVersion::Dev),
         });
         command
     }

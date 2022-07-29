@@ -40,7 +40,7 @@ impl FromCli for Install {
         let command = Ok(Install {
             git: cli.check_option(Optional::new("git").value("url"))?,
             path: cli.check_option(Optional::new("path"))?,
-            version: cli.check_option(Optional::new("variant").switch('v'))?.unwrap_or(AnyVersion::Latest),
+            version: cli.check_option(Optional::new("variant").switch('v').value("version"))?.unwrap_or(AnyVersion::Latest),
             ip: cli.check_option(Optional::new("ip"))?,
             disable_ssh: cli.check_flag(Flag::new("disable-ssh"))?,
         });

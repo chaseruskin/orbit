@@ -7,6 +7,7 @@ use crate::core::parser::Symbol;
 use crate::core::version::AnyVersion;
 use crate::core::version::Version;
 use crate::core::vhdl::symbol::Architecture;
+use crate::core::vhdl::symbol::Entity;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Flag, Optional};
 use crate::interface::errors::CliError;
@@ -206,6 +207,8 @@ impl Get {
     /// Parses through the vhdl files and returns a desired entity struct.
     fn fetch_entity(iden: &Identifier, ip: &IpManifest) -> Result<symbol::Entity, Fault> {
         let files = crate::util::filesystem::gather_current_files(&ip.get_root());
+        // @todo: generate all units first (store architectures, and entities, and then process)
+        // let mut result: Option<(String, Entity)> = None;
         for f in files {
             // lex and parse
             if crate::core::fileset::is_vhdl(&f) == true {

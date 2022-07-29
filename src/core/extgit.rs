@@ -127,7 +127,7 @@ impl ExtGit {
     /// Collects all version git tags from the given `repo` repository.
     /// 
     /// The tags must follow semver `[0-9]*.[0-9]*.[0-9]*` specification.
-    pub fn gather_version_tags(repo: &Repository) -> Result<Vec<Version>, Box<dyn std::error::Error>> {
+    pub fn gather_version_tags(repo: &Repository) -> Result<Vec<Version>, Fault> {
         let tags = repo.tag_names(Some("*.*.*"))?;
         Ok(tags.into_iter()
             .filter_map(|f| {
@@ -138,8 +138,39 @@ impl ExtGit {
             })
             .collect())
     }
-}
 
+    /// Returns the highest tagged version known in the given `repo`.
+    /// 
+    /// This `fn` can be used on a storage dir to detect if an update/pull/replacement 
+    /// needs to be performed.
+    pub fn get_highest_tag(repo: &Repository) -> Result<Option<Version>, Fault> {
+        let mut result: Option<Version> = None;
+        Self::gather_version_tags(repo)?.into_iter().for_each(|v| {
+            if result.is_none() || &v > result.as_ref().unwrap() {
+                result = Some(v);
+            }
+        });
+        Ok(result)
+    }
+
+    /// Forces a checkout to be at the tip HEAD.
+    pub fn checkout_head(repo: &Repository) -> Result<(), Fault> {
+        let obj = repo.head()?.resolve()?.peel(git2::ObjectType::Commit)?;
+        // configure checkout options
+        let mut cb = CheckoutBuilder::new();
+        cb.force();
+        // checkout code at the tag's marked timestamp
+        Ok(repo.checkout_tree(&obj, Some(&mut cb))?)
+    }
+
+    /// Retrieves the latest commit in the current repository using git2 API.
+    /// 
+    /// Source: https://zsiciarz.github.io/24daysofrust/book/vol2/day16.html
+    pub fn find_last_commit(repo: &Repository) -> Result<git2::Commit, git2::Error> {
+        let obj = repo.head()?.resolve()?.peel(git2::ObjectType::Commit)?;
+        obj.into_commit().map_err(|_| git2::Error::from_str("Couldn't find commit"))
+    }
+}
 
 #[derive(Debug)]
 enum ExtGitError {

@@ -200,6 +200,9 @@ impl Install {
         }
         // copy contents into cache slot
         crate::util::filesystem::copy(&temp, &cache_slot, true)?;
+        // revert the store back to its HEAD
+        ExtGit::checkout_head(&repo)?;
+        
         // write the checksum to the directory
         std::fs::write(&cache_slot.join(manifest::ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
         // write the metadata to the directory
@@ -213,9 +216,8 @@ impl Install {
         if let Ok(manifest) = Self::detect_manifest(&installation_path, &self.version) {
             if let Some(lock) = manifest.get_lockfile() {
                 Self::install_from_lock_file(&self, &lock, &catalog)?;
-            } else {
-                todo!("use catalog to try to resolve all installations?")
             }
+            // if the lockfile is invalid, then it will only install the current request and zero dependencies
         }
         let _ = Self::install(&installation_path, &self.version, &catalog.get_cache_path(), force, &catalog.get_store())?;
         Ok(())

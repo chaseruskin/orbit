@@ -61,13 +61,7 @@ use colored::Colorize;
 use crate::core::manifest;
 use crate::util::anyerror::AnyError;
 
-/// Retrieves the latest commit in the current repository using git2 API.
-/// 
-/// Source: https://zsiciarz.github.io/24daysofrust/book/vol2/day16.html
-fn find_last_commit(repo: &Repository) -> Result<git2::Commit, git2::Error> {
-    let obj = repo.head()?.resolve()?.peel(git2::ObjectType::Commit)?;
-    obj.into_commit().map_err(|_| git2::Error::from_str("Couldn't find commit"))
-}
+
 
 impl Command for Launch {
     type Err = Box<dyn std::error::Error>;
@@ -79,7 +73,7 @@ impl Command for Launch {
         let repo = Repository::open(c.get_ip_path().unwrap())?;
 
         // verify the repository has at least one commit
-        let latest_commit = find_last_commit(&repo)?;
+        let latest_commit = ExtGit::find_last_commit(&repo)?;
 
         if self.message.is_some() && self.next.is_none() {
             return Err(CliError::BrokenRule(format!("option '{}' is only allowed when using option {}", "--message".yellow(), "--next".yellow())))?
@@ -270,7 +264,7 @@ impl Command for Launch {
                     &tree,
                     &[&latest_commit])?;
                 // update latest commit to attach with tag
-                find_last_commit(&repo)?
+                ExtGit::find_last_commit(&repo)?
             } else {
                 latest_commit
             };

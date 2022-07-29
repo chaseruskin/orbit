@@ -131,21 +131,25 @@ Verifies all checksums match between the lock file and the current machine's cac
 
 -----
 
-### `peek`
+### `read`
 
-SYNOPSIS: `orbit peek [options] <primary-design-unit>`
+SYNOPSIS: `orbit read [options] [entity-path]`
 
 Inspect an hdl file.
 
 This command allows developers to read more into dependency code. If the requested unit is within the current development IP, it will open the actual file. If the requested file to fetch is from an immutable IP, it will open a temporary copy of the file to prevent a user from accidently modifying the contents and breaking reproducibility.
 
+If the entity is coming from a mutable place, it will open the file in-place. If the file is coming from the cache, then it will create a clean copy in a temporary directory managed by Orbit. Any changes to the file will not affect the cache entry.
+
 OPTIONS:
-   `--editor <editor>`: specify the editor to open it with
+    `--editor <editor>`: specify the editor to open it with
+    `--clean`          : empty the read directory
+    `--version, -v <version>` : ip version to reference
 
 
 Examples:
 ```
-orbit peek gates:nor_gate
+orbit read gates:nor_gate
 ```
 
 -----

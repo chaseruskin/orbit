@@ -145,16 +145,15 @@ pub fn copy(source: &PathBuf, target: &PathBuf, ignore_git: bool) -> Result<(), 
     // create all missing directories
     for from in from_paths.iter().filter(|f| f.is_dir()) {
         // replace common `source` path with `target` path
-        let to = PathBuf::from(from.to_str().unwrap().replace(source.to_str().unwrap(), target.to_str().unwrap()));
+        let to = target.join(remove_base(&source, from));
         std::fs::create_dir_all(&to)?;
     }
 
     // create all missing files
     for from in from_paths.iter().filter(|f| f.is_file()) {
         // grab the parent
-        if let Some(p) = from.parent() {
-            let to = PathBuf::from(p.to_str().unwrap().replace(source.to_str().unwrap(), target.to_str().unwrap()))
-                .join(from.file_name().unwrap());
+        if let Some(parent) = from.parent() {
+            let to = target.join(remove_base(&source, &parent.to_path_buf())).join(from.file_name().unwrap());
             std::fs::copy(from, to)?;
         }
     }

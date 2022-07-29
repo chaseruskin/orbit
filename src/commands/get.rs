@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+use std::path::PathBuf;
+
 use colored::Colorize;
 use crate::Command;
 use crate::FromCli;
@@ -6,7 +9,9 @@ use crate::core::manifest::IpManifest;
 use crate::core::parser::Symbol;
 use crate::core::version::AnyVersion;
 use crate::core::version::Version;
+use crate::core::vhdl::primaryunit::DuplicateIdentifierError;
 use crate::core::vhdl::symbol::Architecture;
+use crate::core::vhdl::symbol::Entity;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Flag, Optional};
 use crate::interface::errors::CliError;
@@ -102,7 +107,9 @@ impl Command for Get {
             if self.version.is_some() {
                 return Err(AnyError(format!("cannot specify a version '{}' when referencing the current ip", "--ver".yellow())))?
             }
-            self.run(&IpManifest::from_path(c.get_ip_path().unwrap())?, true, None) // do not add self to requirements
+            // do not add self to requirements
+            self.run(&IpManifest::from_path(c.get_ip_path().unwrap())?, true, None, &AnyVersion::Dev) 
+        // checking external IP dependency
         } else {
             // gather the catalog (all manifests)
             let mut catalog = Catalog::new()
@@ -137,17 +144,17 @@ impl Command for Get {
                 Err(_) => None,
             };
 
-            self.run(ip.unwrap(), false, if self.peek == true { None } else { current_ip })
+            self.run(ip.unwrap(), false, if self.peek == true { None } else { current_ip }, v)
         }
     }
 }
 
 impl Get {
-    fn run(&self, ip: &IpManifest, is_self: bool, current_ip: Option<IpManifest>) -> Result<(), Fault> {
+    fn run(&self, ip: &IpManifest, is_self: bool, current_ip: Option<IpManifest>, ver: &AnyVersion) -> Result<(), Fault> {
         // collect all hdl files and parse them
         let ent = match Self::fetch_entity(&self.entity_path.entity, &ip) {
             Ok(r) => r,
-            Err(e) => return Err(GetError::SuggestProbe(e.to_string(), ip.get_pkgid().clone(), self.version.as_ref().unwrap_or(&AnyVersion::Latest).clone()))?
+            Err(e) => return Err(GetError::SuggestProbe(e.to_string(), ip.get_pkgid().clone(), ver.clone()))?
         };
 
         // add to dependency list if within a ip
@@ -207,13 +214,14 @@ impl Get {
     fn fetch_entity(iden: &Identifier, ip: &IpManifest) -> Result<symbol::Entity, Fault> {
         let files = crate::util::filesystem::gather_current_files(&ip.get_root());
         // @todo: generate all units first (store architectures, and entities, and then process)
-        // let mut result: Option<(String, Entity)> = None;
+        let mut result: Option<(String, Entity)> = None;
+        // store map of all architectures while parsing all code
+        let mut architectures: HashMap<Identifier, Vec<Architecture>> = HashMap::new();
         for f in files {
             // lex and parse
             if crate::core::fileset::is_vhdl(&f) == true {
-                let text = std::fs::read_to_string(f)?;
-                // store list of all architectures while iterating through all symbols
-                let mut architectures: Vec<Architecture> = Vec::new();
+                let text = std::fs::read_to_string(&f)?;
+            
                 // pull all architectures
                 let units: Vec<Symbol<symbol::VHDLSymbol>> = vhdl::symbol::VHDLParser::parse(VHDLTokenizer::from_source_code(&text).into_tokens())
                     .into_iter()
@@ -221,7 +229,11 @@ impl Get {
                         let unit = f.unwrap();
                         match unit.as_ref().as_architecture() {
                             Some(_) => {
-                                architectures.push(unit.take().into_architecture().unwrap());
+                                let arch = unit.take().into_architecture().unwrap();
+                                match architectures.get_mut(arch.entity()) {
+                                    Some(list) => { list.push(arch); () },
+                                    None => { architectures.insert(arch.entity().clone(), vec![arch]); () }
+                                }
                                 None 
                             },
                             None => Some(unit)
@@ -230,22 +242,30 @@ impl Get {
                     ).collect();
 
                 // detect entity
-                let req_ent = units
+                let requested_entity = units
                     .into_iter() 
                     .filter_map(|r| r.take().into_entity())
                     .find(|p| p.get_name() == iden);
 
-                if let Some(mut entity) = req_ent {
-                    // find all architectures that match entity name/owner
-                    architectures.into_iter()
-                        .for_each(|arch| {
-                            if arch.entity() == entity.get_name() { entity.link_architecture(arch); }
-                        });
-                    return Ok(entity)
+                // verify entity was not already detected (duplicate)
+                if let Some(ent) = requested_entity {
+                    match result {
+                        Some((src_file, entity)) => return Err(DuplicateIdentifierError(entity.get_name().clone(), PathBuf::from(src_file), PathBuf::from(f)))?,
+                        None => result = Some((f, ent)),
+                    }
                 }
             }
         }
-        Err(GetError::EntityNotFound(iden.clone(), ip.get_pkgid().clone(), ip.get_version().clone()))?
+        match result {
+            Some((_, mut entity)) => {
+                match architectures.remove(entity.get_name()) {
+                    Some(archs) => for arch in archs { entity.link_architecture(arch) }
+                    None => (),
+                }
+                Ok(entity)
+            }
+            None => Err(GetError::EntityNotFound(iden.clone(), ip.get_pkgid().clone(), ip.get_version().clone()))?
+        }
     }
 }
 

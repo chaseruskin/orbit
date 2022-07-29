@@ -1,5 +1,5 @@
 use toml_edit::InlineTable;
-use crate::{core::vhdl::token::Identifier, util::anyerror::{Fault, AnyError}};
+use crate::{core::vhdl::token::Identifier, util::anyerror::Fault};
 use std::{collections::HashMap, str::FromStr, path::PathBuf};
 use crate::util::filesystem;
 use super::symbol::VHDLSymbol;
@@ -104,10 +104,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<PrimaryUnit, String>
             
             for primary in units {
                 if let Some(dupe) = result.get(&primary) {
-                    let current_dir = std::env::current_dir()?;
-                    let location_1 = filesystem::normalize_path(filesystem::remove_base(&current_dir, &PathBuf::from(source_file)));
-                    let location_2 = filesystem::normalize_path(filesystem::remove_base(&current_dir, &PathBuf::from(dupe)));
-                    return Err(AnyError(format!("duplicate primary design units identified as '{}'\n\nlocation 1: {}\nlocation 2: {}\n\n{}", primary.as_iden().unwrap(), location_1.display(), location_2.display(), HINT)))?;
+                    return Err(DuplicateIdentifierError(primary.as_iden().unwrap().clone(), PathBuf::from(source_file), PathBuf::from(dupe)))?;
                 }
                 result.insert(primary, source_file.clone());
             }
@@ -116,7 +113,21 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<PrimaryUnit, String>
     Ok(result)
 }
 
+
+#[derive(Debug)]
+pub struct DuplicateIdentifierError(pub Identifier, pub PathBuf, pub PathBuf);
+
+impl std::error::Error for DuplicateIdentifierError {}
+
+impl std::fmt::Display for DuplicateIdentifierError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let current_dir = std::env::current_dir().unwrap();
+        let location_1 = filesystem::remove_base(&current_dir, &self.1);
+        let location_2 = filesystem::remove_base(&current_dir, &self.2);
+        write!(f, "duplicate primary design units identified as '{}'\n\nlocation 1: {}\nlocation 2: {}\n\n{}", self.0, filesystem::normalize_path(location_1).display(), filesystem::normalize_path(location_2).display(), HINT)
+    }
+}
+
 const HINT: &str = "hint: To resolve this error either
     1) rename one of the units to a unique identifier
-    2) add one of the file paths to a .orbitignore file
-";
+    2) add one of the file paths to a .orbitignore file";

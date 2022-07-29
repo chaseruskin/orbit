@@ -156,15 +156,15 @@ return the <code>Orbit.toml</code> manifest file contents.</p>
 data about is the latest installed version. If there is none, it will try
 the latest available version, and then the development version, if those 
 exist. </p>
-<p>The <code>--version</code> option can accept a partial or full verion value, 'latest', 
-or 'dev'. 'latest' will point to the user's highest known version,
+<p>The <code>--variant</code> option can accept a partial or specific version value, 
+'latest', or 'dev'. 'latest' will point to the user's highest known version,
 and 'dev' will point to the IP in the DEV_PATH.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;ip&gt;</code><br />
       The fully specified pkgid for the ip</p>
-<p><code>--tags</code><br />
-      Return a list of versions and where they are located</p>
-<p><code>--ver, -v &lt;version&gt;</code><br />
+<p><code>--versions</code><br />
+      Return a list of possible versions and where they exist</p>
+<p><code>--variant, -v &lt;version&gt;</code><br />
       Extract data from a particular version</p>
 <p><code>--units</code><br />
       List the available primary design units within the IP</p>
@@ -173,7 +173,7 @@ and 'dev' will point to the IP in the DEV_PATH.</p>
 <p><code>--readme</code><br />
       View the README</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit probe ks-tech.rary.gates --tags
+<pre><code>orbit probe ks-tech.rary.gates --versions
 orbit probe util.toolbox -v 1.2.3 --units
 </code></pre>
 

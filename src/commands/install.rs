@@ -134,13 +134,27 @@ impl Install {
 
     /// Searches through a given root as a git repository to find a tagged commit
     /// matching `version` with highest compatibility and contains a manifest.
-    fn detect_manifest(root: &PathBuf, version: &AnyVersion) -> Result<IpManifest, Fault>{
+    fn detect_manifest(root: &PathBuf, version: &AnyVersion, store: &Store) -> Result<IpManifest, Fault>{
         let repo = Repository::open(&root)?;
 
         // find the specified version for the given ip
         let space = ExtGit::gather_version_tags(&repo)?;
         let version_space: Vec<&Version> = space.iter().collect();
-        let version = version::get_target_version(&version, &version_space)?;
+        let version = match version::get_target_version(&version, &version_space) {
+            Ok(r) => r,
+            // update store if it was used
+            Err(e) => {
+                if store.is_path_in_store(&root) && ExtGit::is_remote_linked(&repo)? == true {
+                    println!("info: could not find a version tag matching '{}' in stored repository", &version);
+                    println!("info: pulling latest to store ...");
+                    ExtGit::new(None).path(root.to_path_buf()).pull()?;
+                    ExtGit::gather_version_tags(&repo)?;
+                    version::get_target_version(&version, &version_space)?
+                } else {
+                    return Err(e)?
+                }
+            }
+        };
 
         ExtGit::checkout_tag_state(&repo, &version)?;
 
@@ -154,7 +168,7 @@ impl Install {
     /// Errors if the ip is already installed unless `force` is true.
     pub fn install(installation_path: &PathBuf, version: &AnyVersion, cache_root: &std::path::PathBuf, force: bool, store: &Store) -> Result<IpManifest, Fault> {
         // make an ip manifest
-        let ip = Self::detect_manifest(&installation_path, &version)?;
+        let ip = Self::detect_manifest(&installation_path, &version, &store)?;
         let target = ip.get_pkgid();
 
         // move into stored directory to compute checksum for the tagged version
@@ -211,14 +225,14 @@ impl Install {
         Ok(installed_ip)
     }
 
-    fn run(&self, installation_path: &PathBuf, catalog: &Catalog, force: bool, ) -> Result<(), Fault> {
+    fn run(&self, installation_path: &PathBuf, catalog: &Catalog, force: bool) -> Result<(), Fault> {
         // check if there is a potential lockfile to use
-        if let Ok(manifest) = Self::detect_manifest(&installation_path, &self.version) {
-            if let Some(lock) = manifest.get_lockfile() {
-                Self::install_from_lock_file(&self, &lock, &catalog)?;
-            }
-            // if the lockfile is invalid, then it will only install the current request and zero dependencies
+        let man = Self::detect_manifest(&installation_path, &self.version, catalog.get_store())?;
+        if let Some(lock) = man.get_lockfile() {
+            Self::install_from_lock_file(&self, &lock, &catalog)?;
         }
+        // if the lockfile is invalid, then it will only install the current request and zero dependencies
+        
         let _ = Self::install(&installation_path, &self.version, &catalog.get_cache_path(), force, &catalog.get_store())?;
         Ok(())
     }

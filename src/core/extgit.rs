@@ -89,12 +89,30 @@ impl ExtGit {
         Ok(())
     }
 
-    /// Pushes to remote repository at `path`.
+    /// Pushes to remote repository at the self `path`.
     /// 
     /// Runs the command: `git push` and `git push --tags`.
     pub fn push(&self) -> Result<(), Fault> {
+        self.connect(Request::Push)
+    }
+
+    /// Pulls from remote repository at the self `path`
+    /// 
+    /// Runs the command: `git pull` and `git pull --tags`.
+    pub fn pull(&self) -> Result<(), Fault> {
+        self.connect(Request::Pull)
+    }
+
+    /// Checks if the current branch has a remote connection.
+    pub fn is_remote_linked(repo: &Repository) -> Result<bool, Fault> {
+        let b = git2::Branch::wrap(repo.head()?);
+        Ok(b.upstream().is_ok())
+    }
+
+    /// Accesses remote through external git call using request `req`.
+    fn connect(&self, req: Request) -> Result<(), Fault> {
         let output = std::process::Command::new(&self.command)
-            .args(["push"])
+            .args([&req.to_string()])
             .current_dir(&self.root)
             .output()?; // hide output from reaching stdout by using .output()
         match output.status.code() {
@@ -103,7 +121,7 @@ impl ExtGit {
         };
         // push tags
         let output = std::process::Command::new(&self.command)
-            .args(["push", "--tags"])
+            .args([&req.to_string(), "--tags"])
             .current_dir(&self.root)
             .output()?;
         match output.status.code() {
@@ -169,6 +187,20 @@ impl ExtGit {
     pub fn find_last_commit(repo: &Repository) -> Result<git2::Commit, git2::Error> {
         let obj = repo.head()?.resolve()?.peel(git2::ObjectType::Commit)?;
         obj.into_commit().map_err(|_| git2::Error::from_str("Couldn't find commit"))
+    }
+}
+
+enum Request {
+    Push,
+    Pull
+}
+
+impl std::fmt::Display for Request {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Push => write!(f, "push"),
+            Self::Pull => write!(f, "pull"),
+        }
     }
 }
 

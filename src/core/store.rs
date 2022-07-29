@@ -38,6 +38,11 @@ impl<'a> Store<'a> {
         }
     }
 
+    /// Checks if the provided `path` is within the store.
+    pub fn is_path_in_store(&self,  path: &std::path::PathBuf) -> bool {
+        crate::util::filesystem::remove_base(self.root, path).parent().unwrap().parent().is_none()
+    }
+
     /// Checks if the ip is already stored.
     pub fn is_stored(&self, ip: &PkgId) -> bool {
         std::path::Path::exists(&self.root.join(ip.into_hash().to_string()))

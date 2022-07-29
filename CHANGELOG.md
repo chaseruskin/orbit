@@ -15,6 +15,22 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.6.0
+
+### Features
+- automatically installs all dependent ip from reading available lockfile detected during `orbit install`
+- adds ip graph verification + duplicate identifier detection to `orbit launch` process
+- supports ignoring certain files while still having version control over them with a `.orbitignore` file
+- adds enviornment variable ORBIT_BLUEPRINT = "blueprint.tsv" on `orbit build`
+- pulls latest to the repository store if an unknown version was provided during install and installing from internal store
+
+### Changes
+- renames `--ver, -v <version>` option to `--variant, -v <version>`
+
+### Fixes
+- `orbit get` with `--architecture` will now correctly display all known architectures for the entity in the current project
+- issues error on duplicate primary design unit identifiers in same project
+
 ## 0.5.3
 
 ### Fixes

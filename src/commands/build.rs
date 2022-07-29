@@ -10,6 +10,7 @@ use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::core::plugin::Plugin;
 use crate::util::environment;
+use crate::util::environment::ORBIT_BLUEPRINT;
 
 #[derive(Debug, PartialEq)]
 pub struct Build {
@@ -50,7 +51,7 @@ impl Command for Build {
         // verify running from an IP directory
         c.goto_ip_path()?;
         // verify a blueprint file exists at build directory
-        let blueprint_file = c.get_ip_path().unwrap().join(c.get_build_dir()).join("blueprint.tsv");
+        let blueprint_file = c.get_ip_path().unwrap().join(c.get_build_dir()).join(BLUEPRINT_FILE);
         if blueprint_file.exists() == false {
             return Err(Box::new(AnyError(format!("no blueprint file to build from; consider running 'orbit plan'"))))
         }
@@ -60,7 +61,7 @@ impl Command for Build {
             .from_config(c.get_config())?
             // read ip manifest for env variables
             .from_ip(&IpManifest::from_path(c.get_ip_path().unwrap())?)?
-            .add(EnvVar::new().key("ORBIT_BLUEPRINT").value(BLUEPRINT_FILE))
+            .add(EnvVar::new().key(ORBIT_BLUEPRINT).value(BLUEPRINT_FILE))
             .initialize();
 
         // load from .env file

@@ -38,6 +38,8 @@ Orbit also sets environment variables during runtime so a plugin has access to r
 
 - `ORBIT_IP_VERSION` - specific version of current working directory's ip
 
+- `ORBIT_BLUEPRINT` - the filename for the blueprint: `blueprint.tsv`
+
 ## Checking the environment
 
 You can review the known environment variables within Orbit with `orbit env`.

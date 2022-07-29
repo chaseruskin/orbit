@@ -207,6 +207,7 @@ pub const ORBIT_HOME: &str = "ORBIT_HOME";
 pub const ORBIT_STORE: &str = "ORBIT_STORE";
 pub const ORBIT_IP_PATH: &str = "ORBIT_IP_PATH";
 pub const ORBIT_DEV_PATH: &str = "ORBIT_DEV_PATH";
+pub const ORBIT_BLUEPRINT: &str = "ORBIT_BLUEPRINT";
 
 pub const ORBIT_ENV_PREFIX: &str = "ORBIT_ENV_";
 

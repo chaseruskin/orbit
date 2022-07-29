@@ -10,6 +10,9 @@ use crate::core::context::Context;
 use crate::util::environment;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
+use crate::util::environment::ORBIT_BLUEPRINT;
+
+use super::plan::BLUEPRINT_FILE;
 
 #[derive(Debug, PartialEq)]
 pub struct Env {
@@ -45,9 +48,11 @@ impl Command for Env {
             EnvVar::new().key(environment::ORBIT_STORE).value(c.get_store_path().to_str().unwrap()),
             EnvVar::new().key("EDITOR").value(&std::env::var("EDITOR").unwrap_or(String::new())),
             EnvVar::new().key("NO_COLOR").value(&std::env::var("NO_COLOR").unwrap_or(String::new())),
-        ]).from_config(c.get_config())?;
+            ])
+            .from_config(c.get_config())?
+            .add(EnvVar::new().key(ORBIT_BLUEPRINT).value(BLUEPRINT_FILE));
 
-        // @TODO check if in an ip to add those variables
+        // check if in an ip to add those variables
         if c.goto_ip_path().is_ok() {
             // check ip
             if let Ok(ip) = IpManifest::from_path(c.get_ip_path().unwrap()) {

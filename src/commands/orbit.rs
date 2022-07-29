@@ -28,7 +28,7 @@ impl Command for Orbit {
 impl Orbit {
     fn run(&self, _: &Context) -> Result<(), Box<dyn std::error::Error>> {
         // prioritize version information
-        if self.version {
+        if self.version == true {
             println!("orbit {}", VERSION);
             Ok(())
         // prioritize upgrade information
@@ -64,8 +64,8 @@ impl FromCli for Orbit {
         cli.set_help(HELP);
         let orbit = Ok(Orbit {
             help: cli.check_flag(Flag::new("help").switch('h'))?,
-            version: cli.check_flag(Flag::new("version"))?,
             upgrade: cli.check_flag(Flag::new("upgrade"))?,
+            version: cli.check_flag(Flag::new("version"))?,
             force: cli.check_flag(Flag::new("force"))?,
             command: cli.check_command(Positional::new("command"))?,
         });

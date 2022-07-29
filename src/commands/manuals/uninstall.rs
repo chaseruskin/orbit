@@ -11,7 +11,7 @@ DESCRIPTION
     will delete the IP found on the DEV_PATH.
 
 OPTIONS
-    --ver, -v <version>  
+    --variant, -v <version>  
           Access the settings to the home configuration file
      
     --force    
@@ -19,5 +19,5 @@ OPTIONS
 
 EXAMPLES
     orbit uninstall kepler.rary.gates -v dev
-    orbit uninstall kepler.util.toolbox -v 2.1
+    orbit uninstall kepler.util.toolbox --variant 2.1
 ";

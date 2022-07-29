@@ -40,7 +40,7 @@ impl FromCli for Install {
         let command = Ok(Install {
             git: cli.check_option(Optional::new("git").value("url"))?,
             path: cli.check_option(Optional::new("path"))?,
-            version: cli.check_option(Optional::new("ver").switch('v'))?.unwrap_or(AnyVersion::Latest),
+            version: cli.check_option(Optional::new("variant").switch('v'))?.unwrap_or(AnyVersion::Latest),
             ip: cli.check_option(Optional::new("ip"))?,
             disable_ssh: cli.check_flag(Flag::new("disable-ssh"))?,
         });
@@ -202,7 +202,7 @@ impl Install {
         crate::util::filesystem::copy(&temp, &cache_slot, true)?;
         // revert the store back to its HEAD
         ExtGit::checkout_head(&repo)?;
-        
+
         // write the checksum to the directory
         std::fs::write(&cache_slot.join(manifest::ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
         // write the metadata to the directory
@@ -232,7 +232,7 @@ Usage:
 
 Options:
     --ip <ip>               pkgid to access an orbit ip to install
-    --ver, -v <version>     version to install
+    --variant, -v <version> version to install
     --path <path>           local filesystem path to install from
     --git <url>             remote repository to clone
     --force                 install regardless of cache slot occupancy

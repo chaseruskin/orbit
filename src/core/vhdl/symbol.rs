@@ -231,9 +231,9 @@ impl Entity {
     }
 
     /// Generates VHDL instantiation code from the entity data.
-    pub fn into_instance(&self, inst: &str, library: Option<String>) -> String {
+    pub fn into_instance(&self, inst: &str, library: Option<Identifier>) -> String {
         let prefix = match library {
-            Some(lib) => String::from("entity ") + &lib + ".",
+            Some(lib) => String::from("entity ") + &lib.to_string() + ".",
             None => "".to_owned()
         };
         let mut result = String::from(format!("{} : {}{}\n", inst, prefix, self.get_name()));

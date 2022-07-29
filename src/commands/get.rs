@@ -76,7 +76,7 @@ impl FromCli for Get {
             component: cli.check_flag(Flag::new("component").switch('c'))?,
             instance: cli.check_flag(Flag::new("instance").switch('i'))?,
             architectures: cli.check_flag(Flag::new("architecture").switch('a'))?,
-            version: cli.check_option(Optional::new("ver").switch('v'))?,
+            version: cli.check_option(Optional::new("variant").switch('v'))?,
             info: cli.check_flag(Flag::new("info"))?,
             peek: cli.check_flag(Flag::new("peek"))?,
             name: cli.check_option(Optional::new("name").value("identifier"))?,
@@ -189,8 +189,8 @@ impl Get {
         }  
         // make the library reference the current working ip 'work' if its internal
         let lib = match is_self {
-            true => Some(String::from("work")),
-            false => Some(ip.get_pkgid().get_library().as_ref().unwrap().to_string().replace("-", "_"))
+            true => Some(Identifier::new_working()),
+            false => Some(Identifier::from(ip.get_pkgid().get_library().as_ref().unwrap()))
         };
         // only display the direct entity instantiation code if not providing component code
         let lib = match self.component {
@@ -300,14 +300,14 @@ Args:
     <entity-path>       pkgid and entity identifier
 
 Options:
-    --ver, -v <version> ip version to use
-    --component, -c     print component declaration
-    --signals,   -s     print signal declarations
-    --instance,  -i     print instantation
-    --info              access code file's header comment
-    --architecture, -a  print available architectures
-    --peek              do not add the ip to the dependency table
-    --name <identifier> specific instance identifier
+    --variant, -v <version> ip version to use
+    --component, -c         print component declaration
+    --signals,   -s         print signal declarations
+    --instance,  -i         print instantation
+    --info                  access code file's header comment
+    --architecture, -a      print available architectures
+    --peek                  do not add the ip to the dependency table
+    --name <identifier>     specific instance identifier
 
 Use 'orbit help get' to learn more about the command.
 ";

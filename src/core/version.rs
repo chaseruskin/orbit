@@ -53,7 +53,7 @@ pub fn get_target_version<'a>(ver: &AnyVersion, space: &'a Vec<&Version>) -> Res
         None => Err(AnyError(format!("\
 ip has no version available as {}
 
-To see all versions try `orbit probe <ip> --tags`", ver))),
+To see all versions try `orbit probe <ip> --versions`", ver))),
     }
 }
 

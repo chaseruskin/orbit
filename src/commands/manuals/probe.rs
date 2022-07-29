@@ -15,18 +15,18 @@ DESCRIPTION
     the latest available version, and then the development version, if those 
     exist. 
       
-    The --version option can accept a partial or full verion value, 'latest', 
-    or 'dev'. 'latest' will point to the user's highest known version,
+    The --variant option can accept a partial or specific version value, 
+    'latest', or 'dev'. 'latest' will point to the user's highest known version,
     and 'dev' will point to the IP in the DEV_PATH.
 
 OPTIONS
     <ip>  
           The fully specified pkgid for the ip
      
-    --tags  
-          Return a list of versions and where they are located
+    --versions  
+          Return a list of possible versions and where they exist
      
-    --ver, -v <version>  
+    --variant, -v <version>  
           Extract data from a particular version
      
     --units  
@@ -39,6 +39,6 @@ OPTIONS
           View the README
 
 EXAMPLES
-    orbit probe ks-tech.rary.gates --tags
+    orbit probe ks-tech.rary.gates --versions
     orbit probe util.toolbox -v 1.2.3 --units
 ";

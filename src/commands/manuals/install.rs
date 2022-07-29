@@ -24,7 +24,7 @@ OPTIONS
     --ip <ip>  
           PkgID to access an orbit ip to install
      
-    --ver, -v <version>  
+    --variant, -v <version>  
           Version to install
      
     --path <path>  
@@ -37,6 +37,6 @@ OPTIONS
           Convert SSH to HTTPS urls when fetching external dependencies
 
 EXAMPLES
-    orbit install --ip ks-tech.rary.gates --ver 1.0.0
+    orbit install --ip ks-tech.rary.gates --version 1.0.0
     orbit install --git https://github.com/c-rus/gates.git -v latest
 ";

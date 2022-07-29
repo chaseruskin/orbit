@@ -34,11 +34,11 @@ impl FromCli for Probe {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.set_help(HELP);
         let command = Ok(Probe {
-            tags: cli.check_flag(Flag::new("tags"))?,
+            tags: cli.check_flag(Flag::new("versions"))?,
             units: cli.check_flag(Flag::new("units"))?,
             changelog: cli.check_flag(Flag::new("changes"))?,
             readme: cli.check_flag(Flag::new("readme"))?,
-            version: cli.check_option(Optional::new("ver").switch('v'))?,
+            version: cli.check_option(Optional::new("variant").switch('v'))?,
             ip: cli.require_positional(Positional::new("ip"))?,
         });
         command
@@ -188,9 +188,9 @@ Args:
     <ip>               the pkgid to request data about
 
 Options:
-    --tags                      display the list of possible versions
+    --versions                  display the list of possible versions
     --range <version:version>   narrow the displayed version list
-    --ver, -v <version>         select a particular existing ip version
+    --variant, -v <version>     select a particular existing ip version
     --units                     display primary design units within an ip
     --changes                   view the changelog
     --readme                    view the readme

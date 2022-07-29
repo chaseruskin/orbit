@@ -21,7 +21,7 @@ impl FromCli for Uninstall {
         cli.set_help(HELP);
         let command = Ok(Uninstall {
             ip: cli.require_positional(Positional::new("ip"))?,
-            version: cli.check_option(Optional::new("ver").switch('v'))?.unwrap_or(AnyVersion::Dev),
+            version: cli.check_option(Optional::new("variant").switch('v'))?.unwrap_or(AnyVersion::Dev),
         });
         command
     }
@@ -79,8 +79,8 @@ Usage:
     orbit uninstall [options] <ip>
 
 Args:
-    <ip>                the pkgid corresponding to the ip to delete
-    --ver, -v <version> the state of the pkgid to remove
+    <ip>                    the pkgid corresponding to the ip to delete
+    --variant, -v <version> the version of the pkgid to remove
 
 Use 'orbit help uninstall' to learn more about the command.
 ";

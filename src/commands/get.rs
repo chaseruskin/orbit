@@ -112,7 +112,7 @@ impl Command for Get {
         // checking external IP dependency
         } else {
             // gather the catalog (all manifests)
-            let mut catalog = Catalog::new()
+            let catalog = Catalog::new()
                 .store(c.get_store_path())
                 .development(c.get_development_path().unwrap())?
                 .installations(c.get_cache_path())?
@@ -121,7 +121,7 @@ impl Command for Get {
             let target = crate::core::ip::find_ip(&self.entity_path.ip.as_ref().unwrap(), ids)?;
             
             // find all manifests and prioritize installed manifests over others but to help with errors/confusion
-            let status = catalog.inner_mut().remove(&target).unwrap();
+            let status = catalog.inner().get(&target).unwrap();
 
             // determine version to grab
             let v = self.version.as_ref().unwrap_or(&AnyVersion::Latest);
@@ -193,10 +193,7 @@ impl Get {
             false => Some(Identifier::from(ip.get_pkgid().get_library().as_ref().unwrap()))
         };
         // only display the direct entity instantiation code if not providing component code
-        let lib = match self.component {
-            true => None,
-            false => lib
-        };
+        let lib = if self.component == true { None } else { lib };
 
         // display instantiation code
         if self.instance == true {

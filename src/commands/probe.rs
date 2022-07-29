@@ -50,7 +50,7 @@ impl Command for Probe {
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
 
         // gather the catalog (all manifests)
-        let mut catalog = Catalog::new()
+        let catalog = Catalog::new()
             .store(c.get_store_path())
             .development(c.get_development_path().unwrap())?
             .installations(c.get_cache_path())?
@@ -59,7 +59,7 @@ impl Command for Probe {
         let ids = catalog.inner().keys().map(|f| { f }).collect();
         let target = crate::core::ip::find_ip(&self.ip, ids)?;
         // ips under this key
-        let status = catalog.inner_mut().remove(&target).unwrap();
+        let status = catalog.inner().get(&target).unwrap();
 
         // collect all ip in the user's universe to see if ip exists
         if self.tags == true {
@@ -127,7 +127,7 @@ fn format_units_table(table: Vec<PrimaryUnit>) -> String {
 }
 
 /// Creates a string for a version table for the particular ip.
-fn format_version_table(table: IpLevel, stored_path: Option<PathBuf>) -> String {
+fn format_version_table(table: &IpLevel, stored_path: Option<PathBuf>) -> String {
     let header = format!("\
 {:<15}{:<9}
 {:->15}{2:->9}\n",

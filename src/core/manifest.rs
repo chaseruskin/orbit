@@ -426,13 +426,14 @@ impl IpManifest {
 
     /// Gathers the list of primary design units for the current ip.
     /// 
-    /// If the manifest has an toml entry for `units`, it will return that list rather than go through files.
-    pub fn collect_units(&self) -> Result<Vec<PrimaryUnit>, Fault> {
+    /// If the manifest has an toml entry for `units` and `force` is set to `false`, 
+    /// then it will return that list rather than go through files.
+    pub fn collect_units(&self, force: bool) -> Result<Vec<PrimaryUnit>, Fault> {
         // try to read from metadata file
-        match self.read_units_from_metadata() {
+        match (force == false) && self.read_units_from_metadata().is_some() {
             // use precomputed result
-            Some(units) => Ok(units),
-            None => {
+            true => Ok(self.read_units_from_metadata().unwrap()),
+            false => {
                 // collect all files
                 let files = crate::util::filesystem::gather_current_files(&self.get_manifest().get_path().parent().unwrap().to_path_buf());
                 Ok(crate::core::vhdl::primaryunit::collect_units(&files)?.into_iter().map(|e| e.0).collect())
@@ -771,12 +772,12 @@ impl IpManifest {
         }
     }
 
-    /// Caches the result of collecting all the primary desgin units for the given package.
+    /// Caches the result of collecting all the primary design units for the given package.
     /// 
     /// Writes the data to the toml data structure. Note, this function does not save the manifest data to file.
     pub fn stash_units(&mut self) -> () {
         // collect the units
-        let units = self.collect_units().unwrap();
+        let units = self.collect_units(true).unwrap();
         let tbl = self.get_manifest_mut().get_mut_doc()["ip"].as_table_mut().unwrap();
         tbl.insert("units", toml_edit::Item::Value(toml_edit::Value::Array(Array::new())));
         let arr = tbl["units"].as_array_mut().unwrap();

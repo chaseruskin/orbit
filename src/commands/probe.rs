@@ -90,9 +90,10 @@ impl Command for Probe {
         };
 
         if self.units == true {
-            // default to try to read cached result of units before performing computation
-            let units = ip.read_units()
-                .unwrap_or(ip.collect_units()?);
+            let units = match v {
+                AnyVersion::Dev => ip.collect_units(true)?,
+                _ => ip.read_units().unwrap(),
+            };
             println!("{}", format_units_table(units));
             return Ok(())
         }

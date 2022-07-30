@@ -406,6 +406,30 @@ impl SelectedName {
     fn take_suffix(mut self) -> Identifier {
         self.0.pop().unwrap()
     }
+
+    /// Casts the list of identifiers into a list of `CompoundIdentifiers`.
+    /// 
+    /// If `sep_last` is `true`, then an extra compound will be made with just the 
+    /// suffix and no prefix.
+    fn into_compound_identifiers(self, sep_last: bool) -> Vec<CompoundIdentifier> {
+        let mut result = Vec::new();
+
+        let mut iter = self.0.into_iter().peekable();
+        while let Some(iden) = iter.next() {
+            match iter.peek() {
+                Some(next) => {
+                    result.push(CompoundIdentifier::new(iden, next.clone()));
+                }
+                None => {
+                    if sep_last == true {
+                        result.push(CompoundIdentifier::new_minimal(iden));
+                    }
+                }
+            }
+        }
+
+        result
+    }
 }
 
 /// A `CompoundIdentifier` is a pattern in the code that catches `<library>.<primary-unit>`. We
@@ -541,7 +565,7 @@ use std::iter::Peekable;
 
 /// A `Statement` is a vector of tokens, similiar to how a `String` is a vector
 /// of characters.
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 struct Statement(Vec<Token<VHDLToken>>, Vec<CompoundIdentifier>);
 
 impl Statement {
@@ -853,12 +877,14 @@ impl VHDLSymbol {
         //      | open
         if tokens.peek()?.as_ref().check_keyword(&Keyword::Entity) == true ||
             tokens.peek()?.as_ref().check_keyword(&Keyword::Configuration) == true {
-                // take keyword ENTITY or CONFIGURATION
-                tokens.next();
+            // take keyword ENTITY or CONFIGURATION
+            tokens.next();
             // take the compound identifiers
-            let solo_iden = tokens.peek().unwrap().as_type().as_identifier().unwrap().clone();
             let mut deps = Vec::new();
-            Self::update_deps_from_statement(&mut deps, solo_iden, &mut tokens);
+            // take entity identifier
+            deps.append(&mut Self::compose_name(&mut tokens).into_compound_identifiers(true));
+            // take remaining possible references
+            Self::update_deps_from_statement(&mut deps, &mut tokens);
             Some(deps)
         } else {
             None
@@ -879,21 +905,9 @@ impl VHDLSymbol {
     /// 
     /// Assumes the token stream is built from a single statement. Assumes the first token in the stream is an
     /// indentifier that could be a dependency, if the first dependency detects is not a compound identifier with that matching suffix.
-    fn update_deps_from_statement<I>(deps: &mut Vec<CompoundIdentifier>, iden: Identifier, tokens: &mut Peekable<I>) -> ()
+    fn update_deps_from_statement<I>(deps: &mut Vec<CompoundIdentifier>, tokens: &mut Peekable<I>) -> ()
     where I: Iterator<Item=Token<VHDLToken>> {
-        let mut more_deps = Self::parse_statement(tokens).take_refs();
-        match more_deps.is_empty() {
-            // add simple name if could not find any compound names
-            true => deps.push(CompoundIdentifier::new_minimal(iden)),
-            // add compound names
-            false => {
-                // check if the first dep has iden as the prefix to know if it needs to be added
-                if more_deps.first().unwrap().get_prefix().unwrap() != &iden {
-                    deps.push(CompoundIdentifier::new_minimal(iden))
-                }
-                deps.append(&mut more_deps)
-            },
-        }
+        deps.append(&mut Self::parse_statement(tokens).take_refs());
     }
 
     /// Detects identifiers instantiated in the architecture statement sections.
@@ -909,9 +923,11 @@ impl VHDLSymbol {
         // check what is instantiated
         match tokens.peek()?.as_type() {
             VHDLToken::Identifier(_) => {
-                let solo_iden = tokens.peek().unwrap().as_type().as_identifier().unwrap().clone();
                 let mut deps = Vec::new();
-                Self::update_deps_from_statement(&mut deps, solo_iden, &mut tokens);
+                // take entity identifier
+                deps.append(&mut Self::compose_name(&mut tokens).into_compound_identifiers(true));
+                // take remaining possible references
+                Self::update_deps_from_statement(&mut deps, &mut tokens);
                 Some(deps)
             }
             VHDLToken::Keyword(kw) => {
@@ -919,9 +935,11 @@ impl VHDLSymbol {
                     tokens.next();
                     match tokens.peek()?.as_type() {
                         VHDLToken::Identifier(_) => {
-                            let solo_iden = tokens.peek().unwrap().as_type().as_identifier().unwrap().clone();
                             let mut deps = Vec::new();
-                            Self::update_deps_from_statement(&mut deps, solo_iden, &mut tokens);
+                            // take entity identifier
+                            deps.append(&mut Self::compose_name(&mut tokens).into_compound_identifiers(true));
+                            // take remaining possible references
+                            Self::update_deps_from_statement(&mut deps, &mut tokens);
                             Some(deps)
                         },
                         _ => None,
@@ -1827,13 +1845,18 @@ end HA_Config;
         let s = r#"
 for L1: XOR_GATE use entity WORK.XOR_GATE(Behavior) -- or L1 = 'others' = 'L1, L2, ...' = 'all'
         generic map (3 ns, 3 ns)
-        port map (I1 => I1, I2 => I2, O => O);    
+        port map (I1 => work.lab1_pkg.MAGIC_NUM, I2 => I2, O => O);    
 "#;
         let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         let st = VHDLSymbol::parse_statement(&mut iter);
         let iden = VHDLSymbol::parse_configuration_spec(st);
-        assert_eq!(iden.unwrap(), vec![CompoundIdentifier::new(Identifier::Basic(String::from("WORK")), Identifier::Basic(String::from("XOR_GATE")))]);
+        assert_eq!(iden.unwrap(), vec![
+            CompoundIdentifier::new(Identifier::Basic(String::from("WORK")), Identifier::Basic(String::from("XOR_GATE"))),
+            CompoundIdentifier::new_minimal(Identifier::Basic(String::from("XOR_GATE"))),
+            CompoundIdentifier::new(Identifier::Basic(String::from("work")), Identifier::Basic(String::from("lab1_pkg"))),
+            CompoundIdentifier::new(Identifier::Basic(String::from("lab1_pkg")), Identifier::Basic(String::from("MAGIC_NUM"))),
+        ]);
 
         let s = r#"
 for all: xor_gate use configuration cfg1;    

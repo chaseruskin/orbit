@@ -255,7 +255,7 @@ impl std::fmt::Display for GetError {
 }
 
 const HELP: &str = "\
-Quick help sentence about command.
+Fetch an hdl entity for code integration
 
 Usage:
     orbit get [options] <unit>

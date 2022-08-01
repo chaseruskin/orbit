@@ -16,48 +16,14 @@ use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
-use crate::core::vhdl::token::{Identifier, IdentifierError};
-use crate::core::pkgid::{PkgIdError, PkgId};
+use crate::core::vhdl::token::Identifier;
+use crate::core::pkgid::PkgId;
 use crate::util::anyerror::{AnyError, Fault};
-
-/// The complete V.L.N:IDENTIFIER to pinpoint a particular VHDL symbol.
-#[derive(Debug, PartialEq)]
-struct EntityPath {
-    ip: Option<PkgId>,
-    entity: Identifier,
-}
-
-impl std::str::FromStr for EntityPath {
-    type Err = AnyError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Some((ip, ent)) = s.split_once(':') {
-            Ok(Self {
-                ip: { if ip.is_empty() { None } else { Some(PkgId::from_str(ip)?) } },
-                entity: Identifier::from_str(ent)?,
-            })
-        } else {
-            // require the ':' for consistency
-            return Err(AnyError(format!("missing ':' separator")))?
-        }
-    }
-}
-
-impl From<IdentifierError> for AnyError {
-    fn from(e: IdentifierError) -> Self { 
-        AnyError(e.to_string())
-    }
-}
-
-impl From<PkgIdError> for AnyError {
-    fn from(e: PkgIdError) -> Self { 
-        AnyError(e.to_string())
-    }
-}
 
 #[derive(Debug, PartialEq)]
 pub struct Get {
-    entity_path: EntityPath,
+    unit: Identifier,
+    ip: Option<PkgId>,
     signals: bool,
     component: bool,
     instance: bool,
@@ -77,10 +43,11 @@ impl FromCli for Get {
             instance: cli.check_flag(Flag::new("instance").switch('i'))?,
             architectures: cli.check_flag(Flag::new("architecture").switch('a'))?,
             version: cli.check_option(Optional::new("variant").switch('v').value("version"))?,
-            info: cli.check_flag(Flag::new("info"))?,
+            info: cli.check_flag(Flag::new("info"))?, // @todo: implement
+            ip: cli.check_option(Optional::new("ip").value("pkgid"))?,
             peek: cli.check_flag(Flag::new("peek"))?,
             name: cli.check_option(Optional::new("name").value("identifier"))?,
-            entity_path: cli.require_positional(Positional::new("entity"))?,
+            unit: cli.require_positional(Positional::new("unit"))?,
         });
         command
     }
@@ -100,7 +67,7 @@ impl Command for Get {
         }
 
         // must be in an IP if omitting the pkgid
-        if self.entity_path.ip.is_none() {
+        if self.ip.is_none() {
             c.goto_ip_path()?;
             
             // error if a version is specified and its referencing the self IP
@@ -118,7 +85,7 @@ impl Command for Get {
                 .installations(c.get_cache_path())?
                 .available(c.get_vendors())?;
             let ids = catalog.inner().keys().map(|f| { f }).collect();
-            let target = crate::core::ip::find_ip(&self.entity_path.ip.as_ref().unwrap(), ids)?;
+            let target = crate::core::ip::find_ip(&self.ip.as_ref().unwrap(), ids)?;
             
             // find all manifests and prioritize installed manifests over others but to help with errors/confusion
             let status = catalog.inner().get(&target).unwrap();
@@ -152,7 +119,7 @@ impl Command for Get {
 impl Get {
     fn run(&self, ip: &IpManifest, is_self: bool, current_ip: Option<IpManifest>, ver: &AnyVersion) -> Result<(), Fault> {
         // collect all hdl files and parse them
-        let ent = match Self::fetch_entity(&self.entity_path.entity, &ip) {
+        let ent = match Self::fetch_entity(&self.unit, &ip) {
             Ok(r) => r,
             Err(e) => return Err(GetError::SuggestProbe(e.to_string(), ip.get_pkgid().clone(), ver.clone()))?
         };
@@ -291,12 +258,13 @@ const HELP: &str = "\
 Quick help sentence about command.
 
 Usage:
-    orbit get [options] <entity-path>
+    orbit get [options] <unit>
 
 Args:
-    <entity-path>       pkgid and entity identifier
+    <unit>       entity identifier
 
 Options:
+    --ip <pkgid>            ip to reference unit from
     --variant, -v <version> ip version to use
     --component, -c         print component declaration
     --signals,   -s         print signal declarations

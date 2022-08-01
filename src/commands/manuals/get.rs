@@ -4,7 +4,7 @@ NAME
     get - pull in an hdl entity to use
 
 SYNOPSIS
-    orbit get [options] <entity-path>
+    orbit get [options] <unit>
 
 DESCRIPTION
     This command will add the requested ip as a dependency to the current 
@@ -18,14 +18,17 @@ DESCRIPTION
     display the direct instantiation style code (VHDL-93 feature).  
      
     By default the ip associated with the target entity is added under the 
-    current ip's dependency table.
+    current ip's dependency table. This can be skipped with the --peek flag.
 
 OPTIONS
-    <entity-path>  
+    <unit>  
           The pkgid and entity identifier to request [pkgid:]<entity>
      
     --variant, -v <version>  
           Version of ip to fetch
+     
+    --ip, <pkgid>  
+          The IP to search for the unit
      
     --component, -c  
           Display the component declaration
@@ -49,5 +52,5 @@ OPTIONS
           Specific instance identifier
 
 EXAMPLES
-    orbit get ks-tech.rary.gates:nor_gate -csi
+    orbit get nor_gate --ip ks-tech.rary.gates -csi
 ";

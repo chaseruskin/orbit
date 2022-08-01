@@ -13,17 +13,17 @@ DESCRIPTION
     config.toml file. Explicitly setting the '--editor' option will override
     any previously determined value.
       
-    The ip's project directory must be located on the ORBIT_PATH. The ip's 
+    The ip's project directory must be located on the DEV_PATH. The ip's 
     project path will be passed as an argument to the text editor command. For 
     example, if EDITOR=\"code\", then the command orbit will execute is: 
     code <ip-path>.
 
 OPTIONS
     <ip>  
-          The PKGID to look up the ip under ORBIT_PATH.
+          The PKGID to look up the ip under DEV_PATH
       
-    --editor <cmd>  
-          The command to open the requested text-editor.
+    --editor <editor>  
+          The command to open the requested text-editor
 
 EXAMPLES
     orbit edit ks-tech.rary.gates --editor=code

@@ -5,6 +5,7 @@ use colored::Colorize;
 use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
+use crate::core::catalog::CatalogError;
 use crate::core::manifest::IpManifest;
 use crate::core::parser::Symbol;
 use crate::core::version::AnyVersion;
@@ -98,11 +99,9 @@ impl Command for Get {
             };
             if ip.is_none() {
                 // check if the ip is available for more helpful error message
-                return match status.get_available(v).is_some() || IpManifest::from_store(catalog.get_store(), &target, v).unwrap_or(None).is_some() {
-                    true => Err(AnyError(format!("ip '{}' is not installed but is available; if you want to use any unit from it try installing the ip\n\nTry: `orbit install --ip {} -v {}`", target, target, v))),
-                    false => {
-                        Err(AnyError(format!("ip '{}' is not found as version '{}'", target, v)))
-                    }
+                return match status.is_available_or_in_store(catalog.get_store(), &target, v) {
+                    true => Err(CatalogError::SuggestInstall(target.to_owned(), v.to_owned())),
+                    false => Err(CatalogError::NoVersionForIp(target.to_owned(), v.to_owned()))
                 }?
             }
 

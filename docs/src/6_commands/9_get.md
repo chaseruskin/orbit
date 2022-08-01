@@ -28,7 +28,7 @@ current ip's dependency table. This can be skipped with the `--peek` flag.
 ## __OPTIONS__
 
 `<unit>`  
-      The pkgid and entity identifier to request [pkgid:]<entity>
+      The entity identifier to access
  
 `--variant, -v <version>`  
       Version of ip to fetch

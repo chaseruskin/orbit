@@ -22,7 +22,7 @@ DESCRIPTION
 
 OPTIONS
     <unit>  
-          The pkgid and entity identifier to request [pkgid:]<entity>
+          The entity identifier to access
      
     --variant, -v <version>  
           Version of ip to fetch

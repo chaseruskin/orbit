@@ -88,6 +88,7 @@ use crate::commands::probe::Probe;
 use crate::commands::env::Env;
 use crate::commands::config::Config;
 use crate::commands::uninstall::Uninstall;
+use crate::commands::read::Read;
 
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
@@ -106,6 +107,7 @@ enum OrbitSubcommand {
     Env(Env),
     Config(Config),
     Uninstall(Uninstall),
+    Read(Read),
 }
 
 impl FromCli for OrbitSubcommand {
@@ -127,6 +129,7 @@ impl FromCli for OrbitSubcommand {
             "env",
             "config",
             "uninstall",
+            "read",
         ])?.as_ref() {
             "get" => Ok(OrbitSubcommand::Get(Get::from_cli(cli)?)),
             "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
@@ -143,6 +146,7 @@ impl FromCli for OrbitSubcommand {
             "env" => Ok(OrbitSubcommand::Env(Env::from_cli(cli)?)),
             "config" => Ok(OrbitSubcommand::Config(Config::from_cli(cli)?)),
             "uninstall" => Ok(OrbitSubcommand::Uninstall(Uninstall::from_cli(cli)?)),
+            "read" => Ok(OrbitSubcommand::Read(Read::from_cli(cli)?)),
             _ => panic!("an unimplemented command was passed through!")
         }
     }
@@ -167,6 +171,7 @@ impl Command for OrbitSubcommand {
             OrbitSubcommand::Env(c) => c.exec(context),
             OrbitSubcommand::Config(c) => c.exec(context),
             OrbitSubcommand::Uninstall(c) => c.exec(context),
+            OrbitSubcommand::Read(c) => c.exec(context),
         }
     }
 }
@@ -185,6 +190,7 @@ Commands:
     init            initialize an ip from an existing project
     edit            open an ip in a text editor
     probe           access information about an ip
+    read            inspect hdl design unit source code
     get             fetch an entity
     tree            view the dependency graph
     plan            generate a blueprint file

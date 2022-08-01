@@ -14,4 +14,5 @@ mod get;
 mod env;
 mod init;
 mod config;
+mod read;
 mod uninstall;

@@ -22,6 +22,10 @@ impl IpLevel {
         Self { dev: None, installs: Vec::new(), available: Vec::new() }
     }
 
+    pub fn is_available_or_in_store(&self, store: &Store, pkgid: &PkgId, v: &AnyVersion) -> bool {
+        self.get_available(v).is_some() || IpManifest::from_store(&store, &pkgid, v).unwrap_or(None).is_some()
+    }
+
     pub fn add_dev(&mut self, m: IpManifest) -> () {
         self.dev = Some(m);
     }
@@ -237,5 +241,22 @@ impl CacheSlot {
 impl AsRef<str> for CacheSlot {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
+    }
+}
+
+#[derive(Debug)]
+pub enum CatalogError {
+    SuggestInstall(PkgId, AnyVersion),
+    NoVersionForIp(PkgId, AnyVersion),
+}
+
+impl std::error::Error for CatalogError {}
+
+impl std::fmt::Display for CatalogError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::SuggestInstall(target, version) => write!(f, "ip '{}' is not installed but is available\n\nTry installing the ip: `orbit install --ip {} -v {}`", target, target, version),
+            Self::NoVersionForIp(pkgid, version) => write!(f, "ip '{}' has no version '{}'", pkgid, version),
+        }
     }
 }

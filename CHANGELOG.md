@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.6.1
+
+### Fixes
+- properly detects entity name in instantiation code when referenced from package
+
 ## 0.6.0
 
 ### Features

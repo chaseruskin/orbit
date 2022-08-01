@@ -400,14 +400,18 @@ impl IpManifest {
         LockFile::from_path(&self.get_root())
     }
 
-    pub fn read_units_from_metadata(&self) -> Option<Vec<PrimaryUnit>> {
+    pub fn read_units_from_metadata(&self) -> Option<HashMap<PrimaryUnit, String>> {
         let meta_file = self.get_root().join(ORBIT_METADATA_FILE);
         if std::path::Path::exists(&meta_file) == true {
             if let Ok(contents) = std::fs::read_to_string(&meta_file) {
                 if let Ok(toml) = contents.parse::<Document>() {
                     let entry = toml.get("ip")?.as_table()?.get("units")?.as_array()?;
-                    Some(entry.into_iter()
-                        .filter_map(|p| PrimaryUnit::from_toml(p.as_inline_table().unwrap())).collect())
+                    let mut map = HashMap::new();
+                    for unit in entry {
+                        let pdu = PrimaryUnit::from_toml(unit.as_inline_table()?)?;
+                        map.insert(pdu, String::new());
+                    }
+                    Some(map)
                 } else {
                     None
                 }
@@ -428,7 +432,7 @@ impl IpManifest {
     /// 
     /// If the manifest has an toml entry for `units` and `force` is set to `false`, 
     /// then it will return that list rather than go through files.
-    pub fn collect_units(&self, force: bool) -> Result<Vec<PrimaryUnit>, Fault> {
+    pub fn collect_units(&self, force: bool) -> Result<HashMap<PrimaryUnit, String>, Fault> {
         // try to read from metadata file
         match (force == false) && self.read_units_from_metadata().is_some() {
             // use precomputed result
@@ -436,16 +440,20 @@ impl IpManifest {
             false => {
                 // collect all files
                 let files = crate::util::filesystem::gather_current_files(&self.get_manifest().get_path().parent().unwrap().to_path_buf());
-                Ok(crate::core::vhdl::primaryunit::collect_units(&files)?.into_iter().map(|e| e.0).collect())
+                Ok(crate::core::vhdl::primaryunit::collect_units(&files)?)
             }
         }
     }
 
     /// Attempts to first read from units key entry if exists in toml file.
-    pub fn read_units(&self) -> Option<Vec<PrimaryUnit>> {
+    pub fn read_units(&self) -> Option<HashMap<PrimaryUnit, String>> {
         let entry = self.get_manifest().get_doc().get("ip")?.as_table()?.get("units")?.as_array()?;
-        Some(entry.into_iter()
-            .filter_map(|p| PrimaryUnit::from_toml(p.as_inline_table().unwrap())).collect())
+        let mut map = HashMap::new();
+        for unit in entry {
+            let unit = PrimaryUnit::from_toml(unit.as_inline_table()?)?;
+            map.insert(unit, String::new());
+        }
+        Some(map)
     }
 
     pub fn get_root(&self) -> std::path::PathBuf {
@@ -782,7 +790,7 @@ impl IpManifest {
         tbl.insert("units", toml_edit::Item::Value(toml_edit::Value::Array(Array::new())));
         let arr = tbl["units"].as_array_mut().unwrap();
         // map the units into a serialized data format
-        for unit in &units {
+        for (unit, source) in &units {
             arr.push(unit.to_toml());
         }
         tbl["units"].as_array_mut().unwrap().iter_mut().for_each(|f| {
@@ -800,7 +808,7 @@ impl IpManifest {
         let mut lut = HashMap::new();
         units.into_iter().for_each(|f| {
             lut.insert(
-                f.as_iden().unwrap().clone(), 
+                f.0.as_iden().unwrap().clone(), 
                 "_".to_string() + checksum.to_string().get(0..10).unwrap()
             );
         });

@@ -1,4 +1,10 @@
+use std::io::Write;
+use std::path::Path;
+use std::path::PathBuf;
+
 use colored::Colorize;
+use tempfile::TempPath;
+use tempfile::tempfile;
 
 use crate::Command;
 use crate::FromCli;
@@ -41,6 +47,9 @@ impl Command for Read {
         // determine the text-editor
         let editor = self.editor.as_ref().unwrap_or(&String::new()).to_owned();
 
+        // determine the destination
+        let dest = c.get_home_path().join("tmp");
+
         // must be in an IP if omitting the pkgid
         if self.ip.is_none() {
             c.goto_ip_path()?;
@@ -50,7 +59,7 @@ impl Command for Read {
                 return Err(AnyError(format!("cannot specify a version '{}' when referencing the current ip", "--ver".yellow())))?
             }
 
-            self.run(&editor, &IpManifest::from_path(c.get_ip_path().unwrap())?) 
+            self.run(&editor, &IpManifest::from_path(c.get_ip_path().unwrap())?, &dest) 
         // checking external IP
         } else {
             // gather the catalog (all manifests)
@@ -75,11 +84,21 @@ impl Command for Read {
 }
 
 impl Read {
-    fn run(&self, editor: &str, manifest: &IpManifest) -> Result<(), Fault> {
-        Self::read(&self.unit, manifest, &editor)
+    fn run(&self, editor: &str, manifest: &IpManifest, dest: &PathBuf) -> Result<(), Fault> {
+        Self::read(&self.unit, &manifest, &editor, &dest)
     }
 
-    fn read(unit: &Identifier, ip: &IpManifest, editor: &str) -> Result<(), Fault> {
+    fn read(unit: &Identifier, ip: &IpManifest, editor: &str, dest: &PathBuf) -> Result<(), Fault> {
+        // find the unit
+        let units = ip.collect_units(true)?;
+        // create a temporary file
+        let path = TempPath::from_path("./tmp.txt");
+        let mut file = std::fs::OpenOptions::new().write(true).create(true).open(&path)?;
+        file.write_all("go gators".as_bytes())?;
+        file.sync_all()?;
+        std::process::Command::new(r#"C:\Users\cruskin\AppData\Local\Programs\Microsoft VS Code\code"#)
+            .arg(path.as_os_str().to_str().unwrap())
+            .spawn()?;
         todo!()
     }
 }

@@ -92,7 +92,7 @@ impl Command for Probe {
         if self.units == true {
             // force computing the primary design units if a development version
             let units = ip.collect_units(v == &AnyVersion::Dev)?;
-            println!("{}", format_units_table(units));
+            println!("{}", format_units_table(units.into_iter().map(|(unit, _)| unit).collect()));
             return Ok(())
         }
 

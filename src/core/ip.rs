@@ -77,7 +77,7 @@ fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphM
     // add root's identifiers
     root.collect_units(true)?
         .into_iter()
-        .for_each(|u| { iden_set.insert(u.as_iden().unwrap().clone()); } );
+        .for_each(|(unit, _)| { iden_set.insert(unit.as_iden().unwrap().clone()); } );
 
     while let Some((num, ip)) = processing.pop() {
         // read dependencies
@@ -95,12 +95,12 @@ fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphM
                                 // check if identifiers are already taken in graph
                                 let dst = dep.collect_units(false)?
                                     .into_iter()
-                                    .find(|f| iden_set.contains(f.as_iden().unwrap()))
+                                    .find(|(unit, _)| iden_set.contains(unit.as_iden().unwrap()))
                                     .is_some();
                                 
                                 // update the hashset with the new unique non-taken identifiers
                                 if dst == false {
-                                    for unit in dep.collect_units(false)? {
+                                    for (unit, _) in dep.collect_units(false)? {
                                         iden_set.insert(unit.as_iden().unwrap().clone());
                                     }
                                 }

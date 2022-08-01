@@ -5,6 +5,8 @@ use crate::util::filesystem;
 use super::symbol::VHDLSymbol;
 use crate::core::vhdl::symbol::VHDLParser;
 
+pub type PrimaryUnitStore = HashMap<Identifier, PrimaryUnit>;
+
 #[derive(PartialEq, Hash, Eq)]
 pub enum PrimaryUnit {
     Entity(Unit),

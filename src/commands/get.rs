@@ -213,7 +213,7 @@ impl Get {
                 // verify entity was not already detected (duplicate)
                 if let Some(ent) = requested_entity {
                     match result {
-                        Some((src_file, entity)) => return Err(DuplicateIdentifierError(entity.get_name().clone(), PathBuf::from(src_file), PathBuf::from(f)))?,
+                        Some((src_file, dupe)) => return Err(DuplicateIdentifierError(dupe.get_name().clone(), PathBuf::from(src_file), dupe.get_position().clone(), PathBuf::from(f), ent.get_position().clone()))?,
                         None => result = Some((f, ent)),
                     }
                 }

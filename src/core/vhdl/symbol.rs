@@ -36,6 +36,18 @@ impl VHDLSymbol {
         }
     }
 
+    /// References the starting location in the file for the primary design unit.
+    pub fn get_position(&self) -> &Position {
+        match self {
+            Self::Entity(unit) => unit.get_position(),
+            Self::Architecture(unit) => unit.get_position(),
+            Self::Package(unit) => unit.get_position(),
+            Self::PackageBody(unit) => unit.get_position(),
+            Self::Configuration(unit) => unit.get_position(),
+            Self::Context(unit) => unit.get_position(),
+        }
+    }
+
     /// Casts `self` to entity.
     pub fn as_entity(&self) -> Option<&Entity> {
         match self {
@@ -120,12 +132,17 @@ pub struct Package {
     generics: Generics,
     body: Option<PackageBody>,
     refs: Vec<CompoundIdentifier>,
+    pos: Position,
 }
 
 impl Package {
     /// Accesses the references for the entity.
     pub fn get_refs(&self) -> Vec<&CompoundIdentifier> {
         self.refs.iter().map(|f| f).collect()
+    }
+
+    pub fn get_position(&self) -> &Position {
+        &self.pos
     }
 }
 
@@ -139,6 +156,7 @@ impl Display for Package {
 pub struct PackageBody {
     owner: Identifier,
     refs: Vec<CompoundIdentifier>,
+    pos: Position,
 }
 
 impl PackageBody {
@@ -149,6 +167,10 @@ impl PackageBody {
 
     pub fn get_owner(&self) -> &Identifier {
         &self.owner
+    }
+
+    pub fn get_position(&self) -> &Position {
+        &self.pos
     }
 
     pub fn take_refs(self) -> Vec<CompoundIdentifier> {
@@ -169,6 +191,7 @@ pub struct Entity {
     generics: Generics,
     architectures: Vec<Architecture>,
     refs: Vec<CompoundIdentifier>,
+    pos: Position,
 }
 
 use crate::core::vhdl::interface::*;
@@ -182,7 +205,12 @@ impl Entity {
             generics: Generics::new(), 
             architectures: Vec::new(),
             refs: Vec::new(),
+            pos: Position::new(),
         }
+    }
+
+    pub fn get_position(&self) -> &Position {
+        &self.pos
     }
 
     /// Checks if the current `Entity` is a testbench.
@@ -265,7 +293,7 @@ impl Entity {
 
     /// Parses an `Entity` primary design unit from the entity's identifier to
     /// the END closing statement.
-    fn from_tokens<I>(tokens: &mut Peekable<I>) -> Self 
+    fn from_tokens<I>(tokens: &mut Peekable<I>, pos: Position) -> Self 
     where I: Iterator<Item=Token<VHDLToken>> {
         // take entity name
         let entity_name = tokens.next().take().unwrap().take();
@@ -290,6 +318,7 @@ impl Entity {
             generics: Generics(InterfaceDeclarations::from_double_listed_tokens(generics)),
             ports: Ports(InterfaceDeclarations::from_double_listed_tokens(ports)),
             refs: entity_refs,
+            pos: pos,
         }
     }
 }
@@ -300,11 +329,16 @@ pub struct Architecture {
     owner: Identifier,
     dependencies: Vec<CompoundIdentifier>,
     refs: Vec<CompoundIdentifier>,
+    pos: Position,
 }
 
 impl Architecture {
     pub fn name(&self) -> &Identifier {
         &self.name
+    }
+
+    pub fn get_position(&self) -> &Position {
+        &self.pos
     }
 
     pub fn entity(&self) -> &Identifier {
@@ -325,12 +359,17 @@ impl Architecture {
 pub struct Context {
     name: Identifier,
     refs: Vec<CompoundIdentifier>,
+    pos: Position,
 }
 
 impl Context {
     /// Accesses the references for the entity.
     pub fn get_refs(&self) -> Vec<&CompoundIdentifier> {
         self.refs.iter().map(|f| f).collect()
+    }
+
+    pub fn get_position(&self) -> &Position {
+        &self.pos
     }
 }
 
@@ -358,11 +397,16 @@ pub struct Configuration {
     owner: Identifier,
     dependencies: Vec<CompoundIdentifier>,
     refs: Vec<CompoundIdentifier>,
+    pos: Position,
 }
 
 impl Configuration {
     pub fn name(&self) -> &Identifier {
         &self.name
+    }
+
+    pub fn get_position(&self) -> &Position {
+        &self.pos
     }
 
     pub fn entity(&self) -> &Identifier {
@@ -501,30 +545,31 @@ impl Parse<VHDLToken> for VHDLParser {
         while let Some(t) = tokens.next() {
             // create entity symbol
             if t.as_ref().check_keyword(&Keyword::Entity) {
-                let mut ent = VHDLSymbol::parse_entity(&mut tokens);
+                // get the position
+                let mut ent = VHDLSymbol::parse_entity(&mut tokens, t.into_position());
                 ent.add_refs(&mut global_refs);
                 // println!("info: detected {}", ent);
                 symbols.push(Ok(Symbol::new(ent)));
             // create architecture symbol
             } else if t.as_ref().check_keyword(&Keyword::Architecture) {
-                let mut arch = VHDLSymbol::parse_architecture(&mut tokens);
+                let mut arch = VHDLSymbol::parse_architecture(&mut tokens, t.into_position());
                 arch.add_refs(&mut global_refs);
                 // println!("info: detected {}", arch);
                 symbols.push(Ok(Symbol::new(arch)));
             // create configuration symbol
             } else if t.as_ref().check_keyword(&Keyword::Configuration) {
-                let config = VHDLSymbol::parse_configuration(&mut tokens);
+                let config = VHDLSymbol::parse_configuration(&mut tokens, t.into_position());
                 // println!("info: detected {}", config);
                 symbols.push(Ok(Symbol::new(config)));
             // create package symbol
             } else if t.as_ref().check_keyword(&Keyword::Package) {
-                let mut pack = VHDLSymbol::route_package_parse(&mut tokens);
+                let mut pack = VHDLSymbol::route_package_parse(&mut tokens, t.into_position());
                 pack.add_refs(&mut global_refs);
                 // println!("info: detected {}", pack);
                 symbols.push(Ok(Symbol::new(pack)));
             // create a context symbol or context reference
             } else if t.as_ref().check_keyword(&Keyword::Context) {
-                match VHDLSymbol::parse_context(&mut tokens) {
+                match VHDLSymbol::parse_context(&mut tokens, t.into_position()) {
                     ContextUsage::ContextDeclaration(dec) => {
                         let mut context = VHDLSymbol::Context(dec);
                         // println!("info: detected {}", context);
@@ -653,16 +698,16 @@ impl Statement {
 impl VHDLSymbol {
     /// Parses an `Entity` primary design unit from the entity's identifier to
     /// the END closing statement.
-    fn parse_entity<I>(tokens: &mut Peekable<I>) -> VHDLSymbol 
+    fn parse_entity<I>(tokens: &mut Peekable<I>, pos: Position) -> VHDLSymbol 
     where I: Iterator<Item=Token<VHDLToken>>  {
-        VHDLSymbol::Entity(Entity::from_tokens(tokens))
+        VHDLSymbol::Entity(Entity::from_tokens(tokens, pos))
     }
 
     /// Parses a package declaration, from the <package> IS to the END keyword.
     /// 
     /// Assumes the last consumed token was PACKAGE keyword and the next token
     /// is the identifier for the package name.
-    fn parse_package_declaration<I>(tokens: &mut Peekable<I>) -> VHDLSymbol 
+    fn parse_package_declaration<I>(tokens: &mut Peekable<I>, pos: Position) -> VHDLSymbol 
     where I: Iterator<Item=Token<VHDLToken>>  {
 
         let mut refs = Vec::new();
@@ -686,6 +731,7 @@ impl VHDLSymbol {
                 generics: Generics::new(),
                 refs: clause.take_refs(),
                 body: None,
+                pos: pos,
             })
         }
 
@@ -712,9 +758,9 @@ impl VHDLSymbol {
             // check for nested package declarations
             if t.as_type().check_keyword(&Keyword::Package) {
                 // consume PACKAGE keyword
-                tokens.next();
+                let inner_pos = tokens.next().unwrap().into_position();
                 // parse nested package declaration and grab references
-                let inner_pack = Self::parse_package_declaration(tokens);
+                let inner_pack = Self::parse_package_declaration(tokens, inner_pos);
                 refs.reserve(inner_pack.as_package().unwrap().get_refs().len());
                 inner_pack.as_package().unwrap().get_refs().into_iter().for_each(|r| {
                     refs.push(r.clone());
@@ -740,19 +786,24 @@ impl VHDLSymbol {
             generics: Generics(InterfaceDeclarations::from_double_listed_tokens(generics)),
             refs: refs,
             body: None,
+            pos: pos,
         })
     }
 
     /// Creates a `Context` struct for primary design unit: context.
     /// 
     /// Assumes the next token to consume is the context's identifier.
-    fn parse_context<I>(tokens: &mut Peekable<I>) -> ContextUsage
+    fn parse_context<I>(tokens: &mut Peekable<I>, pos: Position) -> ContextUsage
     where I: Iterator<Item=Token<VHDLToken>>  {
         // grab the identifier name
         let iden = tokens.next().unwrap().take().take_identifier().unwrap();
         // check the next token is the `is` keyword for declaration
         if tokens.peek().unwrap().as_ref().check_keyword(&Keyword::Is) == true {
-            ContextUsage::ContextDeclaration(Context { name: iden, refs: Self::parse_context_declaration(tokens) })
+            ContextUsage::ContextDeclaration(Context { 
+                name: iden, 
+                refs: Self::parse_context_declaration(tokens),
+                pos: pos
+            })
         // parse statement
         } else {
             let mut subtokens = vec![Token::new(VHDLToken::Identifier(iden), Position::new())];
@@ -831,7 +882,7 @@ impl VHDLSymbol {
     /// 
     /// Package declarations within this scope can be ignored because their visibility
     /// is not reached outside of the body.
-    fn parse_package_body<I>(tokens: &mut Peekable<I>) -> PackageBody 
+    fn parse_package_body<I>(tokens: &mut Peekable<I>, pos: Position) -> PackageBody 
     where I: Iterator<Item=Token<VHDLToken>>  {
         // take the 'body' keyword
         tokens.next();
@@ -849,6 +900,7 @@ impl VHDLSymbol {
                 _ => panic!("expected an identifier")
             },
             refs: refs,
+            pos: pos,
         }
     }
 
@@ -952,7 +1004,7 @@ impl VHDLSymbol {
         }
     }
 
-    fn parse_configuration<I>(tokens: &mut Peekable<I>) -> VHDLSymbol 
+    fn parse_configuration<I>(tokens: &mut Peekable<I>, pos: Position) -> VHDLSymbol 
         where I: Iterator<Item=Token<VHDLToken>>  {
         let config_name = match tokens.next().take().unwrap().take() {
             VHDLToken::Identifier(id) => id,
@@ -989,6 +1041,7 @@ impl VHDLSymbol {
             owner: entity_name,
             dependencies: deps,
             refs: refs,
+            pos: pos,
         })
     }
 
@@ -1057,7 +1110,7 @@ impl VHDLSymbol {
     /// Parses an secondary design unit: architecture.
     /// 
     /// Assumes the next token to consume is the architecture's identifier.
-    fn parse_architecture<I>(tokens: &mut Peekable<I>) -> VHDLSymbol 
+    fn parse_architecture<I>(tokens: &mut Peekable<I>, pos: Position) -> VHDLSymbol 
         where I: Iterator<Item=Token<VHDLToken>> {
         let arch_name = match tokens.next().take().unwrap().take() {
             VHDLToken::Identifier(id) => id,
@@ -1072,6 +1125,7 @@ impl VHDLSymbol {
             owner: entity_name,
             dependencies: deps,
             refs: refs,
+            pos: pos,
         })
     }
 
@@ -1274,8 +1328,8 @@ impl VHDLSymbol {
                 }
             // find a nested package (throw away for now)
             } else if t.as_type().check_keyword(&Keyword::Package) {
-                tokens.next();
-                let pack_name = Self::route_package_parse(tokens);
+                let inner_pos = tokens.next().unwrap().into_position();
+                let pack_name = Self::route_package_parse(tokens, inner_pos);
                 // add references found from the package
                 entity_refs.reserve(pack_name.as_package().unwrap().get_refs().len());
                 pack_name.as_package().unwrap().get_refs().into_iter().for_each(|f| {
@@ -1353,8 +1407,8 @@ impl VHDLSymbol {
                 // println!("**** INFO: Found component: \"{}\"", comp_name);
             // find a nested package
             } else if t.as_type().check_keyword(&Keyword::Package) {
-                tokens.next();
-                let _pack_name = Self::route_package_parse(tokens);
+                let inner_pos = tokens.next().unwrap().into_position();
+                let _pack_name = Self::route_package_parse(tokens, inner_pos);
                 // println!("**** INFO: detected nested package \"{}\"", pack_name);
             // detect subprograms
             } else if t.as_type().as_keyword().is_some() && Self::is_subprogram(t.as_type().as_keyword().unwrap()) == true {
@@ -1459,12 +1513,12 @@ impl VHDLSymbol {
 
     /// Routes the parsing to either package body or package declaration,
     /// depending on the next token being BODY keyword or identifier.
-    fn route_package_parse<I>(tokens: &mut Peekable<I>) -> VHDLSymbol
+    fn route_package_parse<I>(tokens: &mut Peekable<I>, pos: Position) -> VHDLSymbol
     where I: Iterator<Item=Token<VHDLToken>> {
         if &VHDLToken::Keyword(Keyword::Body) == tokens.peek().unwrap().as_type() {
-            VHDLSymbol::PackageBody(VHDLSymbol::parse_package_body(tokens))
+            VHDLSymbol::PackageBody(VHDLSymbol::parse_package_body(tokens, pos))
         } else {
-            VHDLSymbol::parse_package_declaration(tokens)
+            VHDLSymbol::parse_package_declaration(tokens, pos)
         }
     }
 
@@ -1500,8 +1554,8 @@ impl VHDLSymbol {
                 // println!("**** INFO: Found component: \"{}\"", comp_name);
             // find packages 
             } else if t.as_type().check_keyword(&Keyword::Package) {
-                tokens.next();
-                let _symbol = Self::route_package_parse(tokens);
+                let inner_pos = tokens.next().unwrap().into_position();
+                let _symbol = Self::route_package_parse(tokens, inner_pos);
                 // println!("**** INFO: Detected nested package \"{}\"", symbol);
             // build statements
             } else {
@@ -1727,7 +1781,7 @@ signal ready: std_logic;";
     #[test]
     fn entity() {
         let s = "\
-nor_gate is
+ nor_gate is
     generic(
         N: positive
     );
@@ -1738,9 +1792,11 @@ nor_gate is
     );
 end entity nor_gate;";
         let mut tokens = VHDLTokenizer::from_source_code(&s).into_tokens().into_iter().peekable();
-        let _ = Entity::from_tokens(&mut tokens);
-
-        // @TODO write signals from ports
+        let e = Entity::from_tokens(&mut tokens, Position::place(1, 2));
+        assert_eq!(e.pos, Position::place(1, 2));
+        assert_eq!(e.name, Identifier::Basic(String::from("nor_gate")));
+        assert_eq!(e.generics.0.len(), 1);
+        assert_eq!(e.ports.0.len(), 3);
     }
 
     use std::str::FromStr;

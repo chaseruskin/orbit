@@ -38,6 +38,11 @@ impl<T> Token<T> {
         }
     }
 
+    /// Transforms the data into a `Position`.
+    pub fn into_position(self) -> Position {
+        self.position
+    }
+
     /// References the inner token type.
     pub fn as_ref(&self) -> &T {
         &self.ttype
@@ -163,7 +168,7 @@ impl<T> TrainCar<T> where T: Iterator<Item=char> {
         self.contents.peek()
     }
 
-    /// Access the position of the first remainig character.
+    /// Access the position of the first remaining character.
     pub fn locate(&self) -> &Position {
         &self.loc
     }

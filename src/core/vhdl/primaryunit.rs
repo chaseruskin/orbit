@@ -1,5 +1,5 @@
 use toml_edit::InlineTable;
-use crate::{core::vhdl::token::Identifier, util::anyerror::Fault};
+use crate::{core::{vhdl::token::Identifier, lexer::Position}, util::anyerror::Fault};
 use std::{collections::HashMap, str::FromStr, path::PathBuf};
 use crate::util::filesystem;
 use super::symbol::VHDLSymbol;
@@ -24,6 +24,15 @@ impl PrimaryUnit {
             Self::Context(u) => &u.name,
             Self::Configuration(u) => &u.name,
         })
+    }
+
+    pub fn get_unit(&self) -> &Unit {
+        match self {
+            Self::Entity(unit) => unit,
+            Self::Package(unit) => unit,
+            Self::Context(unit) => unit,
+            Self::Configuration(unit) => unit,
+        }
     }
 
     /// Serializes the data into a toml inline table
@@ -82,7 +91,7 @@ impl PartialEq for Unit {
 impl Eq for Unit {}
 
 pub fn collect_units(files: &Vec<String>) -> Result<HashMap<PrimaryUnit, String>, Fault> {
-    let mut result = HashMap::new();
+    let mut result: HashMap<PrimaryUnit, String> = HashMap::new();
     // iterate through all source files
     for source_file in files {
         // only read the HDL files
@@ -103,8 +112,14 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<PrimaryUnit, String>
             }).collect();
             
             for primary in units {
-                if let Some(dupe) = result.get(&primary) {
-                    return Err(DuplicateIdentifierError(primary.as_iden().unwrap().clone(), PathBuf::from(source_file), PathBuf::from(dupe)))?;
+                if let Some((dupe_unit, dupe_file)) = result.get_key_value(&primary) {
+                    return Err(DuplicateIdentifierError(
+                        primary.as_iden().unwrap().clone(), 
+                        PathBuf::from(source_file), 
+                        primary.get_unit().symbol.as_ref().unwrap().get_position().clone(),
+                        PathBuf::from(dupe_file), 
+                        dupe_unit.get_unit().symbol.as_ref().unwrap().get_position().clone(),
+                    ))?;
                 }
                 result.insert(primary, source_file.clone());
             }
@@ -113,9 +128,8 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<PrimaryUnit, String>
     Ok(result)
 }
 
-
 #[derive(Debug)]
-pub struct DuplicateIdentifierError(pub Identifier, pub PathBuf, pub PathBuf);
+pub struct DuplicateIdentifierError(pub Identifier, pub PathBuf, pub Position, pub PathBuf, pub Position);
 
 impl std::error::Error for DuplicateIdentifierError {}
 
@@ -123,8 +137,10 @@ impl std::fmt::Display for DuplicateIdentifierError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let current_dir = std::env::current_dir().unwrap();
         let location_1 = filesystem::remove_base(&current_dir, &self.1);
-        let location_2 = filesystem::remove_base(&current_dir, &self.2);
-        write!(f, "duplicate primary design units identified as '{}'\n\nlocation 1: {}\nlocation 2: {}\n\n{}", self.0, filesystem::normalize_path(location_1).display(), filesystem::normalize_path(location_2).display(), HINT)
+        let location_2 = filesystem::remove_base(&current_dir, &self.3);
+        let pos_1 = &self.2;
+        let pos_2 = &self.4;
+        write!(f, "duplicate primary design units identified as '{}'\n\nlocation 1: {}:{}\nlocation 2: {}:{}\n\n{}", self.0, filesystem::normalize_path(location_1).display(), pos_1, filesystem::normalize_path(location_2).display(), pos_2, HINT)
     }
 }
 

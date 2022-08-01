@@ -1,4 +1,4 @@
-use super::{symbol::{self, CompoundIdentifier}, token::Identifier};
+use super::{symbol::{self, IdentifierList}, token::Identifier};
 
 #[derive(Debug, PartialEq)]
 pub enum SubUnit {
@@ -15,7 +15,7 @@ impl SubUnit {
         Self::Configuration(cfg)
     }
 
-    pub fn get_edges(&self) -> &Vec<CompoundIdentifier> {
+    pub fn get_edges(&self) -> &IdentifierList {
         match self {
             Self::Architecture(u) => u.edges(),
             Self::Configuration(u) => u.edges(),
@@ -29,7 +29,7 @@ impl SubUnit {
         }
     }
 
-    pub fn get_refs(&self) -> Vec<&CompoundIdentifier> {
+    pub fn get_refs(&self) -> &IdentifierList {
         match self {
             Self::Architecture(u) => u.get_refs(),
             Self::Configuration(u) => u.get_refs(),

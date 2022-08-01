@@ -1,7 +1,10 @@
+use std::collections::LinkedList;
 use std::fmt::Display;
 use std::hash::Hash;
 use crate::core::parser::*;
 use crate::core::lexer::*;
+
+pub type IdentifierList = LinkedList<CompoundIdentifier>;
 
 #[derive(Debug, PartialEq)]
 pub enum VHDLSymbol {
@@ -28,14 +31,6 @@ impl VHDLSymbol {
         }
     }
 
-    /// Casts `self` to package.
-    pub fn as_package(&self) -> Option<&Package> {
-        match self {
-            Self::Package(p) => Some(p),
-            _ => None,
-        }
-    }
-
     /// References the starting location in the file for the primary design unit.
     pub fn get_position(&self) -> &Position {
         match self {
@@ -45,6 +40,14 @@ impl VHDLSymbol {
             Self::PackageBody(unit) => unit.get_position(),
             Self::Configuration(unit) => unit.get_position(),
             Self::Context(unit) => unit.get_position(),
+        }
+    }
+
+    /// Casts `self` to package.
+    pub fn as_package(&self) -> Option<&Package> {
+        match self {
+            Self::Package(p) => Some(p),
+            _ => None,
         }
     }
 
@@ -88,7 +91,7 @@ impl VHDLSymbol {
         }
     }
 
-    pub fn add_refs(&mut self, refs: &mut Vec<CompoundIdentifier>) {
+    pub fn add_refs(&mut self, refs: &mut IdentifierList) {
         match self {
             Self::Entity(e) => e.refs.append(refs),
             Self::Architecture(a) => a.refs.append(refs),
@@ -100,7 +103,7 @@ impl VHDLSymbol {
         refs.clear();
     }
 
-    pub fn get_refs(&self) -> Vec<&CompoundIdentifier> {
+    pub fn get_refs(&self) -> &IdentifierList {
         match self {
             Self::Entity(e) => e.get_refs(),
             Self::Architecture(a) => a.get_refs(),
@@ -131,14 +134,14 @@ pub struct Package {
     name: Identifier,
     generics: Generics,
     body: Option<PackageBody>,
-    refs: Vec<CompoundIdentifier>,
+    refs: IdentifierList,
     pos: Position,
 }
 
 impl Package {
     /// Accesses the references for the entity.
-    pub fn get_refs(&self) -> Vec<&CompoundIdentifier> {
-        self.refs.iter().map(|f| f).collect()
+    pub fn get_refs(&self) -> &IdentifierList {
+        &self.refs
     }
 
     pub fn get_position(&self) -> &Position {
@@ -155,14 +158,14 @@ impl Display for Package {
 #[derive(Debug, PartialEq)]
 pub struct PackageBody {
     owner: Identifier,
-    refs: Vec<CompoundIdentifier>,
+    refs: IdentifierList,
     pos: Position,
 }
 
 impl PackageBody {
     /// Accesses the references for the entity.
-    pub fn get_refs(&self) -> Vec<&CompoundIdentifier> {
-        self.refs.iter().map(|f| f).collect()
+    pub fn get_refs(&self) -> &IdentifierList {
+        &self.refs
     }
 
     pub fn get_owner(&self) -> &Identifier {
@@ -173,7 +176,7 @@ impl PackageBody {
         &self.pos
     }
 
-    pub fn take_refs(self) -> Vec<CompoundIdentifier> {
+    pub fn take_refs(self) -> IdentifierList {
         self.refs
     }
 }
@@ -190,7 +193,7 @@ pub struct Entity {
     ports: Ports,
     generics: Generics,
     architectures: Vec<Architecture>,
-    refs: Vec<CompoundIdentifier>,
+    refs: IdentifierList,
     pos: Position,
 }
 
@@ -204,7 +207,7 @@ impl Entity {
             ports: Ports::new(), 
             generics: Generics::new(), 
             architectures: Vec::new(),
-            refs: Vec::new(),
+            refs: LinkedList::new(),
             pos: Position::new(),
         }
     }
@@ -226,9 +229,8 @@ impl Entity {
     }
 
     /// References the references for the entity.
-    pub fn get_refs(&self) -> Vec<&CompoundIdentifier> {
-        // let mut all_refs = Vec::new();
-        self.refs.iter().map(|f| f).collect()
+    pub fn get_refs(&self) -> &IdentifierList {
+        &self.refs
     }
 
     // Generates VHDL component code from the entity.
@@ -327,8 +329,8 @@ impl Entity {
 pub struct Architecture {
     name: Identifier,
     owner: Identifier,
-    dependencies: Vec<CompoundIdentifier>,
-    refs: Vec<CompoundIdentifier>,
+    dependencies: IdentifierList,
+    refs: IdentifierList,
     pos: Position,
 }
 
@@ -345,27 +347,27 @@ impl Architecture {
         &self.owner
     }
 
-    pub fn edges(&self) -> &Vec<CompoundIdentifier> {
+    pub fn edges(&self) -> &IdentifierList {
         &self.dependencies
     }
 
     /// Accesses the references for the entity.
-    pub fn get_refs(&self) -> Vec<&CompoundIdentifier> {
-        self.refs.iter().map(|f| f).collect()
+    pub fn get_refs(&self) -> &IdentifierList {
+        &self.refs
     }
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Context {
     name: Identifier,
-    refs: Vec<CompoundIdentifier>,
+    refs: IdentifierList,
     pos: Position,
 }
 
 impl Context {
     /// Accesses the references for the entity.
-    pub fn get_refs(&self) -> Vec<&CompoundIdentifier> {
-        self.refs.iter().map(|f| f).collect()
+    pub fn get_refs(&self) -> &IdentifierList {
+        &self.refs
     }
 
     pub fn get_position(&self) -> &Position {
@@ -376,7 +378,7 @@ impl Context {
 #[derive(Debug, PartialEq)]
 pub enum ContextUsage {
     ContextDeclaration(Context),
-    ContextReference(Vec<CompoundIdentifier>),
+    ContextReference(IdentifierList),
 }
 
 #[derive(Debug, PartialEq)]
@@ -395,8 +397,8 @@ pub struct UseClause {
 pub struct Configuration {
     name: Identifier,
     owner: Identifier,
-    dependencies: Vec<CompoundIdentifier>,
-    refs: Vec<CompoundIdentifier>,
+    dependencies: IdentifierList,
+    refs: IdentifierList,
     pos: Position,
 }
 
@@ -413,13 +415,13 @@ impl Configuration {
         &self.owner
     }
 
-    pub fn edges(&self) -> &Vec<CompoundIdentifier> {
+    pub fn edges(&self) -> &IdentifierList {
         &self.dependencies
     }
 
     /// Accesses the references for the entity.
-    pub fn get_refs(&self) -> Vec<&CompoundIdentifier> {
-        self.refs.iter().map(|f| f).collect()
+    pub fn get_refs(&self) -> &IdentifierList {
+        &self.refs
     }
 }
 
@@ -455,18 +457,18 @@ impl SelectedName {
     /// 
     /// If `sep_last` is `true`, then an extra compound will be made with just the 
     /// suffix and no prefix.
-    fn into_compound_identifiers(self, sep_last: bool) -> Vec<CompoundIdentifier> {
-        let mut result = Vec::new();
+    fn into_compound_identifiers(self, sep_last: bool) -> IdentifierList {
+        let mut result = IdentifierList::new();
 
         let mut iter = self.0.into_iter().peekable();
         while let Some(iden) = iter.next() {
             match iter.peek() {
                 Some(next) => {
-                    result.push(CompoundIdentifier::new(iden, next.clone()));
+                    result.push_back(CompoundIdentifier::new(iden, next.clone()));
                 }
                 None => {
                     if sep_last == true {
-                        result.push(CompoundIdentifier::new_minimal(iden));
+                        result.push_back(CompoundIdentifier::new_minimal(iden));
                     }
                 }
             }
@@ -540,7 +542,7 @@ impl Parse<VHDLToken> for VHDLParser {
         let mut symbols = Vec::new();
         let mut tokens = tokens.into_iter().peekable();
 
-        let mut global_refs = Vec::new();
+        let mut global_refs = IdentifierList::new();
 
         while let Some(t) = tokens.next() {
             // create entity symbol
@@ -611,11 +613,11 @@ use std::iter::Peekable;
 /// A `Statement` is a vector of tokens, similiar to how a `String` is a vector
 /// of characters.
 #[derive(PartialEq, Clone)]
-struct Statement(Vec<Token<VHDLToken>>, Vec<CompoundIdentifier>);
+struct Statement(Vec<Token<VHDLToken>>, IdentifierList);
 
 impl Statement {
     /// References the mutable list of resource references.
-    fn get_refs_mut(&mut self) -> &mut Vec<CompoundIdentifier> {
+    fn get_refs_mut(&mut self) -> &mut IdentifierList {
         &mut self.1
     }
 
@@ -671,7 +673,7 @@ impl std::fmt::Debug for Statement {
 
 impl Statement {
     fn new() -> Self {
-        Self(Vec::new(), Vec::new())
+        Self(Vec::new(), IdentifierList::new())
     }
 
     /// References the tokens as VHDLTokens.
@@ -680,7 +682,7 @@ impl Statement {
     }
 
     /// References the resource references.
-    fn get_refs(&self) -> &Vec<CompoundIdentifier> {
+    fn get_refs(&self) -> &IdentifierList {
         &self.1
     }
 
@@ -690,7 +692,7 @@ impl Statement {
     }
 
     /// Transforms into only resource references.
-    fn take_refs(self) -> Vec<CompoundIdentifier> {
+    fn take_refs(self) -> IdentifierList {
         self.1
     }
 }
@@ -710,7 +712,7 @@ impl VHDLSymbol {
     fn parse_package_declaration<I>(tokens: &mut Peekable<I>, pos: Position) -> VHDLSymbol 
     where I: Iterator<Item=Token<VHDLToken>>  {
 
-        let mut refs = Vec::new();
+        let mut refs = IdentifierList::new();
         // take package name
         let pack_name = tokens.next().take().unwrap().take();
         // take the IS keyword
@@ -761,9 +763,8 @@ impl VHDLSymbol {
                 let inner_pos = tokens.next().unwrap().into_position();
                 // parse nested package declaration and grab references
                 let inner_pack = Self::parse_package_declaration(tokens, inner_pos);
-                refs.reserve(inner_pack.as_package().unwrap().get_refs().len());
                 inner_pack.as_package().unwrap().get_refs().into_iter().for_each(|r| {
-                    refs.push(r.clone());
+                    refs.push_back(r.clone());
                 });
             // grab component declarations
             } else if t.as_type().check_keyword(&Keyword::Component) {
@@ -822,9 +823,9 @@ impl VHDLSymbol {
     /// Creates a `Context` struct for primary design unit: context.
     /// 
     /// Assumes the next token to consume is the keyword `IS`. Stops at the `end`.
-    fn parse_context_declaration<I>(tokens: &mut Peekable<I>) -> Vec<CompoundIdentifier>
+    fn parse_context_declaration<I>(tokens: &mut Peekable<I>) -> IdentifierList
     where I: Iterator<Item=Token<VHDLToken>>  {
-        let mut result = Vec::new();
+        let mut result = IdentifierList::new();
 
         while let Some(t) = tokens.next() {
             let mut stmt = Self::parse_statement(tokens);
@@ -908,7 +909,7 @@ impl VHDLSymbol {
     /// declaration section.
     /// 
     /// Assumes the first token to consume is 'for' and there is a ':' token to follow.
-    fn parse_configuration_spec(statement: Statement) -> Option<Vec<CompoundIdentifier>> {
+    fn parse_configuration_spec(statement: Statement) -> Option<IdentifierList> {
         let mut tokens = Self::statement_to_tokens(statement).into_iter().peekable();
         // force keyword 'for'
         if tokens.next()?.take().check_keyword(&Keyword::For) == false { return None }
@@ -932,7 +933,7 @@ impl VHDLSymbol {
             // take keyword ENTITY or CONFIGURATION
             tokens.next();
             // take the compound identifiers
-            let mut deps = Vec::new();
+            let mut deps = IdentifierList::new();
             // take entity identifier
             deps.append(&mut Self::compose_name(&mut tokens).into_compound_identifiers(true));
             // take remaining possible references
@@ -957,7 +958,7 @@ impl VHDLSymbol {
     /// 
     /// Assumes the token stream is built from a single statement. Assumes the first token in the stream is an
     /// indentifier that could be a dependency, if the first dependency detects is not a compound identifier with that matching suffix.
-    fn update_deps_from_statement<I>(deps: &mut Vec<CompoundIdentifier>, tokens: &mut Peekable<I>) -> ()
+    fn update_deps_from_statement<I>(deps: &mut IdentifierList, tokens: &mut Peekable<I>) -> ()
     where I: Iterator<Item=Token<VHDLToken>> {
         deps.append(&mut Self::parse_statement(tokens).take_refs());
     }
@@ -966,7 +967,7 @@ impl VHDLSymbol {
     /// 
     /// Assumes the next token to consume is instance name of the instantiation and
     /// the token to follow is the COLON ':' delimiter.
-    fn parse_instantiation(statement: Statement) -> Option<Vec<CompoundIdentifier>> {
+    fn parse_instantiation(statement: Statement) -> Option<IdentifierList> {
         let mut tokens = Self::statement_to_tokens(statement).into_iter().peekable();
         // force identifier (instance name)
         tokens.next()?.take().as_identifier()?;
@@ -975,7 +976,7 @@ impl VHDLSymbol {
         // check what is instantiated
         match tokens.peek()?.as_type() {
             VHDLToken::Identifier(_) => {
-                let mut deps = Vec::new();
+                let mut deps = IdentifierList::new();
                 // take entity identifier
                 deps.append(&mut Self::compose_name(&mut tokens).into_compound_identifiers(true));
                 // take remaining possible references
@@ -987,7 +988,7 @@ impl VHDLSymbol {
                     tokens.next();
                     match tokens.peek()?.as_type() {
                         VHDLToken::Identifier(_) => {
-                            let mut deps = Vec::new();
+                            let mut deps = IdentifierList::new();
                             // take entity identifier
                             deps.append(&mut Self::compose_name(&mut tokens).into_compound_identifiers(true));
                             // take remaining possible references
@@ -1015,8 +1016,8 @@ impl VHDLSymbol {
         // force taking the `is` keyword
         if tokens.next().unwrap().as_type().check_keyword(&Keyword::Is) == false { panic!("expecting keyword 'is'") }
 
-        let mut deps = Vec::new();
-        let mut refs = Vec::new();
+        let mut deps = IdentifierList::new();
+        let mut refs = IdentifierList::new();
         // parse configuration section
         while let Some(t) = tokens.peek() {
             if t.as_type().check_keyword(&Keyword::End) {
@@ -1045,9 +1046,9 @@ impl VHDLSymbol {
         })
     }
 
-    fn parse_block_configuration<I>(tokens: &mut Peekable<I>) -> Vec<CompoundIdentifier> 
+    fn parse_block_configuration<I>(tokens: &mut Peekable<I>) -> IdentifierList 
     where I: Iterator<Item=Token<VHDLToken>>  {
-        let mut ids = Vec::new();
+        let mut ids = IdentifierList::new();
         // take the identifier
         tokens.next().unwrap();
         // if next token is '(', take until leveling out to ')'
@@ -1191,7 +1192,7 @@ impl VHDLSymbol {
                             if let Some(id2) = tokens.peek().unwrap().as_type().as_identifier() {
                                 // store the resource reference
                                 clause.get_refs_mut()
-                                    .push(CompoundIdentifier::new(id.clone(), id2.clone()));
+                                    .push_back(CompoundIdentifier::new(id.clone(), id2.clone()));
                             }
                         }
                     }
@@ -1280,7 +1281,7 @@ impl VHDLSymbol {
     /// 
     /// Assumes the next token to consume is `IS` and throws it away. This will
     /// search for interface lists found after GENERIC and PORT keywords.
-    fn parse_entity_declaration<I>(tokens: &mut Peekable<I>) -> (Vec<Statement>, Vec<Statement>, Vec<CompoundIdentifier>)
+    fn parse_entity_declaration<I>(tokens: &mut Peekable<I>) -> (Vec<Statement>, Vec<Statement>, IdentifierList)
         where I: Iterator<Item=Token<VHDLToken>> {
         // println!("*--- declaration section");
         // force taking the 'is' keyword
@@ -1305,7 +1306,7 @@ impl VHDLSymbol {
             Vec::new()
         };
 
-        let mut entity_refs = Vec::new();
+        let mut entity_refs = IdentifierList::new();
         ports.iter_mut().for_each(|f| {
             entity_refs.append(f.get_refs_mut());
         });
@@ -1331,9 +1332,8 @@ impl VHDLSymbol {
                 let inner_pos = tokens.next().unwrap().into_position();
                 let pack_name = Self::route_package_parse(tokens, inner_pos);
                 // add references found from the package
-                entity_refs.reserve(pack_name.as_package().unwrap().get_refs().len());
                 pack_name.as_package().unwrap().get_refs().into_iter().for_each(|f| {
-                    entity_refs.push(f.clone());
+                    entity_refs.push_back(f.clone());
                 });
             // build statements to throw away
             } else {
@@ -1353,7 +1353,7 @@ impl VHDLSymbol {
     }
 
     /// Parses through a subprogram (procedure or function).
-    fn parse_subprogram<I>(tokens: &mut Peekable<I>) -> Vec<CompoundIdentifier>
+    fn parse_subprogram<I>(tokens: &mut Peekable<I>) -> IdentifierList
     where I: Iterator<Item=Token<VHDLToken>> {
         while let Some(t) = tokens.peek() {
             // determine when to branch to declaration section or body section
@@ -1368,21 +1368,21 @@ impl VHDLSymbol {
             }
         }
         // @TODO capture references from declaration and body sections
-        vec![]
+        IdentifierList::new()
     }
 
     /// Consumes tokens after `IS` until finding `BEGIN` or `END`.
     /// 
     /// Assumes the next token to consume is `IS` and throws it away.
-    fn parse_declaration<I>(tokens: &mut Peekable<I>, eval_exit: &dyn Fn(&Statement) -> bool) -> (Vec<CompoundIdentifier>, Vec<CompoundIdentifier>)
+    fn parse_declaration<I>(tokens: &mut Peekable<I>, eval_exit: &dyn Fn(&Statement) -> bool) -> (IdentifierList, IdentifierList)
         where I: Iterator<Item=Token<VHDLToken>> {
         // println!("*--- declaration section");
         // force taking the 'is' keyword
         if tokens.next().unwrap().as_type().check_keyword(&Keyword::Is) == false {
             panic!("expecting 'is' keyword")
         }
-        let mut refs = Vec::new();
-        let mut deps = Vec::new();
+        let mut refs = IdentifierList::new();
+        let mut deps = IdentifierList::new();
         while let Some(t) = tokens.peek() {
             // println!("{:?}", t);
             // stop the declaration section and enter a statement section
@@ -1421,7 +1421,7 @@ impl VHDLSymbol {
                 // println!("st {:?}", stmt);
                 let (tokens, mut resrefs) = (stmt.0, stmt.1);
                 // check if using a configuration specification
-                if let Some(mut idens) = Self::parse_configuration_spec(Statement(tokens, Vec::new())) {
+                if let Some(mut idens) = Self::parse_configuration_spec(Statement(tokens, IdentifierList::new())) {
                     deps.append(&mut idens);
                 } else {
                     refs.append(&mut resrefs);
@@ -1527,11 +1527,11 @@ impl VHDLSymbol {
     /// Builds statements and stops after finding the `END` keyword statement. If
     /// the `END` keyword statement is detected, it will have to pass the `eval_exit`
     /// function to properly exit scope. Assumes the last token consumed was `BEGIN`.
-    fn parse_body<I>(tokens: &mut Peekable<I>, eval_exit: &dyn Fn(&Statement) -> bool) -> (Vec<CompoundIdentifier>, Vec<CompoundIdentifier>)
+    fn parse_body<I>(tokens: &mut Peekable<I>, eval_exit: &dyn Fn(&Statement) -> bool) -> (IdentifierList, IdentifierList)
         where I: Iterator<Item=Token<VHDLToken>> {
         // collect component names
-        let mut deps = Vec::new();
-        let mut refs = Vec::new();
+        let mut deps = IdentifierList::new();
+        let mut refs = IdentifierList::new();
         // println!("*--- statement section");
         while let Some(t) = tokens.peek() {
             if t.as_type().check_keyword(&Keyword::End) == true {
@@ -1753,13 +1753,13 @@ signal ready: std_logic;";
             Token::new(VHDLToken::Keyword(Keyword::End), Position::new()),
             Token::new(VHDLToken::Keyword(Keyword::Case), Position::new()),
             Token::new(VHDLToken::Identifier(Identifier::Basic("case_label".to_owned())), Position::new()),
-        ], vec![]);
+        ], IdentifierList::new());
         assert_eq!(VHDLSymbol::is_primary_ending(&stmt), false);
 
         // primary endings can omit keyword and identifier label
         let stmt = Statement(vec![
             Token::new(VHDLToken::Keyword(Keyword::End), Position::new()),
-        ], vec![]);
+        ], IdentifierList::new());
         assert_eq!(VHDLSymbol::is_primary_ending(&stmt), true);
 
         // primary endings can include their keyword
@@ -1767,14 +1767,14 @@ signal ready: std_logic;";
             Token::new(VHDLToken::Keyword(Keyword::End), Position::new()),
             Token::new(VHDLToken::Keyword(Keyword::Architecture), Position::new()),
             Token::new(VHDLToken::Identifier(Identifier::Basic("architecture_name".to_owned())), Position::new()),
-        ], vec![]);
+        ], IdentifierList::new());
         assert_eq!(VHDLSymbol::is_primary_ending(&stmt), true);
 
         // primary endings can have their keyword omitted and also include the identifier label
         let stmt = Statement(vec![
             Token::new(VHDLToken::Keyword(Keyword::End), Position::new()),
             Token::new(VHDLToken::Identifier(Identifier::Basic("architecture_name".to_owned())), Position::new()),
-        ], vec![]);
+        ], IdentifierList::new());
         assert_eq!(VHDLSymbol::is_primary_ending(&stmt), true);
     }
 
@@ -1806,25 +1806,25 @@ end entity nor_gate;";
         let s = "a : in std_logic_vector(3 downto 0) := work.pack1.p1;";
         let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
-        assert_eq!(VHDLSymbol::parse_statement(&mut iter).get_refs(), &vec![
+        assert_eq!(VHDLSymbol::parse_statement(&mut iter).get_refs(), &IdentifierList::from([
             CompoundIdentifier::new(Identifier::from_str("work").unwrap(), Identifier::from_str("pack1").unwrap()),
             CompoundIdentifier::new(Identifier::from_str("pack1").unwrap(), Identifier::from_str("p1").unwrap()),
-        ]);
+        ]));
 
         let s = "use work.package_name;";
         let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
-        assert_eq!(VHDLSymbol::parse_statement(&mut iter).get_refs(), &vec![
+        assert_eq!(VHDLSymbol::parse_statement(&mut iter).get_refs(), &IdentifierList::from([
             CompoundIdentifier::new(Identifier::from_str("work").unwrap(), Identifier::from_str("package_name").unwrap()),
-        ]);
+        ]));
 
         let s = "use MKS.MEASUREMENTS, STD.STANDARD;";
         let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
-        assert_eq!(VHDLSymbol::parse_statement(&mut iter).get_refs(), &vec![
+        assert_eq!(VHDLSymbol::parse_statement(&mut iter).get_refs(), &IdentifierList::from([
             CompoundIdentifier::new(Identifier::from_str("MKS").unwrap(), Identifier::from_str("MEASUREMENTS").unwrap()),
             CompoundIdentifier::new(Identifier::from_str("STD").unwrap(), Identifier::from_str("STANDARD").unwrap()),
-        ]);
+        ]));
     }
 
     #[test]
@@ -1893,7 +1893,10 @@ end HA_Config;
 "#;
         let symbols = VHDLParser::parse(VHDLTokenizer::from_source_code(&s).into_tokens());
         assert_eq!(symbols.first().unwrap().as_ref().unwrap().as_ref().as_configuration().unwrap().edges(),
-            &vec![CompoundIdentifier::new_minimal(Identifier::Basic(String::from("HA_Comp_Entity"))), CompoundIdentifier::new_minimal(Identifier::Basic(String::from("HA_Comp_Entity2")))]);
+            &IdentifierList::from([
+                CompoundIdentifier::new_minimal(Identifier::Basic(String::from("HA_Comp_Entity"))), 
+                CompoundIdentifier::new_minimal(Identifier::Basic(String::from("HA_Comp_Entity2")))
+            ]));
     }
 
     #[test]
@@ -1907,12 +1910,12 @@ for L1: XOR_GATE use entity WORK.XOR_GATE(Behavior) -- or L1 = 'others' = 'L1, L
         let mut iter = tokens.into_iter().peekable();
         let st = VHDLSymbol::parse_statement(&mut iter);
         let iden = VHDLSymbol::parse_configuration_spec(st);
-        assert_eq!(iden.unwrap(), vec![
+        assert_eq!(iden.unwrap(), IdentifierList::from([
             CompoundIdentifier::new(Identifier::Basic(String::from("WORK")), Identifier::Basic(String::from("XOR_GATE"))),
             CompoundIdentifier::new_minimal(Identifier::Basic(String::from("XOR_GATE"))),
             CompoundIdentifier::new(Identifier::Basic(String::from("work")), Identifier::Basic(String::from("lab1_pkg"))),
             CompoundIdentifier::new(Identifier::Basic(String::from("lab1_pkg")), Identifier::Basic(String::from("MAGIC_NUM"))),
-        ]);
+        ]));
 
         let s = r#"
 for all: xor_gate use configuration cfg1;    
@@ -1921,7 +1924,9 @@ for all: xor_gate use configuration cfg1;
         let mut iter = tokens.into_iter().peekable();
         let st = VHDLSymbol::parse_statement(&mut iter);
         let iden = VHDLSymbol::parse_configuration_spec(st);
-        assert_eq!(iden.unwrap(), vec![CompoundIdentifier::new_minimal(Identifier::Basic(String::from("cfg1")))]);
+        assert_eq!(iden.unwrap(), IdentifierList::from([
+            CompoundIdentifier::new_minimal(Identifier::Basic(String::from("cfg1")))
+            ]));
     }
 
     #[test]

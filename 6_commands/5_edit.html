@@ -155,15 +155,15 @@ determine the editor, it will first check if the EDITOR environment
 variable is set. If not, it will search for the key 'core.editor' in the
 config.toml file. Explicitly setting the '--editor' option will override
 any previously determined value.</p>
-<p>The ip's project directory must be located on the ORBIT_PATH. The ip's 
+<p>The ip's project directory must be located on the DEV_PATH. The ip's 
 project path will be passed as an argument to the text editor command. For 
 example, if EDITOR=&quot;code&quot;, then the command orbit will execute is: 
 <code>code &lt;ip-path&gt;</code>.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;ip&gt;</code><br />
-      The PKGID to look up the ip under ORBIT_PATH.</p>
-<p><code>--editor &lt;cmd&gt;</code><br />
-      The command to open the requested text-editor.</p>
+      The PKGID to look up the ip under DEV_PATH</p>
+<p><code>--editor &lt;editor&gt;</code><br />
+      The command to open the requested text-editor</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit edit ks-tech.rary.gates --editor=code
 </code></pre>

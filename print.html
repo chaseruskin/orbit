@@ -1229,15 +1229,15 @@ determine the editor, it will first check if the EDITOR environment
 variable is set. If not, it will search for the key 'core.editor' in the
 config.toml file. Explicitly setting the '--editor' option will override
 any previously determined value.</p>
-<p>The ip's project directory must be located on the ORBIT_PATH. The ip's 
+<p>The ip's project directory must be located on the DEV_PATH. The ip's 
 project path will be passed as an argument to the text editor command. For 
 example, if EDITOR=&quot;code&quot;, then the command orbit will execute is: 
 <code>code &lt;ip-path&gt;</code>.</p>
 <h2 id="options-1"><a class="header" href="#options-1"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;ip&gt;</code><br />
-      The PKGID to look up the ip under ORBIT_PATH.</p>
-<p><code>--editor &lt;cmd&gt;</code><br />
-      The command to open the requested text-editor.</p>
+      The PKGID to look up the ip under DEV_PATH</p>
+<p><code>--editor &lt;editor&gt;</code><br />
+      The command to open the requested text-editor</p>
 <h2 id="examples-2"><a class="header" href="#examples-2"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit edit ks-tech.rary.gates --editor=code
 </code></pre>
@@ -1426,7 +1426,7 @@ orbit install --git https://github.com/c-rus/gates.git -v latest
 <h2 id="name-8"><a class="header" href="#name-8"><strong>NAME</strong></a></h2>
 <p>get - pull in an hdl entity to use</p>
 <h2 id="synopsis-8"><a class="header" href="#synopsis-8"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit get [options] &lt;entity-path&gt;
+<pre><code>orbit get [options] &lt;unit&gt;
 </code></pre>
 <h2 id="description-8"><a class="header" href="#description-8"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will add the requested ip as a dependency to the current 
@@ -1437,12 +1437,14 @@ for the requested unit. </p>
 <p>If the <code>--instance</code> flag is used without the <code>--component</code> flag, it will
 display the direct instantiation style code (VHDL-93 feature).</p>
 <p>By default the ip associated with the target entity is added under the 
-current ip's dependency table.</p>
+current ip's dependency table. This can be skipped with the <code>--peek</code> flag.</p>
 <h2 id="options-8"><a class="header" href="#options-8"><strong>OPTIONS</strong></a></h2>
-<p><code>&lt;entity-path&gt;</code><br />
+<p><code>&lt;unit&gt;</code><br />
       The pkgid and entity identifier to request [pkgid:]<entity></p>
 <p><code>--variant, -v &lt;version&gt;</code><br />
       Version of ip to fetch</p>
+<p><code>--ip, &lt;pkgid&gt;</code><br />
+      The IP to search for the unit</p>
 <p><code>--component, -c</code><br />
       Display the component declaration</p>
 <p><code>--signals, -s</code><br />
@@ -1458,7 +1460,7 @@ current ip's dependency table.</p>
 <p><code>--name &lt;identifier&gt;</code>
       Specific instance identifier</p>
 <h2 id="examples-9"><a class="header" href="#examples-9"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit get ks-tech.rary.gates:nor_gate -csi
+<pre><code>orbit get nor_gate --ip ks-tech.rary.gates -csi
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-init"><a class="header" href="#orbit-init"><strong>orbit init</strong></a></h1>
 <h2 id="name-9"><a class="header" href="#name-9"><strong>NAME</strong></a></h2>

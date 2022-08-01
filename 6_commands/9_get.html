@@ -147,7 +147,7 @@
 <h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>
 <p>get - pull in an hdl entity to use</p>
 <h2 id="synopsis"><a class="header" href="#synopsis"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit get [options] &lt;entity-path&gt;
+<pre><code>orbit get [options] &lt;unit&gt;
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will add the requested ip as a dependency to the current 
@@ -158,12 +158,14 @@ for the requested unit. </p>
 <p>If the <code>--instance</code> flag is used without the <code>--component</code> flag, it will
 display the direct instantiation style code (VHDL-93 feature).</p>
 <p>By default the ip associated with the target entity is added under the 
-current ip's dependency table.</p>
+current ip's dependency table. This can be skipped with the <code>--peek</code> flag.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
-<p><code>&lt;entity-path&gt;</code><br />
+<p><code>&lt;unit&gt;</code><br />
       The pkgid and entity identifier to request [pkgid:]<entity></p>
 <p><code>--variant, -v &lt;version&gt;</code><br />
       Version of ip to fetch</p>
+<p><code>--ip, &lt;pkgid&gt;</code><br />
+      The IP to search for the unit</p>
 <p><code>--component, -c</code><br />
       Display the component declaration</p>
 <p><code>--signals, -s</code><br />
@@ -179,7 +181,7 @@ current ip's dependency table.</p>
 <p><code>--name &lt;identifier&gt;</code>
       Specific instance identifier</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit get ks-tech.rary.gates:nor_gate -csi
+<pre><code>orbit get nor_gate --ip ks-tech.rary.gates -csi
 </code></pre>
 
                     </main>

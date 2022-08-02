@@ -94,12 +94,12 @@ impl Init {
     fn run(&self, ip_path: std::path::PathBuf, _: bool) -> Result<(), Box<dyn std::error::Error>> {
         // the path must exist if not cloning from a repository
         if std::path::Path::exists(&ip_path) == false && self.repo.is_none() {
-            return Err(AnyError(format!("failed to initialize ip because directory '{}' does not exist", ip_path.display())))?
+            return Err(AnyError(format!("failed to initialize ip because directory '{}' does not exist", crate::util::filesystem::normalize_path(ip_path).display())))?
         }
 
         // cannot clone into a non-empty directory
         if self.repo.is_some() && ip_path.is_dir() && std::fs::read_dir(&ip_path)?.count() > 0 {
-            return Err(AnyError(format!("failed to initialize ip because directory '{}' is not empty to clone repository into", ip_path.display())))?
+            return Err(AnyError(format!("failed to initialize ip because directory '{}' is not empty to clone repository into", crate::util::filesystem::normalize_path(ip_path).display())))?
         }
 
         // verify the ip would exist alone on this path (cannot nest IPs)
@@ -111,7 +111,7 @@ impl Init {
             }
             // verify there are no current IPs living on this path
             if let Some(other_path) = Context::find_ip_path(&path_clone) {
-                return Err(Box::new(AnyError(format!("an ip already exists at path {}", other_path.display()))))
+                return Err(Box::new(AnyError(format!("an ip already exists at path {}", crate::util::filesystem::normalize_path(other_path).display()))))
             }
         }
 

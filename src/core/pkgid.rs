@@ -298,7 +298,7 @@ impl Display for PkgIdError {
             NotAlphabeticFirst(part) => write!(f, "pkgid part '{}' must begin with alphabetic character", part),
             BadLen(id, len) => write!(f, "bad length for pkgid '{}'; expecting 3 parts but found {}", id, len),
             InvalidChar(part, ch) => write!(f, "invalid character '{}' in pkgid part '{}'; can only contain alphanumeric characters, dashes, or underscores", ch, part),
-            Empty => write!(f, "empty pkgid"),
+            Empty => write!(f, "missing name part"),
             MissingLibrary => write!(f, "missing library part"),
             MissingVendor => write!(f, "missing vendor part"),
         }

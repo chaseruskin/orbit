@@ -15,6 +15,22 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.7.0
+
+### Changes
+- `orbit get` now requires `--add` flag to add ip as dependency to Orbit.toml `[dependencies]` table
+- `adds file positions to duplicate identifier error`
+- refactors `orbit get` syntax to avoid awkward colon usage
+- bypasses DEV_PATH existence and directory check on `orbit config`
+- adds rough implementation for `orbit read`
+- adds error for direct dependency identifier naming conflict with current ip
+
+### Documentation
+- adds .orbitignore docs
+- adds command overview
+- updates search man page
+- fixes command man page formatting
+
 ## 0.6.1
 
 ### Fixes

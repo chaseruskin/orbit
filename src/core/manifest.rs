@@ -400,7 +400,7 @@ impl IpManifest {
         LockFile::from_path(&self.get_root())
     }
 
-    pub fn read_units_from_metadata(&self) -> Option<HashMap<PrimaryUnit, String>> {
+    pub fn read_units_from_metadata(&self) -> Option<HashMap<Identifier, PrimaryUnit>> {
         let meta_file = self.get_root().join(ORBIT_METADATA_FILE);
         if std::path::Path::exists(&meta_file) == true {
             if let Ok(contents) = std::fs::read_to_string(&meta_file) {
@@ -409,7 +409,7 @@ impl IpManifest {
                     let mut map = HashMap::new();
                     for unit in entry {
                         let pdu = PrimaryUnit::from_toml(unit.as_inline_table()?)?;
-                        map.insert(pdu, String::new());
+                        map.insert(pdu.get_iden().clone(), pdu);
                     }
                     Some(map)
                 } else {
@@ -432,7 +432,7 @@ impl IpManifest {
     /// 
     /// If the manifest has an toml entry for `units` and `force` is set to `false`, 
     /// then it will return that list rather than go through files.
-    pub fn collect_units(&self, force: bool) -> Result<HashMap<PrimaryUnit, String>, Fault> {
+    pub fn collect_units(&self, force: bool) -> Result<HashMap<Identifier, PrimaryUnit>, Fault> {
         // try to read from metadata file
         match (force == false) && self.read_units_from_metadata().is_some() {
             // use precomputed result
@@ -790,7 +790,7 @@ impl IpManifest {
         tbl.insert("units", toml_edit::Item::Value(toml_edit::Value::Array(Array::new())));
         let arr = tbl["units"].as_array_mut().unwrap();
         // map the units into a serialized data format
-        for (unit, source) in &units {
+        for (_, unit) in &units {
             arr.push(unit.to_toml());
         }
         tbl["units"].as_array_mut().unwrap().iter_mut().for_each(|f| {
@@ -806,9 +806,9 @@ impl IpManifest {
         let checksum = self.read_checksum_proof().unwrap();
         // compose the lut for symbol transformation
         let mut lut = HashMap::new();
-        units.into_iter().for_each(|f| {
+        units.into_iter().for_each(|(key, _)| {
             lut.insert(
-                f.0.as_iden().unwrap().clone(), 
+                key.clone(), 
                 "_".to_string() + checksum.to_string().get(0..10).unwrap()
             );
         });

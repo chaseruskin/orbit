@@ -16,16 +16,14 @@ pub enum PrimaryUnit {
 }
 
 impl PrimaryUnit {
-    /// Casts to an identifier. 
-    /// 
-    /// Currently is safe to unwrap in all instances.
-    pub fn as_iden(&self) -> Option<&Identifier> {
-        Some(match self {
+    /// References the unit's identifier. 
+    pub fn get_iden(&self) -> &Identifier {
+        match self {
             Self::Entity(u) => &u.name,
             Self::Package(u) => &u.name,
             Self::Context(u) => &u.name,
             Self::Configuration(u) => &u.name,
-        })
+        }
     }
 
     pub fn get_unit(&self) -> &Unit {
@@ -41,7 +39,7 @@ impl PrimaryUnit {
     pub fn to_toml(&self) -> toml_edit::Value {
         let mut item = toml_edit::Value::InlineTable(InlineTable::new());
         let tbl = item.as_inline_table_mut().unwrap();
-        tbl.insert("identifier", toml_edit::value(&self.as_iden().unwrap().to_string()).into_value().unwrap());
+        tbl.insert("identifier", toml_edit::value(&self.get_iden().to_string()).into_value().unwrap());
         tbl.insert("type", toml_edit::value(&self.to_string()).into_value().unwrap());
         item
     }
@@ -50,7 +48,8 @@ impl PrimaryUnit {
     pub fn from_toml(tbl: &toml_edit::InlineTable) -> Option<Self> {
         let unit = Unit {
             name: Identifier::from_str(tbl.get("identifier")?.as_str()?).unwrap(), 
-            symbol: None 
+            symbol: None,
+            source: String::new(),
         };
         Some(match tbl.get("type")?.as_str()? {
             "entity" => Self::Entity(unit),
@@ -75,7 +74,19 @@ impl std::fmt::Display for PrimaryUnit {
 
 pub struct Unit {
     name: Identifier,
-    symbol: Option<VHDLSymbol>
+    symbol: Option<VHDLSymbol>,
+    /// source code file
+    source: String,
+}
+
+impl Unit {
+    pub fn get_symbol(&self) -> Option<&VHDLSymbol> {
+        self.symbol.as_ref()
+    }
+
+    pub fn get_source_code_file(&self) -> &str {
+        &self.source
+    }
 }
 
 impl std::hash::Hash for Unit {
@@ -92,8 +103,8 @@ impl PartialEq for Unit {
 
 impl Eq for Unit {}
 
-pub fn collect_units(files: &Vec<String>) -> Result<HashMap<PrimaryUnit, String>, Fault> {
-    let mut result: HashMap<PrimaryUnit, String> = HashMap::new();
+pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryUnit>, Fault> {
+    let mut result: HashMap<Identifier, PrimaryUnit> = HashMap::new();
     // iterate through all source files
     for source_file in files {
         // only read the HDL files
@@ -105,25 +116,24 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<PrimaryUnit, String>
             let units: Vec<PrimaryUnit> = symbols.into_iter().filter_map(|sym| {
                 let name = sym.as_iden()?.clone();
                 match sym {
-                    VHDLSymbol::Entity(_) => Some(PrimaryUnit::Entity(Unit{ name: name, symbol: Some(sym) })),
-                    VHDLSymbol::Package(_) => Some(PrimaryUnit::Package(Unit{ name: name, symbol: Some(sym) })),
-                    VHDLSymbol::Configuration(_) => Some(PrimaryUnit::Configuration(Unit{ name: name, symbol: Some(sym) })),
-                    VHDLSymbol::Context(_) => Some(PrimaryUnit::Context(Unit{ name: name, symbol: Some(sym) })),
+                    VHDLSymbol::Entity(_) => Some(PrimaryUnit::Entity(Unit{ name: name, symbol: Some(sym), source: source_file.clone() })),
+                    VHDLSymbol::Package(_) => Some(PrimaryUnit::Package(Unit{ name: name, symbol: Some(sym), source: source_file.clone() })),
+                    VHDLSymbol::Configuration(_) => Some(PrimaryUnit::Configuration(Unit{ name: name, symbol: Some(sym), source: source_file.clone() })),
+                    VHDLSymbol::Context(_) => Some(PrimaryUnit::Context(Unit{ name: name, symbol: Some(sym), source: source_file.clone() })),
                     _ => None,
                 }
             }).collect();
             
             for primary in units {
-                if let Some((dupe_unit, dupe_file)) = result.get_key_value(&primary) {
+                if let Some(dupe) = result.insert(primary.get_iden().clone(), primary) {
                     return Err(DuplicateIdentifierError(
-                        primary.as_iden().unwrap().clone(), 
+                        dupe.get_iden().clone(), 
                         PathBuf::from(source_file), 
-                        primary.get_unit().symbol.as_ref().unwrap().get_position().clone(),
-                        PathBuf::from(dupe_file), 
-                        dupe_unit.get_unit().symbol.as_ref().unwrap().get_position().clone(),
+                        result.get(dupe.get_iden()).unwrap().get_unit().get_symbol().unwrap().get_position().clone(),
+                        PathBuf::from(dupe.get_unit().get_source_code_file()), 
+                        dupe.get_unit().get_symbol().unwrap().get_position().clone(),
                     ))?;
                 }
-                result.insert(primary, source_file.clone());
             }
         }
     }

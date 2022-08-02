@@ -92,7 +92,7 @@ impl Command for Probe {
         if self.units == true {
             // force computing the primary design units if a development version
             let units = ip.collect_units(v == &AnyVersion::Dev)?;
-            println!("{}", format_units_table(units.into_iter().map(|(unit, _)| unit).collect()));
+            println!("{}", format_units_table(units.into_iter().map(|(_, unit)| unit).collect()));
             return Ok(())
         }
 
@@ -116,10 +116,10 @@ fn format_units_table(table: Vec<PrimaryUnit>) -> String {
     let mut body = String::new();
 
     let mut table = table;
-    table.sort_by(|a, b| a.as_iden().unwrap().cmp(b.as_iden().unwrap()));
+    table.sort_by(|a, b| a.get_iden().cmp(b.get_iden()));
     for unit in table {
         body.push_str(&format!("{:<32}{:<14}{:<2}\n", 
-            unit.as_iden().unwrap().to_string(), 
+            unit.get_iden().to_string(), 
             unit.to_string(), 
             "y"));
     }

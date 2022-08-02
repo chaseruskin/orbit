@@ -1,10 +1,8 @@
+use std::io::BufReader;
 use std::io::Write;
-use std::path::Path;
+use std::io::Read;
 use std::path::PathBuf;
-
 use colored::Colorize;
-use tempfile::TempPath;
-use tempfile::tempfile;
 
 use crate::Command;
 use crate::FromCli;
@@ -19,19 +17,20 @@ use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
+use crate::util::sha256::compute_sha256;
 
 #[derive(Debug, PartialEq)]
-pub struct Read {
+pub struct ReadCommand {
     unit: Identifier,
     ip: Option<PkgId>,
     version: Option<AnyVersion>,
     editor: Option<String>,
 }
 
-impl FromCli for Read {
+impl FromCli for ReadCommand {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.set_help(HELP);
-        let command = Ok(Read {
+        let command = Ok(ReadCommand {
             version: cli.check_option(Optional::new("variant").switch('v').value("version"))?,
             ip: cli.check_option(Optional::new("ip").value("pkgid"))?,
             unit: cli.require_positional(Positional::new("unit"))?,
@@ -41,11 +40,20 @@ impl FromCli for Read {
     }
 }
 
-impl Command for Read {
+impl Command for ReadCommand {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // determine the text-editor
-        let editor = self.editor.as_ref().unwrap_or(&String::new()).to_owned();
+
+        let editor = match &self.editor {
+            Some(e) => Some(e.as_ref()),
+            None => c.get_config().get_as_str("core", "editor")?,
+        };
+
+        // verify we have a text editor
+        if editor.is_none() == true {
+            panic!("no editor selected to open file")
+        }
 
         // determine the destination
         let dest = c.get_home_path().join("tmp");
@@ -59,7 +67,7 @@ impl Command for Read {
                 return Err(AnyError(format!("cannot specify a version '{}' when referencing the current ip", "--ver".yellow())))?
             }
 
-            self.run(&editor, &IpManifest::from_path(c.get_ip_path().unwrap())?, &dest) 
+            self.run(&editor.unwrap(), &IpManifest::from_path(c.get_ip_path().unwrap())?, &dest) 
         // checking external IP
         } else {
             // gather the catalog (all manifests)
@@ -76,14 +84,17 @@ impl Command for Read {
 
             // determine version to grab
             let v = self.version.as_ref().unwrap_or(&AnyVersion::Latest);
-            let _ip = status.get(v, true);
 
-            Ok(())
+            if let Some(ip) = status.get(v, true) {
+                self.run(&editor.unwrap(), &ip, &dest)
+            } else {
+                panic!("no usable ip")
+            }
         }
     }
 }
 
-impl Read {
+impl ReadCommand {
     fn run(&self, editor: &str, manifest: &IpManifest, dest: &PathBuf) -> Result<(), Fault> {
         Self::read(&self.unit, &manifest, &editor, &dest)
     }
@@ -91,15 +102,50 @@ impl Read {
     fn read(unit: &Identifier, ip: &IpManifest, editor: &str, dest: &PathBuf) -> Result<(), Fault> {
         // find the unit
         let units = ip.collect_units(true)?;
+
+        // get the file data for the primary design unit
+        let (source, position) = match units.get_key_value(unit) {
+            Some((_, unit)) => (unit.get_unit().get_source_code_file(), unit.get_unit().get_symbol().unwrap().get_position()),
+            None => todo!()
+        };
+
+        let (checksum, bytes) = {
+            // open the file and create a checksum
+            let mut bytes = Vec::new();
+            let file = std::fs::File::open(source)?;
+            let mut reader = BufReader::new(file);
+            reader.read_to_end(&mut bytes)?;
+            (compute_sha256(&bytes), bytes)
+        };
+
+        // create new file under checksum directory
+        let dest = dest.join(&checksum.to_string().get(0..10).unwrap());
+        std::fs::create_dir_all(&dest)?;
+
+        // add filename to destination path
+        let dest = dest.join(PathBuf::from(source).file_name().unwrap());
+
+        // create and write a file
+        {
+            let mut file = std::fs::OpenOptions::new()
+                .write(true)
+                .create(true)
+                .open(&dest)?;
+            file.write(&bytes)?;
+            file.flush()?;
+
+            // // set to read-only
+            // let mut perms = file.metadata()?.permissions();
+            // perms.set_readonly(true);
+            // file.set_permissions(perms)?;
+        }
+
+        println!("{}:{}", dest.display(), position);
+
+        // std::process::Command::new(editor).arg(&format!("{}:{}", source, position)).spawn()?;
+
         // create a temporary file
-        let path = TempPath::from_path("./tmp.txt");
-        let mut file = std::fs::OpenOptions::new().write(true).create(true).open(&path)?;
-        file.write_all("go gators".as_bytes())?;
-        file.sync_all()?;
-        std::process::Command::new(r#"C:\Users\cruskin\AppData\Local\Programs\Microsoft VS Code\code"#)
-            .arg(path.as_os_str().to_str().unwrap())
-            .spawn()?;
-        todo!()
+        Ok(())
     }
 }
 

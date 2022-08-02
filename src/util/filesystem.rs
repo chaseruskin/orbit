@@ -125,6 +125,9 @@ pub fn remove_base(base: &PathBuf, full: &PathBuf) -> PathBuf {
 /// 
 /// Assumes `target` directory does not already exist. Ignores the `.git/` folder
 /// if `ignore_git` is set to `true`.
+/// 
+/// If immutable is `true`, then read_only permissions will be enabled, else the files
+/// will be mutable. Silently skips files that could be changed with mutability/permissions.
 pub fn copy(source: &PathBuf, target: &PathBuf, ignore_git: bool) -> Result<(), Fault> {
     // create missing directories to `target`
     std::fs::create_dir_all(&target)?;
@@ -207,8 +210,7 @@ const ORBIT_IGNORE_FILE: &str = ".orbitignore";
 
 #[cfg(test)]
 mod test {
-    use tempfile::tempdir;
-
+    use tempfile::{tempdir};
     use super::*;
     
     #[test]

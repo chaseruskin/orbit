@@ -31,7 +31,7 @@ OPTIONS
     --ip, <pkgid>  
           The IP to search for the unit
      
-    --component, -c  
+    --component, -c   
           Display the component declaration
      
     --signals, -s  
@@ -43,13 +43,13 @@ OPTIONS
     --info  
           Display the code file's initial comment header block
      
-    --architecture, -a
+    --architecture, -a  
           Display a list of available architectures
      
-    --add
+    --add  
           Write the referenced ip to the current Orbit.toml dependency table
      
-    --name <identifier>
+    --name <identifier>  
           Specific instance identifier
 
 EXAMPLES

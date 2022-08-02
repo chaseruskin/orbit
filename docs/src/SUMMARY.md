@@ -26,6 +26,7 @@
     - [Blueprint](./4_topic/6_blueprint.md)
     - [Dynamic Symbol Transformation](./4_topic/7_dst.md)
     - [Conceptual Overview](./4_topic/8_concept.md)
+    - [.orbitignore](./4_topic/9_orbitignore.md)
 
 - [Reference](./5_reference/0_reference.md)
     - [Packages](./5_reference/1_packages.md)
@@ -49,5 +50,6 @@
     - [orbit env](./6_commands/12_env.md)
     - [orbit config](./6_commands/13_config.md)
     - [orbit uninstall](./6_commands/14_uninstall.md)
+    - [orbit read](./6_commands/15_read.md)
     
 - [Appendix: Glossary](./glossary.md)

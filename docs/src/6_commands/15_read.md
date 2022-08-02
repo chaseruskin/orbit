@@ -29,7 +29,7 @@ file into a temporary directory ORBIT_HOME/tmp
 `--ip, <pkgid>`  
       The IP to search for the unit
  
-`--editor <editor>`
+`--editor <editor>`  
       The text-editor to open the unit's source code file
 
 ## __EXAMPLES__

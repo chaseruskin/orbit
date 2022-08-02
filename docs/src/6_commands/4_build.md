@@ -23,16 +23,16 @@ for future build commands. It will be the default plugin to use if no
 
 ## __OPTIONS__
 
-`--plugin <alias>`  
+`--plugin <alias>`   
       Plugin to execute
  
-`--command <cmd>`     
+`--command <cmd>`  
       Command to execute
   
-`--list`     
+`--list`  
       View available plugins
  
-`--verbose`     
+`--verbose`  
       Display the command being executed
  
 `-- args...`  

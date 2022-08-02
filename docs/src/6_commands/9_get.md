@@ -37,7 +37,7 @@ current ip manifest dependency table. The ip can be written with the
 `--ip, <pkgid>`  
       The IP to search for the unit
  
-`--component, -c`  
+`--component, -c`   
       Display the component declaration
  
 `--signals, -s`  
@@ -49,13 +49,13 @@ current ip manifest dependency table. The ip can be written with the
 `--info`  
       Display the code file's initial comment header block
  
-`--architecture, -a`
+`--architecture, -a`  
       Display a list of available architectures
  
-`--add`
+`--add`  
       Write the referenced ip to the current Orbit.toml dependency table
  
-`--name <identifier>`
+`--name <identifier>`  
       Specific instance identifier
 
 ## __EXAMPLES__

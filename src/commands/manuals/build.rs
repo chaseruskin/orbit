@@ -17,16 +17,16 @@ DESCRIPTION
     --plugin or --command is entered for the given command.
 
 OPTIONS
-    --plugin <alias>  
+    --plugin <alias>   
           Plugin to execute
      
-    --command <cmd>     
+    --command <cmd>  
           Command to execute
       
-    --list     
+    --list  
           View available plugins
      
-    --verbose     
+    --verbose  
           Display the command being executed
      
     -- args...  

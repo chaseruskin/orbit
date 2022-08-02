@@ -10,7 +10,7 @@ use crate::core::manifest::IpManifest;
 use crate::core::parser::Symbol;
 use crate::core::version::AnyVersion;
 use crate::core::version::Version;
-use crate::core::vhdl::primaryunit::DuplicateIdentifierError;
+use crate::core::vhdl::primaryunit::VhdlIdentifierError;
 use crate::core::vhdl::symbol::Architecture;
 use crate::core::vhdl::symbol::Entity;
 use crate::interface::cli::Cli;
@@ -220,7 +220,7 @@ impl Get {
                 // verify entity was not already detected (duplicate)
                 if let Some(ent) = requested_entity {
                     match result {
-                        Some((src_file, dupe)) => return Err(DuplicateIdentifierError(dupe.get_name().clone(), PathBuf::from(src_file), dupe.get_position().clone(), PathBuf::from(f), ent.get_position().clone()))?,
+                        Some((src_file, dupe)) => return Err(VhdlIdentifierError::DuplicateIdentifier(dupe.get_name().clone(), PathBuf::from(src_file), dupe.get_position().clone(), PathBuf::from(f), ent.get_position().clone()))?,
                         None => result = Some((f, ent)),
                     }
                 }

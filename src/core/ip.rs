@@ -1,4 +1,4 @@
-use std::collections::{HashSet, HashMap};
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use tempfile::tempdir;
@@ -15,6 +15,7 @@ use super::manifest::IpManifest;
 use super::pkgid::PkgId;
 use super::version::Version;
 use super::vhdl::dst;
+use super::vhdl::primaryunit::{VhdlIdentifierError, PrimaryUnit};
 use super::vhdl::token::{Identifier, VHDLTokenizer};
 
 /// Given a partial/full ip specification `ip_spec`, sift through the manifests
@@ -73,11 +74,13 @@ fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphM
     let t = g.add_node(root.into_ip_spec(), IpNode::new_keep(root, Identifier::new_working()));
     let mut processing = vec![(t, root)];
     
-    let mut iden_set: HashSet<Identifier> = HashSet::new();
+    let mut iden_set: HashMap<Identifier, PrimaryUnit> = HashMap::new();
     // add root's identifiers
     root.collect_units(true)?
         .into_iter()
-        .for_each(|(key, _)| { iden_set.insert(key); } );
+        .for_each(|(key, unit)| { iden_set.insert(key, unit); } );
+
+    let mut is_root: bool = true;
 
     while let Some((num, ip)) = processing.pop() {
         // read dependencies
@@ -93,15 +96,27 @@ fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphM
                                 existing_node.index()
                             } else {
                                 // check if identifiers are already taken in graph
-                                let dst = dep.collect_units(false)?
-                                    .into_iter()
-                                    .find(|(key, _)| iden_set.contains(key))
-                                    .is_some();
-                                
+                                let units = dep.collect_units(false)?;
+                                let dst = if let Some(dupe) = units
+                                        .iter()
+                                        .find(|(key, _)| iden_set.contains_key(key)) {
+                                    let dupe = iden_set.get(dupe.0).unwrap();
+                                    if is_root == true {
+                                        return Err(VhdlIdentifierError::DuplicateAcrossDirect(
+                                            dupe.get_iden().clone(), 
+                                            dep.into_ip_spec(),
+                                            PathBuf::from(dupe.get_unit().get_source_code_file().clone()),
+                                            dupe.get_unit().get_symbol().unwrap().get_position().clone()
+                                        ))?
+                                    }
+                                    true
+                                } else {
+                                    false
+                                };
                                 // update the hashset with the new unique non-taken identifiers
                                 if dst == false {
-                                    for (key, _) in dep.collect_units(false)? {
-                                        iden_set.insert(key);
+                                    for (key, unit) in units {
+                                        iden_set.insert(key, unit);
                                     }
                                 }
                                 let lib = Identifier::from(dep.get_pkgid().get_library().as_ref().unwrap());
@@ -118,6 +133,7 @@ fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphM
                 None => return Err(AnyError(format!("unknown ip: {}", pkgid)))?,
             }
         }
+        is_root = false;
     }
     // println!("{:?}", iden_set);
     Ok(g)

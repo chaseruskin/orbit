@@ -1,5 +1,5 @@
 use toml_edit::InlineTable;
-use crate::{core::{vhdl::token::Identifier, lexer::Position}, util::anyerror::Fault};
+use crate::{core::{vhdl::token::Identifier, lexer::Position, ip::IpSpec}, util::anyerror::Fault};
 use std::{collections::HashMap, str::FromStr, path::PathBuf};
 use crate::util::filesystem;
 use super::symbol::VHDLSymbol;
@@ -126,7 +126,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
             
             for primary in units {
                 if let Some(dupe) = result.insert(primary.get_iden().clone(), primary) {
-                    return Err(DuplicateIdentifierError(
+                    return Err(VhdlIdentifierError::DuplicateIdentifier(
                         dupe.get_iden().clone(), 
                         PathBuf::from(source_file), 
                         result.get(dupe.get_iden()).unwrap().get_unit().get_symbol().unwrap().get_position().clone(),
@@ -141,21 +141,45 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
 }
 
 #[derive(Debug)]
-pub struct DuplicateIdentifierError(pub Identifier, pub PathBuf, pub Position, pub PathBuf, pub Position);
+pub enum VhdlIdentifierError {
+    DuplicateIdentifier(Identifier, PathBuf, Position, PathBuf, Position),
+    DuplicateAcrossDirect(Identifier, IpSpec, PathBuf, Position),
+}
 
-impl std::error::Error for DuplicateIdentifierError {}
+impl std::error::Error for VhdlIdentifierError {}
 
-impl std::fmt::Display for DuplicateIdentifierError {
+impl std::fmt::Display for VhdlIdentifierError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let current_dir = std::env::current_dir().unwrap();
-        let location_1 = filesystem::remove_base(&current_dir, &self.1);
-        let location_2 = filesystem::remove_base(&current_dir, &self.3);
-        let pos_1 = &self.2;
-        let pos_2 = &self.4;
-        write!(f, "duplicate primary design units identified as '{}'\n\nlocation 1: {}:{}\nlocation 2: {}:{}\n\n{}", self.0, filesystem::normalize_path(location_1).display(), pos_1, filesystem::normalize_path(location_2).display(), pos_2, HINT)
+        match self {
+            Self::DuplicateIdentifier(iden, path1, loc1, path2, loc2) => {
+                let current_dir = std::env::current_dir().unwrap();
+                let location_1 = filesystem::remove_base(&current_dir, &path1);
+                let location_2 = filesystem::remove_base(&current_dir, &path2);
+                write!(f, "duplicate primary design units identified as '{}'\n\nlocation 1: {}:{}\nlocation 2: {}:{}\n\n{}", 
+                    iden, 
+                    filesystem::normalize_path(location_1).display(), loc1, 
+                    filesystem::normalize_path(location_2).display(), loc2, 
+                    HINT)
+            },
+            Self::DuplicateAcrossDirect(iden, dep, path, pos) => {
+                let current_dir = std::env::current_dir().unwrap();
+                let location = filesystem::remove_base(&current_dir, &path);
+                write!(f, "duplicate primary design units identified as '{}'\n\nlocation: {}:{}\nconflicts with direct dependency {}\n\n{}", 
+                iden, 
+                filesystem::normalize_path(location).display(), pos,
+                dep,
+                HINT_2)
+            }
+        }
+
     }
 }
 
 const HINT: &str = "hint: To resolve this error either
     1) rename one of the units to a unique identifier
     2) add one of the file paths to a .orbitignore file";
+
+const HINT_2: &str = "hint: To resolve this error either
+    1) rename the unit in the current ip to a unique identifier
+    2) remove the direct dependency from Orbit.toml
+    3) add the file path for the unit from the current ip to a .orbitignore file";

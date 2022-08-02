@@ -144,6 +144,33 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="orbitignore"><a class="header" href="#orbitignore">.orbitignore</a></h1>
+<p>Sometimes copies of files will exist within a given project. In this case, you may have duplicate primary design unit identifiers. Having duplicate primary design unit identifiers within the same project results in an error because Orbit cannot resolve ambiguity in which unit to select (as backend tools cannot either).</p>
+<blockquote>
+<p><strong>Note:</strong> <code>.orbitignore</code> files must exactly match its case-sensitive spelling for Orbit to detect it.</p>
+</blockquote>
+<h2 id="syntax"><a class="header" href="#syntax">Syntax</a></h2>
+<p><code>.orbitignore</code> files follow the same syntax as .gitignore files. See the pattern format for more information: <a href="https://git-scm.com/docs/gitignore#_pattern_format">.gitignore pattern format</a>.</p>
+<h2 id="resolving-errors"><a class="header" href="#resolving-errors">Resolving errors</a></h2>
+<p>An error may look like the following:</p>
+<pre><code>error: duplicate primary design units identified as 'my_entity'
+
+location 1: rtl/my_entity_file1.vhd:20:1
+location 2: rtl/my_entity_file2.vhd:1:1
+
+hint: To resolve this error either
+    1) rename one of the units to a unique identifier
+    2) add one of the file paths to a .orbitignore file
+</code></pre>
+<p>A .orbitignore file can be used to tell Orbit to ignore reading that file during HDL analysis. When creating a <code>.orbitignore</code> file, it should generally be placed alongside the <code>Orbit.toml</code> file.</p>
+<p>After reviewing each unit, we decide they are identical and one can be safely ignored for now. We create a file called <code>.orbitignore</code> at the root of our current project.</p>
+<p><em>.orbitignore:</em></p>
+<pre><code>rtl/my_entity_file2.vhd
+
+</code></pre>
+<p>Running commands in Orbit no longer results in an error and Orbit chooses to read the 'my_entity' design unit from <code>rtl/my_entity_file1.vhd</code>.</p>
+<blockquote>
+<p><strong>Note:</strong> If using a <code>.orbitignore</code> file, it is recommended to check in to version control.</p>
+</blockquote>
 
                     </main>
 

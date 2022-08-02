@@ -1436,8 +1436,9 @@ paste into the current project.</p>
 for the requested unit. </p>
 <p>If the <code>--instance</code> flag is used without the <code>--component</code> flag, it will
 display the direct instantiation style code (VHDL-93 feature).</p>
-<p>By default the ip associated with the target entity is added under the 
-current ip's dependency table. This can be skipped with the <code>--peek</code> flag.</p>
+<p>By default the ip associated with the target entity is not added under the 
+current ip manifest dependency table. The ip can be written with the 
+<code>--add</code> flag.</p>
 <h2 id="options-8"><a class="header" href="#options-8"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;unit&gt;</code><br />
       The entity identifier to access</p>
@@ -1455,12 +1456,13 @@ current ip's dependency table. This can be skipped with the <code>--peek</code> 
       Display the code file's initial comment header block</p>
 <p><code>--architecture, -a</code>
       Display a list of available architectures</p>
-<p><code>--peek</code>
-      Do not add the target ip to the current dependency table</p>
+<p><code>--add</code>
+      Write the referenced ip to the current Orbit.toml dependency table</p>
 <p><code>--name &lt;identifier&gt;</code>
       Specific instance identifier</p>
 <h2 id="examples-9"><a class="header" href="#examples-9"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit get nor_gate --ip ks-tech.rary.gates -csi
+orbit get alert_unit --ip ks-tech.util.toolbox --add -v 1.0
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-init"><a class="header" href="#orbit-init"><strong>orbit init</strong></a></h1>
 <h2 id="name-9"><a class="header" href="#name-9"><strong>NAME</strong></a></h2>

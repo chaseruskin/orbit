@@ -147,11 +147,16 @@
 <h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>
 <p>search - browse the ip catalog</p>
 <h2 id="synopsis"><a class="header" href="#synopsis"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit search [options]
+<pre><code>orbit search [options] [&lt;pkgid&gt;]
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will search for all ip defined by Orbit in 3 locations.</p>
+<p>This command will search for all ip defined by Orbit in 3 locations. Use 
+the flags to control what areas to search under (<code>--install</code>, <code>--develop</code>, 
+<code>--available</code>). An optional pkgid can also be provided to narrow results
+even further. Pkgid fields can be omitted by entering an empty value.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
+<p><code>&lt;pkgid&gt;</code><br />
+      Identifiers to filter under V.L.N</p>
 <p><code>--install, -i</code><br />
       Filter for ip installed to the cache</p>
 <p><code>--develop, -d</code><br />
@@ -159,7 +164,10 @@
 <p><code>--available, -a</code><br />
       Filter for ip available via registries</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit search --develop --cache --available
+<pre><code>orbit search --develop --install --available
+orbit search rary. -i
+orbit search gates -ia
+orbit search ks-tecth.rary.gates -d
 </code></pre>
 
                     </main>

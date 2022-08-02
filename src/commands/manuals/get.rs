@@ -17,8 +17,9 @@ DESCRIPTION
     If the --instance flag is used without the --component flag, it will
     display the direct instantiation style code (VHDL-93 feature).  
      
-    By default the ip associated with the target entity is added under the 
-    current ip's dependency table. This can be skipped with the --peek flag.
+    By default the ip associated with the target entity is not added under the 
+    current ip manifest dependency table. The ip can be written with the 
+    --add flag.
 
 OPTIONS
     <unit>  
@@ -45,12 +46,13 @@ OPTIONS
     --architecture, -a
           Display a list of available architectures
      
-    --peek
-          Do not add the target ip to the current dependency table
+    --add
+          Write the referenced ip to the current Orbit.toml dependency table
      
     --name <identifier>
           Specific instance identifier
 
 EXAMPLES
     orbit get nor_gate --ip ks-tech.rary.gates -csi
+    orbit get alert_unit --ip ks-tech.util.toolbox --add -v 1.0
 ";

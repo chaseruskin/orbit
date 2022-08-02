@@ -1,6 +1,6 @@
 use std::io::BufReader;
 use std::io::Write;
-use std::io::Read;
+use std::io::Read as ReadTrait;
 use std::path::PathBuf;
 use colored::Colorize;
 
@@ -20,17 +20,17 @@ use crate::util::anyerror::Fault;
 use crate::util::sha256::compute_sha256;
 
 #[derive(Debug, PartialEq)]
-pub struct ReadCommand {
+pub struct Read {
     unit: Identifier,
     ip: Option<PkgId>,
     version: Option<AnyVersion>,
     editor: Option<String>,
 }
 
-impl FromCli for ReadCommand {
+impl FromCli for Read {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.set_help(HELP);
-        let command = Ok(ReadCommand {
+        let command = Ok(Read {
             version: cli.check_option(Optional::new("variant").switch('v').value("version"))?,
             ip: cli.check_option(Optional::new("ip").value("pkgid"))?,
             unit: cli.require_positional(Positional::new("unit"))?,
@@ -40,7 +40,7 @@ impl FromCli for ReadCommand {
     }
 }
 
-impl Command for ReadCommand {
+impl Command for Read {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // determine the text-editor
@@ -94,12 +94,12 @@ impl Command for ReadCommand {
     }
 }
 
-impl ReadCommand {
+impl Read {
     fn run(&self, editor: &str, manifest: &IpManifest, dest: &PathBuf) -> Result<(), Fault> {
         Self::read(&self.unit, &manifest, &editor, &dest)
     }
 
-    fn read(unit: &Identifier, ip: &IpManifest, editor: &str, dest: &PathBuf) -> Result<(), Fault> {
+    fn read(unit: &Identifier, ip: &IpManifest, _editor: &str, dest: &PathBuf) -> Result<(), Fault> {
         // find the unit
         let units = ip.collect_units(true)?;
 

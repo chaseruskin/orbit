@@ -32,6 +32,7 @@ pub struct Get {
     version: Option<AnyVersion>,
     info: bool,
     peek: bool,
+    add: bool,
     name: Option<Identifier>,
 }
 
@@ -47,6 +48,7 @@ impl FromCli for Get {
             info: cli.check_flag(Flag::new("info"))?, // @todo: implement
             ip: cli.check_option(Optional::new("ip").value("pkgid"))?,
             peek: cli.check_flag(Flag::new("peek"))?,
+            add: cli.check_flag(Flag::new("add"))?,
             name: cli.check_option(Optional::new("name").value("identifier"))?,
             unit: cli.require_positional(Positional::new("unit"))?,
         });
@@ -65,6 +67,16 @@ impl Command for Get {
         // --name can only be used with --instance is set
         if self.name.is_some() && self.instance == false {
             return Err(AnyError(format!("'{}' can only be used with '{}'", "--name".yellow(), "--instance".yellow())))?
+        }
+
+        let current_ip = match c.goto_ip_path() {
+            Ok(_) => Some(IpManifest::from_path(c.get_ip_path().unwrap())?),
+            Err(_) => None,
+        };
+
+        // verify --add is used within an ip
+        if self.add == true && current_ip.is_none() {
+            return Err(AnyError(format!("'{}' can only be used inside an ip directory", "--add".yellow())))?
         }
 
         // must be in an IP if omitting the pkgid
@@ -105,11 +117,6 @@ impl Command for Get {
                 }?
             }
 
-            let current_ip = match c.goto_ip_path() {
-                Ok(_) => Some(IpManifest::from_path(c.get_ip_path().unwrap())?),
-                Err(_) => None,
-            };
-
             self.run(ip.unwrap(), false, if self.peek == true { None } else { current_ip }, v)
         }
     }
@@ -123,10 +130,10 @@ impl Get {
             Err(e) => return Err(GetError::SuggestProbe(e.to_string(), ip.get_pkgid().clone(), ver.clone()))?
         };
 
-        // add to dependency list if within a ip
+        // add to dependency list if within a ip and `self.add` is `true`
         if let Some(mut cur_ip) = current_ip {
             // verify it is the not the same package! 
-            if cur_ip.get_pkgid() != ip.get_pkgid() {
+            if cur_ip.get_pkgid() != ip.get_pkgid() && self.add == true {
                 cur_ip.insert_dependency(ip.get_pkgid().clone(), self.version.as_ref().unwrap_or(&AnyVersion::Latest).clone());
                 cur_ip.get_manifest_mut().save()?;
             }
@@ -270,7 +277,7 @@ Options:
     --instance,  -i         print instantation
     --info                  access code file's header comment
     --architecture, -a      print available architectures
-    --peek                  do not add the ip to the dependency table
+    --add                   add the ip to the Orbit.toml dependency table
     --name <identifier>     specific instance identifier
 
 Use 'orbit help get' to learn more about the command.

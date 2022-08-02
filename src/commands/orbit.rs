@@ -88,7 +88,7 @@ use crate::commands::probe::Probe;
 use crate::commands::env::Env;
 use crate::commands::config::Config;
 use crate::commands::uninstall::Uninstall;
-use crate::commands::read::ReadCommand;
+use crate::commands::read::Read;
 
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
@@ -107,7 +107,7 @@ enum OrbitSubcommand {
     Env(Env),
     Config(Config),
     Uninstall(Uninstall),
-    Read(ReadCommand),
+    Read(Read),
 }
 
 impl FromCli for OrbitSubcommand {
@@ -146,7 +146,7 @@ impl FromCli for OrbitSubcommand {
             "env" => Ok(OrbitSubcommand::Env(Env::from_cli(cli)?)),
             "config" => Ok(OrbitSubcommand::Config(Config::from_cli(cli)?)),
             "uninstall" => Ok(OrbitSubcommand::Uninstall(Uninstall::from_cli(cli)?)),
-            "read" => Ok(OrbitSubcommand::Read(ReadCommand::from_cli(cli)?)),
+            "read" => Ok(OrbitSubcommand::Read(Read::from_cli(cli)?)),
             _ => panic!("an unimplemented command was passed through!")
         }
     }

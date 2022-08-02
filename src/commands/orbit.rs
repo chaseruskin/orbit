@@ -47,7 +47,7 @@ impl Orbit {
                 .current_ip_dir(environment::ORBIT_IP_PATH)? // must come before .settings() call
                 .settings(crate::core::config::CONFIG_FILE)?
                 .build_dir(environment::ORBIT_BUILD_DIR)?
-                .development_path(environment::ORBIT_DEV_PATH)?
+                .development_path(environment::ORBIT_DEV_PATH, c.bypass_check() == false)?
                 .read_vendors()?
                 .retain_options(self.force);
             // pass the context to the given command
@@ -148,6 +148,15 @@ impl FromCli for OrbitSubcommand {
             "uninstall" => Ok(OrbitSubcommand::Uninstall(Uninstall::from_cli(cli)?)),
             "read" => Ok(OrbitSubcommand::Read(Read::from_cli(cli)?)),
             _ => panic!("an unimplemented command was passed through!")
+        }
+    }
+}
+
+impl OrbitSubcommand {
+    fn bypass_check(&self) -> bool {
+        match self {
+            Self::Config(_) => true,
+            _ => false,
         }
     }
 }

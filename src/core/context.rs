@@ -234,25 +234,31 @@ impl Context {
     /// 
     /// Note: Stange behavior where `edit` with vscode captures current ENV variables
     /// into new window to prevent reading config for things like ORBIT_DEV_PATH.
-    pub fn development_path(mut self, s: &str) -> Result<Context, Fault> {
+    /// 
+    /// If `verify` is set to `true`, then it will ensure the path is a directory and exists.
+    pub fn development_path(mut self, s: &str, verify: bool) -> Result<Context, Fault> {
         // an explicit environment variable takes precedence over config file data
         self.dev_path = Some(std::path::PathBuf::from(match std::env::var(s) {
             Ok(v) => v,
             Err(_) => {
                 // use current directory if the key-value pair is not there
                 let path = match self.get_config().get_as_str("core", "path")? {
-                    Some(p) => p.to_owned(),
+                    // normalize
+                    Some(p) => crate::util::filesystem::normalize_path(PathBuf::from(p.to_owned())).to_str().unwrap().to_string(),
                     None => std::env::current_dir().unwrap().display().to_string(),
                 };
                 std::env::set_var(s, &path);
                 path
             }
         }));
-        // verify the orbit path exists and is a directory
-        if self.dev_path.as_ref().unwrap().exists() == false {
-            return Err(ContextError(format!("orbit path '{}' does not exist", self.dev_path.as_ref().unwrap().display())))?
-        } else if self.dev_path.as_ref().unwrap().is_dir() == false {
-            return Err(ContextError(format!("orbit path '{}' is not a directory", self.dev_path.as_ref().unwrap().display())))?
+
+        if verify == true {
+            // verify the orbit path exists and is a directory
+            if self.dev_path.as_ref().unwrap().exists() == false {
+                return Err(ContextError(format!("orbit dev path '{}' does not exist", self.dev_path.as_ref().unwrap().display())))?
+            } else if self.dev_path.as_ref().unwrap().is_dir() == false {
+                return Err(ContextError(format!("orbit dev path '{}' is not a directory", self.dev_path.as_ref().unwrap().display())))?
+            }
         }
         Ok(self)
     }

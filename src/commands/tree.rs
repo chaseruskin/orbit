@@ -8,6 +8,7 @@ use crate::core::ip::IpFileNode;
 use crate::core::manifest::IpManifest;
 use crate::core::vhdl::subunit::SubUnit;
 use crate::core::vhdl::symbol::CompoundIdentifier;
+use crate::core::vhdl::symbol::Entity;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;
@@ -210,10 +211,32 @@ impl Tree {
                 // need to locate the key with a suffix matching `dep` if it was a component instantiation
                 if dep.get_prefix().is_none() {
                     if let Some(lib) = component_pairs.get(dep.get_suffix()) {
-                        graph.add_edge_by_key(&CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone()), &node_name, ());
+                        let b = graph.add_edge_by_key(&CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone()), &node_name, ());
+                        match b {
+                            // create black box entity
+                            EdgeStatus::MissingSource => {
+                                let dep_name = CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone());
+                                graph.add_node(dep_name.clone(), EntityNode::black_box(Entity::black_box(dep.get_suffix().clone())));
+                                graph.add_edge_by_key(&dep_name, &node_name, ());
+                            }
+                            _ => ()
+                        }
+                    // this entity does not exist or was not logged
+                    } else {
+                        // create new node for black box entity
+                        graph.add_node(dep.clone(), EntityNode::black_box(Entity::black_box(dep.get_suffix().clone())));
+                        graph.add_edge_by_key(&dep, &node_name, ());
                     }
                 } else {
-                    graph.add_edge_by_key(dep, &node_name, ());
+                    let b = graph.add_edge_by_key(dep, &node_name, ());
+                    match b {
+                        // create black box entity
+                        EdgeStatus::MissingSource => {
+                            graph.add_node(dep.clone(), EntityNode::black_box(Entity::black_box(dep.get_suffix().clone())));
+                            graph.add_edge_by_key(&dep, &node_name, ());
+                        }
+                        _ => ()
+                    }
                 };
             }
         }
@@ -222,6 +245,7 @@ impl Tree {
 }
 
 use crate::core::vhdl::symbol;
+use crate::util::graph::EdgeStatus;
 use crate::util::graphmap::GraphMap;
 
 use super::plan::SubUnitNode;
@@ -244,6 +268,14 @@ impl<'a> EntityNode<'a> {
         }
     }
 
+    fn is_black_box(&self) -> bool {
+        self.files.is_empty()
+    }
+
+    fn black_box(entity: symbol::Entity) -> Self {
+        Self { entity: entity, files: Vec::new() }
+    }
+
     fn add_file(&mut self, file: &'a IpFileNode<'a>) {
         if self.files.contains(&file) == false {
             self.files.push(file);
@@ -251,12 +283,16 @@ impl<'a> EntityNode<'a> {
     }
 
     fn display(&self, fmt: &IdentifierFormat) -> String {
-        match fmt {
-            IdentifierFormat::Long => {
-                let ip = self.files.first().unwrap().get_ip_manifest();
-                format!("{}:{} v{}", ip.get_pkgid(), self.entity.get_name(), ip.get_version())
+        if self.is_black_box() == true {
+            format!("{} ?", self.entity.get_name())
+        } else {
+            match fmt {
+                IdentifierFormat::Long => {
+                    let ip = self.files.first().unwrap().get_ip_manifest();
+                    format!("{} - {} v{}", self.entity.get_name(), ip.get_pkgid(), ip.get_version())
+                }
+                IdentifierFormat::Short => format!("{}", self.entity.get_name()),
             }
-            IdentifierFormat::Short => format!("{}", self.entity.get_name()),
         }
     }
 }

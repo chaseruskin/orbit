@@ -212,6 +212,19 @@ impl Entity {
         }
     }
 
+    /// Creates a basic entity from a `name`. Assumes no other information is
+    /// available.
+    pub fn black_box(name: Identifier) -> Self {
+        Self { 
+            name: name, 
+            ports: Ports::new(), 
+            generics: Generics::new(), 
+            architectures: Vec::new(), 
+            refs: LinkedList::new(), 
+            pos: Position::new(),
+        }
+    }
+
     pub fn get_position(&self) -> &Position {
         &self.pos
     }

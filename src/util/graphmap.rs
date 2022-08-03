@@ -1,6 +1,6 @@
 use std::{hash::Hash, collections::HashMap, iter::FromIterator};
 
-use super::graph::{Graph, SuccessorsGraphMap};
+use super::graph::{Graph, SuccessorsGraphMap, EdgeStatus};
 
 pub struct GraphMap<K: Eq + Hash + Clone, V, E> {
     graph: Graph<K, E>,
@@ -42,19 +42,24 @@ impl<K: Eq + Hash + Clone, V, E> GraphMap<K, V, E> {
         self.map.contains_key(key)
     }
 
-    pub fn add_edge_by_key(&mut self, source: &K, target: &K, cost: E) -> bool {
+    /// Creates an edge between `source` and `target`.
+    /// 
+    /// Returns `true` if the edge insertion was successful. Returns `false` if
+    /// either endpoint does not exist in the map, the edge already exists,
+    /// or the edge is a self-loop.
+    pub fn add_edge_by_key(&mut self, source: &K, target: &K, cost: E) -> EdgeStatus {
         let source = match self.map.get(source) {
             Some(i) => i.index(),
-            None => return false,
+            None => return EdgeStatus::MissingSource,
         };
         let target = match self.map.get(target) {
             Some(i) => i.index(),
-            None => return false,
+            None => return EdgeStatus::MissingTarget,
         };
         self.graph.add_edge(source, target, cost)
     }
 
-    pub fn add_edge_by_index(&mut self, source: usize, target: usize, cost: E) -> bool {
+    pub fn add_edge_by_index(&mut self, source: usize, target: usize, cost: E) -> EdgeStatus {
         self.graph.add_edge(source, target, cost)
     }
 

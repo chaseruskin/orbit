@@ -103,9 +103,15 @@ impl<V, E> Graph<V, E> {
     /// 
     /// Returns true if the edge insertion was successful. Returns false if the edge
     /// relationship already exists or the edge is a self-loop.
-    pub fn add_edge(&mut self, source: NodeIndex, target: NodeIndex, cost: E) -> bool {
-        // do not allow duplicate edges or self-loops
-        if self.has_edge(source, target) == true || source == target { return false }
+    pub fn add_edge(&mut self, source: NodeIndex, target: NodeIndex, cost: E) -> EdgeStatus {
+        // do not allow duplicate edges
+        if self.has_edge(source, target) == true {
+            return EdgeStatus::AlreadyExists
+        }
+        // do not allow self-loops
+        if source == target { 
+            return EdgeStatus::SelfLoop 
+        }
 
         let edge_index = self.edges.len();
         // enter source -> target data
@@ -126,7 +132,7 @@ impl<V, E> Graph<V, E> {
         rev_node_data.first_incoming_edge = Some(edge_index);
         // update the edge data
         self.edges.last_mut().unwrap().next_incoming_edge = incoming_edge;
-        true
+        EdgeStatus::Success
     }
 
     /// Returns the number of successors to the `source` node.
@@ -310,6 +316,24 @@ impl<'graph, K: Eq + Hash + Clone, V, E> Iterator for SuccessorsGraphMap<'graph,
                 self.current_edge_index = edge.next_outgoing_edge;
                 Some((self.graph.get_key_by_index(edge.target).unwrap(), self.graph.get_node_by_index(edge.target).unwrap().as_ref(), &edge.edge))
             }
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum EdgeStatus {
+    MissingSource,
+    MissingTarget,
+    SelfLoop,
+    AlreadyExists,
+    Success
+}
+
+impl EdgeStatus {
+    pub fn is_ok(&self) -> bool {
+        match self {
+            Self::Success => true,
+            _ => false,
         }
     }
 }
@@ -602,15 +626,15 @@ mod test {
         let n0 = g.add_node(());
         let n1 = g.add_node(());
         assert_eq!(g.edge_count(), 0);
-        assert_eq!(g.add_edge(n0, n1, ()), true);
+        assert_eq!(g.add_edge(n0, n1, ()).is_ok(), true);
         assert_eq!(g.edge_count(), 1);
-        assert_eq!(g.add_edge(n1, n0, ()), true);
+        assert_eq!(g.add_edge(n1, n0, ()).is_ok(), true);
         assert_eq!(g.edge_count(), 2);
         // do not allow duplicate edges
-        assert_eq!(g.add_edge(n1, n0, ()), false);
+        assert_eq!(g.add_edge(n1, n0, ()).is_ok(), false);
         assert_eq!(g.edge_count(), 2);
         // do not allow self-loops
-        assert_eq!(g.add_edge(n0, n0, ()), false);
+        assert_eq!(g.add_edge(n0, n0, ()).is_ok(), false);
     }
 
     #[test]

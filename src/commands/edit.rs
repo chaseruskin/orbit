@@ -60,7 +60,11 @@ impl Command for Edit {
         let sel_editor = Self::configure_editor(&self.editor, &c.get_config())?;
         // open global configuration file
         if self.config == true {
-            return Edit::invoke(&sel_editor, &c.get_config().get_root().join(CONFIG_FILE));
+            let config_path = c.get_config().get_root().join(CONFIG_FILE);
+            return match &self.mode {
+                EditMode::Open => Edit::invoke(&sel_editor, &config_path),
+                EditMode::Path => { println!("{}", crate::util::filesystem::normalize_path(config_path).display()); Ok(()) }
+            }
         // open an ip
         } else if self.ip.is_some() == true {
             // collect manifest from DEV_PATH

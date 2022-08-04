@@ -11,12 +11,14 @@ use crate::util::anyerror::AnyError;
 use crate::core::plugin::Plugin;
 use crate::util::environment;
 use crate::util::environment::ORBIT_BLUEPRINT;
+use crate::util::environment::ORBIT_BUILD_DIR;
 
 #[derive(Debug, PartialEq)]
 pub struct Build {
     alias: Option<String>,
     list: bool,
     command: Option<String>,
+    build_dir: Option<String>,
     args: Vec<String>,
     verbose: bool,
 }
@@ -28,6 +30,7 @@ impl FromCli for Build {
             alias: cli.check_option(Optional::new("plugin").value("alias"))?,
             list: cli.check_flag(Flag::new("list"))?,
             verbose: cli.check_flag(Flag::new("verbose"))?,
+            build_dir: cli.check_option(Optional::new("build-dir").value("dir"))?,
             command: cli.check_option(Optional::new("command").value("cmd"))?,
             args: cli.check_remainder()?,
         });
@@ -48,12 +51,17 @@ impl Command for Build {
         if self.command.is_some() && self.alias.is_some() {
             return Err(AnyError(format!("cannot execute both a plugin and command")))?
         }
-        // verify running from an IP directory
+        // verify running from an IP directory and enter IP's root directory
         c.goto_ip_path()?;
-        // verify a blueprint file exists at build directory
-        let blueprint_file = c.get_ip_path().unwrap().join(c.get_build_dir()).join(BLUEPRINT_FILE);
-        if blueprint_file.exists() == false {
-            return Err(Box::new(AnyError(format!("no blueprint file to build from; consider running 'orbit plan'"))))
+
+        // determine the build directory based on cli priority
+        let b_dir = self.build_dir.as_ref().unwrap_or(c.get_build_dir());
+
+        // todo: is this necessary? -> no, but maybe add a flag/option to bypass (and also allow plugins to specify if they require blueprint in settings)
+        // idea: [[plugin]] require-plan = false
+        // assert a blueprint file exists in the specified build directory
+        if c.get_ip_path().unwrap().join(b_dir).join(BLUEPRINT_FILE).exists() == false {
+            return Err(AnyError(format!("no blueprint file to build from in directory '{}'\n\nTry `orbit plan --build-dir {0}` to generate a blueprint file", b_dir)))?
         }
 
         Environment::new()
@@ -62,13 +70,12 @@ impl Command for Build {
             // read ip manifest for env variables
             .from_ip(&IpManifest::from_path(c.get_ip_path().unwrap())?)?
             .add(EnvVar::new().key(ORBIT_BLUEPRINT).value(BLUEPRINT_FILE))
+            .add(EnvVar::new().key(ORBIT_BUILD_DIR).value(b_dir))
             .initialize();
 
-        // load from .env file
+        // load from .env file from the correct build dir
         let envs = Environment::new()
-            .from_env_file(&c.get_ip_path().unwrap().join(c.get_build_dir()))?;
-
-        
+            .from_env_file(&c.get_ip_path().unwrap().join(b_dir))?;
 
         // check if ORBIT_PLUGIN was set and no command option was set
         let alias = match &self.alias {
@@ -142,6 +149,7 @@ Options:
     --plugin <alias>    plugin to execute
     --command <cmd>     command to execute
     --list              view available plugins
+    --build-dir <dir>   set the output build directory
     --verbose           display the command being executed
     -- args...          arguments to pass to the requested command
 

@@ -205,7 +205,7 @@ impl std::fmt::Display for Request {
 }
 
 #[derive(Debug)]
-enum ExtGitError {
+pub enum ExtGitError {
     NonZeroCode(i32, Vec<u8>),
     SigTermination,
 }

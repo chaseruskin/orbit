@@ -19,6 +19,8 @@ use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::sha256::compute_sha256;
 
+use super::edit::Edit;
+
 #[derive(Debug, PartialEq)]
 pub struct Read {
     unit: Identifier,
@@ -44,16 +46,7 @@ impl Command for Read {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // determine the text-editor
-
-        let editor = match &self.editor {
-            Some(e) => Some(e.as_ref()),
-            None => c.get_config().get_as_str("core", "editor")?,
-        };
-
-        // verify we have a text editor
-        if editor.is_none() == true {
-            panic!("no editor selected to open file")
-        }
+        let editor = Edit::configure_editor(&self.editor, c.get_config())?;
 
         // determine the destination
         let dest = c.get_home_path().join("tmp");
@@ -67,7 +60,7 @@ impl Command for Read {
                 return Err(AnyError(format!("cannot specify a version '{}' when referencing the current ip", "--ver".yellow())))?
             }
 
-            self.run(&editor.unwrap(), &IpManifest::from_path(c.get_ip_path().unwrap())?, &dest) 
+            self.run(&editor, &IpManifest::from_path(c.get_ip_path().unwrap())?, &dest) 
         // checking external IP
         } else {
             // gather the catalog (all manifests)
@@ -86,7 +79,7 @@ impl Command for Read {
             let v = self.version.as_ref().unwrap_or(&AnyVersion::Latest);
 
             if let Some(ip) = status.get(v, true) {
-                self.run(&editor.unwrap(), &ip, &dest)
+                self.run(&editor, &ip, &dest)
             } else {
                 panic!("no usable ip")
             }

@@ -1,25 +1,54 @@
+use std::path::PathBuf;
+use std::str::FromStr;
+
 use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
+use crate::core::config::CONFIG_FILE;
+use crate::core::config::Config;
+use crate::core::extgit::ExtGitError;
 use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Optional};
+use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::core::pkgid::PkgId;
 use crate::util::anyerror::AnyError;
 
+
+#[derive(Debug, PartialEq)]
+enum EditMode {
+    Open,
+    Path
+}
+
+impl FromStr for EditMode {
+    type Err = AnyError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "open" => Ok(Self::Open),
+            "path" => Ok(Self::Path),
+            _ => Err(AnyError(format!("unsupported mode")))
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Edit {
     editor: Option<String>,
-    ip: PkgId,
+    ip: Option<PkgId>,
+    config: bool,
+    mode: EditMode,
 }
 
 impl FromCli for Edit {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.set_help(HELP);
         let command = Ok(Edit {
+            mode: cli.check_option(Optional::new("mode"))?.unwrap_or(EditMode::Open),
+            config: cli.check_flag(Flag::new("config"))?,
             editor: cli.check_option(Optional::new("editor"))?,
-            ip: cli.require_positional(Positional::new("ip"))?,
+            ip: cli.check_option(Optional::new("ip").value("pkgid"))?,
         });
         command
     }
@@ -28,58 +57,101 @@ impl FromCli for Edit {
 impl Command for Edit {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
-        // collect manifest from DEV_PATH
-        let catalog = Catalog::new()
-            .development(c.get_development_path().as_ref().unwrap())?;
-        // determine editor
-        let sel_editor = match &self.editor {
-            // first check if cli arg is empty
-            Some(e) => e.to_owned(),
-            None => {
-                if let Ok(val) = std::env::var("EDITOR") {
-                    val
-                } else {
-                    // try the config.toml
-                    match c.get_config().get_as_str("core", "editor")? {
-                        Some(e) => e.to_owned(),
-                        None => return Err(Box::new(AnyError("no editor detected".to_owned())))
-                    }
-                }
-            }
-        };
-        self.run(&catalog, &sel_editor)
+        let sel_editor = Self::configure_editor(&self.editor, &c.get_config())?;
+        // open global configuration file
+        if self.config == true {
+            return Edit::invoke(&sel_editor, &c.get_config().get_root().join(CONFIG_FILE));
+        // open an ip
+        } else if self.ip.is_some() == true {
+            // collect manifest from DEV_PATH
+            let catalog = Catalog::new()
+                .development(c.get_development_path().as_ref().unwrap())?
+                .installations(c.get_cache_path())?
+                .available(c.get_vendors())?
+                .store(c.get_store_path());
+            self.run(&catalog, &sel_editor)
+        } else {
+            panic!("nothing to edit")
+        }
     }
 }
 
 use crate::core::ip;
+use crate::util::anyerror::Fault;
 
 impl Edit {
+    /// Determines the editor from a priority list. If option 1 or 3 is chosen,
+    /// then it will attempt to resolve the relative path if it is a relative path.
+    /// 
+    /// Priority 
+    /// 1. command-line argument `arg`
+    /// 2. environment variable EDITOR
+    /// 3. configuration value in config.toml for `core.editor`
+    /// 
+    /// Errors if no editor can be returned.
+    pub fn configure_editor(arg: &Option<String>, config: &Config) -> Result<String, Fault> {
+        match &arg {
+            // prioritize the command-line argument as overriding a default value
+            Some(e) => Ok(crate::util::filesystem::resolve_rel_path(&std::env::current_dir().unwrap(), e.to_owned())),
+            None => {
+                if let Ok(val) = std::env::var("EDITOR") {
+                   Ok(val)
+                } else {
+                    // try the config.toml
+                    match config.get_as_str("core", "editor")? {
+                        // try to resolve relative path
+                        Some(e) => Ok(crate::util::filesystem::resolve_rel_path(config.get_root(), e.to_owned())),
+                        None => Err(AnyError("no editor detected".to_owned()))?
+                    }
+                }
+            }
+        }
+    }
+
+    fn invoke(editor: &str, path: &PathBuf) -> Result<(), Fault> {
+        // perform the process
+        let output = std::process::Command::new(editor)
+            .arg(path)
+            .output()?;
+        match output.status.code() {
+            Some(num) => if num != 0 { Err(ExtGitError::NonZeroCode(num, output.stderr))? } else { Ok(()) },
+            None => Err(ExtGitError::SigTermination)?,
+        }
+    }
+
     fn run(&self, catalog: &Catalog, editor: &str) -> Result<(), Box<dyn std::error::Error>> {
         let ids: Vec<&PkgId> = catalog.inner().keys().map(|f| f).collect();
         // find the full ip name among the manifests to get the path
-        let result = ip::find_ip(&self.ip, ids)?;
+        let result = ip::find_ip(&self.ip.as_ref().unwrap(), ids)?;
 
-        let ip = catalog.inner().get(&result).unwrap().get_dev().unwrap();
-        // perform the process
-        let _ = std::process::Command::new(editor)
-            .args(&[ip.get_root().display().to_string()])
-            .spawn()?;
-    
-        Ok(())
+        let ip = match catalog.inner().get(&result).unwrap().get_dev() {
+            // perform the process
+           Some(ip) => ip,
+           None => return Err(AnyError(format!("ip '{}' is not found on the DEV_PATH", result)))?    
+        };
+        match &self.mode {
+            EditMode::Open => {
+                Self::invoke(editor, &ip.get_root())
+            }
+            EditMode::Path => {
+                println!("{}", crate::util::filesystem::normalize_path(ip.get_root()).display());
+                Ok(())
+            }
+        }
     }
 }
 
 const HELP: &str = "\
-Open a text editor to develop an ip.
+Open a text editor to develop an ip or orbit-related files.
 
 Usage:
-    orbit edit [options] <ip>
-
-Args:
-    <ip>               the pkgid to find the ip under ORBIT_PATH
+    orbit edit [options]
 
 Options:
+    --ip <pkgid>       ip to open in development state
     --editor <cmd>     the command to call a text-editor
+    --mode <mode>      select how to edit: 'open' or 'path'
+    --config           modify the global configuration file
 
 Use 'orbit help edit' to learn more about the command.
 ";

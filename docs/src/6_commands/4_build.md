@@ -20,6 +20,8 @@ should read the data from the blueprint, and then process that data
 If the previous plan command accepted a plugin option, then Orbit remembers
 for future build commands. It will be the default plugin to use if no
 `--plugin` or `--command` is entered for the given command.
+  
+The command invoked will be ran from the ip's root directory.
 
 ## __OPTIONS__
 
@@ -32,6 +34,9 @@ for future build commands. It will be the default plugin to use if no
 `--list`  
       View available plugins
  
+`--build-dir <dir>`
+      The relative directory to locate the blueprint.tsv file
+ 
 `--verbose`  
       Display the command being executed
  
@@ -43,4 +48,5 @@ for future build commands. It will be the default plugin to use if no
 ```
 orbit build --plugin xsim -- --waves
 orbit build --command python -- ./tools/synth.py --part x70
+orbit build --verbose
 ```

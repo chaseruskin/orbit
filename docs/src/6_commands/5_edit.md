@@ -2,12 +2,12 @@
 
 ## __NAME__
 
-edit - further develop an ip in a text editor
+edit - develop an ip in a text editor
 
 ## __SYNOPSIS__
 
 ```
-orbit edit [options] <ip>
+orbit edit [options]
 ```
 
 ## __DESCRIPTION__
@@ -22,17 +22,29 @@ The ip's project directory must be located on the DEV_PATH. The ip's
 project path will be passed as an argument to the text editor command. For 
 example, if EDITOR="code", then the command orbit will execute is: 
 `code <ip-path>`.
+  
+By default, the edit command is set to use the 'open' mode. This mode
+requires an editor to be set and will invoke it as a subprocess. Selecting
+the 'path' mode does not require an editor value and will display the path
+to the requested directory/file to edit.
 
 ## __OPTIONS__
 
-`<ip>`  
+`--ip <pkgid>`  
       The PKGID to look up the ip under DEV_PATH
   
 `--editor <editor>`  
       The command to open the requested text-editor
+  
+`--config`  
+      Modify the global configuration file
+  
+`--mode <mode>`  
+      Select how to edit: 'open' or 'path'
 
 ## __EXAMPLES__
 
 ```
-orbit edit ks-tech.rary.gates --editor=code
+orbit edit --ip ks-tech.rary.gates --editor=code
+orbit edit --config --mode path
 ```

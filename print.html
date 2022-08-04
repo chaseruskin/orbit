@@ -1299,9 +1299,9 @@ orbit new ks-tech.rary.common --template base --path common
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-edit"><a class="header" href="#orbit-edit"><strong>orbit edit</strong></a></h1>
 <h2 id="name-1"><a class="header" href="#name-1"><strong>NAME</strong></a></h2>
-<p>edit - further develop an ip in a text editor</p>
+<p>edit - develop an ip in a text editor</p>
 <h2 id="synopsis-1"><a class="header" href="#synopsis-1"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit edit [options] &lt;ip&gt;
+<pre><code>orbit edit [options]
 </code></pre>
 <h2 id="description-1"><a class="header" href="#description-1"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will open an ip project in the configured text editor. To
@@ -1313,13 +1313,22 @@ any previously determined value.</p>
 project path will be passed as an argument to the text editor command. For 
 example, if EDITOR=&quot;code&quot;, then the command orbit will execute is: 
 <code>code &lt;ip-path&gt;</code>.</p>
+<p>By default, the edit command is set to use the 'open' mode. This mode
+requires an editor to be set and will invoke it as a subprocess. Selecting
+the 'path' mode does not require an editor value and will display the path
+to the requested directory/file to edit.</p>
 <h2 id="options-1"><a class="header" href="#options-1"><strong>OPTIONS</strong></a></h2>
-<p><code>&lt;ip&gt;</code><br />
+<p><code>--ip &lt;pkgid&gt;</code><br />
       The PKGID to look up the ip under DEV_PATH</p>
 <p><code>--editor &lt;editor&gt;</code><br />
       The command to open the requested text-editor</p>
+<p><code>--config</code><br />
+      Modify the global configuration file</p>
+<p><code>--mode &lt;mode&gt;</code><br />
+      Select how to edit: 'open' or 'path'</p>
 <h2 id="examples-2"><a class="header" href="#examples-2"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit edit ks-tech.rary.gates --editor=code
+<pre><code>orbit edit --ip ks-tech.rary.gates --editor=code
+orbit edit --config --mode path
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-tree"><a class="header" href="#orbit-tree"><strong>orbit tree</strong></a></h1>
 <h2 id="name-2"><a class="header" href="#name-2"><strong>NAME</strong></a></h2>
@@ -1403,6 +1412,7 @@ should read the data from the blueprint, and then process that data
 <p>If the previous plan command accepted a plugin option, then Orbit remembers
 for future build commands. It will be the default plugin to use if no
 <code>--plugin</code> or <code>--command</code> is entered for the given command.</p>
+<p>The command invoked will be ran from the ip's root directory.</p>
 <h2 id="options-4"><a class="header" href="#options-4"><strong>OPTIONS</strong></a></h2>
 <p><code>--plugin &lt;alias&gt;</code><br />
       Plugin to execute</p>
@@ -1410,6 +1420,8 @@ for future build commands. It will be the default plugin to use if no
       Command to execute</p>
 <p><code>--list</code><br />
       View available plugins</p>
+<p><code>--build-dir &lt;dir&gt;</code>
+      The relative directory to locate the blueprint.tsv file</p>
 <p><code>--verbose</code><br />
       Display the command being executed</p>
 <p><code>-- args...</code><br />
@@ -1417,6 +1429,7 @@ for future build commands. It will be the default plugin to use if no
 <h2 id="examples-5"><a class="header" href="#examples-5"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit build --plugin xsim -- --waves
 orbit build --command python -- ./tools/synth.py --part x70
+orbit build --verbose
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-launch"><a class="header" href="#orbit-launch"><strong>orbit launch</strong></a></h1>
 <h2 id="name-5"><a class="header" href="#name-5"><strong>NAME</strong></a></h2>

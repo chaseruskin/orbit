@@ -145,9 +145,9 @@
                     <main>
                         <h1 id="orbit-edit"><a class="header" href="#orbit-edit"><strong>orbit edit</strong></a></h1>
 <h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>
-<p>edit - further develop an ip in a text editor</p>
+<p>edit - develop an ip in a text editor</p>
 <h2 id="synopsis"><a class="header" href="#synopsis"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit edit [options] &lt;ip&gt;
+<pre><code>orbit edit [options]
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will open an ip project in the configured text editor. To
@@ -159,13 +159,22 @@ any previously determined value.</p>
 project path will be passed as an argument to the text editor command. For 
 example, if EDITOR=&quot;code&quot;, then the command orbit will execute is: 
 <code>code &lt;ip-path&gt;</code>.</p>
+<p>By default, the edit command is set to use the 'open' mode. This mode
+requires an editor to be set and will invoke it as a subprocess. Selecting
+the 'path' mode does not require an editor value and will display the path
+to the requested directory/file to edit.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
-<p><code>&lt;ip&gt;</code><br />
+<p><code>--ip &lt;pkgid&gt;</code><br />
       The PKGID to look up the ip under DEV_PATH</p>
 <p><code>--editor &lt;editor&gt;</code><br />
       The command to open the requested text-editor</p>
+<p><code>--config</code><br />
+      Modify the global configuration file</p>
+<p><code>--mode &lt;mode&gt;</code><br />
+      Select how to edit: 'open' or 'path'</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit edit ks-tech.rary.gates --editor=code
+<pre><code>orbit edit --ip ks-tech.rary.gates --editor=code
+orbit edit --config --mode path
 </code></pre>
 
                     </main>

@@ -157,6 +157,7 @@ should read the data from the blueprint, and then process that data
 <p>If the previous plan command accepted a plugin option, then Orbit remembers
 for future build commands. It will be the default plugin to use if no
 <code>--plugin</code> or <code>--command</code> is entered for the given command.</p>
+<p>The command invoked will be ran from the ip's root directory.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--plugin &lt;alias&gt;</code><br />
       Plugin to execute</p>
@@ -164,6 +165,8 @@ for future build commands. It will be the default plugin to use if no
       Command to execute</p>
 <p><code>--list</code><br />
       View available plugins</p>
+<p><code>--build-dir &lt;dir&gt;</code>
+      The relative directory to locate the blueprint.tsv file</p>
 <p><code>--verbose</code><br />
       Display the command being executed</p>
 <p><code>-- args...</code><br />
@@ -171,6 +174,7 @@ for future build commands. It will be the default plugin to use if no
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit build --plugin xsim -- --waves
 orbit build --command python -- ./tools/synth.py --part x70
+orbit build --verbose
 </code></pre>
 
                     </main>

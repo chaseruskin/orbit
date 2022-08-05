@@ -15,6 +15,31 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.8.0
+
+### Features
+- adds black box entity instances in `orbit tree` when cannot identify a source code file for an instantiated entity
+- allows `--build-dir` to be set on `orbit build` (should match a build dir previously used on `orbit plan`)
+- `orbit edit` can now edit global config.toml with `--config`
+- adds a new variable during template importing: `orbit.filename` corresponds to the filestem of the current file undergoing variable substitution
+- allows paths to be copied as a new ip in `orbit new` with `--from` option
+
+### Changes
+- refactors `orbit new` to allow for creating files within current working ip
+- refactors `orbit edit` to support different modes
+- refactors `orbit read` to support different modes and cleaning of temporary directory
+- orders plugin list by alphabetical naming according to alias
+- improves manifest error messages for bad parsing
+
+### Fixes
+- tree avoids displaying package unit when referencing entity from package in vhdl instantiation statement
+
+### Documentation
+- updates readme command overview
+- updates manual page descriptions
+- adds read command long help text
+- updates pkgid page to reflect current implementation
+
 ## 0.7.0
 
 ### Changes

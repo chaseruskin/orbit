@@ -147,26 +147,50 @@
 <h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>
 <p>new - create a new ip</p>
 <h2 id="synopsis"><a class="header" href="#synopsis"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit new [options] &lt;ip&gt;
+<pre><code>orbit new [options]
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will create a new IP package. The default destination path is
-<code>$ORBIT_DEV_PATH/&lt;vendor&gt;/&lt;library&gt;/&lt;name&gt;</code>. If the ORBIT_DEV_PATH 
-environment variable is not set and <code>core.path</code> entry is absent from 
-configuration, Orbit will use the directory where the command was invoked as
-the base path.</p>
+<p>This command will create a new ip project. The default destination path is
+the vendor/library/name relative to the DEV_PATH. If the DEV_PATH is not
+configured, then it will use the current working directory.</p>
+<p>Use <code>--to</code> to override the destination path. This path is not allowed to
+exist unless <code>--force</code> is specified.</p>
+<p>Copying from existing files can be achieved in two ways. The recommended way
+is to configure templates, which can be viewed with <code>--list</code>. Using 
+<code>--template</code> will import the files from the template's root directory when
+creating a new ip. On the other hand, using <code>--from</code> will import files from 
+that directory.</p>
+<p>Upon creation of an ip or file, variable substitution is performed. Variable
+substitution takes form as a template processor using known information
+about orbit's state and injecting into templated files.</p>
+<p>A new file is able to be generated from within an ip under development with
+the <code>--file</code> flag. You can view available files for importing from a
+particular template by combining options <code>--template</code> and <code>--list</code>. To use
+a file from a template in creating a new file, specify the template and
+the source file's relative path with <code>--template</code> and <code>--from</code>. You can
+specify a source path not tied to a template by just using <code>--from</code>.</p>
+<p>If <code>--from</code> is omitted when creating a file, an empty file will be created.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
-<p><code>--force</code><br />
-      Removes the destination directory if it already exists</p>
-<p><code>--path &lt;path&gt;</code><br />
-      Specify the destination path</p>
+<p><code>--ip &lt;pkgid&gt;</code><br />
+      The vendor.library.name for the new project</p>
 <p><code>--template &lt;alias&gt;</code><br />
-      Specify a configured template to copy</p>
+      Specify a configured template to import</p>
+<p><code>--to &lt;path&gt;</code><br />
+      Specify the destination path</p>
+<p><code>--file</code><br />
+      Create a file for the current ip</p>
+<p><code>--from &lt;path&gt;</code><br />
+      Specify the source path to copy</p>
 <p><code>--list</code><br />
-      View available templates</p>
+      View available templates or files within a specified template</p>
+<p><code>--force</code><br />
+      Overwrites the destination path if it already exists</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit new ks-tech.rary.gates
-orbit new ks-tech.rary.common --template base --path common
+<pre><code>orbit new --list
+orbit new --ip ks-tech.rary.gates --to gates --template base
+orbit new --template base --list
+orbit new --file --to rtl/circuit2.vhd --template base --from extra/cmb.vhd
+orbit new --ip ks-tech.util.toolbox --from ../template
 </code></pre>
 
                     </main>

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 use crate::Command;
 use crate::FromCli;
@@ -166,6 +167,8 @@ impl Tree {
         let mut sub_nodes: Vec<(Identifier, SubUnitNode)> = Vec::new();
         // store the (suffix, prefix) for all entities
         let mut component_pairs: HashMap<Identifier, Identifier> = HashMap::new();
+
+        let mut package_identifiers: HashSet<Identifier> = HashSet::new();
         // read all files
         for source_file in files {
             if crate::core::fileset::is_vhdl(&source_file.get_file()) == true {
@@ -175,8 +178,8 @@ impl Tree {
                 let lib = source_file.get_library();
 
                 // add all entities to a graph and store architectures for later analysis
-                let mut iter = symbols.into_iter().filter_map(|f| {
-                    match f {
+                let mut iter = symbols.into_iter().filter_map(|sym| {
+                    match sym {
                         symbol::VHDLSymbol::Entity(e) => {
                             component_pairs.insert(e.get_name().clone(), lib.clone());
                             Some(e)
@@ -189,6 +192,10 @@ impl Tree {
                             sub_nodes.push((lib.clone(), SubUnitNode::new(SubUnit::from_config(cfg), source_file)));
                             None
                         },
+                        symbol::VHDLSymbol::Package(_) => {
+                            package_identifiers.insert(sym.as_iden().unwrap().clone());
+                            None
+                        }
                         _ => None,
                     }
                 });
@@ -208,6 +215,11 @@ impl Tree {
             entity_node.as_ref_mut().add_file(node.get_file());
             // create edges
             for dep in node.get_sub().get_edges() {
+                // verify we are not a package (will mismatch and make inaccurate graph)
+                if package_identifiers.contains(dep.get_suffix()) == true {
+                    continue;
+                }
+
                 // need to locate the key with a suffix matching `dep` if it was a component instantiation
                 if dep.get_prefix().is_none() {
                     if let Some(lib) = component_pairs.get(dep.get_suffix()) {
@@ -228,6 +240,11 @@ impl Tree {
                         graph.add_edge_by_key(&dep, &node_name, ());
                     }
                 } else {
+                    // verify we are not coming from a package (will mismatch and make inaccurate graph)
+                    if package_identifiers.contains(dep.get_prefix().unwrap()) == true {
+                        continue;
+                    }
+
                     let b = graph.add_edge_by_key(dep, &node_name, ());
                     match b {
                         // create black box entity

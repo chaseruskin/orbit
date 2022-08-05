@@ -43,7 +43,7 @@ impl Command for Build {
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // display plugin list and exit
         if self.list == true {
-            println!("{}", Plugin::list_plugins(&c.get_plugins().values().into_iter().collect::<Vec<&Plugin>>()));
+            println!("{}", Plugin::list_plugins(&mut c.get_plugins().values().into_iter().collect::<Vec<&Plugin>>()));
             return Ok(())
         }
 

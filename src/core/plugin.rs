@@ -47,8 +47,11 @@ impl Plugin {
     }
 
     /// Creates a string to display a list of plugins.
-    pub fn list_plugins(plugs: &[&Plugin]) -> String {
+    /// 
+    /// The string lists the plugins in alphabetical order by `alias`.
+    pub fn list_plugins(plugs: &mut [&Plugin]) -> String {
         let mut list = String::from("Plugins:\n");
+        plugs.sort_by(|a, b| a.alias.cmp(&b.alias));
         for plug in plugs {
             list += &format!("    {}\n", plug);
         }

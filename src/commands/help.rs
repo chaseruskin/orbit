@@ -28,6 +28,7 @@ enum Topic {
     Env,
     Config,
     Uninstall,
+    Read,
 }
 
 impl std::str::FromStr for Topic {
@@ -48,6 +49,7 @@ impl std::str::FromStr for Topic {
             "probe" => Self::Probe,
             "config" => Self::Config,
             "uninstall" => Self::Uninstall,
+            "read" => Self::Read,
             _ => return Err(AnyError(format!("topic '{}' not found", s)))
         })
     }
@@ -72,6 +74,7 @@ impl Topic {
             Init => manuals::init::MANUAL,
             Config => manuals::config::MANUAL,
             Uninstall => manuals::uninstall::MANUAL,
+            Read => manuals::read::MANUAL,
         }
     }
 }
@@ -90,7 +93,7 @@ impl Help {
             Some(t) => t.as_manual(),
             None => manuals::orbit::MANUAL
         };
-        // @TODO check for a pager program to pipe contents into
+        // @todo/idea: check for a pager program to pipe contents into?
         println!("{}", contents);
         Ok(())
     }

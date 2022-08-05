@@ -1703,19 +1703,35 @@ orbit uninstall kepler.util.toolbox --variant 2.1
 examination in a text editor. If the unit is from the current ip, then it
 will return the direct reference to the file. If the unit comes from 
 outside the current ip, then Orbit will create a read-only copy of the 
-file into a temporary directory ORBIT_HOME/tmp</p>
+file in a temporary directory.</p>
+<p>By default, previous files in the temporary directory are removed on every
+new call to this command. If you are viewing multiple files at the same,
+use <code>--no-clean</code> to keep previous files being read existing.</p>
+<p>The line and column where the primary design unit code is found can be
+appended to the source code file path using <code>--location</code>. The syntax for
+the filepath becomes <code>&lt;file&gt;:&lt;line&gt;:col</code>.</p>
+<p>By default, the mode to read a source code file is 'open', which will pass
+the source code filepath as an argument to the configured editor. If the
+mode is 'path', then the editor is ignored and the filepath is output to
+stdout.</p>
 <h2 id="options-14"><a class="header" href="#options-14"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;unit&gt;</code><br />
       The primary design unit identifier to access</p>
+<p><code>--ip, &lt;pkgid&gt;</code><br />
+      The ip where the unit is existing</p>
 <p><code>--variant, -v &lt;version&gt;</code><br />
       Version of ip to fetch</p>
-<p><code>--ip, &lt;pkgid&gt;</code><br />
-      The IP to search for the unit</p>
 <p><code>--editor &lt;editor&gt;</code><br />
-      The text-editor to open the unit's source code file</p>
+      The command to invoke a text editor</p>
+<p><code>--location</code><br />
+      Appends the :line:col to the end of the source code file path</p>
+<p><code>--mode &lt;mode&gt;</code><br />
+      Select how to read the file: options are 'open' or 'path'</p>
+<p><code>--no-clean</code><br />
+      Keep previously read files existing</p>
 <h2 id="examples-15"><a class="header" href="#examples-15"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit read and_gate --ip ks-tech.rary.gates -v 1.0.0
-orbit read multiplier --editor code
+orbit read multiplier --editor code --no-clean
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="glossary"><a class="header" href="#glossary">Glossary</a></h1>
 <h2 id="available-state-a"><a class="header" href="#available-state-a">Available State (A)</a></h2>

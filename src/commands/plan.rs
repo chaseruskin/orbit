@@ -596,7 +596,7 @@ impl std::fmt::Display for PlanError {
 }
 
 const HELP: &str = "\
-Generates a blueprint file.
+Generate a blueprint file.
 
 Usage:
     orbit plan [options]              

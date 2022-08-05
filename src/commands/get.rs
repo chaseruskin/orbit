@@ -261,7 +261,7 @@ impl std::fmt::Display for GetError {
 }
 
 const HELP: &str = "\
-Fetch an hdl entity for code integration
+Fetch an hdl entity for code integration.
 
 Usage:
     orbit get [options] <unit>

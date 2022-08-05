@@ -1,5 +1,5 @@
-use crate::util::anyerror::Fault;
-use std::path::PathBuf;
+use crate::util::{anyerror::Fault, filesystem};
+use std::{path::PathBuf, collections::HashSet};
 use ignore;
 use ignore::overrides::OverrideBuilder;
 
@@ -43,6 +43,15 @@ impl FromToml for Template {
 }
 
 impl Template {
+    /// Creates a string to display a list of templates.
+    pub fn list_templates(temps: &[&Template]) -> String {
+        let mut list = String::from("Templates:\n");
+        for temp in temps {
+            list += &format!("    {}\n", temp);
+        }
+        list
+    }
+
     /// Creates a new empty `Template` struct.
     pub fn new() -> Self {
         Self { 
@@ -53,6 +62,39 @@ impl Template {
         }
     }
 
+    /// Collects the template's files while respecting implicit ignores to
+    /// the Orbit.toml, Orbit.lock, and .git/ paths.
+    /// 
+    /// If `allow_hidden` is false, then it will use the globs defined in the `ignore` entry
+    /// to filter out files.
+    /// 
+    /// Returns a list of files paths, and if they are a directory (`true`) or file (`false`).
+    fn gather_files(&self, src: &PathBuf, allow_hidden: bool) -> Result<Vec<(bool, PathBuf)>, Fault> {
+        let mut overrides = OverrideBuilder::new(src);
+        // add implicit ignores
+        overrides
+            .add("!Orbit.toml").unwrap()
+            .add("!.git/").unwrap()
+            .add("!Orbit.lock").unwrap();
+
+        // add user-defined ignores if they are not allowed
+        if allow_hidden == false {
+            for rule in &self.ignores {
+                overrides.add(&format!("!{}", rule))?;
+            }
+        }
+
+        // collect all paths
+        let result = ignore::WalkBuilder::new(src)
+            .overrides(overrides.build()?)
+            .hidden(false)
+            .build();
+        let paths: Vec<(bool, PathBuf)> = result.into_iter()
+            .filter_map(|f| if f.is_ok() { Some((f.as_ref().unwrap().path().is_dir(), f.unwrap().into_path())) } else { None })
+            .collect();
+        Ok(paths)
+    }
+
     /// Copies contents from `self.root` into destination `dest`.
     /// 
     /// Collects all paths to copy. Removes any paths that match with a
@@ -60,21 +102,7 @@ impl Template {
     /// files and .git/ directories.
     pub fn import(&self, dest: &PathBuf, vars: &VariableTable) -> Result<(), Fault> {
         std::env::set_current_dir(self.path())?;
-        let mut overrides = OverrideBuilder::new(".");
-        // add implicit ignores
-        overrides.add("!Orbit.toml").unwrap().add("!.git/").unwrap();
-        // add user-defined ignores
-        for rule in &self.ignores {
-            overrides.add(&format!("!{}", rule))?;
-        }
-        // collect all paths
-        let result = ignore::WalkBuilder::new(".")
-            .overrides(overrides.build()?)
-            .hidden(false)
-            .build();
-        let paths: Vec<(bool, PathBuf)> = result.into_iter()
-            .filter_map(|f| if f.is_ok() { Some((f.as_ref().unwrap().path().is_dir(), f.unwrap().into_path())) } else { None })
-            .collect();
+        let paths = self.gather_files(&PathBuf::from("."), false)?;
         // make destination directory
         std::fs::create_dir_all(&dest)?;
         // change directory to destination
@@ -97,7 +125,8 @@ impl Template {
 
                 // attempt to read data to string to perform data transformation
                 std::fs::copy(root.join(&file), &to_file)?;
-                let temp = TemplateFile::path(&PathBuf::from(to_file));
+                let dest = PathBuf::from(to_file);
+                let temp = TemplateFile::new(&dest);
                 // silently ignore errors (reading to string or failing to write)
                 match temp.substitute(vars) {
                     Ok(_) => (),
@@ -117,15 +146,6 @@ impl Template {
         self
     }
 
-    /// Creates a string to display a list of templates.
-    pub fn list_templates(temps: &[&Template]) -> String {
-        let mut list = String::from("Templates:\n");
-        for temp in temps {
-            list += &format!("    {}\n", temp);
-        }
-        list
-    }
-
     pub fn alias(&self) -> &String {
         &self.alias
     }
@@ -141,21 +161,51 @@ impl Template {
     pub fn summary(&self) -> &Option<String> {
         &self.summary
     }
+
+    pub fn display_files(&self) -> () {
+        let header = format!("\
+{:<46}{:<10}
+{2:->46}{2:->10}\n",
+            "Relative Path", "Hidden", " ");
+        // collect files
+        let root = PathBuf::from(self.path());
+        let all: Vec<PathBuf> = self.gather_files(&root, true).unwrap()
+            .into_iter()
+            .filter_map(|(d, f)| if d == false { Some(f) } else { None })
+            .collect();
+        // collect hashset of files that were not ignored
+        let imports_set = {
+            let mut set = HashSet::new();
+            self.gather_files(&root, false).unwrap()
+                .into_iter()
+                .for_each(|(d, f)| if d == false { set.insert(f); () } else { () });
+            set
+        }; 
+        // format each file's line in the list
+        let s = all.iter()
+            .fold(String::new(), |x, y| { 
+                x + &format!("{:<46}{:<10}\n",
+                // pretty-print the filepath as relative with forward-slashes 
+                &filesystem::normalize_path(filesystem::remove_base(&root, &y)).display().to_string(),
+                // denote if the file was ignored or not
+                { if imports_set.contains(y) == false { "y" } else { "" }})
+            });
+        println!("{}{}", header, s)
+    }
 }
 
 #[derive(Debug, PartialEq)]
-pub struct TemplateFile(PathBuf);
+pub struct TemplateFile<'a>(&'a PathBuf);
 
-impl TemplateFile {
-    pub fn new() -> Self {
-        Self(PathBuf::new())
+impl<'a> TemplateFile<'a> {
+
+    pub fn new(p: &'a PathBuf) -> Self {
+        Self(p)
     }
 
-    pub fn path(p: &PathBuf) -> Self {
-        Self(p.to_owned())
-    }
-
-    /// Performs variable substitution on the file data
+    /// Performs variable substitution on the file data.
+    /// 
+    /// Writes the contents back to the path it read from.
     pub fn substitute(&self, code: &VariableTable) -> Result<(), Fault> {
         // read the data
         let contents = std::fs::read_to_string(&self.0)?;

@@ -31,7 +31,7 @@ to the requested directory/file to edit.
 ## __OPTIONS__
 
 `--ip <pkgid>`  
-      The PKGID to look up the ip under DEV_PATH
+      The ip to find in the development state
   
 `--editor <editor>`  
       The command to open the requested text-editor

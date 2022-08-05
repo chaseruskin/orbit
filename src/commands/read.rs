@@ -206,7 +206,7 @@ Options:
     --editor <editor>       the command to invoke a text-editor
     --location              append the :line:col to the filepath
     --mode <mode>           select how to read: 'open' or 'path'
-    --no-clean              do not delete previous files available
+    --no-clean              do not delete previous files read
 
 Use 'orbit help read' to learn more about the command.
 ";

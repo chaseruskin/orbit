@@ -22,6 +22,11 @@ denoted as a black box by a '?' character.
   
 An entity is considered a black box if Orbit cannot find its hdl source code
 file.
+  
+The hdl tree does not show how many times an entity is instantiated within 
+a parent entity, and all architectures for each entity are analyzed.
+  
+To view the ip dependency tree, use `--ip`.
 
 ## __OPTIONS__
 

@@ -12,11 +12,26 @@ DESCRIPTION
     blueprint.tsv file.
       
     By default, the top level unit and testbench are auto-detected according to
-    the current design heirarchy. If there is ambiguity, it will ask the user to
-    select one of the possibilities when not set as options.
-     
+    the current design heirarchy. If there is ambiguity, it will show the user
+    the possibilities.
+      
     The top level unit and top level testbench will be stored in a .env file to
-    be set during any following calls to the 'build' command.
+    be set during any following calls to the 'build' command. If a plugin was
+    specified, it will also be stored in the .env file to be recalled during the
+    building phase.
+      
+    User-defined filesets are only collected along the current working ip's 
+    path. Specifying a plugin with --plugin will collect the filesets 
+    configured for that plugin.
+      
+    During the planning phase, a lockfile is produced outlining the exact ip
+    dependencies required, how to get them, and how to verify them. The lockfile
+    should be checked into version control and not directly edited by the user.
+      
+    If the current working ip's manifest's data matches its data stored in its
+    own lockfile, then Orbit will read from the lockfile to create the ip
+    dependency graph. To force Orbit to build the ip dependency graph from
+    scratch, use --force.
 
 OPTIONS
     --top <unit>  
@@ -48,7 +63,6 @@ OPTIONS
      
     --force  
           Ignore reading the lock file
-          
 
 EXAMPLES
     orbit plan --top top_level --fileset PIN-PLAN=\"*.board\"

@@ -12,15 +12,17 @@ orbit search [options] [<pkgid>]
 
 ## __DESCRIPTION__
 
-This command will search for all ip defined by Orbit in 3 locations. Use 
-the flags to control what areas to search under (`--install`, `--develop`, 
-`--available`). An optional pkgid can also be provided to narrow results
-even further. Pkgid fields can be omitted by entering an empty value.
+This command will search for all ip defined by Orbit in the catalog from all
+3 state: development, installation, and available. You can control what 
+states to search for with `--develop`, `--install`, and `--available` flags.
+  
+An optional pkgid can also be provided to narrow results even further. Pkgid 
+fields can be omitted by entering an empty value.
 
 ## __OPTIONS__
 
 `<pkgid>`  
-      Identifiers to filter under V.L.N
+      Identifiers to filter under vendory.library.name
  
 `--install, -i`  
       Filter for ip installed to the cache

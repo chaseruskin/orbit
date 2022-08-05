@@ -19,6 +19,10 @@ abstracted away from the user and is not intended to be manually edited.
 The catalog is the user's entire space of currently known IP. It consists of
 the results from searching the DEV_PATH, cache, and vendor registries for manifests.
 
+## Current Working IP
+An IP in the development state that the current working directory is found. Some
+commands can only be ran from a current working IP.
+
 ## Developing State (D)
 An IP's state where it can be safely mutated and edited. IP in the developing state
 can exist anywhere in the user's filesystem (excluding the cache folder and registry folder),
@@ -50,6 +54,9 @@ library identifier is also the VHDL library identifier for all primary design
 units within that IP.
 
 ## Lock File
+A special file generated and maintained by Orbit outlining the IP dependencies required
+reproduce the last plan. The lockfile should be checked into version control and
+not manually edited by a user.
 
 ## Manifest
 The Manifest is a file used to record IP-level details for Orbit. Orbit 
@@ -77,14 +84,18 @@ The status of an IP is at which it appears in the user's catalog. There are 3
 states: Developing (D), Installed (I), and/or Available (A).
 
 ## Store
+A directory Orbit where maintains IP repositories for quicker installations
+of subsequent IP versions.
 
 ## Template
 A template is a directory available to be imported as a new IP. Templates 
 support variable subsitutiton.
 
 ## Variable Subsitutiton
+@todo
 
 ## Vendor
+@todo
 
 ## Version
 A version consists of 3 numeric values __\<major>.\<minor>.\<patch>__ to capture a
@@ -93,6 +104,5 @@ can be partially specified, having at least a __major__ value. A version can als
 as `latest` or `dev`.
 
 ## VHDL
-
 VHSIC Hardware Design Language (VHDL) is a hardware descrption language to model the
 behavior of digitally electronic circuits.

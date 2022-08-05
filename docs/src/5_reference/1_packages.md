@@ -18,21 +18,19 @@ In some cases, a pkgid must be _fully qualified_, which means all 3 identifiers 
 ### Specification Grammar
 
 ```
-pkgid ::= [[<vendor>.]<library>.]<name>[@v<version>]
+pkgid ::= [[<vendor>.]<library>.]<name>
 ```
 
 If a pkgid can be determined by Orbit without specifying all parts, then unnecessary parts may be omitted. See examples for more information.
 
 ### Example Specifications
-| pkgid                       | Vendor | Library | Name         | Version
-| -                           | -      | -       | -            | -       
-ks-tech.rary.gates            | ks-tech| rary    | gates        | #.#.#
-uf.crypto.simon-cipher       | uf     | crypto  | simon-cipher | #.#.#
-eel4712c.lab1                 |        | eel4712c| lab1         | #.#.#
-lab2@v3.1                     |        |         | lab2         | 3.1.#
-mips-cpu@latest               |        |         | mips-cpu     | #.#.#
-
-> __Note__: In this table, a '#' in a version position represents the highest available value for that position. So, version `#.#.#` would refer to the latest available version.
+| pkgid                       | Vendor | Library | Name         
+| -                           | -      | -       | -             
+ks-tech.rary.gates            | ks-tech| rary    | gates       
+uf.crypt.simon-cipher         | uf     | crypt   | simon-cipher
+eel4712c.lab1                 |        | eel4712c| lab1        
+lab2                          |        |         | lab2        
+ks-tech..mips                 | ks-tech|         | mips   
 
 ### Namespace Collisions
 

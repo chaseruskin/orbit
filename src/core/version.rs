@@ -341,9 +341,9 @@ impl Display for VersionError {
         use VersionError::*;
         match self {
             EmptyVersion => write!(f, "empty version"),
-            MissingMajor => write!(f, "missing major level"),
-            MissingMinor => write!(f, "missing minor level"),
-            MissingPatch => write!(f, "missing patch level"),
+            MissingMajor => write!(f, "missing major number"),
+            MissingMinor => write!(f, "missing minor number"),
+            MissingPatch => write!(f, "missing patch number"),
             ExtraLevels(l) => write!(f, "too many version positions; found {} expected 3", l),
             InvalidDigit(_) => write!(f, "invalid digit in version"),
         }

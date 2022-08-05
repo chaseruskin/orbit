@@ -1,3 +1,4 @@
+use colored::Colorize;
 use toml_edit::{Document, ArrayOfTables, Item, Array, Value, Table, Formatted};
 use std::{path::PathBuf, io::Write};
 use crate::util::{anyerror::{AnyError, Fault}, filesystem::normalize_path};
@@ -25,7 +26,7 @@ pub trait FromToml {
         };
         match result {
             Ok(r) => Ok(Some(r)),
-            Err(e) => Err(FromTomlError::BadParse(s.to_string(), e.to_string()))
+            Err(e) => Err(FromTomlError::BadParse(s.to_string(), table.get(s).unwrap().as_str().unwrap().to_string(), e.to_string()))
         } 
     }
 
@@ -44,7 +45,8 @@ pub trait FromToml {
 pub enum FromTomlError {
     MissingEntry(String),
     ExpectingString(String),
-    BadParse(String, String),
+    /// key, value, error
+    BadParse(String, String, String),
     ExpectingStringArray(String),
 }
 
@@ -55,7 +57,7 @@ impl std::fmt::Display for FromTomlError {
         match self {
             Self::ExpectingString(key) => write!(f, "key '{}' expects a toml string", key),
             Self::MissingEntry(key) => write!(f, "missing required key '{}'", key),
-            Self::BadParse(key, value) => write!(f, "failed to parse value '{}' for key '{}'", value, key),
+            Self::BadParse(key, value, err) => write!(f, "failed to parse value '{}' for key '{}' due to {}", value.yellow(), key.yellow(), err),
             Self::ExpectingStringArray(key) => write!(f, "key '{}' expects an array of strings", key),
         }
     }

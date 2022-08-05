@@ -159,6 +159,9 @@ abstracted away from the user and is not intended to be manually edited.</p>
 <h2 id="catalog"><a class="header" href="#catalog">Catalog</a></h2>
 <p>The catalog is the user's entire space of currently known IP. It consists of
 the results from searching the DEV_PATH, cache, and vendor registries for manifests.</p>
+<h2 id="current-working-ip"><a class="header" href="#current-working-ip">Current Working IP</a></h2>
+<p>An IP in the development state that the current working directory is found. Some
+commands can only be ran from a current working IP.</p>
 <h2 id="developing-state-d"><a class="header" href="#developing-state-d">Developing State (D)</a></h2>
 <p>An IP's state where it can be safely mutated and edited. IP in the developing state
 can exist anywhere in the user's filesystem (excluding the cache folder and registry folder),
@@ -184,6 +187,9 @@ Orbit manages. An IP is identified by its PKGID.</p>
 library identifier is also the VHDL library identifier for all primary design 
 units within that IP.</p>
 <h2 id="lock-file"><a class="header" href="#lock-file">Lock File</a></h2>
+<p>A special file generated and maintained by Orbit outlining the IP dependencies required
+reproduce the last plan. The lockfile should be checked into version control and
+not manually edited by a user.</p>
 <h2 id="manifest"><a class="header" href="#manifest">Manifest</a></h2>
 <p>The Manifest is a file used to record IP-level details for Orbit. Orbit 
 recognizes files named <code>Orbit.toml</code> as an IP's manifest. The manifest is 
@@ -205,11 +211,15 @@ group.</p>
 <p>The status of an IP is at which it appears in the user's catalog. There are 3
 states: Developing (D), Installed (I), and/or Available (A).</p>
 <h2 id="store"><a class="header" href="#store">Store</a></h2>
+<p>A directory Orbit where maintains IP repositories for quicker installations
+of subsequent IP versions.</p>
 <h2 id="template"><a class="header" href="#template">Template</a></h2>
 <p>A template is a directory available to be imported as a new IP. Templates 
 support variable subsitutiton.</p>
 <h2 id="variable-subsitutiton"><a class="header" href="#variable-subsitutiton">Variable Subsitutiton</a></h2>
+<p>@todo</p>
 <h2 id="vendor"><a class="header" href="#vendor">Vendor</a></h2>
+<p>@todo</p>
 <h2 id="version"><a class="header" href="#version">Version</a></h2>
 <p>A version consists of 3 numeric values <strong>&lt;major&gt;.&lt;minor&gt;.&lt;patch&gt;</strong> to capture a
 snapshot of an IP's given state. Versions are recognized in Orbit as git tags. A version

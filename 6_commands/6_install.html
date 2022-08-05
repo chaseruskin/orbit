@@ -150,19 +150,22 @@
 <pre><code>orbit install [options]
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will get move an ip's project folder to the user defined cache.
-By default, the specified version is the 'latest' released version orbit can
+<p>This command will get move an ip's project folder to the cache. By default,
+the specified version is the 'latest' released version orbit can
 identify.</p>
 <p>An ip can be installed from multiple locations. A common method is to
-reference the ip with its pkgid if it is already in your ip catalog. Another
-method is to install by providing the remote git repository url to clone.
-A third method is to provide the local filesystem path to the ip.</p>
+reference the ip with its pkgid if it is already in your ip catalog with
+<code>--ip</code>. Another method is to install by providing the remote git repository 
+url to clone with <code>--git</code>. A third method is to provide the local filesystem
+path to the ip with <code>--path</code>.</p>
 <p>The version is the &quot;snapshot&quot; of the ip's state during that time of
-development. Versions are recognized by git tags following the semver
-specification (major.minor.patch).</p>
+development. Versions are recognized by Orbit as git tags following the 
+semver specification (major.minor.patch).</p>
+<p>Development versions ('dev') are not allowed to be installed to the cache
+because they are considered mutable.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--ip &lt;ip&gt;</code><br />
-      PkgID to access an orbit ip to install</p>
+      Pkgid to access an orbit ip to install</p>
 <p><code>--variant, -v &lt;version&gt;</code><br />
       Version to install</p>
 <p><code>--path &lt;path&gt;</code><br />

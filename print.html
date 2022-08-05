@@ -867,20 +867,17 @@ hint: To resolve this error either
 <h3 id="fully-qualified-status"><a class="header" href="#fully-qualified-status">Fully Qualified Status</a></h3>
 <p>In some cases, a pkgid must be <em>fully qualified</em>, which means all 3 identifiers are provided: vendor, library, and name. For example, a pkgid must be fully qualified when creating a new one from the command-line.</p>
 <h3 id="specification-grammar"><a class="header" href="#specification-grammar">Specification Grammar</a></h3>
-<pre><code>pkgid ::= [[&lt;vendor&gt;.]&lt;library&gt;.]&lt;name&gt;[@v&lt;version&gt;]
+<pre><code>pkgid ::= [[&lt;vendor&gt;.]&lt;library&gt;.]&lt;name&gt;
 </code></pre>
 <p>If a pkgid can be determined by Orbit without specifying all parts, then unnecessary parts may be omitted. See examples for more information.</p>
 <h3 id="example-specifications"><a class="header" href="#example-specifications">Example Specifications</a></h3>
-<table><thead><tr><th>pkgid</th><th>Vendor</th><th>Library</th><th>Name</th><th>Version</th></tr></thead><tbody>
-<tr><td>ks-tech.rary.gates</td><td>ks-tech</td><td>rary</td><td>gates</td><td>#.#.#</td></tr>
-<tr><td>uf.crypto.simon-cipher</td><td>uf</td><td>crypto</td><td>simon-cipher</td><td>#.#.#</td></tr>
-<tr><td>eel4712c.lab1</td><td></td><td>eel4712c</td><td>lab1</td><td>#.#.#</td></tr>
-<tr><td>lab2@v3.1</td><td></td><td></td><td>lab2</td><td>3.1.#</td></tr>
-<tr><td>mips-cpu@latest</td><td></td><td></td><td>mips-cpu</td><td>#.#.#</td></tr>
+<table><thead><tr><th>pkgid</th><th>Vendor</th><th>Library</th><th>Name</th></tr></thead><tbody>
+<tr><td>ks-tech.rary.gates</td><td>ks-tech</td><td>rary</td><td>gates</td></tr>
+<tr><td>uf.crypt.simon-cipher</td><td>uf</td><td>crypt</td><td>simon-cipher</td></tr>
+<tr><td>eel4712c.lab1</td><td></td><td>eel4712c</td><td>lab1</td></tr>
+<tr><td>lab2</td><td></td><td></td><td>lab2</td></tr>
+<tr><td>ks-tech..mips</td><td>ks-tech</td><td></td><td>mips</td></tr>
 </tbody></table>
-<blockquote>
-<p><strong>Note</strong>: In this table, a '#' in a version position represents the highest available value for that position. So, version <code>#.#.#</code> would refer to the latest available version.</p>
-</blockquote>
 <h3 id="namespace-collisions"><a class="header" href="#namespace-collisions">Namespace Collisions</a></h3>
 <p>Within a user's <em>catalog</em>, two different pkgids may share common identifiers, but cannot all be equivalent. Two identifiers are considered equivalent if their lowercase mapping is identical, where dashes <code>-</code> also map to underscores <code>_</code>.</p>
 <ul>
@@ -1397,10 +1394,22 @@ orbit tree --ip
 all necessary files according to their defined fileset into the 
 blueprint.tsv file.</p>
 <p>By default, the top level unit and testbench are auto-detected according to
-the current design heirarchy. If there is ambiguity, it will ask the user to
-select one of the possibilities when not set as options.</p>
+the current design heirarchy. If there is ambiguity, it will show the user
+the possibilities.</p>
 <p>The top level unit and top level testbench will be stored in a .env file to
-be set during any following calls to the 'build' command.</p>
+be set during any following calls to the 'build' command. If a plugin was
+specified, it will also be stored in the .env file to be recalled during the
+building phase.</p>
+<p>User-defined filesets are only collected along the current working ip's 
+path. Specifying a plugin with <code>--plugin</code> will collect the filesets 
+configured for that plugin.</p>
+<p>During the planning phase, a lockfile is produced outlining the exact ip
+dependencies required, how to get them, and how to verify them. The lockfile
+should be checked into version control and not directly edited by the user.</p>
+<p>If the current working ip's manifest's data matches its data stored in its
+own lockfile, then Orbit will read from the lockfile to create the ip
+dependency graph. To force Orbit to build the ip dependency graph from
+scratch, use <code>--force</code>.</p>
 <h2 id="options-3"><a class="header" href="#options-3"><strong>OPTIONS</strong></a></h2>
 <p><code>--top &lt;unit&gt;</code><br />
       The top level entity to explicitly define</p>
@@ -1421,8 +1430,7 @@ be set during any following calls to the 'build' command.</p>
 <p><code>--disable-ssh</code><br />
       Convert SSH to HTTPS urls when fetching external dependencies</p>
 <p><code>--force</code><br />
-      Ignore reading the lock file
-      </p>
+      Ignore reading the lock file</p>
 <h2 id="examples-4"><a class="header" href="#examples-4"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit plan --top top_level --fileset PIN-PLAN=&quot;*.board&quot;
 orbit plan --plugin vivado --clean --bench ram_tb
@@ -1501,13 +1509,14 @@ orbit launch --next major --ready
 <pre><code>orbit search [options] [&lt;pkgid&gt;]
 </code></pre>
 <h2 id="description-6"><a class="header" href="#description-6"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will search for all ip defined by Orbit in 3 locations. Use 
-the flags to control what areas to search under (<code>--install</code>, <code>--develop</code>, 
-<code>--available</code>). An optional pkgid can also be provided to narrow results
-even further. Pkgid fields can be omitted by entering an empty value.</p>
+<p>This command will search for all ip defined by Orbit in the catalog from all
+3 state: development, installation, and available. You can control what 
+states to search for with <code>--develop</code>, <code>--install</code>, and <code>--available</code> flags.</p>
+<p>An optional pkgid can also be provided to narrow results even further. Pkgid 
+fields can be omitted by entering an empty value.</p>
 <h2 id="options-6"><a class="header" href="#options-6"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;pkgid&gt;</code><br />
-      Identifiers to filter under V.L.N</p>
+      Identifiers to filter under vendory.library.name</p>
 <p><code>--install, -i</code><br />
       Filter for ip installed to the cache</p>
 <p><code>--develop, -d</code><br />
@@ -1527,19 +1536,22 @@ orbit search ks-tecth.rary.gates -d
 <pre><code>orbit install [options]
 </code></pre>
 <h2 id="description-7"><a class="header" href="#description-7"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will get move an ip's project folder to the user defined cache.
-By default, the specified version is the 'latest' released version orbit can
+<p>This command will get move an ip's project folder to the cache. By default,
+the specified version is the 'latest' released version orbit can
 identify.</p>
 <p>An ip can be installed from multiple locations. A common method is to
-reference the ip with its pkgid if it is already in your ip catalog. Another
-method is to install by providing the remote git repository url to clone.
-A third method is to provide the local filesystem path to the ip.</p>
+reference the ip with its pkgid if it is already in your ip catalog with
+<code>--ip</code>. Another method is to install by providing the remote git repository 
+url to clone with <code>--git</code>. A third method is to provide the local filesystem
+path to the ip with <code>--path</code>.</p>
 <p>The version is the &quot;snapshot&quot; of the ip's state during that time of
-development. Versions are recognized by git tags following the semver
-specification (major.minor.patch).</p>
+development. Versions are recognized by Orbit as git tags following the 
+semver specification (major.minor.patch).</p>
+<p>Development versions ('dev') are not allowed to be installed to the cache
+because they are considered mutable.</p>
 <h2 id="options-7"><a class="header" href="#options-7"><strong>OPTIONS</strong></a></h2>
 <p><code>--ip &lt;ip&gt;</code><br />
-      PkgID to access an orbit ip to install</p>
+      Pkgid to access an orbit ip to install</p>
 <p><code>--variant, -v &lt;version&gt;</code><br />
       Version to install</p>
 <p><code>--path &lt;path&gt;</code><br />
@@ -1778,6 +1790,9 @@ abstracted away from the user and is not intended to be manually edited.</p>
 <h2 id="catalog"><a class="header" href="#catalog">Catalog</a></h2>
 <p>The catalog is the user's entire space of currently known IP. It consists of
 the results from searching the DEV_PATH, cache, and vendor registries for manifests.</p>
+<h2 id="current-working-ip"><a class="header" href="#current-working-ip">Current Working IP</a></h2>
+<p>An IP in the development state that the current working directory is found. Some
+commands can only be ran from a current working IP.</p>
 <h2 id="developing-state-d"><a class="header" href="#developing-state-d">Developing State (D)</a></h2>
 <p>An IP's state where it can be safely mutated and edited. IP in the developing state
 can exist anywhere in the user's filesystem (excluding the cache folder and registry folder),
@@ -1803,6 +1818,9 @@ Orbit manages. An IP is identified by its PKGID.</p>
 library identifier is also the VHDL library identifier for all primary design 
 units within that IP.</p>
 <h2 id="lock-file"><a class="header" href="#lock-file">Lock File</a></h2>
+<p>A special file generated and maintained by Orbit outlining the IP dependencies required
+reproduce the last plan. The lockfile should be checked into version control and
+not manually edited by a user.</p>
 <h2 id="manifest"><a class="header" href="#manifest">Manifest</a></h2>
 <p>The Manifest is a file used to record IP-level details for Orbit. Orbit 
 recognizes files named <code>Orbit.toml</code> as an IP's manifest. The manifest is 
@@ -1824,11 +1842,15 @@ group.</p>
 <p>The status of an IP is at which it appears in the user's catalog. There are 3
 states: Developing (D), Installed (I), and/or Available (A).</p>
 <h2 id="store"><a class="header" href="#store">Store</a></h2>
+<p>A directory Orbit where maintains IP repositories for quicker installations
+of subsequent IP versions.</p>
 <h2 id="template"><a class="header" href="#template">Template</a></h2>
 <p>A template is a directory available to be imported as a new IP. Templates 
 support variable subsitutiton.</p>
 <h2 id="variable-subsitutiton"><a class="header" href="#variable-subsitutiton">Variable Subsitutiton</a></h2>
+<p>@todo</p>
 <h2 id="vendor"><a class="header" href="#vendor">Vendor</a></h2>
+<p>@todo</p>
 <h2 id="version"><a class="header" href="#version">Version</a></h2>
 <p>A version consists of 3 numeric values <strong>&lt;major&gt;.&lt;minor&gt;.&lt;patch&gt;</strong> to capture a
 snapshot of an IP's given state. Versions are recognized in Orbit as git tags. A version

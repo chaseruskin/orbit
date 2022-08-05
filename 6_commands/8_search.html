@@ -150,13 +150,14 @@
 <pre><code>orbit search [options] [&lt;pkgid&gt;]
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will search for all ip defined by Orbit in 3 locations. Use 
-the flags to control what areas to search under (<code>--install</code>, <code>--develop</code>, 
-<code>--available</code>). An optional pkgid can also be provided to narrow results
-even further. Pkgid fields can be omitted by entering an empty value.</p>
+<p>This command will search for all ip defined by Orbit in the catalog from all
+3 state: development, installation, and available. You can control what 
+states to search for with <code>--develop</code>, <code>--install</code>, and <code>--available</code> flags.</p>
+<p>An optional pkgid can also be provided to narrow results even further. Pkgid 
+fields can be omitted by entering an empty value.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;pkgid&gt;</code><br />
-      Identifiers to filter under V.L.N</p>
+      Identifiers to filter under vendory.library.name</p>
 <p><code>--install, -i</code><br />
       Filter for ip installed to the cache</p>
 <p><code>--develop, -d</code><br />

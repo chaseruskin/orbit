@@ -32,7 +32,8 @@ pub struct Read {
     version: Option<AnyVersion>,
     editor: Option<String>,
     location: bool,
-    mode: EditMode
+    mode: EditMode,
+    no_clean: bool,
 }
 
 impl FromCli for Read {
@@ -44,6 +45,7 @@ impl FromCli for Read {
             editor: cli.check_option(Optional::new("editor"))?,
             mode: cli.check_option(Optional::new("mode"))?.unwrap_or(EditMode::Open),
             location: cli.check_flag(Flag::new("location"))?,
+            no_clean: cli.check_flag(Flag::new("no-clean"))?,
             unit: cli.require_positional(Positional::new("unit"))?,
         });
         command
@@ -55,6 +57,18 @@ impl Command for Read {
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // determine the text-editor
         let editor = Edit::configure_editor(&self.editor, c.get_config())?;
+
+        // determine the destination
+        let dest = c.get_home_path().join(TMP_DIR);
+        
+        // attempt to clean the tmp directory unless --no-clean
+        if dest.exists() == true && self.no_clean == false {
+            // do not error if this procedure fails
+            match std::fs::remove_dir_all(&dest) {
+                Ok(_) => (),
+                Err(_) => (),
+            }
+        }
 
         // must be in an IP if omitting the pkgid
         if self.ip.is_none() {
@@ -82,9 +96,6 @@ impl Command for Read {
 
             // determine version to grab
             let v = self.version.as_ref().unwrap_or(&AnyVersion::Latest);
-
-            // determine the destination
-            let dest = c.get_home_path().join("tmp");
 
             if let Some(ip) = status.get(v, true) {
                 self.run(&editor, &ip, Some(&dest))
@@ -158,31 +169,27 @@ impl Read {
                 let dest = dest.join(src.file_name().unwrap());
 
                 // try to remove file if it exists
-                if dest.exists() == true {
-                    match std::fs::remove_file(&dest) {
-                        Ok(()) => {
-                            // create and write a temporary file
-                            let mut file = std::fs::OpenOptions::new()
-                                .write(true)
-                                .truncate(true)
-                                .create(true)
-                                .open(&dest)?;
-                            file.write(&bytes)?;
-                            file.flush()?;
-            
-                            // set to read-only
-                            let mut perms = file.metadata()?.permissions();
-                            perms.set_readonly(true);
-                            file.set_permissions(perms)?;
-                        }
-                        Err(_) => {}
-                    }
+                if dest.exists() == false || std::fs::remove_file(&dest).is_ok() {
+                    // create and write a temporary file
+                    let mut file = std::fs::OpenOptions::new()
+                        .write(true)
+                        .create(true)
+                        .open(&dest)?;
+                    file.write(&bytes)?;
+                    file.flush()?;
+
+                    // set to read-only
+                    let mut perms = file.metadata()?.permissions();
+                    perms.set_readonly(true);
+                    file.set_permissions(perms)?;
                 }
                 Ok((dest, position))
             },
         }
     }
 }
+
+const TMP_DIR: &str = "tmp";
 
 const HELP: &str = "\
 Inspect hdl design unit source code.
@@ -199,6 +206,7 @@ Options:
     --editor <editor>       the command to invoke a text-editor
     --location              append the :line:col to the filepath
     --mode <mode>           select how to read: 'open' or 'path'
+    --no-clean              do not delete previous files available
 
 Use 'orbit help read' to learn more about the command.
 ";

@@ -136,14 +136,19 @@ impl Command for New {
             self.run(root, c.force, template, &mut vars)
         // what is default behavior? (currently undefined)
         } else {
-            panic!("nothing new to be made, use '--ip' or '--file'")
+            Err(AnyError(format!("nothing specified to create; use {} or {}\n\nFor more information try {}", "--ip".yellow(), "--file".yellow(), "--help".green())))?
         }
     }
 }
 
 impl New {
-
+    /// Creates a new file. 
+    /// 
+    /// If pulling from a template, a source filepath must be defined with --from.
+    /// If not using a template, then it will copy from the actually provided filepath from --from.
+    /// If there is no source and no template, then it will create a new blank file at `dest`.
     fn new_file(&self, template: Option<&Template>, lut: &VariableTable, dest: &PathBuf) -> Result<(), Fault> {
+        // check if we are pulling from a template
         if let Some(tplate) = template {
             match &self.from {
                 Some(p) => { 
@@ -173,9 +178,25 @@ impl New {
                 }
             }
         }
-        // use from as a copy from relative path without tying to template base
-        todo!();
-        // Ok(())
+        // use from as a copy from relative path without a template
+        match &self.from {
+            // copy from file
+            Some(src) => {
+                std::fs::copy(&src, &dest)?;
+                // create template file to perform variable substitution
+                let tfile = TemplateFile::new(&dest);
+                tfile.substitute(&lut)?;
+            }
+            // create a new blank file
+            None => {
+                std::fs::OpenOptions::new()
+                    .write(true)
+                    .truncate(true)
+                    .create(true)
+                    .open(&dest)?;
+            }
+        }
+        Ok(())
     }
 
     fn run(&self, root: &std::path::PathBuf, force: bool, template: Option<&Template>, lut: &mut VariableTable) -> Result<(), Fault> {

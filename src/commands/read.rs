@@ -190,10 +190,12 @@ Inspect hdl design unit source code.
 Usage:
     orbit read [options] <unit>
 
-Options:
-    <unit>                  the pkgid to find the ip under ORBIT_PATH
+Args:
+    <unit>                  primary design unit identifier
+
+Options:            
     --ip <pkgid>            ip to reference the unit from
-    --variant, -v <version> state of ip to checkout
+    --variant, -v <version> ip version to use
     --editor <editor>       the command to invoke a text-editor
     --location              append the :line:col to the filepath
     --mode <mode>           select how to read: 'open' or 'path'

@@ -267,7 +267,7 @@ Usage:
     orbit get [options] <unit>
 
 Args:
-    <unit>       entity identifier
+    <unit>                  entity identifier
 
 Options:
     --ip <pkgid>            ip to reference unit from

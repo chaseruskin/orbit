@@ -16,7 +16,7 @@ use crate::util::anyerror::AnyError;
 
 
 #[derive(Debug, PartialEq)]
-enum EditMode {
+pub enum EditMode {
     Open,
     Path
 }
@@ -112,7 +112,11 @@ impl Edit {
         }
     }
 
-    fn invoke(editor: &str, path: &PathBuf) -> Result<(), Fault> {
+    /// Calls a command `editor` with the argument `path`.
+    /// 
+    /// Silently captures the output and only prints stderr if the command failed with non-zero
+    /// exit code.
+    pub fn invoke(editor: &str, path: &PathBuf) -> Result<(), Fault> {
         // perform the process
         let output = std::process::Command::new(editor)
             .arg(path)

@@ -7,12 +7,14 @@ use colored::Colorize;
 use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
+use crate::core::catalog::CatalogError;
+use crate::core::lexer::Position;
 use crate::core::manifest::IpManifest;
 use crate::core::pkgid::PkgId;
 use crate::core::version::AnyVersion;
 use crate::core::vhdl::token::Identifier;
 use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Optional};
+use crate::interface::arg::{Flag, Positional, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
@@ -20,6 +22,8 @@ use crate::util::anyerror::Fault;
 use crate::util::sha256::compute_sha256;
 
 use super::edit::Edit;
+use super::edit::EditMode;
+use super::get::GetError;
 
 #[derive(Debug, PartialEq)]
 pub struct Read {
@@ -27,6 +31,8 @@ pub struct Read {
     ip: Option<PkgId>,
     version: Option<AnyVersion>,
     editor: Option<String>,
+    location: bool,
+    mode: EditMode
 }
 
 impl FromCli for Read {
@@ -35,8 +41,10 @@ impl FromCli for Read {
         let command = Ok(Read {
             version: cli.check_option(Optional::new("variant").switch('v').value("version"))?,
             ip: cli.check_option(Optional::new("ip").value("pkgid"))?,
-            unit: cli.require_positional(Positional::new("unit"))?,
             editor: cli.check_option(Optional::new("editor"))?,
+            mode: cli.check_option(Optional::new("mode"))?.unwrap_or(EditMode::Open),
+            location: cli.check_flag(Flag::new("location"))?,
+            unit: cli.require_positional(Positional::new("unit"))?,
         });
         command
     }
@@ -48,9 +56,6 @@ impl Command for Read {
         // determine the text-editor
         let editor = Edit::configure_editor(&self.editor, c.get_config())?;
 
-        // determine the destination
-        let dest = c.get_home_path().join("tmp");
-
         // must be in an IP if omitting the pkgid
         if self.ip.is_none() {
             c.goto_ip_path()?;
@@ -60,7 +65,7 @@ impl Command for Read {
                 return Err(AnyError(format!("cannot specify a version '{}' when referencing the current ip", "--ver".yellow())))?
             }
 
-            self.run(&editor, &IpManifest::from_path(c.get_ip_path().unwrap())?, &dest) 
+            self.run(&editor, &IpManifest::from_path(c.get_ip_path().unwrap())?, None) 
         // checking external IP
         } else {
             // gather the catalog (all manifests)
@@ -78,28 +83,56 @@ impl Command for Read {
             // determine version to grab
             let v = self.version.as_ref().unwrap_or(&AnyVersion::Latest);
 
+            // determine the destination
+            let dest = c.get_home_path().join("tmp");
+
             if let Some(ip) = status.get(v, true) {
-                self.run(&editor, &ip, &dest)
+                self.run(&editor, &ip, Some(&dest))
             } else {
-                panic!("no usable ip")
+                if status.get(v, false).is_some() == true {
+                    Err(CatalogError::SuggestInstall(target, v.clone()))?
+                } else {
+                    Err(CatalogError::NoVersionForIp(target, v.clone()))?
+                }
             }
         }
     }
 }
 
 impl Read {
-    fn run(&self, editor: &str, manifest: &IpManifest, dest: &PathBuf) -> Result<(), Fault> {
-        Self::read(&self.unit, &manifest, &editor, &dest)
+    fn run(&self, editor: &str, manifest: &IpManifest, dest: Option<&PathBuf>) -> Result<(), Fault> {
+        let (path, loc) = Self::read(&self.unit, &manifest, dest)?;
+
+        let path = { if self.location == true { PathBuf::from({ let mut p = path.as_os_str().to_os_string(); p.push(&loc.to_string()); p }) } else { path }};
+
+        match &self.mode {
+            EditMode::Path => {
+                println!("{}", crate::util::filesystem::normalize_path(path).display());
+            },
+            EditMode::Open => {
+                Edit::invoke(editor, &path)?;
+            },
+        };
+        Ok(())
     }
 
-    fn read(unit: &Identifier, ip: &IpManifest, _editor: &str, dest: &PathBuf) -> Result<(), Fault> {
+    /// Finds the filepath and file position for the provided primary design unit `unit`
+    /// under the project `ip`.
+    /// 
+    /// If `dest` contains a value, it will create a new directory at `dest` and copy
+    /// the file to be read-only. If it is set to `None`, then it will open the
+    /// file it is referencing (no copy). 
+    fn read(unit: &Identifier, ip: &IpManifest, dest: Option<&PathBuf>) -> Result<(PathBuf, Position), Fault> {
         // find the unit
         let units = ip.collect_units(true)?;
 
         // get the file data for the primary design unit
         let (source, position) = match units.get_key_value(unit) {
-            Some((_, unit)) => (unit.get_unit().get_source_code_file(), unit.get_unit().get_symbol().unwrap().get_position()),
-            None => todo!()
+            Some((_, unit)) => (unit.get_unit().get_source_code_file(), unit.get_unit().get_symbol().unwrap().get_position().clone()),
+            None => return Err(GetError::SuggestProbe(
+                GetError::EntityNotFound(unit.clone(), ip.get_pkgid().clone(), ip.get_version().clone()).to_string(), 
+                ip.get_pkgid().clone(), 
+                AnyVersion::Specific(ip.get_version().to_partial_version())))?
         };
 
         let (checksum, bytes) = {
@@ -111,34 +144,43 @@ impl Read {
             (compute_sha256(&bytes), bytes)
         };
 
-        // create new file under checksum directory
-        let dest = dest.join(&checksum.to_string().get(0..10).unwrap());
-        std::fs::create_dir_all(&dest)?;
+        let src = PathBuf::from(source);
 
-        // add filename to destination path
-        let dest = dest.join(PathBuf::from(source).file_name().unwrap());
+        match dest {
+            // return direct reference if no `dest` (within current ip)
+            None => return Ok((src, position)),
+            Some(dest) => {
+                // create new file under checksum directory
+                let dest = dest.join(&checksum.to_string().get(0..10).unwrap());
+                std::fs::create_dir_all(&dest)?;
 
-        // create and write a file
-        {
-            let mut file = std::fs::OpenOptions::new()
-                .write(true)
-                .create(true)
-                .open(&dest)?;
-            file.write(&bytes)?;
-            file.flush()?;
+                // add filename to destination path
+                let dest = dest.join(src.file_name().unwrap());
 
-            // // set to read-only
-            // let mut perms = file.metadata()?.permissions();
-            // perms.set_readonly(true);
-            // file.set_permissions(perms)?;
+                // try to remove file if it exists
+                if dest.exists() == true {
+                    match std::fs::remove_file(&dest) {
+                        Ok(()) => {
+                            // create and write a temporary file
+                            let mut file = std::fs::OpenOptions::new()
+                                .write(true)
+                                .truncate(true)
+                                .create(true)
+                                .open(&dest)?;
+                            file.write(&bytes)?;
+                            file.flush()?;
+            
+                            // set to read-only
+                            let mut perms = file.metadata()?.permissions();
+                            perms.set_readonly(true);
+                            file.set_permissions(perms)?;
+                        }
+                        Err(_) => {}
+                    }
+                }
+                Ok((dest, position))
+            },
         }
-
-        println!("{}:{}", dest.display(), position);
-
-        // std::process::Command::new(editor).arg(&format!("{}:{}", source, position)).spawn()?;
-
-        // create a temporary file
-        Ok(())
     }
 }
 
@@ -153,6 +195,8 @@ Options:
     --ip <pkgid>            ip to reference the unit from
     --variant, -v <version> state of ip to checkout
     --editor <editor>       the command to invoke a text-editor
+    --location              append the :line:col to the filepath
+    --mode <mode>           select how to read: 'open' or 'path'
 
 Use 'orbit help read' to learn more about the command.
 ";

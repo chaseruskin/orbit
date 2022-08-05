@@ -155,7 +155,7 @@ impl std::fmt::Display for VhdlIdentifierError {
                 let current_dir = std::env::current_dir().unwrap();
                 let location_1 = filesystem::remove_base(&current_dir, &path1);
                 let location_2 = filesystem::remove_base(&current_dir, &path2);
-                write!(f, "duplicate primary design units identified as '{}'\n\nlocation 1: {}:{}\nlocation 2: {}:{}\n\n{}", 
+                write!(f, "duplicate primary design units identified as '{}'\n\nlocation 1: {}{}\nlocation 2: {}{}\n\n{}", 
                     iden, 
                     filesystem::normalize_path(location_1).display(), loc1, 
                     filesystem::normalize_path(location_2).display(), loc2, 
@@ -164,7 +164,7 @@ impl std::fmt::Display for VhdlIdentifierError {
             Self::DuplicateAcrossDirect(iden, dep, path, pos) => {
                 let current_dir = std::env::current_dir().unwrap();
                 let location = filesystem::remove_base(&current_dir, &path);
-                write!(f, "duplicate primary design units identified as '{}'\n\nlocation: {}:{}\nconflicts with direct dependency {}\n\n{}", 
+                write!(f, "duplicate primary design units identified as '{}'\n\nlocation: {}{}\nconflicts with direct dependency {}\n\n{}", 
                 iden, 
                 filesystem::normalize_path(location).display(), pos,
                 dep,

@@ -7,6 +7,7 @@ use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
 use crate::core::catalog::IpLevel;
+use crate::core::catalog::IpState;
 use crate::core::extgit::ExtGit;
 use crate::core::manifest::IpManifest;
 use crate::core::pkgid::PkgId;
@@ -71,7 +72,7 @@ impl Command for Probe {
         let v = self.version.as_ref().unwrap_or(&AnyVersion::Latest);
 
         let ip_opt = status.get(v, false);
-        let stored_ip = if ip_opt.is_none() {
+        let stored_ip = if ip_opt.is_none() == true && v != &AnyVersion::Dev {
             IpManifest::from_store(catalog.get_store(), &target, &v).unwrap_or(None)
         } else {
             None
@@ -80,23 +81,24 @@ impl Command for Probe {
         let ip = match ip_opt {
             Some(i) => i,
             None => {
-                // try to create from store
-                if let Some(other) = &stored_ip {
-                    other
-                } else {
+                if stored_ip.is_none() {
                     return Err(AnyError(format!("ip '{}' is not found as version '{}'", target, v)))?
                 }
+                // try to create from store
+                stored_ip.as_ref().unwrap()
             }
         };
 
+        let state = status.get_state(&ip);
+
         if self.units == true {
             // force computing the primary design units if a development version
-            let units = ip.collect_units(v == &AnyVersion::Dev)?;
+            let units = ip.collect_units(&state == &IpState::Development)?;
             println!("{}", format_units_table(units.into_iter().map(|(_, unit)| unit).collect()));
             return Ok(())
         }
 
-        println!("{}", ip);
+        println!("{}", ip.display_information(&state));
         self.run()
     }
 }

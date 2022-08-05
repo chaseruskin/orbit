@@ -63,13 +63,13 @@ impl Unit {
 }
 
 /// Calculates the size of the given path.
-pub fn compute_size<P>(path: &P, unit: Unit) -> Result<f32, Box<dyn std::error::Error>>
+pub fn compute_size<P>(path: &P, unit: Unit) -> Result<f32, Fault>
 where P: AsRef<Path> {
     Ok(fs_extra::dir::get_size(&path)? as f32 / unit.value() as f32)
 }
 
 /// Attempts to return the executable's path.
-pub fn get_exe_path() -> Result<PathBuf, Box::<dyn std::error::Error>> {
+pub fn get_exe_path() -> Result<PathBuf, Fault> {
     match env::current_exe() {    
         Ok(exe_path) => Ok(std::fs::canonicalize(exe_path)?),
         Err(e) => Err(Box::new(e)),
@@ -124,7 +124,7 @@ pub fn remove_base(base: &PathBuf, full: &PathBuf) -> PathBuf {
 /// Recursively copies files from `source` to `target` directory.
 /// 
 /// Assumes `target` directory does not already exist. Ignores the `.git/` folder
-/// if `ignore_git` is set to `true`.
+/// if `ignore_git` is set to `true`. Respects `.gitignore` files.
 /// 
 /// If immutable is `true`, then read_only permissions will be enabled, else the files
 /// will be mutable. Silently skips files that could be changed with mutability/permissions.

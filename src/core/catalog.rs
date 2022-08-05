@@ -10,6 +10,25 @@ pub struct Catalog<'a> {
     cache: Option<&'a PathBuf>,
 }
 
+#[derive(Debug, PartialEq)]
+pub enum IpState {
+    Development,
+    Installation,
+    Available,
+    Unknown
+}
+
+impl std::fmt::Display for IpState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            Self::Development => write!(f, "development"),
+            Self::Installation => write!(f, "installation"),
+            Self::Available => write!(f, "available"),
+            Self::Unknown => write!(f, "unknown")
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct IpLevel {
     dev: Option<IpManifest>,
@@ -105,6 +124,23 @@ impl IpLevel {
                     None => if usable == false { self.get_available(version) } else { None }
                 }
             }
+        }
+    }
+
+    /// Tracks what level the `manifest` came from.
+    pub fn get_state(&self, manifest: &IpManifest) -> IpState {
+        if self.installs.iter().find(|f| f == &manifest).is_some() { 
+            IpState::Installation 
+        } else if self.available.iter().find(|f| f == &manifest).is_some() {
+            IpState::Available
+        } else if let Some(dev) = &self.dev {
+            if dev == manifest {
+                IpState::Development
+            } else {
+                IpState::Unknown
+            }
+        } else {
+                IpState::Unknown
         }
     }
 

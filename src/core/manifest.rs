@@ -1,4 +1,5 @@
 use colored::Colorize;
+use tempfile::tempdir;
 use toml_edit::{Document, Table, ArrayOfTables, Array, value};
 use std::collections::HashMap;
 use std::io::Write;
@@ -12,8 +13,9 @@ use crate::util::sha256::{Sha256Hash, self};
 use crate::util::url::Url;
 use std::str::FromStr;
 use crate::core::version::Version;
-use crate::util::filesystem::{normalize_path, self};
+use crate::util::filesystem::{normalize_path, self, Unit};
 
+use super::catalog::IpState;
 use super::config::{FromToml, FromTomlError};
 use super::extgit::ExtGit;
 use super::lockfile::LockEntry;
@@ -185,6 +187,45 @@ pub struct IpToml {
 impl IpToml {
     pub fn new() -> Self {
         Self { ip: Ip::new(), deps: DependencyTable::new() }
+    }
+}
+
+impl IpManifest {
+    /// Displays information and metadata about the ip.
+    pub fn display_information(&self, state: &IpState) -> String {
+        // determine how to display url for repository
+        let url = match self.get_repository() {
+            Some(r) => r.to_string(),
+            None => String::new(),
+        };  
+        // determine how to read size
+        let size =  match &state {
+            IpState::Available => match self.read_size_from_metadata() {
+                Some(sz) => format!("{:.2}", sz),
+                None => String::from("?"),
+            }
+            _ => {
+                let sz = crate::util::filesystem::compute_size(&self.manifest.get_path().parent().unwrap(), crate::util::filesystem::Unit::MegaBytes).unwrap();
+                format!("{:.2}", sz)
+            }
+        };
+        format!("\
+state:      {}
+ip:         {}
+summary:    {}
+version:    {}
+repository: {}
+size:       {} MB
+dependencies:
+{}", 
+state,
+self.get_pkgid(), 
+self.get_summary().unwrap_or(&"".to_string()), 
+self.get_version(),
+url,
+size,
+self.get_dependencies().to_string()
+    )
     }
 }
 
@@ -507,10 +548,37 @@ impl IpManifest {
         checksum
     }
 
+    /// Isolates the project into a temporary directory (as if it was installed)
+    /// to compute the size it would consume in the filesystem.
+    pub fn precompute_size(&self) -> Result<f32, Fault> {
+        let temp = tempdir()?;
+        let temp_path = temp.as_ref().to_path_buf();
+        // copy the repository to a temporary directory
+        crate::util::filesystem::copy(&self.get_root(), &temp_path, true)?;
+        crate::util::filesystem::compute_size(&temp_path, Unit::MegaBytes)
+    }
+
+    /// Tries to read the computed size from metadata if exists in toml.
+    pub fn read_size_from_metadata(&self) -> Option<f32> {
+        Some(self.get_manifest().get_doc().get("ip")?.as_table()?.get("size")?.as_float()? as f32)
+    }
+
+    /// Saves a computation for internal referral.
+    pub fn stash_size(&mut self) -> Result<(), Fault> {
+        // compute the size
+        let m = self.precompute_size()?;
+        // write size into toml structure
+        let tbl = self.get_manifest_mut().get_mut_doc()["ip"].as_table_mut().unwrap();
+        tbl["size"] = value(m as f64);
+        Ok(())
+    } 
+
     /// Writes a metadata file for internal usage within orbit.
     pub fn write_metadata(&mut self) -> Result<(), Fault> {
         // write units to document
         self.stash_units();
+        // write the size to document
+        self.stash_size()?;
         // write the document to .orbit-metadata
         let mut meta = std::fs::File::create(self.get_root().join(ORBIT_METADATA_FILE))?;
         meta.write(self.get_manifest().get_doc().to_string().as_bytes())?;

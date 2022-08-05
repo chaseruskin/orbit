@@ -31,7 +31,6 @@ pub struct Get {
     architectures: bool,
     version: Option<AnyVersion>,
     info: bool,
-    peek: bool,
     add: bool,
     name: Option<Identifier>,
 }
@@ -47,7 +46,6 @@ impl FromCli for Get {
             version: cli.check_option(Optional::new("variant").switch('v').value("version"))?,
             info: cli.check_flag(Flag::new("info"))?, // @todo: implement
             ip: cli.check_option(Optional::new("ip").value("pkgid"))?,
-            peek: cli.check_flag(Flag::new("peek"))?,
             add: cli.check_flag(Flag::new("add"))?,
             name: cli.check_option(Optional::new("name").value("identifier"))?,
             unit: cli.require_positional(Positional::new("unit"))?,
@@ -117,7 +115,7 @@ impl Command for Get {
                 }?
             }
 
-            self.run(ip.unwrap(), false, if self.peek == true { None } else { current_ip }, v)
+            self.run(ip.unwrap(), false, current_ip, v)
         }
     }
 }
@@ -132,7 +130,7 @@ impl Get {
 
         // add to dependency list if within a ip and `self.add` is `true`
         if let Some(mut cur_ip) = current_ip {
-            // verify it is the not the same package! 
+            // verify it is the not the same package! and we explicitly want to add 
             if cur_ip.get_pkgid() != ip.get_pkgid() && self.add == true {
                 cur_ip.insert_dependency(ip.get_pkgid().clone(), self.version.as_ref().unwrap_or(&AnyVersion::Latest).clone());
                 cur_ip.get_manifest_mut().save()?;

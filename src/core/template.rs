@@ -62,6 +62,10 @@ impl Template {
         }
     }
 
+    pub fn from_path(root: String) -> Self {
+        Self { alias: String::new(), root: root, summary: None, ignores: Vec::new() }
+    }
+
     /// Collects the template's files while respecting implicit ignores to
     /// the Orbit.toml, Orbit.lock, and .git/ paths.
     /// 

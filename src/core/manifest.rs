@@ -1,3 +1,4 @@
+use colored::Colorize;
 use toml_edit::{Document, Table, ArrayOfTables, Array, value};
 use std::collections::HashMap;
 use std::io::Write;
@@ -11,7 +12,7 @@ use crate::util::sha256::{Sha256Hash, self};
 use crate::util::url::Url;
 use std::str::FromStr;
 use crate::core::version::Version;
-use crate::util::filesystem::normalize_path;
+use crate::util::filesystem::{normalize_path, self};
 
 use super::config::{FromToml, FromTomlError};
 use super::extgit::ExtGit;
@@ -624,14 +625,17 @@ impl IpManifest {
     /// 
     /// A manifest is created one level within `path` as IP_MANIFEST_FILE.
     /// Assumes the `pkgid` is fully qualified. Saves the manifest to disk.
-    pub fn create(path: std::path::PathBuf, pkgid: &PkgId, force: bool, init: bool) -> Result<Self, Box<dyn Error>> {
+    /// 
+    /// This function errors if the destination directory already exists and `force` is `false`.
+    /// If `force` is `true`, then it will remove the directory to create the new ip there.
+    pub fn create(path: std::path::PathBuf, pkgid: &PkgId, force: bool, init: bool) -> Result<Self, Fault> {
         if std::path::Path::exists(&path) == true {
             // remove the entire existing directory
             if force == true {
                 std::fs::remove_dir_all(&path)?;
             // error if directories exist
             } else if init == false {
-                return Err(Box::new(AnyError(format!("failed to create new ip because directory '{}' already exists", path.display()))))
+                return Err(Box::new(AnyError(format!("failed to create new ip because destination '{}' already exists; use {} to overwrite existing directory", filesystem::normalize_path(path).display(), "--force".yellow()))))
             }
         }
         // create all directories if the do not exist

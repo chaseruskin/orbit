@@ -209,8 +209,15 @@ impl New {
             root.join(self.to.as_ref().unwrap())
         };
 
-        // verify directory does not exist (or use force to overwrite)
-        // @todo
+        // verify the from path works out
+        if let Some(src) = &self.from {
+            if src.exists() == false {
+                return Err(AnyError(format!("source path {} does not exist", filesystem::normalize_path(src.to_path_buf()).display())))?
+            }
+            if src.is_dir() == false {
+                return Err(AnyError(format!("source path {} is not a directory", filesystem::normalize_path(src.to_path_buf()).display())))?
+            }
+        }
 
         // verify the ip would exist alone on this path (cannot nest IPs)
         {
@@ -224,7 +231,7 @@ impl New {
             };
             // verify there are no current IPs living on this path
             if let Some(other_path) = Context::find_ip_path(&path_clone) {
-                return Err(AnyError(format!("an IP already exists at path {}", other_path.display())))?
+                return Err(AnyError(format!("ip already exists at path {}", other_path.display())))?
             }
         }
 
@@ -233,8 +240,12 @@ impl New {
 
         // import template if found
         if let Some(t) = template {
-            // create hashmap to store variables
             t.import(&root, lut)?;
+        } else if let Some(src) = &self.from {
+            // act as if the from path is a template to allow for variable substitution
+            let tplate_base = filesystem::resolve_rel_path(&std::env::current_dir().unwrap(), src.to_str().unwrap().to_string());
+            let tplate = Template::from_path(tplate_base);
+            tplate.import(&root, lut)?;
         }
 
         // @TODO issue warning if the ip path is outside of the dev path or dev path is not set

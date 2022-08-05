@@ -158,6 +158,9 @@ an unidentified entity is instantiated it will appear as a leaf and is
 denoted as a black box by a '?' character.</p>
 <p>An entity is considered a black box if Orbit cannot find its hdl source code
 file.</p>
+<p>The hdl tree does not show how many times an entity is instantiated within 
+a parent entity, and all architectures for each entity are analyzed.</p>
+<p>To view the ip dependency tree, use <code>--ip</code>.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--root &lt;entity&gt;</code><br />
       Top-level entity identifier to mark as the root node</p>

@@ -30,7 +30,7 @@ impl std::str::FromStr for IdentifierFormat {
         match s {
             "long" => Ok(Self::Long),
             "short" => Ok(Self::Short),
-            _ => Err(AnyError(format!("format must either be 'long' or 'short'")))
+            _ => Err(AnyError(format!("format can be 'long' or 'short'")))
         }
     }
 }
@@ -63,6 +63,10 @@ impl Command for Tree {
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // go to the ip directory
         c.goto_ip_path()?;
+
+        if self.compress == true {
+            todo!("compression logic")
+        }
 
         // get the ip manifest
         let ip = IpManifest::from_path(c.get_ip_path().unwrap())?;

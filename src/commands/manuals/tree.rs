@@ -10,6 +10,13 @@ DESCRIPTION
     This command will show the hierarchical tree-structure starting from a node.
     By default, Orbit will attempt to automatically detect the root if it is
     unambiguous.
+      
+    The hdl tree only displays the connections between entity in the graph. If
+    an unidentified entity is instantiated it will appear as a leaf and is 
+    denoted as a black box by a '?' character.
+      
+    An entity is considered a black box if Orbit cannot find its hdl source code
+    file.
 
 OPTIONS
     --root <entity>  

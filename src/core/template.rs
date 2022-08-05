@@ -100,7 +100,7 @@ impl Template {
     /// Collects all paths to copy. Removes any paths that match with a
     /// pattern provided in the ignores list. Implicitly ignores `Orbit.toml`
     /// files and .git/ directories.
-    pub fn import(&self, dest: &PathBuf, vars: &VariableTable) -> Result<(), Fault> {
+    pub fn import(&self, dest: &PathBuf, vars: &mut VariableTable) -> Result<(), Fault> {
         std::env::set_current_dir(self.path())?;
         let paths = self.gather_files(&PathBuf::from("."), false)?;
         // make destination directory
@@ -108,8 +108,8 @@ impl Template {
         // change directory to destination
         std::env::set_current_dir(&dest)?;
 
+        let root = PathBuf::from(self.path());       
         // create all directories
-        let root = PathBuf::from(self.path());
         for (is_dir, dir) in &paths {
             if is_dir == &true { 
                 // perform variable subtitution on the filepath
@@ -127,6 +127,9 @@ impl Template {
                 std::fs::copy(root.join(&file), &to_file)?;
                 let dest = PathBuf::from(to_file);
                 let temp = TemplateFile::new(&dest);
+                // create variable for this particular file (will replace existing)
+                vars.add("orbit.filename", dest.file_stem().unwrap().to_str().unwrap());
+
                 // silently ignore errors (reading to string or failing to write)
                 match temp.substitute(vars) {
                     Ok(_) => (),

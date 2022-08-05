@@ -131,9 +131,9 @@ impl Command for New {
                 }
             }
             // load variables for the new ip
-            let vars = vars.load_pkgid(&ip)?;
+            let mut vars = vars.load_pkgid(&ip)?;
             // only pass in necessary variables from context
-            self.run(root, c.force, template, &vars)
+            self.run(root, c.force, template, &mut vars)
         // what is default behavior? (currently undefined)
         } else {
             panic!("nothing new to be made, use '--ip' or '--file'")
@@ -178,7 +178,7 @@ impl New {
         // Ok(())
     }
 
-    fn run(&self, root: &std::path::PathBuf, force: bool, template: Option<&Template>, lut: &VariableTable) -> Result<(), Fault> {
+    fn run(&self, root: &std::path::PathBuf, force: bool, template: Option<&Template>, lut: &mut VariableTable) -> Result<(), Fault> {
         // create ip stemming from DEV_PATH with default /VENDOR/LIBRARY/NAME
         let ip_path = if self.to.is_none() {
             root.join(self.ip.as_ref().unwrap().get_vendor().as_ref().unwrap())
@@ -213,7 +213,7 @@ impl New {
         // import template if found
         if let Some(t) = template {
             // create hashmap to store variables
-            t.import(&root, &lut)?;
+            t.import(&root, lut)?;
         }
 
         // @TODO issue warning if the ip path is outside of the dev path or dev path is not set

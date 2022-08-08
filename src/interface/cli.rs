@@ -303,7 +303,6 @@ impl<'c> Cli<'c> {
                     Ok(r) => transform.push(r),
                     Err(e) => {
                         self.prioritize_help()?;
-                        self.prioritize_suggestion()?;
                         return Err(CliError::BadType(self.known_args.pop().unwrap(), e.to_string()))
                     }
                 }
@@ -336,7 +335,6 @@ impl<'c> Cli<'c> {
                         Ok(r) => Ok(Some(r)),
                         Err(e) => {
                             self.prioritize_help()?;
-                            self.prioritize_suggestion()?;
                             Err(CliError::BadType(self.known_args.pop().unwrap(), e.to_string()))
                         }
                     }

@@ -16,6 +16,7 @@ use crate::core::pkgid::PkgId;
 use crate::core::version::Version;
 use crate::util::anyerror::{AnyError, Fault};
 use crate::core::version::AnyVersion;
+use crate::util::filesystem;
 use crate::util::url::Url;
 use colored::Colorize;
 use git2::Repository;
@@ -49,13 +50,20 @@ impl FromCli for Install {
 }
 
 impl Command for Install {
-    type Err = Box<dyn std::error::Error>;
+    type Err = Fault;
+
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // verify user is not requesting the dev version to be installed
         match &self.version {
-            AnyVersion::Dev => return Err(AnyError(format!("{}", "a dev version cannot be installed to the cache")))?,
+            AnyVersion::Dev => return Err(AnyError(format!("{}", "a development version cannot be installed to the cache")))?,
             _ => ()
         };
+
+        // only allow one type of option to be selected
+        if (self.ip.is_some() ^ self.git.is_some() ^ self.path.is_some()) == false {
+            return Err(AnyError(format!("select one option to install from '{}', '{}', or '{}'", "--ip".yellow(), "--git".yellow(), "--path".yellow())))?
+        }
+        
         // let temporary directory exist for lifetime of install in case of using it
         let temp_dir = tempdir()?;
 
@@ -68,7 +76,6 @@ impl Command for Install {
 
         // get to the repository (root path)
         let ip_root = if let Some(ip) = &self.ip {
-
             // grab install path
             fetch_install_path(ip, &catalog, self.disable_ssh, &temp_dir)?
         } else if let Some(url) = &self.git {
@@ -78,8 +85,16 @@ impl Command for Install {
             ExtGit::new(None).clone(url, &path, self.disable_ssh)?;
             path
         } else if let Some(path) = &self.path {
+            // verify path exists
+            if path.exists() == false {
+                return Err(AnyError(format!("path '{}' does not exist", filesystem::normalize_path(path.to_path_buf()).display())))?
+            }
+            // copy to a temporary directory for installation
+            let tmp = temp_dir.path();
+            let tmp_path = tmp.to_path_buf();
+            filesystem::copy(path, &tmp_path, false)?;
             // traverse filesystem
-            path.clone()
+            tmp_path
         } else {
             return Err(AnyError(format!("select an option to install from '{}', '{}', or '{}'", "--ip".yellow(), "--git".yellow(), "--path".yellow())))?
         };

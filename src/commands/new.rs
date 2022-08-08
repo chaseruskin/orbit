@@ -86,7 +86,7 @@ impl Command for New {
             c.goto_ip_path()?;
             // fail if no '--to' was specified
             if self.to.is_none() {
-                return Err(AnyError(format!("creating a file requires a destination path with '{}'", "--to".yellow())))?
+                return Err(AnyError(format!("creating a file requires a destination path with '{}'\n\nFor more information try {}", "--to".yellow(), "--help".green())))?
             }
             // filepath to place copied contents
             let dest = c.get_ip_path().unwrap().join(self.to.as_ref().unwrap());

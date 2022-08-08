@@ -17,11 +17,13 @@ ignore = [
 
 Templates are paths to a directory on your local filesystem that can be copied when creating a new IP with `orbit new`. 
 
-Orbit automatically will omit copying a `.git` folder and a `Orbit.toml` file from the template's root directory. You can specify additional ignore rules with the template configuration's `ignore` entry.
+Orbit automatically omit copying a `.git` folder, `Orbit.toml` file, and `Orbit.lock` file from the template's root directory. You can specify additional ignore rules with the template configuration's `ignore` entry.
 
 ## Variable Substitution
 
-Templates support variable subsitution for more customized importing per project. Orbit searches for a double bracket notation `{{ }}` to signify a variable. Variables can exist in the filepath name or the file's contents.
+Templates support variable subsitution for more customized importing per project. Orbit searches each text file for a double bracket notation `{{ }}` to signify a variable. Variables can exist in the filepath name or in the file's contents.
+
+The variable `{{ orbit.filename }}` changes to the current file's stem name (omits file extension) per each file being imported.
 
 ### Example 
 Assume the given variables defined by Orbit:

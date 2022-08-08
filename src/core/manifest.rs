@@ -293,6 +293,33 @@ impl Ip {
     }
 }
 
+// #[derive(Debug, PartialEq)]
+// struct PathVersion(String);
+
+// enum DependencyVersion {
+//     Path(PathVersion),
+//     Number(AnyVersion),
+// }
+
+// impl FromToml for DependencyVersion {
+//     type Err = Fault;
+
+//     fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err> where Self: Sized {
+//         // check for version key
+//         match table.get("version") {
+//             Some(item) => { 
+//                 match item {
+//                     Item::Table(t) => todo!(),
+//                     _ => return Ok(Self::Number(Self::require(table, "version")?)),
+//                 }
+//             },
+//             None => {
+//                 return Err(FromTomlError::MissingEntry("version".to_string()))?
+//             }
+//         }
+//     }
+// }
+
 impl FromToml for Ip {
     type Err = Fault;
 

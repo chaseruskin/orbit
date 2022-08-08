@@ -9,7 +9,9 @@ SYNOPSIS
 DESCRIPTION
     This command will create a new ip project. The default destination path is
     the vendor/library/name relative to the DEV_PATH. If the DEV_PATH is not
-    configured, then it will use the current working directory.
+    configured, then it will use the current working directory. Creating a new 
+    ip involves creating a manifest file Orbit.toml and initializing an empty
+    git repository.
       
     Use --to to override the destination path. This path is not allowed to
     exist unless --force is specified.

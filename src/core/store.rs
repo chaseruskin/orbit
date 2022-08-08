@@ -1,11 +1,34 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, collections::hash_map::DefaultHasher};
 
-use crate::util::{anyerror::Fault, filesystem};
+use crate::util::{anyerror::Fault, filesystem, url::Url};
 use super::{pkgid::PkgId, manifest::IpManifest};
 
 #[derive(Debug, PartialEq)]
 pub struct Store<'a> {
     root: &'a PathBuf
+}
+
+// @todo: use this for storage identification? harder to look up though given must find a 
+// repository, but can be more robust against naming identifier conflicts
+#[derive(Debug, PartialEq, Hash, Eq)]
+struct StoreId<'a> {
+    pkgid: &'a PkgId,
+    remote: Option<&'a Url>,
+}
+
+use std::hash::Hash;
+use std::hash::Hasher;
+
+impl<'a> StoreId<'a> {
+    fn _from_ip(ip: &'a IpManifest) -> Self {
+        StoreId { pkgid: ip.get_pkgid(), remote: ip.get_repository() }
+    }
+
+    fn _into_hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish()
+    }
 }
 
 impl<'a> Store<'a> {

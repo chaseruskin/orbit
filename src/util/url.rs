@@ -3,7 +3,7 @@ use url::ParseError;
 
 use super::strcmp;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq, Hash)]
 pub enum Url {
     Https(Https),
     Ssh(Ssh),
@@ -72,7 +72,7 @@ impl std::fmt::Display for Url {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq, Hash)]
 pub struct Https {
     url: url::Url
 }
@@ -90,7 +90,7 @@ impl std::fmt::Display for Https {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq, Hash)]
 /// SSH ::= [ssh://]<user>@<host>:[port]</path/to/repo> or {user}@<host>:<path/to/repo>
 pub struct Ssh {
     prefix: Option<String>,

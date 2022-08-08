@@ -156,9 +156,10 @@ ignore = [
 ]
 </code></pre>
 <p>Templates are paths to a directory on your local filesystem that can be copied when creating a new IP with <code>orbit new</code>. </p>
-<p>Orbit automatically will omit copying a <code>.git</code> folder and a <code>Orbit.toml</code> file from the template's root directory. You can specify additional ignore rules with the template configuration's <code>ignore</code> entry.</p>
+<p>Orbit automatically omit copying a <code>.git</code> folder, <code>Orbit.toml</code> file, and <code>Orbit.lock</code> file from the template's root directory. You can specify additional ignore rules with the template configuration's <code>ignore</code> entry.</p>
 <h2 id="variable-substitution"><a class="header" href="#variable-substitution">Variable Substitution</a></h2>
-<p>Templates support variable subsitution for more customized importing per project. Orbit searches for a double bracket notation <code>{{ }}</code> to signify a variable. Variables can exist in the filepath name or the file's contents.</p>
+<p>Templates support variable subsitution for more customized importing per project. Orbit searches each text file for a double bracket notation <code>{{ }}</code> to signify a variable. Variables can exist in the filepath name or in the file's contents.</p>
+<p>The variable <code>{{ orbit.filename }}</code> changes to the current file's stem name (omits file extension) per each file being imported.</p>
 <h3 id="example"><a class="header" href="#example">Example</a></h3>
 <p>Assume the given variables defined by Orbit:</p>
 <pre><code>orbit.ip = ks-tech.rary.gates

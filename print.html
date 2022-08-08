@@ -465,13 +465,12 @@ fileset.xsim-wcfg = &quot;*.wcfg&quot;
 └─ Orbit.toml 
 </code></pre>
 <h2 id="ip-levels"><a class="header" href="#ip-levels">IP Levels</a></h2>
-<p>An IP can exist at three different levels:</p>
-<ul>
-<li>developing: the IP is in-progress mutable and its location on disk is known (DEV_PATH)</li>
-<li>installed: the IP is immutable and its location on disk is abstracted away from the user (CACHE)</li>
-<li>available: the IP is not stored on disk but has the ability to be pulled from a remote repository</li>
-</ul>
-<p>IPs are indirectly made available through <em>vendors</em>. A vendor is a repository used soley to track the list of repositories where to find and download IP.</p>
+<p>An IP can exist at 3 different levels:</p>
+<ol>
+<li><strong>developing</strong>_: the IP is in-progress/mutable and its location on disk is known (DEV_PATH).</li>
+<li><strong>installed</strong>: the IP is immutable and its location on disk is abstracted away from the user (CACHE).</li>
+<li><strong>available</strong>: the IP is not stored on disk but has the ability to be pulled from a git remote. Only the IP's manifest is stored locally on disk through a <em>vendor</em>.</li>
+</ol>
 <h2 id="inside-an-ip"><a class="header" href="#inside-an-ip">Inside an IP</a></h2>
 <p>An IP is a HDL project recognized by Orbit. Therefore, an IP's files can be grouped into 3 sections.</p>
 <ul>
@@ -480,6 +479,8 @@ fileset.xsim-wcfg = &quot;*.wcfg&quot;
 <li>Supportive files</li>
 </ul>
 <p>Supportive files are the files needed within particular HDL workflows. This is a very generic term because there are a lot of different workflows, some require constraints files, python scripts, text files, configuration files, etc.</p>
+<h2 id="current-working-ip-cwip"><a class="header" href="#current-working-ip-cwip">Current Working IP (CWIP)</a></h2>
+<p>The current working IP (CWIP) is the IP project currently being developed. It is detected within the path from where Orbit was invoked. Some commands, such as <code>orbit plan</code> and <code>orbit build</code>, require you to call Orbit from within a working IP.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbittoml"><a class="header" href="#orbittoml">Orbit.toml</a></h1>
 <p><code>Orbit.toml</code> is the manifest file that tells Orbit that a folder is an IP. The data is stored in a TOML file format. To learn more about TOML files, visit the TOML <a href="https://toml.io/en/">website</a>. </p>
 <blockquote>
@@ -649,9 +650,10 @@ ignore = [
 ]
 </code></pre>
 <p>Templates are paths to a directory on your local filesystem that can be copied when creating a new IP with <code>orbit new</code>. </p>
-<p>Orbit automatically will omit copying a <code>.git</code> folder and a <code>Orbit.toml</code> file from the template's root directory. You can specify additional ignore rules with the template configuration's <code>ignore</code> entry.</p>
+<p>Orbit automatically omit copying a <code>.git</code> folder, <code>Orbit.toml</code> file, and <code>Orbit.lock</code> file from the template's root directory. You can specify additional ignore rules with the template configuration's <code>ignore</code> entry.</p>
 <h2 id="variable-substitution"><a class="header" href="#variable-substitution">Variable Substitution</a></h2>
-<p>Templates support variable subsitution for more customized importing per project. Orbit searches for a double bracket notation <code>{{ }}</code> to signify a variable. Variables can exist in the filepath name or the file's contents.</p>
+<p>Templates support variable subsitution for more customized importing per project. Orbit searches each text file for a double bracket notation <code>{{ }}</code> to signify a variable. Variables can exist in the filepath name or in the file's contents.</p>
+<p>The variable <code>{{ orbit.filename }}</code> changes to the current file's stem name (omits file extension) per each file being imported.</p>
 <h3 id="example"><a class="header" href="#example">Example</a></h3>
 <p>Assume the given variables defined by Orbit:</p>
 <pre><code>orbit.ip = ks-tech.rary.gates
@@ -1278,7 +1280,9 @@ index = [
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will create a new ip project. The default destination path is
 the vendor/library/name relative to the DEV_PATH. If the DEV_PATH is not
-configured, then it will use the current working directory.</p>
+configured, then it will use the current working directory. Creating a new 
+ip involves creating a manifest file <code>Orbit.toml</code> and initializing an empty
+git repository.</p>
 <p>Use <code>--to</code> to override the destination path. This path is not allowed to
 exist unless <code>--force</code> is specified.</p>
 <p>Copying from existing files can be achieved in two ways. The recommended way

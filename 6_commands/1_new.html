@@ -152,7 +152,9 @@
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will create a new ip project. The default destination path is
 the vendor/library/name relative to the DEV_PATH. If the DEV_PATH is not
-configured, then it will use the current working directory.</p>
+configured, then it will use the current working directory. Creating a new 
+ip involves creating a manifest file <code>Orbit.toml</code> and initializing an empty
+git repository.</p>
 <p>Use <code>--to</code> to override the destination path. This path is not allowed to
 exist unless <code>--force</code> is specified.</p>
 <p>Copying from existing files can be achieved in two ways. The recommended way

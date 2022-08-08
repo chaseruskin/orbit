@@ -155,13 +155,12 @@
 └─ Orbit.toml 
 </code></pre>
 <h2 id="ip-levels"><a class="header" href="#ip-levels">IP Levels</a></h2>
-<p>An IP can exist at three different levels:</p>
-<ul>
-<li>developing: the IP is in-progress mutable and its location on disk is known (DEV_PATH)</li>
-<li>installed: the IP is immutable and its location on disk is abstracted away from the user (CACHE)</li>
-<li>available: the IP is not stored on disk but has the ability to be pulled from a remote repository</li>
-</ul>
-<p>IPs are indirectly made available through <em>vendors</em>. A vendor is a repository used soley to track the list of repositories where to find and download IP.</p>
+<p>An IP can exist at 3 different levels:</p>
+<ol>
+<li><strong>developing</strong>_: the IP is in-progress/mutable and its location on disk is known (DEV_PATH).</li>
+<li><strong>installed</strong>: the IP is immutable and its location on disk is abstracted away from the user (CACHE).</li>
+<li><strong>available</strong>: the IP is not stored on disk but has the ability to be pulled from a git remote. Only the IP's manifest is stored locally on disk through a <em>vendor</em>.</li>
+</ol>
 <h2 id="inside-an-ip"><a class="header" href="#inside-an-ip">Inside an IP</a></h2>
 <p>An IP is a HDL project recognized by Orbit. Therefore, an IP's files can be grouped into 3 sections.</p>
 <ul>
@@ -170,6 +169,8 @@
 <li>Supportive files</li>
 </ul>
 <p>Supportive files are the files needed within particular HDL workflows. This is a very generic term because there are a lot of different workflows, some require constraints files, python scripts, text files, configuration files, etc.</p>
+<h2 id="current-working-ip-cwip"><a class="header" href="#current-working-ip-cwip">Current Working IP (CWIP)</a></h2>
+<p>The current working IP (CWIP) is the IP project currently being developed. It is detected within the path from where Orbit was invoked. Some commands, such as <code>orbit plan</code> and <code>orbit build</code>, require you to call Orbit from within a working IP.</p>
 
                     </main>
 

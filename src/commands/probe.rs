@@ -92,8 +92,16 @@ impl Command for Probe {
         let state = status.get_state(&ip);
 
         if self.units == true {
-            // force computing the primary design units if a development version
-            let units = ip.collect_units(&state == &IpState::Development)?;
+            let units = if &state == &IpState::Available {
+                match ip.read_units_from_metadata() {
+                    Some(units) => units,
+                    // have no means of getting the list of units from available state if it was not saved previously
+                    None => { return Err(AnyError(format!("primary design unit data was not previously saved for this ip's version\n\nTry installing the ip to see the list of primary design units")))? }
+                }
+            } else {
+                // force computing the primary design units if a development version
+                ip.collect_units(&state == &IpState::Development)?
+            };
             println!("{}", format_units_table(units.into_iter().map(|(_, unit)| unit).collect()));
             return Ok(())
         }

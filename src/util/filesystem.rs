@@ -162,6 +162,32 @@ pub fn copy(source: &PathBuf, target: &PathBuf, ignore_git: bool) -> Result<(), 
     Ok(())
 }
 
+/// This function creates a universally accepted syntax for a full absolute path.
+/// 
+/// Begins with a leading forward slash (`/`) and uses forward slashes as component separators.
+/// Removes Prefix components and keeps RootDir components.
+/// 
+/// If the path `p` is relative, it will be transformed into its full absolute path.
+pub fn to_absolute(p: PathBuf) -> Result<PathBuf, Fault> {
+    // ensure the path is in absolute form
+    let p = if p.is_relative() == true {
+        p.canonicalize()?
+    } else {
+        p
+    };
+
+    {
+        let mut p2 = p.components();
+        while let Some(c) = p2.next() {
+            println!("{:?}", c);
+        }
+    }
+
+    Ok(p.components()
+        .filter(|f| match f { Component::Prefix(_) => false, _ => true } )
+        .collect())
+}
+
 /// This function resolves common filesystem standards into a standardized path format.
 /// 
 /// It expands leading '~' to be the user's home directory, or expands leading '.' to the
@@ -170,7 +196,7 @@ pub fn copy(source: &PathBuf, target: &PathBuf, ignore_git: bool) -> Result<(), 
 /// 
 /// This function is mainly used for display purposes back to the user and is not safe to use
 /// for converting filepaths within logic.
-pub fn normalize_path(p: std::path::PathBuf) -> PathBuf {
+pub fn normalize_path(p: PathBuf) -> PathBuf {
     // break the path into parts
     let mut parts = p.components();
 
@@ -259,5 +285,19 @@ mod test {
         let source = PathBuf::from("test/data/projects");
         let target = tempdir().unwrap();
         copy(&source, &target.as_ref().to_path_buf(), true).unwrap();
+    }
+
+    // only works on windows system
+    #[test]
+    #[ignore]
+    fn full_path() {
+        let path = PathBuf::from("c://users/cruskin/develop/rust");
+        assert_eq!(to_absolute(path).unwrap(), PathBuf::from("/users/cruskin/develop/rust"));
+
+        let path = PathBuf::from("/users/cruskin/develop/rust");
+        assert_eq!(to_absolute(path).unwrap(), PathBuf::from("/Users/cruskin/Develop/rust"));
+
+        let path = PathBuf::from("./readme.md");
+        assert_eq!(to_absolute(path).unwrap(), PathBuf::from("/Users/cruskin/Develop/rust/orbit/README.md"));
     }
 }

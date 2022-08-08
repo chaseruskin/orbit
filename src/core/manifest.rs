@@ -387,8 +387,12 @@ pub struct DependencyTable(HashMap<PkgId, AnyVersion>);
 
 impl std::fmt::Display for DependencyTable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for pair in &self.0 {
-            write!(f, "    {} {}\n", pair.0, pair.1)?
+        if self.0.is_empty() == true {
+            write!(f, "    None\n")?
+        } else {
+            for pair in &self.0 {
+                write!(f, "    {} {}\n", pair.0, pair.1)?
+            }
         }
         Ok(())
     }

@@ -170,6 +170,10 @@ should be checked into version control and not directly edited by the user.</p>
 own lockfile, then Orbit will read from the lockfile to create the ip
 dependency graph. To force Orbit to build the ip dependency graph from
 scratch, use <code>--force</code>.</p>
+<p>If only wishing to update the lockfile, using <code>--lock-only</code> will not require
+a toplevel or testbench to be determined. The <code>--lock-only</code> flag can be
+combined with <code>--force</code> to overwrite the lockfile regardless if it is
+already in sync with the current working ip's manifest data.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--top &lt;unit&gt;</code><br />
       The top level entity to explicitly define</p>
@@ -191,9 +195,12 @@ scratch, use <code>--force</code>.</p>
       Convert SSH to HTTPS urls when fetching external dependencies</p>
 <p><code>--force</code><br />
       Ignore reading the lock file</p>
+<p><code>--lock-only</code>
+      Only create a lock file</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit plan --top top_level --fileset PIN-PLAN=&quot;*.board&quot;
 orbit plan --plugin vivado --clean --bench ram_tb
+orbit plan --lock-only
 </code></pre>
 
                     </main>

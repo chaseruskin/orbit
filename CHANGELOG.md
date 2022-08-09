@@ -15,6 +15,22 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.8.1
+
+### Changes
+- black box entities in `orbit tree` display as colored yellow
+- adds `--lock-only` flag to `orbit plan` to only generate a lockfile
+- prints 'None' for dependencies if ip has zero dependencies during `orbit probe`
+- saves installation size to ip's manifest when publishing to vendor for later probing helpful information
+- adds error if units were not saved to manifest at vendor/availalble level and trying to probe them from that ip catalog level with `orbit probe`
+
+### Fixes
+- tree command no longer incorrectly auto-detects dependency units as roots
+- installation by --path now behaves properly
+
+### Documentation
+- updates general docs
+
 ## 0.8.0
 
 ### Features

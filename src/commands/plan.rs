@@ -84,6 +84,9 @@ impl Command for Plan {
             .installations(c.get_cache_path())?
             .available(c.get_vendors())?;
 
+        // @todo: recreate the ip graph from the lockfile, then read each installation
+        // see Install::install_from_lock_file
+
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
         if target_ip.can_use_lock() == true && c.force == false {
             // fill in the catalog with missing modules according the lock file if available

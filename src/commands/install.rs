@@ -129,7 +129,7 @@ pub fn fetch_install_path(ip: &PkgId, catalog: &Catalog, disable_ssh: bool, temp
 impl Install {
 
     pub fn install_from_lock_file(&self, lock: &LockFile, catalog: &Catalog) -> Result<(), Fault> {
-        // build entire dependency graph from lockfile
+        // build entire dependency graph from lockfile @todo: denote which ip's are from dev path to ensure they are "develop_from_lock_entry"
         let graph = ip::graph_ip_from_lock(&lock)?;
         // sort to topological ordering
         let mut order = graph.get_graph().topological_sort();

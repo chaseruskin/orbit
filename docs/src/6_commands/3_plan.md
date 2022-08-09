@@ -37,6 +37,11 @@ If the current working ip's manifest's data matches its data stored in its
 own lockfile, then Orbit will read from the lockfile to create the ip
 dependency graph. To force Orbit to build the ip dependency graph from
 scratch, use `--force`.
+  
+If only wishing to update the lockfile, using `--lock-only` will not require
+a toplevel or testbench to be determined. The `--lock-only` flag can be
+combined with `--force` to overwrite the lockfile regardless if it is
+already in sync with the current working ip's manifest data.
 
 ## __OPTIONS__
 
@@ -48,13 +53,13 @@ scratch, use `--force`.
    
 `--plugin <alias>`  
       A plugin to refer to gather its declared filesets
- 
+  
 `--build-dir <dir>`  
       The relative directory to place the blueprint.tsv file
- 
+  
 `--filset <key=glob>...`  
       A glob-style pattern identified by a name to add into the blueprint    
- 
+  
 `--clean`  
       Removes all files from the build directory before planning
   
@@ -69,10 +74,14 @@ scratch, use `--force`.
  
 `--force`  
       Ignore reading the lock file
+  
+`--lock-only`
+      Only create a lock file
 
 ## __EXAMPLES__
 
 ```
 orbit plan --top top_level --fileset PIN-PLAN="*.board"
 orbit plan --plugin vivado --clean --bench ram_tb
+orbit plan --lock-only
 ```

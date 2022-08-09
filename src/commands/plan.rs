@@ -5,6 +5,8 @@ use crate::FromCli;
 use crate::core::catalog::Catalog;
 use crate::core::extgit;
 use crate::core::ip::IpFileNode;
+use crate::core::ip::IpNode;
+use crate::core::ip::IpSpec;
 use crate::core::manifest::IpManifest;
 use crate::core::lockfile::LockEntry;
 use crate::core::template;
@@ -36,10 +38,29 @@ pub struct Plan {
     build_dir: Option<String>,
     filesets: Option<Vec<Fileset>>,
     disable_ssh: bool,
+    only_lock: bool,
+}
+
+impl FromCli for Plan {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
+        cli.set_help(HELP);
+        let command = Ok(Plan {
+            only_lock: cli.check_flag(Flag::new("lock-only"))?,
+            clean: cli.check_flag(Flag::new("clean"))?,
+            list: cli.check_flag(Flag::new("list"))?,
+            top: cli.check_option(Optional::new("top").value("unit"))?,
+            bench: cli.check_option(Optional::new("bench").value("tb"))?,
+            plugin: cli.check_option(Optional::new("plugin"))?,
+            build_dir: cli.check_option(Optional::new("build-dir").value("dir"))?,
+            filesets: cli.check_option_all(Optional::new("fileset").value("key=glob"))?,
+            disable_ssh: cli.check_flag(Flag::new("disable-ssh"))?,
+        });
+        command
+    }
 }
 
 impl Command for Plan {
-    type Err = Box<dyn std::error::Error>;
+    type Err = Fault;
 
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // display plugin list and exit
@@ -301,6 +322,17 @@ impl Plan {
         graph_map
     }
 
+    /// Writes the lockfile according to the constructed `ip_graph`.
+    fn write_lockfile(target: &IpManifest, ip_graph: &GraphMap<IpSpec, IpNode, ()>) -> Result<(), Fault> {
+        // create build list
+        let mut build_list: Vec<&IpManifest> = ip_graph.get_map()
+            .iter()
+            .map(|p| { p.1.as_ref().as_original_ip() })
+            .collect();
+        target.write_lock(&mut build_list)?;
+        Ok(())
+    }
+
     /// Performs the backend logic for creating a blueprint file (planning a design).
     fn run(&self, target: IpManifest, build_dir: &str, plug: Option<&Plugin>, catalog: Catalog) -> Result<(), Fault> {
         // create the build path to know where to begin storing files
@@ -314,6 +346,12 @@ impl Plan {
 
         // build entire ip graph and resolve with dynamic symbol transformation
         let ip_graph = crate::core::ip::compute_final_ip_graph(&target, &catalog)?;
+
+        // only write lockfile and exit if flag is raised 
+        if self.only_lock == true {
+            Self::write_lockfile(&target, &ip_graph)?;
+            return Ok(())
+        }
 
         let files = crate::core::ip::build_ip_file_list(&ip_graph);
         let current_graph = Self::build_full_graph(&files);
@@ -424,14 +462,7 @@ impl Plan {
         };
 
         // [!] write the lock file
-        {
-            // create build list
-            let mut build_list: Vec<&IpManifest> = ip_graph.get_map()
-                .iter()
-                .map(|p| { p.1.as_ref().as_original_ip() })
-                .collect();
-            target.write_lock(&mut build_list)?;
-        }
+        Self::write_lockfile(&target, &ip_graph)?;
 
         // compute minimal topological ordering
         let min_order = current_graph.get_graph().minimal_topological_sort(highest_point);
@@ -544,23 +575,6 @@ impl Plan {
         } else {
             todo!("find toplevel node that is not a bench")
         }
-    }
-}
-
-impl FromCli for Plan {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
-        let command = Ok(Plan {
-            top: cli.check_option(Optional::new("top").value("unit"))?,
-            clean: cli.check_flag(Flag::new("clean"))?,
-            list: cli.check_flag(Flag::new("list"))?,
-            bench: cli.check_option(Optional::new("bench").value("tb"))?,
-            plugin: cli.check_option(Optional::new("plugin"))?,
-            build_dir: cli.check_option(Optional::new("build-dir").value("dir"))?,
-            filesets: cli.check_option_all(Optional::new("fileset").value("key=glob"))?,
-            disable_ssh: cli.check_flag(Flag::new("disable-ssh"))?,
-        });
-        command
     }
 }
 

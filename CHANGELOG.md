@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.8.2
+
+### Fixes
+- `orbit build` on windows OS by default tries to read .bat files from PATH when a command is entered without an extension and is not initially found as .exe. To disable this behavior, set an environment variable called `ORBIT_WIN_LITERAL_CMD`.
+
 ## 0.8.1
 
 ### Changes

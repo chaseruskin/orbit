@@ -1,4 +1,3 @@
-use std::process::Stdio;
 use crate::core::fileset::Fileset;
 use crate::core::config::FromToml;
 
@@ -34,6 +33,8 @@ impl std::fmt::Display for PluginError {
 
 use crate::util::anyerror::{AnyError, Fault};
 
+use super::context::Context;
+
 impl Plugin {
     /// Creates a new `Plugin` struct.
     pub fn new() -> Self {
@@ -65,11 +66,7 @@ impl Plugin {
             let s = args.iter().fold(String::new(), |x, y| { x + "\"" + &y + "\" " });
             println!("running: {} {}", self.command, s);
         }
-        let mut proc = std::process::Command::new(&self.command)
-            .args(&args)
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .spawn()?;
+        let mut proc = crate::util::filesystem::invoke(&self.command, &args, Context::enable_windows_bat_file_match())?;
         let exit_code = proc.wait()?;
         match exit_code.code() {
             Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { Ok(()) },

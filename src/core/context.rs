@@ -15,6 +15,9 @@ use super::config::CONFIG_FILE;
 use super::pkgid::PkgPart;
 use super::vendor::VendorManifest;
 
+
+const ORBIT_WIN_LITERAL_CMD: &str = "ORBIT_WIN_LITERAL_CMD";
+
 pub struct Context {
     /// holds behind-the-scenes internal Orbit operations
     home_path: path::PathBuf,
@@ -97,6 +100,16 @@ impl Context {
     pub fn cache(mut self, key: &str) -> Result<Context, Fault> {
         self.cache_path = self.folder(key, "cache")?;
         Ok(self)
+    }
+
+    /// Checks if windows literal command is enabled.
+    pub fn enable_windows_bat_file_match() -> bool {
+        if cfg!(target_os = "windows") {
+            // by not finding the env var, the windows batch file match is enabled
+            std::env::var(ORBIT_WIN_LITERAL_CMD).is_err()
+        } else {
+            false
+        }
     }
 
     /// Returns an existing filesystem path to be used under `key`.

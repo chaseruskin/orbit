@@ -12,6 +12,7 @@ use crate::core::plugin::Plugin;
 use crate::util::environment;
 use crate::util::environment::ORBIT_BLUEPRINT;
 use crate::util::environment::ORBIT_BUILD_DIR;
+use super::plan::BLUEPRINT_FILE;
 
 #[derive(Debug, PartialEq)]
 pub struct Build {
@@ -109,11 +110,8 @@ impl Command for Build {
     }
 }
 
-use std::process::Stdio;
-
-use super::plan::BLUEPRINT_FILE;
-
 impl Build {
+
     fn run(&self, plug: Option<&Plugin>) -> Result<(), Box<dyn std::error::Error>> {
         // if there is a match run with the plugin then run it
         if let Some(p) = plug {
@@ -123,11 +121,7 @@ impl Build {
                 let s = self.args.iter().fold(String::new(), |x, y| { x + "\"" + &y + "\" " });
                 println!("running: {} {}", cmd, s);
             }
-            let mut proc = std::process::Command::new(cmd)
-                .args(&self.args)
-                .stdout(Stdio::inherit())
-                .stderr(Stdio::inherit())
-                .spawn()?;
+            let mut proc = crate::util::filesystem::invoke(cmd, &self.args, Context::enable_windows_bat_file_match())?;
             let exit_code = proc.wait()?;
             match exit_code.code() {
                 Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { Ok(()) },

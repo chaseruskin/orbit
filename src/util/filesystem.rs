@@ -5,7 +5,6 @@ use std::path::{Path, Component};
 use home::home_dir;
 use std::path::PathBuf;
 use std::env;
-
 use crate::core::manifest;
 use crate::core::lockfile;
 
@@ -229,6 +228,32 @@ pub fn normalize_path(p: PathBuf) -> PathBuf {
     let mut first = true;
     PathBuf::from(result.into_iter().fold(String::new(), |x, y| if first == true { first = false; x + &y } else { x + "/" + &y }).replace("\\", "/").replace("//", "/"))
     // @todo: add some fail-safe where if the final path does not exist then return the original path?
+}
+
+/// Executes the process invoking the `cmd` with the following `args`.
+/// 
+/// Performs a fix to allow .bat files to be searched on windows given the option
+/// is enabled through environment variables.
+pub fn invoke(cmd: &String, args: &Vec<String>, try_again: bool) -> std::io::Result<std::process::Child> {
+    match std::process::Command::new(cmd)
+        .args(args)
+        .stdout(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit())
+        .spawn() { 
+            Ok(r) => Ok(r),
+            Err(e) => {
+                // check if there is no file extension
+                let repeat = try_again == true && match PathBuf::from(cmd).file_name() {
+                    Some(fname) => fname.to_string_lossy().contains('.') == false,
+                    None => true,
+                };
+                if repeat == true && e.kind() == std::io::ErrorKind::NotFound {
+                    invoke(&format!("{}.bat", cmd), args, false)
+                } else {
+                    Err(e)
+                }
+            }
+    }
 }
 
 const GIT_DIR: &str = ".git";

@@ -12,6 +12,8 @@ Orbit's configuration can be customized with the setting of specific environment
 
 - `EDITOR` - chooses this value as the default text editor when no `core.editor` key is present in the config.toml.
 
+- `ORBIT_WIN_LITERAL_CMD` - disables default behavior of checking for programs ending with .exe then .bat when a program name without extension is not found on a windows operating system
+
 ## Runtime environment variables
 
 Orbit also sets environment variables during runtime so a plugin has access to runtime information. 

@@ -35,6 +35,7 @@ pub struct Plan {
     top: Option<Identifier>,
     clean: bool,
     list: bool,
+    all: bool,
     build_dir: Option<String>,
     filesets: Option<Vec<Fileset>>,
     disable_ssh: bool,
@@ -46,6 +47,7 @@ impl FromCli for Plan {
         cli.set_help(HELP);
         let command = Ok(Plan {
             only_lock: cli.check_flag(Flag::new("lock-only"))?,
+            all : cli.check_flag(Flag::new("all"))?,
             clean: cli.check_flag(Flag::new("clean"))?,
             list: cli.check_flag(Flag::new("list"))?,
             top: cli.check_option(Optional::new("top").value("unit"))?,
@@ -390,6 +392,7 @@ impl Plan {
                     if let Some(ent) = n.as_ref().get_symbol().as_entity() {
                         if ent.is_testbench() == true {
                             Some(n.index())
+                        // otherwise we found the toplevel node that is not a testbench "natural top"
                         } else {
                             natural_top = Some(n.index());
                             None
@@ -439,10 +442,9 @@ impl Plan {
                 None => return Err(PlanError::UnknownEntity(t.clone()))?
             }
         } else {
-            if let Some(nt) = natural_top {
-                nt
-            } else {
-                Self::detect_top(&current_graph, bench)?
+            match natural_top {
+                Some(nt) => nt,
+                None => Self::detect_top(&current_graph, bench)?
             }
         };
         // set immutability
@@ -568,12 +570,13 @@ impl Plan {
                     })
                 .collect();
             match entities.len() {
+                // todo: do not make this an error if no entities are tested in testbench
                 0 => Err(AnyError(format!("no entities are tested in the testbench")))?,
                 1 => Ok(entities[0].0),
                 _ => Err(PlanError::Ambiguous("entities instantiated in the testbench".to_string(), entities.into_iter().map(|f| { graph_map.get_key_by_index(f.0).unwrap().get_suffix().clone() }).collect()))?
             }
         } else {
-            todo!("find toplevel node that is not a bench")
+            panic!()
         }
     }
 }

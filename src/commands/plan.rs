@@ -335,6 +335,123 @@ impl Plan {
         Ok(())
     }
 
+    fn detect_bench(&self, graph: &GraphMap<CompoundIdentifier, HdlNode, ()>, working_lib: &Identifier) -> Result<(Option<usize>, Option<usize>), Fault> {
+        Ok(if let Some(t) = &self.bench {
+            match graph.get_node_by_key(&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
+                // verify the unit is an entity that is a testbench
+                Some(node) => {
+                    if let Some(e) = node.as_ref().get_symbol().as_entity() {
+                        if e.is_testbench() == false {
+                            return Err(PlanError::BadTestbench(t.clone()))?
+                        }
+                        (None, Some(node.index()))
+                    } else {
+                        return Err(PlanError::BadEntity(t.clone()))?
+                    }
+                },
+                None => return Err(PlanError::UnknownEntity(t.clone()))?
+            }
+        // try to find the naturally occurring top-level if user did not provide --bench and did not provide --top
+        } else if self.top.is_none() {
+            // filter to display tops that have ports (not testbenches)
+            // traverse subset of graph by filtering only for working library entities
+            let shallow_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> = graph.iter()
+                .filter(|f| match f.0.get_prefix() { 
+                    Some(iden) => iden == working_lib, 
+                    None => false } )
+                .collect();
+            match shallow_graph.find_root() {
+                // only detected a single root
+                Ok(n) => {
+                    let n = graph.get_node_by_key(shallow_graph.get_key_by_index(n.index()).unwrap()).unwrap();
+                    // verify the root is a testbench
+                    if let Some(ent) = n.as_ref().get_symbol().as_entity() {
+                        if ent.is_testbench() == true {
+                            (None, Some(n.index()))
+                        // otherwise we found the toplevel node that is not a testbench "natural top"
+                        } else {
+                            (Some(n.index()), None)
+                        }
+                    } else {
+                        (None, None)
+                    }
+                },
+                Err(e) => {
+                    match e.len() {
+                        0 => (None, None),
+                        _ => return Err(PlanError::Ambiguous("roots".to_string(), e.into_iter().map(|f| { f.as_ref().get_symbol().as_iden().unwrap().clone() }).collect()))?,
+                    }   
+                }
+            }
+        } else {
+            // still could possibly be found by top level if top is some
+            (None, None)
+        })
+    }
+
+    
+    /// Given a `graph` and optionally a `bench`, detect the index corresponding
+    /// to the top.
+    /// 
+    /// This function looks and checks if there is a single predecessor to the
+    /// `bench` node.
+    fn detect_top(&self, graph: &GraphMap<CompoundIdentifier, HdlNode, ()>, working_lib: &Identifier, natural_top: Option<usize>, mut bench: Option<usize>) -> Result<(Option<usize>, Option<usize>), Fault> {
+        // determine the top-level node index
+        let top = if let Some(t) = &self.top {
+            match graph.get_node_by_key(&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
+                Some(node) => {
+                    // verify the unit is an entity that is not a testbench
+                    if let Some(e) = node.as_ref().get_symbol().as_entity() {
+                        if e.is_testbench() == true {
+                            return Err(PlanError::BadTop(t.clone()))?
+                        }
+                    } else {
+                        return Err(PlanError::BadEntity(t.clone()))?
+                    }
+                    let n = node.index();
+                    // try to detect top level testbench
+                    if bench.is_none() {
+                        // check if only 1 is a testbench
+                        let benches: Vec<usize> =  graph.get_graph().successors(n)
+                            .filter(|f| graph.get_node_by_index(*f).unwrap().as_ref().get_symbol().as_entity().unwrap().is_testbench() )
+                            .collect();
+                        // detect the testbench
+                        bench = match benches.len() {
+                            0 => None,
+                            1 => Some(*benches.first().unwrap()),
+                            _ => return Err(PlanError::Ambiguous("testbenches".to_string(), benches.into_iter().map(|f| { graph.get_key_by_index(f).unwrap().get_suffix().clone() }).collect()))?,
+                        };
+                    }
+                    Some(n)
+                },
+                None => return Err(PlanError::UnknownEntity(t.clone()))?
+            }
+        } else {
+            match natural_top {
+                Some(nt) => Some(nt),
+                None => {
+                    if let Some(b) = bench {
+                        let entities: Vec<(usize, &symbol::Entity)> = graph.get_graph().predecessors(b)
+                            .filter_map(|f| {
+                                if let Some(e) = graph.get_node_by_index(f).unwrap().as_ref().get_symbol().as_entity() { 
+                                    Some((f, e)) } else { None }
+                                })
+                            .collect();
+                        match entities.len() {
+                            // todo: do not make this an error if no entities are tested in testbench
+                            0 => return Err(AnyError(format!("no entities are tested in the testbench")))?,
+                            1 => Some(entities[0].0),
+                            _ => return Err(PlanError::Ambiguous("entities instantiated in the testbench".to_string(), entities.into_iter().map(|f| { graph.get_key_by_index(f.0).unwrap().get_suffix().clone() }).collect()))?
+                        }
+                    } else {
+                        None
+                    }
+                }
+            }
+        };
+        Ok((top, bench))
+    }
+
     /// Performs the backend logic for creating a blueprint file (planning a design).
     fn run(&self, target: IpManifest, build_dir: &str, plug: Option<&Plugin>, catalog: Catalog) -> Result<(), Fault> {
         // create the build path to know where to begin storing files
@@ -360,122 +477,55 @@ impl Plan {
 
         let working_lib = Identifier::new_working();
 
-        let mut natural_top: Option<usize> = None;
-        let mut bench = if let Some(t) = &self.bench {
-            match current_graph.get_node_by_key(&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
-                // verify the unit is an entity that is a testbench
-                Some(node) => {
-                    if let Some(e) = node.as_ref().get_symbol().as_entity() {
-                        if e.is_testbench() == false {
-                            return Err(PlanError::BadTestbench(t.clone()))?
-                        }
-                        Some(node.index())
-                    } else {
-                        return Err(PlanError::BadEntity(t.clone()))?
-                    }
-                },
-                None => return Err(PlanError::UnknownEntity(t.clone()))?
-            }
-        } else if self.top.is_none() {
-            // filter to display tops that have ports (not testbenches)
-            // traverse subset of graph by filtering only for working library entities
-            let shallow_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> = current_graph.iter()
-                .filter(|f| match f.0.get_prefix() { 
-                    Some(iden) => iden == &working_lib, 
-                    None => false } )
-                .collect();
-            match shallow_graph.find_root() {
-                // only detected a single root
-                Ok(n) => {
-                    let n = current_graph.get_node_by_key(shallow_graph.get_key_by_index(n.index()).unwrap()).unwrap();
-                    // verify the root is a testbench
-                    if let Some(ent) = n.as_ref().get_symbol().as_entity() {
-                        if ent.is_testbench() == true {
-                            Some(n.index())
-                        // otherwise we found the toplevel node that is not a testbench "natural top"
-                        } else {
-                            natural_top = Some(n.index());
-                            None
-                        }
-                    } else {
-                        None
-                    }
-                },
-                Err(e) => {
-                    match e.len() {
-                        0 => None,
-                        _ => return Err(PlanError::Ambiguous("roots".to_string(), e.into_iter().map(|f| { f.as_ref().get_symbol().as_iden().unwrap().clone() }).collect()))?,
-                    }   
-                }
-            }
-        } else {
-            None // still could possibly be found by top level if top is some
-        };
-
+        let (top, bench) = self.detect_bench(&current_graph, &working_lib)?;
         // determine the top-level node index
-        let top = if let Some(t) = &self.top {
-            match current_graph.get_node_by_key(&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
-                Some(node) => {
-                    // verify the unit is an entity that is not a testbench
-                    if let Some(e) = node.as_ref().get_symbol().as_entity() {
-                        if e.is_testbench() == true {
-                            return Err(PlanError::BadTop(t.clone()))?
-                        }
-                    } else {
-                        return Err(PlanError::BadEntity(t.clone()))?
-                    }
-                    let n = node.index();
-                    // try to detect top level testbench
-                    if bench.is_none() {
-                        // check if only 1 is a testbench
-                        let benches: Vec<usize> =  current_graph.get_graph().successors(n)
-                            .filter(|f| current_graph.get_node_by_index(*f).unwrap().as_ref().get_symbol().as_entity().unwrap().is_testbench() )
-                            .collect();
-                        bench = match benches.len() {
-                            0 => None,
-                            1 => Some(*benches.first().unwrap()),
-                            _ => return Err(PlanError::Ambiguous("testbenches".to_string(), benches.into_iter().map(|f| { current_graph.get_key_by_index(f).unwrap().get_suffix().clone() }).collect()))?,
-                        };
-                    }
-                    n
-                },
-                None => return Err(PlanError::UnknownEntity(t.clone()))?
-            }
-        } else {
-            match natural_top {
-                Some(nt) => nt,
-                None => Self::detect_top(&current_graph, bench)?
-            }
-        };
-        // set immutability
-        let bench = bench;
+        let (top, bench) = self.detect_top(&current_graph, &working_lib, top, bench)?;
+        // guarantees top exists
 
-        let top_name = current_graph.get_node_by_index(top).unwrap().as_ref().get_symbol().as_iden().unwrap().to_string();
-        let bench_name = if let Some(n) = bench {
-            current_graph.get_key_by_index(n).unwrap().get_suffix().to_string()
-        } else {
-            String::new()
-        };
-
-        // determine which point is the upmost root 
-        let highest_point = match bench {
-            Some(b) => b,
-            None => top
-        };
+        // error if the user-defined top is not instantiated in the testbench. Say this can be fixed by adding '--all'
+        if let Some(b) = &bench {
+            // @idea: merge two topological sorted lists together by running top sort from bench and top sort from top if in this situation
+            if self.all == false && current_graph.get_graph().successors(top.unwrap()).find(|i| i == b).is_none() {
+                return Err(AnyError(format!("top unit '{}' is not tested in testbench '{}'\n\nIf you wish to continue, add the `--all` flag", current_graph.get_key_by_index(top.unwrap()).unwrap().get_suffix(), current_graph.get_key_by_index(*b).unwrap().get_suffix())))?
+            }
+        }
 
         // [!] write the lock file
         Self::write_lockfile(&target, &ip_graph)?;
 
         // compute minimal topological ordering
-        let min_order = current_graph.get_graph().minimal_topological_sort(highest_point);
+        let min_order = match self.all {
+            true => current_graph.get_graph().topological_sort(),
+            false => {
+                // determine which point is the upmost root 
+                let highest_point = match bench {
+                    Some(b) => b,
+                    None => top.unwrap()
+                };
+                current_graph.get_graph().minimal_topological_sort(highest_point)
+            }
+        };
 
-        let mut file_order = Vec::new();
-        for i in &min_order {
-            // access the node key
-            let ipfs = current_graph.get_node_by_index(*i).unwrap().as_ref().get_associated_files();
-            // access the files associated with this key
-            file_order.append(&mut ipfs.into_iter().map(|i| *i).collect());
-        }
+        let file_order = { 
+            let mut f_list = Vec::new();
+            for i in &min_order {
+                // access the node key
+                let ipfs = current_graph.get_node_by_index(*i).unwrap().as_ref().get_associated_files();
+                // access the files associated with this key
+                f_list.append(&mut ipfs.into_iter().map(|i| *i).collect());
+            }
+            f_list
+        };
+
+        // grab the names as strings
+        let top_name = match top {
+            Some(i) => current_graph.get_key_by_index(i).unwrap().get_suffix().to_string(),
+            None => String::new(),
+        };
+        let bench_name = match bench {
+            Some(i) => current_graph.get_key_by_index(i).unwrap().get_suffix().to_string(),
+            None => String::new()
+        };
 
         // store data in blueprint TSV format
         let mut blueprint_data = String::new();
@@ -554,30 +604,6 @@ impl Plan {
         // create a blueprint file
         println!("info: Blueprint created at: {}", blueprint_path.display());
         Ok(())
-    }
-
-    /// Given a `graph` and optionally a `bench`, detect the index corresponding
-    /// to the top.
-    /// 
-    /// This function looks and checks if there is a single predecessor to the
-    /// `bench` node.
-    fn detect_top<'a>(graph_map: &GraphMap<CompoundIdentifier, HdlNode<'a>, ()>, bench: Option<usize>) -> Result<usize, Fault> {
-        if let Some(b) = bench {
-            let entities: Vec<(usize, &symbol::Entity)> = graph_map.get_graph().predecessors(b)
-                .filter_map(|f| {
-                    if let Some(e) = graph_map.get_node_by_index(f).unwrap().as_ref().get_symbol().as_entity() { 
-                        Some((f, e)) } else { None }
-                    })
-                .collect();
-            match entities.len() {
-                // todo: do not make this an error if no entities are tested in testbench
-                0 => Err(AnyError(format!("no entities are tested in the testbench")))?,
-                1 => Ok(entities[0].0),
-                _ => Err(PlanError::Ambiguous("entities instantiated in the testbench".to_string(), entities.into_iter().map(|f| { graph_map.get_key_by_index(f.0).unwrap().get_suffix().clone() }).collect()))?
-            }
-        } else {
-            panic!()
-        }
     }
 }
 

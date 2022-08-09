@@ -355,11 +355,13 @@ impl Plan {
         } else if self.top.is_none() {
             // filter to display tops that have ports (not testbenches)
             // traverse subset of graph by filtering only for working library entities
+            println!("{:?}", graph.get_map().keys());
             let shallow_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> = graph.iter()
                 .filter(|f| match f.0.get_prefix() { 
                     Some(iden) => iden == working_lib, 
                     None => false } )
                 .collect();
+            println!("{:?}", shallow_graph.get_map().keys());
             match shallow_graph.find_root() {
                 // only detected a single root
                 Ok(n) => {

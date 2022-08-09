@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
+use colored::Colorize;
+
 use crate::Command;
 use crate::FromCli;
 use crate::core::catalog::Catalog;
@@ -92,7 +94,7 @@ impl Tree {
 
     /// Construct and print the graph at an HDL-entity level.
     fn run_hdl_graph(&self, target: IpManifest, catalog: Catalog) -> Result<(), Fault> {
-        let working_lib = Identifier::Basic(String::from("work"));
+        let working_lib = Identifier::new_working();
 
         // build graph again but with entire set of all files available from all depdendencies
         let ip_graph = ip::compute_final_ip_graph(&target, &catalog)?;
@@ -102,23 +104,24 @@ impl Tree {
 
         let n = if let Some(ent) = &self.root {
             // check if the identifier exists in the entity graph
-            if let Some(id) = graph.get_node_by_key(&CompoundIdentifier::new(working_lib, ent.clone())) {
-                id.index()
-            } else {
-                return Err(PlanError::UnknownEntity(ent.clone()))?
+            match graph.get_node_by_key(&CompoundIdentifier::new(working_lib, ent.clone())) {
+                Some(id) => id.index(),
+                None => return Err(PlanError::UnknownEntity(ent.clone()))?,
             }
+        // auto-detect the root if possible
         } else {
+            println!("{:?}", graph.get_map().keys());
             // traverse subset of graph by filtering only for working library entities
             let shallow_graph: GraphMap<&CompoundIdentifier, &EntityNode, &()> = graph.iter()
                 .filter(|f| match f.0.get_prefix() { 
                     Some(iden) => iden == &working_lib, 
                     None => false } )
                 .collect();
+            println!("{:?}", shallow_graph.get_map().keys());
             match shallow_graph.find_root() {
                 Ok(n) => graph.get_node_by_key(shallow_graph.get_key_by_index(n.index()).unwrap()).unwrap().index(),
                 Err(e) => match e.len() {
                     0 => return Err(PlanError::Empty)?,
-                    1 => graph.get_node_by_key(shallow_graph.get_key_by_index(e.first().unwrap().index()).unwrap()).unwrap().index(),
                     _ => return Err(PlanError::Ambiguous("roots".to_string(), e.into_iter().map(|f| { f.as_ref().entity.get_name().clone() }).collect()))?
                 }
             }
@@ -175,38 +178,35 @@ impl Tree {
         let mut package_identifiers: HashSet<Identifier> = HashSet::new();
         // read all files
         for source_file in files {
-            if crate::core::fileset::is_vhdl(&source_file.get_file()) == true {
-                let contents = std::fs::read_to_string(&source_file.get_file()).unwrap();
-                let symbols = symbol::VHDLParser::read(&contents).into_symbols();
-                
-                let lib = source_file.get_library();
-
-                // add all entities to a graph and store architectures for later analysis
-                let mut iter = symbols.into_iter().filter_map(|sym| {
+            // skip files that are not VHDL
+            if crate::core::fileset::is_vhdl(&source_file.get_file()) == false {
+                continue;
+            }
+            // parse VHDL code
+            let contents = std::fs::read_to_string(&source_file.get_file()).unwrap();
+            let symbols = symbol::VHDLParser::read(&contents).into_symbols();
+            
+            let lib = source_file.get_library();
+            // add all entities to a graph and store architectures for later analysis
+            symbols.into_iter()
+                .for_each(|sym| {
                     match sym {
                         symbol::VHDLSymbol::Entity(e) => {
                             component_pairs.insert(e.get_name().clone(), lib.clone());
-                            Some(e)
+                            graph.add_node(CompoundIdentifier::new(lib.clone(), e.get_name().clone()), EntityNode::new(e, source_file));
                         },
                         symbol::VHDLSymbol::Architecture(arch) => {
                             sub_nodes.push((lib.clone(), SubUnitNode::new(SubUnit::from_arch(arch), source_file)));
-                            None
                         },
                         symbol::VHDLSymbol::Configuration(cfg) => {
                             sub_nodes.push((lib.clone(), SubUnitNode::new(SubUnit::from_config(cfg), source_file)));
-                            None
                         },
                         symbol::VHDLSymbol::Package(_) => {
                             package_identifiers.insert(sym.as_iden().unwrap().clone());
-                            None
                         }
-                        _ => None,
+                        _ => (),
                     }
-                });
-                while let Some(e) = iter.next() {
-                    graph.add_node(CompoundIdentifier::new(lib.clone(), e.get_name().clone()), EntityNode::new(e, source_file));
-                }
-            }
+            });
         }
 
         // go through all subunits and make the connections
@@ -214,6 +214,7 @@ impl Tree {
         while let Some((lib, node)) = sub_nodes_iter.next() {
 
             let node_name = CompoundIdentifier::new(lib, node.get_sub().get_entity().clone());
+
             // link to the owner and add subunit's source file
             let entity_node = graph.get_node_by_key_mut(&node_name).unwrap();
             entity_node.as_ref_mut().add_file(node.get_file());
@@ -223,15 +224,16 @@ impl Tree {
                 if package_identifiers.contains(dep.get_suffix()) == true {
                     continue;
                 }
-
                 // need to locate the key with a suffix matching `dep` if it was a component instantiation
                 if dep.get_prefix().is_none() {
                     if let Some(lib) = component_pairs.get(dep.get_suffix()) {
+                        
                         let b = graph.add_edge_by_key(&CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone()), &node_name, ());
                         match b {
                             // create black box entity
                             EdgeStatus::MissingSource => {
                                 let dep_name = CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone());
+                               
                                 graph.add_node(dep_name.clone(), EntityNode::black_box(Entity::black_box(dep.get_suffix().clone())));
                                 graph.add_edge_by_key(&dep_name, &node_name, ());
                             }
@@ -240,24 +242,18 @@ impl Tree {
                     // this entity does not exist or was not logged
                     } else {
                         // create new node for black box entity
-                        graph.add_node(dep.clone(), EntityNode::black_box(Entity::black_box(dep.get_suffix().clone())));
+                        if graph.has_node_by_key(dep) == false {
+                            graph.add_node(dep.clone(), EntityNode::black_box(Entity::black_box(dep.get_suffix().clone())));
+                        }
                         graph.add_edge_by_key(&dep, &node_name, ());
                     }
+                // the dependency has a prefix (a library) with it
                 } else {
                     // verify we are not coming from a package (will mismatch and make inaccurate graph)
                     if package_identifiers.contains(dep.get_prefix().unwrap()) == true {
                         continue;
                     }
-
-                    let b = graph.add_edge_by_key(dep, &node_name, ());
-                    match b {
-                        // create black box entity
-                        EdgeStatus::MissingSource => {
-                            graph.add_node(dep.clone(), EntityNode::black_box(Entity::black_box(dep.get_suffix().clone())));
-                            graph.add_edge_by_key(&dep, &node_name, ());
-                        }
-                        _ => ()
-                    }
+                    graph.add_edge_by_key(dep, &node_name, ());
                 };
             }
         }
@@ -305,7 +301,7 @@ impl<'a> EntityNode<'a> {
 
     fn display(&self, fmt: &IdentifierFormat) -> String {
         if self.is_black_box() == true {
-            format!("{} ?", self.entity.get_name())
+            format!("{} {}", self.entity.get_name().to_string().yellow(), "?".yellow())
         } else {
             match fmt {
                 IdentifierFormat::Long => {

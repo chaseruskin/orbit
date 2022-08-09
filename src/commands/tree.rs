@@ -110,14 +110,12 @@ impl Tree {
             }
         // auto-detect the root if possible
         } else {
-            println!("{:?}", graph.get_map().keys());
             // traverse subset of graph by filtering only for working library entities
             let shallow_graph: GraphMap<&CompoundIdentifier, &EntityNode, &()> = graph.iter()
                 .filter(|f| match f.0.get_prefix() { 
                     Some(iden) => iden == &working_lib, 
                     None => false } )
                 .collect();
-            println!("{:?}", shallow_graph.get_map().keys());
             match shallow_graph.find_root() {
                 Ok(n) => graph.get_node_by_key(shallow_graph.get_key_by_index(n.index()).unwrap()).unwrap().index(),
                 Err(e) => match e.len() {

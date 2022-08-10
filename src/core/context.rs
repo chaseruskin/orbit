@@ -139,7 +139,7 @@ impl Context {
             ep
         };
         // set the environment variable
-        env::set_var(key, &dir);
+        env::set_var(key, &filesystem::normalize_path(dir.to_path_buf()));
         Ok(dir)
     }
 

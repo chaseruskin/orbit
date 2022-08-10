@@ -45,7 +45,6 @@ impl Command for Build {
     type Err = Fault;
     
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
-
         // try to find plugin matching `command` name under the `alias`
         let plug = if let Some(name) = &self.alias {
             match c.get_plugins().get(name) {

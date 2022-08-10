@@ -1,4 +1,6 @@
 use crate::core::manifest::IpManifest;
+use crate::core::plugin::PluginError;
+use crate::util::anyerror::Fault;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
 use crate::Command;
@@ -40,14 +42,15 @@ impl FromCli for Build {
 }
 
 impl Command for Build {
-    type Err = Box<dyn std::error::Error>;
+    type Err = Fault;
+    
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
 
         // try to find plugin matching `command` name under the `alias`
         let plug = if let Some(name) = &self.alias {
             match c.get_plugins().get(name) {
                 Some(p) => Some(p),
-                None => return Err(AnyError(format!("no plugin named '{}'", name)))?,
+                None => return Err(PluginError::Missing(name.to_string()))?,
             }
         } else {
             None
@@ -102,7 +105,7 @@ impl Command for Build {
                     if self.command.is_none() { 
                         match c.get_plugins().get(plug.get_value()) {
                             Some(p) => Some(p),
-                            None => return Err(AnyError(format!("failed to load plugin from .env named '{}'", plug.get_value())))?,
+                            None => return Err(PluginError::Missing(plug.get_value().to_string()))?,
                         }
                     } else { 
                         None 

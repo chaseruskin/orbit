@@ -9,6 +9,7 @@ use crate::core::ip::IpNode;
 use crate::core::ip::IpSpec;
 use crate::core::manifest::IpManifest;
 use crate::core::lockfile::LockEntry;
+use crate::core::plugin::PluginError;
 use crate::core::template;
 use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
@@ -70,7 +71,7 @@ impl Command for Plan {
             // verify the plugin alias matches
             Some(alias) => match c.get_plugins().get(alias) {
                 Some(p) => Some(p),
-                None => return Err(AnyError(format!("plugin '{}' does not exist", alias)))?,
+                None => return Err(PluginError::Missing(alias.to_string()))?,
             },
             None => None,
         };

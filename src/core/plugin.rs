@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-
+use std::error::Error;
 use crate::core::fileset::Fileset;
 use crate::core::config::FromToml;
 use crate::util::anyerror::{AnyError, Fault};
@@ -143,7 +143,22 @@ impl FromToml for Plugin {
                 }
             }
         })
-        // @TODO verify there are no extra keys
+        // @todo: verify there are no extra keys
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum PluginError {
+    Missing(String)
+}
+
+impl Error for PluginError {}
+
+impl std::fmt::Display for PluginError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Missing(name) => write!(f, "no plugin found as '{}'\n\nTry `orbit plan --list` to see available plugins", name)
+        }
     }
 }
 

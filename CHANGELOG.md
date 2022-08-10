@@ -15,6 +15,13 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.8.3
+
+### Features
+- new entry for plugins in config.toml: `details`- accepts a string (typically will be a multi-line string) that a developer can provide to outline the details of the plugin
+- can now view plugin data in `orbit build` and `orbit plan`: `orbit plan --plugin <alias> --list` to view filesets, the command, summary, details, and its root directory
+- `orbit plan --all` will not error on ambiguous top/bench units
+
 ## 0.8.2
 
 ### Fixes

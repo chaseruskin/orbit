@@ -1,3 +1,4 @@
+use colored::Colorize;
 use tempfile::tempdir;
 
 use crate::Command;
@@ -344,7 +345,7 @@ impl Plan {
         Ok(())
     }
 
-    fn detect_bench(&self, graph: &GraphMap<CompoundIdentifier, HdlNode, ()>, working_lib: &Identifier) -> Result<(Option<usize>, Option<usize>), Fault> {
+    fn detect_bench(&self, graph: &GraphMap<CompoundIdentifier, HdlNode, ()>, working_lib: &Identifier) -> Result<(Option<usize>, Option<usize>), PlanError> {
         Ok(if let Some(t) = &self.bench {
             match graph.get_node_by_key(&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
                 // verify the unit is an entity that is a testbench
@@ -404,7 +405,7 @@ impl Plan {
     /// 
     /// This function looks and checks if there is a single predecessor to the
     /// `bench` node.
-    fn detect_top(&self, graph: &GraphMap<CompoundIdentifier, HdlNode, ()>, working_lib: &Identifier, natural_top: Option<usize>, mut bench: Option<usize>) -> Result<(Option<usize>, Option<usize>), Fault> {
+    fn detect_top(&self, graph: &GraphMap<CompoundIdentifier, HdlNode, ()>, working_lib: &Identifier, natural_top: Option<usize>, mut bench: Option<usize>) -> Result<(Option<usize>, Option<usize>), PlanError> {
         // determine the top-level node index
         let top = if let Some(t) = &self.top {
             match graph.get_node_by_key(&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
@@ -448,7 +449,7 @@ impl Plan {
                             .collect();
                         match entities.len() {
                             // todo: do not make this an error if no entities are tested in testbench
-                            0 => return Err(AnyError(format!("no entities are tested in the testbench")))?,
+                            0 => return Err(PlanError::TestbenchNoTest(graph.get_key_by_index(b).unwrap().get_suffix().clone())),
                             1 => Some(entities[0].0),
                             _ => return Err(PlanError::Ambiguous("entities instantiated in the testbench".to_string(), entities.into_iter().map(|f| { graph.get_key_by_index(f.0).unwrap().get_suffix().clone() }).collect()))?
                         }
@@ -486,10 +487,22 @@ impl Plan {
 
         let working_lib = Identifier::new_working();
 
-        let (top, bench) = self.detect_bench(&current_graph, &working_lib)?;
+        let (top, bench) = match self.detect_bench(&current_graph, &working_lib) {
+            Ok(r) => r,
+            Err(e) => match e {
+                PlanError::Ambiguous(_, _) => if self.all == true { (None, None) } else { return Err(e)? }
+                _ => return Err(e)?
+            }
+        };
         // determine the top-level node index
-        let (top, bench) = self.detect_top(&current_graph, &working_lib, top, bench)?;
-        // guarantees top exists
+        let (top, bench) = match self.detect_top(&current_graph, &working_lib, top, bench) {
+            Ok(r) => r,
+            Err(e) => match e {
+                PlanError::Ambiguous(_, _) => if self.all == true { (top, bench) } else { return Err(e)? }
+                _ => return Err(e)?
+            }
+        };
+        // guarantees top exists if not using --all
 
         // error if the user-defined top is not instantiated in the testbench. Say this can be fixed by adding '--all'
         if let Some(b) = &bench {
@@ -504,7 +517,9 @@ impl Plan {
 
         // compute minimal topological ordering
         let min_order = match self.all {
+            // perform topological sort on the entire graph
             true => current_graph.get_graph().topological_sort(),
+            // perform topological sort on minimal subset of the graph
             false => {
                 // determine which point is the upmost root 
                 let highest_point = match bench {
@@ -515,6 +530,7 @@ impl Plan {
             }
         };
 
+        // gather the files from each node in-order (multiple files can exist for a node)
         let file_order = { 
             let mut f_list = Vec::new();
             for i in &min_order {
@@ -536,6 +552,16 @@ impl Plan {
             None => String::new()
         };
 
+        // print information (maybe also print the plugin saved to .env too?)
+        match top_name.is_empty() {
+            false => println!("info: top-level set to {}", top_name.blue()),
+            true =>  println!("{} no top-level set", "warning:".yellow()),
+        }
+        match bench_name.is_empty() {
+            false => println!("info: testbench set to {}", bench_name.blue()),
+            true =>  println!("{} no testbench set", "warning:".yellow()),
+        }
+
         // store data in blueprint TSV format
         let mut blueprint_data = String::new();
 
@@ -544,6 +570,7 @@ impl Plan {
             let current_files: Vec<String> = crate::util::filesystem::gather_current_files(&std::env::current_dir().unwrap());
 
             let mut vtable = VariableTable::new();
+            // variables could potentially store empty strings if units are not set
             vtable.add("orbit.bench", &bench_name);
             vtable.add("orbit.top", &top_name);
     
@@ -623,6 +650,7 @@ pub enum PlanError {
     BadTestbench(Identifier),
     BadTop(Identifier),
     BadEntity(Identifier),
+    TestbenchNoTest(Identifier),
     UnknownUnit(Identifier),
     UnknownEntity(Identifier),
     Ambiguous(String, Vec<Identifier>),
@@ -634,6 +662,7 @@ impl std::error::Error for PlanError {}
 impl std::fmt::Display for PlanError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::TestbenchNoTest(id) => write!(f, "no entities are tested in testbench {}", id),
             Self::UnknownEntity(id) => write!(f, "no entity named '{}' in the current ip", id),
             Self::Empty => write!(f, "no entities found"),
             Self::BadEntity(id) => write!(f, "primary design unit '{}' is not an entity", id),

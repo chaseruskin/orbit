@@ -263,14 +263,29 @@ date-fmt = &quot;%B %e, %Y&quot; # July 8, 2001
 <li>user-defined additional keys to store glob-style file patterns</li>
 </ul>
 </li>
+<li><code>details</code> : <em>string</em>
+<ul>
+<li>long description about the plugin</li>
+</ul>
+</li>
 </ul>
 <pre><code class="language-toml">[[plugin]]
 alias   = &quot;main&quot;
 command = &quot;vivado&quot;
 summary = &quot;basic toolflow for vivado&quot;
-args    = [&quot;-mode&quot;, &quot;batch&quot;]
+args    = [&quot;-mode&quot;, &quot;batch&quot;, &quot;-source&quot;, &quot;script.tcl&quot;]
 fileset.FLOW   = &quot;*.tcl&quot;
 fileset.PINOUT = &quot;*.xdc&quot;
+details = &quot;&quot;&quot;\
+Usage:
+    orbit build --plugin vivado -- [options]
+
+Options:
+    -tclarg mode=&lt;num&gt;      0 - synthesis, 1 - implementation, 2 - bitstream
+
+Description:
+    This plugin runs vivado in non-project mode to perform its tasks.
+&quot;&quot;&quot;
 </code></pre>
 <h3 id="env--table"><a class="header" href="#env--table"><code>[env]</code> : <em>table</em></a></h3>
 <ul>

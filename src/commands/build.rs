@@ -42,9 +42,22 @@ impl FromCli for Build {
 impl Command for Build {
     type Err = Box<dyn std::error::Error>;
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+
+        // try to find plugin matching `command` name under the `alias`
+        let plug = if let Some(name) = &self.alias {
+            match c.get_plugins().get(name) {
+                Some(p) => Some(p),
+                None => return Err(AnyError(format!("no plugin named '{}'", name)))?,
+            }
+        } else {
+            None
+        };
         // display plugin list and exit
         if self.list == true {
-            println!("{}", Plugin::list_plugins(&mut c.get_plugins().values().into_iter().collect::<Vec<&Plugin>>()));
+            match plug {
+                Some(plg) => println!("{}", plg),
+                None => println!("{}", Plugin::list_plugins(&mut c.get_plugins().values().into_iter().collect::<Vec<&Plugin>>())),
+            }
             return Ok(())
         }
 
@@ -79,25 +92,25 @@ impl Command for Build {
             .from_env_file(&c.get_ip_path().unwrap().join(b_dir))?;
 
         // check if ORBIT_PLUGIN was set and no command option was set
-        let alias = match &self.alias {
-            Some(n) => Some(n.as_str()),
+        let plug = match plug {
+            // already configured from the command-line
+            Some(plg) => Some(plg),
+            // was not set on the command-line
             None => {
                 if let Some(plug) = envs.get(environment::ORBIT_PLUGIN) {
                     // verify there was no command option to override default plugin call
-                    if self.command.is_none() { Some(plug.get_value()) } else { None }
+                    if self.command.is_none() { 
+                        match c.get_plugins().get(plug.get_value()) {
+                            Some(p) => Some(p),
+                            None => return Err(AnyError(format!("failed to load plugin from .env named '{}'", plug.get_value())))?,
+                        }
+                    } else { 
+                        None 
+                    }
                 } else {
                     None
                 }
             }
-        };
-        // try to find plugin matching `command` name under the `alias`
-        let plug = if let Some(a) = alias {
-            match c.get_plugins().get(a) {
-                Some(p) => Some(p),
-                None => return Err(AnyError(format!("no plugin named '{}'", a)))?,
-            }
-        } else {
-            None
         };
 
         envs.initialize();

@@ -65,9 +65,24 @@ impl Command for Plan {
     type Err = Fault;
 
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+        // locate the plugin
+        let plugin = match &self.plugin {
+            // verify the plugin alias matches
+            Some(alias) => match c.get_plugins().get(alias) {
+                Some(p) => Some(p),
+                None => return Err(AnyError(format!("plugin '{}' does not exist", alias)))?,
+            },
+            None => None,
+        };
+
         // display plugin list and exit
         if self.list == true {
-            println!("{}", Plugin::list_plugins(&mut c.get_plugins().values().into_iter().collect::<Vec<&Plugin>>()));
+            match plugin {
+                // display entire contents about the particular plugin
+                Some(plg) => println!("{}", plg),
+                // display quick overview of all plugins
+                None =>  println!("{}", Plugin::list_plugins(&mut c.get_plugins().values().into_iter().collect::<Vec<&Plugin>>())),
+            }
             return Ok(())
         }
         
@@ -117,16 +132,6 @@ impl Command for Plan {
         let b_dir = match &self.build_dir {
             Some(dir) => dir,
             None => c.get_build_dir(),
-        };
-
-        // locate the plugin
-        let plugin = match &self.plugin {
-            // verify the plugin alias matches
-            Some(alias) => match c.get_plugins().get(alias) {
-                Some(p) => Some(p),
-                None => return Err(AnyError(format!("plugin '{}' does not exist", alias)))?,
-            },
-            None => None,
         };
 
         self.run(target_ip, b_dir, plugin, catalog)

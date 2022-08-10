@@ -44,8 +44,9 @@ impl FromToml for Template {
 
 impl Template {
     /// Creates a string to display a list of templates.
-    pub fn list_templates(temps: &[&Template]) -> String {
+    pub fn list_templates(temps: &mut [&Template]) -> String {
         let mut list = String::from("Templates:\n");
+        temps.sort_by(|a, b| a.alias.cmp(&b.alias));
         for temp in temps {
             list += &format!("    {}\n", temp);
         }
@@ -149,7 +150,7 @@ impl Template {
     /// Assumes `root` is the parent directory to the config.toml file that
     /// created this `Plugin` struct.
     pub fn resolve_root_path(mut self, root: &std::path::PathBuf) -> Self {
-        self.root = crate::util::filesystem::resolve_rel_path(&root, self.root);
+        self.root = crate::util::filesystem::resolve_rel_path(&root, &self.root);
         self
     }
 

@@ -96,7 +96,7 @@ impl Edit {
     pub fn configure_editor(arg: &Option<String>, config: &Config) -> Result<String, Fault> {
         match &arg {
             // prioritize the command-line argument as overriding a default value
-            Some(e) => Ok(crate::util::filesystem::resolve_rel_path(&std::env::current_dir().unwrap(), e.to_owned())),
+            Some(e) => Ok(crate::util::filesystem::resolve_rel_path(&std::env::current_dir().unwrap(), e)),
             None => {
                 if let Ok(val) = std::env::var("EDITOR") {
                    Ok(val)
@@ -104,7 +104,7 @@ impl Edit {
                     // try the config.toml
                     match config.get_as_str("core", "editor")? {
                         // try to resolve relative path
-                        Some(e) => Ok(crate::util::filesystem::resolve_rel_path(config.get_root(), e.to_owned())),
+                        Some(e) => Ok(crate::util::filesystem::resolve_rel_path(config.get_root(), e)),
                         None => Err(AnyError("no editor detected".to_owned()))?
                     }
                 }

@@ -146,7 +146,7 @@ impl VendorManifest {
         // check if the key is in manifest
         let file = if let Some(h) = hook.as_ref() { h } else { return Ok(None) };
         // check if file exists
-        let r_path = PathBuf::from(filesystem::resolve_rel_path(&self.get_root(), file.to_string()));
+        let r_path = PathBuf::from(filesystem::resolve_rel_path(&self.get_root(), file));
         let contents = std::fs::read_to_string(r_path)?;
         // perform variable replacement
         Ok(Some(Hook::from_str(&template::substitute(contents, vtable)).unwrap()))

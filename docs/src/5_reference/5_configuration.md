@@ -118,15 +118,27 @@ date-fmt = "%B %e, %Y" # July 8, 2001
     - additional arguments to follow command in subprocess  
 - `fileset` : _inline table_
     - user-defined additional keys to store glob-style file patterns
+- `details` : _string_
+    - long description about the plugin
 
 ``` toml
 [[plugin]]
 alias   = "main"
 command = "vivado"
 summary = "basic toolflow for vivado"
-args    = ["-mode", "batch"]
+args    = ["-mode", "batch", "-source", "script.tcl"]
 fileset.FLOW   = "*.tcl"
 fileset.PINOUT = "*.xdc"
+details = """\
+Usage:
+    orbit build --plugin vivado -- [options]
+
+Options:
+    -tclarg mode=<num>      0 - synthesis, 1 - implementation, 2 - bitstream
+
+Description:
+    This plugin runs vivado in non-project mode to perform its tasks.
+"""
 ```
 
 ### `[env]` : _table_

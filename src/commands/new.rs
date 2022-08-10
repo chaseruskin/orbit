@@ -61,12 +61,8 @@ impl Command for New {
         // view templates
         if self.list == true {
             match template {
-                Some(t) => {
-                    t.display_files()
-                },
-                None => {
-                    println!("{}", Template::list_templates(&c.get_templates().values().into_iter().collect::<Vec<&Template>>()))
-                }
+                Some(t) => t.display_files(),
+                None => println!("{}", Template::list_templates(&mut c.get_templates().values().into_iter().collect::<Vec<&Template>>())),
             }
             return Ok(())
         }
@@ -243,7 +239,7 @@ impl New {
             t.import(&root, lut)?;
         } else if let Some(src) = &self.from {
             // act as if the from path is a template to allow for variable substitution
-            let tplate_base = filesystem::resolve_rel_path(&std::env::current_dir().unwrap(), src.to_str().unwrap().to_string());
+            let tplate_base = filesystem::resolve_rel_path(&std::env::current_dir().unwrap(), src.to_str().unwrap());
             let tplate = Template::from_path(tplate_base);
             tplate.import(&root, lut)?;
         }

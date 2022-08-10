@@ -79,17 +79,17 @@ pub fn get_exe_path() -> Result<PathBuf, Fault> {
 /// 
 /// This function is helpful for resolving full paths in plugin arguments,
 /// config.toml includes, and template paths.
-pub fn resolve_rel_path(root: &std::path::PathBuf, s: String) -> String {
+pub fn resolve_rel_path(root: &std::path::PathBuf, s: &str) -> String {
     let resolved_path = root.join(&s);
     if std::path::Path::exists(&resolved_path) == true {
         if PathBuf::from(&s).is_relative() == true {
             // write out full path
             normalize_path(resolved_path).display().to_string()
         } else {
-            s
+            s.to_string()
         }
     } else {
-        s
+        s.to_string()
     }
 }
 
@@ -268,11 +268,11 @@ mod test {
     fn resolve_path_simple() {
         let rel_root = std::env::current_dir().unwrap();
         // expands relative path to full path
-        assert_eq!(resolve_rel_path(&rel_root, String::from("src/lib.rs")), normalize_path(PathBuf::from("./src/lib.rs")).display().to_string());
+        assert_eq!(resolve_rel_path(&rel_root, "src/lib.rs"), normalize_path(PathBuf::from("./src/lib.rs")).display().to_string());
         // no file or directory named 'orbit' at the relative root
-        assert_eq!(resolve_rel_path(&rel_root, String::from("orbit")), String::from("orbit"));
+        assert_eq!(resolve_rel_path(&rel_root, "orbit"), String::from("orbit"));
         // not relative
-        assert_eq!(resolve_rel_path(&rel_root, String::from("/src")), String::from("/src"));
+        assert_eq!(resolve_rel_path(&rel_root, "/src"), String::from("/src"));
     }
 
     #[test]

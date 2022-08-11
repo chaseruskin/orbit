@@ -5,6 +5,11 @@ use std::hash::Hash;
 use std::io::Write;
 use std::io::Read;
 
+use std::collections::btree_set::Iter;
+use std::collections::btree_set::IntoIter;
+
+use std::collections::btree_set::BTreeSet;
+
 #[derive(Eq)]
 pub struct EnvVar { key: String, value: String }
 
@@ -144,8 +149,6 @@ impl Environment {
     }
 }
 
-
-
 /// Stores a list of `EnvVar` at root in a file named ".env".
 pub fn save_environment(env: &Environment, root: &std::path::PathBuf) -> Result<(), Fault> {
     // create the file
@@ -157,11 +160,6 @@ pub fn save_environment(env: &Environment, root: &std::path::PathBuf) -> Result<
     env_file.write_all(contents.as_bytes()).expect("failed to write data to .env file");
     Ok(())
 }
-
-use std::collections::btree_set::Iter;
-use std::collections::btree_set::IntoIter;
-
-use std::collections::btree_set::BTreeSet;
 
 pub struct Environment(BTreeSet<EnvVar>);
 
@@ -208,6 +206,7 @@ pub const ORBIT_STORE: &str = "ORBIT_STORE";
 pub const ORBIT_IP_PATH: &str = "ORBIT_IP_PATH";
 pub const ORBIT_DEV_PATH: &str = "ORBIT_DEV_PATH";
 pub const ORBIT_BLUEPRINT: &str = "ORBIT_BLUEPRINT";
+pub const ORBIT_WIN_LITERAL_CMD: &str = "ORBIT_WIN_LITERAL_CMD";
 
 pub const ORBIT_ENV_PREFIX: &str = "ORBIT_ENV_";
 

@@ -8,15 +8,12 @@ use crate::core::config::Config;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::core::template::Template;
+use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
 use crate::util::filesystem;
 use crate::util::filesystem::normalize_path;
-
 use super::config::CONFIG_FILE;
 use super::pkgid::PkgPart;
 use super::vendor::VendorManifest;
-
-
-const ORBIT_WIN_LITERAL_CMD: &str = "ORBIT_WIN_LITERAL_CMD";
 
 pub struct Context {
     /// holds behind-the-scenes internal Orbit operations

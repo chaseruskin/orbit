@@ -11,6 +11,7 @@ use crate::util::environment;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
 use crate::util::environment::ORBIT_BLUEPRINT;
+use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
 use crate::util::filesystem;
 
 use super::plan::BLUEPRINT_FILE;
@@ -40,7 +41,7 @@ impl Command for Env {
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // assemble environment information
         let mut env = Environment::from_vec(vec![
-            // @TODO context should own an `Environment` struct instead of this data transformation
+            // @todo: context should own an `Environment` struct instead of this data transformation
             EnvVar::new().key(environment::ORBIT_HOME).value(filesystem::normalize_path(c.get_home_path().clone()).to_str().unwrap()),
             EnvVar::new().key(environment::ORBIT_CACHE).value(filesystem::normalize_path(c.get_cache_path().to_path_buf()).to_str().unwrap()),
             EnvVar::new().key(environment::ORBIT_BUILD_DIR).value(c.get_build_dir()),
@@ -52,6 +53,11 @@ impl Command for Env {
             ])
             .from_config(c.get_config())?
             .add(EnvVar::new().key(ORBIT_BLUEPRINT).value(BLUEPRINT_FILE));
+
+        // add platform-specific environment variables
+        if cfg!(target_os = "windows") {
+            env = env.add(EnvVar::new().key(ORBIT_WIN_LITERAL_CMD).value(&std::env::var(ORBIT_WIN_LITERAL_CMD).unwrap_or(String::new())));
+        }
 
         // check if in an ip to add those variables
         if c.goto_ip_path().is_ok() {

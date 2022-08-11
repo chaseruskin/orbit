@@ -1,4 +1,6 @@
-use super::token::Identifier;
+use colored::ColoredString;
+
+use super::token::{Identifier, ToColor};
 
 #[derive(Debug)]
 pub struct Architectures<'a>(&'a Vec<super::symbol::Architecture>);
@@ -161,10 +163,10 @@ impl InterfaceDeclaration {
     fn into_interface_string(&self, offset: usize) -> String {
         format!("{}{5:<width$}: {}{}{} {}", 
             self.identifier, 
-            { if self.mode.is_none() && self.initial_keyword.is_some() && self.initial_keyword.as_ref().unwrap() == &Keyword::Signal { "in ".to_owned() } else if self.mode.is_some() { self.mode.as_ref().unwrap().to_string() + " " } else { "".to_owned() } }, 
-            tokens_to_string(&self.datatype.0),
-            { if self.bus_present { "bus" } else { "" } },
-            { if self.expr.is_some() { self.expr.as_ref().unwrap().to_string() } else { "".to_string() }},
+            { if self.mode.is_none() && self.initial_keyword.is_some() && self.initial_keyword.as_ref().unwrap() == &Keyword::Signal { Keyword::In.to_string() + " "} else if self.mode.is_some() { self.mode.as_ref().unwrap().to_string() + " " } else { String::new() } }, 
+            tokens_to_string(&self.datatype.0), 
+            { if self.bus_present { Keyword::Bus.to_string() } else { String::new() } },
+            { if self.expr.is_some() { self.expr.as_ref().unwrap().to_string() } else { String::new() }},
             " ",
             width=offset-self.identifier.len()+1,
         ).trim_end().to_string()
@@ -178,8 +180,8 @@ impl InterfaceDeclaration {
             self.initial_keyword.as_ref().unwrap_or(def_keyword), 
             self.identifier,  
             tokens_to_string(&self.datatype.0),
-            { if self.bus_present { "bus " } else { "" } },
-            { if self.expr.is_some() { self.expr.as_ref().unwrap().to_string() } else { "".to_string() }},
+            { if self.bus_present { Keyword::Bus.to_string() + " " } else { String::new() } },
+            { if self.expr.is_some() { self.expr.as_ref().unwrap().to_string() } else { String::new() }},
             " ",
             width=offset-self.identifier.len()+1,
         ).trim_end().to_string()

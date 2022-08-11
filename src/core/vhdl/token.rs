@@ -1,5 +1,7 @@
 use std::fmt::Debug;
 use std::str::FromStr;
+use colored::Colorize;
+use colored::ColoredString;
 use crate::core::lexer;
 use crate::core::lexer::Position;
 use crate::core::lexer::TrainCar;
@@ -7,6 +9,12 @@ use crate::core::lexer::Tokenize;
 use crate::core::pkgid::PkgPart;
 use std::fmt::Display;
 use crate::util::strcmp;
+use std::hash::Hasher;
+use std::hash::Hash;
+
+pub trait ToColor : Display {
+    fn to_color(&self) -> ColoredString;
+}
 
 /// Transforms a VHDL integer `s` into a real unsigned number to be used in rust code.
 /// 
@@ -27,24 +35,6 @@ fn interpret_integer(s: &str) -> usize {
 pub enum Identifier {
     Basic(String),
     Extended(String),
-}
-
-use std::hash::Hasher;
-use std::hash::Hash;
-// @todo: test
-impl Hash for Identifier {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        match self {
-            Self::Basic(id) => { id.to_lowercase().hash(state) },
-            Self::Extended(id) => { id.hash(state) }
-        }
-    }
-}
-
-impl From<&PkgPart> for Identifier {
-    fn from(part: &PkgPart) -> Self {
-        Identifier::Basic(part.to_normal().to_string())
-    }
 }
 
 impl std::cmp::Eq for Identifier {}
@@ -89,6 +79,28 @@ impl Identifier {
             Self::Basic(id) => id.len(),
             Self::Extended(id) => id.len() + 2 + (id.chars().filter(|c| c == &'\\' ).count())
         }
+    }
+}
+
+// @todo: test
+impl Hash for Identifier {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            Self::Basic(id) => { id.to_lowercase().hash(state) },
+            Self::Extended(id) => { id.hash(state) }
+        }
+    }
+}
+
+impl From<&PkgPart> for Identifier {
+    fn from(part: &PkgPart) -> Self {
+        Identifier::Basic(part.to_normal().to_string())
+    }
+}
+
+impl ToColor for Identifier {
+    fn to_color(&self) -> ColoredString {
+        self.to_string().blue()
     }
 }
 
@@ -178,6 +190,12 @@ pub enum Comment {
     Delimited(String),
 }
 
+impl ToColor for Comment {
+    fn to_color(&self) -> ColoredString {
+        self.to_string().green()
+    }
+}
+
 impl Comment {
     fn as_str(&self) -> &str {
         match self {
@@ -219,6 +237,12 @@ impl Display for Comment {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Character(String);
 
+impl ToColor for Character {
+    fn to_color(&self) -> ColoredString {
+        self.to_string().yellow()
+    }
+}
+
 impl std::fmt::Display for Character {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "'{}'", self.0)
@@ -234,10 +258,22 @@ impl std::fmt::Display for BitStrLiteral {
     }
 }
 
+impl ToColor for BitStrLiteral {
+    fn to_color(&self) -> ColoredString {
+        self.to_string().red()
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum AbstLiteral {
     Decimal(String),
     Based(String),
+}
+
+impl ToColor for AbstLiteral {
+    fn to_color(&self) -> ColoredString {
+        self.to_string().red()
+    }
 }
 
 impl std::fmt::Display for AbstLiteral {
@@ -619,6 +655,12 @@ impl Keyword {
     }
 }
 
+impl ToColor for Keyword {
+    fn to_color(&self) -> ColoredString {
+        self.to_string().purple()
+    }
+}
+
 impl Display for Keyword {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_str())
@@ -757,6 +799,12 @@ impl Delimiter {
     }
 }
 
+impl ToColor for Delimiter {
+    fn to_color(&self) -> ColoredString {
+        self.to_string().normal()
+    }
+}
+
 impl Display for Delimiter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_str())
@@ -774,6 +822,22 @@ pub enum VHDLToken {
     Keyword(Keyword),
     Delimiter(Delimiter),
     EOF,
+}
+
+impl ToColor for VHDLToken {
+    fn to_color(&self) -> ColoredString {
+        match &self {
+            Self::Comment(c) => c.to_color(),
+            Self::Identifier(i) => i.to_color(),
+            Self::AbstLiteral(a) => a.to_color(),
+            Self::CharLiteral(c) => c.to_color(),
+            Self::StrLiteral(s) => s.red(),
+            Self::BitStrLiteral(b) => b.to_color(),
+            Self::Keyword(k) => k.to_color(),
+            Self::Delimiter(d) => d.to_color(),
+            Self::EOF => String::new().normal()
+        }
+    }
 }
 
 impl Display for VHDLToken {

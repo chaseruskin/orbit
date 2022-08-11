@@ -248,18 +248,18 @@ impl Entity {
 
     // Generates VHDL component code from the entity.
     pub fn into_component(&self) -> String {
-        let mut result = String::from("component ");
+        let mut result = Keyword::Component.to_string() + " ";
         result.push_str(&self.get_name().to_string());
 
         if self.generics.0.len() > 0 {
-            result.push_str("\ngeneric ");
+            result.push_str(&format!("\n{} ", Keyword::Generic));
             result.push_str(&self.generics.0.to_interface_part_string());
         }
         if self.ports.0.len() > 0 {
-            result.push_str("\nport ");
+            result.push_str(&format!("\n{} ", Keyword::Port));
             result.push_str(&self.ports.0.to_interface_part_string());
         }
-        result.push_str("\nend component;\n");
+        result.push_str(&format!("\n{} {}{}\n", Keyword::End, Keyword::Component, Delimiter::Terminator));
         result
     }
 
@@ -276,21 +276,21 @@ impl Entity {
     /// Generates VHDL instantiation code from the entity data.
     pub fn into_instance(&self, inst: &str, library: Option<Identifier>) -> String {
         let prefix = match library {
-            Some(lib) => String::from("entity ") + &lib.to_string() + ".",
-            None => "".to_owned()
+            Some(lib) => Keyword::Entity.to_string() + " " + &lib.to_string() + ".",
+            None => String::new()
         };
-        let mut result = String::from(format!("{} : {}{}\n", inst, prefix, self.get_name()));
+        let mut result = String::from(format!("{} {} {}{}\n", inst, Delimiter::Colon, prefix, self.get_name()));
         if self.generics.0.len() > 0 {
-            result.push_str("generic ");
+            result.push_str(&(Keyword::Generic.to_string() + " "));
             result.push_str(&self.generics.0.to_instantiation_part())
         }
         if self.ports.0.len() > 0 {
             // add extra spacing
             if self.generics.0.len() > 0 { result.push(' '); }
-            result.push_str("port ");
+            result.push_str(&(Keyword::Port.to_string() + " "));
             result.push_str(&self.ports.0.to_instantiation_part())
         }
-        result.push(';');
+        result.push_str(&Delimiter::Terminator.to_string());
         result
     }
 

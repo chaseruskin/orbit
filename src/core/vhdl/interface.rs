@@ -110,7 +110,7 @@ impl Ports {
 
 impl std::fmt::Display for StaticExpression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, ":= {}", tokens_to_string(&self.0))
+        write!(f, "{} {}", Delimiter::VarAssign, tokens_to_string(&self.0))
     }
 }
 
@@ -161,9 +161,10 @@ fn tokens_to_string(tokens: &Vec<VHDLToken>) -> String {
 
 impl InterfaceDeclaration {
     fn into_interface_string(&self, offset: usize) -> String {
-        format!("{}{5:<width$}: {}{}{} {}", 
+        format!("{}{6:<width$}{} {}{}{} {}", 
             self.identifier, 
-            { if self.mode.is_none() && self.initial_keyword.is_some() && self.initial_keyword.as_ref().unwrap() == &Keyword::Signal { Keyword::In.to_string() + " "} else if self.mode.is_some() { self.mode.as_ref().unwrap().to_string() + " " } else { String::new() } }, 
+            Delimiter::Colon, 
+            { if self.mode.is_none() && self.initial_keyword.is_some() && self.initial_keyword.as_ref().unwrap() == &Keyword::Signal { Keyword::In.to_string() + " "} else if self.mode.is_some() { self.mode.as_ref().unwrap().to_string() + " " } else { String::new() } },
             tokens_to_string(&self.datatype.0), 
             { if self.bus_present { Keyword::Bus.to_string() } else { String::new() } },
             { if self.expr.is_some() { self.expr.as_ref().unwrap().to_string() } else { String::new() }},
@@ -176,9 +177,10 @@ impl InterfaceDeclaration {
     /// 
     /// Note: `offset` is used for padding after the identifier string and before ':'.
     fn into_declaration_string(&self, def_keyword: &Keyword, offset: usize) -> String {
-        format!("{} {}{5:<width$}: {} {}{}",
+        format!("{} {}{6:<width$}{} {} {}{}",
             self.initial_keyword.as_ref().unwrap_or(def_keyword), 
-            self.identifier,  
+            self.identifier, 
+            Delimiter::Colon, 
             tokens_to_string(&self.datatype.0),
             { if self.bus_present { Keyword::Bus.to_string() + " " } else { String::new() } },
             { if self.expr.is_some() { self.expr.as_ref().unwrap().to_string() } else { String::new() }},
@@ -189,7 +191,7 @@ impl InterfaceDeclaration {
 
     /// Creates an instantiation line to be copied into an architecture region.
     fn into_instance_string(&self, offset: usize) -> String {
-        format!("{}{:<width$}=> {}", self.identifier, " ", self.identifier, width=offset-self.identifier.len()+1)
+        format!("{}{:<width$}{} {}", self.identifier, " ", Delimiter::Arrow, self.identifier, width=offset-self.identifier.len()+1)
     }
 }
 
@@ -306,14 +308,14 @@ impl InterfaceDeclarations {
     pub fn to_interface_part_string(&self) -> String {
         // auto-align by first finding longest offset needed
         let offset = self.longest_identifier();
-        let mut result = String::from("(\n");
+        let mut result = Delimiter::ParenL.to_string() + "\n";
         for port in &self.0 {
             if port != self.0.first().unwrap() {
-                result.push_str(";\n")
+                result.push_str(&(Delimiter::Terminator.to_string() +"\n"))
             }
             result.push_str(&format!("    {}", port.into_interface_string(offset)));
         }
-        result + "\n);"
+        result + &format!("\n{}{}", Delimiter::ParenR, Delimiter::Terminator)
     }
 
     pub fn to_declaration_part_string(&self, def_keyword: Keyword) -> String {
@@ -322,7 +324,7 @@ impl InterfaceDeclarations {
         let mut result = String::new();
         for port in &self.0 {
             result.push_str(&port.into_declaration_string(&def_keyword, offset));
-            result.push_str(&";\n");
+            result.push_str(&(Delimiter::Terminator.to_string() + "\n"));
         }
         result
     }
@@ -330,14 +332,14 @@ impl InterfaceDeclarations {
     pub fn to_instantiation_part(&self) -> String {
         // auto-align by first finding longest offset needed
         let offset = self.longest_identifier();
-        let mut result = String::from("map (\n");
+        let mut result = format!("{} {}\n", Keyword::Map, Delimiter::ParenL);
         for port in &self.0 {
             if port != self.0.first().unwrap() {
-                result.push_str(",\n")
+                result.push_str(&(Delimiter::Comma.to_string() + "\n"))
             }
             result.push_str(&format!("    {}", port.into_instance_string(offset)));
         }
-        result + "\n)"
+        result + &format!("\n{}", Delimiter::ParenR)
     }
 }
 

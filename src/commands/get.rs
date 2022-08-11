@@ -169,8 +169,8 @@ impl Get {
         // display instantiation code
         if self.instance == true {
             let name = match &self.name {
-                Some(iden) => iden.to_string(),
-                None => "uX".to_string(),
+                Some(iden) => iden.clone(),
+                None => Identifier::Basic("uX".to_string()),
             };
             println!("{}", ent.into_instance(&name, lib));
         }

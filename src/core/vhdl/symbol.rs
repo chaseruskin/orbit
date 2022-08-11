@@ -1,6 +1,7 @@
 use std::collections::LinkedList;
 use std::fmt::Display;
 use std::hash::Hash;
+
 use crate::core::parser::*;
 use crate::core::lexer::*;
 
@@ -248,47 +249,47 @@ impl Entity {
 
     // Generates VHDL component code from the entity.
     pub fn into_component(&self) -> String {
-        let mut result = Keyword::Component.to_string() + " ";
-        result.push_str(&self.get_name().to_string());
+        let mut result = format!("{} ", Keyword::Component.to_color());
+        result.push_str(&format!("{}", color(&self.get_name().to_string(), ENTITY_NAME)));
 
         if self.generics.0.len() > 0 {
-            result.push_str(&format!("\n{} ", Keyword::Generic));
-            result.push_str(&self.generics.0.to_interface_part_string());
+            result.push_str(&format!("\n{} ", Keyword::Generic.to_color()));
+            result.push_str(&self.generics.0.to_interface_part_string().to_string());
         }
         if self.ports.0.len() > 0 {
-            result.push_str(&format!("\n{} ", Keyword::Port));
-            result.push_str(&self.ports.0.to_interface_part_string());
+            result.push_str(&format!("\n{} ", Keyword::Port.to_color()));
+            result.push_str(&self.ports.0.to_interface_part_string().to_string());
         }
-        result.push_str(&format!("\n{} {}{}\n", Keyword::End, Keyword::Component, Delimiter::Terminator));
+        result.push_str(&format!("\n{} {}{}\n", Keyword::End.to_color(), Keyword::Component.to_color(), Delimiter::Terminator.to_color()));
         result
     }
 
     /// Generates VHDL signal declaration code from the entity data.
     pub fn into_signals(&self) -> String {
-        self.ports.0.to_declaration_part_string(Keyword::Signal)
+        self.ports.0.to_declaration_part_string(Keyword::Signal).to_string()
     }
 
     /// Generates VHDL constant declaration code from the entity data.
     pub fn into_constants(&self) -> String {
-        self.generics.0.to_declaration_part_string(Keyword::Constant)
+        self.generics.0.to_declaration_part_string(Keyword::Constant).to_string()
     }
 
     /// Generates VHDL instantiation code from the entity data.
-    pub fn into_instance(&self, inst: &str, library: Option<Identifier>) -> String {
+    pub fn into_instance(&self, inst: &Identifier, library: Option<Identifier>) -> String {
         let prefix = match library {
-            Some(lib) => Keyword::Entity.to_string() + " " + &lib.to_string() + ".",
+            Some(lib) => format!("{} {}{}", Keyword::Entity.to_color(), color(&lib.to_string(), ENTITY_NAME), Delimiter::Dot.to_color()),
             None => String::new()
         };
-        let mut result = String::from(format!("{} {} {}{}\n", inst, Delimiter::Colon, prefix, self.get_name()));
+        let mut result = String::from(format!("{} {} {}{}\n", inst.to_color(), Delimiter::Colon.to_color(), prefix, color(&self.get_name().to_string(), ENTITY_NAME)));
         if self.generics.0.len() > 0 {
-            result.push_str(&(Keyword::Generic.to_string() + " "));
-            result.push_str(&self.generics.0.to_instantiation_part())
+            result.push_str(&(format!("{} ", Keyword::Generic.to_color())));
+            result.push_str(&self.generics.0.to_instantiation_part().to_string())
         }
         if self.ports.0.len() > 0 {
             // add extra spacing
             if self.generics.0.len() > 0 { result.push(' '); }
-            result.push_str(&(Keyword::Port.to_string() + " "));
-            result.push_str(&self.ports.0.to_instantiation_part())
+            result.push_str(&format!("{} ", Keyword::Port.to_color()));
+            result.push_str(&self.ports.0.to_instantiation_part().to_string())
         }
         result.push_str(&Delimiter::Terminator.to_string());
         result
@@ -622,6 +623,8 @@ impl VHDLParser {
 }
 
 use std::iter::Peekable;
+
+use super::highlight::*;
 
 /// A `Statement` is a vector of tokens, similiar to how a `String` is a vector
 /// of characters.

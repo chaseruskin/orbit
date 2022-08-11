@@ -98,12 +98,6 @@ impl From<&PkgPart> for Identifier {
     }
 }
 
-impl ToColor for Identifier {
-    fn to_color(&self) -> ColoredString {
-        self.to_string().blue()
-    }
-}
-
 #[derive(Debug, PartialEq)]
 pub enum IdentifierError {
     Empty,
@@ -190,12 +184,6 @@ pub enum Comment {
     Delimited(String),
 }
 
-impl ToColor for Comment {
-    fn to_color(&self) -> ColoredString {
-        self.to_string().green()
-    }
-}
-
 impl Comment {
     fn as_str(&self) -> &str {
         match self {
@@ -237,12 +225,6 @@ impl Display for Comment {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Character(String);
 
-impl ToColor for Character {
-    fn to_color(&self) -> ColoredString {
-        self.to_string().yellow()
-    }
-}
-
 impl std::fmt::Display for Character {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "'{}'", self.0)
@@ -258,22 +240,10 @@ impl std::fmt::Display for BitStrLiteral {
     }
 }
 
-impl ToColor for BitStrLiteral {
-    fn to_color(&self) -> ColoredString {
-        self.to_string().red()
-    }
-}
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum AbstLiteral {
     Decimal(String),
     Based(String),
-}
-
-impl ToColor for AbstLiteral {
-    fn to_color(&self) -> ColoredString {
-        self.to_string().red()
-    }
 }
 
 impl std::fmt::Display for AbstLiteral {
@@ -655,12 +625,6 @@ impl Keyword {
     }
 }
 
-impl ToColor for Keyword {
-    fn to_color(&self) -> ColoredString {
-        self.to_string().purple()
-    }
-}
-
 impl Display for Keyword {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_str())
@@ -799,12 +763,6 @@ impl Delimiter {
     }
 }
 
-impl ToColor for Delimiter {
-    fn to_color(&self) -> ColoredString {
-        self.to_string().normal()
-    }
-}
-
 impl Display for Delimiter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_str())
@@ -831,12 +789,59 @@ impl ToColor for VHDLToken {
             Self::Identifier(i) => i.to_color(),
             Self::AbstLiteral(a) => a.to_color(),
             Self::CharLiteral(c) => c.to_color(),
-            Self::StrLiteral(s) => s.red(),
+            Self::StrLiteral(s) => s.to_string().red(),
             Self::BitStrLiteral(b) => b.to_color(),
             Self::Keyword(k) => k.to_color(),
             Self::Delimiter(d) => d.to_color(),
             Self::EOF => String::new().normal()
         }
+    }
+}
+
+impl ToColor for Identifier {
+    fn to_color(&self) -> ColoredString {
+        self.to_string().normal()
+    }
+}
+
+impl ToColor for Comment {
+    fn to_color(&self) -> ColoredString {
+        self.to_string().green()
+    }
+}
+
+use super::highlight::*;
+
+impl ToColor for Character {
+    fn to_color(&self) -> ColoredString {
+        let crayon = CHARS;
+        self.to_string().truecolor(crayon.0, crayon.1, crayon.2)
+    }
+}
+
+impl ToColor for BitStrLiteral {
+    fn to_color(&self) -> ColoredString {
+        let crayon = NUMBERS;
+        self.to_string().truecolor(crayon.0, crayon.1, crayon.2)
+    }
+}
+
+impl ToColor for AbstLiteral {
+    fn to_color(&self) -> ColoredString {
+        let crayon = NUMBERS;
+        self.to_string().truecolor(crayon.0, crayon.1, crayon.2)
+    }
+}
+
+impl ToColor for Keyword {
+    fn to_color(&self) -> ColoredString {
+        self.to_string().blue()
+    }
+}
+
+impl ToColor for Delimiter {
+    fn to_color(&self) -> ColoredString {
+        self.to_string().normal()
     }
 }
 

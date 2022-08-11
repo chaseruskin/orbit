@@ -1,6 +1,57 @@
 use colored::ColoredString;
-
 use super::token::{Identifier, ToColor};
+use super::highlight::*;
+
+#[derive(Debug, PartialEq)]
+enum ColorTone {
+    Color(ColoredString),
+    Bland(String),
+}
+
+impl Display for ColorTone {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            Self::Color(c) => write!(f, "{}", c),
+            Self::Bland(s) => write!(f, "{}", s),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct ColorVec(Vec<ColorTone>);
+
+impl Display for ColorVec {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for item in &self.0 { write!(f, "{}", item)? }
+        Ok(())
+    }
+}
+
+impl ColorVec {
+    fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    fn push_str(&mut self, s: &str) -> () {
+        self.0.push(ColorTone::Bland(String::from(s)));
+    }
+
+    fn push_color(&mut self, c: ColoredString) -> () {
+        self.0.push(ColorTone::Color(c));
+    }
+
+    fn push(&mut self, ct: ColorTone) -> () {
+        self.0.push(ct);
+    }
+
+    fn append(&mut self, mut cv: ColorVec) -> () {
+        self.0.append(&mut cv.0);
+    }
+
+    fn push_whitespace(&mut self, count: usize) -> () {
+        self.0.push(ColorTone::Bland(format!("{:<width$}", " ", width=count)));
+    }
+}
 
 #[derive(Debug)]
 pub struct Architectures<'a>(&'a Vec<super::symbol::Architecture>);
@@ -25,6 +76,7 @@ impl<'a> std::fmt::Display for Architectures<'a> {
 
 use crate::core::lexer;
 use crate::core::vhdl::token::{VHDLToken, Keyword, Delimiter};
+use std::fmt::Display;
 use std::iter::Peekable;
 
 #[derive(Debug, Clone)]
@@ -80,6 +132,14 @@ impl StaticExpression {
         // take remanining tokens
         Self(tokens.map(|f| f.take()).collect())
     }
+
+    fn to_color_vec(&self) -> ColorVec {
+        let mut result = ColorVec::new();
+        result.push_color(Delimiter::VarAssign.to_color());
+        result.push_str(" ");
+        result.append(tokens_to_string(&self.0));
+        result
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -124,8 +184,8 @@ pub struct InterfaceDeclaration {
     expr: Option<StaticExpression>,
 }
 
-fn tokens_to_string(tokens: &Vec<VHDLToken>) -> String {
-    let mut result = String::new();
+fn tokens_to_string(tokens: &Vec<VHDLToken>) -> ColorVec {
+    let mut result = ColorVec::new();
     // determine which delimiters to not add trailing spaces to
     let is_spaced_token = |d: &Delimiter| {
         match d {
@@ -151,7 +211,7 @@ fn tokens_to_string(tokens: &Vec<VHDLToken>) -> String {
                 }
             }
         };
-        result.push_str(&t.to_string());
+        result.push_color(t.to_color());
         if trailing_space == true && iter.peek().is_some() {
             result.push_str(" ");
         }
@@ -160,38 +220,75 @@ fn tokens_to_string(tokens: &Vec<VHDLToken>) -> String {
 }
 
 impl InterfaceDeclaration {
-    fn into_interface_string(&self, offset: usize) -> String {
-        format!("{}{6:<width$}{} {}{}{} {}", 
-            self.identifier, 
-            Delimiter::Colon, 
-            { if self.mode.is_none() && self.initial_keyword.is_some() && self.initial_keyword.as_ref().unwrap() == &Keyword::Signal { Keyword::In.to_string() + " "} else if self.mode.is_some() { self.mode.as_ref().unwrap().to_string() + " " } else { String::new() } },
-            tokens_to_string(&self.datatype.0), 
-            { if self.bus_present { Keyword::Bus.to_string() } else { String::new() } },
-            { if self.expr.is_some() { self.expr.as_ref().unwrap().to_string() } else { String::new() }},
-            " ",
-            width=offset-self.identifier.len()+1,
-        ).trim_end().to_string()
+    fn into_interface_string(&self, offset: usize) -> ColorVec {
+        let mut result = ColorVec::new();
+        // identifier
+        result.push_color(self.identifier.to_color());
+        // whitespace
+        result.push_whitespace(offset-self.identifier.len()+1);
+        // colon
+        result.push_color(Delimiter::Colon.to_color());
+        result.push_str(" ");
+        // port direction
+        if self.mode.is_none() && self.initial_keyword.is_some() && self.initial_keyword.as_ref().unwrap() == &Keyword::Signal { 
+            result.push_color(Keyword::In.to_color());
+            result.push_str(" ");
+        } else if self.mode.is_some() { 
+            result.push_color(self.mode.as_ref().unwrap().to_color());
+            result.push_str(" ");
+        }
+        // data type
+        result.append(tokens_to_string(&self.datatype.0));
+        // optional bus keyword
+        if self.bus_present == true {
+            result.push_str(" ");
+            result.push_color(Keyword::Bus.to_color() ) 
+        }
+        // rhs initial assignment
+        if self.expr.is_some() == true {
+            result.push_str(" ");
+            result.append(self.expr.as_ref().unwrap().to_color_vec()) 
+        }
+        return result
     }
 
     /// Creates a declaration string to be copied into architecture declaration parts.
     /// 
     /// Note: `offset` is used for padding after the identifier string and before ':'.
-    fn into_declaration_string(&self, def_keyword: &Keyword, offset: usize) -> String {
-        format!("{} {}{6:<width$}{} {} {}{}",
-            self.initial_keyword.as_ref().unwrap_or(def_keyword), 
-            self.identifier, 
-            Delimiter::Colon, 
-            tokens_to_string(&self.datatype.0),
-            { if self.bus_present { Keyword::Bus.to_string() + " " } else { String::new() } },
-            { if self.expr.is_some() { self.expr.as_ref().unwrap().to_string() } else { String::new() }},
-            " ",
-            width=offset-self.identifier.len()+1,
-        ).trim_end().to_string()
+    fn into_declaration_string(&self, def_keyword: &Keyword, offset: usize) -> ColorVec {
+        let mut result = ColorVec::new();
+
+        result.push_color(self.initial_keyword.as_ref().unwrap_or(def_keyword).to_color());
+        result.push_str(" ");
+        result.push_color(color(&self.identifier.to_string(), SIGNAL_DEC_IDENTIFIER));
+        result.push_whitespace(offset-self.identifier.len()+1);
+        result.push_color(Delimiter::Colon.to_color());
+        result.push_str(" ");
+        // data type
+        result.append(tokens_to_string(&self.datatype.0));
+        // optional bus keyword
+        if self.bus_present == true {
+            result.push_str(" ");
+            result.push_color(Keyword::Bus.to_color() ) 
+        }
+        // rhs initial assignment
+        if self.expr.is_some() == true {
+            result.push_str(" ");
+            result.append(self.expr.as_ref().unwrap().to_color_vec()) 
+        }
+        result
     }
 
     /// Creates an instantiation line to be copied into an architecture region.
-    fn into_instance_string(&self, offset: usize) -> String {
-        format!("{}{:<width$}{} {}", self.identifier, " ", Delimiter::Arrow, self.identifier, width=offset-self.identifier.len()+1)
+    fn into_instance_string(&self, offset: usize) -> ColorVec {
+        let mut result = ColorVec::new();
+
+        result.push_color(color(&self.identifier.to_string(), INSTANCE_LHS_IDENTIFIER));
+        result.push_whitespace(offset-self.identifier.len()+1);
+        result.push_color(Delimiter::Arrow.to_color());
+        result.push_str(" ");
+        result.push_color(self.identifier.to_color());
+        result
     }
 }
 
@@ -305,41 +402,60 @@ impl InterfaceDeclarations {
     }
 
     /// Creates the body of the component list of interface connections.
-    pub fn to_interface_part_string(&self) -> String {
+    pub fn to_interface_part_string(&self) -> ColorVec {
+        let mut result = ColorVec::new();
         // auto-align by first finding longest offset needed
         let offset = self.longest_identifier();
-        let mut result = Delimiter::ParenL.to_string() + "\n";
+        result.push_color(Delimiter::ParenL.to_color());
+        result.push_str("\n");
         for port in &self.0 {
             if port != self.0.first().unwrap() {
-                result.push_str(&(Delimiter::Terminator.to_string() +"\n"))
+                result.push_color(Delimiter::Terminator.to_color());
+                result.push_str("\n");
             }
-            result.push_str(&format!("    {}", port.into_interface_string(offset)));
+            result.push_whitespace(4);
+            result.append(port.into_interface_string(offset));
         }
-        result + &format!("\n{}{}", Delimiter::ParenR, Delimiter::Terminator)
+        result.push_str("\n");
+        result.push_color(Delimiter::ParenR.to_color());
+        result.push_color(Delimiter::Terminator.to_color());
+
+        result
     }
 
-    pub fn to_declaration_part_string(&self, def_keyword: Keyword) -> String {
+    pub fn to_declaration_part_string(&self, def_keyword: Keyword) -> ColorVec {
+        let mut result = ColorVec::new();
         // auto-align by first finding longest offset needed
         let offset = self.longest_identifier();
-        let mut result = String::new();
         for port in &self.0 {
-            result.push_str(&port.into_declaration_string(&def_keyword, offset));
-            result.push_str(&(Delimiter::Terminator.to_string() + "\n"));
+            result.append(port.into_declaration_string(&def_keyword, offset));
+            result.push_color(Delimiter::Terminator.to_color());
+            result.push_str("\n");
         }
         result
     }
 
-    pub fn to_instantiation_part(&self) -> String {
+    pub fn to_instantiation_part(&self) -> ColorVec {
         // auto-align by first finding longest offset needed
         let offset = self.longest_identifier();
-        let mut result = format!("{} {}\n", Keyword::Map, Delimiter::ParenL);
+        let mut result = ColorVec::new();
+
+        result.push_color(Keyword::Map.to_color());
+        result.push_str(" ");
+        result.push_color(Delimiter::ParenL.to_color());
+        result.push_str("\n");
+
         for port in &self.0 {
             if port != self.0.first().unwrap() {
-                result.push_str(&(Delimiter::Comma.to_string() + "\n"))
+                result.push_color(Delimiter::Comma.to_color());
+                result.push_str("\n");
             }
-            result.push_str(&format!("    {}", port.into_instance_string(offset)));
+            result.push_whitespace(4);
+            result.append(port.into_instance_string(offset));
         }
-        result + &format!("\n{}", Delimiter::ParenR)
+        result.push_str("\n");
+        result.push_color(Delimiter::ParenR.to_color());
+        result
     }
 }
 

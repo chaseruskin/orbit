@@ -51,6 +51,12 @@ impl ColorVec {
     fn push_whitespace(&mut self, count: usize) -> () {
         self.0.push(ColorTone::Bland(format!("{:<width$}", " ", width=count)));
     }
+
+    fn swap(mut self, index: usize, hue: Rgb) -> Self {
+        let item = self.0.get_mut(index).unwrap();
+        *item = ColorTone::Color(color(&item.to_string(), hue));
+        self
+    }
 }
 
 #[derive(Debug)]
@@ -194,9 +200,17 @@ fn tokens_to_string(tokens: &Vec<VHDLToken>) -> ColorVec {
             _ => true,
         }
     };
+    // determine which delimiters to not add have whitespace preceed
+    let no_preceeding_whitespace = |d: &Delimiter| {
+        match d {
+            Delimiter::Comma => true,
+            _ => false,
+        }
+    };
     // iterate through the tokens
     let mut iter = tokens.iter().peekable();
     while let Some(t) = iter.next() {
+        // determine if to add trailing space after the token
         let trailing_space = match t {
             VHDLToken::Delimiter(d) => is_spaced_token(d),
             _ => {
@@ -213,6 +227,10 @@ fn tokens_to_string(tokens: &Vec<VHDLToken>) -> ColorVec {
         };
         result.push_color(t.to_color());
         if trailing_space == true && iter.peek().is_some() {
+            if let Some(d) = iter.peek().unwrap().as_delimiter() {
+                // skip whitespace addition
+                if no_preceeding_whitespace(d) == true { continue }
+            }
             result.push_str(" ");
         }
     }
@@ -238,7 +256,7 @@ impl InterfaceDeclaration {
             result.push_str(" ");
         }
         // data type
-        result.append(tokens_to_string(&self.datatype.0));
+        result.append(tokens_to_string(&self.datatype.0).swap(0, DATA_TYPE));
         // optional bus keyword
         if self.bus_present == true {
             result.push_str(" ");
@@ -265,7 +283,7 @@ impl InterfaceDeclaration {
         result.push_color(Delimiter::Colon.to_color());
         result.push_str(" ");
         // data type
-        result.append(tokens_to_string(&self.datatype.0));
+        result.append(tokens_to_string(&self.datatype.0).swap(0, DATA_TYPE));
         // optional bus keyword
         if self.bus_present == true {
             result.push_str(" ");
@@ -330,9 +348,8 @@ impl InterfaceDeclarations {
     /// Parses VHDL tokens into a series of `Interface` structs.
     pub fn from_tokens<I>(tokens: &mut Peekable<I>) -> Option<Self>
     where I: Iterator<Item=lexer::Token<VHDLToken>> {
-        // check if 'signal' keyword is present
+        // check if optional 'signal'/'constant'/'file'? keyword is present
         let token = tokens.peek()?;
-
         let initial_keyword = if token.as_ref().as_keyword().is_some() {
             Some(tokens.next().unwrap().take().take_keyword().unwrap())
         } else {

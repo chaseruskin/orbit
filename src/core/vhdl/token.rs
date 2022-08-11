@@ -789,7 +789,7 @@ impl ToColor for VHDLToken {
             Self::Identifier(i) => i.to_color(),
             Self::AbstLiteral(a) => a.to_color(),
             Self::CharLiteral(c) => c.to_color(),
-            Self::StrLiteral(s) => s.to_string().red(),
+            Self::StrLiteral(s) => color(&s.to_string(), STRINGS),
             Self::BitStrLiteral(b) => b.to_color(),
             Self::Keyword(k) => k.to_color(),
             Self::Delimiter(d) => d.to_color(),
@@ -891,6 +891,14 @@ impl VHDLToken {
         match self {
             Self::Delimiter(_) => true,
             _ => false,
+        }
+    }
+
+    /// Casts as a delimiter
+    pub fn as_delimiter(&self) -> Option<&Delimiter> {
+        match self {
+            Self::Delimiter(d) => Some(d),
+            _ => None,
         }
     }
     

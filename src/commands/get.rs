@@ -136,7 +136,7 @@ impl Get {
                 cur_ip.get_manifest_mut().save()?;
             }
         }
-
+        
         // display architectures    
         if self.architectures == true {
             println!("{}", ent.get_architectures());

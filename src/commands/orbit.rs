@@ -1,5 +1,7 @@
 use crate::Command;
 use crate::FromCli;
+use crate::core::vhdl::highlight::ColorMode;
+use crate::interface::arg::Optional;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Positional};
 use crate::interface::errors::CliError;
@@ -62,6 +64,12 @@ impl Orbit {
 impl FromCli for Orbit {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.set_help(HELP);
+        // need to set this coloring mode ASAP
+        match cli.check_option(Optional::new("color").value("when"))?.unwrap_or(ColorMode::Auto) {
+            ColorMode::Always => colored::control::set_override(true),
+            ColorMode::Never => colored::control::set_override(false),
+            ColorMode::Auto => (),
+        }
         let orbit = Ok(Orbit {
             help: cli.check_flag(Flag::new("help").switch('h'))?,
             upgrade: cli.check_flag(Flag::new("upgrade"))?,
@@ -215,6 +223,7 @@ Options:
     --version       print version information and exit
     --upgrade       check for the latest orbit binary
     --force         bypass interactive prompts
+    --color <when>  coloring: auto, always, never
     --help, -h      print help information
 
 Use 'orbit help <command>' for more information about a command.

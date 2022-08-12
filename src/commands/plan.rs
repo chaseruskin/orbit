@@ -8,6 +8,7 @@ use crate::core::extgit;
 use crate::core::ip::IpFileNode;
 use crate::core::ip::IpNode;
 use crate::core::ip::IpSpec;
+use crate::core::lockfile::LockFile;
 use crate::core::manifest::IpManifest;
 use crate::core::lockfile::LockEntry;
 use crate::core::plugin::PluginError;
@@ -344,7 +345,8 @@ impl Plan {
                 .iter()
                 .map(|p| { p.1.as_ref().as_original_ip() })
                 .collect();
-            target.write_lock(&mut build_list)?;
+            let lock = LockFile::from_build_list(&mut build_list);
+            target.write_lock(&lock, None)?;
         }
         Ok(())
     }

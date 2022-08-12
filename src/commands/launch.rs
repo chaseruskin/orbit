@@ -2,6 +2,8 @@ use crate::Command;
 use crate::FromCli;
 use crate::commands::install::Install;
 use crate::core::catalog::Catalog;
+use crate::core::lockfile::IP_LOCK_FILE;
+use crate::core::lockfile::LockFile;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::IpManifest;
 use crate::core::store::Store;
@@ -130,11 +132,11 @@ impl Command for Launch {
         // verify ip dependency graph (also checks for duplicate design unit identifiers)
         print!("info: verifying ip dependency graph ... ");
         std::io::stdout().flush().ok().expect("could not flush stdout");
-        {
+        let lock = {
             let r = Launch::verify_ip_graph(&c, &manifest);
             println!("{}", util::prompt::report_eval(r.is_ok()));
             r?
-        }
+        };
 
         // @todo: report if there are unsaved changes in the working directory/staging index?
 
@@ -179,7 +181,6 @@ impl Command for Launch {
         } else {
             false
         };
-
         println!("info: pushing to a remote branch ... {}", util::prompt::report_eval(push));
 
         let ver_str = version.to_string();
@@ -204,22 +205,35 @@ impl Command for Launch {
             return Err(AnyError(format!("direct dependency '{}' cannot come from a development state", dep)))?
         }
         
-        // verify the manifest is committed (not in staging or working directory if not overwriting)
         if overwrite == false {
-            let st = repo.status_file(&std::path::PathBuf::from(IP_MANIFEST_FILE))?;
-            if st.is_empty() {
-                println!("info: manifest is in clean state")
-            } else {
-                return Err(AnyError(format!("manifest {} is dirty; move changes out of working directory or staging index to enter a clean state", IP_MANIFEST_FILE)))?
+            // verify the manifest is committed (not in staging or working directory if not overwriting)
+            {
+                print!("info: checking manifest ... ");
+                std::io::stdout().flush().ok().expect("could not flush stdout");
+                let r = Launch::verify_clean_file(&repo, IP_MANIFEST_FILE);
+                println!("{}", util::prompt::report_eval(r.is_ok()));
+                r?
+            }
+            // verify the lockfile is committed (not in staging or working directory if not overwriting)
+            {
+                print!("info: checking lockfile ... ");
+                std::io::stdout().flush().ok().expect("could not flush stdout");
+                let r = Launch::verify_clean_file(&repo, IP_LOCK_FILE);
+                println!("{}", util::prompt::report_eval(r.is_ok()));
+                r?
             }
         }
+
+        // check if the lockfile is up-to-date
+        let lockfile_up_to_date = manifest.can_use_lock() && overwrite == false;
+        println!("info: lockfile up to date ... {}", util::prompt::report_eval(lockfile_up_to_date));
 
         let message = match &self.message {
             Some(m) => m.to_owned(),
             None => format!("releases version {}", version),
         };
 
-        println!("info: create commit for manifest ... {}", util::prompt::report_eval(overwrite));
+        println!("info: create commit for manifest and lockfile ... {}", util::prompt::report_eval(overwrite));
        
         if overwrite == true {
             println!("info: future commit message \"{}\"", message)
@@ -238,7 +252,9 @@ impl Command for Launch {
         let mut index = repo.index()?;
 
         let manifest_path = std::path::PathBuf::from(IP_MANIFEST_FILE);
+        let lock_path = std::path::PathBuf::from(IP_LOCK_FILE);
         index.add_path(&manifest_path)?;
+        index.add_path(&lock_path)?;
 
         // verify a signature exists
         let signature = repo.signature()?;
@@ -250,6 +266,12 @@ impl Command for Launch {
                 manifest.get_manifest_mut().save()?;
                 // add manifest to staging
                 index.add_path(&manifest_path)?;
+
+                // add lockfile to staging 
+                if lockfile_up_to_date == false {
+                    manifest.write_lock(&lock, Some(&version))?;
+                }
+                index.add_path(&lock_path)?;
                 // source: https://github.com/rust-lang/git2-rs/issues/561
                 index.write()?;
                 // create new commit
@@ -291,7 +313,11 @@ impl Command for Launch {
                 Install::install(&manifest.get_root(), &AnyVersion::Specific(version.to_partial_version()), c.get_cache_path(), true, &store)?;
             }
         } else {
-            println!("info: version {} is ready for launch\n\nhint: include '{}' to proceed", ver_str, "--ready".green());
+            println!("info: version {} is ready for launch\n", ver_str);
+            if lockfile_up_to_date == false && overwrite == false {
+                println!("hint: try `orbit plan --lock-only` to update the lockfile")
+            }
+            println!("hint: include '{}' to proceed", "--ready".green());
         }
 
         self.run()
@@ -303,7 +329,12 @@ impl Launch {
         Ok(())
     }
 
-    fn verify_ip_graph(c: &Context, target: &IpManifest) -> Result<(), Fault> {
+    /// Generates the ip dependency graph.
+    /// 
+    /// If successful, it returns a `LockFile` struct for generated the dependecy graph.
+    /// 
+    /// Errors can come from loading the catalog and graph building.
+    fn verify_ip_graph(c: &Context, target: &IpManifest) -> Result<LockFile, Fault> {
         // gather the catalog
         let catalog = Catalog::new()
             .store(c.get_store_path())
@@ -311,8 +342,21 @@ impl Launch {
             .installations(c.get_cache_path())?
             .available(c.get_vendors())?;
         // build entire ip graph and resolve with dynamic symbol transformation
-        crate::core::ip::compute_final_ip_graph(&target, &catalog)?;
-        Ok(())
+        Ok(LockFile::from_build_list(&mut crate::core::ip::compute_final_ip_graph(&target, &catalog)?
+            .get_map()
+            .iter()
+            .map(|p| { p.1.as_ref().as_original_ip() })
+            .collect()))
+    }
+
+    /// Verifies the `file` is committed (not in staging or working directory if
+    /// not overwriting).
+    fn verify_clean_file(repo: &Repository, file: &str) -> Result<(), Fault> {
+        let st = repo.status_file(&std::path::PathBuf::from(file))?;
+        match st.is_empty() {
+            true => Ok(()),
+            false => Err(AnyError(format!("file '{}' is dirty; move changes out of working directory or staging index to enter a clean state", file)))?,
+        }
     }
 }
 

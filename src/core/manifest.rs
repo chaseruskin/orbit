@@ -662,8 +662,10 @@ impl IpManifest {
     /// The lock file helps fill in the missing pieces of the puzzle when a different
     /// environment/machine is attempting to rebuild a project.
     /// 
+    /// An optional `ver` can be set to alter the entry for the current manifest.
+    /// 
     /// Note: Internally, this function will sort the build into alphabetical order.
-    pub fn write_lock(&self, build_list: &mut Vec<&IpManifest>) -> Result<(), Fault> {
+    pub fn write_lock(&self, lf: &LockFile, ver: Option<&Version>) -> Result<(), Fault> {
         let lock_file = self.get_root().join(IP_LOCK_FILE);
         // remove any old stale lock file
         if lock_file.exists() == true {
@@ -677,21 +679,21 @@ impl IpManifest {
         toml["ip"] = toml_edit::Item::ArrayOfTables(ArrayOfTables::new());
         let lock_table = toml["ip"].as_array_of_tables_mut().unwrap();
 
-        // sort the build list by pkgid and then version
-        build_list.sort_by(|&x, &y| { match x.get_pkgid().cmp(y.get_pkgid()) {
-            std::cmp::Ordering::Less => std::cmp::Ordering::Less,
-            std::cmp::Ordering::Equal => x.get_version().cmp(y.get_version()),
-            std::cmp::Ordering::Greater => std::cmp::Ordering::Greater,
-        } });
-        
-        build_list.into_iter().for_each(|ip| {
+        let main_entry = LockEntry::from(self);
+        lf.inner().into_iter().for_each(|entry| {
             let mut table = Table::new();
-            LockEntry::from(*ip).to_toml(&mut table);
-            if *ip == self {
+            entry.to_toml(&mut table);
+            if entry.matches_target(&main_entry) == true {
+                // overwrite the current ip's version in its lockfile
+                if let Some(v) = ver {
+                    table["version"] = toml_edit::value(v.to_string());
+                }
+                // remove checksum to avoid accidental checksum errors
                 table.remove_entry("sum");
             }
             lock_table.push(table);
         });
+
         // write to disk
         lock.write(toml.to_string().as_bytes())?;
         Ok(())

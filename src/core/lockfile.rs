@@ -34,6 +34,20 @@ impl FromToml for LockFile {
 }
 
 impl LockFile {
+    /// Creates a lockfile from a build list.
+    pub fn from_build_list(build_list: &mut Vec<&IpManifest>) -> Self {
+        // sort the build list by pkgid and then version
+        build_list.sort_by(|&x, &y| { match x.get_pkgid().cmp(y.get_pkgid()) {
+            std::cmp::Ordering::Less => std::cmp::Ordering::Less,
+            std::cmp::Ordering::Equal => x.get_version().cmp(y.get_version()),
+            std::cmp::Ordering::Greater => std::cmp::Ordering::Greater,
+        } });
+        
+        Self(build_list.into_iter()
+            .map(|ip| LockEntry::from(*ip))
+            .collect())
+    }
+
     /// Loads a lockfile from the `root` path.
     /// 
     /// If the file does not exist, then an empty lock entry list is returned.

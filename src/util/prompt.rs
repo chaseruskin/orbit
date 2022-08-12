@@ -1,6 +1,19 @@
 use std::io;
 use std::io::{Error, Read};
+use colored::ColoredString;
+use colored::Colorize;
 
+/// Conditionally operates on `status` to return an string representation.
+pub fn report_eval(status: bool) -> ColoredString {
+    match status {
+        true => ColoredString::from("ok").green(),
+        false => ColoredString::from("no").red(),
+    }
+}
+
+
+/// Outputs the text `s` with a ? mark and y/n option. Accepts '\n' or 
+/// 'y' to return `true`, and `n` to return `false`.
 pub fn prompt(s: &str) -> Result<bool, Error> {
     println!("{}? [y/n]", s);
     check_for_response(&mut io::stdin().lock())

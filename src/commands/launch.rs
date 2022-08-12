@@ -3,6 +3,7 @@ use crate::FromCli;
 use crate::commands::install::Install;
 use crate::core::catalog::Catalog;
 use crate::core::manifest::IP_MANIFEST_FILE;
+use crate::core::manifest::IpManifest;
 use crate::core::store::Store;
 use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
@@ -12,7 +13,14 @@ use crate::interface::errors::CliError;
 use crate::core::context::Context;
 use crate::core::version::Version;
 use crate::core::extgit::ExtGit;
+use crate::util;
+use std::io::Write;
+use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
+use git2::Repository;
+use colored::Colorize;
+use crate::core::manifest;
+use crate::util::anyerror::AnyError;
 
 #[derive(Debug, PartialEq)]
 enum VersionField {
@@ -56,15 +64,8 @@ impl FromCli for Launch {
     }
 }
 
-use git2::Repository;
-use colored::Colorize;
-use crate::core::manifest;
-use crate::util::anyerror::AnyError;
-
-
-
 impl Command for Launch {
-    type Err = Box<dyn std::error::Error>;
+    type Err = Fault;
 
     fn exec(&self, c: &Context) -> Result<(), Self::Err> {
         // make sure it is run from an ip directory
@@ -115,7 +116,7 @@ impl Command for Launch {
                     }
                 }
             }
-            println!("info: raising {} --> {}", prev_version, version);
+            println!("info: raising {} -> {}", prev_version, version.to_string().blue());
             // update the manifest and add a new commit to the git repository
             manifest.get_manifest_mut().write("ip", "version", version.to_string());
             true
@@ -127,24 +128,25 @@ impl Command for Launch {
         vars.add("orbit.ip.version", &version.to_string());
 
         // verify ip dependency graph (also checks for duplicate design unit identifiers)
-        println!("info: verifying ip dependency graph ...");
+        print!("info: verifying ip dependency graph ... ");
+        std::io::stdout().flush().ok().expect("could not flush stdout");
         {
-            // gather the catalog
-            let catalog = Catalog::new()
-                .store(c.get_store_path())
-                .development(c.get_development_path().unwrap())?
-                .installations(c.get_cache_path())?
-                .available(c.get_vendors())?;
-            // build entire ip graph and resolve with dynamic symbol transformation
-            crate::core::ip::compute_final_ip_graph(&manifest, &catalog)?;
+            let r = Launch::verify_ip_graph(&c, &manifest);
+            println!("{}", util::prompt::report_eval(r.is_ok()));
+            r?
         }
 
         // @todo: report if there are unsaved changes in the working directory/staging index?
 
         // verify the repository's HEAD is up-to-date (git remote update)
-        println!("info: updating git repository remotes ...");
+        print!("info: checking git repository remotes ... ");
+        std::io::stdout().flush().ok().expect("could not flush stdout");
         let extgit = ExtGit::new(None).path(c.get_ip_path().unwrap().clone());
-        extgit.remote_update()?;
+        {
+            let r = extgit.remote_update();
+            println!("{}", util::prompt::report_eval(r.is_ok()));
+            r?
+        }
 
         let b = git2::Branch::wrap(repo.head()?);
         let local_name = b.name()?.unwrap().to_string();
@@ -178,7 +180,7 @@ impl Command for Launch {
             false
         };
 
-        println!("info: pushing to a remote branch ... {}", {if push { "yes" } else { "no" }});
+        println!("info: pushing to a remote branch ... {}", util::prompt::report_eval(push));
 
         let ver_str = version.to_string();
         {
@@ -217,30 +219,26 @@ impl Command for Launch {
             None => format!("releases version {}", version),
         };
 
-        println!("info: create commit for manifest ... {}", match overwrite {
-            true => "yes",
-            false => "no",
-        });
+        println!("info: create commit for manifest ... {}", util::prompt::report_eval(overwrite));
        
         if overwrite == true {
             println!("info: future commit message \"{}\"", message)
         }
 
-        println!("info: installing to cache ... {}", match self.no_install {
-            true => "no",
-            false => "yes",
-        });
+        println!("info: installing to cache ... {}",util::prompt::report_eval(!self.no_install));
 
         // find the registry by using the vendor
         let registry = c.get_vendors().get(manifest.get_pkgid().get_vendor().as_ref().unwrap());
         let publish = registry.is_some() && manifest.get_repository().is_some() && push;
-        println!("info: publishing to registry ... {}", match publish { true => "yes", false => "no" });
+        println!("info: publishing to registry ... {}", util::prompt::report_eval(publish));
 
         // --- verify git things
 
         // verify Orbit.toml to staging area
         let mut index = repo.index()?;
-        index.add_path(&std::path::PathBuf::from(IP_MANIFEST_FILE))?;
+
+        let manifest_path = std::path::PathBuf::from(IP_MANIFEST_FILE);
+        index.add_path(&manifest_path)?;
 
         // verify a signature exists
         let signature = repo.signature()?;
@@ -251,7 +249,7 @@ impl Command for Launch {
                 // save the manifest
                 manifest.get_manifest_mut().save()?;
                 // add manifest to staging
-                index.add_path(&std::path::PathBuf::from(IP_MANIFEST_FILE))?;
+                index.add_path(&manifest_path)?;
                 // source: https://github.com/rust-lang/git2-rs/issues/561
                 index.write()?;
                 // create new commit
@@ -293,7 +291,7 @@ impl Command for Launch {
                 Install::install(&manifest.get_root(), &AnyVersion::Specific(version.to_partial_version()), c.get_cache_path(), true, &store)?;
             }
         } else {
-            println!("info: version {} is ready for launch\n\nhint: include '--ready' flag to proceed", ver_str);
+            println!("info: version {} is ready for launch\n\nhint: include '{}' to proceed", ver_str, "--ready".green());
         }
 
         self.run()
@@ -302,6 +300,18 @@ impl Command for Launch {
 
 impl Launch {
     fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    }
+
+    fn verify_ip_graph(c: &Context, target: &IpManifest) -> Result<(), Fault> {
+        // gather the catalog
+        let catalog = Catalog::new()
+            .store(c.get_store_path())
+            .development(c.get_development_path().unwrap())?
+            .installations(c.get_cache_path())?
+            .available(c.get_vendors())?;
+        // build entire ip graph and resolve with dynamic symbol transformation
+        crate::core::ip::compute_final_ip_graph(&target, &catalog)?;
         Ok(())
     }
 }

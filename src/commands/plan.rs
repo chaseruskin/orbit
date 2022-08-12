@@ -136,7 +136,7 @@ impl Command for Plan {
             None => c.get_build_dir(),
         };
 
-        self.run(target_ip, b_dir, plugin, catalog)
+        self.run(target_ip, b_dir, plugin, catalog, c.force)
     }
 }
 
@@ -334,14 +334,18 @@ impl Plan {
         graph_map
     }
 
-    /// Writes the lockfile according to the constructed `ip_graph`.
-    fn write_lockfile(target: &IpManifest, ip_graph: &GraphMap<IpSpec, IpNode, ()>) -> Result<(), Fault> {
-        // create build list
-        let mut build_list: Vec<&IpManifest> = ip_graph.get_map()
-            .iter()
-            .map(|p| { p.1.as_ref().as_original_ip() })
-            .collect();
-        target.write_lock(&mut build_list)?;
+    /// Writes the lockfile according to the constructed `ip_graph`. Only writes if the lockfile is
+    /// out of date or `force` is `true`.
+    fn write_lockfile(target: &IpManifest, ip_graph: &GraphMap<IpSpec, IpNode, ()>, force: bool) -> Result<(), Fault> {
+        // only modify the lockfile if it is out-of-date
+        if target.can_use_lock() == false || force == true { 
+            // create build list
+            let mut build_list: Vec<&IpManifest> = ip_graph.get_map()
+                .iter()
+                .map(|p| { p.1.as_ref().as_original_ip() })
+                .collect();
+            target.write_lock(&mut build_list)?;
+        }
         Ok(())
     }
 
@@ -463,7 +467,7 @@ impl Plan {
     }
 
     /// Performs the backend logic for creating a blueprint file (planning a design).
-    fn run(&self, target: IpManifest, build_dir: &str, plug: Option<&Plugin>, catalog: Catalog) -> Result<(), Fault> {
+    fn run(&self, target: IpManifest, build_dir: &str, plug: Option<&Plugin>, catalog: Catalog, force: bool) -> Result<(), Fault> {
         // create the build path to know where to begin storing files
         let mut build_path = std::env::current_dir().unwrap();
         build_path.push(build_dir);
@@ -478,7 +482,7 @@ impl Plan {
 
         // only write lockfile and exit if flag is raised 
         if self.only_lock == true {
-            Self::write_lockfile(&target, &ip_graph)?;
+            Self::write_lockfile(&target, &ip_graph, force)?;
             return Ok(())
         }
 
@@ -513,7 +517,7 @@ impl Plan {
         }
 
         // [!] write the lock file
-        Self::write_lockfile(&target, &ip_graph)?;
+        Self::write_lockfile(&target, &ip_graph, force)?;
 
         // compute minimal topological ordering
         let min_order = match self.all {

@@ -121,7 +121,7 @@ impl Command for Launch {
             manifest.get_manifest_mut().write("ip", "version", version.to_string());
             true
         } else {
-            println!("info: setting {}", version);
+            println!("info: setting {}", version.to_string().blue());
             false
         };
 

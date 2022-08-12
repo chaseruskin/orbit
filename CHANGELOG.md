@@ -15,6 +15,18 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.8.4
+
+### Features
+- adds colored syntax to `orbit get` VHDL output
+- displays Windows OS-specific env var with `orbit env`
+- major readability improvements and additional checks against the lock file during `orbit launch`
+- saves installation size to published manifests
+
+### Changes
+- displays `library <identifier>;` vhdl code segment when using `orbit get` with `-i` and no `-c`
+- swaps `\` for `/` in filepaths for env variables in `orbit env`
+
 ## 0.8.3
 
 ### Features

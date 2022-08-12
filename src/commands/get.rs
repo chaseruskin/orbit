@@ -10,6 +10,7 @@ use crate::core::manifest::IpManifest;
 use crate::core::parser::Symbol;
 use crate::core::version::AnyVersion;
 use crate::core::version::Version;
+use crate::core::vhdl::interface;
 use crate::core::vhdl::primaryunit::VhdlIdentifierError;
 use crate::core::vhdl::symbol::Architecture;
 use crate::core::vhdl::symbol::Entity;
@@ -136,6 +137,12 @@ impl Get {
                 cur_ip.get_manifest_mut().save()?;
             }
         }
+
+        // make the library reference the current working ip 'work' if its internal
+        let lib = match is_self {
+            true => Identifier::new_working(),
+            false => Identifier::from(ip.get_pkgid().get_library().as_ref().unwrap()),
+        };
         
         // display architectures    
         if self.architectures == true {
@@ -145,6 +152,9 @@ impl Get {
         // display component declaration
         if self.component == true {
             println!("{}", ent.into_component());
+        // display library declaration line if displaying instance
+        } else if self.instance == true {
+            println!("{}", interface::library_statement(&lib));
         }
 
         // display signal declarations
@@ -158,13 +168,9 @@ impl Get {
                 println!("{}", signals);
             }
         }  
-        // make the library reference the current working ip 'work' if its internal
-        let lib = match is_self {
-            true => Some(Identifier::new_working()),
-            false => Some(Identifier::from(ip.get_pkgid().get_library().as_ref().unwrap()))
-        };
+
         // only display the direct entity instantiation code if not providing component code
-        let lib = if self.component == true { None } else { lib };
+        let lib = if self.component == true { None } else { Some(lib) };
 
         // display instantiation code
         if self.instance == true {

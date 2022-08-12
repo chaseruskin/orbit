@@ -2,6 +2,11 @@ use colored::ColoredString;
 use super::token::{Identifier, ToColor};
 use super::highlight::*;
 
+
+pub fn library_statement(lib: &Identifier) -> String {
+    format!("{} {}{}\n", Keyword::Library.to_color(), color(&lib.to_string(), ENTITY_NAME), Delimiter::Terminator.to_color())
+}
+
 #[derive(Debug, PartialEq)]
 enum ColorTone {
     Color(ColoredString),

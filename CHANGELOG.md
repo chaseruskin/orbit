@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.8.5
+
+### Fixes
+- prints missing double quotes on string token for orbit get
+
 ## 0.8.4
 
 ### Features

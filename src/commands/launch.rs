@@ -225,8 +225,11 @@ impl Command for Launch {
         }
 
         // check if the lockfile is up-to-date
-        let lockfile_up_to_date = manifest.can_use_lock() && overwrite == false;
-        println!("info: lockfile up to date ... {}", util::prompt::report_eval(lockfile_up_to_date));
+        let lockfile_up_to_date = manifest.can_use_lock();
+        println!("info: lockfile up to date ... {}", match overwrite {
+            false => util::prompt::report_eval(lockfile_up_to_date),
+            true => "ignored".yellow() 
+        });
 
         let message = match &self.message {
             Some(m) => m.to_owned(),

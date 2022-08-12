@@ -789,7 +789,7 @@ impl ToColor for VHDLToken {
             Self::Identifier(i) => i.to_color(),
             Self::AbstLiteral(a) => a.to_color(),
             Self::CharLiteral(c) => c.to_color(),
-            Self::StrLiteral(s) => color(&s.to_string(), STRINGS),
+            Self::StrLiteral(s) => color(&format!("\"{}\"", s.to_string()), STRINGS),
             Self::BitStrLiteral(b) => b.to_color(),
             Self::Keyword(k) => k.to_color(),
             Self::Delimiter(d) => d.to_color(),

@@ -129,6 +129,8 @@ impl VendorManifest {
 
         // serialize unit data
         ip.stash_units();
+        // serialize size data
+        ip.stash_size()?;
 
         // write contents to new file location
         {

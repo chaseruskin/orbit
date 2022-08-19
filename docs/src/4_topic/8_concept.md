@@ -2,6 +2,8 @@
 
 Orbit is a frontend package manager for HDL development leaving the door open for flexible backend tooling and workflows.
 
+![](./../images/orbit-concept-color-transparent.svg)
+
 ## Key points
 
 - Every IP requires a manifest file (`Orbit.toml`). This is maintained by the developer. The manifest file documents basic metadata and the project's list of direct dependencies.

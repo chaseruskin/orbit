@@ -124,7 +124,7 @@ impl Environment {
     /// It searches the `[env]` table and collects all env variables.
     pub fn from_config(mut self, config: &Config) -> Result<Self, Fault> {
         // read config.toml for setting any env variables
-        if let Some(env_table) = config.get_doc().get(DOT_ENV_FILE) {
+        if let Some(env_table) = config.get_doc().get("env") {
             if let Some(table) = env_table.as_table() {
                 let mut table = table.iter();
                 while let Some((key, val)) = table.next() {

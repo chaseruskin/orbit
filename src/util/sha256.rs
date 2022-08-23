@@ -330,14 +330,14 @@ An interview.".as_bytes()),
 
     #[test]
     fn package_zip() {
-        let body_bytes = std::fs::read("./test/data/archive.zip").unwrap();
+        let body_bytes = std::fs::read("./tests/data/archive.zip").unwrap();
         let sum = compute_sha256(&body_bytes);
         assert_eq!(sum, Sha256Hash::from_str("adcbb89b2a4b08bf0f2c1170129e8c41f5b7c255ec51e0f3d23e6b11da35e904").unwrap())
     }
 
     #[test]
     fn package_zip2() {
-        let body_bytes = std::fs::read("./test/data/archive2.zip").unwrap();
+        let body_bytes = std::fs::read("./tests/data/archive2.zip").unwrap();
         let sum = compute_sha256(&body_bytes);
         println!("{}", sum.to_string());
         assert_eq!(sum, Sha256Hash::from_str("cc8059fc610a3212cd23f48a1d9b709be8ab61ae1c9563dd4598e38e80bf3385").unwrap())

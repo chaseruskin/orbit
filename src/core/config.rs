@@ -359,9 +359,12 @@ pub const INDEX_KEY: &str = "index";
 mod test {
     use super::*;
 
+
+    const BASE_PATH: &str = "./tests/data/config/";
+
     #[test]
     fn access_includes() {
-        let cfg = Config::from_path(&PathBuf::from("./test/data/config/config.toml"))
+        let cfg = Config::from_path(&PathBuf::from(BASE_PATH.to_owned() + "config.toml"))
             .unwrap()
             .include().unwrap();
 
@@ -376,7 +379,7 @@ mod test {
 
     #[test]
     fn collect_all_top_level_arrays() {
-        let cfg = Config::from_path(&PathBuf::from("./test/data/config/config.toml"))
+        let cfg = Config::from_path(&PathBuf::from(BASE_PATH.to_owned() + "config.toml"))
             .unwrap()
             .include().unwrap();
 
@@ -388,7 +391,7 @@ mod test {
 
     #[test]
     fn collect_items() {
-        let cfg = Config::from_path(&PathBuf::from("./test/data/config/config.toml"))
+        let cfg = Config::from_path(&PathBuf::from(BASE_PATH.to_owned() + "config.toml"))
             .unwrap()
             .include().unwrap();
 

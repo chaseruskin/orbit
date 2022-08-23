@@ -32,21 +32,20 @@ jobs:
       - name: Identify target triple and current version
         shell: bash
         run: |
-          rustc ./tools/target-triple.rs -o ./tools/target-triple.exe
-          echo "TARGET=$(./tools/target-triple.exe)" >> $GITHUB_ENV
+          echo "TARGET=$(cargo run --bin target-triple --quiet)" >> $GITHUB_ENV
           echo "VERSION=$(python ./tools/evalver.py --version)" >> $GITHUB_ENV
 
       - name: Update manual pages
         run: python ./tools/rsmangen.py
 
       - name: Build orbit binary
-        run: cargo build --release
+        run: cargo build --release --bin orbit
 
       - name: Test
         run: cargo test
 
       - name: Build installer binary
-        run: cargo build --bin install --release
+        run: cargo build --release --bin install
 
       - name: Package and compress binary executable
         run: python ./tools/pack.py ${{ env.VERSION }}-${{ env.TARGET }}

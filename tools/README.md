@@ -8,4 +8,3 @@ Internal supportive code for the orbit project.
 - `pack.py`: packages project files into single folder and compresses them using zip archive format for distribution
 - `rsmangen.py`: generates rust code `str` literal from docs markdown manual page saved to docs/src/6_commands/
 - `sum.py`: computes the checksum for a list of files found from glob matching a pattern
-- `target-triple.rs`: code for building basic executable to check target for current machine

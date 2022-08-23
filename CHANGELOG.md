@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.8.6
+
+### Fixes
+- reads from table 'env' not '.env' in config file
+
 ## 0.8.5
 
 ### Fixes

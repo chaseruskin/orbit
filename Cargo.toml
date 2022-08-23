@@ -1,14 +1,9 @@
 [package]
 name = "orbit"
-version = "0.8.5"
+version = "0.8.6"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[[bin]]
-# supportive installer program to package with the orbit distribution
-name = "install"
-path = "src/installer/main.rs"
 
 [dependencies]
 colored = "2"

@@ -302,7 +302,11 @@ impl Plan {
                 let node_name = CompoundIdentifier::new(lib, node.get_sub().get_entity().clone());
         
                 // link to the owner and add architecture's source file
-                let entity_node = graph_map.get_node_by_key_mut(&node_name).unwrap();
+                let entity_node = match graph_map.get_node_by_key_mut(&node_name) {
+                    Some(en) => en,
+                    // @todo: issue error because the entity (owner) is not declared
+                    None => continue
+                };
                 entity_node.as_ref_mut().add_file(node.file);
                 // create edges
                 for dep in node.get_sub().get_edges() {

@@ -214,7 +214,12 @@ impl Tree {
             let node_name = CompoundIdentifier::new(lib, node.get_sub().get_entity().clone());
 
             // link to the owner and add subunit's source file
-            let entity_node = graph.get_node_by_key_mut(&node_name).unwrap();
+            // note: this also occurs in `plan.rs`
+            let entity_node = match graph.get_node_by_key_mut(&node_name) {
+                Some(en) => en,
+                // @todo: issue error because the entity (owner) is not declared
+                None => continue
+            };
             entity_node.as_ref_mut().add_file(node.get_file());
             // create edges
             for dep in node.get_sub().get_edges() {

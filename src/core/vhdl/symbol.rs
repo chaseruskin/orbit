@@ -1368,28 +1368,66 @@ impl VHDLSymbol {
         }
     }
 
+    /// Checks if the statement `stmt` is the ending to a subprogram.
+    fn is_subprogram_ending(stmt: &Statement) -> bool {
+        // verify the first token is the 'end' keyword
+        match stmt.0.get(0) {
+            Some(i) => match i.as_ref().as_keyword() {
+                Some(kw) => if kw != &Keyword::End { return false },
+                None => return false,
+            },
+            None => return false,
+        }
+        // verify the next token is the keyword for subprogram
+        match stmt.0.get(1) {
+            Some(i) => match i.as_ref().as_keyword() {
+                Some(kw) => match kw {
+                    Keyword::Procedure | Keyword::Function => true,
+                    _ => false,
+                },
+                None => false,
+            },
+            None => false,
+        }
+    }
+
     /// Parses through a subprogram (procedure or function).
-    fn parse_subprogram<I>(tokens: &mut Peekable<I>) -> IdentifierList
+    /// 
+    /// Returns (`deps`, `refs`).
+    fn parse_subprogram<I>(tokens: &mut Peekable<I>) -> (IdentifierList, IdentifierList)
     where I: Iterator<Item=Token<VHDLToken>> {
+        let mut refs = IdentifierList::new();
+        let mut deps = IdentifierList::new();
+        let mut is_return_yet: bool = false;
         while let Some(t) = tokens.peek() {
+            // trigger when the statement will be the end of the declaration line
+            if t.as_type().check_keyword(&Keyword::Return) == true {
+                is_return_yet = true;
+            }
             // determine when to branch to declaration section or body section
             if t.as_type().check_keyword(&Keyword::Is) {
-                Self::parse_declaration(tokens, &Self::is_sub_ending);
+                // println!("OUT SUB: {:?}", t);
+                let (mut sub_deps, mut sub_refs) = Self::parse_declaration(tokens, &Self::is_subprogram_ending);
+                deps.append(&mut sub_deps);
+                refs.append(&mut sub_refs);
                 break;
-            } else if t.as_type().check_delimiter(&Delimiter::Terminator) {
+            } else if is_return_yet && t.as_type().check_delimiter(&Delimiter::Terminator) {
+                // println!("OUT SUB: {:?}", t);
                 break;
             } else {
                 // println!("IN SUB: {:?}", t);
                 tokens.next();
             }
         }
-        // @TODO capture references from declaration and body sections
-        IdentifierList::new()
+        // @todo: capture references from declaration and body sections
+        (deps, refs)
     }
 
     /// Consumes tokens after `IS` until finding `BEGIN` or `END`.
     /// 
     /// Assumes the next token to consume is `IS` and throws it away.
+    /// 
+    /// Returns (`deps`, `refs`)
     fn parse_declaration<I>(tokens: &mut Peekable<I>, eval_exit: &dyn Fn(&Statement) -> bool) -> (IdentifierList, IdentifierList)
         where I: Iterator<Item=Token<VHDLToken>> {
         // println!("*--- declaration section");
@@ -1400,20 +1438,21 @@ impl VHDLSymbol {
         let mut refs = IdentifierList::new();
         let mut deps = IdentifierList::new();
         while let Some(t) = tokens.peek() {
-            // println!("{:?}", t);
+            // println!("dec: {:?}", t);
             // stop the declaration section and enter a statement section
             if t.as_type().check_keyword(&Keyword::Begin) {
                 tokens.next();
                 // combine refs from declaration and from body
-                let (mut body_deps, mut body_refs) = Self::parse_body(tokens, &Self::is_primary_ending);
+                let (mut body_deps, mut body_refs) = Self::parse_body(tokens, &eval_exit);
                 refs.append(&mut body_refs);
                 deps.append(&mut body_deps);
+                // println!("{}", "stop reading tokens");
                 // STOP READING TOKENS
                 break;
             // the declaration is over and there is no statement section
             } else if t.as_type().check_keyword(&Keyword::End) {
                 let stmt = Self::parse_statement(tokens);
-                // println!("{:?}", stmt);
+                // println!("end of dec: {:?}", stmt);
                 if eval_exit(&stmt) { 
                     break; 
                 }
@@ -1429,7 +1468,9 @@ impl VHDLSymbol {
             // detect subprograms
             } else if t.as_type().as_keyword().is_some() && Self::is_subprogram(t.as_type().as_keyword().unwrap()) == true {
                 // println!("{}", "sub program");
-                Self::parse_subprogram(tokens);
+                let (mut sub_deps, mut sub_refs) = Self::parse_subprogram(tokens);
+                deps.append(&mut sub_deps);
+                refs.append(&mut sub_refs);
             // build statements to throw away
             } else {
                 let stmt = Self::parse_statement(tokens);
@@ -1552,7 +1593,7 @@ impl VHDLSymbol {
         while let Some(t) = tokens.peek() {
             if t.as_type().check_keyword(&Keyword::End) == true {
                 let stmt = Self::parse_statement(tokens);
-                // println!("{:?}", stmt);
+                // println!("in body: {:?}", stmt);
                 if eval_exit(&stmt) == true { 
                     break; 
                 }
@@ -1576,7 +1617,7 @@ impl VHDLSymbol {
             // build statements
             } else {
                 let mut stmt = Self::parse_statement(tokens);
-                // println!("{:?}", stmt);
+                // println!("in body: {:?}", stmt);
                 refs.append(&mut stmt.1);
                 // check if statement is an instantiation
                 if let Some(mut inst) = Self::parse_instantiation(stmt) {
@@ -1943,6 +1984,163 @@ for all: xor_gate use configuration cfg1;
         assert_eq!(iden.unwrap(), IdentifierList::from([
             CompoundIdentifier::new_minimal(Identifier::Basic(String::from("cfg1")))
             ]));
+    }
+
+    #[test]
+    fn playground_fn_in_arch_dec() {
+        let s = r#"
+--------------------------------------------------------------------------------
+--! Project   : crus.eel5721.lab1
+--! Engineer  : Chase Ruskin
+--! Created   : 2022-09-06
+--! Testbench : fib_tb
+--! Details   :
+--!     Tests the `fib` design entity for generating fibonacci sequence values.
+--!     
+--!     The range of values tested are 0 <= n < 47. 47 is omitted from the range
+--!     due to complications loading the resulting value into a 32-bit vector.
+--!
+--!     Uses file i/o to load a text file "inputs.dat" of randomized `n` values 
+--!     for input to be checked against the expected results for fib(n) loaded 
+--!     from another text file "outputs.dat".
+--------------------------------------------------------------------------------
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use std.textio.all;
+
+entity fib_tb is 
+end entity fib_tb;
+
+
+architecture sim of fib_tb is
+    --! internal testbench signals
+    signal clk: std_logic := '0';
+    signal rst: std_logic := '0';
+    -- the simulation will halt when `halt` becomes '1'
+    signal halt: std_logic := '0';
+
+    constant period: time := 10 ns;
+
+    --! unit-under-test (UUT) interface wires
+    signal go     : std_logic;
+    signal n      : std_logic_vector(5 downto 0);
+    signal result : std_logic_vector(31 downto 0);
+    signal done   : std_logic;
+
+    impure function read_int_to_logic_vector(
+        file f : text;
+        len : in positive
+    )
+    return std_logic_vector is
+        variable text_line : line;
+        variable text_int  : integer;
+    begin
+        readline(f, text_line);
+        read(text_line, text_int);
+        return std_logic_vector(to_unsigned(text_int, len));
+    end function;
+
+begin
+    --! UUT instantiation
+    UUT : entity work.fib
+    port map (
+        clk    => clk,
+        rst    => rst,
+        go     => go,
+        n      => n,
+        result => result,
+        done   => done
+    );
+
+    --! generate clock with 50% duty cycle
+    clk <= not clk after period/2 when halt = '0';
+
+    --! initial reset to start from known state
+    boot: process
+    begin
+        rst <= '1';
+        wait for period*4;
+        rst <= '0';
+        wait;
+    end process;
+
+    --! feed inputs into the UUT to begin processing
+    input: process
+        file inputs: text open read_mode is "inputs.dat";
+        variable text_line : line;
+        variable text_int  : integer;
+    begin
+        wait until rst = '0';
+
+        while not endfile(inputs) loop
+            -- drive the current input `n`
+            readline(inputs, text_line);
+            read(text_line, text_int);
+            n <= std_logic_vector(to_unsigned(text_int, 6));
+
+            -- assert the go signal to begin the simulation
+            go <= '1';
+            wait until rising_edge(clk);
+            go <= '0';
+            n <= (others => '0');
+            wait until rising_edge(clk);
+
+            -- assert that done has been set low
+            assert done = '0' report "Done is not lowered during computation." severity error;
+
+            wait until done = '1';
+
+            -- allow 2 cycles to check done remaining asserted in bench process
+            wait until rising_edge(clk);
+            wait until rising_edge(clk);
+        end loop;
+        wait;
+    end process;
+
+    --! assert the received outputs match expected model values
+    bench: process
+        file outputs: text open read_mode is "outputs.dat";
+        variable text_line    : line;
+        variable text_int     : integer;
+        variable ideal_result : std_logic_vector(31 downto 0);
+        variable ideal_result_us : unsigned(31 downto 0);
+    begin
+        wait until rst = '0';
+
+        while not endfile(outputs) loop
+            readline(outputs, text_line);
+            read(text_line, text_int);
+            ideal_result := std_logic_vector(to_unsigned(text_int, 32));
+
+            -- wait until done is asserted
+            wait until done = '1';
+
+            assert ideal_result = result report "Mismatched result." severity error;
+            
+            -- assert done remains '1'
+            wait until rising_edge(clk);
+            assert done = '1' report "Done is lowered too soon." severity error;        
+        end loop;
+        -- stop the simulation
+        halt <= '1';
+        report "Simulation complete.";
+        wait;
+    end process;
+
+end architecture sim;
+        "#;
+
+        use crate::core::vhdl::symbol::Identifier::Basic;
+
+        let syms = VHDLParser::parse(VHDLTokenizer::from_source_code(&s).into_tokens());
+        println!("{:?}", syms);
+        assert_eq!(
+            syms.get(1).as_ref().unwrap().as_ref().unwrap().as_ref().as_architecture().unwrap().edges(), 
+            &LinkedList::from([
+                CompoundIdentifier { prefix: Some(Basic("work".to_string())), suffix: Basic("fib".to_string()) }, 
+                CompoundIdentifier { prefix: None, suffix: Basic("fib".to_string()) }])
+        );
     }
 
     #[test]

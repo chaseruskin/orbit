@@ -15,6 +15,12 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.8.7
+
+### Fixes
+- resolves issue with some function bodies in architecture declarations losing track of architecture body to catch dependencies from instantiations (test: `playground_fn_in_arch_dec`)
+- avoids panic on `.unwrap()` for assuming architecture owner exists and will silently skip analyzing architecture during graphing if owner is not existing
+
 ## 0.8.6
 
 ### Fixes

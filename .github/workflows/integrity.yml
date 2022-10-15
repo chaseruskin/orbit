@@ -7,15 +7,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Fetch Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Setup python
-      uses: actions/setup-python@v2.2.2
+      uses: actions/setup-python@v4
       with:
         python-version: 3.x
 
     - name: Download artifacts
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
 
     - name: Display filesystem contents
       run: ls -R
@@ -30,7 +30,7 @@ jobs:
       run: cat ./orbit-${{ env.VERSION }}-checksums.txt
 
     - name: Upload checksums
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: orbit-${{ env.VERSION }}-checksums
         path: ./orbit-${{ env.VERSION }}-checksums.txt

@@ -24,6 +24,12 @@ jobs:
     with:
       version: ${{ needs.check-release.outputs.version }}
 
+  docker-build:
+    uses: c-rus/orbit/.github/workflows/docker.yml@trunk
+    needs: [check-release, system-test]
+    with:
+      version: ${{ needs.check-release.outputs.version }}
+
   release:
     uses: c-rus/orbit/.github/workflows/release.yml@trunk
     if: ${{ needs.check-release.outputs.ready == '1' }}

@@ -1,15 +1,39 @@
 name: docker
 on:
-  push:
-    branches:
-      - 'trunk'
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version released'
+        required: true
+        type: string
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
       - name: Checkout 
         uses: actions/checkout@v3
+
+      - name: Download package
+        uses: actions/download-artifact@v3
+        with:
+          name: orbit-${{ inputs.version }}-x86_64-linux
+
+      - name: Download checksums
+        uses: actions/download-artifact@v3
+        with:
+          name: orbit-${{ inputs.version }}-checksums
+
+      - name: Verify contents
+        run: grep $(sha256sum orbit-${{ inputs.version }}-x86_64-linux.zip) orbit-${{ inputs.version }}-checksums.txt
+
+      - name: Install Orbit
+        run: |
+          unzip ./orbit-${{ inputs.version }}-x86_64-linux.zip
+          cp ./orbit-${{ inputs.version }}-x86_64-linux/bin/orbit /usr/local/bin
+
+      - name: Test Orbit
+        run: orbit --version
         
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -23,8 +47,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
-          context: ./
-          file: ./Dockerfile
+          context: .
+          file: ./docker/Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orbit:latest

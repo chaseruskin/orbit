@@ -27,7 +27,7 @@ jobs:
           toolchain: stable
 
       - name: Enable Cargo caching
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
 
       - name: Identify target triple and current version
         shell: bash
@@ -51,7 +51,7 @@ jobs:
         run: python ./tools/pack.py ${{ env.VERSION }}-${{ env.TARGET }}
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ env.PROJECT }}-${{ env.VERSION }}-${{ env.TARGET }}
           path: ./${{ env.PROJECT }}-${{ env.VERSION }}-${{ env.TARGET }}.zip

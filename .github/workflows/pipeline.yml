@@ -27,9 +27,10 @@ jobs:
   docker-build:
     uses: c-rus/orbit/.github/workflows/docker.yml@trunk
     needs: [check-release, system-test]
+    secrets:
+      DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+      DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
     with:
-      docker_user: ${{ secrets.DOCKER_HUB_USERNAME }}
-      docker_token: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       version: ${{ needs.check-release.outputs.version }}
 
   release:

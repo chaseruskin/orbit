@@ -39,6 +39,9 @@ jobs:
 
       - name: Test Orbit
         run: ./orbit --version
+
+      - name: Modify entrypoint file permission to executable
+        run: chmod +x ./docker/entrypoint.sh
         
       - name: Login to Docker Hub
         uses: docker/login-action@v2

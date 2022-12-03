@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.8.8
+
+### Fixes
+- resolves error with windows installer script regarding `The system cannot find the file specified. (os error 2)`
+
 ## 0.8.7
 
 ### Fixes

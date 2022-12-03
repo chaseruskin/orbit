@@ -46,5 +46,9 @@ jobs:
         unzip ./orbit-${{ inputs.version }}-x86_64-windows.zip
         printf 'C:/users/runneradmin\n\n' | ./orbit-${{ inputs.version }}-x86_64-windows/install.exe 
 
-    # - name: Test Orbit
-    #   run: orbit --version
+    - name: Add Orbit to PATH
+      shell: bash
+      run: echo "C:/users/runneradmin/orbit/bin" >> $GITHUB_PATH
+
+    - name: Test Orbit
+      run: orbit --version

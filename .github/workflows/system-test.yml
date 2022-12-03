@@ -44,7 +44,7 @@ jobs:
       shell: bash
       run: |
         unzip ./orbit-${{ inputs.version }}-x86_64-windows.zip
-        printf '\n\n' | ./orbit-${{ inputs.version }}-x86_64-windows/install.exe 
+        printf 'C:/users/runneradmin\n\n' | ./orbit-${{ inputs.version }}-x86_64-windows/install.exe 
 
     # - name: Test Orbit
     #   run: orbit --version

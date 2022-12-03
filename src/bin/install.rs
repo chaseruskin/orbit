@@ -22,20 +22,27 @@ fn install() -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
+use home::home_dir;
 use orbit::util::filesystem;
 use orbit::util::prompt;
 
-/// unix installation steps
+/// unix installation steps (copies only the binary)
 fn unix() -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", HEADER);
 
     // gather path for what will be installed
     let contents = {
+        // fetch this program's (installer) path
         let mut root = filesystem::get_exe_path()?;
         // remove file to get parent directory
         root.pop();
         root.join("bin/orbit")
     };
+
+    // verify this program was could find the executable
+    if contents.exists() == false {
+        return Err(InstallError::UndetectedExe(contents))?
+    }
 
     // 1. compute installation size
     let megabytes = fs_extra::dir::get_size(&contents)? as f32 / 1000000 as f32;
@@ -57,7 +64,7 @@ fn unix() -> Result<(), Box<dyn std::error::Error>> {
     match prompt::prompt("Install")? {
         true => {
             // 4a. copy the binary to the location
-            std::fs::copy(contents, path.join("orbit"))?;
+            std::fs::copy(contents, dest)?;
             println!("successfully installed orbit");
         }
         false => {
@@ -68,11 +75,11 @@ fn unix() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// windows installation steps
+/// windows installation steps (copies the entire orbit download folder)
 fn windows() -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", HEADER);
 
-    // gather path for what will be installed
+    // gather path for what will be installed (@note: this is a folder of the contents for windows-style install)
     let contents = {
         let mut root = filesystem::get_exe_path()?;
         // get base directory from where installer exists
@@ -80,12 +87,20 @@ fn windows() -> Result<(), Box<dyn std::error::Error>> {
         root
     };
 
+    // verify this program was could find the executable
+    if contents.join("bin/orbit").exists() == false {
+        return Err(InstallError::UndetectedExe(contents.join("bin/orbit")))?
+    }
+
     // 1. compute installation size
     let megabytes = orbit::util::filesystem::compute_size(&contents, orbit::util::filesystem::Unit::MegaBytes)?;
     println!("installation size: {:.2} MB", megabytes);
 
     // 2. configure installation destination
-    let path = std::path::PathBuf::from(std::env::var("LOCALAPPDATA")?).join("Programs");
+    let path = match std::env::var("LOCALAPPDATA") {
+        Ok(v) => std::path::PathBuf::from(v).join("Programs"),
+        Err(_) => std::path::PathBuf::from(home_dir().unwrap()),
+    };
     let path = installation_path(path)?;
 
     let dest = path.join("orbit");
@@ -100,12 +115,19 @@ fn windows() -> Result<(), Box<dyn std::error::Error>> {
     match prompt::prompt("Install")? {
         true => {
             // 4a. copy the binary to the location
-            let options = fs_extra::dir::CopyOptions::new();
-            fs_extra::dir::copy(&contents, &path, &options)?;
+            let options = {
+                let mut opt = fs_extra::dir::CopyOptions::new();
+                opt.content_only = true;
+                opt
+            };
             // remove old folder called 'orbit'
-            std::fs::remove_dir_all(dest)?;
-            // rename original folder name to 'orbit'
-            std::fs::rename(path.join(contents.file_name().unwrap()), path.join("orbit"))?;
+            if dest.exists() == true {
+                std::fs::remove_dir_all(&dest)?;
+            }
+            // recreate 'orbit' folder
+            std::fs::create_dir(&dest)?;
+            // copy contents (installed directory) to renewed orbit directory destination
+            fs_extra::dir::copy(&contents, &dest, &options)?;
             println!("successfully installed orbit");
             println!("{} add {} to the user PATH variable to call `orbit` from the command-line", "tip:".blue().bold(), path.join("orbit/bin").display());
         }
@@ -142,6 +164,7 @@ fn installation_path(path: PathBuf) -> Result<PathBuf, Box<dyn std::error::Error
 enum InstallError {
     UnknownFamily,
     PathDNE(PathBuf),
+    UndetectedExe(PathBuf),
 }
 
 impl std::error::Error for InstallError {}
@@ -153,6 +176,7 @@ impl Display for InstallError {
         match self {
             Self::PathDNE(p) => write!(f, "path {:?} does not exist", p),
             Self::UnknownFamily => write!(f, "unknown family (did not detect unix or windows)"),
+            Self::UndetectedExe(p) => write!(f, "installer program failed to find executable path {:?}", p)
         }
     }
 }

@@ -22,7 +22,7 @@ impl FromCli for Develop {
 
 impl Command for Develop {
     type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+    fn exec(&self, _c: &Context) -> Result<(), Self::Err> {
         self.run()
     }
 }

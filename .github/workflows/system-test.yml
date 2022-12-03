@@ -27,7 +27,7 @@ jobs:
     - name: Install Orbit
       run: |
         unzip ./orbit-${{ inputs.version }}-x86_64-linux.zip
-        echo "\n\n" | ./orbit-${{ inputs.version }}-x86_64-linux/install
+        printf '\n\n' | ./orbit-${{ inputs.version }}-x86_64-linux/install
 
     - name: Test Orbit
       run: orbit --version
@@ -44,7 +44,7 @@ jobs:
       shell: bash
       run: |
         unzip ./orbit-${{ inputs.version }}-x86_64-windows.zip
-        echo "\n\n" | ./orbit-${{ inputs.version }}-x86_64-windows/install.exe 
+        printf '\n\n' | ./orbit-${{ inputs.version }}-x86_64-windows/install.exe 
 
     # - name: Test Orbit
     #   run: orbit --version

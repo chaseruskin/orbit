@@ -26,6 +26,11 @@ use home::home_dir;
 use orbit::util::filesystem;
 use orbit::util::prompt;
 
+#[cfg(target_os = "windows")]
+const EXE_NAME: &str = "orbit.exe";
+#[cfg(not(target_os = "windows"))]
+const EXE_NAME: &str = "orbit";
+
 /// unix installation steps (copies only the binary)
 fn unix() -> Result<(), Box<dyn std::error::Error>> {
     println!("{}", HEADER);
@@ -36,7 +41,7 @@ fn unix() -> Result<(), Box<dyn std::error::Error>> {
         let mut root = filesystem::get_exe_path()?;
         // remove file to get parent directory
         root.pop();
-        root.join("bin/orbit")
+        root.join("bin/".to_owned()+EXE_NAME)
     };
 
     // verify this program was could find the executable
@@ -52,7 +57,7 @@ fn unix() -> Result<(), Box<dyn std::error::Error>> {
     let path = PathBuf::from("/usr/local/bin");
     let path = installation_path(path)?;
 
-    let dest = path.join("orbit");
+    let dest = path.join(EXE_NAME);
 
     // check if a file named "orbit" already exists
     if dest.exists() == true && prompt::prompt(&format!("file {} already exists; is it okay to replace it", dest.display()))? == false {
@@ -88,8 +93,8 @@ fn windows() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // verify this program was could find the executable
-    if contents.join("bin/orbit").exists() == false {
-        return Err(InstallError::UndetectedExe(contents.join("bin/orbit")))?
+    if contents.join("bin/".to_owned() + EXE_NAME).exists() == false {
+        return Err(InstallError::UndetectedExe(contents.join("bin/".to_owned() + EXE_NAME)))?
     }
 
     // 1. compute installation size

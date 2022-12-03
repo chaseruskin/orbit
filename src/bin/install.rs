@@ -22,8 +22,8 @@ fn install() -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-use orbit::util::filesystem::get_exe_path;
-use orbit::util::prompt::prompt;
+use orbit::util::filesystem;
+use orbit::util::prompt;
 
 /// unix installation steps
 fn unix() -> Result<(), Box<dyn std::error::Error>> {
@@ -31,7 +31,7 @@ fn unix() -> Result<(), Box<dyn std::error::Error>> {
 
     // gather path for what will be installed
     let contents = {
-        let mut root = get_exe_path()?;
+        let mut root = filesystem::get_exe_path()?;
         // remove file to get parent directory
         root.pop();
         root.join("bin/orbit")
@@ -48,13 +48,13 @@ fn unix() -> Result<(), Box<dyn std::error::Error>> {
     let dest = path.join("orbit");
 
     // check if a file named "orbit" already exists
-    if dest.exists() == true && prompt(&format!("file {} already exists; is it okay to replace it", dest.display()))? == false {
+    if dest.exists() == true && prompt::prompt(&format!("file {} already exists; is it okay to replace it", dest.display()))? == false {
         println!("cancelled installation");
         return Ok(())
     }
 
     // 3. ask user for permission 
-    match prompt("Install")? {
+    match prompt::prompt("Install")? {
         true => {
             // 4a. copy the binary to the location
             std::fs::copy(contents, path.join("orbit"))?;
@@ -74,7 +74,7 @@ fn windows() -> Result<(), Box<dyn std::error::Error>> {
 
     // gather path for what will be installed
     let contents = {
-        let mut root = get_exe_path()?;
+        let mut root = filesystem::get_exe_path()?;
         // get base directory from where installer exists
         root.pop();
         root
@@ -91,13 +91,13 @@ fn windows() -> Result<(), Box<dyn std::error::Error>> {
     let dest = path.join("orbit");
             
     // check if a folder named "orbit" already exists
-    if dest.exists() == true && prompt(&format!("directory {} already exists; is it okay to replace it", dest.display()))? == false {
+    if dest.exists() == true && prompt::prompt(&format!("directory {} already exists; is it okay to replace it", dest.display()))? == false {
         println!("cancelled installation");
         return Ok(())
     }
 
     // 3. ask user for permission
-    match prompt("Install")? {
+    match prompt::prompt("Install")? {
         true => {
             // 4a. copy the binary to the location
             let options = fs_extra::dir::CopyOptions::new();

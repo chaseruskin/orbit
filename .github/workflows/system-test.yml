@@ -8,12 +8,9 @@ on:
         type: string
 
 jobs:
-  test:
+  linux-test:
     runs-on: ubuntu-latest
     steps:
-    - name: Fetch repository
-      uses: actions/checkout@v3
-
     - name: Download package
       uses: actions/download-artifact@v3
       with:
@@ -34,3 +31,20 @@ jobs:
 
     - name: Test Orbit
       run: orbit --version
+    
+  windows-test:
+    runs-on: windows-latest
+    steps:
+    - name: Download package
+      uses: actions/download-artifact@v3
+      with:
+        name: orbit-${{ inputs.version }}-x86_64-windows
+
+    - name: Install Orbit
+      shell: bash
+      run: |
+        unzip ./orbit-${{ inputs.version }}-x86_64-windows.zip
+        echo "y\n" | ./orbit-${{ inputs.version }}-x86_64-windows/install.exe 
+
+    # - name: Test Orbit
+    #   run: orbit --version

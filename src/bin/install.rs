@@ -105,7 +105,7 @@ fn windows() -> Result<(), Box<dyn std::error::Error>> {
             // remove old folder called 'orbit'
             std::fs::remove_dir_all(dest)?;
             // rename original folder name to 'orbit'
-            std::fs::rename(path.join(contents.file_name().unwrap()).unwrap(), path.join("orbit").unwrap())?;
+            std::fs::rename(path.join(contents.file_name().unwrap()), path.join("orbit"))?;
             println!("successfully installed orbit");
             println!("{} add {} to the user PATH variable to call `orbit` from the command-line", "tip:".blue().bold(), path.join("orbit/bin").display());
         }

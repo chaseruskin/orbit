@@ -2,13 +2,13 @@ use colored::*;
 
 #[allow(unused_must_use)]
 fn main() -> () {
-    match install() {
-        Ok(()) => (),
-        Err(e) => eprintln!("{} {}", "error:".red().bold(), e)
-    }
+    let rc = match install() {
+        Ok(()) => 0,
+        Err(e) => { eprintln!("{} {}", "error:".red().bold(), e); 101 }
+    };
     // allow user to see final messages before closing the window
-    poll_response("press enter to exit ");
-    ()
+    poll_response("press enter to exit ... ");
+    std::process::exit(rc as i32);
 }
 
 fn install() -> Result<(), Box<dyn std::error::Error>> {

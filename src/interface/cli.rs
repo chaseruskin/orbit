@@ -754,24 +754,24 @@ mod test {
         ));
 
         // detects 0
-        assert_eq!(cli.take_flag_locs("version"), vec![]);
+        assert_eq!(cli.take_flag_locs("version"), Vec::<usize>::new());
         // detects 1
         assert_eq!(cli.take_flag_locs("lib"), vec![4]);
         // detects multiple
         assert_eq!(cli.take_flag_locs("help"), vec![0, 7]);
         // flag was past terminator and marked as ignore
-        assert_eq!(cli.take_flag_locs("map"), vec![]);
+        assert_eq!(cli.take_flag_locs("map"), Vec::<usize>::new());
         // filters out arguments
-        assert_eq!(cli.take_flag_locs("rary.gates"), vec![]);
+        assert_eq!(cli.take_flag_locs("rary.gates"), Vec::<usize>::new());
 
         // detects 0
-        assert_eq!(cli.take_switch_locs(&'q'), vec![]);
+        assert_eq!(cli.take_switch_locs(&'q'), Vec::<usize>::new());
         // detects 1
         assert_eq!(cli.take_switch_locs(&'v'), vec![1]);
         // detects multiple
         assert_eq!(cli.take_switch_locs(&'i'), vec![10, 11]);
         // switch was past terminator and marked as ignore
-        assert_eq!(cli.take_switch_locs(&'j'), vec![]);
+        assert_eq!(cli.take_switch_locs(&'j'), Vec::<usize>::new());
     }
 
     #[test]

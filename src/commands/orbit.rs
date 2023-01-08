@@ -125,6 +125,7 @@ impl FromCli for OrbitSubcommand {
             "new",
             "search",
             "plan",
+            "p",
             "build",
             "edit",
             "launch",
@@ -143,7 +144,7 @@ impl FromCli for OrbitSubcommand {
             "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
             "new" => Ok(OrbitSubcommand::New(New::from_cli(cli)?)),
             "search" => Ok(OrbitSubcommand::Search(Search::from_cli(cli)?)),
-            "plan" => Ok(OrbitSubcommand::Plan(Plan::from_cli(cli)?)),
+      "p" | "plan" => Ok(OrbitSubcommand::Plan(Plan::from_cli(cli)?)),
       "b" | "build" => Ok(OrbitSubcommand::Build(Build::from_cli(cli)?)),
             "edit" => Ok(OrbitSubcommand::Edit(Edit::from_cli(cli)?)),
             "init" => Ok(OrbitSubcommand::Init(Init::from_cli(cli)?)),
@@ -205,14 +206,12 @@ Usage:
 Commands:
     new             create a new ip
     init            initialize an ip from an existing project
-    edit            open an ip in a text editor
     probe           access information about an ip
     read            inspect hdl design unit source code
     get             fetch an entity
     tree            view the dependency graph
-    plan            generate a blueprint file
+    plan, p         generate a blueprint file
     build, b        execute a plugin
-    launch          release a new ip version
     search          browse the ip catalog 
     install         store an immutable reference to an ip
     env             print Orbit environment information
@@ -229,6 +228,20 @@ Options:
 Use 'orbit help <command>' for more information about a command.
 ";
 
+/*
+--*-- commands to remove --*--
+    edit            open an ip in a text editor
+    launch          release a new ip version
+
+--*-- commands to add --*--
+    audit           verify a package is able to installed properly and release-able
+    run             perform plan and build in same step
+
+
+alt names for `probe`: check, scan
+*/ 
+
+
 use reqwest;
 use crate::core::version;
 use crate::util::sha256;
@@ -237,6 +250,9 @@ use std::io::Write;
 use zip;
 use tempfile;
 use crate::util::filesystem::get_exe_path;
+
+use reqwest::header::USER_AGENT;
+use serde_json::Value;
 
 impl Orbit {
     /// Returns current machine's target as `<arch>-<os>`.
@@ -269,29 +285,29 @@ impl Orbit {
         }
 
         // check the connection to grab latest html data
-        let base_url: &str = "https://github.com/c-rus/orbit/releases";
-        let res = reqwest::get(base_url).await?;
+        let api_url: &str = "https://api.github.com/repos/c-rus/orbit/releases/latest";
+
+        let client = reqwest::Client::new();
+        let res = client
+            .get(api_url)
+            .header(USER_AGENT, "reqwest")
+            .send()
+            .await?;
         if res.status() != 200 {
-            return Err(Box::new(UpgradeError::FailedConnection(base_url.to_string(), res.status())))?
+            return Err(Box::new(UpgradeError::FailedConnection(api_url.to_string(), res.status())))?
         }
 
         // create body into string to find the latest version
-        let body = res.text().await?;
-        let key = "href=\"/c-rus/orbit/releases/tag/";
-
-        // if cannot find the key then the releases page failed to auto-detect in html data
-        let pos = match body.find(&key) {
-            Some(r) => r,
-            None => return Err(Box::new(UpgradeError::NoReleasesFound))?
+        let version = {
+            let body = res.text().await?;
+            let json_word: Value = serde_json::from_str(body.as_ref())?;
+            json_word["name"].as_str().unwrap().to_string()
         };
-        // assumes tag is complete version i.e. 1.0.0
-        let (_, sub) = body.split_at(pos+key.len());
-        let (version, _) = sub.split_once('\"').unwrap();
 
         // our current version is guaranteed to be valid
         let current = version::Version::from_str(VERSION).unwrap();
         // the latest version 
-        let latest = version::Version::from_str(version).expect("invalid version released");
+        let latest = version::Version::from_str(&version).expect("invalid version released");
         if latest > current {
             // await user input
             if self.force == false {
@@ -302,6 +318,8 @@ impl Orbit {
         } else {
             return Ok(format!("the latest version is already installed ({})", &latest));
         }
+
+        let base_url: &str = "https://github.com/c-rus/orbit/releases";
 
         // download the list of checksums
         println!("info: downloading update...");

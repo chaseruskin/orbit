@@ -48,6 +48,7 @@ impl Manifest {
                 name: name,
                 version: Version::new().minor(1),
                 source: None,
+                library: None,
             },
             dependencies: Some(Dependencies::new()),
             dev_dependencies: None,
@@ -77,6 +78,7 @@ impl Display for Manifest {
 struct Package {
     name: Identifier,
     version: Version,
+    library: Option<Identifier>,
     source: Option<Source>,
 }
 
@@ -108,6 +110,7 @@ mod test {
             assert_eq!(man.ip.source, None);
             assert_eq!(man.dependencies.unwrap().len(), 1);
             assert_eq!(man.dev_dependencies.unwrap().len(), 2);
+            assert_eq!(man.ip.library, Some(PkgPart::from_str("common").unwrap()));
         }
 
         #[test]
@@ -131,6 +134,7 @@ mod test {
 const EX1: &str = r#"[ip]
 name = "gates"
 version = "0.1.0"
+library = "common"
 
 [dependencies]
 some-package = "10.0.0"

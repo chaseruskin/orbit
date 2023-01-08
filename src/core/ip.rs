@@ -14,9 +14,9 @@ use super::lockfile::{LockEntry, LockFile};
 use super::manifest::IpManifest;
 use super::pkgid::PkgId;
 use super::version::Version;
-use super::vhdl::dst;
-use super::vhdl::primaryunit::{VhdlIdentifierError, PrimaryUnit};
-use super::vhdl::token::{Identifier, VHDLTokenizer};
+use super::lang::vhdl::dst;
+use super::lang::vhdl::primaryunit::{VhdlIdentifierError, PrimaryUnit};
+use super::lang::vhdl::token::{Identifier, VHDLTokenizer};
 
 /// Given a partial/full ip specification `ip_spec`, sift through the manifests
 /// for a possible determined unique solution.

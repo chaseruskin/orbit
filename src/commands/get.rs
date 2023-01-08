@@ -10,15 +10,15 @@ use crate::core::manifest::IpManifest;
 use crate::core::parser::Symbol;
 use crate::core::version::AnyVersion;
 use crate::core::version::Version;
-use crate::core::vhdl::interface;
-use crate::core::vhdl::primaryunit::VhdlIdentifierError;
-use crate::core::vhdl::symbol::Architecture;
-use crate::core::vhdl::symbol::Entity;
+use crate::core::lang::vhdl::interface;
+use crate::core::lang::vhdl::primaryunit::VhdlIdentifierError;
+use crate::core::lang::vhdl::symbol::Architecture;
+use crate::core::lang::vhdl::symbol::Entity;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
-use crate::core::vhdl::token::Identifier;
+use crate::core::lang::vhdl::token::Identifier;
 use crate::core::pkgid::PkgId;
 use crate::util::anyerror::{AnyError, Fault};
 
@@ -56,9 +56,9 @@ impl FromCli for Get {
 }
 
 use crate::core::parser::Parse;
-use crate::core::vhdl;
-use crate::core::vhdl::symbol;
-use crate::core::vhdl::token::VHDLTokenizer;
+use crate::core::lang::vhdl;
+use crate::core::lang::vhdl::symbol;
+use crate::core::lang::vhdl::token::VHDLTokenizer;
 
 impl Command for Get {
     type Err = Box<dyn std::error::Error>;

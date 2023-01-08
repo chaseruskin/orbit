@@ -13,7 +13,7 @@ use crate::core::manifest::IpManifest;
 use crate::core::pkgid::PkgId;
 use crate::core::version::AnyVersion;
 use crate::core::version::Version;
-use crate::core::vhdl::primaryunit::PrimaryUnit;
+use crate::core::lang::vhdl::primaryunit::PrimaryUnit;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Positional, Flag, Optional};
 use crate::interface::errors::CliError;

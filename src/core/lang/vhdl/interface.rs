@@ -86,7 +86,7 @@ impl<'a> std::fmt::Display for Architectures<'a> {
 // @note: identifier_list ::= identifier { , identifier }
 
 use crate::core::lexer;
-use crate::core::vhdl::token::{VHDLToken, Keyword, Delimiter};
+use crate::core::lang::vhdl::token::{VHDLToken, Keyword, Delimiter};
 use std::fmt::Display;
 use std::iter::Peekable;
 

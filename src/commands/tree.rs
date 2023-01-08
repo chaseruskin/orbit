@@ -9,14 +9,14 @@ use crate::core::catalog::Catalog;
 use crate::core::ip;
 use crate::core::ip::IpFileNode;
 use crate::core::manifest::IpManifest;
-use crate::core::vhdl::subunit::SubUnit;
-use crate::core::vhdl::symbol::CompoundIdentifier;
-use crate::core::vhdl::symbol::Entity;
+use crate::core::lang::vhdl::subunit::SubUnit;
+use crate::core::lang::vhdl::symbol::CompoundIdentifier;
+use crate::core::lang::vhdl::symbol::Entity;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Optional};
 use crate::interface::errors::CliError;
 use crate::core::context::Context;
-use crate::core::vhdl::token::Identifier;
+use crate::core::lang::vhdl::token::Identifier;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 
@@ -264,7 +264,7 @@ impl Tree {
     }
 }
 
-use crate::core::vhdl::symbol;
+use crate::core::lang::vhdl::symbol;
 use crate::util::graph::EdgeStatus;
 use crate::util::graphmap::GraphMap;
 

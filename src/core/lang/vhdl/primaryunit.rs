@@ -1,9 +1,9 @@
 use toml_edit::InlineTable;
-use crate::{core::{vhdl::token::Identifier, lexer::Position, ip::IpSpec}, util::anyerror::Fault};
+use crate::{core::{lang::vhdl::token::Identifier, lexer::Position, ip::IpSpec}, util::anyerror::Fault};
 use std::{collections::HashMap, str::FromStr, path::PathBuf};
 use crate::util::filesystem;
 use super::symbol::VHDLSymbol;
-use crate::core::vhdl::symbol::VHDLParser;
+use crate::core::lang::vhdl::symbol::VHDLParser;
 
 pub type PrimaryUnitStore = HashMap<Identifier, PrimaryUnit>;
 

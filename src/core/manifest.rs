@@ -22,8 +22,8 @@ use super::lockfile::LockEntry;
 use super::ip::IpSpec;
 use super::store::Store;
 use super::version::AnyVersion;
-use super::vhdl::primaryunit::PrimaryUnit;
-use super::vhdl::token::{Identifier, IdentifierError};
+use super::lang::vhdl::primaryunit::PrimaryUnit;
+use super::lang::vhdl::token::{Identifier, IdentifierError};
 
 /// Takes an iterative approach to iterating through directories to find a file
 /// matching `name`.
@@ -513,7 +513,7 @@ impl IpManifest {
             false => {
                 // collect all files
                 let files = crate::util::filesystem::gather_current_files(&self.get_manifest().get_path().parent().unwrap().to_path_buf());
-                Ok(crate::core::vhdl::primaryunit::collect_units(&files)?)
+                Ok(crate::core::lang::vhdl::primaryunit::collect_units(&files)?)
             }
         }
     }

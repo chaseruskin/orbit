@@ -15,8 +15,8 @@ use crate::core::plugin::PluginError;
 use crate::core::template;
 use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
-use crate::core::vhdl::subunit::SubUnit;
-use crate::core::vhdl::symbol::CompoundIdentifier;
+use crate::core::lang::vhdl::subunit::SubUnit;
+use crate::core::lang::vhdl::symbol::CompoundIdentifier;
 use crate::interface::cli::Cli;
 use crate::util::anyerror::Fault;
 use crate::util::environment::EnvVar;
@@ -27,7 +27,7 @@ use crate::util::graphmap::GraphMap;
 use std::collections::HashMap;
 use std::io::Write;
 use crate::core::fileset::Fileset;
-use crate::core::vhdl::token::Identifier;
+use crate::core::lang::vhdl::token::Identifier;
 use crate::core::plugin::Plugin;
 use crate::util::environment;
 
@@ -141,7 +141,7 @@ impl Command for Plan {
     }
 }
 
-use crate::core::vhdl::symbol;
+use crate::core::lang::vhdl::symbol;
 use crate::util::anyerror::AnyError;
 
 use super::install;

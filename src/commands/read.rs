@@ -12,7 +12,7 @@ use crate::core::lexer::Position;
 use crate::core::manifest::IpManifest;
 use crate::core::pkgid::PkgId;
 use crate::core::version::AnyVersion;
-use crate::core::vhdl::token::Identifier;
+use crate::core::lang::vhdl::token::Identifier;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Positional, Optional};
 use crate::interface::errors::CliError;

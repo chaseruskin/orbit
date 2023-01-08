@@ -4,7 +4,6 @@ pub mod context;
 pub mod manifest;
 pub mod ip;
 pub mod fileset;
-pub mod vhdl;
 pub mod lexer;
 pub mod parser;
 pub mod plugin;
@@ -17,3 +16,5 @@ pub mod lockfile;
 pub mod catalog;
 pub mod variable;
 pub mod hook;
+
+pub mod lang;

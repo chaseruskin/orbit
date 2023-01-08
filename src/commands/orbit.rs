@@ -1,6 +1,6 @@
 use crate::Command;
 use crate::FromCli;
-use crate::core::vhdl::highlight::ColorMode;
+use crate::core::lang::vhdl::highlight::ColorMode;
 use crate::interface::arg::Optional;
 use crate::interface::cli::Cli;
 use crate::interface::arg::{Flag, Positional};

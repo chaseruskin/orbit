@@ -5,6 +5,9 @@ use std::hash::Hash;
 use crate::core::parser::*;
 use crate::core::lexer::*;
 
+use crate::core::lang::vhdl::token::*;
+use crate::core::lang::vhdl::interface::*;
+
 pub type IdentifierList = LinkedList<CompoundIdentifier>;
 
 #[derive(Debug, PartialEq)]
@@ -197,8 +200,6 @@ pub struct Entity {
     refs: IdentifierList,
     pos: Position,
 }
-
-use crate::core::vhdl::interface::*;
 
 impl Entity {
     /// Returns a new blank `Entity` struct.
@@ -543,8 +544,6 @@ impl CompoundIdentifier {
 pub struct VHDLParser {
     symbols: Vec<Symbol<VHDLSymbol>>,
 }
-
-use crate::core::vhdl::token::*;
 
 impl Parse<VHDLToken> for VHDLParser {
     type SymbolType = VHDLSymbol;
@@ -2131,7 +2130,7 @@ begin
 end architecture sim;
         "#;
 
-        use crate::core::vhdl::symbol::Identifier::Basic;
+        use crate::core::lang::vhdl::symbol::Identifier::Basic;
 
         let syms = VHDLParser::parse(VHDLTokenizer::from_source_code(&s).into_tokens());
         println!("{:?}", syms);

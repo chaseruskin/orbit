@@ -321,7 +321,7 @@ impl Context {
             }
             None => {
                 // @IDEA also give information about reading about ip-dir sensitive commands as a topic?
-                return Err(ContextError(format!("no orbit IP detected in current directory")));
+                return Err(ContextError(format!("no orbit IP detected in current directory or any parent directory")));
             }
         }
         Ok(())

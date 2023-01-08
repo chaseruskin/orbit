@@ -1,8 +1,7 @@
-use crate::Command;
-use crate::FromCli;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Optional};
-use crate::interface::errors::CliError;
+use clif::cmd::{FromCli, Command};
+use clif::Cli;
+use clif::arg::{Optional};
+use clif::Error as CliError;
 use crate::core::context::Context;
 
 #[derive(Debug, PartialEq)]
@@ -12,7 +11,7 @@ pub struct Develop {
 
 impl FromCli for Develop {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Develop {
             flag: cli.check_option(Optional::new("flag"))?,
         });
@@ -20,9 +19,10 @@ impl FromCli for Develop {
     }
 }
 
-impl Command for Develop {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, _c: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for Develop {
+    type Status = Result<(), Box<dyn std::error::Error>>;
+
+    fn exec(&self, _: &Context) -> Self::Status {
         self.run()
     }
 }

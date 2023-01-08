@@ -1,3 +1,3 @@
 fn main() -> () {
-    std::process::exit(orbit::run() as i32);
+    std::process::exit(orbit::go() as i32);
 }

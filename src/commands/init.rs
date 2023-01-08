@@ -1,12 +1,11 @@
 use colored::Colorize;
 
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::manifest::IpManifest;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Optional, Arg};
-use crate::interface::errors::CliError;
+use clif::Cli;
+use clif::arg::{Positional, Optional, Arg};
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::core::pkgid::PkgId;
@@ -22,7 +21,7 @@ pub struct Init {
 
 impl FromCli for Init {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Init {
             repo: cli.check_option(Optional::new("git").value("repo"))?,
             rel_path: cli.check_option(Optional::new("path"))?,
@@ -32,12 +31,13 @@ impl FromCli for Init {
     }
 }
 
-impl Command for Init {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for Init {
+    type Status = Result<(), Box<dyn std::error::Error>>;
+
+    fn exec(&self, c: &Context) -> Self::Status {
         // extra validation for a new IP spec to contain all fields (V.L.N)
         if let Err(e) = self.ip.fully_qualified() {
-            return Err(Box::new(CliError::BadType(Arg::Positional(Positional::new("ip")), e.to_string())));
+            return Err(Box::new(clif::Error::new(None, clif::ErrorKind::BadType, clif::ErrorContext::FailedCast(Arg::Positional(Positional::new("ip")), self.ip.to_string(), Box::new(e)), false)));
         }
 
         // verify only --path can be used with --git

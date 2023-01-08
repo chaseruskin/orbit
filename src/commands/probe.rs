@@ -3,8 +3,7 @@ use std::path::PathBuf;
 
 use git2::Repository;
 
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::catalog::IpLevel;
 use crate::core::catalog::IpState;
@@ -14,9 +13,9 @@ use crate::core::pkgid::PkgId;
 use crate::core::version::AnyVersion;
 use crate::core::version::Version;
 use crate::core::lang::vhdl::primaryunit::PrimaryUnit;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Flag, Optional};
-use crate::interface::errors::CliError;
+use clif::Cli;
+use clif::arg::{Positional, Flag, Optional};
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
@@ -33,7 +32,7 @@ pub struct Probe {
 
 impl FromCli for Probe {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Probe {
             tags: cli.check_flag(Flag::new("versions"))?,
             units: cli.check_flag(Flag::new("units"))?,
@@ -46,9 +45,10 @@ impl FromCli for Probe {
     }
 }
 
-impl Command for Probe {
-    type Err = Fault;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for Probe {
+    type Status = Result<(), Box<dyn std::error::Error>>;
+
+    fn exec(&self, c: &Context) -> Self::Status {
 
         // gather the catalog (all manifests)
         let catalog = Catalog::new()

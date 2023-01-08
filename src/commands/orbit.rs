@@ -1,10 +1,10 @@
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::Command;
+use clif::cmd::FromCli;
 use crate::core::lang::vhdl::highlight::ColorMode;
-use crate::interface::arg::Optional;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Flag, Positional};
-use crate::interface::errors::CliError;
+use clif::arg::Optional;
+use clif::Cli;
+use clif::arg::{Flag, Positional};
+use clif::Error as CliError;
 use crate::util::environment;
 use crate::util::prompt;
 use crate::core::context::Context;
@@ -20,9 +20,10 @@ pub struct Orbit {
     command: Option<OrbitSubcommand>,
 }
 
-impl Command for Orbit {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, context: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for Orbit {
+    type Status = Result<(), Box<dyn std::error::Error>>;
+
+    fn exec(&self, context: &Context) -> Self::Status {
         self.run(context)
     }
 }
@@ -63,7 +64,7 @@ impl Orbit {
 
 impl FromCli for Orbit {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         // need to set this coloring mode ASAP
         match cli.check_option(Optional::new("color").value("when"))?.unwrap_or(ColorMode::Auto) {
             ColorMode::Always => colored::control::set_override(true),
@@ -77,6 +78,7 @@ impl FromCli for Orbit {
             force: cli.check_flag(Flag::new("force"))?,
             command: cli.check_command(Positional::new("command"))?,
         });
+
         orbit
     }
 }
@@ -86,7 +88,6 @@ use crate::commands::new::New;
 use crate::commands::search::Search;
 use crate::commands::plan::Plan;
 use crate::commands::build::Build;
-use crate::commands::edit::Edit;
 use crate::commands::launch::Launch;
 use crate::commands::install::Install;
 use crate::commands::tree::Tree;
@@ -105,7 +106,6 @@ enum OrbitSubcommand {
     Search(Search),
     Plan(Plan),
     Build(Build),
-    Edit(Edit),
     Launch(Launch),
     Install(Install),
     Tree(Tree),
@@ -127,7 +127,6 @@ impl FromCli for OrbitSubcommand {
             "plan",
             "p",
             "build",
-            "edit",
             "launch",
             "install",
             "get",
@@ -146,7 +145,6 @@ impl FromCli for OrbitSubcommand {
             "search" => Ok(OrbitSubcommand::Search(Search::from_cli(cli)?)),
       "p" | "plan" => Ok(OrbitSubcommand::Plan(Plan::from_cli(cli)?)),
       "b" | "build" => Ok(OrbitSubcommand::Build(Build::from_cli(cli)?)),
-            "edit" => Ok(OrbitSubcommand::Edit(Edit::from_cli(cli)?)),
             "init" => Ok(OrbitSubcommand::Init(Init::from_cli(cli)?)),
             "launch" => Ok(OrbitSubcommand::Launch(Launch::from_cli(cli)?)),
             "install" => Ok(OrbitSubcommand::Install(Install::from_cli(cli)?)),
@@ -170,9 +168,10 @@ impl OrbitSubcommand {
     }
 }
 
-impl Command for OrbitSubcommand {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, context: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for OrbitSubcommand {
+    type Status = Result<(), Box<dyn std::error::Error>>;
+
+    fn exec(&self, context: &Context) -> Self::Status {
         match self {
             OrbitSubcommand::Get(c) => c.exec(context),
             OrbitSubcommand::Search(c) => c.exec(context),
@@ -181,7 +180,6 @@ impl Command for OrbitSubcommand {
             OrbitSubcommand::Install(c) => c.exec(context),
             OrbitSubcommand::Help(c) => c.exec(context),
             OrbitSubcommand::New(c) => c.exec(context),
-            OrbitSubcommand::Edit(c) => c.exec(context),
             OrbitSubcommand::Launch(c) => c.exec(context),
             OrbitSubcommand::Tree(c) => c.exec(context),
             OrbitSubcommand::Init(c) => c.exec(context),

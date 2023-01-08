@@ -1,10 +1,9 @@
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::catalog::IpLevel;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Flag};
-use crate::interface::errors::CliError;
+use clif::Cli;
+use clif::arg::{Positional, Flag};
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::core::pkgid::PkgId;
 use crate::util::anyerror::Fault;
@@ -18,9 +17,10 @@ pub struct Search {
     available: bool,
 }
 
-impl Command for Search {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for Search {
+    type Status = Result<(), Box<dyn std::error::Error>>;
+
+    fn exec(&self, c: &Context) -> Self::Status {
 
         let default = !(self.cached || self.developing || self.available);
         let mut catalog = Catalog::new();
@@ -82,7 +82,7 @@ impl Search {
 
 impl FromCli for Search {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Search {
             ip: cli.check_positional(Positional::new("ip"))?,
             cached: cli.check_flag(Flag::new("install").switch('i'))?,

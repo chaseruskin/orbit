@@ -1,8 +1,7 @@
 use colored::Colorize;
 use tempfile::tempdir;
 
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::extgit;
 use crate::core::ip::IpFileNode;
@@ -17,11 +16,11 @@ use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
 use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbol::CompoundIdentifier;
-use crate::interface::cli::Cli;
+use clif::Cli;
 use crate::util::anyerror::Fault;
 use crate::util::environment::EnvVar;
-use crate::interface::arg::{Flag, Optional};
-use crate::interface::errors::CliError;
+use clif::arg::{Flag, Optional};
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::graphmap::GraphMap;
 use std::collections::HashMap;
@@ -47,7 +46,7 @@ pub struct Plan {
 
 impl FromCli for Plan {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Plan {
             only_lock: cli.check_flag(Flag::new("lock-only"))?,
             all : cli.check_flag(Flag::new("all"))?,
@@ -64,10 +63,10 @@ impl FromCli for Plan {
     }
 }
 
-impl Command for Plan {
-    type Err = Fault;
+impl Command<Context> for Plan {
+    type Status = Result<(), Fault>;
 
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+    fn exec(&self, c: &Context) -> Self::Status {
         // locate the plugin
         let plugin = match &self.plugin {
             // verify the plugin alias matches

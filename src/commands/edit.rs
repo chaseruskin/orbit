@@ -1,15 +1,14 @@
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::config::CONFIG_FILE;
 use crate::core::config::Config;
 use crate::core::extgit::ExtGitError;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Flag, Optional};
-use crate::interface::errors::CliError;
+use clif::Cli;
+use clif::arg::{Flag, Optional};
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::core::pkgid::PkgId;
 use crate::util::anyerror::AnyError;
@@ -43,7 +42,7 @@ pub struct Edit {
 
 impl FromCli for Edit {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Edit {
             mode: cli.check_option(Optional::new("mode"))?.unwrap_or(EditMode::Open),
             config: cli.check_flag(Flag::new("config"))?,
@@ -54,9 +53,10 @@ impl FromCli for Edit {
     }
 }
 
-impl Command for Edit {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for Edit {
+    type Status = Result<(), Box<dyn std::error::Error>>;
+
+    fn exec(&self, c: &Context) -> Self::Status {
         let sel_editor = Self::configure_editor(&self.editor, &c.get_config())?;
         // open global configuration file
         if self.config == true {
@@ -151,15 +151,12 @@ impl Edit {
 
 const HELP: &str = "\
 Open a text editor to develop an ip or orbit-related files.
-
 Usage:
     orbit edit [options]
-
 Options:
     --ip <pkgid>       ip to open in development state
     --editor <cmd>     the command to call a text-editor
     --mode <mode>      select how to edit: 'open' or 'path'
     --config           modify the global configuration file
-
 Use 'orbit help edit' to learn more about the command.
 ";

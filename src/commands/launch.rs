@@ -1,5 +1,4 @@
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::{FromCli, Command};
 use crate::commands::install::Install;
 use crate::core::catalog::Catalog;
 use crate::core::lockfile::IP_LOCK_FILE;
@@ -9,9 +8,9 @@ use crate::core::manifest::IpManifest;
 use crate::core::store::Store;
 use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Flag, Optional};
-use crate::interface::errors::CliError;
+use clif::Cli;
+use clif::arg::{Flag, Optional};
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::core::version::Version;
 use crate::core::extgit::ExtGit;
@@ -55,7 +54,7 @@ pub struct Launch {
 
 impl FromCli for Launch {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Launch {
             ready: cli.check_flag(Flag::new("ready"))?,
             next: cli.check_option(Optional::new("next").value("version"))?,
@@ -66,10 +65,10 @@ impl FromCli for Launch {
     }
 }
 
-impl Command for Launch {
-    type Err = Fault;
+impl Command<Context> for Launch {
+    type Status = Result<(), Box<dyn std::error::Error>>;
 
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+    fn exec(&self, c: &Context) -> Self::Status {
         // make sure it is run from an ip directory
         c.goto_ip_path()?;
         // verify the current directory is a git repository
@@ -79,7 +78,7 @@ impl Command for Launch {
         let latest_commit = ExtGit::find_last_commit(&repo)?;
 
         if self.message.is_some() && self.next.is_none() {
-            return Err(CliError::BrokenRule(format!("option '{}' is only allowed when using option {}", "--message".yellow(), "--next".yellow())))?
+            return Err(AnyError(format!("option '{}' is only allowed when using option {}", "--message".yellow(), "--next".yellow())))?
         }
 
         // verify the manifest is checked into version control

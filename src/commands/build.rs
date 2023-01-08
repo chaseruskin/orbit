@@ -1,13 +1,11 @@
 use crate::core::manifest::IpManifest;
 use crate::core::plugin::PluginError;
-use crate::util::anyerror::Fault;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
-use crate::Command;
-use crate::FromCli;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Optional, Flag};
-use crate::interface::errors::CliError;
+use clif::cmd::{FromCli, Command};
+use clif::Cli;
+use clif::arg::{Optional, Flag};
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::core::plugin::Plugin;
@@ -28,7 +26,7 @@ pub struct Build {
 
 impl FromCli for Build {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Build {
             alias: cli.check_option(Optional::new("plugin").value("alias"))?,
             list: cli.check_flag(Flag::new("list"))?,
@@ -41,10 +39,10 @@ impl FromCli for Build {
     }
 }
 
-impl Command for Build {
-    type Err = Fault;
-    
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for Build {
+    type Status = Result<(), Box<dyn std::error::Error>>;
+
+    fn exec(&self, c: &Context) -> Self::Status {
         // try to find plugin matching `command` name under the `alias`
         let plug = if let Some(name) = &self.alias {
             match c.get_plugins().get(name) {
@@ -118,7 +116,7 @@ impl Command for Build {
         envs.initialize();
 
         if plug.is_none() && self.command.is_none() {
-            return Err(AnyError(format!("pass a plugin or a command for building")))?
+            return Err(AnyError(format!("pass a plugin or a Command<Context> for building")))?
         }
 
         self.run(plug)

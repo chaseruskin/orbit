@@ -159,6 +159,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "clif"
+version = "0.1.1"
+source = "git+https://github.com/c-rus/clif?tag=0.1.1#edaab03b6fd2974e16da5e073f6bbb6da3647515"
+dependencies = [
+ "crayon",
+]
+
+[[package]]
 name = "colored"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -209,6 +217,11 @@ checksum = "59a6001667ab124aebae2a495118e11d30984c3a653e99d86d58971708cf5e4b"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "crayon"
+version = "0.1.0"
+source = "git+https://github.com/c-rus/crayon?tag=0.1.0#1b82749de99d517c2ba996be8c0f0c9191ae9362"
 
 [[package]]
 name = "crc32fast"
@@ -853,6 +866,7 @@ name = "orbit"
 version = "0.8.8"
 dependencies = [
  "chrono",
+ "clif",
  "colored",
  "fs_extra",
  "git2",

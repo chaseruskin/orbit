@@ -1,11 +1,10 @@
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::pkgid::PkgId;
 use crate::core::version::AnyVersion;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Optional};
-use crate::interface::errors::CliError;
+use clif::Cli;
+use clif::arg::{Positional, Optional};
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 
@@ -18,7 +17,7 @@ pub struct Uninstall {
 
 impl FromCli for Uninstall {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Uninstall {
             ip: cli.require_positional(Positional::new("ip"))?,
             version: cli.check_option(Optional::new("variant").switch('v').value("version"))?.unwrap_or(AnyVersion::Dev),
@@ -27,9 +26,11 @@ impl FromCli for Uninstall {
     }
 }
 
-impl Command for Uninstall {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for Uninstall {
+
+    type Status = Result<(), Box<dyn std::error::Error>>;
+
+    fn exec(&self, c: &Context) -> Self::Status {
         // collect the catalog from dev and installations
         let catalog = Catalog::new()
             .development(c.get_development_path().unwrap())?

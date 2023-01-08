@@ -2,8 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use colored::Colorize;
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::catalog::CatalogError;
 use crate::core::manifest::IpManifest;
@@ -14,9 +13,9 @@ use crate::core::lang::vhdl::interface;
 use crate::core::lang::vhdl::primaryunit::VhdlIdentifierError;
 use crate::core::lang::vhdl::symbol::Architecture;
 use crate::core::lang::vhdl::symbol::Entity;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Flag, Optional};
-use crate::interface::errors::CliError;
+use clif::Cli;
+use clif::arg::{Positional, Flag, Optional};
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::pkgid::PkgId;
@@ -38,7 +37,7 @@ pub struct Get {
 
 impl FromCli for Get {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Get {
             signals: cli.check_flag(Flag::new("signals").switch('s'))?,
             component: cli.check_flag(Flag::new("component").switch('c'))?,
@@ -60,9 +59,10 @@ use crate::core::lang::vhdl;
 use crate::core::lang::vhdl::symbol;
 use crate::core::lang::vhdl::token::VHDLTokenizer;
 
-impl Command for Get {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {  
+impl Command<Context> for Get {
+    type Status = Result<(), Box<dyn std::error::Error>>;
+
+    fn exec(&self, c: &Context) -> Self::Status {
         // --name can only be used with --instance is set
         if self.name.is_some() && self.instance == false {
             return Err(AnyError(format!("'{}' can only be used with '{}'", "--name".yellow(), "--instance".yellow())))?

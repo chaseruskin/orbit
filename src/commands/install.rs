@@ -1,5 +1,4 @@
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::{FromCli, Command};
 use crate::commands::plan::Plan;
 use crate::core::catalog::CacheSlot;
 use crate::core::catalog::Catalog;
@@ -8,9 +7,9 @@ use crate::core::lockfile::LockFile;
 use crate::core::manifest;
 use crate::core::manifest::IpManifest;
 use crate::core::version;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Optional, Flag};
-use crate::interface::errors::CliError;
+use clif::Cli;
+use clif::arg::{Optional, Flag};
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::core::pkgid::PkgId;
 use crate::core::version::Version;
@@ -37,7 +36,7 @@ pub struct Install {
 
 impl FromCli for Install {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Install {
             git: cli.check_option(Optional::new("git").value("url"))?,
             path: cli.check_option(Optional::new("path"))?,
@@ -49,10 +48,10 @@ impl FromCli for Install {
     }
 }
 
-impl Command for Install {
-    type Err = Fault;
+impl Command<Context> for Install {
+    type Status = Result<(), Box<dyn std::error::Error>>;
 
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+    fn exec(&self, c: &Context) -> Self::Status {
         // verify user is not requesting the dev version to be installed
         match &self.version {
             AnyVersion::Dev => return Err(AnyError(format!("{}", "a development version cannot be installed to the cache")))?,

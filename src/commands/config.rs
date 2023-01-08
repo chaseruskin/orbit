@@ -1,11 +1,10 @@
 use std::str::FromStr;
 
 use colored::*;
-use crate::Command;
-use crate::FromCli;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Flag, Optional};
-use crate::interface::errors::CliError;
+use clif::cmd::{FromCli, Command};
+use clif::Cli;
+use clif::arg::{Flag, Optional};
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 
@@ -34,7 +33,7 @@ pub struct Config {
 
 impl FromCli for Config {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Config {
             global: cli.check_flag(Flag::new("global"))?,
             local: cli.check_flag(Flag::new("local"))?,
@@ -48,9 +47,10 @@ impl FromCli for Config {
 
 use crate::core::config;
 
-impl Command for Config {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for Config {
+    type Status = Result<(), Box<dyn std::error::Error>>;
+
+    fn exec(&self, c: &Context) -> Self::Status {
         // check if we are using global or local
         if self.local && self.global {
             return Err(AnyError(format!("'{}' and '{}' cannot be set at the same time", "--local".yellow(), "--global".yellow())))?

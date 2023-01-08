@@ -1,11 +1,10 @@
 use std::path::PathBuf;
 
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::{FromCli, Command};
 use crate::core::manifest::IpManifest;
-use crate::interface::cli::Cli;
-use crate::interface::arg::Positional;
-use crate::interface::errors::CliError;
+use clif::Cli;
+use clif::arg::Positional;
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::environment;
 use crate::util::environment::EnvVar;
@@ -23,7 +22,7 @@ pub struct Env {
 
 impl FromCli for Env {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         // collect all positional arguments
         let mut keys: Vec<String> = Vec::new();
         while let Some(c) = cli.check_positional(Positional::new("key"))? {
@@ -36,9 +35,10 @@ impl FromCli for Env {
     }
 }
 
-impl Command for Env {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for Env {
+    type Status = Result<(), Box<dyn std::error::Error>>;
+
+    fn exec(&self, c: &Context) -> Self::Status {
         // assemble environment information
         let mut env = Environment::from_vec(vec![
             // @todo: context should own an `Environment` struct instead of this data transformation

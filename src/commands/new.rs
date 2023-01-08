@@ -1,16 +1,16 @@
 use colored::Colorize;
 
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::Command;
+use clif::cmd::FromCli;
 use crate::core::catalog::Catalog;
 use crate::core::manifest::IpManifest;
 use crate::core::template::TemplateFile;
 use crate::core::variable::VariableTable;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Optional, Flag};
-use crate::interface::errors::CliError;
+use clif::Cli;
+use clif::arg::{Positional, Optional, Flag};
+use clif::Error as CliError;
 use crate::core::pkgid::PkgId;
-use crate::interface::arg::Arg;
+use clif::arg::Arg;
 use crate::core::context::Context;
 use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
@@ -32,7 +32,7 @@ pub struct New {
 
 impl FromCli for New {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(New {
             to: cli.check_option(Optional::new("to").value("path"))?,
             list: cli.check_flag(Flag::new("list"))?,
@@ -45,9 +45,10 @@ impl FromCli for New {
     }
 }
 
-impl Command for New {
-    type Err = Box<dyn Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for New {
+    type Status = Result<(), Box<dyn Error>>;
+
+    fn exec(&self, c: &Context) -> Self::Status {
         // verify the template exists
         let template = if let Some(alias) = &self.template {
             match c.get_templates().get(alias) {
@@ -113,7 +114,7 @@ impl Command for New {
 
             // extra validation for a new IP spec to contain all fields (V.L.N)
             if let Err(e) = ip.fully_qualified() {
-                return Err(CliError::BadType(Arg::Positional(Positional::new("ip")), e.to_string()))?
+                return Err(Box::new(clif::Error::new(None, clif::ErrorKind::BadType, clif::ErrorContext::FailedCast(Arg::Positional(Positional::new("ip")), ip.to_string(), Box::new(e)), false)));
             }
             let root = c.get_development_path().unwrap();
             // verify the pkgid is not taken

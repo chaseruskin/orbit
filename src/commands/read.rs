@@ -4,8 +4,7 @@ use std::io::Read as ReadTrait;
 use std::path::PathBuf;
 use colored::Colorize;
 
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::catalog::CatalogError;
 use crate::core::lexer::Position;
@@ -13,9 +12,9 @@ use crate::core::manifest::IpManifest;
 use crate::core::pkgid::PkgId;
 use crate::core::version::AnyVersion;
 use crate::core::lang::vhdl::token::Identifier;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Flag, Positional, Optional};
-use crate::interface::errors::CliError;
+use clif::Cli;
+use clif::arg::{Flag, Positional, Optional};
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
@@ -38,7 +37,7 @@ pub struct Read {
 
 impl FromCli for Read {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Read {
             version: cli.check_option(Optional::new("variant").switch('v').value("version"))?,
             ip: cli.check_option(Optional::new("ip").value("pkgid"))?,
@@ -52,9 +51,10 @@ impl FromCli for Read {
     }
 }
 
-impl Command for Read {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for Read {
+    type Status = Result<(), Box<dyn std::error::Error>>;
+
+    fn exec(&self, c: &Context) -> Self::Status {
         // determine the text-editor
         let editor = Edit::configure_editor(&self.editor, c.get_config())?;
 

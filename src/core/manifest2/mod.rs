@@ -60,7 +60,7 @@ impl Manifest {
 name = "{}"
 version = "0.1.0"
 
-# To learn more about the Orbit manifest file and its available fields, see <url>.
+# See more keys and their definitions at https://c-rus.github.io/orbit/4_topic/2_orbittoml.html
 
 [dependencies]
 "#, name)

@@ -20,10 +20,9 @@ jobs:
         with:
           python-version: 3.x
 
-      - name: Configure rust toolchain
-        uses: actions-rs/toolchain@v1
+      - name: Configure Rust toolchain
+        uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: stable
 
       - name: Enable Cargo caching

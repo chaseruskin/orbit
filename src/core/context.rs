@@ -332,26 +332,42 @@ impl Context {
     /// This function will recursively backtrack down the current working directory
     /// until finding the first directory with a file named "Orbit.toml".
     pub fn find_ip_path(dir: &std::path::PathBuf) -> Option<path::PathBuf> {
-        //let mut cwd = std::env::current_dir().expect("could not locate cwd");
-        let mut cwd = dir.clone();
+        Self::find_target_path(dir, "Orbit.toml")
+    }
+
+    /// Finds the complete path to the current directory that hosts the `target_file`.
+    /// 
+    /// This function recursively backtracks from `dir` into its ancestors until 
+    /// finding the first directory with a file named `target_file`.
+    /// 
+    /// This function has no assumptions on if the directory is readable or not (bypasses read_dir errors).
+    pub fn find_target_path(dir: &std::path::PathBuf, target_file: &str) -> Option<path::PathBuf> {
+        let mut cur = dir.clone();
         // search for the manifest file
         loop {
-            let mut entries = std::fs::read_dir(&cwd).expect("could not read cwd");
-            let result = entries.find_map(|p| {
-                match p {
-                    Ok(file) => {
-                        if file.file_name() == "Orbit.toml" {
-                            Some(cwd.to_path_buf())
-                        } else {
-                            None
+            match std::fs::read_dir(&cur) {
+                // the directory was able to be read (it exists)
+                Ok(mut entries) => {
+                    let result = entries.find_map(|p| {
+                        match p {
+                            Ok(file) => {
+                                if file.file_name() == target_file {
+                                    Some(cur.to_path_buf())
+                                } else {
+                                    None
+                                }
+                            }
+                            _ => None,
                         }
+                    });
+                    if let Some(r) = result {
+                        break Some(r)
                     }
-                    _ => None,
-                }
-            });
-            if let Some(r) = result {
-                break Some(r)
-            } else if cwd.pop() == false {
+                },
+                // failed to read the directory
+                Err(_) => { },
+            }
+            if cur.pop() == false {
                 break None
             }
         }
@@ -373,5 +389,32 @@ impl std::error::Error for ContextError {}
 impl std::fmt::Display for ContextError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    const HOME: &str = "./tests/env";
+
+    #[test]
+    fn find_target_path() {
+        // existing path with target at root
+        let home = HOME.to_owned();
+        let p = Context::find_target_path(&PathBuf::from(home.clone()+"/project1"), "Orbit.toml");
+        assert_eq!(p, Some(PathBuf::from(home.clone()+"/project1")));
+
+        // inner path with target a directory back
+        let p = Context::find_target_path(&PathBuf::from("./src"), "Cargo.toml");
+        assert_eq!(p, Some(PathBuf::from(".")));
+
+        // imaginary path with target a couple directories back
+        let p = Context::find_target_path(&PathBuf::from(home.clone()+"/project1/rtl/syn/"), "Orbit.toml");
+        assert_eq!(p, Some(PathBuf::from(home.clone()+"/project1")));
+
+        // no existing target
+        let p = Context::find_target_path(&PathBuf::from(home.clone()+"/project1/rtl/syn/"), "HIDDEN-TARGET.TXT");
+        assert_eq!(p, None);
     }
 }

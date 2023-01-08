@@ -1,6 +1,7 @@
 pub mod orbit;
 mod help;
 mod new;
+mod new2;
 mod manuals;
 mod search;
 mod plan;

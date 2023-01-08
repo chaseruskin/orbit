@@ -94,7 +94,7 @@ impl FromCli for Orbit {
 }
 
 use crate::commands::help::Help;
-use crate::commands::new::New;
+use crate::commands::new2::New2;
 use crate::commands::search::Search;
 use crate::commands::plan::Plan;
 use crate::commands::build::Build;
@@ -112,7 +112,7 @@ use crate::commands::read::Read;
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
     Help(Help),
-    New(New),
+    New(New2),
     Search(Search),
     Plan(Plan),
     Build(Build),
@@ -151,7 +151,7 @@ impl FromCli for OrbitSubcommand {
         ])?.as_ref() {
             "get" => Ok(OrbitSubcommand::Get(Get::from_cli(cli)?)),
             "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
-            "new" => Ok(OrbitSubcommand::New(New::from_cli(cli)?)),
+            "new" => Ok(OrbitSubcommand::New(New2::from_cli(cli)?)),
             "search" => Ok(OrbitSubcommand::Search(Search::from_cli(cli)?)),
       "p" | "plan" => Ok(OrbitSubcommand::Plan(Plan::from_cli(cli)?)),
       "b" | "build" => Ok(OrbitSubcommand::Build(Build::from_cli(cli)?)),
@@ -189,7 +189,7 @@ impl Command<Context> for OrbitSubcommand {
             OrbitSubcommand::Build(c) => c.exec(context),
             OrbitSubcommand::Install(c) => c.exec(context),
             OrbitSubcommand::Help(c) => c.exec(&()),
-            OrbitSubcommand::New(c) => c.exec(context),
+            OrbitSubcommand::New(c) => c.exec(&()),
             OrbitSubcommand::Launch(c) => c.exec(context),
             OrbitSubcommand::Tree(c) => c.exec(context),
             OrbitSubcommand::Init(c) => c.exec(context),

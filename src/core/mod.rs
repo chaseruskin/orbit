@@ -17,4 +17,5 @@ pub mod catalog;
 pub mod variable;
 pub mod hook;
 
+pub mod manifest2;
 pub mod lang;

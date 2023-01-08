@@ -9,6 +9,7 @@ use crate::OrbitResult;
 use std::io::Write;
 use std::path::PathBuf;
 use std::str::FromStr;
+use crate::core::manifest2::Manifest;
 
 use super::orbit::AnyResult;
 
@@ -99,20 +100,8 @@ impl New2 {
         };
 
         let mut manifest = std::fs::File::create(&manifest_path)?;
-        manifest.write_all(Self::compose_empty_manifest(ip).as_bytes())?;
+        manifest.write_all(Manifest::write_empty_manifest(ip).as_bytes())?;
         Ok(())
-    }
-
-    fn compose_empty_manifest(name: PkgPart) -> String {
-        format!(r#"[ip]
-name = "{}"
-version = "0.1.0"
-
-# To learn more about the Orbit manifest file and its available fields, see <url>.
-
-[dependencies]
-
-"#, name)
     }
 }
 

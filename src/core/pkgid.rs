@@ -6,8 +6,10 @@
 use std::str::FromStr;
 use std::error::Error;
 use std::fmt::Display;
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, PartialOrd, Clone, Eq, Hash)]
+#[derive(Debug, PartialOrd, Clone, Eq, Hash, Deserialize, Serialize)]
+#[serde(transparent)]
 pub struct PkgPart(String);
 
 impl PkgPart {

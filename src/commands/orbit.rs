@@ -249,8 +249,6 @@ Use 'orbit help <command>' for more information about a command.
 alt names for `probe`: check, scan
 */ 
 
-
-use reqwest;
 use crate::core::version;
 use crate::util::sha256;
 use std::str::FromStr;
@@ -258,9 +256,11 @@ use std::io::Write;
 use zip;
 use tempfile;
 use crate::util::filesystem::get_exe_path;
+use curl::easy::{Easy, List};
 
-use reqwest::header::USER_AGENT;
 use serde_json::Value;
+
+const RESPONSE_OKAY: u32 = 200;
 
 impl Orbit {
     /// Returns current machine's target as `<arch>-<os>`.
@@ -277,8 +277,7 @@ impl Orbit {
     /// 4. Download compatible platform zip file and verify checksum matches
     /// 5. Unzip the file and replace the Orbit executable in-place.
     /// 6. Rename the old executable as `orbit-<version>`.
-    #[tokio::main]
-    async fn upgrade(&self) -> Result<String, Box<dyn std::error::Error>> {
+    fn upgrade(&self) -> Result<String, Box<dyn std::error::Error>> {
         // check for stale versions at the current executable's path
         let exe_path = get_exe_path()?;
         let mut current_exe_dir = exe_path.clone();
@@ -295,19 +294,33 @@ impl Orbit {
         // check the connection to grab latest html data
         let api_url: &str = "https://api.github.com/repos/c-rus/orbit/releases/latest";
 
-        let client = reqwest::Client::new();
-        let res = client
-            .get(api_url)
-            .header(USER_AGENT, "reqwest")
-            .send()
-            .await?;
-        if res.status() != 200 {
-            return Err(Box::new(UpgradeError::FailedConnection(api_url.to_string(), res.status())))?
+        let mut dst = Vec::new();
+        {
+            let mut easy = Easy::new();
+            easy.url(api_url).unwrap();
+            easy.follow_location(false).unwrap();
+            // create headers
+            let mut list = List::new();
+            list.append("User-Agent: Orbit").unwrap();
+            easy.http_headers(list).unwrap();
+            {
+                let mut transfer = easy.transfer();
+                transfer.write_function(|data| {
+                    dst.extend_from_slice(data);
+                    Ok(data.len())
+                }).unwrap();
+        
+                transfer.perform()?;
+            }
+            let rc = easy.response_code()?;
+            if rc != RESPONSE_OKAY {
+                return Err(Box::new(UpgradeError::FailedConnection(api_url.to_owned(), rc)));
+            } 
         }
-
+        let body: String = String::from_utf8(dst)?;
+        
         // create body into string to find the latest version
         let version = {
-            let body = res.text().await?;
             let json_word: Value = serde_json::from_str(body.as_ref())?;
             json_word["name"].as_str().unwrap().to_string()
         };
@@ -332,15 +345,31 @@ impl Orbit {
         // download the list of checksums
         println!("info: downloading update...");
         let sum_url = format!("{0}/download/{1}/orbit-{1}-checksums.txt", &base_url, &latest);
-        let res = reqwest::get(&sum_url).await?;
-        if res.status() != 200 {
-            return Err(Box::new(UpgradeError::FailedDownload(sum_url.to_string(), res.status())))?
-        }
 
+        let mut dst = Vec::new();
+        {
+            let mut easy = Easy::new();
+            easy.url(&sum_url).unwrap();
+            easy.follow_location(true).unwrap();
+            {
+                let mut transfer = easy.transfer();
+                transfer.write_function(|data| {
+                    dst.extend_from_slice(data);
+                    Ok(data.len())
+                }).unwrap();
+        
+                transfer.perform()?;
+            }
+            let rc = easy.response_code()?;
+            if rc != RESPONSE_OKAY {
+                return Err(Box::new(UpgradeError::FailedConnection(sum_url, rc)));
+            } 
+        }
+        let checksums: String = String::from_utf8(dst)?;
+        
         // store user's target
         let target = Orbit::target_triple();
         
-        let checksums = String::from_utf8(res.bytes().await?.to_vec())?;
         let pkg = format!("orbit-{}-{}.zip", &latest, &target);
         // search the checksums to check if the desired pkg is available for download
         let cert = checksums.split_terminator('\n').find_map(|p| {
@@ -359,11 +388,31 @@ impl Orbit {
 
         // download the zip pkg file
         let pkg_url = format!("{}/download/{}/{}",&base_url, &latest, &pkg);
-        let res = reqwest::get(&pkg_url).await?;
-        if res.status() != 200 {
-            return Err(Box::new(UpgradeError::FailedDownload(pkg_url.to_string(), res.status())))?
+        // let res = reqwest::get(&pkg_url).await?;
+        // if res.status() != 200 {
+        //     return Err(Box::new(UpgradeError::FailedDownload(pkg_url.to_string(), res.status())))?
+        // }
+        // let body_bytes = res.bytes().await?;
+
+        let mut body_bytes = Vec::new();
+        {
+            let mut easy = Easy::new();
+            easy.url(&pkg_url).unwrap();
+            easy.follow_location(true).unwrap();
+            {
+                let mut transfer = easy.transfer();
+                transfer.write_function(|data| {
+                    body_bytes.extend_from_slice(data);
+                    Ok(data.len())
+                }).unwrap();
+        
+                transfer.perform()?;
+            }
+            let rc = easy.response_code()?;
+            if rc != RESPONSE_OKAY {
+                return Err(Box::new(UpgradeError::FailedConnection(pkg_url, rc)));
+            } 
         }
-        let body_bytes = res.bytes().await?;
 
         // compute the checksum on the downloaded zip file
         let sum = sha256::compute_sha256(&body_bytes);
@@ -405,8 +454,8 @@ impl Orbit {
 #[derive(Debug, PartialEq)]
 enum UpgradeError {
     UnsupportedTarget(String),
-    FailedConnection(String, reqwest::StatusCode),
-    FailedDownload(String, reqwest::StatusCode),
+    FailedConnection(String, u32),
+    FailedDownload(String, u32),
     NoReleasesFound,
     BadChecksum(Sha256Hash, Sha256Hash),
     MissingExe,

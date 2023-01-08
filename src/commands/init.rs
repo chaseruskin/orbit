@@ -22,7 +22,7 @@ pub struct Init {
 }
 
 impl FromCli for Init {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Init {
             force: cli.check_flag(Flag::new("force"))?,

@@ -42,7 +42,7 @@ pub struct Edit {
 }
 
 impl FromCli for Edit {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Edit {
             mode: cli.check_option(Optional::new("mode"))?.unwrap_or(EditMode::Open),

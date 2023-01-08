@@ -66,7 +66,7 @@ impl Orbit {
 }
 
 impl FromCli for Orbit {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
+    fn from_cli(cli: &mut Cli) -> Result<Self,  CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         // need to set this coloring mode ASAP
         match cli.check_option(Optional::new("color").value("when"))?.unwrap_or(ColorMode::Auto) {
@@ -87,7 +87,8 @@ impl FromCli for Orbit {
             force: cli.check_flag(Flag::new("force"))?,
             command: cli.check_command(Positional::new("command"))?,
         });
-
+        // verify there are zero unhandled arguments
+        cli.is_empty()?;
         orbit
     }
 }
@@ -128,7 +129,7 @@ enum OrbitSubcommand {
 }
 
 impl FromCli for OrbitSubcommand {
-    fn from_cli<'c>(cli: &'c mut Cli<'_>) -> Result<Self, CliError<'c>> { 
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> { 
         match cli.match_command(&[
             "help",
             "new",

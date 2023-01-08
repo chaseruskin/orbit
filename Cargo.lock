@@ -160,8 +160,8 @@ dependencies = [
 
 [[package]]
 name = "clif"
-version = "0.1.1"
-source = "git+https://github.com/c-rus/clif?tag=0.1.1#edaab03b6fd2974e16da5e073f6bbb6da3647515"
+version = "0.1.3"
+source = "git+https://github.com/c-rus/clif?tag=0.1.3#4e46e8ad0d8c3098edad8e6fae371659ef93e25c"
 dependencies = [
  "crayon",
 ]

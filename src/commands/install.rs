@@ -37,7 +37,7 @@ pub struct Install {
 }
 
 impl FromCli for Install {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Install {
             force: cli.check_flag(Flag::new("force"))?,

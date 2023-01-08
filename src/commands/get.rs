@@ -20,6 +20,7 @@ use crate::core::context::Context;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::pkgid::PkgId;
 use crate::util::anyerror::{AnyError, Fault};
+use crate::OrbitResult;
 
 #[derive(Debug, PartialEq)]
 pub struct Get {
@@ -60,7 +61,7 @@ use crate::core::lang::vhdl::symbol;
 use crate::core::lang::vhdl::token::VHDLTokenizer;
 
 impl Command<Context> for Get {
-    type Status = Result<(), Box<dyn std::error::Error>>;
+    type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
         // --name can only be used with --instance is set

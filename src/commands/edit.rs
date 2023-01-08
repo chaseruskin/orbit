@@ -7,6 +7,7 @@ use crate::core::config::CONFIG_FILE;
 use crate::core::config::Config;
 use crate::core::extgit::ExtGitError;
 use clif::Cli;
+use crate::OrbitResult;
 use clif::arg::{Flag, Optional};
 use clif::Error as CliError;
 use crate::core::context::Context;
@@ -54,7 +55,7 @@ impl FromCli for Edit {
 }
 
 impl Command<Context> for Edit {
-    type Status = Result<(), Box<dyn std::error::Error>>;
+    type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
         let sel_editor = Self::configure_editor(&self.editor, &c.get_config())?;

@@ -22,6 +22,7 @@ use git2::Repository;
 use colored::Colorize;
 use crate::core::manifest;
 use crate::util::anyerror::AnyError;
+use crate::OrbitResult;
 
 #[derive(Debug, PartialEq)]
 enum VersionField {
@@ -66,7 +67,7 @@ impl FromCli for Launch {
 }
 
 impl Command<Context> for Launch {
-    type Status = Result<(), Box<dyn std::error::Error>>;
+    type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
         // make sure it is run from an ip directory

@@ -1,5 +1,4 @@
 use colored::Colorize;
-
 use clif::cmd::Command;
 use clif::cmd::FromCli;
 use crate::core::catalog::Catalog;
@@ -15,7 +14,7 @@ use crate::core::context::Context;
 use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
 use crate::util::filesystem;
-use std::error::Error;
+use crate::OrbitResult;
 use std::path::PathBuf;
 use crate::util::anyerror::AnyError;
 use crate::core::template::Template;
@@ -27,6 +26,7 @@ pub struct New {
     template: Option<String>,
     list: bool,
     file: bool,
+    force: bool,
     from: Option<PathBuf>,
 }
 
@@ -34,6 +34,7 @@ impl FromCli for New {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(New {
+            force: cli.check_flag(Flag::new("force"))?,
             to: cli.check_option(Optional::new("to").value("path"))?,
             list: cli.check_flag(Flag::new("list"))?,
             from: cli.check_option(Optional::new("from").value("path"))?,
@@ -46,7 +47,7 @@ impl FromCli for New {
 }
 
 impl Command<Context> for New {
-    type Status = Result<(), Box<dyn Error>>;
+    type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
         // verify the template exists
@@ -89,7 +90,7 @@ impl Command<Context> for New {
             let dest = c.get_ip_path().unwrap().join(self.to.as_ref().unwrap());
 
             // fail is destination already exists and not forcing
-            if dest.exists() == true && c.force == false {
+            if dest.exists() == true && self.force == false {
                 return Err(AnyError(format!("destination {} already exists; use '{}' to overwrite", filesystem::normalize_path(PathBuf::from(self.to.as_ref().unwrap())).display(), "--force".yellow())))?
             }
        
@@ -130,7 +131,7 @@ impl Command<Context> for New {
             // load variables for the new ip
             let mut vars = vars.load_pkgid(&ip)?;
             // only pass in necessary variables from context
-            self.run(root, c.force, template, &mut vars)
+            self.run(root, template, &mut vars)
         // what is default behavior? (currently undefined)
         } else {
             Err(AnyError(format!("nothing specified to create; use {} or {}\n\nFor more information try {}", "--ip".yellow(), "--file".yellow(), "--help".green())))?
@@ -196,7 +197,7 @@ impl New {
         Ok(())
     }
 
-    fn run(&self, root: &std::path::PathBuf, force: bool, template: Option<&Template>, lut: &mut VariableTable) -> Result<(), Fault> {
+    fn run(&self, root: &std::path::PathBuf, template: Option<&Template>, lut: &mut VariableTable) -> Result<(), Fault> {
         // create ip stemming from DEV_PATH with default /VENDOR/LIBRARY/NAME
         let ip_path = if self.to.is_none() {
             root.join(self.ip.as_ref().unwrap().get_vendor().as_ref().unwrap())
@@ -232,7 +233,7 @@ impl New {
             }
         }
 
-        let ip = IpManifest::create(ip_path, &self.ip.as_ref().unwrap(), force, false)?;
+        let ip = IpManifest::create(ip_path, &self.ip.as_ref().unwrap(), self.force, false)?;
         let root = ip.get_root();
 
         // import template if found

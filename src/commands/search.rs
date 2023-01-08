@@ -8,6 +8,7 @@ use crate::core::context::Context;
 use crate::core::pkgid::PkgId;
 use crate::util::anyerror::Fault;
 use std::collections::BTreeMap;
+use crate::OrbitResult;
 
 #[derive(Debug, PartialEq)]
 pub struct Search {
@@ -18,7 +19,7 @@ pub struct Search {
 }
 
 impl Command<Context> for Search {
-    type Status = Result<(), Box<dyn std::error::Error>>;
+    type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
 

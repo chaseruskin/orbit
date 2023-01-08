@@ -6,6 +6,7 @@ use clif::cmd::{FromCli, Command};
 use clif::Cli;
 use clif::arg::{Optional, Flag};
 use clif::Error as CliError;
+use crate::OrbitResult;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::core::plugin::Plugin;
@@ -40,7 +41,7 @@ impl FromCli for Build {
 }
 
 impl Command<Context> for Build {
-    type Status = Result<(), Box<dyn std::error::Error>>;
+    type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
         // try to find plugin matching `command` name under the `alias`

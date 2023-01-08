@@ -12,7 +12,7 @@ use crate::util::environment::Environment;
 use crate::util::environment::ORBIT_BLUEPRINT;
 use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
 use crate::util::filesystem;
-
+use crate::OrbitResult;
 use super::plan::BLUEPRINT_FILE;
 
 #[derive(Debug, PartialEq)]
@@ -36,7 +36,7 @@ impl FromCli for Env {
 }
 
 impl Command<Context> for Env {
-    type Status = Result<(), Box<dyn std::error::Error>>;
+    type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
         // assemble environment information

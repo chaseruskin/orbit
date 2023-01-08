@@ -6,6 +6,7 @@ use colored::Colorize;
 use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::ip;
+use crate::OrbitResult;
 use crate::core::ip::IpFileNode;
 use crate::core::manifest::IpManifest;
 use crate::core::lang::vhdl::subunit::SubUnit;
@@ -60,7 +61,7 @@ impl FromCli for Tree {
 }
 
 impl Command<Context> for Tree {
-    type Status = Result<(), Box<dyn std::error::Error>>;
+    type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
         // go to the ip directory

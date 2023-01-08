@@ -25,6 +25,7 @@ use crate::core::context::Context;
 use crate::util::graphmap::GraphMap;
 use std::collections::HashMap;
 use std::io::Write;
+use crate::OrbitResult;
 use crate::core::fileset::Fileset;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::plugin::Plugin;
@@ -42,12 +43,14 @@ pub struct Plan {
     filesets: Option<Vec<Fileset>>,
     disable_ssh: bool,
     only_lock: bool,
+    force: bool,
 }
 
 impl FromCli for Plan {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Plan {
+            force: cli.check_flag(Flag::new("force"))?,
             only_lock: cli.check_flag(Flag::new("lock-only"))?,
             all : cli.check_flag(Flag::new("all"))?,
             clean: cli.check_flag(Flag::new("clean"))?,
@@ -64,7 +67,7 @@ impl FromCli for Plan {
 }
 
 impl Command<Context> for Plan {
-    type Status = Result<(), Fault>;
+    type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
         // locate the plugin
@@ -105,7 +108,7 @@ impl Command<Context> for Plan {
         // see Install::install_from_lock_file
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
-        if target_ip.can_use_lock() == true && c.force == false {
+        if target_ip.can_use_lock() == true && self.force == false {
             // fill in the catalog with missing modules according the lock file if available
             for entry in target_ip.into_lockfile()?.inner() {
                 // skip the current project's ip entry
@@ -136,7 +139,7 @@ impl Command<Context> for Plan {
             None => c.get_build_dir(),
         };
 
-        self.run(target_ip, b_dir, plugin, catalog, c.force)
+        self.run(target_ip, b_dir, plugin, catalog)
     }
 }
 
@@ -472,7 +475,7 @@ impl Plan {
     }
 
     /// Performs the backend logic for creating a blueprint file (planning a design).
-    fn run(&self, target: IpManifest, build_dir: &str, plug: Option<&Plugin>, catalog: Catalog, force: bool) -> Result<(), Fault> {
+    fn run(&self, target: IpManifest, build_dir: &str, plug: Option<&Plugin>, catalog: Catalog) -> Result<(), Fault> {
         // create the build path to know where to begin storing files
         let mut build_path = std::env::current_dir().unwrap();
         build_path.push(build_dir);
@@ -487,7 +490,7 @@ impl Plan {
 
         // only write lockfile and exit if flag is raised 
         if self.only_lock == true {
-            Self::write_lockfile(&target, &ip_graph, force)?;
+            Self::write_lockfile(&target, &ip_graph, self.force)?;
             return Ok(())
         }
 
@@ -522,7 +525,7 @@ impl Plan {
         }
 
         // [!] write the lock file
-        Self::write_lockfile(&target, &ip_graph, force)?;
+        Self::write_lockfile(&target, &ip_graph, self.force)?;
 
         // compute minimal topological ordering
         let min_order = match self.all {

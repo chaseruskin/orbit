@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use colored::Colorize;
 
 use clif::cmd::{FromCli, Command};
+use crate::OrbitResult;
 use crate::core::catalog::Catalog;
 use crate::core::catalog::CatalogError;
 use crate::core::lexer::Position;
@@ -52,7 +53,7 @@ impl FromCli for Read {
 }
 
 impl Command<Context> for Read {
-    type Status = Result<(), Box<dyn std::error::Error>>;
+    type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
         // determine the text-editor

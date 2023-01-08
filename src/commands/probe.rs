@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 use git2::Repository;
 
+use crate::OrbitResult;
 use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::catalog::IpLevel;
@@ -46,7 +47,7 @@ impl FromCli for Probe {
 }
 
 impl Command<Context> for Probe {
-    type Status = Result<(), Box<dyn std::error::Error>>;
+    type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
 

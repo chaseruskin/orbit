@@ -2,9 +2,9 @@ use clif::cmd::{FromCli, Command};
 use clif::Cli;
 use clif::arg::{Positional};
 use clif::Error as CliError;
-use crate::core::context::Context;
 use crate::commands::manuals;
 use crate::util::anyerror::AnyError;
+use crate::OrbitResult;
 
 #[derive(Debug, PartialEq)]
 pub struct Help {
@@ -78,10 +78,10 @@ impl Topic {
     }
 }
 
-impl Command<Context> for Help {
-    type Status = Result<(), Box<dyn std::error::Error>>;
+impl Command<()> for Help {
+    type Status = OrbitResult;
 
-    fn exec(&self, _: &Context) -> Self::Status {
+    fn exec(&self, _: &()) -> Self::Status {
         self.run()?;
         Ok(())
     }

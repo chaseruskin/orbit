@@ -7,6 +7,7 @@ use clif::arg::{Flag, Optional};
 use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
+use crate::OrbitResult;
 
 #[derive(Debug, PartialEq)]
 pub struct Entry(String, String);
@@ -48,7 +49,7 @@ impl FromCli for Config {
 use crate::core::config;
 
 impl Command<Context> for Config {
-    type Status = Result<(), Box<dyn std::error::Error>>;
+    type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
         // check if we are using global or local

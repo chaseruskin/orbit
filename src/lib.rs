@@ -9,7 +9,6 @@ use crate::commands::orbit::*;
 use colored::*;
 use clif::cmd::FromCli;
 use clif::cmd::Command;
-use crate::core::context::Context;
 
 pub fn go() -> u8 {
     // interface level
@@ -20,6 +19,7 @@ pub fn go() -> u8 {
 
     let orbit = match Orbit::from_cli(&mut cli) {
         Ok(app) => {
+            // verify there are zero unhandled arguments
             if let Err(err) = cli.is_empty() {
                 match err.kind() {
                     ErrorKind::Help => println!("{}", err),
@@ -40,10 +40,10 @@ pub fn go() -> u8 {
     };
 
     // program level
-    match orbit.exec(&Context::new()) {
+    match orbit.exec(&()) {
         Ok(_) => 0,
-        Err(e) => {
-            eprintln!("{} {}", "error:".red().bold(), e); 
+        Err(err) => {
+            eprintln!("{}: {}", "error".red().bold(), err); 
             101
         }
     }

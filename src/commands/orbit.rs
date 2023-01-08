@@ -11,6 +11,10 @@ use crate::core::context::Context;
 use crate::util::sha256::Sha256Hash;
 use std::env;
 
+pub type AnyResult<T> = Result<T, Box<dyn std::error::Error>>;
+
+pub type OrbitResult = AnyResult<()>;
+
 #[derive(Debug, PartialEq)]
 pub struct Orbit {
     help: bool,
@@ -20,16 +24,16 @@ pub struct Orbit {
     command: Option<OrbitSubcommand>,
 }
 
-impl Command<Context> for Orbit {
-    type Status = Result<(), Box<dyn std::error::Error>>;
+impl Command<()> for Orbit {
+    type Status = OrbitResult;
 
-    fn exec(&self, context: &Context) -> Self::Status {
+    fn exec(&self, context: &()) -> Self::Status {
         self.run(context)
     }
 }
 
 impl Orbit {
-    fn run(&self, _: &Context) -> Result<(), Box<dyn std::error::Error>> {
+    fn run(&self, _: &()) -> OrbitResult {
         // prioritize version information
         if self.version == true {
             println!("orbit {}", VERSION);
@@ -51,8 +55,7 @@ impl Orbit {
                 .settings(crate::core::config::CONFIG_FILE)?
                 .build_dir(environment::ORBIT_BUILD_DIR)?
                 .development_path(environment::ORBIT_DEV_PATH, c.bypass_check() == false)?
-                .read_vendors()?
-                .retain_options(self.force);
+                .read_vendors()?;
             // pass the context to the given command
             c.exec(&context)
         // if no command is given then print default help
@@ -67,8 +70,14 @@ impl FromCli for Orbit {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         // need to set this coloring mode ASAP
         match cli.check_option(Optional::new("color").value("when"))?.unwrap_or(ColorMode::Auto) {
-            ColorMode::Always => colored::control::set_override(true),
-            ColorMode::Never => colored::control::set_override(false),
+            ColorMode::Always => {
+                cli.use_color();
+                colored::control::set_override(true);
+            },
+            ColorMode::Never => {
+                cli.disable_color();
+                colored::control::set_override(false);
+            },
             ColorMode::Auto => (),
         }
         let orbit = Ok(Orbit {
@@ -169,7 +178,7 @@ impl OrbitSubcommand {
 }
 
 impl Command<Context> for OrbitSubcommand {
-    type Status = Result<(), Box<dyn std::error::Error>>;
+    type Status = OrbitResult;
 
     fn exec(&self, context: &Context) -> Self::Status {
         match self {
@@ -178,7 +187,7 @@ impl Command<Context> for OrbitSubcommand {
             OrbitSubcommand::Plan(c) => c.exec(context),
             OrbitSubcommand::Build(c) => c.exec(context),
             OrbitSubcommand::Install(c) => c.exec(context),
-            OrbitSubcommand::Help(c) => c.exec(context),
+            OrbitSubcommand::Help(c) => c.exec(&()),
             OrbitSubcommand::New(c) => c.exec(context),
             OrbitSubcommand::Launch(c) => c.exec(context),
             OrbitSubcommand::Tree(c) => c.exec(context),

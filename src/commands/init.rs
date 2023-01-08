@@ -4,18 +4,20 @@ use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::manifest::IpManifest;
 use clif::Cli;
-use clif::arg::{Positional, Optional, Arg};
+use clif::arg::{Positional, Optional, Arg, Flag};
 use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::core::pkgid::PkgId;
 use crate::core::extgit::ExtGit;
 use crate::util::url::Url;
+use crate::OrbitResult;
 
 #[derive(Debug, PartialEq)]
 pub struct Init {
     ip: PkgId,
     repo: Option<Url>,
+    force: bool,
     rel_path: Option<std::path::PathBuf>,
 }
 
@@ -23,6 +25,7 @@ impl FromCli for Init {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Init {
+            force: cli.check_flag(Flag::new("force"))?,
             repo: cli.check_option(Optional::new("git").value("repo"))?,
             rel_path: cli.check_option(Optional::new("path"))?,
             ip: cli.require_positional(Positional::new("ip"))?,
@@ -32,7 +35,7 @@ impl FromCli for Init {
 }
 
 impl Command<Context> for Init {
-    type Status = Result<(), Box<dyn std::error::Error>>;
+    type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
         // extra validation for a new IP spec to contain all fields (V.L.N)
@@ -83,7 +86,7 @@ impl Command<Context> for Init {
                 }
             }
         };
-        self.run(path, c.force)
+        self.run(path)
     }
 }
 
@@ -91,7 +94,7 @@ impl Init {
     /// Initializes a project at an exising path.
     /// 
     /// Note the path must exist unless cloning from a git repository.
-    fn run(&self, ip_path: std::path::PathBuf, _: bool) -> Result<(), Box<dyn std::error::Error>> {
+    fn run(&self, ip_path: std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         // the path must exist if not cloning from a repository
         if std::path::Path::exists(&ip_path) == false && self.repo.is_none() {
             return Err(AnyError(format!("failed to initialize ip because directory '{}' does not exist", crate::util::filesystem::normalize_path(ip_path).display())))?

@@ -24,6 +24,7 @@ use tempfile::tempdir;
 use crate::core::store::Store;
 use std::path::PathBuf;
 use crate::core::extgit::ExtGit;
+use crate::OrbitResult;
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
@@ -32,12 +33,14 @@ pub struct Install {
     git: Option<Url>,
     version: AnyVersion,
     disable_ssh: bool,
+    force: bool,
 }
 
 impl FromCli for Install {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Install {
+            force: cli.check_flag(Flag::new("force"))?,
             git: cli.check_option(Optional::new("git").value("url"))?,
             path: cli.check_option(Optional::new("path"))?,
             version: cli.check_option(Optional::new("variant").switch('v').value("version"))?.unwrap_or(AnyVersion::Latest),
@@ -49,7 +52,7 @@ impl FromCli for Install {
 }
 
 impl Command<Context> for Install {
-    type Status = Result<(), Box<dyn std::error::Error>>;
+    type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
         // verify user is not requesting the dev version to be installed
@@ -98,7 +101,7 @@ impl Command<Context> for Install {
             return Err(AnyError(format!("select an option to install from '{}', '{}', or '{}'", "--ip".yellow(), "--git".yellow(), "--path".yellow())))?
         };
         // enter action
-        self.run(&ip_root, &catalog, c.force)
+        self.run(&ip_root, &catalog)
     }
 }
 
@@ -239,7 +242,7 @@ impl Install {
         Ok(installed_ip)
     }
 
-    fn run(&self, installation_path: &PathBuf, catalog: &Catalog, force: bool) -> Result<(), Fault> {
+    fn run(&self, installation_path: &PathBuf, catalog: &Catalog) -> Result<(), Fault> {
         // check if there is a potential lockfile to use
         let man = Self::detect_manifest(&installation_path, &self.version, catalog.get_store())?;
         if let Some(lock) = man.get_lockfile() {
@@ -247,7 +250,7 @@ impl Install {
         }
         // if the lockfile is invalid, then it will only install the current request and zero dependencies
         
-        let _ = Self::install(&installation_path, &self.version, &catalog.get_cache_path(), force, &catalog.get_store())?;
+        let _ = Self::install(&installation_path, &self.version, &catalog.get_cache_path(), self.force, &catalog.get_store())?;
         Ok(())
     }
 }

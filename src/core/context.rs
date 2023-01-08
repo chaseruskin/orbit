@@ -15,24 +15,24 @@ use super::config::CONFIG_FILE;
 use super::pkgid::PkgPart;
 use super::vendor::VendorManifest;
 
+/// Shared attributes about the surrounding user run-time environment.
 pub struct Context {
-    /// holds behind-the-scenes internal Orbit operations
-    home_path: path::PathBuf,
+    /// Path to a "hidden" directory for internal Orbit operations.
+    home_path: PathBuf,
     /// holds installed immutable tags of git repositories
-    cache_path: path::PathBuf,
-    /// the parent path to the current ip Orbit.toml file
-    ip_path: Option<path::PathBuf>,
-    /// holds in-development mutable ip projects
-    dev_path: Option<path::PathBuf>,
+    cache_path: PathBuf,
+    /// The parent path to the current ip `Orbit.toml` manifest file.
+    ip_path: Option<PathBuf>,
+    /// holds in-development mutable ip projects [***DEPRECATED***]
+    dev_path: Option<PathBuf>,
     /// holds installed immutable git repositories to pull versions from into cache
-    store_path: path::PathBuf, 
-    /// temporary throwaway directory     
+    store_path: PathBuf, 
+    /// Directory name for the intermediate build processes and outputs.    
     build_dir: String,
     config: Config,
     plugins: HashMap<String, Plugin>, // @IDEA optionally move hashmap out of context and create it from fn to allow dynamic loading
     templates: HashMap<String, Template>,
     vendors: HashMap<PkgPart, VendorManifest>,
-    pub force: bool,
 }
 
 impl Context {
@@ -50,14 +50,8 @@ impl Context {
             templates: HashMap::new(),
             config: Config::new(),
             build_dir: String::new(),
-            force: false,
             vendors: HashMap::new(),
         }
-    }
-
-    pub fn retain_options(mut self, force: bool) -> Context {
-        self.force = force;
-        self
     }
 
     /// Sets the home directory. By default this is `$HOME/.orbit`. If set by `var`,

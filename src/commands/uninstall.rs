@@ -7,6 +7,7 @@ use clif::arg::{Positional, Optional};
 use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
+use crate::OrbitResult;
 
 #[derive(Debug, PartialEq)]
 pub struct Uninstall {
@@ -28,7 +29,7 @@ impl FromCli for Uninstall {
 
 impl Command<Context> for Uninstall {
 
-    type Status = Result<(), Box<dyn std::error::Error>>;
+    type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
         // collect the catalog from dev and installations

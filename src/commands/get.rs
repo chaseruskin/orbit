@@ -6,7 +6,7 @@ use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::catalog::CatalogError;
 use crate::core::manifest::IpManifest;
-use crate::core::parser::Symbol;
+use crate::core::lang::parser::Symbol;
 use crate::core::version::AnyVersion;
 use crate::core::version::Version;
 use crate::core::lang::vhdl::interface;
@@ -55,7 +55,7 @@ impl FromCli for Get {
     }
 }
 
-use crate::core::parser::Parse;
+use crate::core::lang::parser::Parse;
 use crate::core::lang::vhdl;
 use crate::core::lang::vhdl::symbol;
 use crate::core::lang::vhdl::token::VHDLTokenizer;

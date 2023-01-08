@@ -2,8 +2,8 @@ use std::collections::LinkedList;
 use std::fmt::Display;
 use std::hash::Hash;
 
-use crate::core::parser::*;
-use crate::core::lexer::*;
+use super::super::parser::*;
+use super::super::lexer::*;
 
 use crate::core::lang::vhdl::token::*;
 use crate::core::lang::vhdl::interface::*;
@@ -1800,7 +1800,7 @@ signal ready: std_logic;";
         assert_eq!(tokens.next().unwrap().as_type(), &VHDLToken::Keyword(Keyword::Signal));
     }
 
-    use crate::core::lexer::Position;
+    use super::super::super::lexer::Position;
 
     #[test]
     fn is_primary_ending() {

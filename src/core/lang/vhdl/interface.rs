@@ -85,7 +85,7 @@ impl<'a> std::fmt::Display for Architectures<'a> {
 // @note: interface_signal_declaration ::= [signal] identifier_list : [ mode ] subtype_indication [ bus ] [ := static_expression ]
 // @note: identifier_list ::= identifier { , identifier }
 
-use crate::core::lexer;
+use super::super::lexer;
 use crate::core::lang::vhdl::token::{VHDLToken, Keyword, Delimiter};
 use std::fmt::Display;
 use std::iter::Peekable;

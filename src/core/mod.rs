@@ -4,8 +4,6 @@ pub mod context;
 pub mod manifest;
 pub mod ip;
 pub mod fileset;
-pub mod lexer;
-pub mod parser;
 pub mod plugin;
 pub mod vendor;
 pub mod config;

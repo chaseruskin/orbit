@@ -2,10 +2,10 @@ use std::fmt::Debug;
 use std::str::FromStr;
 use colored::Colorize;
 use colored::ColoredString;
-use crate::core::lexer;
-use crate::core::lexer::Position;
-use crate::core::lexer::TrainCar;
-use crate::core::lexer::Tokenize;
+use super::super::lexer;
+use super::super::lexer::Position;
+use super::super::lexer::TrainCar;
+use super::super::lexer::Tokenize;
 use crate::core::pkgid::PkgPart;
 use std::fmt::Display;
 use crate::util::strcmp;
@@ -1713,7 +1713,7 @@ impl Display for VHDLTokenError {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::core::lexer::*;
+    use super::super::super::lexer::*;
 
     #[test]
     fn iden_from_str() {

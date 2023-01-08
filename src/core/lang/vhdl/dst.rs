@@ -1,7 +1,7 @@
 //! dynamic symbol transform
 
 use std::collections::HashMap;
-use crate::core::lexer::{Token, Position};
+use super::super::lexer::{Token, Position};
 use super::token::{VHDLToken, Identifier};
 
 /// Takes in a list of tokens, and a hashmap of the identifiers and their respective 

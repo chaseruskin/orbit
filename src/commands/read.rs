@@ -8,7 +8,7 @@ use clif::cmd::{FromCli, Command};
 use crate::OrbitResult;
 use crate::core::catalog::Catalog;
 use crate::core::catalog::CatalogError;
-use crate::core::lexer::Position;
+use crate::core::lang::lexer::Position;
 use crate::core::manifest::IpManifest;
 use crate::core::pkgid::PkgId;
 use crate::core::version::AnyVersion;

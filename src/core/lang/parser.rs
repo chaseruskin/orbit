@@ -1,4 +1,4 @@
-use crate::core::lexer::Token;
+use super::lexer::Token;
 use std::fmt::Display;
 
 pub trait Parse<T> {

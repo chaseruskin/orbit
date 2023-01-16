@@ -56,7 +56,7 @@ impl Manifest {
     }
 
     /// Composes a [String] to write to a clean manifest file.
-    pub fn write_empty_manifest(name: Identifier) -> String {
+    pub fn write_empty_manifest(name: &Identifier) -> String {
         format!(r#"[ip]
 name = "{}"
 version = "0.1.0"

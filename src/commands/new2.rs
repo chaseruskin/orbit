@@ -12,6 +12,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use crate::util::filesystem;
 use crate::core::manifest2::Manifest;
+use std::borrow::Cow;
 
 use super::orbit::AnyResult;
 
@@ -44,10 +45,10 @@ impl FromCli for New2 {
 impl New2 {
     /// Determines the final name to use for the ip based on the given `name` and falls back
     /// to the `path`'s file name if not `name` is given.
-    fn extract_name<'a>(name: Option<&'a PkgPart>, path: &PathBuf) -> AnyResult<PkgPart> {
+    fn extract_name<'a>(name: Option<&'a PkgPart>, path: &PathBuf) -> AnyResult<Cow<'a, PkgPart>> {
         match name {
             Some(n) => {
-                Ok(n.clone())
+                Ok(Cow::Borrowed(n))
             },
             // try to use the path's ending name as the ip name
             None => {
@@ -55,7 +56,7 @@ impl New2 {
                     Some(fname) => {
                         let s = fname.to_string_lossy();
                         match PkgPart::from_str(s.as_ref()) {
-                            Ok(r) => Ok(r),
+                            Ok(r) => Ok(Cow::Owned(r)),
                             Err(e) => Err(Box::new(AnyError(format!("the name '{}' cannot be used as an ip name because {}\n\nTo have an ip name not match the directory name, use the '--name' flag.", s, e))))
                         }
                     },
@@ -78,6 +79,7 @@ impl Command<()> for New2 {
             // resolve any relative path
             let dest = filesystem::normalize_path(self.path.clone());
             if let Some(p) = Context::find_ip_path(&dest) {
+                // @todo: write error
                 panic!("an ip already exists at path {:?}", p)
             }
         }
@@ -87,6 +89,7 @@ impl Command<()> for New2 {
             // @todo give user more helpful error message
             // 1. if the manifest already exists at this directory
             // 2. if no manifest already exists at this directory 
+            // @todo: write error
             panic!("destination {:?} already exists, use `orbit init` to initialize directory", self.path)
         }
 
@@ -94,13 +97,13 @@ impl Command<()> for New2 {
 
         let ip_name = Self::extract_name(self.name.as_ref(), &self.path)?;
 
-        self.create_ip(ip_name)
+        self.create_ip(&ip_name)
     }
 }
 
 impl New2 {
     /// Creates a new directory at the given `dest` with a new manifest file.
-    fn create_ip(&self, ip: PkgPart) -> AnyResult<()> {
+    fn create_ip(&self, ip: &PkgPart) -> AnyResult<()> {
         // create the directory
         std::fs::create_dir_all(&self.path)?;
 
@@ -112,7 +115,7 @@ impl New2 {
         };
 
         let mut manifest = std::fs::File::create(&manifest_path)?;
-        manifest.write_all(Manifest::write_empty_manifest(ip).as_bytes())?;
+        manifest.write_all(Manifest::write_empty_manifest(&ip).as_bytes())?;
         Ok(())
     }
 }
@@ -141,19 +144,19 @@ mod test {
     fn ut_extract_name() {
         let name = None;
         let path = PathBuf::from("gates");
-        assert_eq!(New2::extract_name(name.as_ref(), &path).unwrap(), PkgPart::from_str("gates").unwrap());
+        assert_eq!(New2::extract_name(name.as_ref(), &path).unwrap().as_ref(), &PkgPart::from_str("gates").unwrap());
 
         let name = Some(PkgPart::from_str("sha256").unwrap());
         let path = PathBuf::from("gates");
-        assert_eq!(New2::extract_name(name.as_ref(), &path).unwrap(), PkgPart::from_str("sha256").unwrap());
+        assert_eq!(New2::extract_name(name.as_ref(), &path).unwrap().as_ref(), &PkgPart::from_str("sha256").unwrap());
 
         let name = None;
         let path = PathBuf::from("./a/long/path/to/project");
-        assert_eq!(New2::extract_name(name.as_ref(), &path).unwrap(), PkgPart::from_str("project").unwrap());
+        assert_eq!(New2::extract_name(name.as_ref(), &path).unwrap().as_ref(), &PkgPart::from_str("project").unwrap());
 
         let name = None;
         let path = PathBuf::from("./a/long/path/to/Project/");
-        assert_eq!(New2::extract_name(name.as_ref(), &path).unwrap(), PkgPart::from_str("Project").unwrap());
+        assert_eq!(New2::extract_name(name.as_ref(), &path).unwrap().as_ref(), &PkgPart::from_str("Project").unwrap());
     }
 
     #[test]
@@ -161,7 +164,7 @@ mod test {
     fn ut_extract_name_no_file_name() {
         let name = None;
         let path = PathBuf::from(".");
-        assert_eq!(New2::extract_name(name.as_ref(), &path).unwrap(), PkgPart::from_str("sha256").unwrap());
+        assert_eq!(New2::extract_name(name.as_ref(), &path).unwrap().as_ref(), &PkgPart::from_str("sha256").unwrap());
     }
 
 }

@@ -6,9 +6,11 @@ use clif::Error as CliError;
 use crate::core::pkgid::PkgPart;
 use crate::core::context::Context;
 use crate::OrbitResult;
+use crate::util::anyerror::AnyError;
 use std::io::Write;
 use std::path::PathBuf;
 use std::str::FromStr;
+use crate::util::filesystem;
 use crate::core::manifest2::Manifest;
 
 use super::orbit::AnyResult;
@@ -51,7 +53,11 @@ impl New2 {
             None => {
                 match path.file_name() {
                     Some(fname) => {
-                        Ok(PkgPart::from_str(fname.to_string_lossy().as_ref())?)
+                        let s = fname.to_string_lossy();
+                        match PkgPart::from_str(s.as_ref()) {
+                            Ok(r) => Ok(r),
+                            Err(e) => Err(Box::new(AnyError(format!("the name '{}' cannot be used as an ip name because {}\n\nTo have an ip name not match the directory name, use the '--name' flag.", s, e))))
+                        }
                     },
                     None => {
                         panic!("path does not have a file name")
@@ -68,8 +74,12 @@ impl Command<()> for New2 {
     fn exec(&self, _: &()) -> Self::Status {
 
         // verify we are not already in an ip directory
-        if let Some(p) = Context::find_ip_path(&self.path) {
-            panic!("an ip already exists at path {:?}", p)
+        {
+            // resolve any relative path
+            let dest = filesystem::normalize_path(self.path.clone());
+            if let Some(p) = Context::find_ip_path(&dest) {
+                panic!("an ip already exists at path {:?}", p)
+            }
         }
 
         // verify the path does not exist
@@ -79,6 +89,8 @@ impl Command<()> for New2 {
             // 2. if no manifest already exists at this directory 
             panic!("destination {:?} already exists, use `orbit init` to initialize directory", self.path)
         }
+
+
 
         let ip_name = Self::extract_name(self.name.as_ref(), &self.path)?;
 

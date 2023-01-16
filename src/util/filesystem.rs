@@ -175,12 +175,12 @@ pub fn to_absolute(p: PathBuf) -> Result<PathBuf, Fault> {
         p
     };
 
-    {
-        let mut p2 = p.components();
-        while let Some(c) = p2.next() {
-            println!("{:?}", c);
-        }
-    }
+    // {
+    //     let mut p2 = p.components();
+    //     while let Some(c) = p2.next() {
+    //         println!("{:?}", c);
+    //     }
+    // }
 
     Ok(p.components()
         .filter(|f| match f { Component::Prefix(_) => false, _ => true } )
@@ -207,26 +207,45 @@ pub fn normalize_path(p: PathBuf) -> PathBuf {
     };
 
     let mut result = Vec::<String>::new();
-    // check first part for home path '~' and relative path '.'
+    // check first part for home path '~', absolute path, or other (relative path '.'/None)
     if let Some(root) = parts.next() {
         if root.as_os_str() == OsStr::new("~") {
             match home_dir() {
                 Some(home) => for part in home.components() { result.push(c_str(part)) }
                 None => result.push(String::from(root.as_os_str().to_str().unwrap())),
             }
-        } else if root.as_os_str() == OsStr::new(".") {
-            for part in std::env::current_dir().unwrap().components() { result.push(c_str(part)) }
-        } else {
+        } else if root == Component::RootDir {
             result.push(String::from(root.as_os_str().to_str().unwrap()))
+        } else {
+            for part in std::env::current_dir().unwrap().components() { result.push(c_str(part)) }
+            match root.as_os_str().to_str().unwrap() {
+                "." => (),
+                ".." => { result.pop(); () },
+                _ => result.push(String::from(root.as_os_str().to_str().unwrap()))
+            }
         }
     }
-    // push remaining components
+    // push user-defined path (remaining components)
     while let Some(part) = parts.next() {
-        result.push(c_str(part))
+        match part.as_os_str().to_str().unwrap() {
+            // do nothing; remain in the same directory
+            "." => (),
+            // pop if using a '..'
+            ".." => { result.pop(); () },
+            // push all other components
+             _ => { result.push(c_str(part)) },
+        }        
     }
     // assemble new path
     let mut first = true;
-    PathBuf::from(result.into_iter().fold(String::new(), |x, y| if first == true { first = false; x + &y } else { x + "/" + &y }).replace("\\", "/").replace("//", "/"))
+    PathBuf::from(result.into_iter().fold(String::new(), |x, y|
+        if first == true { 
+            first = false; 
+            x + &y 
+        } else { 
+            x + "/" + &y 
+        }
+    ).replace("\\", "/").replace("//", "/"))
     // @todo: add some fail-safe where if the final path does not exist then return the original path?
 }
 
@@ -281,7 +300,7 @@ mod test {
         assert_eq!(normalize_path(p), PathBuf::from(home_dir().unwrap().join(".orbit/plugins/a.txt").to_str().unwrap().replace("\\", "/")));
 
         let p = PathBuf::from("home/.././b.txt");
-        assert_eq!(normalize_path(p), PathBuf::from("home/../b.txt"));
+        assert_eq!(normalize_path(p), PathBuf::from(std::env::current_dir().unwrap().join("b.txt").to_str().unwrap().replace("\\", "/")));
 
         let p = PathBuf::from("/home\\c.txt");
         assert_eq!(normalize_path(p), PathBuf::from("/home/c.txt"));

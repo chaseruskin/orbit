@@ -22,7 +22,7 @@ use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 
 #[derive(Debug, PartialEq)]
-pub struct Probe {
+pub struct Show {
     ip: PkgId,
     tags: bool,
     units: bool,
@@ -31,10 +31,10 @@ pub struct Probe {
     readme: bool,
 }
 
-impl FromCli for Probe {
+impl FromCli for Show {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
-        let command = Ok(Probe {
+        let command = Ok(Show {
             tags: cli.check_flag(Flag::new("versions"))?,
             units: cli.check_flag(Flag::new("units"))?,
             changelog: cli.check_flag(Flag::new("changes"))?,
@@ -46,7 +46,7 @@ impl FromCli for Probe {
     }
 }
 
-impl Command<Context> for Probe {
+impl Command<Context> for Show {
     type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
@@ -112,7 +112,7 @@ impl Command<Context> for Probe {
     }
 }
 
-impl Probe {
+impl Show {
     fn run(&self) -> Result<(), Fault> {
         Ok(())
     }

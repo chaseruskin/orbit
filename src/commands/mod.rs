@@ -10,7 +10,7 @@ mod edit;
 mod launch;
 mod install;
 mod tree;
-mod probe;
+mod show;
 mod get;
 mod env;
 mod init;

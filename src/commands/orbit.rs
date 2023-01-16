@@ -103,7 +103,7 @@ use crate::commands::install::Install;
 use crate::commands::tree::Tree;
 use crate::commands::get::Get;
 use crate::commands::init::Init;
-use crate::commands::probe::Probe;
+use crate::commands::show::Show;
 use crate::commands::env::Env;
 use crate::commands::config::Config;
 use crate::commands::uninstall::Uninstall;
@@ -121,7 +121,7 @@ enum OrbitSubcommand {
     Tree(Tree),
     Get(Get),
     Init(Init),
-    Probe(Probe),
+    Show(Show),
     Env(Env),
     Config(Config),
     Uninstall(Uninstall),
@@ -142,7 +142,7 @@ impl FromCli for OrbitSubcommand {
             "get",
             "init",
             "tree",
-            "probe",
+            "show",
             "b",
             "env",
             "config",
@@ -159,7 +159,7 @@ impl FromCli for OrbitSubcommand {
             "launch" => Ok(OrbitSubcommand::Launch(Launch::from_cli(cli)?)),
             "install" => Ok(OrbitSubcommand::Install(Install::from_cli(cli)?)),
             "tree" => Ok(OrbitSubcommand::Tree(Tree::from_cli(cli)?)),
-            "probe" => Ok(OrbitSubcommand::Probe(Probe::from_cli(cli)?)),
+            "show" => Ok(OrbitSubcommand::Show(Show::from_cli(cli)?)),
             "env" => Ok(OrbitSubcommand::Env(Env::from_cli(cli)?)),
             "config" => Ok(OrbitSubcommand::Config(Config::from_cli(cli)?)),
             "uninstall" => Ok(OrbitSubcommand::Uninstall(Uninstall::from_cli(cli)?)),
@@ -193,7 +193,7 @@ impl Command<Context> for OrbitSubcommand {
             OrbitSubcommand::Launch(c) => c.exec(context),
             OrbitSubcommand::Tree(c) => c.exec(context),
             OrbitSubcommand::Init(c) => c.exec(context),
-            OrbitSubcommand::Probe(c) => c.exec(context),
+            OrbitSubcommand::Show(c) => c.exec(context),
             OrbitSubcommand::Env(c) => c.exec(context),
             OrbitSubcommand::Config(c) => c.exec(context),
             OrbitSubcommand::Uninstall(c) => c.exec(context),
@@ -214,7 +214,7 @@ Usage:
 Commands:
     new             create a new ip
     init            initialize an ip from an existing project
-    probe           access information about an ip
+    show            print information about an ip
     read            inspect hdl design unit source code
     get             fetch an entity
     tree            view the dependency graph
@@ -246,7 +246,7 @@ Use 'orbit help <command>' for more information about a command.
     run             perform plan and build in same step
 
 
-alt names for `probe`: check, scan
+alt names for `probe`: -check-, -scan-, show
 */ 
 
 use crate::core::version;

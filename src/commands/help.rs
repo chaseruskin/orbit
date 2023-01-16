@@ -23,7 +23,7 @@ enum Topic {
     Search,
     Get,
     Init,
-    Probe,
+    Show,
     Env,
     Config,
     Uninstall,
@@ -45,7 +45,7 @@ impl std::str::FromStr for Topic {
             "tree" => Self::Tree,
             "get" => Self::Get,
             "init" => Self::Init,
-            "probe" => Self::Probe,
+            "show" => Self::Show,
             "config" => Self::Config,
             "uninstall" => Self::Uninstall,
             "read" => Self::Read,
@@ -60,7 +60,7 @@ impl Topic {
         use Topic::*;
         match &self {
             Env => manuals::env::MANUAL,
-            Probe => manuals::probe::MANUAL,
+            Show => manuals::probe::MANUAL,
             Get => manuals::get::MANUAL,
             Tree => manuals::tree::MANUAL,
             // Edit => manuals::edit::MANUAL,

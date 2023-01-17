@@ -190,13 +190,13 @@ fn format_version_table(table: &IpLevel, stored_path: Option<PathBuf>) -> String
 }
 
 const HELP: &str = "\
-Access information about an ip
+Print information about an ip.
 
 Usage:
-    orbit probe [options] <ip>
+    orbit show [options] <ip>
 
 Args:
-    <ip>               the pkgid to request data about
+    <ip>                        the pkgid to request data about
 
 Options:
     --versions                  display the list of possible versions
@@ -206,5 +206,5 @@ Options:
     --changes                   view the changelog
     --readme                    view the readme
 
-Use 'orbit help query' to learn more about the command.
+Use 'orbit help show' to learn more about the command.
 ";

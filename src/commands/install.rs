@@ -25,6 +25,7 @@ use crate::core::store::Store;
 use std::path::PathBuf;
 use crate::core::extgit::ExtGit;
 use crate::OrbitResult;
+use crate::util::filesystem::Standardize;
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
@@ -89,7 +90,7 @@ impl Command<Context> for Install {
         } else if let Some(path) = &self.path {
             // verify path exists
             if path.exists() == false {
-                return Err(AnyError(format!("path '{}' does not exist", filesystem::normalize_path(path.to_path_buf()).display())))?
+                return Err(AnyError(format!("path '{}' does not exist", PathBuf::standardize(path.to_path_buf()).display())))?
             }
             // copy to a temporary directory for installation
             let tmp = temp_dir.path();

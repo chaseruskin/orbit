@@ -1,4 +1,4 @@
-use crate::{core::manifest::Manifest, util::{anyerror::{Fault, AnyError}, filesystem::{normalize_path, self}}};
+use crate::{core::manifest::Manifest, util::{anyerror::{Fault, AnyError}, filesystem::{Standardize, self}}};
 use std::{path::PathBuf, str::FromStr};
 use super::{pkgid::PkgPart, config::FromToml, manifest::IpManifest, version::Version, hook::Hook, variable::{VariableTable}, template};
 use std::io::Write;
@@ -107,7 +107,7 @@ impl VendorManifest {
     fn wrap_toml<T, E: std::fmt::Display>(m: &Manifest, r: Result<T, E>) -> Result<T, impl std::error::Error> {
         match r {
             Ok(t) => Ok(t),
-            Err(e) => Err(AnyError(format!("vendor {}: {}", normalize_path(m.get_path().clone()).display(), e))),
+            Err(e) => Err(AnyError(format!("vendor {}: {}", PathBuf::standardize(m.get_path()).display(), e))),
         }
     }
 

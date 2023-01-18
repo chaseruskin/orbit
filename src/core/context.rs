@@ -10,7 +10,7 @@ use crate::util::anyerror::Fault;
 use crate::core::template::Template;
 use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
 use crate::util::filesystem;
-use crate::util::filesystem::normalize_path;
+use crate::util::filesystem::Standardize;
 use super::config::CONFIG_FILE;
 use super::pkgid::PkgPart;
 use super::vendor::VendorManifest;
@@ -130,7 +130,7 @@ impl Context {
             ep
         };
         // set the environment variable
-        env::set_var(key, &filesystem::normalize_path(dir.to_path_buf()));
+        env::set_var(key, &PathBuf::standardize(&dir));
         Ok(dir)
     }
 
@@ -200,7 +200,7 @@ impl Context {
             for tbl in arr_tbl {
                 let plug = match Plugin::from_toml(tbl) {
                     Ok(r) => r.set_root(&root), // resolve paths from that config file's parent directory
-                    Err(e) => return Err(AnyError(format!("configuration {}: plugin {}", normalize_path(root.join(CONFIG_FILE)).display(), e)))?
+                    Err(e) => return Err(AnyError(format!("configuration {}: plugin {}", PathBuf::standardize(root.join(CONFIG_FILE)).display(), e)))?
                 };
                 // will kick out previous values so last item in array has highest precedence
                 self.plugins.insert(plug.alias().to_owned(), plug);
@@ -222,7 +222,7 @@ impl Context {
             for tbl in arr_tbl {
                 let template = match Template::from_toml(tbl) {
                     Ok(r) => r.resolve_root_path(&root),
-                    Err(e) => return Err(AnyError(format!("configuration {}: template {}", normalize_path(root.join(CONFIG_FILE)).display(), e)))?
+                    Err(e) => return Err(AnyError(format!("configuration {}: template {}", PathBuf::standardize(root.join(CONFIG_FILE)).display(), e)))?
                 };
                 self.templates.insert(template.alias().to_owned(), template);
             }
@@ -248,7 +248,7 @@ impl Context {
                 // use current directory if the key-value pair is not there
                 let path = match self.get_config().get_as_str("core", "path")? {
                     // normalize
-                    Some(p) => crate::util::filesystem::normalize_path(PathBuf::from(p.to_owned())).to_str().unwrap().to_string(),
+                    Some(p) => PathBuf::standardize(p).to_str().unwrap().to_string(),
                     None => std::env::current_dir().unwrap().display().to_string(),
                 };
                 std::env::set_var(s, &path);

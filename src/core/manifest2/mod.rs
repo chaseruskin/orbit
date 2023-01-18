@@ -5,6 +5,7 @@ use std::{collections::HashMap, str::FromStr};
 use std::path::PathBuf;
 use std::fmt::Display;
 use super::pkgid::PkgPart;
+// use crate::util::url::Url;
 
 type Identifier = PkgPart;
 type Version = super::version::Version;
@@ -79,6 +80,7 @@ struct Package {
     name: Identifier,
     version: Version,
     library: Option<Identifier>,
+    /// Describes the URL for fetching the captured state's code (expects .ZIP file)
     source: Option<Source>,
 }
 
@@ -107,7 +109,7 @@ mod test {
             let man: Manifest = toml::from_str(EX1).unwrap();
     
             assert_eq!(man.ip.name, PkgPart::from_str("gates").unwrap());
-            assert_eq!(man.ip.source, None);
+            assert_eq!(man.ip.source, Some(String::from("https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip")));
             assert_eq!(man.dependencies.unwrap().len(), 1);
             assert_eq!(man.dev_dependencies.unwrap().len(), 2);
             assert_eq!(man.ip.library, Some(PkgPart::from_str("common").unwrap()));
@@ -135,6 +137,7 @@ const EX1: &str = r#"[ip]
 name = "gates"
 version = "0.1.0"
 library = "common"
+source = "https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip"
 
 [dependencies]
 some-package = "10.0.0"

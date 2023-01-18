@@ -13,7 +13,7 @@ use crate::util::sha256::{Sha256Hash, self};
 use crate::util::url::Url;
 use std::str::FromStr;
 use crate::core::version::Version;
-use crate::util::filesystem::{normalize_path, self, Unit};
+use crate::util::filesystem::{Standardize, Unit};
 
 use super::catalog::IpState;
 use super::config::{FromToml, FromTomlError};
@@ -736,7 +736,7 @@ impl IpManifest {
                 std::fs::remove_dir_all(&path)?;
             // error if directories exist
             } else if init == false {
-                return Err(Box::new(AnyError(format!("failed to create new ip because destination '{}' already exists; use {} to overwrite existing directory", filesystem::normalize_path(path).display(), "--force".yellow()))))
+                return Err(Box::new(AnyError(format!("failed to create new ip because destination '{}' already exists; use {} to overwrite existing directory", PathBuf::standardize(path).display(), "--force".yellow()))))
             }
         }
         // create all directories if the do not exist
@@ -881,7 +881,7 @@ impl IpManifest {
     fn wrap_toml<T, E: std::fmt::Display>(m: &Manifest, r: Result<T, E>) -> Result<T, impl std::error::Error> {
         match r {
             Ok(t) => Ok(t),
-            Err(e) => Err(AnyError(format!("manifest {}: {}", normalize_path(m.get_path().clone()).display(), e))),
+            Err(e) => Err(AnyError(format!("manifest {}: {}", PathBuf::standardize(m.get_path()).display(), e))),
         }
     }
 

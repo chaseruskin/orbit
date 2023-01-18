@@ -149,6 +149,8 @@ pub enum VhdlIdentifierError {
 
 impl std::error::Error for VhdlIdentifierError {}
 
+use filesystem::Standardize;
+
 impl std::fmt::Display for VhdlIdentifierError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -158,8 +160,8 @@ impl std::fmt::Display for VhdlIdentifierError {
                 let location_2 = filesystem::remove_base(&current_dir, &path2);
                 write!(f, "duplicate primary design units identified as '{}'\n\nlocation 1: {}{}\nlocation 2: {}{}\n\n{}", 
                     iden, 
-                    filesystem::normalize_path(location_1).display(), loc1, 
-                    filesystem::normalize_path(location_2).display(), loc2, 
+                    PathBuf::standardize(location_1).display(), loc1, 
+                    PathBuf::standardize(location_2).display(), loc2, 
                     HINT)
             },
             Self::DuplicateAcrossDirect(iden, dep, path, pos) => {
@@ -167,7 +169,7 @@ impl std::fmt::Display for VhdlIdentifierError {
                 let location = filesystem::remove_base(&current_dir, &path);
                 write!(f, "duplicate primary design units identified as '{}'\n\nlocation: {}{}\nconflicts with direct dependency {}\n\n{}", 
                 iden, 
-                filesystem::normalize_path(location).display(), pos,
+                PathBuf::standardize(location).display(), pos,
                 dep,
                 HINT_2)
             }

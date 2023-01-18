@@ -2,6 +2,7 @@ use crate::util::{anyerror::Fault, filesystem};
 use std::{path::PathBuf, collections::HashSet};
 use ignore;
 use ignore::overrides::OverrideBuilder;
+use crate::util::filesystem::Standardize;
 
 use super::{config::{FromToml, FromTomlError}, variable::VariableTable};
 
@@ -194,7 +195,7 @@ impl Template {
             .fold(String::new(), |x, y| { 
                 x + &format!("{:<46}{:<10}\n",
                 // pretty-print the filepath as relative with forward-slashes 
-                &filesystem::normalize_path(filesystem::remove_base(&root, &y)).display().to_string(),
+                &PathBuf::standardize(filesystem::remove_base(&root, &y)).display().to_string(),
                 // denote if the file was ignored or not
                 { if imports_set.contains(y) == false { "y" } else { "" }})
             });

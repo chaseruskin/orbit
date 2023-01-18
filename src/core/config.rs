@@ -1,7 +1,7 @@
 use colored::Colorize;
 use toml_edit::{Document, ArrayOfTables, Item, Array, Value, Table, Formatted};
 use std::{path::PathBuf, io::Write};
-use crate::util::{anyerror::{AnyError, Fault}, filesystem::normalize_path};
+use crate::util::{anyerror::{AnyError, Fault}, filesystem::Standardize};
 
 pub trait FromToml {
     type Err;
@@ -290,7 +290,7 @@ impl Config {
                     if eval(item) {
                        values.push((item, inc.get_root()));
                     } else {
-                        return Err(ConfigError::BadItem(format!("{}", normalize_path(self.get_root().join(CONFIG_FILE)).display()), 
+                        return Err(ConfigError::BadItem(format!("{}", PathBuf::standardize(self.get_root().join(CONFIG_FILE)).display()), 
                             item_name.to_owned(), format!("{}{}", { if table.is_some() { table.unwrap().to_string() + "." } else { "".to_string() } }, 
                             key.to_owned())))?
                     }
@@ -305,7 +305,7 @@ impl Config {
                 if eval(item) {
                    values.push((item, self.get_root()));
                 } else {
-                    return Err(ConfigError::BadItem(format!("{}", normalize_path(self.get_root().join(CONFIG_FILE)).display()), 
+                    return Err(ConfigError::BadItem(format!("{}", PathBuf::standardize(self.get_root().join(CONFIG_FILE)).display()), 
                         item_name.to_owned(), format!("{}{}", { if table.is_some() { table.unwrap().to_string() + "." } else { "".to_string() } }, 
                         key.to_owned())))?
                 }
@@ -320,7 +320,7 @@ impl Config {
                     if eval(item) {
                        values.push((item, cfg.get_root()));
                     } else {
-                        return Err(ConfigError::BadItem(format!("{}", normalize_path(self.get_root().join(CONFIG_FILE)).display()), 
+                        return Err(ConfigError::BadItem(format!("{}", PathBuf::standardize(self.get_root().join(CONFIG_FILE)).display()), 
                             item_name.to_owned(), format!("{}{}", { if table.is_some() { table.unwrap().to_string() + "." } else { "".to_string() } }, 
                             key.to_owned())))?
                     }

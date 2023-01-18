@@ -10,8 +10,9 @@ use crate::util::anyerror::AnyError;
 use std::io::Write;
 use std::path::PathBuf;
 use std::str::FromStr;
-use crate::util::filesystem;
 use crate::core::manifest2::Manifest;
+use crate::util::filesystem::Standardize;
+
 use std::borrow::Cow;
 
 use super::orbit::AnyResult;
@@ -77,7 +78,7 @@ impl Command<()> for New2 {
         // verify we are not already in an ip directory
         {
             // resolve any relative path
-            let dest = filesystem::normalize_path(self.path.clone());
+            let dest = PathBuf::standardize(self.path.clone());
             if let Some(p) = Context::find_ip_path(&dest) {
                 // @todo: write error
                 panic!("an ip already exists at path {:?}", p)

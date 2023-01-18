@@ -24,4 +24,7 @@ colored = "2"
 toml_edit = "0.14"
 fs_extra = "1.2"
 url = "2.2"
-git2 = "0.14"
+
+git2 = "0.14" # @todo: remove
+
+# ssh2 = "0.9.3" # @todo: integrate

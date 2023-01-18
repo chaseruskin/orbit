@@ -20,6 +20,7 @@ use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::sha256::compute_sha256;
+use crate::util::filesystem::Standardize;
 
 use super::edit::Edit;
 use super::edit::EditMode;
@@ -119,7 +120,7 @@ impl Read {
 
         match &self.mode {
             EditMode::Path => {
-                println!("{}", crate::util::filesystem::normalize_path(path).display());
+                println!("{}", PathBuf::standardize(path).display());
             },
             EditMode::Open => {
                 Edit::invoke(editor, &path)?;

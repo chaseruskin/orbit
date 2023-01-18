@@ -3,7 +3,7 @@ use std::error::Error;
 use crate::core::fileset::Fileset;
 use crate::core::config::FromToml;
 use crate::util::anyerror::{AnyError, Fault};
-use crate::util::filesystem;
+use crate::util::filesystem::Standardize;
 use super::config::FromTomlError;
 use super::context::Context;
 
@@ -99,7 +99,7 @@ filesets:
 {}{}{}", 
             self.alias,
             self.command, self.args.iter().fold(String::new(), |x, y| { x + "\"" + &y + "\" " }),
-            filesystem::normalize_path(self.root.as_ref().unwrap().to_path_buf()).display(),
+            PathBuf::standardize(self.root.as_ref().unwrap()).display(),
             { if self.filesets.is_empty() { String::from("    None\n") } else { self.filesets.iter().fold(String::new(), |x, y| { x + &format!("    {:<16}{}\n", y.get_name(), y.get_pattern())}) } },
             { if let Some(text) = &self.summary { format!("\n{}\n", text) } else { String::new() } },
             { if let Some(text) = &self.details { format!("\n{}", text) } else { String::new() } },

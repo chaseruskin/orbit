@@ -18,6 +18,8 @@ use crate::OrbitResult;
 use std::path::PathBuf;
 use crate::util::anyerror::AnyError;
 use crate::core::template::Template;
+use crate::util::filesystem::Standardize;
+
 
 
 #[derive(Debug, PartialEq)]
@@ -92,7 +94,7 @@ impl Command<Context> for New {
 
             // fail is destination already exists and not forcing
             if dest.exists() == true && self.force == false {
-                return Err(AnyError(format!("destination {} already exists; use '{}' to overwrite", filesystem::normalize_path(PathBuf::from(self.to.as_ref().unwrap())).display(), "--force".yellow())))?
+                return Err(AnyError(format!("destination {} already exists; use '{}' to overwrite", PathBuf::standardize(PathBuf::from(self.to.as_ref().unwrap())).display(), "--force".yellow())))?
             }
        
             let ip = IpManifest::from_path(&std::env::current_dir().unwrap())?;
@@ -155,7 +157,7 @@ impl New {
                     let src = PathBuf::from(tplate.path()).join(&p);
 
                     if src.exists() == false {
-                        return Err(AnyError(format!("relative file path '{0}' does not exist in template '{1}'\n\nTry `orbit new --file --template {1} --list` to see available files", filesystem::normalize_path(p.to_path_buf()).display(), template.unwrap().alias())))?
+                        return Err(AnyError(format!("relative file path '{0}' does not exist in template '{1}'\n\nTry `orbit new --file --template {1} --list` to see available files", PathBuf::standardize(p.to_path_buf()).display(), template.unwrap().alias())))?
                     }
                     // create all missing directories on destination side
                     if let Some(parent) = dest.parent() {
@@ -211,10 +213,10 @@ impl New {
         // verify the from path works out
         if let Some(src) = &self.from {
             if src.exists() == false {
-                return Err(AnyError(format!("source path {} does not exist", filesystem::normalize_path(src.to_path_buf()).display())))?
+                return Err(AnyError(format!("source path {} does not exist", PathBuf::standardize(src.to_path_buf()).display())))?
             }
             if src.is_dir() == false {
-                return Err(AnyError(format!("source path {} is not a directory", filesystem::normalize_path(src.to_path_buf()).display())))?
+                return Err(AnyError(format!("source path {} is not a directory", PathBuf::standardize(src.to_path_buf()).display())))?
             }
         }
 

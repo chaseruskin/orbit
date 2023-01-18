@@ -85,7 +85,7 @@ pub fn resolve_rel_path(root: &std::path::PathBuf, s: &str) -> String {
     if std::path::Path::exists(&resolved_path) == true {
         if PathBuf::from(&s).is_relative() == true {
             // write out full path
-            normalize_path(rel_path).display().to_string()
+            PathBuf::standardize(rel_path).display().to_string()
         } else {
             s.to_string()
         }
@@ -188,67 +188,76 @@ pub fn to_absolute(p: PathBuf) -> Result<PathBuf, Fault> {
         .collect())
 }
 
-/// This function resolves common filesystem standards into a standardized path format.
-/// 
-/// It expands leading '~' to be the user's home directory, or expands leading '.' to the
-/// current directory. It also handles back-tracking '..' and intermediate current directory '.'
-/// notations.
-/// 
-/// This function is mainly used for display purposes back to the user and is not safe to use
-/// for converting filepaths within logic.
-pub fn normalize_path(p: PathBuf) -> PathBuf {
-    // break the path into parts
-    let mut parts = p.components();
-
-    let c_str = |cmp: Component| {
-        match cmp {
-            Component::RootDir => String::new(),
-            _ => String::from(cmp.as_os_str().to_str().unwrap()),
-        }
-    };
-
-    let mut result = Vec::<String>::new();
-    // check first part for home path '~', absolute path, or other (relative path '.'/None)
-    if let Some(root) = parts.next() {
-        if root.as_os_str() == OsStr::new("~") {
-            match home_dir() {
-                Some(home) => for part in home.components() { result.push(c_str(part)) }
-                None => result.push(String::from(root.as_os_str().to_str().unwrap())),
-            }
-        } else if root == Component::RootDir {
-            result.push(String::from(root.as_os_str().to_str().unwrap()))
-        } else {
-            for part in std::env::current_dir().unwrap().components() { result.push(c_str(part)) }
-            match root.as_os_str().to_str().unwrap() {
-                "." => (),
-                ".." => { result.pop(); () },
-                _ => result.push(String::from(root.as_os_str().to_str().unwrap()))
-            }
-        }
-    }
-    // push user-defined path (remaining components)
-    while let Some(part) = parts.next() {
-        match part.as_os_str().to_str().unwrap() {
-            // do nothing; remain in the same directory
-            "." => (),
-            // pop if using a '..'
-            ".." => { result.pop(); () },
-            // push all other components
-             _ => { result.push(c_str(part)) },
-        }        
-    }
-    // assemble new path
-    let mut first = true;
-    PathBuf::from(result.into_iter().fold(String::new(), |x, y|
-        if first == true { 
-            first = false; 
-            x + &y 
-        } else { 
-            x + "/" + &y 
-        }
-    ).replace("\\", "/").replace("//", "/"))
-    // @todo: add some fail-safe where if the final path does not exist then return the original path?
+pub trait Standardize {
+    fn standardize<T>(_: T) -> Self where T: Into<Self>, Self: Sized;
 }
+
+impl Standardize for PathBuf {
+    /// This function resolves common filesystem standards into a standardized path format.
+    /// 
+    /// It expands leading '~' to be the user's home directory, or expands leading '.' to the
+    /// current directory. It also handles back-tracking '..' and intermediate current directory '.'
+    /// notations.
+    /// 
+    /// This function is mainly used for display purposes back to the user and is not safe to use
+    /// for converting filepaths within logic.
+    fn standardize<T>(p: T) -> PathBuf where T: Into<PathBuf> {
+        let p: PathBuf = p.into();
+        // break the path into parts
+        let mut parts = p.components();
+
+        let c_str = |cmp: Component| {
+            match cmp {
+                Component::RootDir => String::new(),
+                _ => String::from(cmp.as_os_str().to_str().unwrap()),
+            }
+        };
+
+        let mut result = Vec::<String>::new();
+        // check first part for home path '~', absolute path, or other (relative path '.'/None)
+        if let Some(root) = parts.next() {
+            if root.as_os_str() == OsStr::new("~") {
+                match home_dir() {
+                    Some(home) => for part in home.components() { result.push(c_str(part)) }
+                    None => result.push(String::from(root.as_os_str().to_str().unwrap())),
+                }
+            } else if root == Component::RootDir {
+                result.push(String::from(root.as_os_str().to_str().unwrap()))
+            } else {
+                for part in std::env::current_dir().unwrap().components() { result.push(c_str(part)) }
+                match root.as_os_str().to_str().unwrap() {
+                    "." => (),
+                    ".." => { result.pop(); () },
+                    _ => result.push(String::from(root.as_os_str().to_str().unwrap()))
+                }
+            }
+        }
+        // push user-defined path (remaining components)
+        while let Some(part) = parts.next() {
+            match part.as_os_str().to_str().unwrap() {
+                // do nothing; remain in the same directory
+                "." => (),
+                // pop if using a '..'
+                ".." => { result.pop(); () },
+                // push all other components
+                _ => { result.push(c_str(part)) },
+            }        
+        }
+        // assemble new path
+        let mut first = true;
+        PathBuf::from(result.into_iter().fold(String::new(), |x, y|
+            if first == true { 
+                first = false; 
+                x + &y 
+            } else { 
+                x + "/" + &y 
+            }
+        ).replace("\\", "/").replace("//", "/"))
+        // @todo: add some fail-safe where if the final path does not exist then return the original path?
+    }
+}
+
+
 
 /// Executes the process invoking the `cmd` with the following `args`.
 /// 
@@ -288,7 +297,7 @@ mod test {
     fn resolve_path_simple() {
         let rel_root = std::env::current_dir().unwrap();
         // expands relative path to full path
-        assert_eq!(resolve_rel_path(&rel_root, "src/lib.rs"), normalize_path(PathBuf::from("./src/lib.rs")).display().to_string());
+        assert_eq!(resolve_rel_path(&rel_root, "src/lib.rs"), PathBuf::standardize("./src/lib.rs").display().to_string());
         // no file or directory named 'orbit' at the relative root
         assert_eq!(resolve_rel_path(&rel_root, "orbit"), String::from("orbit"));
         // not relative
@@ -298,16 +307,16 @@ mod test {
     #[test]
     fn normalize() {
         let p = PathBuf::from("~/.orbit/plugins/a.txt");
-        assert_eq!(normalize_path(p), PathBuf::from(home_dir().unwrap().join(".orbit/plugins/a.txt").to_str().unwrap().replace("\\", "/")));
+        assert_eq!(PathBuf::standardize(p), PathBuf::from(home_dir().unwrap().join(".orbit/plugins/a.txt").to_str().unwrap().replace("\\", "/")));
 
         let p = PathBuf::from("home/.././b.txt");
-        assert_eq!(normalize_path(p), PathBuf::from(std::env::current_dir().unwrap().join("b.txt").to_str().unwrap().replace("\\", "/")));
+        assert_eq!(PathBuf::standardize(p), PathBuf::from(std::env::current_dir().unwrap().join("b.txt").to_str().unwrap().replace("\\", "/")));
 
         let p = PathBuf::from("/home\\c.txt");
-        assert_eq!(normalize_path(p), PathBuf::from("/home/c.txt"));
+        assert_eq!(PathBuf::standardize(p), PathBuf::from("/home/c.txt"));
 
         let p = PathBuf::from("./d.txt");
-        assert_eq!(normalize_path(p), PathBuf::from(std::env::current_dir().unwrap().join("d.txt").to_str().unwrap().replace("\\", "/")));
+        assert_eq!(PathBuf::standardize(p), PathBuf::from(std::env::current_dir().unwrap().join("d.txt").to_str().unwrap().replace("\\", "/")));
     }
 
     #[test]

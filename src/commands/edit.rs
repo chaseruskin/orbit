@@ -13,6 +13,7 @@ use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::core::pkgid::PkgId;
 use crate::util::anyerror::AnyError;
+use crate::util::filesystem::Standardize;
 
 
 #[derive(Debug, PartialEq)]
@@ -64,7 +65,7 @@ impl Command<Context> for Edit {
             let config_path = c.get_config().get_root().join(CONFIG_FILE);
             return match &self.mode {
                 EditMode::Open => Edit::invoke(&sel_editor, &config_path),
-                EditMode::Path => { println!("{}", crate::util::filesystem::normalize_path(config_path).display()); Ok(()) }
+                EditMode::Path => { println!("{}", PathBuf::standardize(config_path).display()); Ok(()) }
             }
         // open an ip
         } else if self.ip.is_some() == true {
@@ -143,7 +144,7 @@ impl Edit {
                 Self::invoke(editor, &ip.get_root())
             }
             EditMode::Path => {
-                println!("{}", crate::util::filesystem::normalize_path(ip.get_root()).display());
+                println!("{}", PathBuf::standardize(ip.get_root()).display());
                 Ok(())
             }
         }

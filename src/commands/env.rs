@@ -11,7 +11,7 @@ use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
 use crate::util::environment::ORBIT_BLUEPRINT;
 use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
-use crate::util::filesystem;
+use crate::util::filesystem::Standardize;
 use crate::OrbitResult;
 use super::plan::BLUEPRINT_FILE;
 
@@ -42,12 +42,12 @@ impl Command<Context> for Env {
         // assemble environment information
         let mut env = Environment::from_vec(vec![
             // @todo: context should own an `Environment` struct instead of this data transformation
-            EnvVar::new().key(environment::ORBIT_HOME).value(filesystem::normalize_path(c.get_home_path().clone()).to_str().unwrap()),
-            EnvVar::new().key(environment::ORBIT_CACHE).value(filesystem::normalize_path(c.get_cache_path().to_path_buf()).to_str().unwrap()),
+            EnvVar::new().key(environment::ORBIT_HOME).value(PathBuf::standardize(c.get_home_path()).to_str().unwrap()),
+            EnvVar::new().key(environment::ORBIT_CACHE).value(PathBuf::standardize(c.get_cache_path()).to_str().unwrap()),
             EnvVar::new().key(environment::ORBIT_BUILD_DIR).value(c.get_build_dir()),
             // EnvVar::new().key(environment::ORBIT_DEV_PATH).value(filesystem::normalize_path(c.get_development_path().unwrap_or(&PathBuf::new()).clone()).to_str().unwrap()),
-            EnvVar::new().key(environment::ORBIT_IP_PATH).value(filesystem::normalize_path(c.get_ip_path().unwrap_or(&PathBuf::new()).clone()).to_str().unwrap()),
-            EnvVar::new().key(environment::ORBIT_STORE).value(filesystem::normalize_path(c.get_store_path().clone()).to_str().unwrap()),
+            EnvVar::new().key(environment::ORBIT_IP_PATH).value(PathBuf::standardize(c.get_ip_path().unwrap_or(&PathBuf::new())).to_str().unwrap()),
+            EnvVar::new().key(environment::ORBIT_STORE).value(PathBuf::standardize(c.get_store_path()).to_str().unwrap()),
             EnvVar::new().key("EDITOR").value(&std::env::var("EDITOR").unwrap_or(String::new())),
             EnvVar::new().key("NO_COLOR").value(&std::env::var("NO_COLOR").unwrap_or(String::new())),
             ])

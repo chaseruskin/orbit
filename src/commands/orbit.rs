@@ -94,8 +94,8 @@ impl FromCli for Orbit {
 }
 
 use crate::commands::help::Help;
-use crate::commands::new2::New2;
-use crate::commands::init2::Init2;
+use crate::commands::v2::new::New;
+use crate::commands::v2::init::Init;
 use crate::commands::search::Search;
 use crate::commands::plan::Plan;
 use crate::commands::build::Build;
@@ -103,7 +103,7 @@ use crate::commands::launch::Launch;
 use crate::commands::install::Install;
 use crate::commands::tree::Tree;
 use crate::commands::get::Get;
-use crate::commands::show::Show;
+use crate::commands::v2::show::Show;
 use crate::commands::env::Env;
 use crate::commands::config::Config;
 use crate::commands::uninstall::Uninstall;
@@ -112,7 +112,7 @@ use crate::commands::read::Read;
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
     Help(Help),
-    New(New2),
+    New(New),
     Search(Search),
     Plan(Plan),
     Build(Build),
@@ -120,7 +120,7 @@ enum OrbitSubcommand {
     Install(Install),
     Tree(Tree),
     Get(Get),
-    Init(Init2),
+    Init(Init),
     Show(Show),
     Env(Env),
     Config(Config),
@@ -151,11 +151,11 @@ impl FromCli for OrbitSubcommand {
         ])?.as_ref() {
             "get" => Ok(OrbitSubcommand::Get(Get::from_cli(cli)?)),
             "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
-            "new" => Ok(OrbitSubcommand::New(New2::from_cli(cli)?)),
+            "new" => Ok(OrbitSubcommand::New(New::from_cli(cli)?)),
             "search" => Ok(OrbitSubcommand::Search(Search::from_cli(cli)?)),
       "p" | "plan" => Ok(OrbitSubcommand::Plan(Plan::from_cli(cli)?)),
       "b" | "build" => Ok(OrbitSubcommand::Build(Build::from_cli(cli)?)),
-            "init" => Ok(OrbitSubcommand::Init(Init2::from_cli(cli)?)),
+            "init" => Ok(OrbitSubcommand::Init(Init::from_cli(cli)?)),
             "launch" => Ok(OrbitSubcommand::Launch(Launch::from_cli(cli)?)),
             "install" => Ok(OrbitSubcommand::Install(Install::from_cli(cli)?)),
             "tree" => Ok(OrbitSubcommand::Tree(Tree::from_cli(cli)?)),

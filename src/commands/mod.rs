@@ -1,9 +1,7 @@
 pub mod orbit;
 mod help;
 mod new;
-mod new2;
 mod init;
-mod init2;
 mod manuals;
 mod search;
 mod plan;
@@ -18,3 +16,4 @@ mod env;
 mod config;
 mod read;
 mod uninstall;
+mod v2;

@@ -7,13 +7,23 @@ use std::fmt::Display;
 use super::pkgid::PkgPart;
 // use crate::util::url::Url;
 
-type Identifier = PkgPart;
+type Id = PkgPart;
 type Version = super::version::Version;
 type Source = String;
 
+use crate::core::lang::vhdl::primaryunit::PrimaryUnit;
+use crate::core::lang::vhdl::token::Identifier;
+use crate::util::anyerror::Fault;
+use toml_edit::Document;
 
 type Deps = Option<Dependencies>;
 type DevDeps = Option<Dependencies>;
+
+pub const IP_MANIFEST_FILE: &str = "Orbit.toml";
+pub const IP_MANIFEST_PATTERN_FILE : &str = "Orbit-*.toml";
+const DEPENDENCIES_KEY: &str = "dependencies";
+pub const ORBIT_SUM_FILE: &str = ".orbit-checksum";
+pub const ORBIT_METADATA_FILE: &str = ".orbit-metadata";
 
 #[derive(Deserialize, Serialize)]
 pub struct Manifest {
@@ -43,7 +53,7 @@ impl FromStr for Manifest {
 
 impl Manifest {
     /// Creates data for a new [Manifest].
-    pub fn new(name: Identifier) -> Self {
+    pub fn new(name: Id) -> Self {
         Self {
             ip: Package {
                 name: name,
@@ -57,7 +67,7 @@ impl Manifest {
     }
 
     /// Composes a [String] to write to a clean manifest file.
-    pub fn write_empty_manifest(name: &Identifier) -> String {
+    pub fn write_empty_manifest(name: &Id) -> String {
         format!(r#"[ip]
 name = "{}"
 version = "0.1.0"
@@ -66,6 +76,46 @@ version = "0.1.0"
 
 [dependencies]
 "#, name)
+    }
+
+    /// Gathers the list of primary design units for the current ip.
+    /// 
+    /// If the manifest has an toml entry for `units` and `force` is set to `false`, 
+    /// then it will return that list rather than go through files.
+    pub fn collect_units(force: bool, dir: &PathBuf) -> Result<HashMap<Identifier, PrimaryUnit>, Fault> {
+        // try to read from metadata file
+        match (force == false) && Self::read_units_from_metadata(&dir).is_some() {
+            // use precomputed result
+            true => Ok(Self::read_units_from_metadata(&dir).unwrap()),
+            false => {
+                // collect all files
+                let files = crate::util::filesystem::gather_current_files(&dir);
+                Ok(crate::core::lang::vhdl::primaryunit::collect_units(&files)?)
+            }
+        }
+    }
+
+    pub fn read_units_from_metadata(dir: &PathBuf) -> Option<HashMap<Identifier, PrimaryUnit>> {
+        let meta_file = dir.join(ORBIT_METADATA_FILE);
+        if std::path::Path::exists(&meta_file) == true {
+            if let Ok(contents) = std::fs::read_to_string(&meta_file) {
+                if let Ok(toml) = contents.parse::<Document>() {
+                    let entry = toml.get("ip")?.as_table()?.get("units")?.as_array()?;
+                    let mut map = HashMap::new();
+                    for unit in entry {
+                        let pdu = PrimaryUnit::from_toml(unit.as_inline_table()?)?;
+                        map.insert(pdu.get_iden().clone(), pdu);
+                    }
+                    Some(map)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 }
 
@@ -77,14 +127,14 @@ impl Display for Manifest {
 
 #[derive(Deserialize, Serialize)]
 struct Package {
-    name: Identifier,
+    name: Id,
     version: Version,
-    library: Option<Identifier>,
+    library: Option<Id>,
     /// Describes the URL for fetching the captured state's code (expects .ZIP file)
     source: Option<Source>,
 }
 
-type Dependencies = HashMap<Identifier, Version>;
+type Dependencies = HashMap<Id, Version>;
 
 #[cfg(test)]
 mod test {

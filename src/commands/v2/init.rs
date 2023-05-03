@@ -10,17 +10,17 @@ use crate::util::filesystem::Standardize;
 use std::path::PathBuf;
 use std::io::Write;
 use crate::core::manifest2::Manifest;
-use super::orbit::AnyResult;
-use super::new2::New2;
+use super::super::orbit::AnyResult;
+use super::new::New;
 
 #[derive(Debug, PartialEq)]
-pub struct Init2 {
+pub struct Init {
     force: bool,
     path: PathBuf,
     name: Option<PkgPart>,
 }
 
-impl FromCli for Init2 {
+impl FromCli for Init {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Self {
@@ -32,7 +32,7 @@ impl FromCli for Init2 {
     }
 }
 
-impl Command<Context> for Init2 {
+impl Command<Context> for Init {
     type Status = OrbitResult;
 
     fn exec(&self, _c: &Context) -> Self::Status {
@@ -51,13 +51,13 @@ impl Command<Context> for Init2 {
             }
         }
 
-        let ip_name = New2::extract_name(self.name.as_ref(), &dest)?;
+        let ip_name = New::extract_name(self.name.as_ref(), &dest)?;
 
         self.create_ip(&ip_name)
     }
 }
 
-impl Init2 {
+impl Init {
 
     /// Initializes a project at an exising path.
     fn create_ip(&self, ip: &PkgPart) -> AnyResult<()> {

@@ -10,7 +10,7 @@ use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
-use crate::core::manifest2::Manifest;
+use crate::core::v2::manifest::Manifest;
 
 #[derive(Debug, PartialEq)]
 pub struct Show {

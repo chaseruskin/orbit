@@ -3,10 +3,10 @@ use std::path::PathBuf;
 
 use colored::Colorize;
 use clif::cmd::{FromCli, Command};
-use crate::core::manifest2::FromFile;
+use crate::core::v2::manifest::FromFile;
 use crate::core::lang::parser::Symbol;
-use crate::core::manifest2::IP_MANIFEST_FILE;
-use crate::core::manifest2::Manifest;
+use crate::core::v2::manifest::IP_MANIFEST_FILE;
+use crate::core::v2::manifest::Manifest;
 use crate::core::version::AnyVersion;
 use crate::core::version::Version;
 use crate::core::lang::vhdl::interface;

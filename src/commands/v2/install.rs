@@ -9,3 +9,10 @@
 //! 5. Compute checksum on entire directory
 //! 6. Zip contents and store in "store" for future re-installation
 //! 7. Place artifact directory in "cache" for catalog lookup
+//! 
+//! One issue that remains is how to retrieve packages from online automatically.
+//! 
+//! The download process:
+//!     - write a lockfile
+//! 
+//! 

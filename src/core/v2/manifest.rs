@@ -4,11 +4,11 @@ use serde_derive::{Deserialize, Serialize};
 use std::{collections::HashMap, str::FromStr};
 use std::path::PathBuf;
 use std::fmt::Display;
-use super::pkgid::PkgPart;
+use crate::core::pkgid::PkgPart;
 // use crate::util::url::Url;
 
 type Id = PkgPart;
-type Version = super::version::Version;
+type Version = crate::core::version::Version;
 type Source = String;
 
 use crate::core::lang::vhdl::primaryunit::PrimaryUnit;

@@ -9,7 +9,7 @@ use crate::OrbitResult;
 use crate::util::filesystem::Standardize;
 use std::path::PathBuf;
 use std::io::Write;
-use crate::core::manifest2::Manifest;
+use crate::core::v2::manifest::Manifest;
 use super::super::orbit::AnyResult;
 use super::new::New;
 

@@ -10,7 +10,7 @@ use crate::util::anyerror::AnyError;
 use std::io::Write;
 use std::path::PathBuf;
 use std::str::FromStr;
-use crate::core::manifest2::Manifest;
+use crate::core::v2::manifest::Manifest;
 use crate::util::filesystem::Standardize;
 
 use std::borrow::Cow;

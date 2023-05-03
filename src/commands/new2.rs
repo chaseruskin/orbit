@@ -46,7 +46,7 @@ impl FromCli for New2 {
 impl New2 {
     /// Determines the final name to use for the ip based on the given `name` and falls back
     /// to the `path`'s file name if not `name` is given.
-    fn extract_name<'a>(name: Option<&'a PkgPart>, path: &PathBuf) -> AnyResult<Cow<'a, PkgPart>> {
+    pub fn extract_name<'a>(name: Option<&'a PkgPart>, path: &PathBuf) -> AnyResult<Cow<'a, PkgPart>> {
         match name {
             Some(n) => {
                 Ok(Cow::Borrowed(n))
@@ -91,10 +91,8 @@ impl Command<()> for New2 {
             // 1. if the manifest already exists at this directory
             // 2. if no manifest already exists at this directory 
             // @todo: write error
-            panic!("destination {:?} already exists, use `orbit init` to initialize directory", self.path)
+            panic!("destination {:?} already exists, use `orbit init` to initialize directory", PathBuf::standardize(self.path.clone()))
         }
-
-
 
         let ip_name = Self::extract_name(self.name.as_ref(), &self.path)?;
 

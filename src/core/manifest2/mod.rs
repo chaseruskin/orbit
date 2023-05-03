@@ -33,7 +33,7 @@ pub struct Manifest {
     dev_dependencies: DevDeps,
 }
 
-trait FromFile: FromStr where Self: Sized, <Self as std::str::FromStr>::Err: 'static + std::error::Error {
+pub trait FromFile: FromStr where Self: Sized, <Self as std::str::FromStr>::Err: 'static + std::error::Error {
     fn from_file(path: &PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
         // try to open the file in read-only mode
         let text = std::fs::read_to_string(&path)?;
@@ -117,6 +117,10 @@ version = "0.1.0"
             None
         }
     }
+
+    pub fn get_ip(&self) -> &Package {
+        &self.ip
+    }
 }
 
 impl Display for Manifest {
@@ -126,12 +130,26 @@ impl Display for Manifest {
 }
 
 #[derive(Deserialize, Serialize)]
-struct Package {
+pub struct Package {
     name: Id,
     version: Version,
     library: Option<Id>,
     /// Describes the URL for fetching the captured state's code (expects .ZIP file)
     source: Option<Source>,
+}
+
+impl Package {
+    pub fn get_name(&self) -> &Id {
+        &self.name
+    }
+
+    pub fn get_version(&self) -> &Version {
+        &self.version
+    }
+
+    pub fn get_library(&self) -> &Option<Id> {
+        &self.library
+    }
 }
 
 type Dependencies = HashMap<Id, Version>;

@@ -50,7 +50,6 @@ impl Command<Context> for Show {
             todo!("find ip {} in the catalog", name)
         } else {
             let ip = Context::find_ip_path(&current_dir().unwrap());  
-
             if ip.is_none() == true {
                 return Err(AnyError(format!("no ip provided or detected")))?
             } else {
@@ -60,7 +59,6 @@ impl Command<Context> for Show {
 
         // load the ip's manifest 
 
-        // 
         if self.units == true {
             // force computing the primary design units if a development version
             let units = Manifest::collect_units(true, &ip_path)?;

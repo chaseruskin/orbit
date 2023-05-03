@@ -8,6 +8,8 @@ Orbit is the package manager for Hardware Description Languages (HDL).
   
 Orbit provides a complete frontend package management solution to HDL projects, while allowing users to implement custom backend workflows through the design of a plugin system. Orbit provides commands for every stage of the development cycle, in areas such as exploration, integration, and automation.
 
+> __Note:__ The latest development is occurring on the `next` branch.
+
 ## Installing
 
 Orbit is pre-built through GitHub Actions for 64-bit macOs, Windows, and Ubuntu. See the [releases](https://github.com/c-rus/orbit/releases) page to grab the latest release, or you can build with source through `cargo`. See the full installation instructions for complete details [here](https://c-rus.github.io/orbit/1_starting/1_installing.html).

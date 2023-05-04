@@ -512,7 +512,7 @@ impl IpManifest {
             true => Ok(self.read_units_from_metadata().unwrap()),
             false => {
                 // collect all files
-                let files = crate::util::filesystem::gather_current_files(&self.get_manifest().get_path().parent().unwrap().to_path_buf());
+                let files = crate::util::filesystem::gather_current_files(&self.get_manifest().get_path().parent().unwrap().to_path_buf(), false);
                 Ok(crate::core::lang::vhdl::primaryunit::collect_units(&files)?)
             }
         }
@@ -573,8 +573,8 @@ impl IpManifest {
     pub fn compute_checksum(&self) -> Sha256Hash {
         let cd = std::env::current_dir().unwrap();
         std::env::set_current_dir(&self.get_root()).unwrap();
-        let ip_files = crate::util::filesystem::gather_current_files(&PathBuf::from("."));
-        let checksum = crate::util::checksum::checksum(&ip_files);
+        let ip_files = crate::util::filesystem::gather_current_files(&PathBuf::from("."), false);
+        let checksum = crate::util::checksum::checksum(&ip_files, &std::env::current_dir().unwrap());
         std::env::set_current_dir(&cd).unwrap();
         checksum
     }

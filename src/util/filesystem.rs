@@ -15,11 +15,14 @@ use super::anyerror::Fault;
 /// Returns the resulting list of filepath strings. This function silently skips result errors
 /// while walking. The collected set of paths are also standardized to use forward slashes '/'.
 /// 
+/// Setting `strip_base` to `true` will remove the overlapping `path` components from the
+/// final [String] entries in the resulting vector.
+/// 
 /// Ignores ORBIT_SUM_FILE, .git directory, ORBIT_METADATA_FILE, and IP_LOCK_FILE.
-pub fn gather_current_files(path: &std::path::PathBuf) -> Vec<String> {
+pub fn gather_current_files(path: &PathBuf, strip_base: bool) -> Vec<String> {
     let m = WalkBuilder::new(path)
         .hidden(false)
-        .git_ignore(true)
+        .git_ignore(true) // @note: remove because no git dep?
         .add_custom_ignore_filename(ORBIT_IGNORE_FILE)
         .filter_entry(|p| {
             match p.file_name().to_str().unwrap() {
@@ -32,8 +35,11 @@ pub fn gather_current_files(path: &std::path::PathBuf) -> Vec<String> {
         match result {
             Ok(entry) => {
                 if entry.path().is_file() {
-                    // replace backslash \ with single forward slash /
-                    Some(entry.into_path().display().to_string().replace(r"\", "/"))
+                    // perform standardization
+                    Some(into_std_str(match strip_base {
+                        true => remove_base(&path, &entry.into_path()),
+                        false => entry.into_path(),
+                    }))
                 } else {
                     None
                 }
@@ -41,9 +47,18 @@ pub fn gather_current_files(path: &std::path::PathBuf) -> Vec<String> {
             Err(_) => None,
         }
     }).collect();
-    // sort the fileset for reproductibility purposes
+    // sort the fileset for reproducibility purposes
     files.sort();
     files
+}
+
+/// Replaces '\' characters with single '/' character and converts the [PathBuf] into a [String].
+pub fn into_std_str(path: PathBuf) -> String {
+    let mut s = path.display().to_string().replace(r"\", "/");
+    if s.ends_with("/") == true {
+        s.pop().unwrap();
+    }
+    s
 }
 
 pub enum Unit {
@@ -117,6 +132,7 @@ pub fn remove_base(base: &PathBuf, full: &PathBuf) -> PathBuf {
             None => break PathBuf::new()
         }
     };
+
     // append remaining components
     result.join(f_comps.as_path())
 }
@@ -295,13 +311,12 @@ mod test {
     
     #[test]
     fn resolve_path_simple() {
-        let rel_root = std::env::current_dir().unwrap();
         // expands relative path to full path
-        assert_eq!(resolve_rel_path(&rel_root, "src/lib.rs"), PathBuf::standardize("./src/lib.rs").display().to_string());
+        assert_eq!(resolve_rel_path(&PathBuf::from(env!("CARGO_MANIFEST_DIR")), "src/lib.rs"), PathBuf::standardize("./src/lib.rs").display().to_string());
         // no file or directory named 'orbit' at the relative root
-        assert_eq!(resolve_rel_path(&rel_root, "orbit"), String::from("orbit"));
+        assert_eq!(resolve_rel_path(&PathBuf::from(env!("CARGO_MANIFEST_DIR")), "orbit"), String::from("orbit"));
         // not relative
-        assert_eq!(resolve_rel_path(&rel_root, "/src"), String::from("/src"));
+        assert_eq!(resolve_rel_path(&PathBuf::from(env!("CARGO_MANIFEST_DIR")), "/src"), String::from("/src"));
     }
 
     #[test]
@@ -332,6 +347,10 @@ mod test {
         let base = PathBuf::from("");
         let full = PathBuf::from("c:/users/kepler/projects/");
         assert_eq!(remove_base(&base, &full), PathBuf::from("c:/users/kepler/projects/"));
+
+        let base = PathBuf::from("./tests/env/");
+        let full = PathBuf::from("./tests/env/Orbit.toml");
+        assert_eq!(remove_base(&base, &full), PathBuf::from("Orbit.toml"));
     }
 
     #[test]

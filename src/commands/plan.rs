@@ -579,7 +579,7 @@ impl Plan {
 
         // [!] collect user-defined filesets
         {
-            let current_files: Vec<String> = crate::util::filesystem::gather_current_files(&std::env::current_dir().unwrap());
+            let current_files: Vec<String> = crate::util::filesystem::gather_current_files(&std::env::current_dir().unwrap(), false);
 
             let mut vtable = VariableTable::new();
             // variables could potentially store empty strings if units are not set

@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use crate::util::sha256;
 
 /// Given a list of files, compute a single sha256 digest to encapsulate the
@@ -8,7 +9,7 @@ use crate::util::sha256;
 /// files by removing \r carriage return bytes from windows system file reads.
 /// This function also skips binary files (not intended for reading) by detecting
 /// if a NUL character appears in the byte vector.
-pub fn checksum(files: &[String]) -> sha256::Sha256Hash {
+pub fn checksum(files: &[String], root: &PathBuf) -> sha256::Sha256Hash {
     // determine the amount of bytes required
     let total_hashes = files.len() + 1;
     let mut total_bytes = Vec::<u8>::with_capacity(total_hashes*32);
@@ -19,7 +20,7 @@ pub fn checksum(files: &[String]) -> sha256::Sha256Hash {
     // perform a hash on contents
     for file in files {
         bytes.clear();
-        bytes.append(&mut std::fs::read(&file).expect("failed to read as bytes"));
+        bytes.append(&mut std::fs::read(&root.join(file)).expect("failed to read as bytes"));
         // detect and skip binary-encoded files (.pdf, .jpg, etc.) by reading NUL char
         if bytes.contains(&0x00) == true { continue; }
         // @NOTE windows uses \r\n for newlines, compared to unix systems using just \n
@@ -36,6 +37,8 @@ pub fn checksum(files: &[String]) -> sha256::Sha256Hash {
 
 #[cfg(test)]
 mod test {
+    use std::env::set_current_dir;
+
     use super::*;
 
     #[test]
@@ -46,7 +49,7 @@ mod test {
             "tests/data/poems/file2.txt".to_owned(),
             "tests/data/poems/file3.txt".to_owned(),
         ];
-        let sum1 = checksum(&files);
+        let sum1 = checksum(&files, &PathBuf::from(env!("CARGO_MANIFEST_DIR")));
         assert_eq!(sum1, sha256::Sha256Hash::from_u32s([263520108, 973180588, 
             567942332, 953355145, 2993392414, 360249387, 2698084451, 2514969393]));
 
@@ -57,14 +60,14 @@ mod test {
             "tests/data/poems/file3copy.txt".to_owned(), // same contents as file3.txt
         ];
         assert_eq!(std::fs::read("tests/data/poems/file3.txt").unwrap(), std::fs::read("tests/data/poems/file3copy.txt").unwrap(), "file3 and file3copy must have same contents");
-        assert_ne!(checksum(&files), sum1);
+        assert_ne!(checksum(&files, &PathBuf::from(env!("CARGO_MANIFEST_DIR"))), sum1);
 
         // taking away a file results in a different hash
         let files = vec![
             "tests/data/poems/file1.txt".to_owned(),
             "tests/data/poems/file2.txt".to_owned(),
         ];
-        let sum2 = checksum(&files);
+        let sum2 = checksum(&files, &PathBuf::from(env!("CARGO_MANIFEST_DIR")));
         assert_ne!(sum2, sum1);
 
         // adding a file results in a different hash
@@ -74,16 +77,17 @@ mod test {
             "tests/data/poems/file3.txt".to_owned(),
             "Cargo.toml".to_owned(),
         ];
-        let sum3 = checksum(&files);
+        let sum3 = checksum(&files, &PathBuf::from(env!("CARGO_MANIFEST_DIR")));
         assert_ne!(sum3, sum1);
         assert_ne!(sum3, sum2);
     }
 
     #[test]
     fn from_filesystem() {
-        let test_files = crate::util::filesystem::gather_current_files(&std::path::PathBuf::from("./tests/data/poems"));
+        set_current_dir(env!("CARGO_MANIFEST_DIR")).unwrap();
+        let test_files = crate::util::filesystem::gather_current_files(&std::path::PathBuf::from("./tests/data/poems"), false);
         println!("{:?}", test_files);
-        let checksum = crate::util::checksum::checksum(&test_files);
+        let checksum = crate::util::checksum::checksum(&test_files, &PathBuf::from(env!("CARGO_MANIFEST_DIR")));
         assert_eq!(checksum, sha256::Sha256Hash::from_u32s(
             [2683333810, 489846115, 2143450031, 2869629133, 
             1604039077, 517642943, 2999962878, 2156562165]

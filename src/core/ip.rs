@@ -197,7 +197,7 @@ pub fn compute_final_ip_graph<'a>(target: &'a IpManifest, catalog: &'a Catalog<'
 pub fn build_ip_file_list<'a>(ip_graph: &'a GraphMap<IpSpec, IpNode<'a>, ()>) -> Vec<IpFileNode<'a>> {
     let mut files = Vec::new();
     ip_graph.get_map().iter().for_each(|(_, ip)| {
-        crate::util::filesystem::gather_current_files(&ip.as_ref().as_ip().get_root())
+        crate::util::filesystem::gather_current_files(&ip.as_ref().as_ip().get_root(), false)
             .into_iter()
             .filter(|f| crate::core::fileset::is_vhdl(f) )
             .for_each(|f| {
@@ -276,7 +276,7 @@ impl<'a> IpNode<'a> {
         let temp_ip = IpManifest::from_path(&temp_path).unwrap();
 
         // edit all vhdl files
-        let files = crate::util::filesystem::gather_current_files(&temp_path);
+        let files = crate::util::filesystem::gather_current_files(&temp_path, false);
         for file in &files {
             // perform dst on the data
             if crate::core::fileset::is_vhdl(&file) == true {
@@ -366,6 +366,21 @@ impl IpSpec {
 }
 
 impl std::fmt::Display for IpSpec {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} v{}", self.0, self.1)
+    }
+}
+
+#[derive(Debug, PartialEq, Hash, Eq, Clone)]
+pub struct IpSpec2(PkgPart, Version);
+
+impl IpSpec2 {
+    pub fn new(pkgid: PkgPart, version: Version) -> Self {
+        Self(pkgid, version)
+    }
+}
+
+impl std::fmt::Display for IpSpec2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} v{}", self.0, self.1)
     }

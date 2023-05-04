@@ -157,7 +157,7 @@ impl Get {
 
     /// Parses through the vhdl files and returns a desired entity struct.
     fn fetch_entity(iden: &Identifier, dir: &PathBuf, man: &Manifest) -> Result<symbol::Entity, Fault> {
-        let files = crate::util::filesystem::gather_current_files(&dir);
+        let files = crate::util::filesystem::gather_current_files(&dir, false);
         // @todo: generate all units first (store architectures, and entities, and then process)
         let mut result: Option<(String, Entity)> = None;
         // store map of all architectures while parsing all code

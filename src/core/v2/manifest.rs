@@ -11,10 +11,12 @@ type Id = PkgPart;
 type Version = crate::core::version::Version;
 type Source = String;
 
+use crate::core::ip::IpSpec2;
 use crate::core::lang::vhdl::primaryunit::PrimaryUnit;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::util::anyerror::Fault;
 use toml_edit::Document;
+use crate::util::sha256::Sha256Hash;
 
 type Deps = Option<Dependencies>;
 type DevDeps = Option<Dependencies>;
@@ -89,7 +91,7 @@ version = "0.1.0"
             true => Ok(Self::read_units_from_metadata(&dir).unwrap()),
             false => {
                 // collect all files
-                let files = crate::util::filesystem::gather_current_files(&dir);
+                let files = crate::util::filesystem::gather_current_files(&dir, false);
                 Ok(crate::core::lang::vhdl::primaryunit::collect_units(&files)?)
             }
         }
@@ -150,6 +152,20 @@ impl Package {
     pub fn get_library(&self) -> &Option<Id> {
         &self.library
     }
+
+    /// Clones into a new [IpSpec2] struct.
+    pub fn into_ip_spec(&self) -> IpSpec2 {
+        IpSpec2::new(self.get_name().clone(), self.get_version().clone())
+    }
+
+    /// Computes the checksum on the root of the IP.
+    /// 
+    /// Changes the current working directory to the root for consistent computation.
+    pub fn compute_checksum(dir: &PathBuf) -> Sha256Hash {
+        let ip_files = crate::util::filesystem::gather_current_files(&dir, true);
+        let checksum = crate::util::checksum::checksum(&ip_files, &dir);
+        checksum
+    }
 }
 
 type Dependencies = HashMap<Id, Version>;
@@ -197,6 +213,15 @@ mod test {
             let text = toml::to_string(&man).unwrap();
             assert_eq!(text, EX3);
         }
+    }
+
+
+    #[test]
+    fn compute_checksum() {
+        let sum = Package::compute_checksum(&PathBuf::from("./tests/env/project1/"));
+        assert_eq!(sum, Sha256Hash::from_u32s([
+            2472527351, 1678808787, 3321465315, 1927515725, 
+            108238780, 2368649324, 2487325306, 4053483655]))
     }
 }
 

@@ -21,6 +21,7 @@ use crate::core::lang::vhdl::token::Identifier;
 use crate::util::anyerror::{AnyError, Fault};
 use crate::core::pkgid::PkgPart;
 use crate::OrbitResult;
+use crate::core::v2::catalog::Catalog;
 
 #[derive(Debug, PartialEq)]
 pub struct Get {
@@ -62,17 +63,31 @@ use std::env;
 impl Command<Context> for Get {
     type Status = OrbitResult;
 
-    fn exec(&self, _c: &Context) -> Self::Status {
+    fn exec(&self, c: &Context) -> Self::Status {
         // --name can only be used with --instance is set
         if self.name.is_some() && self.instance == false {
             return Err(AnyError(format!("'{}' can only be used with '{}'", "--name".yellow(), "--instance".yellow())))?
         }
         // @todo: check --version can only be used with --ip (or change --ip option to tack on a version)
 
+        // @todo: load the catalog
+        let catalog = Catalog::new()
+        // .store(c.get_store_path())
+        // .development(c.get_development_path().unwrap())?
+            .installations(c.get_cache_path())?;
+
         // try to auto-determine the ip (check if in a working ip)
         let ip_path = if let Some(name) = &self.ip {
             // @todo: find the path to the provided ip by searching through the catalog
-            todo!("find ip {} in the catalog", name)
+            if let Some(lvl) = catalog.inner().get(name) {
+                if let Some(slot) = lvl.get(&AnyVersion::Latest, true) {
+                    slot.get_root().clone()
+                } else {
+                    return Err(AnyError(format!("the requested ip is not installed")))?
+                }
+            } else {
+                return Err(AnyError(format!("no ip found in cache")))?
+            }
         } else {
             let ip = Context::find_ip_path(&env::current_dir().unwrap());  
             if ip.is_none() == true {

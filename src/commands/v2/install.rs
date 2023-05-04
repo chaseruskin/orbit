@@ -18,11 +18,8 @@
 //! 
 
 use clif::cmd::{FromCli, Command};
-use crate::commands::plan::Plan;
-use crate::core::catalog::CacheSlot;
-use crate::core::catalog::Catalog;
-use crate::core::ip;
-use crate::core::lockfile::LockFile;
+use crate::core::v2::catalog::CacheSlot;
+use crate::core::v2::catalog::Catalog;
 use crate::core::manifest;
 use crate::core::v2::manifest::IP_MANIFEST_FILE;
 use crate::core::v2::manifest::Manifest;
@@ -31,12 +28,8 @@ use clif::Cli;
 use clif::arg::{Optional, Flag};
 use clif::Error as CliError;
 use crate::core::context::Context;
-use crate::core::pkgid::PkgId;
 use crate::util::anyerror::{AnyError, Fault};
-use crate::core::version::AnyVersion;
-use tempfile::TempDir;
 use std::path::PathBuf;
-use crate::core::extgit::ExtGit;
 use crate::OrbitResult;
 use crate::util::filesystem::Standardize;
 use crate::core::v2::ip::Ip;
@@ -71,91 +64,36 @@ impl Command<Context> for Install {
         
         // let temporary directory exist for lifetime of install in case of using it
         // let temp_dir = tempdir()?;
-
         // gather the catalog (all manifests)
         let catalog = Catalog::new()
             // .store(c.get_store_path())
             // .development(c.get_development_path().unwrap())?
             .installations(c.get_cache_path())?;
             // .available(c.get_vendors())?;
-
         // enter action
         self.run(&dest, &catalog)
     }
 }
 
-/// Grabs the root path to the repository to perform the installation on.
-pub fn fetch_install_path(ip: &PkgId, catalog: &Catalog, disable_ssh: bool, temp_dir: &TempDir) -> Result<PathBuf, Fault> {
-    let ids = catalog.inner().keys().map(|f| { f }).collect();
-
-    let target = crate::core::ip::find_ip(ip, ids)?;
-    // gather all possible versions found for this IP
-    let status = catalog.inner().get(&target).take().unwrap();
-
-    // check the store/ for the repository
-    if let Some(root) = catalog.get_store().as_stored(&target) {
-        Ok(root)
-    // clone from remote repository if exists
-    } else if let Some(url) = status.try_repository() {
-        let path = temp_dir.path().to_path_buf();
-        println!("info: fetching repository ...");
-        ExtGit::new(None).clone(&url, &path, disable_ssh)?;
-        Ok(path)
-    } else {
-        // @TODO last resort, clone the actual dev directory to a temp folder
-        panic!("no repository to access ip")
-    }
-}
-
 impl Install {
 
-    pub fn install_from_lock_file(&self, lock: &LockFile, catalog: &Catalog) -> Result<(), Fault> {
-        // build entire dependency graph from lockfile @todo: denote which ip's are from dev path to ensure they are "develop_from_lock_entry"
-        let graph = ip::graph_ip_from_lock(&lock)?;
-        // sort to topological ordering
-        let mut order = graph.get_graph().topological_sort();
-        // remove target ip from the list of intermediate installations
-        order.pop();
+    // pub fn install_from_lock_file(&self, lock: &LockFile, catalog: &Catalog) -> Result<(), Fault> {
+    //     // build entire dependency graph from lockfile @todo: denote which ip's are from dev path to ensure they are "develop_from_lock_entry"
+    //     let graph = ip::graph_ip_from_lock(&lock)?;
+    //     // sort to topological ordering
+    //     let mut order = graph.get_graph().topological_sort();
+    //     // remove target ip from the list of intermediate installations
+    //     order.pop();
 
-        for i in order {
-            let entry = graph.get_node_by_index(i).unwrap().as_ref();
-            // check if already installed
-            match std::path::Path::exists(&catalog.get_cache_path().join(entry.to_cache_slot().as_ref())) {
-                true => println!("info: {} v{} already installed", entry.get_name(), entry.get_version()),
-                false => Plan::install_from_lock_entry(entry, &AnyVersion::Specific(entry.get_version().to_partial_version()), &catalog, false)?,
-            }
-        }
-        Ok(())
-    }
-
-    // /// Searches through a given root as a git repository to find a tagged commit
-    // /// matching `version` with highest compatibility and contains a manifest.
-    // fn detect_manifest(root: &PathBuf, version: &AnyVersion, store: &Store) -> Result<IpManifest, Fault>{
-    //     let repo = Repository::open(&root)?;
-
-    //     // find the specified version for the given ip
-    //     let space = ExtGit::gather_version_tags(&repo)?;
-    //     let version_space: Vec<&Version> = space.iter().collect();
-    //     let version = match version::get_target_version(&version, &version_space) {
-    //         Ok(r) => r,
-    //         // update store if it was used
-    //         Err(e) => {
-    //             if store.is_path_in_store(&root) && ExtGit::is_remote_linked(&repo)? == true {
-    //                 println!("info: could not find a version tag matching '{}' in stored repository", &version);
-    //                 println!("info: pulling latest to store ...");
-    //                 ExtGit::new(None).path(root.to_path_buf()).pull()?;
-    //                 ExtGit::gather_version_tags(&repo)?;
-    //                 version::get_target_version(&version, &version_space)?
-    //             } else {
-    //                 return Err(e)?
-    //             }
+    //     for i in order {
+    //         let entry = graph.get_node_by_index(i).unwrap().as_ref();
+    //         // check if already installed
+    //         match std::path::Path::exists(&catalog.get_cache_path().join(entry.to_cache_slot().as_ref())) {
+    //             true => println!("info: {} v{} already installed", entry.get_name(), entry.get_version()),
+    //             false => Plan::install_from_lock_entry(entry, &AnyVersion::Specific(entry.get_version().to_partial_version()), &catalog, false)?,
     //         }
-    //     };
-
-    //     ExtGit::checkout_tag_state(&repo, &version)?;
-
-    //     // make an ip manifest
-    //     Ok(IpManifest::from_path(&root)?)
+    //     }
+    //     Ok(())
     // }
 
     /// Installs the `ip` with particular partial `version` to the `cache_root`.

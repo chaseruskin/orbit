@@ -17,7 +17,9 @@ use std::collections::HashMap;
 
 #[derive(Debug, PartialEq)]
 pub struct Ip {
+    /// The base directory for the entire [Ip] structure
     root: PathBuf,
+    /// The metadata for the [Ip]
     data: Manifest,
 }
 
@@ -48,9 +50,10 @@ impl Ip {
     fn detect_all_sub(path: &PathBuf, name: &str, is_exclusive: bool) -> Result<Vec<Self>, Fault> {
         let mut result = Vec::new();
         // walk the ORBIT_PATH directory @TODO recursively walk inner directories until hitting first 'Orbit.toml' file
-        for entry in manifest::find_file(&path, &name, is_exclusive)? {
+        for mut entry in manifest::find_file(&path, &name, is_exclusive)? {
             // read ip_spec from each manifest
             let man = Manifest::from_file(&entry)?;
+            entry.pop();
             result.push( Self {
                 root: entry, 
                 data: man,

@@ -11,6 +11,7 @@ use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::core::v2::ip::Ip;
+use crate::core::v2::catalog::Catalog;
 
 #[derive(Debug, PartialEq)]
 pub struct Show {
@@ -40,14 +41,26 @@ impl FromCli for Show {
 impl Command<Context> for Show {
     type Status = OrbitResult;
 
-    fn exec(&self, _c: &Context) -> Self::Status {
+    fn exec(&self, c: &Context) -> Self::Status {
 
         // @todo: collect all manifests available (load catalog)
+        let catalog = Catalog::new()
+        // .store(c.get_store_path())
+        // .development(c.get_development_path().unwrap())?
+            .installations(c.get_cache_path())?;
 
         // try to auto-determine the ip (check if in a working ip)
         let ip_path = if let Some(name) = &self.ip {
             // @todo: find the path to the provided ip by searching through the catalog
-            todo!("find ip {} in the catalog", name)
+            if let Some(lvl) = catalog.inner().get(name) {
+                if let Some(slot) = lvl.get(&AnyVersion::Latest, true) {
+                    slot.get_root().clone()
+                } else {
+                    return Err(AnyError(format!("the requested ip is not installed")))?
+                }
+            } else {
+                return Err(AnyError(format!("no ip found in cache")))?
+            }
         } else {
             let ip = Context::find_ip_path(&current_dir().unwrap());  
             if ip.is_none() == true {

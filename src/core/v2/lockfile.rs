@@ -8,7 +8,7 @@ use super::manifest::Manifest;
 
 pub const IP_LOCK_FILE: &str = "Orbit.lock";
 
-pub type Ip = (PathBuf, Manifest);
+use crate::core::v2::ip::Ip;
 
 #[derive(Debug)]
 pub struct LockFile(Vec<LockEntry>);
@@ -40,14 +40,14 @@ impl LockFile {
     /// Creates a lockfile from a build list.
     pub fn from_build_list(build_list: &mut Vec<&Ip>) -> Self {
         // sort the build list by pkgid and then version
-        build_list.sort_by(|&x, &y| { match x.1.get_ip().get_name().cmp(y.1.get_ip().get_name()) {
+        build_list.sort_by(|&x, &y| { match x.get_man().get_ip().get_name().cmp(y.get_man().get_ip().get_name()) {
             std::cmp::Ordering::Less => std::cmp::Ordering::Less,
-            std::cmp::Ordering::Equal => x.1.get_ip().get_version().cmp(y.1.get_ip().get_version()),
+            std::cmp::Ordering::Equal => x.get_man().get_ip().get_version().cmp(y.get_man().get_ip().get_version()),
             std::cmp::Ordering::Greater => std::cmp::Ordering::Greater,
         } });
         
         Self(build_list.into_iter()
-            .map(|ip| LockEntry::from(&ip.1, &ip.0))
+            .map(|ip| LockEntry::from(&ip.get_man(), &ip.get_root()))
             .collect())
     }
 

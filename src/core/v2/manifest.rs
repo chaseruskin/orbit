@@ -18,6 +18,8 @@ use crate::util::anyerror::Fault;
 use toml_edit::Document;
 use crate::util::sha256::Sha256Hash;
 
+type Dependencies = HashMap<Id, Version>;
+
 type Deps = Option<Dependencies>;
 type DevDeps = Option<Dependencies>;
 
@@ -28,7 +30,7 @@ pub const ORBIT_METADATA_FILE: &str = ".orbit-metadata";
 
 const DEPENDENCIES_KEY: &str = "dependencies";
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct Manifest {
     ip: Package,
     dependencies: Deps,
@@ -136,7 +138,7 @@ impl Display for Manifest {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct Package {
     name: Id,
     version: Version,
@@ -198,7 +200,54 @@ impl Package {
     }
 }
 
-type Dependencies = HashMap<Id, Version>;
+/// Takes an iterative approach to iterating through directories to find a file
+/// matching `name`.
+/// 
+/// Note: `name` is become a glob-style pattern.
+/// 
+/// Stops descending the directories upon finding first match of `name`. 
+/// The match must be case-sensitive. If `is_exclusive` is `false`, then the directory
+/// with match will continued to be searched at that level and then re-track.
+pub fn find_file(path: &PathBuf, name: &str, is_exclusive: bool) -> Result<Vec<PathBuf>, Fault> {
+    // create a glob-style pattern
+    let pattern = glob::Pattern::new(name).unwrap();
+    // list of directories to continue to process
+    let mut to_process: Vec<PathBuf> = Vec::new();
+    let mut result = Vec::new();
+    // start at base path
+    if path.is_dir() {
+        to_process.push(path.to_path_buf());
+    // only look at file and exit
+    } else if path.is_file() && pattern.matches(path.file_name().unwrap().to_str().unwrap()) {
+        return Ok(vec![path.to_path_buf()])
+    }
+    // process next directory to read
+    while let Some(entry) = to_process.pop() {
+        // needs to look for more clues deeper in the filesystem
+        if entry.is_dir() {
+            let mut next_to_process = Vec::new();
+            let mut found_file = false;
+            // iterate through all next-level directories for potential future processing
+            for e in std::fs::read_dir(entry)? {
+                let e = e?;
+                if pattern.matches(e.file_name().to_str().unwrap()) {
+                    result.push(e.path());
+                    found_file = true;
+                    if is_exclusive == true {
+                        break;
+                    }
+                } else if e.file_type().unwrap().is_dir() == true {
+                    next_to_process.push(e.path());
+                }
+            }
+            // add next-level directories to process
+            if found_file == false {
+                to_process.append(&mut next_to_process);
+            }
+        }
+    }
+    Ok(result)
+}
 
 #[cfg(test)]
 mod test {

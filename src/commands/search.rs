@@ -1,18 +1,18 @@
 use clif::cmd::{FromCli, Command};
-use crate::core::catalog::Catalog;
-use crate::core::catalog::IpLevel;
+use crate::core::v2::catalog::Catalog;
+use crate::core::v2::catalog::IpLevel;
 use clif::Cli;
 use clif::arg::{Positional, Flag};
 use clif::Error as CliError;
 use crate::core::context::Context;
-use crate::core::pkgid::PkgId;
 use crate::util::anyerror::Fault;
 use std::collections::BTreeMap;
 use crate::OrbitResult;
+use crate::core::pkgid::PkgPart;
 
 #[derive(Debug, PartialEq)]
 pub struct Search {
-    ip: Option<PkgId>,
+    ip: Option<PkgPart>,
     cached: bool,
     developing: bool,
     available: bool,
@@ -27,13 +27,13 @@ impl Command<Context> for Search {
         let mut catalog = Catalog::new();
 
         // collect development IP
-        if default || self.developing { catalog = catalog.development(c.get_development_path().unwrap())?; }
+        // if default || self.developing { catalog = catalog.development(c.get_development_path().unwrap())?; }
         
         // collect installed IP
         if default || self.cached { catalog = catalog.installations(c.get_cache_path())?; }
 
         // collect available IP
-        if default || self.available { catalog = catalog.available(c.get_vendors())?; }
+       //  if default || self.available { catalog = catalog.available(c.get_vendors())?; }
 
         self.run(&catalog)
     }
@@ -49,7 +49,7 @@ impl Search {
             // filter by name if user entered a pkgid to search
             .filter(|(key, _)| {
                 match &self.ip {
-                    Some(pkgid) => pkgid.partial_match(key),
+                    Some(pkgid) => &pkgid == key,
                     None => true,
                 }
             })
@@ -61,17 +61,15 @@ impl Search {
         Ok(())
     }
 
-    fn fmt_table(catalog: BTreeMap<&PkgId, &IpLevel>) -> String {
+    fn fmt_table(catalog: BTreeMap<&PkgPart, &IpLevel>) -> String {
         let header = format!("\
-{:<15}{:<15}{:<20}{:<9}
-{:->15}{4:->15}{4:->20}{4:->9}\n", 
-            "Vendor", "Library", "Name", "Status", " ");
+{:<28}{:<9}
+{2:->28}{2:->9}\n", 
+            "Package", "Status", " ");
         let mut body = String::new();
         for (ip, status) in catalog {
-            body.push_str(&format!("{:<15}{:<15}{:<20}{:<2}{:<2}{:<2}\n", 
-                ip.get_vendor().as_ref().unwrap().to_string(),
-                ip.get_library().as_ref().unwrap().to_string(),
-                ip.get_name().to_string(),
+            body.push_str(&format!("{:<28}{:<2}{:<2}{:<2}\n", 
+                ip.to_string(),
                 { if status.is_developing() { "D" } else { "" } },
                 { if status.is_installed() { "I" } else { "" } },
                 { if status.is_available() { "A" } else { "" } },
@@ -119,8 +117,8 @@ mod test {
     fn fmt_table() {
         let t = Search::fmt_table(BTreeMap::new());
         let table = "\
-Vendor         Library        Name                Status   
--------------- -------------- ------------------- -------- 
+Package                     Status   
+--------------------------- -------- 
 ";
         assert_eq!(t, table);
     }

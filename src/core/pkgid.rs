@@ -8,7 +8,7 @@ use std::error::Error;
 use std::fmt::Display;
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, PartialOrd, Clone, Eq, Hash, Deserialize, Serialize)]
+#[derive(Debug, PartialOrd, Clone, Eq, Hash, Deserialize, Serialize, Ord)]
 #[serde(transparent)]
 pub struct PkgPart(String);
 

@@ -375,13 +375,27 @@ impl std::fmt::Display for IpSpec {
 pub struct IpSpec2(PkgPart, Version);
 
 impl IpSpec2 {
-    pub fn new(pkgid: PkgPart, version: Version) -> Self {
-        Self(pkgid, version)
+    pub fn new(id: PkgPart, version: Version) -> Self {
+        Self(id, version)
+    }
+
+    pub fn get_name(&self) -> &PkgPart {
+        &self.0
+    }
+
+    pub fn get_version(&self) -> &Version {
+        &self.1
     }
 }
 
 impl std::fmt::Display for IpSpec2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} v{}", self.0, self.1)
+    }
+}
+
+impl From<(PkgPart, Version)> for IpSpec2 {
+    fn from(value: (PkgPart, Version)) -> Self {
+        Self(value.0, value.1)
     }
 }

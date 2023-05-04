@@ -7,9 +7,9 @@ use std::fmt::Display;
 use crate::core::pkgid::PkgPart;
 // use crate::util::url::Url;
 
-type Id = PkgPart;
-type Version = crate::core::version::Version;
-type Source = String;
+pub type Id = PkgPart;
+pub type Version = crate::core::version::Version;
+pub type Source = String;
 
 use crate::core::ip::IpSpec2;
 use crate::core::lang::vhdl::primaryunit::PrimaryUnit;
@@ -23,9 +23,10 @@ type DevDeps = Option<Dependencies>;
 
 pub const IP_MANIFEST_FILE: &str = "Orbit.toml";
 pub const IP_MANIFEST_PATTERN_FILE : &str = "Orbit-*.toml";
-const DEPENDENCIES_KEY: &str = "dependencies";
 pub const ORBIT_SUM_FILE: &str = ".orbit-checksum";
 pub const ORBIT_METADATA_FILE: &str = ".orbit-metadata";
+
+const DEPENDENCIES_KEY: &str = "dependencies";
 
 #[derive(Deserialize, Serialize)]
 pub struct Manifest {
@@ -123,6 +124,10 @@ version = "0.1.0"
     pub fn get_ip(&self) -> &Package {
         &self.ip
     }
+
+    pub fn get_deps(&self) -> &Deps {
+        &self.dependencies
+    }
 }
 
 impl Display for Manifest {
@@ -153,6 +158,10 @@ impl Package {
         &self.library
     }
 
+    pub fn get_source(&self) -> &Option<Source> {
+        &self.source
+    }
+
     /// Clones into a new [IpSpec2] struct.
     pub fn into_ip_spec(&self) -> IpSpec2 {
         IpSpec2::new(self.get_name().clone(), self.get_version().clone())
@@ -165,6 +174,27 @@ impl Package {
         let ip_files = crate::util::filesystem::gather_current_files(&dir, true);
         let checksum = crate::util::checksum::checksum(&ip_files, &dir);
         checksum
+    }
+
+    /// Gets the already calculated checksum from an installed IP from [ORBIT_SUM_FILE].
+    /// 
+    /// Returns `None` if the file does not exist, is unable to read into a string, or
+    /// if the sha cannot be parsed.
+    pub fn read_checksum_proof(dir: &PathBuf) -> Option<Sha256Hash> {
+        let sum_file = dir.join(ORBIT_SUM_FILE);
+        if sum_file.exists() == false {
+            None
+        } else {
+            match std::fs::read_to_string(&sum_file) {
+                Ok(text) => {
+                    match Sha256Hash::from_str(&text.trim()) {
+                        Ok(sha) => Some(sha),
+                        Err(_) => None,
+                    }
+                }
+                Err(_) => None,
+            }
+        }
     }
 }
 

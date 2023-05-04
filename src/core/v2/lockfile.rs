@@ -90,8 +90,6 @@ impl LockFile {
     } 
 }
 
-use crate::core::v2::manifest::Package;
-
 #[derive(Debug, PartialEq)]
 pub struct LockEntry {
     name: manifest::Id,
@@ -106,7 +104,7 @@ impl LockEntry {
         Self {
             name: man.get_ip().get_name().clone(), 
             version: man.get_ip().get_version().clone(), 
-            sum: Some(Package::read_checksum_proof(&dir).unwrap_or(Package::compute_checksum(&dir))), 
+            sum: Some(Ip::read_checksum_proof(&dir).unwrap_or(Ip::compute_checksum(&dir))), 
             source: man.get_ip().get_source().clone(),
             dependencies: if let Some(deps) = man.get_deps() {
                 match deps.len() {

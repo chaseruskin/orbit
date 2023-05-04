@@ -10,7 +10,7 @@ use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
-use crate::core::v2::manifest::Manifest;
+use crate::core::v2::ip::Ip;
 
 #[derive(Debug, PartialEq)]
 pub struct Show {
@@ -58,10 +58,9 @@ impl Command<Context> for Show {
         };
 
         // load the ip's manifest 
-
         if self.units == true {
             // force computing the primary design units if a development version
-            let units = Manifest::collect_units(true, &ip_path)?;
+            let units = Ip::collect_units(true, &ip_path)?;
             println!("{}", Self::format_units_table(units.into_iter().map(|(_, unit)| unit).collect()));
             return Ok(())
         }

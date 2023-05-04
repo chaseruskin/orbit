@@ -12,11 +12,7 @@ pub type Version = crate::core::version::Version;
 pub type Source = String;
 
 use crate::core::ip::IpSpec2;
-use crate::core::lang::vhdl::primaryunit::PrimaryUnit;
-use crate::core::lang::vhdl::token::Identifier;
 use crate::util::anyerror::Fault;
-use toml_edit::Document;
-use crate::util::sha256::Sha256Hash;
 
 type Dependencies = HashMap<Id, Version>;
 
@@ -83,46 +79,6 @@ version = "0.1.0"
 "#, name)
     }
 
-    /// Gathers the list of primary design units for the current ip.
-    /// 
-    /// If the manifest has an toml entry for `units` and `force` is set to `false`, 
-    /// then it will return that list rather than go through files.
-    pub fn collect_units(force: bool, dir: &PathBuf) -> Result<HashMap<Identifier, PrimaryUnit>, Fault> {
-        // try to read from metadata file
-        match (force == false) && Self::read_units_from_metadata(&dir).is_some() {
-            // use precomputed result
-            true => Ok(Self::read_units_from_metadata(&dir).unwrap()),
-            false => {
-                // collect all files
-                let files = crate::util::filesystem::gather_current_files(&dir, false);
-                Ok(crate::core::lang::vhdl::primaryunit::collect_units(&files)?)
-            }
-        }
-    }
-
-    pub fn read_units_from_metadata(dir: &PathBuf) -> Option<HashMap<Identifier, PrimaryUnit>> {
-        let meta_file = dir.join(ORBIT_METADATA_FILE);
-        if std::path::Path::exists(&meta_file) == true {
-            if let Ok(contents) = std::fs::read_to_string(&meta_file) {
-                if let Ok(toml) = contents.parse::<Document>() {
-                    let entry = toml.get("ip")?.as_table()?.get("units")?.as_array()?;
-                    let mut map = HashMap::new();
-                    for unit in entry {
-                        let pdu = PrimaryUnit::from_toml(unit.as_inline_table()?)?;
-                        map.insert(pdu.get_iden().clone(), pdu);
-                    }
-                    Some(map)
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else {
-            None
-        }
-    }
-
     pub fn get_ip(&self) -> &Package {
         &self.ip
     }
@@ -167,36 +123,6 @@ impl Package {
     /// Clones into a new [IpSpec2] struct.
     pub fn into_ip_spec(&self) -> IpSpec2 {
         IpSpec2::new(self.get_name().clone(), self.get_version().clone())
-    }
-
-    /// Computes the checksum on the root of the IP.
-    /// 
-    /// Changes the current working directory to the root for consistent computation.
-    pub fn compute_checksum(dir: &PathBuf) -> Sha256Hash {
-        let ip_files = crate::util::filesystem::gather_current_files(&dir, true);
-        let checksum = crate::util::checksum::checksum(&ip_files, &dir);
-        checksum
-    }
-
-    /// Gets the already calculated checksum from an installed IP from [ORBIT_SUM_FILE].
-    /// 
-    /// Returns `None` if the file does not exist, is unable to read into a string, or
-    /// if the sha cannot be parsed.
-    pub fn read_checksum_proof(dir: &PathBuf) -> Option<Sha256Hash> {
-        let sum_file = dir.join(ORBIT_SUM_FILE);
-        if sum_file.exists() == false {
-            None
-        } else {
-            match std::fs::read_to_string(&sum_file) {
-                Ok(text) => {
-                    match Sha256Hash::from_str(&text.trim()) {
-                        Ok(sha) => Some(sha),
-                        Err(_) => None,
-                    }
-                }
-                Err(_) => None,
-            }
-        }
     }
 }
 
@@ -292,15 +218,6 @@ mod test {
             let text = toml::to_string(&man).unwrap();
             assert_eq!(text, EX3);
         }
-    }
-
-
-    #[test]
-    fn compute_checksum() {
-        let sum = Package::compute_checksum(&PathBuf::from("./tests/env/project1/"));
-        assert_eq!(sum, Sha256Hash::from_u32s([
-            2472527351, 1678808787, 3321465315, 1927515725, 
-            108238780, 2368649324, 2487325306, 4053483655]))
     }
 }
 

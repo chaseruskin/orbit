@@ -201,6 +201,7 @@ pub const ORBIT_TOP: &str = "ORBIT_TOP";
 pub const ORBIT_BENCH: &str = "ORBIT_BENCH";
 pub const ORBIT_BUILD_DIR: &str = "ORBIT_BUILD_DIR";
 pub const ORBIT_CACHE: &str = "ORBIT_CACHE";
+pub const ORBIT_QUEUE: &str = "ORBIT_QUEUE";
 pub const ORBIT_HOME: &str = "ORBIT_HOME";
 pub const ORBIT_STORE: &str = "ORBIT_STORE";
 pub const ORBIT_IP_PATH: &str = "ORBIT_IP_PATH";

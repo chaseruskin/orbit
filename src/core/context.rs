@@ -19,8 +19,10 @@ use super::vendor::VendorManifest;
 pub struct Context {
     /// Path to a "hidden" directory for internal Orbit operations.
     home_path: PathBuf,
-    /// holds installed immutable tags of git repositories
+    /// Directory holding installed immutable tags of git repositories.
     cache_path: PathBuf,
+    /// Directory holding orbit IP awaiting to be installed on local machine.
+    queue_path: PathBuf,
     /// The parent path to the current ip `Orbit.toml` manifest file.
     ip_path: Option<PathBuf>,
     /// holds in-development mutable ip projects [***DEPRECATED***]
@@ -40,10 +42,12 @@ impl Context {
         let home = std::env::temp_dir();
         let cache = home.join("cache");
         let store = home.join("store");
+        let queue = home.join("queue");
         Context { 
             home_path: home,
             cache_path: cache,
             store_path: store,
+            queue_path: queue,
             ip_path: None,
             dev_path: None,
             plugins: HashMap::new(),
@@ -90,6 +94,13 @@ impl Context {
     /// exists. If setting by default (within HOME), it assumes HOME is already existing.
     pub fn cache(mut self, key: &str) -> Result<Context, Fault> {
         self.cache_path = self.folder(key, "cache")?;
+        Ok(self)
+    }
+
+    /// Sets the queue directory. If it was set from `var`, it assumes the path
+    /// exists. If setting by default (within HOME), it assumes HOME is already existing.
+    pub fn queue(mut self, key: &str) -> Result<Context, Fault> {
+        self.queue_path = self.folder(key, "queue")?;
         Ok(self)
     }
 

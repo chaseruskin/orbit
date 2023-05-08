@@ -5,13 +5,14 @@ use std::{collections::HashMap, str::FromStr};
 use std::path::PathBuf;
 use std::fmt::Display;
 use crate::core::pkgid::PkgPart;
+use std::error::Error;
 // use crate::util::url::Url;
 
 pub type Id = PkgPart;
 pub type Version = crate::core::version::Version;
 pub type Source = String;
 
-use crate::core::ip::IpSpec2;
+use crate::core::v2::ip::IpSpec;
 use crate::util::anyerror::Fault;
 
 type Dependencies = HashMap<Id, Version>;
@@ -34,8 +35,8 @@ pub struct Manifest {
     dev_dependencies: DevDeps,
 }
 
-pub trait FromFile: FromStr where Self: Sized, <Self as std::str::FromStr>::Err: 'static + std::error::Error {
-    fn from_file(path: &PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
+pub trait FromFile: FromStr where Self: Sized, <Self as std::str::FromStr>::Err: 'static + Error {
+    fn from_file(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
         // try to open the file in read-only mode
         let text = std::fs::read_to_string(&path)?;
         Ok(Self::from_str(&text)?)
@@ -121,8 +122,8 @@ impl Package {
     }
 
     /// Clones into a new [IpSpec2] struct.
-    pub fn into_ip_spec(&self) -> IpSpec2 {
-        IpSpec2::new(self.get_name().clone(), self.get_version().clone())
+    pub fn into_ip_spec(&self) -> IpSpec {
+        IpSpec::new(self.get_name().clone(), self.get_version().clone())
     }
 }
 

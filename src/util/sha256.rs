@@ -15,6 +15,48 @@ pub struct Sha256Hash {
     digest: [u32; 8]
 }
 
+use serde::{Deserialize, Serialize};
+use serde::Serializer;
+use serde::de::{self};
+use std::fmt;
+
+impl<'de> Deserialize<'de> for Sha256Hash {
+    fn deserialize<D>(deserializer: D) -> Result<Sha256Hash, D::Error>
+        where D: de::Deserializer<'de>
+    {
+        struct LayerVisitor;
+
+        impl<'de> de::Visitor<'de> for LayerVisitor {
+            type Value = Sha256Hash;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a 256-character checksum")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+                where
+                    E: de::Error, {
+                
+                match Sha256Hash::from_str(v) {
+                    Ok(v) => Ok(v),
+                    Err(e) => Err(de::Error::custom(e))
+                }
+            }
+        }
+
+        deserializer.deserialize_map(LayerVisitor)
+    }
+}
+
+impl Serialize for Sha256Hash {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
 impl Sha256Hash {
     /// Creates a new blank hash filled with all 0's.
     pub fn new() -> Self {

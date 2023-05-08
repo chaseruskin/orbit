@@ -4,6 +4,8 @@ use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::core::v2::manifest;
 
+use super::lockfile::IP_LOCK_FILE;
+use super::lockfile::LockFile;
 use super::manifest::FromFile;
 use crate::core::v2::manifest::ORBIT_METADATA_FILE;
 use crate::core::v2::manifest::IP_MANIFEST_FILE;
@@ -14,13 +16,16 @@ use crate::core::lang::vhdl::primaryunit::PrimaryUnit;
 use crate::core::lang::vhdl::token::Identifier;
 use std::str::FromStr;
 use std::collections::HashMap;
+use std::error::Error;
 
 #[derive(Debug, PartialEq)]
 pub struct Ip {
-    /// The base directory for the entire [Ip] structure
+    /// The base directory for the entire [Ip] structure.
     root: PathBuf,
-    /// The metadata for the [Ip]
+    /// The metadata for the [Ip].
     data: Manifest,
+    /// The lockfile for the [Ip].
+    lock: LockFile,
 }
 
 impl Ip {
@@ -33,8 +38,25 @@ impl Ip {
         &self.data
     }
 
+    pub fn get_lock(&self) -> &LockFile {
+        &self.lock
+    }
+
+    pub fn load(root: PathBuf) -> Result<Self, Box<dyn Error>> {
+        let man_path = root.join(IP_MANIFEST_FILE);
+        if man_path.exists() == false || man_path.is_file() == false {
+            return Err(AnyError(format!("A manifest file does not exist")))?
+        }
+        let lock_path = root.join(IP_LOCK_FILE);
+        Ok(Self {
+            root: root,
+            data: Manifest::from_file(&man_path)?,
+            lock: LockFile::from_file(&lock_path)?,
+        })
+    }
+
     /// Checks if the given path hosts a valid manifest file.
-    pub fn is_valid(path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn is_valid(path: &PathBuf) -> Result<(), Box<dyn Error>> {
         let man_path = path.join(IP_MANIFEST_FILE);
         if man_path.exists() == false || man_path.is_file() == false {
             return Err(AnyError(format!("A manifest file does not exist")))?
@@ -57,6 +79,7 @@ impl Ip {
             result.push( Self {
                 root: entry, 
                 data: man,
+                lock: LockFile::new(),
             });
         }
         Ok(result)
@@ -183,6 +206,99 @@ impl Ip {
     // }
 }
 
+use crate::core::pkgid::PkgPart;
+use crate::core::version::Version;
+
+const SPEC_DELIM: &str = "=";
+
+#[derive(Debug, PartialEq, Hash, Eq, Clone)]
+pub struct IpSpec(PkgPart, Version);
+
+impl IpSpec {
+    pub fn new(id: PkgPart, version: Version) -> Self {
+        Self(id, version)
+    }
+
+    pub fn get_name(&self) -> &PkgPart {
+        &self.0
+    }
+
+    pub fn get_version(&self) -> &Version {
+        &self.1
+    }
+}
+
+impl FromStr for IpSpec {
+    type Err = Box<dyn Error>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // split by delimiter
+        match s.split_once("=") {
+            Some((n, v)) => {
+                Ok(Self::new(PkgPart::from_str(n)?, Version::from_str(v)?))
+            },
+            None => {
+                Err(Box::new(AnyError(format!("missing specification delimiter {}", SPEC_DELIM))))
+            }
+        }
+    }
+}
+
+impl std::fmt::Display for IpSpec {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} v{}", self.0, self.1)
+    }
+}
+
+impl From<(PkgPart, Version)> for IpSpec {
+    fn from(value: (PkgPart, Version)) -> Self {
+        Self(value.0, value.1)
+    }
+}
+
+use serde::{Deserialize, Serialize};
+use serde::Serializer;
+use serde::de::{self};
+use std::fmt;
+
+impl<'de> Deserialize<'de> for IpSpec {
+    fn deserialize<D>(deserializer: D) -> Result<IpSpec, D::Error>
+        where D: de::Deserializer<'de>
+    {
+        struct LayerVisitor;
+
+        impl<'de> de::Visitor<'de> for LayerVisitor {
+            type Value = IpSpec;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a 256-character checksum")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+                where
+                    E: de::Error, {
+                
+                match IpSpec::from_str(v) {
+                    Ok(v) => Ok(v),
+                    Err(e) => Err(de::Error::custom(e))
+                }
+            }
+        }
+
+        deserializer.deserialize_map(LayerVisitor)
+    }
+}
+
+impl Serialize for IpSpec {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -193,5 +309,12 @@ mod test {
         assert_eq!(sum, Sha256Hash::from_u32s([
             2472527351, 1678808787, 3321465315, 1927515725, 
             108238780, 2368649324, 2487325306, 4053483655]))
+    }
+
+    #[test]
+    fn from_str_ip_spec() {
+        let ip = format!("name{}1.0.0", SPEC_DELIM);
+
+        assert_eq!(IpSpec::new(PkgPart::from_str("name").unwrap(), Version::from_str("1.0.0").unwrap()), IpSpec::from_str(&ip).unwrap());
     }
 }

@@ -103,7 +103,7 @@ impl Install {
     /// 
     /// Errors if the ip is already installed unless `force` is true.
     pub fn install(src: &PathBuf, cache_root: &std::path::PathBuf, force: bool) -> Result<(), Fault> {
-        // make an ip manifest
+        // @todo: validate the IP and its dependencies
         let man = Manifest::from_file(&src.join(IP_MANIFEST_FILE))?;
 
         // temporary destination to move files for processing and manipulation
@@ -163,8 +163,11 @@ impl Install {
 
     fn run(&self, src: &PathBuf, catalog: &Catalog) -> Result<(), Fault> {
         // @todo: check if there is a potential lockfile to use
-        let _man = Manifest::from_file(&src.join(IP_MANIFEST_FILE))?;
+        let _pkg = Ip::load(src.clone())?;
 
+        // _pkg.get_lock().save_to_disk(&_pkg.get_root())?;
+        // todo!();
+        
         // @todo: check lockfile to process installing any IP that may be already downloaded to the queue
 
         // if let Some(lock) = man.get_lockfile() {

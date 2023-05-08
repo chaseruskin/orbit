@@ -1,6 +1,7 @@
 use toml_edit::InlineTable;
 use super::super::lexer::Position;
-use crate::{core::{lang::vhdl::token::Identifier, ip::IpSpec}, util::anyerror::Fault};
+use crate::{core::{lang::vhdl::token::Identifier}, util::anyerror::Fault};
+use crate::core::v2::ip::IpSpec;
 use std::{collections::HashMap, str::FromStr, path::PathBuf};
 use crate::util::filesystem;
 use super::symbol::VHDLSymbol;

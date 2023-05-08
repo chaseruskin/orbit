@@ -31,7 +31,7 @@ impl FromStr for LockFile {
 
 
 impl FromFile for LockFile {
-    fn from_file(path: &PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
+    fn from_file(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
         if path.exists() == true {
             // make sure it is a file
             if path.is_file() == false {
@@ -40,7 +40,14 @@ impl FromFile for LockFile {
             // open file
             let contents = std::fs::read_to_string(&path)?;
             // parse toml syntax
-            Ok(Self::from_str(&contents)?)
+            match Self::from_str(&contents) {
+                Ok(r) => Ok(r),
+                // enter a blank lock file if failed (do not exit)
+                Err(e) => {
+                    println!("warning: {}: {}", "failed to parse Orbit.lock file", e);
+                    Ok(LockFile::new())
+                }
+            }
         } else {
             Ok(Self {
                 ip: Vec::new(),

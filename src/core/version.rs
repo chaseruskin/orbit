@@ -87,6 +87,16 @@ impl std::str::FromStr for AnyVersion {
     }
 }
 
+impl From<&Version> for AnyVersion {
+    fn from(value: &Version) -> Self {
+        Self::Specific(PartialVersion { 
+            major: value.get_major(), 
+            minor: Some(value.get_minor()), 
+            patch: Some(value.get_patch()),
+        })
+    }
+}
+
 #[derive(Debug, PartialEq, PartialOrd, Clone, Eq, Ord)]
 pub struct PartialVersion {
     major: VerNum,

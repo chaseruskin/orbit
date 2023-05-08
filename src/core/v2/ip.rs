@@ -17,6 +17,7 @@ use crate::core::lang::vhdl::token::Identifier;
 use std::str::FromStr;
 use std::collections::HashMap;
 use std::error::Error;
+use crate::core::v2::lockfile::LockEntry;
 
 #[derive(Debug, PartialEq)]
 pub struct Ip {
@@ -94,18 +95,37 @@ impl Ip {
 
     /// Checks the metadata file for a entry for `dynamic`.
     pub fn is_dynamic(&self) -> bool {
-        let meta_path = self.get_root().join(ORBIT_METADATA_FILE);
-        let table = if std::path::Path::exists(&meta_path) == true {
-            let contents = std::fs::read_to_string(meta_path).unwrap();
-            contents.parse::<Document>().unwrap()
-        } else {
-            return false
-        };
-        match table.get("dynamic") {
-            Some(item) => match item.as_bool() {
-                Some(b) => b,
-                None => false,
-            },
+        self.get_root().join(".orbit-dynamic").exists() == true
+    }
+
+    pub fn generate_dst_lut(&self) -> HashMap<Identifier, String> {
+        // @todo: read units from metadata to speed up results
+        let units = Self::collect_units(true, self.get_root()).unwrap();
+        let checksum = Ip::read_checksum_proof(self.get_root()).unwrap();
+        // compose the lut for symbol transformation
+        let mut lut = HashMap::new();
+        units.into_iter().for_each(|(key, _)| {
+            lut.insert(
+                key.clone(), 
+                "_".to_string() + checksum.to_string().get(0..10).unwrap()
+            );
+        });
+        lut
+    }
+
+    pub fn set_as_dynamic(&self) -> () {
+        let _ = std::fs::write(self.get_root().join(".orbit-dynamic"), "").unwrap();
+    }
+
+    /// Checks if needing to read off the lock file.
+    /// 
+    /// This determines if the lock file's data matches the Orbit.toml manifest data,
+    /// indicating it is safe to pull data from the lock file and no changes would be
+    /// made to the lock file.
+    pub fn can_use_lock(&self) -> bool {
+        let target = self.get_lock().get(self.get_man().get_ip().get_name(), self.get_man().get_ip().get_version());
+        match target {
+            Some(entry) => entry.matches_target(&LockEntry::from(self)),
             None => false,
         }
     }
@@ -294,7 +314,7 @@ impl Serialize for IpSpec {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&self.to_string())
+        serializer.serialize_str(&format!("{}{}{}", self.get_name(), SPEC_DELIM, self.get_version()))
     }
 }
 

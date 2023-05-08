@@ -12,6 +12,7 @@ use std::io::Write;
 use crate::core::v2::manifest::Manifest;
 use super::super::orbit::AnyResult;
 use super::new::New;
+use crate::util::filesystem;
 
 #[derive(Debug, PartialEq)]
 pub struct Init {
@@ -41,7 +42,7 @@ impl Command<Context> for Init {
         // @todo: refactor due to heavy overlap with 'new' command
 
         // resolve any relative path
-        let dest = PathBuf::standardize(self.path.clone());
+        let dest = filesystem::full_normal(&self.path);
         // verify we are not already in an ip directory
         {
 

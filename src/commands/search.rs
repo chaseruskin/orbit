@@ -1,6 +1,4 @@
 use clif::cmd::{FromCli, Command};
-use crate::core::v2::catalog::Catalog;
-use crate::core::v2::catalog::IpLevel;
 use clif::Cli;
 use clif::arg::{Positional, Flag};
 use clif::Error as CliError;
@@ -9,6 +7,10 @@ use crate::util::anyerror::Fault;
 use std::collections::BTreeMap;
 use crate::OrbitResult;
 use crate::core::pkgid::PkgPart;
+
+use crate::core::v2::catalog::Catalog;
+use crate::core::version::AnyVersion;
+use crate::core::v2::catalog::IpLevel;
 
 #[derive(Debug, PartialEq)]
 pub struct Search {
@@ -63,13 +65,14 @@ impl Search {
 
     fn fmt_table(catalog: BTreeMap<&PkgPart, &IpLevel>) -> String {
         let header = format!("\
-{:<28}{:<9}
-{2:->28}{2:->9}\n", 
-            "Package", "Status", " ");
+{:<28}{:<10}{:<9}
+{3:->28}{3:->10}{3:->9}\n", 
+            "Package", "Latest", "Status", " ");
         let mut body = String::new();
         for (ip, status) in catalog {
-            body.push_str(&format!("{:<28}{:<2}{:<2}{:<2}\n", 
+            body.push_str(&format!("{:<28}{:<10}{:<7}{:<2}{:<2}\n", 
                 ip.to_string(),
+                status.get(&AnyVersion::Latest, true).unwrap().get_man().get_ip().get_version(),
                 { if status.is_developing() { "D" } else { "" } },
                 { if status.is_installed() { "I" } else { "" } },
                 { if status.is_available() { "A" } else { "" } },
@@ -117,8 +120,8 @@ mod test {
     fn fmt_table() {
         let t = Search::fmt_table(BTreeMap::new());
         let table = "\
-Package                     Status   
---------------------------- -------- 
+Package                     Latest    Status   
+--------------------------- --------- -------- 
 ";
         assert_eq!(t, table);
     }

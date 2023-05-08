@@ -20,12 +20,12 @@
 use clif::cmd::{FromCli, Command};
 use crate::core::v2::catalog::CacheSlot;
 use crate::core::v2::catalog::Catalog;
-use crate::core::manifest;
-use crate::core::v2::manifest::IP_MANIFEST_FILE;
+use crate::core::v2::manifest::{IP_MANIFEST_FILE, ORBIT_SUM_FILE};
 use crate::core::v2::manifest::Manifest;
 use crate::core::v2::manifest::FromFile;
 use crate::util::filesystem;
 use clif::Cli;
+use std::env::current_dir;
 use std::fs;
 use clif::arg::{Optional, Flag};
 use clif::Error as CliError;
@@ -58,20 +58,18 @@ impl Command<Context> for Install {
 
     fn exec(&self, c: &Context) -> Self::Status {
         // verify the path points to a valid ip
-        let dest = PathBuf::standardize(self.path.clone());
+        let path = filesystem::resolve_rel_path(&current_dir().unwrap(), &filesystem::into_std_str(self.path.clone()));
+        let dest = PathBuf::standardize(PathBuf::from(path));
 
         Ip::is_valid(&dest)?;
-
-        // todo!();
         
-        // let temporary directory exist for lifetime of install in case of using it
-        // let temp_dir = tempdir()?;
         // gather the catalog (all manifests)
         let catalog = Catalog::new()
             // .store(c.get_store_path())
             // .development(c.get_development_path().unwrap())?
             .installations(c.get_cache_path())?;
             // .available(c.get_vendors())?;
+
         // enter action
         self.run(&dest, &catalog)
     }
@@ -151,13 +149,13 @@ impl Install {
         }
         // copy contents into cache slot from temporary destination
         crate::util::filesystem::copy(&dest, &cache_slot, false)?;
-        
+ 
         // clean up the temporary directory ourself
         fs::remove_dir_all(dest)?;
 
         // write the checksum to the directory (this file is excluded from auditing)
-        std::fs::write(&cache_slot.join(manifest::ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
-
+        std::fs::write(&cache_slot.join(ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
+        
         Ok(())
     }
 

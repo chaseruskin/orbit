@@ -4,6 +4,7 @@ use std::ffi::OsStr;
 use std::path::{Path, Component};
 use home::home_dir;
 use std::path::PathBuf;
+use std::env::current_dir;
 use std::env;
 use crate::core::fileset;
 use crate::core::manifest;
@@ -25,11 +26,10 @@ use super::anyerror::Fault;
 pub fn gather_current_files(path: &PathBuf, strip_base: bool) -> Vec<String> {
     let m = WalkBuilder::new(path)
         .hidden(false)
-        .git_ignore(true) // @note: remove because no git dep?
         .add_custom_ignore_filename(ORBIT_IGNORE_FILE)
         .filter_entry(|p| {
             match p.file_name().to_str().unwrap() {
-                manifest::ORBIT_SUM_FILE | GIT_DIR | lockfile::IP_LOCK_FILE | manifest::ORBIT_METADATA_FILE => false,
+                manifest::ORBIT_SUM_FILE | lockfile::IP_LOCK_FILE | manifest::ORBIT_METADATA_FILE => false,
                 _ => true,
             }
         })
@@ -224,6 +224,12 @@ pub fn to_absolute(p: PathBuf) -> Result<PathBuf, Fault> {
         .collect())
 }
 
+// Normalizes the path and resolves any relativity to the current working directory.
+pub fn full_normal(p: &PathBuf) -> PathBuf {
+    let path = resolve_rel_path(&current_dir().unwrap(), &into_std_str(p.clone()));
+    PathBuf::standardize(PathBuf::from(path))
+}
+
 pub trait Standardize {
     fn standardize<T>(_: T) -> Self where T: Into<Self>, Self: Sized;
 }
@@ -321,7 +327,6 @@ pub fn invoke(cmd: &String, args: &Vec<String>, try_again: bool) -> std::io::Res
     }
 }
 
-const GIT_DIR: &str = ".git";
 const ORBIT_IGNORE_FILE: &str = ".orbitignore";
 
 #[cfg(test)]

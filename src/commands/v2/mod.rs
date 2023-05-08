@@ -5,3 +5,4 @@ pub mod get;
 pub mod install;
 pub mod plan;
 pub mod build;
+pub mod tree;

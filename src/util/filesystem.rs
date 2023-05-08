@@ -187,7 +187,7 @@ pub fn copy(source: &PathBuf, target: &PathBuf, minimal: bool) -> Result<(), Fau
         }
     }
     // remove all empty directories
-    for from in from_paths.iter().filter(|f| f.is_dir()) {
+    for from in from_paths.iter().rev().filter(|f| f.is_dir()) {
         // replace common `source` path with `target` path
         let to = target.join(remove_base(&source, from));
         // check if directory is empty

@@ -337,7 +337,7 @@ mod test {
     #[test]
     fn resolve_path_simple() {
         // expands relative path to full path
-        assert_eq!(resolve_rel_path(&PathBuf::from(env!("CARGO_MANIFEST_DIR")), "src/lib.rs"), PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/lib.rs").display().to_string());
+        assert_eq!(resolve_rel_path(&PathBuf::from(env!("CARGO_MANIFEST_DIR")), "src/lib.rs"), into_std_str(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/lib.rs")));
         // no file or directory named 'orbit' at the relative root
         assert_eq!(resolve_rel_path(&PathBuf::from(env!("CARGO_MANIFEST_DIR")), "orbit"), String::from("orbit"));
         // not relative

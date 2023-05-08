@@ -1384,9 +1384,10 @@ impl VHDLSymbol {
                     Keyword::Procedure | Keyword::Function => true,
                     _ => false,
                 },
-                None => false,
+                
+                None => true,
             },
-            None => false,
+            None => true,
         }
     }
 

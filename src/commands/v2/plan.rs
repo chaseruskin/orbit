@@ -419,7 +419,7 @@ impl Plan {
             .collect();
 
         // determine the top-level node index
-        let top = if let Some(t) = &self.top {
+        let top: Option<usize> = if let Some(t) = &self.top {
             match shallow_graph.get_node_by_key(&&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
                 Some(node) => {
                     // verify the unit is an entity that is not a testbench
@@ -430,7 +430,7 @@ impl Plan {
                     } else {
                         return Err(PlanError::BadEntity(t.clone()))?
                     }
-                    let n = node.index();
+                    let n: usize = node.index();
                     // try to detect top level testbench
                     if bench.is_none() {
                         // check if only 1 is a testbench
@@ -444,7 +444,8 @@ impl Plan {
                             _ => return Err(PlanError::Ambiguous("testbenches".to_string(), benches.into_iter().map(|f| { graph.get_key_by_index(f).unwrap().get_suffix().clone() }).collect()))?,
                         };
                     }
-                    Some(n)
+                    // access the index from the global graph
+                    Some(graph.get_node_by_key(&&CompoundIdentifier::new(working_lib.clone(), t.clone())).unwrap().index())
                 },
                 None => return Err(PlanError::UnknownEntity(t.clone()))?
             }

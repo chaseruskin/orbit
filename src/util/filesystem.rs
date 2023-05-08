@@ -260,7 +260,7 @@ impl Standardize for PathBuf {
             } else if root == Component::RootDir {
                 result.push(String::from(root.as_os_str().to_str().unwrap()))
             } else {
-                for part in std::env::current_dir().unwrap().components() { result.push(c_str(part)) }
+                // for part in std::env::current_dir().unwrap().components() { result.push(c_str(part)) }
                 match root.as_os_str().to_str().unwrap() {
                     "." => (),
                     ".." => { result.pop(); () },
@@ -332,11 +332,13 @@ mod test {
     #[test]
     fn resolve_path_simple() {
         // expands relative path to full path
-        assert_eq!(resolve_rel_path(&PathBuf::from(env!("CARGO_MANIFEST_DIR")), "src/lib.rs"), PathBuf::standardize("./src/lib.rs").display().to_string());
+        assert_eq!(resolve_rel_path(&PathBuf::from(env!("CARGO_MANIFEST_DIR")), "src/lib.rs"), PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/lib.rs").display().to_string());
         // no file or directory named 'orbit' at the relative root
         assert_eq!(resolve_rel_path(&PathBuf::from(env!("CARGO_MANIFEST_DIR")), "orbit"), String::from("orbit"));
         // not relative
         assert_eq!(resolve_rel_path(&PathBuf::from(env!("CARGO_MANIFEST_DIR")), "/src"), String::from("/src"));
+
+        // assert_eq!(resolve_rel_path(&PathBuf::from("D:/a/orbit/orbit/"), "src/lib.rs"), String::from("D:/a/orbit/orbit/src/lib.rs"));
     }
 
     #[test]
@@ -345,13 +347,13 @@ mod test {
         assert_eq!(PathBuf::standardize(p), PathBuf::from(home_dir().unwrap().join(".orbit/plugins/a.txt").to_str().unwrap().replace("\\", "/")));
 
         let p = PathBuf::from("home/.././b.txt");
-        assert_eq!(PathBuf::standardize(p), PathBuf::from(std::env::current_dir().unwrap().join("b.txt").to_str().unwrap().replace("\\", "/")));
+        assert_eq!(PathBuf::standardize(p), PathBuf::from("b.txt"));
 
         let p = PathBuf::from("/home\\c.txt");
         assert_eq!(PathBuf::standardize(p), PathBuf::from("/home/c.txt"));
 
         let p = PathBuf::from("./d.txt");
-        assert_eq!(PathBuf::standardize(p), PathBuf::from(std::env::current_dir().unwrap().join("d.txt").to_str().unwrap().replace("\\", "/")));
+        assert_eq!(PathBuf::standardize(p).display().to_string(), "d.txt");
     }
 
     #[test]

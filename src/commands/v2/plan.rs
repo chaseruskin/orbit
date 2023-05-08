@@ -31,6 +31,8 @@ use crate::core::v2::algo::IpNode;
 use crate::core::v2::ip::IpSpec;
 use crate::core::v2::lockfile::LockFile;
 
+use crate::util::graphmap::Node;
+
 #[derive(Debug, PartialEq)]
 pub struct Plan {
     plugin: Option<String>,
@@ -332,31 +334,23 @@ impl Plan {
         Ok(())
     }
 
-    fn detect_bench(&self, graph: &GraphMap<CompoundIdentifier, HdlNode, ()>, working_lib: &Identifier, target: &Ip) -> Result<(Option<usize>, Option<usize>), PlanError> {
-        // filter to display tops that have ports (not testbenches)
-        let shallow_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> = graph.iter()
-            // traverse subset of graph by filtering only for working library entities (current lib)
-            .filter(|f| match f.0.get_prefix() { 
-                Some(iden) => iden == working_lib, 
-                None => false } )
-            // filter by checking if the node's ip is the same as target
-            .filter(|f| {
-                let mut in_range: bool = true;
-                for tag in f.1.get_associated_files() {
-                    if tag.get_ip() != target { in_range = false; break; }
-                }
-                in_range
-            }) 
-            .collect();
-        
+    /// Maps the local index to the global index between two different maps.
+    /// 
+    /// Assumes `local` is a subset of `global`.
+    fn local_to_global<'a>(local_index: usize, global: &'a GraphMap<CompoundIdentifier, HdlNode, ()>, local: &GraphMap<&CompoundIdentifier, &HdlNode, &()>) -> &'a Node<HdlNode<'a>> {
+        global.get_node_by_key(local.get_key_by_index(local_index).unwrap()).unwrap()
+    }
+
+    fn detect_bench(&self, _graph: &GraphMap<CompoundIdentifier, HdlNode, ()>, local: &GraphMap<&CompoundIdentifier, &HdlNode, &()>, working_lib: &Identifier) -> Result<(Option<usize>, Option<usize>), PlanError> {        
         Ok(if let Some(t) = &self.bench {
-            match shallow_graph.get_node_by_key(&&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
+            match local.get_node_by_key(&&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
                 // verify the unit is an entity that is a testbench
                 Some(node) => {
                     if let Some(e) = node.as_ref().get_symbol().as_entity() {
                         if e.is_testbench() == false {
                             return Err(PlanError::BadTestbench(t.clone()))?
                         }
+                        // return the id from the local graph
                         (None, Some(node.index()))
                     } else {
                         return Err(PlanError::BadEntity(t.clone()))?
@@ -366,16 +360,17 @@ impl Plan {
             }
         // try to find the naturally occurring top-level if user did not provide --bench and did not provide --top
         } else if self.top.is_none() {
-            match shallow_graph.find_root() {
+            match local.find_root() {
                 // only detected a single root
                 Ok(n) => {
-                    let n = graph.get_node_by_key(shallow_graph.get_key_by_index(n.index()).unwrap()).unwrap();
+                    let n = local.get_node_by_key(local.get_key_by_index(n.index()).unwrap()).unwrap();
                     // verify the root is a testbench
                     if let Some(ent) = n.as_ref().get_symbol().as_entity() {
                         if ent.is_testbench() == true {
                             (None, Some(n.index()))
                         // otherwise we found the toplevel node that is not a testbench "natural top"
                         } else {
+                            // return the local index
                             (Some(n.index()), None)
                         }
                     } else {
@@ -394,33 +389,16 @@ impl Plan {
             (None, None)
         })
     }
-
     
     /// Given a `graph` and optionally a `bench`, detect the index corresponding
     /// to the top.
     /// 
     /// This function looks and checks if there is a single predecessor to the
     /// `bench` node.
-    fn detect_top(&self, graph: &GraphMap<CompoundIdentifier, HdlNode, ()>, working_lib: &Identifier, target: &Ip, natural_top: Option<usize>, mut bench: Option<usize>) -> Result<(Option<usize>, Option<usize>), PlanError> {
-        // restrict graph to units only found within the current IP
-        let shallow_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> = graph.iter()
-            // traverse subset of graph by filtering only for working library entities (current lib)
-            .filter(|f| match f.0.get_prefix() { 
-                Some(iden) => iden == working_lib, 
-                None => false } )
-            // filter by checking if the node's ip is the same as target
-            .filter(|f| {
-                let mut in_range: bool = true;
-                for tag in f.1.get_associated_files() {
-                    if tag.get_ip() != target { in_range = false; break; }
-                }
-                in_range
-            }) 
-            .collect();
-
+    fn detect_top(&self, _graph: &GraphMap<CompoundIdentifier, HdlNode, ()>, local: &GraphMap<&CompoundIdentifier, &HdlNode, &()>, working_lib: &Identifier, natural_top: Option<usize>, mut bench: Option<usize>) -> Result<(Option<usize>, Option<usize>), PlanError> {
         // determine the top-level node index
         let top: Option<usize> = if let Some(t) = &self.top {
-            match shallow_graph.get_node_by_key(&&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
+            match local.get_node_by_key(&&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
                 Some(node) => {
                     // verify the unit is an entity that is not a testbench
                     if let Some(e) = node.as_ref().get_symbol().as_entity() {
@@ -434,18 +412,18 @@ impl Plan {
                     // try to detect top level testbench
                     if bench.is_none() {
                         // check if only 1 is a testbench
-                        let benches: Vec<usize> =  shallow_graph.get_graph().successors(n)
-                            .filter(|f| shallow_graph.get_node_by_index(*f).unwrap().as_ref().get_symbol().as_entity().unwrap().is_testbench() )
+                        let benches: Vec<usize> =  local.get_graph().successors(n)
+                            .filter(|f| local.get_node_by_index(*f).unwrap().as_ref().get_symbol().as_entity().unwrap().is_testbench() )
                             .collect();
                         // detect the testbench
                         bench = match benches.len() {
                             0 => None,
                             1 => Some(*benches.first().unwrap()),
-                            _ => return Err(PlanError::Ambiguous("testbenches".to_string(), benches.into_iter().map(|f| { graph.get_key_by_index(f).unwrap().get_suffix().clone() }).collect()))?,
+                            _ => return Err(PlanError::Ambiguous("testbenches".to_string(), benches.into_iter().map(|f| { local.get_key_by_index(f).unwrap().get_suffix().clone() }).collect()))?,
                         };
                     }
-                    // access the index from the global graph
-                    Some(graph.get_node_by_key(&&CompoundIdentifier::new(working_lib.clone(), t.clone())).unwrap().index())
+                    // return the index from the local graph
+                    Some(n)
                 },
                 None => return Err(PlanError::UnknownEntity(t.clone()))?
             }
@@ -454,17 +432,17 @@ impl Plan {
                 Some(nt) => Some(nt),
                 None => {
                     if let Some(b) = bench {
-                        let entities: Vec<(usize, &symbol::Entity)> = graph.get_graph().predecessors(b)
+                        let entities: Vec<(usize, &symbol::Entity)> = local.get_graph().predecessors(b)
                             .filter_map(|f| {
-                                if let Some(e) = graph.get_node_by_index(f).unwrap().as_ref().get_symbol().as_entity() { 
+                                if let Some(e) = local.get_node_by_index(f).unwrap().as_ref().get_symbol().as_entity() { 
                                     Some((f, e)) } else { None }
                                 })
                             .collect();
                         match entities.len() {
                             // todo: do not make this an error if no entities are tested in testbench
-                            0 => return Err(PlanError::TestbenchNoTest(graph.get_key_by_index(b).unwrap().get_suffix().clone())),
+                            0 => return Err(PlanError::TestbenchNoTest(local.get_key_by_index(b).unwrap().get_suffix().clone())),
                             1 => Some(entities[0].0),
-                            _ => return Err(PlanError::Ambiguous("entities instantiated in the testbench".to_string(), entities.into_iter().map(|f| { graph.get_key_by_index(f.0).unwrap().get_suffix().clone() }).collect()))?
+                            _ => return Err(PlanError::Ambiguous("entities instantiated in the testbench".to_string(), entities.into_iter().map(|f| { local.get_key_by_index(f.0).unwrap().get_suffix().clone() }).collect()))?
                         }
                     } else {
                         None
@@ -496,11 +474,27 @@ impl Plan {
         }
 
         let files = algo::build_ip_file_list(&ip_graph);
-        let current_graph = Self::build_full_graph(&files);
+        let global_graph = Self::build_full_graph(&files);
 
         let working_lib = Identifier::new_working();
 
-        let (top, bench) = match self.detect_bench(&current_graph, &working_lib, &target) {
+        // restrict graph to units only found within the current IP
+        let local_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> = global_graph.iter()
+            // traverse subset of graph by filtering only for working library entities (current lib)
+            .filter(|f| match f.0.get_prefix() { 
+                Some(iden) => iden == &working_lib, 
+                None => false } )
+            // filter by checking if the node's ip is the same as target
+            .filter(|f| {
+                let mut in_range: bool = true;
+                for tag in f.1.get_associated_files() {
+                    if tag.get_ip() != &target { in_range = false; break; }
+                }
+                in_range
+            }) 
+            .collect();
+
+        let (top, bench) = match self.detect_bench(&global_graph, &local_graph, &working_lib) {
             Ok(r) => r,
             Err(e) => match e {
                 PlanError::Ambiguous(_, _) => if self.all == true { (None, None) } else { return Err(e)? }
@@ -508,20 +502,30 @@ impl Plan {
             }
         };
         // determine the top-level node index
-        let (top, bench) = match self.detect_top(&current_graph, &working_lib, &target, top, bench) {
+        let (top, bench) = match self.detect_top(&global_graph, &local_graph, &working_lib, top, bench) {
             Ok(r) => r,
             Err(e) => match e {
                 PlanError::Ambiguous(_, _) => if self.all == true { (top, bench) } else { return Err(e)? }
                 _ => return Err(e)?
             }
         };
+
+        let top = match top {
+            Some(i) => Some(Self::local_to_global(i, &global_graph, &local_graph).index()),
+            None => None,
+        };
+
+        let bench = match bench {
+            Some(i) => Some(Self::local_to_global(i, &global_graph, &local_graph).index()),
+            None => None,
+        };
         // guarantees top exists if not using --all
 
         // error if the user-defined top is not instantiated in the testbench. Say this can be fixed by adding '--all'
         if let Some(b) = &bench {
             // @idea: merge two topological sorted lists together by running top sort from bench and top sort from top if in this situation
-            if self.all == false && current_graph.get_graph().successors(top.unwrap()).find(|i| i == b).is_none() {
-                return Err(AnyError(format!("top unit '{}' is not tested in testbench '{}'\n\nIf you wish to continue, add the `--all` flag", current_graph.get_key_by_index(top.unwrap()).unwrap().get_suffix(), current_graph.get_key_by_index(*b).unwrap().get_suffix())))?
+            if self.all == false && global_graph.get_graph().successors(top.unwrap()).find(|i| i == b).is_none() {
+                return Err(AnyError(format!("top unit '{}' is not tested in testbench '{}'\n\nIf you wish to continue, add the `--all` flag", global_graph.get_key_by_index(top.unwrap()).unwrap().get_suffix(), global_graph.get_key_by_index(*b).unwrap().get_suffix())))?
             }
         }
 
@@ -531,7 +535,7 @@ impl Plan {
         // compute minimal topological ordering
         let min_order = match self.all {
             // perform topological sort on the entire graph
-            true => current_graph.get_graph().topological_sort(),
+            true => global_graph.get_graph().topological_sort(),
             // perform topological sort on minimal subset of the graph
             false => {
                 // determine which point is the upmost root 
@@ -539,7 +543,7 @@ impl Plan {
                     Some(b) => b,
                     None => top.unwrap()
                 };
-                current_graph.get_graph().minimal_topological_sort(highest_point)
+                global_graph.get_graph().minimal_topological_sort(highest_point)
             }
         };
 
@@ -548,7 +552,7 @@ impl Plan {
             let mut f_list = Vec::new();
             for i in &min_order {
                 // access the node key
-                let ipfs = current_graph.get_node_by_index(*i).unwrap().as_ref().get_associated_files();
+                let ipfs = global_graph.get_node_by_index(*i).unwrap().as_ref().get_associated_files();
                 // access the files associated with this key
                 f_list.append(&mut ipfs.into_iter().map(|i| *i).collect());
             }
@@ -557,11 +561,11 @@ impl Plan {
 
         // grab the names as strings
         let top_name = match top {
-            Some(i) => current_graph.get_key_by_index(i).unwrap().get_suffix().to_string(),
+            Some(i) => global_graph.get_key_by_index(i).unwrap().get_suffix().to_string(),
             None => String::new(),
         };
         let bench_name = match bench {
-            Some(i) => current_graph.get_key_by_index(i).unwrap().get_suffix().to_string(),
+            Some(i) => global_graph.get_key_by_index(i).unwrap().get_suffix().to_string(),
             None => String::new()
         };
 

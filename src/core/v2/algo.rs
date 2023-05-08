@@ -131,6 +131,7 @@ fn graph_ip<'a>(root: &'a Ip, catalog: &'a Catalog<'a>) -> Result<GraphMap<IpSpe
                         }
                     },
                     // todo: try to use the lock file to fill in missing pieces
+                    // @TODO: check the queue for this IP and attempt to install
                     None => return Err(AnyError(format!("unknown ip: {}", pkgid)))?,
                 }
             }
@@ -348,7 +349,7 @@ impl<'a> IpFileNode<'a> {
         &self.file
     }
 
-    pub fn get_ip_manifest(&self) -> &Ip {
+    pub fn get_ip(&self) -> &Ip {
         &self.ip
     }
 

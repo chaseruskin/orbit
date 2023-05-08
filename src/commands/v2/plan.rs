@@ -208,32 +208,6 @@ impl<'a> HdlNode<'a> {
 }
 
 impl Plan {
-    /// Clones the ip entry's repository to a temporary directory and then installs the appropriate version `ver`.
-    // pub fn install_from_lock_entry(entry: &LockEntry, ver: &AnyVersion, catalog: &Catalog, disable_ssh: bool) -> Result<(), Fault> {
-    //     let temp = tempdir()?;
-    //     // try to use the source
-    //     let from = if let Some(source) = entry.get_source() {
-    //         let temp = temp.as_ref().to_path_buf();
-    //         println!("info: fetching {} repository ...", entry.get_name());
-    //         extgit::ExtGit::new(None)
-    //             .clone(source, &temp, disable_ssh)?;
-    //         temp
-    //     // try to find an install path
-    //     } else {
-    //         install::fetch_install_path(entry.get_name(), &catalog, disable_ssh, &temp)?
-    //     };
-    //     let ip = install::Install::install(&from, &ver, catalog.get_cache_path(), true, catalog.get_store())?;
-
-    //     // verify the checksums align
-    //     match &ip.read_checksum_proof().unwrap() == entry.get_sum().unwrap() {
-    //         true => Ok(()),
-    //         false => {
-    //             // delete the entry from the cache slot
-    //             ip.remove()?;
-    //             Err(AnyError(format!("failed to install ip '{}' from lockfile due to differing checksums\n\ncomputed: {}\nexpected: {}", entry.get_name(), ip.read_checksum_proof().unwrap(), entry.get_sum().unwrap())))?
-    //         }
-    //     } 
-    // }
 
     /// Builds a graph of design units. Used for planning.
     fn build_full_graph<'a>(files: &'a Vec<IpFileNode>) -> GraphMap<CompoundIdentifier, HdlNode<'a>, ()> {
@@ -358,9 +332,25 @@ impl Plan {
         Ok(())
     }
 
-    fn detect_bench(&self, graph: &GraphMap<CompoundIdentifier, HdlNode, ()>, working_lib: &Identifier) -> Result<(Option<usize>, Option<usize>), PlanError> {
+    fn detect_bench(&self, graph: &GraphMap<CompoundIdentifier, HdlNode, ()>, working_lib: &Identifier, target: &Ip) -> Result<(Option<usize>, Option<usize>), PlanError> {
+        // filter to display tops that have ports (not testbenches)
+        let shallow_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> = graph.iter()
+            // traverse subset of graph by filtering only for working library entities (current lib)
+            .filter(|f| match f.0.get_prefix() { 
+                Some(iden) => iden == working_lib, 
+                None => false } )
+            // filter by checking if the node's ip is the same as target
+            .filter(|f| {
+                let mut in_range: bool = true;
+                for tag in f.1.get_associated_files() {
+                    if tag.get_ip() != target { in_range = false; break; }
+                }
+                in_range
+            }) 
+            .collect();
+        
         Ok(if let Some(t) = &self.bench {
-            match graph.get_node_by_key(&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
+            match shallow_graph.get_node_by_key(&&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
                 // verify the unit is an entity that is a testbench
                 Some(node) => {
                     if let Some(e) = node.as_ref().get_symbol().as_entity() {
@@ -376,13 +366,6 @@ impl Plan {
             }
         // try to find the naturally occurring top-level if user did not provide --bench and did not provide --top
         } else if self.top.is_none() {
-            // filter to display tops that have ports (not testbenches)
-            // traverse subset of graph by filtering only for working library entities
-            let shallow_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> = graph.iter()
-                .filter(|f| match f.0.get_prefix() { 
-                    Some(iden) => iden == working_lib, 
-                    None => false } )
-                .collect();
             match shallow_graph.find_root() {
                 // only detected a single root
                 Ok(n) => {
@@ -418,10 +401,26 @@ impl Plan {
     /// 
     /// This function looks and checks if there is a single predecessor to the
     /// `bench` node.
-    fn detect_top(&self, graph: &GraphMap<CompoundIdentifier, HdlNode, ()>, working_lib: &Identifier, natural_top: Option<usize>, mut bench: Option<usize>) -> Result<(Option<usize>, Option<usize>), PlanError> {
+    fn detect_top(&self, graph: &GraphMap<CompoundIdentifier, HdlNode, ()>, working_lib: &Identifier, target: &Ip, natural_top: Option<usize>, mut bench: Option<usize>) -> Result<(Option<usize>, Option<usize>), PlanError> {
+        // restrict graph to units only found within the current IP
+        let shallow_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> = graph.iter()
+            // traverse subset of graph by filtering only for working library entities (current lib)
+            .filter(|f| match f.0.get_prefix() { 
+                Some(iden) => iden == working_lib, 
+                None => false } )
+            // filter by checking if the node's ip is the same as target
+            .filter(|f| {
+                let mut in_range: bool = true;
+                for tag in f.1.get_associated_files() {
+                    if tag.get_ip() != target { in_range = false; break; }
+                }
+                in_range
+            }) 
+            .collect();
+
         // determine the top-level node index
         let top = if let Some(t) = &self.top {
-            match graph.get_node_by_key(&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
+            match shallow_graph.get_node_by_key(&&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
                 Some(node) => {
                     // verify the unit is an entity that is not a testbench
                     if let Some(e) = node.as_ref().get_symbol().as_entity() {
@@ -435,8 +434,8 @@ impl Plan {
                     // try to detect top level testbench
                     if bench.is_none() {
                         // check if only 1 is a testbench
-                        let benches: Vec<usize> =  graph.get_graph().successors(n)
-                            .filter(|f| graph.get_node_by_index(*f).unwrap().as_ref().get_symbol().as_entity().unwrap().is_testbench() )
+                        let benches: Vec<usize> =  shallow_graph.get_graph().successors(n)
+                            .filter(|f| shallow_graph.get_node_by_index(*f).unwrap().as_ref().get_symbol().as_entity().unwrap().is_testbench() )
                             .collect();
                         // detect the testbench
                         bench = match benches.len() {
@@ -500,7 +499,7 @@ impl Plan {
 
         let working_lib = Identifier::new_working();
 
-        let (top, bench) = match self.detect_bench(&current_graph, &working_lib) {
+        let (top, bench) = match self.detect_bench(&current_graph, &working_lib, &target) {
             Ok(r) => r,
             Err(e) => match e {
                 PlanError::Ambiguous(_, _) => if self.all == true { (None, None) } else { return Err(e)? }
@@ -508,7 +507,7 @@ impl Plan {
             }
         };
         // determine the top-level node index
-        let (top, bench) = match self.detect_top(&current_graph, &working_lib, top, bench) {
+        let (top, bench) = match self.detect_top(&current_graph, &working_lib, &target, top, bench) {
             Ok(r) => r,
             Err(e) => match e {
                 PlanError::Ambiguous(_, _) => if self.all == true { (top, bench) } else { return Err(e)? }

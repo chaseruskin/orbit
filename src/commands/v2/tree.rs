@@ -311,7 +311,7 @@ impl<'a> EntityNode<'a> {
         } else {
             match fmt {
                 IdentifierFormat::Long => {
-                    let ip = self.files.first().unwrap().get_ip_manifest();
+                    let ip = self.files.first().unwrap().get_ip();
                     format!("{} - {} v{}", self.entity.get_name(), ip.get_man().get_ip().get_name(), ip.get_man().get_ip().get_version())
                 }
                 IdentifierFormat::Short => format!("{}", self.entity.get_name()),

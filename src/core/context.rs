@@ -172,6 +172,11 @@ impl Context {
         &self.vendors
     }
 
+    /// References the queue directory.
+    pub fn get_queue_path(&self) -> &PathBuf {
+        &self.queue_path
+    }
+
     /// Configures and reads data from the settings object to return a `Settings` struct
     /// in the `Context`. 
     /// 

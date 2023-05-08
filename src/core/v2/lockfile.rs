@@ -232,8 +232,8 @@ name = 'l1'
 version = '0.5.0'
 source = 'https://go1.here'
 dependencies = [
-    'l3 v2.3.1',
-    'l2 v1.0.0',
+    'l3=2.3.1',
+    'l2=1.0.0',
 ]
 
 [[ip]]

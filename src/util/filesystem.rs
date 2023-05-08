@@ -99,11 +99,10 @@ pub fn get_exe_path() -> Result<PathBuf, Fault> {
 /// config.toml includes, and template paths.
 pub fn resolve_rel_path(root: &std::path::PathBuf, s: &str) -> String {
     let resolved_path = root.join(&s);
-    let rel_path = PathBuf::from(s);
     if std::path::Path::exists(&resolved_path) == true {
         if PathBuf::from(&s).is_relative() == true {
             // write out full path
-            PathBuf::standardize(rel_path).display().to_string()
+            PathBuf::standardize(resolved_path).display().to_string()
         } else {
             s.to_string()
         }

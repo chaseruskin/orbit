@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use clif::cmd::{FromCli, Command};
-use crate::core::manifest::IpManifest;
+use crate::core::v2::ip::Ip;
 use clif::Cli;
 use clif::arg::Positional;
 use clif::Error as CliError;
@@ -62,7 +62,7 @@ impl Command<Context> for Env {
         // check if in an ip to add those variables
         if let Some(ip_path) = c.get_ip_path() {
             // check ip
-            if let Ok(ip) = IpManifest::from_path(ip_path) {
+            if let Ok(ip) = Ip::load(ip_path.clone()) {
                 env = env.from_ip(&ip)?;
             }
             // check the build directory

@@ -5,7 +5,7 @@ mod init;
 mod manuals;
 mod search;
 mod plan;
-mod build;
+// mod build;
 mod edit;
 mod launch;
 mod install;

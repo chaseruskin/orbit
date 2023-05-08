@@ -57,6 +57,7 @@ impl Plugin {
         let arguments: Vec<String> = self.args.iter()
             .map(|f| crate::util::filesystem::resolve_rel_path(root_path, f) )
             .collect();
+
         // append args set on the command-line to the base-line of arguments
         let args = [&arguments, extra_args].concat();
         // display the literal command being ran

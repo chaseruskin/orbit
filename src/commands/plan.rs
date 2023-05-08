@@ -1,15 +1,12 @@
 use colored::Colorize;
-use tempfile::tempdir;
 
 use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
-use crate::core::extgit;
 use crate::core::ip::IpFileNode;
 use crate::core::ip::IpNode;
 use crate::core::ip::IpSpec;
 use crate::core::lockfile::LockFile;
 use crate::core::manifest::IpManifest;
-use crate::core::lockfile::LockEntry;
 use crate::core::plugin::PluginError;
 use crate::core::template;
 use crate::core::variable::VariableTable;
@@ -122,11 +119,11 @@ impl Command<Context> for Plan {
                             // no action required
                             Some(_) => (),
                             // install
-                            None => Plan::install_from_lock_entry(&entry, &ver, &catalog, self.disable_ssh)?,
+                            None => todo!() // Plan::install_from_lock_entry(&entry, &ver, &catalog, self.disable_ssh)?,
                         }
                     }
                     // install
-                    None => Plan::install_from_lock_entry(&entry, &ver, &catalog, self.disable_ssh)?,
+                    None => todo!() // Plan::install_from_lock_entry(&entry, &ver, &catalog, self.disable_ssh)?,
                 }
             }
             // recollect the installations to update the catalog
@@ -146,7 +143,6 @@ impl Command<Context> for Plan {
 use crate::core::lang::vhdl::symbol;
 use crate::util::anyerror::AnyError;
 
-use super::install;
 
 #[derive(Debug, PartialEq)]
 pub struct SubUnitNode<'a> {
@@ -208,31 +204,31 @@ impl<'a> HdlNode<'a> {
 
 impl Plan {
     /// Clones the ip entry's repository to a temporary directory and then installs the appropriate version `ver`.
-    pub fn install_from_lock_entry(entry: &LockEntry, ver: &AnyVersion, catalog: &Catalog, disable_ssh: bool) -> Result<(), Fault> {
-        let temp = tempdir()?;
-        // try to use the source
-        let from = if let Some(source) = entry.get_source() {
-            let temp = temp.as_ref().to_path_buf();
-            println!("info: fetching {} repository ...", entry.get_name());
-            extgit::ExtGit::new(None)
-                .clone(source, &temp, disable_ssh)?;
-            temp
-        // try to find an install path
-        } else {
-            install::fetch_install_path(entry.get_name(), &catalog, disable_ssh, &temp)?
-        };
-        let ip = install::Install::install(&from, &ver, catalog.get_cache_path(), true, catalog.get_store())?;
+    // pub fn install_from_lock_entry(entry: &LockEntry, ver: &AnyVersion, catalog: &Catalog, disable_ssh: bool) -> Result<(), Fault> {
+    //     let temp = tempdir()?;
+    //     // try to use the source
+    //     let from = if let Some(source) = entry.get_source() {
+    //         let temp = temp.as_ref().to_path_buf();
+    //         println!("info: fetching {} repository ...", entry.get_name());
+    //         extgit::ExtGit::new(None)
+    //             .clone(source, &temp, disable_ssh)?;
+    //         temp
+    //     // try to find an install path
+    //     } else {
+    //         install::fetch_install_path(entry.get_name(), &catalog, disable_ssh, &temp)?
+    //     };
+    //     let ip = install::Install::install(&from, &ver, catalog.get_cache_path(), true, catalog.get_store())?;
 
-        // verify the checksums align
-        match &ip.read_checksum_proof().unwrap() == entry.get_sum().unwrap() {
-            true => Ok(()),
-            false => {
-                // delete the entry from the cache slot
-                ip.remove()?;
-                Err(AnyError(format!("failed to install ip '{}' from lockfile due to differing checksums\n\ncomputed: {}\nexpected: {}", entry.get_name(), ip.read_checksum_proof().unwrap(), entry.get_sum().unwrap())))?
-            }
-        } 
-    }
+    //     // verify the checksums align
+    //     match &ip.read_checksum_proof().unwrap() == entry.get_sum().unwrap() {
+    //         true => Ok(()),
+    //         false => {
+    //             // delete the entry from the cache slot
+    //             ip.remove()?;
+    //             Err(AnyError(format!("failed to install ip '{}' from lockfile due to differing checksums\n\ncomputed: {}\nexpected: {}", entry.get_name(), ip.read_checksum_proof().unwrap(), entry.get_sum().unwrap())))?
+    //         }
+    //     } 
+    // }
 
     /// Builds a graph of design units. Used for planning.
     fn build_full_graph<'a>(files: &'a Vec<IpFileNode>) -> GraphMap<CompoundIdentifier, HdlNode<'a>, ()> {

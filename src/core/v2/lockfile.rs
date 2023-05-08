@@ -106,7 +106,7 @@ impl LockFile {
     /// Writes the [LockFile] data to disk.
     pub fn save_to_disk(&self, dir: &PathBuf) -> Result<(), Box<dyn Error>> {
         // write a file
-        std::fs::write(dir.join(IP_LOCK_FILE), format!("# {}\n\n{}", LOCK_COMMENT, toml::to_string(&self)?))?;
+        std::fs::write(dir.join(IP_LOCK_FILE), format!("# {}\n\n{}", LOCK_COMMENT, toml::to_string_pretty(&self)?))?;
         Ok(())
     }
 }
@@ -203,7 +203,7 @@ mod test {
                     sum: None,
                     source: Some(Source::from("https://go1.here")),
                     dependencies: vec![
-                        IpSpec::new(PkgPart::from_str("l3").unwrap(), Version::from_str("2.3.1").unwrap()),
+                        IpSpec::new(PkgPart::from_str("l4").unwrap(), Version::from_str("0.5.19").unwrap()),
                         IpSpec::new(PkgPart::from_str("l2").unwrap(), Version::from_str("1.0.0").unwrap()),
                     ],
                 },
@@ -221,33 +221,48 @@ mod test {
                     source: None,
                     dependencies: Vec::new(),
                 },
+                LockEntry {
+                    name: Id::from_str("l4").unwrap(),
+                    version: Version::from_str("0.5.19").unwrap(),
+                    sum: Some(Sha256Hash::new()),
+                    source: None,
+                    dependencies: vec![
+                        IpSpec::new(PkgPart::from_str("l3").unwrap(), Version::from_str("2.3.1").unwrap()),
+                    ],
+                },
             ]
         };
-        // println!("{}", &toml::to_string_pretty(&lock).unwrap());
+        println!("{}", &toml::to_string_pretty(&lock).unwrap());
         assert_eq!(&toml::to_string_pretty(&lock).unwrap(), DATA1);
     }
 
     const DATA1: &str = r#"[[ip]]
-name = 'l1'
-version = '0.5.0'
-source = 'https://go1.here'
+name = "l1"
+version = "0.5.0"
+source = "https://go1.here"
 dependencies = [
-    'l3=2.3.1',
-    'l2=1.0.0',
+    "l4=0.5.19",
+    "l2=1.0.0",
 ]
 
 [[ip]]
-name = 'l2'
-version = '1.0.0'
-sum = '0000000000000000000000000000000000000000000000000000000000000000'
-source = 'https://go2.here'
+name = "l2"
+version = "1.0.0"
+sum = "0000000000000000000000000000000000000000000000000000000000000000"
+source = "https://go2.here"
 dependencies = []
 
 [[ip]]
-name = 'l3'
-version = '2.3.1'
-sum = '0000000000000000000000000000000000000000000000000000000000000000'
+name = "l3"
+version = "2.3.1"
+sum = "0000000000000000000000000000000000000000000000000000000000000000"
 dependencies = []
+
+[[ip]]
+name = "l4"
+version = "0.5.19"
+sum = "0000000000000000000000000000000000000000000000000000000000000000"
+dependencies = ["l3=2.3.1"]
 "#;
 
 }

@@ -5,7 +5,6 @@ use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::config::CONFIG_FILE;
 use crate::core::config::Config;
-use crate::core::extgit::ExtGitError;
 use clif::Cli;
 use crate::OrbitResult;
 use clif::arg::{Flag, Optional};
@@ -124,8 +123,8 @@ impl Edit {
             .arg(path)
             .output()?;
         match output.status.code() {
-            Some(num) => if num != 0 { Err(ExtGitError::NonZeroCode(num, output.stderr))? } else { Ok(()) },
-            None => Err(ExtGitError::SigTermination)?,
+            Some(num) => if num != 0 { Err(ExtError::NonZeroCode(num, output.stderr))? } else { Ok(()) },
+            None => Err(ExtError::SigTermination)?,
         }
     }
 
@@ -147,6 +146,23 @@ impl Edit {
                 println!("{}", PathBuf::standardize(ip.get_root()).display());
                 Ok(())
             }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum ExtError {
+    NonZeroCode(i32, Vec<u8>),
+    SigTermination,
+}
+
+impl std::error::Error for ExtError {}
+
+impl std::fmt::Display for ExtError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NonZeroCode(num, reason) => write!(f, "exited with error code: {} due to {}", num, String::from_utf8_lossy(reason)),
+            Self::SigTermination => write!(f, "terminated by signal"),
         }
     }
 }

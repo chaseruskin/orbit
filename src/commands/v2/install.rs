@@ -24,7 +24,9 @@ use crate::core::manifest;
 use crate::core::v2::manifest::IP_MANIFEST_FILE;
 use crate::core::v2::manifest::Manifest;
 use crate::core::v2::manifest::FromFile;
+use crate::util::filesystem;
 use clif::Cli;
+use std::fs;
 use clif::arg::{Optional, Flag};
 use clif::Error as CliError;
 use crate::core::context::Context;
@@ -100,29 +102,29 @@ impl Install {
     /// It will reinstall if it finds the original installation has a mismatching checksum.
     /// 
     /// Errors if the ip is already installed unless `force` is true.
-    pub fn install(installation_path: &PathBuf, cache_root: &std::path::PathBuf, force: bool) -> Result<(), Fault> {
+    pub fn install(src: &PathBuf, cache_root: &std::path::PathBuf, force: bool) -> Result<(), Fault> {
         // make an ip manifest
-        // let ip = Self::detect_manifest(&installation_path, &version, &store)?;
-        let man = Manifest::from_file(&installation_path.join(IP_MANIFEST_FILE))?;
-        let target = man.get_ip().get_name();
+        let man = Manifest::from_file(&src.join(IP_MANIFEST_FILE))?;
 
-        // move into stored directory to compute checksum for the tagged version
-        let src = installation_path;
-        // let temp = match store.is_stored(&target) {
-        //     true => ip.get_root(),
-        //     // throw repository into the store/ for future use
-        //     false => store.store(&ip)?,
-        // };
-        // update version to be a specific complete spec
+        // temporary destination to move files for processing and manipulation
+        let dest = tempfile::tempdir()?.into_path();
+        filesystem::copy(src, &dest, true)?;
+        
+        // store results from expensive computations into specific orbit files
+
+        // @todo: listing all units
+
+        // @todo: store a LUT for unit names to the correct file to read when computing "get" command
+
+        // @todo: getting the size of the entire directory
+
+        // access the name and version
         let version = man.get_ip().get_version();
-
-        // let repo = Repository::open(&temp)?;
-        // ExtGit::checkout_tag_state(&repo, &version)?;
-
+        let target = man.get_ip().get_name();
         println!("info: installing {} v{} ...", target, version);
 
         // perform sha256 on the temporary cloned directory 
-        let checksum = Ip::compute_checksum(&installation_path);
+        let checksum = Ip::compute_checksum(&dest);
         // println!("checksum: {}", checksum);
 
         // use checksum to create new directory slot
@@ -147,30 +149,30 @@ impl Install {
                 std::fs::remove_dir_all(&cache_slot)?;
             }
         }
-        // copy contents into cache slot
-        crate::util::filesystem::copy(&src, &cache_slot, true)?;
-        // // revert the store back to its HEAD
-        // ExtGit::checkout_head(&repo)?;
+        // copy contents into cache slot from temporary destination
+        crate::util::filesystem::copy(&dest, &cache_slot, false)?;
+        
+        // clean up the temporary directory ourself
+        fs::remove_dir_all(dest)?;
 
-        // write the checksum to the directory
+        // write the checksum to the directory (this file is excluded from auditing)
         std::fs::write(&cache_slot.join(manifest::ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
-        // write the metadata to the directory
-        // let mut installed_ip = IpManifest::from_path(&cache_slot)?;
 
-        // let installed_man = Manifest::from_
-        // installed_ip.write_metadata()?;
         Ok(())
     }
 
-    fn run(&self, installation_path: &PathBuf, catalog: &Catalog) -> Result<(), Fault> {
-        // check if there is a potential lockfile to use
-        let _man = Manifest::from_file(&installation_path.join(IP_MANIFEST_FILE))?;
+    fn run(&self, src: &PathBuf, catalog: &Catalog) -> Result<(), Fault> {
+        // @todo: check if there is a potential lockfile to use
+        let _man = Manifest::from_file(&src.join(IP_MANIFEST_FILE))?;
+
+        // @todo: check lockfile to process installing any IP that may be already downloaded to the queue
+
         // if let Some(lock) = man.get_lockfile() {
         //     Self::install_from_lock_file(&self, &lock, &catalog)?;
         // }
         // if the lockfile is invalid, then it will only install the current request and zero dependencies
         
-        let _ = Self::install(&installation_path, &catalog.get_cache_path(), self.force)?;
+        let _ = Self::install(&src, &catalog.get_cache_path(), self.force)?;
         Ok(())
     }
 }

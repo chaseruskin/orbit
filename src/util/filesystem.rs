@@ -5,8 +5,11 @@ use std::path::{Path, Component};
 use home::home_dir;
 use std::path::PathBuf;
 use std::env;
+use crate::core::fileset;
 use crate::core::manifest;
 use crate::core::lockfile;
+use crate::core::v2::lockfile::IP_LOCK_FILE;
+use crate::core::v2::manifest::IP_MANIFEST_FILE;
 
 use super::anyerror::Fault;
 
@@ -137,6 +140,14 @@ pub fn remove_base(base: &PathBuf, full: &PathBuf) -> PathBuf {
     result.join(f_comps.as_path())
 }
 
+pub fn is_orbit_metadata(s: &str) -> bool {
+    s == IP_MANIFEST_FILE || s == ORBIT_IGNORE_FILE || s == IP_LOCK_FILE
+}
+
+pub fn is_minimal(name: &str) -> bool {
+    fileset::is_vhdl(&name) == true || is_orbit_metadata(&name) == true
+}
+
 /// Recursively copies files from `source` to `target` directory.
 /// 
 /// Assumes `target` directory does not already exist. Ignores the `.git/` folder
@@ -144,17 +155,18 @@ pub fn remove_base(base: &PathBuf, full: &PathBuf) -> PathBuf {
 /// 
 /// If immutable is `true`, then read_only permissions will be enabled, else the files
 /// will be mutable. Silently skips files that could be changed with mutability/permissions.
-pub fn copy(source: &PathBuf, target: &PathBuf, ignore_git: bool) -> Result<(), Fault> {
+pub fn copy(source: &PathBuf, target: &PathBuf, minimal: bool) -> Result<(), Fault> {
     // create missing directories to `target`
     std::fs::create_dir_all(&target)?;
     // gather list of paths to copy
     let mut from_paths = Vec::new();
 
-    // respect .gitignore by using `WalkBuilder`
+    // respect .orbitignore by using `WalkBuilder`
     for result in WalkBuilder::new(&source)
         .hidden(false)
-        .git_ignore(true)
-        .filter_entry(move |f| (f.file_name() != GIT_DIR || ignore_git == false))
+        .add_custom_ignore_filename(ORBIT_IGNORE_FILE)
+        // only capture files that are required by minimal installations
+        .filter_entry(move |f| (f.path().is_file() == false || minimal == false || is_minimal(&f.file_name().to_string_lossy()) == true))
         .build() {
             match result {
                 Ok(entry) => from_paths.push(entry.path().to_path_buf()),
@@ -173,6 +185,15 @@ pub fn copy(source: &PathBuf, target: &PathBuf, ignore_git: bool) -> Result<(), 
         if let Some(parent) = from.parent() {
             let to = target.join(remove_base(&source, &parent.to_path_buf())).join(from.file_name().unwrap());
             std::fs::copy(from, &to)?;
+        }
+    }
+    // remove all empty directories
+    for from in from_paths.iter().filter(|f| f.is_dir()) {
+        // replace common `source` path with `target` path
+        let to = target.join(remove_base(&source, from));
+        // check if directory is empty
+        if to.read_dir()?.count() == 0 {
+            std::fs::remove_dir(to)?;
         }
     }
     Ok(())

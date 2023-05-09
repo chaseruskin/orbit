@@ -87,6 +87,23 @@ impl std::str::FromStr for AnyVersion {
     }
 }
 
+impl AnyVersion {
+    pub fn as_specific(&self) -> Option<&PartialVersion> {
+        match self {
+            Self::Specific(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn is_dev(&self) -> bool {
+        self == &Self::Dev
+    }
+
+    pub fn is_latest(&self) -> bool {
+        self == &Self::Latest
+    }
+}
+
 impl From<&Version> for AnyVersion {
     fn from(value: &Version) -> Self {
         Self::Specific(PartialVersion { 

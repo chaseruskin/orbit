@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::{HashMap, HashSet}, path::PathBuf};
 use crate::util::{anyerror::Fault, sha256::Sha256Hash};
 
 use super::super::{pkgid::{PkgId, PkgPart}, manifest::IpManifest, version::{Version, AnyVersion}, store::Store, vendor::VendorManifest};
@@ -206,9 +206,17 @@ impl<'a> Catalog<'a> {
 
     /// Returns all possible versions found for the `target` ip.
     /// 
-    /// Searches the cache/store, availability space, and development space.
-    pub fn get_possible_versions(&self, _: &PkgPart) -> Vec<Version> {
-        todo!();
+    /// Returns `None` if the id is not found in the catalog.
+    pub fn get_possible_versions(&self, id: &PkgPart) -> Option<Vec<&Version>> {
+        let kaban = self.inner.get(&id)?;
+        let mut set = HashSet::new();
+        for ip in kaban.get_installations() {
+            set.insert(ip.get_man().get_ip().get_version());
+        }
+        let mut arr: Vec<&Version> = set.into_iter().collect();
+        arr.sort();
+        arr.reverse();
+        Some(arr)
     }
 
     pub fn update_installations(&mut self) -> () {

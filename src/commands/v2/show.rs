@@ -2,7 +2,7 @@ use std::env::current_dir;
 use crate::OrbitResult;
 use clif::cmd::{FromCli, Command};
 use crate::core::pkgid::PkgPart;
-use crate::core::version::AnyVersion;
+use crate::core::version::{AnyVersion, self};
 use crate::core::lang::vhdl::primaryunit::PrimaryUnit;
 use clif::Cli;
 use clif::arg::{Flag, Optional};
@@ -19,8 +19,6 @@ pub struct Show {
     tags: bool,
     units: bool,
     version: Option<AnyVersion>,
-    changelog: bool,
-    readme: bool,
 }
 
 impl FromCli for Show {
@@ -29,9 +27,7 @@ impl FromCli for Show {
         let command = Ok(Show {
             tags: cli.check_flag(Flag::new("versions"))?,
             units: cli.check_flag(Flag::new("units"))?,
-            changelog: cli.check_flag(Flag::new("changes"))?,
-            readme: cli.check_flag(Flag::new("readme"))?,
-            version: cli.check_option(Optional::new("variant").switch('v').value("version"))?,
+            version: cli.check_option(Optional::new("ver").switch('v').value("version"))?,
             ip: cli.check_option(Optional::new("ip").value("name"))?,
         });
         command
@@ -43,17 +39,17 @@ impl Command<Context> for Show {
 
     fn exec(&self, c: &Context) -> Self::Status {
 
-        // @todo: collect all manifests available (load catalog)
+        // collect all manifests available (load catalog)
         let catalog = Catalog::new()
-        // .store(c.get_store_path())
-        // .development(c.get_development_path().unwrap())?
             .installations(c.get_cache_path())?;
 
         // try to auto-determine the ip (check if in a working ip)
         let ip_path = if let Some(name) = &self.ip {
-            // @todo: find the path to the provided ip by searching through the catalog
+            // find the path to the provided ip by searching through the catalog
             if let Some(lvl) = catalog.inner().get(name) {
-                if let Some(slot) = lvl.get(&AnyVersion::Latest, true) {
+                // return the highest available version
+                let spec_ver = self.version.as_ref().unwrap_or(&AnyVersion::Latest);
+                if let Some(slot) = lvl.get(spec_ver, true) {
                     slot.get_root().clone()
                 } else {
                     return Err(AnyError(format!("the requested ip is not installed")))?
@@ -70,15 +66,41 @@ impl Command<Context> for Show {
             }
         };
 
+        let ip = Ip::load(ip_path)?;
+
         // load the ip's manifest 
         if self.units == true {
             // force computing the primary design units if a development version
-            let units = Ip::collect_units(true, &ip_path)?;
+            let units = Ip::collect_units(true, &ip.get_root())?;
             println!("{}", Self::format_units_table(units.into_iter().map(|(_, unit)| unit).collect()));
             return Ok(())
         }
 
-        todo!("implement remaining features to present data");
+        // display all installed versions in the cache
+        if self.tags == true {
+            return match catalog.get_possible_versions(ip.get_man().get_ip().get_name()) {
+                Some(vers) => {
+                    match vers.len() {
+                        0 => { println!("info: no versions in the cache") },
+                        _ => {
+                            // further restrict versions if a particular version is set
+                            vers.iter()
+                                .filter(move |p| self.version.is_none() == true || version::is_compatible(self.version.as_ref().unwrap().as_specific().unwrap(), &p) == true)
+                                .for_each(|v| {
+                                    println!("{}", v);
+                                });
+                        }
+                    }
+                    Ok(())
+                }
+                None => Err(AnyError(format!("no ip found in catalog")))?,
+            };
+        }
+
+        // print the manifest data "pretty"
+        let s = toml::to_string_pretty(ip.get_man())?;
+        println!("{}", s);
+        Ok(())
     }
 }
 
@@ -107,7 +129,6 @@ impl Show {
     }
 }
 
-
 const HELP: &str = "\
 Print information about an ip.
 
@@ -117,11 +138,15 @@ Usage:
 Options:
     --ip <name>                 the package to request data about
     --versions                  display the list of possible versions
-    --range <version:version>   narrow the displayed version list
-    --variant, -v <version>     select a particular existing ip version
+    --ver, -v <version>         select a particular existing ip version
     --units                     display primary design units within an ip
-    --changes                   view the changelog
-    --readme                    view the readme
+
 
 Use 'orbit help show' to learn more about the command.
 ";
+
+// FUTURE FLAGS
+// ============
+// --changes                   view the changelog
+// --readme                    view the readme
+// --range <version:version>   narrow the displayed version list

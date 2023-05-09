@@ -34,12 +34,16 @@ use crate::util::anyerror::{AnyError, Fault};
 use std::path::PathBuf;
 use crate::OrbitResult;
 use crate::util::filesystem::Standardize;
+
 use crate::core::v2::ip::Ip;
+use crate::core::v2::lockfile::LockFile;
+use crate::core::v2::manifest::Source;
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
     path: PathBuf,
     force: bool,
+    compile: bool,
 }
 
 impl FromCli for Install {
@@ -47,6 +51,7 @@ impl FromCli for Install {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Install {
             force: cli.check_flag(Flag::new("force"))?,
+            compile: cli.check_flag(Flag::new("compile"))?,
             path: cli.check_option(Optional::new("path"))?.unwrap_or(PathBuf::from(".")),
         });
         command
@@ -96,6 +101,17 @@ impl Install {
     //     Ok(())
     // }
 
+    /// Generates a list of dependencies required to be downloaded from the internet. 
+    /// 
+    /// Enabling `missing_only` will only push sources for ip not already installed.
+    pub fn compile_download_list<'a>(lf: &'a LockFile, catalog: &Catalog, missing_only: bool) -> Vec<&'a Source> {
+        lf.inner().iter()
+            .filter(|p| p.get_source().is_some() == true)
+            .filter(|p| missing_only == false || catalog.is_cached_slot(&p.to_cache_slot_key()) == false)
+            .map(|f| f.get_source().unwrap())
+            .collect()
+    }
+
     /// Installs the `ip` with particular partial `version` to the `cache_root`.
     /// It will reinstall if it finds the original installation has a mismatching checksum.
     /// 
@@ -107,8 +123,6 @@ impl Install {
         // temporary destination to move files for processing and manipulation
         let dest = tempfile::tempdir()?.into_path();
         filesystem::copy(src, &dest, true)?;
-        
-        // store results from expensive computations into specific orbit files
 
         // @todo: listing all units
 
@@ -161,7 +175,17 @@ impl Install {
 
     fn run(&self, src: &PathBuf, catalog: &Catalog) -> Result<(), Fault> {
         // @todo: check if there is a potential lockfile to use
-        let _pkg = Ip::load(src.clone())?;
+        let ip = Ip::load(src.clone())?;
+
+        // store results from expensive computations into specific orbit files
+
+        // print download list for top-level package
+        if self.compile == true {
+            for s in Self::compile_download_list(ip.get_lock(), &catalog, false) {
+                println!("{}", s);
+            }
+            return Ok(())
+        }
 
         // _pkg.get_lock().save_to_disk(&_pkg.get_root())?;
         // todo!();
@@ -188,6 +212,7 @@ Options:
     --path <path>           destination directory to install into the cache
     --ip <name>             the ip to match for install into the cache
     --force                 install regardless of cache slot occupancy
+    --compile               gather the list of necessary dependencies to download
 
 Use 'orbit help install' to learn more about the command.
 ";

@@ -10,6 +10,7 @@ pub struct Catalog<'a> {
     inner: HashMap<PkgPart, IpLevel>, 
     store: Option<Store<'a>>, 
     cache: Option<&'a PathBuf>,
+    queue: Option<&'a PathBuf>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -35,12 +36,13 @@ impl std::fmt::Display for IpState {
 pub struct IpLevel {
     dev: Option<Ip>,
     installs: Vec<Ip>,
+    queue: Vec<Ip>,
     available: Vec<Ip>
 }
 
 impl IpLevel {
     pub fn new() -> Self {
-        Self { dev: None, installs: Vec::new(), available: Vec::new() }
+        Self { dev: None, installs: Vec::new(), available: Vec::new(), queue: Vec::new(), }
     }
 
     pub fn is_available_or_in_store(&self, store: &Store, pkgid: &PkgId, v: &AnyVersion) -> bool {
@@ -56,6 +58,10 @@ impl IpLevel {
         if m.is_dynamic() == false {
             self.installs.push(m);
         }
+    }
+
+    pub fn add_queue(&mut self, m: Ip) -> () {
+        self.queue.push(m);
     }
 
     pub fn add_available(&mut self, m: Ip) -> () {
@@ -161,6 +167,7 @@ impl<'a> Catalog<'a> {
             inner: HashMap::new(), 
             store: None, 
             cache: None,
+            queue: None,
         }
     }
 
@@ -176,15 +183,20 @@ impl<'a> Catalog<'a> {
     }
 
     /// Uses the cache slot name to check if the directory exists.
-    pub fn is_cached_slot(&self, target: &IpManifest) -> bool {
-        let _cache_slot = CacheSlot::new(target.get_pkgid().get_name(), target.get_version(), &Sha256Hash::new());
-        todo!()
+    pub fn is_cached_slot(&self, slot: &CacheSlot) -> bool {
+        self.get_cache_path().join(slot.as_ref()).is_dir()
     }
 
     /// Searches the `path` for IP installed.
     pub fn installations(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
         self.cache = Some(&path);
         self.detect(path, &IpLevel::add_install, false)
+    }
+
+    /// Searches the `path` for IP in the queue.
+    pub fn queue(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
+        self.queue = Some(&path);
+        self.detect(path, &IpLevel::add_queue, false)
     }
 
     /// Searches the `path` for IP available.

@@ -7,3 +7,4 @@ pub mod plan;
 pub mod build;
 pub mod tree;
 pub mod launch;
+pub mod download;

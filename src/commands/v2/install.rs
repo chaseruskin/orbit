@@ -36,8 +36,6 @@ use crate::OrbitResult;
 use crate::util::filesystem::Standardize;
 
 use crate::core::v2::ip::Ip;
-use crate::core::v2::lockfile::LockFile;
-use crate::core::v2::manifest::Source;
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
@@ -100,17 +98,6 @@ impl Install {
     //     }
     //     Ok(())
     // }
-
-    /// Generates a list of dependencies required to be downloaded from the internet. 
-    /// 
-    /// Enabling `missing_only` will only push sources for ip not already installed.
-    pub fn compile_download_list<'a>(lf: &'a LockFile, catalog: &Catalog, missing_only: bool) -> Vec<&'a Source> {
-        lf.inner().iter()
-            .filter(|p| p.get_source().is_some() == true)
-            .filter(|p| missing_only == false || catalog.is_cached_slot(&p.to_cache_slot_key()) == false)
-            .map(|f| f.get_source().unwrap())
-            .collect()
-    }
 
     /// Installs the `ip` with particular partial `version` to the `cache_root`.
     /// It will reinstall if it finds the original installation has a mismatching checksum.
@@ -180,12 +167,12 @@ impl Install {
         // store results from expensive computations into specific orbit files
 
         // print download list for top-level package
-        if self.compile == true {
-            for s in Self::compile_download_list(ip.get_lock(), &catalog, false) {
-                println!("{}", s);
-            }
-            return Ok(())
-        }
+        // if self.compile == true {
+        //     for s in Self::compile_download_list(ip.get_lock(), &catalog, false) {
+        //         println!("{}", s);
+        //     }
+        //     return Ok(())
+        // }
 
         // _pkg.get_lock().save_to_disk(&_pkg.get_root())?;
         // todo!();

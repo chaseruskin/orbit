@@ -64,6 +64,11 @@ impl LockFile {
         }
     }
 
+    /// Checks if a lockfile is empty (does not exist).
+    pub fn is_empty(&self) -> bool {
+        self.ip.len() == 0
+    }
+
     /// Creates a lockfile from a build list.
     pub fn from_build_list(build_list: &mut Vec<&Ip>) -> Self {
         // sort the build list by pkgid and then version
@@ -97,10 +102,6 @@ impl LockFile {
 
     pub fn inner(&self) -> &Vec<LockEntry> {
         &self.ip
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.ip.len() == 0
     }
     
     /// Writes the [LockFile] data to disk.

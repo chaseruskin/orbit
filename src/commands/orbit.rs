@@ -104,6 +104,7 @@ use crate::commands::v2::plan::Plan;
 use crate::commands::v2::build::Build;
 use crate::commands::v2::tree::Tree;
 use crate::commands::v2::launch::Launch;
+use crate::commands::v2::download::Download;
 use crate::commands::search::Search;
 use crate::commands::env::Env;
 use crate::commands::config::Config;
@@ -127,6 +128,7 @@ enum OrbitSubcommand {
     Config(Config),
     Uninstall(Uninstall),
     Read(Read),
+    Download(Download),
 }
 
 impl FromCli for OrbitSubcommand {
@@ -139,6 +141,7 @@ impl FromCli for OrbitSubcommand {
             "p",
             "build",
             "launch",
+            "download",
             "install",
             "get",
             "init",
@@ -157,6 +160,7 @@ impl FromCli for OrbitSubcommand {
       "p" | "plan" => Ok(OrbitSubcommand::Plan(Plan::from_cli(cli)?)),
       "b" | "build" => Ok(OrbitSubcommand::Build(Build::from_cli(cli)?)),
             "init" => Ok(OrbitSubcommand::Init(Init::from_cli(cli)?)),
+            "download" => Ok(OrbitSubcommand::Download(Download::from_cli(cli)?)),
             "launch" => Ok(OrbitSubcommand::Launch(Launch::from_cli(cli)?)),
             "install" => Ok(OrbitSubcommand::Install(Install::from_cli(cli)?)),
             "tree" => Ok(OrbitSubcommand::Tree(Tree::from_cli(cli)?)),
@@ -199,6 +203,7 @@ impl Command<Context> for OrbitSubcommand {
             OrbitSubcommand::Config(c) => c.exec(context),
             OrbitSubcommand::Uninstall(c) => c.exec(context),
             OrbitSubcommand::Read(c) => c.exec(context),
+            OrbitSubcommand::Download(c) => c.exec(context),
         }
     }
 }
@@ -222,6 +227,7 @@ Commands:
     plan, p         generate a blueprint file
     build, b        execute a plugin
     search          browse the ip catalog 
+    download        fetch packages from the internet
     install         store an immutable reference to an ip
     env             print Orbit environment information
     config          modify configuration values

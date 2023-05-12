@@ -162,7 +162,7 @@ impl Install {
 
     fn run(&self, src: &PathBuf, catalog: &Catalog) -> Result<(), Fault> {
         // @todo: check if there is a potential lockfile to use
-        let ip = Ip::load(src.clone())?;
+        let _ip = Ip::load(src.clone())?;
 
         // store results from expensive computations into specific orbit files
 

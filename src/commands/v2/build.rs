@@ -9,6 +9,7 @@ use crate::OrbitResult;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::core::plugin::Plugin;
+use crate::core::plugin::Process;
 use crate::util::environment;
 use crate::util::environment::ORBIT_BLUEPRINT;
 use crate::util::environment::ORBIT_BUILD_DIR;

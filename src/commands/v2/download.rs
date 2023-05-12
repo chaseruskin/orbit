@@ -11,12 +11,14 @@ use crate::OrbitResult;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::core::v2::manifest::Source;
-use crate::core::plugin::Plugin;
 use crate::core::v2::lockfile::LockFile;
 use crate::core::v2::catalog::Catalog;
-use std::error::Error;
 use crate::core::v2::lockfile::LockEntry;
-
+use crate::core::config::FromToml;
+use crate::util::anyerror::Fault;
+use crate::core::config::FromTomlError;
+use crate::core::plugin::Process;
+use std::io::Write;
 use crate::core::v2::ip::Ip;
 
 #[derive(Debug, PartialEq)]
@@ -28,6 +30,75 @@ pub struct Download {
     queue_dir: Option<PathBuf>,
     args: Vec<String>,
     verbose: bool,
+}
+
+#[derive(Debug, PartialEq)]
+struct DownloadProc {
+    root: PathBuf,
+    command: Option<String>,
+    args: Vec<String>,
+}
+
+impl Process for DownloadProc {
+    fn get_root(&self) -> &PathBuf { 
+        &self.root 
+    }
+
+    fn get_command(&self) -> &String {
+        &self.command.as_ref().unwrap()
+    }
+
+    fn get_args(&self) -> &Vec<String> {
+        &self.args
+    }
+}
+
+impl FromToml for DownloadProc {
+    type Err = Fault;
+
+    fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err>
+    where Self: Sized {
+        let command = Self::get(table, "command")?;
+        Ok(Self {
+            args: if let Some(args) = table.get("args") {
+                if args.is_array() == false {
+                    return Err(FromTomlError::ExpectingStringArray(String::from("args")))?
+                } else if command.is_none() == true {
+                    return Err(AnyError(format!("a command must be specified when given args")))?
+                } else {
+                    args.as_array().unwrap().into_iter().map(|f| f.as_str().unwrap().to_owned() ).collect()
+                }
+            } else {
+                Vec::new()
+            },
+            command: command,
+            // to be set later
+            root: PathBuf::new()
+        })
+        // @todo: verify there are no extra keys
+    }
+}
+
+impl DownloadProc {
+    pub fn new() -> Self {
+        Self {
+            root: PathBuf::new(),
+            command: None,
+            args: Vec::new(),
+        }
+    }
+
+    pub fn has_command(&self) -> bool {
+        self.command.is_some()
+    }
+
+    pub fn set_command(&mut self, cmd: String) {
+        self.command = Some(cmd);
+    }
+
+    pub fn set_root(&mut self, root: PathBuf) {
+        self.root = root;
+    }
 }
 
 impl FromCli for Download {
@@ -58,6 +129,31 @@ impl Command<Context> for Download {
             panic!("cannot display all and missing lock entries");
         }
 
+        let dl_proc = {
+            // get the configured download command
+            let tables = c.get_config().collect_as_tables("download")?;
+            match tables.first() {
+                Some((tbl, root)) => {
+                    let mut tmp = DownloadProc::from_toml(&tbl)?;
+                    // override the existing command
+                    if self.command.is_some() == true {
+                        tmp.set_command(self.command.as_ref().unwrap().clone());
+                    }
+                    // set the root
+                    tmp.set_root(root.to_path_buf());
+                    tmp
+                },
+                None => DownloadProc::new(),
+            }
+        };
+
+        // do not allow args if no command is set
+        let is_command_set = self.command.is_some() || dl_proc.has_command();
+
+        if is_command_set == false && self.args.len() > 0 {
+            panic!("invalid arguments for no command set")
+        }
+        
         // load the catalog
         let catalog = Catalog::new()
             .installations(c.get_cache_path())?
@@ -88,13 +184,32 @@ impl Command<Context> for Download {
         let missing_only = self.all == false || self.missing == true;
 
         // default behavior is to print out to console
-        let to_stdout = self.command.is_none() || self.list == true;
+        let to_stdout = dl_proc.has_command() == false || self.list == true;
 
+        let downloads =  Self::compile_download_list(&LockEntry::from(&ip), ip.get_lock(), &catalog, missing_only);
+        // print to console
         if to_stdout == true {
-            for s in Self::compile_download_list(&ip, ip.get_lock(), &catalog, missing_only) {
-                println!("{}", s);
+            downloads.iter().for_each(|d| println!("{}", d));
+        // execute the command
+        } else {
+            // write the download list to a temporary file
+            let mut file = tempfile::NamedTempFile::new()?;
+            let contents = downloads.iter().fold(String::new(), |mut acc, x| { acc.push_str(&x); acc.push_str("\n"); acc });
+            file.write(&contents.as_bytes())?;
+
+            // set a new env var
+            Environment::new()
+                .add(EnvVar::new().key("ORBIT_DOWNLOAD_LIST").value(&file.path().to_string_lossy()))
+                .initialize();
+
+            match dl_proc.execute(&self.args, self.verbose) {
+                Ok(_) => (),
+                Err(e) => {
+                    file.close()?;
+                    return Err(e);
+                }
             }
-            return Ok(())
+            // clean up temporary file
         }
         Ok(())
     }
@@ -104,48 +219,29 @@ impl Download {
     /// Generates a list of dependencies required to be downloaded from the internet. 
     /// 
     /// Enabling `missing_only` will only push sources for ip not already installed.
-    pub fn compile_download_list<'a>(ip: &Ip, lf: &'a LockFile, catalog: &Catalog, missing_only: bool) -> Vec<&'a Source> {
+    pub fn compile_download_list<'a>(le: &LockEntry, lf: &'a LockFile, catalog: &Catalog, missing_only: bool) -> Vec<&'a Source> {
         lf.inner().iter()
             .filter(|p| p.get_source().is_some() == true)
-            .filter(|p| p.matches_target(&LockEntry::from(ip)) == false && (missing_only == false || catalog.is_cached_slot(&p.to_cache_slot_key()) == false))
+            .filter(|p| p.matches_target(&le) == false && (missing_only == false || catalog.is_cached_slot(&p.to_cache_slot_key()) == false))
             .map(|f| f.get_source().unwrap())
             .collect()
-    }
-
-    fn run(&self, plug: Option<&Plugin>) -> Result<(), Box<dyn Error>> {
-        // if there is a match run with the plugin then run it
-        if let Some(p) = plug {
-            p.execute(&self.args, self.verbose)
-        } else if let Some(cmd) = &self.command {
-            if self.verbose == true {
-                let s = self.args.iter().fold(String::new(), |x, y| { x + "\"" + &y + "\" " });
-                println!("running: {} {}", cmd, s);
-            }
-            let mut proc = crate::util::filesystem::invoke(cmd, &self.args, Context::enable_windows_bat_file_match())?;
-            let exit_code = proc.wait()?;
-            match exit_code.code() {
-                Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { Ok(()) },
-                None =>  Err(AnyError(format!("terminated by signal")))?
-            }
-        } else {
-            Ok(())
-        }
     }
 }
 
 const HELP: &str = "\
-Execute a backend tool/workflow.
+Fetch packages from the internet.
 
 Usage:
-    orbit build [options] [--] [args]...
+    orbit download [options] [--] [args]...
 
 Options:
-    --plugin <alias>    plugin to execute
     --command <cmd>     command to execute
-    --list              view available plugins
-    --build-dir <dir>   set the output build directory
+    --list              print URLs to the console
+    --missing           filter only uninstalled packages (default: true)
+    --all               contain all packages in list
+    --queue <dir>       set the destination queue directory
     --verbose           display the command being executed
     -- args...          arguments to pass to the requested command
 
-Use 'orbit help build' to learn more about the command.
+Use 'orbit help download' to learn more about the command.
 ";

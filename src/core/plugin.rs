@@ -18,6 +18,20 @@ pub struct Plugin {
     root: Option<PathBuf>,
 }
 
+impl Process for Plugin {
+    fn get_root(&self) -> &PathBuf {
+        &self.root.as_ref().unwrap()
+    }
+
+    fn get_args(&self) -> &Vec<String> {
+        &self.args
+    }
+
+    fn get_command(&self) -> &String {
+        &self.command
+    }
+}
+
 impl Plugin {
     /// Creates a new `Plugin` struct.
     pub fn new() -> Self {
@@ -47,30 +61,6 @@ impl Plugin {
             list += &format!("    {}\n", plug.quick_info());
         }
         list
-    }
-
-    /// Runs the given `command` with the set `args` for the plugin.
-    pub fn execute(&self, extra_args: &[String], verbose: bool) -> Result<(), Fault> {
-        // resolve the relative paths in the command and arguments defined in original configuration
-        let root_path = self.root.as_ref().expect("root path not defined for plugin");
-        let command = crate::util::filesystem::resolve_rel_path(root_path, &self.command);
-        let arguments: Vec<String> = self.args.iter()
-            .map(|f| crate::util::filesystem::resolve_rel_path(root_path, f) )
-            .collect();
-
-        // append args set on the command-line to the base-line of arguments
-        let args = [&arguments, extra_args].concat();
-        // display the literal command being ran
-        if verbose == true {
-            let s = args.iter().fold(String::new(), |x, y| { x + "\"" + &y + "\" " });
-            println!("running: {} {}", command, s);
-        }
-        let mut proc = crate::util::filesystem::invoke(&command, &args, Context::enable_windows_bat_file_match())?;
-        let exit_code = proc.wait()?;
-        match exit_code.code() {
-            Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { Ok(()) },
-            None =>  Err(AnyError(format!("terminated by signal")))?
-        }
     }
 
     /// References the plugin's `alias`.
@@ -146,6 +136,39 @@ impl FromToml for Plugin {
         })
         // @todo: verify there are no extra keys
     }
+}
+
+pub trait Process {
+    fn get_root(&self) -> &PathBuf;
+
+    fn get_command(&self) -> &String;
+
+    fn get_args(&self) -> &Vec<String>;
+
+    /// Runs the given `command` with the set `args` for the plugin.
+    fn execute(&self, extra_args: &[String], verbose: bool) -> Result<(), Fault> {
+        // resolve the relative paths in the command and arguments defined in original configuration
+        let root_path = self.get_root();
+        let command = crate::util::filesystem::resolve_rel_path(root_path, &self.get_command());
+        let arguments: Vec<String> = self.get_args().iter()
+            .map(|f| crate::util::filesystem::resolve_rel_path(root_path, f) )
+            .collect();
+
+        // append args set on the command-line to the base-line of arguments
+        let args = [&arguments, extra_args].concat();
+        // display the literal command being ran
+        if verbose == true {
+            let s = args.iter().fold(String::new(), |x, y| { x + "\"" + &y + "\" " });
+            println!("running: {} {}", command, s);
+        }
+        let mut proc = crate::util::filesystem::invoke(&command, &args, Context::enable_windows_bat_file_match())?;
+        let exit_code = proc.wait()?;
+        match exit_code.code() {
+            Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { Ok(()) },
+            None =>  Err(AnyError(format!("terminated by signal")))?
+        }
+    }
+
 }
 
 #[derive(Debug, PartialEq)]

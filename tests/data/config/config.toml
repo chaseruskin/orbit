@@ -7,6 +7,10 @@ include = [
 editor = "code"
 path = "base/path"
 
+[download]
+command = "python2"
+args = [""]
+
 
 [[plugin]]
 alias = "vivado"

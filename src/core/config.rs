@@ -252,6 +252,17 @@ impl Config {
         Ok(self.collect_as_item(None, key, &Item::is_array_of_tables, "array of tables")?.into_iter().map(|f| (f.0.as_array_of_tables().unwrap(), f.1)).collect())
     }
 
+    /// Gathers all values assigned under a given `Table` entry in configuration.
+    /// 
+    /// The list is given with priority items first (base configurations), then
+    /// extra included items to follow.
+    /// 
+    /// Errors if the entry exists, but is not an array.
+    /// Returns `Vec::new()` if the entry does not exist anywhere.
+    pub fn collect_as_tables<'a>(&'a self, key: &str) -> Result<Vec<(&Table, &PathBuf)>, Fault> {
+        Ok(self.collect_as_item(None, key, &Item::is_table, "table")?.into_iter().map(|f| (f.0.as_table().unwrap(), f.1)).collect())
+    }
+
     /// Takes the last value.
     pub fn get_as_str(&self, table: &str, key: &str) -> Result<Option<&str>, Fault> {
         let mut values = self.collect_as_str(table, key)?;

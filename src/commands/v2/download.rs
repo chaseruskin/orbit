@@ -231,7 +231,7 @@ impl Download {
 }
 
 const HELP: &str = "\
-Fetch packages from the internet.
+Request packages from the internet.
 
 Usage:
     orbit download [options] [--] [args]...

@@ -227,7 +227,7 @@ Commands:
     plan, p         generate a blueprint file
     build, b        execute a plugin
     search          browse the ip catalog 
-    download        fetch packages from the internet
+    download        request packages from the internet
     install         store an immutable reference to an ip
     env             print Orbit environment information
     config          modify configuration values

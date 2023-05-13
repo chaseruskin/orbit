@@ -29,10 +29,10 @@ Commands:
     read            inspect hdl design unit source code
     get             fetch an entity
     tree            view the dependency graph
-    plan            generate a blueprint file
+    plan, p         generate a blueprint file
     build, b        execute a plugin
-    launch          release a new ip version
-    search          browse the ip catalog
+    search          browse the ip catalog 
+    download        request packages from the internet
     install         store an immutable reference to an ip
     env             print Orbit environment information
     config          modify configuration values

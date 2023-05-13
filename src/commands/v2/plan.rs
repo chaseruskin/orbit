@@ -15,7 +15,7 @@ use clif::arg::{Flag, Optional};
 use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::graphmap::GraphMap;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use crate::OrbitResult;
 use crate::core::fileset::Fileset;
@@ -23,6 +23,7 @@ use crate::core::lang::vhdl::token::Identifier;
 use crate::core::plugin::Plugin;
 use crate::util::environment;
 use std::fs;
+use std::hash::Hash;
 
 use crate::commands::v2::install::Install;
 use crate::core::v2::ip::Ip;
@@ -486,6 +487,26 @@ impl Plan {
         Ok((top, bench))
     }
 
+    /// Modifies the `list` to only have a list of unique elements while preserving their original
+    /// order.
+    /// 
+    /// Removes all duplicate elements found after the first occurence of said element.
+    fn remove_multi_occurences<T: Eq + Hash>(list: &Vec<T>) -> Vec<&T> {
+        let mut result = Vec::new();
+        // be prepared to store no more than the amount of elements in `list`
+        result.reserve(list.len());
+        // gradually build a set to track duplicates
+        let mut set = HashSet::<&T>::new();
+
+        for elem in list {
+            if set.insert(elem) == true {
+                result.push(elem)
+            }
+        }
+
+        result
+    }
+
     /// Performs the backend logic for creating a blueprint file (planning a design).
     fn run(&self, target: Ip, build_dir: &str, plug: Option<&Plugin>, catalog: Catalog) -> Result<(), Fault> {
         // create the build path to know where to begin storing files
@@ -592,6 +613,9 @@ impl Plan {
             f_list
         };
 
+        // remove duplicate files from list while perserving order
+        let file_order = Self::remove_multi_occurences(&file_order);
+
         // grab the names as strings
         let top_name = match top {
             Some(i) => global_graph.get_key_by_index(i).unwrap().get_suffix().to_string(),
@@ -617,7 +641,7 @@ impl Plan {
 
         // [!] collect user-defined filesets
         {
-            let current_files: Vec<String> = crate::util::filesystem::gather_current_files(&std::env::current_dir().unwrap(), false);
+            let current_files: Vec<String> = crate::util::filesystem::gather_current_files(&target.get_root(), false);
 
             let mut vtable = VariableTable::new();
             // variables could potentially store empty strings if units are not set
@@ -746,3 +770,25 @@ Options:
 
 Use 'orbit help plan' to learn more about the command.
 ";
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn remove_multi_occur() {
+        // removes
+        let arr = vec![1, 2, 2, 3, 4];
+        assert_eq!(Plan::remove_multi_occurences(&arr), vec![&1, &2, &3, &4]);
+
+        let arr = vec![1, 2, 2, 3, 4, 2, 1];
+        assert_eq!(Plan::remove_multi_occurences(&arr), vec![&1, &2, &3, &4]);
+
+        let arr = vec![1, 1, 1, 1, 1];
+        assert_eq!(Plan::remove_multi_occurences(&arr), vec![&1]);
+
+        // no changes
+        let arr = vec![9, 8, 7, 6, 5, 4];
+        assert_eq!(Plan::remove_multi_occurences(&arr), vec![&9, &8, &7, &6, &5, &4]);
+    }
+}

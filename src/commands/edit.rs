@@ -1,18 +1,18 @@
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::config::CONFIG_FILE;
 use crate::core::config::Config;
-use crate::core::extgit::ExtGitError;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Flag, Optional};
-use crate::interface::errors::CliError;
+use clif::Cli;
+use crate::OrbitResult;
+use clif::arg::{Flag, Optional};
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::core::pkgid::PkgId;
 use crate::util::anyerror::AnyError;
+use crate::util::filesystem::Standardize;
 
 
 #[derive(Debug, PartialEq)]
@@ -42,8 +42,8 @@ pub struct Edit {
 }
 
 impl FromCli for Edit {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Edit {
             mode: cli.check_option(Optional::new("mode"))?.unwrap_or(EditMode::Open),
             config: cli.check_flag(Flag::new("config"))?,
@@ -54,16 +54,17 @@ impl FromCli for Edit {
     }
 }
 
-impl Command for Edit {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for Edit {
+    type Status = OrbitResult;
+
+    fn exec(&self, c: &Context) -> Self::Status {
         let sel_editor = Self::configure_editor(&self.editor, &c.get_config())?;
         // open global configuration file
         if self.config == true {
             let config_path = c.get_config().get_root().join(CONFIG_FILE);
             return match &self.mode {
                 EditMode::Open => Edit::invoke(&sel_editor, &config_path),
-                EditMode::Path => { println!("{}", crate::util::filesystem::normalize_path(config_path).display()); Ok(()) }
+                EditMode::Path => { println!("{}", PathBuf::standardize(config_path).display()); Ok(()) }
             }
         // open an ip
         } else if self.ip.is_some() == true {
@@ -122,8 +123,8 @@ impl Edit {
             .arg(path)
             .output()?;
         match output.status.code() {
-            Some(num) => if num != 0 { Err(ExtGitError::NonZeroCode(num, output.stderr))? } else { Ok(()) },
-            None => Err(ExtGitError::SigTermination)?,
+            Some(num) => if num != 0 { Err(ExtError::NonZeroCode(num, output.stderr))? } else { Ok(()) },
+            None => Err(ExtError::SigTermination)?,
         }
     }
 
@@ -142,24 +143,38 @@ impl Edit {
                 Self::invoke(editor, &ip.get_root())
             }
             EditMode::Path => {
-                println!("{}", crate::util::filesystem::normalize_path(ip.get_root()).display());
+                println!("{}", PathBuf::standardize(ip.get_root()).display());
                 Ok(())
             }
         }
     }
 }
 
+#[derive(Debug)]
+pub enum ExtError {
+    NonZeroCode(i32, Vec<u8>),
+    SigTermination,
+}
+
+impl std::error::Error for ExtError {}
+
+impl std::fmt::Display for ExtError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::NonZeroCode(num, reason) => write!(f, "exited with error code: {} due to {}", num, String::from_utf8_lossy(reason)),
+            Self::SigTermination => write!(f, "terminated by signal"),
+        }
+    }
+}
+
 const HELP: &str = "\
 Open a text editor to develop an ip or orbit-related files.
-
 Usage:
     orbit edit [options]
-
 Options:
     --ip <pkgid>       ip to open in development state
     --editor <cmd>     the command to call a text-editor
     --mode <mode>      select how to edit: 'open' or 'path'
     --config           modify the global configuration file
-
 Use 'orbit help edit' to learn more about the command.
 ";

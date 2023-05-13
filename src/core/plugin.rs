@@ -3,7 +3,7 @@ use std::error::Error;
 use crate::core::fileset::Fileset;
 use crate::core::config::FromToml;
 use crate::util::anyerror::{AnyError, Fault};
-use crate::util::filesystem;
+use crate::util::filesystem::Standardize;
 use super::config::FromTomlError;
 use super::context::Context;
 
@@ -16,6 +16,20 @@ pub struct Plugin {
     summary: Option<String>,
     details: Option<String>,
     root: Option<PathBuf>,
+}
+
+impl Process for Plugin {
+    fn get_root(&self) -> &PathBuf {
+        &self.root.as_ref().unwrap()
+    }
+
+    fn get_args(&self) -> &Vec<String> {
+        &self.args
+    }
+
+    fn get_command(&self) -> &String {
+        &self.command
+    }
 }
 
 impl Plugin {
@@ -49,29 +63,6 @@ impl Plugin {
         list
     }
 
-    /// Runs the given `command` with the set `args` for the plugin.
-    pub fn execute(&self, extra_args: &[String], verbose: bool) -> Result<(), Fault> {
-        // resolve the relative paths in the command and arguments defined in original configuration
-        let root_path = self.root.as_ref().expect("root path not defined for plugin");
-        let command = crate::util::filesystem::resolve_rel_path(root_path, &self.command);
-        let arguments: Vec<String> = self.args.iter()
-            .map(|f| crate::util::filesystem::resolve_rel_path(root_path, f) )
-            .collect();
-        // append args set on the command-line to the base-line of arguments
-        let args = [&arguments, extra_args].concat();
-        // display the literal command being ran
-        if verbose == true {
-            let s = args.iter().fold(String::new(), |x, y| { x + "\"" + &y + "\" " });
-            println!("running: {} {}", command, s);
-        }
-        let mut proc = crate::util::filesystem::invoke(&command, &args, Context::enable_windows_bat_file_match())?;
-        let exit_code = proc.wait()?;
-        match exit_code.code() {
-            Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { Ok(()) },
-            None =>  Err(AnyError(format!("terminated by signal")))?
-        }
-    }
-
     /// References the plugin's `alias`.
     pub fn alias(&self) -> &String {
         &self.alias
@@ -99,7 +90,7 @@ filesets:
 {}{}{}", 
             self.alias,
             self.command, self.args.iter().fold(String::new(), |x, y| { x + "\"" + &y + "\" " }),
-            filesystem::normalize_path(self.root.as_ref().unwrap().to_path_buf()).display(),
+            PathBuf::standardize(self.root.as_ref().unwrap()).display(),
             { if self.filesets.is_empty() { String::from("    None\n") } else { self.filesets.iter().fold(String::new(), |x, y| { x + &format!("    {:<16}{}\n", y.get_name(), y.get_pattern())}) } },
             { if let Some(text) = &self.summary { format!("\n{}\n", text) } else { String::new() } },
             { if let Some(text) = &self.details { format!("\n{}", text) } else { String::new() } },
@@ -145,6 +136,39 @@ impl FromToml for Plugin {
         })
         // @todo: verify there are no extra keys
     }
+}
+
+pub trait Process {
+    fn get_root(&self) -> &PathBuf;
+
+    fn get_command(&self) -> &String;
+
+    fn get_args(&self) -> &Vec<String>;
+
+    /// Runs the given `command` with the set `args` for the plugin.
+    fn execute(&self, extra_args: &[String], verbose: bool) -> Result<(), Fault> {
+        // resolve the relative paths in the command and arguments defined in original configuration
+        let root_path = self.get_root();
+        let command = crate::util::filesystem::resolve_rel_path(root_path, &self.get_command());
+        let arguments: Vec<String> = self.get_args().iter()
+            .map(|f| crate::util::filesystem::resolve_rel_path(root_path, f) )
+            .collect();
+
+        // append args set on the command-line to the base-line of arguments
+        let args = [&arguments, extra_args].concat();
+        // display the literal command being ran
+        if verbose == true {
+            let s = args.iter().fold(String::new(), |x, y| { x + "\"" + &y + "\" " });
+            println!("running: {} {}", command, s);
+        }
+        let mut proc = crate::util::filesystem::invoke(&command, &args, Context::enable_windows_bat_file_match())?;
+        let exit_code = proc.wait()?;
+        match exit_code.code() {
+            Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { Ok(()) },
+            None =>  Err(AnyError(format!("terminated by signal")))?
+        }
+    }
+
 }
 
 #[derive(Debug, PartialEq)]

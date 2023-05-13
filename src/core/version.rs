@@ -87,6 +87,33 @@ impl std::str::FromStr for AnyVersion {
     }
 }
 
+impl AnyVersion {
+    pub fn as_specific(&self) -> Option<&PartialVersion> {
+        match self {
+            Self::Specific(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn is_dev(&self) -> bool {
+        self == &Self::Dev
+    }
+
+    pub fn is_latest(&self) -> bool {
+        self == &Self::Latest
+    }
+}
+
+impl From<&Version> for AnyVersion {
+    fn from(value: &Version) -> Self {
+        Self::Specific(PartialVersion { 
+            major: value.get_major(), 
+            minor: Some(value.get_minor()), 
+            patch: Some(value.get_patch()),
+        })
+    }
+}
+
 #[derive(Debug, PartialEq, PartialOrd, Clone, Eq, Ord)]
 pub struct PartialVersion {
     major: VerNum,
@@ -222,6 +249,48 @@ pub struct Version {
     major: VerNum, 
     minor: VerNum,
     patch: VerNum,
+}
+
+use serde::{Deserialize, Serialize};
+use serde::Serializer;
+use serde::de::{self};
+use std::fmt;
+
+impl<'de> Deserialize<'de> for Version {
+    fn deserialize<D>(deserializer: D) -> Result<Version, D::Error>
+        where D: de::Deserializer<'de>
+    {
+        struct LayerVisitor;
+
+        impl<'de> de::Visitor<'de> for LayerVisitor {
+            type Value = Version;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a semantic version number")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+                where
+                    E: de::Error, {
+                
+                match Version::from_str(v) {
+                    Ok(v) => Ok(v),
+                    Err(e) => Err(de::Error::custom(e))
+                }
+            }
+        }
+
+        deserializer.deserialize_map(LayerVisitor)
+    }
+}
+
+impl Serialize for Version {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
 }
 
 impl Version {

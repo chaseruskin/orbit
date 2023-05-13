@@ -1,11 +1,10 @@
-use crate::Command;
-use crate::FromCli;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional};
-use crate::interface::errors::CliError;
-use crate::core::context::Context;
+use clif::cmd::{FromCli, Command};
+use clif::Cli;
+use clif::arg::{Positional};
+use clif::Error as CliError;
 use crate::commands::manuals;
 use crate::util::anyerror::AnyError;
+use crate::OrbitResult;
 
 #[derive(Debug, PartialEq)]
 pub struct Help {
@@ -18,13 +17,13 @@ enum Topic {
     Plan,
     Build,
     Launch,
-    Edit,
+    // Edit,
     Install,
     Tree,
     Search,
     Get,
     Init,
-    Probe,
+    Show,
     Env,
     Config,
     Uninstall,
@@ -41,12 +40,12 @@ impl std::str::FromStr for Topic {
             "build" => Self::Build,
             "search" => Self::Search,
             "launch" => Self::Launch,
-            "edit" => Self::Edit,
+            // "edit" => Self::Edit,
             "install" => Self::Install,
             "tree" => Self::Tree,
             "get" => Self::Get,
             "init" => Self::Init,
-            "probe" => Self::Probe,
+            "show" => Self::Show,
             "config" => Self::Config,
             "uninstall" => Self::Uninstall,
             "read" => Self::Read,
@@ -61,10 +60,10 @@ impl Topic {
         use Topic::*;
         match &self {
             Env => manuals::env::MANUAL,
-            Probe => manuals::probe::MANUAL,
+            Show => manuals::probe::MANUAL,
             Get => manuals::get::MANUAL,
             Tree => manuals::tree::MANUAL,
-            Edit => manuals::edit::MANUAL,
+            // Edit => manuals::edit::MANUAL,
             New => manuals::new::MANUAL,
             Plan => manuals::plan::MANUAL,
             Search => manuals::search::MANUAL,
@@ -79,9 +78,10 @@ impl Topic {
     }
 }
 
-impl Command for Help {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, _: &Context) -> Result<(), Self::Err> {
+impl Command<()> for Help {
+    type Status = OrbitResult;
+
+    fn exec(&self, _: &()) -> Self::Status {
         self.run()?;
         Ok(())
     }
@@ -100,8 +100,8 @@ impl Help {
 }
 
 impl FromCli for Help {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Help {
             topic: cli.check_positional(Positional::new("topic"))?,
         });

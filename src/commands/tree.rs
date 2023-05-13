@@ -3,20 +3,20 @@ use std::collections::HashSet;
 
 use colored::Colorize;
 
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::ip;
+use crate::OrbitResult;
 use crate::core::ip::IpFileNode;
 use crate::core::manifest::IpManifest;
-use crate::core::vhdl::subunit::SubUnit;
-use crate::core::vhdl::symbol::CompoundIdentifier;
-use crate::core::vhdl::symbol::Entity;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Flag, Optional};
-use crate::interface::errors::CliError;
+use crate::core::lang::vhdl::subunit::SubUnit;
+use crate::core::lang::vhdl::symbol::CompoundIdentifier;
+use crate::core::lang::vhdl::symbol::Entity;
+use clif::Cli;
+use clif::arg::{Flag, Optional};
+use clif::Error as CliError;
 use crate::core::context::Context;
-use crate::core::vhdl::token::Identifier;
+use crate::core::lang::vhdl::token::Identifier;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 
@@ -47,8 +47,8 @@ pub struct Tree {
 }
 
 impl FromCli for Tree {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Tree {
             root: cli.check_option(Optional::new("root").value("entity"))?,
             compress: cli.check_flag(Flag::new("compress"))?,
@@ -60,9 +60,10 @@ impl FromCli for Tree {
     }
 }
 
-impl Command for Tree {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for Tree {
+    type Status = OrbitResult;
+
+    fn exec(&self, c: &Context) -> Self::Status {
         // go to the ip directory
         c.goto_ip_path()?;
 
@@ -264,7 +265,7 @@ impl Tree {
     }
 }
 
-use crate::core::vhdl::symbol;
+use crate::core::lang::vhdl::symbol;
 use crate::util::graph::EdgeStatus;
 use crate::util::graphmap::GraphMap;
 

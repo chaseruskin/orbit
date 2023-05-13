@@ -1,19 +1,18 @@
 use std::path::PathBuf;
 
-use crate::Command;
-use crate::FromCli;
-use crate::core::manifest::IpManifest;
-use crate::interface::cli::Cli;
-use crate::interface::arg::Positional;
-use crate::interface::errors::CliError;
+use clif::cmd::{FromCli, Command};
+use crate::core::v2::ip::Ip;
+use clif::Cli;
+use clif::arg::Positional;
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::environment;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
 use crate::util::environment::ORBIT_BLUEPRINT;
 use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
-use crate::util::filesystem;
-
+use crate::util::filesystem::Standardize;
+use crate::OrbitResult;
 use super::plan::BLUEPRINT_FILE;
 
 #[derive(Debug, PartialEq)]
@@ -22,8 +21,8 @@ pub struct Env {
 }
 
 impl FromCli for Env {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+    fn from_cli(cli: &mut Cli) -> Result<Self,  CliError> {
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         // collect all positional arguments
         let mut keys: Vec<String> = Vec::new();
         while let Some(c) = cli.check_positional(Positional::new("key"))? {
@@ -36,18 +35,18 @@ impl FromCli for Env {
     }
 }
 
-impl Command for Env {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for Env {
+    type Status = OrbitResult;
+
+    fn exec(&self, c: &Context) -> Self::Status {
         // assemble environment information
         let mut env = Environment::from_vec(vec![
             // @todo: context should own an `Environment` struct instead of this data transformation
-            EnvVar::new().key(environment::ORBIT_HOME).value(filesystem::normalize_path(c.get_home_path().clone()).to_str().unwrap()),
-            EnvVar::new().key(environment::ORBIT_CACHE).value(filesystem::normalize_path(c.get_cache_path().to_path_buf()).to_str().unwrap()),
+            EnvVar::new().key(environment::ORBIT_HOME).value(PathBuf::standardize(c.get_home_path()).to_str().unwrap()),
+            EnvVar::new().key(environment::ORBIT_CACHE).value(PathBuf::standardize(c.get_cache_path()).to_str().unwrap()),
+            EnvVar::new().key(environment::ORBIT_QUEUE).value(PathBuf::standardize(c.get_queue_path()).to_str().unwrap()),
             EnvVar::new().key(environment::ORBIT_BUILD_DIR).value(c.get_build_dir()),
-            EnvVar::new().key(environment::ORBIT_DEV_PATH).value(filesystem::normalize_path(c.get_development_path().unwrap_or(&PathBuf::new()).clone()).to_str().unwrap()),
-            EnvVar::new().key(environment::ORBIT_IP_PATH).value(filesystem::normalize_path(c.get_ip_path().unwrap_or(&PathBuf::new()).clone()).to_str().unwrap()),
-            EnvVar::new().key(environment::ORBIT_STORE).value(filesystem::normalize_path(c.get_store_path().clone()).to_str().unwrap()),
+            EnvVar::new().key(environment::ORBIT_IP_PATH).value(PathBuf::standardize(c.get_ip_path().unwrap_or(&PathBuf::new())).to_str().unwrap()),
             EnvVar::new().key("EDITOR").value(&std::env::var("EDITOR").unwrap_or(String::new())),
             EnvVar::new().key("NO_COLOR").value(&std::env::var("NO_COLOR").unwrap_or(String::new())),
             ])
@@ -60,13 +59,13 @@ impl Command for Env {
         }
 
         // check if in an ip to add those variables
-        if c.goto_ip_path().is_ok() {
+        if let Some(ip_path) = c.get_ip_path() {
             // check ip
-            if let Ok(ip) = IpManifest::from_path(c.get_ip_path().unwrap()) {
+            if let Ok(ip) = Ip::load(ip_path.clone()) {
                 env = env.from_ip(&ip)?;
             }
             // check the build directory
-            env = env.from_env_file( &std::path::PathBuf::from(c.get_build_dir()))?;
+            env = env.from_env_file(&std::path::PathBuf::from(c.get_build_dir()))?;
         }
         
         self.run(env)
@@ -114,7 +113,7 @@ Usage:
     orbit env [options]
 
 Options:
-    <key>...     A environment variable to display its value
+    <key>...     Lookup environment variable to display its value
 
 Use 'orbit help env' to learn more about the command.
 ";

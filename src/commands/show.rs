@@ -1,28 +1,25 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use git2::Repository;
-
-use crate::Command;
-use crate::FromCli;
+use crate::OrbitResult;
+use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::catalog::IpLevel;
 use crate::core::catalog::IpState;
-use crate::core::extgit::ExtGit;
 use crate::core::manifest::IpManifest;
 use crate::core::pkgid::PkgId;
 use crate::core::version::AnyVersion;
 use crate::core::version::Version;
-use crate::core::vhdl::primaryunit::PrimaryUnit;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Flag, Optional};
-use crate::interface::errors::CliError;
+use crate::core::lang::vhdl::primaryunit::PrimaryUnit;
+use clif::Cli;
+use clif::arg::{Positional, Flag, Optional};
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 
 #[derive(Debug, PartialEq)]
-pub struct Probe {
+pub struct Show {
     ip: PkgId,
     tags: bool,
     units: bool,
@@ -31,10 +28,10 @@ pub struct Probe {
     readme: bool,
 }
 
-impl FromCli for Probe {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
-        let command = Ok(Probe {
+impl FromCli for Show {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
+        let command = Ok(Show {
             tags: cli.check_flag(Flag::new("versions"))?,
             units: cli.check_flag(Flag::new("units"))?,
             changelog: cli.check_flag(Flag::new("changes"))?,
@@ -46,9 +43,10 @@ impl FromCli for Probe {
     }
 }
 
-impl Command for Probe {
-    type Err = Fault;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for Show {
+    type Status = OrbitResult;
+
+    fn exec(&self, c: &Context) -> Self::Status {
 
         // gather the catalog (all manifests)
         let catalog = Catalog::new()
@@ -111,7 +109,7 @@ impl Command for Probe {
     }
 }
 
-impl Probe {
+impl Show {
     fn run(&self) -> Result<(), Fault> {
         Ok(())
     }
@@ -137,7 +135,7 @@ fn format_units_table(table: Vec<PrimaryUnit>) -> String {
 }
 
 /// Creates a string for a version table for the particular ip.
-fn format_version_table(table: &IpLevel, stored_path: Option<PathBuf>) -> String {
+fn format_version_table(table: &IpLevel, _stored_path: Option<PathBuf>) -> String {
     let header = format!("\
 {:<15}{:<9}
 {:->15}{2:->9}\n",
@@ -163,12 +161,12 @@ fn format_version_table(table: &IpLevel, stored_path: Option<PathBuf>) -> String
         } 
     }
 
-    let mut hidden_vers = Vec::new();
+    let mut _hidden_vers = Vec::new();
     // log versions hidden in store
-    if let Some(path) = stored_path {
-        hidden_vers = ExtGit::gather_version_tags(&Repository::open(&path).unwrap()).unwrap();
-    }
-    for ver in &hidden_vers {
+    // if let Some(path) = stored_path {
+    //     hidden_vers = ExtGit::gather_version_tags(&Repository::open(&path).unwrap()).unwrap();
+    // }
+    for ver in &_hidden_vers {
         match btmap.get_mut(&ver) {
             Some(_) => (),
             None => { btmap.insert(&ver, (false, false, false)); () },
@@ -189,13 +187,13 @@ fn format_version_table(table: &IpLevel, stored_path: Option<PathBuf>) -> String
 }
 
 const HELP: &str = "\
-Access information about an ip
+Print information about an ip.
 
 Usage:
-    orbit probe [options] <ip>
+    orbit show [options] <ip>
 
 Args:
-    <ip>               the pkgid to request data about
+    <ip>                        the pkgid to request data about
 
 Options:
     --versions                  display the list of possible versions
@@ -205,5 +203,5 @@ Options:
     --changes                   view the changelog
     --readme                    view the readme
 
-Use 'orbit help query' to learn more about the command.
+Use 'orbit help show' to learn more about the command.
 ";

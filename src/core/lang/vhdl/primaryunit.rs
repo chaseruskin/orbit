@@ -1,9 +1,11 @@
 use toml_edit::InlineTable;
-use crate::{core::{vhdl::token::Identifier, lexer::Position, ip::IpSpec}, util::anyerror::Fault};
+use super::super::lexer::Position;
+use crate::{core::{lang::vhdl::token::Identifier}, util::anyerror::Fault};
+use crate::core::v2::ip::IpSpec;
 use std::{collections::HashMap, str::FromStr, path::PathBuf};
 use crate::util::filesystem;
 use super::symbol::VHDLSymbol;
-use crate::core::vhdl::symbol::VHDLParser;
+use crate::core::lang::vhdl::symbol::VHDLParser;
 
 pub type PrimaryUnitStore = HashMap<Identifier, PrimaryUnit>;
 
@@ -157,8 +159,8 @@ impl std::fmt::Display for VhdlIdentifierError {
                 let location_2 = filesystem::remove_base(&current_dir, &path2);
                 write!(f, "duplicate primary design units identified as '{}'\n\nlocation 1: {}{}\nlocation 2: {}{}\n\n{}", 
                     iden, 
-                    filesystem::normalize_path(location_1).display(), loc1, 
-                    filesystem::normalize_path(location_2).display(), loc2, 
+                    filesystem::into_std_str(location_1), loc1, 
+                    filesystem::into_std_str(location_2), loc2, 
                     HINT)
             },
             Self::DuplicateAcrossDirect(iden, dep, path, pos) => {
@@ -166,7 +168,7 @@ impl std::fmt::Display for VhdlIdentifierError {
                 let location = filesystem::remove_base(&current_dir, &path);
                 write!(f, "duplicate primary design units identified as '{}'\n\nlocation: {}{}\nconflicts with direct dependency {}\n\n{}", 
                 iden, 
-                filesystem::normalize_path(location).display(), pos,
+                filesystem::into_std_str(location), pos,
                 dep,
                 HINT_2)
             }

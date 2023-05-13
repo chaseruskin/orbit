@@ -1,38 +1,41 @@
-use crate::Command;
-use crate::FromCli;
-use crate::core::catalog::Catalog;
-use crate::core::catalog::IpLevel;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Flag};
-use crate::interface::errors::CliError;
+use clif::cmd::{FromCli, Command};
+use clif::Cli;
+use clif::arg::{Positional, Flag};
+use clif::Error as CliError;
 use crate::core::context::Context;
-use crate::core::pkgid::PkgId;
 use crate::util::anyerror::Fault;
 use std::collections::BTreeMap;
+use crate::OrbitResult;
+use crate::core::pkgid::PkgPart;
+
+use crate::core::v2::catalog::Catalog;
+use crate::core::version::AnyVersion;
+use crate::core::v2::catalog::IpLevel;
 
 #[derive(Debug, PartialEq)]
 pub struct Search {
-    ip: Option<PkgId>,
+    ip: Option<PkgPart>,
     cached: bool,
     developing: bool,
     available: bool,
 }
 
-impl Command for Search {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for Search {
+    type Status = OrbitResult;
+
+    fn exec(&self, c: &Context) -> Self::Status {
 
         let default = !(self.cached || self.developing || self.available);
         let mut catalog = Catalog::new();
 
         // collect development IP
-        if default || self.developing { catalog = catalog.development(c.get_development_path().unwrap())?; }
+        // if default || self.developing { catalog = catalog.development(c.get_development_path().unwrap())?; }
         
         // collect installed IP
         if default || self.cached { catalog = catalog.installations(c.get_cache_path())?; }
 
         // collect available IP
-        if default || self.available { catalog = catalog.available(c.get_vendors())?; }
+       //  if default || self.available { catalog = catalog.available(c.get_vendors())?; }
 
         self.run(&catalog)
     }
@@ -48,7 +51,7 @@ impl Search {
             // filter by name if user entered a pkgid to search
             .filter(|(key, _)| {
                 match &self.ip {
-                    Some(pkgid) => pkgid.partial_match(key),
+                    Some(pkgid) => &pkgid == key,
                     None => true,
                 }
             })
@@ -60,17 +63,16 @@ impl Search {
         Ok(())
     }
 
-    fn fmt_table(catalog: BTreeMap<&PkgId, &IpLevel>) -> String {
+    fn fmt_table(catalog: BTreeMap<&PkgPart, &IpLevel>) -> String {
         let header = format!("\
-{:<15}{:<15}{:<20}{:<9}
-{:->15}{4:->15}{4:->20}{4:->9}\n", 
-            "Vendor", "Library", "Name", "Status", " ");
+{:<28}{:<10}{:<9}
+{3:->28}{3:->10}{3:->9}\n", 
+            "Package", "Latest", "Status", " ");
         let mut body = String::new();
         for (ip, status) in catalog {
-            body.push_str(&format!("{:<15}{:<15}{:<20}{:<2}{:<2}{:<2}\n", 
-                ip.get_vendor().as_ref().unwrap().to_string(),
-                ip.get_library().as_ref().unwrap().to_string(),
-                ip.get_name().to_string(),
+            body.push_str(&format!("{:<28}{:<10}{:<7}{:<2}{:<2}\n", 
+                ip.to_string(),
+                status.get(&AnyVersion::Latest, true).unwrap().get_man().get_ip().get_version(),
                 { if status.is_developing() { "D" } else { "" } },
                 { if status.is_installed() { "I" } else { "" } },
                 { if status.is_available() { "A" } else { "" } },
@@ -81,8 +83,8 @@ impl Search {
 }
 
 impl FromCli for Search {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Search {
             ip: cli.check_positional(Positional::new("ip"))?,
             cached: cli.check_flag(Flag::new("install").switch('i'))?,
@@ -118,8 +120,8 @@ mod test {
     fn fmt_table() {
         let t = Search::fmt_table(BTreeMap::new());
         let table = "\
-Vendor         Library        Name                Status   
--------------- -------------- ------------------- -------- 
+Package                     Latest    Status   
+--------------------------- --------- -------- 
 ";
         assert_eq!(t, table);
     }

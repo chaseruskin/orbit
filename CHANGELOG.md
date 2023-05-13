@@ -15,6 +15,19 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.9.0
+
+### Changes
+- major overhaul to all commands
+- adds download command
+- refactors backend IP filesystem management methodology
+- new lockfiles
+- new manifests
+- and more to be further documented
+
+### Fixes
+- resolves issue with a function not having to use 'end function' syntax and breaking AST during VHDL parsing
+
 ## 0.8.8
 
 ### Fixes

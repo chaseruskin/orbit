@@ -2,25 +2,25 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use colored::Colorize;
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::catalog::CatalogError;
 use crate::core::manifest::IpManifest;
-use crate::core::parser::Symbol;
+use crate::core::lang::parser::Symbol;
 use crate::core::version::AnyVersion;
 use crate::core::version::Version;
-use crate::core::vhdl::interface;
-use crate::core::vhdl::primaryunit::VhdlIdentifierError;
-use crate::core::vhdl::symbol::Architecture;
-use crate::core::vhdl::symbol::Entity;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Flag, Optional};
-use crate::interface::errors::CliError;
+use crate::core::lang::vhdl::interface;
+use crate::core::lang::vhdl::primaryunit::VhdlIdentifierError;
+use crate::core::lang::vhdl::symbol::Architecture;
+use crate::core::lang::vhdl::symbol::Entity;
+use clif::Cli;
+use clif::arg::{Positional, Flag, Optional};
+use clif::Error as CliError;
 use crate::core::context::Context;
-use crate::core::vhdl::token::Identifier;
+use crate::core::lang::vhdl::token::Identifier;
 use crate::core::pkgid::PkgId;
 use crate::util::anyerror::{AnyError, Fault};
+use crate::OrbitResult;
 
 #[derive(Debug, PartialEq)]
 pub struct Get {
@@ -37,8 +37,8 @@ pub struct Get {
 }
 
 impl FromCli for Get {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Get {
             signals: cli.check_flag(Flag::new("signals").switch('s'))?,
             component: cli.check_flag(Flag::new("component").switch('c'))?,
@@ -55,14 +55,15 @@ impl FromCli for Get {
     }
 }
 
-use crate::core::parser::Parse;
-use crate::core::vhdl;
-use crate::core::vhdl::symbol;
-use crate::core::vhdl::token::VHDLTokenizer;
+use crate::core::lang::parser::Parse;
+use crate::core::lang::vhdl;
+use crate::core::lang::vhdl::symbol;
+use crate::core::lang::vhdl::token::VHDLTokenizer;
 
-impl Command for Get {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {  
+impl Command<Context> for Get {
+    type Status = OrbitResult;
+
+    fn exec(&self, c: &Context) -> Self::Status {
         // --name can only be used with --instance is set
         if self.name.is_some() && self.instance == false {
             return Err(AnyError(format!("'{}' can only be used with '{}'", "--name".yellow(), "--instance".yellow())))?
@@ -186,7 +187,7 @@ impl Get {
 
     /// Parses through the vhdl files and returns a desired entity struct.
     fn fetch_entity(iden: &Identifier, ip: &IpManifest) -> Result<symbol::Entity, Fault> {
-        let files = crate::util::filesystem::gather_current_files(&ip.get_root());
+        let files = crate::util::filesystem::gather_current_files(&ip.get_root(), false);
         // @todo: generate all units first (store architectures, and entities, and then process)
         let mut result: Option<(String, Entity)> = None;
         // store map of all architectures while parsing all code

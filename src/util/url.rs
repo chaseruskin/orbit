@@ -1,11 +1,15 @@
 use std::{num::ParseIntError, str::FromStr};
 use url::ParseError;
+use serde_derive::{Deserialize, Serialize};
+use url::Url as CrateUrl;
 
 use super::strcmp;
 
-#[derive(Debug, PartialEq, Clone, Eq, Hash)]
+#[derive(Debug, PartialEq, Clone, Eq, Hash, Deserialize, Serialize)]
 pub enum Url {
+    #[serde(rename = "https")]
     Https(Https),
+    #[serde(rename = "ssh")]
     Ssh(Ssh),
 }
 
@@ -72,25 +76,24 @@ impl std::fmt::Display for Url {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Eq, Hash)]
-pub struct Https {
-    url: url::Url
-}
+#[derive(Debug, PartialEq, Clone, Eq, Hash, Deserialize, Serialize)]
+#[serde(transparent)]
+pub struct Https(String);
 
 impl std::str::FromStr for Https {
     type Err = url::ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self { url: url::Url::from_str(s)? })
+        Ok(Self(CrateUrl::from_str(s)?.to_string()))
     }
 }
 
 impl std::fmt::Display for Https {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.url)
+        write!(f, "{}", self.0)
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Eq, Hash)]
+#[derive(Debug, PartialEq, Clone, Eq, Hash, Deserialize, Serialize)]
 /// SSH ::= [ssh://]<user>@<host>:[port]</path/to/repo> or {user}@<host>:<path/to/repo>
 pub struct Ssh {
     prefix: Option<String>,
@@ -102,7 +105,7 @@ pub struct Ssh {
 
 impl Ssh {
     fn to_https(&self) -> Https {
-        Https { url: url::Url::from_str(&format!("https://{}/{}", self.host, self.path)).unwrap() }
+        Https(CrateUrl::from_str(&format!("https://{}/{}", self.host, self.path)).unwrap().to_string())
     }
 }
 
@@ -228,8 +231,8 @@ mod test {
     #[test]
     fn https_from_str() {
         let url = Https::from_str("https://github.ks-tech.org/rary/gates.git").unwrap();
-        assert_eq!(url.url.path(), "/rary/gates.git");
-        assert_eq!(url.url.host_str().unwrap(), "github.ks-tech.org");
+        assert_eq!(CrateUrl::from_str(&url.0).unwrap().path(), "/rary/gates.git");
+        assert_eq!(CrateUrl::from_str(&url.0).unwrap().host_str().unwrap(), "github.ks-tech.org");
     }
 
     #[test]

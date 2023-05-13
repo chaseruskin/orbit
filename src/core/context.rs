@@ -10,29 +10,31 @@ use crate::util::anyerror::Fault;
 use crate::core::template::Template;
 use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
 use crate::util::filesystem;
-use crate::util::filesystem::normalize_path;
+use crate::util::filesystem::Standardize;
 use super::config::CONFIG_FILE;
 use super::pkgid::PkgPart;
 use super::vendor::VendorManifest;
 
+/// Shared attributes about the surrounding user run-time environment.
 pub struct Context {
-    /// holds behind-the-scenes internal Orbit operations
-    home_path: path::PathBuf,
-    /// holds installed immutable tags of git repositories
-    cache_path: path::PathBuf,
-    /// the parent path to the current ip Orbit.toml file
-    ip_path: Option<path::PathBuf>,
-    /// holds in-development mutable ip projects
-    dev_path: Option<path::PathBuf>,
+    /// Path to a "hidden" directory for internal Orbit operations.
+    home_path: PathBuf,
+    /// Directory holding installed immutable tags of git repositories.
+    cache_path: PathBuf,
+    /// Directory holding orbit IP awaiting to be installed on local machine.
+    queue_path: PathBuf,
+    /// The parent path to the current ip `Orbit.toml` manifest file.
+    ip_path: Option<PathBuf>,
+    /// holds in-development mutable ip projects [***DEPRECATED***]
+    dev_path: Option<PathBuf>,
     /// holds installed immutable git repositories to pull versions from into cache
-    store_path: path::PathBuf, 
-    /// temporary throwaway directory     
+    store_path: PathBuf, 
+    /// Directory name for the intermediate build processes and outputs.    
     build_dir: String,
     config: Config,
     plugins: HashMap<String, Plugin>, // @IDEA optionally move hashmap out of context and create it from fn to allow dynamic loading
     templates: HashMap<String, Template>,
     vendors: HashMap<PkgPart, VendorManifest>,
-    pub force: bool,
 }
 
 impl Context {
@@ -40,24 +42,20 @@ impl Context {
         let home = std::env::temp_dir();
         let cache = home.join("cache");
         let store = home.join("store");
+        let queue = home.join("queue");
         Context { 
             home_path: home,
             cache_path: cache,
             store_path: store,
+            queue_path: queue,
             ip_path: None,
             dev_path: None,
             plugins: HashMap::new(),
             templates: HashMap::new(),
             config: Config::new(),
             build_dir: String::new(),
-            force: false,
             vendors: HashMap::new(),
         }
-    }
-
-    pub fn retain_options(mut self, force: bool) -> Context {
-        self.force = force;
-        self
     }
 
     /// Sets the home directory. By default this is `$HOME/.orbit`. If set by `var`,
@@ -99,6 +97,13 @@ impl Context {
         Ok(self)
     }
 
+    /// Sets the queue directory. If it was set from `var`, it assumes the path
+    /// exists. If setting by default (within HOME), it assumes HOME is already existing.
+    pub fn queue(mut self, key: &str) -> Result<Context, Fault> {
+        self.queue_path = self.folder(key, "queue")?;
+        Ok(self)
+    }
+
     /// Checks if windows literal command is enabled.
     pub fn enable_windows_bat_file_match() -> bool {
         if cfg!(target_os = "windows") {
@@ -136,7 +141,7 @@ impl Context {
             ep
         };
         // set the environment variable
-        env::set_var(key, &filesystem::normalize_path(dir.to_path_buf()));
+        env::set_var(key, &PathBuf::standardize(&dir));
         Ok(dir)
     }
 
@@ -165,6 +170,11 @@ impl Context {
     /// References the list of linked vendors.
     pub fn get_vendors(&self) -> &HashMap<PkgPart, VendorManifest> {
         &self.vendors
+    }
+
+    /// References the queue directory.
+    pub fn get_queue_path(&self) -> &PathBuf {
+        &self.queue_path
     }
 
     /// Configures and reads data from the settings object to return a `Settings` struct
@@ -206,7 +216,7 @@ impl Context {
             for tbl in arr_tbl {
                 let plug = match Plugin::from_toml(tbl) {
                     Ok(r) => r.set_root(&root), // resolve paths from that config file's parent directory
-                    Err(e) => return Err(AnyError(format!("configuration {}: plugin {}", normalize_path(root.join(CONFIG_FILE)).display(), e)))?
+                    Err(e) => return Err(AnyError(format!("configuration {}: plugin {}", PathBuf::standardize(root.join(CONFIG_FILE)).display(), e)))?
                 };
                 // will kick out previous values so last item in array has highest precedence
                 self.plugins.insert(plug.alias().to_owned(), plug);
@@ -228,7 +238,7 @@ impl Context {
             for tbl in arr_tbl {
                 let template = match Template::from_toml(tbl) {
                     Ok(r) => r.resolve_root_path(&root),
-                    Err(e) => return Err(AnyError(format!("configuration {}: template {}", normalize_path(root.join(CONFIG_FILE)).display(), e)))?
+                    Err(e) => return Err(AnyError(format!("configuration {}: template {}", PathBuf::standardize(root.join(CONFIG_FILE)).display(), e)))?
                 };
                 self.templates.insert(template.alias().to_owned(), template);
             }
@@ -254,7 +264,7 @@ impl Context {
                 // use current directory if the key-value pair is not there
                 let path = match self.get_config().get_as_str("core", "path")? {
                     // normalize
-                    Some(p) => crate::util::filesystem::normalize_path(PathBuf::from(p.to_owned())).to_str().unwrap().to_string(),
+                    Some(p) => PathBuf::standardize(p).to_str().unwrap().to_string(),
                     None => std::env::current_dir().unwrap().display().to_string(),
                 };
                 std::env::set_var(s, &path);
@@ -327,7 +337,7 @@ impl Context {
             }
             None => {
                 // @IDEA also give information about reading about ip-dir sensitive commands as a topic?
-                return Err(ContextError(format!("no orbit IP detected in current directory")));
+                return Err(ContextError(format!("no orbit IP detected in current directory or any parent directory")));
             }
         }
         Ok(())
@@ -338,26 +348,42 @@ impl Context {
     /// This function will recursively backtrack down the current working directory
     /// until finding the first directory with a file named "Orbit.toml".
     pub fn find_ip_path(dir: &std::path::PathBuf) -> Option<path::PathBuf> {
-        //let mut cwd = std::env::current_dir().expect("could not locate cwd");
-        let mut cwd = dir.clone();
+        Self::find_target_path(dir, "Orbit.toml")
+    }
+
+    /// Finds the complete path to the current directory that hosts the `target_file`.
+    /// 
+    /// This function recursively backtracks from `dir` into its ancestors until 
+    /// finding the first directory with a file named `target_file`.
+    /// 
+    /// This function has no assumptions on if the directory is readable or not (bypasses read_dir errors).
+    pub fn find_target_path(dir: &std::path::PathBuf, target_file: &str) -> Option<path::PathBuf> {
+        let mut cur = dir.clone();
         // search for the manifest file
         loop {
-            let mut entries = std::fs::read_dir(&cwd).expect("could not read cwd");
-            let result = entries.find_map(|p| {
-                match p {
-                    Ok(file) => {
-                        if file.file_name() == "Orbit.toml" {
-                            Some(cwd.to_path_buf())
-                        } else {
-                            None
+            match std::fs::read_dir(&cur) {
+                // the directory was able to be read (it exists)
+                Ok(mut entries) => {
+                    let result = entries.find_map(|p| {
+                        match p {
+                            Ok(file) => {
+                                if file.file_name() == target_file {
+                                    Some(cur.to_path_buf())
+                                } else {
+                                    None
+                                }
+                            }
+                            _ => None,
                         }
+                    });
+                    if let Some(r) = result {
+                        break Some(r)
                     }
-                    _ => None,
-                }
-            });
-            if let Some(r) = result {
-                break Some(r)
-            } else if cwd.pop() == false {
+                },
+                // failed to read the directory
+                Err(_) => { },
+            }
+            if cur.pop() == false {
                 break None
             }
         }
@@ -379,5 +405,32 @@ impl std::error::Error for ContextError {}
 impl std::fmt::Display for ContextError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    const HOME: &str = "./tests/env";
+
+    #[test]
+    fn find_target_path() {
+        // existing path with target at root
+        let home = HOME.to_owned();
+        let p = Context::find_target_path(&PathBuf::from(home.clone()+"/project1"), "Orbit.toml");
+        assert_eq!(p, Some(PathBuf::from(home.clone()+"/project1")));
+
+        // inner path with target a directory back
+        let p = Context::find_target_path(&PathBuf::from("./src"), "Cargo.toml");
+        assert_eq!(p, Some(PathBuf::from(".")));
+
+        // imaginary path with target a couple directories back
+        let p = Context::find_target_path(&PathBuf::from(home.clone()+"/project1/rtl/syn/"), "Orbit.toml");
+        assert_eq!(p, Some(PathBuf::from(home.clone()+"/project1")));
+
+        // no existing target
+        let p = Context::find_target_path(&PathBuf::from(home.clone()+"/project1/rtl/syn/"), "HIDDEN-TARGET.TXT");
+        assert_eq!(p, None);
     }
 }

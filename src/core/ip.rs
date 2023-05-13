@@ -14,9 +14,9 @@ use super::lockfile::{LockEntry, LockFile};
 use super::manifest::IpManifest;
 use super::pkgid::PkgId;
 use super::version::Version;
-use super::vhdl::dst;
-use super::vhdl::primaryunit::{VhdlIdentifierError, PrimaryUnit};
-use super::vhdl::token::{Identifier, VHDLTokenizer};
+use super::lang::vhdl::dst;
+use super::lang::vhdl::primaryunit::{PrimaryUnit};
+use super::lang::vhdl::token::{Identifier, VHDLTokenizer};
 
 /// Given a partial/full ip specification `ip_spec`, sift through the manifests
 /// for a possible determined unique solution.
@@ -97,17 +97,18 @@ fn graph_ip<'a>(root: &'a IpManifest, catalog: &'a Catalog<'a>) -> Result<GraphM
                             } else {
                                 // check if identifiers are already taken in graph
                                 let units = dep.collect_units(false)?;
-                                let dst = if let Some(dupe) = units
+                                let dst = if let Some(_dupe) = units
                                         .iter()
                                         .find(|(key, _)| iden_set.contains_key(key)) {
-                                    let dupe = iden_set.get(dupe.0).unwrap();
+                                    // let dupe = iden_set.get(dupe.0).unwrap();
                                     if is_root == true {
-                                        return Err(VhdlIdentifierError::DuplicateAcrossDirect(
-                                            dupe.get_iden().clone(), 
-                                            dep.into_ip_spec(),
-                                            PathBuf::from(dupe.get_unit().get_source_code_file().clone()),
-                                            dupe.get_unit().get_symbol().unwrap().get_position().clone()
-                                        ))?
+                                        panic!("duplicate!")
+                                        // return Err(VhdlIdentifierError::DuplicateAcrossDirect(
+                                        //     dupe.get_iden().clone(), 
+                                        //     dep.into_ip_spec(),
+                                        //     PathBuf::from(dupe.get_unit().get_source_code_file().clone()),
+                                        //     dupe.get_unit().get_symbol().unwrap().get_position().clone()
+                                        // ))?
                                     }
                                     true
                                 } else {
@@ -197,7 +198,7 @@ pub fn compute_final_ip_graph<'a>(target: &'a IpManifest, catalog: &'a Catalog<'
 pub fn build_ip_file_list<'a>(ip_graph: &'a GraphMap<IpSpec, IpNode<'a>, ()>) -> Vec<IpFileNode<'a>> {
     let mut files = Vec::new();
     ip_graph.get_map().iter().for_each(|(_, ip)| {
-        crate::util::filesystem::gather_current_files(&ip.as_ref().as_ip().get_root())
+        crate::util::filesystem::gather_current_files(&ip.as_ref().as_ip().get_root(), false)
             .into_iter()
             .filter(|f| crate::core::fileset::is_vhdl(f) )
             .for_each(|f| {
@@ -276,7 +277,7 @@ impl<'a> IpNode<'a> {
         let temp_ip = IpManifest::from_path(&temp_path).unwrap();
 
         // edit all vhdl files
-        let files = crate::util::filesystem::gather_current_files(&temp_path);
+        let files = crate::util::filesystem::gather_current_files(&temp_path, false);
         for file in &files {
             // perform dst on the data
             if crate::core::fileset::is_vhdl(&file) == true {

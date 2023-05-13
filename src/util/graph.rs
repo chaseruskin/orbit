@@ -676,14 +676,14 @@ mod test {
         let g = basic_graph();
         assert_eq!(g.successors(0).collect::<Vec<NodeIndex>>(), vec![3, 1]);
         assert_eq!(g.successors(1).collect::<Vec<NodeIndex>>(), vec![2]);
-        assert_eq!(g.successors(2).collect::<Vec<NodeIndex>>(), vec![]);
+        assert_eq!(g.successors(2).collect::<Vec<NodeIndex>>(), Vec::<usize>::new());
         assert_eq!(g.successors(3).collect::<Vec<NodeIndex>>(), vec![2]);
     }
 
     #[test]
     fn predecessors() {
         let g = basic_graph();
-        assert_eq!(g.predecessors(0).collect::<Vec<usize>>(), vec![]);
+        assert_eq!(g.predecessors(0).collect::<Vec<usize>>(), Vec::<usize>::new());
         assert_eq!(g.predecessors(1).collect::<Vec<usize>>(), vec![0]);
         assert_eq!(g.predecessors(2).collect::<Vec<usize>>(), vec![3, 1]);
         assert_eq!(g.predecessors(3).collect::<Vec<usize>>(), vec![0]);

@@ -1,7 +1,7 @@
 use colored::Colorize;
 use toml_edit::{Document, ArrayOfTables, Item, Array, Value, Table, Formatted};
 use std::{path::PathBuf, io::Write};
-use crate::util::{anyerror::{AnyError, Fault}, filesystem::normalize_path};
+use crate::util::{anyerror::{AnyError, Fault}, filesystem::Standardize};
 
 pub trait FromToml {
     type Err;
@@ -252,6 +252,17 @@ impl Config {
         Ok(self.collect_as_item(None, key, &Item::is_array_of_tables, "array of tables")?.into_iter().map(|f| (f.0.as_array_of_tables().unwrap(), f.1)).collect())
     }
 
+    /// Gathers all values assigned under a given `Table` entry in configuration.
+    /// 
+    /// The list is given with priority items first (base configurations), then
+    /// extra included items to follow.
+    /// 
+    /// Errors if the entry exists, but is not an array.
+    /// Returns `Vec::new()` if the entry does not exist anywhere.
+    pub fn collect_as_tables<'a>(&'a self, key: &str) -> Result<Vec<(&Table, &PathBuf)>, Fault> {
+        Ok(self.collect_as_item(None, key, &Item::is_table, "table")?.into_iter().map(|f| (f.0.as_table().unwrap(), f.1)).collect())
+    }
+
     /// Takes the last value.
     pub fn get_as_str(&self, table: &str, key: &str) -> Result<Option<&str>, Fault> {
         let mut values = self.collect_as_str(table, key)?;
@@ -290,7 +301,7 @@ impl Config {
                     if eval(item) {
                        values.push((item, inc.get_root()));
                     } else {
-                        return Err(ConfigError::BadItem(format!("{}", normalize_path(self.get_root().join(CONFIG_FILE)).display()), 
+                        return Err(ConfigError::BadItem(format!("{}", PathBuf::standardize(self.get_root().join(CONFIG_FILE)).display()), 
                             item_name.to_owned(), format!("{}{}", { if table.is_some() { table.unwrap().to_string() + "." } else { "".to_string() } }, 
                             key.to_owned())))?
                     }
@@ -305,7 +316,7 @@ impl Config {
                 if eval(item) {
                    values.push((item, self.get_root()));
                 } else {
-                    return Err(ConfigError::BadItem(format!("{}", normalize_path(self.get_root().join(CONFIG_FILE)).display()), 
+                    return Err(ConfigError::BadItem(format!("{}", PathBuf::standardize(self.get_root().join(CONFIG_FILE)).display()), 
                         item_name.to_owned(), format!("{}{}", { if table.is_some() { table.unwrap().to_string() + "." } else { "".to_string() } }, 
                         key.to_owned())))?
                 }
@@ -320,7 +331,7 @@ impl Config {
                     if eval(item) {
                        values.push((item, cfg.get_root()));
                     } else {
-                        return Err(ConfigError::BadItem(format!("{}", normalize_path(self.get_root().join(CONFIG_FILE)).display()), 
+                        return Err(ConfigError::BadItem(format!("{}", PathBuf::standardize(self.get_root().join(CONFIG_FILE)).display()), 
                             item_name.to_owned(), format!("{}{}", { if table.is_some() { table.unwrap().to_string() + "." } else { "".to_string() } }, 
                             key.to_owned())))?
                     }

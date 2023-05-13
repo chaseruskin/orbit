@@ -13,17 +13,16 @@ use crate::util::sha256::{Sha256Hash, self};
 use crate::util::url::Url;
 use std::str::FromStr;
 use crate::core::version::Version;
-use crate::util::filesystem::{normalize_path, self, Unit};
+use crate::util::filesystem::{Standardize, Unit};
 
 use super::catalog::IpState;
 use super::config::{FromToml, FromTomlError};
-use super::extgit::ExtGit;
 use super::lockfile::LockEntry;
 use super::ip::IpSpec;
 use super::store::Store;
 use super::version::AnyVersion;
-use super::vhdl::primaryunit::PrimaryUnit;
-use super::vhdl::token::{Identifier, IdentifierError};
+use super::lang::vhdl::primaryunit::PrimaryUnit;
+use super::lang::vhdl::token::{Identifier, IdentifierError};
 
 /// Takes an iterative approach to iterating through directories to find a file
 /// matching `name`.
@@ -512,8 +511,8 @@ impl IpManifest {
             true => Ok(self.read_units_from_metadata().unwrap()),
             false => {
                 // collect all files
-                let files = crate::util::filesystem::gather_current_files(&self.get_manifest().get_path().parent().unwrap().to_path_buf());
-                Ok(crate::core::vhdl::primaryunit::collect_units(&files)?)
+                let files = crate::util::filesystem::gather_current_files(&self.get_manifest().get_path().parent().unwrap().to_path_buf(), false);
+                Ok(crate::core::lang::vhdl::primaryunit::collect_units(&files)?)
             }
         }
     }
@@ -573,8 +572,8 @@ impl IpManifest {
     pub fn compute_checksum(&self) -> Sha256Hash {
         let cd = std::env::current_dir().unwrap();
         std::env::set_current_dir(&self.get_root()).unwrap();
-        let ip_files = crate::util::filesystem::gather_current_files(&PathBuf::from("."));
-        let checksum = crate::util::checksum::checksum(&ip_files);
+        let ip_files = crate::util::filesystem::gather_current_files(&PathBuf::from("."), false);
+        let checksum = crate::util::checksum::checksum(&ip_files, &std::env::current_dir().unwrap());
         std::env::set_current_dir(&cd).unwrap();
         checksum
     }
@@ -736,7 +735,7 @@ impl IpManifest {
                 std::fs::remove_dir_all(&path)?;
             // error if directories exist
             } else if init == false {
-                return Err(Box::new(AnyError(format!("failed to create new ip because destination '{}' already exists; use {} to overwrite existing directory", filesystem::normalize_path(path).display(), "--force".yellow()))))
+                return Err(Box::new(AnyError(format!("failed to create new ip because destination '{}' already exists; use {} to overwrite existing directory", PathBuf::standardize(path).display(), "--force".yellow()))))
             }
         }
         // create all directories if the do not exist
@@ -760,7 +759,7 @@ impl IpManifest {
         ip_man.get_manifest_mut().save()?;
 
         // create an empty git repository
-        git2::Repository::init(&path)?;
+        // git2::Repository::init(&path)?;
 
         Ok(ip_man)
     }
@@ -846,18 +845,18 @@ impl IpManifest {
     }
 
     /// Tries to load a manifest from the store.
-    pub fn from_store(store: &Store, pkgid: &PkgId, version: &AnyVersion) -> Result<Option<IpManifest>, Fault> {
-        let root = match store.as_stored(&pkgid) {
+    pub fn from_store(store: &Store, pkgid: &PkgId, _version: &AnyVersion) -> Result<Option<IpManifest>, Fault> {
+        let root: PathBuf = match store.as_stored(&pkgid) {
             Some(r) => r,
             None => return Ok(None),
         };
-        // create the repository
-        let repo = git2::Repository::open(&root)?;
-        // verify the version exists
-        let space = ExtGit::gather_version_tags(&repo)?;
-        let target_ver = super::version::get_target_version(version, &space.iter().collect())?;
-        // checkout the selected version
-        ExtGit::checkout_tag_state(&repo, &target_ver)?;
+        // // create the repository
+        // let repo = git2::Repository::open(&root)?;
+        // // verify the version exists
+        // let space = ExtGit::gather_version_tags(&repo)?;
+        // let target_ver = super::version::get_target_version(version, &space.iter().collect())?;
+        // // checkout the selected version
+        // ExtGit::checkout_tag_state(&repo, &target_ver)?;
         // load the manifest
         let ip = Self::from_path(&root)?;
         // verify the package id's match because store could overwrite with hash collision
@@ -881,7 +880,7 @@ impl IpManifest {
     fn wrap_toml<T, E: std::fmt::Display>(m: &Manifest, r: Result<T, E>) -> Result<T, impl std::error::Error> {
         match r {
             Ok(t) => Ok(t),
-            Err(e) => Err(AnyError(format!("manifest {}: {}", normalize_path(m.get_path().clone()).display(), e))),
+            Err(e) => Err(AnyError(format!("manifest {}: {}", PathBuf::standardize(m.get_path()).display(), e))),
         }
     }
 

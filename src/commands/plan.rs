@@ -1,33 +1,30 @@
 use colored::Colorize;
-use tempfile::tempdir;
 
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
-use crate::core::extgit;
 use crate::core::ip::IpFileNode;
 use crate::core::ip::IpNode;
 use crate::core::ip::IpSpec;
 use crate::core::lockfile::LockFile;
 use crate::core::manifest::IpManifest;
-use crate::core::lockfile::LockEntry;
 use crate::core::plugin::PluginError;
 use crate::core::template;
 use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
-use crate::core::vhdl::subunit::SubUnit;
-use crate::core::vhdl::symbol::CompoundIdentifier;
-use crate::interface::cli::Cli;
+use crate::core::lang::vhdl::subunit::SubUnit;
+use crate::core::lang::vhdl::symbol::CompoundIdentifier;
+use clif::Cli;
 use crate::util::anyerror::Fault;
 use crate::util::environment::EnvVar;
-use crate::interface::arg::{Flag, Optional};
-use crate::interface::errors::CliError;
+use clif::arg::{Flag, Optional};
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::graphmap::GraphMap;
 use std::collections::HashMap;
 use std::io::Write;
+use crate::OrbitResult;
 use crate::core::fileset::Fileset;
-use crate::core::vhdl::token::Identifier;
+use crate::core::lang::vhdl::token::Identifier;
 use crate::core::plugin::Plugin;
 use crate::util::environment;
 
@@ -43,12 +40,14 @@ pub struct Plan {
     filesets: Option<Vec<Fileset>>,
     disable_ssh: bool,
     only_lock: bool,
+    force: bool,
 }
 
 impl FromCli for Plan {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Plan {
+            force: cli.check_flag(Flag::new("force"))?,
             only_lock: cli.check_flag(Flag::new("lock-only"))?,
             all : cli.check_flag(Flag::new("all"))?,
             clean: cli.check_flag(Flag::new("clean"))?,
@@ -64,10 +63,10 @@ impl FromCli for Plan {
     }
 }
 
-impl Command for Plan {
-    type Err = Fault;
+impl Command<Context> for Plan {
+    type Status = OrbitResult;
 
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+    fn exec(&self, c: &Context) -> Self::Status {
         // locate the plugin
         let plugin = match &self.plugin {
             // verify the plugin alias matches
@@ -106,7 +105,7 @@ impl Command for Plan {
         // see Install::install_from_lock_file
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
-        if target_ip.can_use_lock() == true && c.force == false {
+        if target_ip.can_use_lock() == true && self.force == false {
             // fill in the catalog with missing modules according the lock file if available
             for entry in target_ip.into_lockfile()?.inner() {
                 // skip the current project's ip entry
@@ -120,11 +119,11 @@ impl Command for Plan {
                             // no action required
                             Some(_) => (),
                             // install
-                            None => Plan::install_from_lock_entry(&entry, &ver, &catalog, self.disable_ssh)?,
+                            None => todo!() // Plan::install_from_lock_entry(&entry, &ver, &catalog, self.disable_ssh)?,
                         }
                     }
                     // install
-                    None => Plan::install_from_lock_entry(&entry, &ver, &catalog, self.disable_ssh)?,
+                    None => todo!() // Plan::install_from_lock_entry(&entry, &ver, &catalog, self.disable_ssh)?,
                 }
             }
             // recollect the installations to update the catalog
@@ -137,14 +136,13 @@ impl Command for Plan {
             None => c.get_build_dir(),
         };
 
-        self.run(target_ip, b_dir, plugin, catalog, c.force)
+        self.run(target_ip, b_dir, plugin, catalog)
     }
 }
 
-use crate::core::vhdl::symbol;
+use crate::core::lang::vhdl::symbol;
 use crate::util::anyerror::AnyError;
 
-use super::install;
 
 #[derive(Debug, PartialEq)]
 pub struct SubUnitNode<'a> {
@@ -206,31 +204,31 @@ impl<'a> HdlNode<'a> {
 
 impl Plan {
     /// Clones the ip entry's repository to a temporary directory and then installs the appropriate version `ver`.
-    pub fn install_from_lock_entry(entry: &LockEntry, ver: &AnyVersion, catalog: &Catalog, disable_ssh: bool) -> Result<(), Fault> {
-        let temp = tempdir()?;
-        // try to use the source
-        let from = if let Some(source) = entry.get_source() {
-            let temp = temp.as_ref().to_path_buf();
-            println!("info: fetching {} repository ...", entry.get_name());
-            extgit::ExtGit::new(None)
-                .clone(source, &temp, disable_ssh)?;
-            temp
-        // try to find an install path
-        } else {
-            install::fetch_install_path(entry.get_name(), &catalog, disable_ssh, &temp)?
-        };
-        let ip = install::Install::install(&from, &ver, catalog.get_cache_path(), true, catalog.get_store())?;
+    // pub fn install_from_lock_entry(entry: &LockEntry, ver: &AnyVersion, catalog: &Catalog, disable_ssh: bool) -> Result<(), Fault> {
+    //     let temp = tempdir()?;
+    //     // try to use the source
+    //     let from = if let Some(source) = entry.get_source() {
+    //         let temp = temp.as_ref().to_path_buf();
+    //         println!("info: fetching {} repository ...", entry.get_name());
+    //         extgit::ExtGit::new(None)
+    //             .clone(source, &temp, disable_ssh)?;
+    //         temp
+    //     // try to find an install path
+    //     } else {
+    //         install::fetch_install_path(entry.get_name(), &catalog, disable_ssh, &temp)?
+    //     };
+    //     let ip = install::Install::install(&from, &ver, catalog.get_cache_path(), true, catalog.get_store())?;
 
-        // verify the checksums align
-        match &ip.read_checksum_proof().unwrap() == entry.get_sum().unwrap() {
-            true => Ok(()),
-            false => {
-                // delete the entry from the cache slot
-                ip.remove()?;
-                Err(AnyError(format!("failed to install ip '{}' from lockfile due to differing checksums\n\ncomputed: {}\nexpected: {}", entry.get_name(), ip.read_checksum_proof().unwrap(), entry.get_sum().unwrap())))?
-            }
-        } 
-    }
+    //     // verify the checksums align
+    //     match &ip.read_checksum_proof().unwrap() == entry.get_sum().unwrap() {
+    //         true => Ok(()),
+    //         false => {
+    //             // delete the entry from the cache slot
+    //             ip.remove()?;
+    //             Err(AnyError(format!("failed to install ip '{}' from lockfile due to differing checksums\n\ncomputed: {}\nexpected: {}", entry.get_name(), ip.read_checksum_proof().unwrap(), entry.get_sum().unwrap())))?
+    //         }
+    //     } 
+    // }
 
     /// Builds a graph of design units. Used for planning.
     fn build_full_graph<'a>(files: &'a Vec<IpFileNode>) -> GraphMap<CompoundIdentifier, HdlNode<'a>, ()> {
@@ -473,7 +471,7 @@ impl Plan {
     }
 
     /// Performs the backend logic for creating a blueprint file (planning a design).
-    fn run(&self, target: IpManifest, build_dir: &str, plug: Option<&Plugin>, catalog: Catalog, force: bool) -> Result<(), Fault> {
+    fn run(&self, target: IpManifest, build_dir: &str, plug: Option<&Plugin>, catalog: Catalog) -> Result<(), Fault> {
         // create the build path to know where to begin storing files
         let mut build_path = std::env::current_dir().unwrap();
         build_path.push(build_dir);
@@ -488,7 +486,7 @@ impl Plan {
 
         // only write lockfile and exit if flag is raised 
         if self.only_lock == true {
-            Self::write_lockfile(&target, &ip_graph, force)?;
+            Self::write_lockfile(&target, &ip_graph, self.force)?;
             return Ok(())
         }
 
@@ -523,7 +521,7 @@ impl Plan {
         }
 
         // [!] write the lock file
-        Self::write_lockfile(&target, &ip_graph, force)?;
+        Self::write_lockfile(&target, &ip_graph, self.force)?;
 
         // compute minimal topological ordering
         let min_order = match self.all {
@@ -577,7 +575,7 @@ impl Plan {
 
         // [!] collect user-defined filesets
         {
-            let current_files: Vec<String> = crate::util::filesystem::gather_current_files(&std::env::current_dir().unwrap());
+            let current_files: Vec<String> = crate::util::filesystem::gather_current_files(&std::env::current_dir().unwrap(), false);
 
             let mut vtable = VariableTable::new();
             // variables could potentially store empty strings if units are not set

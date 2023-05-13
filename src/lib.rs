@@ -1,49 +1,42 @@
 #![allow(dead_code)]
 
-mod interface;
 mod commands;
 pub mod util;
 mod core;
 
-use crate::interface::cli::*;
-use crate::interface::errors::*;
-use crate::interface::command::*;
+use clif::*;
 use crate::commands::orbit::*;
 use colored::*;
-use crate::core::context::Context;
+use clif::cmd::FromCli;
+use clif::cmd::Command;
 
-pub fn run() -> u8 {
+pub fn go() -> u8 {
     // interface level
-    let mut cli = Cli::tokenize(std::env::args());
+    let mut cli = Cli::new()
+        .emphasize_help()
+        .color()
+        .threshold(2)
+        .tokenize(std::env::args());
+
     let orbit = match Orbit::from_cli(&mut cli) {
-        Ok(r) => r,
-        Err(e) => {
-            match e {
-                CliError::Help(s) => {
-                    println!("{}", s);
-                    return 0;
-                }
-                _ => eprintln!("{} {}", "error:".red().bold(), e)
+        Ok(app) => {
+            std::mem::drop(cli);
+            app
+        },
+        Err(err) => {
+            match err.kind() {
+                ErrorKind::Help => println!("{}", err),
+                _ => eprintln!("{}: {}", "error".red().bold(), err)
             }
-            return 101;
+            return err.code()
         }
     };
-    if let Err(e) = cli.is_empty() {
-        match e {
-            CliError::Help(s) => {
-                println!("{}", s);
-                return 0;
-            }
-            _ => eprintln!("{} {}", "error:".red().bold(), e),
-        }
-        return 101;
-    }
-    std::mem::drop(cli);
+
     // program level
-    match orbit.exec(&Context::new()) {
+    match orbit.exec(&()) {
         Ok(_) => 0,
-        Err(e) => {
-            eprintln!("{} {}", "error:".red().bold(), e); 
+        Err(err) => {
+            eprintln!("{}: {}", "error".red().bold(), err); 
             101
         }
     }

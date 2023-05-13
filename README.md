@@ -27,8 +27,7 @@ Usage:
 Commands:
     new             create a new ip
     init            initialize an ip from an existing project
-    edit            open an ip in a text editor
-    probe           access information about an ip
+    show            print information about an ip
     read            inspect hdl design unit source code
     get             fetch an entity
     tree            view the dependency graph

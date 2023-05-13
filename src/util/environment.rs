@@ -1,10 +1,11 @@
 use crate::core::config::Config;
-use crate::core::manifest::IpManifest;
+use crate::core::lang::vhdl::token::Identifier;
 use crate::util::anyerror::Fault;
 use std::hash::Hash;
 use std::io::Write;
 use std::io::Read;
 
+use crate::core::v2::ip::Ip;
 use std::collections::btree_set::Iter;
 use std::collections::btree_set::IntoIter;
 
@@ -109,13 +110,16 @@ impl Environment {
         Ok(self)
     }
 
-    /// Loads environment variables from a target IpManifest.
-    pub fn from_ip(mut self, ip: &IpManifest) -> Result<Self, Fault> {
-        self.insert(EnvVar::new().key("ORBIT_IP").value(&ip.get_pkgid().to_string()));
-        self.insert(EnvVar::new().key("ORBIT_IP_NAME").value(&ip.get_pkgid().get_name().to_string()));
-        self.insert(EnvVar::new().key("ORBIT_IP_VENDOR").value(&ip.get_pkgid().get_vendor().as_ref().unwrap().to_string()));
-        self.insert(EnvVar::new().key("ORBIT_IP_LIBRARY").value(&ip.get_pkgid().get_library().as_ref().unwrap().to_string()));
-        self.insert(EnvVar::new().key("ORBIT_IP_VERSION").value(&ip.get_version().to_string()));
+    /// Loads environment variables from a target [Ip].
+    pub fn from_ip(mut self, ip: &Ip) -> Result<Self, Fault> {
+        self.insert(EnvVar::new().key("ORBIT_IP_NAME").value(&ip.get_man().get_ip().get_name().to_string()));
+        self.insert(EnvVar::new().key("ORBIT_IP_VERSION").value(&ip.get_man().get_ip().get_version().to_string()));
+        self.insert(EnvVar::new().key("ORBIT_IP_LIBRARY").value(&
+            match ip.get_man().get_ip().get_library() {
+                Some(lib) => lib.to_string(),
+                None => Identifier::new_working().to_string(),
+            }
+        ));
         Ok(self)
     }
 
@@ -201,6 +205,7 @@ pub const ORBIT_TOP: &str = "ORBIT_TOP";
 pub const ORBIT_BENCH: &str = "ORBIT_BENCH";
 pub const ORBIT_BUILD_DIR: &str = "ORBIT_BUILD_DIR";
 pub const ORBIT_CACHE: &str = "ORBIT_CACHE";
+pub const ORBIT_QUEUE: &str = "ORBIT_QUEUE";
 pub const ORBIT_HOME: &str = "ORBIT_HOME";
 pub const ORBIT_STORE: &str = "ORBIT_STORE";
 pub const ORBIT_IP_PATH: &str = "ORBIT_IP_PATH";

@@ -1,29 +1,33 @@
 use colored::Colorize;
 
-use crate::Command;
-use crate::FromCli;
+use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
 use crate::core::manifest::IpManifest;
-use crate::interface::cli::Cli;
-use crate::interface::arg::{Positional, Optional, Arg};
-use crate::interface::errors::CliError;
+use clif::Cli;
+use clif::arg::{Positional, Optional, Arg, Flag};
+use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::core::pkgid::PkgId;
 use crate::core::extgit::ExtGit;
 use crate::util::url::Url;
+use crate::OrbitResult;
+use crate::util::filesystem::Standardize;
+use std::path::PathBuf;
 
 #[derive(Debug, PartialEq)]
 pub struct Init {
     ip: PkgId,
     repo: Option<Url>,
+    force: bool,
     rel_path: Option<std::path::PathBuf>,
 }
 
 impl FromCli for Init {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError<'c>> {
-        cli.set_help(HELP);
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Init {
+            force: cli.check_flag(Flag::new("force"))?,
             repo: cli.check_option(Optional::new("git").value("repo"))?,
             rel_path: cli.check_option(Optional::new("path"))?,
             ip: cli.require_positional(Positional::new("ip"))?,
@@ -32,12 +36,13 @@ impl FromCli for Init {
     }
 }
 
-impl Command for Init {
-    type Err = Box<dyn std::error::Error>;
-    fn exec(&self, c: &Context) -> Result<(), Self::Err> {
+impl Command<Context> for Init {
+    type Status = OrbitResult;
+
+    fn exec(&self, c: &Context) -> Self::Status {
         // extra validation for a new IP spec to contain all fields (V.L.N)
         if let Err(e) = self.ip.fully_qualified() {
-            return Err(Box::new(CliError::BadType(Arg::Positional(Positional::new("ip")), e.to_string())));
+            return Err(Box::new(clif::Error::new(None, clif::ErrorKind::BadType, clif::ErrorContext::FailedCast(Arg::Positional(Positional::new("ip")), self.ip.to_string(), Box::new(e)), false)));
         }
 
         // verify only --path can be used with --git
@@ -83,7 +88,7 @@ impl Command for Init {
                 }
             }
         };
-        self.run(path, c.force)
+        self.run(path)
     }
 }
 
@@ -91,15 +96,15 @@ impl Init {
     /// Initializes a project at an exising path.
     /// 
     /// Note the path must exist unless cloning from a git repository.
-    fn run(&self, ip_path: std::path::PathBuf, _: bool) -> Result<(), Box<dyn std::error::Error>> {
+    fn run(&self, ip_path: std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         // the path must exist if not cloning from a repository
         if std::path::Path::exists(&ip_path) == false && self.repo.is_none() {
-            return Err(AnyError(format!("failed to initialize ip because directory '{}' does not exist", crate::util::filesystem::normalize_path(ip_path).display())))?
+            return Err(AnyError(format!("failed to initialize ip because directory '{}' does not exist", PathBuf::standardize(ip_path).display())))?
         }
 
         // cannot clone into a non-empty directory
         if self.repo.is_some() && ip_path.is_dir() && std::fs::read_dir(&ip_path)?.count() > 0 {
-            return Err(AnyError(format!("failed to initialize ip because directory '{}' is not empty to clone repository into", crate::util::filesystem::normalize_path(ip_path).display())))?
+            return Err(AnyError(format!("failed to initialize ip because directory '{}' is not empty to clone repository into", PathBuf::standardize(ip_path).display())))?
         }
 
         // verify the ip would exist alone on this path (cannot nest IPs)
@@ -111,7 +116,7 @@ impl Init {
             }
             // verify there are no current IPs living on this path
             if let Some(other_path) = Context::find_ip_path(&path_clone) {
-                return Err(Box::new(AnyError(format!("an ip already exists at path {}", crate::util::filesystem::normalize_path(other_path).display()))))
+                return Err(Box::new(AnyError(format!("an ip already exists at path {}", PathBuf::standardize(other_path).display()))))
             }
         }
 

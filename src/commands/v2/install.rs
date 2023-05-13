@@ -14,15 +14,13 @@
 //! 
 //! The download process:
 //!     - write a lockfile
-//! 
+//!     - ...
 //! 
 
 use clif::cmd::{FromCli, Command};
 use crate::core::v2::catalog::CacheSlot;
 use crate::core::v2::catalog::Catalog;
-use crate::core::v2::manifest::{IP_MANIFEST_FILE, ORBIT_SUM_FILE};
-use crate::core::v2::manifest::Manifest;
-use crate::core::v2::manifest::FromFile;
+use crate::core::v2::manifest::ORBIT_SUM_FILE;
 use crate::util::filesystem;
 use clif::Cli;
 use std::env::current_dir;
@@ -41,7 +39,7 @@ use crate::core::v2::ip::Ip;
 pub struct Install {
     path: PathBuf,
     force: bool,
-    compile: bool,
+    deps_only: bool,
 }
 
 impl FromCli for Install {
@@ -49,7 +47,7 @@ impl FromCli for Install {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Install {
             force: cli.check_flag(Flag::new("force"))?,
-            compile: cli.check_flag(Flag::new("compile"))?,
+            deps_only: cli.check_flag(Flag::new("deps"))?,
             path: cli.check_option(Optional::new("path"))?.unwrap_or(PathBuf::from(".")),
         });
         command
@@ -68,10 +66,8 @@ impl Command<Context> for Install {
         
         // gather the catalog (all manifests)
         let catalog = Catalog::new()
-            // .store(c.get_store_path())
-            // .development(c.get_development_path().unwrap())?
-            .installations(c.get_cache_path())?;
-            // .available(c.get_vendors())?;
+            .installations(c.get_cache_path())?
+            .queue(c.get_queue_path())?;
 
         // enter action
         self.run(&dest, &catalog)
@@ -103,13 +99,10 @@ impl Install {
     /// It will reinstall if it finds the original installation has a mismatching checksum.
     /// 
     /// Errors if the ip is already installed unless `force` is true.
-    pub fn install(src: &PathBuf, cache_root: &std::path::PathBuf, force: bool) -> Result<(), Fault> {
-        // @todo: validate the IP and its dependencies
-        let man = Manifest::from_file(&src.join(IP_MANIFEST_FILE))?;
-
+    pub fn install(src: &Ip, cache_root: &std::path::PathBuf, force: bool) -> Result<(), Fault> {
         // temporary destination to move files for processing and manipulation
         let dest = tempfile::tempdir()?.into_path();
-        filesystem::copy(src, &dest, true)?;
+        filesystem::copy(src.get_root(), &dest, true)?;
 
         // @todo: listing all units
 
@@ -118,8 +111,8 @@ impl Install {
         // @todo: getting the size of the entire directory
 
         // access the name and version
-        let version = man.get_ip().get_version();
-        let target = man.get_ip().get_name();
+        let version = src.get_man().get_ip().get_version();
+        let target = src.get_man().get_ip().get_name();
         println!("info: installing {} v{} ...", target, version);
 
         // perform sha256 on the temporary cloned directory 
@@ -162,7 +155,7 @@ impl Install {
 
     fn run(&self, src: &PathBuf, catalog: &Catalog) -> Result<(), Fault> {
         // @todo: check if there is a potential lockfile to use
-        let _ip = Ip::load(src.clone())?;
+        let ip = Ip::load(src.clone())?;
 
         // store results from expensive computations into specific orbit files
 
@@ -178,13 +171,20 @@ impl Install {
         // todo!();
         
         // @todo: check lockfile to process installing any IP that may be already downloaded to the queue
+        
+        if ip.get_lock().is_empty() == true {
+            panic!("must have a lockfile before installing, be sure to run orbit plan")
+        }
+
+        // verify each requirement for the IP is also installed (o.w. install)
+        
 
         // if let Some(lock) = man.get_lockfile() {
         //     Self::install_from_lock_file(&self, &lock, &catalog)?;
         // }
         // if the lockfile is invalid, then it will only install the current request and zero dependencies
         
-        let _ = Self::install(&src, &catalog.get_cache_path(), self.force)?;
+        let _ = Self::install(&ip, &catalog.get_cache_path(), self.force)?;
         Ok(())
     }
 }

@@ -22,7 +22,9 @@ use crate::core::fileset::Fileset;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::plugin::Plugin;
 use crate::util::environment;
+use std::fs;
 
+use crate::commands::v2::install::Install;
 use crate::core::v2::ip::Ip;
 use crate::core::v2::catalog::Catalog;
 use crate::core::v2::algo;
@@ -30,6 +32,8 @@ use crate::core::v2::algo::IpFileNode;
 use crate::core::v2::algo::IpNode;
 use crate::core::v2::ip::IpSpec;
 use crate::core::v2::lockfile::LockFile;
+// use crate::commands::v2::download::Download;
+use crate::core::v2::lockfile::LockEntry;
 
 use crate::util::graphmap::Node;
 
@@ -96,47 +100,38 @@ impl Command<Context> for Plan {
         // check that user is in an IP directory
         c.goto_ip_path()?;
 
-        let target = Ip::load(c.get_ip_path().unwrap().clone())?;
-
         // create the ip manifest
-        //let target_ip = IpManifest::from_path(c.get_ip_path().unwrap())?;
+        let target = Ip::load(c.get_ip_path().unwrap().clone())?;
 
         // gather the catalog
         let mut catalog = Catalog::new()
-            // .store(c.get_store_path())
-            // .development(c.get_development_path().unwrap())?
             .installations(c.get_cache_path())?
             .queue(c.get_queue_path())?;
-            // .available(c.get_vendors())?;
 
         // @todo: recreate the ip graph from the lockfile, then read each installation
         // see Install::install_from_lock_file
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
         if target.can_use_lock() == true && self.force == false {
-            // fill in the catalog with missing modules according the lock file if available
-            for entry in target.get_lock().inner() {
-                // skip the current project's ip entry
-                if entry.get_name() == target.get_man().get_ip().get_name() { continue }
-                let ver = AnyVersion::Specific(entry.get_version().to_partial_version());
-                // try to use the lock file to fill in missing pieces
-                match catalog.inner().get(entry.get_name()) {
-                    Some(status) => {
-                        // find this IP to read its dependencies
-                        match status.get(&ver, true) {
-                            // no action required (already installed)
-                            Some(_) => (),
-                            // install
-                            // @note: this should no longer be reachable
-                            None => todo!("install from lock entry"), //Plan::install_from_lock_entry(&entry, &ver, &catalog, self.disable_ssh)?,
-                        }
-                    }
-                    // @todo: install (check the queue for the dependency)
-                    None => todo!("install from lock entry by searching queue"), //Plan::install_from_lock_entry(&entry, &ver, &catalog, self.disable_ssh)?,
-                }
-            }
-            // recollect the installations to update the catalog
-            catalog = catalog.installations(c.get_cache_path())?;
+            let le = LockEntry::from(&target);
+            let lf = target.get_lock();
+            
+            // @todo: attempt to download missing deps
+            // {
+            //     let dls = Download::compile_download_list(&le, &lf, &catalog, true);
+            //     let dl_proc = DownloadProc::from_config(c.get_config(), None)?;
+            //     Download::download(&dls, dl_proc, &Vec::new(), true)?;
+            // }
+            // @todo: update catalog
+            // catalog = catalog
+            //     .installations(c.get_cache_path())?
+            //     .queue(c.get_queue_path())?;
+
+            fill_missing_dependencies(&lf, &le, &catalog)?;
+            // recollect the installations and queued items to update the catalog
+            catalog = catalog
+                .installations(c.get_cache_path())?
+                .queue(c.get_queue_path())?;
         }
 
         // determine the build directory (command-line arg overrides configuration setting)
@@ -147,6 +142,43 @@ impl Command<Context> for Plan {
 
         self.run(target, b_dir, plugin, catalog)
     }
+}
+
+
+pub fn fill_missing_dependencies(lf: &LockFile, le: &LockEntry, catalog: &Catalog) -> Result<(), Fault> {
+    // fill in the catalog with missing modules according the lock file if available
+    for entry in lf.inner() {
+        // skip the current project's IP entry
+        if entry.matches_target(&le) { continue }
+
+        let ver = AnyVersion::Specific(entry.get_version().to_partial_version());
+        // try to use the lock file to fill in missing pieces
+        match catalog.inner().get(entry.get_name()) {
+            Some(status) => {
+                // find this IP to read its dependencies
+                match status.get(&ver, true) {
+                    // no action required (already installed)
+                    Some(_) => (),
+                    // install
+                    None => {
+                        // check the queue for installation
+                        match status.get(&ver, false) {
+                            Some(dep) => {
+                                Install::install(dep, catalog.get_cache_path(), false)?;
+                                // remove from queue
+                                fs::remove_dir_all(dep.get_root())?;
+                            },
+                            None => {
+                                panic!("entry is not queued for installation")
+                            }
+                        }
+                    },
+                }
+            }
+            None => panic!("entry is not queued for installation (unknown ip)"),
+        }
+    }
+    Ok(())
 }
 
 use crate::core::lang::vhdl::symbol;
@@ -531,7 +563,7 @@ impl Plan {
         }
 
         // [!] write the lock file
-        Self::write_lockfile(&target, &ip_graph, self.force)?;
+        Self::write_lockfile(&target, &ip_graph, true)?;
 
         // compute minimal topological ordering
         let min_order = match self.all {

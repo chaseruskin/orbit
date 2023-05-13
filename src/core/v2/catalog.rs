@@ -76,6 +76,10 @@ impl IpLevel {
         &self.available
     }
 
+    pub fn get_queued(&self) -> &Vec<Ip> {
+        &self.queue
+    }
+
     pub fn is_available(&self) -> bool {
         self.available.is_empty() == false
     }
@@ -99,19 +103,23 @@ impl IpLevel {
         Self::get_target_version(version, self.get_availability())
     }
 
+    pub fn get_queue(&self, version: &AnyVersion) -> Option<&Ip> {
+        Self::get_target_version(version, self.get_queued())
+    }
+
     /// References the ip matching the most compatible version `version`.
     /// 
     /// A `dev` version is only searched at the DEV_PATH. Any other version is
     /// first sought for in the cache installations, and if not found then searched
     /// for in the availability space.
-    /// Note: `usable` to `false` will not check available state
+    /// Note: `usable` to `false` will not check queued state
     pub fn get(&self, version: &AnyVersion, usable: bool) -> Option<&Ip> {
         match version {
             AnyVersion::Dev => self.get_dev(),
             _ => {
                 match self.get_install(version) {
                     Some(ip) => Some(ip),
-                    None => if usable == false { self.get_available(version) } else { None }
+                    None => if usable == false { self.get_queue(version) } else { None }
                 }
             }
         }

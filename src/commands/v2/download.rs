@@ -20,6 +20,7 @@ use crate::core::config::FromTomlError;
 use crate::core::plugin::Process;
 use std::io::Write;
 use crate::core::v2::ip::Ip;
+use crate::core::config::Config;
 
 #[derive(Debug, PartialEq)]
 pub struct Download {
@@ -33,7 +34,7 @@ pub struct Download {
 }
 
 #[derive(Debug, PartialEq)]
-struct DownloadProc {
+pub struct DownloadProc {
     root: PathBuf,
     command: Option<String>,
     args: Vec<String>,
@@ -88,7 +89,7 @@ impl DownloadProc {
         }
     }
 
-    pub fn has_command(&self) -> bool {
+    pub fn exists(&self) -> bool {
         self.command.is_some()
     }
 
@@ -98,6 +99,24 @@ impl DownloadProc {
 
     pub fn set_root(&mut self, root: PathBuf) {
         self.root = root;
+    }
+
+    pub fn from_config(config: &Config, cmd: &Option<String>) -> Result<Self, Fault> {
+        // get the configured download command
+        let tables = config.collect_as_tables("download")?;
+        match tables.first() {
+            Some((tbl, root)) => {
+                let mut dl_proc = DownloadProc::from_toml(&tbl)?;
+                // override the existing command
+                if cmd.is_some() == true {
+                    dl_proc.set_command(cmd.as_ref().unwrap().clone());
+                }
+                // set the root
+                dl_proc.set_root(root.to_path_buf());
+                Ok(dl_proc)
+            },
+            None => Ok(DownloadProc::new()),
+        }
     }
 }
 
@@ -129,28 +148,10 @@ impl Command<Context> for Download {
             panic!("cannot display all and missing lock entries");
         }
 
-        let dl_proc = {
-            // get the configured download command
-            let tables = c.get_config().collect_as_tables("download")?;
-            match tables.first() {
-                Some((tbl, root)) => {
-                    let mut tmp = DownloadProc::from_toml(&tbl)?;
-                    // override the existing command
-                    if self.command.is_some() == true {
-                        tmp.set_command(self.command.as_ref().unwrap().clone());
-                    }
-                    // set the root
-                    tmp.set_root(root.to_path_buf());
-                    tmp
-                },
-                None => DownloadProc::new(),
-            }
-        };
+        let dl_proc = DownloadProc::from_config(c.get_config(), &self.command)?;
 
         // do not allow args if no command is set
-        let is_command_set = self.command.is_some() || dl_proc.has_command();
-
-        if is_command_set == false && self.args.len() > 0 {
+        if dl_proc.exists() == false && self.args.is_empty() == false {
             panic!("invalid arguments for no command set")
         }
         
@@ -184,7 +185,7 @@ impl Command<Context> for Download {
         let missing_only = self.all == false || self.missing == true;
 
         // default behavior is to print out to console
-        let to_stdout = dl_proc.has_command() == false || self.list == true;
+        let to_stdout = dl_proc.exists() == false || self.list == true;
 
         let downloads =  Self::compile_download_list(&LockEntry::from(&ip), ip.get_lock(), &catalog, missing_only);
         // print to console
@@ -192,24 +193,7 @@ impl Command<Context> for Download {
             downloads.iter().for_each(|d| println!("{}", d));
         // execute the command
         } else {
-            // write the download list to a temporary file
-            let mut file = tempfile::NamedTempFile::new()?;
-            let contents = downloads.iter().fold(String::new(), |mut acc, x| { acc.push_str(&x); acc.push_str("\n"); acc });
-            file.write(&contents.as_bytes())?;
-
-            // set a new env var
-            Environment::new()
-                .add(EnvVar::new().key("ORBIT_DOWNLOAD_LIST").value(&file.path().to_string_lossy()))
-                .initialize();
-
-            match dl_proc.execute(&self.args, self.verbose) {
-                Ok(_) => (),
-                Err(e) => {
-                    file.close()?;
-                    return Err(e);
-                }
-            }
-            // clean up temporary file
+            Self::download(&downloads, dl_proc, &self.args, self.verbose)?;
         }
         Ok(())
     }
@@ -225,6 +209,24 @@ impl Download {
             .filter(|p| p.matches_target(&le) == false && (missing_only == false || catalog.is_cached_slot(&p.to_cache_slot_key()) == false))
             .map(|f| f.get_source().unwrap())
             .collect()
+    }
+
+    pub fn download(downloads: &Vec<&String>, dl_proc: DownloadProc, extra_args: &Vec<String>, verbose: bool) -> Result<(), Fault> {
+        // write the download list to a temporary file
+        let mut file = tempfile::NamedTempFile::new()?;
+        let contents = downloads.iter().fold(String::new(), |mut acc, x| { acc.push_str(&x); acc.push_str("\n"); acc });
+        file.write(&contents.as_bytes())?;
+
+        // set a new env var
+        Environment::new()
+            .add(EnvVar::new().key("ORBIT_DOWNLOAD_LIST").value(&file.path().to_string_lossy()))
+            .initialize();
+        
+        let result = dl_proc.execute(&extra_args, verbose);
+        // clean up temporary file
+        file.close()?;
+        result?;
+        Ok(())
     }
 }
 

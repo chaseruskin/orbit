@@ -589,7 +589,25 @@ impl Plan {
         // compute minimal topological ordering
         let min_order = match self.all {
             // perform topological sort on the entire graph
-            true => global_graph.get_graph().topological_sort(),
+            true => {
+                match local_graph.find_root() {
+                    // only one topological sorting to compute
+                    Ok(r) => {
+                        let id = Self::local_to_global(r.index(), &global_graph, &local_graph);
+                        global_graph.get_graph().minimal_topological_sort(id.index())
+                    },
+                    // exclude roots that do not belong to the local graph
+                    Err(rs) => {
+                        let mut order = Vec::new();
+                        rs.into_iter().for_each(|r| {
+                            let id = Self::local_to_global(r.index(), &global_graph, &local_graph);
+                            let mut subset = global_graph.get_graph().minimal_topological_sort(id.index());
+                            order.append(&mut subset);
+                        });
+                        order
+                    },
+                }
+            }
             // perform topological sort on minimal subset of the graph
             false => {
                 // determine which point is the upmost root 

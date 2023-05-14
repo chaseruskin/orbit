@@ -1,3 +1,7 @@
+//!
+//! TO BE DEPRECATED.
+//!
+
 use colored::Colorize;
 
 use clif::cmd::{FromCli, Command};

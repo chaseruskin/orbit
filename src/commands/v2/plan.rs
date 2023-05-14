@@ -17,13 +17,18 @@ use crate::core::context::Context;
 use crate::util::graphmap::GraphMap;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
+use std::fs::File;
+use std::path::{PathBuf, Path};
 use crate::OrbitResult;
 use crate::core::fileset::Fileset;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::plugin::Plugin;
 use crate::util::environment;
+use crate::core::lang::vhdl::symbol::{VHDLSymbol, VHDLParser, PackageBody, Entity};
 use std::fs;
+use crate::util::filesystem;
 use std::hash::Hash;
+use crate::util::environment::Environment;
 
 use crate::commands::v2::install::Install;
 use crate::core::v2::ip::Ip;
@@ -182,8 +187,9 @@ pub fn fill_missing_dependencies(lf: &LockFile, le: &LockEntry, catalog: &Catalo
     Ok(())
 }
 
-use crate::core::lang::vhdl::symbol;
+// use crate::core::lang::vhdl::symbol;
 use crate::util::anyerror::AnyError;
+use crate::core::fileset;
 
 #[derive(Debug, PartialEq)]
 pub struct SubUnitNode<'a> {
@@ -209,12 +215,12 @@ impl<'a> SubUnitNode<'a> {
 
 #[derive(Debug, PartialEq)]
 pub struct HdlNode<'a> {
-    sym: symbol::VHDLSymbol,
+    sym: VHDLSymbol,
     files: Vec<&'a IpFileNode<'a>>, // must use a vector to retain file order in blueprint
 }
 
 impl<'a> HdlNode<'a> {
-    fn new(sym: symbol::VHDLSymbol, file: &'a IpFileNode) -> Self {
+    fn new(sym: VHDLSymbol, file: &'a IpFileNode) -> Self {
         let mut set = Vec::with_capacity(1);
         set.push(file);
         Self {
@@ -230,11 +236,11 @@ impl<'a> HdlNode<'a> {
     }
 
     /// References the VHDL symbol
-    fn get_symbol(&self) -> &symbol::VHDLSymbol {
+    fn get_symbol(&self) -> &VHDLSymbol {
         &self.sym
     }
 
-    fn get_symbol_mut(&mut self) -> &mut symbol::VHDLSymbol {
+    fn get_symbol_mut(&mut self) -> &mut VHDLSymbol {
         &mut self.sym
     }
 
@@ -250,14 +256,14 @@ impl Plan {
             let mut graph_map: GraphMap<CompoundIdentifier, HdlNode, ()> = GraphMap::new();
     
             let mut sub_nodes: Vec<(Identifier, SubUnitNode)> = Vec::new();
-            let mut bodies: Vec<(Identifier, symbol::PackageBody)> = Vec::new();
+            let mut bodies: Vec<(Identifier, PackageBody)> = Vec::new();
             // store the (suffix, prefix) for all entities
             let mut component_pairs: HashMap<Identifier, Identifier> = HashMap::new();
             // read all files
             for source_file in files {
-                if crate::core::fileset::is_vhdl(&source_file.get_file()) == true {
-                    let contents = std::fs::read_to_string(&source_file.get_file()).unwrap();
-                    let symbols = symbol::VHDLParser::read(&contents).into_symbols();
+                if fileset::is_vhdl(&source_file.get_file()) == true {
+                    let contents = fs::read_to_string(&source_file.get_file()).unwrap();
+                    let symbols = VHDLParser::read(&contents).into_symbols();
 
                     let lib = source_file.get_library();
 
@@ -265,22 +271,22 @@ impl Plan {
                     let mut iter = symbols.into_iter()
                         .filter_map(|f| {
                             match f {
-                                symbol::VHDLSymbol::Entity(_) => {
+                                VHDLSymbol::Entity(_) => {
                                     component_pairs.insert(f.as_entity().unwrap().get_name().clone(), lib.clone());
                                     Some(f)
                                 },
-                                symbol::VHDLSymbol::Package(_) => Some(f),
-                                symbol::VHDLSymbol::Context(_) => Some(f),
-                                symbol::VHDLSymbol::Architecture(arch) => {
+                                VHDLSymbol::Package(_) => Some(f),
+                                VHDLSymbol::Context(_) => Some(f),
+                                VHDLSymbol::Architecture(arch) => {
                                     sub_nodes.push((lib.clone(), SubUnitNode{ sub: SubUnit::from_arch(arch), file: source_file }));
                                     None
                                 }
-                                symbol::VHDLSymbol::Configuration(cfg) => {
+                                VHDLSymbol::Configuration(cfg) => {
                                     sub_nodes.push((lib.clone(), SubUnitNode { sub: SubUnit::from_config(cfg), file: source_file }));
                                     None
                                 }
                                 // package bodies are usually in same design file as package
-                                symbol::VHDLSymbol::PackageBody(pb) => {
+                                VHDLSymbol::PackageBody(pb) => {
                                     bodies.push((lib.clone(), pb));
                                     None
                                 }
@@ -466,7 +472,7 @@ impl Plan {
                 Some(nt) => Some(nt),
                 None => {
                     if let Some(b) = bench {
-                        let entities: Vec<(usize, &symbol::Entity)> = local.get_graph().predecessors(b)
+                        let entities: Vec<(usize, &Entity)> = local.get_graph().predecessors(b)
                             .filter_map(|f| {
                                 if let Some(e) = local.get_node_by_index(f).unwrap().as_ref().get_symbol().as_entity() { 
                                     Some((f, e)) } else { None }
@@ -510,12 +516,12 @@ impl Plan {
     /// Performs the backend logic for creating a blueprint file (planning a design).
     fn run(&self, target: Ip, build_dir: &str, plug: Option<&Plugin>, catalog: Catalog) -> Result<(), Fault> {
         // create the build path to know where to begin storing files
-        let mut build_path = std::env::current_dir().unwrap();
+        let mut build_path = target.get_root().clone();
         build_path.push(build_dir);
         
         // check if to clean the directory
-        if self.clean == true && std::path::Path::exists(&build_path) == true {
-            std::fs::remove_dir_all(&build_path)?;
+        if self.clean == true && Path::exists(&build_path) == true {
+            fs::remove_dir_all(&build_path)?;
         }
 
         // build entire ip graph and resolve with dynamic symbol transformation
@@ -659,7 +665,7 @@ impl Plan {
 
         // [!] collect user-defined filesets
         {
-            let current_files: Vec<String> = crate::util::filesystem::gather_current_files(&target.get_root(), false);
+            let current_files: Vec<String> = filesystem::gather_current_files(&target.get_root(), false);
 
             let mut vtable = VariableTable::new();
             // variables could potentially store empty strings if units are not set
@@ -699,7 +705,7 @@ impl Plan {
 
         // collect in-order HDL file list
         for file in file_order {
-            if crate::core::fileset::is_rtl(&file.get_file()) == true {
+            if fileset::is_rtl(&file.get_file()) == true {
                 blueprint_data += &format!("VHDL-RTL\t{}\t{}\n", file.get_library(), file.get_file());
             } else {
                 blueprint_data += &format!("VHDL-SIM\t{}\t{}\n", file.get_library(), file.get_file());
@@ -707,18 +713,18 @@ impl Plan {
         }
 
         // create a output build directorie(s) if they do not exist
-        if std::path::PathBuf::from(build_dir).exists() == false {
-            std::fs::create_dir_all(build_dir).expect("could not create build dir");
+        if PathBuf::from(build_dir).exists() == false {
+            fs::create_dir_all(build_dir).expect("could not create build dir");
         }
 
         // [!] create the blueprint file
         let blueprint_path = build_path.join(BLUEPRINT_FILE);
-        let mut blueprint_file = std::fs::File::create(&blueprint_path).expect("could not create blueprint file");
+        let mut blueprint_file = File::create(&blueprint_path).expect("could not create blueprint file");
         // write the data
         blueprint_file.write_all(blueprint_data.as_bytes()).expect("failed to write data to blueprint");
         
         // create environment variables to .env file
-        let mut envs = environment::Environment::from_vec(vec![
+        let mut envs = Environment::from_vec(vec![
             EnvVar::new().key(environment::ORBIT_TOP).value(&top_name), 
             EnvVar::new().key(environment::ORBIT_BENCH).value(&bench_name)
         ]);
@@ -727,7 +733,7 @@ impl Plan {
             Some(p) => { envs.insert(EnvVar::new().key(environment::ORBIT_PLUGIN).value(&p.alias())); () },
             None => (),
         };
-        crate::util::environment::save_environment(&envs, &build_path)?;
+        environment::save_environment(&envs, &build_path)?;
 
         // create a blueprint file
         println!("info: Blueprint created at: {}", blueprint_path.display());

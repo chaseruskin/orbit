@@ -10,6 +10,7 @@ use crate::core::v2::manifest::FromFile;
 use crate::core::v2::ip::Ip;
 use serde_derive::{Deserialize, Serialize};
 use std::error::Error;
+use colored::Colorize;
 
 pub const IP_LOCK_FILE: &str = "Orbit.lock";
 
@@ -43,7 +44,7 @@ impl FromFile for LockFile {
                 Ok(r) => Ok(r),
                 // enter a blank lock file if failed (do not exit)
                 Err(e) => {
-                    println!("warning: {}: {}", "failed to parse Orbit.lock file", e);
+                    println!("{}: failed to parse {} file: {}", "warning".yellow().bold(), IP_LOCK_FILE, e);
                     Ok(LockFile::new())
                 }
             }

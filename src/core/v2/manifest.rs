@@ -11,9 +11,8 @@ use std::error::Error;
 pub type Id = PkgPart;
 pub type Version = crate::core::version::Version;
 pub type Source = String;
-
 use crate::core::v2::ip::IpSpec;
-use crate::util::anyerror::Fault;
+use crate::util::anyerror::{Fault, AnyError};
 
 type Dependencies = HashMap<Id, Version>;
 
@@ -43,7 +42,21 @@ pub trait FromFile: FromStr where Self: Sized, <Self as std::str::FromStr>::Err:
     }
 }
 
-impl FromFile for Manifest {}
+impl FromFile for Manifest {
+
+    fn from_file(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
+        // open file
+        let contents = std::fs::read_to_string(&path)?;
+        // parse toml syntax
+        match Self::from_str(&contents) {
+            Ok(r) => Ok(r),
+            // enter a blank lock file if failed (do not exit)
+            Err(e) => {
+                return Err(AnyError(format!("failed to parse {} file: {}", IP_MANIFEST_FILE, e)))?
+            }
+        }
+    }
+}
 
 impl FromStr for Manifest {
     type Err = toml::de::Error;

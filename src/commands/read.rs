@@ -24,7 +24,7 @@ use crate::util::filesystem::Standardize;
 
 use super::edit::Edit;
 use super::edit::EditMode;
-use super::get::GetError;
+use super::v2::get::GetError;
 
 #[derive(Debug, PartialEq)]
 pub struct Read {
@@ -142,10 +142,10 @@ impl Read {
         // get the file data for the primary design unit
         let (source, position) = match units.get_key_value(unit) {
             Some((_, unit)) => (unit.get_unit().get_source_code_file(), unit.get_unit().get_symbol().unwrap().get_position().clone()),
-            None => return Err(GetError::SuggestProbe(
-                GetError::EntityNotFound(unit.clone(), ip.get_pkgid().clone(), ip.get_version().clone()).to_string(), 
-                ip.get_pkgid().clone(), 
-                AnyVersion::Specific(ip.get_version().to_partial_version())))?
+            None => return Err(GetError::SuggestShow(
+                GetError::EntityNotFound(unit.clone(), ip.get_pkgid().get_name().clone(), ip.get_version().clone()).to_string(), 
+                ip.get_pkgid().get_name().clone(), 
+                ip.get_version().clone()))?
         };
 
         let (checksum, bytes) = {

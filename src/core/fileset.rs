@@ -32,7 +32,7 @@ pub struct Fileset {
 pub struct Style(Pattern);
 
 impl Style {
-    fn inner(&self) -> &Pattern {
+    pub fn inner(&self) -> &Pattern {
         &self.0
     }
 }
@@ -168,7 +168,7 @@ impl Fileset {
     /// Standardizes the name to be UPPER-AND-HYPHENS.
     /// 
     /// The returned string is its own data (cloned from `s`).
-    fn standardize_name(s: &str) -> String {
+    pub fn standardize_name(s: &str) -> String {
         s.to_uppercase().replace('_', "-")
     }
 

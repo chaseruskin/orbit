@@ -2,7 +2,8 @@ use std::path;
 use std::env;
 use std::path::PathBuf;
 use std::collections::HashMap;
-use crate::core::plugin::Plugin;
+use std::str::FromStr;
+use crate::core::v2::plugin::Plugin;
 use crate::core::config::FromToml;
 use crate::core::config::Config;
 use crate::util::anyerror::AnyError;
@@ -214,12 +215,12 @@ impl Context {
 
         for (arr_tbl, root) in plugs {
             for tbl in arr_tbl {
-                let plug = match Plugin::from_toml(tbl) {
-                    Ok(r) => r.set_root(&root), // resolve paths from that config file's parent directory
+                let plug = match Plugin::from_str(&tbl.to_string()) {
+                    Ok(r) => r.root(root.clone()), // resolve paths from that config file's parent directory
                     Err(e) => return Err(AnyError(format!("configuration {}: plugin {}", PathBuf::standardize(root.join(CONFIG_FILE)).display(), e)))?
                 };
                 // will kick out previous values so last item in array has highest precedence
-                self.plugins.insert(plug.alias().to_owned(), plug);
+                self.plugins.insert(plug.get_alias().to_owned(), plug);
             }
         }
         Ok(self)

@@ -1,4 +1,4 @@
-use crate::core::plugin::PluginError;
+use crate::core::v2::plugin::PluginError;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
 use clif::cmd::{FromCli, Command};
@@ -8,8 +8,8 @@ use clif::Error as CliError;
 use crate::OrbitResult;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
-use crate::core::plugin::Plugin;
-use crate::core::plugin::Process;
+use crate::core::v2::plugin::Plugin;
+use crate::core::v2::plugin::Process;
 use crate::util::environment;
 use crate::util::environment::ORBIT_BLUEPRINT;
 use crate::util::environment::ORBIT_BUILD_DIR;

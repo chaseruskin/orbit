@@ -22,7 +22,7 @@ use std::path::{PathBuf, Path};
 use crate::OrbitResult;
 use crate::core::fileset::Fileset;
 use crate::core::lang::vhdl::token::Identifier;
-use crate::core::plugin::Plugin;
+use crate::core::v2::plugin::Plugin;
 use crate::util::environment;
 use crate::core::lang::vhdl::symbol::{VHDLSymbol, VHDLParser, PackageBody, Entity};
 use std::fs;
@@ -671,35 +671,53 @@ impl Plan {
             // variables could potentially store empty strings if units are not set
             vtable.add("orbit.bench", &bench_name);
             vtable.add("orbit.top", &top_name);
-    
+            
+            // store data in a map for quicker look-ups when comparing to plugin-defind filesets
+            let mut cli_fset_map: HashMap<&String, &Fileset> = HashMap::new();
+
             // use command-line set filesets
             if let Some(fsets) = &self.filesets {
                 for fset in fsets {
-                    // perform variable substitution
-                    let fset = Fileset::new()
-                        .name(fset.get_name())
-                        .pattern(&template::substitute(fset.get_pattern().to_string(), &vtable))?;
-                    // match files
-                    fset.collect_files(&current_files).into_iter().for_each(|f| {
-                        blueprint_data += &fset.to_blueprint_string(f);
-                    });
+                    // insert into map structure
+                    cli_fset_map.insert(fset.get_name(), &fset);
                 }
             }
-    
+
             // collect data for the given plugin
-            if let Some(p) = plug {
-                let fsets = p.filesets();
-                // check against every defined fileset for the plugin
-                for fset in fsets {
+            if plug.is_some() == true && plug.unwrap().get_filesets().is_some() == true {
+                for (name, pattern) in plug.unwrap().get_filesets().unwrap() {
+                    let proper_key = Fileset::standardize_name(name);
+                    // check if appeared in cli arguments
+                    let (f_name, f_patt) = match cli_fset_map.contains_key(&proper_key) {
+                        // override with fileset provided by command-line if conflicting names
+                        true => {
+                            // pull from map to ensure it is not double-counted when just writing command-line filesets
+                            let entry = cli_fset_map.remove(&proper_key);
+                            (name, entry.unwrap().get_pattern()) 
+                        },
+                        false => { (name, pattern.inner()) },
+                    };
                     // perform variable substitution
                     let fset = Fileset::new()
-                        .name(fset.get_name())
-                        .pattern(&template::substitute(fset.get_pattern().to_string(), &vtable))?;
+                        .name(f_name)
+                        .pattern(&template::substitute(f_patt.to_string(), &vtable))?;
                     // match files
                     fset.collect_files(&current_files).into_iter().for_each(|f| {
                         blueprint_data += &fset.to_blueprint_string(&f);
                     });
                 }
+            }
+
+            // check against every defined fileset in the command-line (call remaining filesets)
+            for (_key, fset) in cli_fset_map {
+                // perform variable substitution
+                let fset = Fileset::new()
+                    .name(fset.get_name())
+                    .pattern(&template::substitute(fset.get_pattern().to_string(), &vtable))?;
+                // match files
+                fset.collect_files(&current_files).into_iter().for_each(|f| {
+                    blueprint_data += &fset.to_blueprint_string(&f);
+                });
             }
         }
 
@@ -730,7 +748,7 @@ impl Plan {
         ]);
         // conditionally set the plugin used to plan
         match plug {
-            Some(p) => { envs.insert(EnvVar::new().key(environment::ORBIT_PLUGIN).value(&p.alias())); () },
+            Some(p) => { envs.insert(EnvVar::new().key(environment::ORBIT_PLUGIN).value(&p.get_alias())); () },
             None => (),
         };
         environment::save_environment(&envs, &build_path)?;

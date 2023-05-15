@@ -87,7 +87,7 @@ impl Command<Context> for Plan {
                 // display entire contents about the particular plugin
                 Some(plg) => println!("{}", plg),
                 // display quick overview of all plugins
-                None =>  println!("{}", Plugin::list_plugins(&mut c.get_plugins().values().into_iter().collect::<Vec<&Plugin>>())),
+                None =>  panic!() //println!("{}", Plugin::list_plugins(&mut c.get_plugins().values().into_iter().collect::<Vec<&Plugin>>())),
             }
             return Ok(())
         }
@@ -140,7 +140,7 @@ impl Command<Context> for Plan {
             None => c.get_build_dir(),
         };
 
-        self.run(target_ip, b_dir, plugin, catalog)
+        self.run(target_ip, b_dir, None, catalog)
     }
 }
 

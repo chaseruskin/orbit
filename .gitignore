@@ -1,6 +1,8 @@
 /target
 /docs/book
 
+.vscode/
+
 __pycache__
 RELEASE_NOTES.md
 CHANGELOG_MERGE.md

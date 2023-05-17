@@ -13,6 +13,8 @@ use crate::util::anyerror::AnyError;
 use std::error::Error;
 use crate::core::context::Context;
 
+pub type Plugins = Vec<Plugin>;
+
 type Filesets = HashMap<String, Style>;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -151,22 +153,30 @@ impl std::fmt::Display for PluginError {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct Plugins {
-    protocol: Vec<Plugin>
-}
-
-impl FromStr for Plugins {
-    type Err = toml::de::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        toml::from_str(s)
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[derive(Debug, PartialEq, Serialize, Deserialize)]
+    pub struct Plugins {
+        plugin: Vec<Plugin>
+    }
+
+    impl Plugins {
+        pub fn new() -> Self {
+            Self {
+                plugin: Vec::new()
+            }
+        }
+    }
+
+    impl FromStr for Plugins {
+        type Err = toml::de::Error;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            toml::from_str(s)
+        }
+    }
 
     const P_1: &str = r#" 
 alias = "ghdl"
@@ -211,16 +221,16 @@ args = ["~/scripts/download.bash"]
         });
     }
 
-    // #[test]
-    // fn series_of_protocols() {
-    //     let contents = format!("{0}{1}\n{0}{2}", "[[protocol]]", P_1, P_2);
-    //     // assemble the list of protocols
-    //     let protos = Protocols::from_str(&contents).unwrap();
-    //     assert_eq!(protos, Protocols {
-    //         protocol: vec![
-    //             Protocol::from_str(P_1).unwrap(),
-    //             Protocol::from_str(P_2).unwrap()
-    //         ],
-    //     });
-    // }
+    #[test]
+    fn series_of_plugins() {
+        let contents = format!("{0}{1}\n{0}{2}", "[[plugin]]", P_1, P_2);
+        // assemble the list of protocols
+        let plugs = Plugins::from_str(&contents).unwrap();
+        assert_eq!(plugs, Plugins {
+            plugin: vec![
+                Plugin::from_str(P_1).unwrap(),
+                Plugin::from_str(P_2).unwrap()
+            ],
+        });
+    }
 }

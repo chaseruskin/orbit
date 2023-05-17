@@ -4,6 +4,8 @@
 use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
 
+pub type Protocols = Vec<Protocol>;
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Protocol {
     name: String,
@@ -19,22 +21,22 @@ impl FromStr for Protocol {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct Protocols {
-    protocol: Vec<Protocol>
-}
-
-impl FromStr for Protocols {
-    type Err = toml::de::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        toml::from_str(s)
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[derive(Debug, PartialEq, Serialize, Deserialize)]
+    pub struct Protocols {
+        protocol: Vec<Protocol>
+    }
+    
+    impl FromStr for Protocols {
+        type Err = toml::de::Error;
+    
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            toml::from_str(s)
+        }
+    }
 
     const P_1: &str = r#" 
 name = "gcp"

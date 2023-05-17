@@ -5,3 +5,4 @@ pub mod catalog;
 pub mod algo;
 pub mod protocol;
 pub mod plugin;
+pub mod config;

@@ -6,8 +6,10 @@ use clif::Cli;
 use clif::arg::{Flag, Optional};
 use clif::Error as CliError;
 use crate::core::context::Context;
+use crate::core::v2::manifest::FromFile;
 use crate::util::anyerror::AnyError;
 use crate::OrbitResult;
+
 
 #[derive(Debug, PartialEq)]
 pub struct Entry(String, String);
@@ -46,7 +48,7 @@ impl FromCli for Config {
     }
 }
 
-use crate::core::config;
+use crate::core::v2::config;
 
 impl Command<Context> for Config {
     type Status = OrbitResult;
@@ -58,12 +60,12 @@ impl Command<Context> for Config {
         }
         let mut cfg = if self.local == true {
             match c.get_ip_path() {
-                Some(path) => config::Config::from_path(&path.join(".orbit").join(config::CONFIG_FILE))?,
+                Some(path) => config::Config::from_file(&path.join(".orbit").join(config::CONFIG_FILE))?,
                 None => return Err(AnyError(format!("no ip detected in the current directory to modify local configurations")))?,
             }
         } else {
             // duplicate the configuration so we can potentially mutate it
-            config::Config::from_path(&c.get_config().get_root().join(config::CONFIG_FILE)).expect("already should be parsed correctly")
+            config::Config::from_file(&c.get_all_configs().get_global().0).expect("already should be parsed correctly")
         };
         // modify the settings for cfg file
         self.run(&mut cfg)
@@ -71,32 +73,33 @@ impl Command<Context> for Config {
 }
 
 impl Config {
-    fn run(&self, cfg: &mut config::Config) -> Result<(), Box<dyn std::error::Error>> {
-        // check for list appending
-        for entry in &self.append {
-            match entry.0.as_ref() {
-                "include" => cfg.append_include(&entry.1),
-                "vendor.index" => cfg.append_vendor_index(&entry.1),
-                _ => return Err(AnyError(format!("unsupported key '{}' cannot be appended", entry.0)))?
-            };
-        }
-        for entry in &self.set {
-            // split by dots to get table.key (silently ignores improper parsing)
-            if let Some((table, key)) = entry.0.split_once('.') {
-                cfg.set(table, key, &entry.1)
-            } else {
-                return Err(AnyError(format!("unsupported key '{}' cannot be set", entry.0)))?
-            }
-        }
-        for key in &self.unset {
-            // split by dots to get table.key (silently ignores improper parsing)
-            if let Some((table, key)) = key.split_once('.') {
-                cfg.unset(table, key)?
-            } else {
-                return Err(AnyError(format!("unsupported key '{}' cannot be set", key)))?
-            }
-        }
-        cfg.write()
+    fn run(&self, _cfg: &mut config::Config) -> Result<(), Box<dyn std::error::Error>> {
+        todo!("implement");
+        // // check for list appending
+        // for entry in &self.append {
+        //     match entry.0.as_ref() {
+        //         "include" => cfg.append_include(&entry.1),
+        //         "vendor.index" => cfg.append_vendor_index(&entry.1),
+        //         _ => return Err(AnyError(format!("unsupported key '{}' cannot be appended", entry.0)))?
+        //     };
+        // }
+        // for entry in &self.set {
+        //     // split by dots to get table.key (silently ignores improper parsing)
+        //     if let Some((table, key)) = entry.0.split_once('.') {
+        //         cfg.set(table, key, &entry.1)
+        //     } else {
+        //         return Err(AnyError(format!("unsupported key '{}' cannot be set", entry.0)))?
+        //     }
+        // }
+        // for key in &self.unset {
+        //     // split by dots to get table.key (silently ignores improper parsing)
+        //     if let Some((table, key)) = key.split_once('.') {
+        //         cfg.unset(table, key)?
+        //     } else {
+        //         return Err(AnyError(format!("unsupported key '{}' cannot be set", key)))?
+        //     }
+        // }
+        // cfg.write()
     }
 }
 

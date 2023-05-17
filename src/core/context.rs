@@ -2,17 +2,13 @@ use std::path;
 use std::env;
 use std::path::PathBuf;
 use std::collections::HashMap;
-use std::str::FromStr;
 use crate::core::v2::plugin::Plugin;
-use crate::core::config::FromToml;
-use crate::core::config::Config;
+use crate::core::v2::config::{Locality, Configs, Config};
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::core::template::Template;
 use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
-use crate::util::filesystem;
 use crate::util::filesystem::Standardize;
-use super::config::CONFIG_FILE;
 use super::pkgid::PkgPart;
 use super::vendor::VendorManifest;
 
@@ -33,9 +29,10 @@ pub struct Context {
     /// Directory name for the intermediate build processes and outputs.    
     build_dir: String,
     config: Config,
+    all_configs: Configs,
     plugins: HashMap<String, Plugin>, // @IDEA optionally move hashmap out of context and create it from fn to allow dynamic loading
     templates: HashMap<String, Template>,
-    vendors: HashMap<PkgPart, VendorManifest>,
+    // vendors: HashMap<PkgPart, VendorManifest>,
 }
 
 impl Context {
@@ -53,9 +50,10 @@ impl Context {
             dev_path: None,
             plugins: HashMap::new(),
             templates: HashMap::new(),
+            all_configs: Configs::new(),
             config: Config::new(),
             build_dir: String::new(),
-            vendors: HashMap::new(),
+            // vendors: HashMap::new(),
         }
     }
 
@@ -147,15 +145,8 @@ impl Context {
     }
 
     /// Loads all vendor files.
-    pub fn read_vendors(mut self) -> Result<Self, Fault> {
-        // read off all the files in the vendor.index array
-        let indices = self.config.collect_as_array_of_str("vendor", "index")?;
-        for index in indices {
-            let r_path = filesystem::resolve_rel_path(index.1, index.0);
-            let vendor = VendorManifest::from_path(&PathBuf::from(r_path))?;
-            self.vendors.insert(vendor.get_name().clone(), vendor);
-        }
-        Ok(self)
+    pub fn read_vendors(self) -> Result<Self, Fault> {
+        panic!("deprecated")
     }
 
     /// References the cache directory.
@@ -170,7 +161,7 @@ impl Context {
 
     /// References the list of linked vendors.
     pub fn get_vendors(&self) -> &HashMap<PkgPart, VendorManifest> {
-        &self.vendors
+        panic!("deprecated")
     }
 
     /// References the queue directory.
@@ -188,41 +179,27 @@ impl Context {
     /// Note: the `self.ip_path` must already be determined before invocation.
     pub fn settings(mut self, name: &str) -> Result<Context, Fault> {
         // initialize and load the global configuration
-        let cfg = Config::from_path(&self.home_path.join(name))?
-            .include()?;
-
+        let cfg = Configs::new()
+            .load(self.home_path.join(name), Locality::Global)?;
         // if in ip, also look along current directory for a /.orbit/config.toml file to load (local configuration) 
-        self.config = if let Some(ip_dir) = self.get_ip_path() {
-            cfg.local(&ip_dir.join(".orbit").join(name))?
+        self.all_configs = if let Some(ip_dir) = self.get_ip_path() {
+            cfg.load(ip_dir.join(".orbit").join(name), Locality::Local)?
         } else {
             cfg
         };
 
+        // @TODO: FIXME (clone?)
+        // initialize and load the global configuration
+        let cfg = Configs::new()
+            .load(self.home_path.join(name), Locality::Global)?;
+        // if in ip, also look along current directory for a /.orbit/config.toml file to load (local configuration) 
+        self.config = if let Some(ip_dir) = self.get_ip_path() {
+            cfg.load(ip_dir.join(".orbit").join(name), Locality::Local)?
+        } else {
+            cfg
+        }.into();
+
         // @TODO dynamically set from environment variables from configuration data
-
-        // load plugins and templates
-        self.plugins()?.templates()
-    }
-
-    /// Accesses the plugins in a map with `alias` as the keys.
-    pub fn get_plugins(&self) -> &HashMap<String, Plugin> {
-        &self.plugins
-    }
-
-    /// Iterates through an array of tables to define all plugins.
-    fn plugins(mut self) -> Result<Context, Fault> {
-        let plugs = self.config.collect_as_array_of_tables("plugin")?;
-
-        for (arr_tbl, root) in plugs {
-            for tbl in arr_tbl {
-                let plug = match Plugin::from_str(&tbl.to_string()) {
-                    Ok(r) => r.root(root.clone()), // resolve paths from that config file's parent directory
-                    Err(e) => return Err(AnyError(format!("configuration {}: plugin {}", PathBuf::standardize(root.join(CONFIG_FILE)).display(), e)))?
-                };
-                // will kick out previous values so last item in array has highest precedence
-                self.plugins.insert(plug.get_alias().to_owned(), plug);
-            }
-        }
         Ok(self)
     }
 
@@ -232,20 +209,20 @@ impl Context {
     }
 
     /// Iterates through the array of tables to define all templates.
-    fn templates(mut self) -> Result<Context, Fault> {
-        let temps = self.config.collect_as_array_of_tables("template")?;
+    // fn templates(mut self) -> Result<Context, Fault> {
+    //     let temps = self.config.collect_as_array_of_tables("template")?;
 
-        for (arr_tbl, root) in temps {
-            for tbl in arr_tbl {
-                let template = match Template::from_toml(tbl) {
-                    Ok(r) => r.resolve_root_path(&root),
-                    Err(e) => return Err(AnyError(format!("configuration {}: template {}", PathBuf::standardize(root.join(CONFIG_FILE)).display(), e)))?
-                };
-                self.templates.insert(template.alias().to_owned(), template);
-            }
-        }
-        Ok(self)
-    }
+    //     for (arr_tbl, root) in temps {
+    //         for tbl in arr_tbl {
+    //             let template = match Template::from_toml(tbl) {
+    //                 Ok(r) => r.resolve_root_path(&root),
+    //                 Err(e) => return Err(AnyError(format!("configuration {}: template {}", PathBuf::standardize(root.join(CONFIG_FILE)).display(), e)))?
+    //             };
+    //             self.templates.insert(template.alias().to_owned(), template);
+    //         }
+    //     }
+    //     Ok(self)
+    // }
 
     /// Determines the orbit ip development path.
     /// 
@@ -257,32 +234,32 @@ impl Context {
     /// into new window to prevent reading config for things like ORBIT_DEV_PATH.
     /// 
     /// If `verify` is set to `true`, then it will ensure the path is a directory and exists.
-    pub fn development_path(mut self, s: &str, verify: bool) -> Result<Context, Fault> {
-        // an explicit environment variable takes precedence over config file data
-        self.dev_path = Some(std::path::PathBuf::from(match std::env::var(s) {
-            Ok(v) => v,
-            Err(_) => {
-                // use current directory if the key-value pair is not there
-                let path = match self.get_config().get_as_str("core", "path")? {
-                    // normalize
-                    Some(p) => PathBuf::standardize(p).to_str().unwrap().to_string(),
-                    None => std::env::current_dir().unwrap().display().to_string(),
-                };
-                std::env::set_var(s, &path);
-                path
-            }
-        }));
+    // pub fn development_path(mut self, s: &str, verify: bool) -> Result<Context, Fault> {
+    //     // an explicit environment variable takes precedence over config file data
+    //     self.dev_path = Some(std::path::PathBuf::from(match std::env::var(s) {
+    //         Ok(v) => v,
+    //         Err(_) => {
+    //             // use current directory if the key-value pair is not there
+    //             let path = match self.get_config().get_as_str("core", "path")? {
+    //                 // normalize
+    //                 Some(p) => PathBuf::standardize(p).to_str().unwrap().to_string(),
+    //                 None => std::env::current_dir().unwrap().display().to_string(),
+    //             };
+    //             std::env::set_var(s, &path);
+    //             path
+    //         }
+    //     }));
 
-        if verify == true {
-            // verify the orbit path exists and is a directory
-            if self.dev_path.as_ref().unwrap().exists() == false {
-                return Err(ContextError(format!("orbit dev path '{}' does not exist", self.dev_path.as_ref().unwrap().display())))?
-            } else if self.dev_path.as_ref().unwrap().is_dir() == false {
-                return Err(ContextError(format!("orbit dev path '{}' is not a directory", self.dev_path.as_ref().unwrap().display())))?
-            }
-        }
-        Ok(self)
-    }
+    //     if verify == true {
+    //         // verify the orbit path exists and is a directory
+    //         if self.dev_path.as_ref().unwrap().exists() == false {
+    //             return Err(ContextError(format!("orbit dev path '{}' does not exist", self.dev_path.as_ref().unwrap().display())))?
+    //         } else if self.dev_path.as_ref().unwrap().is_dir() == false {
+    //             return Err(ContextError(format!("orbit dev path '{}' is not a directory", self.dev_path.as_ref().unwrap().display())))?
+    //         }
+    //     }
+    //     Ok(self)
+    // }
 
     /// Access the Orbit development path.
     pub fn get_development_path(&self) -> Option<&path::PathBuf> {
@@ -292,6 +269,10 @@ impl Context {
     /// Access the configuration data.
     pub fn get_config(&self) -> &Config {
         &self.config
+    }
+
+    pub fn get_all_configs(&self) -> &Configs {
+        &self.all_configs
     }
 
     /// Access the configuration data as mutable.

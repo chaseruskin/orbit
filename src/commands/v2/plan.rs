@@ -85,8 +85,8 @@ impl Command<Context> for Plan {
         // locate the plugin
         let plugin = match &self.plugin {
             // verify the plugin alias matches
-            Some(alias) => match c.get_plugins().get(alias) {
-                Some(p) => Some(p),
+            Some(alias) => match c.get_config().get_plugins().get(alias.as_str()) {
+                Some(&p) => Some(p),
                 None => return Err(PluginError::Missing(alias.to_string()))?,
             },
             None => None,
@@ -98,7 +98,7 @@ impl Command<Context> for Plan {
                 // display entire contents about the particular plugin
                 Some(plg) => println!("{}", plg),
                 // display quick overview of all plugins
-                None =>  println!("{}", Plugin::list_plugins(&mut c.get_plugins().values().into_iter().collect::<Vec<&Plugin>>())),
+                None =>  println!("{}", Plugin::list_plugins(&mut c.get_config().get_plugins().values().into_iter().collect::<Vec<&&Plugin>>())),
             }
             return Ok(())
         }
@@ -181,7 +181,10 @@ pub fn fill_missing_dependencies(lf: &LockFile, le: &LockEntry, catalog: &Catalo
                     },
                 }
             }
-            None => panic!("entry is not queued for installation (unknown ip)"),
+            None => {
+                // @todo: try to download dependencies from lock file
+                panic!("entry is not queued for installation (unknown ip)")
+            },
         }
     }
     Ok(())

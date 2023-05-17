@@ -42,7 +42,7 @@ impl Plugin {
     /// Creates a string to display a list of plugins.
     /// 
     /// The string lists the plugins in alphabetical order by `alias`.
-    pub fn list_plugins(plugs: &mut [&Plugin]) -> String {
+    pub fn list_plugins(plugs: &mut [&&Plugin]) -> String {
         let mut list = String::from("Plugins:\n");
         plugs.sort_by(|a, b| a.alias.cmp(&b.alias));
         for plug in plugs {
@@ -55,6 +55,10 @@ impl Plugin {
     pub fn root(mut self, root: PathBuf) -> Self {
         self.root = Some(root);
         self
+    }
+
+    pub fn set_root(&mut self, root: PathBuf) {
+        self.root = Some(root);
     }
 
     /// References the alias to call this plugin.

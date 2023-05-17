@@ -48,8 +48,8 @@ impl Command<Context> for Build {
     fn exec(&self, c: &Context) -> Self::Status {
         // try to find plugin matching `command` name under the `alias`
         let plug = if let Some(name) = &self.alias {
-            match c.get_plugins().get(name) {
-                Some(p) => Some(p),
+            match c.get_config().get_plugins().get(name.as_str()) {
+                Some(&p) => Some(p),
                 None => return Err(PluginError::Missing(name.to_string()))?,
             }
         } else {
@@ -59,7 +59,7 @@ impl Command<Context> for Build {
         if self.list == true {
             match plug {
                 Some(plg) => println!("{}", plg),
-                None => println!("{}", Plugin::list_plugins(&mut c.get_plugins().values().into_iter().collect::<Vec<&Plugin>>())),
+                None => println!("{}", Plugin::list_plugins(&mut c.get_config().get_plugins().values().into_iter().collect::<Vec<&&Plugin>>())),
             }
             return Ok(())
         }
@@ -103,8 +103,8 @@ impl Command<Context> for Build {
                 if let Some(plug) = envs.get(environment::ORBIT_PLUGIN) {
                     // verify there was no command option to override default plugin call
                     if self.command.is_none() { 
-                        match c.get_plugins().get(plug.get_value()) {
-                            Some(p) => Some(p),
+                        match c.get_config().get_plugins().get(plug.get_value()) {
+                            Some(&p) => Some(p),
                             None => return Err(PluginError::Missing(plug.get_value().to_string()))?,
                         }
                     } else { 

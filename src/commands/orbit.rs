@@ -10,6 +10,7 @@ use crate::util::prompt;
 use crate::core::context::Context;
 use crate::util::sha256::Sha256Hash;
 use std::env;
+use crate::core::v2::config;
 
 pub type AnyResult<T> = Result<T, Box<dyn std::error::Error>>;
 
@@ -53,10 +54,10 @@ impl Orbit {
                 .queue(environment::ORBIT_QUEUE)?
                 .store(environment::ORBIT_STORE)?
                 .current_ip_dir(environment::ORBIT_IP_PATH)? // must come before .settings() call
-                .settings(crate::core::config::CONFIG_FILE)?
-                .build_dir(environment::ORBIT_BUILD_DIR)?
-                .development_path(environment::ORBIT_DEV_PATH, c.bypass_check() == false)?
-                .read_vendors()?;
+                .settings(config::CONFIG_FILE)?
+                .build_dir(environment::ORBIT_BUILD_DIR)?;
+                // .development_path(environment::ORBIT_DEV_PATH, c.bypass_check() == false)?;
+                // .read_vendors()?;
             // pass the context to the given command
             c.exec(&context)
         // if no command is given then print default help

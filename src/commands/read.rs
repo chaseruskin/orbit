@@ -58,7 +58,7 @@ impl Command<Context> for Read {
 
     fn exec(&self, c: &Context) -> Self::Status {
         // determine the text-editor
-        let editor = Edit::configure_editor(&self.editor, c.get_config())?;
+        let editor = Edit::configure_editor(&self.editor, c.get_all_configs())?;
 
         // determine the destination
         let dest = c.get_home_path().join(TMP_DIR);

@@ -3,6 +3,8 @@
 
 use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
+use crate::core::v2::plugin::Process;
+use std::path::PathBuf;
 
 pub type Protocols = Vec<Protocol>;
 
@@ -11,6 +13,8 @@ pub struct Protocol {
     name: String,
     command: String,
     args: Option<Vec<String>>,
+    #[serde(skip_serializing, skip_deserializing)]
+    root: Option<PathBuf>,
 }
 
 impl FromStr for Protocol {
@@ -18,6 +22,42 @@ impl FromStr for Protocol {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         toml::from_str(s)
+    }
+}
+
+impl Process for Protocol {
+    fn get_root(&self) -> &PathBuf { 
+        &self.root.as_ref().unwrap()
+    }
+
+    fn get_command(&self) -> &String {
+        &self.command
+    }
+
+    fn get_args(&self) -> Vec<&String> {
+        match &self.args {
+            Some(list) => list.iter().map(|e| e).collect(),
+            None => Vec::new()
+        }
+    }
+}
+
+impl Protocol {
+    pub fn new() -> Self {
+        Self {
+            name: String::new(),
+            command: String::new(),
+            root: None,
+            args: None,
+        }
+    }
+
+    pub fn set_root(&mut self, root: PathBuf) {
+        self.root = Some(root);
+    }
+
+    pub fn get_name(&self) -> &str {
+        &self.name.as_ref()
     }
 }
 
@@ -56,6 +96,7 @@ args = ["~/scripts/download.bash"]
             name: String::from("gcp"),
             command: String::from("python"),
             args: None,
+            root: None,
         });
 
         let proto = Protocol::from_str(P_2).unwrap();
@@ -63,6 +104,7 @@ args = ["~/scripts/download.bash"]
             name: String::from("ffi"),
             command: String::from("bash"),
             args: Some(vec![String::from("~/scripts/download.bash")]),
+            root: None,
         });
     }
 

@@ -5,12 +5,50 @@ use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
 use crate::core::v2::plugin::Process;
 use std::path::PathBuf;
+use crate::core::v2::source::DELIM;
+use crate::util::anyerror::AnyError;
 
 pub type Protocols = Vec<Protocol>;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct Name {
+    inner: String
+}
+
+impl Name {
+    fn new() -> Self {
+        Name {
+            inner: String::new(),
+        }
+    }
+
+    fn as_ref(&self) -> &str {
+        &self.inner
+    }
+}
+
+impl FromStr for Name {
+    type Err = AnyError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // verify the delimiter is not a part of the name
+        match s.find(DELIM) {
+            Some(i) => {
+                return Err(AnyError(format!("illegal character '{}' at index {}", DELIM, i)))
+            },
+            None => ()
+        }
+
+        Ok(Self {
+            inner: String::from(s)
+        })
+    }
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Protocol {
-    name: String,
+    name: Name,
     command: String,
     args: Option<Vec<String>>,
     #[serde(skip_serializing, skip_deserializing)]
@@ -45,7 +83,7 @@ impl Process for Protocol {
 impl Protocol {
     pub fn new() -> Self {
         Self {
-            name: String::new(),
+            name: Name::new(),
             command: String::new(),
             root: None,
             args: None,
@@ -93,7 +131,7 @@ args = ["~/scripts/download.bash"]
     fn from_toml_string() {
         let proto = Protocol::from_str(P_1).unwrap();
         assert_eq!(proto, Protocol {
-            name: String::from("gcp"),
+            name: Name::from_str("gcp").unwrap(),
             command: String::from("python"),
             args: None,
             root: None,
@@ -101,7 +139,7 @@ args = ["~/scripts/download.bash"]
 
         let proto = Protocol::from_str(P_2).unwrap();
         assert_eq!(proto, Protocol {
-            name: String::from("ffi"),
+            name: Name::from_str("ffi").unwrap(),
             command: String::from("bash"),
             args: Some(vec![String::from("~/scripts/download.bash")]),
             root: None,
@@ -119,5 +157,14 @@ args = ["~/scripts/download.bash"]
                 Protocol::from_str(P_2).unwrap()
             ],
         });
+    }
+
+    #[test]
+    fn name_from_str() {
+        let name = "my-protocol";
+        assert_eq!(Name::from_str(name).unwrap(), Name { inner: String::from(name) });
+
+        let name = "my-protocol+bad-char";
+        assert_eq!(Name::from_str(name).is_err(), true);
     }
 }

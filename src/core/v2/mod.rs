@@ -6,3 +6,4 @@ pub mod algo;
 pub mod protocol;
 pub mod plugin;
 pub mod config;
+pub mod source;

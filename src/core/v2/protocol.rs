@@ -10,20 +10,20 @@ use crate::util::anyerror::AnyError;
 
 pub type Protocols = Vec<Protocol>;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(transparent)]
 pub struct Name {
     inner: String
 }
 
 impl Name {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Name {
             inner: String::new(),
         }
     }
 
-    fn as_ref(&self) -> &str {
+    pub fn as_ref(&self) -> &str {
         &self.inner
     }
 }
@@ -38,6 +38,10 @@ impl FromStr for Name {
                 return Err(AnyError(format!("illegal character '{}' at index {}", DELIM, i)))
             },
             None => ()
+        }
+
+        if s.is_empty() == true {
+            return Err(AnyError(format!("name cannot be empty")))
         }
 
         Ok(Self {
@@ -80,6 +84,14 @@ impl Process for Protocol {
     }
 }
 
+use crate::commands::orbit::RESPONSE_OKAY;
+use crate::commands::orbit::UpgradeError;
+use crate::util::anyerror::Fault;
+use curl::easy::Easy;
+use zip::ZipArchive;
+use tempfile;
+use std::io::Write;
+
 impl Protocol {
     pub fn new() -> Self {
         Self {
@@ -96,6 +108,43 @@ impl Protocol {
 
     pub fn get_name(&self) -> &str {
         &self.name.as_ref()
+    }
+
+    // /// Performs the default behavior of the download on each
+    // pub fn default_execute(srcs: &[&String]) -> Result<(), Fault> {
+        
+    // }
+
+    /// Performs the default behavior for a protocol.
+    pub fn single_download(url: &str, dst: &PathBuf) -> Result<(), Fault> {
+        let mut body_bytes = Vec::new();
+        {
+            let mut easy = Easy::new();
+            easy.url(&url).unwrap();
+            easy.follow_location(true).unwrap();
+            {
+                let mut transfer = easy.transfer();
+                transfer.write_function(|data| {
+                    body_bytes.extend_from_slice(data);
+                    Ok(data.len())
+                }).unwrap();
+        
+                transfer.perform()?;
+            }
+            let rc = easy.response_code()?;
+            if rc != RESPONSE_OKAY {
+                return Err(Box::new(UpgradeError::FailedConnection(url.to_string(), rc)));
+            }
+        }
+        // place the bytes into a file
+        let mut temp_file = tempfile::tempfile()?;
+        temp_file.write_all(&body_bytes)?;
+        let mut zip_archive = ZipArchive::new(temp_file)?;
+
+        // decompress the zip file to the queue
+        zip_archive.extract(&dst)?;
+
+        Ok(())
     }
 }
 

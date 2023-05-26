@@ -5,7 +5,7 @@ use crate::core::v2::{ip::IpSpec, catalog::CacheSlot};
 use crate::util::sha256::Sha256Hash;
 use crate::util::anyerror::AnyError;
 use crate::core::v2::manifest::Id;
-use crate::core::v2::manifest::Source;
+use crate::core::v2::source::Source;
 use crate::core::v2::manifest::FromFile;
 use crate::core::v2::ip::Ip;
 use serde_derive::{Deserialize, Serialize};
@@ -202,7 +202,7 @@ mod test {
                     name: Id::from_str("l1").unwrap(),
                     version: Version::from_str("0.5.0").unwrap(),
                     sum: None,
-                    source: Some(Source::from("https://go1.here")),
+                    source: Some(Source::from_str("https://go1.here").unwrap()),
                     dependencies: vec![
                         IpSpec::new(PkgPart::from_str("l4").unwrap(), Version::from_str("0.5.19").unwrap()),
                         IpSpec::new(PkgPart::from_str("l2").unwrap(), Version::from_str("1.0.0").unwrap()),
@@ -212,7 +212,7 @@ mod test {
                     name: Id::from_str("l2").unwrap(),
                     version: Version::from_str("1.0.0").unwrap(),
                     sum: Some(Sha256Hash::new()),
-                    source: Some(Source::from("https://go2.here")),
+                    source: Some(Source::from_str("https://go2.here").unwrap()),
                     dependencies: Vec::new(),
                 },
                 LockEntry {

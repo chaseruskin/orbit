@@ -7,10 +7,11 @@ use std::fmt::Display;
 use crate::core::pkgid::PkgPart;
 use std::error::Error;
 // use crate::util::url::Url;
+use crate::core::v2::source::Source;
 
 pub type Id = PkgPart;
 pub type Version = crate::core::version::Version;
-pub type Source = String;
+// pub type Source = String;
 use crate::core::v2::ip::IpSpec;
 use crate::util::anyerror::{Fault, AnyError};
 
@@ -212,7 +213,7 @@ mod test {
             let man: Manifest = toml::from_str(EX1).unwrap();
     
             assert_eq!(man.ip.name, PkgPart::from_str("gates").unwrap());
-            assert_eq!(man.ip.source, Some(String::from("https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip")));
+            assert_eq!(man.ip.source, Some(Source::from_str("https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip").unwrap()));
             assert_eq!(man.dependencies.unwrap().len(), 1);
             assert_eq!(man.dev_dependencies.unwrap().len(), 2);
             assert_eq!(man.ip.library, Some(PkgPart::from_str("common").unwrap()));

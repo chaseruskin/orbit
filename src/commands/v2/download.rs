@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use crate::core::v2::ip::IpSpec;
+use crate::util::anyerror::AnyError;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
 use crate::util::environment::ORBIT_QUEUE;
@@ -9,14 +11,14 @@ use clif::arg::{Optional, Flag};
 use clif::Error as CliError;
 use crate::OrbitResult;
 use crate::core::context::Context;
-use crate::core::v2::manifest::Source;
+use crate::core::v2::source::Source;
 use crate::core::v2::lockfile::LockFile;
 use crate::core::v2::catalog::Catalog;
 use crate::core::v2::lockfile::LockEntry;
 use crate::util::anyerror::Fault;
 use crate::core::v2::plugin::Process;
+use std::collections::HashMap;
 use crate::core::v2::protocol::Protocol;
-use std::io::Write;
 use crate::core::v2::ip::Ip;
 
 #[derive(Debug, PartialEq)]
@@ -24,10 +26,9 @@ pub struct Download {
     all: bool,
     missing: bool,
     list: bool,
-    command: Option<String>,
     queue_dir: Option<PathBuf>,
-    args: Vec<String>,
     verbose: bool,
+    force: bool,
 }
 
 impl FromCli for Download {
@@ -37,10 +38,9 @@ impl FromCli for Download {
             all: cli.check_flag(Flag::new("all"))?,
             missing: cli.check_flag(Flag::new("missing"))?,
             list: cli.check_flag(Flag::new("list"))?,
+            force: cli.check_flag(Flag::new("force"))?,
             verbose: cli.check_flag(Flag::new("verbose"))?,
             queue_dir: cli.check_option(Optional::new("queue").value("dir"))?,
-            command: cli.check_option(Optional::new("command").value("cmd"))?,
-            args: cli.check_remainder()?,
         });
         command
     }
@@ -58,7 +58,7 @@ impl Command<Context> for Download {
             panic!("cannot display all and missing lock entries");
         }
 
-        let dl_proc = c.get_config().get_protocols().into_iter().next();
+        let proto_map = c.get_config().get_protocols();
 
         // // do not allow args if no command is set
         // if dl_proc.is_none() == true {
@@ -67,6 +67,7 @@ impl Command<Context> for Download {
         // if dl_proc.exists() == false && self.args.is_empty() == false {
         //     panic!("invalid arguments for no command set")
         // }
+
         
         // load the catalog
         let catalog = Catalog::new()
@@ -98,15 +99,15 @@ impl Command<Context> for Download {
         let missing_only = self.all == false || self.missing == true;
 
         // default behavior is to print out to console
-        let to_stdout = dl_proc.is_some() == false || self.list == true;
+        let to_stdout = self.list == true;
 
         let downloads =  Self::compile_download_list(&LockEntry::from(&ip), ip.get_lock(), &catalog, missing_only);
         // print to console
         if to_stdout == true {
-            downloads.iter().for_each(|d| println!("{}", d));
+            downloads.iter().for_each(|(_, src)| println!("{}", src));
         // execute the command
         } else {
-            Self::download(&downloads, dl_proc.unwrap().1, &self.args, self.verbose)?;
+            Self::download(&downloads, &proto_map, self.verbose, c.get_queue_path(), self.force)?;
         }
         Ok(())
     }
@@ -116,29 +117,59 @@ impl Download {
     /// Generates a list of dependencies required to be downloaded from the internet. 
     /// 
     /// Enabling `missing_only` will only push sources for ip not already installed.
-    pub fn compile_download_list<'a>(le: &LockEntry, lf: &'a LockFile, catalog: &Catalog, missing_only: bool) -> Vec<&'a Source> {
+    pub fn compile_download_list<'a>(le: &LockEntry, lf: &'a LockFile, catalog: &Catalog, missing_only: bool) -> Vec<(IpSpec, &'a Source)> {
         lf.inner().iter()
             .filter(|p| p.get_source().is_some() == true)
             .filter(|p| p.matches_target(&le) == false && (missing_only == false || catalog.is_cached_slot(&p.to_cache_slot_key()) == false))
-            .map(|f| f.get_source().unwrap())
+            .map(|f| (f.to_ip_spec(), f.get_source().unwrap()))
             .collect()
     }
 
-    pub fn download(downloads: &Vec<&String>, dl_proc: &Protocol, extra_args: &Vec<String>, verbose: bool) -> Result<(), Fault> {
-        // write the download list to a temporary file
-        let mut file = tempfile::NamedTempFile::new()?;
-        let contents = downloads.iter().fold(String::new(), |mut acc, x| { acc.push_str(&x); acc.push_str("\n"); acc });
-        file.write(&contents.as_bytes())?;
-
-        // set a new env var
-        Environment::new()
-            .add(EnvVar::new().key("ORBIT_DOWNLOAD_LIST").value(&file.path().to_string_lossy()))
-            .initialize();
+    pub fn download(downloads: &Vec<(IpSpec, &Source)>, proto_map: &HashMap<&str, &Protocol>, verbose: bool, queue: &PathBuf, force: bool) -> Result<(), Fault> {
         
-        let result = dl_proc.execute(&extra_args, verbose);
-        // clean up temporary file
-        file.close()?;
-        result?;
+        match downloads.len() {
+            0 => { println!("info: No missing downloads"); return Ok(()) },
+            1 => { println!("info: Downloading 1 package ...") },
+            _ => { println!("info: Downloading {} packages ...", downloads.len()) },
+        }
+
+        // perform all in-house default downloads
+        let mut default_downloads = downloads.iter()
+            .filter(|(_, f)| f.is_default() == true)
+            .map(|(n, f)| {
+                println!("info: Downloading {} ...", n);
+                Protocol::single_download(f.get_url(), queue)
+            })
+            .filter_map(|e| e.err() );
+        if let Some(n) = default_downloads.next() {
+            return Err(n)
+        }
+
+        // perform all protocol-specific downloads
+        let mut custom_downloads = downloads.iter()
+            .filter(|(_, f)| f.is_default() == false)
+            .map(|(n, f)| {
+                let p_name = f.get_protocol().as_ref().unwrap();
+                println!("info: Downloading {} over \"{}\" protocol ...", n, p_name.as_ref());
+                match proto_map.get(p_name.as_ref()) {
+                    Some(p) => {
+                        p.execute(&[f.get_url().to_string()], verbose)
+                    },
+                    None => {
+                        match force {
+                            // try to use default protocol
+                            true => { Protocol::single_download(f.get_url(), queue) },
+                            // encounter error
+                            false => { Err(Box::new(AnyError(format!("Unknown protocol \"{}\"", p_name.as_ref()))).into()) },
+                        }
+                    },
+                }
+            })
+            .filter_map(|e| e.err() );
+            if let Some(n) = custom_downloads.next() {
+                return Err(n)
+            }
+
         Ok(())
     }
 }
@@ -147,16 +178,15 @@ const HELP: &str = "\
 Request packages from the internet.
 
 Usage:
-    orbit download [options] [--] [args]...
+    orbit download [options]
 
 Options:
-    --command <cmd>     command to execute
     --list              print URLs to the console
     --missing           filter only uninstalled packages (default: true)
     --all               contain all packages in list
     --queue <dir>       set the destination queue directory
     --verbose           display the command being executed
-    -- args...          arguments to pass to the requested command
+    --force             fallback to default protocol if missing given protocol
 
 Use 'orbit help download' to learn more about the command.
 ";

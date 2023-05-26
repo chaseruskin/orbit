@@ -183,7 +183,12 @@ impl Context {
             .load(self.home_path.join(name), Locality::Global)?;
         // if in ip, also look along current directory for a /.orbit/config.toml file to load (local configuration) 
         self.all_configs = if let Some(ip_dir) = self.get_ip_path() {
-            cfg.load(ip_dir.join(".orbit").join(name), Locality::Local)?
+            let local_path = ip_dir.join(".orbit").join(name);
+            if local_path.exists() == true {
+                cfg.load(local_path, Locality::Local)?
+            } else {
+                cfg
+            }
         } else {
             cfg
         };
@@ -194,11 +199,15 @@ impl Context {
             .load(self.home_path.join(name), Locality::Global)?;
         // if in ip, also look along current directory for a /.orbit/config.toml file to load (local configuration) 
         self.config = if let Some(ip_dir) = self.get_ip_path() {
-            cfg.load(ip_dir.join(".orbit").join(name), Locality::Local)?
+            let local_path = ip_dir.join(".orbit").join(name);
+            if local_path.exists() == true {
+                cfg.load(local_path, Locality::Local)?
+            } else {
+                cfg
+            }
         } else {
             cfg
         }.into();
-
         // @TODO dynamically set from environment variables from configuration data
         Ok(self)
     }

@@ -38,13 +38,13 @@ impl Command<Context> for Show {
     type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
-
+        
         // collect all manifests available (load catalog)
         let catalog = Catalog::new()
             .installations(c.get_cache_path())?;
 
         // try to auto-determine the ip (check if in a working ip)
-        let ip_path = if let Some(name) = &self.ip {
+        let ip_path: std::path::PathBuf = if let Some(name) = &self.ip {
             // find the path to the provided ip by searching through the catalog
             if let Some(lvl) = catalog.inner().get(name) {
                 // return the highest available version
@@ -64,7 +64,7 @@ impl Command<Context> for Show {
             } else {
                 ip.unwrap()
             }
-        };
+        };  
 
         let ip = Ip::load(ip_path)?;
 

@@ -128,7 +128,7 @@ impl From<&Ip> for LockEntry {
             name: ip.get_man().get_ip().get_name().clone(), 
             version: ip.get_man().get_ip().get_version().clone(), 
             sum: Some(Ip::read_checksum_proof(ip.get_root()).unwrap_or(Ip::compute_checksum(ip.get_root()))), 
-            source: ip.get_man().get_ip().get_source().clone(),
+            source: ip.get_man().get_ip().get_source().cloned(),
             dependencies: match ip.get_man().get_deps().as_ref().unwrap_or(&HashMap::new()).len() {
                 0 => Vec::new(),
                 _ => {
@@ -240,18 +240,22 @@ mod test {
     const DATA1: &str = r#"[[ip]]
 name = "l1"
 version = "0.5.0"
-source = "https://go1.here"
 dependencies = [
     "l4=0.5.19",
     "l2=1.0.0",
 ]
 
+[ip.source]
+url = "https://go1.here"
+
 [[ip]]
 name = "l2"
 version = "1.0.0"
 sum = "0000000000000000000000000000000000000000000000000000000000000000"
-source = "https://go2.here"
 dependencies = []
+
+[ip.source]
+url = "https://go2.here"
 
 [[ip]]
 name = "l3"

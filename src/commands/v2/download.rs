@@ -150,8 +150,9 @@ impl Download {
             .filter(|(_, f)| f.is_default() == false)
             .map(|(n, f)| {
                 let p_name = f.get_protocol().as_ref().unwrap();
-                println!("info: Downloading {} over \"{}\" protocol ...", n, p_name.as_ref());
-                match proto_map.get(p_name.as_ref()) {
+                let p_ref: &str = p_name.as_ref();
+                println!("info: Downloading {} over \"{}\" protocol ...", n, &p_name);
+                match proto_map.get(p_ref) {
                     Some(p) => {
                         p.execute(&[f.get_url().to_string()], verbose)
                     },
@@ -160,7 +161,7 @@ impl Download {
                             // try to use default protocol
                             true => { Protocol::single_download(f.get_url(), queue) },
                             // encounter error
-                            false => { Err(Box::new(AnyError(format!("Unknown protocol \"{}\"", p_name.as_ref()))).into()) },
+                            false => { Err(Box::new(AnyError(format!("Unknown protocol \"{}\"", &p_name))).into()) },
                         }
                     },
                 }

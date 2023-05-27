@@ -4,6 +4,7 @@ use crate::util::anyerror::AnyError;
 
 /// A [Source] outlines the process and location for extracting packages from the internet.
 #[derive(Debug, PartialEq, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Source {
     protocol: Option<String>,
     url: String,

@@ -9,6 +9,7 @@ use std::path::PathBuf;
 pub type Protocols = Vec<Protocol>;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Protocol {
     name: String,
     command: String,

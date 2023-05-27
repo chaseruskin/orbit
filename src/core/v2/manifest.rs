@@ -111,7 +111,6 @@ impl Display for Manifest {
 use crate::core::v2::source;
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
-#[serde(deny_unknown_fields)]
 pub struct Package {
     name: Id,
     version: Version,

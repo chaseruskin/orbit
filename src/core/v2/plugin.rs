@@ -18,6 +18,7 @@ pub type Plugins = Vec<Plugin>;
 type Filesets = HashMap<String, Style>;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Plugin {
     alias: String,
     command: String,

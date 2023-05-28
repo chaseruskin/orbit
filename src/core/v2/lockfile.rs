@@ -118,6 +118,7 @@ pub struct LockEntry {
     version: Version,
     // @note: `sum` is optional because the root package will have its sum omitted
     sum: Option<Sha256Hash>,
+    #[serde(flatten)]
     source: Option<Source>,
     dependencies: Vec<IpSpec>,
 }
@@ -237,25 +238,63 @@ mod test {
         assert_eq!(&toml::to_string_pretty(&lock).unwrap(), DATA1);
     }
 
+    #[test]
+    fn from_str() {
+        let lock = LockFile {
+            ip: vec![
+                LockEntry {
+                    name: Id::from_str("l1").unwrap(),
+                    version: Version::from_str("0.5.0").unwrap(),
+                    sum: None,
+                    source: Some(Source::from_str("https://go1.here").unwrap()),
+                    dependencies: vec![
+                        IpSpec::new(PkgPart::from_str("l4").unwrap(), Version::from_str("0.5.19").unwrap()),
+                        IpSpec::new(PkgPart::from_str("l2").unwrap(), Version::from_str("1.0.0").unwrap()),
+                    ],
+                },
+                LockEntry {
+                    name: Id::from_str("l2").unwrap(),
+                    version: Version::from_str("1.0.0").unwrap(),
+                    sum: Some(Sha256Hash::new()),
+                    source: Some(Source::from_str("https://go2.here").unwrap()),
+                    dependencies: Vec::new(),
+                },
+                LockEntry {
+                    name: Id::from_str("l3").unwrap(),
+                    version: Version::from_str("2.3.1").unwrap(),
+                    sum: Some(Sha256Hash::new()),
+                    source: None,
+                    dependencies: Vec::new(),
+                },
+                LockEntry {
+                    name: Id::from_str("l4").unwrap(),
+                    version: Version::from_str("0.5.19").unwrap(),
+                    sum: Some(Sha256Hash::new()),
+                    source: None,
+                    dependencies: vec![
+                        IpSpec::new(PkgPart::from_str("l3").unwrap(), Version::from_str("2.3.1").unwrap()),
+                    ],
+                },
+            ]
+        };
+        assert_eq!(&toml::from_str::<LockFile>(&DATA1).unwrap(), &lock);
+    }
+
     const DATA1: &str = r#"[[ip]]
 name = "l1"
 version = "0.5.0"
+url = "https://go1.here"
 dependencies = [
     "l4=0.5.19",
     "l2=1.0.0",
 ]
 
-[ip.source]
-url = "https://go1.here"
-
 [[ip]]
 name = "l2"
 version = "1.0.0"
 sum = "0000000000000000000000000000000000000000000000000000000000000000"
-dependencies = []
-
-[ip.source]
 url = "https://go2.here"
+dependencies = []
 
 [[ip]]
 name = "l3"

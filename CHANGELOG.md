@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.9.2
+
+### Changes
+- fixes bug regarding global config.toml not being able to properly be created when not existing
+
 ## 0.9.1
 
 ### Changes

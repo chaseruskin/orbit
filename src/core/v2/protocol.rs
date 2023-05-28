@@ -14,6 +14,8 @@ pub struct Protocol {
     name: String,
     command: String,
     args: Option<Vec<String>>,
+    summary: Option<String>,
+    details: Option<String>,
     #[serde(skip_serializing, skip_deserializing)]
     root: Option<PathBuf>,
 }
@@ -58,6 +60,8 @@ impl Protocol {
             command: String::new(),
             root: None,
             args: None,
+            summary: None,
+            details: None,
         }
     }
 
@@ -143,6 +147,8 @@ args = ["~/scripts/download.bash"]
             command: String::from("python"),
             args: None,
             root: None,
+            summary: None,
+            details: None,
         });
 
         let proto = Protocol::from_str(P_2).unwrap();
@@ -151,6 +157,8 @@ args = ["~/scripts/download.bash"]
             command: String::from("bash"),
             args: Some(vec![String::from("~/scripts/download.bash")]),
             root: None,
+            summary: None,
+            details: None,
         });
     }
 

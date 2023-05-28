@@ -75,6 +75,7 @@ impl Manifest {
                 version: Version::new().minor(1),
                 source: None.into(),
                 library: None,
+                summary: None,
             },
             dependencies: Some(Dependencies::new()),
             dev_dependencies: None,
@@ -114,6 +115,7 @@ use crate::core::v2::source;
 pub struct Package {
     name: Id,
     version: Version,
+    summary: Option<String>,
     library: Option<Id>,
     /// Describes the URL for fetching the captured state's code (expects .ZIP file)
     #[serde(deserialize_with = "source::string_or_struct", default)]

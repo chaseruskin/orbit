@@ -2,6 +2,7 @@ use colored::Colorize;
 
 use clif::cmd::{FromCli, Command};
 
+use crate::commands::v2::download::Download;
 use crate::core::plugin::PluginError;
 use crate::core::template;
 use crate::core::variable::VariableTable;
@@ -122,18 +123,13 @@ impl Command<Context> for Plan {
             let le = LockEntry::from(&target);
             let lf = target.get_lock();
             
-            // @todo: attempt to download missing deps
-            // {
-            //     let dls = Download::compile_download_list(&le, &lf, &catalog, true);
-            //     let dl_proc = DownloadProc::from_config(c.get_config(), None)?;
-            //     Download::download(&dls, dl_proc, &Vec::new(), true)?;
-            // }
-            // @todo: update catalog
-            // catalog = catalog
-            //     .installations(c.get_cache_path())?
-            //     .queue(c.get_queue_path())?;
+            download_missing_deps(&lf, &le, &catalog, &c.get_config().get_protocols())?;
+            // recollect the queued items to update the catalog
+            catalog = catalog
+                .installations(c.get_cache_path())?
+                .queue(c.get_queue_path())?;
 
-            fill_missing_dependencies(&lf, &le, &catalog)?;
+            install_missing_deps(&lf, &le, &catalog)?;
             // recollect the installations and queued items to update the catalog
             catalog = catalog
                 .installations(c.get_cache_path())?
@@ -150,14 +146,61 @@ impl Command<Context> for Plan {
     }
 }
 
+pub fn download_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog, protocols: &ProtocolMap) -> Result<(), Fault> {
+    // fetch all non-downloaded packages
+    for entry in lf.inner() {
+        // skip the current project's IP entry
+        if entry.matches_target(&le) { continue }
 
-pub fn fill_missing_dependencies(lf: &LockFile, le: &LockEntry, catalog: &Catalog) -> Result<(), Fault> {
+        let ver = AnyVersion::Specific(entry.get_version().to_partial_version());
+
+        let mut require_download = false;
+
+        match catalog.inner().get(entry.get_name()) {
+            Some(status) => {
+                match status.get(&ver, true) {
+                    Some(_) => (),
+                    None => {
+                        match status.get(&ver, false) {
+                            Some(_) => (),
+                            // does not exist in the queue
+                            None => {
+                                require_download = true;
+                            },
+                        }
+                    }
+                }
+            }
+            // does not exist at all in the catalog
+            None => {
+                require_download = true;
+            }
+        }
+
+        if require_download == true {
+            match entry.get_source() {
+                Some(src) => {
+                    // fetch from the internet
+                    Download::download(&entry.to_ip_spec(), src, catalog.get_queue_path(), &protocols, false, false)?;
+                },
+                None => {
+                    return Err(AnyError(format!("unable to fetch ip {} from the internet due to missing source", entry.to_ip_spec())))?;
+                },
+            }
+        }
+    }
+    Ok(())
+}
+
+
+pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) -> Result<(), Fault> {
     // fill in the catalog with missing modules according the lock file if available
     for entry in lf.inner() {
         // skip the current project's IP entry
         if entry.matches_target(&le) { continue }
 
         let ver = AnyVersion::Specific(entry.get_version().to_partial_version());
+
         // try to use the lock file to fill in missing pieces
         match catalog.inner().get(entry.get_name()) {
             Some(status) => {
@@ -182,7 +225,6 @@ pub fn fill_missing_dependencies(lf: &LockFile, le: &LockEntry, catalog: &Catalo
                 }
             }
             None => {
-                // @todo: try to download dependencies from lock file
                 panic!("entry is not queued for installation (unknown ip)")
             },
         }
@@ -193,6 +235,8 @@ pub fn fill_missing_dependencies(lf: &LockFile, le: &LockEntry, catalog: &Catalo
 // use crate::core::lang::vhdl::symbol;
 use crate::util::anyerror::AnyError;
 use crate::core::fileset;
+
+use super::download::ProtocolMap;
 
 #[derive(Debug, PartialEq)]
 pub struct SubUnitNode<'a> {

@@ -46,6 +46,8 @@ impl FromCli for Download {
     }
 }
 
+pub type ProtocolMap<'a> = HashMap<&'a str, &'a Protocol>;
+
 impl Command<Context> for Download {
     type Status = OrbitResult;
 
@@ -58,7 +60,7 @@ impl Command<Context> for Download {
             panic!("cannot display all and missing lock entries");
         }
 
-        let proto_map = c.get_config().get_protocols();
+        let proto_map: ProtocolMap = c.get_config().get_protocols();
 
         // // do not allow args if no command is set
         // if dl_proc.is_none() == true {
@@ -107,7 +109,7 @@ impl Command<Context> for Download {
             downloads.iter().for_each(|(_, src)| println!("{}", src));
         // execute the command
         } else {
-            Self::download(&downloads, &proto_map, self.verbose, c.get_queue_path(), self.force)?;
+            Self::download_all(&downloads, &proto_map, self.verbose, c.get_queue_path(), self.force)?;
         }
         Ok(())
     }
@@ -125,7 +127,30 @@ impl Download {
             .collect()
     }
 
-    pub fn download(downloads: &Vec<(IpSpec, &Source)>, proto_map: &HashMap<&str, &Protocol>, verbose: bool, queue: &PathBuf, force: bool) -> Result<(), Fault> {
+    pub fn download(spec: &IpSpec, src: &Source, queue: &PathBuf, protocols: &HashMap<&str, &Protocol>, verbose: bool, force: bool) -> Result<(), Fault> {
+        // access the protocol
+        if let Some(proto) = src.get_protocol() {
+            match protocols.get(proto.as_str()) {
+                Some(entry) => {
+                    println!("info: Downloading {} over \"{}\" protocol ...", spec, &proto);
+                    entry.execute(&[src.get_url().to_string()], verbose)?
+                }
+                None => { 
+                    if force == false { 
+                        return Err(Box::new(AnyError(format!("Unknown protocol \"{}\"", &proto))).into());
+                    } 
+                }
+            }
+        }
+        // try to use default protocol
+        if force == true || src.is_default() == true {
+            println!("info: Downloading {} ...", spec);
+            Protocol::single_download(src.get_url(), queue)?;
+        }
+        Ok(())
+    }
+
+    pub fn download_all(downloads: &Vec<(IpSpec, &Source)>, proto_map: &HashMap<&str, &Protocol>, verbose: bool, queue: &PathBuf, force: bool) -> Result<(), Fault> {
         
         match downloads.len() {
             0 => { println!("info: No missing downloads"); return Ok(()) },
@@ -133,43 +158,15 @@ impl Download {
             _ => { println!("info: Downloading {} packages ...", downloads.len()) },
         }
 
-        // perform all in-house default downloads
-        let mut default_downloads = downloads.iter()
-            .filter(|(_, f)| f.is_default() == true)
-            .map(|(n, f)| {
-                println!("info: Downloading {} ...", n);
-                Protocol::single_download(f.get_url(), queue)
-            })
-            .filter_map(|e| e.err() );
-        if let Some(n) = default_downloads.next() {
+        let mut results = downloads.iter().filter_map(|e| {
+            match Self::download(&e.0, &e.1, &queue, &proto_map, verbose, force) {
+                Ok(_) => None,
+                Err(e) => Some(e),
+            }
+        });
+        if let Some(n) = results.next() {
             return Err(n)
         }
-
-        // perform all protocol-specific downloads
-        let mut custom_downloads = downloads.iter()
-            .filter(|(_, f)| f.is_default() == false)
-            .map(|(n, f)| {
-                let p_name = f.get_protocol().as_ref().unwrap();
-                let p_ref: &str = p_name.as_ref();
-                println!("info: Downloading {} over \"{}\" protocol ...", n, &p_name);
-                match proto_map.get(p_ref) {
-                    Some(p) => {
-                        p.execute(&[f.get_url().to_string()], verbose)
-                    },
-                    None => {
-                        match force {
-                            // try to use default protocol
-                            true => { Protocol::single_download(f.get_url(), queue) },
-                            // encounter error
-                            false => { Err(Box::new(AnyError(format!("Unknown protocol \"{}\"", &p_name))).into()) },
-                        }
-                    },
-                }
-            })
-            .filter_map(|e| e.err() );
-            if let Some(n) = custom_downloads.next() {
-                return Err(n)
-            }
 
         Ok(())
     }

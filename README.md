@@ -51,7 +51,6 @@ Use 'orbit help <command>' for more information about a command.
 
 ```
 
-
 ## Contributing
 
 See [CONTRIBUTING](./CONTRIBUTING.md).

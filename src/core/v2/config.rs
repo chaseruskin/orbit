@@ -12,6 +12,118 @@ use crate::util::filesystem::Standardize;
 use crate::core::v2::protocol::Protocol;
 
 use serde_derive::{Serialize, Deserialize};
+use toml_edit::Document;
+
+#[derive(Debug)]
+pub struct ConfigDocument {
+    document: Document,
+}
+
+impl FromStr for ConfigDocument {
+    type Err = toml::de::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // verify all keys are valid during deserializing
+        let _ : Config = toml::from_str(s)?;
+        Ok(Self {
+            document: s.parse::<Document>().unwrap(),
+        })
+    }
+}
+
+const INCLUDE_KEY: &str = "include";
+use toml_edit::Table;
+use toml_edit::Item;
+use toml_edit::Value;
+use toml_edit::Array;
+use toml_edit::Formatted;
+use crate::util::anyerror::Fault;
+
+impl ConfigDocument {
+    pub fn print(&self) {
+        println!("{}", self.document.to_string())
+    }
+
+    fn append_list(table: &mut Table, key: &str, item: &str) -> () {
+        // verify the key/entry exists (make empty array)
+        if table.contains_key(key) == false {
+            table.insert(key, Item::Value(Value::Array(Array::new())));
+        }
+        table[key].as_array_mut().unwrap().push(item);
+        // before neat formatting of an item on every line
+        table[key].as_array_mut().unwrap().iter_mut().for_each(|f| {
+            f.decor_mut().set_prefix("\n    ");
+            f.decor_mut().set_suffix("");
+        });
+        table[key].as_array_mut().unwrap().set_trailing("\n");
+    }
+
+    /// Adds a new value to the `include` entry.
+    /// 
+    /// Automatically creates the new key if it does not exist.
+    pub fn append_include(&mut self, item: &str) -> () {
+        Self::append_list(&mut self.document, INCLUDE_KEY, item);
+    } 
+
+    /// Sets a value for the given entry in the toml document.
+    /// 
+    /// Creates parent table and/or key if does not exist.
+    pub fn set(&mut self, table: &str, key: &str, value: &str) -> () {
+        // create table if it does not exist
+        if self.document.contains_key(table) == false {
+            self.document.insert(table, Item::Table(Table::new()));
+        }
+        // create key if it does not exist
+        let table = self.document.get_mut(table).unwrap().as_table_mut().unwrap();
+        // insert/overwrite into the table
+        table.insert(key, Item::Value(Value::String(Formatted::<String>::new(value.to_string()))));
+    }
+
+    /// Removes an entry from the toml document.
+    /// 
+    /// Errors if the entry does not exist.
+    pub fn unset(&mut self, table: &str, key: &str) -> Result<(), Fault> {
+        if self.document.contains_key(table) == false {
+            return Err(AnyError(format!("key '{}.{}' does not exist in configuration", table, key)))?
+        }
+        // remnove the key if it does exist
+        let toml_table = self.document.get_mut(table).unwrap().as_table_mut().unwrap();
+        match toml_table.contains_key(key) {
+            true => {
+                toml_table.remove(key);
+                Ok(())
+            },
+            false => {
+                Err(AnyError(format!("key '{}.{}' does not exist in configuration", table, key)))?
+            }
+        }
+    }
+
+    /// Writes the `document` to the `path`.
+    /// 
+    /// Uses CONFIG_FILE as the filename to save to.
+    pub fn write(&mut self, dest: &PathBuf) -> Result<(), Fault> {
+        let contents = self.document.to_string();
+        std::fs::write(&dest, contents)?;
+        Ok(())
+    }
+
+}
+
+impl FromFile for ConfigDocument {
+    fn from_file(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
+        // open file
+        let contents = std::fs::read_to_string(&path)?;
+        // parse toml syntax
+        match Self::from_str(&contents) {
+            Ok(r) => Ok(r),
+            // enter a blank lock file if failed (do not exit)
+            Err(e) => {
+                return Err(AnyError(format!("failed to parse {} file: {}", path.display(), e)))?
+            }
+        }
+    }
+}
 
 
 #[derive(Debug, PartialEq, Clone)]
@@ -122,6 +234,16 @@ impl Config {
         }
     }
 
+    /// Adds `path` to the end of the list for the include attribute.
+    /// 
+    /// This function creates some vector if no vector originally exists.
+    pub fn append_include(&mut self, path: &str) {
+        match &self.include.is_some() {
+            true => self.include.as_mut().unwrap().push(PathBuf::from(path)),
+            false => self.include = Some(vec![PathBuf::from(path)]),
+        }
+    }
+
     /// Adds the new information to the existing configuration to combine data.
     pub fn append(&mut self, rhs: Self) {
 
@@ -197,6 +319,10 @@ impl FromStr for Config {
 impl FromFile for Config {
 
     fn from_file(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
+        // verify the path exists
+        if path.is_file() == false {
+            return Err(AnyError(format!("failed to locate configuration file \"{}\"", path.display())))?
+        }
         // open file
         let contents = std::fs::read_to_string(&path)?;
         // parse toml syntax
@@ -218,7 +344,7 @@ impl FromFile for Config {
             },
             // enter a blank lock file if failed (do not exit)
             Err(e) => {
-                return Err(AnyError(format!("failed to parse {} file: {}", path.display(), e)))?
+                return Err(AnyError(format!("failed to parse \"{}\" file: {}", path.display(), e)))?
             }
         }
     }

@@ -7,7 +7,6 @@ pub mod plugin;
 pub mod vendor;
 pub mod config;
 pub mod ip;
-// pub mod extgit;
 pub mod template;
 pub mod store;
 pub mod lockfile;
@@ -18,3 +17,5 @@ pub mod hook;
 pub mod lang;
 
 pub mod v2;
+
+// pub mod extgit;

@@ -2,6 +2,7 @@ use colored::Colorize;
 
 use clif::cmd::{FromCli, Command};
 
+use crate::commands::v2::download::Download;
 use crate::core::plugin::PluginError;
 use crate::core::template;
 use crate::core::variable::VariableTable;
@@ -15,14 +16,20 @@ use clif::arg::{Flag, Optional};
 use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::graphmap::GraphMap;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::Write;
+use std::fs::File;
+use std::path::{PathBuf, Path};
 use crate::OrbitResult;
 use crate::core::fileset::Fileset;
 use crate::core::lang::vhdl::token::Identifier;
-use crate::core::plugin::Plugin;
+use crate::core::v2::plugin::Plugin;
 use crate::util::environment;
+use crate::core::lang::vhdl::symbol::{VHDLSymbol, VHDLParser, PackageBody, Entity};
 use std::fs;
+use crate::util::filesystem;
+use std::hash::Hash;
+use crate::util::environment::Environment;
 
 use crate::commands::v2::install::Install;
 use crate::core::v2::ip::Ip;
@@ -79,8 +86,8 @@ impl Command<Context> for Plan {
         // locate the plugin
         let plugin = match &self.plugin {
             // verify the plugin alias matches
-            Some(alias) => match c.get_plugins().get(alias) {
-                Some(p) => Some(p),
+            Some(alias) => match c.get_config().get_plugins().get(alias.as_str()) {
+                Some(&p) => Some(p),
                 None => return Err(PluginError::Missing(alias.to_string()))?,
             },
             None => None,
@@ -92,7 +99,7 @@ impl Command<Context> for Plan {
                 // display entire contents about the particular plugin
                 Some(plg) => println!("{}", plg),
                 // display quick overview of all plugins
-                None =>  println!("{}", Plugin::list_plugins(&mut c.get_plugins().values().into_iter().collect::<Vec<&Plugin>>())),
+                None =>  println!("{}", Plugin::list_plugins(&mut c.get_config().get_plugins().values().into_iter().collect::<Vec<&&Plugin>>())),
             }
             return Ok(())
         }
@@ -116,18 +123,13 @@ impl Command<Context> for Plan {
             let le = LockEntry::from(&target);
             let lf = target.get_lock();
             
-            // @todo: attempt to download missing deps
-            // {
-            //     let dls = Download::compile_download_list(&le, &lf, &catalog, true);
-            //     let dl_proc = DownloadProc::from_config(c.get_config(), None)?;
-            //     Download::download(&dls, dl_proc, &Vec::new(), true)?;
-            // }
-            // @todo: update catalog
-            // catalog = catalog
-            //     .installations(c.get_cache_path())?
-            //     .queue(c.get_queue_path())?;
+            download_missing_deps(&lf, &le, &catalog, &c.get_config().get_protocols())?;
+            // recollect the queued items to update the catalog
+            catalog = catalog
+                .installations(c.get_cache_path())?
+                .queue(c.get_queue_path())?;
 
-            fill_missing_dependencies(&lf, &le, &catalog)?;
+            install_missing_deps(&lf, &le, &catalog)?;
             // recollect the installations and queued items to update the catalog
             catalog = catalog
                 .installations(c.get_cache_path())?
@@ -144,14 +146,61 @@ impl Command<Context> for Plan {
     }
 }
 
+pub fn download_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog, protocols: &ProtocolMap) -> Result<(), Fault> {
+    // fetch all non-downloaded packages
+    for entry in lf.inner() {
+        // skip the current project's IP entry
+        if entry.matches_target(&le) { continue }
 
-pub fn fill_missing_dependencies(lf: &LockFile, le: &LockEntry, catalog: &Catalog) -> Result<(), Fault> {
+        let ver = AnyVersion::Specific(entry.get_version().to_partial_version());
+
+        let mut require_download = false;
+
+        match catalog.inner().get(entry.get_name()) {
+            Some(status) => {
+                match status.get(&ver, true) {
+                    Some(_) => (),
+                    None => {
+                        match status.get(&ver, false) {
+                            Some(_) => (),
+                            // does not exist in the queue
+                            None => {
+                                require_download = true;
+                            },
+                        }
+                    }
+                }
+            }
+            // does not exist at all in the catalog
+            None => {
+                require_download = true;
+            }
+        }
+
+        if require_download == true {
+            match entry.get_source() {
+                Some(src) => {
+                    // fetch from the internet
+                    Download::download(&entry.to_ip_spec(), src, catalog.get_queue_path(), &protocols, false, false)?;
+                },
+                None => {
+                    return Err(AnyError(format!("unable to fetch ip {} from the internet due to missing source", entry.to_ip_spec())))?;
+                },
+            }
+        }
+    }
+    Ok(())
+}
+
+
+pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) -> Result<(), Fault> {
     // fill in the catalog with missing modules according the lock file if available
     for entry in lf.inner() {
         // skip the current project's IP entry
         if entry.matches_target(&le) { continue }
 
         let ver = AnyVersion::Specific(entry.get_version().to_partial_version());
+
         // try to use the lock file to fill in missing pieces
         match catalog.inner().get(entry.get_name()) {
             Some(status) => {
@@ -175,14 +224,19 @@ pub fn fill_missing_dependencies(lf: &LockFile, le: &LockEntry, catalog: &Catalo
                     },
                 }
             }
-            None => panic!("entry is not queued for installation (unknown ip)"),
+            None => {
+                panic!("entry is not queued for installation (unknown ip)")
+            },
         }
     }
     Ok(())
 }
 
-use crate::core::lang::vhdl::symbol;
+// use crate::core::lang::vhdl::symbol;
 use crate::util::anyerror::AnyError;
+use crate::core::fileset;
+
+use super::download::ProtocolMap;
 
 #[derive(Debug, PartialEq)]
 pub struct SubUnitNode<'a> {
@@ -208,12 +262,12 @@ impl<'a> SubUnitNode<'a> {
 
 #[derive(Debug, PartialEq)]
 pub struct HdlNode<'a> {
-    sym: symbol::VHDLSymbol,
+    sym: VHDLSymbol,
     files: Vec<&'a IpFileNode<'a>>, // must use a vector to retain file order in blueprint
 }
 
 impl<'a> HdlNode<'a> {
-    fn new(sym: symbol::VHDLSymbol, file: &'a IpFileNode) -> Self {
+    fn new(sym: VHDLSymbol, file: &'a IpFileNode) -> Self {
         let mut set = Vec::with_capacity(1);
         set.push(file);
         Self {
@@ -229,11 +283,11 @@ impl<'a> HdlNode<'a> {
     }
 
     /// References the VHDL symbol
-    fn get_symbol(&self) -> &symbol::VHDLSymbol {
+    fn get_symbol(&self) -> &VHDLSymbol {
         &self.sym
     }
 
-    fn get_symbol_mut(&mut self) -> &mut symbol::VHDLSymbol {
+    fn get_symbol_mut(&mut self) -> &mut VHDLSymbol {
         &mut self.sym
     }
 
@@ -249,14 +303,14 @@ impl Plan {
             let mut graph_map: GraphMap<CompoundIdentifier, HdlNode, ()> = GraphMap::new();
     
             let mut sub_nodes: Vec<(Identifier, SubUnitNode)> = Vec::new();
-            let mut bodies: Vec<(Identifier, symbol::PackageBody)> = Vec::new();
+            let mut bodies: Vec<(Identifier, PackageBody)> = Vec::new();
             // store the (suffix, prefix) for all entities
             let mut component_pairs: HashMap<Identifier, Identifier> = HashMap::new();
             // read all files
             for source_file in files {
-                if crate::core::fileset::is_vhdl(&source_file.get_file()) == true {
-                    let contents = std::fs::read_to_string(&source_file.get_file()).unwrap();
-                    let symbols = symbol::VHDLParser::read(&contents).into_symbols();
+                if fileset::is_vhdl(&source_file.get_file()) == true {
+                    let contents = fs::read_to_string(&source_file.get_file()).unwrap();
+                    let symbols = VHDLParser::read(&contents).into_symbols();
 
                     let lib = source_file.get_library();
 
@@ -264,22 +318,22 @@ impl Plan {
                     let mut iter = symbols.into_iter()
                         .filter_map(|f| {
                             match f {
-                                symbol::VHDLSymbol::Entity(_) => {
+                                VHDLSymbol::Entity(_) => {
                                     component_pairs.insert(f.as_entity().unwrap().get_name().clone(), lib.clone());
                                     Some(f)
                                 },
-                                symbol::VHDLSymbol::Package(_) => Some(f),
-                                symbol::VHDLSymbol::Context(_) => Some(f),
-                                symbol::VHDLSymbol::Architecture(arch) => {
+                                VHDLSymbol::Package(_) => Some(f),
+                                VHDLSymbol::Context(_) => Some(f),
+                                VHDLSymbol::Architecture(arch) => {
                                     sub_nodes.push((lib.clone(), SubUnitNode{ sub: SubUnit::from_arch(arch), file: source_file }));
                                     None
                                 }
-                                symbol::VHDLSymbol::Configuration(cfg) => {
+                                VHDLSymbol::Configuration(cfg) => {
                                     sub_nodes.push((lib.clone(), SubUnitNode { sub: SubUnit::from_config(cfg), file: source_file }));
                                     None
                                 }
                                 // package bodies are usually in same design file as package
-                                symbol::VHDLSymbol::PackageBody(pb) => {
+                                VHDLSymbol::PackageBody(pb) => {
                                     bodies.push((lib.clone(), pb));
                                     None
                                 }
@@ -465,7 +519,7 @@ impl Plan {
                 Some(nt) => Some(nt),
                 None => {
                     if let Some(b) = bench {
-                        let entities: Vec<(usize, &symbol::Entity)> = local.get_graph().predecessors(b)
+                        let entities: Vec<(usize, &Entity)> = local.get_graph().predecessors(b)
                             .filter_map(|f| {
                                 if let Some(e) = local.get_node_by_index(f).unwrap().as_ref().get_symbol().as_entity() { 
                                     Some((f, e)) } else { None }
@@ -486,15 +540,35 @@ impl Plan {
         Ok((top, bench))
     }
 
+    /// Modifies the `list` to only have a list of unique elements while preserving their original
+    /// order.
+    /// 
+    /// Removes all duplicate elements found after the first occurence of said element.
+    fn remove_multi_occurences<T: Eq + Hash>(list: &Vec<T>) -> Vec<&T> {
+        let mut result = Vec::new();
+        // be prepared to store no more than the amount of elements in `list`
+        result.reserve(list.len());
+        // gradually build a set to track duplicates
+        let mut set = HashSet::<&T>::new();
+
+        for elem in list {
+            if set.insert(elem) == true {
+                result.push(elem)
+            }
+        }
+
+        result
+    }
+
     /// Performs the backend logic for creating a blueprint file (planning a design).
     fn run(&self, target: Ip, build_dir: &str, plug: Option<&Plugin>, catalog: Catalog) -> Result<(), Fault> {
         // create the build path to know where to begin storing files
-        let mut build_path = std::env::current_dir().unwrap();
+        let mut build_path = target.get_root().clone();
         build_path.push(build_dir);
         
         // check if to clean the directory
-        if self.clean == true && std::path::Path::exists(&build_path) == true {
-            std::fs::remove_dir_all(&build_path)?;
+        if self.clean == true && Path::exists(&build_path) == true {
+            fs::remove_dir_all(&build_path)?;
         }
 
         // build entire ip graph and resolve with dynamic symbol transformation
@@ -568,7 +642,25 @@ impl Plan {
         // compute minimal topological ordering
         let min_order = match self.all {
             // perform topological sort on the entire graph
-            true => global_graph.get_graph().topological_sort(),
+            true => {
+                match local_graph.find_root() {
+                    // only one topological sorting to compute
+                    Ok(r) => {
+                        let id = Self::local_to_global(r.index(), &global_graph, &local_graph);
+                        global_graph.get_graph().minimal_topological_sort(id.index())
+                    },
+                    // exclude roots that do not belong to the local graph
+                    Err(rs) => {
+                        let mut order = Vec::new();
+                        rs.into_iter().for_each(|r| {
+                            let id = Self::local_to_global(r.index(), &global_graph, &local_graph);
+                            let mut subset = global_graph.get_graph().minimal_topological_sort(id.index());
+                            order.append(&mut subset);
+                        });
+                        order
+                    },
+                }
+            }
             // perform topological sort on minimal subset of the graph
             false => {
                 // determine which point is the upmost root 
@@ -591,6 +683,9 @@ impl Plan {
             }
             f_list
         };
+
+        // remove duplicate files from list while perserving order
+        let file_order = Self::remove_multi_occurences(&file_order);
 
         // grab the names as strings
         let top_name = match top {
@@ -617,47 +712,65 @@ impl Plan {
 
         // [!] collect user-defined filesets
         {
-            let current_files: Vec<String> = crate::util::filesystem::gather_current_files(&std::env::current_dir().unwrap(), false);
+            let current_files: Vec<String> = filesystem::gather_current_files(&target.get_root(), false);
 
             let mut vtable = VariableTable::new();
             // variables could potentially store empty strings if units are not set
             vtable.add("orbit.bench", &bench_name);
             vtable.add("orbit.top", &top_name);
-    
+            
+            // store data in a map for quicker look-ups when comparing to plugin-defind filesets
+            let mut cli_fset_map: HashMap<&String, &Fileset> = HashMap::new();
+
             // use command-line set filesets
             if let Some(fsets) = &self.filesets {
                 for fset in fsets {
-                    // perform variable substitution
-                    let fset = Fileset::new()
-                        .name(fset.get_name())
-                        .pattern(&template::substitute(fset.get_pattern().to_string(), &vtable))?;
-                    // match files
-                    fset.collect_files(&current_files).into_iter().for_each(|f| {
-                        blueprint_data += &fset.to_blueprint_string(f);
-                    });
+                    // insert into map structure
+                    cli_fset_map.insert(fset.get_name(), &fset);
                 }
             }
-    
+
             // collect data for the given plugin
-            if let Some(p) = plug {
-                let fsets = p.filesets();
-                // check against every defined fileset for the plugin
-                for fset in fsets {
+            if plug.is_some() == true && plug.unwrap().get_filesets().is_some() == true {
+                for (name, pattern) in plug.unwrap().get_filesets().unwrap() {
+                    let proper_key = Fileset::standardize_name(name);
+                    // check if appeared in cli arguments
+                    let (f_name, f_patt) = match cli_fset_map.contains_key(&proper_key) {
+                        // override with fileset provided by command-line if conflicting names
+                        true => {
+                            // pull from map to ensure it is not double-counted when just writing command-line filesets
+                            let entry = cli_fset_map.remove(&proper_key);
+                            (name, entry.unwrap().get_pattern()) 
+                        },
+                        false => { (name, pattern.inner()) },
+                    };
                     // perform variable substitution
                     let fset = Fileset::new()
-                        .name(fset.get_name())
-                        .pattern(&template::substitute(fset.get_pattern().to_string(), &vtable))?;
+                        .name(f_name)
+                        .pattern(&template::substitute(f_patt.to_string(), &vtable))?;
                     // match files
                     fset.collect_files(&current_files).into_iter().for_each(|f| {
                         blueprint_data += &fset.to_blueprint_string(&f);
                     });
                 }
             }
+
+            // check against every defined fileset in the command-line (call remaining filesets)
+            for (_key, fset) in cli_fset_map {
+                // perform variable substitution
+                let fset = Fileset::new()
+                    .name(fset.get_name())
+                    .pattern(&template::substitute(fset.get_pattern().to_string(), &vtable))?;
+                // match files
+                fset.collect_files(&current_files).into_iter().for_each(|f| {
+                    blueprint_data += &fset.to_blueprint_string(&f);
+                });
+            }
         }
 
         // collect in-order HDL file list
         for file in file_order {
-            if crate::core::fileset::is_rtl(&file.get_file()) == true {
+            if fileset::is_rtl(&file.get_file()) == true {
                 blueprint_data += &format!("VHDL-RTL\t{}\t{}\n", file.get_library(), file.get_file());
             } else {
                 blueprint_data += &format!("VHDL-SIM\t{}\t{}\n", file.get_library(), file.get_file());
@@ -665,27 +778,27 @@ impl Plan {
         }
 
         // create a output build directorie(s) if they do not exist
-        if std::path::PathBuf::from(build_dir).exists() == false {
-            std::fs::create_dir_all(build_dir).expect("could not create build dir");
+        if PathBuf::from(build_dir).exists() == false {
+            fs::create_dir_all(build_dir).expect("could not create build dir");
         }
 
         // [!] create the blueprint file
         let blueprint_path = build_path.join(BLUEPRINT_FILE);
-        let mut blueprint_file = std::fs::File::create(&blueprint_path).expect("could not create blueprint file");
+        let mut blueprint_file = File::create(&blueprint_path).expect("could not create blueprint file");
         // write the data
         blueprint_file.write_all(blueprint_data.as_bytes()).expect("failed to write data to blueprint");
         
         // create environment variables to .env file
-        let mut envs = environment::Environment::from_vec(vec![
+        let mut envs = Environment::from_vec(vec![
             EnvVar::new().key(environment::ORBIT_TOP).value(&top_name), 
             EnvVar::new().key(environment::ORBIT_BENCH).value(&bench_name)
         ]);
         // conditionally set the plugin used to plan
         match plug {
-            Some(p) => { envs.insert(EnvVar::new().key(environment::ORBIT_PLUGIN).value(&p.alias())); () },
+            Some(p) => { envs.insert(EnvVar::new().key(environment::ORBIT_PLUGIN).value(&p.get_alias())); () },
             None => (),
         };
-        crate::util::environment::save_environment(&envs, &build_path)?;
+        environment::save_environment(&envs, &build_path)?;
 
         // create a blueprint file
         println!("info: Blueprint created at: {}", blueprint_path.display());
@@ -746,3 +859,25 @@ Options:
 
 Use 'orbit help plan' to learn more about the command.
 ";
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn remove_multi_occur() {
+        // removes
+        let arr = vec![1, 2, 2, 3, 4];
+        assert_eq!(Plan::remove_multi_occurences(&arr), vec![&1, &2, &3, &4]);
+
+        let arr = vec![1, 2, 2, 3, 4, 2, 1];
+        assert_eq!(Plan::remove_multi_occurences(&arr), vec![&1, &2, &3, &4]);
+
+        let arr = vec![1, 1, 1, 1, 1];
+        assert_eq!(Plan::remove_multi_occurences(&arr), vec![&1]);
+
+        // no changes
+        let arr = vec![9, 8, 7, 6, 5, 4];
+        assert_eq!(Plan::remove_multi_occurences(&arr), vec![&9, &8, &7, &6, &5, &4]);
+    }
+}

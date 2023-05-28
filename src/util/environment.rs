@@ -1,4 +1,4 @@
-use crate::core::config::Config;
+use crate::core::v2::config::Config;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::util::anyerror::Fault;
 use std::hash::Hash;
@@ -128,19 +128,10 @@ impl Environment {
     /// It searches the `[env]` table and collects all env variables.
     pub fn from_config(mut self, config: &Config) -> Result<Self, Fault> {
         // read config.toml for setting any env variables
-        if let Some(env_table) = config.get_doc().get("env") {
-            if let Some(table) = env_table.as_table() {
-                let mut table = table.iter();
-                while let Some((key, val)) = table.next() {
-                    if let Some(val) = val.as_str() {
-                        self.insert(EnvVar::new().key(&format!("{}{}", ORBIT_ENV_PREFIX, key)).value(val));
-                    } else {
-                        panic!("key 'env.{}' must have string value", key)
-                    }
-                }
-            } else {
-                panic!("key 'env' must be a table")
-            }
+        if let Some(map) = config.get_env() {
+            map.iter().for_each(|(key, val)| {
+                self.insert(EnvVar::new().key(&format!("{}{}", ORBIT_ENV_PREFIX, key)).value(val));
+            });
         }
         Ok(self)
     }

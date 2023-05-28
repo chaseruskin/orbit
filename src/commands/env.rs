@@ -13,7 +13,7 @@ use crate::util::environment::ORBIT_BLUEPRINT;
 use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
 use crate::util::filesystem::Standardize;
 use crate::OrbitResult;
-use super::plan::BLUEPRINT_FILE;
+use crate::commands::v2::plan::BLUEPRINT_FILE;
 
 #[derive(Debug, PartialEq)]
 pub struct Env {

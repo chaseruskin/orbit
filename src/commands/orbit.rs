@@ -10,6 +10,7 @@ use crate::util::prompt;
 use crate::core::context::Context;
 use crate::util::sha256::Sha256Hash;
 use std::env;
+use crate::core::v2::config;
 
 pub type AnyResult<T> = Result<T, Box<dyn std::error::Error>>;
 
@@ -53,10 +54,10 @@ impl Orbit {
                 .queue(environment::ORBIT_QUEUE)?
                 .store(environment::ORBIT_STORE)?
                 .current_ip_dir(environment::ORBIT_IP_PATH)? // must come before .settings() call
-                .settings(crate::core::config::CONFIG_FILE)?
-                .build_dir(environment::ORBIT_BUILD_DIR)?
-                .development_path(environment::ORBIT_DEV_PATH, c.bypass_check() == false)?
-                .read_vendors()?;
+                .settings(config::CONFIG_FILE)?
+                .build_dir(environment::ORBIT_BUILD_DIR)?;
+                // .development_path(environment::ORBIT_DEV_PATH, c.bypass_check() == false)?;
+                // .read_vendors()?;
             // pass the context to the given command
             c.exec(&context)
         // if no command is given then print default help
@@ -256,7 +257,6 @@ Use 'orbit help <command>' for more information about a command.
 alt names for `probe`: -check-, -scan-, show
 */ 
 
-use crate::core::version;
 use crate::util::sha256;
 use std::str::FromStr;
 use std::io::Write;
@@ -264,10 +264,16 @@ use zip;
 use tempfile;
 use crate::util::filesystem::get_exe_path;
 use curl::easy::{Easy, List};
+use crate::util::anyerror::Fault;
+use std::fs;
+use crate::core::version::Version;
+use std::env::consts;
+use zip::ZipArchive;
+use std::path::Path;
 
 use serde_json::Value;
 
-const RESPONSE_OKAY: u32 = 200;
+pub const RESPONSE_OKAY: u32 = 200;
 
 impl Orbit {
     /// Returns current machine's target as `<arch>-<os>`.
@@ -284,17 +290,17 @@ impl Orbit {
     /// 4. Download compatible platform zip file and verify checksum matches
     /// 5. Unzip the file and replace the Orbit executable in-place.
     /// 6. Rename the old executable as `orbit-<version>`.
-    fn upgrade(&self) -> Result<String, Box<dyn std::error::Error>> {
+    fn upgrade(&self) -> Result<String, Fault> {
         // check for stale versions at the current executable's path
         let exe_path = get_exe_path()?;
         let mut current_exe_dir = exe_path.clone();
         current_exe_dir.pop();
         // find any old versions existing in executable's current folder
-        let paths = std::fs::read_dir(&current_exe_dir)?;
+        let paths = fs::read_dir(&current_exe_dir)?;
         for path in paths {
             if path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap().starts_with("orbit-") {
                 // remove stale binaries
-                std::fs::remove_file(path.as_ref().unwrap().path())?;
+                fs::remove_file(path.as_ref().unwrap().path())?;
             }
         }
 
@@ -333,9 +339,9 @@ impl Orbit {
         };
 
         // our current version is guaranteed to be valid
-        let current = version::Version::from_str(VERSION).unwrap();
+        let current = Version::from_str(VERSION).unwrap();
         // the latest version 
-        let latest = version::Version::from_str(&version).expect("invalid version released");
+        let latest = Version::from_str(&version).expect("invalid version released");
         if latest > current {
             // await user input
             if self.force == false {
@@ -382,7 +388,7 @@ impl Orbit {
         let cert = checksums.split_terminator('\n').find_map(|p| {
             let (cert, key) = p.split_once(' ').expect("bad checksum file format");
             if key == pkg  {
-                Some(sha256::Sha256Hash::from_str(cert).expect("bad checksum format"))
+                Some(Sha256Hash::from_str(cert).expect("bad checksum format"))
             } else {
                 None
             }
@@ -433,33 +439,33 @@ impl Orbit {
         println!("info: installing update...");
         let mut temp_file = tempfile::tempfile()?;
         temp_file.write_all(&body_bytes)?;
-        let mut zip_archive = zip::ZipArchive::new(temp_file)?;
+        let mut zip_archive = ZipArchive::new(temp_file)?;
 
         // decompress zip file to a temporary directory
         let temp_dir = tempfile::tempdir()?;
         zip_archive.extract(&temp_dir)?;
 
-        let exe_ext = if std::env::consts::EXE_EXTENSION.is_empty() == true { "" } else { ".exe" };
+        let exe_ext = if consts::EXE_EXTENSION.is_empty() == true { "" } else { ".exe" };
 
         // verify the path to the new executable exists before renaming current binary
         let temp_exe_path = temp_dir.path().join(&format!("orbit-{}-{}/bin/orbit{}", &latest, &target, &exe_ext));
-        if std::path::Path::exists(&temp_exe_path) == false {
+        if Path::exists(&temp_exe_path) == false {
             return Err(Box::new(UpgradeError::MissingExe))?;
         }
 
         // rename the current binary with its version to become a 'stale binary'
         let stale_exe_path = current_exe_dir.join(&format!("orbit-{}", VERSION));
-        std::fs::rename(&exe_path, &stale_exe_path)?;
+        fs::rename(&exe_path, &stale_exe_path)?;
 
         // copy the executable from the temporary directory to the original location
-        std::fs::copy(&temp_exe_path, &exe_path)?;
+        fs::copy(&temp_exe_path, &exe_path)?;
 
         Ok(String::from(format!("successfully upgraded orbit to version {}", &latest)))
     }
 }
 
 #[derive(Debug, PartialEq)]
-enum UpgradeError {
+pub enum UpgradeError {
     UnsupportedTarget(String),
     FailedConnection(String, u32),
     FailedDownload(String, u32),

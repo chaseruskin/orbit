@@ -1,9 +1,97 @@
 use std::str::FromStr;
+use glob::{Pattern, PatternError};
+use serde_derive::{Serialize, Deserialize};
+use std::collections::HashMap;
 
-#[derive(Debug, PartialEq)]
+pub struct Filesets(Vec<Fileset>);
+
+impl From<HashMap<String, Style>> for Filesets {
+    fn from(value: HashMap<String, Style>) -> Self {
+        Self(value.into_iter().map(|(n, p)| {
+            Fileset {
+                name: n,
+                pattern: p,
+            }
+        }).collect())
+    }
+}
+
+impl Filesets {
+    // pub fn inner(&self) -> &Vec<Fileset> {
+        
+    // }
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Fileset {
     name: String,
-    pattern: glob::Pattern,
+    pattern: Style,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Style(Pattern);
+
+impl Style {
+    pub fn inner(&self) -> &Pattern {
+        &self.0
+    }
+}
+
+impl From<Pattern> for Style {
+    fn from(value: Pattern) -> Self {
+        Self(value)
+    }
+}
+
+
+impl FromStr for Style {
+    type Err = PatternError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Style(Pattern::new(&("**/".to_owned() + s))?.into()))
+    }
+}
+
+use serde::{Deserialize, Serialize};
+use serde::Serializer;
+use serde::de::{self};
+use std::fmt;
+
+impl<'de> Deserialize<'de> for Style {
+    fn deserialize<D>(deserializer: D) -> Result<Style, D::Error>
+        where D: de::Deserializer<'de>
+    {
+        struct LayerVisitor;
+
+        impl<'de> de::Visitor<'de> for LayerVisitor {
+            type Value = Style;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a glob-style pattern")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+                where
+                    E: de::Error, {
+                
+                match Style::from_str(v) {
+                    Ok(v) => Ok(v),
+                    Err(e) => Err(de::Error::custom(e))
+                }
+            }
+        }
+
+        deserializer.deserialize_map(LayerVisitor)
+    }
+}
+
+impl Serialize for Style {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.0.to_string())
+    }
 }
 
 #[derive(Debug)]
@@ -11,7 +99,7 @@ pub enum FilesetError {
     MissingSeparator(char),
     EmptyPattern,
     EmptyName,
-    PatternError(String, glob::PatternError),
+    PatternError(String, PatternError),
 }
 
 impl std::error::Error for FilesetError {}
@@ -42,12 +130,12 @@ impl FromStr for Fileset {
             return Err(Self::Err::EmptyName)
         }
         Ok(Fileset {
-            pattern: match glob::Pattern::new(pattern) {
+            pattern: match Pattern::new(pattern) {
                 // pattern must not be empty
                 Ok(p) => if p.as_str().is_empty() {
                     return Err(Self::Err::EmptyPattern)
                 } else {
-                    p
+                    p.into()
                 },
                 Err(e) => return Err(Self::Err::PatternError(pattern.to_string(), e))
             },
@@ -61,7 +149,7 @@ impl Fileset {
     pub fn new() -> Self {
         Fileset {
             name: String::new(),
-            pattern: glob::Pattern::new("*").unwrap(),
+            pattern: Pattern::new("*").unwrap().into(),
         }
     }
 
@@ -72,15 +160,15 @@ impl Fileset {
     }
 
     /// Set the `Fileset` glob-style pattern.
-    pub fn pattern(mut self, p: &str) -> Result<Self, glob::PatternError>{
-        self.pattern = glob::Pattern::new(&("**/".to_owned() + p))?;
+    pub fn pattern(mut self, p: &str) -> Result<Self, PatternError>{
+        self.pattern = Pattern::new(&("**/".to_owned() + p))?.into();
         Ok(self)
     }
 
     /// Standardizes the name to be UPPER-AND-HYPHENS.
     /// 
     /// The returned string is its own data (cloned from `s`).
-    fn standardize_name(s: &str) -> String {
+    pub fn standardize_name(s: &str) -> String {
         s.to_uppercase().replace('_', "-")
     }
 
@@ -93,7 +181,7 @@ impl Fileset {
         };
 
         files.iter().filter_map(|f| {
-            if self.pattern.matches_with(&f, match_opts) == true {
+            if self.pattern.inner().matches_with(&f, match_opts) == true {
                 Some(f)
             } else {
                 None
@@ -107,8 +195,8 @@ impl Fileset {
     }
 
     /// Access pattern.
-    pub fn get_pattern(&self) -> &glob::Pattern {
-        &self.pattern
+    pub fn get_pattern(&self) -> &Pattern {
+        &self.pattern.inner()
     }
 
     /// Creates format for blueprint.tsv file.
@@ -150,11 +238,11 @@ pub fn is_rtl(file: &str) -> bool {
         require_literal_leading_dot: false,
     };
 
-    let p1 = glob::Pattern::new("*.vhd").unwrap();
-    let p2 = glob::Pattern::new("*.vhdl").unwrap();
+    let p1 = Pattern::new("*.vhd").unwrap();
+    let p2 = Pattern::new("*.vhdl").unwrap();
 
-    let tb1 = glob::Pattern::new("tb_*").unwrap();
-    let tb2 = glob::Pattern::new("*_tb.*").unwrap();
+    let tb1 = Pattern::new("tb_*").unwrap();
+    let tb2 = Pattern::new("*_tb.*").unwrap();
 
     (p1.matches_with(file, match_opts) == true || p2.matches_with(file, match_opts) == true) && 
         tb1.matches_with(file, match_opts) == false && tb2.matches_with(file, match_opts) == false
@@ -204,7 +292,7 @@ mod test {
         let fset = Fileset::from_str(s);
         assert_eq!(fset.unwrap(), Fileset {
             name: "XSIM-CFG".to_string(),
-            pattern: glob::Pattern::new("*.wcfg").unwrap()
+            pattern: Pattern::new("*.wcfg").unwrap().into()
         });
 
         let s = "xsim-cfg=";

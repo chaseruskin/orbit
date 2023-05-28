@@ -15,6 +15,21 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.9.1
+
+### Changes
+- supports `summary` field to Orbit.toml
+- supports `summary` and `details` fields for protocols in config.toml
+- automatically downloads missing dependencies from lock file during plan command
+- refactors config command
+- denies unknown fields to certain TOML tables
+- allows protocols to be defined as in-line tables in Orbit.toml
+- fixes bug with forcing local config to exist per project
+- refactors context and multi-layer configs
+- improves error messages for toml parsing
+- fixes --all option on plan command to ignore terminal nodes of graph found in dependency packages
+- removes duplicate entries in blueprint
+
 ## 0.9.0
 
 ### Changes

@@ -19,18 +19,18 @@ impl VariableTable {
         Ok(self)
     }
 
-    pub fn load_context(mut self, c: &Context) -> Result<Self, Fault> {
+    pub fn load_context(self, _c: &Context) -> Result<Self, Fault> {
         // user
-        self.0.insert("orbit.user".to_owned(), c.get_config()
-            .get_as_str("core", "user")?
-            .unwrap_or("")
-            .to_string());
+        // self.0.insert("orbit.user".to_owned(), c.get_config()
+        //     .get_as_str("core", "user")?
+        //     .unwrap_or("")
+        //     .to_string());
         // date
-        self.0.insert("orbit.date".to_owned(), format!("{}", { 
-            let dt = chrono::offset::Local::now(); 
-            let fmt: &str = c.get_config().get_as_str("core", "date-fmt")?.unwrap_or("%Y-%m-%d");
-            dt.format(fmt).to_string() 
-        })); 
+        // self.0.insert("orbit.date".to_owned(), format!("{}", { 
+        //     let dt = chrono::offset::Local::now(); 
+        //     let fmt: &str = c.get_config().get_as_str("core", "date-fmt")?.unwrap_or("%Y-%m-%d");
+        //     dt.format(fmt).to_string() 
+        // })); 
         // load all env variables
         
         Ok(self)

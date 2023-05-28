@@ -1,5 +1,5 @@
 # download base image ubuntu 18.04
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 
 # LABEL about the custom image
 LABEL maintainer="c-rus"

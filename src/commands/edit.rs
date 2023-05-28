@@ -3,8 +3,7 @@ use std::str::FromStr;
 
 use clif::cmd::{FromCli, Command};
 use crate::core::catalog::Catalog;
-use crate::core::config::CONFIG_FILE;
-use crate::core::config::Config;
+use crate::core::v2::config::Configs;
 use clif::Cli;
 use crate::OrbitResult;
 use clif::arg::{Flag, Optional};
@@ -58,10 +57,10 @@ impl Command<Context> for Edit {
     type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
-        let sel_editor = Self::configure_editor(&self.editor, &c.get_config())?;
+        let sel_editor = Self::configure_editor(&self.editor, &c.get_all_configs())?;
         // open global configuration file
         if self.config == true {
-            let config_path = c.get_config().get_root().join(CONFIG_FILE);
+            let config_path = c.get_all_configs().get_global().0;
             return match &self.mode {
                 EditMode::Open => Edit::invoke(&sel_editor, &config_path),
                 EditMode::Path => { println!("{}", PathBuf::standardize(config_path).display()); Ok(()) }
@@ -94,7 +93,7 @@ impl Edit {
     /// 3. configuration value in config.toml for `core.editor`
     /// 
     /// Errors if no editor can be returned.
-    pub fn configure_editor(arg: &Option<String>, config: &Config) -> Result<String, Fault> {
+    pub fn configure_editor(arg: &Option<String>, _config: &Configs) -> Result<String, Fault> {
         match &arg {
             // prioritize the command-line argument as overriding a default value
             Some(e) => Ok(crate::util::filesystem::resolve_rel_path(&std::env::current_dir().unwrap(), e)),
@@ -103,11 +102,12 @@ impl Edit {
                    Ok(val)
                 } else {
                     // try the config.toml
-                    match config.get_as_str("core", "editor")? {
-                        // try to resolve relative path
-                        Some(e) => Ok(crate::util::filesystem::resolve_rel_path(config.get_root(), e)),
-                        None => Err(AnyError("no editor detected".to_owned()))?
-                    }
+                    panic!("todo")
+                    // match config.get_as_str("core", "editor")? {
+                    //     // try to resolve relative path
+                    //     Some(e) => Ok(crate::util::filesystem::resolve_rel_path(config.get_root(), e)),
+                    //     None => Err(AnyError("no editor detected".to_owned()))?
+                    // }
                 }
             }
         }

@@ -273,6 +273,10 @@ impl<'a> Catalog<'a> {
     pub fn get_cache_path(&self) -> &PathBuf {
         self.cache.as_ref().unwrap()
     }
+
+    pub fn get_queue_path(&self) -> &PathBuf {
+        self.queue.as_ref().unwrap()
+    }
 }
 
 

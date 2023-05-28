@@ -113,7 +113,7 @@ impl Install {
         // access the name and version
         let version = src.get_man().get_ip().get_version();
         let target = src.get_man().get_ip().get_name();
-        println!("info: installing {} v{} ...", target, version);
+        println!("info: Installing {} v{} ...", target, version);
 
         // perform sha256 on the temporary cloned directory 
         let checksum = Ip::compute_checksum(&dest);
@@ -135,7 +135,7 @@ impl Install {
                         return Err(AnyError(format!("ip '{}' as version '{}' is already installed", target, version)))?
                     }
                 }
-                println!("info: reinstalling ip '{}' as version '{}' due to bad checksum", target, version);
+                println!("info: Reinstalling ip '{}' as version '{}' due to bad checksum", target, version);
 
                 // blow directory up for re-install
                 std::fs::remove_dir_all(&cache_slot)?;

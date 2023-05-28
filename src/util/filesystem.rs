@@ -111,6 +111,24 @@ pub fn resolve_rel_path(root: &std::path::PathBuf, s: &str) -> String {
     }
 }
 
+/// Resolves a relative path into a full path if given relative to some `root` path.
+/// 
+/// This function is helpful for resolving full paths in plugin arguments,
+/// config.toml includes, and template paths.
+pub fn resolve_rel_path2(root: &std::path::PathBuf, s: &PathBuf) -> PathBuf {
+    let resolved_path = root.join(&s);
+    if std::path::Path::exists(&resolved_path) == true {
+        if PathBuf::from(&s).is_relative() == true {
+            // write out full path
+            PathBuf::standardize(resolved_path)
+        } else {
+            s.to_path_buf()
+        }
+    } else {
+        s.to_path_buf()
+    }
+}
+
 /// Removes common path components from `full` if they are found in `base` on
 /// the same iterations.
 pub fn remove_base(base: &PathBuf, full: &PathBuf) -> PathBuf {

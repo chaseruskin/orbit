@@ -7,14 +7,13 @@ use std::fmt::Display;
 use crate::core::pkgid::PkgPart;
 use std::error::Error;
 // use crate::util::url::Url;
+use crate::core::v2::source::Source;
 
 pub type Id = PkgPart;
 pub type Version = crate::core::version::Version;
-pub type Source = String;
-
+// pub type Source = String;
 use crate::core::v2::ip::IpSpec;
-use crate::util::anyerror::Fault;
-
+use crate::util::anyerror::{Fault, AnyError};
 type Dependencies = HashMap<Id, Version>;
 
 type Deps = Option<Dependencies>;
@@ -43,7 +42,21 @@ pub trait FromFile: FromStr where Self: Sized, <Self as std::str::FromStr>::Err:
     }
 }
 
-impl FromFile for Manifest {}
+impl FromFile for Manifest {
+
+    fn from_file(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
+        // open file
+        let contents = std::fs::read_to_string(&path)?;
+        // parse toml syntax
+        match Self::from_str(&contents) {
+            Ok(r) => Ok(r),
+            // enter a blank lock file if failed (do not exit)
+            Err(e) => {
+                return Err(AnyError(format!("failed to parse {} file: {}", IP_MANIFEST_FILE, e)))?
+            }
+        }
+    }
+}
 
 impl FromStr for Manifest {
     type Err = toml::de::Error;
@@ -60,8 +73,9 @@ impl Manifest {
             ip: Package {
                 name: name,
                 version: Version::new().minor(1),
-                source: None,
+                source: None.into(),
                 library: None,
+                summary: None,
             },
             dependencies: Some(Dependencies::new()),
             dev_dependencies: None,
@@ -95,13 +109,17 @@ impl Display for Manifest {
     }
 }
 
+use crate::core::v2::source;
+
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct Package {
     name: Id,
     version: Version,
+    summary: Option<String>,
     library: Option<Id>,
     /// Describes the URL for fetching the captured state's code (expects .ZIP file)
-    source: Option<Source>,
+    #[serde(deserialize_with = "source::string_or_struct", default)]
+    source: Source,
 }
 
 impl Package {
@@ -117,8 +135,8 @@ impl Package {
         &self.library
     }
 
-    pub fn get_source(&self) -> &Option<Source> {
-        &self.source
+    pub fn get_source(&self) -> Option<&Source> {
+        self.source.as_option()
     }
 
     /// Clones into a new [IpSpec2] struct.
@@ -189,7 +207,7 @@ mod test {
     
             assert_eq!(man.ip.name, PkgPart::from_str("Lab1").unwrap());
             assert_eq!(man.ip.version, Version::new().major(1));
-            assert_eq!(man.ip.source, None);
+            assert_eq!(man.ip.get_source(), None);
             assert_eq!(man.dependencies, None);
             assert_eq!(man.dev_dependencies, None);
         }
@@ -199,7 +217,7 @@ mod test {
             let man: Manifest = toml::from_str(EX1).unwrap();
     
             assert_eq!(man.ip.name, PkgPart::from_str("gates").unwrap());
-            assert_eq!(man.ip.source, Some(String::from("https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip")));
+            assert_eq!(man.ip.get_source(), Some(&Source::from_str("https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip").unwrap()));
             assert_eq!(man.dependencies.unwrap().len(), 1);
             assert_eq!(man.dev_dependencies.unwrap().len(), 2);
             assert_eq!(man.ip.library, Some(PkgPart::from_str("common").unwrap()));
@@ -218,6 +236,48 @@ mod test {
             let man: Manifest = toml::from_str(EX3).unwrap();
             let text = toml::to_string(&man).unwrap();
             assert_eq!(text, EX3);
+        }
+
+        #[test]
+        fn ut_complex_source() {
+            let man: Manifest = match toml::from_str(EX4) {
+                Ok(m) => m,
+                Err(e) => panic!("{}", e.to_string())
+            };
+
+            println!("{}", toml::to_string(&man).unwrap());
+
+            assert_eq!(man.ip.get_source().is_some(), true);
+            assert_eq!(man.ip.get_source().as_ref().unwrap().get_url(), "https://some.url");
+            assert_eq!(man.ip.get_source().as_ref().unwrap().get_protocol().as_ref().unwrap(), "ktsp");
+
+            let man: Manifest = match toml::from_str(EX5) {
+                Ok(m) => m,
+                Err(e) => panic!("{}", e.to_string())
+            };
+
+            assert_eq!(man.ip.get_source().is_some(), true);
+            assert_eq!(man.ip.get_source().as_ref().unwrap().get_url(), "https://some.url");
+            assert_eq!(man.ip.get_source().as_ref().unwrap().get_protocol().as_ref(), None);
+
+            let man: Manifest = match toml::from_str(EX6) {
+                Ok(m) => m,
+                Err(e) => panic!("{}", e.to_string())
+            };
+            
+            assert_eq!(man.ip.get_source().is_some(), true);
+            assert_eq!(man.ip.get_source().as_ref().unwrap().get_url(), "https://some.url");
+            assert_eq!(man.ip.get_source().as_ref().unwrap().get_protocol().as_ref(), None);    
+        }
+
+        #[test]
+        #[should_panic]
+        fn ut_source_missing_url() {
+            // missing required key "url"
+            let _man: Manifest = match toml::from_str(EX7) {
+                Ok(m) => m,
+                Err(e) => panic!("{}", e.to_string())
+            };
         }
     }
 }
@@ -251,6 +311,30 @@ some-package = "9.0.0"
 
 [dev-dependencies]
 top-builder = "1.0.0"
+"#;
+
+const EX4: &str = r#"[ip]
+name = "lab2"
+version = "1.20.0"
+source = { url = "https://some.url", protocol = "ktsp" }
+"#;
+
+const EX5: &str = r#"[ip]
+name = "lab2"
+version = "1.20.0"
+source = { url = "https://some.url" }
+"#;
+
+const EX6: &str = r#"[ip]
+name = "lab2"
+version = "1.20.0"
+source = "https://some.url"
+"#;
+
+const EX7: &str = r#"[ip]
+name = "lab2"
+version = "1.20.0"
+source = { protocol = "ktsp" }
 "#;
 
 const ERR1: &str = r#"[ip]

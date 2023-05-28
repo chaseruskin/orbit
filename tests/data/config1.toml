@@ -1,0 +1,6 @@
+include = [
+    "./config2.toml"
+]
+
+[env]
+key = "1"

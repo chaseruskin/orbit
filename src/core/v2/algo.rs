@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use tempfile::tempdir;
-
+use std::hash::Hash;
 use crate::util::graphmap::GraphMap;
 use crate::util::anyerror::{AnyError, Fault};
 
@@ -338,6 +338,14 @@ pub struct IpFileNode<'a> {
     file: String,
     library: Identifier,
     ip: &'a Ip
+}
+
+impl<'a> Eq for IpFileNode<'a> {}
+
+impl<'a> Hash for IpFileNode<'a> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.file.hash(state)
+    }
 }
 
 impl<'a> IpFileNode<'a> {

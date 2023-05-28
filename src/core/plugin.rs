@@ -168,7 +168,6 @@ pub trait Process {
             None =>  Err(AnyError(format!("terminated by signal")))?
         }
     }
-
 }
 
 #[derive(Debug, PartialEq)]

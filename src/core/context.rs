@@ -178,9 +178,16 @@ impl Context {
     /// 
     /// Note: the `self.ip_path` must already be determined before invocation.
     pub fn settings(mut self, name: &str) -> Result<Context, Fault> {
+
+        // check if global file exists first
+        let global_file = self.home_path.join(name);
+        if global_file.exists() == false {
+            std::fs::write(&global_file, Vec::new())?;
+        }
+        
         // initialize and load the global configuration
         let cfg = Configs::new()
-            .load(self.home_path.join(name), Locality::Global)?;
+            .load(global_file, Locality::Global)?;
         // if in ip, also look along current directory for a /.orbit/config.toml file to load (local configuration) 
         self.all_configs = if let Some(ip_dir) = self.get_ip_path() {
             let local_path = ip_dir.join(".orbit").join(name);

@@ -229,7 +229,7 @@ impl Ip {
 use crate::core::pkgid::PkgPart;
 use crate::core::version::Version;
 
-const SPEC_DELIM: &str = "=";
+const SPEC_DELIM: &str = ":";
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
 pub struct IpSpec(PkgPart, Version);
@@ -253,7 +253,7 @@ impl FromStr for IpSpec {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // split by delimiter
-        match s.split_once("=") {
+        match s.rsplit_once(SPEC_DELIM) {
             Some((n, v)) => {
                 Ok(Self::new(PkgPart::from_str(n)?, Version::from_str(v)?))
             },
@@ -266,7 +266,7 @@ impl FromStr for IpSpec {
 
 impl std::fmt::Display for IpSpec {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} v{}", self.0, self.1)
+        write!(f, "{}{}{}", self.get_name(), SPEC_DELIM, self.get_version())
     }
 }
 
@@ -291,7 +291,7 @@ impl<'de> Deserialize<'de> for IpSpec {
             type Value = IpSpec;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                formatter.write_str("a 256-character checksum")
+                formatter.write_str("an identifier and a version")
             }
 
             fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
@@ -314,7 +314,7 @@ impl Serialize for IpSpec {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&format!("{}{}{}", self.get_name(), SPEC_DELIM, self.get_version()))
+        serializer.serialize_str(&self.to_string())
     }
 }
 
@@ -335,6 +335,35 @@ mod test {
     fn from_str_ip_spec() {
         let ip = format!("name{}1.0.0", SPEC_DELIM);
 
-        assert_eq!(IpSpec::new(PkgPart::from_str("name").unwrap(), Version::from_str("1.0.0").unwrap()), IpSpec::from_str(&ip).unwrap());
+        assert_eq!(
+            IpSpec::new(
+                PkgPart::from_str("name").unwrap(), 
+                Version::from_str("1.0.0").unwrap()
+            ), 
+            IpSpec::from_str(&ip).unwrap()
+        );
+
+        // // @note: errors due to invalid char for parsing PkgPart, but tests for 
+        // // extracting delimiter from RHS only once
+        // let ip = format!("global{}local{}0.3.0", SPEC_DELIM, SPEC_DELIM);
+
+        // assert_eq!(
+        //     IpSpec::new(
+        //         PkgPart::from_str(&format!("global{}local", SPEC_DELIM)).unwrap(), 
+        //         Version::from_str("0.3.0").unwrap()
+        //     ), 
+        //     IpSpec::from_str(&ip).unwrap()
+        // );
     }
+
+    #[test]
+    fn from_str_ip_spec_bad() {
+        let ip = format!("name");
+
+        assert_eq!(
+            IpSpec::from_str(&ip).is_err(),
+            true
+        );
+    }
+
 }

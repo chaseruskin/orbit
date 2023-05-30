@@ -10,6 +10,7 @@ use crate::core::v2::manifest::FromFile;
 use crate::core::v2::ip::Ip;
 use serde_derive::{Deserialize, Serialize};
 use std::error::Error;
+use std::fmt::Display;
 use colored::Colorize;
 
 pub const IP_LOCK_FILE: &str = "Orbit.lock";
@@ -107,8 +108,14 @@ impl LockFile {
     /// Writes the [LockFile] data to disk.
     pub fn save_to_disk(&self, dir: &PathBuf) -> Result<(), Box<dyn Error>> {
         // write a file
-        std::fs::write(dir.join(IP_LOCK_FILE), format!("# {}\n\n{}", LOCK_COMMENT, toml::to_string_pretty(&self)?))?;
+        std::fs::write(dir.join(IP_LOCK_FILE), format!("# {}\n\n{}", LOCK_COMMENT, &self.to_string()))?;
         Ok(())
+    }
+}
+
+impl Display for LockFile {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", toml::to_string_pretty(&self).unwrap())
     }
 }
 
@@ -200,42 +207,42 @@ mod test {
         let lock = LockFile {
             ip: vec![
                 LockEntry {
-                    name: Id::from_str("l1").unwrap(),
+                    name: Id::from_str("lab1").unwrap(),
                     version: Version::from_str("0.5.0").unwrap(),
                     sum: None,
                     source: Some(Source::from_str("https://go1.here").unwrap()),
                     dependencies: vec![
-                        IpSpec::new(PkgPart::from_str("l4").unwrap(), Version::from_str("0.5.19").unwrap()),
-                        IpSpec::new(PkgPart::from_str("l2").unwrap(), Version::from_str("1.0.0").unwrap()),
+                        IpSpec::new(PkgPart::from_str("lab4").unwrap(), Version::from_str("0.5.19").unwrap()),
+                        IpSpec::new(PkgPart::from_str("lab2").unwrap(), Version::from_str("1.0.0").unwrap()),
                     ],
                 },
                 LockEntry {
-                    name: Id::from_str("l2").unwrap(),
+                    name: Id::from_str("lab2").unwrap(),
                     version: Version::from_str("1.0.0").unwrap(),
                     sum: Some(Sha256Hash::new()),
                     source: Some(Source::from_str("https://go2.here").unwrap()),
                     dependencies: Vec::new(),
                 },
                 LockEntry {
-                    name: Id::from_str("l3").unwrap(),
+                    name: Id::from_str("lab3").unwrap(),
                     version: Version::from_str("2.3.1").unwrap(),
                     sum: Some(Sha256Hash::new()),
                     source: None,
                     dependencies: Vec::new(),
                 },
                 LockEntry {
-                    name: Id::from_str("l4").unwrap(),
+                    name: Id::from_str("lab4").unwrap(),
                     version: Version::from_str("0.5.19").unwrap(),
                     sum: Some(Sha256Hash::new()),
                     source: None,
                     dependencies: vec![
-                        IpSpec::new(PkgPart::from_str("l3").unwrap(), Version::from_str("2.3.1").unwrap()),
+                        IpSpec::new(PkgPart::from_str("lab3").unwrap(), Version::from_str("2.3.1").unwrap()),
                     ],
                 },
             ]
         };
-        println!("{}", &toml::to_string_pretty(&lock).unwrap());
-        assert_eq!(&toml::to_string_pretty(&lock).unwrap(), DATA1);
+        println!("{}", &lock.to_string());
+        assert_eq!(&lock.to_string(), DATA1);
     }
 
     #[test]
@@ -243,36 +250,36 @@ mod test {
         let lock = LockFile {
             ip: vec![
                 LockEntry {
-                    name: Id::from_str("l1").unwrap(),
+                    name: Id::from_str("lab1").unwrap(),
                     version: Version::from_str("0.5.0").unwrap(),
                     sum: None,
                     source: Some(Source::from_str("https://go1.here").unwrap()),
                     dependencies: vec![
-                        IpSpec::new(PkgPart::from_str("l4").unwrap(), Version::from_str("0.5.19").unwrap()),
-                        IpSpec::new(PkgPart::from_str("l2").unwrap(), Version::from_str("1.0.0").unwrap()),
+                        IpSpec::new(PkgPart::from_str("lab4").unwrap(), Version::from_str("0.5.19").unwrap()),
+                        IpSpec::new(PkgPart::from_str("lab2").unwrap(), Version::from_str("1.0.0").unwrap()),
                     ],
                 },
                 LockEntry {
-                    name: Id::from_str("l2").unwrap(),
+                    name: Id::from_str("lab2").unwrap(),
                     version: Version::from_str("1.0.0").unwrap(),
                     sum: Some(Sha256Hash::new()),
                     source: Some(Source::from_str("https://go2.here").unwrap()),
                     dependencies: Vec::new(),
                 },
                 LockEntry {
-                    name: Id::from_str("l3").unwrap(),
+                    name: Id::from_str("lab3").unwrap(),
                     version: Version::from_str("2.3.1").unwrap(),
                     sum: Some(Sha256Hash::new()),
                     source: None,
                     dependencies: Vec::new(),
                 },
                 LockEntry {
-                    name: Id::from_str("l4").unwrap(),
+                    name: Id::from_str("lab4").unwrap(),
                     version: Version::from_str("0.5.19").unwrap(),
                     sum: Some(Sha256Hash::new()),
                     source: None,
                     dependencies: vec![
-                        IpSpec::new(PkgPart::from_str("l3").unwrap(), Version::from_str("2.3.1").unwrap()),
+                        IpSpec::new(PkgPart::from_str("lab3").unwrap(), Version::from_str("2.3.1").unwrap()),
                     ],
                 },
             ]
@@ -281,32 +288,32 @@ mod test {
     }
 
     const DATA1: &str = r#"[[ip]]
-name = "l1"
+name = "lab1"
 version = "0.5.0"
 url = "https://go1.here"
 dependencies = [
-    "l4=0.5.19",
-    "l2=1.0.0",
+    "lab4:0.5.19",
+    "lab2:1.0.0",
 ]
 
 [[ip]]
-name = "l2"
+name = "lab2"
 version = "1.0.0"
 sum = "0000000000000000000000000000000000000000000000000000000000000000"
 url = "https://go2.here"
 dependencies = []
 
 [[ip]]
-name = "l3"
+name = "lab3"
 version = "2.3.1"
 sum = "0000000000000000000000000000000000000000000000000000000000000000"
 dependencies = []
 
 [[ip]]
-name = "l4"
+name = "lab4"
 version = "0.5.19"
 sum = "0000000000000000000000000000000000000000000000000000000000000000"
-dependencies = ["l3=2.3.1"]
+dependencies = ["lab3:2.3.1"]
 "#;
 
 }

@@ -28,7 +28,7 @@ use std::fs;
 use clif::arg::{Optional, Flag};
 use clif::Error as CliError;
 use crate::core::context::Context;
-use crate::util::anyerror::{AnyError, Fault};
+use crate::util::anyerror::Fault;
 use std::path::PathBuf;
 use crate::OrbitResult;
 use crate::util::filesystem::Standardize;
@@ -65,41 +65,56 @@ impl Command<Context> for Install {
         Ip::is_valid(&dest)?;
         
         // gather the catalog (all manifests)
-        let catalog = Catalog::new()
+        let mut catalog = Catalog::new()
             .installations(c.get_cache_path())?
             .queue(c.get_queue_path())?;
 
-        // enter action
-        self.run(&dest, &catalog)
+        // @todo: check if there is a potential lockfile to use
+        let target = Ip::load(dest.clone())?;
+
+        // this code is only ran if the lock file matches the manifest and we aren't force to recompute
+        if target.can_use_lock() == true && self.force == false {
+            let le = LockEntry::from(&target);
+            let lf = target.get_lock();
+            
+            plan::download_missing_deps(&lf, &le, &catalog, &c.get_config().get_protocols())?;
+            // recollect the queued items to update the catalog
+            catalog = catalog
+                .installations(c.get_cache_path())?
+                .queue(c.get_queue_path())?;
+
+            plan::install_missing_deps(&lf, &le, &catalog)?;
+            // recollect the installations and queued items to update the catalog
+            catalog = catalog
+                .installations(c.get_cache_path())?
+                .queue(c.get_queue_path())?;
+        }
+        // install the top-level target
+        self.run(&target, &catalog)
     }
 }
 
+use crate::core::v2::lockfile::LockEntry;
+use crate::commands::v2::plan;
+
 impl Install {
 
-    // pub fn install_from_lock_file(&self, lock: &LockFile, catalog: &Catalog) -> Result<(), Fault> {
-    //     // build entire dependency graph from lockfile @todo: denote which ip's are from dev path to ensure they are "develop_from_lock_entry"
-    //     let graph = ip::graph_ip_from_lock(&lock)?;
-    //     // sort to topological ordering
-    //     let mut order = graph.get_graph().topological_sort();
-    //     // remove target ip from the list of intermediate installations
-    //     order.pop();
-
-    //     for i in order {
-    //         let entry = graph.get_node_by_index(i).unwrap().as_ref();
-    //         // check if already installed
-    //         match std::path::Path::exists(&catalog.get_cache_path().join(entry.to_cache_slot().as_ref())) {
-    //             true => println!("info: {} v{} already installed", entry.get_name(), entry.get_version()),
-    //             false => Plan::install_from_lock_entry(entry, &AnyVersion::Specific(entry.get_version().to_partial_version()), &catalog, false)?,
-    //         }
-    //     }
-    //     Ok(())
-    // }
+    pub fn is_checksum_good(root: &PathBuf) -> bool {
+        // verify the checksum
+        if let Some(sha) = Ip::read_checksum_proof(&root) {
+            // make sure the sums match expected
+            sha == Ip::compute_checksum(&root)
+        } else {
+            // failing to compute a checksum
+            false
+        }
+    }
 
     /// Installs the `ip` with particular partial `version` to the `cache_root`.
     /// It will reinstall if it finds the original installation has a mismatching checksum.
     /// 
-    /// Errors if the ip is already installed unless `force` is true.
-    pub fn install(src: &Ip, cache_root: &std::path::PathBuf, force: bool) -> Result<(), Fault> {
+    /// Returns `true` if the IP was successfully installed and `false` if it already existed.
+    pub fn install(src: &Ip, cache_root: &std::path::PathBuf, force: bool) -> Result<bool, Fault> {
         // temporary destination to move files for processing and manipulation
         let dest = tempfile::tempdir()?.into_path();
         filesystem::copy(src.get_root(), &dest, true)?;
@@ -113,7 +128,8 @@ impl Install {
         // access the name and version
         let version = src.get_man().get_ip().get_version();
         let target = src.get_man().get_ip().get_name();
-        println!("info: Installing {} v{} ...", target, version);
+        let ip_spec = src.get_man().get_ip().into_ip_spec();
+        println!("info: Installing IP {} ...", &ip_spec);
 
         // perform sha256 on the temporary cloned directory 
         let checksum = Ip::compute_checksum(&dest);
@@ -128,17 +144,17 @@ impl Install {
             if force == true {
                 std::fs::remove_dir_all(&cache_slot)?;
             } else {
-                // verify the installed version is valid
-                if let Some(sha) = Ip::read_checksum_proof(&cache_slot) {
-                    // recompute the checksum on the cache installation
-                    if sha == Ip::compute_checksum(&cache_slot) {
-                        return Err(AnyError(format!("ip '{}' as version '{}' is already installed", target, version)))?
-                    }
-                }
-                println!("info: Reinstalling ip '{}' as version '{}' due to bad checksum", target, version);
+                // ip is already installed
+                if Self::is_checksum_good(&cache_slot) == true {
+                    // clean up the temporary directory ourself
+                    fs::remove_dir_all(dest)?;
+                    return Ok(false)
+                } else {
+                    println!("info: Reinstalling IP {} due to bad checksum ...", ip_spec);
 
-                // blow directory up for re-install
-                std::fs::remove_dir_all(&cache_slot)?;
+                    // blow directory up for re-install
+                    std::fs::remove_dir_all(&cache_slot)?;
+                }
             }
         }
         // copy contents into cache slot from temporary destination
@@ -150,13 +166,17 @@ impl Install {
         // write the checksum to the directory (this file is excluded from auditing)
         std::fs::write(&cache_slot.join(ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
         
-        Ok(())
+        Ok(true)
     }
 
-    fn run(&self, src: &PathBuf, catalog: &Catalog) -> Result<(), Fault> {
-        // @todo: check if there is a potential lockfile to use
-        let ip = Ip::load(src.clone())?;
+    fn run(&self, target: &Ip, catalog: &Catalog) -> Result<(), Fault> {
+        let result = Self::install(&target, &catalog.get_cache_path(), self.force)?;
 
+        if result == false {
+            println!("info: IP {} is already installed", target.get_man().get_ip().into_ip_spec());
+        }
+
+        Ok(())
         // store results from expensive computations into specific orbit files
 
         // print download list for top-level package
@@ -171,10 +191,6 @@ impl Install {
         // todo!();
         
         // @todo: check lockfile to process installing any IP that may be already downloaded to the queue
-        
-        if ip.get_lock().is_empty() == true {
-            panic!("must have a lockfile before installing, be sure to run orbit plan")
-        }
 
         // verify each requirement for the IP is also installed (o.w. install)
         
@@ -183,9 +199,6 @@ impl Install {
         //     Self::install_from_lock_file(&self, &lock, &catalog)?;
         // }
         // if the lockfile is invalid, then it will only install the current request and zero dependencies
-        
-        let _ = Self::install(&ip, &catalog.get_cache_path(), self.force)?;
-        Ok(())
     }
 }
 

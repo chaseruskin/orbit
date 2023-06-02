@@ -146,6 +146,7 @@ impl Command<Context> for Plan {
     }
 }
 
+
 pub fn download_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog, protocols: &ProtocolMap) -> Result<(), Fault> {
     // fetch all non-downloaded packages
     for entry in lf.inner() {
@@ -158,10 +159,17 @@ pub fn download_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog, p
 
         match catalog.inner().get(entry.get_name()) {
             Some(status) => {
-                match status.get(&ver, true) {
-                    Some(_) => (),
+                match status.get_install(&ver) {
+                    Some(dep) => {
+                         // verify the checksum
+                        if Install::is_checksum_good(&dep.get_root()) == false {
+                            println!("info: Redownloading IP {} due to bad checksum ...", dep.get_man().get_ip().into_ip_spec());
+                            require_download = true;
+                        }
+                    },
                     None => {
-                        match status.get(&ver, false) {
+                        match status.get_queue(&ver) {
+                            // already exists in the queue
                             Some(_) => (),
                             // does not exist in the queue
                             None => {
@@ -181,10 +189,10 @@ pub fn download_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog, p
             match entry.get_source() {
                 Some(src) => {
                     // fetch from the internet
-                    Download::download(&entry.to_ip_spec(), src, catalog.get_queue_path(), &protocols, false, false)?;
+                    Download::download(&entry.to_ip_spec(), src, catalog.get_queue_path(), &protocols, false, true)?;
                 },
                 None => {
-                    return Err(AnyError(format!("unable to fetch ip {} from the internet due to missing source", entry.to_ip_spec())))?;
+                    return Err(AnyError(format!("unable to fetch IP {} from the internet due to missing source", entry.to_ip_spec())))?;
                 },
             }
         }
@@ -205,13 +213,25 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
         match catalog.inner().get(entry.get_name()) {
             Some(status) => {
                 // find this IP to read its dependencies
-                match status.get(&ver, true) {
+                match status.get_install(&ver) {
                     // no action required (already installed)
-                    Some(_) => (),
+                    Some(dep) => {
+                        // verify the checksum
+                        if Install::is_checksum_good(&dep.get_root()) == false {
+                            if let Some(dl_dep) = status.get_queue(&ver) {
+                                Install::install(dl_dep, catalog.get_cache_path(), true)?;
+                                // remove from queue
+                                fs::remove_dir_all(dl_dep.get_root())?;
+                            } else {
+                                // failed to get the install from the queue
+                                panic!("entry is not queued for installation (missing download)")
+                            }
+                        } 
+                    },
                     // install
                     None => {
                         // check the queue for installation
-                        match status.get(&ver, false) {
+                        match status.get_queue(&ver) {
                             Some(dep) => {
                                 Install::install(dep, catalog.get_cache_path(), false)?;
                                 // remove from queue

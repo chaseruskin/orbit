@@ -1,4 +1,4 @@
-use std::{str::FromStr, path::{PathBuf}, collections::HashMap};
+use std::{str::FromStr, path::PathBuf};
 use crate::core::{pkgid::PkgPart, version::{Version, AnyVersion, self}};
 use crate::core::v2::{ip::IpSpec, catalog::CacheSlot};
 
@@ -71,7 +71,7 @@ impl LockFile {
     }
 
     /// Creates a lockfile from a build list.
-    pub fn from_build_list(build_list: &mut Vec<&Ip>) -> Self {
+    pub fn from_build_list(build_list: &mut Vec<&Ip>, root: &Ip) -> Self {
         // sort the build list by pkgid and then version
         build_list.sort_by(|&x, &y| { match x.get_man().get_ip().get_name().cmp(y.get_man().get_ip().get_name()) {
             std::cmp::Ordering::Less => std::cmp::Ordering::Less,
@@ -81,7 +81,7 @@ impl LockFile {
 
         Self {
             ip: build_list.into_iter()
-                .map(|ip| LockEntry::from(*ip))
+                .map(|ip| LockEntry::from((*ip, *ip == root)))
                 .collect()
         }
     }
@@ -130,17 +130,19 @@ pub struct LockEntry {
     dependencies: Vec<IpSpec>,
 }
 
-impl From<&Ip> for LockEntry {
-    fn from(ip: &Ip) -> Self {
+impl From<(&Ip, bool)> for LockEntry {
+    fn from(ip: (&Ip, bool)) -> Self {
+        let is_root = ip.1;
+        let ip = ip.0;
         Self {
             name: ip.get_man().get_ip().get_name().clone(), 
             version: ip.get_man().get_ip().get_version().clone(), 
             sum: Some(Ip::read_checksum_proof(ip.get_root()).unwrap_or(Ip::compute_checksum(ip.get_root()))), 
             source: ip.get_man().get_ip().get_source().cloned(),
-            dependencies: match ip.get_man().get_deps().as_ref().unwrap_or(&HashMap::new()).len() {
+            dependencies: match ip.get_man().get_deps_list(is_root).len() {
                 0 => Vec::new(),
                 _ => {
-                    let mut result: Vec<IpSpec> = ip.get_man().get_deps().as_ref().unwrap()
+                    let mut result: Vec<IpSpec> = ip.get_man().get_deps_list(is_root)
                         .into_iter()
                         .map(|e| { IpSpec::new(e.0.clone(), e.1.clone()) })
                         .collect();

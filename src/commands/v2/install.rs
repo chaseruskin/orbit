@@ -54,6 +54,8 @@ impl FromCli for Install {
     }
 }
 
+use crate::core::v2::algo;
+
 impl Command<Context> for Install {
     type Status = OrbitResult;
 
@@ -74,7 +76,7 @@ impl Command<Context> for Install {
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
         if target.can_use_lock() == true && self.force == false {
-            let le = LockEntry::from(&target);
+            let le = LockEntry::from((&target, true));
             let lf = target.get_lock();
             
             plan::download_missing_deps(&lf, &le, &catalog, &c.get_config().get_protocols())?;
@@ -89,6 +91,12 @@ impl Command<Context> for Install {
                 .installations(c.get_cache_path())?
                 .queue(c.get_queue_path())?;
         }
+        // generate lock file if it is missing
+        if target.lock_exists() == false {
+            // build entire ip graph and resolve with dynamic symbol transformation
+            let ip_graph = algo::compute_final_ip_graph(&target, &catalog)?;
+            Plan::write_lockfile(&target, &ip_graph, true)?;
+        }
         // install the top-level target
         self.run(&target, &catalog)
     }
@@ -96,6 +104,8 @@ impl Command<Context> for Install {
 
 use crate::core::v2::lockfile::LockEntry;
 use crate::commands::v2::plan;
+
+use super::plan::Plan;
 
 impl Install {
 

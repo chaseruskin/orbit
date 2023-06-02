@@ -81,62 +81,62 @@ fn graph_ip<'a>(root: &'a Ip, catalog: &'a Catalog<'a>) -> Result<GraphMap<IpSpe
     let mut is_root: bool = true;
 
     while let Some((num, ip)) = processing.pop() {
+        // load dependencies from manifest
+        let reqs = ip.get_man().get_deps_list(is_root);
         // read dependencies
-        if let Some(deps) = ip.get_man().get_deps().as_ref() {
-            for (pkgid, version) in deps {
-                match catalog.inner().get(pkgid) {
-                    Some(status) => {
-                        // find this IP to read its dependencies
-                        match status.get_install(&AnyVersion::from(version)) {
-                            Some(dep) => {
-                                // check if node is already in graph ????
-                                let s = if let Some(existing_node) = g.get_node_by_key(&dep.get_man().get_ip().into_ip_spec()) {
-                                    existing_node.index()
-                                } else {
-                                    // check if identifiers are already taken in graph
-                                    let units = Ip::collect_units(false, dep.get_root())?;
-                                    let dst = if let Some(dupe) = units
-                                            .iter()
-                                            .find(|(key, _)| iden_set.contains_key(key)) {
-                                        let dupe = iden_set.get(dupe.0).unwrap();
-                                        if is_root == true {
-                                            return Err(VhdlIdentifierError::DuplicateAcrossDirect(
-                                                dupe.get_iden().clone(), 
-                                                dep.get_man().get_ip().into_ip_spec(),
-                                                PathBuf::from(dupe.get_unit().get_source_code_file().clone()),
-                                                dupe.get_unit().get_symbol().unwrap().get_position().clone()
-                                            ))?
-                                        }
-                                        true
-                                    } else {
-                                        false
-                                    };
-                                    // update the hashset with the new unique non-taken identifiers
-                                    if dst == false {
-                                        for (key, unit) in units {
-                                            iden_set.insert(key, unit);
-                                        }
+        for (pkgid, version) in reqs {
+            match catalog.inner().get(pkgid) {
+                Some(status) => {
+                    // find this IP to read its dependencies
+                    match status.get_install(&AnyVersion::from(version)) {
+                        Some(dep) => {
+                            // check if node is already in graph ????
+                            let s = if let Some(existing_node) = g.get_node_by_key(&dep.get_man().get_ip().into_ip_spec()) {
+                                existing_node.index()
+                            } else {
+                                // check if identifiers are already taken in graph
+                                let units = Ip::collect_units(false, dep.get_root())?;
+                                let dst = if let Some(dupe) = units
+                                        .iter()
+                                        .find(|(key, _)| iden_set.contains_key(key)) {
+                                    let dupe = iden_set.get(dupe.0).unwrap();
+                                    if is_root == true {
+                                        return Err(VhdlIdentifierError::DuplicateAcrossDirect(
+                                            dupe.get_iden().clone(), 
+                                            dep.get_man().get_ip().into_ip_spec(),
+                                            PathBuf::from(dupe.get_unit().get_source_code_file().clone()),
+                                            dupe.get_unit().get_symbol().unwrap().get_position().clone()
+                                        ))?
                                     }
-                                    let lib = match dep.get_man().get_ip().get_library().as_ref() {
-                                        Some(l) => Identifier::from(l),
-                                        None => Identifier::new_working(),
-                                    };
-                                    g.add_node(dep.get_man().get_ip().into_ip_spec(), match dst { true => IpNode::new_alter(dep, lib), false => IpNode::new_keep(dep, lib) })
+                                    true
+                                } else {
+                                    false
                                 };
-                                g.add_edge_by_index(s, num, ());
-                                processing.push((s, dep));
-                            },
-                            // todo: try to use the lock file to fill in missing pieces
-                            None => return Err(AnyError(format!("IP {} is not installed", IpSpec::from((pkgid.clone(), version.clone())))))?,
-                        }
-                    },
-                    // todo: try to use the lock file to fill in missing pieces
-                    // @TODO: check the queue for this IP and attempt to install
-                    None => return Err(AnyError(format!("unknown IP {}", IpSpec::from((pkgid.clone(), version.clone())))))?,
-                }
+                                // update the hashset with the new unique non-taken identifiers
+                                if dst == false {
+                                    for (key, unit) in units {
+                                        iden_set.insert(key, unit);
+                                    }
+                                }
+                                let lib = match dep.get_man().get_ip().get_library().as_ref() {
+                                    Some(l) => Identifier::from(l),
+                                    None => Identifier::new_working(),
+                                };
+                                g.add_node(dep.get_man().get_ip().into_ip_spec(), match dst { true => IpNode::new_alter(dep, lib), false => IpNode::new_keep(dep, lib) })
+                            };
+                            g.add_edge_by_index(s, num, ());
+                            processing.push((s, dep));
+                        },
+                        // todo: try to use the lock file to fill in missing pieces
+                        None => return Err(AnyError(format!("IP {} is not installed", IpSpec::from((pkgid.clone(), version.clone())))))?,
+                    }
+                },
+                // todo: try to use the lock file to fill in missing pieces
+                // @TODO: check the queue for this IP and attempt to install
+                None => return Err(AnyError(format!("unknown IP {}", IpSpec::from((pkgid.clone(), version.clone())))))?,
             }
-            is_root = false;
         }
+        is_root = false;
     }
     // println!("{:?}", iden_set);
     Ok(g)

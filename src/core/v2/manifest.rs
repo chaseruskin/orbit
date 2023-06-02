@@ -6,21 +6,18 @@ use std::path::PathBuf;
 use std::fmt::Display;
 use crate::core::pkgid::PkgPart;
 use std::error::Error;
-// use crate::util::url::Url;
 use crate::core::v2::source::Source;
 
 pub type Id = PkgPart;
 pub type Version = crate::core::version::Version;
-// pub type Source = String;
+
 use crate::core::v2::ip::IpSpec;
 use crate::util::anyerror::{Fault, AnyError};
+
 type Dependencies = HashMap<Id, Version>;
 
-type Deps = Option<Dependencies>;
-type DevDeps = Option<Dependencies>;
-
 pub const IP_MANIFEST_FILE: &str = "Orbit.toml";
-pub const IP_MANIFEST_PATTERN_FILE : &str = "Orbit-*.toml";
+// pub const IP_MANIFEST_PATTERN_FILE : &str = "Orbit-*.toml";
 pub const ORBIT_SUM_FILE: &str = ".orbit-checksum";
 pub const ORBIT_METADATA_FILE: &str = ".orbit-metadata";
 
@@ -29,9 +26,10 @@ const DEPENDENCIES_KEY: &str = "dependencies";
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 pub struct Manifest {
     ip: Package,
-    dependencies: Deps,
-    #[serde(rename = "dev-dependencies")]
-    dev_dependencies: DevDeps,
+    #[serde(default)]
+    dependencies: Dependencies,
+    #[serde(rename = "dev-dependencies", default)]
+    dev_dependencies: Dependencies,
 }
 
 pub trait FromFile: FromStr where Self: Sized, <Self as std::str::FromStr>::Err: 'static + Error {
@@ -48,13 +46,18 @@ impl FromFile for Manifest {
         // open file
         let contents = std::fs::read_to_string(&path)?;
         // parse toml syntax
-        match Self::from_str(&contents) {
-            Ok(r) => Ok(r),
+        let man = match Self::from_str(&contents) {
+            Ok(r) => r,
             // enter a blank lock file if failed (do not exit)
             Err(e) => {
                 return Err(AnyError(format!("failed to parse {} file: {}", IP_MANIFEST_FILE, e)))?
             }
+        };
+        // verify there are no duplicate entries between tables
+        if let Some(e) = man.is_deps_valid().err() {
+            return Err(AnyError(format!("failed to parse {} file: {}", IP_MANIFEST_FILE, e)))?
         }
+        Ok(man)
     }
 }
 
@@ -77,8 +80,8 @@ impl Manifest {
                 library: None,
                 summary: None,
             },
-            dependencies: Some(Dependencies::new()),
-            dev_dependencies: None,
+            dependencies: Dependencies::new(),
+            dev_dependencies: Dependencies::new(),
         }
     }
 
@@ -98,8 +101,43 @@ version = "0.1.0"
         &self.ip
     }
 
-    pub fn get_deps(&self) -> &Deps {
+    /// Returns the list of dependencies found only under the "dependencies"
+    /// table.
+    pub fn get_deps(&self) -> &Dependencies {
         &self.dependencies
+    }
+
+    // /// Prints to the console to inform the user about conflicting dependencies
+    // /// between the dev and regular table.
+    // pub fn report_overriden_deps(&self) -> () {
+
+    // }
+
+    pub fn is_deps_valid(&self) -> Result<(), AnyError> {
+        for (key, _) in &self.dependencies {
+            if let Some(_) = self.dev_dependencies.get(key) {
+                return Err(AnyError(format!("duplicate key '{}' in [dependencies] and [dev-dependencies]", key)));
+                // println!("{}: Dependency {} is used instead of dev-dependency {}", 
+                //     "warning".yellow().bold(), 
+                //     IpSpec::from((key.clone(), val.clone())), 
+                //     IpSpec::from((key.clone(), rep.clone())),
+                // )
+            }
+        }
+        Ok(())
+    }
+
+    /// Returns the list of dependencies found under "dependencies" and
+    /// "dev-dependencies".
+    pub fn get_deps_list(&self, include_dev: bool) -> Vec<(&PkgPart, &Version)> {
+        let mut result = Vec::with_capacity(
+            self.dependencies.len() + match include_dev { 
+                true => self.dev_dependencies.len(), 
+                false => 0 
+            });
+        if include_dev == true { result.extend(self.dev_dependencies.iter()); }
+        result.extend(self.dependencies.iter());
+        result
     }
 }
 
@@ -208,8 +246,8 @@ mod test {
             assert_eq!(man.ip.name, PkgPart::from_str("Lab1").unwrap());
             assert_eq!(man.ip.version, Version::new().major(1));
             assert_eq!(man.ip.get_source(), None);
-            assert_eq!(man.dependencies, None);
-            assert_eq!(man.dev_dependencies, None);
+            assert_eq!(man.dependencies, HashMap::new());
+            assert_eq!(man.dev_dependencies, HashMap::new());
         }
 
         #[test]
@@ -218,8 +256,8 @@ mod test {
     
             assert_eq!(man.ip.name, PkgPart::from_str("gates").unwrap());
             assert_eq!(man.ip.get_source(), Some(&Source::from_str("https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip").unwrap()));
-            assert_eq!(man.dependencies.unwrap().len(), 1);
-            assert_eq!(man.dev_dependencies.unwrap().len(), 2);
+            assert_eq!(man.dependencies.len(), 1);
+            assert_eq!(man.dev_dependencies.len(), 2);
             assert_eq!(man.ip.library, Some(PkgPart::from_str("common").unwrap()));
         }
 

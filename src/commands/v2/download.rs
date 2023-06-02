@@ -103,7 +103,7 @@ impl Command<Context> for Download {
         // default behavior is to print out to console
         let to_stdout = self.list == true;
 
-        let downloads =  Self::compile_download_list(&LockEntry::from(&ip), ip.get_lock(), &catalog, missing_only);
+        let downloads =  Self::compile_download_list(&LockEntry::from((&ip, true)), ip.get_lock(), &catalog, missing_only);
         // print to console
         if to_stdout == true {
             downloads.iter().for_each(|(_, src)| println!("{}", src));

@@ -24,8 +24,6 @@ chrono = "0.4"
 colored = "2"
 toml_edit = "0.19" # @todo: remove
 
-url = "2.2"
-
-# git2 = "0.14" # removed for future releases
+url = "2.2.2"
 
 # ssh2 = "0.9.3" # @todo: integrate

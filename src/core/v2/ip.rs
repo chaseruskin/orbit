@@ -125,9 +125,14 @@ impl Ip {
     pub fn can_use_lock(&self) -> bool {
         let target = self.get_lock().get(self.get_man().get_ip().get_name(), self.get_man().get_ip().get_version());
         match target {
-            Some(entry) => entry.matches_target(&LockEntry::from(self)),
+            Some(entry) => entry.matches_target(&LockEntry::from((self, true))),
             None => false,
         }
+    }
+
+    /// Checks if the lockfile exists
+    pub fn lock_exists(&self) -> bool {
+        self.lock.is_empty() == false
     }
 
     /// Computes the checksum on the root of the IP.

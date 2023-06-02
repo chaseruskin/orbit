@@ -120,7 +120,7 @@ impl Command<Context> for Plan {
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
         if target.can_use_lock() == true && self.force == false {
-            let le = LockEntry::from(&target);
+            let le: LockEntry = LockEntry::from((&target, true));
             let lf = target.get_lock();
             
             download_missing_deps(&lf, &le, &catalog, &c.get_config().get_protocols())?;
@@ -145,7 +145,6 @@ impl Command<Context> for Plan {
         self.run(target, b_dir, plugin, catalog)
     }
 }
-
 
 pub fn download_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog, protocols: &ProtocolMap) -> Result<(), Fault> {
     // fetch all non-downloaded packages
@@ -252,7 +251,6 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
     Ok(())
 }
 
-// use crate::core::lang::vhdl::symbol;
 use crate::util::anyerror::AnyError;
 use crate::core::fileset;
 
@@ -427,7 +425,7 @@ impl Plan {
 
     /// Writes the lockfile according to the constructed `ip_graph`. Only writes if the lockfile is
     /// out of date or `force` is `true`.
-    fn write_lockfile(target: &Ip, ip_graph: &GraphMap<IpSpec, IpNode, ()>, force: bool) -> Result<(), Fault> {
+    pub fn write_lockfile(target: &Ip, ip_graph: &GraphMap<IpSpec, IpNode, ()>, force: bool) -> Result<(), Fault> {
         // only modify the lockfile if it is out-of-date
         if target.can_use_lock() == false || force == true { 
             // create build list
@@ -435,7 +433,7 @@ impl Plan {
                 .iter()
                 .map(|p| { p.1.as_ref().as_original_ip() })
                 .collect();
-            let lock = LockFile::from_build_list(&mut build_list);
+            let lock = LockFile::from_build_list(&mut build_list, target);
             lock.save_to_disk(target.get_root())?;
         }
         Ok(())
@@ -686,7 +684,10 @@ impl Plan {
                 // determine which point is the upmost root 
                 let highest_point = match bench {
                     Some(b) => b,
-                    None => top.unwrap()
+                    None => match top {
+                        Some(t) => t,
+                        None => return Err(AnyError(format!("No top-level unit exists")))?
+                    }
                 };
                 global_graph.get_graph().minimal_topological_sort(highest_point)
             }

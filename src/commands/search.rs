@@ -55,7 +55,7 @@ impl Search {
             // filter by name if user entered a pkgid to search
             .filter(|(key, _)| {
                 match &self.ip {
-                    Some(pkgid) => &pkgid == key,
+                    Some(pkgid) => key.to_string().contains(pkgid.as_ref()),
                     None => true,
                 }
             })

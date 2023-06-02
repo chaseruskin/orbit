@@ -318,6 +318,58 @@ impl Serialize for IpSpec {
     }
 }
 
+use crate::core::version::AnyVersion;
+
+#[derive(Debug, PartialEq)]
+pub struct PartialIpSpec(PkgPart, AnyVersion);
+
+impl PartialIpSpec {
+    pub fn new() -> Self {
+        Self(PkgPart::new(), AnyVersion::Latest)
+    }
+
+    pub fn get_name(&self) -> &PkgPart {
+        &self.0
+    }
+
+    pub fn get_version(&self) -> &AnyVersion {
+        &self.1
+    }
+}
+
+impl FromStr for PartialIpSpec {
+    type Err = AnyError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.rsplit_once(SPEC_DELIM) {
+            // split by delimiter (beginning from rhs)
+            Some((n, v)) => Ok(Self(
+                match PkgPart::from_str(n) {
+                    Ok(p) => p, 
+                    Err(e) => return Err(AnyError(e.to_string())),
+                },
+                match AnyVersion::from_str(v) {
+                    Ok(w) => w, 
+                    Err(e) => return Err(AnyError(e.to_string())),
+                }
+            )),
+            // take entire string as name and refer to latest version
+            None => Ok(Self(
+                match PkgPart::from_str(s) {
+                    Ok(p) => p, 
+                    Err(e) => return Err(AnyError(e.to_string())),
+                }, 
+                AnyVersion::Latest
+            )),
+        }
+    }
+}
+
+impl std::fmt::Display for PartialIpSpec {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}{}", self.get_name(), SPEC_DELIM, self.get_version())
+    }
+}
 
 #[cfg(test)]
 mod test {

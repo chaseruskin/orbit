@@ -3,11 +3,11 @@ use std::path::PathBuf;
 
 use colored::Colorize;
 use clif::cmd::{FromCli, Command};
+use crate::core::v2::ip::PartialIpSpec;
 use crate::core::v2::manifest::FromFile;
 use crate::core::lang::parser::Symbol;
 use crate::core::v2::manifest::IP_MANIFEST_FILE;
 use crate::core::v2::manifest::Manifest;
-use crate::core::version::AnyVersion;
 use crate::core::version::Version;
 use crate::core::lang::vhdl::interface;
 use crate::core::lang::vhdl::primaryunit::VhdlIdentifierError;
@@ -26,12 +26,11 @@ use crate::core::v2::catalog::Catalog;
 #[derive(Debug, PartialEq)]
 pub struct Get {
     unit: Identifier,
-    ip: Option<PkgPart>,
+    ip: Option<PartialIpSpec>,
     signals: bool,
     component: bool,
     instance: bool,
     architectures: bool,
-    version: Option<AnyVersion>,
     info: bool,
     name: Option<Identifier>,
 }
@@ -44,9 +43,8 @@ impl FromCli for Get {
             component: cli.check_flag(Flag::new("component").switch('c'))?,
             instance: cli.check_flag(Flag::new("instance").switch('i'))?,
             architectures: cli.check_flag(Flag::new("architecture").switch('a'))?,
-            version: cli.check_option(Optional::new("variant").switch('v').value("version"))?,
             info: cli.check_flag(Flag::new("info"))?, // @todo: implement
-            ip: cli.check_option(Optional::new("ip").value("name"))?,
+            ip: cli.check_option(Optional::new("ip").value("spec"))?,
             name: cli.check_option(Optional::new("name").value("identifier"))?,
             unit: cli.require_positional(Positional::new("unit"))?,
         });
@@ -77,13 +75,13 @@ impl Command<Context> for Get {
             .installations(c.get_cache_path())?;
 
         // try to auto-determine the ip (check if in a working ip)
-        let ip_path = if let Some(name) = &self.ip {
+        let ip_path = if let Some(spec) = &self.ip {
             // @todo: find the path to the provided ip by searching through the catalog
-            if let Some(lvl) = catalog.inner().get(name) {
-                if let Some(slot) = lvl.get(&AnyVersion::Latest, true) {
+            if let Some(lvl) = catalog.inner().get(spec.get_name()) {
+                if let Some(slot) = lvl.get_install(spec.get_version()) {
                     slot.get_root().clone()
                 } else {
-                    return Err(AnyError(format!("the requested ip is not installed")))?
+                    return Err(AnyError(format!("IP {} does not exist in the cache", spec)))?
                 }
             } else {
                 return Err(AnyError(format!("no ip found in cache")))?
@@ -260,19 +258,18 @@ Args:
     <unit>                  entity identifier
 
 Options:
-    --ip <pkgid>            ip to reference unit from
-    --variant, -v <version> ip version to use
+    --ip <spec>             ip to reference unit from
     --component, -c         print component declaration
     --signals,   -s         print signal declarations
     --instance,  -i         print instantation
     --info                  access code file's header comment
     --architecture, -a      print available architectures
-    --add                   add the ip to the Orbit.toml dependency table
     --name <identifier>     specific instance identifier
 
 Use 'orbit help get' to learn more about the command.
 ";
 
+//  --add                   add dependency to Orbit.toml table
 
 // #[cfg(test)]
 // mod test {

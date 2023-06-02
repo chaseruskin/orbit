@@ -1,8 +1,7 @@
 use std::env::current_dir;
 use crate::OrbitResult;
 use clif::cmd::{FromCli, Command};
-use crate::core::pkgid::PkgPart;
-use crate::core::version::{AnyVersion, self};
+use crate::core::version;
 use crate::core::lang::vhdl::primaryunit::PrimaryUnit;
 use clif::Cli;
 use clif::arg::{Flag, Optional};
@@ -10,15 +9,14 @@ use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
-use crate::core::v2::ip::Ip;
+use crate::core::v2::ip::{Ip, PartialIpSpec};
 use crate::core::v2::catalog::Catalog;
 
 #[derive(Debug, PartialEq)]
 pub struct Show {
-    ip: Option<PkgPart>,
+    ip: Option<PartialIpSpec>,
     tags: bool,
     units: bool,
-    version: Option<AnyVersion>,
 }
 
 impl FromCli for Show {
@@ -27,8 +25,7 @@ impl FromCli for Show {
         let command = Ok(Show {
             tags: cli.check_flag(Flag::new("versions"))?,
             units: cli.check_flag(Flag::new("units"))?,
-            version: cli.check_option(Optional::new("ver").switch('v').value("version"))?,
-            ip: cli.check_option(Optional::new("ip").value("name"))?,
+            ip: cli.check_option(Optional::new("ip").value("spec"))?,
         });
         command
     }
@@ -44,15 +41,14 @@ impl Command<Context> for Show {
             .installations(c.get_cache_path())?;
 
         // try to auto-determine the ip (check if in a working ip)
-        let ip_path: std::path::PathBuf = if let Some(name) = &self.ip {
+        let ip_path: std::path::PathBuf = if let Some(spec) = &self.ip {
             // find the path to the provided ip by searching through the catalog
-            if let Some(lvl) = catalog.inner().get(name) {
+            if let Some(lvl) = catalog.inner().get(spec.get_name()) {
                 // return the highest available version
-                let spec_ver = self.version.as_ref().unwrap_or(&AnyVersion::Latest);
-                if let Some(slot) = lvl.get(spec_ver, true) {
+                if let Some(slot) = lvl.get( spec.get_version(), true) {
                     slot.get_root().clone()
                 } else {
-                    return Err(AnyError(format!("the requested ip is not installed")))?
+                    return Err(AnyError(format!("IP {} does not exist in the cache", spec)))?
                 }
             } else {
                 return Err(AnyError(format!("no ip found in cache")))?
@@ -78,6 +74,8 @@ impl Command<Context> for Show {
 
         // display all installed versions in the cache
         if self.tags == true {
+            let specified_ver = self.ip.as_ref().unwrap().get_version().as_specific(); 
+
             return match catalog.get_possible_versions(ip.get_man().get_ip().get_name()) {
                 Some(vers) => {
                     match vers.len() {
@@ -85,7 +83,7 @@ impl Command<Context> for Show {
                         _ => {
                             // further restrict versions if a particular version is set
                             vers.iter()
-                                .filter(move |p| self.version.is_none() == true || version::is_compatible(self.version.as_ref().unwrap().as_specific().unwrap(), &p) == true)
+                                .filter(move |p| specified_ver.is_none() || version::is_compatible(specified_ver.unwrap(), &p) == true)
                                 .for_each(|v| {
                                     println!("{}", v);
                                 });
@@ -136,9 +134,8 @@ Usage:
     orbit show [options]
 
 Options:
-    --ip <name>                 the package to request data about
+    --ip <spec>                 the package to request data about
     --versions                  display the list of possible versions
-    --ver, -v <version>         select a particular existing ip version
     --units                     display primary design units within an ip
 
 

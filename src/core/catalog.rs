@@ -117,7 +117,7 @@ impl IpLevel {
     /// Note: `usable` to `false` will not check available state
     pub fn get(&self, version: &AnyVersion, usable: bool) -> Option<&IpManifest> {
         match version {
-            AnyVersion::Dev => self.get_dev(),
+            // AnyVersion::Dev => self.get_dev(),
             _ => {
                 match self.get_install(version) {
                     Some(ip) => Some(ip),
@@ -156,7 +156,6 @@ impl IpLevel {
             .filter(|ip| match &target {
                 AnyVersion::Specific(v) => crate::core::version::is_compatible(v, ip.get_version()),
                 AnyVersion::Latest => true,
-                _ => panic!("dev version cannot be filtered")
             })
             .for_each(|ip| {
                 if latest_version.is_none() || ip.get_version() > latest_version.as_ref().unwrap().get_version() {

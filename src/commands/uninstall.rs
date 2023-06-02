@@ -51,14 +51,9 @@ impl Command<Context> for Uninstall {
         };
 
         // grab the ip's manifest
-        let target = match &self.version {
-            AnyVersion::Dev => {
-                panic!("unsupported")
-            },
-            _ => match status.get_install(&self.version) {
+        let target = match status.get_install(&self.version) {
                 Some(t) => t,
                 None => return Err(AnyError(format!("ip '{}' is not installed to the cache under version '{}'", self.ip, self.version)))?
-            }
         };
 
         // delete the project

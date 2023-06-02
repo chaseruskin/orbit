@@ -41,7 +41,6 @@ pub fn get_target_version<'a>(ver: &AnyVersion, space: &'a Vec<&Version>) -> Res
     .filter(|f| match &ver {
         AnyVersion::Specific(v) => crate::core::version::is_compatible(v, f),
         AnyVersion::Latest => true,
-        _ => panic!("dev version cannot be filtered")
     })
     .for_each(|tag| {
         if latest_version.is_none() || *tag > latest_version.as_ref().unwrap() {
@@ -59,7 +58,6 @@ To see all versions try `orbit probe <ip> --versions`", ver))),
 
 #[derive(Debug, Eq, Clone, PartialEq, Ord, PartialOrd)]
 pub enum AnyVersion {
-    Dev,
     Specific(PartialVersion),
     Latest,
 }
@@ -67,7 +65,6 @@ pub enum AnyVersion {
 impl std::fmt::Display for AnyVersion {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Dev => write!(f, "dev"),
             Self::Latest => write!(f, "latest"),
             Self::Specific(v) => write!(f, "{}", v),
         }
@@ -79,8 +76,6 @@ impl std::str::FromStr for AnyVersion {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if crate::util::strcmp::cmp_ascii_ignore_case(s, "latest") {
             Ok(Self::Latest)
-        } else if crate::util::strcmp::cmp_ascii_ignore_case(s, "dev") {
-            Ok(Self::Dev)
         } else {    
             Ok(Self::Specific(PartialVersion::from_str(s)?))
         }
@@ -93,10 +88,6 @@ impl AnyVersion {
             Self::Specific(v) => Some(v),
             _ => None,
         }
-    }
-
-    pub fn is_dev(&self) -> bool {
-        self == &Self::Dev
     }
 
     pub fn is_latest(&self) -> bool {

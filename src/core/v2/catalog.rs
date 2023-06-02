@@ -118,14 +118,9 @@ impl IpLevel {
     /// for in the availability space.
     /// Note: `usable` to `false` will not check queued state
     pub fn get(&self, version: &AnyVersion, usable: bool) -> Option<&Ip> {
-        match version {
-            AnyVersion::Dev => self.get_dev(),
-            _ => {
-                match self.get_install(version) {
-                    Some(ip) => Some(ip),
-                    None => if usable == false { self.get_queue(version) } else { None }
-                }
-            }
+        match self.get_install(version) {
+            Some(ip) => Some(ip),
+            None => if usable == false { self.get_queue(version) } else { None }
         }
     }
 
@@ -158,7 +153,6 @@ impl IpLevel {
             .filter(|ip| match &target {
                 AnyVersion::Specific(v) => crate::core::version::is_compatible(v, ip.get_man().get_ip().get_version()),
                 AnyVersion::Latest => true,
-                _ => panic!("dev version cannot be filtered")
             })
             .for_each(|ip| {
                 if latest_version.is_none() || ip.get_man().get_ip().get_version() > latest_version.as_ref().unwrap().get_man().get_ip().get_version() {

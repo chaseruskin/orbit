@@ -40,6 +40,7 @@ pub struct Install {
     path: PathBuf,
     force: bool,
     deps_only: bool,
+    all: bool,
 }
 
 impl FromCli for Install {
@@ -48,6 +49,7 @@ impl FromCli for Install {
         let command = Ok(Install {
             force: cli.check_flag(Flag::new("force"))?,
             deps_only: cli.check_flag(Flag::new("deps"))?,
+            all: cli.check_flag(Flag::new("all"))?,
             path: cli.check_option(Optional::new("path"))?.unwrap_or(PathBuf::from(".")),
         });
         command
@@ -55,6 +57,7 @@ impl FromCli for Install {
 }
 
 use crate::core::v2::algo;
+use crate::core::v2::lockfile::LockFile;
 
 impl Command<Context> for Install {
     type Status = OrbitResult;
@@ -77,7 +80,23 @@ impl Command<Context> for Install {
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
         if target.can_use_lock() == true && self.force == false {
             let le = LockEntry::from((&target, true));
-            let lf = target.get_lock();
+
+            let lf = {
+                let lf = target.get_lock().clone();
+                // find the dev-deps and remove them from the lockfile data
+                let entries: Vec<LockEntry> = match self.all {
+                    // install dev-deps anyway
+                    true => lf.unwrap(),
+                    // do not install dev-deps (filter them out)
+                    false => {
+                        lf.unwrap().into_iter().filter(|p| match target.get_man().get_dev_deps().get(p.get_name()) {
+                            Some(v) => if p.get_version() == v { false } else { true },
+                            None => true,
+                        }).collect()
+                    }
+                };
+                LockFile::wrap(entries)
+            };
             
             plan::download_missing_deps(&lf, &le, &catalog, &c.get_config().get_protocols())?;
             // recollect the queued items to update the catalog
@@ -222,7 +241,7 @@ Options:
     --path <path>           destination directory to install into the cache
     --ip <name>             the ip to match for install into the cache
     --force                 install regardless of cache slot occupancy
-    --compile               gather the list of necessary dependencies to download
+    --all                   install all dependencies including development
 
 Use 'orbit help install' to learn more about the command.
 ";

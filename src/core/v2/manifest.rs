@@ -107,11 +107,9 @@ version = "0.1.0"
         &self.dependencies
     }
 
-    // /// Prints to the console to inform the user about conflicting dependencies
-    // /// between the dev and regular table.
-    // pub fn report_overriden_deps(&self) -> () {
-
-    // }
+    pub fn get_dev_deps(&self) -> &Dependencies {
+        &self.dev_dependencies
+    }
 
     pub fn is_deps_valid(&self) -> Result<(), AnyError> {
         for (key, _) in &self.dependencies {

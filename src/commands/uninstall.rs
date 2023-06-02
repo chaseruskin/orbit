@@ -38,10 +38,6 @@ impl Command<Context> for Uninstall {
             .installations(c.get_cache_path())?
             .queue(c.get_queue_path())?;
 
-        // @deprec: find the target IP
-        // let ids = catalog.inner().keys().map(|f| { f }).collect();
-        // let target = crate::core::ip::find_ip(&self.ip, ids)?;
-
         // check for ip in development or installation
         let status = match catalog.inner().get(&self.ip.get_name()) {
             Some(st) => st,

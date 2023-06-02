@@ -76,7 +76,7 @@ impl Search {
         for (ip, status) in catalog {
             body.push_str(&format!("{:<28}{:<10}     {:<9}\n", 
                 ip.to_string(),
-                status.get(&AnyVersion::Latest, false).unwrap().get_man().get_ip().get_version(),
+                status.get(false, &AnyVersion::Latest).unwrap().get_man().get_ip().get_version(),
                 if status.is_installed() == true {
                     "Installed"
                 } else if status.is_queued() == true {

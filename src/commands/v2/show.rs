@@ -45,7 +45,7 @@ impl Command<Context> for Show {
             // find the path to the provided ip by searching through the catalog
             if let Some(lvl) = catalog.inner().get(spec.get_name()) {
                 // return the highest available version
-                if let Some(slot) = lvl.get( spec.get_version(), true) {
+                if let Some(slot) = lvl.get_install(spec.get_version()) {
                     slot.get_root().clone()
                 } else {
                     return Err(AnyError(format!("IP {} does not exist in the cache", spec)))?
@@ -137,7 +137,6 @@ Options:
     --ip <spec>                 the package to request data about
     --versions                  display the list of possible versions
     --units                     display primary design units within an ip
-
 
 Use 'orbit help show' to learn more about the command.
 ";

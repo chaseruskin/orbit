@@ -66,8 +66,7 @@ impl Command<Context> for Get {
         if self.name.is_some() && self.instance == false {
             return Err(AnyError(format!("'{}' can only be used with '{}'", "--name".yellow(), "--instance".yellow())))?
         }
-        // @todo: check --version can only be used with --ip (or change --ip option to tack on a version)
-
+        
         // @todo: load the catalog
         let catalog = Catalog::new()
         // .store(c.get_store_path())

@@ -87,7 +87,7 @@ fn graph_ip<'a>(root: &'a Ip, catalog: &'a Catalog<'a>) -> Result<GraphMap<IpSpe
                 match catalog.inner().get(pkgid) {
                     Some(status) => {
                         // find this IP to read its dependencies
-                        match status.get(&AnyVersion::from(version), true) {
+                        match status.get_install(&AnyVersion::from(version)) {
                             Some(dep) => {
                                 // check if node is already in graph ????
                                 let s = if let Some(existing_node) = g.get_node_by_key(&dep.get_man().get_ip().into_ip_spec()) {
@@ -127,12 +127,12 @@ fn graph_ip<'a>(root: &'a Ip, catalog: &'a Catalog<'a>) -> Result<GraphMap<IpSpe
                                 processing.push((s, dep));
                             },
                             // todo: try to use the lock file to fill in missing pieces
-                            None => return Err(AnyError(format!("ip '{} v{}' is not installed", pkgid, version)))?,
+                            None => return Err(AnyError(format!("IP {} is not installed", IpSpec::from((pkgid.clone(), version.clone())))))?,
                         }
                     },
                     // todo: try to use the lock file to fill in missing pieces
                     // @TODO: check the queue for this IP and attempt to install
-                    None => return Err(AnyError(format!("unknown ip: {}", pkgid)))?,
+                    None => return Err(AnyError(format!("unknown IP {}", IpSpec::from((pkgid.clone(), version.clone())))))?,
                 }
             }
             is_root = false;

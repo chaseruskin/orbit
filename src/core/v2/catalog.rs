@@ -15,7 +15,7 @@ pub struct Catalog<'a> {
 
 #[derive(Debug, PartialEq)]
 pub enum IpState {
-    Development,
+    Downloaded,
     Installation,
     Available,
     Unknown
@@ -24,7 +24,7 @@ pub enum IpState {
 impl std::fmt::Display for IpState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
-            Self::Development => write!(f, "development"),
+            Self::Downloaded => write!(f, "downloaded"),
             Self::Installation => write!(f, "installation"),
             Self::Available => write!(f, "available"),
             Self::Unknown => write!(f, "unknown")
@@ -117,10 +117,15 @@ impl IpLevel {
     /// first sought for in the cache installations, and if not found then searched
     /// for in the availability space.
     /// Note: `usable` to `false` will not check queued state
-    pub fn get(&self, version: &AnyVersion, usable: bool) -> Option<&Ip> {
+    pub fn get(&self, check_queue: bool, version: &AnyVersion) -> Option<&Ip> {
         match self.get_install(version) {
             Some(ip) => Some(ip),
-            None => if usable == false { self.get_queue(version) } else { None }
+            None => {
+                match check_queue {
+                    true => self.get_queue(version),
+                    false => None,
+                }
+            },
         }
     }
 
@@ -130,15 +135,11 @@ impl IpLevel {
             IpState::Installation 
         } else if self.available.iter().find(|f| f == &ip).is_some() {
             IpState::Available
-        } else if let Some(dev) = &self.dev {
-            if dev == ip {
-                IpState::Development
-            } else {
-                IpState::Unknown
-            }
+        } else if self.queue.iter().find(|f| f == &ip).is_some() {
+            IpState::Downloaded
         } else {
-                IpState::Unknown
-        }
+            IpState::Unknown
+        } 
     }
 
     /// Finds the most compatible version matching `target` among the possible `space`.

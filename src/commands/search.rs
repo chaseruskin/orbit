@@ -17,6 +17,7 @@ pub struct Search {
     ip: Option<PkgPart>,
     cached: bool,
     developing: bool,
+    queued: bool,
     available: bool,
 }
 
@@ -25,7 +26,7 @@ impl Command<Context> for Search {
 
     fn exec(&self, c: &Context) -> Self::Status {
 
-        let default = !(self.cached || self.developing || self.available);
+        let default = !(self.cached || self.developing || self.available || self.queued);
         let mut catalog = Catalog::new();
 
         // collect development IP
@@ -33,6 +34,9 @@ impl Command<Context> for Search {
         
         // collect installed IP
         if default || self.cached { catalog = catalog.installations(c.get_cache_path())?; }
+
+        // collect downloaded IP
+        if default || self.queued { catalog = catalog.queue(c.get_queue_path())?; }
 
         // collect available IP
        //  if default || self.available { catalog = catalog.available(c.get_vendors())?; }
@@ -66,16 +70,20 @@ impl Search {
     fn fmt_table(catalog: BTreeMap<&PkgPart, &IpLevel>) -> String {
         let header = format!("\
 {:<28}{:<10}{:<9}
-{3:->28}{3:->10}{3:->9}\n", 
+{3:->28}{3:->10}{3:->11}\n", 
             "Package", "Latest", "Status", " ");
         let mut body = String::new();
         for (ip, status) in catalog {
-            body.push_str(&format!("{:<28}{:<10}{:<7}{:<2}{:<2}\n", 
+            body.push_str(&format!("{:<28}{:<10}     {:<9}\n", 
                 ip.to_string(),
-                status.get(&AnyVersion::Latest, true).unwrap().get_man().get_ip().get_version(),
-                { if status.is_developing() { "D" } else { "" } },
-                { if status.is_installed() { "I" } else { "" } },
-                { if status.is_available() { "A" } else { "" } },
+                status.get(&AnyVersion::Latest, false).unwrap().get_man().get_ip().get_version(),
+                if status.is_installed() == true {
+                    "Installed"
+                } else if status.is_queued() == true {
+                    "Downloaded"
+                } else {
+                    ""
+                },
             ));
         }
         header + &body
@@ -87,8 +95,9 @@ impl FromCli for Search {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Search {
             ip: cli.check_positional(Positional::new("ip"))?,
+            queued: cli.check_flag(Flag::new("download").switch('d'))?,
             cached: cli.check_flag(Flag::new("install").switch('i'))?,
-            developing: cli.check_flag(Flag::new("develop").switch('d'))?,
+            developing: cli.check_flag(Flag::new("develop"))?,
             available: cli.check_flag(Flag::new("available").switch('a'))?,
         });
         command
@@ -106,7 +115,8 @@ Args:
 
 Options:
     --install, -i       filter for ip installed to cache
-    --develop, -d       filter for ip in-development
+    --download, -d      filter for ip downloaded to the queue
+    --develop           filter for ip in-development
     --available, -a     filter for ip available from vendors
 
 Use 'orbit help search' to learn more about the command.
@@ -121,7 +131,7 @@ mod test {
         let t = Search::fmt_table(BTreeMap::new());
         let table = "\
 Package                     Latest    Status   
---------------------------- --------- -------- 
+--------------------------- --------- ---------- 
 ";
         assert_eq!(t, table);
     }

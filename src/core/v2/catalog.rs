@@ -88,6 +88,10 @@ impl IpLevel {
         self.installs.is_empty() == false
     }
 
+    pub fn is_queued(&self) -> bool {
+        self.queue.is_empty() == false
+    }
+
     /// Returns the manifest found on the DEV_PATH.
     pub fn get_dev(&self) -> Option<&Ip> {
         self.dev.as_ref()

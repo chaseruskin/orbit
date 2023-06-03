@@ -256,63 +256,8 @@ use crate::core::fileset;
 
 use super::download::ProtocolMap;
 
-#[derive(Debug, PartialEq)]
-pub struct SubUnitNode<'a> {
-    sub: SubUnit,
-    file: &'a IpFileNode<'a>,
-}
-
-impl<'a> SubUnitNode<'a> {
-    pub fn new(unit: SubUnit, file: &'a IpFileNode<'a>) -> Self {
-        Self { sub: unit, file: file }
-    }
-
-    /// References the architecture struct.
-    pub fn get_sub(&self) -> &SubUnit {
-        &self.sub
-    }
-
-    /// References the ip file node.
-    pub fn get_file(&self) -> &'a IpFileNode<'a> {
-        &self.file
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct HdlNode<'a> {
-    sym: VHDLSymbol,
-    files: Vec<&'a IpFileNode<'a>>, // must use a vector to retain file order in blueprint
-}
-
-impl<'a> HdlNode<'a> {
-    fn new(sym: VHDLSymbol, file: &'a IpFileNode) -> Self {
-        let mut set = Vec::with_capacity(1);
-        set.push(file);
-        Self {
-            sym: sym,
-            files: set,
-        }
-    }
-
-    fn add_file(&mut self, ipf: &'a IpFileNode) {
-        if self.files.contains(&ipf) == false {
-            self.files.push(ipf);
-        }
-    }
-
-    /// References the VHDL symbol
-    fn get_symbol(&self) -> &VHDLSymbol {
-        &self.sym
-    }
-
-    fn get_symbol_mut(&mut self) -> &mut VHDLSymbol {
-        &mut self.sym
-    }
-
-    fn get_associated_files(&self) -> &Vec<&'a IpFileNode<'a>> {
-        &self.files
-    }
-}
+use crate::core::lang::node::HdlNode;
+use crate::core::lang::node::SubUnitNode;
 
 impl Plan {
 
@@ -343,11 +288,11 @@ impl Plan {
                                 VHDLSymbol::Package(_) => Some(f),
                                 VHDLSymbol::Context(_) => Some(f),
                                 VHDLSymbol::Architecture(arch) => {
-                                    sub_nodes.push((lib.clone(), SubUnitNode{ sub: SubUnit::from_arch(arch), file: source_file }));
+                                    sub_nodes.push((lib.clone(), SubUnitNode::new(SubUnit::from_arch(arch), source_file)));
                                     None
                                 }
                                 VHDLSymbol::Configuration(cfg) => {
-                                    sub_nodes.push((lib.clone(), SubUnitNode { sub: SubUnit::from_config(cfg), file: source_file }));
+                                    sub_nodes.push((lib.clone(), SubUnitNode::new(SubUnit::from_config(cfg), source_file)));
                                     None
                                 }
                                 // package bodies are usually in same design file as package
@@ -391,7 +336,7 @@ impl Plan {
                     // @todo: issue error because the entity (owner) is not declared
                     None => continue
                 };
-                entity_node.as_ref_mut().add_file(node.file);
+                entity_node.as_ref_mut().add_file(node.get_file());
                 // create edges
                 for dep in node.get_sub().get_edges() {
                     // need to locate the key with a suffix matching `dep` if it was a component instantiation
@@ -442,7 +387,7 @@ impl Plan {
     /// Maps the local index to the global index between two different maps.
     /// 
     /// Assumes `local` is a subset of `global`.
-    fn local_to_global<'a>(local_index: usize, global: &'a GraphMap<CompoundIdentifier, HdlNode, ()>, local: &GraphMap<&CompoundIdentifier, &HdlNode, &()>) -> &'a Node<HdlNode<'a>> {
+    pub fn local_to_global<'a>(local_index: usize, global: &'a GraphMap<CompoundIdentifier, HdlNode, ()>, local: &GraphMap<&CompoundIdentifier, &HdlNode, &()>) -> &'a Node<HdlNode<'a>> {
         global.get_node_by_key(local.get_key_by_index(local_index).unwrap()).unwrap()
     }
 
@@ -578,6 +523,27 @@ impl Plan {
         result
     }
 
+    /// Filters out the local nodes existing within the current IP from the `global_graph`.
+    pub fn compute_local_graph<'a>(global_graph: &'a GraphMap<CompoundIdentifier, HdlNode, ()>, working_lib: &Identifier, target: &Ip) -> GraphMap<&'a CompoundIdentifier, &'a HdlNode<'a>, &'a ()> {
+        // restrict graph to units only found within the current IP
+        let local_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> = global_graph.iter()
+        // traverse subset of graph by filtering only for working library entities (current lib)
+        .filter(|f| match f.0.get_prefix() { 
+            Some(iden) => iden == working_lib, 
+            None => false } )
+        // filter by checking if the node's ip is the same as target
+        .filter(|f| {
+            let mut in_range: bool = true;
+            for tag in f.1.get_associated_files() {
+                if tag.get_ip() != target { in_range = false; break; }
+            }
+            in_range
+        }) 
+        .collect();
+
+        local_graph
+    }
+
     /// Performs the backend logic for creating a blueprint file (planning a design).
     fn run(&self, target: Ip, build_dir: &str, plug: Option<&Plugin>, catalog: Catalog) -> Result<(), Fault> {
         // create the build path to know where to begin storing files
@@ -604,20 +570,7 @@ impl Plan {
         let working_lib = Identifier::new_working();
 
         // restrict graph to units only found within the current IP
-        let local_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> = global_graph.iter()
-            // traverse subset of graph by filtering only for working library entities (current lib)
-            .filter(|f| match f.0.get_prefix() { 
-                Some(iden) => iden == &working_lib, 
-                None => false } )
-            // filter by checking if the node's ip is the same as target
-            .filter(|f| {
-                let mut in_range: bool = true;
-                for tag in f.1.get_associated_files() {
-                    if tag.get_ip() != &target { in_range = false; break; }
-                }
-                in_range
-            }) 
-            .collect();
+        let local_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> = Self::compute_local_graph(&global_graph, &working_lib, &target);
 
         let (top, bench) = match self.detect_bench(&global_graph, &local_graph, &working_lib) {
             Ok(r) => r,

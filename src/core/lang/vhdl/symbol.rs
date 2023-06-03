@@ -22,6 +22,12 @@ pub enum VHDLSymbol {
     PackageBody(PackageBody),
 }
 
+impl From<Entity> for VHDLSymbol {
+    fn from(value: Entity) -> Self {
+        Self::Entity(value)
+    }
+}
+
 impl VHDLSymbol {
     /// Casts `self` to identifier.
     pub fn as_iden(&self) -> Option<&Identifier> {

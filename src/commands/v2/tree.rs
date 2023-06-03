@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use colored::Colorize;
-
 use clif::cmd::{FromCli, Command};
 
 use crate::OrbitResult;
+use crate::core::lang::node::HdlNode;
 use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbol::CompoundIdentifier;
 use crate::core::lang::vhdl::symbol::Entity;
@@ -14,30 +13,15 @@ use clif::arg::{Flag, Optional};
 use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::core::lang::vhdl::token::Identifier;
-use crate::util::anyerror::AnyError;
+use crate::commands::v2::plan::Plan;
 use crate::util::anyerror::Fault;
+
+use crate::core::lang::node::IdentifierFormat;
 
 use crate::core::v2::ip::Ip;
 use crate::core::v2::catalog::Catalog;
 use crate::core::v2::algo;
 use crate::core::v2::algo::IpFileNode;
-
-#[derive(Debug, PartialEq)]
-enum IdentifierFormat {
-    Long,
-    Short
-}
-
-impl std::str::FromStr for IdentifierFormat {
-    type Err = AnyError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "long" => Ok(Self::Long),
-            "short" => Ok(Self::Short),
-            _ => Err(AnyError(format!("format can be 'long' or 'short'")))
-        }
-    }
-}
 
 #[derive(Debug, PartialEq)]
 pub struct Tree {
@@ -78,10 +62,7 @@ impl Command<Context> for Tree {
 
         // gather the catalog
         let catalog = Catalog::new()
-            // .store(c.get_store_path())
-            // .development(c.get_development_path().unwrap())?
             .installations(c.get_cache_path())?;
-            // .available(c.get_vendors())?;
         
         self.run(ip, catalog)
     }
@@ -102,39 +83,42 @@ impl Tree {
         // build graph again but with entire set of all files available from all depdendencies
         let ip_graph = algo::compute_final_ip_graph(&target, &catalog)?;
         let files = algo::build_ip_file_list(&ip_graph);
-        // build the complete graph
-        let graph = Self::build_graph(&files);
 
-        let n = if let Some(ent) = &self.root {
-            // check if the identifier exists in the entity graph
-            match graph.get_node_by_key(&CompoundIdentifier::new(working_lib, ent.clone())) {
-                Some(id) => id.index(),
-                None => return Err(PlanError::UnknownEntity(ent.clone()))?,
-            }
-        // auto-detect the root if possible
-        } else {
-            // traverse subset of graph by filtering only for working library entities
-            let shallow_graph: GraphMap<&CompoundIdentifier, &EntityNode, &()> = graph.iter()
-                .filter(|f| match f.0.get_prefix() { 
-                    Some(iden) => iden == &working_lib, 
-                    None => false } )
-                .collect();
-            match shallow_graph.find_root() {
-                Ok(n) => graph.get_node_by_key(shallow_graph.get_key_by_index(n.index()).unwrap()).unwrap().index(),
-                Err(e) => match e.len() {
-                    0 => return Err(PlanError::Empty)?,
-                    _ => return Err(PlanError::Ambiguous("roots".to_string(), e.into_iter().map(|f| { f.as_ref().entity.get_name().clone() }).collect()))?
+        // build the complete graph (using entities as the nodes)
+        let global_graph = Self::build_graph(&files);
+
+        let n = {
+            // restrict graph to units only found within the current IP
+            let local_graph = Plan::compute_local_graph(&global_graph, &working_lib, &target);
+
+            let root_index = if let Some(ent) = &self.root {
+                // check if the identifier exists in the entity graph
+                let i = match local_graph.get_node_by_key(&&CompoundIdentifier::new(working_lib, ent.clone())) {
+                    Some(id) => id.index(),
+                    None => return Err(PlanError::UnknownEntity(ent.clone()))?,
+                };
+                Plan::local_to_global(i, &global_graph, &local_graph).index()
+            // auto-detect the root if possible
+            } else {
+                // traverse subset of graph by filtering only for working library entities
+                match local_graph.find_root() {
+                    Ok(i) => Plan::local_to_global(i.index(), &global_graph, &local_graph).index(),
+                    Err(e) => match e.len() {
+                        0 => return Err(PlanError::Empty)?,
+                        _ => return Err(PlanError::Ambiguous("roots".to_string(), e.into_iter().map(|f| { f.as_ref().get_symbol().as_entity().unwrap().get_name().clone() }).collect()))?
+                    }
                 }
-            }
+            };
+            root_index
         };
 
-        let tree = graph.get_graph().treeview(n);
+        let tree = global_graph.get_graph().treeview(n);
         for twig in &tree {
             let branch_str = match self.ascii {
                 true => Self::to_ascii(&twig.0.to_string()),
                 false => twig.0.to_string(),
             };
-            println!("{}{}", branch_str, graph.get_node_by_index(twig.1).unwrap().as_ref().display(self.format.as_ref().unwrap_or(&IdentifierFormat::Short)));            
+            println!("{}{}", branch_str, global_graph.get_node_by_index(twig.1).unwrap().as_ref().display(self.format.as_ref().unwrap_or(&IdentifierFormat::Short)));            
         }
         Ok(())
     }
@@ -168,9 +152,9 @@ impl Tree {
     }
 
     /// Constructs a graph of the design heirarchy with entity nodes.
-    fn build_graph<'a>(files: &'a Vec<IpFileNode>) -> GraphMap<CompoundIdentifier, EntityNode<'a>, ()> {
+    fn build_graph<'a>(files: &'a Vec<IpFileNode>) -> GraphMap<CompoundIdentifier, HdlNode<'a>, ()> {
         // entity identifier, HashNode (hash-node holds entity structs)
-        let mut graph = GraphMap::<CompoundIdentifier, EntityNode, ()>::new();
+        let mut graph = GraphMap::<CompoundIdentifier, HdlNode, ()>::new();
 
         let mut sub_nodes: Vec<(Identifier, SubUnitNode)> = Vec::new();
         // store the (suffix, prefix) for all entities
@@ -180,29 +164,29 @@ impl Tree {
         // read all files
         for source_file in files {
             // skip files that are not VHDL
-            if crate::core::fileset::is_vhdl(&source_file.get_file()) == false {
+            if fileset::is_vhdl(&source_file.get_file()) == false {
                 continue;
             }
             // parse VHDL code
-            let contents = std::fs::read_to_string(&source_file.get_file()).unwrap();
-            let symbols = symbol::VHDLParser::read(&contents).into_symbols();
+            let contents = fs::read_to_string(&source_file.get_file()).unwrap();
+            let symbols = VHDLParser::read(&contents).into_symbols();
             
             let lib = source_file.get_library();
             // add all entities to a graph and store architectures for later analysis
             symbols.into_iter()
                 .for_each(|sym| {
                     match sym {
-                        symbol::VHDLSymbol::Entity(e) => {
+                        VHDLSymbol::Entity(e) => {
                             component_pairs.insert(e.get_name().clone(), lib.clone());
-                            graph.add_node(CompoundIdentifier::new(lib.clone(), e.get_name().clone()), EntityNode::new(e, source_file));
+                            graph.add_node(CompoundIdentifier::new(lib.clone(), e.get_name().clone()), HdlNode::new(VHDLSymbol::from(e), source_file));
                         },
-                        symbol::VHDLSymbol::Architecture(arch) => {
+                        VHDLSymbol::Architecture(arch) => {
                             sub_nodes.push((lib.clone(), SubUnitNode::new(SubUnit::from_arch(arch), source_file)));
                         },
-                        symbol::VHDLSymbol::Configuration(cfg) => {
+                        VHDLSymbol::Configuration(cfg) => {
                             sub_nodes.push((lib.clone(), SubUnitNode::new(SubUnit::from_config(cfg), source_file)));
                         },
-                        symbol::VHDLSymbol::Package(_) => {
+                        VHDLSymbol::Package(_) => {
                             package_identifiers.insert(sym.as_iden().unwrap().clone());
                         }
                         _ => (),
@@ -240,7 +224,7 @@ impl Tree {
                             EdgeStatus::MissingSource => {
                                 let dep_name = CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone());
                                
-                                graph.add_node(dep_name.clone(), EntityNode::black_box(Entity::black_box(dep.get_suffix().clone())));
+                                graph.add_node(dep_name.clone(), HdlNode::black_box(VHDLSymbol::from(Entity::black_box(dep.get_suffix().clone()))));
                                 graph.add_edge_by_key(&dep_name, &node_name, ());
                             }
                             _ => ()
@@ -249,7 +233,7 @@ impl Tree {
                     } else {
                         // create new node for black box entity
                         if graph.has_node_by_key(dep) == false {
-                            graph.add_node(dep.clone(), EntityNode::black_box(Entity::black_box(dep.get_suffix().clone())));
+                            graph.add_node(dep.clone(), HdlNode::black_box(VHDLSymbol::from(Entity::black_box(dep.get_suffix().clone()))));
                         }
                         graph.add_edge_by_key(&dep, &node_name, ());
                     }
@@ -267,58 +251,14 @@ impl Tree {
     }
 }
 
-use crate::core::lang::vhdl::symbol;
+use crate::core::lang::node::SubUnitNode;
+use crate::core::lang::vhdl::symbol::{VHDLParser, VHDLSymbol};
 use crate::util::graph::EdgeStatus;
 use crate::util::graphmap::GraphMap;
+use std::fs;
+use crate::core::fileset;
 
-use super::plan::SubUnitNode;
 use super::plan::PlanError;
-
-#[derive(Debug, PartialEq)]
-pub struct EntityNode<'a> {
-    entity: symbol::Entity,
-    files: Vec<&'a IpFileNode<'a>>,
-}
-
-impl<'a> EntityNode<'a> {
-    
-    fn new(entity: symbol::Entity, file: &'a IpFileNode<'a>) -> Self {
-        let mut set = Vec::new();
-        set.push(file);
-        Self {
-            entity: entity,
-            files: set,
-        }
-    }
-
-    fn is_black_box(&self) -> bool {
-        self.files.is_empty()
-    }
-
-    fn black_box(entity: symbol::Entity) -> Self {
-        Self { entity: entity, files: Vec::new() }
-    }
-
-    fn add_file(&mut self, file: &'a IpFileNode<'a>) {
-        if self.files.contains(&file) == false {
-            self.files.push(file);
-        }
-    }
-
-    fn display(&self, fmt: &IdentifierFormat) -> String {
-        if self.is_black_box() == true {
-            format!("{} {}", self.entity.get_name().to_string().yellow(), "?".yellow())
-        } else {
-            match fmt {
-                IdentifierFormat::Long => {
-                    let ip = self.files.first().unwrap().get_ip();
-                    format!("{} - {} v{}", self.entity.get_name(), ip.get_man().get_ip().get_name(), ip.get_man().get_ip().get_version())
-                }
-                IdentifierFormat::Short => format!("{}", self.entity.get_name()),
-            }
-        }
-    }
-}
 
 const HELP: &str = "\
 View the hardware design hierarchy.

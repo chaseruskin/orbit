@@ -1,6 +1,6 @@
 use clif::cmd::{FromCli, Command};
 use clif::Cli;
-use clif::arg::{Positional, Flag};
+use clif::arg::{Positional, Flag, Optional};
 use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::Fault;
@@ -16,9 +16,9 @@ use crate::core::v2::catalog::IpLevel;
 pub struct Search {
     ip: Option<PkgPart>,
     cached: bool,
-    developing: bool,
     queued: bool,
-    available: bool,
+    keywords: Vec<String>,
+    hard_match: bool,
 }
 
 impl Command<Context> for Search {
@@ -26,21 +26,15 @@ impl Command<Context> for Search {
 
     fn exec(&self, c: &Context) -> Self::Status {
 
-        let default = !(self.cached || self.developing || self.available || self.queued);
+        let default = !(self.cached || self.queued);
         let mut catalog = Catalog::new();
 
-        // collect development IP
-        // if default || self.developing { catalog = catalog.development(c.get_development_path().unwrap())?; }
-        
         // collect installed IP
         if default || self.cached { catalog = catalog.installations(c.get_cache_path())?; }
 
         // collect downloaded IP
         if default || self.queued { catalog = catalog.queue(c.get_queue_path())?; }
-
-        // collect available IP
-       //  if default || self.available { catalog = catalog.available(c.get_vendors())?; }
-
+        
         self.run(&catalog)
     }
 }
@@ -50,16 +44,54 @@ impl Search {
 
         // transform into a BTreeMap for alphabetical ordering
         let mut tree = BTreeMap::new();
-        catalog.inner()
-            .into_iter()
-            // filter by name if user entered a pkgid to search
-            .filter(|(key, _)| {
-                match &self.ip {
-                    Some(pkgid) => key.to_string().contains(pkgid.as_ref()),
-                    None => true,
-                }
-            })
-            .for_each(|(key, status)| {
+                catalog.inner()
+                    .into_iter()
+                    // filter by name if user entered a pkgid to search
+                    .filter(|(key, iplvl)| {
+                        let prj = iplvl.get(true, &AnyVersion::Latest).unwrap();
+                        match self.hard_match {
+                            true => {
+                                let name_match = match &self.ip {
+                                    // names must be identical
+                                    Some(pkgid) => if key == &pkgid { true } else { false },
+                                    // move on to the keywords
+                                    None => true
+                                }; 
+                                let keyword_match = {
+                                    for kw in &self.keywords {
+                                        if prj.get_man().get_ip().get_keywords().contains(kw) == false {
+                                            return false
+                                        }
+                                    }
+                                    true
+                                };
+                                name_match && keyword_match
+                            },
+                            false => {
+                                // pass everything if there is no filters applied
+                                if self.ip.is_none() && self.keywords.is_empty() { return true }
+
+                                let name_match = match &self.ip {
+                                    // names must be identical
+                                    Some(pkgid) => key.contains(&pkgid),
+                                    // move on to the keywords
+                                    None => false,
+                                }; 
+                                // try to evaluate keywords
+                                if name_match == false {
+                                    for kw in &self.keywords {
+                                        if prj.get_man().get_ip().get_keywords().contains(kw) == true {
+                                            return true
+                                        }
+                                    }
+                                    false
+                                } else {
+                                    true
+                                }
+                            },
+                        }
+                    })
+                    .for_each(|(key, status)| {
                 tree.insert(key, status);
             });
 
@@ -94,11 +126,11 @@ impl FromCli for Search {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Search {
-            ip: cli.check_positional(Positional::new("ip"))?,
             queued: cli.check_flag(Flag::new("download").switch('d'))?,
             cached: cli.check_flag(Flag::new("install").switch('i'))?,
-            developing: cli.check_flag(Flag::new("develop"))?,
-            available: cli.check_flag(Flag::new("available").switch('a'))?,
+            hard_match: cli.check_flag(Flag::new("match"))?,
+            keywords: cli.check_option_all(Optional::new("keyword").value("term"))?.unwrap_or(Vec::new()),
+            ip: cli.check_positional(Positional::new("ip"))?,
         });
         command
     }
@@ -116,8 +148,8 @@ Args:
 Options:
     --install, -i       filter for ip installed to cache
     --download, -d      filter for ip downloaded to the queue
-    --develop           filter for ip in-development
-    --available, -a     filter for ip available from vendors
+    --keyword <term>... special word to filter out packages
+    --match             return results with each filter passed
 
 Use 'orbit help search' to learn more about the command.
 ";

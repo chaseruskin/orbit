@@ -25,6 +25,11 @@ impl PkgPart {
     pub fn as_ref(&self) -> &str {
         &self.0
     }
+
+    /// Checks if the current [PkgPart] is a superset of the `rhs`.
+    pub fn contains(&self, rhs: &Self) -> bool {
+        self.to_normal().to_string().contains(rhs.to_normal().as_ref())
+    }
 }
 
 impl AsRef<std::path::Path> for PkgPart {

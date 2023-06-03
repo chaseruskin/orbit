@@ -147,7 +147,7 @@ impl From<(&Ip, bool)> for LockEntry {
         Self {
             name: ip.get_man().get_ip().get_name().clone(), 
             version: ip.get_man().get_ip().get_version().clone(), 
-            sum: Some(Ip::read_checksum_proof(ip.get_root()).unwrap_or(Ip::compute_checksum(ip.get_root()))), 
+            sum: if is_root == true { None } else { Some(Ip::read_checksum_proof(ip.get_root()).unwrap_or(Ip::compute_checksum(ip.get_root()))) }, 
             source: ip.get_man().get_ip().get_source().cloned(),
             dependencies: match ip.get_man().get_deps_list(is_root).len() {
                 0 => Vec::new(),

@@ -34,7 +34,6 @@ impl std::fmt::Display for IpState {
 
 #[derive(Debug)]
 pub struct IpLevel {
-    dev: Option<Ip>,
     installs: Vec<Ip>,
     queue: Vec<Ip>,
     available: Vec<Ip>
@@ -42,15 +41,11 @@ pub struct IpLevel {
 
 impl IpLevel {
     pub fn new() -> Self {
-        Self { dev: None, installs: Vec::new(), available: Vec::new(), queue: Vec::new(), }
+        Self { installs: Vec::new(), available: Vec::new(), queue: Vec::new(), }
     }
 
     pub fn is_available_or_in_store(&self, store: &Store, pkgid: &PkgId, v: &AnyVersion) -> bool {
         self.get_available(v).is_some() || IpManifest::from_store(&store, &pkgid, v).unwrap_or(None).is_some()
-    }
-
-    pub fn add_dev(&mut self, m: Ip) -> () {
-        self.dev = Some(m);
     }
 
     pub fn add_install(&mut self, m: Ip) -> () {
@@ -90,11 +85,6 @@ impl IpLevel {
 
     pub fn is_queued(&self) -> bool {
         self.queue.is_empty() == false
-    }
-
-    /// Returns the manifest found on the DEV_PATH.
-    pub fn get_dev(&self) -> Option<&Ip> {
-        self.dev.as_ref()
     }
 
     /// Returns the manifest with the most compatible version fitting `version`.
@@ -162,10 +152,6 @@ impl IpLevel {
             });
         latest_version
     }
-
-    pub fn is_developing(&self) -> bool {
-        self.dev.is_some()
-    }
 }
 
 impl<'a> Catalog<'a> {
@@ -182,11 +168,6 @@ impl<'a> Catalog<'a> {
     pub fn store(mut self, path: &'a PathBuf) -> Self {
         self.store = Some(Store::new(path));
         self
-    }
-
-    /// Searches the `path` for IP under development.
-    pub fn development(self, path: &PathBuf) -> Result<Self, Fault> {
-        self.detect(path, &IpLevel::add_dev, false)
     }
 
     /// Uses the cache slot name to check if the directory exists.

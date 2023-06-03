@@ -77,6 +77,7 @@ impl Manifest {
                 name: name,
                 version: Version::new().minor(1),
                 source: None.into(),
+                keywords: Vec::new(),
                 library: None,
                 summary: None,
             },
@@ -153,6 +154,8 @@ pub struct Package {
     version: Version,
     summary: Option<String>,
     library: Option<Id>,
+    #[serde(default)]
+    keywords: Vec<String>,
     /// Describes the URL for fetching the captured state's code (expects .ZIP file)
     #[serde(deserialize_with = "source::string_or_struct", default)]
     source: Source,
@@ -165,6 +168,10 @@ impl Package {
 
     pub fn get_version(&self) -> &Version {
         &self.version
+    }
+
+    pub fn get_keywords(&self) -> &Vec<String> {
+        &self.keywords
     }
 
     pub fn get_library(&self) -> &Option<Id> {
@@ -341,6 +348,7 @@ version = "1.0.0"
 const EX3: &str = r#"[ip]
 name = "lab2"
 version = "1.20.0"
+keywords = []
 
 [dependencies]
 some-package = "9.0.0"

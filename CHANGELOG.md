@@ -15,6 +15,21 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.9.3
+
+### Changes
+- removes checksum from root ip in lock file and improves search
+- adds option for installing dev-deps during install or to ignore
+- adds support for dev-dependencies
+- refactors catalog accessor
+- allows uninstall to specify version through ip spec arg
+- removes ability to specify deprecated dev version as partial version
+- refactors cli option for ip to accept spec
+- improves search command filtering and output
+- install all missing deps during install and enhances checksum review
+- changes ip spec to use ':' delimiter
+- flattens source map in lockfile for more compact view
+
 ## 0.9.2
 
 ### Changes

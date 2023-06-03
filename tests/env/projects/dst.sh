@@ -16,6 +16,7 @@ cd ..
 
 cd ip-c
 orbit plan --lock-only --force
+
 # verify DST runs without error
 STDOUT=$(orbit tree --root entity_c)
 

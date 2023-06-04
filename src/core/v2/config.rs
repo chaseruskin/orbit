@@ -246,22 +246,22 @@ impl Config {
 
     /// Adds the new information to the existing configuration to combine data.
     pub fn append(&mut self, rhs: Self) {
-
+        // combine "includes"
         match &mut self.include {
             Some(v) => v.append(&mut rhs.include.unwrap_or(Vec::new())),
             None => self.include = rhs.include,
         }
-
+        // combine "plugins"
         match &mut self.plugin {
             Some(v) => v.append(&mut rhs.plugin.unwrap_or(Vec::new())),
             None => self.plugin = rhs.plugin,
         }
-
+        // combine protocol
         match &mut self.protocol {
             Some(v) => v.append(&mut rhs.protocol.unwrap_or(Vec::new())),
             None => self.protocol = rhs.protocol,
         }
-
+        // combine env
         match &mut self.env {
             Some(v) => v.extend(rhs.env.unwrap_or(HashMap::new()).into_iter()),
             None => self.env = rhs.env,

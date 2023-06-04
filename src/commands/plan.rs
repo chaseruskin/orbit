@@ -9,9 +9,9 @@ use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbol::CompoundIdentifier;
 use crate::core::lang::vhdl::symbol::{Entity, PackageBody, VHDLParser, VHDLSymbol};
 use crate::core::lang::vhdl::token::Identifier;
+use crate::core::plugin::Plugin;
 use crate::core::plugin::PluginError;
 use crate::core::template;
-use crate::core::v2::plugin::Plugin;
 use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
 use crate::util::anyerror::Fault;
@@ -32,15 +32,15 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use crate::commands::install::Install;
-use crate::core::v2::algo;
-use crate::core::v2::algo::IpFileNode;
-use crate::core::v2::algo::IpNode;
-use crate::core::v2::catalog::Catalog;
-use crate::core::v2::ip::Ip;
-use crate::core::v2::ip::IpSpec;
-use crate::core::v2::lockfile::LockFile;
+use crate::core::algo;
+use crate::core::algo::IpFileNode;
+use crate::core::algo::IpNode;
+use crate::core::catalog::Catalog;
+use crate::core::ip::Ip;
+use crate::core::ip::IpSpec;
+use crate::core::lockfile::LockFile;
 // use crate::commands::v2::download::Download;
-use crate::core::v2::lockfile::LockEntry;
+use crate::core::lockfile::LockEntry;
 
 use crate::util::graphmap::Node;
 

@@ -1,6 +1,6 @@
+use crate::core::catalog::Catalog;
 use crate::core::context::Context;
-use crate::core::v2::catalog::Catalog;
-use crate::core::v2::ip::PartialIpSpec;
+use crate::core::ip::PartialIpSpec;
 use crate::util::anyerror::AnyError;
 use crate::OrbitResult;
 use clif::arg::{Flag, Positional};

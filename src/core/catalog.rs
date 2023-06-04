@@ -1,24 +1,26 @@
 use crate::util::{anyerror::Fault, sha256::Sha256Hash};
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 
 use super::{
-    manifest::IpManifest,
     pkgid::{PkgId, PkgPart},
-    store::Store,
-    vendor::VendorManifest,
     version::{AnyVersion, Version},
 };
 
+use crate::core::ip::Ip;
+
 #[derive(Debug)]
 pub struct Catalog<'a> {
-    inner: HashMap<PkgId, IpLevel>,
-    store: Option<Store<'a>>,
+    inner: HashMap<PkgPart, IpLevel>,
     cache: Option<&'a PathBuf>,
+    queue: Option<&'a PathBuf>,
 }
 
 #[derive(Debug, PartialEq)]
 pub enum IpState {
-    Development,
+    Downloaded,
     Installation,
     Available,
     Unknown,
@@ -27,7 +29,7 @@ pub enum IpState {
 impl std::fmt::Display for IpState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
-            Self::Development => write!(f, "development"),
+            Self::Downloaded => write!(f, "downloaded"),
             Self::Installation => write!(f, "installation"),
             Self::Available => write!(f, "available"),
             Self::Unknown => write!(f, "unknown"),
@@ -37,48 +39,45 @@ impl std::fmt::Display for IpState {
 
 #[derive(Debug)]
 pub struct IpLevel {
-    dev: Option<IpManifest>,
-    installs: Vec<IpManifest>,
-    available: Vec<IpManifest>,
+    installs: Vec<Ip>,
+    queue: Vec<Ip>,
+    available: Vec<Ip>,
 }
 
 impl IpLevel {
     pub fn new() -> Self {
         Self {
-            dev: None,
             installs: Vec::new(),
             available: Vec::new(),
+            queue: Vec::new(),
         }
     }
 
-    pub fn is_available_or_in_store(&self, store: &Store, pkgid: &PkgId, v: &AnyVersion) -> bool {
-        self.get_available(v).is_some()
-            || IpManifest::from_store(&store, &pkgid, v)
-                .unwrap_or(None)
-                .is_some()
-    }
-
-    pub fn add_dev(&mut self, m: IpManifest) -> () {
-        self.dev = Some(m);
-    }
-
-    pub fn add_install(&mut self, m: IpManifest) -> () {
+    pub fn add_install(&mut self, m: Ip) -> () {
         // only add if not a DST
         if m.is_dynamic() == false {
             self.installs.push(m);
         }
     }
 
-    pub fn add_available(&mut self, m: IpManifest) -> () {
+    pub fn add_queue(&mut self, m: Ip) -> () {
+        self.queue.push(m);
+    }
+
+    pub fn add_available(&mut self, m: Ip) -> () {
         self.available.push(m);
     }
 
-    pub fn get_installations(&self) -> &Vec<IpManifest> {
+    pub fn get_installations(&self) -> &Vec<Ip> {
         &self.installs
     }
 
-    pub fn get_availability(&self) -> &Vec<IpManifest> {
+    pub fn get_availability(&self) -> &Vec<Ip> {
         &self.available
+    }
+
+    pub fn get_queued(&self) -> &Vec<Ip> {
+        &self.queue
     }
 
     pub fn is_available(&self) -> bool {
@@ -89,37 +88,22 @@ impl IpLevel {
         self.installs.is_empty() == false
     }
 
-    /// Returns the manifest found on the DEV_PATH.
-    pub fn get_dev(&self) -> Option<&IpManifest> {
-        self.dev.as_ref()
+    pub fn is_queued(&self) -> bool {
+        self.queue.is_empty() == false
     }
 
     /// Returns the manifest with the most compatible version fitting `version`.
-    pub fn get_install(&self, version: &AnyVersion) -> Option<&IpManifest> {
+    pub fn get_install(&self, version: &AnyVersion) -> Option<&Ip> {
         Self::get_target_version(version, self.get_installations())
     }
 
     /// Returns the manifest with the most compatible version fitting `version`.
-    pub fn get_available(&self, version: &AnyVersion) -> Option<&IpManifest> {
+    pub fn get_available(&self, version: &AnyVersion) -> Option<&Ip> {
         Self::get_target_version(version, self.get_availability())
     }
 
-    /// Searches through all manifests for a repository to use for cloning.
-    pub fn try_repository(&self) -> Option<&crate::util::url::Url> {
-        // check all installations
-        for ip in &self.installs {
-            if ip.get_repository().is_some() {
-                return ip.get_repository();
-            }
-        }
-        // check all available
-        for ip in &self.available {
-            if ip.get_repository().is_some() {
-                return ip.get_repository();
-            }
-        }
-        // check dev
-        self.get_dev()?.get_repository()
+    pub fn get_queue(&self, version: &AnyVersion) -> Option<&Ip> {
+        Self::get_target_version(version, self.get_queued())
     }
 
     /// References the ip matching the most compatible version `version`.
@@ -127,35 +111,25 @@ impl IpLevel {
     /// A `dev` version is only searched at the DEV_PATH. Any other version is
     /// first sought for in the cache installations, and if not found then searched
     /// for in the availability space.
-    /// Note: `usable` to `false` will not check available state
-    pub fn get(&self, version: &AnyVersion, usable: bool) -> Option<&IpManifest> {
-        match version {
-            // AnyVersion::Dev => self.get_dev(),
-            _ => match self.get_install(version) {
-                Some(ip) => Some(ip),
-                None => {
-                    if usable == false {
-                        self.get_available(version)
-                    } else {
-                        None
-                    }
-                }
+    /// Note: `usable` to `false` will not check queued state
+    pub fn get(&self, check_queue: bool, version: &AnyVersion) -> Option<&Ip> {
+        match self.get_install(version) {
+            Some(ip) => Some(ip),
+            None => match check_queue {
+                true => self.get_queue(version),
+                false => None,
             },
         }
     }
 
     /// Tracks what level the `manifest` came from.
-    pub fn get_state(&self, manifest: &IpManifest) -> IpState {
-        if self.installs.iter().find(|f| f == &manifest).is_some() {
+    pub fn get_state(&self, ip: &Ip) -> IpState {
+        if self.installs.iter().find(|f| f == &ip).is_some() {
             IpState::Installation
-        } else if self.available.iter().find(|f| f == &manifest).is_some() {
+        } else if self.available.iter().find(|f| f == &ip).is_some() {
             IpState::Available
-        } else if let Some(dev) = &self.dev {
-            if dev == manifest {
-                IpState::Development
-            } else {
-                IpState::Unknown
-            }
+        } else if self.queue.iter().find(|f| f == &ip).is_some() {
+            IpState::Downloaded
         } else {
             IpState::Unknown
         }
@@ -166,30 +140,31 @@ impl IpLevel {
     /// Returns `None` if no compatible version was found.
     ///
     /// Panics if a development version is entered as `target`.
-    fn get_target_version<'a>(
-        target: &AnyVersion,
-        space: &'a Vec<IpManifest>,
-    ) -> Option<&'a IpManifest> {
+    fn get_target_version<'a>(target: &AnyVersion, space: &'a Vec<Ip>) -> Option<&'a Ip> {
         // find the specified version for the given ip
-        let mut latest_version: Option<&IpManifest> = None;
+        let mut latest_version: Option<&Ip> = None;
         space
             .iter()
             .filter(|ip| match &target {
-                AnyVersion::Specific(v) => crate::core::version::is_compatible(v, ip.get_version()),
+                AnyVersion::Specific(v) => {
+                    crate::core::version::is_compatible(v, ip.get_man().get_ip().get_version())
+                }
                 AnyVersion::Latest => true,
             })
             .for_each(|ip| {
                 if latest_version.is_none()
-                    || ip.get_version() > latest_version.as_ref().unwrap().get_version()
+                    || ip.get_man().get_ip().get_version()
+                        > latest_version
+                            .as_ref()
+                            .unwrap()
+                            .get_man()
+                            .get_ip()
+                            .get_version()
                 {
                     latest_version = Some(ip);
                 }
             });
         latest_version
-    }
-
-    pub fn is_developing(&self) -> bool {
-        self.dev.is_some()
     }
 }
 
@@ -197,30 +172,14 @@ impl<'a> Catalog<'a> {
     pub fn new() -> Self {
         Self {
             inner: HashMap::new(),
-            store: None,
             cache: None,
+            queue: None,
         }
     }
 
-    /// Sets the store.
-    pub fn store(mut self, path: &'a PathBuf) -> Self {
-        self.store = Some(Store::new(path));
-        self
-    }
-
-    /// Searches the `path` for IP under development.
-    pub fn development(self, path: &PathBuf) -> Result<Self, Fault> {
-        self.detect(path, &IpLevel::add_dev, false)
-    }
-
     /// Uses the cache slot name to check if the directory exists.
-    pub fn is_cached_slot(&self, target: &IpManifest) -> bool {
-        let _cache_slot = CacheSlot::new(
-            target.get_pkgid().get_name(),
-            target.get_version(),
-            &Sha256Hash::new(),
-        );
-        todo!()
+    pub fn is_cached_slot(&self, slot: &CacheSlot) -> bool {
+        self.get_cache_path().join(slot.as_ref()).is_dir()
     }
 
     /// Searches the `path` for IP installed.
@@ -229,28 +188,33 @@ impl<'a> Catalog<'a> {
         self.detect(path, &IpLevel::add_install, false)
     }
 
-    /// Searches the `path` for IP available.
-    pub fn available(self, vendors: &HashMap<PkgPart, VendorManifest>) -> Result<Self, Fault> {
-        let mut catalog = self;
-        for (_, v) in vendors {
-            catalog = catalog.detect(&v.get_root(), &IpLevel::add_available, true)?;
-        }
-        Ok(catalog)
+    /// Searches the `path` for IP in the queue.
+    pub fn queue(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
+        self.queue = Some(&path);
+        self.detect(path, &IpLevel::add_queue, false)
     }
 
-    pub fn inner(&self) -> &HashMap<PkgId, IpLevel> {
+    pub fn inner(&self) -> &HashMap<PkgPart, IpLevel> {
         &self.inner
     }
 
-    pub fn inner_mut(&mut self) -> &mut HashMap<PkgId, IpLevel> {
+    pub fn inner_mut(&mut self) -> &mut HashMap<PkgPart, IpLevel> {
         &mut self.inner
     }
 
     /// Returns all possible versions found for the `target` ip.
     ///
-    /// Searches the cache/store, availability space, and development space.
-    pub fn get_possible_versions(&self, _: &PkgId) -> Vec<Version> {
-        todo!();
+    /// Returns `None` if the id is not found in the catalog.
+    pub fn get_possible_versions(&self, id: &PkgPart) -> Option<Vec<&Version>> {
+        let kaban = self.inner.get(&id)?;
+        let mut set = HashSet::new();
+        for ip in kaban.get_installations() {
+            set.insert(ip.get_man().get_ip().get_version());
+        }
+        let mut arr: Vec<&Version> = set.into_iter().collect();
+        arr.sort();
+        arr.reverse();
+        Some(arr)
     }
 
     pub fn update_installations(&mut self) -> () {
@@ -263,33 +227,35 @@ impl<'a> Catalog<'a> {
     fn detect(
         mut self,
         path: &PathBuf,
-        add: &dyn Fn(&mut IpLevel, IpManifest) -> (),
+        add: &dyn Fn(&mut IpLevel, Ip) -> (),
         is_pointers: bool,
     ) -> Result<Self, Fault> {
         match is_pointers {
-            false => crate::core::manifest::IpManifest::detect_all(path),
-            true => crate::core::manifest::IpManifest::detect_available(path),
+            false => Ip::detect_all(path),
+            true => todo!("only detect for available"),
         }?
         .into_iter()
-        .for_each(|ip| match self.inner.get_mut(&ip.get_pkgid()) {
-            Some(lvl) => add(lvl, ip),
-            None => {
-                let pkgid = ip.get_pkgid().clone();
-                let mut lvl = IpLevel::new();
-                add(&mut lvl, ip);
-                self.inner.insert(pkgid, lvl);
-                ()
-            }
-        });
+        .for_each(
+            |ip| match self.inner.get_mut(&ip.get_man().get_ip().get_name()) {
+                Some(lvl) => add(lvl, ip),
+                None => {
+                    let pkgid = ip.get_man().get_ip().get_name().clone();
+                    let mut lvl = IpLevel::new();
+                    add(&mut lvl, ip);
+                    self.inner.insert(pkgid, lvl);
+                    ()
+                }
+            },
+        );
         Ok(self)
-    }
-
-    pub fn get_store(&self) -> &Store {
-        self.store.as_ref().unwrap()
     }
 
     pub fn get_cache_path(&self) -> &PathBuf {
         self.cache.as_ref().unwrap()
+    }
+
+    pub fn get_queue_path(&self) -> &PathBuf {
+        self.queue.as_ref().unwrap()
     }
 }
 

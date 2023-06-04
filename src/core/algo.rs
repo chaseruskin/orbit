@@ -10,38 +10,13 @@ use crate::core::lang::vhdl::dst;
 use crate::core::lang::vhdl::primaryunit::{PrimaryUnit, VhdlIdentifierError};
 use crate::core::lang::vhdl::token::{Identifier, VHDLTokenizer};
 
-use crate::core::v2::catalog::CacheSlot;
-use crate::core::v2::catalog::Catalog;
-use crate::core::v2::ip::Ip;
-use crate::core::v2::ip::IpSpec;
-use crate::core::v2::lockfile::{LockEntry, LockFile};
-use crate::core::v2::manifest;
+use crate::core::catalog::CacheSlot;
+use crate::core::catalog::Catalog;
+use crate::core::ip::Ip;
+use crate::core::ip::IpSpec;
+use crate::core::lockfile::{LockEntry, LockFile};
+use crate::core::manifest;
 use crate::core::version::AnyVersion;
-
-/// Given a partial/full ip specification `ip_spec`, sift through the manifests
-/// for a possible determined unique solution.
-///
-/// Note: Currently clones each id, possibly look for faster implemtenation avoiding clone.
-// pub fn find_ip(ip_spec: &PkgId, universe: Vec<&PkgId>) -> Result<PkgId, AnyError> {
-//     // try to find ip name
-//     let space: Vec<Vec<PkgPart>> = universe.into_iter().map(|f| { f.into_full_vec().unwrap() }).collect();
-//     let result = match overdetsys::solve(space, ip_spec.iter()) {
-//         Ok(r) => r,
-//         Err(e) => match e {
-//             overdetsys::OverDetSysError::NoSolution => Err(AnyError(format!("no ip as '{}' exists", ip_spec)))?,
-//             overdetsys::OverDetSysError::Ambiguous(set) => {
-//                 // assemble error message
-//                 let mut set = set.into_iter().map(|f| PkgId::from_vec(f) );
-//                 let mut content = String::new();
-//                 while let Some(s) = set.next() {
-//                     content.push_str(&format!("    {}\n", s.to_string()));
-//                 }
-//                 Err(AnyError(format!("ambiguous ip '{}' yields multiple solutions:\n{}", ip_spec, content)))?
-//             }
-//         }
-//     };
-//     Ok(PkgId::from_vec(result))
-// }
 
 /// Constructs an ip-graph from a lockfile.
 pub fn graph_ip_from_lock(lock: &LockFile) -> Result<GraphMap<IpSpec, &LockEntry, ()>, Fault> {
@@ -396,7 +371,7 @@ fn install_dst(source_ip: &Ip, root: &std::path::PathBuf) -> Ip {
     crate::util::filesystem::copy(&source_ip.get_root(), &cache_path, true).unwrap();
     let cached_ip = Ip::load(cache_path).unwrap();
 
-    // @TODO: cache results of primary design unit list
+    // @todo: cache results of primary design unit list
     // cached_ip.stash_units();
     // // indicate this installation is dynamic in the metadata
     cached_ip.set_as_dynamic();

@@ -1,7 +1,7 @@
 use super::super::lexer::Position;
 use super::symbol::VHDLSymbol;
+use crate::core::ip::IpSpec;
 use crate::core::lang::vhdl::symbol::VHDLParser;
-use crate::core::v2::ip::IpSpec;
 use crate::util::filesystem;
 use crate::{core::lang::vhdl::token::Identifier, util::anyerror::Fault};
 use std::{collections::HashMap, path::PathBuf, str::FromStr};

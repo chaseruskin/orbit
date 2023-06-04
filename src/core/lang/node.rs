@@ -1,4 +1,8 @@
+use crate::core::algo::IpFileNode;
+use crate::core::lang::vhdl::subunit::SubUnit;
+use crate::core::lang::vhdl::symbol::VHDLSymbol;
 use crate::core::lang::vhdl::token::Identifier;
+use crate::util::anyerror::AnyError;
 use colored::Colorize;
 
 #[derive(Debug, PartialEq)]
@@ -87,11 +91,6 @@ impl<'a> SubUnitNode<'a> {
         &self.file
     }
 }
-
-use crate::core::lang::vhdl::subunit::SubUnit;
-use crate::core::lang::vhdl::symbol::VHDLSymbol;
-use crate::core::v2::algo::IpFileNode;
-use crate::util::anyerror::AnyError;
 
 #[derive(Debug, PartialEq)]
 pub enum IdentifierFormat {

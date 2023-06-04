@@ -1,8 +1,9 @@
 use super::plan::BLUEPRINT_FILE;
 use crate::core::context::Context;
-use crate::core::v2::plugin::Plugin;
-use crate::core::v2::plugin::PluginError;
-use crate::core::v2::plugin::Process;
+use crate::core::ip::Ip;
+use crate::core::plugin::Plugin;
+use crate::core::plugin::PluginError;
+use crate::core::plugin::Process;
 use crate::util::anyerror::AnyError;
 use crate::util::environment;
 use crate::util::environment::EnvVar;
@@ -14,8 +15,6 @@ use clif::arg::{Flag, Optional};
 use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
-
-use crate::core::v2::ip::Ip;
 
 #[derive(Debug, PartialEq)]
 pub struct Build {

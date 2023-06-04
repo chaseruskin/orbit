@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use crate::commands::plan::BLUEPRINT_FILE;
 use crate::core::context::Context;
-use crate::core::v2::ip::Ip;
+use crate::core::ip::Ip;
 use crate::util::environment;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;

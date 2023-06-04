@@ -9,4 +9,3 @@ pub mod prompt;
 pub mod seqalin;
 pub mod sha256;
 pub mod strcmp;
-pub mod url;

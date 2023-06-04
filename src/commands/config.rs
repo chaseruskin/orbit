@@ -1,8 +1,10 @@
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use crate::core::config::ConfigDocument;
+use crate::core::config::CONFIG_FILE;
 use crate::core::context::Context;
-use crate::core::v2::manifest::FromFile;
+use crate::core::manifest::FromFile;
 use crate::util::anyerror::AnyError;
 use crate::OrbitResult;
 use clif::arg::{Flag, Optional};
@@ -53,9 +55,6 @@ impl FromCli for Config {
         command
     }
 }
-
-use crate::core::v2::config::ConfigDocument;
-use crate::core::v2::config::CONFIG_FILE;
 
 impl Command<Context> for Config {
     type Status = OrbitResult;

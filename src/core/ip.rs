@@ -1,454 +1,424 @@
-use std::collections::HashMap;
+use crate::core::manifest;
+use crate::core::manifest::Manifest;
+use crate::util::anyerror::AnyError;
+use crate::util::anyerror::Fault;
 use std::path::PathBuf;
 
-use tempfile::tempdir;
+use super::lockfile::LockFile;
+use super::lockfile::IP_LOCK_FILE;
+use super::manifest::FromFile;
+use crate::core::lang::vhdl::primaryunit::PrimaryUnit;
+use crate::core::lang::vhdl::token::Identifier;
+use crate::core::lockfile::LockEntry;
+use crate::core::manifest::IP_MANIFEST_FILE;
+use crate::core::manifest::ORBIT_METADATA_FILE;
+use crate::core::manifest::ORBIT_SUM_FILE;
+use crate::util::sha256::Sha256Hash;
+use std::collections::HashMap;
+use std::error::Error;
+use std::str::FromStr;
+use toml_edit::Document;
 
-use super::catalog::Catalog;
-use super::lang::vhdl::dst;
-use super::lang::vhdl::primaryunit::PrimaryUnit;
-use super::lang::vhdl::token::{Identifier, VHDLTokenizer};
-use super::lockfile::{LockEntry, LockFile};
-use super::manifest::IpManifest;
-use super::pkgid::PkgId;
-use super::version::Version;
-use crate::core::catalog::CacheSlot;
-use crate::core::manifest;
-use crate::core::pkgid::PkgPart;
-use crate::util::anyerror::{AnyError, Fault};
-use crate::util::graphmap::GraphMap;
-use crate::util::overdetsys;
-
-/// Given a partial/full ip specification `ip_spec`, sift through the manifests
-/// for a possible determined unique solution.
-///
-/// Note: Currently clones each id, possibly look for faster implemtenation avoiding clone.
-pub fn find_ip(ip_spec: &PkgId, universe: Vec<&PkgId>) -> Result<PkgId, AnyError> {
-    // try to find ip name
-    let space: Vec<Vec<PkgPart>> = universe
-        .into_iter()
-        .map(|f| f.into_full_vec().unwrap())
-        .collect();
-    let result = match overdetsys::solve(space, ip_spec.iter()) {
-        Ok(r) => r,
-        Err(e) => match e {
-            overdetsys::OverDetSysError::NoSolution => {
-                Err(AnyError(format!("no ip as '{}' exists", ip_spec)))?
-            }
-            overdetsys::OverDetSysError::Ambiguous(set) => {
-                // assemble error message
-                let mut set = set.into_iter().map(|f| PkgId::from_vec(f));
-                let mut content = String::new();
-                while let Some(s) = set.next() {
-                    content.push_str(&format!("    {}\n", s.to_string()));
-                }
-                Err(AnyError(format!(
-                    "ambiguous ip '{}' yields multiple solutions:\n{}",
-                    ip_spec, content
-                )))?
-            }
-        },
-    };
-    Ok(PkgId::from_vec(result))
+#[derive(Debug, PartialEq)]
+pub struct Ip {
+    /// The base directory for the entire [Ip] structure.
+    root: PathBuf,
+    /// The metadata for the [Ip].
+    data: Manifest,
+    /// The lockfile for the [Ip].
+    lock: LockFile,
 }
 
-/// Constructs an ip-graph from a lockfile.
-pub fn graph_ip_from_lock(lock: &LockFile) -> Result<GraphMap<IpSpec, &LockEntry, ()>, Fault> {
-    let mut graph = GraphMap::new();
-    // add all vertices
-    lock.inner().iter().for_each(|f| {
-        graph.add_node(f.to_ip_spec(), f);
-    });
-    // add all edges
-    lock.inner().iter().for_each(|upper| {
-        // get list of dependencies
-        if let Some(deps) = upper.get_deps() {
-            for dep in deps {
-                // determine the most compatible entry for this dependency
-                let lower = lock.get_highest(&dep.0, &dep.1).unwrap();
-                graph.add_edge_by_key(&lower.to_ip_spec(), &upper.to_ip_spec(), ());
-            }
+impl Ip {
+    pub fn get_root(&self) -> &PathBuf {
+        &self.root
+    }
+
+    pub fn get_man(&self) -> &Manifest {
+        &self.data
+    }
+
+    pub fn get_lock(&self) -> &LockFile {
+        &self.lock
+    }
+
+    pub fn load(root: PathBuf) -> Result<Self, Box<dyn Error>> {
+        let man_path = root.join(IP_MANIFEST_FILE);
+        if man_path.exists() == false || man_path.is_file() == false {
+            return Err(AnyError(format!("A manifest file does not exist")))?;
         }
-    });
-    Ok(graph)
-}
+        let lock_path = root.join(IP_LOCK_FILE);
+        Ok(Self {
+            root: root,
+            data: Manifest::from_file(&man_path)?,
+            lock: LockFile::from_file(&lock_path)?,
+        })
+    }
 
-/// Constructs a graph at the IP-level.
-///
-/// Note: this function performs no reduction.
-fn graph_ip<'a>(
-    root: &'a IpManifest,
-    catalog: &'a Catalog<'a>,
-) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, Fault> {
-    // create empty graph
-    let mut g = GraphMap::new();
-    // construct iterative approach with lists
-    let t = g.add_node(
-        root.into_ip_spec(),
-        IpNode::new_keep(root, Identifier::new_working()),
-    );
-    let mut processing = vec![(t, root)];
+    /// Checks if the given path hosts a valid manifest file.
+    pub fn is_valid(path: &PathBuf) -> Result<(), Box<dyn Error>> {
+        let man_path = path.join(IP_MANIFEST_FILE);
+        if man_path.exists() == false || man_path.is_file() == false {
+            return Err(AnyError(format!("A manifest file does not exist")))?;
+        }
+        // attempt to load the manifest file
+        let _ = Manifest::from_file(&man_path)?;
+        return Ok(());
+    }
 
-    let mut iden_set: HashMap<Identifier, PrimaryUnit> = HashMap::new();
-    // add root's identifiers
-    root.collect_units(true)?
-        .into_iter()
-        .for_each(|(key, unit)| {
-            iden_set.insert(key, unit);
+    /// Finds all Manifest files available in the provided path `path`.
+    ///
+    /// Errors if on filesystem problems.
+    fn detect_all_sub(path: &PathBuf, name: &str, is_exclusive: bool) -> Result<Vec<Self>, Fault> {
+        let mut result = Vec::new();
+        // walk the ORBIT_PATH directory @TODO recursively walk inner directories until hitting first 'Orbit.toml' file
+        for mut entry in manifest::find_file(&path, &name, is_exclusive)? {
+            // read ip_spec from each manifest
+            let man = Manifest::from_file(&entry)?;
+            entry.pop();
+            result.push(Self {
+                root: entry,
+                data: man,
+                lock: LockFile::new(),
+            });
+        }
+        Ok(result)
+    }
+
+    /// Finds all IP manifest files along the provided path `path`.
+    ///
+    /// Wraps Manifest::detect_all.
+    pub fn detect_all(path: &PathBuf) -> Result<Vec<Self>, Box<dyn std::error::Error>> {
+        Self::detect_all_sub(path, IP_MANIFEST_FILE, true)
+    }
+
+    /// Checks the metadata file for a entry for `dynamic`.
+    pub fn is_dynamic(&self) -> bool {
+        self.get_root().join(".orbit-dynamic").exists() == true
+    }
+
+    pub fn generate_dst_lut(&self) -> HashMap<Identifier, String> {
+        // @todo: read units from metadata to speed up results
+        let units = Self::collect_units(true, self.get_root()).unwrap();
+        let checksum = Ip::read_checksum_proof(self.get_root()).unwrap();
+        // compose the lut for symbol transformation
+        let mut lut = HashMap::new();
+        units.into_iter().for_each(|(key, _)| {
+            lut.insert(
+                key.clone(),
+                "_".to_string() + checksum.to_string().get(0..10).unwrap(),
+            );
         });
-
-    let mut is_root: bool = true;
-
-    while let Some((num, ip)) = processing.pop() {
-        // read dependencies
-        let deps = ip.get_dependencies();
-        for (pkgid, version) in deps.inner() {
-            match catalog.inner().get(pkgid) {
-                Some(status) => {
-                    // find this IP to read its dependencies
-                    match status.get(version, true) {
-                        Some(dep) => {
-                            // check if node is already in graph ????
-                            let s = if let Some(existing_node) =
-                                g.get_node_by_key(&dep.into_ip_spec())
-                            {
-                                existing_node.index()
-                            } else {
-                                // check if identifiers are already taken in graph
-                                let units = dep.collect_units(false)?;
-                                let dst = if let Some(_dupe) =
-                                    units.iter().find(|(key, _)| iden_set.contains_key(key))
-                                {
-                                    // let dupe = iden_set.get(dupe.0).unwrap();
-                                    if is_root == true {
-                                        panic!("duplicate!")
-                                        // return Err(VhdlIdentifierError::DuplicateAcrossDirect(
-                                        //     dupe.get_iden().clone(),
-                                        //     dep.into_ip_spec(),
-                                        //     PathBuf::from(dupe.get_unit().get_source_code_file().clone()),
-                                        //     dupe.get_unit().get_symbol().unwrap().get_position().clone()
-                                        // ))?
-                                    }
-                                    true
-                                } else {
-                                    false
-                                };
-                                // update the hashset with the new unique non-taken identifiers
-                                if dst == false {
-                                    for (key, unit) in units {
-                                        iden_set.insert(key, unit);
-                                    }
-                                }
-                                let lib = Identifier::from(
-                                    dep.get_pkgid().get_library().as_ref().unwrap(),
-                                );
-                                g.add_node(
-                                    dep.into_ip_spec(),
-                                    match dst {
-                                        true => IpNode::new_alter(dep, lib),
-                                        false => IpNode::new_keep(dep, lib),
-                                    },
-                                )
-                            };
-                            g.add_edge_by_index(s, num, ());
-                            processing.push((s, dep));
-                        }
-                        // todo: try to use the lock file to fill in missing pieces
-                        None => {
-                            return Err(AnyError(format!(
-                                "ip '{} v{}' is not installed",
-                                pkgid, version
-                            )))?
-                        }
-                    }
-                }
-                // todo: try to use the lock file to fill in missing pieces
-                None => return Err(AnyError(format!("unknown ip: {}", pkgid)))?,
-            }
-        }
-        is_root = false;
-    }
-    // println!("{:?}", iden_set);
-    Ok(g)
-}
-
-pub fn compute_final_ip_graph<'a>(
-    target: &'a IpManifest,
-    catalog: &'a Catalog<'a>,
-) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, Fault> {
-    // collect rough outline of ip graph
-    let mut rough_ip_graph = graph_ip(&target, &catalog)?;
-
-    // keep track of list of neighbors that must perform dst and their lookup-tables to use after processing all direct impacts
-    let mut transforms = HashMap::<IpSpec, HashMap<Identifier, String>>::new();
-
-    // iterate through the graph to find all DST nodes to create their replacements
-    {
-        let mut graph_iter = rough_ip_graph.get_map().iter();
-        while let Some((key, node)) = graph_iter.next() {
-            if node.as_ref().is_direct_conflict() == true {
-                // remember units if true that a transform occurred
-                let lut = node.as_ref().as_ip().generate_dst_lut();
-                match transforms.get_mut(key) {
-                    // update the hashmap for the key
-                    Some(entry) => lut.into_iter().for_each(|pair| {
-                        entry.insert(pair.0, pair.1);
-                        ()
-                    }),
-                    // create new entry with the lut
-                    None => {
-                        transforms.insert(key.clone(), lut);
-                        ()
-                    }
-                }
-
-                // grab neighbors and update their hashmaps
-                let index = rough_ip_graph.get_node_by_key(&key).unwrap().index();
-                let mut dependents = rough_ip_graph.get_graph().successors(index);
-
-                while let Some(i) = dependents.next() {
-                    // remember units if true that a transform occurred on the direct conflict node
-                    let lut = node.as_ref().as_ip().generate_dst_lut();
-                    // determine the neighboring node's ip spec
-                    let neighbor_key = rough_ip_graph.get_key_by_index(i).unwrap();
-
-                    match transforms.get_mut(&neighbor_key) {
-                        // update the hashmap for the key
-                        Some(entry) => lut.into_iter().for_each(|pair| {
-                            entry.insert(pair.0, pair.1);
-                            ()
-                        }),
-                        // create new entry with the lut
-                        None => {
-                            transforms.insert(neighbor_key.clone(), lut);
-                            ()
-                        }
-                    }
-                }
-            }
-        }
-    }
-    // println!("{:?}", transforms);
-
-    // perform each dynamic symbol transform
-    let mut transforms_iter = transforms.into_iter();
-    while let Some((key, lut)) = transforms_iter.next() {
-        rough_ip_graph
-            .get_map_mut()
-            .get_mut(&key)
-            .unwrap()
-            .as_ref_mut()
-            .dynamic_symbol_transform(&lut, catalog.get_cache_path());
+        lut
     }
 
-    Ok(rough_ip_graph)
-}
-
-/// Take the ip graph and create the entire space of VHDL files that could be used for the current design.
-pub fn build_ip_file_list<'a>(
-    ip_graph: &'a GraphMap<IpSpec, IpNode<'a>, ()>,
-) -> Vec<IpFileNode<'a>> {
-    let mut files = Vec::new();
-    ip_graph.get_map().iter().for_each(|(_, ip)| {
-        crate::util::filesystem::gather_current_files(&ip.as_ref().as_ip().get_root(), false)
-            .into_iter()
-            .filter(|f| crate::core::fileset::is_vhdl(f))
-            .for_each(|f| {
-                files.push(IpFileNode {
-                    file: f,
-                    ip: ip.as_ref().as_ip(),
-                    library: ip.as_ref().get_library().clone(),
-                });
-            })
-    });
-    files
-}
-
-#[derive(Debug, PartialEq)]
-pub struct IpNode<'a> {
-    dyn_state: DynState,
-    original: &'a IpManifest,
-    transform: Option<IpManifest>,
-    library: Identifier,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum DynState {
-    Keep,
-    Alter,
-}
-
-impl<'a> IpNode<'a> {
-    fn new_keep(og: &'a IpManifest, lib: Identifier) -> Self {
-        Self {
-            dyn_state: DynState::Keep,
-            original: og,
-            transform: None,
-            library: lib,
-        }
+    pub fn set_as_dynamic(&self) -> () {
+        let _ = std::fs::write(self.get_root().join(".orbit-dynamic"), "").unwrap();
     }
 
-    fn new_alter(og: &'a IpManifest, lib: Identifier) -> Self {
-        Self {
-            dyn_state: DynState::Alter,
-            original: og,
-            transform: None,
-            library: lib,
-        }
-    }
-
-    /// References the internal `IpManifest` struct.
+    /// Checks if needing to read off the lock file.
     ///
-    /// Favors the dynamic IP if it exists over the original IP.
-    pub fn as_ip(&'a self) -> &'a IpManifest {
-        if let Some(altered) = &self.transform {
-            altered
-        } else {
-            &self.original
-        }
-    }
-
-    /// References the underlying original `IpManifest` struct regardless if it has
-    /// a transform.
-    pub fn as_original_ip(&'a self) -> &'a IpManifest {
-        &self.original
-    }
-
-    fn get_library(&self) -> &Identifier {
-        &self.library
-    }
-
-    /// Checks if an ip is a direct result requiring DST.
-    fn is_direct_conflict(&self) -> bool {
-        match &self.dyn_state {
-            DynState::Alter => true,
-            DynState::Keep => false,
-        }
-    }
-
-    /// Transforms the current IP into a different installed ip with alternated symbols.
-    ///
-    /// Returns the new IpManifest to be replaced with. If the manifest was marked as `Keep`, then
-    /// it returns the original manifest.
-    ///
-    /// Note: this function can only be applied ip that are already installed to the cache.
-    fn dynamic_symbol_transform(
-        &mut self,
-        lut: &HashMap<Identifier, String>,
-        cache_path: &PathBuf,
-    ) -> () {
-        // create a temporary directory
-        let temp = tempdir().unwrap();
-        let temp_path = temp.path().to_path_buf();
-        // copy entire project folder to temporary directory
-        crate::util::filesystem::copy(&self.original.get_root(), &temp_path, true).unwrap();
-
-        // create the ip from the temporary dir
-        let temp_ip = IpManifest::from_path(&temp_path).unwrap();
-
-        // edit all vhdl files
-        let files = crate::util::filesystem::gather_current_files(&temp_path, false);
-        for file in &files {
-            // perform dst on the data
-            if crate::core::fileset::is_vhdl(&file) == true {
-                // parse into tokens
-                let vhdl_path = PathBuf::from(file);
-                let code = std::fs::read_to_string(&vhdl_path).unwrap();
-                let tokens = VHDLTokenizer::from_source_code(&code).into_tokens_all();
-                // perform DYNAMIC SYMBOL TRANSFORM
-                let transform = dst::dyn_symbol_transform(&tokens, &lut);
-                // rewrite the file
-                std::fs::write(&vhdl_path, transform).unwrap();
-            }
-        }
-        // update the slot with a transformed IP manifest
-        self.transform = Some(install_dst(&temp_ip, &cache_path));
-    }
-}
-
-/// Creates a ip manifest that undergoes dynamic symbol transformation.
-///
-/// Returns the DST ip for reference.
-fn install_dst(source_ip: &IpManifest, root: &std::path::PathBuf) -> IpManifest {
-    // compute the new checksum on the new ip and its transformed hdl files
-    let sum = source_ip.compute_checksum();
-
-    // determine the cache slot name
-    let cache_path = {
-        let cache_slot = CacheSlot::new(
-            source_ip.get_pkgid().get_name(),
-            source_ip.get_version(),
-            &sum,
+    /// This determines if the lock file's data matches the Orbit.toml manifest data,
+    /// indicating it is safe to pull data from the lock file and no changes would be
+    /// made to the lock file.
+    pub fn can_use_lock(&self) -> bool {
+        let target = self.get_lock().get(
+            self.get_man().get_ip().get_name(),
+            self.get_man().get_ip().get_version(),
         );
-        root.join(cache_slot.as_ref())
-    };
-
-    // check if already exists and return early with manifest if exists
-    if cache_path.exists() == true {
-        return IpManifest::from_path(&cache_path).unwrap();
-    }
-
-    // copy the source ip to the new location
-    crate::util::filesystem::copy(&source_ip.get_root(), &cache_path, true).unwrap();
-    let mut cached_ip = IpManifest::from_path(&cache_path).unwrap();
-
-    // cache results of primary design unit list
-    cached_ip.stash_units();
-    // indicate this installation is dynamic in the metadata
-    cached_ip.set_as_dynamic();
-    // save and write the new metadata
-    cached_ip.write_metadata().unwrap();
-
-    // write the new checksum file
-    std::fs::write(
-        &cache_path.join(manifest::ORBIT_SUM_FILE),
-        sum.to_string().as_bytes(),
-    )
-    .unwrap();
-
-    cached_ip
-}
-
-#[derive(Debug, PartialEq)]
-pub struct IpFileNode<'a> {
-    file: String,
-    library: Identifier,
-    ip: &'a IpManifest,
-}
-
-impl<'a> IpFileNode<'a> {
-    pub fn new(file: String, ip: &'a IpManifest, lib: Identifier) -> Self {
-        Self {
-            file: file,
-            ip: ip,
-            library: lib,
+        match target {
+            Some(entry) => entry.matches_target(&LockEntry::from((self, true))),
+            None => false,
         }
     }
 
-    pub fn get_file(&self) -> &String {
-        &self.file
+    /// Checks if the lockfile exists
+    pub fn lock_exists(&self) -> bool {
+        self.lock.is_empty() == false
     }
 
-    pub fn get_ip_manifest(&self) -> &IpManifest {
-        &self.ip
+    /// Computes the checksum on the root of the IP.
+    ///
+    /// Changes the current working directory to the root for consistent computation.
+    pub fn compute_checksum(dir: &PathBuf) -> Sha256Hash {
+        let ip_files = crate::util::filesystem::gather_current_files(&dir, true);
+        let checksum = crate::util::checksum::checksum(&ip_files, &dir);
+        checksum
     }
 
-    /// References the library identifier.
-    pub fn get_library(&self) -> &Identifier {
-        &self.library
+    /// Gets the already calculated checksum from an installed IP from [ORBIT_SUM_FILE].
+    ///
+    /// Returns `None` if the file does not exist, is unable to read into a string, or
+    /// if the sha cannot be parsed.
+    pub fn read_checksum_proof(dir: &PathBuf) -> Option<Sha256Hash> {
+        let sum_file = dir.join(ORBIT_SUM_FILE);
+        if sum_file.exists() == false {
+            None
+        } else {
+            match std::fs::read_to_string(&sum_file) {
+                Ok(text) => match Sha256Hash::from_str(&text.trim()) {
+                    Ok(sha) => Some(sha),
+                    Err(_) => None,
+                },
+                Err(_) => None,
+            }
+        }
+    }
+
+    /// Caches the result of collecting all the primary design units for the given package.
+    ///
+    /// Writes the data to the toml data structure. Note, this function does not save the manifest data to file.
+    // pub fn stash_units(&mut self) -> () {
+    //     // collect the units
+    //     let units = Self::collect_units(true).unwrap();
+    //     let tbl = self.get_manifest_mut().get_mut_doc()["ip"].as_table_mut().unwrap();
+    //     tbl.insert("units", toml_edit::Item::Value(toml_edit::Value::Array(Array::new())));
+    //     let arr = tbl["units"].as_array_mut().unwrap();
+    //     // map the units into a serialized data format
+    //     for (_, unit) in &units {
+    //         arr.push(unit.to_toml());
+    //     }
+    //     tbl["units"].as_array_mut().unwrap().iter_mut().for_each(|f| {
+    //         f.decor_mut().set_prefix("\n    ");
+    //         f.decor_mut().set_suffix("");
+    //     });
+    //     tbl["units"].as_array_mut().unwrap().set_trailing("\n");
+    // }
+
+    /// Gathers the list of primary design units for the current ip.
+    ///
+    /// If the manifest has an toml entry for `units` and `force` is set to `false`,
+    /// then it will return that list rather than go through files.
+    pub fn collect_units(
+        force: bool,
+        dir: &PathBuf,
+    ) -> Result<HashMap<Identifier, PrimaryUnit>, Fault> {
+        // try to read from metadata file
+        match (force == false) && Self::read_units_from_metadata(&dir).is_some() {
+            // use precomputed result
+            true => Ok(Self::read_units_from_metadata(&dir).unwrap()),
+            false => {
+                // collect all files
+                let files = crate::util::filesystem::gather_current_files(&dir, false);
+                Ok(crate::core::lang::vhdl::primaryunit::collect_units(&files)?)
+            }
+        }
+    }
+
+    pub fn read_units_from_metadata(dir: &PathBuf) -> Option<HashMap<Identifier, PrimaryUnit>> {
+        let meta_file = dir.join(ORBIT_METADATA_FILE);
+        if std::path::Path::exists(&meta_file) == true {
+            if let Ok(contents) = std::fs::read_to_string(&meta_file) {
+                if let Ok(toml) = contents.parse::<Document>() {
+                    let entry = toml.get("ip")?.as_table()?.get("units")?.as_array()?;
+                    let mut map = HashMap::new();
+                    for unit in entry {
+                        let pdu = PrimaryUnit::from_toml(unit.as_inline_table()?)?;
+                        map.insert(pdu.get_iden().clone(), pdu);
+                    }
+                    Some(map)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 }
+
+use crate::core::pkgid::PkgPart;
+use crate::core::version::Version;
+
+const SPEC_DELIM: &str = ":";
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone)]
-pub struct IpSpec(PkgId, Version);
+pub struct IpSpec(PkgPart, Version);
 
 impl IpSpec {
-    pub fn new(pkgid: PkgId, version: Version) -> Self {
-        Self(pkgid, version)
+    pub fn new(id: PkgPart, version: Version) -> Self {
+        Self(id, version)
+    }
+
+    pub fn get_name(&self) -> &PkgPart {
+        &self.0
+    }
+
+    pub fn get_version(&self) -> &Version {
+        &self.1
+    }
+}
+
+impl FromStr for IpSpec {
+    type Err = Box<dyn Error>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // split by delimiter
+        match s.rsplit_once(SPEC_DELIM) {
+            Some((n, v)) => Ok(Self::new(PkgPart::from_str(n)?, Version::from_str(v)?)),
+            None => Err(Box::new(AnyError(format!(
+                "missing specification delimiter {}",
+                SPEC_DELIM
+            )))),
+        }
     }
 }
 
 impl std::fmt::Display for IpSpec {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} v{}", self.0, self.1)
+        write!(f, "{}{}{}", self.get_name(), SPEC_DELIM, self.get_version())
+    }
+}
+
+impl From<(PkgPart, Version)> for IpSpec {
+    fn from(value: (PkgPart, Version)) -> Self {
+        Self(value.0, value.1)
+    }
+}
+
+use serde::de::{self};
+use serde::Serializer;
+use serde::{Deserialize, Serialize};
+use std::fmt;
+
+impl<'de> Deserialize<'de> for IpSpec {
+    fn deserialize<D>(deserializer: D) -> Result<IpSpec, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        struct LayerVisitor;
+
+        impl<'de> de::Visitor<'de> for LayerVisitor {
+            type Value = IpSpec;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("an identifier and a version")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                match IpSpec::from_str(v) {
+                    Ok(v) => Ok(v),
+                    Err(e) => Err(de::Error::custom(e)),
+                }
+            }
+        }
+
+        deserializer.deserialize_map(LayerVisitor)
+    }
+}
+
+impl Serialize for IpSpec {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+use crate::core::version::AnyVersion;
+
+#[derive(Debug, PartialEq)]
+pub struct PartialIpSpec(PkgPart, AnyVersion);
+
+impl PartialIpSpec {
+    pub fn new() -> Self {
+        Self(PkgPart::new(), AnyVersion::Latest)
+    }
+
+    pub fn get_name(&self) -> &PkgPart {
+        &self.0
+    }
+
+    pub fn get_version(&self) -> &AnyVersion {
+        &self.1
+    }
+}
+
+impl FromStr for PartialIpSpec {
+    type Err = AnyError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.rsplit_once(SPEC_DELIM) {
+            // split by delimiter (beginning from rhs)
+            Some((n, v)) => Ok(Self(
+                match PkgPart::from_str(n) {
+                    Ok(p) => p,
+                    Err(e) => return Err(AnyError(e.to_string())),
+                },
+                match AnyVersion::from_str(v) {
+                    Ok(w) => w,
+                    Err(e) => return Err(AnyError(e.to_string())),
+                },
+            )),
+            // take entire string as name and refer to latest version
+            None => Ok(Self(
+                match PkgPart::from_str(s) {
+                    Ok(p) => p,
+                    Err(e) => return Err(AnyError(e.to_string())),
+                },
+                AnyVersion::Latest,
+            )),
+        }
+    }
+}
+
+impl std::fmt::Display for PartialIpSpec {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}{}", self.get_name(), SPEC_DELIM, self.get_version())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn compute_checksum() {
+        let sum = Ip::compute_checksum(&PathBuf::from("./tests/env/project1/"));
+        assert_eq!(
+            sum,
+            Sha256Hash::from_u32s([
+                2472527351, 1678808787, 3321465315, 1927515725, 108238780, 2368649324, 2487325306,
+                4053483655
+            ])
+        )
+    }
+
+    #[test]
+    fn from_str_ip_spec() {
+        let ip = format!("name{}1.0.0", SPEC_DELIM);
+
+        assert_eq!(
+            IpSpec::new(
+                PkgPart::from_str("name").unwrap(),
+                Version::from_str("1.0.0").unwrap()
+            ),
+            IpSpec::from_str(&ip).unwrap()
+        );
+
+        // // @note: errors due to invalid char for parsing PkgPart, but tests for
+        // // extracting delimiter from RHS only once
+        // let ip = format!("global{}local{}0.3.0", SPEC_DELIM, SPEC_DELIM);
+
+        // assert_eq!(
+        //     IpSpec::new(
+        //         PkgPart::from_str(&format!("global{}local", SPEC_DELIM)).unwrap(),
+        //         Version::from_str("0.3.0").unwrap()
+        //     ),
+        //     IpSpec::from_str(&ip).unwrap()
+        // );
+    }
+
+    #[test]
+    fn from_str_ip_spec_bad() {
+        let ip = format!("name");
+
+        assert_eq!(IpSpec::from_str(&ip).is_err(), true);
     }
 }

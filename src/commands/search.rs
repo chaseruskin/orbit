@@ -8,8 +8,8 @@ use clif::Cli;
 use clif::Error as CliError;
 use std::collections::BTreeMap;
 
-use crate::core::v2::catalog::Catalog;
-use crate::core::v2::catalog::IpLevel;
+use crate::core::catalog::Catalog;
+use crate::core::catalog::IpLevel;
 use crate::core::version::AnyVersion;
 
 #[derive(Debug, PartialEq)]

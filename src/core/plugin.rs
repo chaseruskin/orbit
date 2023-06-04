@@ -1,49 +1,38 @@
-use super::config::FromTomlError;
-use super::context::Context;
-use crate::core::config::FromToml;
-use crate::core::fileset::Fileset;
-use crate::util::anyerror::{AnyError, Fault};
+//! A plugin is a user-defined backend workflow for processing the files collected
+//! in the generated blueprint file.
+
+use crate::core::context::Context;
+use crate::core::fileset::Style;
+use crate::util::anyerror::AnyError;
+use crate::util::anyerror::Fault;
+use crate::util::filesystem;
 use crate::util::filesystem::Standardize;
+use serde_derive::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::error::Error;
 use std::path::PathBuf;
+use std::str::FromStr;
 
-#[derive(Debug, PartialEq)]
+pub type Plugins = Vec<Plugin>;
+
+type Filesets = HashMap<String, Style>;
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Plugin {
     alias: String,
     command: String,
-    args: Vec<String>,
-    filesets: Vec<Fileset>,
+    args: Option<Vec<String>>,
+    fileset: Option<Filesets>,
     summary: Option<String>,
     details: Option<String>,
+    #[serde(skip_serializing, skip_deserializing)]
     root: Option<PathBuf>,
 }
 
-impl Process for Plugin {
-    fn get_root(&self) -> &PathBuf {
-        &self.root.as_ref().unwrap()
-    }
-
-    fn get_args(&self) -> &Vec<String> {
-        &self.args
-    }
-
-    fn get_command(&self) -> &String {
-        &self.command
-    }
-}
-
 impl Plugin {
-    /// Creates a new `Plugin` struct.
-    pub fn new() -> Self {
-        Self {
-            alias: String::new(),
-            command: String::new(),
-            args: Vec::new(),
-            summary: None,
-            details: None,
-            root: None,
-            filesets: Vec::new(),
-        }
+    pub fn get_filesets(&self) -> Option<&Filesets> {
+        self.fileset.as_ref()
     }
 
     /// Displays a plugin's information in a single line for quick glance.
@@ -58,7 +47,7 @@ impl Plugin {
     /// Creates a string to display a list of plugins.
     ///
     /// The string lists the plugins in alphabetical order by `alias`.
-    pub fn list_plugins(plugs: &mut [&Plugin]) -> String {
+    pub fn list_plugins(plugs: &mut [&&Plugin]) -> String {
         let mut list = String::from("Plugins:\n");
         plugs.sort_by(|a, b| a.alias.cmp(&b.alias));
         for plug in plugs {
@@ -67,20 +56,19 @@ impl Plugin {
         list
     }
 
-    /// References the plugin's `alias`.
-    pub fn alias(&self) -> &String {
-        &self.alias
-    }
-
-    /// References the plugin's `filesets`.
-    pub fn filesets(&self) -> &Vec<Fileset> {
-        &self.filesets
-    }
-
     /// Sets the root directory from where the command should reference paths from.
-    pub fn set_root(mut self, root: &PathBuf) -> Self {
-        self.root = Some(root.to_path_buf());
+    pub fn root(mut self, root: PathBuf) -> Self {
+        self.root = Some(root);
         self
+    }
+
+    pub fn set_root(&mut self, root: PathBuf) {
+        self.root = Some(root);
+    }
+
+    /// References the alias to call this plugin.
+    pub fn get_alias(&self) -> &str {
+        &self.alias
     }
 }
 
@@ -97,16 +85,22 @@ filesets:
             self.alias,
             self.command,
             self.args
+                .as_ref()
+                .unwrap_or(&Vec::new())
                 .iter()
                 .fold(String::new(), |x, y| { x + "\"" + &y + "\" " }),
             PathBuf::standardize(self.root.as_ref().unwrap()).display(),
             {
-                if self.filesets.is_empty() {
+                if self.fileset.is_none() {
                     String::from("    None\n")
                 } else {
-                    self.filesets.iter().fold(String::new(), |x, y| {
-                        x + &format!("    {:<16}{}\n", y.get_name(), y.get_pattern())
-                    })
+                    self.fileset
+                        .as_ref()
+                        .unwrap()
+                        .iter()
+                        .fold(String::new(), |x, (n, p)| {
+                            x + &format!("    {:<16}{}\n", n, p.inner())
+                        })
                 }
             },
             {
@@ -127,51 +121,11 @@ filesets:
     }
 }
 
-impl FromToml for Plugin {
-    type Err = Fault;
+impl FromStr for Plugin {
+    type Err = toml::de::Error;
 
-    fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err>
-    where
-        Self: Sized,
-    {
-        Ok(Self {
-            alias: Self::require(table, "alias")?,
-            command: Self::require(table, "command")?,
-            args: if let Some(args) = table.get("args") {
-                if args.is_array() == false {
-                    return Err(FromTomlError::ExpectingStringArray(String::from("args")))?;
-                } else {
-                    args.as_array()
-                        .unwrap()
-                        .into_iter()
-                        .map(|f| f.as_str().unwrap().to_owned())
-                        .collect()
-                }
-            } else {
-                Vec::new()
-            },
-            root: None,
-            summary: Self::get(table, "summary")?,
-            details: Self::get(table, "details")?,
-            filesets: {
-                if let Some(inner_table) = table.get("fileset") {
-                    // grab every key and value to transform into a fileset
-                    let inner_table = inner_table
-                        .as_table_like()
-                        .expect("fileset must be a table");
-                    let mut iter = inner_table.iter();
-                    let mut filesets = Vec::new();
-                    while let Some((key, value)) = iter.next() {
-                        let value = value.as_str().unwrap();
-                        filesets.push(Fileset::new().name(key).pattern(value).unwrap())
-                    }
-                    filesets
-                } else {
-                    Vec::new()
-                }
-            },
-        })
-        // @todo: verify there are no extra keys
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        toml::from_str(s)
     }
 }
 
@@ -180,17 +134,17 @@ pub trait Process {
 
     fn get_command(&self) -> &String;
 
-    fn get_args(&self) -> &Vec<String>;
+    fn get_args(&self) -> Vec<&String>;
 
     /// Runs the given `command` with the set `args` for the plugin.
     fn execute(&self, extra_args: &[String], verbose: bool) -> Result<(), Fault> {
         // resolve the relative paths in the command and arguments defined in original configuration
         let root_path = self.get_root();
-        let command = crate::util::filesystem::resolve_rel_path(root_path, &self.get_command());
+        let command = filesystem::resolve_rel_path(root_path, &self.get_command());
         let arguments: Vec<String> = self
             .get_args()
             .iter()
-            .map(|f| crate::util::filesystem::resolve_rel_path(root_path, f))
+            .map(|f| filesystem::resolve_rel_path(root_path, f))
             .collect();
 
         // append args set on the command-line to the base-line of arguments
@@ -202,11 +156,8 @@ pub trait Process {
                 .fold(String::new(), |x, y| x + "\"" + &y + "\" ");
             println!("running: {} {}", command, s);
         }
-        let mut proc = crate::util::filesystem::invoke(
-            &command,
-            &args,
-            Context::enable_windows_bat_file_match(),
-        )?;
+        let mut proc =
+            filesystem::invoke(&command, &args, Context::enable_windows_bat_file_match())?;
         let exit_code = proc.wait()?;
         match exit_code.code() {
             Some(num) => {
@@ -218,6 +169,23 @@ pub trait Process {
             }
             None => Err(AnyError(format!("terminated by signal")))?,
         }
+    }
+}
+
+impl Process for Plugin {
+    fn get_root(&self) -> &PathBuf {
+        &self.root.as_ref().unwrap()
+    }
+
+    fn get_args(&self) -> Vec<&String> {
+        match &self.args {
+            Some(list) => list.iter().map(|e| e).collect(),
+            None => Vec::new(),
+        }
+    }
+
+    fn get_command(&self) -> &String {
+        &self.command
     }
 }
 
@@ -244,46 +212,91 @@ impl std::fmt::Display for PluginError {
 mod test {
     use super::*;
 
+    #[derive(Debug, PartialEq, Serialize, Deserialize)]
+    pub struct Plugins {
+        plugin: Vec<Plugin>,
+    }
+
+    impl Plugins {
+        pub fn new() -> Self {
+            Self { plugin: Vec::new() }
+        }
+    }
+
+    impl FromStr for Plugins {
+        type Err = toml::de::Error;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            toml::from_str(s)
+        }
+    }
+
+    const P_1: &str = r#" 
+alias = "ghdl"
+summary = "Backend script for simulating VHDL with GHDL."  
+command = "python"
+args = ["./scripts/ghdl.py"]
+fileset.py-model = "{{orbit.bench}}.py"
+fileset.text = "*.txt"
+"#;
+
+    const P_2: &str = r#"
+alias = "ffi"
+command = "bash"
+args = ["~/scripts/download.bash"]    
+"#;
+
     #[test]
-    fn new() {
-        let plug = Plugin::new();
+    fn from_toml_string() {
+        let plug = Plugin::from_str(P_1).unwrap();
         assert_eq!(
             plug,
             Plugin {
-                summary: None,
+                alias: String::from("ghdl"),
+                command: String::from("python"),
+                args: Some(vec![String::from("./scripts/ghdl.py")]),
+                summary: Some(String::from(
+                    "Backend script for simulating VHDL with GHDL."
+                )),
+                fileset: Some(HashMap::from([
+                    (
+                        String::from("py-model"),
+                        Style::from_str("{{orbit.bench}}.py").unwrap()
+                    ),
+                    (String::from("text"), Style::from_str("*.txt").unwrap()),
+                ])),
                 details: None,
                 root: None,
-                alias: String::new(),
-                command: String::new(),
-                args: Vec::new(),
-                filesets: Vec::new(),
+            }
+        );
+
+        let plug = Plugin::from_str(P_2).unwrap();
+        assert_eq!(
+            plug,
+            Plugin {
+                alias: String::from("ffi"),
+                command: String::from("bash"),
+                args: Some(vec![String::from("~/scripts/download.bash")]),
+                summary: None,
+                fileset: None,
+                details: None,
+                root: None,
             }
         );
     }
 
     #[test]
-    fn from_toml() {
-        let toml = r#"
-[[plugin]]
-alias = "ghdl"
-command = "python"
-args = ["orbit-ghdl.py"]
-fileset.py-model = "*_mdl.py"
-details = "more info"
-"#;
-        let doc = toml.parse::<toml_edit::Document>().unwrap();
-        let plug = Plugin::from_toml(&doc["plugin"].as_array_of_tables().unwrap().get(0).unwrap())
-            .unwrap();
+    fn series_of_plugins() {
+        let contents = format!("{0}{1}\n{0}{2}", "[[plugin]]", P_1, P_2);
+        // assemble the list of protocols
+        let plugs = Plugins::from_str(&contents).unwrap();
         assert_eq!(
-            plug,
-            Plugin {
-                summary: None,
-                root: None,
-                details: Some(String::from("more info")),
-                alias: String::from("ghdl"),
-                command: String::from("python"),
-                args: vec!["orbit-ghdl.py".to_string()],
-                filesets: vec![Fileset::new().name("py-model").pattern("*_mdl.py").unwrap(),],
+            plugs,
+            Plugins {
+                plugin: vec![
+                    Plugin::from_str(P_1).unwrap(),
+                    Plugin::from_str(P_2).unwrap()
+                ],
             }
         );
     }

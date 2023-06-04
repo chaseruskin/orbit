@@ -1,8 +1,5 @@
-use super::pkgid::PkgPart;
-use super::vendor::VendorManifest;
-use crate::core::template::Template;
-use crate::core::v2::config::{Config, Configs, Locality};
-use crate::core::v2::plugin::Plugin;
+use crate::core::config::{Config, Configs, Locality};
+use crate::core::plugin::Plugin;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
@@ -22,38 +19,30 @@ pub struct Context {
     queue_path: PathBuf,
     /// The parent path to the current ip `Orbit.toml` manifest file.
     ip_path: Option<PathBuf>,
-    /// holds in-development mutable ip projects [***DEPRECATED***]
-    dev_path: Option<PathBuf>,
-    /// holds installed immutable git repositories to pull versions from into cache
-    store_path: PathBuf,
     /// Directory name for the intermediate build processes and outputs.    
     build_dir: String,
+    /// Flattened view of the current configuration settings.
     config: Config,
+    /// Entire list of configuration settings.
     all_configs: Configs,
-    plugins: HashMap<String, Plugin>, // @IDEA optionally move hashmap out of context and create it from fn to allow dynamic loading
-    templates: HashMap<String, Template>,
-    // vendors: HashMap<PkgPart, VendorManifest>,
+    // @idea: optionally move hashmap out of context and create it from fn to allow dynamic loading
+    plugins: HashMap<String, Plugin>,
 }
 
 impl Context {
     pub fn new() -> Context {
         let home = std::env::temp_dir();
         let cache = home.join("cache");
-        let store = home.join("store");
         let queue = home.join("queue");
         Context {
             home_path: home,
             cache_path: cache,
-            store_path: store,
             queue_path: queue,
             ip_path: None,
-            dev_path: None,
             plugins: HashMap::new(),
-            templates: HashMap::new(),
             all_configs: Configs::new(),
             config: Config::new(),
             build_dir: String::new(),
-            // vendors: HashMap::new(),
         }
     }
 
@@ -82,13 +71,6 @@ impl Context {
         }
         // verify the environment variable is set
         env::set_var(key, &self.home_path);
-        Ok(self)
-    }
-
-    /// Sets the store directory. If it was set from `var`, it assumes the path
-    /// exists. If setting by default (within HOME), it assumes HOME is already existing.
-    pub fn store(mut self, key: &str) -> Result<Context, Fault> {
-        self.store_path = self.folder(key, "store")?;
         Ok(self)
     }
 
@@ -152,24 +134,9 @@ impl Context {
         Ok(dir)
     }
 
-    /// Loads all vendor files.
-    pub fn read_vendors(self) -> Result<Self, Fault> {
-        panic!("deprecated")
-    }
-
     /// References the cache directory.
     pub fn get_cache_path(&self) -> &PathBuf {
         &self.cache_path
-    }
-
-    /// References the store directory.
-    pub fn get_store_path(&self) -> &PathBuf {
-        &self.store_path
-    }
-
-    /// References the list of linked vendors.
-    pub fn get_vendors(&self) -> &HashMap<PkgPart, VendorManifest> {
-        panic!("deprecated")
     }
 
     /// References the queue directory.
@@ -221,71 +188,8 @@ impl Context {
             cfg
         }
         .into();
-        // @TODO dynamically set from environment variables from configuration data
+        // @todo: dynamically set from environment variables from configuration data
         Ok(self)
-    }
-
-    /// References the templates in a map with `alias` as the keys.
-    pub fn get_templates(&self) -> &HashMap<String, Template> {
-        &self.templates
-    }
-
-    /// Iterates through the array of tables to define all templates.
-    // fn templates(mut self) -> Result<Context, Fault> {
-    //     let temps = self.config.collect_as_array_of_tables("template")?;
-
-    //     for (arr_tbl, root) in temps {
-    //         for tbl in arr_tbl {
-    //             let template = match Template::from_toml(tbl) {
-    //                 Ok(r) => r.resolve_root_path(&root),
-    //                 Err(e) => return Err(AnyError(format!("configuration {}: template {}", PathBuf::standardize(root.join(CONFIG_FILE)).display(), e)))?
-    //             };
-    //             self.templates.insert(template.alias().to_owned(), template);
-    //         }
-    //     }
-    //     Ok(self)
-    // }
-
-    /// Determines the orbit ip development path.
-    ///
-    /// First checks if the environment already has ORBIT_DEV_PATH set, otherwise it
-    /// will look for the value found in the config file. If no development path
-    /// is set, it will use the current directory.
-    ///
-    /// Note: Stange behavior where `edit` with vscode captures current ENV variables
-    /// into new window to prevent reading config for things like ORBIT_DEV_PATH.
-    ///
-    /// If `verify` is set to `true`, then it will ensure the path is a directory and exists.
-    // pub fn development_path(mut self, s: &str, verify: bool) -> Result<Context, Fault> {
-    //     // an explicit environment variable takes precedence over config file data
-    //     self.dev_path = Some(std::path::PathBuf::from(match std::env::var(s) {
-    //         Ok(v) => v,
-    //         Err(_) => {
-    //             // use current directory if the key-value pair is not there
-    //             let path = match self.get_config().get_as_str("core", "path")? {
-    //                 // normalize
-    //                 Some(p) => PathBuf::standardize(p).to_str().unwrap().to_string(),
-    //                 None => std::env::current_dir().unwrap().display().to_string(),
-    //             };
-    //             std::env::set_var(s, &path);
-    //             path
-    //         }
-    //     }));
-
-    //     if verify == true {
-    //         // verify the orbit path exists and is a directory
-    //         if self.dev_path.as_ref().unwrap().exists() == false {
-    //             return Err(ContextError(format!("orbit dev path '{}' does not exist", self.dev_path.as_ref().unwrap().display())))?
-    //         } else if self.dev_path.as_ref().unwrap().is_dir() == false {
-    //             return Err(ContextError(format!("orbit dev path '{}' is not a directory", self.dev_path.as_ref().unwrap().display())))?
-    //         }
-    //     }
-    //     Ok(self)
-    // }
-
-    /// Access the Orbit development path.
-    pub fn get_development_path(&self) -> Option<&path::PathBuf> {
-        self.dev_path.as_ref()
     }
 
     /// Access the configuration data.

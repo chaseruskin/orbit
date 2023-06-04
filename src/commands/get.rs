@@ -1,19 +1,19 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use crate::core::catalog::Catalog;
 use crate::core::context::Context;
+use crate::core::ip::PartialIpSpec;
 use crate::core::lang::parser::Symbol;
 use crate::core::lang::vhdl::interface;
 use crate::core::lang::vhdl::primaryunit::VhdlIdentifierError;
 use crate::core::lang::vhdl::symbol::Architecture;
 use crate::core::lang::vhdl::symbol::Entity;
 use crate::core::lang::vhdl::token::Identifier;
+use crate::core::manifest::FromFile;
+use crate::core::manifest::Manifest;
+use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::pkgid::PkgPart;
-use crate::core::v2::catalog::Catalog;
-use crate::core::v2::ip::PartialIpSpec;
-use crate::core::v2::manifest::FromFile;
-use crate::core::v2::manifest::Manifest;
-use crate::core::v2::manifest::IP_MANIFEST_FILE;
 use crate::core::version::Version;
 use crate::util::anyerror::{AnyError, Fault};
 use crate::OrbitResult;

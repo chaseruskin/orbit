@@ -1,14 +1,14 @@
 use std::path::PathBuf;
 
+use crate::core::catalog::Catalog;
 use crate::core::context::Context;
-use crate::core::v2::catalog::Catalog;
-use crate::core::v2::ip::Ip;
-use crate::core::v2::ip::IpSpec;
-use crate::core::v2::lockfile::LockEntry;
-use crate::core::v2::lockfile::LockFile;
-use crate::core::v2::plugin::Process;
-use crate::core::v2::protocol::Protocol;
-use crate::core::v2::source::Source;
+use crate::core::ip::Ip;
+use crate::core::ip::IpSpec;
+use crate::core::lockfile::LockEntry;
+use crate::core::lockfile::LockFile;
+use crate::core::plugin::Process;
+use crate::core::protocol::Protocol;
+use crate::core::source::Source;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::environment::EnvVar;

@@ -1,7 +1,7 @@
+use crate::core::catalog::Catalog;
 use crate::core::context::Context;
+use crate::core::ip::{Ip, PartialIpSpec};
 use crate::core::lang::vhdl::primaryunit::PrimaryUnit;
-use crate::core::v2::catalog::Catalog;
-use crate::core::v2::ip::{Ip, PartialIpSpec};
 use crate::core::version;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;

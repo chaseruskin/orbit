@@ -1,6 +1,6 @@
 use crate::core::context::Context;
+use crate::core::manifest::Manifest;
 use crate::core::pkgid::PkgPart;
-use crate::core::v2::manifest::Manifest;
 use crate::util::anyerror::AnyError;
 use crate::util::filesystem::Standardize;
 use crate::OrbitResult;

@@ -17,10 +17,16 @@
 //!     - ...
 //!
 
+use super::plan::Plan;
+use crate::commands::plan;
+use crate::core::algo;
+use crate::core::catalog::CacheSlot;
+use crate::core::catalog::Catalog;
 use crate::core::context::Context;
-use crate::core::v2::catalog::CacheSlot;
-use crate::core::v2::catalog::Catalog;
-use crate::core::v2::manifest::ORBIT_SUM_FILE;
+use crate::core::ip::Ip;
+use crate::core::lockfile::LockEntry;
+use crate::core::lockfile::LockFile;
+use crate::core::manifest::ORBIT_SUM_FILE;
 use crate::util::anyerror::Fault;
 use crate::util::filesystem;
 use crate::util::filesystem::Standardize;
@@ -29,11 +35,9 @@ use clif::arg::{Flag, Optional};
 use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
-use std::env::current_dir;
+use std::env;
 use std::fs;
 use std::path::PathBuf;
-
-use crate::core::v2::ip::Ip;
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
@@ -58,16 +62,13 @@ impl FromCli for Install {
     }
 }
 
-use crate::core::v2::algo;
-use crate::core::v2::lockfile::LockFile;
-
 impl Command<Context> for Install {
     type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
         // verify the path points to a valid ip
         let path = filesystem::resolve_rel_path(
-            &current_dir().unwrap(),
+            &env::current_dir().unwrap(),
             &filesystem::into_std_str(self.path.clone()),
         );
         let dest = PathBuf::standardize(PathBuf::from(path));
@@ -135,11 +136,6 @@ impl Command<Context> for Install {
         self.run(&target, &catalog)
     }
 }
-
-use crate::commands::plan;
-use crate::core::v2::lockfile::LockEntry;
-
-use super::plan::Plan;
 
 impl Install {
     pub fn is_checksum_good(root: &PathBuf) -> bool {

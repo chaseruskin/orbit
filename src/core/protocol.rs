@@ -1,7 +1,7 @@
 //! A protocol is a series of steps defined for requesting files/packages
 //! from the internet.
 
-use crate::core::v2::plugin::Process;
+use crate::core::plugin::Process;
 use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::str::FromStr;

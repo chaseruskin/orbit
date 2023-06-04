@@ -1,11 +1,11 @@
+use crate::core::config::Config;
 use crate::core::lang::vhdl::token::Identifier;
-use crate::core::v2::config::Config;
 use crate::util::anyerror::Fault;
 use std::hash::Hash;
 use std::io::Read;
 use std::io::Write;
 
-use crate::core::v2::ip::Ip;
+use crate::core::ip::Ip;
 use std::collections::btree_set::IntoIter;
 use std::collections::btree_set::Iter;
 

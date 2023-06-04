@@ -3,12 +3,12 @@ use std::io::Read as ReadTrait;
 use std::io::Write;
 use std::path::PathBuf;
 
+use crate::core::catalog::Catalog;
 use crate::core::context::Context;
+use crate::core::ip::Ip;
+use crate::core::ip::PartialIpSpec;
 use crate::core::lang::lexer::Position;
 use crate::core::lang::vhdl::token::Identifier;
-use crate::core::v2::catalog::Catalog;
-use crate::core::v2::ip::Ip;
-use crate::core::v2::ip::PartialIpSpec;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::sha256;

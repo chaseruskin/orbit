@@ -1,6 +1,6 @@
+use crate::core::config;
 use crate::core::context::Context;
 use crate::core::lang::vhdl::highlight::ColorMode;
-use crate::core::v2::config;
 use crate::util::environment;
 use crate::util::prompt;
 use crate::util::sha256::Sha256Hash;
@@ -52,12 +52,9 @@ impl Orbit {
                 .home(environment::ORBIT_HOME)?
                 .cache(environment::ORBIT_CACHE)?
                 .queue(environment::ORBIT_QUEUE)?
-                .store(environment::ORBIT_STORE)?
                 .current_ip_dir(environment::ORBIT_IP_PATH)? // must come before .settings() call
                 .settings(config::CONFIG_FILE)?
                 .build_dir(environment::ORBIT_BUILD_DIR)?;
-            // .development_path(environment::ORBIT_DEV_PATH, c.bypass_check() == false)?;
-            // .read_vendors()?;
             // pass the context to the given command
             c.exec(&context)
         // if no command is given then print default help

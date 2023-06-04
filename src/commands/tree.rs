@@ -13,7 +13,7 @@ use clif::arg::{Flag, Optional};
 use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::core::lang::vhdl::token::Identifier;
-use crate::commands::v2::plan::Plan;
+use crate::commands::plan::Plan;
 use crate::util::anyerror::Fault;
 
 use crate::core::lang::node::IdentifierFormat;

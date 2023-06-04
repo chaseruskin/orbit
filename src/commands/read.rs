@@ -18,7 +18,7 @@ use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::sha256;
 
-use super::v2::get::GetError;
+use super::get::GetError;
 use std::fs;
 
 #[derive(Debug, PartialEq)]

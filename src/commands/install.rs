@@ -122,7 +122,7 @@ impl Command<Context> for Install {
 }
 
 use crate::core::v2::lockfile::LockEntry;
-use crate::commands::v2::plan;
+use crate::commands::plan;
 
 use super::plan::Plan;
 

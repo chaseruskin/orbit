@@ -96,16 +96,16 @@ impl FromCli for Orbit {
 }
 
 use crate::commands::help::Help;
-use crate::commands::v2::new::New;
-use crate::commands::v2::init::Init;
-use crate::commands::v2::get::Get;
-use crate::commands::v2::show::Show;
-use crate::commands::v2::install::Install;
-use crate::commands::v2::plan::Plan;
-use crate::commands::v2::build::Build;
-use crate::commands::v2::tree::Tree;
-use crate::commands::v2::launch::Launch;
-use crate::commands::v2::download::Download;
+use crate::commands::new::New;
+use crate::commands::init::Init;
+use crate::commands::get::Get;
+use crate::commands::show::Show;
+use crate::commands::install::Install;
+use crate::commands::plan::Plan;
+use crate::commands::build::Build;
+use crate::commands::tree::Tree;
+use crate::commands::launch::Launch;
+use crate::commands::download::Download;
 use crate::commands::search::Search;
 use crate::commands::env::Env;
 use crate::commands::config::Config;

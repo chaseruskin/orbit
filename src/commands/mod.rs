@@ -6,6 +6,14 @@ mod env;
 mod config;
 mod read;
 mod uninstall;
-mod v2;
 
-// mod deprec;
+mod init;
+mod new;
+mod show;
+mod get;
+mod install;
+mod plan;
+mod build;
+mod tree;
+mod launch;
+mod download;

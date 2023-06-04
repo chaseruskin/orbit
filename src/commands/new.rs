@@ -15,7 +15,7 @@ use crate::util::filesystem::Standardize;
 
 use std::borrow::Cow;
 
-use super::super::orbit::AnyResult;
+use crate::commands::orbit::AnyResult;
 
 #[derive(Debug, PartialEq)]
 pub struct New {

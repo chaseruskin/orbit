@@ -2,7 +2,7 @@ use colored::Colorize;
 
 use clif::cmd::{FromCli, Command};
 
-use crate::commands::v2::download::Download;
+use crate::commands::download::Download;
 use crate::core::plugin::PluginError;
 use crate::core::template;
 use crate::core::variable::VariableTable;
@@ -31,7 +31,7 @@ use crate::util::filesystem;
 use std::hash::Hash;
 use crate::util::environment::Environment;
 
-use crate::commands::v2::install::Install;
+use crate::commands::install::Install;
 use crate::core::v2::ip::Ip;
 use crate::core::v2::catalog::Catalog;
 use crate::core::v2::algo;

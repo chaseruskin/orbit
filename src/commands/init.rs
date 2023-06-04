@@ -10,7 +10,7 @@ use crate::util::filesystem::Standardize;
 use std::path::PathBuf;
 use std::io::Write;
 use crate::core::v2::manifest::Manifest;
-use super::super::orbit::AnyResult;
+use crate::commands::orbit::AnyResult;
 use super::new::New;
 use crate::util::filesystem;
 

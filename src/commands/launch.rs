@@ -1,10 +1,10 @@
-use clif::cmd::{FromCli, Command};
-use clif::Cli;
-use clif::arg::{Flag, Optional};
-use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::core::version::Version;
 use crate::OrbitResult;
+use clif::arg::{Flag, Optional};
+use clif::cmd::{Command, FromCli};
+use clif::Cli;
+use clif::Error as CliError;
 
 #[derive(Debug, PartialEq)]
 enum VersionField {
@@ -36,7 +36,7 @@ pub struct Launch {
 }
 
 impl FromCli for Launch {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Launch {
             ready: cli.check_flag(Flag::new("ready"))?,

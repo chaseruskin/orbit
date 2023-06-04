@@ -1,14 +1,14 @@
 #![allow(dead_code)]
 
 mod commands;
-pub mod util;
 mod core;
+pub mod util;
 
-use clif::*;
 use crate::commands::orbit::*;
-use colored::*;
-use clif::cmd::FromCli;
 use clif::cmd::Command;
+use clif::cmd::FromCli;
+use clif::*;
+use colored::*;
 
 pub fn go() -> u8 {
     // interface level
@@ -22,13 +22,13 @@ pub fn go() -> u8 {
         Ok(app) => {
             std::mem::drop(cli);
             app
-        },
+        }
         Err(err) => {
             match err.kind() {
                 ErrorKind::Help => println!("{}", err),
-                _ => eprintln!("{}: {}", "error".red().bold(), err)
+                _ => eprintln!("{}: {}", "error".red().bold(), err),
             }
-            return err.code()
+            return err.code();
         }
     };
 
@@ -36,7 +36,7 @@ pub fn go() -> u8 {
     match orbit.exec(&()) {
         Ok(_) => 0,
         Err(err) => {
-            eprintln!("{}: {}", "error".red().bold(), err); 
+            eprintln!("{}: {}", "error".red().bold(), err);
             101
         }
     }

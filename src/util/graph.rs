@@ -7,7 +7,7 @@ use super::graphmap::GraphMap;
 type NodeIndex = usize;
 
 #[derive(Debug, PartialEq)]
-struct NodeData<V> { 
+struct NodeData<V> {
     node: V,
     first_outgoing_edge: Option<EdgeIndex>,
     first_incoming_edge: Option<EdgeIndex>,
@@ -16,7 +16,7 @@ struct NodeData<V> {
 type EdgeIndex = usize;
 
 #[derive(Debug, PartialEq)]
-struct EdgeData<E> { 
+struct EdgeData<E> {
     edge: E,
     source: NodeIndex,
     target: NodeIndex,
@@ -33,11 +33,19 @@ pub struct Graph<V, E> {
 impl<V, E> std::fmt::Display for Graph<V, E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (i, data) in self.vertices.iter().enumerate() {
-            write!(f, "i:{} out:{:?} in:{:?}\n", i, data.first_outgoing_edge, data.first_incoming_edge)?
+            write!(
+                f,
+                "i:{} out:{:?} in:{:?}\n",
+                i, data.first_outgoing_edge, data.first_incoming_edge
+            )?
         }
         write!(f, "\n")?;
         for (i, data) in self.edges.iter().enumerate() {
-            write!(f, "i:{}, t:{} s:{} out:{:?} in:{:?}\n", i, data.target, data.source, data.next_outgoing_edge, data.next_incoming_edge)?
+            write!(
+                f,
+                "i:{}, t:{} s:{} out:{:?} in:{:?}\n",
+                i, data.target, data.source, data.next_outgoing_edge, data.next_incoming_edge
+            )?
         }
         Ok(())
     }
@@ -61,11 +69,11 @@ impl<V, E> Graph<V, E> {
     }
 
     /// Adds a new node to the graph.
-    /// 
+    ///
     /// Returns the `NodeIndex` to remember the node.
     pub fn add_node(&mut self, node: V) -> NodeIndex {
         let index = self.vertices.len();
-        self.vertices.push(NodeData { 
+        self.vertices.push(NodeData {
             node: node,
             first_outgoing_edge: None,
             first_incoming_edge: None,
@@ -100,27 +108,27 @@ impl<V, E> Graph<V, E> {
     }
 
     /// Adds a new edge to the graph from `source` to `target`.
-    /// 
+    ///
     /// Returns true if the edge insertion was successful. Returns false if the edge
     /// relationship already exists or the edge is a self-loop.
     pub fn add_edge(&mut self, source: NodeIndex, target: NodeIndex, cost: E) -> EdgeStatus {
         // do not allow duplicate edges
         if self.has_edge(source, target) == true {
-            return EdgeStatus::AlreadyExists
+            return EdgeStatus::AlreadyExists;
         }
         // do not allow self-loops
-        if source == target { 
-            return EdgeStatus::SelfLoop 
+        if source == target {
+            return EdgeStatus::SelfLoop;
         }
 
         let edge_index = self.edges.len();
         // enter source -> target data
         {
             let node_data = &mut self.vertices[source];
-            self.edges.push(EdgeData { 
+            self.edges.push(EdgeData {
                 source: source,
                 edge: cost,
-                target: target, 
+                target: target,
                 next_outgoing_edge: node_data.first_outgoing_edge,
                 next_incoming_edge: None,
             });
@@ -148,17 +156,26 @@ impl<V, E> Graph<V, E> {
     /// Creates an iterator over the incoming nodes to the `target` source.
     pub fn predecessors(&self, target: NodeIndex) -> Predecessors<V, E> {
         let first_incoming_edge = self.vertices[target].first_incoming_edge;
-        Predecessors { graph: self, current_edge_index: first_incoming_edge }
+        Predecessors {
+            graph: self,
+            current_edge_index: first_incoming_edge,
+        }
     }
 
     /// Creates an iterator over the outgoing nodes from the `source` node.
     pub fn successors(&self, source: NodeIndex) -> Successors<V, E> {
         let first_outgoing_edge = self.vertices[source].first_outgoing_edge;
-        Successors { graph: self, current_edge_index: first_outgoing_edge }
+        Successors {
+            graph: self,
+            current_edge_index: first_outgoing_edge,
+        }
     }
 
     pub fn iter(&self) -> IterGraph<V, E> {
-        IterGraph { graph: self, current_node_index: 0 }
+        IterGraph {
+            graph: self,
+            current_node_index: 0,
+        }
     }
 
     /// Checks if the graph has zero nodes.
@@ -168,29 +185,40 @@ impl<V, E> Graph<V, E> {
 
     /// Checks if the graph contains a cycle.
     pub fn is_cyclic(&self) -> bool {
-        if self.is_empty() { return false }
+        if self.is_empty() {
+            return false;
+        }
 
         for i in 0..self.node_count() {
             if self.in_degree(i) == 0 {
-                return false
+                return false;
             }
         }
         true
     }
 
     /// Determines which node has zero outgoing edges as the 'root' node.
-    /// 
+    ///
     /// Returns a list of possible roots (potentially zero) as an err if there is
     /// not just a definite single root.
     pub fn find_root(&self) -> Result<NodeIndex, Vec<NodeIndex>> {
         // grab a list of all nodes that have zero outgoing edges
-        let roots: Vec<NodeIndex> = self.vertices.iter().enumerate().filter_map(|(i, n)| {
-            if n.first_outgoing_edge.is_none() { Some(i) } else { None }
-        }).collect();
+        let roots: Vec<NodeIndex> = self
+            .vertices
+            .iter()
+            .enumerate()
+            .filter_map(|(i, n)| {
+                if n.first_outgoing_edge.is_none() {
+                    Some(i)
+                } else {
+                    None
+                }
+            })
+            .collect();
         // check how many roots were detected
         match roots.len() {
             1 => Ok(*roots.first().unwrap()),
-            _ => Err(roots)
+            _ => Err(roots),
         }
     }
 
@@ -200,7 +228,7 @@ impl<V, E> Graph<V, E> {
         // add target to the list
         traversal.push(target);
         // select predecessors
-        let mut tunnels: Box<dyn Iterator<Item=usize>> = Box::new(self.predecessors(target));
+        let mut tunnels: Box<dyn Iterator<Item = usize>> = Box::new(self.predecessors(target));
         while let Some(n) = tunnels.next() {
             // select node
             traversal.push(n);
@@ -253,8 +281,9 @@ impl<V, E> Graph<V, E> {
         // collect number of nodes a part of the partial tree starting from `target`
         let effected_nodes: HashSet<usize> = self.depth_first_search(target).into_iter().collect();
         // filter out all nodes not in the hashset
-        total_order.into_iter()
-            .filter(|f| { effected_nodes.contains(f) == true })
+        total_order
+            .into_iter()
+            .filter(|f| effected_nodes.contains(f) == true)
             .collect()
     }
 
@@ -291,14 +320,19 @@ impl<V, E> Graph<V, E> {
 
 use std::hash::Hash;
 
-impl<K, V, E> GraphMap<K, V, E> where K: Eq + Hash + Clone {
+impl<K, V, E> GraphMap<K, V, E>
+where
+    K: Eq + Hash + Clone,
+{
     /// Creates an iterator over the outgoing nodes from the `source` node.
     pub fn successors(&self, source: NodeIndex) -> SuccessorsGraphMap<K, V, E> {
         let first_outgoing_edge = self.get_graph().vertices[source].first_outgoing_edge;
-        SuccessorsGraphMap { graph: self, current_edge_index: first_outgoing_edge }
+        SuccessorsGraphMap {
+            graph: self,
+            current_edge_index: first_outgoing_edge,
+        }
     }
 }
-
 
 pub struct SuccessorsGraphMap<'graph, K: Eq + Hash + Clone, V, E> {
     graph: &'graph GraphMap<K, V, E>,
@@ -314,7 +348,11 @@ impl<'graph, K: Eq + Hash + Clone, V, E> Iterator for SuccessorsGraphMap<'graph,
             Some(edge_num) => {
                 let edge = &self.graph.get_graph().edges[edge_num];
                 self.current_edge_index = edge.next_outgoing_edge;
-                Some((self.graph.get_key_by_index(edge.target).unwrap(), self.graph.get_node_by_index(edge.target).unwrap().as_ref(), &edge.edge))
+                Some((
+                    self.graph.get_key_by_index(edge.target).unwrap(),
+                    self.graph.get_node_by_index(edge.target).unwrap().as_ref(),
+                    &edge.edge,
+                ))
             }
         }
     }
@@ -326,7 +364,7 @@ pub enum EdgeStatus {
     MissingTarget,
     SelfLoop,
     AlreadyExists,
-    Success
+    Success,
 }
 
 impl EdgeStatus {
@@ -340,7 +378,7 @@ impl EdgeStatus {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Twig {
-    EndLeaf(Option<Box<Twig>>), 
+    EndLeaf(Option<Box<Twig>>),
     MidBranch(Option<Box<Twig>>),
 }
 
@@ -362,8 +400,16 @@ impl std::fmt::Display for Twig {
             let mut x = self;
             while let Some(n) = x.get_upper() {
                 match n {
-                    Self::EndLeaf(q) => if q.is_some() { space.push_str("   ") },
-                    Self::MidBranch(q) => if q.is_some() { space.push_str("  │") },
+                    Self::EndLeaf(q) => {
+                        if q.is_some() {
+                            space.push_str("   ")
+                        }
+                    }
+                    Self::MidBranch(q) => {
+                        if q.is_some() {
+                            space.push_str("  │")
+                        }
+                    }
                 }
                 x = n;
             }
@@ -372,10 +418,12 @@ impl std::fmt::Display for Twig {
         };
 
         match self {
-            Self::EndLeaf(m) => if m.is_none() {
-                write!(f, "")
-            } else {
-                write!(f, "{}└─ ", space)
+            Self::EndLeaf(m) => {
+                if m.is_none() {
+                    write!(f, "")
+                } else {
+                    write!(f, "{}└─ ", space)
+                }
             }
             Self::MidBranch(_) => write!(f, "{}├─ ", space),
         }
@@ -403,7 +451,7 @@ impl<'graph, V, E> Iterator for IterGraph<'graph, V, E> {
 
 pub struct Predecessors<'graph, V, E> {
     graph: &'graph Graph<V, E>,
-    current_edge_index: Option<EdgeIndex>
+    current_edge_index: Option<EdgeIndex>,
 }
 
 impl<'graph, V, E> Iterator for Predecessors<'graph, V, E> {
@@ -456,10 +504,12 @@ mod test {
 
     #[test]
     fn treeview() {
-        let mut g= binary_tree();
+        let mut g = binary_tree();
         g.add_edge(4, 2, ());
         let tree = g.treeview(0);
-        assert_eq!(tree_to_string(&tree), "\
+        assert_eq!(
+            tree_to_string(&tree),
+            "\
 0
 ├─ 4
 │  ├─ 6
@@ -470,7 +520,8 @@ mod test {
       └─ 4
          ├─ 6
          └─ 5
-");
+"
+        );
     }
 
     #[test]
@@ -478,14 +529,14 @@ mod test {
         let mut graph = Graph::<(), ()>::new();
         let z = graph.add_node(());
         let y = graph.add_node(());
-        let a = graph.add_node(()); 
-        let b = graph.add_node(()); 
-        let c = graph.add_node(()); 
-        let d = graph.add_node(()); 
-        let e = graph.add_node(()); 
-        let f = graph.add_node(()); 
-        let g = graph.add_node(()); 
-        let h = graph.add_node(()); 
+        let a = graph.add_node(());
+        let b = graph.add_node(());
+        let c = graph.add_node(());
+        let d = graph.add_node(());
+        let e = graph.add_node(());
+        let f = graph.add_node(());
+        let g = graph.add_node(());
+        let h = graph.add_node(());
 
         graph.add_edge(y, z, ());
 
@@ -503,7 +554,9 @@ mod test {
         graph.add_edge(h, g, ());
 
         let tree = graph.treeview(z);
-        assert_eq!(tree_to_string(&tree), "\
+        assert_eq!(
+            tree_to_string(&tree),
+            "\
 0
 └─ 1
    ├─ 4
@@ -516,23 +569,24 @@ mod test {
    │  └─ 8
    │     └─ 9
    └─ 2
-");
+"
+        );
     }
-/* --ascii version
-0
-\─ 1
-   +─ 4
-   |  +─ 7
-   |  \- 6
-   +─ 5
-   |  \─ 8
-   |     \─ 9
-   +─ 3
-   |  \─ 8
-   |     \─ 9
-   \─ 2
-*/
-    
+    /* --ascii version
+    0
+    \─ 1
+       +─ 4
+       |  +─ 7
+       |  \- 6
+       +─ 5
+       |  \─ 8
+       |     \─ 9
+       +─ 3
+       |  \─ 8
+       |     \─ 9
+       \─ 2
+    */
+
     /// Creates basic graph illustrated in this blog post:
     /// - source: http://smallcultfollowing.com/babysteps/blog/2015/04/06/modeling-graphs-in-rust-using-vector-indices/
     fn basic_graph() -> Graph<(), ()> {
@@ -569,10 +623,10 @@ mod test {
         // level 1
         g.add_edge(n1, n0, ()); // n1 -> n0
         g.add_edge(n4, n0, ()); // n4 -> n0
-        // level 2 - L
+                                // level 2 - L
         g.add_edge(n2, n1, ()); // n2 -> n1
         g.add_edge(n3, n1, ()); // n3 -> n1
-        // level 2 - R
+                                // level 2 - R
         g.add_edge(n5, n4, ()); // n5 -> n4
         g.add_edge(n6, n4, ()); // n6 -> n4
         g
@@ -602,7 +656,7 @@ mod test {
         let n0 = g.add_node(());
         g.add_edge(n0, 0, ());
         assert_eq!(g.topological_sort(), vec![4, 0, 1, 3, 2]);
-        
+
         let g = binary_tree();
         assert_eq!(g.topological_sort(), vec![2, 3, 1, 5, 6, 4, 0]);
     }
@@ -649,7 +703,7 @@ mod test {
 
         // add edges between the two known roots: n0 and n7
         g.add_edge(0, n7, ());
-        g.add_edge(n7,0, ());
+        g.add_edge(n7, 0, ());
         assert_eq!(g.find_root(), Err(vec![]));
     }
 
@@ -676,14 +730,20 @@ mod test {
         let g = basic_graph();
         assert_eq!(g.successors(0).collect::<Vec<NodeIndex>>(), vec![3, 1]);
         assert_eq!(g.successors(1).collect::<Vec<NodeIndex>>(), vec![2]);
-        assert_eq!(g.successors(2).collect::<Vec<NodeIndex>>(), Vec::<usize>::new());
+        assert_eq!(
+            g.successors(2).collect::<Vec<NodeIndex>>(),
+            Vec::<usize>::new()
+        );
         assert_eq!(g.successors(3).collect::<Vec<NodeIndex>>(), vec![2]);
     }
 
     #[test]
     fn predecessors() {
         let g = basic_graph();
-        assert_eq!(g.predecessors(0).collect::<Vec<usize>>(), Vec::<usize>::new());
+        assert_eq!(
+            g.predecessors(0).collect::<Vec<usize>>(),
+            Vec::<usize>::new()
+        );
         assert_eq!(g.predecessors(1).collect::<Vec<usize>>(), vec![0]);
         assert_eq!(g.predecessors(2).collect::<Vec<usize>>(), vec![3, 1]);
         assert_eq!(g.predecessors(3).collect::<Vec<usize>>(), vec![0]);

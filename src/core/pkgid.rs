@@ -3,10 +3,10 @@
 //!     A `pkgid` is formed is a unique string following VLNV format that allows
 //!     reference to a particular package/ip.
 
-use std::str::FromStr;
+use serde_derive::{Deserialize, Serialize};
 use std::error::Error;
 use std::fmt::Display;
-use serde_derive::{Deserialize, Serialize};
+use std::str::FromStr;
 
 #[derive(Debug, PartialOrd, Clone, Eq, Hash, Deserialize, Serialize, Ord)]
 #[serde(transparent)]
@@ -28,7 +28,9 @@ impl PkgPart {
 
     /// Checks if the current [PkgPart] is a superset of the `rhs`.
     pub fn contains(&self, rhs: &Self) -> bool {
-        self.to_normal().to_string().contains(rhs.to_normal().as_ref())
+        self.to_normal()
+            .to_string()
+            .contains(rhs.to_normal().as_ref())
     }
 }
 
@@ -48,7 +50,7 @@ impl std::str::FromStr for PkgPart {
     type Err = PkgIdError;
 
     /// Verifies a part follows the `PkgId` specification.
-    /// 
+    ///
     /// First character must be `alphabetic`. Remaining characters must be
     /// `ascii alphanumeric`, `-`, or `_`.
     fn from_str(s: &str) -> Result<Self, PkgIdError> {
@@ -60,11 +62,9 @@ impl std::str::FromStr for PkgPart {
             }
         }
         // find first char in pkgid part not following spec
-        let result = s.chars()
-            .find(|&c| {
-                !c.is_ascii_alphanumeric() && !(c == '_') && !(c == '-')
-            }
-        );
+        let result = s
+            .chars()
+            .find(|&c| !c.is_ascii_alphanumeric() && !(c == '_') && !(c == '-'));
         if let Some(r) = result {
             Err(InvalidChar(s.to_owned(), r))
         } else {
@@ -74,8 +74,8 @@ impl std::str::FromStr for PkgPart {
 }
 
 impl std::cmp::PartialEq for PkgPart {
-    /// Two `PkgId`'s are considered equivalent if they have identical case 
-    /// insensitive string parts. Different than `==` operator. Converting '-' 
+    /// Two `PkgId`'s are considered equivalent if they have identical case
+    /// insensitive string parts. Different than `==` operator. Converting '-'
     /// to '_' is also applied.
     fn eq(&self, other: &Self) -> bool {
         self.to_normal().0 == other.to_normal().0
@@ -96,7 +96,7 @@ impl std::fmt::Display for PkgPart {
 pub struct PkgId {
     vendor: Option<PkgPart>,
     library: Option<PkgPart>,
-    name: PkgPart
+    name: PkgPart,
 }
 
 impl Eq for PkgId {}
@@ -104,23 +104,36 @@ impl Eq for PkgId {}
 use std::hash::Hash;
 
 impl Ord for PkgId {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering { 
-        let r = self.vendor.as_ref().unwrap().0.cmp(&other.vendor.as_ref().unwrap().0);
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let r = self
+            .vendor
+            .as_ref()
+            .unwrap()
+            .0
+            .cmp(&other.vendor.as_ref().unwrap().0);
         match r {
             std::cmp::Ordering::Equal => {
-                let s = self.library.as_ref().unwrap().0.cmp(&other.library.as_ref().unwrap().0);
+                let s = self
+                    .library
+                    .as_ref()
+                    .unwrap()
+                    .0
+                    .cmp(&other.library.as_ref().unwrap().0);
                 match s {
                     std::cmp::Ordering::Equal => self.name.0.cmp(&other.name.0),
                     _ => s,
                 }
             }
-            _ => r
+            _ => r,
         }
     }
 }
 
 impl Hash for PkgId {
-    fn hash<H>(&self, state: &mut H) where H: std::hash::Hasher { 
+    fn hash<H>(&self, state: &mut H)
+    where
+        H: std::hash::Hasher,
+    {
         if let Some(v) = &self.vendor {
             v.to_normal().0.hash(state);
         }
@@ -139,8 +152,8 @@ pub struct PkgIdIter<'a> {
 
 impl<'a> Iterator for PkgIdIter<'a> {
     type Item = &'a PkgPart;
-    
-    fn next(&mut self) -> Option<<Self as Iterator>::Item> { 
+
+    fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         self.index += 1;
         match self.index {
             1 => Some(&self.inner.name),
@@ -164,12 +177,24 @@ impl PkgId {
     }
 
     /// Checks if the `other` `PkgId` fits under current name.
-    /// 
+    ///
     /// Assumes `other` is fully qualified.
     pub fn partial_match(&self, other: &PkgId) -> bool {
-        if self.name.as_ref().is_empty() == false && self.name != other.name { return false }
-        if self.library.is_some() && self.library.as_ref().unwrap().as_ref().is_empty() == false && self.library != other.library { return false }
-        if self.vendor.is_some() && self.vendor.as_ref().unwrap().as_ref().is_empty() == false && self.vendor != other.vendor { return false }
+        if self.name.as_ref().is_empty() == false && self.name != other.name {
+            return false;
+        }
+        if self.library.is_some()
+            && self.library.as_ref().unwrap().as_ref().is_empty() == false
+            && self.library != other.library
+        {
+            return false;
+        }
+        if self.vendor.is_some()
+            && self.vendor.as_ref().unwrap().as_ref().is_empty() == false
+            && self.vendor != other.vendor
+        {
+            return false;
+        }
         true
     }
 
@@ -180,7 +205,10 @@ impl PkgId {
     }
 
     pub fn iter(&self) -> PkgIdIter {
-        PkgIdIter { inner: &self, index: 0 }
+        PkgIdIter {
+            inner: &self,
+            index: 0,
+        }
     }
 
     pub fn name(mut self, n: &str) -> Result<Self, PkgIdError> {
@@ -229,19 +257,27 @@ impl PkgId {
     }
 
     /// Transforms into a complete `Vec`.
-    /// 
+    ///
     /// Errors if the PkgId is not fully qualified.
     pub fn into_full_vec(&self) -> Result<Vec<PkgPart>, PkgIdError> {
         self.fully_qualified()?;
-        Ok(vec![self.name.clone(), self.library.as_ref().unwrap().clone(), self.vendor.as_ref().unwrap().clone()])
+        Ok(vec![
+            self.name.clone(),
+            self.library.as_ref().unwrap().clone(),
+            self.vendor.as_ref().unwrap().clone(),
+        ])
     }
 
     /// Borrows the `PkgId` as a complete `Vec`.
-    /// 
+    ///
     /// Errors if the PkgId is not fully qualified.
     pub fn as_full_vec(&self) -> Result<Vec<&PkgPart>, PkgIdError> {
         self.fully_qualified()?;
-        Ok(vec![&self.name, self.library.as_ref().unwrap(), self.vendor.as_ref().unwrap()])
+        Ok(vec![
+            &self.name,
+            self.library.as_ref().unwrap(),
+            self.vendor.as_ref().unwrap(),
+        ])
     }
 
     /// Transform a vector of `PkgPart` parts into a `PkgId`.
@@ -251,24 +287,27 @@ impl PkgId {
             library: Some(vec.remove(0)),
             vendor: Some(vec.remove(0)),
         }
-    } 
+    }
 }
 
 impl Display for PkgId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
-        write!(f, "{0}{1}{2}{3}{4}", 
-            self.vendor.as_ref().unwrap_or(&PkgPart::new()), 
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(
+            f,
+            "{0}{1}{2}{3}{4}",
+            self.vendor.as_ref().unwrap_or(&PkgPart::new()),
             if self.vendor.is_some() { "." } else { "" },
-            self.library.as_ref().unwrap_or(&PkgPart::new()), 
+            self.library.as_ref().unwrap_or(&PkgPart::new()),
             if self.library.is_some() { "." } else { "" },
-            self.name)
+            self.name
+        )
     }
 }
 
 impl FromStr for PkgId {
     type Err = PkgIdError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> { 
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         let chunks: Vec<&str> = s.rsplit('.').collect();
         if chunks.len() > 3 {
             return Err(PkgIdError::BadLen(s.to_owned(), chunks.len()));
@@ -276,13 +315,21 @@ impl FromStr for PkgId {
 
         Ok(PkgId {
             name: if let Some(&n) = chunks.get(0) {
-                PkgPart::from_str(n)? } else { return Err(PkgIdError::Empty) },
+                PkgPart::from_str(n)?
+            } else {
+                return Err(PkgIdError::Empty);
+            },
             library: if let Some(&l) = chunks.get(1) {
-                Some(PkgPart::from_str(l)?) } else { None },
+                Some(PkgPart::from_str(l)?)
+            } else {
+                None
+            },
             vendor: if let Some(&v) = chunks.get(2) {
-                Some(PkgPart::from_str(v)?) } else { None }
-            }
-        )
+                Some(PkgPart::from_str(v)?)
+            } else {
+                None
+            },
+        })
     }
 }
 
@@ -299,7 +346,7 @@ pub enum PkgIdError {
 impl Error for PkgIdError {}
 
 impl Display for PkgIdError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         use PkgIdError::*;
         match self {
             NotAlphabeticFirst(part) => write!(f, "pkgid part '{}' must begin with alphabetic character", part),
@@ -319,9 +366,12 @@ mod test {
     #[test]
     fn iter() {
         let p1 = PkgId::new()
-            .name("NAME").unwrap()
-            .library("library").unwrap()
-            .vendor("Vendor").unwrap();
+            .name("NAME")
+            .unwrap()
+            .library("library")
+            .unwrap()
+            .vendor("Vendor")
+            .unwrap();
         let mut p1_iter = p1.iter();
 
         assert_eq!(p1_iter.next(), Some(&PkgPart("NAME".to_owned())));
@@ -337,115 +387,167 @@ mod test {
             PkgPart("library".to_owned()),
             PkgPart("Vendor".to_owned()),
         ];
-        assert_eq!(PkgId::from_vec(parts), PkgId::new()
-            .name("NAME").unwrap()
-            .library("library").unwrap()
-            .vendor("Vendor").unwrap()
+        assert_eq!(
+            PkgId::from_vec(parts),
+            PkgId::new()
+                .name("NAME")
+                .unwrap()
+                .library("library")
+                .unwrap()
+                .vendor("Vendor")
+                .unwrap()
         );
     }
 
     #[test]
     fn into_vec() {
         let p1 = PkgId::new()
-            .name("NAME").unwrap()
-            .library("library").unwrap()
-            .vendor("Vendor").unwrap();
-        assert_eq!(p1.into_full_vec(), Ok(vec![
-            PkgPart("NAME".to_owned()),
-            PkgPart("library".to_owned()),
-            PkgPart("Vendor".to_owned()),
-        ]));
+            .name("NAME")
+            .unwrap()
+            .library("library")
+            .unwrap()
+            .vendor("Vendor")
+            .unwrap();
+        assert_eq!(
+            p1.into_full_vec(),
+            Ok(vec![
+                PkgPart("NAME".to_owned()),
+                PkgPart("library".to_owned()),
+                PkgPart("Vendor".to_owned()),
+            ])
+        );
 
         let p1 = PkgId::new()
-            .name("NAME").unwrap()
-            .library("library").unwrap()
-            .vendor("Vendor").unwrap();
-        assert_eq!(p1.into_vec(), vec![
-            Some(PkgPart("NAME".to_owned())),
-            Some(PkgPart("library".to_owned())),
-            Some(PkgPart("Vendor".to_owned())),
-        ]);
-
+            .name("NAME")
+            .unwrap()
+            .library("library")
+            .unwrap()
+            .vendor("Vendor")
+            .unwrap();
+        assert_eq!(
+            p1.into_vec(),
+            vec![
+                Some(PkgPart("NAME".to_owned())),
+                Some(PkgPart("library".to_owned())),
+                Some(PkgPart("Vendor".to_owned())),
+            ]
+        );
 
         let p1 = PkgId::new()
-            .name("NAME").unwrap()
-            .library("library").unwrap();
+            .name("NAME")
+            .unwrap()
+            .library("library")
+            .unwrap();
         assert_eq!(p1.into_full_vec().is_err(), true);
 
-        let p1 = PkgId::new()
-            .name("NAME").unwrap();
-        assert_eq!(p1.into_vec(), vec![
-            Some(PkgPart("NAME".to_owned())),
-            None,
-            None,
-        ]);
+        let p1 = PkgId::new().name("NAME").unwrap();
+        assert_eq!(
+            p1.into_vec(),
+            vec![Some(PkgPart("NAME".to_owned())), None, None,]
+        );
     }
 
     #[test]
     fn new() {
         let pkgid = PkgId::new();
-        assert_eq!(pkgid, PkgId {
-            name: PkgPart::new(),
-            library: None,
-            vendor: None,
-        });
+        assert_eq!(
+            pkgid,
+            PkgId {
+                name: PkgPart::new(),
+                library: None,
+                vendor: None,
+            }
+        );
 
         let pkgid = PkgId::new()
-            .name("name").unwrap()
-            .library("rary").unwrap()
-            .vendor("vendor").unwrap();
-        assert_eq!(pkgid, PkgId {
-            name: PkgPart("name".to_owned()),
-            library: Some(PkgPart("rary".to_owned())),
-            vendor: Some(PkgPart("vendor".to_owned())),
-        });
+            .name("name")
+            .unwrap()
+            .library("rary")
+            .unwrap()
+            .vendor("vendor")
+            .unwrap();
+        assert_eq!(
+            pkgid,
+            PkgId {
+                name: PkgPart("name".to_owned()),
+                library: Some(PkgPart("rary".to_owned())),
+                vendor: Some(PkgPart("vendor".to_owned())),
+            }
+        );
 
         assert_eq!(pkgid.get_name(), &PkgPart("name".to_owned()));
-        assert_eq!(pkgid.get_library().as_ref().unwrap(), &PkgPart("rary".to_owned()));
-        assert_eq!(pkgid.get_vendor().as_ref().unwrap(), &PkgPart("vendor".to_owned()));
+        assert_eq!(
+            pkgid.get_library().as_ref().unwrap(),
+            &PkgPart("rary".to_owned())
+        );
+        assert_eq!(
+            pkgid.get_vendor().as_ref().unwrap(),
+            &PkgPart("vendor".to_owned())
+        );
     }
 
     #[test]
     fn equivalence() {
         let p1 = PkgId::new()
-            .name("NAME").unwrap()
-            .library("library").unwrap()
-            .vendor("Vendor").unwrap();
+            .name("NAME")
+            .unwrap()
+            .library("library")
+            .unwrap()
+            .vendor("Vendor")
+            .unwrap();
 
         let p2 = PkgId::new()
-            .name("name").unwrap()
-            .library("LIBRARY").unwrap()
-            .vendor("vendoR").unwrap();
+            .name("name")
+            .unwrap()
+            .library("LIBRARY")
+            .unwrap()
+            .vendor("vendoR")
+            .unwrap();
         assert_eq!(p1, p2);
 
         let p2 = PkgId::new()
-            .name("name").unwrap()
-            .library("library2").unwrap()
-            .vendor("vendor").unwrap();
+            .name("name")
+            .unwrap()
+            .library("library2")
+            .unwrap()
+            .vendor("vendor")
+            .unwrap();
         assert_ne!(p1, p2);
 
         let p2 = PkgId::new()
-            .name("name4").unwrap()
-            .library("library").unwrap()
-            .vendor("vendor").unwrap();
+            .name("name4")
+            .unwrap()
+            .library("library")
+            .unwrap()
+            .vendor("vendor")
+            .unwrap();
         assert_ne!(p1, p2);
 
         let p2 = PkgId::new()
-            .name("name").unwrap()
-            .library("library").unwrap()
-            .vendor("ven_dor").unwrap();
+            .name("name")
+            .unwrap()
+            .library("library")
+            .unwrap()
+            .vendor("ven_dor")
+            .unwrap();
         assert_ne!(p1, p2);
 
         // Converting '-' to '_' is applied for equivalence
         let p1 = PkgId::new()
-            .name("name").unwrap()
-            .library("lib_rary").unwrap()
-            .vendor("Vendor").unwrap();
+            .name("name")
+            .unwrap()
+            .library("lib_rary")
+            .unwrap()
+            .vendor("Vendor")
+            .unwrap();
 
         let p2 = PkgId::new()
-            .name("name").unwrap()
-            .library("lib-rary").unwrap()
-            .vendor("vendor").unwrap();
+            .name("name")
+            .unwrap()
+            .library("lib-rary")
+            .unwrap()
+            .vendor("vendor")
+            .unwrap();
         assert_eq!(p1, p2);
     }
 
@@ -484,28 +586,40 @@ mod test {
             library: Some(PkgPart("library".to_owned())),
             name: PkgPart("name".to_owned()),
         };
-        assert_eq!(pkgid.fully_qualified().unwrap_err(), PkgIdError::MissingVendor);
+        assert_eq!(
+            pkgid.fully_qualified().unwrap_err(),
+            PkgIdError::MissingVendor
+        );
 
         let pkgid = PkgId {
             vendor: None,
             library: Some(PkgPart("library".to_owned())),
             name: PkgPart("name".to_owned()),
         };
-        assert_eq!(pkgid.fully_qualified().unwrap_err(), PkgIdError::MissingVendor);
+        assert_eq!(
+            pkgid.fully_qualified().unwrap_err(),
+            PkgIdError::MissingVendor
+        );
 
         let pkgid = PkgId {
             vendor: Some(PkgPart("vendor".to_owned())),
             library: Some(PkgPart("".to_owned())),
             name: PkgPart("name".to_owned()),
         };
-        assert_eq!(pkgid.fully_qualified().unwrap_err(), PkgIdError::MissingLibrary);
+        assert_eq!(
+            pkgid.fully_qualified().unwrap_err(),
+            PkgIdError::MissingLibrary
+        );
 
         let pkgid = PkgId {
             vendor: Some(PkgPart("vendor".to_owned())),
             library: None,
             name: PkgPart("name".to_owned()),
         };
-        assert_eq!(pkgid.fully_qualified().unwrap_err(), PkgIdError::MissingLibrary);
+        assert_eq!(
+            pkgid.fully_qualified().unwrap_err(),
+            PkgIdError::MissingLibrary
+        );
 
         let pkgid = PkgId {
             vendor: Some(PkgPart("vendor".to_owned())),
@@ -519,46 +633,67 @@ mod test {
             library: None,
             name: PkgPart("name".to_owned()),
         };
-        assert_eq!(pkgid.fully_qualified().unwrap_err(), PkgIdError::MissingLibrary);
+        assert_eq!(
+            pkgid.fully_qualified().unwrap_err(),
+            PkgIdError::MissingLibrary
+        );
     }
 
     #[test]
     fn from_str() {
-        assert_eq!(PkgId::from_str("vendor.library.name"), Ok(PkgId {
-            vendor: Some(PkgPart("vendor".to_owned())),
-            library: Some(PkgPart("library".to_owned())),
-            name: PkgPart("name".to_owned()),
-        }));
+        assert_eq!(
+            PkgId::from_str("vendor.library.name"),
+            Ok(PkgId {
+                vendor: Some(PkgPart("vendor".to_owned())),
+                library: Some(PkgPart("library".to_owned())),
+                name: PkgPart("name".to_owned()),
+            })
+        );
 
-        assert_eq!(PkgId::from_str("library.name"), Ok(PkgId {
-            vendor: None,
-            library: Some(PkgPart("library".to_owned())),
-            name: PkgPart("name".to_owned()),
-        }));
+        assert_eq!(
+            PkgId::from_str("library.name"),
+            Ok(PkgId {
+                vendor: None,
+                library: Some(PkgPart("library".to_owned())),
+                name: PkgPart("name".to_owned()),
+            })
+        );
 
-        assert_eq!(PkgId::from_str("name"), Ok(PkgId {
-            vendor: None,
-            library: None,
-            name: PkgPart("name".to_owned()),
-        }));
+        assert_eq!(
+            PkgId::from_str("name"),
+            Ok(PkgId {
+                vendor: None,
+                library: None,
+                name: PkgPart("name".to_owned()),
+            })
+        );
 
-        assert_eq!(PkgId::from_str(".name"), Ok(PkgId {
-            vendor: None,
-            library: Some(PkgPart("".to_owned())),
-            name: PkgPart("name".to_owned()),
-        }));
+        assert_eq!(
+            PkgId::from_str(".name"),
+            Ok(PkgId {
+                vendor: None,
+                library: Some(PkgPart("".to_owned())),
+                name: PkgPart("name".to_owned()),
+            })
+        );
 
-        assert_eq!(PkgId::from_str("..name"), Ok(PkgId {
-            vendor: Some(PkgPart("".to_owned())),
-            library: Some(PkgPart("".to_owned())),
-            name: PkgPart("name".to_owned()),
-        }));
+        assert_eq!(
+            PkgId::from_str("..name"),
+            Ok(PkgId {
+                vendor: Some(PkgPart("".to_owned())),
+                library: Some(PkgPart("".to_owned())),
+                name: PkgPart("name".to_owned()),
+            })
+        );
 
-        assert_eq!(PkgId::from_str("Ven-dor.Lib_Rary.name10"), Ok(PkgId {
-            vendor: Some(PkgPart("Ven-dor".to_owned())),
-            library: Some(PkgPart("Lib_Rary".to_owned())),
-            name: PkgPart("name10".to_owned()),
-        }));
+        assert_eq!(
+            PkgId::from_str("Ven-dor.Lib_Rary.name10"),
+            Ok(PkgId {
+                vendor: Some(PkgPart("Ven-dor".to_owned())),
+                library: Some(PkgPart("Lib_Rary".to_owned())),
+                name: PkgPart("name10".to_owned()),
+            })
+        );
 
         // invalid pkgids
         assert!(PkgId::from_str("vendor.library.name.").is_err());
@@ -585,7 +720,7 @@ mod test {
         assert_eq!(p1.to_string(), "gates");
         let p1 = PkgId::from_str("rary.gates").unwrap();
         assert_eq!(p1.to_string(), "rary.gates");
-    } 
+    }
 
     #[test]
     fn partial_match() {

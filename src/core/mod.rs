@@ -1,18 +1,18 @@
-pub mod pkgid;
-pub mod version;
-pub mod context;
-pub mod manifest;
-pub mod fileset;
-pub mod plugin;
-pub mod vendor;
-pub mod config;
-pub mod ip;
-pub mod template;
-pub mod store;
-pub mod lockfile;
 pub mod catalog;
-pub mod variable;
+pub mod config;
+pub mod context;
+pub mod fileset;
 pub mod hook;
+pub mod ip;
+pub mod lockfile;
+pub mod manifest;
+pub mod pkgid;
+pub mod plugin;
+pub mod store;
+pub mod template;
+pub mod variable;
+pub mod vendor;
+pub mod version;
 
 pub mod lang;
 

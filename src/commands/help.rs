@@ -1,10 +1,10 @@
-use clif::cmd::{FromCli, Command};
-use clif::Cli;
-use clif::arg::{Positional};
-use clif::Error as CliError;
 use crate::commands::manuals;
 use crate::util::anyerror::AnyError;
 use crate::OrbitResult;
+use clif::arg::Positional;
+use clif::cmd::{Command, FromCli};
+use clif::Cli;
+use clif::Error as CliError;
 
 #[derive(Debug, PartialEq)]
 pub struct Help {
@@ -49,7 +49,7 @@ impl std::str::FromStr for Topic {
             "config" => Self::Config,
             "uninstall" => Self::Uninstall,
             "read" => Self::Read,
-            _ => return Err(AnyError(format!("topic '{}' not found", s)))
+            _ => return Err(AnyError(format!("topic '{}' not found", s))),
         })
     }
 }
@@ -91,7 +91,7 @@ impl Help {
     fn run(&self) -> Result<(), AnyError> {
         let contents = match &self.topic {
             Some(t) => t.as_manual(),
-            None => manuals::orbit::MANUAL
+            None => manuals::orbit::MANUAL,
         };
         // @todo/idea: check for a pager program to pipe contents into?
         println!("{}", contents);
@@ -100,7 +100,7 @@ impl Help {
 }
 
 impl FromCli for Help {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Help {
             topic: cli.check_positional(Positional::new("topic"))?,

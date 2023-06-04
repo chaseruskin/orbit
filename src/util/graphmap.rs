@@ -1,6 +1,6 @@
-use std::{hash::Hash, collections::HashMap, iter::FromIterator};
+use std::{collections::HashMap, hash::Hash, iter::FromIterator};
 
-use super::graph::{Graph, SuccessorsGraphMap, EdgeStatus};
+use super::graph::{EdgeStatus, Graph, SuccessorsGraphMap};
 
 pub struct GraphMap<K: Eq + Hash + Clone, V, E> {
     graph: Graph<K, E>,
@@ -29,7 +29,10 @@ impl<V> Node<V> {
 
 impl<K: Eq + Hash + Clone, V, E> GraphMap<K, V, E> {
     pub fn new() -> Self {
-        Self { graph: Graph::new(), map: HashMap::new() }
+        Self {
+            graph: Graph::new(),
+            map: HashMap::new(),
+        }
     }
 
     pub fn add_node(&mut self, key: K, value: V) -> usize {
@@ -43,7 +46,7 @@ impl<K: Eq + Hash + Clone, V, E> GraphMap<K, V, E> {
     }
 
     /// Creates an edge between `source` and `target`.
-    /// 
+    ///
     /// Returns `true` if the edge insertion was successful. Returns `false` if
     /// either endpoint does not exist in the map, the edge already exists,
     /// or the edge is a self-loop.
@@ -90,11 +93,10 @@ impl<K: Eq + Hash + Clone, V, E> GraphMap<K, V, E> {
     pub fn find_root(&self) -> Result<&Node<V>, Vec<&Node<V>>> {
         match self.graph.find_root() {
             Ok(n) => Ok(self.map.get(self.graph.get_node(n).unwrap()).unwrap()),
-            Err(e) => {
-                Err(e.into_iter().map(|f| {
-                    self.map.get(self.graph.get_node(f).unwrap()).unwrap()
-                }).collect())
-            }
+            Err(e) => Err(e
+                .into_iter()
+                .map(|f| self.map.get(self.graph.get_node(f).unwrap()).unwrap())
+                .collect()),
         }
     }
 
@@ -103,7 +105,10 @@ impl<K: Eq + Hash + Clone, V, E> GraphMap<K, V, E> {
     }
 
     pub fn iter(&self) -> IterGraphMap<K, V, E> {
-        IterGraphMap { graph: &self, current_node_index: 0 }
+        IterGraphMap {
+            graph: &self,
+            current_node_index: 0,
+        }
     }
 }
 
@@ -122,7 +127,10 @@ impl<'graph, K: Eq + Hash + Clone, V, E> Iterator for IterGraphMap<'graph, K, V,
         if self.current_node_index >= self.graph.get_graph().node_count() {
             None
         } else {
-            let key = self.graph.get_key_by_index(self.current_node_index).unwrap();
+            let key = self
+                .graph
+                .get_key_by_index(self.current_node_index)
+                .unwrap();
             let value = &self.graph.get_node_by_key(&key).unwrap();
 
             self.current_node_index += 1;
@@ -131,12 +139,19 @@ impl<'graph, K: Eq + Hash + Clone, V, E> Iterator for IterGraphMap<'graph, K, V,
     }
 }
 
-impl<'graph, K: 'graph + Eq + Hash + Clone, V: 'graph, E: 'graph> FromIterator<(&'graph K, &'graph V, SuccessorsGraphMap<'graph, K, V, E>)> for GraphMap<&'graph K, &'graph V, &'graph E> {
-    fn from_iter<T: IntoIterator<Item = (&'graph K, &'graph V, SuccessorsGraphMap<'graph, K, V, E>)>>(iter: T) -> Self {
+impl<'graph, K: 'graph + Eq + Hash + Clone, V: 'graph, E: 'graph>
+    FromIterator<(&'graph K, &'graph V, SuccessorsGraphMap<'graph, K, V, E>)>
+    for GraphMap<&'graph K, &'graph V, &'graph E>
+{
+    fn from_iter<
+        T: IntoIterator<Item = (&'graph K, &'graph V, SuccessorsGraphMap<'graph, K, V, E>)>,
+    >(
+        iter: T,
+    ) -> Self {
         let mut graph: GraphMap<&K, &V, &E> = GraphMap::new();
 
         let mut iter = iter.into_iter();
-        
+
         while let Some((key, value, mut outgoing_neighbors)) = iter.next() {
             // add missing node
             if graph.has_node_by_key(&key) == false {
@@ -148,7 +163,7 @@ impl<'graph, K: 'graph + Eq + Hash + Clone, V: 'graph, E: 'graph> FromIterator<(
                     graph.add_node(n_key, n_value);
                 }
                 // add edge connection between node and neighbor
-                graph.add_edge_by_key(&key,&n_key, edge);
+                graph.add_edge_by_key(&key, &n_key, edge);
             }
         }
         graph

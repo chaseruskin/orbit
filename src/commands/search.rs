@@ -1,16 +1,16 @@
-use clif::cmd::{FromCli, Command};
-use clif::Cli;
-use clif::arg::{Positional, Flag, Optional};
-use clif::Error as CliError;
 use crate::core::context::Context;
-use crate::util::anyerror::Fault;
-use std::collections::BTreeMap;
-use crate::OrbitResult;
 use crate::core::pkgid::PkgPart;
+use crate::util::anyerror::Fault;
+use crate::OrbitResult;
+use clif::arg::{Flag, Optional, Positional};
+use clif::cmd::{Command, FromCli};
+use clif::Cli;
+use clif::Error as CliError;
+use std::collections::BTreeMap;
 
 use crate::core::v2::catalog::Catalog;
-use crate::core::version::AnyVersion;
 use crate::core::v2::catalog::IpLevel;
+use crate::core::version::AnyVersion;
 
 #[derive(Debug, PartialEq)]
 pub struct Search {
@@ -25,73 +25,84 @@ impl Command<Context> for Search {
     type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
-
         let default = !(self.cached || self.queued);
         let mut catalog = Catalog::new();
 
         // collect installed IP
-        if default || self.cached { catalog = catalog.installations(c.get_cache_path())?; }
+        if default || self.cached {
+            catalog = catalog.installations(c.get_cache_path())?;
+        }
 
         // collect downloaded IP
-        if default || self.queued { catalog = catalog.queue(c.get_queue_path())?; }
-        
+        if default || self.queued {
+            catalog = catalog.queue(c.get_queue_path())?;
+        }
+
         self.run(&catalog)
     }
 }
 
 impl Search {
     fn run(&self, catalog: &Catalog) -> Result<(), Fault> {
-
         // transform into a BTreeMap for alphabetical ordering
         let mut tree = BTreeMap::new();
-                catalog.inner()
-                    .into_iter()
-                    // filter by name if user entered a pkgid to search
-                    .filter(|(key, iplvl)| {
-                        let prj = iplvl.get(true, &AnyVersion::Latest).unwrap();
-                        match self.hard_match {
-                            true => {
-                                let name_match = match &self.ip {
-                                    // names must be identical
-                                    Some(pkgid) => if key == &pkgid { true } else { false },
-                                    // move on to the keywords
-                                    None => true
-                                }; 
-                                let keyword_match = {
-                                    for kw in &self.keywords {
-                                        if prj.get_man().get_ip().get_keywords().contains(kw) == false {
-                                            return false
-                                        }
-                                    }
+        catalog
+            .inner()
+            .into_iter()
+            // filter by name if user entered a pkgid to search
+            .filter(|(key, iplvl)| {
+                let prj = iplvl.get(true, &AnyVersion::Latest).unwrap();
+                match self.hard_match {
+                    true => {
+                        let name_match = match &self.ip {
+                            // names must be identical
+                            Some(pkgid) => {
+                                if key == &pkgid {
                                     true
-                                };
-                                name_match && keyword_match
-                            },
-                            false => {
-                                // pass everything if there is no filters applied
-                                if self.ip.is_none() && self.keywords.is_empty() { return true }
-
-                                let name_match = match &self.ip {
-                                    // names must be identical
-                                    Some(pkgid) => key.contains(&pkgid),
-                                    // move on to the keywords
-                                    None => false,
-                                }; 
-                                // try to evaluate keywords
-                                if name_match == false {
-                                    for kw in &self.keywords {
-                                        if prj.get_man().get_ip().get_keywords().contains(kw) == true {
-                                            return true
-                                        }
-                                    }
-                                    false
                                 } else {
-                                    true
+                                    false
                                 }
-                            },
+                            }
+                            // move on to the keywords
+                            None => true,
+                        };
+                        let keyword_match = {
+                            for kw in &self.keywords {
+                                if prj.get_man().get_ip().get_keywords().contains(kw) == false {
+                                    return false;
+                                }
+                            }
+                            true
+                        };
+                        name_match && keyword_match
+                    }
+                    false => {
+                        // pass everything if there is no filters applied
+                        if self.ip.is_none() && self.keywords.is_empty() {
+                            return true;
                         }
-                    })
-                    .for_each(|(key, status)| {
+
+                        let name_match = match &self.ip {
+                            // names must be identical
+                            Some(pkgid) => key.contains(&pkgid),
+                            // move on to the keywords
+                            None => false,
+                        };
+                        // try to evaluate keywords
+                        if name_match == false {
+                            for kw in &self.keywords {
+                                if prj.get_man().get_ip().get_keywords().contains(kw) == true {
+                                    return true;
+                                }
+                            }
+                            false
+                        } else {
+                            true
+                        }
+                    }
+                }
+            })
+            .for_each(|(key, status)| {
                 tree.insert(key, status);
             });
 
@@ -100,15 +111,23 @@ impl Search {
     }
 
     fn fmt_table(catalog: BTreeMap<&PkgPart, &IpLevel>) -> String {
-        let header = format!("\
+        let header = format!(
+            "\
 {:<28}{:<10}{:<9}
-{3:->28}{3:->10}{3:->11}\n", 
-            "Package", "Latest", "Status", " ");
+{3:->28}{3:->10}{3:->11}\n",
+            "Package", "Latest", "Status", " "
+        );
         let mut body = String::new();
         for (ip, status) in catalog {
-            body.push_str(&format!("{:<28}{:<10}     {:<9}\n", 
+            body.push_str(&format!(
+                "{:<28}{:<10}     {:<9}\n",
                 ip.to_string(),
-                status.get(false, &AnyVersion::Latest).unwrap().get_man().get_ip().get_version(),
+                status
+                    .get(false, &AnyVersion::Latest)
+                    .unwrap()
+                    .get_man()
+                    .get_ip()
+                    .get_version(),
                 if status.is_installed() == true {
                     "Installed"
                 } else if status.is_queued() == true {
@@ -123,13 +142,15 @@ impl Search {
 }
 
 impl FromCli for Search {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Search {
             queued: cli.check_flag(Flag::new("download").switch('d'))?,
             cached: cli.check_flag(Flag::new("install").switch('i'))?,
             hard_match: cli.check_flag(Flag::new("match"))?,
-            keywords: cli.check_option_all(Optional::new("keyword").value("term"))?.unwrap_or(Vec::new()),
+            keywords: cli
+                .check_option_all(Optional::new("keyword").value("term"))?
+                .unwrap_or(Vec::new()),
             ip: cli.check_positional(Positional::new("ip"))?,
         });
         command

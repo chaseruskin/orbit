@@ -1,23 +1,23 @@
-use std::path::PathBuf;
+use crate::core::v2::manifest;
 use crate::core::v2::manifest::Manifest;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
-use crate::core::v2::manifest;
+use std::path::PathBuf;
 
-use super::lockfile::IP_LOCK_FILE;
 use super::lockfile::LockFile;
+use super::lockfile::IP_LOCK_FILE;
 use super::manifest::FromFile;
-use crate::core::v2::manifest::ORBIT_METADATA_FILE;
-use crate::core::v2::manifest::IP_MANIFEST_FILE;
-use crate::core::v2::manifest::ORBIT_SUM_FILE;
-use toml_edit::Document;
-use crate::util::sha256::Sha256Hash;
 use crate::core::lang::vhdl::primaryunit::PrimaryUnit;
 use crate::core::lang::vhdl::token::Identifier;
-use std::str::FromStr;
+use crate::core::v2::lockfile::LockEntry;
+use crate::core::v2::manifest::IP_MANIFEST_FILE;
+use crate::core::v2::manifest::ORBIT_METADATA_FILE;
+use crate::core::v2::manifest::ORBIT_SUM_FILE;
+use crate::util::sha256::Sha256Hash;
 use std::collections::HashMap;
 use std::error::Error;
-use crate::core::v2::lockfile::LockEntry;
+use std::str::FromStr;
+use toml_edit::Document;
 
 #[derive(Debug, PartialEq)]
 pub struct Ip {
@@ -30,7 +30,6 @@ pub struct Ip {
 }
 
 impl Ip {
-
     pub fn get_root(&self) -> &PathBuf {
         &self.root
     }
@@ -46,7 +45,7 @@ impl Ip {
     pub fn load(root: PathBuf) -> Result<Self, Box<dyn Error>> {
         let man_path = root.join(IP_MANIFEST_FILE);
         if man_path.exists() == false || man_path.is_file() == false {
-            return Err(AnyError(format!("A manifest file does not exist")))?
+            return Err(AnyError(format!("A manifest file does not exist")))?;
         }
         let lock_path = root.join(IP_LOCK_FILE);
         Ok(Self {
@@ -60,15 +59,15 @@ impl Ip {
     pub fn is_valid(path: &PathBuf) -> Result<(), Box<dyn Error>> {
         let man_path = path.join(IP_MANIFEST_FILE);
         if man_path.exists() == false || man_path.is_file() == false {
-            return Err(AnyError(format!("A manifest file does not exist")))?
+            return Err(AnyError(format!("A manifest file does not exist")))?;
         }
         // attempt to load the manifest file
         let _ = Manifest::from_file(&man_path)?;
-        return Ok(())
+        return Ok(());
     }
 
     /// Finds all Manifest files available in the provided path `path`.
-    /// 
+    ///
     /// Errors if on filesystem problems.
     fn detect_all_sub(path: &PathBuf, name: &str, is_exclusive: bool) -> Result<Vec<Self>, Fault> {
         let mut result = Vec::new();
@@ -77,8 +76,8 @@ impl Ip {
             // read ip_spec from each manifest
             let man = Manifest::from_file(&entry)?;
             entry.pop();
-            result.push( Self {
-                root: entry, 
+            result.push(Self {
+                root: entry,
                 data: man,
                 lock: LockFile::new(),
             });
@@ -87,7 +86,7 @@ impl Ip {
     }
 
     /// Finds all IP manifest files along the provided path `path`.
-    /// 
+    ///
     /// Wraps Manifest::detect_all.
     pub fn detect_all(path: &PathBuf) -> Result<Vec<Self>, Box<dyn std::error::Error>> {
         Self::detect_all_sub(path, IP_MANIFEST_FILE, true)
@@ -106,8 +105,8 @@ impl Ip {
         let mut lut = HashMap::new();
         units.into_iter().for_each(|(key, _)| {
             lut.insert(
-                key.clone(), 
-                "_".to_string() + checksum.to_string().get(0..10).unwrap()
+                key.clone(),
+                "_".to_string() + checksum.to_string().get(0..10).unwrap(),
             );
         });
         lut
@@ -118,12 +117,15 @@ impl Ip {
     }
 
     /// Checks if needing to read off the lock file.
-    /// 
+    ///
     /// This determines if the lock file's data matches the Orbit.toml manifest data,
     /// indicating it is safe to pull data from the lock file and no changes would be
     /// made to the lock file.
     pub fn can_use_lock(&self) -> bool {
-        let target = self.get_lock().get(self.get_man().get_ip().get_name(), self.get_man().get_ip().get_version());
+        let target = self.get_lock().get(
+            self.get_man().get_ip().get_name(),
+            self.get_man().get_ip().get_version(),
+        );
         match target {
             Some(entry) => entry.matches_target(&LockEntry::from((self, true))),
             None => false,
@@ -136,7 +138,7 @@ impl Ip {
     }
 
     /// Computes the checksum on the root of the IP.
-    /// 
+    ///
     /// Changes the current working directory to the root for consistent computation.
     pub fn compute_checksum(dir: &PathBuf) -> Sha256Hash {
         let ip_files = crate::util::filesystem::gather_current_files(&dir, true);
@@ -145,7 +147,7 @@ impl Ip {
     }
 
     /// Gets the already calculated checksum from an installed IP from [ORBIT_SUM_FILE].
-    /// 
+    ///
     /// Returns `None` if the file does not exist, is unable to read into a string, or
     /// if the sha cannot be parsed.
     pub fn read_checksum_proof(dir: &PathBuf) -> Option<Sha256Hash> {
@@ -154,19 +156,17 @@ impl Ip {
             None
         } else {
             match std::fs::read_to_string(&sum_file) {
-                Ok(text) => {
-                    match Sha256Hash::from_str(&text.trim()) {
-                        Ok(sha) => Some(sha),
-                        Err(_) => None,
-                    }
-                }
+                Ok(text) => match Sha256Hash::from_str(&text.trim()) {
+                    Ok(sha) => Some(sha),
+                    Err(_) => None,
+                },
                 Err(_) => None,
             }
         }
     }
 
     /// Caches the result of collecting all the primary design units for the given package.
-    /// 
+    ///
     /// Writes the data to the toml data structure. Note, this function does not save the manifest data to file.
     // pub fn stash_units(&mut self) -> () {
     //     // collect the units
@@ -186,10 +186,13 @@ impl Ip {
     // }
 
     /// Gathers the list of primary design units for the current ip.
-    /// 
-    /// If the manifest has an toml entry for `units` and `force` is set to `false`, 
+    ///
+    /// If the manifest has an toml entry for `units` and `force` is set to `false`,
     /// then it will return that list rather than go through files.
-    pub fn collect_units(force: bool, dir: &PathBuf) -> Result<HashMap<Identifier, PrimaryUnit>, Fault> {
+    pub fn collect_units(
+        force: bool,
+        dir: &PathBuf,
+    ) -> Result<HashMap<Identifier, PrimaryUnit>, Fault> {
         // try to read from metadata file
         match (force == false) && Self::read_units_from_metadata(&dir).is_some() {
             // use precomputed result
@@ -259,12 +262,11 @@ impl FromStr for IpSpec {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // split by delimiter
         match s.rsplit_once(SPEC_DELIM) {
-            Some((n, v)) => {
-                Ok(Self::new(PkgPart::from_str(n)?, Version::from_str(v)?))
-            },
-            None => {
-                Err(Box::new(AnyError(format!("missing specification delimiter {}", SPEC_DELIM))))
-            }
+            Some((n, v)) => Ok(Self::new(PkgPart::from_str(n)?, Version::from_str(v)?)),
+            None => Err(Box::new(AnyError(format!(
+                "missing specification delimiter {}",
+                SPEC_DELIM
+            )))),
         }
     }
 }
@@ -281,14 +283,15 @@ impl From<(PkgPart, Version)> for IpSpec {
     }
 }
 
-use serde::{Deserialize, Serialize};
-use serde::Serializer;
 use serde::de::{self};
+use serde::Serializer;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 impl<'de> Deserialize<'de> for IpSpec {
     fn deserialize<D>(deserializer: D) -> Result<IpSpec, D::Error>
-        where D: de::Deserializer<'de>
+    where
+        D: de::Deserializer<'de>,
     {
         struct LayerVisitor;
 
@@ -300,12 +303,12 @@ impl<'de> Deserialize<'de> for IpSpec {
             }
 
             fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-                where
-                    E: de::Error, {
-                
+            where
+                E: de::Error,
+            {
                 match IpSpec::from_str(v) {
                     Ok(v) => Ok(v),
-                    Err(e) => Err(de::Error::custom(e))
+                    Err(e) => Err(de::Error::custom(e)),
                 }
             }
         }
@@ -350,21 +353,21 @@ impl FromStr for PartialIpSpec {
             // split by delimiter (beginning from rhs)
             Some((n, v)) => Ok(Self(
                 match PkgPart::from_str(n) {
-                    Ok(p) => p, 
+                    Ok(p) => p,
                     Err(e) => return Err(AnyError(e.to_string())),
                 },
                 match AnyVersion::from_str(v) {
-                    Ok(w) => w, 
+                    Ok(w) => w,
                     Err(e) => return Err(AnyError(e.to_string())),
-                }
+                },
             )),
             // take entire string as name and refer to latest version
             None => Ok(Self(
                 match PkgPart::from_str(s) {
-                    Ok(p) => p, 
+                    Ok(p) => p,
                     Err(e) => return Err(AnyError(e.to_string())),
-                }, 
-                AnyVersion::Latest
+                },
+                AnyVersion::Latest,
             )),
         }
     }
@@ -383,9 +386,13 @@ mod test {
     #[test]
     fn compute_checksum() {
         let sum = Ip::compute_checksum(&PathBuf::from("./tests/env/project1/"));
-        assert_eq!(sum, Sha256Hash::from_u32s([
-            2472527351, 1678808787, 3321465315, 1927515725, 
-            108238780, 2368649324, 2487325306, 4053483655]))
+        assert_eq!(
+            sum,
+            Sha256Hash::from_u32s([
+                2472527351, 1678808787, 3321465315, 1927515725, 108238780, 2368649324, 2487325306,
+                4053483655
+            ])
+        )
     }
 
     #[test]
@@ -394,21 +401,21 @@ mod test {
 
         assert_eq!(
             IpSpec::new(
-                PkgPart::from_str("name").unwrap(), 
+                PkgPart::from_str("name").unwrap(),
                 Version::from_str("1.0.0").unwrap()
-            ), 
+            ),
             IpSpec::from_str(&ip).unwrap()
         );
 
-        // // @note: errors due to invalid char for parsing PkgPart, but tests for 
+        // // @note: errors due to invalid char for parsing PkgPart, but tests for
         // // extracting delimiter from RHS only once
         // let ip = format!("global{}local{}0.3.0", SPEC_DELIM, SPEC_DELIM);
 
         // assert_eq!(
         //     IpSpec::new(
-        //         PkgPart::from_str(&format!("global{}local", SPEC_DELIM)).unwrap(), 
+        //         PkgPart::from_str(&format!("global{}local", SPEC_DELIM)).unwrap(),
         //         Version::from_str("0.3.0").unwrap()
-        //     ), 
+        //     ),
         //     IpSpec::from_str(&ip).unwrap()
         // );
     }
@@ -417,10 +424,6 @@ mod test {
     fn from_str_ip_spec_bad() {
         let ip = format!("name");
 
-        assert_eq!(
-            IpSpec::from_str(&ip).is_err(),
-            true
-        );
+        assert_eq!(IpSpec::from_str(&ip).is_err(), true);
     }
-
 }

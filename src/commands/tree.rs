@@ -1,27 +1,27 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use clif::cmd::{FromCli, Command};
+use clif::cmd::{Command, FromCli};
 
-use crate::OrbitResult;
+use crate::commands::plan::Plan;
+use crate::core::context::Context;
 use crate::core::lang::node::HdlNode;
 use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbol::CompoundIdentifier;
 use crate::core::lang::vhdl::symbol::Entity;
-use clif::Cli;
-use clif::arg::{Flag, Optional};
-use clif::Error as CliError;
-use crate::core::context::Context;
 use crate::core::lang::vhdl::token::Identifier;
-use crate::commands::plan::Plan;
 use crate::util::anyerror::Fault;
+use crate::OrbitResult;
+use clif::arg::{Flag, Optional};
+use clif::Cli;
+use clif::Error as CliError;
 
 use crate::core::lang::node::IdentifierFormat;
 
-use crate::core::v2::ip::Ip;
-use crate::core::v2::catalog::Catalog;
 use crate::core::v2::algo;
 use crate::core::v2::algo::IpFileNode;
+use crate::core::v2::catalog::Catalog;
+use crate::core::v2::ip::Ip;
 
 #[derive(Debug, PartialEq)]
 pub struct Tree {
@@ -34,7 +34,7 @@ pub struct Tree {
 }
 
 impl FromCli for Tree {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Tree {
             compress: cli.check_flag(Flag::new("compress"))?,
@@ -63,9 +63,8 @@ impl Command<Context> for Tree {
         let ip = Ip::load(c.get_ip_path().unwrap().clone())?;
 
         // gather the catalog
-        let catalog = Catalog::new()
-            .installations(c.get_cache_path())?;
-        
+        let catalog = Catalog::new().installations(c.get_cache_path())?;
+
         self.run(ip, catalog)
     }
 }
@@ -93,10 +92,12 @@ impl Tree {
             let n = {
                 // restrict graph to units only found within the current IP
                 let local_graph = Plan::compute_local_graph(&global_graph, &working_lib, &target);
-    
+
                 let root_index = if let Some(ent) = &self.root {
                     // check if the identifier exists in the entity graph
-                    let i = match local_graph.get_node_by_key(&&CompoundIdentifier::new(working_lib, ent.clone())) {
+                    let i = match local_graph
+                        .get_node_by_key(&&CompoundIdentifier::new(working_lib, ent.clone()))
+                    {
                         Some(id) => id.index(),
                         None => return Err(PlanError::UnknownEntity(ent.clone()))?,
                     };
@@ -106,16 +107,32 @@ impl Tree {
                     // check if --all is applied
                     // traverse subset of graph by filtering only for working library entities
                     match local_graph.find_root() {
-                        Ok(i) => Plan::local_to_global(i.index(), &global_graph, &local_graph).index(),
+                        Ok(i) => {
+                            Plan::local_to_global(i.index(), &global_graph, &local_graph).index()
+                        }
                         Err(e) => match e.len() {
                             0 => return Err(PlanError::Empty)?,
-                            _ => return Err(PlanError::Ambiguous("roots".to_string(), e.into_iter().map(|f| { f.as_ref().get_symbol().as_entity().unwrap().get_name().clone() }).collect()))?
-                        }
+                            _ => {
+                                return Err(PlanError::Ambiguous(
+                                    "roots".to_string(),
+                                    e.into_iter()
+                                        .map(|f| {
+                                            f.as_ref()
+                                                .get_symbol()
+                                                .as_entity()
+                                                .unwrap()
+                                                .get_name()
+                                                .clone()
+                                        })
+                                        .collect(),
+                                ))?
+                            }
+                        },
                     }
                 };
                 root_index
             };
-            
+
             // display the root's tree to the console
             let tree = global_graph.get_graph().treeview(n);
             for twig in &tree {
@@ -123,7 +140,15 @@ impl Tree {
                     true => Self::to_ascii(&twig.0.to_string()),
                     false => twig.0.to_string(),
                 };
-                println!("{}{}", branch_str, global_graph.get_node_by_index(twig.1).unwrap().as_ref().display(self.format.as_ref().unwrap_or(&IdentifierFormat::Short)));            
+                println!(
+                    "{}{}",
+                    branch_str,
+                    global_graph
+                        .get_node_by_index(twig.1)
+                        .unwrap()
+                        .as_ref()
+                        .display(self.format.as_ref().unwrap_or(&IdentifierFormat::Short))
+                );
             }
         } else {
             // restrict graph to units only found within the current IP
@@ -131,11 +156,16 @@ impl Tree {
             // compile list of all roots
             let mut roots = Vec::new();
             match local_graph.find_root() {
-                Ok(i) => roots.push(Plan::local_to_global(i.index(), &global_graph, &local_graph).index()),
+                Ok(i) => roots
+                    .push(Plan::local_to_global(i.index(), &global_graph, &local_graph).index()),
                 Err(e) => match e.len() {
                     0 => return Err(PlanError::Empty)?,
-                    _ => e.into_iter().for_each(|f| { roots.push(Plan::local_to_global(f.index(), &global_graph, &local_graph).index()) })
-                }
+                    _ => e.into_iter().for_each(|f| {
+                        roots.push(
+                            Plan::local_to_global(f.index(), &global_graph, &local_graph).index(),
+                        )
+                    }),
+                },
             }
 
             // display each root's tree to the console
@@ -146,7 +176,15 @@ impl Tree {
                         true => Self::to_ascii(&twig.0.to_string()),
                         false => twig.0.to_string(),
                     };
-                    println!("{}{}", branch_str, global_graph.get_node_by_index(twig.1).unwrap().as_ref().display(self.format.as_ref().unwrap_or(&IdentifierFormat::Short)));            
+                    println!(
+                        "{}{}",
+                        branch_str,
+                        global_graph
+                            .get_node_by_index(twig.1)
+                            .unwrap()
+                            .as_ref()
+                            .display(self.format.as_ref().unwrap_or(&IdentifierFormat::Short))
+                    );
                 }
             });
         }
@@ -160,7 +198,18 @@ impl Tree {
 
         let tree = ip_graph.get_graph().treeview(0);
         for twig in &tree {
-            println!("{}{}", twig.0, ip_graph.get_node_by_index(twig.1).unwrap().as_ref().as_ip().get_man().get_ip().into_ip_spec());
+            println!(
+                "{}{}",
+                twig.0,
+                ip_graph
+                    .get_node_by_index(twig.1)
+                    .unwrap()
+                    .as_ref()
+                    .as_ip()
+                    .get_man()
+                    .get_ip()
+                    .into_ip_spec()
+            );
         }
         Ok(())
     }
@@ -183,7 +232,9 @@ impl Tree {
     }
 
     /// Constructs a graph of the design heirarchy with entity nodes.
-    fn build_graph<'a>(files: &'a Vec<IpFileNode>) -> GraphMap<CompoundIdentifier, HdlNode<'a>, ()> {
+    fn build_graph<'a>(
+        files: &'a Vec<IpFileNode>,
+    ) -> GraphMap<CompoundIdentifier, HdlNode<'a>, ()> {
         // entity identifier, HashNode (hash-node holds entity structs)
         let mut graph = GraphMap::<CompoundIdentifier, HdlNode, ()>::new();
 
@@ -201,34 +252,39 @@ impl Tree {
             // parse VHDL code
             let contents = fs::read_to_string(&source_file.get_file()).unwrap();
             let symbols = VHDLParser::read(&contents).into_symbols();
-            
+
             let lib = source_file.get_library();
             // add all entities to a graph and store architectures for later analysis
-            symbols.into_iter()
-                .for_each(|sym| {
-                    match sym {
-                        VHDLSymbol::Entity(e) => {
-                            component_pairs.insert(e.get_name().clone(), lib.clone());
-                            graph.add_node(CompoundIdentifier::new(lib.clone(), e.get_name().clone()), HdlNode::new(VHDLSymbol::from(e), source_file));
-                        },
-                        VHDLSymbol::Architecture(arch) => {
-                            sub_nodes.push((lib.clone(), SubUnitNode::new(SubUnit::from_arch(arch), source_file)));
-                        },
-                        VHDLSymbol::Configuration(cfg) => {
-                            sub_nodes.push((lib.clone(), SubUnitNode::new(SubUnit::from_config(cfg), source_file)));
-                        },
-                        VHDLSymbol::Package(_) => {
-                            package_identifiers.insert(sym.as_iden().unwrap().clone());
-                        }
-                        _ => (),
-                    }
+            symbols.into_iter().for_each(|sym| match sym {
+                VHDLSymbol::Entity(e) => {
+                    component_pairs.insert(e.get_name().clone(), lib.clone());
+                    graph.add_node(
+                        CompoundIdentifier::new(lib.clone(), e.get_name().clone()),
+                        HdlNode::new(VHDLSymbol::from(e), source_file),
+                    );
+                }
+                VHDLSymbol::Architecture(arch) => {
+                    sub_nodes.push((
+                        lib.clone(),
+                        SubUnitNode::new(SubUnit::from_arch(arch), source_file),
+                    ));
+                }
+                VHDLSymbol::Configuration(cfg) => {
+                    sub_nodes.push((
+                        lib.clone(),
+                        SubUnitNode::new(SubUnit::from_config(cfg), source_file),
+                    ));
+                }
+                VHDLSymbol::Package(_) => {
+                    package_identifiers.insert(sym.as_iden().unwrap().clone());
+                }
+                _ => (),
             });
         }
 
         // go through all subunits and make the connections
         let mut sub_nodes_iter = sub_nodes.into_iter();
         while let Some((lib, node)) = sub_nodes_iter.next() {
-
             let node_name = CompoundIdentifier::new(lib, node.get_sub().get_entity().clone());
 
             // link to the owner and add subunit's source file
@@ -236,7 +292,7 @@ impl Tree {
             let entity_node = match graph.get_node_by_key_mut(&node_name) {
                 Some(en) => en,
                 // @todo: issue error because the entity (owner) is not declared
-                None => continue
+                None => continue,
             };
             entity_node.as_ref_mut().add_file(node.get_file());
             // create edges
@@ -248,23 +304,37 @@ impl Tree {
                 // need to locate the key with a suffix matching `dep` if it was a component instantiation
                 if dep.get_prefix().is_none() {
                     if let Some(lib) = component_pairs.get(dep.get_suffix()) {
-                        
-                        let b = graph.add_edge_by_key(&CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone()), &node_name, ());
+                        let b = graph.add_edge_by_key(
+                            &CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone()),
+                            &node_name,
+                            (),
+                        );
                         match b {
                             // create black box entity
                             EdgeStatus::MissingSource => {
-                                let dep_name = CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone());
-                               
-                                graph.add_node(dep_name.clone(), HdlNode::black_box(VHDLSymbol::from(Entity::black_box(dep.get_suffix().clone()))));
+                                let dep_name =
+                                    CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone());
+
+                                graph.add_node(
+                                    dep_name.clone(),
+                                    HdlNode::black_box(VHDLSymbol::from(Entity::black_box(
+                                        dep.get_suffix().clone(),
+                                    ))),
+                                );
                                 graph.add_edge_by_key(&dep_name, &node_name, ());
                             }
-                            _ => ()
+                            _ => (),
                         }
                     // this entity does not exist or was not logged
                     } else {
                         // create new node for black box entity
                         if graph.has_node_by_key(dep) == false {
-                            graph.add_node(dep.clone(), HdlNode::black_box(VHDLSymbol::from(Entity::black_box(dep.get_suffix().clone()))));
+                            graph.add_node(
+                                dep.clone(),
+                                HdlNode::black_box(VHDLSymbol::from(Entity::black_box(
+                                    dep.get_suffix().clone(),
+                                ))),
+                            );
                         }
                         graph.add_edge_by_key(&dep, &node_name, ());
                     }
@@ -282,12 +352,12 @@ impl Tree {
     }
 }
 
+use crate::core::fileset;
 use crate::core::lang::node::SubUnitNode;
 use crate::core::lang::vhdl::symbol::{VHDLParser, VHDLSymbol};
 use crate::util::graph::EdgeStatus;
 use crate::util::graphmap::GraphMap;
 use std::fs;
-use crate::core::fileset;
 
 use super::plan::PlanError;
 

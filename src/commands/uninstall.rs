@@ -1,12 +1,12 @@
-use clif::cmd::{FromCli, Command};
+use crate::core::context::Context;
 use crate::core::v2::catalog::Catalog;
 use crate::core::v2::ip::PartialIpSpec;
-use clif::Cli;
-use clif::arg::{Positional, Flag};
-use clif::Error as CliError;
-use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::OrbitResult;
+use clif::arg::{Flag, Positional};
+use clif::cmd::{Command, FromCli};
+use clif::Cli;
+use clif::Error as CliError;
 use std::fs;
 
 #[derive(Debug, PartialEq)]
@@ -14,11 +14,11 @@ pub struct Uninstall {
     ip: PartialIpSpec,
     full: bool,
     // @todo: add option to remove all versions (including store)
-    // @todo: 
+    // @todo:
 }
 
 impl FromCli for Uninstall {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Uninstall {
             full: cli.check_flag(Flag::new("full"))?,
@@ -29,7 +29,6 @@ impl FromCli for Uninstall {
 }
 
 impl Command<Context> for Uninstall {
-
     type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
@@ -42,14 +41,22 @@ impl Command<Context> for Uninstall {
         let status = match catalog.inner().get(&self.ip.get_name()) {
             Some(st) => st,
             None => {
-                return Err(AnyError(format!("ip '{}' does not exist in the cache", self.ip)))?
+                return Err(AnyError(format!(
+                    "ip '{}' does not exist in the cache",
+                    self.ip
+                )))?
             }
         };
 
         // grab the ip's manifest
         let target = match status.get_install(&self.ip.get_version()) {
-                Some(t) => t,
-                None => return Err(AnyError(format!("IP {} does not exist in the cache", self.ip)))?
+            Some(t) => t,
+            None => {
+                return Err(AnyError(format!(
+                    "IP {} does not exist in the cache",
+                    self.ip
+                )))?
+            }
         };
 
         // delete the project

@@ -1,11 +1,11 @@
-use toml_edit::InlineTable;
 use super::super::lexer::Position;
-use crate::{core::{lang::vhdl::token::Identifier}, util::anyerror::Fault};
-use crate::core::v2::ip::IpSpec;
-use std::{collections::HashMap, str::FromStr, path::PathBuf};
-use crate::util::filesystem;
 use super::symbol::VHDLSymbol;
 use crate::core::lang::vhdl::symbol::VHDLParser;
+use crate::core::v2::ip::IpSpec;
+use crate::util::filesystem;
+use crate::{core::lang::vhdl::token::Identifier, util::anyerror::Fault};
+use std::{collections::HashMap, path::PathBuf, str::FromStr};
+use toml_edit::InlineTable;
 
 pub type PrimaryUnitStore = HashMap<Identifier, PrimaryUnit>;
 
@@ -18,7 +18,7 @@ pub enum PrimaryUnit {
 }
 
 impl PrimaryUnit {
-    /// References the unit's identifier. 
+    /// References the unit's identifier.
     pub fn get_iden(&self) -> &Identifier {
         match self {
             Self::Entity(u) => &u.name,
@@ -41,15 +41,23 @@ impl PrimaryUnit {
     pub fn to_toml(&self) -> toml_edit::Value {
         let mut item = toml_edit::Value::InlineTable(InlineTable::new());
         let tbl = item.as_inline_table_mut().unwrap();
-        tbl.insert("identifier", toml_edit::value(&self.get_iden().to_string()).into_value().unwrap());
-        tbl.insert("type", toml_edit::value(&self.to_string()).into_value().unwrap());
+        tbl.insert(
+            "identifier",
+            toml_edit::value(&self.get_iden().to_string())
+                .into_value()
+                .unwrap(),
+        );
+        tbl.insert(
+            "type",
+            toml_edit::value(&self.to_string()).into_value().unwrap(),
+        );
         item
     }
 
     /// Deserializes the data from a toml inline table.
     pub fn from_toml(tbl: &toml_edit::InlineTable) -> Option<Self> {
         let unit = Unit {
-            name: Identifier::from_str(tbl.get("identifier")?.as_str()?).unwrap(), 
+            name: Identifier::from_str(tbl.get("identifier")?.as_str()?).unwrap(),
             symbol: None,
             source: String::new(),
         };
@@ -65,12 +73,16 @@ impl PrimaryUnit {
 
 impl std::fmt::Display for PrimaryUnit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            Self::Entity(_) => "entity",
-            Self::Package(_) => "package",
-            Self::Context(_) => "context",
-            Self::Configuration(_) => "configuration",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Entity(_) => "entity",
+                Self::Package(_) => "package",
+                Self::Context(_) => "context",
+                Self::Configuration(_) => "configuration",
+            }
+        )
     }
 }
 
@@ -115,24 +127,50 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
             let contents = std::fs::read_to_string(&source_file).unwrap();
             let symbols = VHDLParser::read(&contents).into_symbols();
             // transform into primary design units
-            let units: Vec<PrimaryUnit> = symbols.into_iter().filter_map(|sym| {
-                let name = sym.as_iden()?.clone();
-                match sym {
-                    VHDLSymbol::Entity(_) => Some(PrimaryUnit::Entity(Unit{ name: name, symbol: Some(sym), source: source_file.clone() })),
-                    VHDLSymbol::Package(_) => Some(PrimaryUnit::Package(Unit{ name: name, symbol: Some(sym), source: source_file.clone() })),
-                    VHDLSymbol::Configuration(_) => Some(PrimaryUnit::Configuration(Unit{ name: name, symbol: Some(sym), source: source_file.clone() })),
-                    VHDLSymbol::Context(_) => Some(PrimaryUnit::Context(Unit{ name: name, symbol: Some(sym), source: source_file.clone() })),
-                    _ => None,
-                }
-            }).collect();
-            
+            let units: Vec<PrimaryUnit> = symbols
+                .into_iter()
+                .filter_map(|sym| {
+                    let name = sym.as_iden()?.clone();
+                    match sym {
+                        VHDLSymbol::Entity(_) => Some(PrimaryUnit::Entity(Unit {
+                            name: name,
+                            symbol: Some(sym),
+                            source: source_file.clone(),
+                        })),
+                        VHDLSymbol::Package(_) => Some(PrimaryUnit::Package(Unit {
+                            name: name,
+                            symbol: Some(sym),
+                            source: source_file.clone(),
+                        })),
+                        VHDLSymbol::Configuration(_) => Some(PrimaryUnit::Configuration(Unit {
+                            name: name,
+                            symbol: Some(sym),
+                            source: source_file.clone(),
+                        })),
+                        VHDLSymbol::Context(_) => Some(PrimaryUnit::Context(Unit {
+                            name: name,
+                            symbol: Some(sym),
+                            source: source_file.clone(),
+                        })),
+                        _ => None,
+                    }
+                })
+                .collect();
+
             for primary in units {
                 if let Some(dupe) = result.insert(primary.get_iden().clone(), primary) {
                     return Err(VhdlIdentifierError::DuplicateIdentifier(
-                        dupe.get_iden().clone(), 
-                        PathBuf::from(source_file), 
-                        result.get(dupe.get_iden()).unwrap().get_unit().get_symbol().unwrap().get_position().clone(),
-                        PathBuf::from(dupe.get_unit().get_source_code_file()), 
+                        dupe.get_iden().clone(),
+                        PathBuf::from(source_file),
+                        result
+                            .get(dupe.get_iden())
+                            .unwrap()
+                            .get_unit()
+                            .get_symbol()
+                            .unwrap()
+                            .get_position()
+                            .clone(),
+                        PathBuf::from(dupe.get_unit().get_source_code_file()),
                         dupe.get_unit().get_symbol().unwrap().get_position().clone(),
                     ))?;
                 }
@@ -158,22 +196,21 @@ impl std::fmt::Display for VhdlIdentifierError {
                 let location_1 = filesystem::remove_base(&current_dir, &path1);
                 let location_2 = filesystem::remove_base(&current_dir, &path2);
                 write!(f, "duplicate primary design units identified as '{}'\n\nlocation 1: {}{}\nlocation 2: {}{}\n\n{}", 
-                    iden, 
+                    iden,
                     filesystem::into_std_str(location_1), loc1, 
                     filesystem::into_std_str(location_2), loc2, 
                     HINT)
-            },
+            }
             Self::DuplicateAcrossDirect(iden, dep, path, pos) => {
                 let current_dir = std::env::current_dir().unwrap();
                 let location = filesystem::remove_base(&current_dir, &path);
                 write!(f, "duplicate primary design units identified as '{}'\n\nlocation: {}{}\nconflicts with direct dependency {}\n\n{}", 
-                iden, 
+                iden,
                 filesystem::into_std_str(location), pos,
                 dep,
                 HINT_2)
             }
         }
-
     }
 }
 

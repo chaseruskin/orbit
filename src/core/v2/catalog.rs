@@ -1,14 +1,23 @@
-use std::{collections::{HashMap, HashSet}, path::PathBuf};
 use crate::util::{anyerror::Fault, sha256::Sha256Hash};
+use std::{
+    collections::{HashMap, HashSet},
+    path::PathBuf,
+};
 
-use super::super::{pkgid::{PkgId, PkgPart}, manifest::IpManifest, version::{Version, AnyVersion}, store::Store, vendor::VendorManifest};
+use super::super::{
+    manifest::IpManifest,
+    pkgid::{PkgId, PkgPart},
+    store::Store,
+    vendor::VendorManifest,
+    version::{AnyVersion, Version},
+};
 
 use crate::core::v2::ip::Ip;
 
 #[derive(Debug)]
 pub struct Catalog<'a> {
-    inner: HashMap<PkgPart, IpLevel>, 
-    store: Option<Store<'a>>, 
+    inner: HashMap<PkgPart, IpLevel>,
+    store: Option<Store<'a>>,
     cache: Option<&'a PathBuf>,
     queue: Option<&'a PathBuf>,
 }
@@ -18,7 +27,7 @@ pub enum IpState {
     Downloaded,
     Installation,
     Available,
-    Unknown
+    Unknown,
 }
 
 impl std::fmt::Display for IpState {
@@ -27,7 +36,7 @@ impl std::fmt::Display for IpState {
             Self::Downloaded => write!(f, "downloaded"),
             Self::Installation => write!(f, "installation"),
             Self::Available => write!(f, "available"),
-            Self::Unknown => write!(f, "unknown")
+            Self::Unknown => write!(f, "unknown"),
         }
     }
 }
@@ -36,16 +45,23 @@ impl std::fmt::Display for IpState {
 pub struct IpLevel {
     installs: Vec<Ip>,
     queue: Vec<Ip>,
-    available: Vec<Ip>
+    available: Vec<Ip>,
 }
 
 impl IpLevel {
     pub fn new() -> Self {
-        Self { installs: Vec::new(), available: Vec::new(), queue: Vec::new(), }
+        Self {
+            installs: Vec::new(),
+            available: Vec::new(),
+            queue: Vec::new(),
+        }
     }
 
     pub fn is_available_or_in_store(&self, store: &Store, pkgid: &PkgId, v: &AnyVersion) -> bool {
-        self.get_available(v).is_some() || IpManifest::from_store(&store, &pkgid, v).unwrap_or(None).is_some()
+        self.get_available(v).is_some()
+            || IpManifest::from_store(&store, &pkgid, v)
+                .unwrap_or(None)
+                .is_some()
     }
 
     pub fn add_install(&mut self, m: Ip) -> () {
@@ -60,7 +76,7 @@ impl IpLevel {
     }
 
     pub fn add_available(&mut self, m: Ip) -> () {
-        self.available.push(m);    
+        self.available.push(m);
     }
 
     pub fn get_installations(&self) -> &Vec<Ip> {
@@ -102,7 +118,7 @@ impl IpLevel {
     }
 
     /// References the ip matching the most compatible version `version`.
-    /// 
+    ///
     /// A `dev` version is only searched at the DEV_PATH. Any other version is
     /// first sought for in the cache installations, and if not found then searched
     /// for in the availability space.
@@ -110,43 +126,52 @@ impl IpLevel {
     pub fn get(&self, check_queue: bool, version: &AnyVersion) -> Option<&Ip> {
         match self.get_install(version) {
             Some(ip) => Some(ip),
-            None => {
-                match check_queue {
-                    true => self.get_queue(version),
-                    false => None,
-                }
+            None => match check_queue {
+                true => self.get_queue(version),
+                false => None,
             },
         }
     }
 
     /// Tracks what level the `manifest` came from.
     pub fn get_state(&self, ip: &Ip) -> IpState {
-        if self.installs.iter().find(|f| f == &ip).is_some() { 
-            IpState::Installation 
+        if self.installs.iter().find(|f| f == &ip).is_some() {
+            IpState::Installation
         } else if self.available.iter().find(|f| f == &ip).is_some() {
             IpState::Available
         } else if self.queue.iter().find(|f| f == &ip).is_some() {
             IpState::Downloaded
         } else {
             IpState::Unknown
-        } 
+        }
     }
 
     /// Finds the most compatible version matching `target` among the possible `space`.
-    /// 
+    ///
     /// Returns `None` if no compatible version was found.
-    /// 
+    ///
     /// Panics if a development version is entered as `target`.
     fn get_target_version<'a>(target: &AnyVersion, space: &'a Vec<Ip>) -> Option<&'a Ip> {
         // find the specified version for the given ip
         let mut latest_version: Option<&Ip> = None;
-        space.iter()
+        space
+            .iter()
             .filter(|ip| match &target {
-                AnyVersion::Specific(v) => crate::core::version::is_compatible(v, ip.get_man().get_ip().get_version()),
+                AnyVersion::Specific(v) => {
+                    crate::core::version::is_compatible(v, ip.get_man().get_ip().get_version())
+                }
                 AnyVersion::Latest => true,
             })
             .for_each(|ip| {
-                if latest_version.is_none() || ip.get_man().get_ip().get_version() > latest_version.as_ref().unwrap().get_man().get_ip().get_version() {
+                if latest_version.is_none()
+                    || ip.get_man().get_ip().get_version()
+                        > latest_version
+                            .as_ref()
+                            .unwrap()
+                            .get_man()
+                            .get_ip()
+                            .get_version()
+                {
                     latest_version = Some(ip);
                 }
             });
@@ -157,8 +182,8 @@ impl IpLevel {
 impl<'a> Catalog<'a> {
     pub fn new() -> Self {
         Self {
-            inner: HashMap::new(), 
-            store: None, 
+            inner: HashMap::new(),
+            store: None,
             cache: None,
             queue: None,
         }
@@ -205,7 +230,7 @@ impl<'a> Catalog<'a> {
     }
 
     /// Returns all possible versions found for the `target` ip.
-    /// 
+    ///
     /// Returns `None` if the id is not found in the catalog.
     pub fn get_possible_versions(&self, id: &PkgPart) -> Option<Vec<&Version>> {
         let kaban = self.inner.get(&id)?;
@@ -224,25 +249,31 @@ impl<'a> Catalog<'a> {
     }
 
     /// Finds all `Orbit.toml` manifest files (markings of an IP) within the provided `path`.
-    /// 
+    ///
     /// This function is generic enough to be used to catch ip at all 3 levels: dev, install, and available.
-    fn detect(mut self, path: &PathBuf, add: &dyn Fn(&mut IpLevel, Ip) -> (), is_pointers: bool) -> Result<Self, Fault> {
+    fn detect(
+        mut self,
+        path: &PathBuf,
+        add: &dyn Fn(&mut IpLevel, Ip) -> (),
+        is_pointers: bool,
+    ) -> Result<Self, Fault> {
         match is_pointers {
             false => Ip::detect_all(path),
-            true => todo!("only detect for available")
-        }?.into_iter()
-            .for_each(|ip| {
-                match self.inner.get_mut(&ip.get_man().get_ip().get_name()) {
-                    Some(lvl) => add(lvl, ip),
-                    None => { 
-                        let pkgid = ip.get_man().get_ip().get_name().clone();
-                        let mut lvl = IpLevel::new(); 
-                        add(&mut lvl, ip); 
-                        self.inner.insert(pkgid, lvl); 
-                        ()
-                    },
+            true => todo!("only detect for available"),
+        }?
+        .into_iter()
+        .for_each(
+            |ip| match self.inner.get_mut(&ip.get_man().get_ip().get_name()) {
+                Some(lvl) => add(lvl, ip),
+                None => {
+                    let pkgid = ip.get_man().get_ip().get_name().clone();
+                    let mut lvl = IpLevel::new();
+                    add(&mut lvl, ip);
+                    self.inner.insert(pkgid, lvl);
+                    ()
                 }
-            });
+            },
+        );
         Ok(self)
     }
 
@@ -259,14 +290,18 @@ impl<'a> Catalog<'a> {
     }
 }
 
-
 #[derive(PartialEq, Debug, Clone)]
 pub struct CacheSlot(String);
 
 impl CacheSlot {
     /// Combines the various components of a cache slot name into a `CacheSlot`.
     pub fn new(name: &PkgPart, version: &Version, checksum: &Sha256Hash) -> Self {
-        Self(format!("{}-{}-{}", name, version, checksum.to_string().get(0..10).unwrap()))
+        Self(format!(
+            "{}-{}-{}",
+            name,
+            version,
+            checksum.to_string().get(0..10).unwrap()
+        ))
     }
 }
 

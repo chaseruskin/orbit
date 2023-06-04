@@ -1,55 +1,57 @@
-use fs_extra;
-use ignore::WalkBuilder;
-use std::ffi::OsStr;
-use std::path::{Path, Component};
-use home::home_dir;
-use std::path::PathBuf;
-use std::env::current_dir;
-use std::env;
 use crate::core::fileset;
-use crate::core::manifest;
 use crate::core::lockfile;
+use crate::core::manifest;
 use crate::core::v2::lockfile::IP_LOCK_FILE;
 use crate::core::v2::manifest::IP_MANIFEST_FILE;
+use fs_extra;
+use home::home_dir;
+use ignore::WalkBuilder;
+use std::env;
+use std::env::current_dir;
+use std::ffi::OsStr;
+use std::path::PathBuf;
+use std::path::{Component, Path};
 
 use super::anyerror::Fault;
 
 /// Recursively walks the given `path` and ignores files defined in a .gitignore file or .orbitignore files.
-/// 
+///
 /// Returns the resulting list of filepath strings. This function silently skips result errors
 /// while walking. The collected set of paths are also standardized to use forward slashes '/'.
-/// 
+///
 /// Setting `strip_base` to `true` will remove the overlapping `path` components from the
 /// final [String] entries in the resulting vector.
-/// 
+///
 /// Ignores ORBIT_SUM_FILE, .git directory, ORBIT_METADATA_FILE, and IP_LOCK_FILE.
 pub fn gather_current_files(path: &PathBuf, strip_base: bool) -> Vec<String> {
     let m = WalkBuilder::new(path)
         .hidden(false)
         .add_custom_ignore_filename(ORBIT_IGNORE_FILE)
-        .filter_entry(|p| {
-            match p.file_name().to_str().unwrap() {
-                manifest::ORBIT_SUM_FILE | lockfile::IP_LOCK_FILE | manifest::ORBIT_METADATA_FILE => false,
-                _ => true,
+        .filter_entry(|p| match p.file_name().to_str().unwrap() {
+            manifest::ORBIT_SUM_FILE | lockfile::IP_LOCK_FILE | manifest::ORBIT_METADATA_FILE => {
+                false
             }
+            _ => true,
         })
         .build();
-    let mut files: Vec<String> = m.filter_map(|result| {
-        match result {
-            Ok(entry) => {
-                if entry.path().is_file() {
-                    // perform standardization
-                    Some(into_std_str(match strip_base {
-                        true => remove_base(&path, &entry.into_path()),
-                        false => entry.into_path(),
-                    }))
-                } else {
-                    None
+    let mut files: Vec<String> = m
+        .filter_map(|result| {
+            match result {
+                Ok(entry) => {
+                    if entry.path().is_file() {
+                        // perform standardization
+                        Some(into_std_str(match strip_base {
+                            true => remove_base(&path, &entry.into_path()),
+                            false => entry.into_path(),
+                        }))
+                    } else {
+                        None
+                    }
                 }
-            },
-            Err(_) => None,
-        }
-    }).collect();
+                Err(_) => None,
+            }
+        })
+        .collect();
     // sort the fileset for reproducibility purposes
     files.sort();
     files
@@ -81,20 +83,22 @@ impl Unit {
 
 /// Calculates the size of the given path.
 pub fn compute_size<P>(path: &P, unit: Unit) -> Result<f32, Fault>
-where P: AsRef<Path> {
+where
+    P: AsRef<Path>,
+{
     Ok(fs_extra::dir::get_size(&path)? as f32 / unit.value() as f32)
 }
 
 /// Attempts to return the executable's path.
 pub fn get_exe_path() -> Result<PathBuf, Fault> {
-    match env::current_exe() {    
+    match env::current_exe() {
         Ok(exe_path) => Ok(std::fs::canonicalize(exe_path)?),
         Err(e) => Err(Box::new(e)),
     }
 }
 
 /// Resolves a relative path into a full path if given relative to some `root` path.
-/// 
+///
 /// This function is helpful for resolving full paths in plugin arguments,
 /// config.toml includes, and template paths.
 pub fn resolve_rel_path(root: &std::path::PathBuf, s: &str) -> String {
@@ -112,7 +116,7 @@ pub fn resolve_rel_path(root: &std::path::PathBuf, s: &str) -> String {
 }
 
 /// Resolves a relative path into a full path if given relative to some `root` path.
-/// 
+///
 /// This function is helpful for resolving full paths in plugin arguments,
 /// config.toml includes, and template paths.
 pub fn resolve_rel_path2(root: &std::path::PathBuf, s: &PathBuf) -> PathBuf {
@@ -137,19 +141,17 @@ pub fn remove_base(base: &PathBuf, full: &PathBuf) -> PathBuf {
 
     let result = loop {
         match f_comps.next() {
-            Some(full_c) => {
-                match b_comps.next() {
-                    Some(base_c) => {
-                        if full_c == base_c { 
-                            continue 
-                        } else {
-                            break PathBuf::from(full_c)
-                        }
+            Some(full_c) => match b_comps.next() {
+                Some(base_c) => {
+                    if full_c == base_c {
+                        continue;
+                    } else {
+                        break PathBuf::from(full_c);
                     }
-                    None => break PathBuf::from(full_c)
                 }
-            }
-            None => break PathBuf::new()
+                None => break PathBuf::from(full_c),
+            },
+            None => break PathBuf::new(),
         }
     };
 
@@ -166,10 +168,10 @@ pub fn is_minimal(name: &str) -> bool {
 }
 
 /// Recursively copies files from `source` to `target` directory.
-/// 
+///
 /// Assumes `target` directory does not already exist. Ignores the `.git/` folder
 /// if `ignore_git` is set to `true`. Respects `.gitignore` files.
-/// 
+///
 /// If immutable is `true`, then read_only permissions will be enabled, else the files
 /// will be mutable. Silently skips files that could be changed with mutability/permissions.
 pub fn copy(source: &PathBuf, target: &PathBuf, minimal: bool) -> Result<(), Fault> {
@@ -183,12 +185,17 @@ pub fn copy(source: &PathBuf, target: &PathBuf, minimal: bool) -> Result<(), Fau
         .hidden(false)
         .add_custom_ignore_filename(ORBIT_IGNORE_FILE)
         // only capture files that are required by minimal installations
-        .filter_entry(move |f| (f.path().is_file() == false || minimal == false || is_minimal(&f.file_name().to_string_lossy()) == true))
-        .build() {
-            match result {
-                Ok(entry) => from_paths.push(entry.path().to_path_buf()),
-                Err(_) => (),
-            }
+        .filter_entry(move |f| {
+            f.path().is_file() == false
+                || minimal == false
+                || is_minimal(&f.file_name().to_string_lossy()) == true
+        })
+        .build()
+    {
+        match result {
+            Ok(entry) => from_paths.push(entry.path().to_path_buf()),
+            Err(_) => (),
+        }
     }
     // create all missing directories
     for from in from_paths.iter().filter(|f| f.is_dir()) {
@@ -200,7 +207,9 @@ pub fn copy(source: &PathBuf, target: &PathBuf, minimal: bool) -> Result<(), Fau
     for from in from_paths.iter().filter(|f| f.is_file()) {
         // grab the parent
         if let Some(parent) = from.parent() {
-            let to = target.join(remove_base(&source, &parent.to_path_buf())).join(from.file_name().unwrap());
+            let to = target
+                .join(remove_base(&source, &parent.to_path_buf()))
+                .join(from.file_name().unwrap());
             std::fs::copy(from, &to)?;
         }
     }
@@ -217,10 +226,10 @@ pub fn copy(source: &PathBuf, target: &PathBuf, minimal: bool) -> Result<(), Fau
 }
 
 /// This function creates a universally accepted syntax for a full absolute path.
-/// 
+///
 /// Begins with a leading forward slash (`/`) and uses forward slashes as component separators.
 /// Removes Prefix components and keeps RootDir components.
-/// 
+///
 /// If the path `p` is relative, it will be transformed into its full absolute path.
 pub fn to_absolute(p: PathBuf) -> Result<PathBuf, Fault> {
     // ensure the path is in absolute form
@@ -238,7 +247,10 @@ pub fn to_absolute(p: PathBuf) -> Result<PathBuf, Fault> {
     // }
 
     Ok(p.components()
-        .filter(|f| match f { Component::Prefix(_) => false, _ => true } )
+        .filter(|f| match f {
+            Component::Prefix(_) => false,
+            _ => true,
+        })
         .collect())
 }
 
@@ -249,28 +261,32 @@ pub fn full_normal(p: &PathBuf) -> PathBuf {
 }
 
 pub trait Standardize {
-    fn standardize<T>(_: T) -> Self where T: Into<Self>, Self: Sized;
+    fn standardize<T>(_: T) -> Self
+    where
+        T: Into<Self>,
+        Self: Sized;
 }
 
 impl Standardize for PathBuf {
     /// This function resolves common filesystem standards into a standardized path format.
-    /// 
+    ///
     /// It expands leading '~' to be the user's home directory, or expands leading '.' to the
     /// current directory. It also handles back-tracking '..' and intermediate current directory '.'
     /// notations.
-    /// 
+    ///
     /// This function is mainly used for display purposes back to the user and is not safe to use
     /// for converting filepaths within logic.
-    fn standardize<T>(p: T) -> PathBuf where T: Into<PathBuf> {
+    fn standardize<T>(p: T) -> PathBuf
+    where
+        T: Into<PathBuf>,
+    {
         let p: PathBuf = p.into();
         // break the path into parts
         let mut parts = p.components();
 
-        let c_str = |cmp: Component| {
-            match cmp {
-                Component::RootDir => String::new(),
-                _ => String::from(cmp.as_os_str().to_str().unwrap()),
-            }
+        let c_str = |cmp: Component| match cmp {
+            Component::RootDir => String::new(),
+            _ => String::from(cmp.as_os_str().to_str().unwrap()),
         };
 
         let mut result = Vec::<String>::new();
@@ -278,7 +294,11 @@ impl Standardize for PathBuf {
         if let Some(root) = parts.next() {
             if root.as_os_str() == OsStr::new("~") {
                 match home_dir() {
-                    Some(home) => for part in home.components() { result.push(c_str(part)) }
+                    Some(home) => {
+                        for part in home.components() {
+                            result.push(c_str(part))
+                        }
+                    }
                     None => result.push(String::from(root.as_os_str().to_str().unwrap())),
                 }
             } else if root == Component::RootDir {
@@ -287,8 +307,11 @@ impl Standardize for PathBuf {
                 // for part in std::env::current_dir().unwrap().components() { result.push(c_str(part)) }
                 match root.as_os_str().to_str().unwrap() {
                     "." => (),
-                    ".." => { result.pop(); () },
-                    _ => result.push(String::from(root.as_os_str().to_str().unwrap()))
+                    ".." => {
+                        result.pop();
+                        ()
+                    }
+                    _ => result.push(String::from(root.as_os_str().to_str().unwrap())),
                 }
             }
         }
@@ -298,50 +321,63 @@ impl Standardize for PathBuf {
                 // do nothing; remain in the same directory
                 "." => (),
                 // pop if using a '..'
-                ".." => { result.pop(); () },
+                ".." => {
+                    result.pop();
+                    ()
+                }
                 // push all other components
-                _ => { result.push(c_str(part)) },
-            }        
+                _ => result.push(c_str(part)),
+            }
         }
         // assemble new path
         let mut first = true;
-        PathBuf::from(result.into_iter().fold(String::new(), |x, y|
-            if first == true { 
-                first = false; 
-                x + &y 
-            } else { 
-                x + "/" + &y 
-            }
-        ).replace("\\", "/").replace("//", "/"))
+        PathBuf::from(
+            result
+                .into_iter()
+                .fold(String::new(), |x, y| {
+                    if first == true {
+                        first = false;
+                        x + &y
+                    } else {
+                        x + "/" + &y
+                    }
+                })
+                .replace("\\", "/")
+                .replace("//", "/"),
+        )
         // @todo: add some fail-safe where if the final path does not exist then return the original path?
     }
 }
 
-
-
 /// Executes the process invoking the `cmd` with the following `args`.
-/// 
+///
 /// Performs a fix to allow .bat files to be searched on windows given the option
 /// is enabled through environment variables.
-pub fn invoke(cmd: &String, args: &Vec<String>, try_again: bool) -> std::io::Result<std::process::Child> {
+pub fn invoke(
+    cmd: &String,
+    args: &Vec<String>,
+    try_again: bool,
+) -> std::io::Result<std::process::Child> {
     match std::process::Command::new(cmd)
         .args(args)
         .stdout(std::process::Stdio::inherit())
         .stderr(std::process::Stdio::inherit())
-        .spawn() { 
-            Ok(r) => Ok(r),
-            Err(e) => {
-                // check if there is no file extension
-                let repeat = try_again == true && match PathBuf::from(cmd).file_name() {
+        .spawn()
+    {
+        Ok(r) => Ok(r),
+        Err(e) => {
+            // check if there is no file extension
+            let repeat = try_again == true
+                && match PathBuf::from(cmd).file_name() {
                     Some(fname) => fname.to_string_lossy().contains('.') == false,
                     None => true,
                 };
-                if repeat == true && e.kind() == std::io::ErrorKind::NotFound {
-                    invoke(&format!("{}.bat", cmd), args, false)
-                } else {
-                    Err(e)
-                }
+            if repeat == true && e.kind() == std::io::ErrorKind::NotFound {
+                invoke(&format!("{}.bat", cmd), args, false)
+            } else {
+                Err(e)
             }
+        }
     }
 }
 
@@ -349,17 +385,26 @@ const ORBIT_IGNORE_FILE: &str = ".orbitignore";
 
 #[cfg(test)]
 mod test {
-    use tempfile::{tempdir};
     use super::*;
-    
+    use tempfile::tempdir;
+
     #[test]
     fn resolve_path_simple() {
         // expands relative path to full path
-        assert_eq!(resolve_rel_path(&PathBuf::from(env!("CARGO_MANIFEST_DIR")), "src/lib.rs"), into_std_str(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/lib.rs")));
+        assert_eq!(
+            resolve_rel_path(&PathBuf::from(env!("CARGO_MANIFEST_DIR")), "src/lib.rs"),
+            into_std_str(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/lib.rs"))
+        );
         // no file or directory named 'orbit' at the relative root
-        assert_eq!(resolve_rel_path(&PathBuf::from(env!("CARGO_MANIFEST_DIR")), "orbit"), String::from("orbit"));
+        assert_eq!(
+            resolve_rel_path(&PathBuf::from(env!("CARGO_MANIFEST_DIR")), "orbit"),
+            String::from("orbit")
+        );
         // not relative
-        assert_eq!(resolve_rel_path(&PathBuf::from(env!("CARGO_MANIFEST_DIR")), "/src"), String::from("/src"));
+        assert_eq!(
+            resolve_rel_path(&PathBuf::from(env!("CARGO_MANIFEST_DIR")), "/src"),
+            String::from("/src")
+        );
 
         // assert_eq!(resolve_rel_path(&PathBuf::from("D:/a/orbit/orbit/"), "src/lib.rs"), String::from("D:/a/orbit/orbit/src/lib.rs"));
     }
@@ -367,7 +412,17 @@ mod test {
     #[test]
     fn normalize() {
         let p = PathBuf::from("~/.orbit/plugins/a.txt");
-        assert_eq!(PathBuf::standardize(p), PathBuf::from(home_dir().unwrap().join(".orbit/plugins/a.txt").to_str().unwrap().replace("\\", "/")));
+        assert_eq!(
+            PathBuf::standardize(p),
+            PathBuf::from(
+                home_dir()
+                    .unwrap()
+                    .join(".orbit/plugins/a.txt")
+                    .to_str()
+                    .unwrap()
+                    .replace("\\", "/")
+            )
+        );
 
         let p = PathBuf::from("home/.././b.txt");
         assert_eq!(PathBuf::standardize(p), PathBuf::from("b.txt"));
@@ -383,7 +438,10 @@ mod test {
     fn rem_base() {
         let base = PathBuf::from("c:/users/kepler/projects");
         let full = PathBuf::from("c:/users/kepler/projects/gates/src/and_gate.vhd");
-        assert_eq!(remove_base(&base, &full), PathBuf::from("gates/src/and_gate.vhd"));
+        assert_eq!(
+            remove_base(&base, &full),
+            PathBuf::from("gates/src/and_gate.vhd")
+        );
 
         let base = PathBuf::from("c:/users/kepler/projects");
         let full = PathBuf::from("c:/users/kepler/projects/");
@@ -391,7 +449,10 @@ mod test {
 
         let base = PathBuf::from("");
         let full = PathBuf::from("c:/users/kepler/projects/");
-        assert_eq!(remove_base(&base, &full), PathBuf::from("c:/users/kepler/projects/"));
+        assert_eq!(
+            remove_base(&base, &full),
+            PathBuf::from("c:/users/kepler/projects/")
+        );
 
         let base = PathBuf::from("./tests/env/");
         let full = PathBuf::from("./tests/env/Orbit.toml");
@@ -410,12 +471,21 @@ mod test {
     #[ignore]
     fn full_path() {
         let path = PathBuf::from("c://users/cruskin/develop/rust");
-        assert_eq!(to_absolute(path).unwrap(), PathBuf::from("/users/cruskin/develop/rust"));
+        assert_eq!(
+            to_absolute(path).unwrap(),
+            PathBuf::from("/users/cruskin/develop/rust")
+        );
 
         let path = PathBuf::from("/users/cruskin/develop/rust");
-        assert_eq!(to_absolute(path).unwrap(), PathBuf::from("/Users/cruskin/Develop/rust"));
+        assert_eq!(
+            to_absolute(path).unwrap(),
+            PathBuf::from("/Users/cruskin/Develop/rust")
+        );
 
         let path = PathBuf::from("./readme.md");
-        assert_eq!(to_absolute(path).unwrap(), PathBuf::from("/Users/cruskin/Develop/rust/orbit/README.md"));
+        assert_eq!(
+            to_absolute(path).unwrap(),
+            PathBuf::from("/Users/cruskin/Develop/rust/orbit/README.md")
+        );
     }
 }

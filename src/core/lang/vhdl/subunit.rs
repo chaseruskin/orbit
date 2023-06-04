@@ -1,4 +1,7 @@
-use super::{symbol::{self, IdentifierList}, token::Identifier};
+use super::{
+    symbol::{self, IdentifierList},
+    token::Identifier,
+};
 
 #[derive(Debug, PartialEq)]
 pub enum SubUnit {

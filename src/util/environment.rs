@@ -1,18 +1,21 @@
-use crate::core::v2::config::Config;
 use crate::core::lang::vhdl::token::Identifier;
+use crate::core::v2::config::Config;
 use crate::util::anyerror::Fault;
 use std::hash::Hash;
-use std::io::Write;
 use std::io::Read;
+use std::io::Write;
 
 use crate::core::v2::ip::Ip;
-use std::collections::btree_set::Iter;
 use std::collections::btree_set::IntoIter;
+use std::collections::btree_set::Iter;
 
 use std::collections::btree_set::BTreeSet;
 
 #[derive(Eq)]
-pub struct EnvVar { key: String, value: String }
+pub struct EnvVar {
+    key: String,
+    value: String,
+}
 
 impl PartialEq for EnvVar {
     fn eq(&self, other: &Self) -> bool {
@@ -41,7 +44,10 @@ impl Hash for EnvVar {
 
 impl EnvVar {
     pub fn new() -> Self {
-        Self { key: String::new(), value: String::new() }
+        Self {
+            key: String::new(),
+            value: String::new(),
+        }
     }
 
     /// Sets the environment key.
@@ -66,11 +72,14 @@ impl EnvVar {
     }
 
     /// Transforms the string format into a orbit variable format.
-    /// 
+    ///
     /// The rules are that the key's '_' become '.' and all letters become lowercase.
     /// The value is left unmodified.
     pub fn to_variable(&self) -> (String, String) {
-        (self.key.replace("_", ".").to_lowercase(), self.value.to_owned())
+        (
+            self.key.replace("_", ".").to_lowercase(),
+            self.value.to_owned(),
+        )
     }
 }
 
@@ -88,7 +97,7 @@ impl std::fmt::Display for EnvVar {
 
 impl Environment {
     /// Sets environment variables from a '.env' file living at `root`.
-    /// 
+    ///
     /// Silently skips text lines that do not have proper delimiter `=` between key and value.
     /// This function will not add any environment variables if the file does not exist.
     pub fn from_env_file(mut self, root: &std::path::PathBuf) -> Result<Self, Fault> {
@@ -97,7 +106,8 @@ impl Environment {
         if env_file.exists() == true {
             let mut file = std::fs::File::open(env_file).expect("failed to open .env file");
             let mut contents = String::new();
-            file.read_to_string(&mut contents).expect("failed to read contents");
+            file.read_to_string(&mut contents)
+                .expect("failed to read contents");
             // transform into environment variables
             for line in contents.split_terminator('\n') {
                 let result = line.split_once('=');
@@ -112,25 +122,37 @@ impl Environment {
 
     /// Loads environment variables from a target [Ip].
     pub fn from_ip(mut self, ip: &Ip) -> Result<Self, Fault> {
-        self.insert(EnvVar::new().key("ORBIT_IP_NAME").value(&ip.get_man().get_ip().get_name().to_string()));
-        self.insert(EnvVar::new().key("ORBIT_IP_VERSION").value(&ip.get_man().get_ip().get_version().to_string()));
-        self.insert(EnvVar::new().key("ORBIT_IP_LIBRARY").value(&
-            match ip.get_man().get_ip().get_library() {
+        self.insert(
+            EnvVar::new()
+                .key("ORBIT_IP_NAME")
+                .value(&ip.get_man().get_ip().get_name().to_string()),
+        );
+        self.insert(
+            EnvVar::new()
+                .key("ORBIT_IP_VERSION")
+                .value(&ip.get_man().get_ip().get_version().to_string()),
+        );
+        self.insert(EnvVar::new().key("ORBIT_IP_LIBRARY").value(
+            &match ip.get_man().get_ip().get_library() {
                 Some(lib) => lib.to_string(),
                 None => Identifier::new_working().to_string(),
-            }
+            },
         ));
         Ok(self)
     }
 
     /// Loads an `Environment` struct from a `Config` document.
-    /// 
+    ///
     /// It searches the `[env]` table and collects all env variables.
     pub fn from_config(mut self, config: &Config) -> Result<Self, Fault> {
         // read config.toml for setting any env variables
         if let Some(map) = config.get_env() {
             map.iter().for_each(|(key, val)| {
-                self.insert(EnvVar::new().key(&format!("{}{}", ORBIT_ENV_PREFIX, key)).value(val));
+                self.insert(
+                    EnvVar::new()
+                        .key(&format!("{}{}", ORBIT_ENV_PREFIX, key))
+                        .value(val),
+                );
             });
         }
         Ok(self)
@@ -138,21 +160,24 @@ impl Environment {
 
     /// Sets a set of environment variables, consuming the list.
     pub fn initialize(self) -> () {
-        self.into_iter().for_each(|e| {
-            std::env::set_var(e.key, e.value)
-        });
+        self.into_iter()
+            .for_each(|e| std::env::set_var(e.key, e.value));
     }
 }
 
 /// Stores a list of `EnvVar` at root in a file named ".env".
 pub fn save_environment(env: &Environment, root: &std::path::PathBuf) -> Result<(), Fault> {
     // create the file
-    let mut env_file = std::fs::File::create(&root.join(".env")).expect("could not create .env file");
+    let mut env_file =
+        std::fs::File::create(&root.join(".env")).expect("could not create .env file");
     // prepare the data into a single string for writing
-    let contents = env.iter()
+    let contents = env
+        .iter()
         .fold(String::new(), |x, y| x + &y.to_string() + &"\n");
     // write the data to the file
-    env_file.write_all(contents.as_bytes()).expect("failed to write data to .env file");
+    env_file
+        .write_all(contents.as_bytes())
+        .expect("failed to write data to .env file");
     Ok(())
 }
 
@@ -182,7 +207,10 @@ impl Environment {
 
     pub fn from_vec(vec: Vec<EnvVar>) -> Self {
         let mut inner = BTreeSet::new();
-        vec.into_iter().for_each(|e| { inner.insert(e); () } );
+        vec.into_iter().for_each(|e| {
+            inner.insert(e);
+            ()
+        });
         Self(inner)
     }
 

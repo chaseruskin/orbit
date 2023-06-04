@@ -1,16 +1,16 @@
-use clif::cmd::Command;
-use clif::cmd::FromCli;
+use crate::core::context::Context;
 use crate::core::lang::vhdl::highlight::ColorMode;
-use clif::arg::Optional;
-use clif::Cli;
-use clif::arg::{Flag, Positional};
-use clif::Error as CliError;
+use crate::core::v2::config;
 use crate::util::environment;
 use crate::util::prompt;
-use crate::core::context::Context;
 use crate::util::sha256::Sha256Hash;
+use clif::arg::Optional;
+use clif::arg::{Flag, Positional};
+use clif::cmd::Command;
+use clif::cmd::FromCli;
+use clif::Cli;
+use clif::Error as CliError;
 use std::env;
-use crate::core::v2::config;
 
 pub type AnyResult<T> = Result<T, Box<dyn std::error::Error>>;
 
@@ -56,8 +56,8 @@ impl Orbit {
                 .current_ip_dir(environment::ORBIT_IP_PATH)? // must come before .settings() call
                 .settings(config::CONFIG_FILE)?
                 .build_dir(environment::ORBIT_BUILD_DIR)?;
-                // .development_path(environment::ORBIT_DEV_PATH, c.bypass_check() == false)?;
-                // .read_vendors()?;
+            // .development_path(environment::ORBIT_DEV_PATH, c.bypass_check() == false)?;
+            // .read_vendors()?;
             // pass the context to the given command
             c.exec(&context)
         // if no command is given then print default help
@@ -68,18 +68,21 @@ impl Orbit {
 }
 
 impl FromCli for Orbit {
-    fn from_cli(cli: &mut Cli) -> Result<Self,  CliError> {
+    fn from_cli(cli: &mut Cli) -> Result<Self, CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         // need to set this coloring mode ASAP
-        match cli.check_option(Optional::new("color").value("when"))?.unwrap_or(ColorMode::Auto) {
+        match cli
+            .check_option(Optional::new("color").value("when"))?
+            .unwrap_or(ColorMode::Auto)
+        {
             ColorMode::Always => {
                 cli.use_color();
                 colored::control::set_override(true);
-            },
+            }
             ColorMode::Never => {
                 cli.disable_color();
                 colored::control::set_override(false);
-            },
+            }
             ColorMode::Auto => (),
         }
         let orbit = Ok(Orbit {
@@ -95,22 +98,22 @@ impl FromCli for Orbit {
     }
 }
 
-use crate::commands::help::Help;
-use crate::commands::new::New;
-use crate::commands::init::Init;
-use crate::commands::get::Get;
-use crate::commands::show::Show;
-use crate::commands::install::Install;
-use crate::commands::plan::Plan;
 use crate::commands::build::Build;
-use crate::commands::tree::Tree;
-use crate::commands::launch::Launch;
-use crate::commands::download::Download;
-use crate::commands::search::Search;
-use crate::commands::env::Env;
 use crate::commands::config::Config;
-use crate::commands::uninstall::Uninstall;
+use crate::commands::download::Download;
+use crate::commands::env::Env;
+use crate::commands::get::Get;
+use crate::commands::help::Help;
+use crate::commands::init::Init;
+use crate::commands::install::Install;
+use crate::commands::launch::Launch;
+use crate::commands::new::New;
+use crate::commands::plan::Plan;
 use crate::commands::read::Read;
+use crate::commands::search::Search;
+use crate::commands::show::Show;
+use crate::commands::tree::Tree;
+use crate::commands::uninstall::Uninstall;
 
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
@@ -133,33 +136,36 @@ enum OrbitSubcommand {
 }
 
 impl FromCli for OrbitSubcommand {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> { 
-        match cli.match_command(&[
-            "help",
-            "new",
-            "search",
-            "plan",
-            "p",
-            "build",
-            "launch",
-            "download",
-            "install",
-            "get",
-            "init",
-            "tree",
-            "show",
-            "b",
-            "env",
-            "config",
-            "uninstall",
-            "read",
-        ])?.as_ref() {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
+        match cli
+            .match_command(&[
+                "help",
+                "new",
+                "search",
+                "plan",
+                "p",
+                "build",
+                "launch",
+                "download",
+                "install",
+                "get",
+                "init",
+                "tree",
+                "show",
+                "b",
+                "env",
+                "config",
+                "uninstall",
+                "read",
+            ])?
+            .as_ref()
+        {
             "get" => Ok(OrbitSubcommand::Get(Get::from_cli(cli)?)),
             "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
             "new" => Ok(OrbitSubcommand::New(New::from_cli(cli)?)),
             "search" => Ok(OrbitSubcommand::Search(Search::from_cli(cli)?)),
-      "p" | "plan" => Ok(OrbitSubcommand::Plan(Plan::from_cli(cli)?)),
-      "b" | "build" => Ok(OrbitSubcommand::Build(Build::from_cli(cli)?)),
+            "p" | "plan" => Ok(OrbitSubcommand::Plan(Plan::from_cli(cli)?)),
+            "b" | "build" => Ok(OrbitSubcommand::Build(Build::from_cli(cli)?)),
             "init" => Ok(OrbitSubcommand::Init(Init::from_cli(cli)?)),
             "download" => Ok(OrbitSubcommand::Download(Download::from_cli(cli)?)),
             "launch" => Ok(OrbitSubcommand::Launch(Launch::from_cli(cli)?)),
@@ -170,7 +176,7 @@ impl FromCli for OrbitSubcommand {
             "config" => Ok(OrbitSubcommand::Config(Config::from_cli(cli)?)),
             "uninstall" => Ok(OrbitSubcommand::Uninstall(Uninstall::from_cli(cli)?)),
             "read" => Ok(OrbitSubcommand::Read(Read::from_cli(cli)?)),
-            _ => panic!("an unimplemented command was passed through!")
+            _ => panic!("an unimplemented command was passed through!"),
         }
     }
 }
@@ -255,21 +261,21 @@ Use 'orbit help <command>' for more information about a command.
 
 
 alt names for `probe`: -check-, -scan-, show
-*/ 
+*/
 
-use crate::util::sha256;
-use std::str::FromStr;
-use std::io::Write;
-use zip;
-use tempfile;
-use crate::util::filesystem::get_exe_path;
-use curl::easy::{Easy, List};
-use crate::util::anyerror::Fault;
-use std::fs;
 use crate::core::version::Version;
+use crate::util::anyerror::Fault;
+use crate::util::filesystem::get_exe_path;
+use crate::util::sha256;
+use curl::easy::{Easy, List};
 use std::env::consts;
-use zip::ZipArchive;
+use std::fs;
+use std::io::Write;
 use std::path::Path;
+use std::str::FromStr;
+use tempfile;
+use zip;
+use zip::ZipArchive;
 
 use serde_json::Value;
 
@@ -282,7 +288,7 @@ impl Orbit {
     }
 
     /// Runs a process to check for an updated version of Orbit on GitHub to install.
-    /// 
+    ///
     /// Steps it follows:  
     /// 1. Removes any old version existing in executables' current folder
     /// 2. Gets website data from GitHub releases page to check for latest version
@@ -298,7 +304,16 @@ impl Orbit {
         // find any old versions existing in executable's current folder
         let paths = fs::read_dir(&current_exe_dir)?;
         for path in paths {
-            if path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap().starts_with("orbit-") {
+            if path
+                .as_ref()
+                .unwrap()
+                .path()
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .starts_with("orbit-")
+            {
                 // remove stale binaries
                 fs::remove_file(path.as_ref().unwrap().path())?;
             }
@@ -318,20 +333,25 @@ impl Orbit {
             easy.http_headers(list).unwrap();
             {
                 let mut transfer = easy.transfer();
-                transfer.write_function(|data| {
-                    dst.extend_from_slice(data);
-                    Ok(data.len())
-                }).unwrap();
-        
+                transfer
+                    .write_function(|data| {
+                        dst.extend_from_slice(data);
+                        Ok(data.len())
+                    })
+                    .unwrap();
+
                 transfer.perform()?;
             }
             let rc = easy.response_code()?;
             if rc != RESPONSE_OKAY {
-                return Err(Box::new(UpgradeError::FailedConnection(api_url.to_owned(), rc)));
-            } 
+                return Err(Box::new(UpgradeError::FailedConnection(
+                    api_url.to_owned(),
+                    rc,
+                )));
+            }
         }
         let body: String = String::from_utf8(dst)?;
-        
+
         // create body into string to find the latest version
         let version = {
             let json_word: Value = serde_json::from_str(body.as_ref())?;
@@ -340,24 +360,34 @@ impl Orbit {
 
         // our current version is guaranteed to be valid
         let current = Version::from_str(VERSION).unwrap();
-        // the latest version 
+        // the latest version
         let latest = Version::from_str(&version).expect("invalid version released");
         if latest > current {
             // await user input
             if self.force == false {
-                if prompt::prompt(&format!("info: a new version is available ({}), would you like to upgrade", latest))? == false {
-                    return Ok(String::from("upgrade cancelled"))
+                if prompt::prompt(&format!(
+                    "info: a new version is available ({}), would you like to upgrade",
+                    latest
+                ))? == false
+                {
+                    return Ok(String::from("upgrade cancelled"));
                 }
             }
         } else {
-            return Ok(format!("the latest version is already installed ({})", &latest));
+            return Ok(format!(
+                "the latest version is already installed ({})",
+                &latest
+            ));
         }
 
         let base_url: &str = "https://github.com/c-rus/orbit/releases";
 
         // download the list of checksums
         println!("info: downloading update...");
-        let sum_url = format!("{0}/download/{1}/orbit-{1}-checksums.txt", &base_url, &latest);
+        let sum_url = format!(
+            "{0}/download/{1}/orbit-{1}-checksums.txt",
+            &base_url, &latest
+        );
 
         let mut dst = Vec::new();
         {
@@ -366,28 +396,30 @@ impl Orbit {
             easy.follow_location(true).unwrap();
             {
                 let mut transfer = easy.transfer();
-                transfer.write_function(|data| {
-                    dst.extend_from_slice(data);
-                    Ok(data.len())
-                }).unwrap();
-        
+                transfer
+                    .write_function(|data| {
+                        dst.extend_from_slice(data);
+                        Ok(data.len())
+                    })
+                    .unwrap();
+
                 transfer.perform()?;
             }
             let rc = easy.response_code()?;
             if rc != RESPONSE_OKAY {
                 return Err(Box::new(UpgradeError::FailedConnection(sum_url, rc)));
-            } 
+            }
         }
         let checksums: String = String::from_utf8(dst)?;
-        
+
         // store user's target
         let target = Orbit::target_triple();
-        
+
         let pkg = format!("orbit-{}-{}.zip", &latest, &target);
         // search the checksums to check if the desired pkg is available for download
         let cert = checksums.split_terminator('\n').find_map(|p| {
             let (cert, key) = p.split_once(' ').expect("bad checksum file format");
-            if key == pkg  {
+            if key == pkg {
                 Some(Sha256Hash::from_str(cert).expect("bad checksum format"))
             } else {
                 None
@@ -400,7 +432,7 @@ impl Orbit {
         };
 
         // download the zip pkg file
-        let pkg_url = format!("{}/download/{}/{}",&base_url, &latest, &pkg);
+        let pkg_url = format!("{}/download/{}/{}", &base_url, &latest, &pkg);
         // let res = reqwest::get(&pkg_url).await?;
         // if res.status() != 200 {
         //     return Err(Box::new(UpgradeError::FailedDownload(pkg_url.to_string(), res.status())))?
@@ -414,17 +446,19 @@ impl Orbit {
             easy.follow_location(true).unwrap();
             {
                 let mut transfer = easy.transfer();
-                transfer.write_function(|data| {
-                    body_bytes.extend_from_slice(data);
-                    Ok(data.len())
-                }).unwrap();
-        
+                transfer
+                    .write_function(|data| {
+                        body_bytes.extend_from_slice(data);
+                        Ok(data.len())
+                    })
+                    .unwrap();
+
                 transfer.perform()?;
             }
             let rc = easy.response_code()?;
             if rc != RESPONSE_OKAY {
                 return Err(Box::new(UpgradeError::FailedConnection(pkg_url, rc)));
-            } 
+            }
         }
 
         // compute the checksum on the downloaded zip file
@@ -432,7 +466,7 @@ impl Orbit {
         // verify the checksums match
         match sum == cert {
             true => println!("info: verified download"),
-            false =>  return Err(Box::new(UpgradeError::BadChecksum(sum, cert)))?,
+            false => return Err(Box::new(UpgradeError::BadChecksum(sum, cert)))?,
         };
 
         // unzip the bytes and put file in temporary file
@@ -445,10 +479,17 @@ impl Orbit {
         let temp_dir = tempfile::tempdir()?;
         zip_archive.extract(&temp_dir)?;
 
-        let exe_ext = if consts::EXE_EXTENSION.is_empty() == true { "" } else { ".exe" };
+        let exe_ext = if consts::EXE_EXTENSION.is_empty() == true {
+            ""
+        } else {
+            ".exe"
+        };
 
         // verify the path to the new executable exists before renaming current binary
-        let temp_exe_path = temp_dir.path().join(&format!("orbit-{}-{}/bin/orbit{}", &latest, &target, &exe_ext));
+        let temp_exe_path = temp_dir.path().join(&format!(
+            "orbit-{}-{}/bin/orbit{}",
+            &latest, &target, &exe_ext
+        ));
         if Path::exists(&temp_exe_path) == false {
             return Err(Box::new(UpgradeError::MissingExe))?;
         }
@@ -460,7 +501,10 @@ impl Orbit {
         // copy the executable from the temporary directory to the original location
         fs::copy(&temp_exe_path, &exe_path)?;
 
-        Ok(String::from(format!("successfully upgraded orbit to version {}", &latest)))
+        Ok(String::from(format!(
+            "successfully upgraded orbit to version {}",
+            &latest
+        )))
     }
 }
 
@@ -477,13 +521,25 @@ pub enum UpgradeError {
 impl std::error::Error for UpgradeError {}
 
 impl std::fmt::Display for UpgradeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             Self::MissingExe => write!(f, "failed to find the binary in the downloaded package"),
-            Self::BadChecksum(computed, ideal) => write!(f, "checksums did not match, please try again\n\ncomputed: {}\nexpected: {}", computed, ideal),
-            Self::FailedConnection(url, status) => write!(f, "connection failed\n\nurl: {}\nstatus: {}", url, status),
-            Self::FailedDownload(url, status) => write!(f, "download failed\n\nurl: {}\nstatus: {}", url, status),
-            Self::UnsupportedTarget(t) => write!(f, "no pre-compiled binaries exist for the current target {}", t),
+            Self::BadChecksum(computed, ideal) => write!(
+                f,
+                "checksums did not match, please try again\n\ncomputed: {}\nexpected: {}",
+                computed, ideal
+            ),
+            Self::FailedConnection(url, status) => {
+                write!(f, "connection failed\n\nurl: {}\nstatus: {}", url, status)
+            }
+            Self::FailedDownload(url, status) => {
+                write!(f, "download failed\n\nurl: {}\nstatus: {}", url, status)
+            }
+            Self::UnsupportedTarget(t) => write!(
+                f,
+                "no pre-compiled binaries exist for the current target {}",
+                t
+            ),
             Self::NoReleasesFound => write!(f, "no releases were found"),
         }
     }

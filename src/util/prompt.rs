@@ -1,7 +1,7 @@
-use std::io;
-use std::io::{Error, Read};
 use colored::ColoredString;
 use colored::Colorize;
+use std::io;
+use std::io::{Error, Read};
 
 /// Conditionally operates on `status` to return an string representation.
 pub fn report_eval(status: bool) -> ColoredString {
@@ -11,8 +11,7 @@ pub fn report_eval(status: bool) -> ColoredString {
     }
 }
 
-
-/// Outputs the text `s` with a ? mark and y/n option. Accepts '\n' or 
+/// Outputs the text `s` with a ? mark and y/n option. Accepts '\n' or
 /// 'y' to return `true`, and `n` to return `false`.
 pub fn prompt(s: &str) -> Result<bool, Error> {
     println!("{}? [y/n]", s);
@@ -21,7 +20,7 @@ pub fn prompt(s: &str) -> Result<bool, Error> {
 
 /// Infinitely loops until a valid response is entered. "Y\n" and "\n" map to `true`, while
 /// "N\n" maps to `false`.
-/// 
+///
 /// Also supports checking windows-style line endings `\r\n`.
 fn check_for_response(input: &mut (impl Read + std::io::BufRead)) -> Result<bool, Error> {
     let mut buffer: String = String::new();
@@ -33,10 +32,10 @@ fn check_for_response(input: &mut (impl Read + std::io::BufRead)) -> Result<bool
             _ => {
                 buffer.clear();
                 None
-            },
+            }
         };
         if let Some(r) = result {
-            break Ok(r)
+            break Ok(r);
         };
     }
 }

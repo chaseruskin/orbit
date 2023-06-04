@@ -1,8 +1,8 @@
 use std::error::Error;
 use std::fmt::Display;
 
-/// Quickly implement a custom/unique error message. 
-/// 
+/// Quickly implement a custom/unique error message.
+///
 /// Can also be used to wrap an error's message.
 #[derive(Debug, PartialEq)]
 pub struct AnyError(pub String);

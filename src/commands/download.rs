@@ -1,25 +1,25 @@
 use std::path::PathBuf;
 
+use crate::core::context::Context;
+use crate::core::v2::catalog::Catalog;
+use crate::core::v2::ip::Ip;
 use crate::core::v2::ip::IpSpec;
+use crate::core::v2::lockfile::LockEntry;
+use crate::core::v2::lockfile::LockFile;
+use crate::core::v2::plugin::Process;
+use crate::core::v2::protocol::Protocol;
+use crate::core::v2::source::Source;
 use crate::util::anyerror::AnyError;
+use crate::util::anyerror::Fault;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
 use crate::util::environment::ORBIT_QUEUE;
-use clif::cmd::{FromCli, Command};
-use clif::Cli;
-use clif::arg::{Optional, Flag};
-use clif::Error as CliError;
 use crate::OrbitResult;
-use crate::core::context::Context;
-use crate::core::v2::source::Source;
-use crate::core::v2::lockfile::LockFile;
-use crate::core::v2::catalog::Catalog;
-use crate::core::v2::lockfile::LockEntry;
-use crate::util::anyerror::Fault;
-use crate::core::v2::plugin::Process;
+use clif::arg::{Flag, Optional};
+use clif::cmd::{Command, FromCli};
+use clif::Cli;
+use clif::Error as CliError;
 use std::collections::HashMap;
-use crate::core::v2::protocol::Protocol;
-use crate::core::v2::ip::Ip;
 
 #[derive(Debug, PartialEq)]
 pub struct Download {
@@ -32,7 +32,7 @@ pub struct Download {
 }
 
 impl FromCli for Download {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Download {
             all: cli.check_flag(Flag::new("all"))?,
@@ -52,7 +52,6 @@ impl Command<Context> for Download {
     type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
-
         // @idea: display lock entries as JSON? or use different env var for ORBIT_DOWNLOAD_LIST and ORBIT_VERSION_LIST
 
         // cannot happen
@@ -70,7 +69,6 @@ impl Command<Context> for Download {
         //     panic!("invalid arguments for no command set")
         // }
 
-        
         // load the catalog
         let catalog = Catalog::new()
             .installations(c.get_cache_path())?
@@ -94,51 +92,88 @@ impl Command<Context> for Download {
             .from_config(c.get_config())?
             // read ip manifest for env variables
             .from_ip(&Ip::load(c.get_ip_path().unwrap().clone())?)?
-            .add(EnvVar::new().key(ORBIT_QUEUE).value(&q_dir.to_string_lossy()))
+            .add(
+                EnvVar::new()
+                    .key(ORBIT_QUEUE)
+                    .value(&q_dir.to_string_lossy()),
+            )
             .initialize();
-        
+
         // default behavior is report only missing installations
         let missing_only = self.all == false || self.missing == true;
 
         // default behavior is to print out to console
         let to_stdout = self.list == true;
 
-        let downloads =  Self::compile_download_list(&LockEntry::from((&ip, true)), ip.get_lock(), &catalog, missing_only);
+        let downloads = Self::compile_download_list(
+            &LockEntry::from((&ip, true)),
+            ip.get_lock(),
+            &catalog,
+            missing_only,
+        );
         // print to console
         if to_stdout == true {
             downloads.iter().for_each(|(_, src)| println!("{}", src));
         // execute the command
         } else {
-            Self::download_all(&downloads, &proto_map, self.verbose, c.get_queue_path(), self.force)?;
+            Self::download_all(
+                &downloads,
+                &proto_map,
+                self.verbose,
+                c.get_queue_path(),
+                self.force,
+            )?;
         }
         Ok(())
     }
 }
 
 impl Download {
-    /// Generates a list of dependencies required to be downloaded from the internet. 
-    /// 
+    /// Generates a list of dependencies required to be downloaded from the internet.
+    ///
     /// Enabling `missing_only` will only push sources for ip not already installed.
-    pub fn compile_download_list<'a>(le: &LockEntry, lf: &'a LockFile, catalog: &Catalog, missing_only: bool) -> Vec<(IpSpec, &'a Source)> {
-        lf.inner().iter()
+    pub fn compile_download_list<'a>(
+        le: &LockEntry,
+        lf: &'a LockFile,
+        catalog: &Catalog,
+        missing_only: bool,
+    ) -> Vec<(IpSpec, &'a Source)> {
+        lf.inner()
+            .iter()
             .filter(|p| p.get_source().is_some() == true)
-            .filter(|p| p.matches_target(&le) == false && (missing_only == false || catalog.is_cached_slot(&p.to_cache_slot_key()) == false))
+            .filter(|p| {
+                p.matches_target(&le) == false
+                    && (missing_only == false
+                        || catalog.is_cached_slot(&p.to_cache_slot_key()) == false)
+            })
             .map(|f| (f.to_ip_spec(), f.get_source().unwrap()))
             .collect()
     }
 
-    pub fn download(spec: &IpSpec, src: &Source, queue: &PathBuf, protocols: &HashMap<&str, &Protocol>, verbose: bool, force: bool) -> Result<(), Fault> {
+    pub fn download(
+        spec: &IpSpec,
+        src: &Source,
+        queue: &PathBuf,
+        protocols: &HashMap<&str, &Protocol>,
+        verbose: bool,
+        force: bool,
+    ) -> Result<(), Fault> {
         // access the protocol
         if let Some(proto) = src.get_protocol() {
             match protocols.get(proto.as_str()) {
                 Some(entry) => {
-                    println!("info: Downloading {} over \"{}\" protocol ...", spec, &proto);
+                    println!(
+                        "info: Downloading {} over \"{}\" protocol ...",
+                        spec, &proto
+                    );
                     entry.execute(&[src.get_url().to_string()], verbose)?
                 }
-                None => { 
-                    if force == false { 
-                        return Err(Box::new(AnyError(format!("Unknown protocol \"{}\"", &proto))).into());
-                    } 
+                None => {
+                    if force == false {
+                        return Err(
+                            Box::new(AnyError(format!("Unknown protocol \"{}\"", &proto))).into(),
+                        );
+                    }
                 }
             }
         }
@@ -150,12 +185,24 @@ impl Download {
         Ok(())
     }
 
-    pub fn download_all(downloads: &Vec<(IpSpec, &Source)>, proto_map: &HashMap<&str, &Protocol>, verbose: bool, queue: &PathBuf, force: bool) -> Result<(), Fault> {
-        
+    pub fn download_all(
+        downloads: &Vec<(IpSpec, &Source)>,
+        proto_map: &HashMap<&str, &Protocol>,
+        verbose: bool,
+        queue: &PathBuf,
+        force: bool,
+    ) -> Result<(), Fault> {
         match downloads.len() {
-            0 => { println!("info: No missing downloads"); return Ok(()) },
-            1 => { println!("info: Downloading 1 package ...") },
-            _ => { println!("info: Downloading {} packages ...", downloads.len()) },
+            0 => {
+                println!("info: No missing downloads");
+                return Ok(());
+            }
+            1 => {
+                println!("info: Downloading 1 package ...")
+            }
+            _ => {
+                println!("info: Downloading {} packages ...", downloads.len())
+            }
         }
 
         let mut results = downloads.iter().filter_map(|e| {
@@ -165,7 +212,7 @@ impl Download {
             }
         });
         if let Some(n) = results.next() {
-            return Err(n)
+            return Err(n);
         }
 
         Ok(())

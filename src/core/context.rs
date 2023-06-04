@@ -1,16 +1,16 @@
-use std::path;
-use std::env;
-use std::path::PathBuf;
-use std::collections::HashMap;
-use crate::core::v2::plugin::Plugin;
-use crate::core::v2::config::{Locality, Configs, Config};
-use crate::util::anyerror::AnyError;
-use crate::util::anyerror::Fault;
-use crate::core::template::Template;
-use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
-use crate::util::filesystem::Standardize;
 use super::pkgid::PkgPart;
 use super::vendor::VendorManifest;
+use crate::core::template::Template;
+use crate::core::v2::config::{Config, Configs, Locality};
+use crate::core::v2::plugin::Plugin;
+use crate::util::anyerror::AnyError;
+use crate::util::anyerror::Fault;
+use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
+use crate::util::filesystem::Standardize;
+use std::collections::HashMap;
+use std::env;
+use std::path;
+use std::path::PathBuf;
 
 /// Shared attributes about the surrounding user run-time environment.
 pub struct Context {
@@ -25,7 +25,7 @@ pub struct Context {
     /// holds in-development mutable ip projects [***DEPRECATED***]
     dev_path: Option<PathBuf>,
     /// holds installed immutable git repositories to pull versions from into cache
-    store_path: PathBuf, 
+    store_path: PathBuf,
     /// Directory name for the intermediate build processes and outputs.    
     build_dir: String,
     config: Config,
@@ -41,7 +41,7 @@ impl Context {
         let cache = home.join("cache");
         let store = home.join("store");
         let queue = home.join("queue");
-        Context { 
+        Context {
             home_path: home,
             cache_path: cache,
             store_path: store,
@@ -75,7 +75,10 @@ impl Context {
         };
         // do not allow a non-existent directory to be set for the home
         if path::Path::exists(&self.home_path) == false {
-            return Err(ContextError(format!("directory {} does not exist for ORBIT_HOME", self.home_path.display())))
+            return Err(ContextError(format!(
+                "directory {} does not exist for ORBIT_HOME",
+                self.home_path.display()
+            )));
         }
         // verify the environment variable is set
         env::set_var(key, &self.home_path);
@@ -114,7 +117,7 @@ impl Context {
     }
 
     /// Returns an existing filesystem path to be used under `key`.
-    /// 
+    ///
     /// Uses `key`'s value if already explicitly set and will set the environment
     /// variable accordingly.
     fn folder(&self, key: &str, folder: &str) -> Result<PathBuf, Fault> {
@@ -123,11 +126,15 @@ impl Context {
             let ep = PathBuf::from(s);
             // verify the path exists
             if ep.exists() == false {
-                return Err(AnyError(format!("directory {} does not exist for {}", ep.display(), key)))?
+                return Err(AnyError(format!(
+                    "directory {} does not exist for {}",
+                    ep.display(),
+                    key
+                )))?;
             }
             // verify the path is a directory
             if ep.is_dir() == false {
-                return Err(AnyError(format!("{} must be a filesystem directory", key)))?
+                return Err(AnyError(format!("{} must be a filesystem directory", key)))?;
             }
             ep
         // proceed with default
@@ -135,7 +142,8 @@ impl Context {
             let ep = self.home_path.join(&folder);
             // create the directory if does not exist
             if ep.exists() == false {
-                std::fs::create_dir(&ep).expect(&format!("failed to create .orbit/{} directory", folder));
+                std::fs::create_dir(&ep)
+                    .expect(&format!("failed to create .orbit/{} directory", folder));
             }
             ep
         };
@@ -170,25 +178,23 @@ impl Context {
     }
 
     /// Configures and reads data from the settings object to return a `Settings` struct
-    /// in the `Context`. 
-    /// 
+    /// in the `Context`.
+    ///
     /// The settings file `name` must be directly under `$ORBIT_HOME`. It also
     /// checks for a local configuration as `name` under a .orbit/ directory if
     /// the command is invoked from within an ip directory.
-    /// 
+    ///
     /// Note: the `self.ip_path` must already be determined before invocation.
     pub fn settings(mut self, name: &str) -> Result<Context, Fault> {
-
         // check if global file exists first
         let global_file = self.home_path.join(name);
         if global_file.exists() == false {
             std::fs::write(&global_file, Vec::new())?;
         }
-        
+
         // initialize and load the global configuration
-        let cfg = Configs::new()
-            .load(global_file, Locality::Global)?;
-        // if in ip, also look along current directory for a /.orbit/config.toml file to load (local configuration) 
+        let cfg = Configs::new().load(global_file, Locality::Global)?;
+        // if in ip, also look along current directory for a /.orbit/config.toml file to load (local configuration)
         self.all_configs = if let Some(ip_dir) = self.get_ip_path() {
             let local_path = ip_dir.join(".orbit").join(name);
             if local_path.exists() == true {
@@ -202,9 +208,8 @@ impl Context {
 
         // @TODO: FIXME (clone?)
         // initialize and load the global configuration
-        let cfg = Configs::new()
-            .load(self.home_path.join(name), Locality::Global)?;
-        // if in ip, also look along current directory for a /.orbit/config.toml file to load (local configuration) 
+        let cfg = Configs::new().load(self.home_path.join(name), Locality::Global)?;
+        // if in ip, also look along current directory for a /.orbit/config.toml file to load (local configuration)
         self.config = if let Some(ip_dir) = self.get_ip_path() {
             let local_path = ip_dir.join(".orbit").join(name);
             if local_path.exists() == true {
@@ -214,7 +219,8 @@ impl Context {
             }
         } else {
             cfg
-        }.into();
+        }
+        .into();
         // @TODO dynamically set from environment variables from configuration data
         Ok(self)
     }
@@ -241,14 +247,14 @@ impl Context {
     // }
 
     /// Determines the orbit ip development path.
-    /// 
+    ///
     /// First checks if the environment already has ORBIT_DEV_PATH set, otherwise it
     /// will look for the value found in the config file. If no development path
     /// is set, it will use the current directory.
-    /// 
+    ///
     /// Note: Stange behavior where `edit` with vscode captures current ENV variables
     /// into new window to prevent reading config for things like ORBIT_DEV_PATH.
-    /// 
+    ///
     /// If `verify` is set to `true`, then it will ensure the path is a directory and exists.
     // pub fn development_path(mut self, s: &str, verify: bool) -> Result<Context, Fault> {
     //     // an explicit environment variable takes precedence over config file data
@@ -305,7 +311,7 @@ impl Context {
     pub fn get_ip_path(&self) -> Option<&path::PathBuf> {
         self.ip_path.as_ref()
     }
-    
+
     /// Access the home path.
     pub fn get_home_path(&self) -> &path::PathBuf {
         &self.home_path
@@ -314,7 +320,9 @@ impl Context {
     /// Determines if the directory is within a current IP and sets the proper
     /// runtime environment variable.
     pub fn current_ip_dir(mut self, s: &str) -> Result<Context, ContextError> {
-        self.ip_path = match Context::find_ip_path(&std::env::current_dir().expect("failed to get current directory")) {
+        self.ip_path = match Context::find_ip_path(
+            &std::env::current_dir().expect("failed to get current directory"),
+        ) {
             Some(cwd) => {
                 env::set_var(s, &cwd);
                 Some(cwd)
@@ -325,7 +333,7 @@ impl Context {
     }
 
     /// Changes current working directory to the detected IP path.
-    /// 
+    ///
     /// Returns an error if ip_path is `None`.
     pub fn goto_ip_path(&self) -> Result<(), ContextError> {
         match self.get_ip_path() {
@@ -335,14 +343,16 @@ impl Context {
             }
             None => {
                 // @IDEA also give information about reading about ip-dir sensitive commands as a topic?
-                return Err(ContextError(format!("no orbit IP detected in current directory or any parent directory")));
+                return Err(ContextError(format!(
+                    "no orbit IP detected in current directory or any parent directory"
+                )));
             }
         }
         Ok(())
     }
 
     /// Finds the complete path to the current IP's directory.
-    /// 
+    ///
     /// This function will recursively backtrack down the current working directory
     /// until finding the first directory with a file named "Orbit.toml".
     pub fn find_ip_path(dir: &std::path::PathBuf) -> Option<path::PathBuf> {
@@ -350,10 +360,10 @@ impl Context {
     }
 
     /// Finds the complete path to the current directory that hosts the `target_file`.
-    /// 
-    /// This function recursively backtracks from `dir` into its ancestors until 
+    ///
+    /// This function recursively backtracks from `dir` into its ancestors until
     /// finding the first directory with a file named `target_file`.
-    /// 
+    ///
     /// This function has no assumptions on if the directory is readable or not (bypasses read_dir errors).
     pub fn find_target_path(dir: &std::path::PathBuf, target_file: &str) -> Option<path::PathBuf> {
         let mut cur = dir.clone();
@@ -362,27 +372,25 @@ impl Context {
             match std::fs::read_dir(&cur) {
                 // the directory was able to be read (it exists)
                 Ok(mut entries) => {
-                    let result = entries.find_map(|p| {
-                        match p {
-                            Ok(file) => {
-                                if file.file_name() == target_file {
-                                    Some(cur.to_path_buf())
-                                } else {
-                                    None
-                                }
+                    let result = entries.find_map(|p| match p {
+                        Ok(file) => {
+                            if file.file_name() == target_file {
+                                Some(cur.to_path_buf())
+                            } else {
+                                None
                             }
-                            _ => None,
                         }
+                        _ => None,
                     });
                     if let Some(r) = result {
-                        break Some(r)
+                        break Some(r);
                     }
-                },
+                }
                 // failed to read the directory
-                Err(_) => { },
+                Err(_) => {}
             }
             if cur.pop() == false {
-                break None
+                break None;
             }
         }
     }
@@ -416,19 +424,25 @@ mod test {
     fn find_target_path() {
         // existing path with target at root
         let home = HOME.to_owned();
-        let p = Context::find_target_path(&PathBuf::from(home.clone()+"/project1"), "Orbit.toml");
-        assert_eq!(p, Some(PathBuf::from(home.clone()+"/project1")));
+        let p = Context::find_target_path(&PathBuf::from(home.clone() + "/project1"), "Orbit.toml");
+        assert_eq!(p, Some(PathBuf::from(home.clone() + "/project1")));
 
         // inner path with target a directory back
         let p = Context::find_target_path(&PathBuf::from("./src"), "Cargo.toml");
         assert_eq!(p, Some(PathBuf::from(".")));
 
         // imaginary path with target a couple directories back
-        let p = Context::find_target_path(&PathBuf::from(home.clone()+"/project1/rtl/syn/"), "Orbit.toml");
-        assert_eq!(p, Some(PathBuf::from(home.clone()+"/project1")));
+        let p = Context::find_target_path(
+            &PathBuf::from(home.clone() + "/project1/rtl/syn/"),
+            "Orbit.toml",
+        );
+        assert_eq!(p, Some(PathBuf::from(home.clone() + "/project1")));
 
         // no existing target
-        let p = Context::find_target_path(&PathBuf::from(home.clone()+"/project1/rtl/syn/"), "HIDDEN-TARGET.TXT");
+        let p = Context::find_target_path(
+            &PathBuf::from(home.clone() + "/project1/rtl/syn/"),
+            "HIDDEN-TARGET.TXT",
+        );
         assert_eq!(p, None);
     }
 }

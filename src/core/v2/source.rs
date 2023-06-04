@@ -1,6 +1,6 @@
-use std::str::FromStr;
-use serde_derive::Deserialize;
 use crate::util::anyerror::AnyError;
+use serde_derive::Deserialize;
+use std::str::FromStr;
 
 /// A [Source] outlines the process and location for extracting packages from the internet.
 #[derive(Debug, PartialEq, Clone, Deserialize)]
@@ -8,7 +8,7 @@ use crate::util::anyerror::AnyError;
 pub struct Source {
     protocol: Option<String>,
     url: String,
-    #[serde(skip, default="set_true")]
+    #[serde(skip, default = "set_true")]
     valid: bool,
 }
 
@@ -21,7 +21,7 @@ impl Source {
         Self {
             protocol: None,
             url: String::new(),
-            valid: true
+            valid: true,
         }
     }
 
@@ -63,12 +63,11 @@ impl std::fmt::Display for Source {
         match &self.protocol {
             Some(p) => {
                 write!(f, "{}+{}", p, self.url)
-            },
+            }
             None => {
                 write!(f, "{}", self.url)
-            },
+            }
         }
-        
     }
 }
 
@@ -77,7 +76,7 @@ impl Default for Source {
         Self {
             protocol: None,
             url: String::new(),
-            valid: false
+            valid: false,
         }
     }
 }
@@ -89,16 +88,16 @@ impl FromStr for Source {
         Ok(Self {
             url: s.to_string(),
             protocol: None,
-            valid: true
+            valid: true,
         })
     }
 }
 
-use serde::{Deserialize, Serialize};
-use serde::Serializer;
 use serde::de::{self};
+use serde::de::{MapAccess, Visitor};
+use serde::Serializer;
+use serde::{Deserialize, Serialize};
 use std::fmt;
-use serde::de::{Visitor, MapAccess};
 
 pub fn string_or_struct<'de, D>(deserializer: D) -> Result<Source, D::Error>
 where
@@ -157,11 +156,10 @@ impl Serialize for Source {
                 if let Some(p) = self.get_protocol() {
                     map.serialize_entry("protocol", p)?;
                 }
-                
+
                 map.end()
-            
             }
-            false => serializer.serialize_none()
+            false => serializer.serialize_none(),
         }
     }
 }
@@ -174,20 +172,23 @@ mod test {
     fn from_str() {
         let src: &str = "https://some.url";
 
-        assert_eq!(Source::from_str(src).unwrap(), Source {
-            protocol: None,
-            url: String::from("https://some.url"),
-            valid: true,
-        });
+        assert_eq!(
+            Source::from_str(src).unwrap(),
+            Source {
+                protocol: None,
+                url: String::from("https://some.url"),
+                valid: true,
+            }
+        );
     }
 
     #[test]
     fn deser_struct() {
         let src: Source = match toml::from_str(EX1) {
             Ok(r) => r,
-            Err(e) => panic!("{}", e.to_string())
+            Err(e) => panic!("{}", e.to_string()),
         };
-        
+
         assert_eq!(src.is_valid(), true);
     }
 

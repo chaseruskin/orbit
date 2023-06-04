@@ -26,20 +26,26 @@ impl VariableTable {
         //     .unwrap_or("")
         //     .to_string());
         // date
-        // self.0.insert("orbit.date".to_owned(), format!("{}", { 
-        //     let dt = chrono::offset::Local::now(); 
+        // self.0.insert("orbit.date".to_owned(), format!("{}", {
+        //     let dt = chrono::offset::Local::now();
         //     let fmt: &str = c.get_config().get_as_str("core", "date-fmt")?.unwrap_or("%Y-%m-%d");
-        //     dt.format(fmt).to_string() 
-        // })); 
+        //     dt.format(fmt).to_string()
+        // }));
         // load all env variables
-        
+
         Ok(self)
     }
 
     pub fn load_pkgid(mut self, pkgid: &PkgId) -> Result<Self, Fault> {
         self.add("orbit.ip.name", pkgid.get_name().as_ref());
-        self.add("orbit.ip.library", pkgid.get_library().as_ref().unwrap().as_ref());
-        self.add("orbit.ip.vendor", pkgid.get_vendor().as_ref().unwrap().as_ref());
+        self.add(
+            "orbit.ip.library",
+            pkgid.get_library().as_ref().unwrap().as_ref(),
+        );
+        self.add(
+            "orbit.ip.vendor",
+            pkgid.get_vendor().as_ref().unwrap().as_ref(),
+        );
         self.add("orbit.ip", &pkgid.to_string());
         Ok(self)
     }

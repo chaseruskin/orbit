@@ -1,12 +1,13 @@
-use std::iter::Peekable;
 use std::fmt::Display;
+use std::iter::Peekable;
 
 pub trait Tokenize {
     type TokenType;
     type Err;
 
-    fn tokenize(s: &str) -> Vec<Result<Token<Self::TokenType>, TokenError<Self::Err>>> 
-        where <Self as Tokenize>::Err: Display;
+    fn tokenize(s: &str) -> Vec<Result<Token<Self::TokenType>, TokenError<Self::Err>>>
+    where
+        <Self as Tokenize>::Err: Display;
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -60,7 +61,7 @@ impl<T: Display> TokenError<T> {
     pub fn new(err: T, loc: Position) -> Self {
         Self {
             position: loc,
-            err: err
+            err: err,
         }
     }
 }
@@ -89,7 +90,7 @@ impl Position {
     /// Increments the column counter by 1.
     pub fn next_col(&mut self) {
         self.1 += 1;
-    }   
+    }
 
     /// Increments the column counter by 1. If the current char `c` is a newline,
     /// it will then drop down to the next line.
@@ -101,7 +102,7 @@ impl Position {
     }
 
     /// Increments the line counter by 1.
-    /// 
+    ///
     /// Also resets the column counter to 0.
     pub fn next_line(&mut self) {
         self.0 += 1;
@@ -137,12 +138,18 @@ impl std::fmt::Display for Position {
 }
 
 /// Helps keep the current position in the contents as the characters are consumed.
-pub struct TrainCar<T> where T: Iterator<Item=char> {
+pub struct TrainCar<T>
+where
+    T: Iterator<Item = char>,
+{
     contents: Peekable<T>,
     loc: Position,
 }
 
-impl<T> TrainCar<T> where T: Iterator<Item=char> {
+impl<T> TrainCar<T>
+where
+    T: Iterator<Item = char>,
+{
     /// Creates a new `TrainCar` struct with an initial position (1, 0) and a
     /// train `s`.
     pub fn new(s: T) -> Self {
@@ -152,7 +159,7 @@ impl<T> TrainCar<T> where T: Iterator<Item=char> {
         }
     }
 
-    /// Takes the next char in the iterator and steps the `Position` marker 
+    /// Takes the next char in the iterator and steps the `Position` marker
     /// accordingly, if a char exists.
     pub fn consume(&mut self) -> Option<char> {
         if let Some(c) = self.contents.next() {
@@ -178,7 +185,6 @@ impl<T> TrainCar<T> where T: Iterator<Item=char> {
         &self.contents
     }
 }
-
 
 #[cfg(test)]
 mod test {

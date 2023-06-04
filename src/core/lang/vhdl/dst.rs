@@ -1,15 +1,18 @@
 //! dynamic symbol transform
 
+use super::super::lexer::{Position, Token};
+use super::token::{Identifier, VHDLToken};
 use std::collections::HashMap;
-use super::super::lexer::{Token, Position};
-use super::token::{VHDLToken, Identifier};
 
-/// Takes in a list of tokens, and a hashmap of the identifiers and their respective 
+/// Takes in a list of tokens, and a hashmap of the identifiers and their respective
 /// UIE (unique identifier extension).
-/// 
-/// Performs a swap on the identifiers (keys) and appends their extensions (values) to write to 
+///
+/// Performs a swap on the identifiers (keys) and appends their extensions (values) to write to
 /// new VHDL text.
-pub fn dyn_symbol_transform(tkns: &[Token<VHDLToken>], lut: &HashMap<Identifier, String>) -> String {
+pub fn dyn_symbol_transform(
+    tkns: &[Token<VHDLToken>],
+    lut: &HashMap<Identifier, String>,
+) -> String {
     let mut result = String::with_capacity(tkns.len());
     let mut tkns_iter = tkns.into_iter();
 
@@ -20,15 +23,15 @@ pub fn dyn_symbol_transform(tkns: &[Token<VHDLToken>], lut: &HashMap<Identifier,
     while let Some(tkn) = tkns_iter.next() {
         let pos = tkn.locate().clone();
 
-        let line_diff = pos.line()-prev_pos.line()-comment_lines;
+        let line_diff = pos.line() - prev_pos.line() - comment_lines;
         // add appropriate new lines
         for _ in 0..line_diff {
             result.push('\n')
         }
         let col_diff = if line_diff == 0 {
-            transform_diff+pos.col()-prev_pos.col()-offset
+            transform_diff + pos.col() - prev_pos.col() - offset
         } else {
-            pos.col()-1
+            pos.col() - 1
         };
         // add appropriate spaces
         for _ in 0..col_diff {
@@ -40,24 +43,24 @@ pub fn dyn_symbol_transform(tkns: &[Token<VHDLToken>], lut: &HashMap<Identifier,
         let (diff, text) = match tkn.as_ref() {
             VHDLToken::Identifier(id) => {
                 match lut.get(id) {
-                    Some(ext) => { 
+                    Some(ext) => {
                         let t = id.into_extension(ext).to_string();
                         // compute the extra space shifted for next token
                         transform_diff = t.len() - id.len();
                         (t.len(), t)
-                    },
+                    }
                     None => {
                         let t = id.to_string();
                         (t.len(), t)
                     }
                 }
-            },
+            }
             VHDLToken::Comment(c) => {
                 let tmp_pos = c.ending_position();
                 // needed to be set to balance for next token
-                comment_lines = tmp_pos.line()-1;
+                comment_lines = tmp_pos.line() - 1;
                 (tmp_pos.col(), c.to_string())
-            },
+            }
             _ => {
                 let t = tkn.as_ref().to_string();
                 (t.len(), t)
@@ -74,18 +77,25 @@ pub fn dyn_symbol_transform(tkns: &[Token<VHDLToken>], lut: &HashMap<Identifier,
     result
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::core::lang::vhdl::{dst::dyn_symbol_transform, token::{VHDLTokenizer, Identifier}};
+    use crate::core::lang::vhdl::{
+        dst::dyn_symbol_transform,
+        token::{Identifier, VHDLTokenizer},
+    };
 
     #[test]
     fn simple() {
-
         let mut map = HashMap::new();
-        map.insert(Identifier::Basic(String::from("adder")), "_sha12345".to_string());
-        map.insert(Identifier::Extended(String::from("adder_tb")), "_sha12345".to_string());
+        map.insert(
+            Identifier::Basic(String::from("adder")),
+            "_sha12345".to_string(),
+        );
+        map.insert(
+            Identifier::Extended(String::from("adder_tb")),
+            "_sha12345".to_string(),
+        );
 
         let code: &str = r#"
 --! module: adder (name here is untouched)

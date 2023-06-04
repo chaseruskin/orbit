@@ -5,8 +5,11 @@ pub trait Parse<T> {
     type SymbolType;
     type Err;
 
-    fn parse(tokens: Vec<Token<T>>) -> Vec<Result<Symbol<Self::SymbolType>, SymbolError<Self::Err>>> 
-        where <Self as Parse<T>>::Err: Display;
+    fn parse(
+        tokens: Vec<Token<T>>,
+    ) -> Vec<Result<Symbol<Self::SymbolType>, SymbolError<Self::Err>>>
+    where
+        <Self as Parse<T>>::Err: Display;
 }
 
 #[derive(Debug, PartialEq)]
@@ -17,9 +20,7 @@ pub struct Symbol<T> {
 impl<T> Symbol<T> {
     /// Creates a new symbol.
     pub fn new(stype: T) -> Self {
-        Self {
-            stype: stype,
-        }
+        Self { stype: stype }
     }
 
     pub fn take(self) -> T {

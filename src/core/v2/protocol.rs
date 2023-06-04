@@ -1,10 +1,10 @@
 //! A protocol is a series of steps defined for requesting files/packages
 //! from the internet.
 
-use serde_derive::{Deserialize, Serialize};
-use std::str::FromStr;
 use crate::core::v2::plugin::Process;
+use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
+use std::str::FromStr;
 
 pub type Protocols = Vec<Protocol>;
 
@@ -29,7 +29,7 @@ impl FromStr for Protocol {
 }
 
 impl Process for Protocol {
-    fn get_root(&self) -> &PathBuf { 
+    fn get_root(&self) -> &PathBuf {
         &self.root.as_ref().unwrap()
     }
 
@@ -40,18 +40,18 @@ impl Process for Protocol {
     fn get_args(&self) -> Vec<&String> {
         match &self.args {
             Some(list) => list.iter().map(|e| e).collect(),
-            None => Vec::new()
+            None => Vec::new(),
         }
     }
 }
 
-use crate::commands::orbit::RESPONSE_OKAY;
 use crate::commands::orbit::UpgradeError;
+use crate::commands::orbit::RESPONSE_OKAY;
 use crate::util::anyerror::Fault;
 use curl::easy::Easy;
-use zip::ZipArchive;
-use tempfile;
 use std::io::Write;
+use tempfile;
+use zip::ZipArchive;
 
 impl Protocol {
     pub fn new() -> Self {
@@ -75,7 +75,7 @@ impl Protocol {
 
     // /// Performs the default behavior of the download on each
     // pub fn default_execute(srcs: &[&String]) -> Result<(), Fault> {
-        
+
     // }
 
     /// Performs the default behavior for a protocol.
@@ -87,16 +87,21 @@ impl Protocol {
             easy.follow_location(true).unwrap();
             {
                 let mut transfer = easy.transfer();
-                transfer.write_function(|data| {
-                    body_bytes.extend_from_slice(data);
-                    Ok(data.len())
-                }).unwrap();
-        
+                transfer
+                    .write_function(|data| {
+                        body_bytes.extend_from_slice(data);
+                        Ok(data.len())
+                    })
+                    .unwrap();
+
                 transfer.perform()?;
             }
             let rc = easy.response_code()?;
             if rc != RESPONSE_OKAY {
-                return Err(Box::new(UpgradeError::FailedConnection(url.to_string(), rc)));
+                return Err(Box::new(UpgradeError::FailedConnection(
+                    url.to_string(),
+                    rc,
+                )));
             }
         }
         // place the bytes into a file
@@ -117,12 +122,12 @@ mod test {
 
     #[derive(Debug, PartialEq, Serialize, Deserialize)]
     pub struct Protocols {
-        protocol: Vec<Protocol>
+        protocol: Vec<Protocol>,
     }
-    
+
     impl FromStr for Protocols {
         type Err = toml::de::Error;
-    
+
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             toml::from_str(s)
         }
@@ -142,24 +147,30 @@ args = ["~/scripts/download.bash"]
     #[test]
     fn from_toml_string() {
         let proto = Protocol::from_str(P_1).unwrap();
-        assert_eq!(proto, Protocol {
-            name: String::from("gcp"),
-            command: String::from("python"),
-            args: None,
-            root: None,
-            summary: None,
-            details: None,
-        });
+        assert_eq!(
+            proto,
+            Protocol {
+                name: String::from("gcp"),
+                command: String::from("python"),
+                args: None,
+                root: None,
+                summary: None,
+                details: None,
+            }
+        );
 
         let proto = Protocol::from_str(P_2).unwrap();
-        assert_eq!(proto, Protocol {
-            name: String::from("ffi"),
-            command: String::from("bash"),
-            args: Some(vec![String::from("~/scripts/download.bash")]),
-            root: None,
-            summary: None,
-            details: None,
-        });
+        assert_eq!(
+            proto,
+            Protocol {
+                name: String::from("ffi"),
+                command: String::from("bash"),
+                args: Some(vec![String::from("~/scripts/download.bash")]),
+                root: None,
+                summary: None,
+                details: None,
+            }
+        );
     }
 
     #[test]
@@ -167,11 +178,14 @@ args = ["~/scripts/download.bash"]
         let contents = format!("{0}{1}\n{0}{2}", "[[protocol]]", P_1, P_2);
         // assemble the list of protocols
         let protos = Protocols::from_str(&contents).unwrap();
-        assert_eq!(protos, Protocols {
-            protocol: vec![
-                Protocol::from_str(P_1).unwrap(),
-                Protocol::from_str(P_2).unwrap()
-            ],
-        });
+        assert_eq!(
+            protos,
+            Protocols {
+                protocol: vec![
+                    Protocol::from_str(P_1).unwrap(),
+                    Protocol::from_str(P_2).unwrap()
+                ],
+            }
+        );
     }
 }

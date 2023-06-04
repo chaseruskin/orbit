@@ -1,9 +1,9 @@
 /*
 File: target-triple.rs
 Author: Chase Ruskin
-Abstract: 
+Abstract:
     Basic executable to extract the current machine's "target triple".
-Usage:   
+Usage:
     `rustc target-triple.rs --out-dir DIR`
 */
 use std::env;

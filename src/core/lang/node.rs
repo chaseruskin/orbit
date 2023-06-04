@@ -1,5 +1,5 @@
-use colored::Colorize;
 use crate::core::lang::vhdl::token::Identifier;
+use colored::Colorize;
 
 #[derive(Debug, PartialEq)]
 pub struct HdlNode<'a> {
@@ -41,7 +41,10 @@ impl<'a> HdlNode<'a> {
     }
 
     pub fn black_box(sym: VHDLSymbol) -> Self {
-        Self { sym: sym, files: Vec::new() }
+        Self {
+            sym: sym,
+            files: Vec::new(),
+        }
     }
 
     pub fn display(&self, fmt: &IdentifierFormat) -> String {
@@ -68,7 +71,10 @@ pub struct SubUnitNode<'a> {
 
 impl<'a> SubUnitNode<'a> {
     pub fn new(unit: SubUnit, file: &'a IpFileNode<'a>) -> Self {
-        Self { sub: unit, file: file }
+        Self {
+            sub: unit,
+            file: file,
+        }
     }
 
     /// References the architecture struct.
@@ -83,14 +89,14 @@ impl<'a> SubUnitNode<'a> {
 }
 
 use crate::core::lang::vhdl::subunit::SubUnit;
+use crate::core::lang::vhdl::symbol::VHDLSymbol;
 use crate::core::v2::algo::IpFileNode;
 use crate::util::anyerror::AnyError;
-use crate::core::lang::vhdl::symbol::VHDLSymbol;
 
 #[derive(Debug, PartialEq)]
 pub enum IdentifierFormat {
     Long,
-    Short
+    Short,
 }
 
 impl std::str::FromStr for IdentifierFormat {
@@ -99,7 +105,7 @@ impl std::str::FromStr for IdentifierFormat {
         match s {
             "long" => Ok(Self::Long),
             "short" => Ok(Self::Short),
-            _ => Err(AnyError(format!("format can be 'long' or 'short'")))
+            _ => Err(AnyError(format!("format can be 'long' or 'short'"))),
         }
     }
 }

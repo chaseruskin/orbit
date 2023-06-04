@@ -1,5 +1,5 @@
-use std::ffi::OsStr;
 use crate::util::anyerror::Fault;
+use std::ffi::OsStr;
 
 #[derive(Debug, PartialEq)]
 struct Statement(Vec<Argument>);
@@ -58,29 +58,41 @@ impl std::str::FromStr for Statement {
                 '\'' | '\"' => {
                     in_quote = !in_quote;
                     if in_quote == false {
-                        if buffer.is_empty() == false { result.push(Argument::Quoted(buffer.clone())); }
+                        if buffer.is_empty() == false {
+                            result.push(Argument::Quoted(buffer.clone()));
+                        }
                         buffer.clear();
                     }
-                },
+                }
                 ' ' | '\t' | '\n' | '\r' => {
                     if in_quote == false {
-                        if buffer.is_empty() == false { result.push(Argument::Bare(buffer.clone())); }
+                        if buffer.is_empty() == false {
+                            result.push(Argument::Bare(buffer.clone()));
+                        }
                         buffer.clear();
                     } else {
                         buffer.push(c);
                     }
-                },
+                }
                 _ => buffer.push(c),
             }
         }
-        if buffer.is_empty() == false { result.push(Argument::Bare(buffer)); }
+        if buffer.is_empty() == false {
+            result.push(Argument::Bare(buffer));
+        }
         Ok(Self(result))
     }
 }
 
 impl std::fmt::Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0.iter().fold(String::new(), |acc, x| acc + " " + x.as_ref()))
+        write!(
+            f,
+            "{}",
+            self.0
+                .iter()
+                .fold(String::new(), |acc, x| acc + " " + x.as_ref())
+        )
     }
 }
 
@@ -92,7 +104,13 @@ impl Statement {
             .output()?;
 
         match proc.status.code() {
-            Some(num) => if num != 0 { panic!("error code") } else { () },
+            Some(num) => {
+                if num != 0 {
+                    panic!("error code")
+                } else {
+                    ()
+                }
+            }
             None => panic!("sig termination"),
         };
         Ok(())
@@ -105,7 +123,17 @@ pub struct Hook(Vec<Statement>);
 impl std::str::FromStr for Hook {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(s.split_terminator('\n').filter_map(|f| if f.is_empty() { None } else { Some(f.parse::<Statement>().unwrap()) }).collect()))
+        Ok(Self(
+            s.split_terminator('\n')
+                .filter_map(|f| {
+                    if f.is_empty() {
+                        None
+                    } else {
+                        Some(f.parse::<Statement>().unwrap())
+                    }
+                })
+                .collect(),
+        ))
     }
 }
 
@@ -127,25 +155,41 @@ mod test {
     fn it_works() {
         let text = "a b c\n\nd\te  f\r\ng h";
         let hook = Hook::from_str(text).unwrap();
-        assert_eq!(hook.0, vec![
-            Statement(vec![
-                Argument::Bare(String::from("a")), 
-                Argument::Bare(String::from("b")), 
-                Argument::Bare(String::from("c"))]),
-            Statement(vec![
-                Argument::Bare(String::from("d")),
-                Argument::Bare(String::from("e")), 
-                Argument::Bare(String::from("f"))]),
-            Statement(vec![
-                Argument::Bare(String::from("g")), 
-                Argument::Bare(String::from("h"))]),
-        ]);
+        assert_eq!(
+            hook.0,
+            vec![
+                Statement(vec![
+                    Argument::Bare(String::from("a")),
+                    Argument::Bare(String::from("b")),
+                    Argument::Bare(String::from("c"))
+                ]),
+                Statement(vec![
+                    Argument::Bare(String::from("d")),
+                    Argument::Bare(String::from("e")),
+                    Argument::Bare(String::from("f"))
+                ]),
+                Statement(vec![
+                    Argument::Bare(String::from("g")),
+                    Argument::Bare(String::from("h"))
+                ]),
+            ]
+        );
     }
 
     #[test]
     fn statement_from_str() {
         let text = "git commit -m \"my message\"";
-        assert_eq!(Statement::from_str(text).unwrap().0.into_iter().map(|f| f.as_string().to_string()).collect::<Vec<String>>(),
-            vec!["git", "commit", "-m", "my message"].into_iter().map(|f| f.to_owned()).collect::<Vec<String>>());
+        assert_eq!(
+            Statement::from_str(text)
+                .unwrap()
+                .0
+                .into_iter()
+                .map(|f| f.as_string().to_string())
+                .collect::<Vec<String>>(),
+            vec!["git", "commit", "-m", "my message"]
+                .into_iter()
+                .map(|f| f.to_owned())
+                .collect::<Vec<String>>()
+        );
     }
 }

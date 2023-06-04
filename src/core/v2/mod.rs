@@ -1,9 +1,9 @@
-pub mod manifest;
-pub mod lockfile;
-pub mod ip;
-pub mod catalog;
 pub mod algo;
-pub mod protocol;
-pub mod plugin;
+pub mod catalog;
 pub mod config;
+pub mod ip;
+pub mod lockfile;
+pub mod manifest;
+pub mod plugin;
+pub mod protocol;
 pub mod source;

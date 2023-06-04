@@ -4,7 +4,10 @@ use colored::*;
 fn main() -> () {
     let rc = match install() {
         Ok(()) => 0,
-        Err(e) => { eprintln!("{} {}", "error:".red().bold(), e); 101 }
+        Err(e) => {
+            eprintln!("{} {}", "error:".red().bold(), e);
+            101
+        }
     };
     // allow user to see final messages before closing the window
     poll_response("press enter to exit ... ");
@@ -41,12 +44,12 @@ fn unix() -> Result<(), Box<dyn std::error::Error>> {
         let mut root = filesystem::get_exe_path()?;
         // remove file to get parent directory
         root.pop();
-        root.join("bin/".to_owned()+EXE_NAME)
+        root.join("bin/".to_owned() + EXE_NAME)
     };
 
     // verify this program was could find the executable
     if contents.exists() == false {
-        return Err(InstallError::UndetectedExe(contents))?
+        return Err(InstallError::UndetectedExe(contents))?;
     }
 
     // 1. compute installation size
@@ -60,12 +63,17 @@ fn unix() -> Result<(), Box<dyn std::error::Error>> {
     let dest = path.join(EXE_NAME);
 
     // check if a file named "orbit" already exists
-    if dest.exists() == true && prompt::prompt(&format!("file {} already exists; is it okay to replace it", dest.display()))? == false {
+    if dest.exists() == true
+        && prompt::prompt(&format!(
+            "file {} already exists; is it okay to replace it",
+            dest.display()
+        ))? == false
+    {
         println!("cancelled installation");
-        return Ok(())
+        return Ok(());
     }
 
-    // 3. ask user for permission 
+    // 3. ask user for permission
     match prompt::prompt("Install")? {
         true => {
             // 4a. copy the binary to the location
@@ -94,11 +102,14 @@ fn windows() -> Result<(), Box<dyn std::error::Error>> {
 
     // verify this program was could find the executable
     if contents.join("bin/".to_owned() + EXE_NAME).exists() == false {
-        return Err(InstallError::UndetectedExe(contents.join("bin/".to_owned() + EXE_NAME)))?
+        return Err(InstallError::UndetectedExe(
+            contents.join("bin/".to_owned() + EXE_NAME),
+        ))?;
     }
 
     // 1. compute installation size
-    let megabytes = orbit::util::filesystem::compute_size(&contents, orbit::util::filesystem::Unit::MegaBytes)?;
+    let megabytes =
+        orbit::util::filesystem::compute_size(&contents, orbit::util::filesystem::Unit::MegaBytes)?;
     println!("installation size: {:.2} MB", megabytes);
 
     // 2. configure installation destination
@@ -109,11 +120,16 @@ fn windows() -> Result<(), Box<dyn std::error::Error>> {
     let path = installation_path(path)?;
 
     let dest = path.join("orbit");
-            
+
     // check if a folder named "orbit" already exists
-    if dest.exists() == true && prompt::prompt(&format!("directory {} already exists; is it okay to replace it", dest.display()))? == false {
+    if dest.exists() == true
+        && prompt::prompt(&format!(
+            "directory {} already exists; is it okay to replace it",
+            dest.display()
+        ))? == false
+    {
         println!("cancelled installation");
-        return Ok(())
+        return Ok(());
     }
 
     // 3. ask user for permission
@@ -134,7 +150,11 @@ fn windows() -> Result<(), Box<dyn std::error::Error>> {
             // copy contents (installed directory) to renewed orbit directory destination
             fs_extra::dir::copy(&contents, &dest, &options)?;
             println!("successfully installed orbit");
-            println!("{} add {} to the user PATH variable to call `orbit` from the command-line", "tip:".blue().bold(), path.join("orbit/bin").display());
+            println!(
+                "{} add {} to the user PATH variable to call `orbit` from the command-line",
+                "tip:".blue().bold(),
+                path.join("orbit/bin").display()
+            );
         }
         false => {
             // 4b. cancel installation
@@ -144,8 +164,8 @@ fn windows() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-use std::path::PathBuf;
 use fs_extra;
+use std::path::PathBuf;
 
 fn installation_path(path: PathBuf) -> Result<PathBuf, Box<dyn std::error::Error>> {
     println!("default installation path: {}", path.display());
@@ -159,9 +179,7 @@ fn installation_path(path: PathBuf) -> Result<PathBuf, Box<dyn std::error::Error
             println!("set installation path: {}", path.display());
             Ok(path)
         }
-        false => {
-            Err(InstallError::PathDNE(path))?
-        }
+        false => Err(InstallError::PathDNE(path))?,
     }
 }
 
@@ -177,11 +195,15 @@ impl std::error::Error for InstallError {}
 use std::fmt::Display;
 
 impl Display for InstallError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { 
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             Self::PathDNE(p) => write!(f, "path {:?} does not exist", p),
             Self::UnknownFamily => write!(f, "unknown family (did not detect unix or windows)"),
-            Self::UndetectedExe(p) => write!(f, "installer program failed to find executable path {:?}", p)
+            Self::UndetectedExe(p) => write!(
+                f,
+                "installer program failed to find executable path {:?}",
+                p
+            ),
         }
     }
 }

@@ -1,17 +1,17 @@
 //! A plugin is a user-defined backend workflow for processing the files collected
 //! in the generated blueprint file.
 
-use serde_derive::{Deserialize, Serialize};
-use std::str::FromStr;
-use std::path::PathBuf;
-use std::collections::HashMap;
+use crate::core::context::Context;
 use crate::core::fileset::Style;
-use crate::util::filesystem::Standardize;
+use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::filesystem;
-use crate::util::anyerror::AnyError;
+use crate::util::filesystem::Standardize;
+use serde_derive::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::error::Error;
-use crate::core::context::Context;
+use std::path::PathBuf;
+use std::str::FromStr;
 
 pub type Plugins = Vec<Plugin>;
 
@@ -37,11 +37,15 @@ impl Plugin {
 
     /// Displays a plugin's information in a single line for quick glance.
     pub fn quick_info(&self) -> String {
-        format!("{:<16}{}", self.alias, self.summary.as_ref().unwrap_or(&String::new()))
+        format!(
+            "{:<16}{}",
+            self.alias,
+            self.summary.as_ref().unwrap_or(&String::new())
+        )
     }
 
     /// Creates a string to display a list of plugins.
-    /// 
+    ///
     /// The string lists the plugins in alphabetical order by `alias`.
     pub fn list_plugins(plugs: &mut [&&Plugin]) -> String {
         let mut list = String::from("Plugins:\n");
@@ -70,18 +74,49 @@ impl Plugin {
 
 impl std::fmt::Display for Plugin {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "\
+        write!(
+            f,
+            "\
 alias:   {}
 command: {} {}
 root:    {}
 filesets:
-{}{}{}", 
+{}{}{}",
             self.alias,
-            self.command, self.args.as_ref().unwrap_or(&Vec::new()).iter().fold(String::new(), |x, y| { x + "\"" + &y + "\" " }),
+            self.command,
+            self.args
+                .as_ref()
+                .unwrap_or(&Vec::new())
+                .iter()
+                .fold(String::new(), |x, y| { x + "\"" + &y + "\" " }),
             PathBuf::standardize(self.root.as_ref().unwrap()).display(),
-            { if self.fileset.is_none() { String::from("    None\n") } else { self.fileset.as_ref().unwrap().iter().fold(String::new(), |x, (n, p)| { x + &format!("    {:<16}{}\n", n, p.inner())}) } },
-            { if let Some(text) = &self.summary { format!("\n{}\n", text) } else { String::new() } },
-            { if let Some(text) = &self.details { format!("\n{}", text) } else { String::new() } },
+            {
+                if self.fileset.is_none() {
+                    String::from("    None\n")
+                } else {
+                    self.fileset
+                        .as_ref()
+                        .unwrap()
+                        .iter()
+                        .fold(String::new(), |x, (n, p)| {
+                            x + &format!("    {:<16}{}\n", n, p.inner())
+                        })
+                }
+            },
+            {
+                if let Some(text) = &self.summary {
+                    format!("\n{}\n", text)
+                } else {
+                    String::new()
+                }
+            },
+            {
+                if let Some(text) = &self.details {
+                    format!("\n{}", text)
+                } else {
+                    String::new()
+                }
+            },
         )
     }
 }
@@ -106,22 +141,33 @@ pub trait Process {
         // resolve the relative paths in the command and arguments defined in original configuration
         let root_path = self.get_root();
         let command = filesystem::resolve_rel_path(root_path, &self.get_command());
-        let arguments: Vec<String> = self.get_args().iter()
-            .map(|f| filesystem::resolve_rel_path(root_path, f) )
+        let arguments: Vec<String> = self
+            .get_args()
+            .iter()
+            .map(|f| filesystem::resolve_rel_path(root_path, f))
             .collect();
 
         // append args set on the command-line to the base-line of arguments
         let args = [&arguments, extra_args].concat();
         // display the literal command being ran
         if verbose == true {
-            let s = args.iter().fold(String::new(), |x, y| { x + "\"" + &y + "\" " });
+            let s = args
+                .iter()
+                .fold(String::new(), |x, y| x + "\"" + &y + "\" ");
             println!("running: {} {}", command, s);
         }
-        let mut proc = filesystem::invoke(&command, &args, Context::enable_windows_bat_file_match())?;
+        let mut proc =
+            filesystem::invoke(&command, &args, Context::enable_windows_bat_file_match())?;
         let exit_code = proc.wait()?;
         match exit_code.code() {
-            Some(num) => if num != 0 { Err(AnyError(format!("exited with error code: {}", num)))? } else { Ok(()) },
-            None =>  Err(AnyError(format!("terminated by signal")))?
+            Some(num) => {
+                if num != 0 {
+                    Err(AnyError(format!("exited with error code: {}", num)))?
+                } else {
+                    Ok(())
+                }
+            }
+            None => Err(AnyError(format!("terminated by signal")))?,
         }
     }
 }
@@ -134,7 +180,7 @@ impl Process for Plugin {
     fn get_args(&self) -> Vec<&String> {
         match &self.args {
             Some(list) => list.iter().map(|e| e).collect(),
-            None => Vec::new()
+            None => Vec::new(),
         }
     }
 
@@ -145,7 +191,7 @@ impl Process for Plugin {
 
 #[derive(Debug, PartialEq)]
 pub enum PluginError {
-    Missing(String)
+    Missing(String),
 }
 
 impl Error for PluginError {}
@@ -153,7 +199,11 @@ impl Error for PluginError {}
 impl std::fmt::Display for PluginError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Missing(name) => write!(f, "no plugin found as '{}'\n\nTry `orbit plan --list` to see available plugins", name)
+            Self::Missing(name) => write!(
+                f,
+                "no plugin found as '{}'\n\nTry `orbit plan --list` to see available plugins",
+                name
+            ),
         }
     }
 }
@@ -164,14 +214,12 @@ mod test {
 
     #[derive(Debug, PartialEq, Serialize, Deserialize)]
     pub struct Plugins {
-        plugin: Vec<Plugin>
+        plugin: Vec<Plugin>,
     }
 
     impl Plugins {
         pub fn new() -> Self {
-            Self {
-                plugin: Vec::new()
-            }
+            Self { plugin: Vec::new() }
         }
     }
 
@@ -201,29 +249,40 @@ args = ["~/scripts/download.bash"]
     #[test]
     fn from_toml_string() {
         let plug = Plugin::from_str(P_1).unwrap();
-        assert_eq!(plug, Plugin {
-            alias: String::from("ghdl"),
-            command: String::from("python"),
-            args: Some(vec![String::from("./scripts/ghdl.py")]),
-            summary: Some(String::from("Backend script for simulating VHDL with GHDL.")),
-            fileset: Some(HashMap::from([
-                (String::from("py-model"), Style::from_str("{{orbit.bench}}.py").unwrap()),
-                (String::from("text"), Style::from_str("*.txt").unwrap()),
-            ])),
-            details: None,
-            root: None,
-        });
+        assert_eq!(
+            plug,
+            Plugin {
+                alias: String::from("ghdl"),
+                command: String::from("python"),
+                args: Some(vec![String::from("./scripts/ghdl.py")]),
+                summary: Some(String::from(
+                    "Backend script for simulating VHDL with GHDL."
+                )),
+                fileset: Some(HashMap::from([
+                    (
+                        String::from("py-model"),
+                        Style::from_str("{{orbit.bench}}.py").unwrap()
+                    ),
+                    (String::from("text"), Style::from_str("*.txt").unwrap()),
+                ])),
+                details: None,
+                root: None,
+            }
+        );
 
         let plug = Plugin::from_str(P_2).unwrap();
-        assert_eq!(plug, Plugin {
-            alias: String::from("ffi"),
-            command: String::from("bash"),
-            args: Some(vec![String::from("~/scripts/download.bash")]),
-            summary: None,
-            fileset: None,
-            details: None,
-            root: None,
-        });
+        assert_eq!(
+            plug,
+            Plugin {
+                alias: String::from("ffi"),
+                command: String::from("bash"),
+                args: Some(vec![String::from("~/scripts/download.bash")]),
+                summary: None,
+                fileset: None,
+                details: None,
+                root: None,
+            }
+        );
     }
 
     #[test]
@@ -231,11 +290,14 @@ args = ["~/scripts/download.bash"]
         let contents = format!("{0}{1}\n{0}{2}", "[[plugin]]", P_1, P_2);
         // assemble the list of protocols
         let plugs = Plugins::from_str(&contents).unwrap();
-        assert_eq!(plugs, Plugins {
-            plugin: vec![
-                Plugin::from_str(P_1).unwrap(),
-                Plugin::from_str(P_2).unwrap()
-            ],
-        });
+        assert_eq!(
+            plugs,
+            Plugins {
+                plugin: vec![
+                    Plugin::from_str(P_1).unwrap(),
+                    Plugin::from_str(P_2).unwrap()
+                ],
+            }
+        );
     }
 }

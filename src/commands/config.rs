@@ -1,16 +1,15 @@
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use colored::*;
-use clif::cmd::{FromCli, Command};
-use clif::Cli;
-use clif::arg::{Flag, Optional};
-use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::core::v2::manifest::FromFile;
 use crate::util::anyerror::AnyError;
 use crate::OrbitResult;
-
+use clif::arg::{Flag, Optional};
+use clif::cmd::{Command, FromCli};
+use clif::Cli;
+use clif::Error as CliError;
+use colored::*;
 
 #[derive(Debug, PartialEq)]
 pub struct Entry(String, String);
@@ -21,7 +20,7 @@ impl FromStr for Entry {
         // split on first '=' sign
         match s.split_once('=') {
             Some(e) => Ok(Entry(e.0.to_owned(), e.1.to_owned())),
-            None => Err(AnyError(format!("missing '=' separator")))
+            None => Err(AnyError(format!("missing '=' separator"))),
         }
     }
 }
@@ -36,14 +35,20 @@ pub struct Config {
 }
 
 impl FromCli for Config {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Config {
             global: cli.check_flag(Flag::new("global"))?,
             local: cli.check_flag(Flag::new("local"))?,
-            append: cli.check_option_all(Optional::new("append"))?.unwrap_or(Vec::new()),
-            set: cli.check_option_all(Optional::new("set"))?.unwrap_or(Vec::new()),
-            unset: cli.check_option_all(Optional::new("unset"))?.unwrap_or(Vec::new()),
+            append: cli
+                .check_option_all(Optional::new("append"))?
+                .unwrap_or(Vec::new()),
+            set: cli
+                .check_option_all(Optional::new("set"))?
+                .unwrap_or(Vec::new()),
+            unset: cli
+                .check_option_all(Optional::new("unset"))?
+                .unwrap_or(Vec::new()),
         });
         command
     }
@@ -58,20 +63,31 @@ impl Command<Context> for Config {
     fn exec(&self, c: &Context) -> Self::Status {
         // check if we are using global or local
         if self.local == true && self.global == true {
-            return Err(AnyError(format!("'{}' and '{}' cannot be set at the same time", "--local".yellow(), "--global".yellow())))?
+            return Err(AnyError(format!(
+                "'{}' and '{}' cannot be set at the same time",
+                "--local".yellow(),
+                "--global".yellow()
+            )))?;
         }
         let (mut cfg, file) = if self.local == true {
             match c.get_ip_path() {
                 Some(path) => {
                     let file = path.join(".orbit").join(CONFIG_FILE);
-                    (ConfigDocument::from_file(&file)?, file) 
+                    (ConfigDocument::from_file(&file)?, file)
                 }
-                None => return Err(AnyError(format!("no ip detected in the current directory to modify local configurations")))?,
+                None => {
+                    return Err(AnyError(format!(
+                        "no ip detected in the current directory to modify local configurations"
+                    )))?
+                }
             }
         } else {
             // duplicate the configuration so we can potentially mutate it
             let file = c.get_all_configs().get_global().0.clone();
-            (ConfigDocument::from_file(&file).expect("already should be parsed correctly"), file)
+            (
+                ConfigDocument::from_file(&file).expect("already should be parsed correctly"),
+                file,
+            )
         };
         // modify the settings for cfg file
         self.run(&mut cfg, &file)
@@ -79,21 +95,33 @@ impl Command<Context> for Config {
 }
 
 impl Config {
-    fn run(&self, cfg: &mut ConfigDocument, file: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+    fn run(
+        &self,
+        cfg: &mut ConfigDocument,
+        file: &PathBuf,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // check for list appending
         for entry in &self.append {
             match entry.0.as_ref() {
                 "include" => cfg.append_include(&entry.1),
-                _ => return Err(AnyError(format!("unsupported key '{}' cannot be appended", entry.0)))?
+                _ => {
+                    return Err(AnyError(format!(
+                        "unsupported key '{}' cannot be appended",
+                        entry.0
+                    )))?
+                }
             };
         }
-        
+
         for entry in &self.set {
             // split by dots to get table.key (silently ignores improper parsing)
             if let Some((table, key)) = entry.0.split_once('.') {
                 cfg.set(table, key, &entry.1)
             } else {
-                return Err(AnyError(format!("unsupported key '{}' cannot be set", entry.0)))?
+                return Err(AnyError(format!(
+                    "unsupported key '{}' cannot be set",
+                    entry.0
+                )))?;
             }
         }
 
@@ -102,7 +130,7 @@ impl Config {
             if let Some((table, key)) = key.split_once('.') {
                 cfg.unset(table, key)?
             } else {
-                return Err(AnyError(format!("unsupported key '{}' cannot be set", key)))?
+                return Err(AnyError(format!("unsupported key '{}' cannot be set", key)))?;
             }
         }
 

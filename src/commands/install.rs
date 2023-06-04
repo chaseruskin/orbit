@@ -9,29 +9,29 @@
 //! 5. Compute checksum on entire directory
 //! 6. Zip contents and store in "store" for future re-installation
 //! 7. Place artifact directory in "cache" for catalog lookup
-//! 
+//!
 //! One issue that remains is how to retrieve packages from online automatically.
-//! 
+//!
 //! The download process:
 //!     - write a lockfile
 //!     - ...
-//! 
+//!
 
-use clif::cmd::{FromCli, Command};
+use crate::core::context::Context;
 use crate::core::v2::catalog::CacheSlot;
 use crate::core::v2::catalog::Catalog;
 use crate::core::v2::manifest::ORBIT_SUM_FILE;
+use crate::util::anyerror::Fault;
 use crate::util::filesystem;
+use crate::util::filesystem::Standardize;
+use crate::OrbitResult;
+use clif::arg::{Flag, Optional};
+use clif::cmd::{Command, FromCli};
 use clif::Cli;
+use clif::Error as CliError;
 use std::env::current_dir;
 use std::fs;
-use clif::arg::{Optional, Flag};
-use clif::Error as CliError;
-use crate::core::context::Context;
-use crate::util::anyerror::Fault;
 use std::path::PathBuf;
-use crate::OrbitResult;
-use crate::util::filesystem::Standardize;
 
 use crate::core::v2::ip::Ip;
 
@@ -44,13 +44,15 @@ pub struct Install {
 }
 
 impl FromCli for Install {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Install {
             force: cli.check_flag(Flag::new("force"))?,
             deps_only: cli.check_flag(Flag::new("deps"))?,
             all: cli.check_flag(Flag::new("all"))?,
-            path: cli.check_option(Optional::new("path"))?.unwrap_or(PathBuf::from(".")),
+            path: cli
+                .check_option(Optional::new("path"))?
+                .unwrap_or(PathBuf::from(".")),
         });
         command
     }
@@ -64,11 +66,14 @@ impl Command<Context> for Install {
 
     fn exec(&self, c: &Context) -> Self::Status {
         // verify the path points to a valid ip
-        let path = filesystem::resolve_rel_path(&current_dir().unwrap(), &filesystem::into_std_str(self.path.clone()));
+        let path = filesystem::resolve_rel_path(
+            &current_dir().unwrap(),
+            &filesystem::into_std_str(self.path.clone()),
+        );
         let dest = PathBuf::standardize(PathBuf::from(path));
 
         Ip::is_valid(&dest)?;
-        
+
         // gather the catalog (all manifests)
         let mut catalog = Catalog::new()
             .installations(c.get_cache_path())?
@@ -88,16 +93,26 @@ impl Command<Context> for Install {
                     // install dev-deps anyway
                     true => lf.unwrap(),
                     // do not install dev-deps (filter them out)
-                    false => {
-                        lf.unwrap().into_iter().filter(|p| match target.get_man().get_dev_deps().get(p.get_name()) {
-                            Some(v) => if p.get_version() == v { false } else { true },
-                            None => true,
-                        }).collect()
-                    }
+                    false => lf
+                        .unwrap()
+                        .into_iter()
+                        .filter(
+                            |p| match target.get_man().get_dev_deps().get(p.get_name()) {
+                                Some(v) => {
+                                    if p.get_version() == v {
+                                        false
+                                    } else {
+                                        true
+                                    }
+                                }
+                                None => true,
+                            },
+                        )
+                        .collect(),
                 };
                 LockFile::wrap(entries)
             };
-            
+
             plan::download_missing_deps(&lf, &le, &catalog, &c.get_config().get_protocols())?;
             // recollect the queued items to update the catalog
             catalog = catalog
@@ -121,13 +136,12 @@ impl Command<Context> for Install {
     }
 }
 
-use crate::core::v2::lockfile::LockEntry;
 use crate::commands::plan;
+use crate::core::v2::lockfile::LockEntry;
 
 use super::plan::Plan;
 
 impl Install {
-
     pub fn is_checksum_good(root: &PathBuf) -> bool {
         // verify the checksum
         if let Some(sha) = Ip::read_checksum_proof(&root) {
@@ -141,7 +155,7 @@ impl Install {
 
     /// Installs the `ip` with particular partial `version` to the `cache_root`.
     /// It will reinstall if it finds the original installation has a mismatching checksum.
-    /// 
+    ///
     /// Returns `true` if the IP was successfully installed and `false` if it already existed.
     pub fn install(src: &Ip, cache_root: &std::path::PathBuf, force: bool) -> Result<bool, Fault> {
         // temporary destination to move files for processing and manipulation
@@ -160,7 +174,7 @@ impl Install {
         let ip_spec = src.get_man().get_ip().into_ip_spec();
         println!("info: Installing IP {} ...", &ip_spec);
 
-        // perform sha256 on the temporary cloned directory 
+        // perform sha256 on the temporary cloned directory
         let checksum = Ip::compute_checksum(&dest);
         // println!("checksum: {}", checksum);
 
@@ -177,7 +191,7 @@ impl Install {
                 if Self::is_checksum_good(&cache_slot) == true {
                     // clean up the temporary directory ourself
                     fs::remove_dir_all(dest)?;
-                    return Ok(false)
+                    return Ok(false);
                 } else {
                     println!("info: Reinstalling IP {} due to bad checksum ...", ip_spec);
 
@@ -188,13 +202,16 @@ impl Install {
         }
         // copy contents into cache slot from temporary destination
         crate::util::filesystem::copy(&dest, &cache_slot, false)?;
- 
+
         // clean up the temporary directory ourself
         fs::remove_dir_all(dest)?;
 
         // write the checksum to the directory (this file is excluded from auditing)
-        std::fs::write(&cache_slot.join(ORBIT_SUM_FILE), checksum.to_string().as_bytes())?;
-        
+        std::fs::write(
+            &cache_slot.join(ORBIT_SUM_FILE),
+            checksum.to_string().as_bytes(),
+        )?;
+
         Ok(true)
     }
 
@@ -202,7 +219,10 @@ impl Install {
         let result = Self::install(&target, &catalog.get_cache_path(), self.force)?;
 
         if result == false {
-            println!("info: IP {} is already installed", target.get_man().get_ip().into_ip_spec());
+            println!(
+                "info: IP {} is already installed",
+                target.get_man().get_ip().into_ip_spec()
+            );
         }
 
         Ok(())
@@ -218,11 +238,10 @@ impl Install {
 
         // _pkg.get_lock().save_to_disk(&_pkg.get_root())?;
         // todo!();
-        
+
         // @todo: check lockfile to process installing any IP that may be already downloaded to the queue
 
         // verify each requirement for the IP is also installed (o.w. install)
-        
 
         // if let Some(lock) = man.get_lockfile() {
         //     Self::install_from_lock_file(&self, &lock, &catalog)?;

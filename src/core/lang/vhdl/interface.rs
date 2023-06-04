@@ -1,10 +1,14 @@
-use colored::ColoredString;
-use super::token::{Identifier, ToColor};
 use super::highlight::*;
-
+use super::token::{Identifier, ToColor};
+use colored::ColoredString;
 
 pub fn library_statement(lib: &Identifier) -> String {
-    format!("{} {}{}\n", Keyword::Library.to_color(), color(&lib.to_string(), ENTITY_NAME), Delimiter::Terminator.to_color())
+    format!(
+        "{} {}{}\n",
+        Keyword::Library.to_color(),
+        color(&lib.to_string(), ENTITY_NAME),
+        Delimiter::Terminator.to_color()
+    )
 }
 
 #[derive(Debug, PartialEq)]
@@ -27,7 +31,9 @@ pub struct ColorVec(Vec<ColorTone>);
 
 impl Display for ColorVec {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for item in &self.0 { write!(f, "{}", item)? }
+        for item in &self.0 {
+            write!(f, "{}", item)?
+        }
         Ok(())
     }
 }
@@ -54,7 +60,8 @@ impl ColorVec {
     }
 
     fn push_whitespace(&mut self, count: usize) -> () {
-        self.0.push(ColorTone::Bland(format!("{:<width$}", " ", width=count)));
+        self.0
+            .push(ColorTone::Bland(format!("{:<width$}", " ", width = count)));
     }
 
     fn swap(mut self, index: usize, hue: Rgb) -> Self {
@@ -86,7 +93,7 @@ impl<'a> std::fmt::Display for Architectures<'a> {
 // @note: identifier_list ::= identifier { , identifier }
 
 use super::super::lexer;
-use crate::core::lang::vhdl::token::{VHDLToken, Keyword, Delimiter};
+use crate::core::lang::vhdl::token::{Delimiter, Keyword, VHDLToken};
 use std::fmt::Display;
 use std::iter::Peekable;
 
@@ -94,18 +101,36 @@ use std::iter::Peekable;
 pub struct IdentifierList(Vec<Identifier>);
 
 impl IdentifierList {
-    fn from_tokens<I>(tokens: &mut Peekable<I>) -> Self 
-    where I: Iterator<Item=lexer::Token<VHDLToken>> {
+    fn from_tokens<I>(tokens: &mut Peekable<I>) -> Self
+    where
+        I: Iterator<Item = lexer::Token<VHDLToken>>,
+    {
         let mut inner = Vec::new();
         // accept first identifier
-        inner.push(tokens.next().unwrap().as_ref().as_identifier().unwrap().clone());
+        inner.push(
+            tokens
+                .next()
+                .unwrap()
+                .as_ref()
+                .as_identifier()
+                .unwrap()
+                .clone(),
+        );
         while let Some(tkn) = tokens.peek() {
             // continue on commas
             if tkn.as_ref().check_delimiter(&Delimiter::Comma) == true {
                 tokens.next();
             // collect more identifiers
             } else if tkn.as_ref().as_identifier().is_some() {
-                inner.push(tokens.next().unwrap().as_ref().as_identifier().unwrap().clone());
+                inner.push(
+                    tokens
+                        .next()
+                        .unwrap()
+                        .as_ref()
+                        .as_identifier()
+                        .unwrap()
+                        .clone(),
+                );
             // break on non-identifier or comma
             } else {
                 break;
@@ -120,11 +145,15 @@ struct SubtypeIndication(Vec<VHDLToken>);
 
 impl SubtypeIndication {
     fn from_tokens<I>(tokens: &mut Peekable<I>) -> Self
-    where I: Iterator<Item=lexer::Token<VHDLToken>> {
+    where
+        I: Iterator<Item = lexer::Token<VHDLToken>>,
+    {
         let mut inner = Vec::new();
         while let Some(tkn) = tokens.peek() {
             // exit case: encounter 'bus' or ':=' delimiter
-            if tkn.as_ref().check_keyword(&Keyword::Bus) || tkn.as_ref().check_delimiter(&Delimiter::VarAssign) {
+            if tkn.as_ref().check_keyword(&Keyword::Bus)
+                || tkn.as_ref().check_delimiter(&Delimiter::VarAssign)
+            {
                 break;
             } else {
                 inner.push(tokens.next().unwrap().take());
@@ -139,7 +168,9 @@ struct StaticExpression(Vec<VHDLToken>);
 
 impl StaticExpression {
     fn from_tokens<I>(tokens: &mut Peekable<I>) -> Self
-    where I: Iterator<Item=lexer::Token<VHDLToken>> {
+    where
+        I: Iterator<Item = lexer::Token<VHDLToken>>,
+    {
         // take remanining tokens
         Self(tokens.map(|f| f.take()).collect())
     }
@@ -171,11 +202,11 @@ impl Ports {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.0.0.is_empty()
+        self.0 .0.is_empty()
     }
 
     pub fn len(&self) -> usize {
-        self.0.0.len()
+        self.0 .0.len()
     }
 }
 
@@ -198,19 +229,19 @@ pub struct InterfaceDeclaration {
 fn tokens_to_string(tokens: &Vec<VHDLToken>) -> ColorVec {
     let mut result = ColorVec::new();
     // determine which delimiters to not add trailing spaces to
-    let is_spaced_token = |d: &Delimiter| {
-        match d {
-            Delimiter::ParenL | Delimiter::ParenR |
-            Delimiter::Dash | Delimiter::Plus | Delimiter::Star | Delimiter::FwdSlash => false,
-            _ => true,
-        }
+    let is_spaced_token = |d: &Delimiter| match d {
+        Delimiter::ParenL
+        | Delimiter::ParenR
+        | Delimiter::Dash
+        | Delimiter::Plus
+        | Delimiter::Star
+        | Delimiter::FwdSlash => false,
+        _ => true,
     };
     // determine which delimiters to not add have whitespace preceed
-    let no_preceeding_whitespace = |d: &Delimiter| {
-        match d {
-            Delimiter::Comma => true,
-            _ => false,
-        }
+    let no_preceeding_whitespace = |d: &Delimiter| match d {
+        Delimiter::Comma => true,
+        _ => false,
     };
     // iterate through the tokens
     let mut iter = tokens.iter().peekable();
@@ -223,7 +254,7 @@ fn tokens_to_string(tokens: &Vec<VHDLToken>) -> ColorVec {
                 if let Some(m) = iter.peek() {
                     match m {
                         VHDLToken::Delimiter(d) => is_spaced_token(d),
-                        _ => true
+                        _ => true,
                     }
                 } else {
                     true
@@ -234,7 +265,9 @@ fn tokens_to_string(tokens: &Vec<VHDLToken>) -> ColorVec {
         if trailing_space == true && iter.peek().is_some() {
             if let Some(d) = iter.peek().unwrap().as_delimiter() {
                 // skip whitespace addition
-                if no_preceeding_whitespace(d) == true { continue }
+                if no_preceeding_whitespace(d) == true {
+                    continue;
+                }
             }
             result.push_str(" ");
         }
@@ -248,15 +281,18 @@ impl InterfaceDeclaration {
         // identifier
         result.push_color(self.identifier.to_color());
         // whitespace
-        result.push_whitespace(offset-self.identifier.len()+1);
+        result.push_whitespace(offset - self.identifier.len() + 1);
         // colon
         result.push_color(Delimiter::Colon.to_color());
         result.push_str(" ");
         // port direction
-        if self.mode.is_none() && self.initial_keyword.is_some() && self.initial_keyword.as_ref().unwrap() == &Keyword::Signal { 
+        if self.mode.is_none()
+            && self.initial_keyword.is_some()
+            && self.initial_keyword.as_ref().unwrap() == &Keyword::Signal
+        {
             result.push_color(Keyword::In.to_color());
             result.push_str(" ");
-        } else if self.mode.is_some() { 
+        } else if self.mode.is_some() {
             result.push_color(self.mode.as_ref().unwrap().to_color());
             result.push_str(" ");
         }
@@ -265,26 +301,31 @@ impl InterfaceDeclaration {
         // optional bus keyword
         if self.bus_present == true {
             result.push_str(" ");
-            result.push_color(Keyword::Bus.to_color() ) 
+            result.push_color(Keyword::Bus.to_color())
         }
         // rhs initial assignment
         if self.expr.is_some() == true {
             result.push_str(" ");
-            result.append(self.expr.as_ref().unwrap().to_color_vec()) 
+            result.append(self.expr.as_ref().unwrap().to_color_vec())
         }
-        return result
+        return result;
     }
 
     /// Creates a declaration string to be copied into architecture declaration parts.
-    /// 
+    ///
     /// Note: `offset` is used for padding after the identifier string and before ':'.
     fn into_declaration_string(&self, def_keyword: &Keyword, offset: usize) -> ColorVec {
         let mut result = ColorVec::new();
 
-        result.push_color(self.initial_keyword.as_ref().unwrap_or(def_keyword).to_color());
+        result.push_color(
+            self.initial_keyword
+                .as_ref()
+                .unwrap_or(def_keyword)
+                .to_color(),
+        );
         result.push_str(" ");
         result.push_color(color(&self.identifier.to_string(), SIGNAL_DEC_IDENTIFIER));
-        result.push_whitespace(offset-self.identifier.len()+1);
+        result.push_whitespace(offset - self.identifier.len() + 1);
         result.push_color(Delimiter::Colon.to_color());
         result.push_str(" ");
         // data type
@@ -292,12 +333,12 @@ impl InterfaceDeclaration {
         // optional bus keyword
         if self.bus_present == true {
             result.push_str(" ");
-            result.push_color(Keyword::Bus.to_color() ) 
+            result.push_color(Keyword::Bus.to_color())
         }
         // rhs initial assignment
         if self.expr.is_some() == true {
             result.push_str(" ");
-            result.append(self.expr.as_ref().unwrap().to_color_vec()) 
+            result.append(self.expr.as_ref().unwrap().to_color_vec())
         }
         result
     }
@@ -307,7 +348,7 @@ impl InterfaceDeclaration {
         let mut result = ColorVec::new();
 
         result.push_color(color(&self.identifier.to_string(), INSTANCE_LHS_IDENTIFIER));
-        result.push_whitespace(offset-self.identifier.len()+1);
+        result.push_whitespace(offset - self.identifier.len() + 1);
         result.push_color(Delimiter::Arrow.to_color());
         result.push_str(" ");
         result.push_color(self.identifier.to_color());
@@ -329,7 +370,8 @@ impl InterfaceDeclarations {
 
     /// Determines the length of the longest identifier.
     pub fn longest_identifier(&self) -> usize {
-        let longest = self.0
+        let longest = self
+            .0
             .iter()
             .max_by(|x, y| x.identifier.len().cmp(&y.identifier.len()));
         match longest {
@@ -352,7 +394,9 @@ impl InterfaceDeclarations {
 
     /// Parses VHDL tokens into a series of `Interface` structs.
     pub fn from_tokens<I>(tokens: &mut Peekable<I>) -> Option<Self>
-    where I: Iterator<Item=lexer::Token<VHDLToken>> {
+    where
+        I: Iterator<Item = lexer::Token<VHDLToken>>,
+    {
         // check if optional 'signal'/'constant'/'file'? keyword is present
         let token = tokens.peek()?;
         let initial_keyword = if token.as_ref().as_keyword().is_some() {
@@ -364,22 +408,27 @@ impl InterfaceDeclarations {
         let identifiers = IdentifierList::from_tokens(tokens);
         // skip past ':' delimiter
         if tokens.next()?.as_ref().check_delimiter(&Delimiter::Colon) == false {
-            return None
+            return None;
         }
         // check if a mode exists
         let token = tokens.peek()?;
         let mode = if let Some(kw) = token.as_type().as_keyword() {
             match kw {
-                Keyword::In | Keyword::Out | Keyword::Buffer 
-                | Keyword::Linkage | Keyword::Inout => {
-                    true
-                }
+                Keyword::In
+                | Keyword::Out
+                | Keyword::Buffer
+                | Keyword::Linkage
+                | Keyword::Inout => true,
                 _ => false,
             }
         } else {
             false
         };
-        let mode = if mode { Some(tokens.next().unwrap().take().take_keyword().unwrap()) } else { None };
+        let mode = if mode {
+            Some(tokens.next().unwrap().take().take_keyword().unwrap())
+        } else {
+            None
+        };
         // collect the datatype
         let subtype = SubtypeIndication::from_tokens(tokens);
 
@@ -390,7 +439,9 @@ impl InterfaceDeclarations {
         } else {
             false
         };
-        if bus_present == true { tokens.next(); }
+        if bus_present == true {
+            tokens.next();
+        }
 
         // check if an expression exists
         let token = tokens.next();
@@ -480,7 +531,6 @@ impl InterfaceDeclarations {
         result
     }
 }
-
 
 #[cfg(test)]
 mod test {

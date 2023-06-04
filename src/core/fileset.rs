@@ -1,24 +1,27 @@
-use std::str::FromStr;
 use glob::{Pattern, PatternError};
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::str::FromStr;
 
 pub struct Filesets(Vec<Fileset>);
 
 impl From<HashMap<String, Style>> for Filesets {
     fn from(value: HashMap<String, Style>) -> Self {
-        Self(value.into_iter().map(|(n, p)| {
-            Fileset {
-                name: n,
-                pattern: p,
-            }
-        }).collect())
+        Self(
+            value
+                .into_iter()
+                .map(|(n, p)| Fileset {
+                    name: n,
+                    pattern: p,
+                })
+                .collect(),
+        )
     }
 }
 
 impl Filesets {
     // pub fn inner(&self) -> &Vec<Fileset> {
-        
+
     // }
 }
 
@@ -43,7 +46,6 @@ impl From<Pattern> for Style {
     }
 }
 
-
 impl FromStr for Style {
     type Err = PatternError;
 
@@ -52,14 +54,15 @@ impl FromStr for Style {
     }
 }
 
-use serde::{Deserialize, Serialize};
-use serde::Serializer;
 use serde::de::{self};
+use serde::Serializer;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 impl<'de> Deserialize<'de> for Style {
     fn deserialize<D>(deserializer: D) -> Result<Style, D::Error>
-        where D: de::Deserializer<'de>
+    where
+        D: de::Deserializer<'de>,
     {
         struct LayerVisitor;
 
@@ -71,12 +74,12 @@ impl<'de> Deserialize<'de> for Style {
             }
 
             fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-                where
-                    E: de::Error, {
-                
+            where
+                E: de::Error,
+            {
                 match Style::from_str(v) {
                     Ok(v) => Ok(v),
-                    Err(e) => Err(de::Error::custom(e))
+                    Err(e) => Err(de::Error::custom(e)),
                 }
             }
         }
@@ -127,17 +130,19 @@ impl FromStr for Fileset {
         let (name, pattern) = result.unwrap();
         // name cannot be empty
         if name.is_empty() {
-            return Err(Self::Err::EmptyName)
+            return Err(Self::Err::EmptyName);
         }
         Ok(Fileset {
             pattern: match Pattern::new(pattern) {
                 // pattern must not be empty
-                Ok(p) => if p.as_str().is_empty() {
-                    return Err(Self::Err::EmptyPattern)
-                } else {
-                    p.into()
-                },
-                Err(e) => return Err(Self::Err::PatternError(pattern.to_string(), e))
+                Ok(p) => {
+                    if p.as_str().is_empty() {
+                        return Err(Self::Err::EmptyPattern);
+                    } else {
+                        p.into()
+                    }
+                }
+                Err(e) => return Err(Self::Err::PatternError(pattern.to_string(), e)),
             },
             name: Self::standardize_name(name),
         })
@@ -160,13 +165,13 @@ impl Fileset {
     }
 
     /// Set the `Fileset` glob-style pattern.
-    pub fn pattern(mut self, p: &str) -> Result<Self, PatternError>{
+    pub fn pattern(mut self, p: &str) -> Result<Self, PatternError> {
         self.pattern = Pattern::new(&("**/".to_owned() + p))?.into();
         Ok(self)
     }
 
     /// Standardizes the name to be UPPER-AND-HYPHENS.
-    /// 
+    ///
     /// The returned string is its own data (cloned from `s`).
     pub fn standardize_name(s: &str) -> String {
         s.to_uppercase().replace('_', "-")
@@ -180,13 +185,16 @@ impl Fileset {
             require_literal_leading_dot: false,
         };
 
-        files.iter().filter_map(|f| {
-            if self.pattern.inner().matches_with(&f, match_opts) == true {
-                Some(f)
-            } else {
-                None
-            }
-        }).collect()
+        files
+            .iter()
+            .filter_map(|f| {
+                if self.pattern.inner().matches_with(&f, match_opts) == true {
+                    Some(f)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     /// Access name.
@@ -200,7 +208,7 @@ impl Fileset {
     }
 
     /// Creates format for blueprint.tsv file.
-    /// 
+    ///
     /// The format goes FILESET_NAME\tFILE_NAME\tFILE_PATH
     pub fn to_blueprint_string(&self, file: &str) -> String {
         let filename = {
@@ -213,7 +221,7 @@ impl Fileset {
             // removes file extenstion
             match filenode.rsplit_once('.') {
                 Some((name, _)) => name,
-                None => filenode
+                None => filenode,
             }
         };
         format!("{}\t{}\t{}\n", self.name, filename, file)
@@ -223,8 +231,8 @@ impl Fileset {
 /// Checks if the `file` is a VHDL file (ending with .vhd or .vhdl).
 pub fn is_vhdl(file: &str) -> bool {
     if let Some((_, ending)) = file.rsplit_once('.') {
-        crate::util::strcmp::cmp_ascii_ignore_case(ending, "vhd") ||
-        crate::util::strcmp::cmp_ascii_ignore_case(ending, "vhdl")
+        crate::util::strcmp::cmp_ascii_ignore_case(ending, "vhd")
+            || crate::util::strcmp::cmp_ascii_ignore_case(ending, "vhdl")
     } else {
         false
     }
@@ -244,8 +252,9 @@ pub fn is_rtl(file: &str) -> bool {
     let tb1 = Pattern::new("tb_*").unwrap();
     let tb2 = Pattern::new("*_tb.*").unwrap();
 
-    (p1.matches_with(file, match_opts) == true || p2.matches_with(file, match_opts) == true) && 
-        tb1.matches_with(file, match_opts) == false && tb2.matches_with(file, match_opts) == false
+    (p1.matches_with(file, match_opts) == true || p2.matches_with(file, match_opts) == true)
+        && tb1.matches_with(file, match_opts) == false
+        && tb2.matches_with(file, match_opts) == false
 }
 
 #[cfg(test)]
@@ -256,10 +265,16 @@ mod test {
     fn to_blueprint_string() {
         let fset = Fileset::new().name("vhdl").pattern("*.sv").unwrap();
         let filepath = "c:/users/chase/develop/project/adder.sv";
-        assert_eq!(fset.to_blueprint_string(&filepath), format!("VHDL\tadder\t{}\n", filepath));
+        assert_eq!(
+            fset.to_blueprint_string(&filepath),
+            format!("VHDL\tadder\t{}\n", filepath)
+        );
 
         let filepath = "FILE2.sv";
-        assert_eq!(fset.to_blueprint_string(&filepath), format!("VHDL\tFILE2\t{}\n", filepath));
+        assert_eq!(
+            fset.to_blueprint_string(&filepath),
+            format!("VHDL\tFILE2\t{}\n", filepath)
+        );
     }
 
     #[test]
@@ -290,10 +305,13 @@ mod test {
     fn fset_from_str() {
         let s = "xsim-cfg=*.wcfg";
         let fset = Fileset::from_str(s);
-        assert_eq!(fset.unwrap(), Fileset {
-            name: "XSIM-CFG".to_string(),
-            pattern: Pattern::new("*.wcfg").unwrap().into()
-        });
+        assert_eq!(
+            fset.unwrap(),
+            Fileset {
+                name: "XSIM-CFG".to_string(),
+                pattern: Pattern::new("*.wcfg").unwrap().into()
+            }
+        );
 
         let s = "xsim-cfg=";
         let fset = Fileset::from_str(s);

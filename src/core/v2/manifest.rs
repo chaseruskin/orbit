@@ -1,18 +1,18 @@
 #![allow(dead_code)]
 
-use serde_derive::{Deserialize, Serialize};
-use std::{collections::HashMap, str::FromStr};
-use std::path::PathBuf;
-use std::fmt::Display;
 use crate::core::pkgid::PkgPart;
-use std::error::Error;
 use crate::core::v2::source::Source;
+use serde_derive::{Deserialize, Serialize};
+use std::error::Error;
+use std::fmt::Display;
+use std::path::PathBuf;
+use std::{collections::HashMap, str::FromStr};
 
 pub type Id = PkgPart;
 pub type Version = crate::core::version::Version;
 
 use crate::core::v2::ip::IpSpec;
-use crate::util::anyerror::{Fault, AnyError};
+use crate::util::anyerror::{AnyError, Fault};
 
 type Dependencies = HashMap<Id, Version>;
 
@@ -32,7 +32,11 @@ pub struct Manifest {
     dev_dependencies: Dependencies,
 }
 
-pub trait FromFile: FromStr where Self: Sized, <Self as std::str::FromStr>::Err: 'static + Error {
+pub trait FromFile: FromStr
+where
+    Self: Sized,
+    <Self as std::str::FromStr>::Err: 'static + Error,
+{
     fn from_file(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
         // try to open the file in read-only mode
         let text = std::fs::read_to_string(&path)?;
@@ -41,7 +45,6 @@ pub trait FromFile: FromStr where Self: Sized, <Self as std::str::FromStr>::Err:
 }
 
 impl FromFile for Manifest {
-
     fn from_file(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
         // open file
         let contents = std::fs::read_to_string(&path)?;
@@ -50,12 +53,18 @@ impl FromFile for Manifest {
             Ok(r) => r,
             // enter a blank lock file if failed (do not exit)
             Err(e) => {
-                return Err(AnyError(format!("failed to parse {} file: {}", IP_MANIFEST_FILE, e)))?
+                return Err(AnyError(format!(
+                    "failed to parse {} file: {}",
+                    IP_MANIFEST_FILE, e
+                )))?
             }
         };
         // verify there are no duplicate entries between tables
         if let Some(e) = man.is_deps_valid().err() {
-            return Err(AnyError(format!("failed to parse {} file: {}", IP_MANIFEST_FILE, e)))?
+            return Err(AnyError(format!(
+                "failed to parse {} file: {}",
+                IP_MANIFEST_FILE, e
+            )))?;
         }
         Ok(man)
     }
@@ -88,14 +97,17 @@ impl Manifest {
 
     /// Composes a [String] to write to a clean manifest file.
     pub fn write_empty_manifest(name: &Id) -> String {
-        format!(r#"[ip]
+        format!(
+            r#"[ip]
 name = "{}"
 version = "0.1.0"
 
 # See more keys and their definitions at https://c-rus.github.io/orbit/4_topic/2_orbittoml.html
 
 [dependencies]
-"#, name)
+"#,
+            name
+        )
     }
 
     pub fn get_ip(&self) -> &Package {
@@ -115,10 +127,13 @@ version = "0.1.0"
     pub fn is_deps_valid(&self) -> Result<(), AnyError> {
         for (key, _) in &self.dependencies {
             if let Some(_) = self.dev_dependencies.get(key) {
-                return Err(AnyError(format!("duplicate key '{}' in [dependencies] and [dev-dependencies]", key)));
-                // println!("{}: Dependency {} is used instead of dev-dependency {}", 
-                //     "warning".yellow().bold(), 
-                //     IpSpec::from((key.clone(), val.clone())), 
+                return Err(AnyError(format!(
+                    "duplicate key '{}' in [dependencies] and [dev-dependencies]",
+                    key
+                )));
+                // println!("{}: Dependency {} is used instead of dev-dependency {}",
+                //     "warning".yellow().bold(),
+                //     IpSpec::from((key.clone(), val.clone())),
                 //     IpSpec::from((key.clone(), rep.clone())),
                 // )
             }
@@ -130,11 +145,15 @@ version = "0.1.0"
     /// "dev-dependencies".
     pub fn get_deps_list(&self, include_dev: bool) -> Vec<(&PkgPart, &Version)> {
         let mut result = Vec::with_capacity(
-            self.dependencies.len() + match include_dev { 
-                true => self.dev_dependencies.len(), 
-                false => 0 
-            });
-        if include_dev == true { result.extend(self.dev_dependencies.iter()); }
+            self.dependencies.len()
+                + match include_dev {
+                    true => self.dev_dependencies.len(),
+                    false => 0,
+                },
+        );
+        if include_dev == true {
+            result.extend(self.dev_dependencies.iter());
+        }
         result.extend(self.dependencies.iter());
         result
     }
@@ -190,10 +209,10 @@ impl Package {
 
 /// Takes an iterative approach to iterating through directories to find a file
 /// matching `name`.
-/// 
+///
 /// Note: `name` is become a glob-style pattern.
-/// 
-/// Stops descending the directories upon finding first match of `name`. 
+///
+/// Stops descending the directories upon finding first match of `name`.
 /// The match must be case-sensitive. If `is_exclusive` is `false`, then the directory
 /// with match will continued to be searched at that level and then re-track.
 pub fn find_file(path: &PathBuf, name: &str, is_exclusive: bool) -> Result<Vec<PathBuf>, Fault> {
@@ -207,7 +226,7 @@ pub fn find_file(path: &PathBuf, name: &str, is_exclusive: bool) -> Result<Vec<P
         to_process.push(path.to_path_buf());
     // only look at file and exit
     } else if path.is_file() && pattern.matches(path.file_name().unwrap().to_str().unwrap()) {
-        return Ok(vec![path.to_path_buf()])
+        return Ok(vec![path.to_path_buf()]);
     }
     // process next directory to read
     while let Some(entry) = to_process.pop() {
@@ -247,7 +266,7 @@ mod test {
         #[test]
         fn ut_minimal() {
             let man: Manifest = toml::from_str(EX2).unwrap();
-    
+
             assert_eq!(man.ip.name, PkgPart::from_str("Lab1").unwrap());
             assert_eq!(man.ip.version, Version::new().major(1));
             assert_eq!(man.ip.get_source(), None);
@@ -258,9 +277,17 @@ mod test {
         #[test]
         fn ut_complex() {
             let man: Manifest = toml::from_str(EX1).unwrap();
-    
+
             assert_eq!(man.ip.name, PkgPart::from_str("gates").unwrap());
-            assert_eq!(man.ip.get_source(), Some(&Source::from_str("https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip").unwrap()));
+            assert_eq!(
+                man.ip.get_source(),
+                Some(
+                    &Source::from_str(
+                        "https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip"
+                    )
+                    .unwrap()
+                )
+            );
             assert_eq!(man.dependencies.len(), 1);
             assert_eq!(man.dev_dependencies.len(), 2);
             assert_eq!(man.ip.library, Some(PkgPart::from_str("common").unwrap()));
@@ -285,32 +312,66 @@ mod test {
         fn ut_complex_source() {
             let man: Manifest = match toml::from_str(EX4) {
                 Ok(m) => m,
-                Err(e) => panic!("{}", e.to_string())
+                Err(e) => panic!("{}", e.to_string()),
             };
 
             println!("{}", toml::to_string(&man).unwrap());
 
             assert_eq!(man.ip.get_source().is_some(), true);
-            assert_eq!(man.ip.get_source().as_ref().unwrap().get_url(), "https://some.url");
-            assert_eq!(man.ip.get_source().as_ref().unwrap().get_protocol().as_ref().unwrap(), "ktsp");
+            assert_eq!(
+                man.ip.get_source().as_ref().unwrap().get_url(),
+                "https://some.url"
+            );
+            assert_eq!(
+                man.ip
+                    .get_source()
+                    .as_ref()
+                    .unwrap()
+                    .get_protocol()
+                    .as_ref()
+                    .unwrap(),
+                "ktsp"
+            );
 
             let man: Manifest = match toml::from_str(EX5) {
                 Ok(m) => m,
-                Err(e) => panic!("{}", e.to_string())
+                Err(e) => panic!("{}", e.to_string()),
             };
 
             assert_eq!(man.ip.get_source().is_some(), true);
-            assert_eq!(man.ip.get_source().as_ref().unwrap().get_url(), "https://some.url");
-            assert_eq!(man.ip.get_source().as_ref().unwrap().get_protocol().as_ref(), None);
+            assert_eq!(
+                man.ip.get_source().as_ref().unwrap().get_url(),
+                "https://some.url"
+            );
+            assert_eq!(
+                man.ip
+                    .get_source()
+                    .as_ref()
+                    .unwrap()
+                    .get_protocol()
+                    .as_ref(),
+                None
+            );
 
             let man: Manifest = match toml::from_str(EX6) {
                 Ok(m) => m,
-                Err(e) => panic!("{}", e.to_string())
+                Err(e) => panic!("{}", e.to_string()),
             };
-            
+
             assert_eq!(man.ip.get_source().is_some(), true);
-            assert_eq!(man.ip.get_source().as_ref().unwrap().get_url(), "https://some.url");
-            assert_eq!(man.ip.get_source().as_ref().unwrap().get_protocol().as_ref(), None);    
+            assert_eq!(
+                man.ip.get_source().as_ref().unwrap().get_url(),
+                "https://some.url"
+            );
+            assert_eq!(
+                man.ip
+                    .get_source()
+                    .as_ref()
+                    .unwrap()
+                    .get_protocol()
+                    .as_ref(),
+                None
+            );
         }
 
         #[test]
@@ -319,12 +380,11 @@ mod test {
             // missing required key "url"
             let _man: Manifest = match toml::from_str(EX7) {
                 Ok(m) => m,
-                Err(e) => panic!("{}", e.to_string())
+                Err(e) => panic!("{}", e.to_string()),
             };
         }
     }
 }
-
 
 const EX1: &str = r#"[ip]
 name = "gates"

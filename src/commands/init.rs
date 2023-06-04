@@ -1,18 +1,18 @@
-use clif::cmd::{FromCli, Command};
-use clif::Cli;
-use clif::arg::{Optional, Flag};
-use clif::Error as CliError;
-use crate::core::context::Context;
-use crate::util::anyerror::AnyError;
-use crate::core::pkgid::PkgPart;
-use crate::OrbitResult;
-use crate::util::filesystem::Standardize;
-use std::path::PathBuf;
-use std::io::Write;
-use crate::core::v2::manifest::Manifest;
-use crate::commands::orbit::AnyResult;
 use super::new::New;
+use crate::commands::orbit::AnyResult;
+use crate::core::context::Context;
+use crate::core::pkgid::PkgPart;
+use crate::core::v2::manifest::Manifest;
+use crate::util::anyerror::AnyError;
 use crate::util::filesystem;
+use crate::util::filesystem::Standardize;
+use crate::OrbitResult;
+use clif::arg::{Flag, Optional};
+use clif::cmd::{Command, FromCli};
+use clif::Cli;
+use clif::Error as CliError;
+use std::io::Write;
+use std::path::PathBuf;
 
 #[derive(Debug, PartialEq)]
 pub struct Init {
@@ -22,11 +22,13 @@ pub struct Init {
 }
 
 impl FromCli for Init {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Self {
             force: cli.check_flag(Flag::new("force"))?,
-            path: cli.check_option(Optional::new("path"))?.unwrap_or(PathBuf::from(".")),
+            path: cli
+                .check_option(Optional::new("path"))?
+                .unwrap_or(PathBuf::from(".")),
             name: cli.check_option(Optional::new("ip"))?,
         });
         command
@@ -45,7 +47,6 @@ impl Command<Context> for Init {
         let dest = filesystem::full_normal(&self.path);
         // verify we are not already in an ip directory
         {
-
             if let Some(p) = Context::find_ip_path(&dest) {
                 // @todo: write error
                 panic!("an ip already exists at path {:?}", p)
@@ -59,12 +60,14 @@ impl Command<Context> for Init {
 }
 
 impl Init {
-
     /// Initializes a project at an exising path.
     fn create_ip(&self, ip: &PkgPart) -> AnyResult<()> {
         // verify the directory already exists
         if self.path.is_dir() == false || self.path.exists() == false {
-            return Err(Box::new(AnyError(format!("the path {:?} is not an already existing directory", PathBuf::standardize(self.path.clone())))));
+            return Err(Box::new(AnyError(format!(
+                "the path {:?} is not an already existing directory",
+                PathBuf::standardize(self.path.clone())
+            ))));
         }
 
         // create the file directly nested within the destination path
@@ -78,7 +81,6 @@ impl Init {
         manifest.write_all(Manifest::write_empty_manifest(&ip).as_bytes())?;
         Ok(())
     }
-
 }
 
 const HELP: &str = "\

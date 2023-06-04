@@ -1,22 +1,22 @@
 use std::io::BufReader;
-use std::io::Write;
 use std::io::Read as ReadTrait;
+use std::io::Write;
 use std::path::PathBuf;
 
-use clif::cmd::{FromCli, Command};
-use crate::OrbitResult;
-use crate::core::v2::catalog::Catalog;
+use crate::core::context::Context;
 use crate::core::lang::lexer::Position;
+use crate::core::lang::vhdl::token::Identifier;
+use crate::core::v2::catalog::Catalog;
 use crate::core::v2::ip::Ip;
 use crate::core::v2::ip::PartialIpSpec;
-use crate::core::lang::vhdl::token::Identifier;
-use clif::Cli;
-use clif::arg::{Flag, Positional, Optional};
-use clif::Error as CliError;
-use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::sha256;
+use crate::OrbitResult;
+use clif::arg::{Flag, Optional, Positional};
+use clif::cmd::{Command, FromCli};
+use clif::Cli;
+use clif::Error as CliError;
 
 use super::get::GetError;
 use std::fs;
@@ -31,7 +31,7 @@ pub struct Read {
 }
 
 impl FromCli for Read {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Read {
             ip: cli.check_option(Optional::new("ip").value("spec"))?,
@@ -48,10 +48,9 @@ impl Command<Context> for Read {
     type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
-
         // determine the destination
         let dest: PathBuf = c.get_home_path().join(TMP_DIR);
-        
+
         // attempt to clean the tmp directory when --keep is disabled
         if dest.exists() == true && self.keep == false {
             // do not error if this procedure fails
@@ -70,18 +69,17 @@ impl Command<Context> for Read {
         // checking external IP
         if let Some(tg) = &self.ip {
             // gather the catalog (all manifests)
-            let catalog = Catalog::new()
-                .installations(c.get_cache_path())?;
+            let catalog = Catalog::new().installations(c.get_cache_path())?;
 
             // access the requested ip
             match catalog.inner().get(&tg.get_name()) {
                 Some(lvl) => {
                     let inst = match lvl.get_install(tg.get_version()) {
                         Some(i) => i,
-                        None => panic!("version does not exist for this ip")
+                        None => panic!("version does not exist for this ip"),
                     };
                     self.run(inst, dest.as_ref())
-                },
+                }
                 None => {
                     // the ip does not exist
                     todo!()
@@ -90,52 +88,78 @@ impl Command<Context> for Read {
         // must be in an IP if omitting the pkgid
         } else {
             let ip = match c.get_ip_path() {
-                Some(p) => { Ip::load(p.to_path_buf())? },
-                None => return Err(AnyError(format!("Not within an existing ip")))?
+                Some(p) => Ip::load(p.to_path_buf())?,
+                None => return Err(AnyError(format!("Not within an existing ip")))?,
             };
 
-            self.run(&ip, dest.as_ref()) 
+            self.run(&ip, dest.as_ref())
         }
     }
 }
 
 impl Read {
-
     fn run(&self, target: &Ip, dest: Option<&PathBuf>) -> Result<(), Fault> {
         let (path, loc) = Self::read(&self.unit, &target, dest)?;
 
-        let path = { if self.location == true { PathBuf::from({ let mut p = path.as_os_str().to_os_string(); p.push(&loc.to_string()); p }) } else { path }};
+        let path = {
+            if self.location == true {
+                PathBuf::from({
+                    let mut p = path.as_os_str().to_os_string();
+                    p.push(&loc.to_string());
+                    p
+                })
+            } else {
+                path
+            }
+        };
 
         // dump the file contents of the source code to the console if there was no destination
         let print_to_console = dest.is_none();
 
-        println!("{}", match print_to_console {
-            // display the contents
-            true => fs::read_to_string(&path)?,
-            // display the file path
-            false => path.display().to_string(),
-        });
+        println!(
+            "{}",
+            match print_to_console {
+                // display the contents
+                true => fs::read_to_string(&path)?,
+                // display the file path
+                false => path.display().to_string(),
+            }
+        );
         Ok(())
     }
 
     /// Finds the filepath and file position for the provided primary design unit `unit`
     /// under the project `ip`.
-    /// 
+    ///
     /// If `dest` contains a value, it will create a new directory at `dest` and copy
     /// the file to be read-only. If it is set to `None`, then it will open the
-    /// file it is referencing (no copy). 
-    fn read(unit: &Identifier, ip: &Ip, dest: Option<&PathBuf>) -> Result<(PathBuf, Position), Fault> {
+    /// file it is referencing (no copy).
+    fn read(
+        unit: &Identifier,
+        ip: &Ip,
+        dest: Option<&PathBuf>,
+    ) -> Result<(PathBuf, Position), Fault> {
         // find the unit
         let units = Ip::collect_units(true, ip.get_root())?;
 
         // get the file data for the primary design unit
         let (source, position) = match units.get_key_value(unit) {
-            Some((_, unit)) => (unit.get_unit().get_source_code_file(), unit.get_unit().get_symbol().unwrap().get_position().clone()),
-            None => return Err(GetError::SuggestShow(
-                GetError::EntityNotFound(unit.clone(), ip.get_man().get_ip().get_name().clone(), ip.get_man().get_ip().get_version().clone()).to_string(), 
-                ip.get_man().get_ip().get_name().clone(), 
-                ip.get_man().get_ip().get_version().clone(),
-            ))?
+            Some((_, unit)) => (
+                unit.get_unit().get_source_code_file(),
+                unit.get_unit().get_symbol().unwrap().get_position().clone(),
+            ),
+            None => {
+                return Err(GetError::SuggestShow(
+                    GetError::EntityNotFound(
+                        unit.clone(),
+                        ip.get_man().get_ip().get_name().clone(),
+                        ip.get_man().get_ip().get_version().clone(),
+                    )
+                    .to_string(),
+                    ip.get_man().get_ip().get_name().clone(),
+                    ip.get_man().get_ip().get_version().clone(),
+                ))?
+            }
         };
 
         let (checksum, bytes) = {
@@ -176,7 +200,7 @@ impl Read {
                     file.set_permissions(perms)?;
                 }
                 Ok((dest, position))
-            },
+            }
         }
     }
 }

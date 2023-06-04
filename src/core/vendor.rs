@@ -1,7 +1,16 @@
-use crate::{core::manifest::Manifest, util::{anyerror::{Fault, AnyError}, filesystem::{Standardize, self}}};
-use std::{path::PathBuf, str::FromStr};
-use super::{pkgid::PkgPart, config::FromToml, manifest::IpManifest, version::Version, hook::Hook, variable::{VariableTable}, template};
+use super::{
+    config::FromToml, hook::Hook, manifest::IpManifest, pkgid::PkgPart, template,
+    variable::VariableTable, version::Version,
+};
+use crate::{
+    core::manifest::Manifest,
+    util::{
+        anyerror::{AnyError, Fault},
+        filesystem::{self, Standardize},
+    },
+};
 use std::io::Write;
+use std::{path::PathBuf, str::FromStr};
 
 #[derive(Debug, PartialEq)]
 pub struct VendorToml {
@@ -11,17 +20,27 @@ pub struct VendorToml {
 
 impl VendorToml {
     fn new() -> Self {
-        Self { vendor: Vendor::new(), hooks: HookTable::new() }
+        Self {
+            vendor: Vendor::new(),
+            hooks: HookTable::new(),
+        }
     }
 }
 
 impl FromToml for VendorToml {
     type Err = Fault;
 
-    fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err> where Self: Sized {
+    fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err>
+    where
+        Self: Sized,
+    {
         Ok(Self {
             vendor: Vendor::from_toml(table.get("vendor").unwrap().as_table().unwrap())?,
-            hooks: if let Some(tbl) = table.get("hook") { HookTable::from_toml(tbl.as_table().unwrap())? } else { HookTable::new() },
+            hooks: if let Some(tbl) = table.get("hook") {
+                HookTable::from_toml(tbl.as_table().unwrap())?
+            } else {
+                HookTable::new()
+            },
         })
     }
 }
@@ -34,13 +53,19 @@ pub struct HookTable {
 
 impl HookTable {
     pub fn new() -> Self {
-        Self { pre_publish: None, post_publish: None }
+        Self {
+            pre_publish: None,
+            post_publish: None,
+        }
     }
 }
 
 impl FromToml for HookTable {
     type Err = Fault;
-    fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err> where Self: Sized {
+    fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err>
+    where
+        Self: Sized,
+    {
         Ok(Self {
             pre_publish: Self::get(&table, "pre-publish")?,
             post_publish: Self::get(&table, "post-publish")?,
@@ -57,13 +82,20 @@ pub struct Vendor {
 
 impl Vendor {
     pub fn new() -> Self {
-        Self { name: PkgPart::new(), summary: None, repository: None }
+        Self {
+            name: PkgPart::new(),
+            summary: None,
+            repository: None,
+        }
     }
 }
 
 impl FromToml for Vendor {
     type Err = Fault;
-    fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err> where Self: Sized {
+    fn from_toml(table: &toml_edit::Table) -> Result<Self, Self::Err>
+    where
+        Self: Sized,
+    {
         Ok(Self {
             name: Self::require(&table, "name")?,
             summary: Self::get(&table, "summary")?,
@@ -94,25 +126,37 @@ impl VendorManifest {
         &self.vendor.vendor.name
     }
 
-    /// Loads the manifest document from 
+    /// Loads the manifest document from
     pub fn from_path(file: &PathBuf) -> Result<Self, Fault> {
         // load the toml document
         let doc = Manifest::from_path(file.to_owned())?;
         Ok(Self {
-            vendor:Self::wrap_toml(&doc, VendorToml::from_toml(&doc.get_doc().as_table()))?,
+            vendor: Self::wrap_toml(&doc, VendorToml::from_toml(&doc.get_doc().as_table()))?,
             manifest: doc,
         })
     }
 
-    fn wrap_toml<T, E: std::fmt::Display>(m: &Manifest, r: Result<T, E>) -> Result<T, impl std::error::Error> {
+    fn wrap_toml<T, E: std::fmt::Display>(
+        m: &Manifest,
+        r: Result<T, E>,
+    ) -> Result<T, impl std::error::Error> {
         match r {
             Ok(t) => Ok(t),
-            Err(e) => Err(AnyError(format!("vendor {}: {}", PathBuf::standardize(m.get_path()).display(), e))),
+            Err(e) => Err(AnyError(format!(
+                "vendor {}: {}",
+                PathBuf::standardize(m.get_path()).display(),
+                e
+            ))),
         }
     }
 
     /// Copies the ip manifest into the vendor.
-    pub fn publish(&self, ip: &mut IpManifest, next: &Version, vtable: VariableTable) -> Result<(), Fault> {
+    pub fn publish(
+        &self,
+        ip: &mut IpManifest,
+        next: &Version,
+        vtable: VariableTable,
+    ) -> Result<(), Fault> {
         let cwd = std::env::current_dir()?;
         std::env::set_current_dir(self.get_root())?;
 
@@ -122,7 +166,8 @@ impl VendorManifest {
         let pkgid = ip.get_pkgid();
 
         // create intermediate directories
-        let pub_dir = self.get_root()
+        let pub_dir = self
+            .get_root()
             .join(pkgid.get_library().as_ref().unwrap())
             .join(pkgid.get_name());
         std::fs::create_dir_all(&pub_dir)?;
@@ -134,27 +179,38 @@ impl VendorManifest {
 
         // write contents to new file location
         {
-            let mut pub_file = std::fs::File::create(&pub_dir.join(format!("Orbit-{}.toml", next)))?;
+            let mut pub_file =
+                std::fs::File::create(&pub_dir.join(format!("Orbit-{}.toml", next)))?;
             pub_file.write(ip.get_manifest().get_doc().to_string().as_bytes())?;
         }
-        
+
         self.post_publish_hook(&vtable)?;
 
         std::env::set_current_dir(cwd)?;
         Ok(())
     }
 
-    fn get_hook(&self, hook: &Option<String>, vtable: &VariableTable) -> Result<Option<Hook>, Fault> {
+    fn get_hook(
+        &self,
+        hook: &Option<String>,
+        vtable: &VariableTable,
+    ) -> Result<Option<Hook>, Fault> {
         // check if the key is in manifest
-        let file = if let Some(h) = hook.as_ref() { h } else { return Ok(None) };
+        let file = if let Some(h) = hook.as_ref() {
+            h
+        } else {
+            return Ok(None);
+        };
         // check if file exists
         let r_path = PathBuf::from(filesystem::resolve_rel_path(&self.get_root(), file));
         let contents = std::fs::read_to_string(r_path)?;
         // perform variable replacement
-        Ok(Some(Hook::from_str(&template::substitute(contents, vtable)).unwrap()))
+        Ok(Some(
+            Hook::from_str(&template::substitute(contents, vtable)).unwrap(),
+        ))
     }
 
-    fn pre_publish_hook(&self, vtable: &VariableTable) -> Result<(), Fault>  {
+    fn pre_publish_hook(&self, vtable: &VariableTable) -> Result<(), Fault> {
         let hook = self.get_hook(&self.vendor.hooks.pre_publish, vtable)?;
         if let Some(h) = hook {
             h.execute()?;
@@ -162,7 +218,7 @@ impl VendorManifest {
         Ok(())
     }
 
-    fn post_publish_hook(&self, vtable: &VariableTable) -> Result<(), Fault>  {
+    fn post_publish_hook(&self, vtable: &VariableTable) -> Result<(), Fault> {
         let hook = self.get_hook(&self.vendor.hooks.post_publish, vtable)?;
         if let Some(h) = hook {
             h.execute()?;

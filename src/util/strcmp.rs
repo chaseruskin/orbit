@@ -1,28 +1,32 @@
 /// Compares to string references `s0` and `s1` with case conversion.
-/// 
+///
 /// Returns `true` if they are deemed equivalent without regarding case sensivity.
 pub fn cmp_ignore_case(s0: &str, s1: &str) -> bool {
-    if s0.len() != s1.len() { return false }
+    if s0.len() != s1.len() {
+        return false;
+    }
     let mut s0 = s0.chars();
     let mut s1 = s1.chars();
     while let Some(c) = s0.next() {
         if c.to_lowercase().cmp(s1.next().unwrap().to_lowercase()) != std::cmp::Ordering::Equal {
-            return false
+            return false;
         }
     }
     true
 }
 
 /// Compares to string references `s0` and `s1` with only ascii case conversion.
-/// 
+///
 /// Returns `true` if they are deemed equivalent without regarding ascii case sensivity.
 pub fn cmp_ascii_ignore_case(s0: &str, s1: &str) -> bool {
-    if s0.len() != s1.len() { return false }
+    if s0.len() != s1.len() {
+        return false;
+    }
     let mut s0 = s0.chars();
     let mut s1 = s1.chars();
     while let Some(c) = s0.next() {
         if c.to_ascii_lowercase() != s1.next().unwrap().to_ascii_lowercase() {
-            return false
+            return false;
         }
     }
     true
@@ -31,7 +35,7 @@ pub fn cmp_ascii_ignore_case(s0: &str, s1: &str) -> bool {
 #[cfg(test)]
 mod test {
     use super::*;
-    
+
     #[test]
     fn it_works() {
         let s0 = "ABC";

@@ -1,17 +1,17 @@
-use std::collections::HashSet;
-use crate::core::v2::plugin::{Plugins, Plugin};
-use crate::core::v2::protocol::Protocols;
-use std::str::FromStr;
 use crate::core::v2::manifest::FromFile;
-use std::path::PathBuf;
-use std::collections::HashMap;
+use crate::core::v2::plugin::{Plugin, Plugins};
+use crate::core::v2::protocol::Protocol;
+use crate::core::v2::protocol::Protocols;
 use crate::util::anyerror::AnyError;
-use std::error::Error;
 use crate::util::filesystem;
 use crate::util::filesystem::Standardize;
-use crate::core::v2::protocol::Protocol;
+use std::collections::HashMap;
+use std::collections::HashSet;
+use std::error::Error;
+use std::path::PathBuf;
+use std::str::FromStr;
 
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{Deserialize, Serialize};
 use toml_edit::Document;
 
 #[derive(Debug)]
@@ -24,7 +24,7 @@ impl FromStr for ConfigDocument {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // verify all keys are valid during deserializing
-        let _ : Config = toml::from_str(s)?;
+        let _: Config = toml::from_str(s)?;
         Ok(Self {
             document: s.parse::<Document>().unwrap(),
         })
@@ -32,12 +32,12 @@ impl FromStr for ConfigDocument {
 }
 
 const INCLUDE_KEY: &str = "include";
-use toml_edit::Table;
-use toml_edit::Item;
-use toml_edit::Value;
+use crate::util::anyerror::Fault;
 use toml_edit::Array;
 use toml_edit::Formatted;
-use crate::util::anyerror::Fault;
+use toml_edit::Item;
+use toml_edit::Table;
+use toml_edit::Value;
 
 impl ConfigDocument {
     pub fn print(&self) {
@@ -59,14 +59,14 @@ impl ConfigDocument {
     }
 
     /// Adds a new value to the `include` entry.
-    /// 
+    ///
     /// Automatically creates the new key if it does not exist.
     pub fn append_include(&mut self, item: &str) -> () {
         Self::append_list(&mut self.document, INCLUDE_KEY, item);
-    } 
+    }
 
     /// Sets a value for the given entry in the toml document.
-    /// 
+    ///
     /// Creates parent table and/or key if does not exist.
     pub fn set(&mut self, table: &str, key: &str, value: &str) -> () {
         // create table if it does not exist
@@ -74,40 +74,56 @@ impl ConfigDocument {
             self.document.insert(table, Item::Table(Table::new()));
         }
         // create key if it does not exist
-        let table = self.document.get_mut(table).unwrap().as_table_mut().unwrap();
+        let table = self
+            .document
+            .get_mut(table)
+            .unwrap()
+            .as_table_mut()
+            .unwrap();
         // insert/overwrite into the table
-        table.insert(key, Item::Value(Value::String(Formatted::<String>::new(value.to_string()))));
+        table.insert(
+            key,
+            Item::Value(Value::String(Formatted::<String>::new(value.to_string()))),
+        );
     }
 
     /// Removes an entry from the toml document.
-    /// 
+    ///
     /// Errors if the entry does not exist.
     pub fn unset(&mut self, table: &str, key: &str) -> Result<(), Fault> {
         if self.document.contains_key(table) == false {
-            return Err(AnyError(format!("key '{}.{}' does not exist in configuration", table, key)))?
+            return Err(AnyError(format!(
+                "key '{}.{}' does not exist in configuration",
+                table, key
+            )))?;
         }
         // remnove the key if it does exist
-        let toml_table = self.document.get_mut(table).unwrap().as_table_mut().unwrap();
+        let toml_table = self
+            .document
+            .get_mut(table)
+            .unwrap()
+            .as_table_mut()
+            .unwrap();
         match toml_table.contains_key(key) {
             true => {
                 toml_table.remove(key);
                 Ok(())
-            },
-            false => {
-                Err(AnyError(format!("key '{}.{}' does not exist in configuration", table, key)))?
             }
+            false => Err(AnyError(format!(
+                "key '{}.{}' does not exist in configuration",
+                table, key
+            )))?,
         }
     }
 
     /// Writes the `document` to the `path`.
-    /// 
+    ///
     /// Uses CONFIG_FILE as the filename to save to.
     pub fn write(&mut self, dest: &PathBuf) -> Result<(), Fault> {
         let contents = self.document.to_string();
         std::fs::write(&dest, contents)?;
         Ok(())
     }
-
 }
 
 impl FromFile for ConfigDocument {
@@ -119,12 +135,15 @@ impl FromFile for ConfigDocument {
             Ok(r) => Ok(r),
             // enter a blank lock file if failed (do not exit)
             Err(e) => {
-                return Err(AnyError(format!("failed to parse {} file: {}", path.display(), e)))?
+                return Err(AnyError(format!(
+                    "failed to parse {} file: {}",
+                    path.display(),
+                    e
+                )))?
             }
         }
     }
 }
-
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Locality {
@@ -139,11 +158,8 @@ pub struct Configs {
 }
 
 impl Configs {
-
     pub fn new() -> Self {
-        Self {
-            inner: Vec::new(),
-        }
+        Self { inner: Vec::new() }
     }
 
     pub fn load(self, file: PathBuf, lvl: Locality) -> Result<Self, Box<dyn Error>> {
@@ -160,7 +176,7 @@ impl Configs {
                 // load the entry file
                 let cfg = Config::from_file(&path)?;
                 set.insert(path.clone());
-                configs.push((path.clone(), cfg, local.clone())); 
+                configs.push((path.clone(), cfg, local.clone()));
             }
             let base = configs.last().unwrap().0.parent().unwrap().to_path_buf();
             // access its neighboring files (check "include" key)
@@ -174,9 +190,7 @@ impl Configs {
             i += 1;
         }
 
-        Ok(Self {
-            inner: configs
-        })
+        Ok(Self { inner: configs })
     }
 
     pub fn get_plugins(&self) -> HashMap<&str, &Plugin> {
@@ -185,10 +199,11 @@ impl Configs {
 
         self.inner.iter().for_each(|(_path, cfg, _lvl)| {
             if let Some(plugs) = &cfg.plugin {
-                plugs.iter().for_each(|p| {
-                    match map.get(p.get_alias()) {
-                        Some(_) => (),
-                        None => { map.insert(p.get_alias().clone(), p); () }
+                plugs.iter().for_each(|p| match map.get(p.get_alias()) {
+                    Some(_) => (),
+                    None => {
+                        map.insert(p.get_alias().clone(), p);
+                        ()
                     }
                 });
             }
@@ -197,7 +212,12 @@ impl Configs {
     }
 
     pub fn get_global(&self) -> (&PathBuf, &Config) {
-        let cfg = &self.inner.iter().filter(|(_, _, l)| l == &Locality::Global).next().unwrap();
+        let cfg = &self
+            .inner
+            .iter()
+            .filter(|(_, _, l)| l == &Locality::Global)
+            .next()
+            .unwrap();
         (&cfg.0, &cfg.1)
     }
 }
@@ -235,7 +255,7 @@ impl Config {
     }
 
     /// Adds `path` to the end of the list for the include attribute.
-    /// 
+    ///
     /// This function creates some vector if no vector originally exists.
     pub fn append_include(&mut self, path: &str) {
         match &self.include.is_some() {
@@ -279,10 +299,11 @@ impl Config {
         let mut map = HashMap::new();
 
         if let Some(plugs) = &self.plugin {
-            plugs.iter().for_each(|p| {
-                match map.get(p.get_alias()) {
-                    Some(_) => (),
-                    None => { map.insert(p.get_alias().clone(), p); () }
+            plugs.iter().for_each(|p| match map.get(p.get_alias()) {
+                Some(_) => (),
+                None => {
+                    map.insert(p.get_alias().clone(), p);
+                    ()
                 }
             });
         }
@@ -297,10 +318,11 @@ impl Config {
         let mut map = HashMap::new();
 
         if let Some(plugs) = &self.protocol {
-            plugs.iter().for_each(|p| {
-                match map.get(p.get_name()) {
-                    Some(_) => (),
-                    None => { map.insert(p.get_name().clone(), p); () }
+            plugs.iter().for_each(|p| match map.get(p.get_name()) {
+                Some(_) => (),
+                None => {
+                    map.insert(p.get_name().clone(), p);
+                    ()
                 }
             });
         }
@@ -317,11 +339,13 @@ impl FromStr for Config {
 }
 
 impl FromFile for Config {
-
     fn from_file(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
         // verify the path exists
         if path.is_file() == false {
-            return Err(AnyError(format!("failed to locate configuration file \"{}\"", path.display())))?
+            return Err(AnyError(format!(
+                "failed to locate configuration file \"{}\"",
+                path.display()
+            )))?;
         }
         // open file
         let contents = std::fs::read_to_string(&path)?;
@@ -341,10 +365,14 @@ impl FromFile for Config {
                     });
                 }
                 Ok(r)
-            },
+            }
             // enter a blank lock file if failed (do not exit)
             Err(e) => {
-                return Err(AnyError(format!("failed to parse \"{}\" file: {}", path.display(), e)))?
+                return Err(AnyError(format!(
+                    "failed to parse \"{}\" file: {}",
+                    path.display(),
+                    e
+                )))?
             }
         }
     }
@@ -389,7 +417,10 @@ args = ["./download.py"]
     fn parse_empty_config() {
         match Config::from_str(C_0) {
             Ok(r) => assert_eq!(r, Config::new()),
-            Err(e) => { println!("{}", e); panic!("failed to parse") }
+            Err(e) => {
+                println!("{}", e);
+                panic!("failed to parse")
+            }
         }
     }
 
@@ -397,12 +428,17 @@ args = ["./download.py"]
     fn parse_basic_config() {
         match Config::from_str(C_1) {
             Ok(r) => assert_ne!(r, Config::new()),
-            Err(e) => { println!("{}", e); panic!("failed to parse") }
+            Err(e) => {
+                println!("{}", e);
+                panic!("failed to parse")
+            }
         }
     }
 
     #[test]
     fn linked_configs() {
-        Configs::new().load(PathBuf::from("./tests/data/config1.toml"), Locality::Global).unwrap();
+        Configs::new()
+            .load(PathBuf::from("./tests/data/config1.toml"), Locality::Global)
+            .unwrap();
     }
 }

@@ -4,7 +4,7 @@ use clif::cmd::{FromCli, Command};
 use crate::core::version;
 use crate::core::lang::vhdl::primaryunit::PrimaryUnit;
 use clif::Cli;
-use clif::arg::{Flag, Optional};
+use clif::arg::{Flag, Positional};
 use clif::Error as CliError;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
@@ -25,7 +25,7 @@ impl FromCli for Show {
         let command = Ok(Show {
             tags: cli.check_flag(Flag::new("versions"))?,
             units: cli.check_flag(Flag::new("units"))?,
-            ip: cli.check_option(Optional::new("ip").value("spec"))?,
+            ip: cli.check_positional(Positional::new("ip"))?,
         });
         command
     }
@@ -131,10 +131,12 @@ const HELP: &str = "\
 Print information about an ip.
 
 Usage:
-    orbit show [options]
+    orbit show [options] [ip]
 
-Options:
-    --ip <spec>                 the package to request data about
+Args:
+    [ip]                        the package to request data about
+
+Options:          
     --versions                  display the list of possible versions
     --units                     display primary design units within an ip
 

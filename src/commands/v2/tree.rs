@@ -30,17 +30,19 @@ pub struct Tree {
     format: Option<IdentifierFormat>,
     ascii: bool,
     ip: bool,
+    all: bool,
 }
 
 impl FromCli for Tree {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self,  CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Tree {
-            root: cli.check_option(Optional::new("root").value("entity"))?,
             compress: cli.check_flag(Flag::new("compress"))?,
             ascii: cli.check_flag(Flag::new("ascii"))?,
-            format: cli.check_option(Optional::new("format").value("fmt"))?,
             ip: cli.check_flag(Flag::new("ip"))?,
+            all: cli.check_flag(Flag::new("all"))?,
+            root: cli.check_option(Optional::new("root").value("entity"))?,
+            format: cli.check_option(Optional::new("format").value("fmt"))?,
         });
         command
     }
@@ -87,39 +89,68 @@ impl Tree {
         // build the complete graph (using entities as the nodes)
         let global_graph = Self::build_graph(&files);
 
-        let n = {
+        if self.all == false {
+            let n = {
+                // restrict graph to units only found within the current IP
+                let local_graph = Plan::compute_local_graph(&global_graph, &working_lib, &target);
+    
+                let root_index = if let Some(ent) = &self.root {
+                    // check if the identifier exists in the entity graph
+                    let i = match local_graph.get_node_by_key(&&CompoundIdentifier::new(working_lib, ent.clone())) {
+                        Some(id) => id.index(),
+                        None => return Err(PlanError::UnknownEntity(ent.clone()))?,
+                    };
+                    Plan::local_to_global(i, &global_graph, &local_graph).index()
+                // auto-detect the root if possible
+                } else {
+                    // check if --all is applied
+                    // traverse subset of graph by filtering only for working library entities
+                    match local_graph.find_root() {
+                        Ok(i) => Plan::local_to_global(i.index(), &global_graph, &local_graph).index(),
+                        Err(e) => match e.len() {
+                            0 => return Err(PlanError::Empty)?,
+                            _ => return Err(PlanError::Ambiguous("roots".to_string(), e.into_iter().map(|f| { f.as_ref().get_symbol().as_entity().unwrap().get_name().clone() }).collect()))?
+                        }
+                    }
+                };
+                root_index
+            };
+            
+            // display the root's tree to the console
+            let tree = global_graph.get_graph().treeview(n);
+            for twig in &tree {
+                let branch_str = match self.ascii {
+                    true => Self::to_ascii(&twig.0.to_string()),
+                    false => twig.0.to_string(),
+                };
+                println!("{}{}", branch_str, global_graph.get_node_by_index(twig.1).unwrap().as_ref().display(self.format.as_ref().unwrap_or(&IdentifierFormat::Short)));            
+            }
+        } else {
             // restrict graph to units only found within the current IP
             let local_graph = Plan::compute_local_graph(&global_graph, &working_lib, &target);
-
-            let root_index = if let Some(ent) = &self.root {
-                // check if the identifier exists in the entity graph
-                let i = match local_graph.get_node_by_key(&&CompoundIdentifier::new(working_lib, ent.clone())) {
-                    Some(id) => id.index(),
-                    None => return Err(PlanError::UnknownEntity(ent.clone()))?,
-                };
-                Plan::local_to_global(i, &global_graph, &local_graph).index()
-            // auto-detect the root if possible
-            } else {
-                // traverse subset of graph by filtering only for working library entities
-                match local_graph.find_root() {
-                    Ok(i) => Plan::local_to_global(i.index(), &global_graph, &local_graph).index(),
-                    Err(e) => match e.len() {
-                        0 => return Err(PlanError::Empty)?,
-                        _ => return Err(PlanError::Ambiguous("roots".to_string(), e.into_iter().map(|f| { f.as_ref().get_symbol().as_entity().unwrap().get_name().clone() }).collect()))?
-                    }
+            // compile list of all roots
+            let mut roots = Vec::new();
+            match local_graph.find_root() {
+                Ok(i) => roots.push(Plan::local_to_global(i.index(), &global_graph, &local_graph).index()),
+                Err(e) => match e.len() {
+                    0 => return Err(PlanError::Empty)?,
+                    _ => e.into_iter().for_each(|f| { roots.push(Plan::local_to_global(f.index(), &global_graph, &local_graph).index()) })
                 }
-            };
-            root_index
-        };
+            }
 
-        let tree = global_graph.get_graph().treeview(n);
-        for twig in &tree {
-            let branch_str = match self.ascii {
-                true => Self::to_ascii(&twig.0.to_string()),
-                false => twig.0.to_string(),
-            };
-            println!("{}{}", branch_str, global_graph.get_node_by_index(twig.1).unwrap().as_ref().display(self.format.as_ref().unwrap_or(&IdentifierFormat::Short)));            
+            // display each root's tree to the console
+            roots.iter().for_each(|n| {
+                let tree = global_graph.get_graph().treeview(*n);
+                for twig in &tree {
+                    let branch_str = match self.ascii {
+                        true => Self::to_ascii(&twig.0.to_string()),
+                        false => twig.0.to_string(),
+                    };
+                    println!("{}{}", branch_str, global_graph.get_node_by_index(twig.1).unwrap().as_ref().display(self.format.as_ref().unwrap_or(&IdentifierFormat::Short)));            
+                }
+            });
         }
+
         Ok(())
     }
 

@@ -35,10 +35,10 @@ Now imagine there are two projects that use this symbol `reg`, but the entities 
 
 Take this example dependency tree:
 ```
-Project A 1.0.0
-├─ Project_B 1.0.0
-│  └─ Project_C 2.0.0
-└─ Project_C 3.0.0
+Project_A - v1.0.0
+├─ Project_B - v1.0.0
+│  └─ Project_C - v2.0.0
+└─ Project_C - v3.0.0
 ```
 
 Imagine `Project_C` has a primary design unit named `entity_c`, but has notable backward-incompatible differences between version 2.0.0 and version 3.0.0.
@@ -52,7 +52,7 @@ entity_a
 
 Both units are required in order to build the design, but when reading the VHDL files through a backend tool a naming issue will occur and only one can be used. How can we keep both?
 
-_Dynamic symbol transformation_ will identify symbol collisions within the current build graph and automatically resolve the conflicts to produce a  cleanbuild tree.
+_Dynamic symbol transformation_ will identify symbol collisions within the current build graph and automatically resolve the conflicts to produce a  clean build tree.
 
 ```
 entity_a

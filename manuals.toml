@@ -1,0 +1,152 @@
+[build]
+name = "build"
+summary = "execute a plugin/backend tool flow"
+synopsis = "orbit build [options] [--] [args]..."
+description = """\
+This command will call a user-defined command or plugin. A plugin should
+typically require a blueprint.tsv to be generated. The command also
+should read the data from the blueprint, and then process that data
+(synthesis, simulation, etc.).
+  
+If the previous plan command accepted a plugin option, then Orbit remembers
+for future build commands. It will be the default plugin to use if no
+`--plugin` or `--command` is entered for the given command.
+  
+The command invoked will be ran from the ip's root directory."""
+
+option."--plugin <alias>" = "Plugin to execute"
+option."--command <cmd>" = "Command to execute"
+option."--list" = "View available plugins"
+option."--build-dir <dir>" = "The relative directory to locate the blueprint.tsv file"
+option."--verbose" = "Display the command being executed"
+option."-- args..." = "Arguments to pass to the requested plugin"
+
+examples = """\
+orbit build --plugin xsim -- --waves
+orbit build --command python -- ./tools/synth.py --part x70
+orbit build --verbose"""
+
+
+[new]
+name = "new"
+summary = "create a new ip"
+synopsis = "orbit new [options] <path>"
+description = """\
+This command will create a new ip project. The default destination path is
+the vendor/library/name relative to the DEV_PATH. If the DEV_PATH is not
+configured, then it will use the current working directory. Creating a new 
+ip involves creating a manifest file `Orbit.toml` and initializing an empty
+git repository.
+  
+Use `--to` to override the destination path. This path is not allowed to
+exist unless `--force` is specified.
+  
+Copying from existing files can be achieved in two ways. The recommended way
+is to configure templates, which can be viewed with `--list`. Using 
+`--template` will import the files from the template's root directory when
+creating a new ip. On the other hand, using `--from` will import files from 
+that directory.
+  
+Upon creation of an ip or file, variable substitution is performed. Variable
+substitution takes form as a template processor using known information
+about orbit's state and injecting into templated files.
+  
+A new file is able to be generated from within an ip under development with
+the `--file` flag. You can view available files for importing from a
+particular template by combining options `--template` and `--list`. To use
+a file from a template in creating a new file, specify the template and
+the source file's relative path with `--template` and `--from`. You can
+specify a source path not tied to a template by just using `--from`.
+   
+If `--from` is omitted when creating a file, an empty file will be created."""
+
+option."--name <name>" = "The ip name to create"
+
+examples = """\
+orbit new gates
+orbit new ./projects/lab1 --name adder"""
+
+
+[plan]
+name = "plan"
+summary = "generate a blueprint file"
+synopsis = "orbit plan [options]"
+description = """\
+This command will set up the current ip for build processes. It will collect
+all necessary files according to their defined fileset into the 
+blueprint.tsv file.
+  
+By default, the top level unit and testbench are auto-detected according to
+the current design heirarchy. If there is ambiguity, it will show the user
+the possibilities.
+  
+The top level unit and top level testbench will be stored in a .env file to
+be set during any following calls to the 'build' command. If a plugin was
+specified, it will also be stored in the .env file to be recalled during the
+building phase.
+  
+User-defined filesets are only collected along the current working ip's 
+path. Specifying a plugin with `--plugin` will collect the filesets 
+configured for that plugin.
+  
+During the planning phase, a lockfile is produced outlining the exact ip
+dependencies required, how to get them, and how to verify them. The lockfile
+should be checked into version control and not directly edited by the user.
+  
+If the current working ip's manifest's data matches its data stored in its
+own lockfile, then Orbit will read from the lockfile to create the ip
+dependency graph. To force Orbit to build the ip dependency graph from
+scratch, use `--force`.
+  
+If only wishing to update the lockfile, using `--lock-only` will not require
+a toplevel or testbench to be determined. The `--lock-only` flag can be
+combined with `--force` to overwrite the lockfile regardless if it is
+already in sync with the current working ip's manifest data."""
+
+option."--top <unit>" = "The top level entity to explicitly define"
+option."--bench <tb>" = "The top level testbench to explicitly define"
+option."--plugin <alias>" = "A plugin to refer to gather its declared filesets"
+option."--build-dir <dir>" = "The relative directory to place the blueprint.tsv file"
+option."--fileset <key=glob>..." = "A glob-style pattern identified by a name to add into the blueprint"
+option."--clean" = "Removes all files from the build directory before execution"
+option."--list" = "Displays all available plugins and exit"
+option."--force" = "Ignore reading the precomputed lock file"
+option."--lock-only" = "Create the lock file and exit"
+option."--all" = "Include all locally found HDL files"
+
+examples = """\
+orbit plan --top and_gate --fileset PIN-PLAN="*.board"
+orbit plan --plugin vivado --clean --bench ram_tb
+orbit plan --lock-only"""
+
+[install]
+name = "install"
+summary = "store an immutable reference to an ip"
+synopsis = "orbit install [options]"
+description = """\
+This command will get move an ip's project folder to the cache. By default,
+the specified version is the 'latest' released version orbit can
+identify.
+  
+An ip can be installed from multiple locations. A common method is to
+reference the ip with its pkgid if it is already in your ip catalog with
+`--ip`. Another method is to install by providing the remote git repository 
+url to clone with `--git`. A third method is to provide the local filesystem
+path to the ip with `--path`.
+  
+The version is the "snapshot" of the ip's state during that time of
+development. Versions are recognized by Orbit as git tags following the 
+semver specification (major.minor.patch).
+  
+Development versions ('dev') are not allowed to be installed to the cache
+because they are considered mutable."""
+
+option."--path <path>" = "Directory to install ip from to place in the cache"
+option."--ip <name>" = "Ip to install from the queue into the cache"
+option."--force" = "Install the ip regardless of the cache slot occupancy"
+option."--all" = "Install all dependencies (including developmental)"
+
+examples = """\
+orbit install"
+orbit install --path ./projects/ram --force 
+orbit install --all"""

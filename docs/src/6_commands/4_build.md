@@ -34,7 +34,7 @@ The command invoked will be ran from the ip's root directory.
 `--list`  
       View available plugins
  
-`--build-dir <dir>`
+`--build-dir <dir>`  
       The relative directory to locate the blueprint.tsv file
  
 `--verbose`  

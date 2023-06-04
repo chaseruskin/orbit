@@ -34,11 +34,11 @@ because they are considered mutable.
 `--ip <ip>`  
       Pkgid to access an orbit ip to install
  
-`--variant, -v <version>`  
-      Version to install
+`--variant, -v <version>`
+Version to install
  
 `--path <path>`  
-      Filesystem path to the ip
+      Filesystem path to the ip
  
 `--git <url>`  
       Url to git remote repository for the ip

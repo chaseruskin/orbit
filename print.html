@@ -767,10 +767,10 @@ end entity reg;
 <p>Now imagine there are two projects that use this symbol <code>reg</code>, but the entities are not the same. If your current project required both of those projects as dependencies, then traditionally your tool would not be able to resolve which <code>reg</code> was used where. Now, this problem is solved using <em>dynamic symbol resolution</em>.</p>
 <h2 id="walkthrough"><a class="header" href="#walkthrough">Walkthrough</a></h2>
 <p>Take this example dependency tree:</p>
-<pre><code>Project A 1.0.0
-├─ Project_B 1.0.0
-│  └─ Project_C 2.0.0
-└─ Project_C 3.0.0
+<pre><code>Project_A - v1.0.0
+├─ Project_B - v1.0.0
+│  └─ Project_C - v2.0.0
+└─ Project_C - v3.0.0
 </code></pre>
 <p>Imagine <code>Project_C</code> has a primary design unit named <code>entity_c</code>, but has notable backward-incompatible differences between version 2.0.0 and version 3.0.0.</p>
 <pre><code>entity_a
@@ -779,7 +779,7 @@ end entity reg;
    └─ entity_c (from version 2.0.0)
 </code></pre>
 <p>Both units are required in order to build the design, but when reading the VHDL files through a backend tool a naming issue will occur and only one can be used. How can we keep both?</p>
-<p><em>Dynamic symbol transformation</em> will identify symbol collisions within the current build graph and automatically resolve the conflicts to produce a  cleanbuild tree.</p>
+<p><em>Dynamic symbol transformation</em> will identify symbol collisions within the current build graph and automatically resolve the conflicts to produce a  clean build tree.</p>
 <pre><code>entity_a
 ├─ entity_c (from version 3.0.0)
 └─ entity_b
@@ -1490,7 +1490,7 @@ for future build commands. It will be the default plugin to use if no
       Command to execute</p>
 <p><code>--list</code><br />
       View available plugins</p>
-<p><code>--build-dir &lt;dir&gt;</code>
+<p><code>--build-dir &lt;dir&gt;</code><br />
       The relative directory to locate the blueprint.tsv file</p>
 <p><code>--verbose</code><br />
       Display the command being executed</p>
@@ -1585,10 +1585,10 @@ because they are considered mutable.</p>
 <h2 id="options-7"><a class="header" href="#options-7"><strong>OPTIONS</strong></a></h2>
 <p><code>--ip &lt;ip&gt;</code><br />
       Pkgid to access an orbit ip to install</p>
-<p><code>--variant, -v &lt;version&gt;</code><br />
-      Version to install</p>
+<p><code>--variant, -v &lt;version&gt;</code>
+Version to install</p>
 <p><code>--path &lt;path&gt;</code><br />
-      Filesystem path to the ip</p>
+Filesystem path to the ip</p>
 <p><code>--git &lt;url&gt;</code><br />
       Url to git remote repository for the ip</p>
 <p><code>--disable-ssh</code><br />

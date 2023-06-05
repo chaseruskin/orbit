@@ -39,6 +39,8 @@ use clif::Error as CliError;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
+use crate::util::environment::Environment;
+use crate::core::variable::VariableTable;
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
@@ -90,6 +92,11 @@ impl Command<Context> for Install {
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
         if target.can_use_lock() == true && self.force == false {
+            let env = Environment::new()
+                // read config.toml for setting any env variables
+                .from_config(c.get_config())?;
+            let vtable =  VariableTable::new().load_environment(&env)?;
+
             let le = LockEntry::from((&target, true));
 
             let lf = {
@@ -119,7 +126,7 @@ impl Command<Context> for Install {
                 LockFile::wrap(entries)
             };
 
-            plan::download_missing_deps(&lf, &le, &catalog, &c.get_config().get_protocols())?;
+            plan::download_missing_deps(vtable, &lf, &le, &catalog, &c.get_config().get_protocols())?;
             // recollect the queued items to update the catalog
             catalog = catalog
                 .installations(c.get_cache_path())?

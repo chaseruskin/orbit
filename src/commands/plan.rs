@@ -133,7 +133,12 @@ impl Command<Context> for Plan {
             let le: LockEntry = LockEntry::from((&target, true));
             let lf = target.get_lock();
 
-            download_missing_deps(&lf, &le, &catalog, &c.get_config().get_protocols())?;
+            let env = Environment::new()
+                // read config.toml for setting any env variables
+                .from_config(c.get_config())?;
+            let vtable =  VariableTable::new().load_environment(&env)?;
+
+            download_missing_deps(vtable, &lf, &le, &catalog, &c.get_config().get_protocols())?;
             // recollect the queued items to update the catalog
             catalog = catalog
                 .installations(c.get_cache_path())?
@@ -157,11 +162,13 @@ impl Command<Context> for Plan {
 }
 
 pub fn download_missing_deps(
+    vtable: VariableTable,
     lf: &LockFile,
     le: &LockEntry,
     catalog: &Catalog,
     protocols: &ProtocolMap,
 ) -> Result<(), Fault> {
+    let mut vtable = vtable;
     // fetch all non-downloaded packages
     for entry in lf.inner() {
         // skip the current project's IP entry
@@ -209,6 +216,7 @@ pub fn download_missing_deps(
                 Some(src) => {
                     // fetch from the internet
                     Download::download(
+                        &mut vtable,
                         &entry.to_ip_spec(),
                         src,
                         catalog.get_queue_path(),

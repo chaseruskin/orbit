@@ -81,7 +81,7 @@ impl Command<Context> for Download {
         // determine the queue directory based on cli priority
         let q_dir = self.queue_dir.as_ref().unwrap_or(c.get_queue_path());
 
-        Environment::new()
+        let env = Environment::new()
             // read config.toml for setting any env variables
             .from_config(c.get_config())?
             // read ip manifest for env variables
@@ -90,8 +90,9 @@ impl Command<Context> for Download {
                 EnvVar::new()
                     .key(ORBIT_QUEUE)
                     .value(&q_dir.to_string_lossy()),
-            )
-            .initialize();
+            );
+        let vtable =  VariableTable::new().load_environment(&env)?;
+        env.initialize();
 
         // default behavior is report only missing installations
         let missing_only = self.all == false || self.missing == true;
@@ -113,6 +114,7 @@ impl Command<Context> for Download {
             Self::download_all(
                 &downloads,
                 &proto_map,
+                vtable,
                 self.verbose,
                 c.get_queue_path(),
                 self.force,
@@ -145,6 +147,7 @@ impl Download {
     }
 
     pub fn download(
+        vtable: &mut VariableTable,
         spec: &IpSpec,
         src: &Source,
         queue: &PathBuf,
@@ -152,11 +155,8 @@ impl Download {
         verbose: bool,
         force: bool,
     ) -> Result<(), Fault> {
-        // create variable table
-        let mut vtable = VariableTable::new();
-
+        // update the variable table
         vtable.add("orbit.queue", &PathBuf::standardize(&queue).display().to_string());
-
         // access the protocol
         if let Some(proto) = src.get_protocol() {
             match protocols.get(proto.as_str()) {
@@ -196,6 +196,7 @@ impl Download {
     pub fn download_all(
         downloads: &Vec<(IpSpec, &Source)>,
         proto_map: &HashMap<&str, &Protocol>,
+        vtable: VariableTable, 
         verbose: bool,
         queue: &PathBuf,
         force: bool,
@@ -212,9 +213,9 @@ impl Download {
                 println!("info: Downloading {} packages ...", downloads.len())
             }
         }
-
+        let mut vtable = vtable;
         let mut results = downloads.iter().filter_map(|e| {
-            match Self::download(&e.0, &e.1, &queue, &proto_map, verbose, force) {
+            match Self::download(&mut vtable, &e.0, &e.1, &queue, &proto_map, verbose, force) {
                 Ok(_) => None,
                 Err(e) => Some(e),
             }

@@ -5,10 +5,11 @@ use crate::core::plugin::Process;
 use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::str::FromStr;
+use crate::core::variable;
 
 pub type Protocols = Vec<Protocol>;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Protocol {
     name: String,
@@ -26,6 +27,20 @@ impl FromStr for Protocol {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         toml::from_str(s)
     }
+}
+
+impl Protocol {
+    /// Performs variable substitution on the provided arguments for the protocol.
+    pub fn replace_vars_in_args(mut self, vtable: &VariableTable) -> Self {
+        self.args = if let Some(args) = self.args {
+            Some(args.into_iter().map(|arg| {
+                variable::substitute(arg, vtable)
+            }).collect())
+        } else {
+            self.args
+        };
+        self
+    } 
 }
 
 impl Process for Protocol {
@@ -52,6 +67,8 @@ use curl::easy::Easy;
 use std::io::Write;
 use tempfile;
 use zip::ZipArchive;
+
+use super::variable::VariableTable;
 
 impl Protocol {
     pub fn new() -> Self {

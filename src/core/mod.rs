@@ -2,10 +2,8 @@ pub mod context;
 pub mod fileset;
 pub mod lang;
 pub mod pkgid;
-pub mod template;
 pub mod variable;
 pub mod version;
-
 pub mod algo;
 pub mod catalog;
 pub mod config;

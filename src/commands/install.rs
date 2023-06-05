@@ -24,6 +24,7 @@ use crate::core::catalog::CacheSlot;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
+use crate::core::ip::PartialIpSpec;
 use crate::core::lockfile::LockEntry;
 use crate::core::lockfile::LockFile;
 use crate::core::manifest::ORBIT_SUM_FILE;
@@ -31,7 +32,7 @@ use crate::util::anyerror::Fault;
 use crate::util::filesystem;
 use crate::util::filesystem::Standardize;
 use crate::OrbitResult;
-use clif::arg::{Flag, Optional};
+use clif::arg::{Flag, Optional, Positional};
 use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
@@ -41,7 +42,10 @@ use std::path::PathBuf;
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
-    path: PathBuf,
+    ip: Option<PartialIpSpec>,
+    path: Option<PathBuf>,
+    url: Option<String>,
+    protocol: Option<String>,
     force: bool,
     deps_only: bool,
     all: bool,
@@ -54,9 +58,10 @@ impl FromCli for Install {
             force: cli.check_flag(Flag::new("force"))?,
             deps_only: cli.check_flag(Flag::new("deps"))?,
             all: cli.check_flag(Flag::new("all"))?,
-            path: cli
-                .check_option(Optional::new("path"))?
-                .unwrap_or(PathBuf::from(".")),
+            path: cli.check_option(Optional::new("path"))?,
+            url: cli.check_option(Optional::new("url"))?,
+            protocol: cli.check_option(Optional::new("protocol").value("name"))?,
+            ip: cli.check_positional(Positional::new("ip"))?,
         });
         command
     }
@@ -69,7 +74,7 @@ impl Command<Context> for Install {
         // verify the path points to a valid ip
         let path = filesystem::resolve_rel_path(
             &env::current_dir().unwrap(),
-            &filesystem::into_std_str(self.path.clone()),
+            &filesystem::into_std_str(self.path.as_ref().unwrap_or(&PathBuf::from(".")).clone()),
         );
         let dest = PathBuf::standardize(PathBuf::from(path));
 
@@ -250,13 +255,29 @@ const HELP: &str = "\
 Places an immutable version of an ip to the cache for dependency usage.
 
 Usage:
-    orbit install [options]
+    orbit install [options] [<ip>]
 
 Options:
-    --path <path>           destination directory to install into the cache
-    --ip <name>             the ip to match for install into the cache
+    <ip>                    ip specification to install
+    --url <url>             URL to install the of the package on the internet
+    --protocol <protocol>   custom protocol to download the package
+    --path <path>           filesystem path to local ip to install
     --force                 install regardless of cache slot occupancy
     --all                   install all dependencies including development
 
 Use 'orbit help install' to learn more about the command.
 ";
+
+// # install from online using custom protocol
+// orbit install toolbox:1.0.1 --url https://github.com/c-rus/toolbox.git --protocol git-op
+
+// # install from local path
+// orbit install hamming:1.0.0 --path .
+
+// # install from online using default protocol
+// orbit install --url https://github.com/c-rus/toolbox/archive/refs/tags/1.0.1.zip
+
+// # install from queue
+// orbit install toolbox:1.0.1
+
+// error if multiple packages are located in a downloaded area (then they must supply a ip spec)

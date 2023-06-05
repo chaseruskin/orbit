@@ -11,7 +11,7 @@ use crate::core::lang::vhdl::symbol::{Entity, PackageBody, VHDLParser, VHDLSymbo
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::plugin::Plugin;
 use crate::core::plugin::PluginError;
-use crate::core::template;
+use crate::core::variable;
 use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
 use crate::util::anyerror::Fault;
@@ -165,7 +165,7 @@ pub fn download_missing_deps(
     // fetch all non-downloaded packages
     for entry in lf.inner() {
         // skip the current project's IP entry
-        if entry.matches_target(&le) {
+        if entry.matches_target(&le) == true {
             continue;
         }
 
@@ -913,7 +913,7 @@ impl Plan {
                     // perform variable substitution
                     let fset = Fileset::new()
                         .name(f_name)
-                        .pattern(&template::substitute(f_patt.to_string(), &vtable))?;
+                        .pattern(&variable::substitute(f_patt.to_string(), &vtable))?;
                     // match files
                     fset.collect_files(&current_files)
                         .into_iter()
@@ -928,7 +928,7 @@ impl Plan {
                 // perform variable substitution
                 let fset = Fileset::new()
                     .name(fset.get_name())
-                    .pattern(&template::substitute(
+                    .pattern(&variable::substitute(
                         fset.get_pattern().to_string(),
                         &vtable,
                     ))?;

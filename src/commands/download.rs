@@ -9,12 +9,14 @@ use crate::core::lockfile::LockFile;
 use crate::core::plugin::Process;
 use crate::core::protocol::Protocol;
 use crate::core::source::Source;
+use crate::core::variable::VariableTable;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
 use crate::util::environment::ORBIT_QUEUE;
 use crate::OrbitResult;
+use crate::util::filesystem::Standardize;
 use clif::arg::{Flag, Optional};
 use clif::cmd::{Command, FromCli};
 use clif::Cli;
@@ -150,15 +152,29 @@ impl Download {
         verbose: bool,
         force: bool,
     ) -> Result<(), Fault> {
+        // create variable table
+        let mut vtable = VariableTable::new();
+
+        vtable.add("orbit.queue", &PathBuf::standardize(&queue).display().to_string());
+
         // access the protocol
         if let Some(proto) = src.get_protocol() {
             match protocols.get(proto.as_str()) {
-                Some(entry) => {
+                Some(&entry) => {
                     println!(
                         "info: Downloading {} over \"{}\" protocol ...",
                         spec, &proto
                     );
-                    entry.execute(&[src.get_url().to_string()], verbose)?
+                    // update variable table for this lock entry
+                    vtable.add("orbit.ip.name", spec.get_name().as_ref());
+                    vtable.add("orbit.ip.version", &spec.get_version().to_string());
+                    vtable.add("orbit.ip.source.url", src.get_url());
+                    vtable.add("orbit.ip.source.protocol", entry.get_name());
+                    // generate a random string
+                    // vtable.add("orbit.random", "a0a0");
+                    
+                    let entry: Protocol = entry.clone().replace_vars_in_args(&vtable);
+                    entry.execute(&[], verbose)?
                 }
                 None => {
                     if force == false {

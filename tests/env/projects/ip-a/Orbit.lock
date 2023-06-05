@@ -9,5 +9,5 @@ dependencies = ["ip-b:0.1.0"]
 [[ip]]
 name = "ip-b"
 version = "0.1.0"
-sum = "87678be5e3cf83fe82ae649051c3fd98fefa7edaa22664a58960721fd4a04296"
+checksum = "87678be5e3cf83fe82ae649051c3fd98fefa7edaa22664a58960721fd4a04296"
 dependencies = []

@@ -207,7 +207,7 @@ pub mod v1 {
         name: Id,
         version: Version,
         // @note: `sum` is optional because the root package will have its sum omitted
-        sum: Option<Sha256Hash>,
+        checksum: Option<Sha256Hash>,
         #[serde(flatten)]
         source: Option<Source>,
         dependencies: Vec<IpSpec>,
@@ -220,7 +220,7 @@ pub mod v1 {
             Self {
                 name: ip.get_man().get_ip().get_name().clone(),
                 version: ip.get_man().get_ip().get_version().clone(),
-                sum: if is_root == true {
+                checksum: if is_root == true {
                     None
                 } else {
                     Some(
@@ -267,7 +267,7 @@ pub mod v1 {
         }
 
         pub fn get_sum(&self) -> Option<&Sha256Hash> {
-            self.sum.as_ref()
+            self.checksum.as_ref()
         }
 
         pub fn get_source(&self) -> Option<&Source> {
@@ -303,7 +303,7 @@ pub mod v1 {
                     LockEntry {
                         name: Id::from_str("lab1").unwrap(),
                         version: Version::from_str("0.5.0").unwrap(),
-                        sum: None,
+                        checksum: None,
                         source: Some(Source::from_str("https://go1.here").unwrap()),
                         dependencies: vec![
                             IpSpec::new(
@@ -319,21 +319,21 @@ pub mod v1 {
                     LockEntry {
                         name: Id::from_str("lab2").unwrap(),
                         version: Version::from_str("1.0.0").unwrap(),
-                        sum: Some(Sha256Hash::new()),
+                        checksum: Some(Sha256Hash::new()),
                         source: Some(Source::from_str("https://go2.here").unwrap()),
                         dependencies: Vec::new(),
                     },
                     LockEntry {
                         name: Id::from_str("lab3").unwrap(),
                         version: Version::from_str("2.3.1").unwrap(),
-                        sum: Some(Sha256Hash::new()),
+                        checksum: Some(Sha256Hash::new()),
                         source: None,
                         dependencies: Vec::new(),
                     },
                     LockEntry {
                         name: Id::from_str("lab4").unwrap(),
                         version: Version::from_str("0.5.19").unwrap(),
-                        sum: Some(Sha256Hash::new()),
+                        checksum: Some(Sha256Hash::new()),
                         source: None,
                         dependencies: vec![IpSpec::new(
                             PkgPart::from_str("lab3").unwrap(),
@@ -354,7 +354,7 @@ pub mod v1 {
                     LockEntry {
                         name: Id::from_str("lab1").unwrap(),
                         version: Version::from_str("0.5.0").unwrap(),
-                        sum: None,
+                        checksum: None,
                         source: Some(Source::from_str("https://go1.here").unwrap()),
                         dependencies: vec![
                             IpSpec::new(
@@ -370,21 +370,21 @@ pub mod v1 {
                     LockEntry {
                         name: Id::from_str("lab2").unwrap(),
                         version: Version::from_str("1.0.0").unwrap(),
-                        sum: Some(Sha256Hash::new()),
+                        checksum: Some(Sha256Hash::new()),
                         source: Some(Source::from_str("https://go2.here").unwrap()),
                         dependencies: Vec::new(),
                     },
                     LockEntry {
                         name: Id::from_str("lab3").unwrap(),
                         version: Version::from_str("2.3.1").unwrap(),
-                        sum: Some(Sha256Hash::new()),
+                        checksum: Some(Sha256Hash::new()),
                         source: None,
                         dependencies: Vec::new(),
                     },
                     LockEntry {
                         name: Id::from_str("lab4").unwrap(),
                         version: Version::from_str("0.5.19").unwrap(),
-                        sum: Some(Sha256Hash::new()),
+                        checksum: Some(Sha256Hash::new()),
                         source: None,
                         dependencies: vec![IpSpec::new(
                             PkgPart::from_str("lab3").unwrap(),
@@ -410,20 +410,20 @@ dependencies = [
 [[ip]]
 name = "lab2"
 version = "1.0.0"
-sum = "0000000000000000000000000000000000000000000000000000000000000000"
+checksum = "0000000000000000000000000000000000000000000000000000000000000000"
 url = "https://go2.here"
 dependencies = []
 
 [[ip]]
 name = "lab3"
 version = "2.3.1"
-sum = "0000000000000000000000000000000000000000000000000000000000000000"
+checksum = "0000000000000000000000000000000000000000000000000000000000000000"
 dependencies = []
 
 [[ip]]
 name = "lab4"
 version = "0.5.19"
-sum = "0000000000000000000000000000000000000000000000000000000000000000"
+checksum = "0000000000000000000000000000000000000000000000000000000000000000"
 dependencies = ["lab3:2.3.1"]
 "#;
     }

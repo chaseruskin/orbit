@@ -102,7 +102,7 @@ impl Manifest {
 name = "{}"
 version = "0.1.0"
 
-# See more keys and their definitions at https://c-rus.github.io/orbit/4_topic/2_orbittoml.html
+# See more keys and their definitions at https://c-rus.github.io/orbit/reference/manifest.html
 
 [dependencies]
 "#,

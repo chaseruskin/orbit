@@ -119,6 +119,7 @@ orbit plan --top and_gate --fileset PIN-PLAN="*.board"
 orbit plan --plugin vivado --clean --bench ram_tb
 orbit plan --lock-only"""
 
+
 [install]
 name = "install"
 summary = "store an immutable reference to an ip"
@@ -150,3 +151,40 @@ examples = """\
 orbit install"
 orbit install --path ./projects/ram --force 
 orbit install --all"""
+
+
+[config]
+name = "config"
+summary = "modify configuration values"
+synopsis = "orbit config [options]"
+description = """\
+This command will alter configuration entries in Orbit's settings file named 
+`config.toml`. By default, it will modify the user's config located at
+$ORBIT_HOME.
+  
+To access an entry (key/value pair), use dots (`.`) to delimit between 
+intermediate table identifiers and the final key identifier.
+  
+The command modifies the document in three independent stages. The first stage
+modifies the settings by iterating through all defined `--append` values. Then, 
+it will insert all `--set` values. Lastly, it will remove all `--unset` entries."""
+
+options."--global" = "Access the home configuration file"
+options."--local" = "Access the current project's configuration file"
+options."--append <key>=<value>..." = "Add a value to the key storing a list"
+options."--set <key>=<value>..." = "Write the value at the key's entry"
+options."--unset <key>..." = "Delete the key's entry"
+
+examples = """\
+orbit config --append include="~/.orbit/profile/ks-tech"
+orbit config --unset env.VIVADO_PATH --global"""
+
+
+[download]
+name = "download"
+summary = "fetch packages from the internet"
+synopsis = "orbit download [options]"
+description = """\
+This command will get a package from the internet using the default protocol
+or a user-defined protocol and place the package
+"""

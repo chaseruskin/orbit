@@ -40,7 +40,7 @@ impl FromCli for Download {
             list: cli.check_flag(Flag::new("list"))?,
             force: cli.check_flag(Flag::new("force"))?,
             verbose: cli.check_flag(Flag::new("verbose"))?,
-            queue_dir: cli.check_option(Optional::new("queue").value("dir"))?,
+            queue_dir: cli.check_option(Optional::new("dest").value("dir"))?,
         });
         command
     }
@@ -60,14 +60,6 @@ impl Command<Context> for Download {
         }
 
         let proto_map: ProtocolMap = c.get_config().get_protocols();
-
-        // // do not allow args if no command is set
-        // if dl_proc.is_none() == true {
-        //     panic!("no protocol defined!")
-        // }
-        // if dl_proc.exists() == false && self.args.is_empty() == false {
-        //     panic!("invalid arguments for no command set")
-        // }
 
         // load the catalog
         let catalog = Catalog::new()
@@ -220,7 +212,7 @@ impl Download {
 }
 
 const HELP: &str = "\
-Request packages from the internet.
+Fetch packages from the internet.
 
 Usage:
     orbit download [options]
@@ -229,9 +221,11 @@ Options:
     --list              print URLs to the console
     --missing           filter only uninstalled packages (default: true)
     --all               contain all packages in list
-    --queue <dir>       set the destination queue directory
+    --dest <dir>        set the destination directory
     --verbose           display the command being executed
     --force             fallback to default protocol if missing given protocol
 
 Use 'orbit help download' to learn more about the command.
 ";
+
+// add <url> argument to download? with --protocol <alias> option?

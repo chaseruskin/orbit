@@ -15,6 +15,25 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.9.4
+
+### Changes
+- changes lockfile to store checksum under "checksum" field
+- adds '--all' flag to "tree" command
+- refactors "read" command
+- adds version number to lock file for future compatibility
+- fixes "tree" command to only list nodes within local ip graph
+- allows variable substitution to custom protocol arguments
+- introduces CACHEDIR.TAG file to the cache directory
+
+### Documentation
+- adds page about protocols
+
+### Internal
+- removes deprecated source code
+- reorganizes command modules
+- adds new script for generating synchronous command documentation across github pages and manual pages
+
 ## 0.9.3
 
 ### Changes

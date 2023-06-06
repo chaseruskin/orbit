@@ -24,7 +24,7 @@ STDOUT=$(orbit tree --root entity_c)
 EXACT="entity_c
 ├─ dupe
 └─ entity_a
-   └─ dupe_87678be5e3"
+   └─ dupe_eac05fa204"
 
 # compare the output with the expected value
 if [ "$STDOUT" = "$EXACT" ]; then

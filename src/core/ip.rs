@@ -18,6 +18,8 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::str::FromStr;
 use toml_edit::Document;
+use colored::Colorize;
+use crate::core::uuid::Uuid;
 
 #[derive(Debug, PartialEq)]
 pub struct Ip {
@@ -27,6 +29,8 @@ pub struct Ip {
     data: Manifest,
     /// The lockfile for the [Ip].
     lock: LockFile,
+    /// The UUID for the [Ip].
+    uuid: Uuid,
 }
 
 impl Ip {
@@ -42,16 +46,42 @@ impl Ip {
         &self.lock
     }
 
+    pub fn get_uuid(&self) -> &Uuid {
+        &self.uuid
+    }
+
     pub fn load(root: PathBuf) -> Result<Self, Box<dyn Error>> {
         let man_path = root.join(IP_MANIFEST_FILE);
         if man_path.exists() == false || man_path.is_file() == false {
             return Err(AnyError(format!("A manifest file does not exist")))?;
         }
+        let man = Manifest::from_file(&man_path)?;
+
         let lock_path = root.join(IP_LOCK_FILE);
+        
+        let lock = match LockFile::from_file(&lock_path) {
+            Ok(l) => l,
+            Err(e) => {
+                println!(
+                    "{}: failed to parse {} file: {}",
+                    "warning".yellow().bold(),
+                    IP_LOCK_FILE,
+                    e
+                );
+                LockFile::new()
+            }
+        };
+
+        let uuid = match lock.get(man.get_ip().get_name(), man.get_ip().get_version()) {
+            Some(entry) => entry.get_uuid().clone(),
+            None => Uuid::new(),
+        };
+
         Ok(Self {
             root: root,
-            data: Manifest::from_file(&man_path)?,
-            lock: LockFile::from_file(&lock_path)?,
+            data: man,
+            lock: lock,
+            uuid: uuid,
         })
     }
 
@@ -73,14 +103,9 @@ impl Ip {
         let mut result = Vec::new();
         // walk the ORBIT_PATH directory @TODO recursively walk inner directories until hitting first 'Orbit.toml' file
         for mut entry in manifest::find_file(&path, &name, is_exclusive)? {
-            // read ip_spec from each manifest
-            let man = Manifest::from_file(&entry)?;
+            // remove the manifest file to access the ip's root directory
             entry.pop();
-            result.push(Self {
-                root: entry,
-                data: man,
-                lock: LockFile::new(),
-            });
+            result.push(Ip::load(entry)?);
         }
         Ok(result)
     }
@@ -199,16 +224,16 @@ impl Ip {
             true => Ok(Self::read_units_from_metadata(&dir).unwrap()),
             false => {
                 // collect all files
-                let files = crate::util::filesystem::gather_current_files(&dir, false);
-                Ok(crate::core::lang::vhdl::primaryunit::collect_units(&files)?)
+                let files = filesystem::gather_current_files(&dir, false);
+                Ok(primaryunit::collect_units(&files)?)
             }
         }
     }
 
     pub fn read_units_from_metadata(dir: &PathBuf) -> Option<HashMap<Identifier, PrimaryUnit>> {
-        let meta_file = dir.join(ORBIT_METADATA_FILE);
-        if std::path::Path::exists(&meta_file) == true {
-            if let Ok(contents) = std::fs::read_to_string(&meta_file) {
+        let meta_file: PathBuf = dir.join(ORBIT_METADATA_FILE);
+        if Path::exists(&meta_file) == true {
+            if let Ok(contents) = fs::read_to_string(&meta_file) {
                 if let Ok(toml) = contents.parse::<Document>() {
                     let entry = toml.get("ip")?.as_table()?.get("units")?.as_array()?;
                     let mut map = HashMap::new();
@@ -231,6 +256,10 @@ impl Ip {
 
 use crate::core::pkgid::PkgPart;
 use crate::core::version::Version;
+use crate::core::lang::vhdl::primaryunit;
+use crate::util::filesystem;
+use std::path::Path;
+use std::fs;
 
 const SPEC_DELIM: &str = ":";
 

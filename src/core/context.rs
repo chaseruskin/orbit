@@ -8,6 +8,15 @@ use std::collections::HashMap;
 use std::env;
 use std::path;
 use std::path::PathBuf;
+use std::fs;
+
+const CACHE_TAG_FILE: &str = "CACHEDIR.TAG";
+
+const CACHE_TAG: &str = "\
+Signature: 8a477f597d28d172789f06886806bc55
+# This file is a cache directory tag created by orbit.
+# For information about cache directory tags see https://bford.info/cachedir/
+";
 
 /// Shared attributes about the surrounding user run-time environment.
 pub struct Context {
@@ -78,7 +87,30 @@ impl Context {
     /// exists. If setting by default (within HOME), it assumes HOME is already existing.
     pub fn cache(mut self, key: &str) -> Result<Context, Fault> {
         self.cache_path = self.folder(key, "cache")?;
+        // create a cache tag file if does not exist
+        match Self::is_cache_tag_valid(&self.cache_path) {
+            Ok(_) => (),
+            Err(e) => fs::write(&e, CACHE_TAG)?,
+        }
         Ok(self)
+    }
+
+    /// Checks if the cache tag file is properly configured in the set cache directory.
+    /// 
+    /// Returns an `Err` holding the path to the needed cache file if the path was
+    /// not a file or did not exactly contain the content's string.
+    pub fn is_cache_tag_valid(dir: &PathBuf) -> Result<(), PathBuf> {
+        let tag = dir.join(CACHE_TAG_FILE);
+        match tag.is_file() {
+            false => Err(tag),
+            true => match fs::read_to_string(&tag) {
+                Err(_) => Err(tag),
+                Ok(text) => match text == CACHE_TAG {
+                    false => Err(tag),
+                    true => Ok(()),
+                }
+            }
+        }
     }
 
     /// Sets the queue directory. If it was set from `var`, it assumes the path

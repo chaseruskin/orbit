@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 clif = { git = "https://github.com/c-rus/clif", tag = "0.1.3", features = ["color"] }
 colored = "2"
+uuid = { version = "1.3.3", features = ["v4", "fast-rng", "macro-diagnostics"] }
 
 home = "0.5"
 tempfile = "3.5"

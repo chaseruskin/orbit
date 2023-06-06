@@ -13,3 +13,4 @@ pub mod manifest;
 pub mod plugin;
 pub mod protocol;
 pub mod source;
+pub mod uuid;

@@ -230,7 +230,7 @@ Commands:
     tree            view the dependency graph
     plan, p         generate a blueprint file
     build, b        execute a plugin
-    launch          verify a new release
+    launch          verify an upcoming release
     search          browse the ip catalog 
     download        request packages from the internet
     install         store an immutable reference to an ip

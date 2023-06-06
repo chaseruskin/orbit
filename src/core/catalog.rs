@@ -1,4 +1,5 @@
 use crate::util::{anyerror::Fault, sha256::Sha256Hash};
+use crate::core::uuid::Uuid;
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
@@ -256,6 +257,64 @@ impl<'a> Catalog<'a> {
 
     pub fn get_queue_path(&self) -> &PathBuf {
         self.queue.as_ref().unwrap()
+    }
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct CacheEntry {
+    set: [u8; 1],
+    tag: [u8; 1],
+    offset: [u8; 14],
+}
+
+impl From<&Uuid> for CacheEntry {
+    fn from(value: &Uuid) -> Self {
+        let bytes: &[u8; 16] = value.get().as_bytes();
+        Self {
+            set: [bytes[0]; 1],
+            tag: [bytes[1]; 1],
+            offset: bytes[2..16].try_into().unwrap(),
+        }
+    }
+}
+
+impl CacheEntry {
+    /// The first byte in the [Uuid].
+    pub fn set(&self) -> String {
+        format!("{:02X}", &self.set[0])
+    }
+
+    /// The second byte in the [Uuid].
+    pub fn tag(&self) -> String {
+        format!("{:02X}", &self.tag[0])
+    }
+
+    /// The 14 remaining bytes in the [Uuid].
+    pub fn offset(&self) -> String {
+        self.offset.iter().fold(String::new(), |acc, x| { acc + &format!("{:02X}", x) })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn disp_set() {
+        let ce = CacheEntry::from(&Uuid::nil());
+        assert_eq!("00", ce.set());
+    }
+
+    #[test]
+    fn disp_tag() {
+        let ce = CacheEntry::from(&Uuid::nil());
+        assert_eq!("00", ce.tag());
+    }
+
+    #[test]
+    fn disp_offset() {
+        let ce = CacheEntry::from(&Uuid::nil());
+        assert_eq!("0000000000000000000000000000", ce.offset());
     }
 }
 

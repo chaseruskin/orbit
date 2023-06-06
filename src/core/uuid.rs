@@ -15,10 +15,15 @@ impl Uuid {
             inner: uuid::Uuid::new_v4(),
         } 
     }
+
     pub fn nil() -> Self {
         Self {
             inner: uuid::Uuid::nil()
         }
+    }
+
+    pub fn get(&self) -> &uuid::Uuid {
+        &self.inner
     }
 }
 

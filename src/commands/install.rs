@@ -155,8 +155,8 @@ impl Install {
         if let Some(sha) = Ip::read_checksum_proof(&root) {
             // make sure the sums match expected
             sha == Ip::compute_checksum(&root)
+        // failing to compute a checksum
         } else {
-            // failing to compute a checksum
             false
         }
     }
@@ -169,6 +169,13 @@ impl Install {
         // temporary destination to move files for processing and manipulation
         let dest = tempfile::tempdir()?.into_path();
         filesystem::copy(src.get_root(), &dest, true)?;
+
+        // lookup the package name in the index to see if the UUIDs match
+        // verify the version for this package is not already logged
+
+        // @note: a package's index file contains all metadata for all versions known to orbit
+        // @note: ability to link various index directories (essentially vendors)
+        // @note: also want to store zipped archives of installs in the "vault" for quicker retrieval
 
         // @todo: listing all units
 

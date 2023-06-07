@@ -1,6 +1,8 @@
 # The Book of Orbit
 
-Orbit is the package manager for Hardware Description Languages (HDL).
+![](./images/orbit_logo_128px.png)
+
+Orbit is the package manager for Hardware Description Languages (HDL). Orbit provides a complete frontend package management solution to HDL projects, while allowing users to implement custom backend workflows through a plugin system. Orbit provides commands for every stage of the development cycle, in areas such as exploration, integration, and automation.
 
 ## Sections
 The following documentation will be mainly divided into 4 sections:

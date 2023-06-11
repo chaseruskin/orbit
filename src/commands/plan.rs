@@ -669,6 +669,50 @@ impl Plan {
         result
     }
 
+    fn determine_file_order<'a>(global_graph: &'a GraphMap<CompoundIdentifier, HdlNode, ()>, min_order: Vec<usize>) -> Vec<&'a IpFileNode<'a>> {
+        // gather the files from each node in-order (multiple files can exist for a node)
+        let file_order = {
+            let mut file_map = HashMap::<String, (&IpFileNode, Vec<&HdlNode>)>::new();
+            let mut file_order = Vec::<String>::new();
+
+            let mut f_list = Vec::new();
+            for i in &min_order {
+                // access the node key and access the files associated with this key (the dependencies)
+                let ipfs = global_graph
+                    .get_node_by_index(*i)
+                    .unwrap()
+                    .as_ref()
+                    .get_associated_files();
+                
+                ipfs.iter().for_each(|&e| {
+                    let mut preds: Vec<&HdlNode> = global_graph.predecessors(*i).into_iter().map(|e| e.1).collect();
+                    match file_map.get_mut(e.get_file()) {
+                        // merge dependencies together
+                        Some((_file_node, deps)) => {
+                        deps.append(&mut preds); 
+                        }, 
+                        // log this node and its dependencies
+                        None => {
+                            file_order.push(e.get_file().clone());
+                            file_map.insert(e.get_file().clone(), (e, preds));
+                        },
+                    }
+                });
+            }
+
+            for file_name in &file_order {
+                let (entry, deps) = file_map.get(file_name).unwrap();
+                for &ifn in deps {
+                    f_list.append(&mut ifn.get_associated_files().into_iter().map(|i| *i).collect());
+                }
+                f_list.push(entry);
+            }
+            f_list
+        };
+        file_order
+    }
+
+
     /// Filters out the local nodes existing within the current IP from the `global_graph`.
     pub fn compute_local_graph<'a>(
         global_graph: &'a GraphMap<CompoundIdentifier, HdlNode, ()>,
@@ -833,21 +877,8 @@ impl Plan {
             }
         };
 
-        // gather the files from each node in-order (multiple files can exist for a node)
-        let file_order = {
-            let mut f_list = Vec::new();
-            for i in &min_order {
-                // access the node key
-                let ipfs = global_graph
-                    .get_node_by_index(*i)
-                    .unwrap()
-                    .as_ref()
-                    .get_associated_files();
-                // access the files associated with this key
-                f_list.append(&mut ipfs.into_iter().map(|i| *i).collect());
-            }
-            f_list
-        };
+        // generate the file order while merging dependencies for common file path names together
+        let file_order = Self::determine_file_order(&global_graph, min_order);
 
         // remove duplicate files from list while perserving order
         let file_order = Self::remove_multi_occurences(&file_order);

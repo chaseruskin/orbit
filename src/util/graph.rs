@@ -332,6 +332,14 @@ where
             current_edge_index: first_outgoing_edge,
         }
     }
+
+    pub fn predecessors(&self, source: NodeIndex) -> PredecessorsGraphMap<K, V, E> {
+        let first_incoming_edge = self.get_graph().vertices[source].first_incoming_edge;
+        PredecessorsGraphMap {
+            graph: self,
+            current_edge_index: first_incoming_edge,
+        }
+    }
 }
 
 pub struct SuccessorsGraphMap<'graph, K: Eq + Hash + Clone, V, E> {
@@ -351,6 +359,30 @@ impl<'graph, K: Eq + Hash + Clone, V, E> Iterator for SuccessorsGraphMap<'graph,
                 Some((
                     self.graph.get_key_by_index(edge.target).unwrap(),
                     self.graph.get_node_by_index(edge.target).unwrap().as_ref(),
+                    &edge.edge,
+                ))
+            }
+        }
+    }
+}
+
+pub struct PredecessorsGraphMap<'graph, K: Eq + Hash + Clone, V, E> {
+    graph: &'graph GraphMap<K, V, E>,
+    current_edge_index: Option<EdgeIndex>,
+}
+
+impl<'graph, K: Eq + Hash + Clone, V, E> Iterator for PredecessorsGraphMap<'graph, K, V, E> {
+    type Item = (&'graph K, &'graph V, &'graph E);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.current_edge_index {
+            None => None,
+            Some(edge_num) => {
+                let edge = &self.graph.get_graph().edges[edge_num];
+                self.current_edge_index = edge.next_incoming_edge;
+                Some((
+                    self.graph.get_key_by_index(edge.source).unwrap(),
+                    self.graph.get_node_by_index(edge.source).unwrap().as_ref(),
                     &edge.edge,
                 ))
             }

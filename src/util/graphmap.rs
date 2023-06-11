@@ -1,6 +1,6 @@
 use std::{collections::HashMap, hash::Hash, iter::FromIterator};
 
-use super::graph::{EdgeStatus, Graph, SuccessorsGraphMap};
+use super::graph::{EdgeStatus, Graph, SuccessorsGraphMap, PredecessorsGraphMap};
 
 pub struct GraphMap<K: Eq + Hash + Clone, V, E> {
     graph: Graph<K, E>,
@@ -164,6 +164,37 @@ impl<'graph, K: 'graph + Eq + Hash + Clone, V: 'graph, E: 'graph>
                 }
                 // add edge connection between node and neighbor
                 graph.add_edge_by_key(&key, &n_key, edge);
+            }
+        }
+        graph
+    }
+}
+
+impl<'graph, K: 'graph + Eq + Hash + Clone, V: 'graph, E: 'graph>
+    FromIterator<(&'graph K, &'graph V, PredecessorsGraphMap<'graph, K, V, E>)>
+    for GraphMap<&'graph K, &'graph V, &'graph E>
+{
+    fn from_iter<
+        T: IntoIterator<Item = (&'graph K, &'graph V, PredecessorsGraphMap<'graph, K, V, E>)>,
+    >(
+        iter: T,
+    ) -> Self {
+        let mut graph: GraphMap<&K, &V, &E> = GraphMap::new();
+
+        let mut iter = iter.into_iter();
+
+        while let Some((key, value, mut incoming_neighbors)) = iter.next() {
+            // add missing node
+            if graph.has_node_by_key(&key) == false {
+                graph.add_node(key, value);
+            }
+            // add node's missing neighbors
+            while let Some((n_key, n_value, edge)) = incoming_neighbors.next() {
+                if graph.has_node_by_key(&n_key) == false {
+                    graph.add_node(n_key, n_value);
+                }
+                // add edge connection between node and neighbor
+                graph.add_edge_by_key(&n_key, &key, edge);
             }
         }
         graph

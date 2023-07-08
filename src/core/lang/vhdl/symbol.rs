@@ -1317,6 +1317,7 @@ impl VHDLSymbol {
         while let Some(t) = tokens.next() {
             // exit upon encountering terminator ';'
             if t.as_type().check_delimiter(&Delimiter::Terminator) {
+                // println!("{:?}", clause);
                 return clause;
             // extra keywords to help break up statements early
             } else if t.as_type().check_keyword(&Keyword::Generate)
@@ -1332,6 +1333,7 @@ impl VHDLSymbol {
             {
                 // add the breaking token to the statement before exiting
                 clause.get_tokens_mut().push(t);
+                // println!("{:?}", clause);
                 return clause;
             } else {
                 // check for compound identifiers as references to other design units
@@ -1362,8 +1364,10 @@ impl VHDLSymbol {
                 if let Some(dot) = took_dot {
                     clause.get_tokens_mut().push(dot);
                 }
+                
             }
         }
+        // println!("{:?}", clause);
         // return empty statement if unable to close with terminator ';'
         Statement::new()
     }
@@ -1831,11 +1835,17 @@ impl VHDLSymbol {
             } else if t.as_type().check_keyword(&Keyword::Function)
                 || t.as_type().check_keyword(&Keyword::Begin)
             {
-                let mut stmt = Self::parse_statement(tokens);
+                let mut stmt: Statement = Self::parse_statement(tokens);
                 // println!("ENTERING SUBPROGRAM {:?}", stmt);
+                // catch any references in the given statement
                 refs.append(&mut stmt.1);
+                // println!("REFS BEFORE: {:?}", refs);
                 let mut inner = Self::parse_body(tokens, &Self::is_sub_ending);
+                // update any references caught
                 refs.append(&mut inner.1);
+                // update any dependencies caught
+                deps.append(&mut inner.0);
+                // println!("REFS AFTER: {:?}", refs);
                 // println!("EXITING SUBPROGRAM");
                 // find component names (could be in package)
             } else if t.as_type().check_keyword(&Keyword::Component) {
@@ -1853,12 +1863,13 @@ impl VHDLSymbol {
                 refs.append(&mut stmt.1);
                 // check if statement is an instantiation
                 if let Some(mut inst) = Self::parse_instantiation(stmt) {
-                    // println!("info: detected dependency \"{}\"", inst);
+                    // println!("info: detected dependency \"{:?}\"", inst);
                     deps.append(&mut inst);
                 }
             }
         }
-        // println!("{:?}", deps);
+        // println!("DEPS: {:?}", deps);
+        // println!("REFS: {:?}", refs);
         (deps, refs)
     }
 }
@@ -2705,5 +2716,15 @@ end architecture rtl;
 ";
         let _ = VHDLParser::parse(VHDLTokenizer::from_source_code(&s).into_tokens());
         panic!("manually inspect token list")
+    }
+
+    #[test]
+    fn test_if_gen() {
+        let data = std::fs::read_to_string("./tests/data/vhdl/if_gen.vhd").unwrap();
+
+        let syms = VHDLParser::read(&data).into_symbols();
+        println!("{:?}", syms);
+        // verify we captured the dependency outside the if_gen and inside the if_gen (2 * 2)
+        assert_eq!(syms[1].as_architecture().unwrap().dependencies.len(), 2 * 2);
     }
 }

@@ -176,7 +176,7 @@ options."--set <key>=<value>..." = "Write the value at the key's entry"
 options."--unset <key>..." = "Delete the key's entry"
 
 examples = """\
-orbit config --append include="~/.orbit/profile/ks-tech"
+orbit config --append include="~/.orbit/profiles/ks-tech"
 orbit config --unset env.VIVADO_PATH --global"""
 
 

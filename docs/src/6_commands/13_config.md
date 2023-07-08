@@ -43,6 +43,6 @@ values. Lastly, it will remove all `--unset` entries.
 
 ```
 orbit config --set core.path="C:/my/projects" --set core.editor="code"
-orbit config --append include="/profile/ks-tech"
+orbit config --append include="/profiles/ks-tech"
 orbit config --unset env.VIVADO_PATH --global
 ```

@@ -10,7 +10,7 @@ The first config file you may come across is `config.toml`. This file is used to
 
 Here is a very minimal and basic example config file:
 ``` toml
-include = ["profile/ks-tech/config.toml"]
+include = ["profiles/ks-tech/config.toml"]
 
 [core]
 path = "c:/users/kepler/hdl" # path to find and store IP in-development
@@ -52,7 +52,7 @@ The following is a list of acceptable entries (key/value pairs) recognized by Or
 - only supported in the home configuration file
 
 ``` toml
-include = ["profile/ks-tech/config.toml"]
+include = ["profiles/ks-tech/config.toml"]
 ```
 
 ### `core.path` : _string_

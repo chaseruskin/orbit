@@ -26,12 +26,12 @@ Let's pull down our first profile to help us get up and running faster.
 
 1. Clone the repository to your .orbit home folder:
 ```
-git clone https://github.com/kepler-space-tech/orbit-profile.git "$(orbit env ORBIT_HOME)/profile/ks-tech"
+git clone https://github.com/kepler-space-tech/orbit-profile.git "$(orbit env ORBIT_HOME)/profiles/ks-tech"
 ```
 
 2. Link the profile's configuration file to your global configuration file:
 ```
-orbit config --append include="$(orbit env ORBIT_HOME)/profile/ks-tech/config.toml"
+orbit config --append include="$(orbit env ORBIT_HOME)/profiles/ks-tech/config.toml"
 ```
 
 ## Creating the Project

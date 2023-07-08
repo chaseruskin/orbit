@@ -1083,6 +1083,14 @@ impl VHDLSymbol {
     where
         I: Iterator<Item = Token<VHDLToken>>,
     {
+        // steal the '(' if it is next to prevent performing sensitivity list
+        while let Some(t) = tokens.peek() {
+            if t.as_type().check_delimiter(&Delimiter::ParenL) == true {
+                tokens.next();
+            } else {
+                break;
+            }
+        }
         deps.append(&mut Self::parse_statement(tokens).take_refs());
     }
 
@@ -1313,14 +1321,38 @@ impl VHDLSymbol {
         I: Iterator<Item = Token<VHDLToken>>,
     {
         let mut clause = Statement::new();
+
+        // determine if the statement will be a sensitivity list
+        let mut paren_count: i32 = 0;
+        let is_sensitivity_list = { 
+            if let Some(t) = tokens.peek() {
+                t.as_type().check_delimiter(&Delimiter::ParenL) == true
+            } else {
+                false
+            }
+        };
+         
         // traverse through token stream
         while let Some(t) = tokens.next() {
+            // gather sensitivity list as its own statement
+            if is_sensitivity_list == true && (t.as_type().check_delimiter(&Delimiter::ParenL) || t.as_type().check_delimiter(&Delimiter::ParenR)) {
+                clause.get_tokens_mut().push(t);
+                if clause.get_tokens().last().unwrap().as_type().check_delimiter(&Delimiter::ParenL) {
+                    paren_count += 1;
+                    // add token
+                } else if clause.get_tokens().last().unwrap().as_type().check_delimiter(&Delimiter::ParenR) {
+                    paren_count -= 1;
+                    if paren_count == 0 {
+                        return clause;
+                    }
+                }
             // exit upon encountering terminator ';'
-            if t.as_type().check_delimiter(&Delimiter::Terminator) {
+            } else if t.as_type().check_delimiter(&Delimiter::Terminator) {
                 // println!("{:?}", clause);
                 return clause;
             // extra keywords to help break up statements early
             } else if t.as_type().check_keyword(&Keyword::Generate)
+                || t.as_type().check_keyword(&Keyword::Process)
                 || t.as_type().check_keyword(&Keyword::Begin)
                 || (clause.get_tokens().first().is_some()
                     && clause
@@ -1827,20 +1859,26 @@ impl VHDLSymbol {
         while let Some(t) = tokens.peek() {
             if t.as_type().check_keyword(&Keyword::End) == true {
                 let stmt = Self::parse_statement(tokens);
-                // println!("in body: {:?}", stmt);
+                // println!("IN BODY AT END: {:?}", stmt);
                 if eval_exit(&stmt) == true {
                     break;
                 }
             // enter a subprogram
             } else if t.as_type().check_keyword(&Keyword::Function)
                 || t.as_type().check_keyword(&Keyword::Begin)
+                || t.as_type().check_keyword(&Keyword::Procedure)
             {
+                let next_eval_exit = match Self::is_subprogram(t.as_type().as_keyword().unwrap()) {
+                    true => Self::is_subprogram_ending,
+                    false => Self::is_sub_ending
+                };
                 let mut stmt: Statement = Self::parse_statement(tokens);
                 // println!("ENTERING SUBPROGRAM {:?}", stmt);
                 // catch any references in the given statement
                 refs.append(&mut stmt.1);
+
                 // println!("REFS BEFORE: {:?}", refs);
-                let mut inner = Self::parse_body(tokens, &Self::is_sub_ending);
+                let mut inner = Self::parse_body(tokens, &next_eval_exit);
                 // update any references caught
                 refs.append(&mut inner.1);
                 // update any dependencies caught
@@ -1859,7 +1897,7 @@ impl VHDLSymbol {
                 // build statements
             } else {
                 let mut stmt = Self::parse_statement(tokens);
-                // println!("in body: {:?}", stmt);
+                // println!("IN BODY: {:?}", stmt);
                 refs.append(&mut stmt.1);
                 // check if statement is an instantiation
                 if let Some(mut inst) = Self::parse_instantiation(stmt) {
@@ -2285,6 +2323,11 @@ end entity nor_gate;";
         let _ = VHDLSymbol::parse_statement(&mut tokens);
         assert_eq!(
             tokens.next().unwrap().as_type(),
+            &VHDLToken::Delimiter(Delimiter::ParenL)
+        );
+        let _ = VHDLSymbol::parse_statement(&mut tokens);
+        assert_eq!(
+            tokens.next().unwrap().as_type(),
             &VHDLToken::Keyword(Keyword::End)
         );
     }
@@ -2343,6 +2386,7 @@ for L1: XOR_GATE use entity WORK.XOR_GATE(Behavior) -- or L1 = 'others' = 'L1, L
         let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         let st = VHDLSymbol::parse_statement(&mut iter);
+        println!("{}", st);
         let iden = VHDLSymbol::parse_configuration_spec(st);
         assert_eq!(
             iden.unwrap(),
@@ -2734,5 +2778,15 @@ end architecture rtl;
         let syms = VHDLParser::read(&data).into_symbols();
         // capture all units (primary and secondary)
         assert_eq!(syms.len(), 6);
+    }
+    
+    #[test]
+    fn test_procedure_in_process() {
+        let data = std::fs::read_to_string("./tests/data/vhdl/proced_in_proc.vhd").unwrap();
+        let syms = VHDLParser::read(&data).into_symbols();
+        // capture all units (primary and secondary)
+        println!("{:?}", syms);
+        // verify we captured all 3 sub-entities following procedures
+        assert_eq!(syms[1].as_architecture().unwrap().dependencies.len(), 2 * 3);
     }
 }

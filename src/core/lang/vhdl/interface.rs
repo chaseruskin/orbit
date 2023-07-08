@@ -232,6 +232,8 @@ fn tokens_to_string(tokens: &Vec<VHDLToken>) -> ColorVec {
     let is_spaced_token = |d: &Delimiter| match d {
         Delimiter::ParenL
         | Delimiter::ParenR
+        | Delimiter::Dot
+        | Delimiter::SingleQuote
         | Delimiter::Dash
         | Delimiter::Plus
         | Delimiter::Star

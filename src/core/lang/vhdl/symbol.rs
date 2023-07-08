@@ -2727,4 +2727,12 @@ end architecture rtl;
         // verify we captured the dependency outside the if_gen and inside the if_gen (2 * 2)
         assert_eq!(syms[1].as_architecture().unwrap().dependencies.len(), 2 * 2);
     }
+
+    #[test]
+    fn test_entity_after_package() {
+        let data = std::fs::read_to_string("./tests/data/vhdl/ent_after_pkg.vhd").unwrap();
+        let syms = VHDLParser::read(&data).into_symbols();
+        // capture all units (primary and secondary)
+        assert_eq!(syms.len(), 6);
+    }
 }

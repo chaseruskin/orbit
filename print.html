@@ -281,12 +281,12 @@
 <ol>
 <li>Clone the repository to your .orbit home folder:</li>
 </ol>
-<pre><code>git clone https://github.com/kepler-space-tech/orbit-profile.git &quot;$(orbit env ORBIT_HOME)/profile/ks-tech&quot;
+<pre><code>git clone https://github.com/kepler-space-tech/orbit-profile.git &quot;$(orbit env ORBIT_HOME)/profiles/ks-tech&quot;
 </code></pre>
 <ol start="2">
 <li>Link the profile's configuration file to your global configuration file:</li>
 </ol>
-<pre><code>orbit config --append include=&quot;$(orbit env ORBIT_HOME)/profile/ks-tech/config.toml&quot;
+<pre><code>orbit config --append include=&quot;$(orbit env ORBIT_HOME)/profiles/ks-tech/config.toml&quot;
 </code></pre>
 <h2 id="creating-the-project"><a class="header" href="#creating-the-project">Creating the Project</a></h2>
 <p>Lets create our first project! We, <em>KS-Tech</em>, want a HDL library called <em>rary</em>, that holds some <em>gate</em> components for us. It's fitting for us to give it the title: <code>ks-tech.rary.gates</code>. This title is the <em>pkgid</em> of the ip, split by &lt;vendor&gt;.&lt;library&gt;.&lt;name&gt;.</p>
@@ -1094,7 +1094,7 @@ precedence:
 <h2 id="configtoml"><a class="header" href="#configtoml">config.toml</a></h2>
 <p>The first config file you may come across is <code>config.toml</code>. This file is used to load initial startup settings into orbit and customize a user's program experience.</p>
 <p>Here is a very minimal and basic example config file:</p>
-<pre><code class="language-toml">include = [&quot;profile/ks-tech/config.toml&quot;]
+<pre><code class="language-toml">include = [&quot;profiles/ks-tech/config.toml&quot;]
 
 [core]
 path = &quot;c:/users/kepler/hdl&quot; # path to find and store IP in-development
@@ -1130,7 +1130,7 @@ editor = &quot;c:/users/kepler/appdata/local/programs/vscode/code&quot;
 <li>paths to other configurations files to load before the home configuration</li>
 <li>only supported in the home configuration file</li>
 </ul>
-<pre><code class="language-toml">include = [&quot;profile/ks-tech/config.toml&quot;]
+<pre><code class="language-toml">include = [&quot;profiles/ks-tech/config.toml&quot;]
 </code></pre>
 <h3 id="corepath--string"><a class="header" href="#corepath--string"><code>core.path</code> : <em>string</em></a></h3>
 <ul>
@@ -1782,7 +1782,7 @@ values. Lastly, it will remove all <code>--unset</code> entries.</p>
       Remove the key's entry</p>
 <h2 id="examples-13"><a class="header" href="#examples-13"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit config --set core.path=&quot;C:/my/projects&quot; --set core.editor=&quot;code&quot;
-orbit config --append include=&quot;/profile/ks-tech&quot;
+orbit config --append include=&quot;/profiles/ks-tech&quot;
 orbit config --unset env.VIVADO_PATH --global
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-uninstall"><a class="header" href="#orbit-uninstall"><strong>orbit uninstall</strong></a></h1>

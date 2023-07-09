@@ -341,6 +341,27 @@ impl AsRef<str> for CacheSlot {
     }
 }
 
+#[derive(PartialEq, Debug, Clone)]
+pub struct DownloadSlot(String);
+
+impl DownloadSlot {
+    /// Combines the various components of a cache slot name into a `CacheSlot`.
+    pub fn new(name: &PkgPart, version: &Version, uuid: &Uuid) -> Self {
+        Self(format!(
+            "{}-{}-{:x?}.ip",
+            name,
+            version,
+            uuid.get().to_fields_le().0.to_be(),
+        ))
+    }
+}
+
+impl AsRef<str> for DownloadSlot {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
 #[derive(Debug)]
 pub enum CatalogError {
     SuggestInstall(PkgId, AnyVersion),

@@ -44,6 +44,34 @@ struct LockNumber {
     version: usize,
 }
 
+impl LockVersion {
+    pub fn decode(s: &str) -> Result<LockFile, Box<dyn Error>> {
+        // grab the version number to determine who to parse
+        let data: LockVersion = match toml::from_str::<LockNumber>(&s)?.version {
+            // parse for VERSION 1
+            1 => LockVersion::V1(
+                // parse toml syntax
+                match LockFile::from_str(&s) {
+                    Ok(r) => r,
+                    // enter a blank lock file if failed (do not exit)
+                    Err(e) => {
+                        println!(
+                            "{}: failed to parse {} file: {}",
+                            "warning".yellow().bold(),
+                            IP_LOCK_FILE,
+                            e
+                        );
+                        v1::LockFile::new()
+                    }
+                },
+            ),
+            _ => return Err(AnyError(format!("Unsupported lockfile version")))?,
+        };
+        Ok(data.into_latest())
+    }
+}
+
+
 impl FromFile for LockFile {
     fn from_file(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
         if path.exists() == true {
@@ -53,29 +81,8 @@ impl FromFile for LockFile {
             }
             // open file
             let contents = std::fs::read_to_string(&path)?;
-
-            // grab the version number to determine who to parse
-            let data: LockVersion = match toml::from_str::<LockNumber>(&contents)?.version {
-                // parse for VERSION 1
-                1 => LockVersion::V1(
-                    // parse toml syntax
-                    match Self::from_str(&contents) {
-                        Ok(r) => r,
-                        // enter a blank lock file if failed (do not exit)
-                        Err(e) => {
-                            println!(
-                                "{}: failed to parse {} file: {}",
-                                "warning".yellow().bold(),
-                                IP_LOCK_FILE,
-                                e
-                            );
-                            v1::LockFile::new()
-                        }
-                    },
-                ),
-                _ => return Err(AnyError(format!("Unsupported lockfile version")))?,
-            };
-            Ok(data.into_latest())
+            // decode based on version and give the lockfile data
+            LockVersion::decode(&contents)
         } else {
             Ok(LockFile::new())
         }

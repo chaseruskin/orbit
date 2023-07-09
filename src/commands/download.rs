@@ -1,7 +1,9 @@
 use crate::core::catalog::Catalog;
+use crate::core::catalog::DownloadSlot;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::ip::IpSpec;
+use crate::core::iparchive::IpArchive;
 use crate::core::lockfile::LockEntry;
 use crate::core::lockfile::LockFile;
 use crate::core::manifest;
@@ -12,7 +14,6 @@ use crate::core::source::Source;
 use crate::core::variable::VariableTable;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
-use crate::util::compress;
 use crate::util::environment::Environment;
 use crate::util::filesystem::Standardize;
 use crate::OrbitResult;
@@ -235,16 +236,11 @@ impl Download {
                         && temp.get_man().get_ip().get_version() == spec.get_version()
                     {
                         // zip the project to the downloads directory
-                        let download_slot_name = format!(
-                            "{}-{}-{}.ip",
-                            &spec.get_name(),
-                            &spec.get_version(),
-                            temp.get_uuid().get().as_u128()
-                        );
-                        let full_download_path = downloads.join(&download_slot_name);
-                        compress::write_zip_dir(temp.get_root(), &full_download_path)?;
-                        // @todo: embed the bytes of manifest, lockfile, and metadata into the .ip file to be able to
-                        // load the IP in the catalog
+                        let download_slot_name = DownloadSlot::new(spec.get_name(), spec.get_version(), temp.get_uuid());
+                        let full_download_path = downloads.join(&download_slot_name.as_ref());
+                        IpArchive::write(&temp, &full_download_path)?;
+                        // let arch = IpArchive::read(&full_download_path)?;
+                        // arch.extract(&PathBuf::from("./my-installs"))?;
                         return Ok(());
                     }
                 }

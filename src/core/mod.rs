@@ -14,3 +14,4 @@ pub mod source;
 pub mod uuid;
 pub mod variable;
 pub mod version;
+pub mod iparchive;

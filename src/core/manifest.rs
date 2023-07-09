@@ -79,16 +79,16 @@ impl FromStr for Manifest {
 }
 
 impl Manifest {
-    /// Creates data for a new [Manifest].
-    pub fn new(name: Id) -> Self {
+    /// Establishes a minimal bare [Manifest].
+    pub fn new() -> Self {
         Self {
             ip: Package {
-                name: name,
-                version: Version::new().minor(1),
+                name: PkgPart::new(),
+                version: Version::new(),
                 source: None.into(),
                 keywords: Vec::new(),
-                library: None,
                 summary: None,
+                library: None,
             },
             dependencies: Dependencies::new(),
             dev_dependencies: Dependencies::new(),

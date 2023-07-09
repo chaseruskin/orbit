@@ -4,6 +4,7 @@ use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use std::path::PathBuf;
 
+use super::iparchive::IpArchive;
 use super::lockfile::LockFile;
 use super::lockfile::IP_LOCK_FILE;
 use super::manifest::FromFile;
@@ -21,6 +22,12 @@ use std::error::Error;
 use std::str::FromStr;
 use toml_edit::Document;
 
+// add state to `root` (make enum) to determine if is real path or not
+pub enum IpLocation {
+    Physical(PathBuf),
+    Virtual,
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Ip {
     /// The base directory for the entire [Ip] structure.
@@ -31,6 +38,22 @@ pub struct Ip {
     lock: LockFile,
     /// The UUID for the [Ip].
     uuid: Uuid,
+}
+
+impl From<IpArchive> for Ip {
+    fn from(value: IpArchive) -> Self {
+        let (man, lock) = value.decouple();
+        let uuid = match lock.get(man.get_ip().get_name(), man.get_ip().get_version()) {
+            Some(entry) => entry.get_uuid().clone(),
+            None => Uuid::new(),
+        }; 
+        Self {
+            root: PathBuf::new(),
+            data: man,
+            lock: lock,
+            uuid: uuid,
+        }
+    }
 }
 
 impl Ip {

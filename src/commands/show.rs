@@ -36,31 +36,46 @@ impl Command<Context> for Show {
 
     fn exec(&self, c: &Context) -> Self::Status {
         // collect all manifests available (load catalog)
-        let catalog = Catalog::new().installations(c.get_cache_path())?;
+        let catalog = Catalog::new()
+            .installations(c.get_cache_path())?
+            .downloads(c.get_downloads_path())?;
+
+        let dev_ip: Option<Result<Ip, Fault>> = {
+            match Context::find_ip_path(&current_dir().unwrap()) {
+                Some(dir) => Some(Ip::load(dir)),
+                None => None
+            }
+        };
 
         // try to auto-determine the ip (check if in a working ip)
-        let ip_path: std::path::PathBuf = if let Some(spec) = &self.ip {
+        let ip: &Ip = if let Some(spec) = &self.ip {
             // find the path to the provided ip by searching through the catalog
             if let Some(lvl) = catalog.inner().get(spec.get_name()) {
                 // return the highest available version
                 if let Some(slot) = lvl.get_install(spec.get_version()) {
-                    slot.get_root().clone()
+                    slot
                 } else {
-                    return Err(AnyError(format!("IP {} does not exist in the cache", spec)))?;
+                    // try to find from downloads
+                    if let Some(slot) = lvl.get_download(spec.get_version()) {
+                        slot
+                    } else {
+                        return Err(AnyError(format!("IP {} does not exist in the cache", spec)))?;
+                    }
                 }
             } else {
-                return Err(AnyError(format!("no ip found in cache")))?;
+                return Err(AnyError(format!("no ip found anywhere")))?;
             }
         } else {
-            let ip = Context::find_ip_path(&current_dir().unwrap());
-            if ip.is_none() == true {
+            if dev_ip.is_none() == true {
                 return Err(AnyError(format!("no ip provided or detected")))?;
             } else {
-                ip.unwrap()
+                match &dev_ip {
+                    Some(Ok(r)) => r,
+                    Some(Err(e)) => return Err(AnyError(format!("{}", e.to_string())))?,
+                    _ => panic!("unreachable code")
+                }
             }
         };
-
-        let ip = Ip::load(ip_path)?;
 
         // load the ip's manifest
         if self.units == true {

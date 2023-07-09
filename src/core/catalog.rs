@@ -5,12 +5,14 @@ use std::{
     path::PathBuf,
 };
 
+use super::iparchive::ARCHIVE_EXT;
 use super::{
     pkgid::{PkgId, PkgPart},
     version::{AnyVersion, Version},
 };
 
 use crate::core::ip::Ip;
+use crate::core::iparchive::IpArchive;
 
 #[derive(Debug)]
 pub struct Catalog<'a> {
@@ -38,8 +40,6 @@ impl std::fmt::Display for IpState {
     }
 }
 
-type IpArchive = ();
-
 #[derive(Debug)]
 pub struct IpLevel {
     installs: Vec<Ip>,
@@ -61,6 +61,10 @@ impl IpLevel {
         if m.is_dynamic() == false {
             self.installs.push(m);
         }
+    }
+
+    pub fn add_download(&mut self, m: Ip) -> () {
+        self.downloads.push(m);
     }
 
     pub fn add_available(&mut self, m: Ip) -> () {
@@ -190,14 +194,13 @@ impl<'a> Catalog<'a> {
     /// Searches the `path` for IP installed.
     pub fn installations(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
         self.cache = Some(&path);
-        self.detect(path, &IpLevel::add_install, false)
+        self.detect(path, &IpLevel::add_install, IpState::Installation)
     }
 
     /// Searches the `path` for IP downloaded.
     pub fn downloads(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
         self.downloads = Some(&path);
-        // @todo: use special method for detecting downloads
-        Ok(self)
+        self.detect(path, &IpLevel::add_download, IpState::Downloaded)
     }
 
     pub fn inner(&self) -> &HashMap<PkgPart, IpLevel> {
@@ -234,11 +237,13 @@ impl<'a> Catalog<'a> {
         mut self,
         path: &PathBuf,
         add: &dyn Fn(&mut IpLevel, Ip) -> (),
-        is_pointers: bool,
+        lvl: IpState,
     ) -> Result<Self, Fault> {
-        match is_pointers {
-            false => Ip::detect_all(path),
-            true => todo!("only detect for available"),
+        match lvl {
+            IpState::Installation => Ip::detect_all(path),
+            IpState::Available => todo!("only detect for available"),
+            IpState::Downloaded => IpArchive::detect_all(path),
+            _ => panic!("Unknown catalog state to find")
         }?
         .into_iter()
         .for_each(
@@ -353,10 +358,11 @@ impl DownloadSlot {
     /// Combines the various components of a cache slot name into a `CacheSlot`.
     pub fn new(name: &PkgPart, version: &Version, uuid: &Uuid) -> Self {
         Self(format!(
-            "{}-{}-{:x?}.ip",
+            "{}-{}-{:x?}.{}",
             name,
             version,
             uuid.get().to_fields_le().0.to_be(),
+            ARCHIVE_EXT
         ))
     }
 }

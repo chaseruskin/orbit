@@ -15,16 +15,22 @@ use zip::ZipArchive;
 use crate::util::anyerror::Fault;
 use std::fs::{self, File};
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use crate::util::compress;
+use std::str::FromStr;
 
 use super::ip::Ip;
+use super::lockfile::LockFile;
+use super::manifest::Manifest;
+
+pub const ARCHIVE_EXT: &str = "ip";
 
 #[derive(Debug, PartialEq)]
 pub struct IpArchive {
     version: u8,
-    /// Metadata about the [Ip].
-    header: Vec<u8>,
+    // Metadata about the IP.
+    manifest: Manifest,
+    lock: LockFile,
     /// Compressed data containing the [Ip].
     archive: Vec<u8>,
 }
@@ -33,7 +39,7 @@ pub struct IpArchive {
 const ARCHIVE_VERSION: u8 = 1;
 
 impl IpArchive {
-    pub fn read<P: AsRef<Path>>(path: P) -> Result<Self, Fault> {
+    pub fn read(path: &PathBuf) -> Result<Self, Fault> {
         let contents = fs::read(path)?;
         // read the first byte as the version of the archive
         let version: u8 = u8::from_be_bytes(contents[0..1].try_into()?);
@@ -55,15 +61,18 @@ impl IpArchive {
 
         let archive_offset: usize = lock_offset+4+lock_len;
 
-        let lock_str = String::from_utf8(buf[lock_offset+4..lock_offset+4+lock_len].to_vec())?;
-        println!("{}", lock_str);
+        let archive = &buf[archive_offset..];
 
-        let (header, archive) = buf.split_at(archive_offset);
         Ok(Self {
             version: 1,
-            header: header.to_vec(),
+            manifest: Manifest::from_str(&String::from_utf8(buf[man_offset+4..man_offset+4+man_len].to_vec())?)?,
+            lock: LockFile::decode(&String::from_utf8(buf[lock_offset+4..lock_offset+4+lock_len].to_vec())?)?,
             archive: archive.to_vec(),
         })
+    }
+
+    pub fn decouple(self) -> (Manifest, LockFile) {
+        (self.manifest, self.lock)
     }
 
     /// Unzips the archive and places it at `dest`. The `dest` path will be
@@ -110,6 +119,23 @@ impl IpArchive {
 
         Ok(())
     }
+
+    /// Detects all Ip found as archives.
+    pub fn detect_all(dir: &PathBuf) -> Result<Vec<Ip>, Fault> {
+        // for each .ip file
+        fs::read_dir(&dir)?
+            .filter_map(|result| { if let Ok(r) = result { Some(r) } else { None } })
+            .map(|entry| { entry.path().to_path_buf() })
+            .filter(|path| path.extension().is_some() && path.extension().unwrap() == ARCHIVE_EXT)
+            .map(|path| {
+                match IpArchive::read(&path) {
+                    Ok(arc) => Ok(Ip::from(arc)),
+                    Err(e) => Err(e)
+                }
+            })
+            .collect()
+    }
+
 }
 
 // #[cfg(test)]

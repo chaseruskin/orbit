@@ -123,7 +123,7 @@ impl Search {
                 "{:<28}{:<10}     {:<9}\n",
                 ip.to_string(),
                 status
-                    .get(false, &AnyVersion::Latest)
+                    .get(true, &AnyVersion::Latest)
                     .unwrap()
                     .get_man()
                     .get_ip()

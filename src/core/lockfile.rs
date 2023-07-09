@@ -43,8 +43,7 @@ impl LockVersion {
 struct LockNumber {
     version: usize,
 }
-
-impl LockVersion {
+impl LockFile {
     pub fn decode(s: &str) -> Result<LockFile, Box<dyn Error>> {
         // grab the version number to determine who to parse
         let data: LockVersion = match toml::from_str::<LockNumber>(&s)?.version {
@@ -71,7 +70,6 @@ impl LockVersion {
     }
 }
 
-
 impl FromFile for LockFile {
     fn from_file(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
         if path.exists() == true {
@@ -82,7 +80,7 @@ impl FromFile for LockFile {
             // open file
             let contents = std::fs::read_to_string(&path)?;
             // decode based on version and give the lockfile data
-            LockVersion::decode(&contents)
+            Self::decode(&contents)
         } else {
             Ok(LockFile::new())
         }

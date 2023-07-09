@@ -13,8 +13,6 @@ use crate::core::variable::VariableTable;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::compress;
-use crate::util::environment;
-use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
 use crate::util::filesystem::Standardize;
 use crate::OrbitResult;
@@ -169,18 +167,7 @@ impl Download {
             }
             None => TempDir::into_path(TempDir::new()?),
         };
-        vtable.add(
-            "orbit.queue",
-            &PathBuf::standardize(&queue).display().to_string(),
-        );
-        // set the environment variable
-        Environment::new()
-            .add(
-                EnvVar::new()
-                    .key(environment::ORBIT_QUEUE)
-                    .value(PathBuf::standardize(&queue).to_str().unwrap()),
-            )
-            .initialize();
+
         // access the protocol
         if let Some(proto) = src.get_protocol() {
             match protocols.get(proto.as_str()) {
@@ -189,11 +176,13 @@ impl Download {
                         "info: Downloading {} over \"{}\" protocol ...",
                         spec, &proto
                     );
+                    vtable.add("orbit.queue", PathBuf::standardize(&queue).to_str().unwrap());
                     // update variable table for this lock entry
                     vtable.add("orbit.ip.name", spec.get_name().as_ref());
                     vtable.add("orbit.ip.version", &spec.get_version().to_string());
                     vtable.add("orbit.ip.source.url", src.get_url());
                     vtable.add("orbit.ip.source.protocol", entry.get_name());
+                    vtable.add("orbit.ip.source.tag", src.get_tag().unwrap_or(&String::new()));
                     // allow the user to handle placing the code in the queue
                     let entry: Protocol = entry.clone().replace_vars_in_args(&vtable);
                     if let Err(err) = entry.execute(&[], verbose) {

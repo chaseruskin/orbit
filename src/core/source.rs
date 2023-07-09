@@ -8,6 +8,8 @@ use std::str::FromStr;
 pub struct Source {
     protocol: Option<String>,
     url: String,
+    /// A `tag`is optional user-defined information that is needed to proceed with the protocol.
+    tag: Option<String>,
     #[serde(skip, default = "set_true")]
     valid: bool,
 }
@@ -22,11 +24,12 @@ impl Source {
             protocol: None,
             url: String::new(),
             valid: true,
+            tag: None,
         }
     }
 
-    pub fn get_protocol(&self) -> &Option<String> {
-        &self.protocol
+    pub fn get_protocol(&self) -> Option<&String> {
+        self.protocol.as_ref()
     }
 
     pub fn get_url(&self) -> &str {
@@ -35,6 +38,10 @@ impl Source {
 
     pub fn is_valid(&self) -> bool {
         self.valid
+    }
+
+    pub fn get_tag(&self) -> Option<&String> {
+        self.tag.as_ref()
     }
 
     pub fn is_default(&self) -> bool {
@@ -77,6 +84,7 @@ impl Default for Source {
             protocol: None,
             url: String::new(),
             valid: false,
+            tag: None,
         }
     }
 }
@@ -88,6 +96,7 @@ impl FromStr for Source {
         Ok(Self {
             url: s.to_string(),
             protocol: None,
+            tag: None,
             valid: true,
         })
     }
@@ -156,7 +165,9 @@ impl Serialize for Source {
                 if let Some(p) = self.get_protocol() {
                     map.serialize_entry("protocol", p)?;
                 }
-
+                if let Some(p) = self.get_tag() {
+                    map.serialize_entry("tag", p)?;
+                }
                 map.end()
             }
             false => serializer.serialize_none(),
@@ -176,6 +187,7 @@ mod test {
             Source::from_str(src).unwrap(),
             Source {
                 protocol: None,
+                tag: None,
                 url: String::from("https://some.url"),
                 valid: true,
             }

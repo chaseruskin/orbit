@@ -18,6 +18,7 @@ pub struct Search {
     cached: bool,
     downloaded: bool,
     keywords: Vec<String>,
+    limit: Option<usize>,
     hard_match: bool,
 }
 
@@ -81,10 +82,10 @@ impl Search {
                         if self.ip.is_none() && self.keywords.is_empty() {
                             return true;
                         }
-
+                        // try to match the name of the IP with ones in the database
                         let name_match = match &self.ip {
                             // names must be identical
-                            Some(pkgid) => key.contains(&pkgid),
+                            Some(pkgid) => key.starts_with(&pkgid),
                             // move on to the keywords
                             None => false,
                         };
@@ -106,11 +107,11 @@ impl Search {
                 tree.insert(key, status);
             });
 
-        println!("{}", Self::fmt_table(tree));
+        println!("{}", Self::fmt_table(tree, self.limit));
         Ok(())
     }
 
-    fn fmt_table(catalog: BTreeMap<&PkgPart, &IpLevel>) -> String {
+    fn fmt_table(catalog: BTreeMap<&PkgPart, &IpLevel>, limit: Option<usize>) -> String {
         let header = format!(
             "\
 {:<28}{:<10}{:<9}
@@ -118,7 +119,14 @@ impl Search {
             "Package", "Latest", "Status", " "
         );
         let mut body = String::new();
+        let mut index = 0;
         for (ip, status) in catalog {
+            if let Some(cap) = limit {
+                index += 1;
+                // exit when next entry will go past the max results
+                if index > cap { break; }
+            }
+
             body.push_str(&format!(
                 "{:<28}{:<10}     {:<9}\n",
                 ip.to_string(),
@@ -148,6 +156,7 @@ impl FromCli for Search {
             downloaded: cli.check_flag(Flag::new("download").switch('d'))?,
             cached: cli.check_flag(Flag::new("install").switch('i'))?,
             hard_match: cli.check_flag(Flag::new("match"))?,
+            limit: cli.check_option(Optional::new("limit"))?,
             keywords: cli
                 .check_option_all(Optional::new("keyword").value("term"))?
                 .unwrap_or(Vec::new()),
@@ -170,6 +179,7 @@ Options:
     --install, -i       filter for ip installed to cache
     --download, -d      filter for ip downloaded to the queue
     --keyword <term>... special word to filter out packages
+    --limit <count>     maximum number of results to return
     --match             return results with each filter passed
 
 Use 'orbit help search' to learn more about the command.
@@ -181,7 +191,7 @@ mod test {
 
     #[test]
     fn fmt_table() {
-        let t = Search::fmt_table(BTreeMap::new());
+        let t = Search::fmt_table(BTreeMap::new(), None);
         let table = "\
 Package                     Latest    Status   
 --------------------------- --------- ---------- 

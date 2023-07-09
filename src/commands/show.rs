@@ -133,8 +133,8 @@ impl Show {
     fn format_units_table(table: Vec<PrimaryUnit>) -> String {
         let header = format!(
             "\
-{:<32}{:<14}{:<9}
-{:->32}{3:->14}{3:->9}\n",
+{:<36}{:<14}{:<9}
+{:->36}{3:->14}{3:->9}\n",
             "Identifier", "Type", "Public", " "
         );
         let mut body = String::new();
@@ -143,7 +143,7 @@ impl Show {
         table.sort_by(|a, b| a.get_iden().cmp(b.get_iden()));
         for unit in table {
             body.push_str(&format!(
-                "{:<32}{:<14}{:<2}\n",
+                "{:<36}{:<14}{:<2}\n",
                 unit.get_iden().to_string(),
                 unit.to_string(),
                 "y"

@@ -32,6 +32,14 @@ impl PkgPart {
             .to_string()
             .contains(rhs.to_normal().as_ref())
     }
+
+    /// Checks if the current [PkgPart] is a superset of the `rhs` starting
+    /// from position 0.
+    pub fn starts_with(&self, rhs: &Self) -> bool {
+        self.to_normal()
+            .to_string()
+            .starts_with(rhs.to_normal().as_ref())
+    }
 }
 
 impl AsRef<std::path::Path> for PkgPart {

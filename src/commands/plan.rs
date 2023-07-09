@@ -123,7 +123,7 @@ impl Command<Context> for Plan {
         // gather the catalog
         let mut catalog = Catalog::new()
             .installations(c.get_cache_path())?
-            .queue(c.get_queue_path())?;
+            .downloads(c.get_downloads_path())?;
 
         // @todo: recreate the ip graph from the lockfile, then read each installation
         // see Install::install_from_lock_file
@@ -142,13 +142,13 @@ impl Command<Context> for Plan {
             // recollect the queued items to update the catalog
             catalog = catalog
                 .installations(c.get_cache_path())?
-                .queue(c.get_queue_path())?;
+                .downloads(c.get_downloads_path())?;
 
             install_missing_deps(&lf, &le, &catalog)?;
             // recollect the installations and queued items to update the catalog
             catalog = catalog
                 .installations(c.get_cache_path())?
-                .queue(c.get_queue_path())?;
+                .downloads(c.get_downloads_path())?;
         }
 
         // determine the build directory (command-line arg overrides configuration setting)
@@ -194,7 +194,7 @@ pub fn download_missing_deps(
                         }
                     }
                     None => {
-                        match status.get_queue(&ver) {
+                        match status.get_download(&ver) {
                             // already exists in the queue
                             Some(_) => (),
                             // does not exist in the queue
@@ -219,7 +219,8 @@ pub fn download_missing_deps(
                         &mut vtable,
                         &entry.to_ip_spec(),
                         src,
-                        catalog.get_queue_path(),
+                        None,
+                        catalog.get_downloads_path(),
                         &protocols,
                         false,
                         true,
@@ -256,7 +257,7 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                     Some(dep) => {
                         // verify the checksum
                         if Install::is_checksum_good(&dep.get_root()) == false {
-                            if let Some(dl_dep) = status.get_queue(&ver) {
+                            if let Some(dl_dep) = status.get_download(&ver) {
                                 Install::install(dl_dep, catalog.get_cache_path(), true)?;
                                 // remove from queue
                                 fs::remove_dir_all(dl_dep.get_root())?;
@@ -269,7 +270,7 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                     // install
                     None => {
                         // check the queue for installation
-                        match status.get_queue(&ver) {
+                        match status.get_download(&ver) {
                             Some(dep) => {
                                 Install::install(dep, catalog.get_cache_path(), false)?;
                                 // remove from queue

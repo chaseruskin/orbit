@@ -16,7 +16,7 @@ use crate::core::ip::Ip;
 pub struct Catalog<'a> {
     inner: HashMap<PkgPart, IpLevel>,
     cache: Option<&'a PathBuf>,
-    queue: Option<&'a PathBuf>,
+    downloads: Option<&'a PathBuf>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -38,10 +38,12 @@ impl std::fmt::Display for IpState {
     }
 }
 
+type IpArchive = ();
+
 #[derive(Debug)]
 pub struct IpLevel {
     installs: Vec<Ip>,
-    queue: Vec<Ip>,
+    downloads: Vec<Ip>, 
     available: Vec<Ip>,
 }
 
@@ -50,7 +52,7 @@ impl IpLevel {
         Self {
             installs: Vec::new(),
             available: Vec::new(),
-            queue: Vec::new(),
+            downloads: Vec::new(),
         }
     }
 
@@ -61,10 +63,6 @@ impl IpLevel {
         }
     }
 
-    pub fn add_queue(&mut self, m: Ip) -> () {
-        self.queue.push(m);
-    }
-
     pub fn add_available(&mut self, m: Ip) -> () {
         self.available.push(m);
     }
@@ -73,12 +71,12 @@ impl IpLevel {
         &self.installs
     }
 
-    pub fn get_availability(&self) -> &Vec<Ip> {
-        &self.available
+    pub fn get_downloads(&self) -> &Vec<Ip> {
+        &self.downloads
     }
 
-    pub fn get_queued(&self) -> &Vec<Ip> {
-        &self.queue
+    pub fn get_availability(&self) -> &Vec<Ip> {
+        &self.available
     }
 
     pub fn is_available(&self) -> bool {
@@ -89,8 +87,8 @@ impl IpLevel {
         self.installs.is_empty() == false
     }
 
-    pub fn is_queued(&self) -> bool {
-        self.queue.is_empty() == false
+    pub fn is_downloaded(&self) -> bool {
+        self.downloads.is_empty() == false
     }
 
     /// Returns the manifest with the most compatible version fitting `version`.
@@ -99,12 +97,13 @@ impl IpLevel {
     }
 
     /// Returns the manifest with the most compatible version fitting `version`.
-    pub fn get_available(&self, version: &AnyVersion) -> Option<&Ip> {
-        Self::get_target_version(version, self.get_availability())
+    pub fn get_download(&self, version: &AnyVersion) -> Option<&Ip> {
+        Self::get_target_version(version, self.get_downloads())
     }
 
-    pub fn get_queue(&self, version: &AnyVersion) -> Option<&Ip> {
-        Self::get_target_version(version, self.get_queued())
+    /// Returns the manifest with the most compatible version fitting `version`.
+    pub fn get_available(&self, version: &AnyVersion) -> Option<&Ip> {
+        Self::get_target_version(version, self.get_availability())
     }
 
     /// References the ip matching the most compatible version `version`.
@@ -113,11 +112,11 @@ impl IpLevel {
     /// first sought for in the cache installations, and if not found then searched
     /// for in the availability space.
     /// Note: `usable` to `false` will not check queued state
-    pub fn get(&self, check_queue: bool, version: &AnyVersion) -> Option<&Ip> {
+    pub fn get(&self, check_downloads: bool, version: &AnyVersion) -> Option<&Ip> {
         match self.get_install(version) {
             Some(ip) => Some(ip),
-            None => match check_queue {
-                true => self.get_queue(version),
+            None => match check_downloads {
+                true => self.get_download(version),
                 false => None,
             },
         }
@@ -129,7 +128,7 @@ impl IpLevel {
             IpState::Installation
         } else if self.available.iter().find(|f| f == &ip).is_some() {
             IpState::Available
-        } else if self.queue.iter().find(|f| f == &ip).is_some() {
+        } else if self.downloads.iter().find(|f| f == &ip).is_some() {
             IpState::Downloaded
         } else {
             IpState::Unknown
@@ -174,7 +173,7 @@ impl<'a> Catalog<'a> {
         Self {
             inner: HashMap::new(),
             cache: None,
-            queue: None,
+            downloads: None,
         }
     }
 
@@ -189,10 +188,11 @@ impl<'a> Catalog<'a> {
         self.detect(path, &IpLevel::add_install, false)
     }
 
-    /// Searches the `path` for IP in the queue.
-    pub fn queue(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
-        self.queue = Some(&path);
-        self.detect(path, &IpLevel::add_queue, false)
+    /// Searches the `path` for IP downloaded.
+    pub fn downloads(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
+        self.downloads = Some(&path);
+        // @todo: use special method for detecting downloads
+        Ok(self)
     }
 
     pub fn inner(&self) -> &HashMap<PkgPart, IpLevel> {
@@ -255,8 +255,8 @@ impl<'a> Catalog<'a> {
         self.cache.as_ref().unwrap()
     }
 
-    pub fn get_queue_path(&self) -> &PathBuf {
-        self.queue.as_ref().unwrap()
+    pub fn get_downloads_path(&self) -> &PathBuf {
+        self.downloads.as_ref().unwrap()
     }
 }
 

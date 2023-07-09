@@ -47,8 +47,12 @@ impl Command<Context> for Env {
                 .key(environment::ORBIT_CACHE)
                 .value(PathBuf::standardize(c.get_cache_path()).to_str().unwrap()),
             EnvVar::new()
-                .key(environment::ORBIT_QUEUE)
-                .value(PathBuf::standardize(c.get_queue_path()).to_str().unwrap()),
+                .key(environment::ORBIT_DOWNLOADS)
+                .value(PathBuf::standardize(c.get_downloads_path()).to_str().unwrap()),
+            // Do NOT display QUEUE because it is a temporary directory and changes often
+            // EnvVar::new()
+            //     .key(environment::ORBIT_QUEUE)
+            //     .value(PathBuf::standardize(c.get_queue_path()).to_str().unwrap()),
             EnvVar::new()
                 .key(environment::ORBIT_BUILD_DIR)
                 .value(c.get_build_dir()),

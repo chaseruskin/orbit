@@ -1,11 +1,12 @@
+use std::fs;
 use std::path::PathBuf;
-
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::ip::IpSpec;
 use crate::core::lockfile::LockEntry;
 use crate::core::lockfile::LockFile;
+use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::plugin::Process;
 use crate::core::protocol::Protocol;
 use crate::core::source::Source;
@@ -14,7 +15,8 @@ use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
-use crate::util::environment::ORBIT_QUEUE;
+use tempfile::TempDir;
+use crate::util::environment;
 use crate::OrbitResult;
 use crate::util::filesystem::Standardize;
 use clif::arg::{Flag, Optional};
@@ -22,6 +24,8 @@ use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
 use std::collections::HashMap;
+use crate::core::manifest;
+use crate::util::compress;
 
 #[derive(Debug, PartialEq)]
 pub struct Download {
@@ -61,12 +65,19 @@ impl Command<Context> for Download {
             panic!("cannot display all and missing lock entries");
         }
 
+        if let Some(dir) = &self.queue_dir {
+            if dir.exists() == true {
+                panic!("queue directory must be a non-existent directory");
+            }
+        }
+
         let proto_map: ProtocolMap = c.get_config().get_protocols();
 
         // load the catalog
         let catalog = Catalog::new()
             .installations(c.get_cache_path())?
-            .queue(&self.queue_dir.as_ref().unwrap_or(c.get_queue_path()))?;
+            .downloads(c.get_downloads_path())?;
+    
 
         // verify running from an IP directory and enter IP's root directory
         c.goto_ip_path()?;
@@ -78,19 +89,11 @@ impl Command<Context> for Download {
             panic!("cannot download due to missing lockfile")
         }
 
-        // determine the queue directory based on cli priority
-        let q_dir = self.queue_dir.as_ref().unwrap_or(c.get_queue_path());
-
         let env = Environment::new()
             // read config.toml for setting any env variables
             .from_config(c.get_config())?
             // read ip manifest for env variables
-            .from_ip(&Ip::load(c.get_ip_path().unwrap().clone())?)?
-            .add(
-                EnvVar::new()
-                    .key(ORBIT_QUEUE)
-                    .value(&q_dir.to_string_lossy()),
-            );
+            .from_ip(&Ip::load(c.get_ip_path().unwrap().clone())?)?;
         let vtable =  VariableTable::new().load_environment(&env)?;
         env.initialize();
 
@@ -116,7 +119,8 @@ impl Command<Context> for Download {
                 &proto_map,
                 vtable,
                 self.verbose,
-                c.get_queue_path(),
+                self.queue_dir.as_ref(),
+                c.get_downloads_path(),
                 self.force,
             )?;
         }
@@ -146,17 +150,35 @@ impl Download {
             .collect()
     }
 
+    /// Calls a protocol for the given package and then places the download into
+    /// the downloads folder.
     pub fn download(
         vtable: &mut VariableTable,
         spec: &IpSpec,
         src: &Source,
-        queue: &PathBuf,
+        queue: Option<&PathBuf>,
+        download_dir: &PathBuf,
         protocols: &HashMap<&str, &Protocol>,
         verbose: bool,
         force: bool,
     ) -> Result<(), Fault> {
         // update the variable table
+        let queue = match queue {
+            Some(q) => {
+                std::fs::create_dir_all(q)?;
+                q.clone()
+            },
+            None => TempDir::into_path(TempDir::new()?)
+        };
         vtable.add("orbit.queue", &PathBuf::standardize(&queue).display().to_string());
+        // set the environment variable
+        Environment::new()
+            .add(
+                EnvVar::new()
+                    .key(environment::ORBIT_QUEUE)
+                    .value(PathBuf::standardize(&queue).to_str().unwrap())
+            )
+            .initialize();
         // access the protocol
         if let Some(proto) = src.get_protocol() {
             match protocols.get(proto.as_str()) {
@@ -170,14 +192,16 @@ impl Download {
                     vtable.add("orbit.ip.version", &spec.get_version().to_string());
                     vtable.add("orbit.ip.source.url", src.get_url());
                     vtable.add("orbit.ip.source.protocol", entry.get_name());
-                    // generate a random string
-                    // vtable.add("orbit.random", "a0a0");
-                    
+                    // allow the user to handle placing the code in the queue
                     let entry: Protocol = entry.clone().replace_vars_in_args(&vtable);
-                    entry.execute(&[], verbose)?
+                    if let Err(err) = entry.execute(&[], verbose) {
+                        fs::remove_dir_all(queue)?;
+                        return Err(err)
+                    }
                 }
                 None => {
                     if force == false {
+                        fs::remove_dir_all(queue)?;
                         return Err(
                             Box::new(AnyError(format!("Unknown protocol \"{}\"", &proto))).into(),
                         );
@@ -188,9 +212,42 @@ impl Download {
         // try to use default protocol
         if force == true || src.is_default() == true {
             println!("info: Downloading {} ...", spec);
-            Protocol::single_download(src.get_url(), queue)?;
+            if let Err(err) = Protocol::single_download(src.get_url(), &queue) {
+                fs::remove_dir_all(queue)?;
+                return Err(err)
+            }
         }
+        // move the IP to the downloads folder
+        if let Err(err) = Self::move_to_download_dir(&queue, download_dir, spec) {
+            fs::remove_dir_all(queue)?;
+            return Err(err)
+        }
+        // clean up temporary directory
+        fs::remove_dir_all(queue)?;
         Ok(())
+    }
+
+    fn move_to_download_dir(queue: &PathBuf, downloads: &PathBuf, spec: &IpSpec) -> Result<(), Fault> {
+        // code is in the queue now, move it to the downloads/ folder
+
+        // find the IP
+        for entry in manifest::find_file(&queue, IP_MANIFEST_FILE, false)? {
+            // check if this is our IP
+            match Ip::load(entry.parent().unwrap().to_path_buf()) {
+                Ok(temp) => {
+                    // move to downloads
+                    if temp.get_man().get_ip().get_name() == spec.get_name() && temp.get_man().get_ip().get_version() == spec.get_version() {
+                        // zip the project to the downloads directory
+                        let download_slot_name = format!("{}-{}-{}.ip", &spec.get_name(), &spec.get_version(), temp.get_uuid().get().as_u128());
+                        compress::write_zip_dir(temp.get_root(), &downloads.join(&download_slot_name))?;
+                        return Ok(());
+                    }
+                },
+                Err(_) => {},
+            }
+        }
+        // could not find the IP
+        Err(AnyError(format!("Failed to detect/load the IP's manifest")))?
     }
 
     pub fn download_all(
@@ -198,7 +255,8 @@ impl Download {
         proto_map: &HashMap<&str, &Protocol>,
         vtable: VariableTable, 
         verbose: bool,
-        queue: &PathBuf,
+        queue: Option<&PathBuf>,
+        download_dir: &PathBuf,
         force: bool,
     ) -> Result<(), Fault> {
         match downloads.len() {
@@ -215,7 +273,7 @@ impl Download {
         }
         let mut vtable = vtable;
         let mut results = downloads.iter().filter_map(|e| {
-            match Self::download(&mut vtable, &e.0, &e.1, &queue, &proto_map, verbose, force) {
+            match Self::download(&mut vtable, &e.0, &e.1, queue, &download_dir, &proto_map, verbose, force) {
                 Ok(_) => None,
                 Err(e) => Some(e),
             }

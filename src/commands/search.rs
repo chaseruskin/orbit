@@ -16,7 +16,7 @@ use crate::core::version::AnyVersion;
 pub struct Search {
     ip: Option<PkgPart>,
     cached: bool,
-    queued: bool,
+    downloaded: bool,
     keywords: Vec<String>,
     hard_match: bool,
 }
@@ -25,7 +25,7 @@ impl Command<Context> for Search {
     type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
-        let default = !(self.cached || self.queued);
+        let default = !(self.cached || self.downloaded);
         let mut catalog = Catalog::new();
 
         // collect installed IP
@@ -34,8 +34,8 @@ impl Command<Context> for Search {
         }
 
         // collect downloaded IP
-        if default || self.queued {
-            catalog = catalog.queue(c.get_queue_path())?;
+        if default || self.downloaded {
+            catalog = catalog.downloads(c.get_downloads_path())?;
         }
 
         self.run(&catalog)
@@ -130,7 +130,7 @@ impl Search {
                     .get_version(),
                 if status.is_installed() == true {
                     "Installed"
-                } else if status.is_queued() == true {
+                } else if status.is_downloaded() == true {
                     "Downloaded"
                 } else {
                     ""
@@ -145,7 +145,7 @@ impl FromCli for Search {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Search {
-            queued: cli.check_flag(Flag::new("download").switch('d'))?,
+            downloaded: cli.check_flag(Flag::new("download").switch('d'))?,
             cached: cli.check_flag(Flag::new("install").switch('i'))?,
             hard_match: cli.check_flag(Flag::new("match"))?,
             keywords: cli

@@ -24,8 +24,8 @@ pub struct Context {
     home_path: PathBuf,
     /// Directory holding installed immutable tags of git repositories.
     cache_path: PathBuf,
-    /// Directory holding orbit IP awaiting to be installed on local machine.
-    queue_path: PathBuf,
+    /// Directory holding orbit IP downloaded 
+    download_path: PathBuf,
     /// The parent path to the current ip `Orbit.toml` manifest file.
     ip_path: Option<PathBuf>,
     /// Directory name for the intermediate build processes and outputs.    
@@ -42,11 +42,11 @@ impl Context {
     pub fn new() -> Context {
         let home = std::env::temp_dir();
         let cache = home.join("cache");
-        let queue = home.join("queue");
+        let downloads = home.join("downloads");
         Context {
             home_path: home,
             cache_path: cache,
-            queue_path: queue,
+            download_path: downloads,
             ip_path: None,
             plugins: HashMap::new(),
             all_configs: Configs::new(),
@@ -113,10 +113,10 @@ impl Context {
         }
     }
 
-    /// Sets the queue directory. If it was set from `var`, it assumes the path
+    /// Sets the downloads directory. If it was set from `var`, it assumes the path
     /// exists. If setting by default (within HOME), it assumes HOME is already existing.
-    pub fn queue(mut self, key: &str) -> Result<Context, Fault> {
-        self.queue_path = self.folder(key, "queue")?;
+    pub fn downloads(mut self, key: &str) -> Result<Context, Fault> {
+        self.download_path = self.folder(key, "downloads")?;
         Ok(self)
     }
 
@@ -171,9 +171,9 @@ impl Context {
         &self.cache_path
     }
 
-    /// References the queue directory.
-    pub fn get_queue_path(&self) -> &PathBuf {
-        &self.queue_path
+    /// References the downloads directory
+    pub fn get_downloads_path(&self) -> &PathBuf {
+        &self.download_path
     }
 
     /// Configures and reads data from the settings object to return a `Settings` struct

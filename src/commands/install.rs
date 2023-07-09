@@ -85,7 +85,7 @@ impl Command<Context> for Install {
         // gather the catalog (all manifests)
         let mut catalog = Catalog::new()
             .installations(c.get_cache_path())?
-            .queue(c.get_queue_path())?;
+            .downloads(c.get_downloads_path())?;
 
         // @todo: check if there is a potential lockfile to use
         let target = Ip::load(dest.clone())?;
@@ -130,13 +130,13 @@ impl Command<Context> for Install {
             // recollect the queued items to update the catalog
             catalog = catalog
                 .installations(c.get_cache_path())?
-                .queue(c.get_queue_path())?;
+                .downloads(c.get_downloads_path())?;
 
             plan::install_missing_deps(&lf, &le, &catalog)?;
             // recollect the installations and queued items to update the catalog
             catalog = catalog
                 .installations(c.get_cache_path())?
-                .queue(c.get_queue_path())?;
+                .downloads(c.get_downloads_path())?;
         }
         // generate lock file if it is missing
         if target.lock_exists() == false {

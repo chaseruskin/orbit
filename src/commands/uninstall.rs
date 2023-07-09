@@ -35,7 +35,7 @@ impl Command<Context> for Uninstall {
         // collect the catalog from dev and installations
         let catalog = Catalog::new()
             .installations(c.get_cache_path())?
-            .queue(c.get_queue_path())?;
+            .downloads(c.get_downloads_path())?;
 
         // check for ip in development or installation
         let status = match catalog.inner().get(&self.ip.get_name()) {

@@ -51,7 +51,7 @@ impl Orbit {
             let context = Context::new()
                 .home(environment::ORBIT_HOME)?
                 .cache(environment::ORBIT_CACHE)?
-                .queue(environment::ORBIT_QUEUE)?
+                .downloads(environment::ORBIT_DOWNLOADS)?
                 .current_ip_dir(environment::ORBIT_IP_PATH)? // must come before .settings() call
                 .settings(config::CONFIG_FILE)?
                 .build_dir(environment::ORBIT_BUILD_DIR)?;

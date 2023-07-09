@@ -1,6 +1,6 @@
 use std::{collections::HashMap, hash::Hash, iter::FromIterator};
 
-use super::graph::{EdgeStatus, Graph, SuccessorsGraphMap, PredecessorsGraphMap};
+use super::graph::{EdgeStatus, Graph, PredecessorsGraphMap, SuccessorsGraphMap};
 
 pub struct GraphMap<K: Eq + Hash + Clone, V, E> {
     graph: Graph<K, E>,

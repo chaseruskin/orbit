@@ -197,8 +197,8 @@ impl std::fmt::Display for VhdlIdentifierError {
                 let location_2 = filesystem::remove_base(&current_dir, &path2);
                 write!(f, "duplicate primary design units identified as '{}'\n\nlocation 1: {}{}\nlocation 2: {}{}\n\n{}", 
                     iden,
-                    filesystem::into_std_str(location_1), loc1, 
-                    filesystem::into_std_str(location_2), loc2, 
+                    filesystem::into_std_str(location_1), loc1,
+                    filesystem::into_std_str(location_2), loc2,
                     HINT)
             }
             Self::DuplicateAcrossDirect(iden, dep, path, pos) => {

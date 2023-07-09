@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use crate::util::{anyerror::Fault, environment::Environment};
+use std::collections::HashMap;
 
 pub struct VariableTable(HashMap<String, String>);
 
@@ -149,4 +149,3 @@ mod test {
         );
     }
 }
-

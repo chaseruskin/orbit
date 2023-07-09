@@ -56,7 +56,6 @@ impl Command<Context> for Launch {
         // todo!("verify there is no other ip with this name (and different uuid)");
         // todo!("verify the HDL graph can be generated without errors");
         // warn if there are no HDL units in the project
-
     }
 }
 

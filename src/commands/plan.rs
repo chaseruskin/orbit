@@ -136,7 +136,7 @@ impl Command<Context> for Plan {
             let env = Environment::new()
                 // read config.toml for setting any env variables
                 .from_config(c.get_config())?;
-            let vtable =  VariableTable::new().load_environment(&env)?;
+            let vtable = VariableTable::new().load_environment(&env)?;
 
             download_missing_deps(vtable, &lf, &le, &catalog, &c.get_config().get_protocols())?;
             // recollect the queued items to update the catalog
@@ -670,7 +670,10 @@ impl Plan {
         result
     }
 
-    fn determine_file_order<'a>(global_graph: &'a GraphMap<CompoundIdentifier, HdlNode, ()>, min_order: Vec<usize>) -> Vec<&'a IpFileNode<'a>> {
+    fn determine_file_order<'a>(
+        global_graph: &'a GraphMap<CompoundIdentifier, HdlNode, ()>,
+        min_order: Vec<usize>,
+    ) -> Vec<&'a IpFileNode<'a>> {
         // gather the files from each node in-order (multiple files can exist for a node)
         let file_order = {
             let mut file_map = HashMap::<String, (&IpFileNode, Vec<&HdlNode>)>::new();
@@ -684,19 +687,23 @@ impl Plan {
                     .unwrap()
                     .as_ref()
                     .get_associated_files();
-                
+
                 ipfs.iter().for_each(|&e| {
-                    let mut preds: Vec<&HdlNode> = global_graph.predecessors(*i).into_iter().map(|e| e.1).collect();
+                    let mut preds: Vec<&HdlNode> = global_graph
+                        .predecessors(*i)
+                        .into_iter()
+                        .map(|e| e.1)
+                        .collect();
                     match file_map.get_mut(e.get_file()) {
                         // merge dependencies together
                         Some((_file_node, deps)) => {
-                        deps.append(&mut preds); 
-                        }, 
+                            deps.append(&mut preds);
+                        }
                         // log this node and its dependencies
                         None => {
                             file_order.push(e.get_file().clone());
                             file_map.insert(e.get_file().clone(), (e, preds));
-                        },
+                        }
                     }
                 });
             }
@@ -704,7 +711,8 @@ impl Plan {
             for file_name in &file_order {
                 let (entry, deps) = file_map.get(file_name).unwrap();
                 for &ifn in deps {
-                    f_list.append(&mut ifn.get_associated_files().into_iter().map(|i| *i).collect());
+                    f_list
+                        .append(&mut ifn.get_associated_files().into_iter().map(|i| *i).collect());
                 }
                 f_list.push(entry);
             }
@@ -712,7 +720,6 @@ impl Plan {
         };
         file_order
     }
-
 
     /// Filters out the local nodes existing within the current IP from the `global_graph`.
     pub fn compute_local_graph<'a>(

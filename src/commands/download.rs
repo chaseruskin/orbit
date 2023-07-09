@@ -1,11 +1,10 @@
-use std::fs;
-use std::path::PathBuf;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::ip::IpSpec;
 use crate::core::lockfile::LockEntry;
 use crate::core::lockfile::LockFile;
+use crate::core::manifest;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::plugin::Process;
 use crate::core::protocol::Protocol;
@@ -13,19 +12,20 @@ use crate::core::source::Source;
 use crate::core::variable::VariableTable;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
+use crate::util::compress;
+use crate::util::environment;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
-use tempfile::TempDir;
-use crate::util::environment;
-use crate::OrbitResult;
 use crate::util::filesystem::Standardize;
+use crate::OrbitResult;
 use clif::arg::{Flag, Optional};
 use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
 use std::collections::HashMap;
-use crate::core::manifest;
-use crate::util::compress;
+use std::fs;
+use std::path::PathBuf;
+use tempfile::TempDir;
 
 #[derive(Debug, PartialEq)]
 pub struct Download {
@@ -77,7 +77,6 @@ impl Command<Context> for Download {
         let catalog = Catalog::new()
             .installations(c.get_cache_path())?
             .downloads(c.get_downloads_path())?;
-    
 
         // verify running from an IP directory and enter IP's root directory
         c.goto_ip_path()?;
@@ -94,7 +93,7 @@ impl Command<Context> for Download {
             .from_config(c.get_config())?
             // read ip manifest for env variables
             .from_ip(&Ip::load(c.get_ip_path().unwrap().clone())?)?;
-        let vtable =  VariableTable::new().load_environment(&env)?;
+        let vtable = VariableTable::new().load_environment(&env)?;
         env.initialize();
 
         // default behavior is report only missing installations
@@ -167,16 +166,19 @@ impl Download {
             Some(q) => {
                 std::fs::create_dir_all(q)?;
                 q.clone()
-            },
-            None => TempDir::into_path(TempDir::new()?)
+            }
+            None => TempDir::into_path(TempDir::new()?),
         };
-        vtable.add("orbit.queue", &PathBuf::standardize(&queue).display().to_string());
+        vtable.add(
+            "orbit.queue",
+            &PathBuf::standardize(&queue).display().to_string(),
+        );
         // set the environment variable
         Environment::new()
             .add(
                 EnvVar::new()
                     .key(environment::ORBIT_QUEUE)
-                    .value(PathBuf::standardize(&queue).to_str().unwrap())
+                    .value(PathBuf::standardize(&queue).to_str().unwrap()),
             )
             .initialize();
         // access the protocol
@@ -196,7 +198,7 @@ impl Download {
                     let entry: Protocol = entry.clone().replace_vars_in_args(&vtable);
                     if let Err(err) = entry.execute(&[], verbose) {
                         fs::remove_dir_all(queue)?;
-                        return Err(err)
+                        return Err(err);
                     }
                 }
                 None => {
@@ -214,20 +216,24 @@ impl Download {
             println!("info: Downloading {} ...", spec);
             if let Err(err) = Protocol::single_download(src.get_url(), &queue) {
                 fs::remove_dir_all(queue)?;
-                return Err(err)
+                return Err(err);
             }
         }
         // move the IP to the downloads folder
         if let Err(err) = Self::move_to_download_dir(&queue, download_dir, spec) {
             fs::remove_dir_all(queue)?;
-            return Err(err)
+            return Err(err);
         }
         // clean up temporary directory
         fs::remove_dir_all(queue)?;
         Ok(())
     }
 
-    fn move_to_download_dir(queue: &PathBuf, downloads: &PathBuf, spec: &IpSpec) -> Result<(), Fault> {
+    fn move_to_download_dir(
+        queue: &PathBuf,
+        downloads: &PathBuf,
+        spec: &IpSpec,
+    ) -> Result<(), Fault> {
         // code is in the queue now, move it to the downloads/ folder
 
         // find the IP
@@ -236,14 +242,24 @@ impl Download {
             match Ip::load(entry.parent().unwrap().to_path_buf()) {
                 Ok(temp) => {
                     // move to downloads
-                    if temp.get_man().get_ip().get_name() == spec.get_name() && temp.get_man().get_ip().get_version() == spec.get_version() {
+                    if temp.get_man().get_ip().get_name() == spec.get_name()
+                        && temp.get_man().get_ip().get_version() == spec.get_version()
+                    {
                         // zip the project to the downloads directory
-                        let download_slot_name = format!("{}-{}-{}.ip", &spec.get_name(), &spec.get_version(), temp.get_uuid().get().as_u128());
-                        compress::write_zip_dir(temp.get_root(), &downloads.join(&download_slot_name))?;
+                        let download_slot_name = format!(
+                            "{}-{}-{}.ip",
+                            &spec.get_name(),
+                            &spec.get_version(),
+                            temp.get_uuid().get().as_u128()
+                        );
+                        let full_download_path = downloads.join(&download_slot_name);
+                        compress::write_zip_dir(temp.get_root(), &full_download_path)?;
+                        // @todo: embed the bytes of manifest, lockfile, and metadata into the .ip file to be able to
+                        // load the IP in the catalog
                         return Ok(());
                     }
-                },
-                Err(_) => {},
+                }
+                Err(_) => {}
             }
         }
         // could not find the IP
@@ -253,7 +269,7 @@ impl Download {
     pub fn download_all(
         downloads: &Vec<(IpSpec, &Source)>,
         proto_map: &HashMap<&str, &Protocol>,
-        vtable: VariableTable, 
+        vtable: VariableTable,
         verbose: bool,
         queue: Option<&PathBuf>,
         download_dir: &PathBuf,
@@ -273,7 +289,16 @@ impl Download {
         }
         let mut vtable = vtable;
         let mut results = downloads.iter().filter_map(|e| {
-            match Self::download(&mut vtable, &e.0, &e.1, queue, &download_dir, &proto_map, verbose, force) {
+            match Self::download(
+                &mut vtable,
+                &e.0,
+                &e.1,
+                queue,
+                &download_dir,
+                &proto_map,
+                verbose,
+                force,
+            ) {
                 Ok(_) => None,
                 Err(e) => Some(e),
             }

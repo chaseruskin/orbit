@@ -1,5 +1,5 @@
 //! Abstraction layer for writing a directory to a zip file
-//! 
+//!
 //! Reference: https://github.com/zip-rs/zip/blob/master/examples/write_dir.rs
 
 use std::io::prelude::*;
@@ -9,9 +9,9 @@ use zip::result::ZipError;
 use zip::write::FileOptions;
 use zip::CompressionMethod;
 
+use ignore::{DirEntry, WalkBuilder};
 use std::fs::File;
 use std::path::{Path, PathBuf};
-use ignore::{DirEntry, WalkBuilder};
 
 /// Declare the type of compression algorithm to use.
 const COMPRESSION_METHOD: CompressionMethod = CompressionMethod::ZSTD;
@@ -58,10 +58,7 @@ where
     Result::Ok(())
 }
 
-pub fn write_zip_dir(
-    src_dir: &PathBuf,
-    dst_file: &PathBuf,
-) -> zip::result::ZipResult<()> {
+pub fn write_zip_dir(src_dir: &PathBuf, dst_file: &PathBuf) -> zip::result::ZipResult<()> {
     if !Path::new(src_dir).is_dir() {
         return Err(ZipError::FileNotFound);
     }
@@ -69,12 +66,15 @@ pub fn write_zip_dir(
     let path = Path::new(dst_file);
     let file = File::create(path).unwrap();
 
-    let walkdir = WalkBuilder::new(src_dir)
-        .git_ignore(false)
-        .build();
+    let walkdir = WalkBuilder::new(src_dir).git_ignore(false).build();
     let it = walkdir.into_iter();
 
-    zip_dir(&mut it.filter_map(|e| e.ok()), src_dir, file, COMPRESSION_METHOD)?;
+    zip_dir(
+        &mut it.filter_map(|e| e.ok()),
+        src_dir,
+        file,
+        COMPRESSION_METHOD,
+    )?;
 
     Ok(())
 }

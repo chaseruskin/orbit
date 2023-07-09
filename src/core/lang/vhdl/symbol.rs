@@ -1324,23 +1324,38 @@ impl VHDLSymbol {
 
         // determine if the statement will be a sensitivity list
         let mut paren_count: i32 = 0;
-        let is_sensitivity_list = { 
+        let is_sensitivity_list = {
             if let Some(t) = tokens.peek() {
                 t.as_type().check_delimiter(&Delimiter::ParenL) == true
             } else {
                 false
             }
         };
-         
+
         // traverse through token stream
         while let Some(t) = tokens.next() {
             // gather sensitivity list as its own statement
-            if is_sensitivity_list == true && (t.as_type().check_delimiter(&Delimiter::ParenL) || t.as_type().check_delimiter(&Delimiter::ParenR)) {
+            if is_sensitivity_list == true
+                && (t.as_type().check_delimiter(&Delimiter::ParenL)
+                    || t.as_type().check_delimiter(&Delimiter::ParenR))
+            {
                 clause.get_tokens_mut().push(t);
-                if clause.get_tokens().last().unwrap().as_type().check_delimiter(&Delimiter::ParenL) {
+                if clause
+                    .get_tokens()
+                    .last()
+                    .unwrap()
+                    .as_type()
+                    .check_delimiter(&Delimiter::ParenL)
+                {
                     paren_count += 1;
                     // add token
-                } else if clause.get_tokens().last().unwrap().as_type().check_delimiter(&Delimiter::ParenR) {
+                } else if clause
+                    .get_tokens()
+                    .last()
+                    .unwrap()
+                    .as_type()
+                    .check_delimiter(&Delimiter::ParenR)
+                {
                     paren_count -= 1;
                     if paren_count == 0 {
                         return clause;
@@ -1396,7 +1411,6 @@ impl VHDLSymbol {
                 if let Some(dot) = took_dot {
                     clause.get_tokens_mut().push(dot);
                 }
-                
             }
         }
         // println!("{:?}", clause);
@@ -1870,7 +1884,7 @@ impl VHDLSymbol {
             {
                 let next_eval_exit = match Self::is_subprogram(t.as_type().as_keyword().unwrap()) {
                     true => Self::is_subprogram_ending,
-                    false => Self::is_sub_ending
+                    false => Self::is_sub_ending,
                 };
                 let mut stmt: Statement = Self::parse_statement(tokens);
                 // println!("ENTERING SUBPROGRAM {:?}", stmt);
@@ -2779,7 +2793,7 @@ end architecture rtl;
         // capture all units (primary and secondary)
         assert_eq!(syms.len(), 6);
     }
-    
+
     #[test]
     fn test_procedure_in_process() {
         let data = std::fs::read_to_string("./tests/data/vhdl/proced_in_proc.vhd").unwrap();

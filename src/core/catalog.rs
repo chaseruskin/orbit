@@ -1,5 +1,5 @@
-use crate::util::{anyerror::Fault, sha256::Sha256Hash};
 use crate::core::uuid::Uuid;
+use crate::util::{anyerror::Fault, sha256::Sha256Hash};
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
@@ -43,7 +43,7 @@ type IpArchive = ();
 #[derive(Debug)]
 pub struct IpLevel {
     installs: Vec<Ip>,
-    downloads: Vec<Ip>, 
+    downloads: Vec<Ip>,
     available: Vec<Ip>,
 }
 
@@ -291,7 +291,9 @@ impl CacheEntry {
 
     /// The 14 remaining bytes in the [Uuid].
     pub fn offset(&self) -> String {
-        self.offset.iter().fold(String::new(), |acc, x| { acc + &format!("{:02X}", x) })
+        self.offset
+            .iter()
+            .fold(String::new(), |acc, x| acc + &format!("{:02X}", x))
     }
 }
 

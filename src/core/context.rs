@@ -6,9 +6,9 @@ use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
 use crate::util::filesystem::Standardize;
 use std::collections::HashMap;
 use std::env;
+use std::fs;
 use std::path;
 use std::path::PathBuf;
-use std::fs;
 
 const CACHE_TAG_FILE: &str = "CACHEDIR.TAG";
 
@@ -24,7 +24,7 @@ pub struct Context {
     home_path: PathBuf,
     /// Directory holding installed immutable tags of git repositories.
     cache_path: PathBuf,
-    /// Directory holding orbit IP downloaded 
+    /// Directory holding orbit IP downloaded
     download_path: PathBuf,
     /// The parent path to the current ip `Orbit.toml` manifest file.
     ip_path: Option<PathBuf>,
@@ -96,7 +96,7 @@ impl Context {
     }
 
     /// Checks if the cache tag file is properly configured in the set cache directory.
-    /// 
+    ///
     /// Returns an `Err` holding the path to the needed cache file if the path was
     /// not a file or did not exactly contain the content's string.
     pub fn is_cache_tag_valid(dir: &PathBuf) -> Result<(), PathBuf> {
@@ -108,8 +108,8 @@ impl Context {
                 Ok(text) => match text == CACHE_TAG {
                     false => Err(tag),
                     true => Ok(()),
-                }
-            }
+                },
+            },
         }
     }
 

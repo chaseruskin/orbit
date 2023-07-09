@@ -13,13 +13,13 @@ use crate::core::lockfile::LockEntry;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::ORBIT_METADATA_FILE;
 use crate::core::manifest::ORBIT_SUM_FILE;
+use crate::core::uuid::Uuid;
 use crate::util::sha256::Sha256Hash;
+use colored::Colorize;
 use std::collections::HashMap;
 use std::error::Error;
 use std::str::FromStr;
 use toml_edit::Document;
-use colored::Colorize;
-use crate::core::uuid::Uuid;
 
 #[derive(Debug, PartialEq)]
 pub struct Ip {
@@ -58,7 +58,7 @@ impl Ip {
         let man = Manifest::from_file(&man_path)?;
 
         let lock_path = root.join(IP_LOCK_FILE);
-        
+
         let lock = match LockFile::from_file(&lock_path) {
             Ok(l) => l,
             Err(e) => {
@@ -254,12 +254,12 @@ impl Ip {
     }
 }
 
+use crate::core::lang::vhdl::primaryunit;
 use crate::core::pkgid::PkgPart;
 use crate::core::version::Version;
-use crate::core::lang::vhdl::primaryunit;
 use crate::util::filesystem;
-use std::path::Path;
 use std::fs;
+use std::path::Path;
 
 const SPEC_DELIM: &str = ":";
 

@@ -28,7 +28,9 @@ use crate::core::ip::PartialIpSpec;
 use crate::core::lockfile::LockEntry;
 use crate::core::lockfile::LockFile;
 use crate::core::manifest::ORBIT_SUM_FILE;
+use crate::core::variable::VariableTable;
 use crate::util::anyerror::Fault;
+use crate::util::environment::Environment;
 use crate::util::filesystem;
 use crate::util::filesystem::Standardize;
 use crate::OrbitResult;
@@ -39,8 +41,6 @@ use clif::Error as CliError;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
-use crate::util::environment::Environment;
-use crate::core::variable::VariableTable;
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
@@ -95,7 +95,7 @@ impl Command<Context> for Install {
             let env = Environment::new()
                 // read config.toml for setting any env variables
                 .from_config(c.get_config())?;
-            let vtable =  VariableTable::new().load_environment(&env)?;
+            let vtable = VariableTable::new().load_environment(&env)?;
 
             let le = LockEntry::from((&target, true));
 
@@ -126,7 +126,13 @@ impl Command<Context> for Install {
                 LockFile::wrap(entries)
             };
 
-            plan::download_missing_deps(vtable, &lf, &le, &catalog, &c.get_config().get_protocols())?;
+            plan::download_missing_deps(
+                vtable,
+                &lf,
+                &le,
+                &catalog,
+                &c.get_config().get_protocols(),
+            )?;
             // recollect the queued items to update the catalog
             catalog = catalog
                 .installations(c.get_cache_path())?

@@ -1,7 +1,7 @@
-use serde::{Serialize, Deserialize};
-use serde::Serializer;
-use std::fmt;
 use serde::de;
+use serde::Serializer;
+use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -13,12 +13,12 @@ impl Uuid {
     pub fn new() -> Self {
         Self {
             inner: uuid::Uuid::new_v4(),
-        } 
+        }
     }
 
     pub fn nil() -> Self {
         Self {
-            inner: uuid::Uuid::nil()
+            inner: uuid::Uuid::nil(),
         }
     }
 
@@ -44,7 +44,7 @@ impl<'de> Deserialize<'de> for Uuid {
             fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
             where
                 E: de::Error,
-            {   
+            {
                 match uuid::Uuid::from_str(v) {
                     Ok(v) => Ok(Uuid { inner: v }),
                     Err(e) => Err(de::Error::custom(e)),

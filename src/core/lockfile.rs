@@ -91,6 +91,8 @@ impl FromFile for LockFile {
 
 // version 1 for the lockfile
 pub mod v1 {
+    use crate::core::catalog::DownloadSlot;
+
     use super::*;
 
     #[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
@@ -298,6 +300,10 @@ pub mod v1 {
 
         pub fn to_cache_slot_key(&self) -> CacheSlot {
             CacheSlot::new(self.get_name(), self.get_version(), self.get_sum().unwrap())
+        }
+
+        pub fn to_download_slot_key(&self) -> DownloadSlot {
+            DownloadSlot::new(self.get_name(), self.get_version(), self.get_uuid())
         }
 
         pub fn to_ip_spec(&self) -> IpSpec {

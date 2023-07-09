@@ -181,6 +181,11 @@ impl<'a> Catalog<'a> {
     pub fn is_cached_slot(&self, slot: &CacheSlot) -> bool {
         self.get_cache_path().join(slot.as_ref()).is_dir()
     }
+    
+    /// Uses the download slot name to check if the file exists.
+    pub fn is_downloaded_slot(&self, slot: &DownloadSlot) -> bool {
+        self.get_downloads_path().join(slot.as_ref()).is_file()
+    }
 
     /// Searches the `path` for IP installed.
     pub fn installations(mut self, path: &'a PathBuf) -> Result<Self, Fault> {

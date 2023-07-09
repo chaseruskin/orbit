@@ -142,7 +142,7 @@ impl Download {
             .filter(|p| {
                 p.matches_target(&le) == false
                     && (missing_only == false
-                        || catalog.is_cached_slot(&p.to_cache_slot_key()) == false)
+                        || catalog.is_downloaded_slot(&p.to_download_slot_key()) == false)
             })
             .map(|f| (f.to_ip_spec(), f.get_source().unwrap()))
             .collect()

@@ -195,9 +195,9 @@ pub fn download_missing_deps(
                     }
                     None => {
                         match status.get_download(&ver) {
-                            // already exists in the queue
+                            // already exists in the downloads
                             Some(_) => (),
-                            // does not exist in the queue
+                            // does not exist in the downloads
                             None => {
                                 require_download = true;
                             }

@@ -72,10 +72,17 @@ impl Command<Context> for Download {
 
         let proto_map: ProtocolMap = c.get_config().get_protocols();
 
-        // load the catalog
-        let catalog = Catalog::new()
-            .installations(c.get_cache_path())?
-            .downloads(c.get_downloads_path())?;
+        // load the catalog (ignore errors because we are only downloading)
+        let catalog = match self.force {
+            true => {
+                let mut cat = Catalog::new();
+                cat.set_downloads_path(c.get_downloads_path());
+                cat
+            },
+            false => {
+                Catalog::new().downloads(c.get_downloads_path())?
+            }
+        };
 
         // verify running from an IP directory and enter IP's root directory
         c.goto_ip_path()?;
@@ -245,8 +252,6 @@ impl Download {
                             DownloadSlot::new(spec.get_name(), spec.get_version(), temp.get_uuid());
                         let full_download_path = downloads.join(&download_slot_name.as_ref());
                         IpArchive::write(&temp, &full_download_path)?;
-                        // let arch = IpArchive::read(&full_download_path)?;
-                        // arch.extract(&PathBuf::from("./my-installs"))?;
                         return Ok(());
                     }
                 }

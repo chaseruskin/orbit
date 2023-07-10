@@ -1,7 +1,7 @@
 use super::ip::Ip;
 use super::lockfile::LockFile;
 use super::manifest::Manifest;
-use crate::util::anyerror::Fault;
+use crate::util::anyerror::{Fault, AnyError};
 use crate::util::compress;
 use flate2::read::ZlibDecoder;
 use flate2::write::ZlibEncoder;
@@ -14,8 +14,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use zip::ZipArchive;
 
-/// Increment this number any time the format of the archive changes.
-const ARCHIVE_VERSION: u8 = 1;
+const ARCHIVE_MARKER: [u8; 4] = [0xc7, 0x9e, 0xf1, 0x6b];
 
 pub const ARCHIVE_EXT: &str = "ip";
 
@@ -35,61 +34,144 @@ pub struct IpArchive {
 }
 
 impl IpArchive {
-    fn slice(buf: &Vec<u8>, offset: usize, size: usize) -> &[u8] {
+    fn slice(buf: &[u8], offset: usize, size: usize) -> &[u8] {
         &buf[offset..offset + size]
     }
 
     pub fn read(path: &PathBuf) -> Result<Self, Fault> {
-        let contents = fs::read(path)?;
-        // read the first byte as the version of the archive
-        let version: u8 = u8::from_be_bytes(Self::slice(&contents, 0, VERSION_SIZE).try_into()?);
+        let contents = fs::read(&path)?;
+        Self::parse(contents, false, &path)
+    }
 
-        match version {
-            1 => Self::parse_v1(contents),
-            _ => {
-                panic!("unsupported archive version {}", version)
+    /// Converts the series of bytes into the [String] to be read as the struct.
+    /// 
+    /// Returns [None] if there is any point of failure.
+    fn parse_struct<T: FromStr>(bytes: &[u8], offset: usize) -> Option<(T, usize)> {
+        // attempt to read the size
+        let len: usize = {
+            let size_bytes: [u8; 4] = match Self::slice(&bytes, offset, U32_SIZE).try_into() {
+                Ok(arr) => arr,
+                Err(_) => return None
+            };
+            u32::from_be_bytes(size_bytes) as usize
+        };
+        // attempt to parse from string
+        match String::from_utf8(Self::slice(&bytes, offset + U32_SIZE, len).to_vec()) {
+            Ok(s) => {
+                match T::from_str(&s) {
+                    Ok(t) => Some((t, len + U32_SIZE)),
+                    Err(_) => None,
+                }
             }
+            Err(_) => None
         }
     }
 
     /// Parses according to version of [IpArchive] format.
-    fn parse_v1(buf: Vec<u8>) -> Result<Self, Fault> {
+    /// 
+    /// The `repairing` argument should be asserted only when a repair process
+    /// is occurring.
+    fn parse(buf: Vec<u8>, repairing: bool, path: &PathBuf) -> Result<Self, Fault> {
+        // read the marker back to verify the file is for orbit
+        let marker: [u8; 4] = Self::slice(&buf, 0, ARCHIVE_MARKER.len()).try_into()?;
+        if marker != ARCHIVE_MARKER {
+            return Err(AnyError(format!("{}", "The download file is corrupted")))?
+        }
+
         // read length of header
-        let header_offset = VERSION_SIZE;
+        let header_offset = ARCHIVE_MARKER.len();
         let header_len: usize =
             u32::from_be_bytes(Self::slice(&buf, header_offset, U32_SIZE).try_into()?) as usize;
+
+        // slice to the bytes for the relevant zipped archive
+        let archive_offset: usize = header_offset + U32_SIZE + header_len;
+        let archive = &buf[archive_offset..];
 
         // decompress the header bytes
         let mut d = ZlibDecoder::new(Self::slice(&buf, header_offset + U32_SIZE, header_len));
         let mut header_bytes = Vec::new();
         d.read_to_end(&mut header_bytes)?;
 
-        // decompose the decompressed header bytes
+        // parse the decompressed header bytes
 
-        // read length of manifest
-        let man_offset: usize = 0;
-        let man_len: usize =
-            u32::from_be_bytes(Self::slice(&header_bytes, man_offset, U32_SIZE).try_into()?)
-                as usize;
-        // read length of lockfile
-        let lock_offset: usize = man_offset + U32_SIZE + man_len;
-        let lock_len: usize =
-            u32::from_be_bytes(Self::slice(&header_bytes, lock_offset, U32_SIZE).try_into()?)
-                as usize;
-
-        // slice to the bytes for the relevant zipped archive
-        let archive_offset: usize = header_offset + U32_SIZE + header_len;
-        let archive = &buf[archive_offset..];
+        // handle manifest
+        let mut offset: usize = 0;
+        let (man, bytes_read): (Manifest, usize) = match Self::parse_struct(&header_bytes, offset) {
+            Some(t) => t,
+            None => {
+                match repairing {
+                    true => panic!("Repairing function failed"),
+                    false => {
+                        println!("info: {}", "Failed to parse downloaded file's header bytes; running repair function ...");
+                        let repaired_bytes = Self::repair(archive, &path)?;
+                        match Self::parse(repaired_bytes, true, &path) {
+                            Ok(rp) => {
+                                println!("info: {}", "Repair successful");
+                                return Ok(rp)
+                            }
+                            Err(e) => return Err(e)?
+                        }
+                    },
+                }
+            }
+        };
+        // handle lockfile
+        offset += bytes_read;
+        let (lock, _bytes_read): (LockFile, usize) = match Self::parse_struct(&header_bytes, offset) {
+            Some(t) => t,
+            None => {
+                match repairing {
+                    true => panic!("Repairing function failed"),
+                    false => {
+                        println!("info: {}", "Failed to parse downloaded file's header bytes; running repair function ...");
+                        let repaired_bytes = Self::repair(archive, &path)?;
+                        match Self::parse(repaired_bytes, true, &path) {
+                            Ok(rp) => {
+                                println!("info: {}", "Repair successful");
+                                return Ok(rp)
+                            }
+                            Err(e) => return Err(e)?
+                        }
+                    },
+                }
+            }
+        };
+        // offset += bytes_read;
 
         Ok(Self {
-            manifest: Manifest::from_str(&String::from_utf8(
-                Self::slice(&header_bytes, man_offset + U32_SIZE, man_len).to_vec(),
-            )?)?,
-            lock: LockFile::decode(&String::from_utf8(
-                Self::slice(&header_bytes, lock_offset + U32_SIZE, lock_len).to_vec(),
-            )?)?,
+            manifest: man,
+            lock: lock,
             archive: archive.to_vec(),
         })
+    }
+
+    /// Fixes any issues with header bytes.
+    /// 
+    /// This function will skip the header bytes, unzip the archive into a
+    /// temporary location, and then re-run the `write` function to update the
+    /// header bytes.
+    /// 
+    /// This function is helpful whenever there is an update to the download
+    /// compression algorithm and new data gets stored in the header.
+    pub fn repair(archive: &[u8], path: &PathBuf) -> Result<Vec<u8>, Fault> {
+        // place the dependency into a temporary directory
+        let dir = tempfile::tempdir()?.into_path();
+        if let Err(e) = IpArchive::extract(&archive, &dir) {
+            fs::remove_dir_all(dir)?;
+            return Err(e);
+        }
+        // load the IP
+        let extracted_ip = match Ip::load(dir.clone()) {
+            Ok(x) => x,
+            Err(e) => {
+                fs::remove_dir_all(dir)?;
+                return Err(e);
+            }
+        };
+        // re-perform a write
+        Self::write(&extracted_ip, &path)?;
+        let repaired_bytes = fs::read(&path)?;
+        Ok(repaired_bytes)
     }
 
     /// Separates the inner data into their own structs.
@@ -114,33 +196,40 @@ impl IpArchive {
 
     /// Stores the project's state and additional metadata into a .zip archive.
     pub fn write(ip: &Ip, dest: &PathBuf) -> Result<(), Fault> {
+        // compress the ip package
         compress::write_zip_dir(ip.get_root(), &dest)?;
         // read back the bytes
         let archive_bytes = fs::read(&dest)?;
-        // write the header bytes first
-        let mut file = File::options().write(true).truncate(true).open(&dest)?;
-
-        // write the version of the writer
-        file.write(&ARCHIVE_VERSION.to_be_bytes())?;
 
         // compress the header bytes
-        let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
-        let embedded_data = vec![
-            // get the manifest bytes
-            ip.get_man().to_string(),
-            // get the lockfile bytes
-            ip.get_lock().to_string(),
-        ];
-        for data in embedded_data {
-            // write the size of the string
-            e.write_all(&(data.len() as u32).to_be_bytes())?;
-            // write the string contents
-            e.write_all(&data.as_bytes())?;
-        }
-        // complete the compression algorithm
-        let header_bytes = e.finish()?;
+        let header_bytes = {
+            // create a Zlib encoder for compression scheme
+            let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
+            let embedded_data = vec![
+                // get the manifest bytes
+                ip.get_man().to_string(),
+                // get the lockfile bytes
+                ip.get_lock().to_string(),
+            ];
+            for data in embedded_data {
+                // write the size of the string
+                e.write_all(&(data.len() as u32).to_be_bytes())?;
+                // write the string contents
+                e.write_all(&data.as_bytes())?;
+            }
+            // complete the compression algorithm
+            e.finish()?
+        };
+
+        // open the destination file and truncate it to overwrite with new scheme
+        let mut file = File::options().write(true).truncate(true).open(&dest)?;
+
+        // write the marker to start the file
+        file.write(&ARCHIVE_MARKER)?;
+
         // write the number of compressed header bytes to the archive
         file.write(&(header_bytes.len() as u32).to_be_bytes())?;
+
         // write the compressed bytes
         file.write(&header_bytes)?;
 

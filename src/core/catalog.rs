@@ -273,6 +273,14 @@ impl<'a> Catalog<'a> {
     pub fn get_downloads_path(&self) -> &PathBuf {
         self.downloads.as_ref().unwrap()
     }
+
+    pub fn set_cache_path(&mut self, path: &'a PathBuf) {
+        self.cache = Some(path);
+    }
+
+    pub fn set_downloads_path(&mut self, path: &'a PathBuf) {
+        self.downloads = Some(path);
+    }
 }
 
 #[derive(PartialEq, Debug, Clone)]

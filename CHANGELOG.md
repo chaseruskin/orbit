@@ -15,6 +15,24 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.9.5
+
+### Changes
+- uninstalls dynamic variants from cache when uninstalling original
+- adds auto-repair function to download files for future upkeep
+- improves installing and downloading and catalog usage for downloads
+- adds '--limit' to search and uses starts_with comparison for ip lookup during search
+- checks download slot before downloading to prevent unncessary calls
+- allows downloads to appear in search command
+- adds downloads/ folder for stashing snapshots of versions as compressed files
+- adds 'tag' field for source to define extra data for protocol
+
+### Fixes
+- trims whitespace around `.` and `'` in "get" command's VHDL code
+- resolves issue with entering/exiting subprograms and missing dependencies after
+- resolves issue with tree not detecting dependencies in generate statements
+- fixes bug avoiding merging dependencies among files before removing duplicates in blueprint
+
 ## 0.9.4
 
 ### Changes

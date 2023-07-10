@@ -171,7 +171,7 @@ impl Install {
 
         // use checksum to create new directory slot
         let cache_slot_name = CacheSlot::new(target, &version, &checksum);
-        let cache_slot = cache_root.join(&cache_slot_name.as_ref());
+        let cache_slot = cache_root.join(&cache_slot_name.to_string());
         // check if the slot is occupied in the cache
         if cache_slot.exists() == true {
             // check if we should proceed with force regardless if the installation is valid

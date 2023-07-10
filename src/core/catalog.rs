@@ -1,5 +1,6 @@
 use crate::core::uuid::Uuid;
 use crate::util::{anyerror::Fault, sha256::Sha256Hash};
+use std::str::FromStr;
 use std::{
     collections::{HashMap, HashSet},
     path::PathBuf,
@@ -183,7 +184,7 @@ impl<'a> Catalog<'a> {
 
     /// Uses the cache slot name to check if the directory exists.
     pub fn is_cached_slot(&self, slot: &CacheSlot) -> bool {
-        self.get_cache_path().join(slot.as_ref()).is_dir()
+        self.get_cache_path().join(slot.to_string()).is_dir()
     }
 
     /// Uses the download slot name to check if the file exists.
@@ -343,24 +344,51 @@ mod test {
     }
 }
 
+type Remainder = String;
+
 #[derive(PartialEq, Debug, Clone)]
-pub struct CacheSlot(String);
+pub struct CacheSlot(PkgPart, Version, Remainder);
 
 impl CacheSlot {
     /// Combines the various components of a cache slot name into a `CacheSlot`.
     pub fn new(name: &PkgPart, version: &Version, checksum: &Sha256Hash) -> Self {
-        Self(format!(
-            "{}-{}-{}",
-            name,
-            version,
-            checksum.to_string().get(0..10).unwrap()
-        ))
+        Self(name.clone(), version.clone(), checksum.to_string().get(0..10).unwrap().to_string())
+    }
+
+    // @todo: test `try_from_str` (especially if build names get supported in versions ex: 1.0.0-alpha)
+
+    /// Attempts to deconstruct a [String] into the components of a [CacheSlot].
+    pub fn try_from_str(s: &str) -> Option<Self> {
+        // split into three components
+        let parts: Vec<&str> = s.rsplitn(3, '-').collect();
+        // println!("{:?}", parts);
+        if parts.len() != 3 { return None }
+        Some(Self(
+            match PkgPart::from_str(parts.get(2)?) {
+                Ok(r) => r,
+                Err(_) => return None,
+            }, 
+            match Version::from_str(parts.get(1)?) {
+                Ok(r) => r,
+                Err(_) => return None,
+            }, 
+            parts.get(0)?.to_string()))
+    }
+
+    pub fn get_name(&self) -> &PkgPart {
+        &self.0
+    }
+
+    pub fn get_version(&self) -> &Version {
+        &self.1
     }
 }
 
-impl AsRef<str> for CacheSlot {
-    fn as_ref(&self) -> &str {
-        self.0.as_ref()
+use std::fmt::Display;
+
+impl Display for CacheSlot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}-{}-{}", self.0, self.1, self.2)
     }
 }
 

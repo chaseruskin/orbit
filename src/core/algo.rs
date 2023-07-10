@@ -359,7 +359,7 @@ fn install_dst(source_ip: &Ip, root: &std::path::PathBuf) -> Ip {
             source_ip.get_man().get_ip().get_version(),
             &sum,
         );
-        root.join(cache_slot.as_ref())
+        root.join(cache_slot.to_string())
     };
 
     // check if already exists and return early with manifest if exists

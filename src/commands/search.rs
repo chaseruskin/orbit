@@ -51,56 +51,59 @@ impl Search {
             .inner()
             .into_iter()
             // filter by name if user entered a pkgid to search
-            .filter(|(key, iplvl)| {
-                let prj = iplvl.get(true, &AnyVersion::Latest).unwrap();
-                match self.hard_match {
-                    true => {
-                        let name_match = match &self.ip {
-                            // names must be identical
-                            Some(pkgid) => {
-                                if key == &pkgid {
-                                    true
-                                } else {
-                                    false
+            .filter(|(key, iplvl)| { 
+                if let Some(prj) = iplvl.get(true, &AnyVersion::Latest) {
+                    match self.hard_match {
+                        true => {
+                            let name_match = match &self.ip {
+                                // names must be identical
+                                Some(pkgid) => {
+                                    if key == &pkgid {
+                                        true
+                                    } else {
+                                        false
+                                    }
                                 }
-                            }
-                            // move on to the keywords
-                            None => true,
-                        };
-                        let keyword_match = {
-                            for kw in &self.keywords {
-                                if prj.get_man().get_ip().get_keywords().contains(kw) == false {
-                                    return false;
+                                // move on to the keywords
+                                None => true,
+                            };
+                            let keyword_match = {
+                                for kw in &self.keywords {
+                                    if prj.get_man().get_ip().get_keywords().contains(kw) == false {
+                                        return false;
+                                    }
                                 }
-                            }
-                            true
-                        };
-                        name_match && keyword_match
-                    }
-                    false => {
-                        // pass everything if there is no filters applied
-                        if self.ip.is_none() && self.keywords.is_empty() {
-                            return true;
+                                true
+                            };
+                            name_match && keyword_match
                         }
-                        // try to match the name of the IP with ones in the database
-                        let name_match = match &self.ip {
-                            // names must be identical
-                            Some(pkgid) => key.starts_with(&pkgid),
-                            // move on to the keywords
-                            None => false,
-                        };
-                        // try to evaluate keywords
-                        if name_match == false {
-                            for kw in &self.keywords {
-                                if prj.get_man().get_ip().get_keywords().contains(kw) == true {
-                                    return true;
-                                }
+                        false => {
+                            // pass everything if there is no filters applied
+                            if self.ip.is_none() && self.keywords.is_empty() {
+                                return true;
                             }
-                            false
-                        } else {
-                            true
+                            // try to match the name of the IP with ones in the database
+                            let name_match = match &self.ip {
+                                // names must be identical
+                                Some(pkgid) => key.starts_with(&pkgid),
+                                // move on to the keywords
+                                None => false,
+                            };
+                            // try to evaluate keywords
+                            if name_match == false {
+                                for kw in &self.keywords {
+                                    if prj.get_man().get_ip().get_keywords().contains(kw) == true {
+                                        return true;
+                                    }
+                                }
+                                false
+                            } else {
+                                true
+                            }
                         }
                     }
+                } else {
+                    false
                 }
             })
             .for_each(|(key, status)| {

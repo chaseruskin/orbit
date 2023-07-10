@@ -1,6 +1,6 @@
-use crate::core::catalog::Catalog;
+use crate::core::catalog::{Catalog, CacheSlot};
 use crate::core::context::Context;
-use crate::core::ip::PartialIpSpec;
+use crate::core::ip::{PartialIpSpec, Ip};
 use crate::util::anyerror::AnyError;
 use crate::OrbitResult;
 use clif::arg::{Flag, Positional};
@@ -59,11 +59,38 @@ impl Command<Context> for Uninstall {
             }
         };
 
+        let ip_spec = target.get_man().get_ip().into_ip_spec();
+
         // delete the project
         fs::remove_dir_all(target.get_root())?;
+        println!("info: Removed IP {} from the cache", ip_spec);
 
-        // @TODO if force is off and the project is not found anywhere else, then ask
-        // confirmation prompt
+        // check for any "dynamics" under this target
+        for dir in fs::read_dir(c.get_cache_path())? {
+            // only check valid directory entries
+            if let Ok(entry) = dir {
+                // println!("{:?}", entry.file_name());
+                let file_name = entry.file_name();
+                if let Some(cache_slot) = CacheSlot::try_from_str(&file_name.to_string_lossy()) {
+                    // check if the slot is matching
+                    if target.get_man().get_ip().get_name() != cache_slot.get_name() ||
+                        target.get_man().get_ip().get_version() != cache_slot.get_version() {
+                            continue;
+                    }
+                    // check for same UUID
+                    let cached_ip = Ip::load(entry.path().to_path_buf())?;
+                    if cached_ip.get_uuid() != target.get_uuid() {
+                        continue;
+                    }
+                    // remove the slot if it is dynamic
+                    if cached_ip.is_dynamic() == true {
+                        fs::remove_dir_all(entry.path())?;
+                        println!("info: Removed a dynamic variant of IP {} from the cache", ip_spec);
+                    }
+                }
+                
+            }
+        }
 
         self.run()
     }

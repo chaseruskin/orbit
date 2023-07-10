@@ -43,7 +43,7 @@ impl Command<Context> for Show {
         let dev_ip: Option<Result<Ip, Fault>> = {
             match Context::find_ip_path(&current_dir().unwrap()) {
                 Some(dir) => Some(Ip::load(dir)),
-                None => None
+                None => None,
             }
         };
 
@@ -72,19 +72,27 @@ impl Command<Context> for Show {
                 match &dev_ip {
                     Some(Ok(r)) => r,
                     Some(Err(e)) => return Err(AnyError(format!("{}", e.to_string())))?,
-                    _ => panic!("unreachable code")
+                    _ => panic!("unreachable code"),
                 }
             }
         };
 
         // load the ip's manifest
         if self.units == true {
-            // force computing the primary design units if a development version
-            let units = Ip::collect_units(true, &ip.get_root())?;
-            println!(
-                "{}",
-                Self::format_units_table(units.into_iter().map(|(_, unit)| unit).collect())
-            );
+            if ip.get_mapping().is_physical() == true {
+                // force computing the primary design units if a development version
+                let units = Ip::collect_units(true, &ip.get_root())?;
+                println!(
+                    "{}",
+                    Self::format_units_table(units.into_iter().map(|(_, unit)| unit).collect())
+                );
+            } else {
+                println!(
+                    "info: {}",
+                    "unable to display HDL units from a downloaded IP; try again after installing"
+                );
+            }
+
             return Ok(());
         }
 

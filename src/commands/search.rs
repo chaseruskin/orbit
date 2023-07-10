@@ -124,7 +124,9 @@ impl Search {
             if let Some(cap) = limit {
                 index += 1;
                 // exit when next entry will go past the max results
-                if index > cap { break; }
+                if index > cap {
+                    break;
+                }
             }
 
             body.push_str(&format!(

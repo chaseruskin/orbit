@@ -5,6 +5,7 @@ use clif::cmd::{Command, FromCli};
 use crate::commands::download::Download;
 use crate::core::context::Context;
 use crate::core::fileset::Fileset;
+use crate::core::iparchive::IpArchive;
 use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbol::CompoundIdentifier;
 use crate::core::lang::vhdl::symbol::{Entity, PackageBody, VHDLParser, VHDLSymbol};
@@ -38,9 +39,8 @@ use crate::core::algo::IpNode;
 use crate::core::catalog::Catalog;
 use crate::core::ip::Ip;
 use crate::core::ip::IpSpec;
-use crate::core::lockfile::LockFile;
-// use crate::commands::v2::download::Download;
 use crate::core::lockfile::LockEntry;
+use crate::core::lockfile::LockFile;
 
 use crate::util::graphmap::Node;
 
@@ -139,16 +139,12 @@ impl Command<Context> for Plan {
             let vtable = VariableTable::new().load_environment(&env)?;
 
             download_missing_deps(vtable, &lf, &le, &catalog, &c.get_config().get_protocols())?;
-            // recollect the queued items to update the catalog
-            catalog = catalog
-                .installations(c.get_cache_path())?
-                .downloads(c.get_downloads_path())?;
+            // recollect the downloaded items to update the catalog for installations
+            catalog = catalog.downloads(c.get_downloads_path())?;
 
             install_missing_deps(&lf, &le, &catalog)?;
-            // recollect the installations and queued items to update the catalog
-            catalog = catalog
-                .installations(c.get_cache_path())?
-                .downloads(c.get_downloads_path())?;
+            // recollect the installations to update the catalog for dependency graphing
+            catalog = catalog.installations(c.get_cache_path())?;
         }
 
         // determine the build directory (command-line arg overrides configuration setting)
@@ -171,8 +167,10 @@ pub fn download_missing_deps(
     let mut vtable = vtable;
     // fetch all non-downloaded packages
     for entry in lf.inner() {
-        // skip the current project's IP entry
-        if entry.matches_target(&le) == true {
+        // skip the current project's IP entry or any IP already in the downloads/
+        if entry.matches_target(&le) == true
+            || catalog.is_downloaded_slot(&entry.to_download_slot_key()) == true
+        {
             continue;
         }
 
@@ -210,7 +208,7 @@ pub fn download_missing_deps(
                 require_download = true;
             }
         }
-
+        // check if the slot is not already filled before trying to download
         if require_download == true {
             match entry.get_source() {
                 Some(src) => {
@@ -255,15 +253,23 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                 match status.get_install(&ver) {
                     // no action required (already installed)
                     Some(dep) => {
-                        // verify the checksum
+                        // verify the checksum in case we need to re-install from downloads
                         if Install::is_checksum_good(&dep.get_root()) == false {
-                            if let Some(dl_dep) = status.get_download(&ver) {
-                                Install::install(dl_dep, catalog.get_cache_path(), true)?;
-                                // remove from queue
-                                fs::remove_dir_all(dl_dep.get_root())?;
-                            } else {
-                                // failed to get the install from the queue
-                                panic!("entry is not queued for installation (missing download)")
+                            match status.get_download(&ver) {
+                                Some(dep) => {
+                                    println!(
+                                        "info: Reinstalling IP {} due to bad checksum ...",
+                                        dep.get_man().get_ip().into_ip_spec()
+                                    );
+                                    // perform extra work if the Ip is virtual (from downloads)
+                                    install_ip_from_downloads(&dep, &catalog, true)?
+                                }
+                                None => {
+                                    // failed to get the install from the queue
+                                    panic!(
+                                        "entry is not queued for installation (missing download)"
+                                    )
+                                }
                             }
                         }
                     }
@@ -272,9 +278,8 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                         // check the queue for installation
                         match status.get_download(&ver) {
                             Some(dep) => {
-                                Install::install(dep, catalog.get_cache_path(), false)?;
-                                // remove from queue
-                                fs::remove_dir_all(dep.get_root())?;
+                                // perform extra work if the Ip is virtual (from downloads)
+                                install_ip_from_downloads(&dep, &catalog, false)?
                             }
                             None => {
                                 panic!("entry is not queued for installation")
@@ -287,6 +292,38 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                 panic!("entry is not queued for installation (unknown ip)")
             }
         }
+    }
+    Ok(())
+}
+
+fn install_ip_from_downloads(dep: &Ip, catalog: &Catalog, force: bool) -> Result<(), Fault> {
+    // perform extra work if the Ip is virtual (from downloads)
+    if let Some(bytes) = dep.get_mapping().as_bytes() {
+        // place the dependency into a temporary directory
+        let dir = tempfile::tempdir()?.into_path();
+        if let Err(e) = IpArchive::extract(&bytes, &dir) {
+            fs::remove_dir_all(dir)?;
+            return Err(e);
+        }
+        // load the IP
+        let unzipped_dep = match Ip::load(dir.clone()) {
+            Ok(x) => x,
+            Err(e) => {
+                fs::remove_dir_all(dir)?;
+                return Err(e);
+            }
+        };
+        // install from the unzipp ip
+        match Install::install(&unzipped_dep, catalog.get_cache_path(), force) {
+            Ok(_) => {}
+            Err(e) => {
+                fs::remove_dir_all(dir)?;
+                return Err(e);
+            }
+        }
+        fs::remove_dir_all(unzipped_dep.get_root())?;
+    } else {
+        panic!("trying to download from a physical path")
     }
     Ok(())
 }

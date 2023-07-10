@@ -185,7 +185,7 @@ impl<'a> Catalog<'a> {
     pub fn is_cached_slot(&self, slot: &CacheSlot) -> bool {
         self.get_cache_path().join(slot.as_ref()).is_dir()
     }
-    
+
     /// Uses the download slot name to check if the file exists.
     pub fn is_downloaded_slot(&self, slot: &DownloadSlot) -> bool {
         self.get_downloads_path().join(slot.as_ref()).is_file()
@@ -217,7 +217,12 @@ impl<'a> Catalog<'a> {
     pub fn get_possible_versions(&self, id: &PkgPart) -> Option<Vec<&Version>> {
         let kaban = self.inner.get(&id)?;
         let mut set = HashSet::new();
+        // read from cache
         for ip in kaban.get_installations() {
+            set.insert(ip.get_man().get_ip().get_version());
+        }
+        // read from downloads
+        for ip in kaban.get_downloads() {
             set.insert(ip.get_man().get_ip().get_version());
         }
         let mut arr: Vec<&Version> = set.into_iter().collect();
@@ -243,7 +248,7 @@ impl<'a> Catalog<'a> {
             IpState::Installation => Ip::detect_all(path),
             IpState::Available => todo!("only detect for available"),
             IpState::Downloaded => IpArchive::detect_all(path),
-            _ => panic!("Unknown catalog state to find")
+            _ => panic!("Unknown catalog state to find"),
         }?
         .into_iter()
         .for_each(

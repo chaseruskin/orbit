@@ -45,7 +45,7 @@ impl FromCli for Download {
             list: cli.check_flag(Flag::new("list"))?,
             force: cli.check_flag(Flag::new("force"))?,
             verbose: cli.check_flag(Flag::new("verbose"))?,
-            queue_dir: cli.check_option(Optional::new("dest").value("dir"))?,
+            queue_dir: cli.check_option(Optional::new("queue").value("dir"))?,
         });
         command
     }
@@ -96,17 +96,16 @@ impl Command<Context> for Download {
         env.initialize();
 
         // default behavior is report only missing installations
-        let missing_only = self.all == false || self.missing == true;
+        let missing_only = self.force == false || self.missing == true;
 
         // default behavior is to print out to console
         let to_stdout = self.list == true;
 
-        let downloads = Self::compile_download_list(
-            &LockEntry::from((&ip, true)),
-            ip.get_lock(),
-            &catalog,
-            missing_only,
-        );
+        // determine whether to filter out or keep the dev dependencies from the lock file
+        let lf = ip.get_lock().keep_dev_dep_entries(&ip, self.all);
+
+        let downloads =
+            Self::compile_download_list(&LockEntry::from((&ip, true)), &lf, &catalog, missing_only);
         // print to console
         if to_stdout == true {
             downloads.iter().for_each(|(_, src)| println!("{}", src));
@@ -160,7 +159,7 @@ impl Download {
         verbose: bool,
         force: bool,
     ) -> Result<(), Fault> {
-        // update the variable table
+        // use the user-provided queue directory or simply use a temporary directory
         let queue = match queue {
             Some(q) => {
                 std::fs::create_dir_all(q)?;
@@ -177,13 +176,19 @@ impl Download {
                         "info: Downloading {} over \"{}\" protocol ...",
                         spec, &proto
                     );
-                    vtable.add("orbit.queue", PathBuf::standardize(&queue).to_str().unwrap());
+                    vtable.add(
+                        "orbit.queue",
+                        PathBuf::standardize(&queue).to_str().unwrap(),
+                    );
                     // update variable table for this lock entry
                     vtable.add("orbit.ip.name", spec.get_name().as_ref());
                     vtable.add("orbit.ip.version", &spec.get_version().to_string());
                     vtable.add("orbit.ip.source.url", src.get_url());
                     vtable.add("orbit.ip.source.protocol", entry.get_name());
-                    vtable.add("orbit.ip.source.tag", src.get_tag().unwrap_or(&String::new()));
+                    vtable.add(
+                        "orbit.ip.source.tag",
+                        src.get_tag().unwrap_or(&String::new()),
+                    );
                     // allow the user to handle placing the code in the queue
                     let entry: Protocol = entry.clone().replace_vars_in_args(&vtable);
                     if let Err(err) = entry.execute(&[], verbose) {
@@ -236,7 +241,8 @@ impl Download {
                         && temp.get_man().get_ip().get_version() == spec.get_version()
                     {
                         // zip the project to the downloads directory
-                        let download_slot_name = DownloadSlot::new(spec.get_name(), spec.get_version(), temp.get_uuid());
+                        let download_slot_name =
+                            DownloadSlot::new(spec.get_name(), spec.get_version(), temp.get_uuid());
                         let full_download_path = downloads.join(&download_slot_name.as_ref());
                         IpArchive::write(&temp, &full_download_path)?;
                         // let arch = IpArchive::read(&full_download_path)?;
@@ -306,7 +312,7 @@ Options:
     --list              print URLs to the console
     --missing           filter only uninstalled packages (default: true)
     --all               contain all packages in list
-    --dest <dir>        set the destination directory
+    --queue <dir>       set the destination directory to place fetched codebase
     --verbose           display the command being executed
     --force             fallback to default protocol if missing given protocol
 

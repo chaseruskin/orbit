@@ -202,6 +202,34 @@ pub mod v1 {
             )?;
             Ok(())
         }
+
+        pub fn keep_dev_dep_entries(&self, target: &Ip, enable: bool) -> Self {
+            // find the dev-deps and remove them from the lockfile data
+            let entries: Vec<LockEntry> = match enable {
+                // install dev-deps anyway
+                true => self.inner().clone(),
+                // do not install dev-deps (filter them out)
+                false => self
+                    .inner()
+                    .clone()
+                    .into_iter()
+                    .filter(
+                        // check if this entry is a dev dependency
+                        |p| match target.get_man().get_dev_deps().get(p.get_name()) {
+                            Some(v) => {
+                                if p.get_version() == v {
+                                    false
+                                } else {
+                                    true
+                                }
+                            }
+                            None => true,
+                        },
+                    )
+                    .collect(),
+            };
+            LockFile::wrap(entries)
+        }
     }
 
     impl Display for LockFile {

@@ -26,7 +26,6 @@ use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::ip::PartialIpSpec;
 use crate::core::lockfile::LockEntry;
-use crate::core::lockfile::LockFile;
 use crate::core::manifest::ORBIT_SUM_FILE;
 use crate::core::variable::VariableTable;
 use crate::util::anyerror::Fault;
@@ -99,32 +98,7 @@ impl Command<Context> for Install {
 
             let le = LockEntry::from((&target, true));
 
-            let lf = {
-                let lf = target.get_lock().clone();
-                // find the dev-deps and remove them from the lockfile data
-                let entries: Vec<LockEntry> = match self.all {
-                    // install dev-deps anyway
-                    true => lf.unwrap(),
-                    // do not install dev-deps (filter them out)
-                    false => lf
-                        .unwrap()
-                        .into_iter()
-                        .filter(
-                            |p| match target.get_man().get_dev_deps().get(p.get_name()) {
-                                Some(v) => {
-                                    if p.get_version() == v {
-                                        false
-                                    } else {
-                                        true
-                                    }
-                                }
-                                None => true,
-                            },
-                        )
-                        .collect(),
-                };
-                LockFile::wrap(entries)
-            };
+            let lf = target.get_lock().keep_dev_dep_entries(&target, self.all);
 
             plan::download_missing_deps(
                 vtable,
@@ -134,15 +108,11 @@ impl Command<Context> for Install {
                 &c.get_config().get_protocols(),
             )?;
             // recollect the queued items to update the catalog
-            catalog = catalog
-                .installations(c.get_cache_path())?
-                .downloads(c.get_downloads_path())?;
+            catalog = catalog.downloads(c.get_downloads_path())?;
 
             plan::install_missing_deps(&lf, &le, &catalog)?;
             // recollect the installations and queued items to update the catalog
-            catalog = catalog
-                .installations(c.get_cache_path())?
-                .downloads(c.get_downloads_path())?;
+            catalog = catalog.installations(c.get_cache_path())?;
         }
         // generate lock file if it is missing
         if target.lock_exists() == false {

@@ -23,13 +23,31 @@ use std::str::FromStr;
 use toml_edit::Document;
 
 // add state to `root` (make enum) to determine if is real path or not
-pub enum IpLocation {
-    Physical(PathBuf),
-    Virtual,
+#[derive(Debug, PartialEq)]
+pub enum Mapping {
+    Physical,
+    Virtual(Vec<u8>),
+}
+
+impl Mapping {
+    pub fn is_physical(&self) -> bool {
+        match &self {
+            Self::Physical => true,
+            _ => false,
+        }
+    }
+
+    pub fn as_bytes(&self) -> Option<&Vec<u8>> {
+        match &self {
+            Self::Virtual(b) => Some(b),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
 pub struct Ip {
+    mapping: Mapping,
     /// The base directory for the entire [Ip] structure.
     root: PathBuf,
     /// The metadata for the [Ip].
@@ -42,12 +60,13 @@ pub struct Ip {
 
 impl From<IpArchive> for Ip {
     fn from(value: IpArchive) -> Self {
-        let (man, lock) = value.decouple();
+        let (man, lock, archive) = value.decouple();
         let uuid = match lock.get(man.get_ip().get_name(), man.get_ip().get_version()) {
             Some(entry) => entry.get_uuid().clone(),
             None => Uuid::new(),
-        }; 
+        };
         Self {
+            mapping: Mapping::Virtual(archive),
             root: PathBuf::new(),
             data: man,
             lock: lock,
@@ -59,6 +78,10 @@ impl From<IpArchive> for Ip {
 impl Ip {
     pub fn get_root(&self) -> &PathBuf {
         &self.root
+    }
+
+    pub fn get_mapping(&self) -> &Mapping {
+        &self.mapping
     }
 
     pub fn get_man(&self) -> &Manifest {
@@ -101,6 +124,7 @@ impl Ip {
         };
 
         Ok(Self {
+            mapping: Mapping::Physical,
             root: root,
             data: man,
             lock: lock,
@@ -142,15 +166,21 @@ impl Ip {
 
     /// Checks the metadata file for a entry for `dynamic`.
     pub fn is_dynamic(&self) -> bool {
-        self.get_root().join(".orbit-dynamic").exists() == true
+        self.get_mapping().is_physical() == true
+            && self.get_root().join(".orbit-dynamic").exists() == true
     }
 
     pub fn generate_dst_lut(&self) -> HashMap<Identifier, String> {
+        // compose the lut for symbol transformation
+        let mut lut = HashMap::new();
+
+        if self.mapping.is_physical() == false {
+            return lut;
+        }
         // @todo: read units from metadata to speed up results
         let units = Self::collect_units(true, self.get_root()).unwrap();
         let checksum = Ip::read_checksum_proof(self.get_root()).unwrap();
-        // compose the lut for symbol transformation
-        let mut lut = HashMap::new();
+
         units.into_iter().for_each(|(key, _)| {
             lut.insert(
                 key.clone(),

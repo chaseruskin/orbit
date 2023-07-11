@@ -278,20 +278,24 @@ pub enum GetError {
     SuggestShow(String, PkgPart, Version),
 }
 
+use crate::core::ip::IpSpec;
+
 impl std::error::Error for GetError {}
 
 impl std::fmt::Display for GetError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::EntityNotFound(ent, pkg, ver) => {
+                let spec = IpSpec::new(pkg.clone(), ver.clone());
                 write!(
                     f,
-                    "entity '{0}' is not found in ip '{1}' under version '{2}'",
-                    ent, pkg, ver
+                    "Failed to find entity '{}' in IP '{}'",
+                    ent, spec
                 )
             }
             Self::SuggestShow(err, pkg, ver) => {
-                write!(f, "{}\n\nTry `orbit show {1} -v {2} --units` to see a list of primary design units", err, pkg, ver)
+                let spec = IpSpec::new(pkg.clone(), ver.clone());
+                write!(f, "{}\n\nTry `orbit show {} --units` to see a list of primary design units", err, spec)
             }
         }
     }

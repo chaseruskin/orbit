@@ -49,7 +49,7 @@ SECT_END = '\n\n'
 
 # --- Functions ----------------------------------------------------------------
 
-def write_md(table, dest, command) -> int:
+def write_md(table, dest: str, command: str) -> int:
     '''
     Writes the TOML `table` for a particular `command` to the `dest` folder in
     Markdown format.

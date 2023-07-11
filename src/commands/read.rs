@@ -28,6 +28,7 @@ pub struct Read {
     location: bool,
     file: bool,
     keep: bool,
+    limit: Option<usize>,
 }
 
 impl FromCli for Read {
@@ -38,6 +39,7 @@ impl FromCli for Read {
             file: cli.check_flag(Flag::new("file"))?,
             location: cli.check_flag(Flag::new("location"))?,
             keep: cli.check_flag(Flag::new("keep"))?,
+            limit: cli.check_option(Optional::new("limit"))?,
             unit: cli.require_positional(Positional::new("unit"))?,
         });
         command
@@ -82,7 +84,7 @@ impl Command<Context> for Read {
                 }
                 None => {
                     // the ip does not exist
-                    todo!()
+                    return Err(AnyError(format!("Failed to find IP {}", tg)))?
                 }
             }
         // must be in an IP if omitting the pkgid
@@ -120,7 +122,15 @@ impl Read {
             "{}",
             match print_to_console {
                 // display the contents
-                true => fs::read_to_string(&path)?,
+                true => {
+                    let contents = fs::read_to_string(&path)?;
+                    if let Some(l) = self.limit {
+                        contents.split_terminator('\n').take(l).map(|line| line.to_string() + "\n").collect()
+                    } else {
+                        contents
+                    }
+
+                }
                 // display the file path
                 false => path.display().to_string(),
             }
@@ -221,6 +231,7 @@ Options:
     --location              append the :line:col to the filepath
     --file                  display the path to the read-only source code
     --keep                  prevent previous files read from being deleted
+    --limit <num>           set a maximum number of lines to print
 
 Use 'orbit help read' to learn more about the command.
 ";

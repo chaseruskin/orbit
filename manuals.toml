@@ -169,11 +169,11 @@ The command modifies the document in three independent stages. The first stage
 modifies the settings by iterating through all defined `--append` values. Then, 
 it will insert all `--set` values. Lastly, it will remove all `--unset` entries."""
 
-options."--global" = "Access the home configuration file"
-options."--local" = "Access the current project's configuration file"
-options."--append <key>=<value>..." = "Add a value to the key storing a list"
-options."--set <key>=<value>..." = "Write the value at the key's entry"
-options."--unset <key>..." = "Delete the key's entry"
+option."--global" = "Access the home configuration file"
+option."--local" = "Access the current project's configuration file"
+option."--append <key>=<value>..." = "Add a value to the key storing a list"
+option."--set <key>=<value>..." = "Write the value at the key's entry"
+option."--unset <key>..." = "Delete the key's entry"
 
 examples = """\
 orbit config --append include="~/.orbit/profiles/ks-tech"
@@ -186,5 +186,39 @@ summary = "fetch packages from the internet"
 synopsis = "orbit download [options]"
 description = """\
 This command will get a package from the internet using the default protocol
-or a user-defined protocol and place the package
-"""
+or a user-defined protocol. It places the package in the path defined as
+environment variable ORBIT_DOWNLOADS.
+
+Downloads are vital to Orbit's management system as to avoid having to solely 
+rely on accessing the internet to get IP. Downloads allow Orbit to quickly
+repair broken installations and allow users to learn about IP before installing.
+
+When using a custom protocol, Orbit expects the final fetched repository to
+exist within a special directory called the queue. By default, the queue is set
+to a temporary directory, but it can be overridden with `--queue <dir>`. After a 
+protocol is executed, Orbit resumes the download process by trying to detect the 
+target IP and then performing a compression algorithm on the path to store as a 
+single file archive. This final archive is special and packed with additional 
+bytes, which makes it unsuitable to easily unzip with existing compression 
+tools.
+
+A lockfile is required to exist in the current IP in order to download its 
+dependencies.
+
+Variable substitution is supported when specifying the "command" and "args"
+fields for a protocol. Most notably, the queue is accessed as {{ orbit.queue }}.
+See `orbit help protocols` for more information about available variables.
+
+This action may automatically run during an install if the package is missing
+from the downloads. See `orbit help install` for more details."""
+
+option."--list" = "Print URLs and exit"
+option."--missing" = "Filter only uninstalled packages (default: true)"
+option."--all" = "Gather packages from all dependency types"
+option."--queue <dir>" = "Set the destination directory for placing fetched repositories"
+option."--verbose" = "Display the custom protocol being executed"
+option."--force" = "Download selected packages regardless of status"
+
+examples = """\
+orbit download --missing --list
+orbit download --all --force"""

@@ -44,6 +44,9 @@ use crate::core::lockfile::LockFile;
 
 use crate::util::graphmap::Node;
 
+pub const BLUEPRINT_FILE: &str = "blueprint.tsv";
+pub const BLUEPRINT_DELIMITER: &str = "\t";
+
 #[derive(Debug, PartialEq)]
 pub struct Plan {
     plugin: Option<String>,
@@ -54,7 +57,6 @@ pub struct Plan {
     all: bool,
     build_dir: Option<String>,
     filesets: Option<Vec<Fileset>>,
-    disable_ssh: bool,
     only_lock: bool,
     force: bool,
 }
@@ -73,7 +75,6 @@ impl FromCli for Plan {
             plugin: cli.check_option(Optional::new("plugin"))?,
             build_dir: cli.check_option(Optional::new("build-dir").value("dir"))?,
             filesets: cli.check_option_all(Optional::new("fileset").value("key=glob"))?,
-            disable_ssh: cli.check_flag(Flag::new("disable-ssh"))?,
         });
         command
     }
@@ -489,6 +490,9 @@ impl Plan {
                 .collect();
             let lock = LockFile::from_build_list(&mut build_list, target);
             lock.save_to_disk(target.get_root())?;
+            println!("info: Updated lockfile");
+        } else {
+            println!("info: Lockfile is already up to date");
         }
         Ok(())
     }
@@ -703,7 +707,6 @@ impl Plan {
                 result.push(elem)
             }
         }
-
         result
     }
 
@@ -1029,10 +1032,10 @@ impl Plan {
         for file in file_order {
             if fileset::is_rtl(&file.get_file()) == true {
                 blueprint_data +=
-                    &format!("VHDL-RTL\t{}\t{}\n", file.get_library(), file.get_file());
+                    &format!("VHDL-RTL{0}{1}{0}{2}\n", BLUEPRINT_DELIMITER, file.get_library(), file.get_file());
             } else {
                 blueprint_data +=
-                    &format!("VHDL-SIM\t{}\t{}\n", file.get_library(), file.get_file());
+                    &format!("VHDL-SIM{0}{1}{0}{2}\n", BLUEPRINT_DELIMITER, file.get_library(), file.get_file());
             }
         }
 
@@ -1077,8 +1080,6 @@ impl Plan {
     }
 }
 
-pub const BLUEPRINT_FILE: &str = "blueprint.tsv";
-
 #[derive(Debug)]
 pub enum PlanError {
     BadTestbench(Identifier),
@@ -1118,7 +1119,7 @@ impl std::fmt::Display for PlanError {
                 "multiple {} were found:\n {}",
                 name,
                 tbs.iter()
-                    .fold(String::new(), |sum, x| { sum + &format!("\t{}\n", x) })
+                    .fold(String::new(), |sum, x| { sum + &format!("    {}\n", x) })
             ),
         }
     }
@@ -1138,8 +1139,8 @@ Options:
     --fileset <key=glob>... set an additional fileset
     --clean                 remove all files from the build directory
     --list                  view available plugins
+    --lock-only             create the lockfile and exit
     --all                   include all found HDL files
-    --disable-ssh           convert SSH repositories to HTTPS for dependencies
     --force                 skip reading from the lock file
 
 Use 'orbit help plan' to learn more about the command.

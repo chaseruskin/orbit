@@ -31,24 +31,23 @@ because they are considered mutable.
 
 ## __OPTIONS__
 
-`--ip <ip>`  
-      Pkgid to access an orbit ip to install
- 
-`--variant, -v <version>`
-Version to install
- 
 `--path <path>`  
-      Filesystem path to the ip
- 
-`--git <url>`  
-      Url to git remote repository for the ip
- 
-`--disable-ssh`  
-      Convert SSH to HTTPS urls when fetching external dependencies
+      Directory to install ip from to place in the cache
+
+`--ip <name>`  
+      Ip to install from the queue into the cache
+
+`--force`  
+      Install the ip regardless of the cache slot occupancy
+
+`--all`  
+      Install all dependencies (including developmental)
 
 ## __EXAMPLES__
 
 ```
-orbit install --ip ks-tech.rary.gates --version 1.0.0
-orbit install --git https://github.com/c-rus/gates.git -v latest
+orbit install"
+orbit install --path ./projects/ram --force 
+orbit install --all
 ```
+

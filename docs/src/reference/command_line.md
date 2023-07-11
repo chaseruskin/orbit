@@ -59,4 +59,4 @@ Some scenarios will allow you to pass arguments through Orbit to an internally e
 ```
 orbit build vivado -- synthesis --incremental
 ```
-An example where an argument terminator is used is when invoking a plugin with Orbit. In this example,  `synthesis --incremental` is passed to a plugin recognized as "quartus" by Orbit.
+An example where an argument terminator is used is when invoking a plugin with Orbit. In this example, `synthesis --incremental` is passed to a plugin recognized as "quartus" by Orbit.

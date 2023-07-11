@@ -25,21 +25,21 @@ The command invoked will be ran from the ip's root directory.
 
 ## __OPTIONS__
 
-`--plugin <alias>`   
+`--plugin <alias>`  
       Plugin to execute
- 
+
 `--command <cmd>`  
       Command to execute
-  
+
 `--list`  
       View available plugins
- 
+
 `--build-dir <dir>`  
       The relative directory to locate the blueprint.tsv file
- 
+
 `--verbose`  
       Display the command being executed
- 
+
 `-- args...`  
       Arguments to pass to the requested plugin
 
@@ -50,3 +50,4 @@ orbit build --plugin xsim -- --waves
 orbit build --command python -- ./tools/synth.py --part x70
 orbit build --verbose
 ```
+

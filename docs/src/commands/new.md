@@ -7,7 +7,7 @@ new - create a new ip
 ## __SYNOPSIS__
 
 ```
-orbit new [options]
+orbit new [options] <path>
 ```
 
 ## __DESCRIPTION__
@@ -42,33 +42,13 @@ If `--from` is omitted when creating a file, an empty file will be created.
 
 ## __OPTIONS__
 
-`--ip <pkgid>`  
-      The vendor.library.name for the new project
- 
-`--template <alias>`  
-      Specify a configured template to import
- 
-`--to <path>`  
-      Specify the destination path
- 
-`--file`  
-      Create a file for the current ip
- 
-`--from <path>`  
-      Specify the source path to copy
- 
-`--list`  
-      View available templates or files within a specified template
- 
-`--force`  
-      Overwrites the destination path if it already exists
+`--name <name>`  
+      The ip name to create
 
 ## __EXAMPLES__
 
 ```
-orbit new --list
-orbit new --ip ks-tech.rary.gates --to gates --template base
-orbit new --template base --list
-orbit new --file --to rtl/circuit2.vhd --template base --from extra/cmb.vhd
-orbit new --ip ks-tech.util.toolbox --from ../template
+orbit new gates
+orbit new ./projects/lab1 --name adder
 ```
+

@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-plan - generate a blueprint file 
+plan - generate a blueprint file
 
 ## __SYNOPSIS__
 
@@ -47,41 +47,39 @@ already in sync with the current working ip's manifest data.
 
 `--top <unit>`  
       The top level entity to explicitly define
-  
+
 `--bench <tb>`  
       The top level testbench to explicitly define
-   
+
 `--plugin <alias>`  
       A plugin to refer to gather its declared filesets
-  
+
 `--build-dir <dir>`  
       The relative directory to place the blueprint.tsv file
-  
-`--filset <key=glob>...`  
-      A glob-style pattern identified by a name to add into the blueprint    
-  
+
+`--fileset <key=glob>...`  
+      A glob-style pattern identified by a name to add into the blueprint
+
 `--clean`  
-      Removes all files from the build directory before planning
-  
+      Removes all files from the build directory before execution
+
 `--list`  
-      Display all available plugins and exit
- 
-`--all`  
-      Ignore any design hierarchy and include all hdl files
- 
-`--disable-ssh`  
-      Convert SSH to HTTPS urls when fetching external dependencies
- 
+      Displays all available plugins and exit
+
 `--force`  
-      Ignore reading the lock file
-  
-`--lock-only`
-      Only create a lock file
+      Ignore reading the precomputed lock file
+
+`--lock-only`  
+      Create the lock file and exit
+
+`--all`  
+      Include all locally found HDL files
 
 ## __EXAMPLES__
 
 ```
-orbit plan --top top_level --fileset PIN-PLAN="*.board"
+orbit plan --top and_gate --fileset PIN-PLAN="*.board"
 orbit plan --plugin vivado --clean --bench ram_tb
 orbit plan --lock-only
 ```
+

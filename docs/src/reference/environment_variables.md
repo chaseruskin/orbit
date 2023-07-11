@@ -6,7 +6,7 @@ Orbit's configuration can be customized with the setting of specific environment
 
 - `ORBIT_CACHE` - directory where orbit caches installed IP. By default it is `$ORBIT_HOME/cache`.
 
-- `ORBIT_STORE` - directory where orbit saves IP git repositories. By default it is `$ORBIT_HOME/store`.
+- `ORBIT_DOWNLOADS` - directory where orbit saves archived snapshots of IP at a particular version.
 
 - `NO_COLOR` - does not print colorized output when set to a value.
 
@@ -18,9 +18,7 @@ Orbit's configuration can be customized with the setting of specific environment
 
 Orbit also sets environment variables during runtime so a plugin has access to runtime information. 
 
-- `ORBIT_DEV_PATH` - path to locate mutable in-development IP. Unless explicitly set, Orbit will set this value to the path found as `core.path` set in config.toml.
-
-- `ORBIT_BUILD_DIR` - directory to place the `blueprint.tsv` file relative to the current IP path. Default is `build` unless set as `core.build-dir` in config.toml.
+- `ORBIT_BUILD_DIR` - directory to place the `blueprint.tsv` file relative to the current IP path. Default is `build`.
 
 - `ORBIT_IP_PATH` - path to the IP that is detected under the current working directory. If its not immediately detected at the current directory, it will continue to search the parent directory until it finds a `Orbit.toml` manifest file.
 
@@ -30,15 +28,11 @@ Orbit also sets environment variables during runtime so a plugin has access to r
 
 - `ORBIT_BENCH` - toplevel design's testbench identifier
 
-- `ORBIT_IP` - current working directory's ip PKGID
+- `ORBIT_IP_NAME` - name field of the manifest for the IP package
 
-- `ORBIT_IP_NAME` - name component of current working directory's ip PKGID
+- `ORBIT_IP_LIBRARY` - optional HDL library defined in the manifest for the IP package
 
-- `ORBIT_IP_LIBRARY` - library component of current working directory's ip PKGID
-
-- `ORBIT_IP_VENDOR` - vendor component of current working directory's ip PKGID
-
-- `ORBIT_IP_VERSION` - specific version of current working directory's ip
+- `ORBIT_IP_VERSION` - specific version of current working directory's IP
 
 - `ORBIT_BLUEPRINT` - the filename for the blueprint: `blueprint.tsv`
 

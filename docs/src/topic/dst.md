@@ -10,7 +10,7 @@ Before we begin, it is important to understand the problem we are trying to solv
 
 Namespace pollution can lead to _namespace clashes_. As you define more primary design units at the same scope, you are more likely to have two things that accidently have the same name. This is at the core the problem we are going to solve, because VHDL compilers and synthesizers are not built to gracefully handle clashes and will error out when a primary design unit at the same scope has multiple definitions.
 
-In VHDL, a common example of a namespace clash is when different files define an entity by the same name, which may have different behaviors. Namespace clashes may begin to appear when a higher-level IP begins to require the same entity but as different versions throughout its depedency tree.
+In VHDL, a common example of a namespace clash is when different files define an entity by the same name, which may have different behaviors. Namespace clashes may start to appear when a higher-level IP requires the same entity from an IP but as different versions throughout its dependency tree.
 
 ## Solution - Dynamic Symbol Transformation
 

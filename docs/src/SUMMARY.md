@@ -26,7 +26,7 @@
     - [Templates](./topic/4_template.md)
     - [Blueprint](./topic/6_blueprint.md)
     - [Protocols](./topic/protocols.md)
-    - [Dynamic Symbol Transformation](./topic/7_dst.md)
+    - [Dynamic Symbol Transformation](./topic/dst.md)
     - [.orbitignore](./topic/orbitignore.md)
 
 - [Reference](./reference/reference.md)

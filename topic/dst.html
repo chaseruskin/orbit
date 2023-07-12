@@ -212,15 +212,15 @@ end entity;
 ├─ and_gate (lab3)
 │  └─ adder (lab2)
 |     └─ and_gate (lab1)
-└─ adder (lab2)
+└─ mux (lab2)
 </code></pre>
 <p>Notice lab1 and lab3 both have the <code>and_gate</code> entity, but their interfaces and functionality are internally different as previously mentioned. How can we allow both units in the hierarchy while resolving the namespace clash?</p>
 <p>DST identifies namespace clashes within the current dependency graph and automatically resolve the conflicts to produce a clean unambiguous graph.</p>
 <pre><code>top_level (final-project)
 ├─ and_gate (lab3)
-│  └─ adder (lab2)
-|     └─ and_gate_fbe4720d0 (lab1)
-└─ adder (lab2)
+│  └─ adder (lab2 *)
+|     └─ and_gate_fbe4720d0 (lab1 *)
+└─ mux (lab2)
 </code></pre>
 <p>Let's take a closer look at what happened here. DST handled the namespace clash by <em>transforming</em>, or renaming, the entity related to lab1. The entity's identifier in lab1 was appended with the first 10 digits of the original lab1 IP's checksum. This transformation occurred at that IP's source code level (lab1), and in the source code for all dependents of that entity (lab2). Therefore, DST produced new dynamic variants of the lab1 and lab2 IPs that properly reference and associate with <code>and_gate_fbe4720d0</code>.</p>
 <p>DST specifically chose not to rename the <code>and_gate</code> from lab3, or else the user would have to be burdened with trying to track and maintain the new unique identifier in the currently developed IP (final-project). As a result, DST has no additional overhead to the user and is kept abstracted away by Orbit. Direct dependencies are never chosen for DST.</p>

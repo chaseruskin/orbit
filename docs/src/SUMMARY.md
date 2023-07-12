@@ -31,11 +31,11 @@
 
 - [Reference](./reference/reference.md)
     - [Manifest](./reference/manifest.md)
-    - [Packages](./reference/1_packages.md)
+    - [Packages](./reference/packages.md)
     - [Versions](./reference/versions.md)
     - [Command line](./reference/command_line.md)
     - [Environment Variables](./reference/environment_variables.md)
-    - [Configuration](./reference/5_configuration.md)
+    - [Configuration](./reference/configuration.md)
 
 - [Commands](./commands/commands.md)
     - [orbit new](./commands/new.md) <!-- DONE -->

@@ -6,7 +6,7 @@ Orbit's configuration can be customized with the setting of specific environment
 
 - `ORBIT_CACHE` - directory where orbit caches installed IP. By default it is `$ORBIT_HOME/cache`.
 
-- `ORBIT_DOWNLOADS` - directory where orbit saves archived snapshots of IP at a particular version.
+- `ORBIT_DOWNLOADS` - directory where orbit saves archived snapshots of IP at a particular version. By default it is `$ORBIT_HOME/downloads`
 
 - `NO_COLOR` - does not print colorized output when set to a value.
 

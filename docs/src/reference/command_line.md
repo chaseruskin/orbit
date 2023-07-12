@@ -4,9 +4,9 @@ The command line is the main way of interacting with Orbit. Let's understand som
 
 ## Syntax
 
-`< >` denotes that a user input is required. The label within the angular brackets gives a hint to the user as to what type of value to enter here.
+Angular brackets (`< >`) denotes that a user input is required. The label within the angular brackets gives a hint to the user as to what type of value to enter here.
 
-`[ ]` denotes that this input is optional and is not required to get the command to successfully run.
+Square brackets (`[ ]`) denotes that this input is optional and is not required to get the command to successfully run.
 
 ## Jargon
 
@@ -19,17 +19,16 @@ orbit <command>
 ```
 
 ### __Argument__
-A value interpreted based on its position in the input. Arguments must be included when requested by Orbit.
+A value interpreted based on its position in the input. Arguments must be included when requested by Orbit within angular brackets (`< >`).
 ```
-orbit new <ip>
+orbit new <path>
 ```
 
 ### __Option__
 A flag that are required to have an argument assigned to them. The argument may immediately proceed the option's flag separated by whitespace or an equal sign `=`. Options can be omitted.
 ```
 --output <file>
-
---code=<language>
+--output=<file>
 ```
 
 Common flags and options may have a shorthand _switch_ associated with them. For example, `--help` can be alternatively passed with just `-h`.
@@ -38,6 +37,7 @@ Common flags and options may have a shorthand _switch_ associated with them. For
 Simple boolean on-off conditional to alter a command's behavior. Flags are options that do not take an argument and can be omitted.
 ```
 --help
+-h
 ```
 
 ### __Switch__
@@ -52,11 +52,11 @@ If a switch is associated with an option, it must be declared last on a chain wi
 ```
 
 ### __Argument terminator__ 
-Special no-op flag `--` that tells Orbit to parse up until this symbol.
+The argument terminator is a special no-op flag `--` that tells Orbit to parse up until this symbol.
 
 Some scenarios will allow you to pass arguments through Orbit to an internally executed command. You can pass these arguments by using the _argument terminator_.
 
 ```
-orbit build vivado -- synthesis --incremental
+orbit build --plugin vivado -- synthesis --incremental
 ```
-An example where an argument terminator is used is when invoking a plugin with Orbit. In this example, `synthesis --incremental` is passed to a plugin recognized as "quartus" by Orbit.
+An example where an argument terminator is used is when invoking a plugin with Orbit. In this example, `synthesis --incremental` is passed to a plugin recognized as "vivado" by Orbit.

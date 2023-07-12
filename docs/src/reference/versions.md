@@ -36,25 +36,27 @@ In some scenarios a _partially qualified_ version can be accepted. This means on
 1.0
 ```
 
-When given a partially qualified version, Orbit references the maximum version available that satifies the partially qualified version. Assume the known released versions for a given IP are as listed: 
+When given a partially qualified version, Orbit references the maximum version available that satifies the partially qualified version. If no version is specified, it assumes the request is for the latest known version. The latest known version can also be explicitly requested by inputting `latest` as the version. Assume the known released versions for a given IP are as listed: 
 
 Versions | 
---
-2.1.0 |
-1.5.0 |
-1.2.1 |
-1.2.0 |
-1.0.0 |
+---------|
+2.1.0    |
+1.5.0    |
+1.2.1    |
+1.2.0    |
+1.0.0    |
 
-Then the following illustrates the mapping from the partially specified requested version to its fully specified known version that would be returned:
+The following illustrates the mapping from the partially specified requested version to its fully specified known version that would be returned:
 
-Requested | Returned |
--- | -- |
-1 | 1.5.0 |
-1.1 | NOT FOUND |
-1.2 | 1.2.1 |
-2 | 2.1.0 |
-1.2.0 | 1.2.0
+Requested | Returned  |
+----------|-----------|
+1         | 1.5.0     |
+1.1       | NOT FOUND |
+1.2       | 1.2.1     |
+2         | 2.1.0     |
+1.2.0     | 1.2.0     |
+latest    | 2.1.0     |
+(omitted) | 2.1.0     |
 
 ### Example Scenarios
 

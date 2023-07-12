@@ -12,12 +12,24 @@ Here is a very minimal and basic example config file:
 ``` toml
 include = ["profiles/ks-tech/config.toml"]
 
-[core]
-path = "c:/users/kepler/hdl" # path to find and store IP in-development
-editor = "c:/users/kepler/appdata/local/programs/vscode/code"
+[env]
+QUARTUS_PATH = "C:/IntelFPGA_lite/19.1/quartus/bin64"
+
+[[plugin]]
+alias = "zipr"
+summary = "Compress files into a submission-like format"
+command = "python"
+args = ["./main/plugins/zipr.py"]
+fileset.zip-list = "submission.txt"
+
+[[protocol]]
+name = "zip-op"
+summary = "Handle zip file urls"
+command = "python"
+args = ["./main/protocols/download.py"]
 ```
 
-The __home configuration__ is the config.toml file located at your ORBIT_HOME path.
+The __home configuration__ is the config.toml file located at your $ORBIT_HOME path.
 
 If you have `cat` installed, you can view your home config file in the console:
 ```
@@ -34,9 +46,9 @@ When specifying a value that is known to be a path, Orbit supports resolving rel
 
 Orbit supports multiple levels of configuration. The order of precedence:
 
-1. local configuration file (located in current ip)
+1. local configuration file (located in current IP)
 
-2. global configuration file (located in ORBIT_HOME)
+2. global configuration file (located in $ORBIT_HOME)
 
 3. configuration files listed in `include` entry (last has higher precedence than first)
 
@@ -55,25 +67,17 @@ The following is a list of acceptable entries (key/value pairs) recognized by Or
 include = ["profiles/ks-tech/config.toml"]
 ```
 
-### `core.path` : _string_
-- development path
-- contains mutable ip (in-development)
+### `[env]` : _table_
+- user-defined additional keys to set as runtime environment variables during build phase
+- the following example would set an environment variable ORBIT_ENV_VAR_1 as "100" during runtime
 
 ``` toml
-[core]
-path = "C:/users/chase/projects/"
+[env]
+VAR_1 = "100"
 # ...
 ```
 
-### `core.editor` : _string_
-- program called to open files/folders
-
-``` toml
-[core]
-editor = "code"
-# ...
-```
-
+<!-- 
 ### `core.build-dir` : _string_
 - directory to create to save blueprint file to
 - default is "build"
@@ -103,7 +107,8 @@ user = "Kepler [KST-001]"
 [core]
 date-fmt = "%B %e, %Y" # July 8, 2001
 # ...
-```
+``` 
+-->
 
 ### `[[plugin]]` : _array of tables_
 - `alias` : _string_ 
@@ -123,58 +128,65 @@ date-fmt = "%B %e, %Y" # July 8, 2001
 
 ``` toml
 [[plugin]]
-alias   = "main"
+alias   = "vvd"
 command = "vivado"
-summary = "basic toolflow for vivado"
+summary = "Basic toolflow for Vivado Design Suite"
 args    = ["-mode", "batch", "-source", "script.tcl"]
-fileset.FLOW   = "*.tcl"
-fileset.PINOUT = "*.xdc"
+fileset.EDA-FLOW    = "*.tcl"
+fileset.CONSTRAINTS = "*.xdc"
 details = """\
+    This plugin runs Vivado in non-project mode to perform its tasks.
+
 Usage:
-    orbit build --plugin vivado -- [options]
+    orbit build --plugin vvd -- [options]
 
 Options:
-    -tclarg mode=<num>      0 - synthesis, 1 - implementation, 2 - bitstream
+    -tclarg mode=<num>      0 - synth, 1 - impl, 2 - bit
 
-Description:
-    This plugin runs vivado in non-project mode to perform its tasks.
+Environment:
+    ORBIT_ENV_VIVADO_PATH   Local path to Vivado binaries   
+
+Dependencies:
+    Vivado Design Suite (tested: 2019.2)
 """
 ```
 
-### `[env]` : _table_
-- user-defined additional keys to set as runtime environment variables during build phase
-- the following example would set an environment variable ORBIT_ENV_VAR_1 as "100" during runtime
-
-``` toml
-[env]
-VAR_1 = "100"
-# ...
-```
-
-### `[[template]]` : _array of tables_
-- `alias` : _string_
-    - template name to reference when invoking
+### `[[protocol]]` : _array of tables_
+- `name` : _string_ 
+    - protocol name to reference in an IP's manifest
     - required
-- `path` : _string_
-    - root directory path to copy
+- `command` : _string_
+    - first argument to pass to subprocess
     - required
-- `ignore` : _list_ of _string_
-    - glob-style patterns to ignore during creating a new project
+- `summary` : _string_
+    - short description about the protocol
+    - optional
+- `args` : _array_ of _string_
+    - additional arguments to follow command in subprocess 
+    - optional 
+- `details` : _string_
+    - long description about the protocol
+    - optional
 
 ``` toml
-[[template]]
-alias  = "base"
-path   = "template/"
-ignore = ["extra/"]
-```
+[[protocol]]
+name = "git-op"
+summary = "Fetch remote repositories using git"
+command = "git"
+args = ["clone", "-b", "{{ orbit.ip.version }}", "{{ orbit.ip.source.url }}", "{{ orbit.queue }}/{{ orbit.ip.name }}"]
+details = """\
+This protocol tries to clone a repository defined under the source URL at a tag 
+matching the IP's version.
 
-### `vendor.index` : _array of strings_
-- paths to vendor index files to load vendors
-- if the path is relative, it is relative to the `config.toml` file that defines it
+Examples:
+    [ip]
+    # ...
+    name = "lab1"
+    version = "1.0.0"
+    source = { protocol = "git-op", url = "https://github.com/path/to/lab1.git" }
+    # ...
 
-``` toml
-[vendor]
-index = [
-    'profile/ks-tech/vendor/index.toml'
-]
+Dependencies:
+    git (tested: 2.36.0)
+"""
 ```

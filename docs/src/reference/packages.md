@@ -21,12 +21,6 @@ A package specification, or _spec_, is the total unambiguous reference to a part
 spec ::= <name>[:version]
 ```
 
-### Specification Grammar
-
-```
-pkgid ::= [[<vendor>.]<library>.]<name>
-```
-
 ### Example Specifications
 The following provides various valid inputs when defining an IP's spec value and how it decomposes into its parts.
 

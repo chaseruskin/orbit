@@ -3,6 +3,7 @@ use super::super::lexer::Position;
 use super::super::lexer::Tokenize;
 use super::super::lexer::TrainCar;
 use crate::core::pkgid::PkgPart;
+use crate::util::anyerror::AnyError;
 use crate::util::strcmp;
 use colored::ColoredString;
 use colored::Colorize;
@@ -1731,6 +1732,14 @@ pub struct VHDLTokenizer {
     tokens: Vec<VHDLElement>,
 }
 
+impl FromStr for VHDLTokenizer {
+    type Err = AnyError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self::from_source_code(s))
+    }
+}
+
 impl VHDLTokenizer {
     /// Creates a new `VHDLTokenizer` struct.
     pub fn new() -> Self {
@@ -1774,6 +1783,18 @@ impl VHDLTokenizer {
         self.tokens
             .into_iter()
             .filter_map(|f| match f.0 {
+                Ok(t) => Some(t),
+                Err(_) => None,
+            })
+            .collect()
+    }
+
+    /// Transforms the list of results into a list of tokens, silently skipping over
+    /// errors.
+    pub fn as_tokens_all(&self) -> Vec<&lexer::Token<VHDLToken>> {
+        self.tokens
+            .iter()
+            .filter_map(|f| match &f.0 {
                 Ok(t) => Some(t),
                 Err(_) => None,
             })

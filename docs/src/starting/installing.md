@@ -57,5 +57,6 @@ This will build the `orbit` binary and place it a path already set in the PATH e
 To verify orbit is working correctly on your system, open a new terminal and run:
 ```
 $ orbit --version
+orbit CARGO_CRATE_VERSION
 ```
 This should print out your version of orbit you installed. Congratulations!

@@ -28,17 +28,17 @@ $ mv ./orbit-CARGO_CRATE_VERSION-x86_64-macos/bin/orbit /usr/local/bin/orbit
 
 2. Unzip the prebuilt package.
 ```
-expand-archive "./orbit-CARGO_CRATE_VERSION-x86_64-windows.zip"
+$ expand-archive "./orbit-CARGO_CRATE_VERSION-x86_64-windows.zip"
 ```
 
 3. Make a new directory to store this package.
 ```
-new-item -path "$env:LOCALAPPDATA/Programs/orbit" -itemtype directory
+$ new-item -path "$env:LOCALAPPDATA/Programs/orbit" -itemtype directory
 ```
 
 4. Move the package to the new directory.
 ```
-copy-item "./orbit-CARGO_CRATE_VERSION-x86_64-windows/*" -destination "$env:LOCALAPPDATA/Programs/orbit" -recurse
+$ copy-item "./orbit-CARGO_CRATE_VERSION-x86_64-windows/*" -destination "$env:LOCALAPPDATA/Programs/orbit" -recurse
 ```
 
 5. Edit the user-level PATH environment variable in ___Control Panel___ by adding __%LOCALAPPDATA%\Programs\orbit\bin__.
@@ -47,7 +47,7 @@ copy-item "./orbit-CARGO_CRATE_VERSION-x86_64-windows/*" -destination "$env:LOCA
 
 To install the latest version through Cargo:
 ```
-cargo install --git https://github.com/c-rus/orbit.git --tag CARGO_CRATE_VERSION
+$ cargo install --git https://github.com/c-rus/orbit.git --tag CARGO_CRATE_VERSION
 ```
 
 This will build the `orbit` binary and place it a path already set in the PATH environment variable.
@@ -56,6 +56,6 @@ This will build the `orbit` binary and place it a path already set in the PATH e
 
 To verify orbit is working correctly on your system, open a new terminal and run:
 ```
-orbit --version
+$ orbit --version
 ```
 This should print out your version of orbit you installed. Congratulations!

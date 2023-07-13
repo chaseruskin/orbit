@@ -25,4 +25,4 @@ This behavior performs the following strategy:
 7. Unzips the package and moves the new executable to the original executable's location.
 
 
-> __Note__: If you wish to remove the newly created stale binary after an upgrade, rerunning `$ orbit --upgrade` immediately again will perform step 1 and stop at step 3.
+> __Note__: If you wish to remove the newly created stale binary after an upgrade, rerunning `orbit --upgrade` immediately again will perform step 1 and stop at step 3.

@@ -5,7 +5,6 @@
 - [Getting Started](./starting/starting.md)
     - [Installing](./starting/installing.md)
     - [Upgrading](./starting/upgrading.md)
-    - [First Steps](./starting/first_steps.md)
 
 - [Tutorials](./2_tutorials/0_tutorials.md)
     - [First Project: Gates](./2_tutorials/1_first_project.md)
@@ -33,7 +32,7 @@
     - [Manifest](./reference/manifest.md)
     - [Packages](./reference/packages.md)
     - [Versions](./reference/versions.md)
-    - [Command line](./reference/command_line.md)
+    - [Command Line](./reference/command_line.md)
     - [Environment Variables](./reference/environment_variables.md)
     - [Configuration](./reference/configuration.md)
 

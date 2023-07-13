@@ -83,10 +83,10 @@ Let's look at the VHDL entity hierarchy tree across the integrated IP:
 
 ```
 top_level (final-project)
-├─ and_gate (lab3)
-│  └─ adder (lab2)
-|     └─ and_gate (lab1)
-└─ mux (lab2)
+├─ and_gate [lab3]
+│  └─ adder [lab2]
+|     └─ and_gate [lab1]
+└─ mux [lab2]
 ```
 
 Notice lab1 and lab3 both have the `and_gate` entity, but their interfaces and functionality are internally different as previously mentioned. How can we allow both units in the hierarchy while resolving the namespace clash?
@@ -95,10 +95,10 @@ DST identifies namespace clashes within the current dependency graph and automat
 
 ```
 top_level (final-project)
-├─ and_gate (lab3)
-│  └─ adder (lab2 *)
-|     └─ and_gate_fbe4720d0 (lab1 *)
-└─ mux (lab2)
+├─ and_gate [lab3]
+│  └─ adder [lab2]*
+|     └─ and_gate_fbe4720d0 [lab1]*
+└─ mux [lab2]
 ```
 
 Let's take a closer look at what happened here. DST handled the namespace clash by _transforming_, or renaming, the entity related to lab1. The entity's identifier in lab1 was appended with the first 10 digits of the original lab1 IP's checksum. This transformation occurred at that IP's source code level (lab1), and in the source code for all dependents of that entity (lab2). Therefore, DST produced new dynamic variants of the lab1 and lab2 IPs that properly reference and associate with `and_gate_fbe4720d0`.

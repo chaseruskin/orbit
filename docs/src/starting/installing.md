@@ -16,34 +16,38 @@ There are multiple solutions to accomplish step 3. The following outlines one wa
 1. Open a terminal to where Orbit was downloaded.
 2. Unzip the prebuilt package.
 ```
-$ unzip orbit-1.0.0-x86_64-macos.zip
+$ unzip orbit-CARGO_CRATE_VERSION-x86_64-macos.zip
 ```
 3. Move the executable to a location already set in the PATH environment variable. 
 ```
-$ mv ./orbit-1.0.0-x86_64-macos/bin/orbit /usr/local/bin/orbit
+$ mv ./orbit-CARGO_CRATE_VERSION-x86_64-macos/bin/orbit /usr/local/bin/orbit
 ```
 
 ### Windows
 1. Open a terminal (Powershell) to where Orbit was downloaded.
+
 2. Unzip the prebuilt package.
 ```
-$ expand-archive ".\orbit-1.0.0-x86_64-windows.zip"
+expand-archive "./orbit-CARGO_CRATE_VERSION-x86_64-windows.zip"
 ```
+
 3. Make a new directory to store this package.
 ```
-new-item -path "$env:LOCALAPPDATA\Programs\orbit" -itemtype directory
+new-item -path "$env:LOCALAPPDATA/Programs/orbit" -itemtype directory
 ```
+
 4. Move the package to the new directory.
 ```
-$ copy-item ".\orbit-1.0.0-x86_64-windows\*" -destination "$env:LOCALAPPDATA\Programs\orbit" -recurse
+copy-item "./orbit-CARGO_CRATE_VERSION-x86_64-windows/*" -destination "$env:LOCALAPPDATA/Programs/orbit" -recurse
 ```
+
 5. Edit the user-level PATH environment variable in ___Control Panel___ by adding __%LOCALAPPDATA%\Programs\orbit\bin__.
 
 ## 2. Installing with Cargo
 
-To install with Cargo, enter the following command while replacing `<VERSION>` with the desired version tag (such as "1.0.0").
+To install the latest version through Cargo:
 ```
-$ cargo install --git https://github.com/c-rus/orbit.git --tag <VERSION>
+cargo install --git https://github.com/c-rus/orbit.git --tag CARGO_CRATE_VERSION
 ```
 
 This will build the `orbit` binary and place it a path already set in the PATH environment variable.
@@ -52,6 +56,6 @@ This will build the `orbit` binary and place it a path already set in the PATH e
 
 To verify orbit is working correctly on your system, open a new terminal and run:
 ```
-$ orbit --version
+orbit --version
 ```
 This should print out your version of orbit you installed. Congratulations!

@@ -17,17 +17,17 @@ from typing import List
 
 def is_new_version_higher(lhs: str, rhs: str) -> bool:
     '''Checks if the new version `rhs` is larger than the previous version `lhs`.'''
-    lhs = lhs.split('.', 2)
-    rhs = rhs.split('.', 2)
+    lsplit: List[str] = lhs.split('.', 2)
+    rsplit: List[str] = rhs.split('.', 2)
     # compare the two versions
     for i in range(0, 3):
-        if rhs[i] != lhs[i]:
-            return bool(int(rhs[i]) > int(lhs[i]))
+        if rsplit[i] != lsplit[i]:
+            return bool(int(rsplit[i]) > int(lsplit[i]))
     # false if they are equivalent
     return False
 
 
-def extract_crate_version(contents: List[str]) -> str:
+def extract_crate_version(contents: List[str]) -> str | None:
     '''Returns the cargo crate version from the crate's manifest file contents (Cargo.toml).'''
     for line in contents:
         property = line.split('=', 1)
@@ -41,7 +41,7 @@ def extract_crate_version(contents: List[str]) -> str:
     return None
 
 
-def extract_latest_released_version(tags: str) -> str:
+def extract_latest_released_version(tags: str) -> str | None:
     '''Grabs the latest git tag that fits a valid version format: <MAJOR.MINOR.PATCH>.
     Assumes all tags are already available in the current git repository.'''
     tags = tags.strip()

@@ -82,7 +82,7 @@ Imagine the `final-project` IP has an entity called `top_level` which is the roo
 Let's look at the VHDL entity hierarchy tree across the integrated IP:
 
 ```
-top_level (final-project)
+top_level [final-project]
 ├─ and_gate [lab3]
 │  └─ adder [lab2]
 |     └─ and_gate [lab1]
@@ -94,7 +94,7 @@ Notice lab1 and lab3 both have the `and_gate` entity, but their interfaces and f
 DST identifies namespace clashes within the current dependency graph and automatically resolve the conflicts to produce a clean unambiguous graph.
 
 ```
-top_level (final-project)
+top_level [final-project]
 ├─ and_gate [lab3]
 │  └─ adder [lab2]*
 |     └─ and_gate_fbe4720d0 [lab1]*

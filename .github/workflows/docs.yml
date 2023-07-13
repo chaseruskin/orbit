@@ -12,13 +12,22 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+
       - name: Setup mdbook
         uses: peaceiris/actions-mdbook@v1
         with:
           mdbook-version: '0.4.31'
           # mdbook-version: 'latest'
 
-      - run: mdbook build ./docs/
+      - name: Insert current version into docs
+        run: python ./tools/sync_docs_version.py ./docs/src/starting/installing.md
+
+      - name: Generate book
+        run: mdbook build ./docs/
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3

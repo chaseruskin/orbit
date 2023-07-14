@@ -109,9 +109,9 @@ impl Ip {
             Ok(l) => l,
             Err(e) => {
                 println!(
-                    "{}: failed to parse {} file: {}",
+                    "{}: failed to parse lock file \"{}\": {}",
                     "warning".yellow().bold(),
-                    IP_LOCK_FILE,
+                    filesystem::into_std_str(lock_path),
                     e
                 );
                 LockFile::new()

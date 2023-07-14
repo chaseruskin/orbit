@@ -231,7 +231,7 @@ impl Download {
         Ok(())
     }
 
-    fn move_to_download_dir(
+    pub fn move_to_download_dir(
         queue: &PathBuf,
         downloads: &PathBuf,
         spec: &IpSpec,

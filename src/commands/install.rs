@@ -18,6 +18,7 @@
 //!
 
 use super::plan::Plan;
+use crate::commands::download::Download;
 use crate::commands::plan;
 use crate::core::algo;
 use crate::core::catalog::CacheSlot;
@@ -26,8 +27,12 @@ use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::ip::PartialIpSpec;
 use crate::core::lockfile::LockEntry;
+use crate::core::manifest;
+use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::ORBIT_SUM_FILE;
+use crate::core::iparchive::IpArchive;
 use crate::core::variable::VariableTable;
+use crate::core::version;
 use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
 use crate::util::filesystem;
@@ -39,6 +44,7 @@ use clif::Cli;
 use clif::Error as CliError;
 use std::env;
 use std::fs;
+use crate::util::anyerror::AnyError;
 use std::path::PathBuf;
 
 #[derive(Debug, PartialEq)]
@@ -72,22 +78,109 @@ impl Command<Context> for Install {
     type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
+        // if no path is provided then use catalog
+        
+
         // verify the path points to a valid ip
-        let path = filesystem::resolve_rel_path(
-            &env::current_dir().unwrap(),
+        let search_path = filesystem::resolve_rel_path(
+            &env::current_dir()?,
             &filesystem::into_std_str(self.path.as_ref().unwrap_or(&PathBuf::from(".")).clone()),
         );
-        let dest = PathBuf::standardize(PathBuf::from(path));
 
-        Ip::is_valid(&dest)?;
+        // check if specifying an Ip
+        let search_path = PathBuf::standardize(PathBuf::from(search_path));
+
+        // look for IP along this path
+        let result = manifest::find_file(&search_path, IP_MANIFEST_FILE, true)?;
+        // find the IP to match
+        // println!("{:?}", result);
+        let target = match &self.ip {
+            Some(entry) => {
+                result.into_iter().find_map(|m| {
+                    let ip = match Ip::load(m.parent().unwrap().to_path_buf()) {
+                        Ok(r) => r,
+                        Err(_) => return None,
+                    };
+                    if ip.get_man().get_ip().get_name() == entry.get_name()
+                        && (entry.get_version().is_latest() || version::is_compatible(entry.get_version().as_specific().unwrap(), ip.get_man().get_ip().get_version())) {
+                        Some(ip)
+                    } else {
+                        None
+                    }
+                })
+            },
+            // make sure there is only 1 IP to download
+            None => {
+                match &result.len() {
+                    0 => Err(AnyError(format!("No IPs to install from this path")))?,
+                    1 => {
+                        Some(Ip::load(result.first().unwrap().parent().unwrap().to_path_buf())?)
+                    }
+                    _ => Err(AnyError(format!("Multiple IPs exist; specify an IP to install from this path")))?
+                }
+            },
+        };
 
         // gather the catalog (all manifests)
         let mut catalog = Catalog::new()
             .installations(c.get_cache_path())?
             .downloads(c.get_downloads_path())?;
+        
+        // use the catalog
+        let target = if self.path.is_none() {
+            if let Some(spec) = &self.ip {
+                if let Some(lvl) = catalog.inner().get(spec.get_name()) {
+                    if let Some(slot) = lvl.get(true, spec.get_version()) {
+                        if let Some(bytes) = slot.get_mapping().as_bytes() {
+                            // place the dependency into a temporary directory
+                            let dir = tempfile::tempdir()?.into_path();
+                            if let Err(e) = IpArchive::extract(&bytes, &dir) {
+                                fs::remove_dir_all(dir)?;
+                                return Err(e);
+                            }
+                            // load the IP
+                            let unzipped_dep = match Ip::load(dir.clone()) {
+                                Ok(x) => x,
+                                Err(e) => {
+                                    fs::remove_dir_all(dir)?;
+                                    return Err(e);
+                                }
+                            };
+                            Some(unzipped_dep)
+                        } else {
+                            Some(Ip::load(slot.get_root().clone())?)
+                        }   
+                    } else {
+                        return Err(AnyError(format!("IP {} does not exist in the catalog", spec)))?;
+                    }
+                } else {
+                    return Err(AnyError(format!("Failed to find an IP in the catalog")))?;
+                }
+            } else {
+                target
+            }
+        // use the path
+        } else {
+            target
+        };
+        // println!("{:?},", target);
+        let target = match target {
+            Some(t) => t,
+            None => return Err(AnyError(format!("Failed to find an IP to install")))?
+        };
+
+        // move the IP to the downloads folder if not already there
+        if catalog.is_downloaded_slot(&LockEntry::from((&target, true)).to_download_slot_key()) == false {
+            Download::move_to_download_dir(&target.get_root(), c.get_downloads_path(), &target.get_man().get_ip().into_ip_spec())?;
+        }
+
+        // if target is not in downloads, download it
+        // Ip::is_valid(&search_path)?;
+
+
 
         // @todo: check if there is a potential lockfile to use
-        let target = Ip::load(dest.clone())?;
+        // let target = Ip::load(search_path.clone())?;
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
         if target.can_use_lock() == true && self.force == false {

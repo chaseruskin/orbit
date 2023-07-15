@@ -31,10 +31,9 @@ pub struct Read {
     location: bool,
     file: bool,
     keep: bool,
-    reverse: bool,
     start: Option<VHDLTokenizer>,
     end: Option<VHDLTokenizer>,
-    follow: Option<VHDLTokenizer>,
+    comment: Option<VHDLTokenizer>,
     limit: Option<usize>,
 }
 
@@ -46,13 +45,12 @@ impl FromCli for Read {
             file: cli.check_flag(Flag::new("file"))?,
             location: cli.check_flag(Flag::new("location"))?,
             keep: cli.check_flag(Flag::new("keep"))?,
-            reverse: cli.check_flag(Flag::new("reverse"))?,
             // options
             limit: cli.check_option(Optional::new("limit"))?,
             ip: cli.check_option(Optional::new("ip").value("spec"))?,
             start: cli.check_option(Optional::new("start").value("code"))?,
             end: cli.check_option(Optional::new("end").value("code"))?,
-            follow: cli.check_option(Optional::new("follow").value("code"))?,
+            comment: cli.check_option(Optional::new("doc").value("code"))?,
             // positionals
             unit: cli.require_positional(Positional::new("unit"))?,
         });
@@ -137,7 +135,7 @@ impl Read {
         let src_tokens = VHDLTokenizer::from_source_code(&contents).into_tokens_all();
 
         // perform a search on tokens
-        let (start, follow,end) = {
+        let (start, end) = {
             // get the tokens
             let start_tokens = match &self.start {
                 Some(tokenizer) => tokenizer.as_tokens_all()
@@ -153,7 +151,7 @@ impl Read {
                     .collect(),
                 None => Vec::new(),
             };
-            let follow_tokens = match &self.follow {
+            let comment_tokens = match &self.comment {
                 Some(tokenizer) => tokenizer.as_tokens_all()
                     .into_iter()
                     .filter(|t| t.as_type() != &VHDLToken::EOF)
@@ -162,51 +160,60 @@ impl Read {
             };
             // search over the source code tokens
             let start = Self::find_location(&src_tokens, &start_tokens);
-
+            // limit based on starting index
             let remaining_tokens = match &start {
-                Some(pos) => {
-                    match self.reverse {
-                        true => src_tokens.into_iter().rev().skip_while(|p| p.locate() >= pos).collect(),
-                        false => src_tokens.into_iter().skip_while(|p| p.locate() <= pos).collect(),
+                Some(pos) => src_tokens.into_iter().skip_while(|p| p.locate() <= pos).collect(),
+                None => src_tokens,
+            };
+
+            let end = Self::find_location(&remaining_tokens, &end_tokens);
+            let remaining_tokens = match &end {
+                Some(pos) => remaining_tokens.into_iter().take_while(|p| p.locate() < pos).collect(),
+                None => remaining_tokens,
+            };
+
+            // find the comment
+            let first_token = Self::find_location(&remaining_tokens, &comment_tokens);
+            // grab all continuous '--' tokens immediately above/before this location
+            let comment = match &first_token {
+                Some(pos) => { 
+                    let mut line = pos.line();
+                    // println!("{:?}", pos); 
+                    match remaining_tokens.into_iter().rev().skip_while(|p| p.locate() >= pos).take_while(|p| {
+                        // println!("{:?}", p);
+                        // only take immediate comments grouped together
+                        line -= 1;
+                        p.as_type().as_comment().is_some() && p.locate().line() == line
+                    }).last() {
+                        Some(token) => Some(token.locate().clone()),
+                        None => None,
                     }
                 },
-                None => match self.reverse {
-                    true => src_tokens.into_iter().rev().collect(),
-                    false => src_tokens,
-                }
-            };
-            
-            let follow_tokens = match self.reverse {
-                true => follow_tokens.into_iter().rev().collect(),
-                false => follow_tokens,
+                None => None,
             };
 
-            let follow = Self::find_location(&remaining_tokens, &follow_tokens);
-
-            let end_tokens = match self.reverse {
-                true => end_tokens.into_iter().rev().collect(),
-                false => end_tokens,
+            let end = match &comment {
+                Some(_) => first_token,
+                None => end
             };
-            let end = Self::find_location(&remaining_tokens, &end_tokens);
 
-            (start, follow, end)
+            let start = match comment {
+                Some(c) => Some(c),
+                None => start
+            };
+
+            (start, end)
         };
-
-        // sort among all three items
-        let mut points: [&Option<Position>; 3] = [&start, &follow, &end];
-        points.sort();
-        let points: Vec<&Option<Position>> = points.into_iter().filter(|p| p.is_some() == true).collect();
-        // println!("{:?}", points);
 
         let segment: String = {
             let iter = contents.split_terminator('\n');
 
-            let iter = match &points.get(0) {
-                Some(p) => iter.skip(p.as_ref().unwrap().line()-1),
+            let iter = match &start {
+                Some(p) => iter.skip(p.line()-1),
                 None => iter.skip(0),
             };
-            let iter = match &points.get(1) {
-                Some(p) => iter.take(p.as_ref().unwrap().line()-points.get(0).unwrap().as_ref().unwrap_or(&Position::new()).line()+1),
+            let iter = match &end {
+                Some(p) => iter.take(p.line()-start.as_ref().unwrap_or(&Position::new()).line()+1),
                 None => iter.take(usize::MAX),
             };
             let iter = iter.map(|line| line.to_string() + "\n");
@@ -224,7 +231,7 @@ impl Read {
                 true => { segment },
                 // overwrite contents and display the file path
                 false => {
-                    let cut_code = start.is_some() || end.is_some() || follow.is_some();
+                    let cut_code = start.is_some() || end.is_some();
 
                     let file = match cut_code {
                         true => {
@@ -389,6 +396,9 @@ Options:
     --file                  display the path to the read-only source code
     --keep                  prevent previous files read from being deleted
     --limit <num>           set a maximum number of lines to print
+    --start <code>          tokens to begin reading contents from file
+    --end <code>            tokens to end reading contents from file
+    --doc <code>            series of tokens to find immediate comments for
 
 Use 'orbit help read' to learn more about the command.
 ";

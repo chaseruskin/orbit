@@ -76,7 +76,7 @@ impl Command<Context> for Build {
         // verify only 1 option is provided
         if self.command.is_some() && self.alias.is_some() {
             return Err(AnyError(format!(
-                "cannot execute both a plugin and command"
+                "Cannot execute both a plugin and command"
             )))?;
         }
         // verify running from an IP directory and enter IP's root directory
@@ -95,7 +95,7 @@ impl Command<Context> for Build {
             .exists()
             == false
         {
-            return Err(AnyError(format!("no blueprint file to build from in directory '{}'\n\nTry `orbit plan --build-dir {0}` to generate a blueprint file", b_dir)))?;
+            return Err(AnyError(format!("No blueprint file to build from in directory '{}'\n\nTry `orbit plan --build-dir {0}` to generate a blueprint file", b_dir)))?;
         }
 
         Environment::new()
@@ -138,7 +138,7 @@ impl Command<Context> for Build {
 
         if plug.is_none() && self.command.is_none() {
             return Err(AnyError(format!(
-                "pass a plugin or a Command<Context> for building"
+                "Building requires a plugin or a command to process"
             )))?;
         }
 

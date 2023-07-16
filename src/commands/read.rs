@@ -180,16 +180,19 @@ impl Read {
                     let mut line = pos.line();
                     // println!("{:?}", pos); 
                     match remaining_tokens.into_iter().rev().skip_while(|p| p.locate() >= pos).take_while(|p| {
-                        // println!("{:?}", p);
                         // only take immediate comments grouped together
                         line -= 1;
                         p.as_type().as_comment().is_some() && p.locate().line() == line
                     }).last() {
                         Some(token) => Some(token.locate().clone()),
-                        None => None,
+                        None => {
+                            return Err(AnyError(format!("Zero comments associated with code chunk")))?
+                        },
                     }
                 },
-                None => None,
+                None => {
+                    return Err(AnyError(format!("Failed to find code segment matching code chunk")))?
+                },
             };
 
             let end = match &comment {

@@ -139,7 +139,7 @@ impl Command<Context> for Plan {
                 .from_config(c.get_config())?;
             let vtable = VariableTable::new().load_environment(&env)?;
 
-            download_missing_deps(vtable, &lf, &catalog, &c.get_config().get_protocols())?;
+            download_missing_deps(vtable, &lf, &le, &catalog, &c.get_config().get_protocols())?;
             // recollect the downloaded items to update the catalog for installations
             catalog = catalog.downloads(c.get_downloads_path())?;
 
@@ -161,6 +161,7 @@ impl Command<Context> for Plan {
 pub fn download_missing_deps(
     vtable: VariableTable,
     lf: &LockFile,
+    le: &LockEntry,
     catalog: &Catalog,
     protocols: &ProtocolMap,
 ) -> Result<(), Fault> {
@@ -168,7 +169,7 @@ pub fn download_missing_deps(
     // fetch all non-downloaded packages
     for entry in lf.inner() {
         // skip the current project's IP entry or any IP already in the downloads/
-        if catalog.is_downloaded_slot(&entry.to_download_slot_key()) == true {
+        if entry.matches_target(le) == true || catalog.is_downloaded_slot(&entry.to_download_slot_key()) == true {
             continue;
         }
 

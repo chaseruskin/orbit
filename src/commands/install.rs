@@ -206,6 +206,7 @@ impl Command<Context> for Install {
             plan::download_missing_deps(
                 vtable,
                 &lf,
+                &le,
                 &catalog,
                 &c.get_config().get_protocols(),
             )?;

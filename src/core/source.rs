@@ -10,6 +10,7 @@ pub struct Source {
     url: String,
     /// A `tag`is optional user-defined information that is needed to proceed with the protocol.
     tag: Option<String>,
+    // Valid is triggered true when built with a function other than "default".
     #[serde(skip, default = "set_true")]
     valid: bool,
 }
@@ -19,6 +20,22 @@ fn set_true() -> bool {
 }
 
 impl Source {
+
+    pub fn protocol(mut self, p: Option<String>) -> Self {
+        self.protocol = p;
+        self
+    }
+
+    pub fn url(mut self, url: String) -> Self {
+        self.url = url;
+        self
+    }
+
+    pub fn tag(mut self, tag: Option<String>) -> Self {
+        self.tag = tag;
+        self
+    }
+
     pub fn new() -> Self {
         Self {
             protocol: None,

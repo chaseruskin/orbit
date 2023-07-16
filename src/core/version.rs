@@ -182,6 +182,10 @@ impl PartialVersion {
         self.minor.is_some() && self.patch.is_some()
     }
 
+    pub fn as_version(&self) -> Option<Version> {
+        Some(Version::new().major(self.major).minor(self.minor?).patch(self.patch?))
+    }
+
     /// Returns the partial version as a glob-style pattern.
     pub fn to_pattern_string(&self) -> String {
         format!(

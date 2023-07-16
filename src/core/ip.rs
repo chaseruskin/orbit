@@ -420,6 +420,10 @@ impl PartialIpSpec {
     pub fn get_version(&self) -> &AnyVersion {
         &self.1
     }
+
+    pub fn as_ip_spec(&self) -> Option<IpSpec> {
+        Some(IpSpec::new(self.0.clone(), self.1.as_specific()?.as_version()?))
+    }
 }
 
 impl FromStr for PartialIpSpec {

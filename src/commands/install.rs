@@ -31,6 +31,7 @@ use crate::core::manifest;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::ORBIT_SUM_FILE;
 use crate::core::iparchive::IpArchive;
+use crate::core::protocol::Protocol;
 use crate::core::variable::VariableTable;
 use crate::core::version;
 use crate::util::anyerror::Fault;
@@ -53,7 +54,9 @@ pub struct Install {
     path: Option<PathBuf>,
     url: Option<String>,
     protocol: Option<String>,
+    tag: Option<String>,
     force: bool,
+    verbose: bool,
     deps_only: bool,
     all: bool,
 }
@@ -63,10 +66,12 @@ impl FromCli for Install {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Install {
             force: cli.check_flag(Flag::new("force"))?,
+            verbose: cli.check_flag(Flag::new("verbose"))?,
             deps_only: cli.check_flag(Flag::new("deps"))?,
             all: cli.check_flag(Flag::new("all"))?,
             path: cli.check_option(Optional::new("path"))?,
             url: cli.check_option(Optional::new("url"))?,
+            tag: cli.check_option(Optional::new("tag"))?,
             protocol: cli.check_option(Optional::new("protocol").value("name"))?,
             ip: cli.check_positional(Positional::new("ip"))?,
         });
@@ -74,52 +79,148 @@ impl FromCli for Install {
     }
 }
 
+use crate::commands::download::ProtocolMap;
+use tempfile::TempDir;
+use crate::core::plugin::Process;
+
 impl Command<Context> for Install {
     type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
-        // if no path is provided then use catalog
-        
+        // check if trying to download from the internet
+        let target = if let Some(url) = &self.url {
+            let env = Environment::new()
+                // read config.toml for setting any env variables
+                .from_config(c.get_config())?
+                // read ip manifest for env variables
+                .from_ip(&Ip::load(c.get_ip_path().unwrap().clone())?)?;
+    
+            let mut vtable = VariableTable::new().load_environment(&env)?;
 
-        // verify the path points to a valid ip
-        let search_path = filesystem::resolve_rel_path(
-            &env::current_dir()?,
-            &filesystem::into_std_str(self.path.as_ref().unwrap_or(&PathBuf::from(".")).clone()),
-        );
+            env.initialize();
 
-        // check if specifying an Ip
-        let search_path = PathBuf::standardize(PathBuf::from(search_path));
+            // use the user-provided queue directory or simply use a temporary directory
+            let queue = TempDir::into_path(TempDir::new()?);
 
-        // look for IP along this path
-        let result = manifest::find_file(&search_path, IP_MANIFEST_FILE, true)?;
-        // find the IP to match
-        // println!("{:?}", result);
-        let target = match &self.ip {
-            Some(entry) => {
-                result.into_iter().find_map(|m| {
-                    let ip = match Ip::load(m.parent().unwrap().to_path_buf()) {
-                        Ok(r) => r,
-                        Err(_) => return None,
-                    };
-                    if ip.get_man().get_ip().get_name() == entry.get_name()
-                        && (entry.get_version().is_latest() || version::is_compatible(entry.get_version().as_specific().unwrap(), ip.get_man().get_ip().get_version())) {
-                        Some(ip)
-                    } else {
-                        None
+            let proto_map: ProtocolMap = c.get_config().get_protocols();
+
+            // verify a whole spec is provided
+            let spec = match &self.ip {
+                Some(spec) => {
+                    match spec.as_ip_spec() {
+                        Some(full_spec) => full_spec,
+                        None => return Err(AnyError(format!("{}", "A complete IP specification is required when providing a url")))?
                     }
-                })
-            },
-            // make sure there is only 1 IP to download
-            None => {
-                match &result.len() {
-                    0 => Err(AnyError(format!("No IPs to install from this path")))?,
-                    1 => {
-                        Some(Ip::load(result.first().unwrap().parent().unwrap().to_path_buf())?)
-                    }
-                    _ => Err(AnyError(format!("Multiple IPs exist; specify an IP to install from this path")))?
+                },
+                None => {
+                    return Err(AnyError(format!("{}", "A complete IP specification is required when providing a url")))?
                 }
-            },
+            };
+            // get the correct protocol
+            let pcall = match &self.protocol {
+                Some(name) => {
+                    match proto_map.get(name.as_str()) {
+                        Some(&entry) => {
+                            vtable.add(
+                                "orbit.queue",
+                                PathBuf::standardize(&queue).to_str().unwrap(),
+                            );
+                            // update variable table for this lock entry
+                            vtable.add("orbit.ip.name", spec.get_name().as_ref());
+                            vtable.add("orbit.ip.version", &spec.get_version().to_string());
+                            vtable.add("orbit.ip.source.url", url);
+                            vtable.add("orbit.ip.source.protocol", entry.get_name());
+                            vtable.add(
+                                "orbit.ip.source.tag",
+                                self.tag.as_ref().unwrap_or(&String::new()),
+                            );
+                            // update custom protocol with IP-specific variables
+                            Some(entry.clone().replace_vars_in_args(&vtable))
+                        }
+                        None => {
+                            if self.force == false {
+                                fs::remove_dir_all(queue)?;
+                                return Err(
+                                    Box::new(AnyError(format!("Unknown protocol \"{}\"", &name))).into(),
+                                );
+                            } else {
+                                None
+                            }
+                        }
+                    }
+                },
+                None => None
+            };
+
+            match pcall {
+                Some(protocol) => {
+                    if let Err(err) = protocol.execute(&[], self.verbose) {
+                        fs::remove_dir_all(queue)?;
+                        return Err(err);
+                    }
+                },
+                None => {
+                    // fetch the package from the internet
+                    println!("info: Downloading {} ...", spec);
+                    if let Err(err) = Protocol::single_download(url, &queue) {
+                        fs::remove_dir_all(queue)?;
+                        return Err(err);
+                    }
+                },
+            }
+            // move the IP to the downloads folder
+            if let Err(err) = Download::move_to_download_dir(&queue, c.get_downloads_path(), &spec) {
+                fs::remove_dir_all(queue)?;
+                return Err(err);
+            }
+            // clean up temporary directory
+            fs::remove_dir_all(queue)?;
+            None
+        } else {
+            // verify the path points to a valid ip
+            let search_path = filesystem::resolve_rel_path(
+                &env::current_dir()?,
+                &filesystem::into_std_str(self.path.as_ref().unwrap_or(&PathBuf::from(".")).clone()),
+            );
+
+            // check if specifying an Ip
+            let search_path = PathBuf::standardize(PathBuf::from(search_path));
+
+            // look for IP along this path
+            let result = manifest::find_file(&search_path, IP_MANIFEST_FILE, true)?;
+            // find the IP to match
+            // println!("{:?}", result);
+            let target = match &self.ip {
+                Some(entry) => {
+                    result.into_iter().find_map(|m| {
+                        let ip = match Ip::load(m.parent().unwrap().to_path_buf()) {
+                            Ok(r) => r,
+                            Err(_) => return None,
+                        };
+                        if ip.get_man().get_ip().get_name() == entry.get_name()
+                            && (entry.get_version().is_latest() || version::is_compatible(entry.get_version().as_specific().unwrap(), ip.get_man().get_ip().get_version())) {
+                            Some(ip)
+                        } else {
+                            None
+                        }
+                    })
+                },
+                // make sure there is only 1 IP to download
+                None => {
+                    match &result.len() {
+                        0 => Err(AnyError(format!("No IPs to install from this path")))?,
+                        1 => {
+                            Some(Ip::load(result.first().unwrap().parent().unwrap().to_path_buf())?)
+                        }
+                        _ => Err(AnyError(format!("Multiple IPs exist; specify an IP to install from this path")))?
+                    }
+                },
+            };
+            target
         };
+
+        // @note: if no path is provided then use catalog
+
 
         // gather the catalog (all manifests)
         let mut catalog = Catalog::new()
@@ -177,8 +278,6 @@ impl Command<Context> for Install {
         // if target is not in downloads, download it
         // Ip::is_valid(&search_path)?;
 
-
-
         // @todo: check if there is a potential lockfile to use
         // let target = Ip::load(search_path.clone())?;
 
@@ -196,7 +295,6 @@ impl Command<Context> for Install {
             plan::download_missing_deps(
                 vtable,
                 &lf,
-                &le,
                 &catalog,
                 &c.get_config().get_protocols(),
             )?;

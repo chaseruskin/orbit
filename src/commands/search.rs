@@ -1,4 +1,5 @@
 use crate::core::context::Context;
+use crate::core::ip::Mapping;
 use crate::core::pkgid::PkgPart;
 use crate::util::anyerror::Fault;
 use crate::OrbitResult;
@@ -123,7 +124,29 @@ impl Search {
         );
         let mut body = String::new();
         let mut index = 0;
-        for (ip, status) in catalog {
+        for (name, status) in catalog {
+            // return the highest version (return installation when they are equal in downloads and cache)
+            let ip = {
+                let dld = status.get_download(&AnyVersion::Latest);
+                let ins = status.get_install(&AnyVersion::Latest);
+                if dld.is_some() && ins.is_some() {
+                    if dld.unwrap().get_man().get_ip().get_version() > ins.unwrap().get_man().get_ip().get_version() {
+                        dld
+                    } else {
+                        ins
+                    }
+                } else if dld.is_none() {
+                    ins
+                } else {
+                    dld
+                }
+            };
+            // IP should NOT be empty but skip if it is
+            let ip = match ip {
+                Some(r) => r,
+                None => continue,
+            };
+
             if let Some(cap) = limit {
                 index += 1;
                 // exit when next entry will go past the max results
@@ -134,20 +157,16 @@ impl Search {
 
             body.push_str(&format!(
                 "{:<28}{:<10}     {:<9}\n",
-                ip.to_string(),
-                status
-                    .get(true, &AnyVersion::Latest)
-                    .unwrap()
+                    name.to_string(),
+                    ip
                     .get_man()
                     .get_ip()
                     .get_version(),
-                if status.is_installed() == true {
-                    "Installed"
-                } else if status.is_downloaded() == true {
-                    "Downloaded"
-                } else {
-                    ""
-                },
+                    match ip.get_mapping() {
+                        Mapping::Physical => "Installed",
+                        Mapping::Virtual(_) => "Downloaded",
+                        // _ => ""
+                    },
             ));
         }
         header + &body

@@ -3,7 +3,6 @@ FROM ubuntu:22.04
 
 # LABEL about the custom image
 LABEL maintainer="c-rus"
-LABEL version="0.1"
 LABEL description="This is a custom Docker image for Orbit HDL package manager."
 
 

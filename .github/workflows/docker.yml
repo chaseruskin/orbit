@@ -13,7 +13,7 @@ on:
         required: true
 
 jobs:
-  build:
+  build-image:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 
@@ -62,3 +62,27 @@ jobs:
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orbit:latest
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:buildcache,mode=max
+
+  build-simulation-image:
+    needs: [build-image]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+          
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./docker/fpga/ghdl/Dockerfile
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orbit-simulation:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit-simulation:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit-simulation:buildcache,mode=max

@@ -90,8 +90,7 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit-simulation:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit-simulation:buildcache,mode=max
 
-  build-fpga-quartus-image:
-    needs: [build-image]
+  build-intel-quartus-lite-image:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 
@@ -113,6 +112,6 @@ jobs:
           file: ./docker/fpga/quartus/Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orbit-fpga:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit-fpga:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit-fpga:buildcache,mode=max
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/quartus-lite:19.1
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/quartus-lite:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/quartus-lite:buildcache,mode=max

@@ -13,7 +13,7 @@ on:
         required: true
 
 jobs:
-  build-image:
+  build-base-image:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 
@@ -64,7 +64,7 @@ jobs:
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:buildcache,mode=max
 
   build-simulation-image:
-    needs: [build-image]
+    needs: [build-base-image]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 
@@ -91,6 +91,7 @@ jobs:
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit-simulation:buildcache,mode=max
 
   build-fpga-image:
+    needs: [build-base-image]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 

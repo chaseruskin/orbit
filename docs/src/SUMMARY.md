@@ -17,7 +17,7 @@
     - [Create Plugins](./3_user/5_creating_plugins.md)
 
 - [Topic Guide](./topic/topic.md)
-    - [Conceptual Overview](./topic/8_concept.md)
+    - [Conceptual Overview](./topic/concept.md)
     - [IP](./topic/1_ip.md)
     - [Orbit.toml](./topic/2_orbittoml.md)
     - [Orbit.lock](./topic/5_orbitlock.md)

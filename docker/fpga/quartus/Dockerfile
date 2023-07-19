@@ -27,7 +27,7 @@ RUN apt-get update && apt-get install -y \
     libxext6
 
 # Export Quartus path to the $PATH environment variable 
-RUN echo "export PATH="$PATH:/opt/intelFPGA_lite/19.1/quartus/bin"" > ~/.bashrc
+ENV PATH "$PATH:/opt/intelFPGA_lite/19.1/quartus/bin"
 
 # Enter the shell
 CMD ["bash"]

@@ -2,9 +2,8 @@
 FROM ubuntu:22.04
 
 # LABEL about the custom image
-LABEL maintainer="c-rus"
-LABEL description="This is a custom Docker image for Orbit HDL package manager."
-
+LABEL maintainer="crus800"
+LABEL description="Orbit HDL package manager on Ubuntu 22.04."
 
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -14,8 +13,8 @@ RUN apt-get update && apt-get install -y \
 
 
 # copy from action repository to the container
-COPY orbit /usr/local/bin/orbit
-COPY docker/entrypoint.sh /entrypoint.sh
+COPY ../../orbit /usr/local/bin/orbit
+COPY ./entrypoint.sh /entrypoint.sh
 
 # Code file to execute when the docker container starts up (`entrypoint.sh`)
 ENTRYPOINT ["/entrypoint.sh"]

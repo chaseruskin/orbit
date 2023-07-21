@@ -13,7 +13,7 @@ on:
         required: true
 
 jobs:
-  build-orbit-ubuntu22-latest:
+  build-orbit-latest-ubuntu-22.04:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 
@@ -59,11 +59,11 @@ jobs:
           file: ./docker/ubuntu22/Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orbit:ubuntu22-latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:ubuntu22-latest
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orbit:latest-ubuntu-22.04
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:latest-ubuntu-22.04
           cache-to: type=inline
 
-  build-orbit-ubuntu18-latest:
+  build-orbit-latest-ubuntu-18.04:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 
@@ -88,13 +88,13 @@ jobs:
           file: ./docker/ubuntu18/Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orbit:ubuntu18-latest
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orbit:latest-ubuntu-18.04
           build-args: REV=${{ github.sha }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:ubuntu18-latest
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:latest-ubuntu-18.04
           cache-to: type=inline
 
-  build-simulation-image:
-    needs: [build-orbit-ubuntu22-latest]
+  build-fpga-simulation:
+    needs: [build-orbit-latest-ubuntu-22.04]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 
@@ -116,12 +116,12 @@ jobs:
           file: ./docker/fpga/ghdl/Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orbit-simulation:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit-simulation:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit-simulation:buildcache,mode=max
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/fpga-simulation:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/fpga-simulation:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/fpga-simulation:buildcache,mode=max
 
-  build-fpga-image:
-    needs: [build-orbit-ubuntu22-latest]
+  build-fpga-toolchain:
+    needs: [build-orbit-latest-ubuntu-18.04]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 
@@ -143,6 +143,6 @@ jobs:
           file: ./docker/fpga/quartus/Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orbit-fpga:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit-fpga:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit-fpga:buildcache,mode=max
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/fpga-toolchain:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/fpga-toolchain:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/fpga-toolchain:buildcache,mode=max

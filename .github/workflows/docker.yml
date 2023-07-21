@@ -61,7 +61,7 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orbit:ubuntu22-latest
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:ubuntu22-latest
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:ubuntu22-latest,mode=max
+          cache-to: type=inline
 
   build-orbit-ubuntu18-latest:
     runs-on: ubuntu-latest
@@ -91,7 +91,7 @@ jobs:
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orbit:ubuntu18-latest
           build-args: REV=${{ github.sha }}
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:ubuntu18-latest
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:ubuntu18-latest,mode=max
+          cache-to: type=inline
 
   build-simulation-image:
     needs: [build-orbit-ubuntu22-latest]

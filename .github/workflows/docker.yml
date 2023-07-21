@@ -13,7 +13,7 @@ on:
         required: true
 
 jobs:
-  build-orbit-latest-ubuntu-22.04:
+  build-orbit-latest-ubuntu-2204:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 
@@ -63,7 +63,7 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:latest-ubuntu-22.04
           cache-to: type=inline
 
-  build-orbit-latest-ubuntu-18.04:
+  build-orbit-latest-ubuntu-1804:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 
@@ -94,7 +94,7 @@ jobs:
           cache-to: type=inline
 
   build-fpga-simulation:
-    needs: [build-orbit-latest-ubuntu-22.04]
+    needs: [build-orbit-latest-ubuntu-2204]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 
@@ -121,7 +121,7 @@ jobs:
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/fpga-simulation:buildcache,mode=max
 
   build-fpga-toolchain:
-    needs: [build-orbit-latest-ubuntu-18.04]
+    needs: [build-orbit-latest-ubuntu-1804]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 

@@ -353,6 +353,7 @@ impl Plan {
                 let symbols = VHDLParser::read(&contents).into_symbols();
 
                 let lib = source_file.get_library();
+                // println!("{} {}", source_file.get_file(), source_file.get_library());
 
                 // add all entities to a graph and store architectures for later analysis
                 let mut iter = symbols.into_iter().filter_map(|f| {
@@ -463,9 +464,24 @@ impl Plan {
                 .into_iter()
                 .map(|rr| rr.clone())
                 .collect();
+
             for dep in &references {
+                let working = Identifier::Basic("work".to_string());
+                // re-route the library prefix to the current unit's library
+                let dep_adjusted = CompoundIdentifier::new(iden.get_prefix().unwrap_or(&working).clone(), dep.get_suffix().clone());
+                // if the dep is using "work", match it with the identifier's library
+                let dep_adjusted = if let Some(lib) = dep.get_prefix() {
+                    match lib == &working {
+                        true => &dep_adjusted,
+                        false => dep,
+                    }
+                } else {
+                    dep
+                };
+                // println!("{} {} ... {}", iden, dep, dep_adjusted);
                 // verify the dep exists
-                graph_map.add_edge_by_key(dep, &iden, ());
+                let _stat = graph_map.add_edge_by_key(dep_adjusted, &iden, ());
+                // println!("{:?}", stat);
             }
         }
         graph_map

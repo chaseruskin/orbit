@@ -2,7 +2,7 @@
 #   to run FPGA toolflow (synthesis to bitstream).
 
 # Stage 0: Orbit layer
-FROM crus800/orbit:ubuntu18-latest
+FROM crus800/orbit:latest-ubuntu-18.04
 
 # Stage 1: Python layer
 FROM brunneis/python:3.8.0-ubuntu-18.04

@@ -13,7 +13,7 @@ RUN python -m pip install --upgrade pip
 COPY --from=0 / /
 
 # Stage 2: Orbit layer
-FROM crus800/orbit:latest-ubuntu-20.04
+FROM crus800/orbit:latest-ubuntu-22.04
 
 COPY --from=1 / /
 

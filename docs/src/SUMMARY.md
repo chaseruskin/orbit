@@ -7,7 +7,7 @@
     - [Upgrading](./starting/upgrading.md)
 
 - [Tutorials](./tutorials/tutorials.md)
-    - [First Project: Gates](./tutorials/1_first_project.md)
+    - [First Project: Gates](./tutorials/first_project.md)
 
 - [User Guide](./3_user/0_user.md)
     - [Develop IP](./3_user/1_develop_ip.md)

@@ -40,7 +40,20 @@ lab2/
    └─ top_tb.vhd
 ```
 
- <br>
+<br>
+
+Adding a simple TOML file `Orbit.toml` to a directory signifies an IP to `orbit`:
+
+``` toml
+[ip]
+name = "lab2"
+version = "1.0.0"
+
+[dependencies]
+lab1 = "1.0.4"
+```
+
+<br>
 
 `orbit` generates VHDL code snippets able to be directly inserted into a new VHDL design for rapid reuse:
 ```
@@ -117,23 +130,25 @@ VHDL-SIM	work	/users/chase/projects/lab2/sim/top_tb.vhd
 
 - Specify additional supportive files to be passed to your backend workflows with filesets.
 
+- Dependencies at the HDL level are automatically identified and resolved by tokenizing file contents for valid primary design unit references across IP. The user is only responsible for specifying direct dependencies at the IP level.
+
 ## Examples
 
-An example FPGA team, "Hyperspace Labs", exists for the purpose of demonstrating and learning how to leverage `orbit` in a real development setting. The team is fictitious. No identification with actual persons, places, buildings, and products is intended or should be inferred. 
+A fictitious organization, "Hyperspace Labs", exists for the purpose of demonstrating and learning how to leverage `orbit` in a real development setting. No identification with actual persons, places, buildings, and products is intended or should be inferred. 
 
-The projects and code are walked through in the [tutorials](https://c-rus.github.io/orbit/tutorials/tutorials.html) section.
+The projects and code for Hyperspace Labs are walked through in the [tutorials](https://c-rus.github.io/orbit/tutorials/tutorials.html) section.
 
-The final code repositories are found [here](https://github.com/orgs/hyperspace-labs/repositories). 
+The final code repositories for Hyperspace Labs are found [here](https://github.com/orgs/hyperspace-labs/repositories). 
 
 ## Installing
 
-`orbit` is pre-built through GitHub Actions for 64-bit MacOs, Windows, and Ubuntu. See the [releases](https://github.com/c-rus/orbit/releases) page to grab the latest release, or you can build with source through `cargo`. See the full installation instructions for complete details [here](https://c-rus.github.io/orbit/1_starting/1_installing.html).
+`orbit` has pre-built binaries for MacOs, Windows, and Ubuntu. See the [releases](https://github.com/c-rus/orbit/releases) page to grab the latest release, or you can build with source through `cargo`. See the full installation instructions for complete details [here](https://c-rus.github.io/orbit/1_starting/1_installing.html).
 
 ## Documentation
 
 Read the [Book of Orbit](https://c-rus.github.io/orbit/) for comprehensive documentation composed of tutorials, user guides, topic guides, references, and command manuals.
 
-`orbit` provides commands for every stage of the development cycle, such as exploration, integration, and automation.
+`orbit` provides commands for every stage of the development cycle, such as exploration, integration, and automation:
 
 ```
 Orbit is a tool for hdl package management.

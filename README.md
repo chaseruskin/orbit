@@ -85,7 +85,7 @@ VHDL-RTL	work	/users/chase/projects/lab2/rtl/top.vhd
 VHDL-SIM	work	/users/chase/projects/lab2/sim/top_tb.vhd
 ```
 
-<br>
+## Features
 
 `orbit` has a lot more useful features relating to HDL package management and development:
 

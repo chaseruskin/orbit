@@ -1,10 +1,96 @@
-# `orbit`
+<h1 align="center"><code>orbit</code></h1>
 
-![pipeline](https://github.com/c-rus/orbit/actions/workflows/pipeline.yml/badge.svg) ![docs](https://github.com/c-rus/orbit/actions/workflows/docs.yml/badge.svg) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) [![images](https://img.shields.io/badge/dockerhub-images-important.svg?logo=docker)](https://hub.docker.com/repository/docker/crus800/orbit/general)
+<div align="center">
+  <a href="https://github.com/c-rus/orbit/actions">
+    <img src="https://github.com/c-rus/orbit/workflows/pipeline/badge.svg" alt="pipeline">
+  </a>
+  <a href="https://c-rus.github.io/orbit/">
+    <img src="https://github.com/c-rus/orbit/actions/workflows/docs.yml/badge.svg" alt="docs">
+  </a>
+  <a href="https://www.gnu.org/licenses/gpl-3.0">
+    <img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3">
+  </a>
+  <a href="https://hub.docker.com/repository/docker/crus800/orbit/general">
+    <img src="https://img.shields.io/badge/dockerhub-images-important.svg?logo=docker" alt="images">
+  </a>
+  <a href="https://github.com/c-rus/orbit/releases">
+    <img src="https://img.shields.io/github/downloads/c-rus/orbit/total.svg" alt="downloads">
+  </a>
+  <a href="mailto:c.ruskin@ufl.edu?subject=Thanks%20for%20Orbit!">
+    <img src="https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg" alt="say thanks">
+  </a>
+</div>
+<br>
 
-## The HDL package manager
+`orbit` is the package manager for Hardware Description Languages (HDL). 
 
-Orbit is the package manager for Hardware Description Languages (HDL). 
+Read the [Book of Orbit](https://c-rus.github.io/orbit/) for complete documentation.
+
+`orbit` manages your projects, called IPs, by handling the overhead for referencing, maintaining, and integrating your hardware description files:
+
+```
+lab2/
+├─ Orbit.toml
+├─ rtl/
+|  ├─ reg.vhd
+│  └─ top.vhd
+└─ sim/
+   └─ top_tb.vhd
+```
+
+`orbit` generates VHDL code snippets able to be directly inserted into a new VHDL design for rapid reuse:
+```
+$ orbit get adder --ip lab1:1.0.4 --component --signals --instance
+```
+``` vhdl
+component adder
+  port (
+    input1    : in  std_logic_vector(5 downto 0);
+    input2    : in  std_logic_vector(5 downto 0);
+    carry_in  : in  std_logic;
+    sum       : out std_logic_vector(5 downto 0);
+    carry_out : out std_logic
+  );
+end component;
+
+signal input1    : std_logic_vector(5 downto 0);
+signal input2    : std_logic_vector(5 downto 0);
+signal carry_in  : std_logic;
+signal sum       : std_logic_vector(5 downto 0);
+signal carry_out : std_logic;
+
+u_adder : adder
+  port map (
+    input1    => input1,
+    input2    => input2,
+    carry_in  => carry_in,
+    sum       => sum,
+    carry_out => carry_out
+  );
+```
+`orbit` plans your build by generating a file list, called a blueprint, that lists the required files for your given design in topologically-sorted order to act as an input to any backend toolchain:
+
+```
+VHDL-RTL	math	/users/chase/.orbit/cache/lab1-1.0.4-7f4d8c7812/rtl/fa.vhd
+VHDL-RTL	math	/users/chase/.orbit/cache/lab1-1.0.4-7f4d8c7812/rtl/adder.vhd
+VHDL-RTL	work	/users/chase/projects/lab2/rtl/reg.vhd
+VHDL-RTL	work	/users/chase/projects/lab2/rtl/top.vhd
+VHDL-SIM	work	/users/chase/projects/lab2/sim/top_tb.vhd
+```
+
+`orbit` has lots more useful features relating to HDL package management and development:
+
+- `orbit` is a frontend package manager, not a build system, so it allows users to define and automate their own workflows for building HDL designs.
+
+- Linux, MacOS, and Windows are supported with no additional dependencies.
+
+- Docker images of `orbit` exist to easily integrate into new or existing CI/CD pipelines.
+
+- Reproducible builds are achieved through automatic maintenance of a lock file `Orbit.lock`. 
+
+- Namespace collisions, a problem inherent to VHDL and not resolved in many backend tools, is solved through a custom algorithm called [_dynamic symbol transformation_](https://c-rus.github.io/orbit/topic/dst.html).
+
+- Multiple versions of the same entity (or more broadly, entities given the same identifier) are allowed in the same build under two simple constraints.
   
 Orbit provides a complete frontend package management solution to HDL projects, while allowing users to implement custom backend workflows through the design of a plugin system. Orbit provides commands for every stage of the development cycle, in areas such as exploration, integration, and automation.
 

@@ -42,7 +42,7 @@ lab2/
 
 <br>
 
-Adding a simple TOML file `Orbit.toml` to a directory signifies an IP to `orbit`:
+Adding a simple TOML file `Orbit.toml` to a directory denotes that directory as an IP to `orbit`:
 
 ``` toml
 [ip]
@@ -142,7 +142,7 @@ The final code repositories for Hyperspace Labs are found [here](https://github.
 
 ## Installing
 
-`orbit` has pre-built binaries for MacOs, Windows, and Ubuntu. See the [releases](https://github.com/c-rus/orbit/releases) page to grab the latest release, or you can build with source through `cargo`. See the full installation instructions for complete details [here](https://c-rus.github.io/orbit/1_starting/1_installing.html).
+`orbit` has pre-built binaries for MacOs, Windows, and Ubuntu. See the [releases](https://github.com/c-rus/orbit/releases) page to grab the latest release, or you can build from source with `cargo`. See the full installation instructions for complete details [here](https://c-rus.github.io/orbit/1_starting/1_installing.html).
 
 ## Documentation
 

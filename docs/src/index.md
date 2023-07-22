@@ -6,7 +6,7 @@ Orbit is the package manager for Hardware Description Languages (HDL). Orbit pro
 
 ## Sections
 The following documentation will be mainly divided into 4 sections:
-1. [Tutorials](./2_tutorials/0_tutorials.md) - step-by-step lessons working with orbit
+1. [Tutorials](./tutorials/tutorials.md) - step-by-step lessons working with orbit
 2. [User Guide](./3_user/0_user.md) - general procedures for "how-to" solve common problems
 3. [Topic Guide](./topic/topic.md) - explanations that clarify and provide more detail to particular topics
 4. [Reference](./reference/reference.md) - technical information

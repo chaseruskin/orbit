@@ -26,6 +26,8 @@
 
 Read the [Book of Orbit](https://c-rus.github.io/orbit/) for complete documentation.
 
+<br>
+
 `orbit` manages your projects, called IPs, by handling the overhead for referencing, maintaining, and integrating your hardware description files:
 
 ```
@@ -37,6 +39,8 @@ lab2/
 └─ sim/
    └─ top_tb.vhd
 ```
+
+ <br>
 
 `orbit` generates VHDL code snippets able to be directly inserted into a new VHDL design for rapid reuse:
 ```
@@ -68,7 +72,10 @@ u_adder : adder
     carry_out => carry_out
   );
 ```
-`orbit` plans your build by generating a file list, called a blueprint, that lists the required files for your given design in topologically-sorted order to act as an input to any backend toolchain:
+
+<br>
+
+`orbit` plans your build by generating a file list, called a blueprint, that contains a list of the required files for your given design in topologically-sorted order to act as an input to any backend toolchain:
 
 ```
 VHDL-RTL	math	/users/chase/.orbit/cache/lab1-1.0.4-7f4d8c7812/rtl/fa.vhd
@@ -78,29 +85,55 @@ VHDL-RTL	work	/users/chase/projects/lab2/rtl/top.vhd
 VHDL-SIM	work	/users/chase/projects/lab2/sim/top_tb.vhd
 ```
 
-`orbit` has lots more useful features relating to HDL package management and development:
+<br>
+
+`orbit` has a lot more useful features relating to HDL package management and development:
 
 - `orbit` is a frontend package manager, not a build system, so it allows users to define and automate their own workflows for building HDL designs.
 
 - Linux, MacOS, and Windows are supported with no additional dependencies.
 
-- Docker images of `orbit` exist to easily integrate into new or existing CI/CD pipelines.
+- Docker images of `orbit` are available for easy integration into new or existing CI/CD pipelines.
 
-- Reproducible builds are achieved through automatic maintenance of a lock file `Orbit.lock`. 
+- Reproducible builds are achieved with checksums and automatic handling of a lock file `Orbit.lock`. 
 
 - Namespace collisions, a problem inherent to VHDL and not resolved in many backend tools, is solved through a custom algorithm called [_dynamic symbol transformation_](https://c-rus.github.io/orbit/topic/dst.html).
 
 - Multiple versions of the same entity (or more broadly, entities given the same identifier) are allowed in the same build under two simple constraints.
+
+- Produce VHDL code snippets with a single command to properly instantiate a entities within a new design.
+
+- Quickly search through your IP catalog by filtering based on keywords, catalog status, and name.
+
+- Avoid being locked into a specific vendor's tooling through `orbit`'s common interface with a flexible build command to adapt to any workflow.
   
-Orbit provides a complete frontend package management solution to HDL projects, while allowing users to implement custom backend workflows through the design of a plugin system. Orbit provides commands for every stage of the development cycle, in areas such as exploration, integration, and automation.
+- `orbit` is version control system (VCS) agnostic through defining custom protocols for fetching IP. Continue to use your current VCS (or none).
+
+- Minimal user upkeep is required to maintain a manifest file `Orbit.toml` that identifies an IP, its metadata, and any dependencies from your catalog.
+
+- View the current design's tree hierarchy at an HDL entity level or at an IP level.
+
+- Implement custom scripted workflows through a plugin system.
+
+- Specify additional supportive files to be passed to your backend workflows with filesets.
+
+## Examples
+
+An example FPGA team, "Hyperspace Labs", exists for the purpose of demonstrating and learning how to leverage `orbit` in a real development setting. The team is fictitious. No identification with actual persons, places, buildings, and products is intended or should be inferred. 
+
+The projects and code are walked through in the [tutorials](https://c-rus.github.io/orbit/tutorials/tutorials.html) section.
+
+The final code repositories are found [here](https://github.com/orgs/hyperspace-labs/repositories). 
 
 ## Installing
 
-Orbit is pre-built through GitHub Actions for 64-bit macOs, Windows, and Ubuntu. See the [releases](https://github.com/c-rus/orbit/releases) page to grab the latest release, or you can build with source through `cargo`. See the full installation instructions for complete details [here](https://c-rus.github.io/orbit/1_starting/1_installing.html).
+`orbit` is pre-built through GitHub Actions for 64-bit MacOs, Windows, and Ubuntu. See the [releases](https://github.com/c-rus/orbit/releases) page to grab the latest release, or you can build with source through `cargo`. See the full installation instructions for complete details [here](https://c-rus.github.io/orbit/1_starting/1_installing.html).
 
 ## Documentation
 
-Read the [Book of Orbit](https://c-rus.github.io/orbit/).
+Read the [Book of Orbit](https://c-rus.github.io/orbit/) for comprehensive documentation composed of tutorials, user guides, topic guides, references, and command manuals.
+
+`orbit` provides commands for every stage of the development cycle, such as exploration, integration, and automation.
 
 ```
 Orbit is a tool for hdl package management.

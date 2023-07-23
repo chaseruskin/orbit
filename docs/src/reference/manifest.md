@@ -9,10 +9,13 @@ Every manifest file consists of the following sections:
 - [[ip]](#the-ip-section) - Defines an IP.
     - [name](#the-name-field) - The name of the IP.
     - [version](#the-version-field) - The version of the IP.
+    - [authors](#the-authors-field) - The authors of the IP.
     - [library](#the-library-field) - The HDL library for the design units within the IP.
     - [summary](#the-summary-field) - A short description of the IP.
     - [keywords](#the-keywords-field) - A list of simple words categorizing the IP.
     - [source](#the-source-field) - The URL for remotely retrieving the IP.
+    - [readme](#the-readme-field) - The path to the README file.
+    - [[metadata]](#the-metadata-section) - An unchecked section for custom fields.
 - [[dependencies]](#the-dependencies-section) - IP dependencies.
 - [[dev-dependencies]](#the-dev-dependencies-section) - IP dependencies only used for ongoing development.
 
@@ -22,7 +25,7 @@ The first section in a `Orbit.toml` file is `[ip]`.
 
 ``` toml
 [ip]
-name = "lab1" # the name of the package
+name = "my-ip" # the name of the package
 version = "0.1.0" # the current version
 ```
 
@@ -30,15 +33,83 @@ The only fields required by `orbit` are name and version.
 
 ### The `name` field
 
+``` toml
+[ip]
+name = "my-ip"
+# ...
+```
+
 ### The `version` field
+
+``` toml
+[ip]
+# ...
+version = "0.1.0"
+```
+
+### The `authors` field
+
+``` toml
+[ip]
+# ...
+authors = ["Duncan Idaho", "Gurney Halleck"]
+
+```
 
 ### The `library` field
 
+``` toml
+[ip]
+# ...
+library = "my-lib"
+```
+
 ### The `summary` field
+
+``` toml
+[ip]
+# ...
+summary = "A short description of the ip"
+```
 
 ### The `keywords` field
 
+``` toml
+[ip]
+# ...
+keywords = ["cpu", "risc"]
+```
+
 ### The `source` field
+
+``` toml
+[ip]
+# ...
+source = "https://github.com/c-rus/orbit/archive/refs/tags/0.9.5.zip"
+```
+
+``` toml
+[ip]
+# ...
+source = { url = "https://github.com/c-rus/orbit.git", protocol = "p-git", tag = "0.9.5" }
+```
+
+### The `readme` field
+
+``` toml
+[ip]
+# ...
+readme = "README.md"
+```
+
+### The `[metadata]` section
+
+``` toml
+[ip.metadata]
+my-field-1 = true
+my-field-2 = "hello world"
+# ...
+```
 
 ### The `[dependencies]` section
 

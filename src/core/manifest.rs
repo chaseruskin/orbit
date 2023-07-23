@@ -24,11 +24,12 @@ pub const ORBIT_METADATA_FILE: &str = ".orbit-metadata";
 const DEPENDENCIES_KEY: &str = "dependencies";
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct Manifest {
     ip: Package,
-    #[serde(default)]
+    #[serde(skip_serializing_if = "map_is_empty", default)]
     dependencies: Dependencies,
-    #[serde(rename = "dev-dependencies", default)]
+    #[serde(rename = "dev-dependencies", skip_serializing_if = "map_is_empty", default)]
     dev_dependencies: Dependencies,
 }
 
@@ -89,6 +90,9 @@ impl Manifest {
                 keywords: Vec::new(),
                 summary: None,
                 library: None,
+                readme: None,
+                authors: None,
+                metadata: HashMap::new(),
             },
             dependencies: Dependencies::new(),
             dev_dependencies: Dependencies::new(),
@@ -165,17 +169,30 @@ impl Display for Manifest {
     }
 }
 
+fn vec_is_empty<T>(field: &Vec<T>) -> bool {
+    field.is_empty()
+}
+
+fn map_is_empty<K, V>(field: &HashMap<K, V>) -> bool {
+    field.is_empty()
+}
+
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct Package {
     name: Id,
     version: Version,
+    authors: Option<Vec<String>>,
     summary: Option<String>,
     library: Option<Id>,
-    #[serde(default)]
+    #[serde(skip_serializing_if = "vec_is_empty", default)]
     keywords: Vec<String>,
     /// Describes the URL for fetching the captured state's code (expects .ZIP file)
     #[serde(deserialize_with = "source::string_or_struct", default)]
     source: Source,
+    readme: Option<PathBuf>,
+    #[serde(skip_serializing_if = "map_is_empty", default)]
+    metadata: HashMap<String, toml::Value>,
 }
 
 impl Package {
@@ -302,7 +319,7 @@ mod test {
         fn ut_serialize() {
             // @note: keys in an table-array (hashmap) are not guaranteed to be in the same order
             let man: Manifest = toml::from_str(EX3).unwrap();
-            let text = toml::to_string(&man).unwrap();
+            let text = man.to_string();
             assert_eq!(text, EX3);
         }
 
@@ -389,12 +406,21 @@ version = "0.1.0"
 library = "common"
 source = "https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip"
 
+[ip.metadata]
+foo = 1
+bar = 2
+
+[ip.metadata.subtable]
+foo = "hello world"
+
 [dependencies]
 some-package = "10.0.0"
 
 [dev-dependencies]
 top-builder = "1.0.0"
 my-testing-framework = "0.1.0"
+
+
 "#;
 
 const EX2: &str = r#"[ip]
@@ -405,7 +431,7 @@ version = "1.0.0"
 const EX3: &str = r#"[ip]
 name = "lab2"
 version = "1.20.0"
-keywords = []
+keywords = ["circuits"]
 
 [dependencies]
 some-package = "9.0.0"

@@ -8,6 +8,9 @@
 
 - [Tutorials](./tutorials/tutorials.md)
     - [First Project: Gates](./tutorials/first_project.md)
+    - [First Dependency](./tutorials/first_dependency.md)
+    - [Gates: Revisited](./tutorials/gates_revisited.md)
+    - [Final Project: Adder](./tutorials/final_project.md)
 
 - [User Guide](./3_user/0_user.md)
     - [Develop IP](./3_user/1_develop_ip.md)

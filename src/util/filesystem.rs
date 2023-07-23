@@ -166,8 +166,8 @@ pub fn is_minimal(name: &str) -> bool {
 }
 
 pub fn is_keep_override(target: &PathBuf, vip_list: &Vec<PathBuf>) -> bool {
-    println!("{:?}", target);
-    println!("{:?}", vip_list);
+    // println!("{:?}", target);
+    // println!("{:?}", vip_list);
     vip_list.iter().find(|&p| p == target).is_some()
 }
 

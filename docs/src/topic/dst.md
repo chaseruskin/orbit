@@ -17,9 +17,9 @@ In VHDL, a common example of a namespace clash is when different files define an
 The proposed algorithm solves the namespace clashing problem by rewriting conflicts with a new unique identifier without losing information in the original identifier.
 
 ### Limitations
-The user never must explicitly handle resolving duplicate identifiers due to the constraints set forth by Orbit when naming primary design units. The limitations are:
-1. A primary design unit in the current IP may not have a duplicate name within its IP.
-2. A primary design unit in the current IP may not have a duplicate name in a direct dependency of its IP.
+Orbit automatically handles resolving duplicate identifiers for primary design units due to two design contraints. The limitations are:
+1. All primary design unit identifiers in the current IP must be unique within the scope of the IP.
+2. All primary design units identifiers in the current IP must be unique within the scope of the IP's direct dependencies. An identifier can be duplicated for primary design units across indirect dependencies.
 
 
 ## Example Demonstration

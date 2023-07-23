@@ -20,6 +20,7 @@ use colored::Colorize;
 use std::collections::HashMap;
 use std::error::Error;
 use std::str::FromStr;
+use std::collections::HashSet;
 use toml_edit::Document;
 
 // add state to `root` (make enum) to determine if is real path or not
@@ -308,11 +309,11 @@ impl Ip {
 
     /// Compile a list of referenced paths to make sure are copied into a directory
     /// when moving an IP around the filesystem.
-    pub fn get_files_to_keep(&self) -> Vec<PathBuf> {
-        let mut list = Vec::new();
+    pub fn get_files_to_keep(&self) -> HashSet<PathBuf> {
+        let mut list = HashSet::new();
         if let Some(readme) = self.get_man().get_ip().get_readme() {
             // resolve a relative path
-            list.push(filesystem::resolve_rel_path2(self.get_root(), readme));
+            list.insert(filesystem::resolve_rel_path2(self.get_root(), readme));
         }
         list
     }

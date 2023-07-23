@@ -112,9 +112,9 @@ VHDL-SIM	work	/users/chase/projects/lab2/sim/top_tb.vhd
 
 - Namespace collisions, a problem inherent to VHDL and not resolved in many backend tools, is solved through a custom algorithm called [_dynamic symbol transformation_](https://c-rus.github.io/orbit/topic/dst.html).
 
-- Multiple versions of the same entity (or more broadly, entities given the same identifier) are allowed in the same build under two simple constraints.
+- Multiple versions of the same entity (or more broadly, entities given the same identifier) are allowed in the same build under [two simple constraints](https://c-rus.github.io/orbit/topic/dst.html#limitations).
 
-- Produce VHDL code snippets with a single command to properly instantiate a entities within a new design.
+- Produce VHDL code snippets with a single command to properly instantiate entities within a new design.
 
 - Quickly search through your IP catalog by filtering based on keywords, catalog status, and name.
 

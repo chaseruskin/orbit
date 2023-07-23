@@ -4,6 +4,7 @@ use crate::core::manifest;
 use fs_extra;
 use home::home_dir;
 use ignore::WalkBuilder;
+use std::collections::HashSet;
 use std::env;
 use std::env::current_dir;
 use std::ffi::OsStr;
@@ -165,10 +166,8 @@ pub fn is_minimal(name: &str) -> bool {
     fileset::is_vhdl(&name) == true || is_orbit_metadata(&name) == true
 }
 
-pub fn is_keep_override(target: &PathBuf, vip_list: &Vec<PathBuf>) -> bool {
-    // println!("{:?}", target);
-    // println!("{:?}", vip_list);
-    vip_list.iter().find(|&p| p == target).is_some()
+pub fn is_keep_override(target: &PathBuf, vip_list: &HashSet<PathBuf>) -> bool {
+    vip_list.contains(target)
 }
 
 /// Recursively copies files from `source` to `target` directory.
@@ -178,7 +177,7 @@ pub fn is_keep_override(target: &PathBuf, vip_list: &Vec<PathBuf>) -> bool {
 ///
 /// If immutable is `true`, then read_only permissions will be enabled, else the files
 /// will be mutable. Silently skips files that could be changed with mutability/permissions.
-pub fn copy(source: &PathBuf, target: &PathBuf, minimal: bool, keep: Option<Vec<PathBuf>>) -> Result<(), Fault> {
+pub fn copy(source: &PathBuf, target: &PathBuf, minimal: bool, keep: Option<HashSet<PathBuf>>) -> Result<(), Fault> {
     // create missing directories to `target`
     std::fs::create_dir_all(&target)?;
     // gather list of paths to copy

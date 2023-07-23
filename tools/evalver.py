@@ -27,7 +27,7 @@ def is_new_version_higher(lhs: str, rhs: str) -> bool:
     return False
 
 
-def extract_crate_version(contents: List[str]) -> str | None:
+def extract_crate_version(contents: List[str]):
     '''Returns the cargo crate version from the crate's manifest file contents (Cargo.toml).'''
     for line in contents:
         property = line.split('=', 1)
@@ -41,7 +41,7 @@ def extract_crate_version(contents: List[str]) -> str | None:
     return None
 
 
-def extract_latest_released_version(tags: str) -> str | None:
+def extract_latest_released_version(tags: str):
     '''Grabs the latest git tag that fits a valid version format: <MAJOR.MINOR.PATCH>.
     Assumes all tags are already available in the current git repository.'''
     tags = tags.strip()

@@ -21,14 +21,12 @@ install.ps1
 /src/commands/template.txt
 /docs/src/6_commands/template.txt
 
-thoughts.md
-.ideas/
 .internal/
-
 
 license-header
 
 orbit-test.zip
 orbit-test/
 
-test-site/
+mansync/
+tests/playground/

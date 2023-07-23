@@ -1,5 +1,5 @@
 # Use IP
-
+<!-- 
 ## Exploring the IP catalog
 
 1. View all known IP and their current states:
@@ -31,4 +31,4 @@ $ orbit probe <ip> -v <version> --units
 $ orbit get <ip>:<entity> -v <version> --component -signals --instance
 ```
 
-> __Note:__ By default, `orbit get` will add the \<ip> to your `Orbit.toml` manifest file. To only peek at the HDL code, pass the `--peek` flag.
+> __Note:__ By default, `orbit get` will add the \<ip> to your `Orbit.toml` manifest file. To only peek at the HDL code, pass the `--peek` flag. -->

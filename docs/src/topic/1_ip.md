@@ -1,6 +1,6 @@
 # IP
 
-Orbit refers to the packages it manages as _IP_. Orbit recognizes a directory to be an IP by finding the `Orbit.toml` manifest file at the IP's root.
+<!-- Orbit refers to the packages it manages as _IP_. Orbit recognizes a directory to be an IP by finding the `Orbit.toml` manifest file at the IP's root.
 
 Here is an example IP directory structure:
 ```
@@ -32,4 +32,4 @@ Supportive files are the files needed within particular HDL workflows. This is a
 
 ## Current Working IP (CWIP)
 
-The current working IP (CWIP) is the IP project currently being developed. It is detected within the path from where Orbit was invoked. Some commands, such as `orbit plan` and `orbit build`, require you to call Orbit from within a working IP.
+The current working IP (CWIP) is the IP project currently being developed. It is detected within the path from where Orbit was invoked. Some commands, such as `orbit plan` and `orbit build`, require you to call Orbit from within a working IP. -->

@@ -1,4 +1,4 @@
-# Vendors and Registries
+<!-- # Vendors and Registries
 
 It can be hard to begin to keep track of all your IP that is available, especially among a team where different members are contributing to different projects. To streamline maintaining a list of the IP available, Orbit uses _vendors_.
 
@@ -79,4 +79,4 @@ git add {{ orbit.ip.library }}/{{orbit.ip.name }}/Orbit-{{ orbit.ip.version }}.t
 git commit -m "Adds {{ orbit.ip }} {{ orbit.ip.version }}"
 git push --set-upstream origin {{ orbit.ip }}-{{ orbit.ip.version }}
 git checkout -
-```
+``` -->

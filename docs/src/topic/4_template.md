@@ -1,4 +1,4 @@
-# Templates
+<!-- # Templates
 
 Templates help you start a project faster.
 
@@ -63,4 +63,4 @@ entity gates is
 end entity;
 ```
 
-> __Note:__ Any variable that is not recognized by Orbit has its text left as-is and is not transformed.
+> __Note:__ Any variable that is not recognized by Orbit has its text left as-is and is not transformed. -->

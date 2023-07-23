@@ -1,6 +1,6 @@
-# Make Vendors
+# Make Channels
 
-## Registering a Vendor
+<!-- ## Registering a Vendor
 
 1. Clone the repository to a known location:
 
@@ -12,4 +12,4 @@ $ git clone <repository> "$(orbit env ORBIT_HOME)/vendor/<name>"
 
 ```
 $ orbit config --global --append vendor.index="$(orbit env ORBIT_HOME)/vendor/<name>/index.toml"
-```
+``` -->

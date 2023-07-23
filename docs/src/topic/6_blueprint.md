@@ -65,8 +65,8 @@ The rules for HDL filesets are in-order, meaning the entire design hierarchy tre
 
 ### HDL filesets
 
-If the fileset is an HDL fileset, then the identifier is the HDL library for the particular file. All files belonging to the current working IP will be identified under
-the library `work`. Otherwise, the library identifier is that IP's library component of the PKGID.
+If the fileset is an HDL fileset, then the identifier is the HDL library for the particular file. All files belonging to the current working IP will automatically be identified under
+the library `work`.
 
 ### Supportive filesets
 

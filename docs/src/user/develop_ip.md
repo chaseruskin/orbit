@@ -1,6 +1,6 @@
 # Develop IP
 
-## Creating a new IP from scratch
+<!-- ## Creating a new IP from scratch
 1. Create a new directory and import a template project:
 ```
 $ orbit new <ip> --template <alias>
@@ -60,4 +60,4 @@ Orbit allows you to configure and run customized workflows through plugins.
 Run a plugin and pass additional arguments to the plugin's command:
 ```
 $ orbit build --plugin <alias> -- [args]...
-```
+``` -->

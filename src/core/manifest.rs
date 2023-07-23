@@ -191,6 +191,7 @@ pub struct Package {
     #[serde(deserialize_with = "source::string_or_struct", default)]
     source: Source,
     readme: Option<PathBuf>,
+    /// Ignore this field and never use it for any processing
     #[serde(skip_serializing_if = "map_is_empty", default)]
     metadata: HashMap<String, toml::Value>,
 }
@@ -219,6 +220,10 @@ impl Package {
     /// Clones into a new [IpSpec2] struct.
     pub fn into_ip_spec(&self) -> IpSpec {
         IpSpec::new(self.get_name().clone(), self.get_version().clone())
+    }
+
+    pub fn get_readme(&self) -> &Option<PathBuf> {
+        &self.readme
     }
 }
 

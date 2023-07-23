@@ -320,7 +320,7 @@ impl<'a> IpNode<'a> {
         let temp = tempdir().unwrap();
         let temp_path = temp.path().to_path_buf();
         // copy entire project folder to temporary directory
-        crate::util::filesystem::copy(&self.original.get_root(), &temp_path, true).unwrap();
+        crate::util::filesystem::copy(&self.original.get_root(), &temp_path, true, Some(self.original.get_files_to_keep())).unwrap();
 
         // create the ip from the temporary dir
         let temp_ip = Ip::load(temp_path).unwrap();
@@ -368,7 +368,7 @@ fn install_dst(source_ip: &Ip, root: &std::path::PathBuf) -> Ip {
     }
 
     // copy the source ip to the new location
-    crate::util::filesystem::copy(&source_ip.get_root(), &cache_path, true).unwrap();
+    crate::util::filesystem::copy(&source_ip.get_root(), &cache_path, true, Some(source_ip.get_files_to_keep())).unwrap();
     let cached_ip = Ip::load(cache_path).unwrap();
 
     // @todo: cache results of primary design unit list

@@ -165,6 +165,12 @@ pub fn is_minimal(name: &str) -> bool {
     fileset::is_vhdl(&name) == true || is_orbit_metadata(&name) == true
 }
 
+pub fn is_keep_override(target: &PathBuf, vip_list: &Vec<PathBuf>) -> bool {
+    println!("{:?}", target);
+    println!("{:?}", vip_list);
+    vip_list.iter().find(|&p| p == target).is_some()
+}
+
 /// Recursively copies files from `source` to `target` directory.
 ///
 /// Assumes `target` directory does not already exist. Ignores the `.git/` folder
@@ -172,7 +178,7 @@ pub fn is_minimal(name: &str) -> bool {
 ///
 /// If immutable is `true`, then read_only permissions will be enabled, else the files
 /// will be mutable. Silently skips files that could be changed with mutability/permissions.
-pub fn copy(source: &PathBuf, target: &PathBuf, minimal: bool) -> Result<(), Fault> {
+pub fn copy(source: &PathBuf, target: &PathBuf, minimal: bool, keep: Option<Vec<PathBuf>>) -> Result<(), Fault> {
     // create missing directories to `target`
     std::fs::create_dir_all(&target)?;
     // gather list of paths to copy
@@ -187,6 +193,7 @@ pub fn copy(source: &PathBuf, target: &PathBuf, minimal: bool) -> Result<(), Fau
             f.path().is_file() == false
                 || minimal == false
                 || is_minimal(&f.file_name().to_string_lossy()) == true
+                || (keep.is_some() && is_keep_override(&f.path().to_path_buf(), &keep.as_ref().unwrap()) == true)
         })
         .build()
     {
@@ -458,10 +465,10 @@ mod test {
     }
 
     #[test]
-    fn copy_all() {
+    fn copy_minimal() {
         let source = PathBuf::from("test/data/projects");
         let target = tempdir().unwrap();
-        copy(&source, &target.as_ref().to_path_buf(), true).unwrap();
+        copy(&source, &target.as_ref().to_path_buf(), true, None).unwrap();
     }
 
     // only works on windows system

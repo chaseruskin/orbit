@@ -287,7 +287,7 @@ impl Install {
     pub fn install(src: &Ip, cache_root: &std::path::PathBuf, force: bool) -> Result<bool, Fault> {
         // temporary destination to move files for processing and manipulation
         let dest = tempfile::tempdir()?.into_path();
-        filesystem::copy(src.get_root(), &dest, true)?;
+        filesystem::copy(src.get_root(), &dest, true, Some(src.get_files_to_keep()))?;
 
         // lookup the package name in the index to see if the UUIDs match
         // verify the version for this package is not already logged
@@ -335,7 +335,7 @@ impl Install {
             }
         }
         // copy contents into cache slot from temporary destination
-        crate::util::filesystem::copy(&dest, &cache_slot, false)?;
+        crate::util::filesystem::copy(&dest, &cache_slot, false, None)?;
 
         // clean up the temporary directory ourself
         fs::remove_dir_all(dest)?;

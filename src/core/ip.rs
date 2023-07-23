@@ -305,6 +305,17 @@ impl Ip {
             None
         }
     }
+
+    /// Compile a list of referenced paths to make sure are copied into a directory
+    /// when moving an IP around the filesystem.
+    pub fn get_files_to_keep(&self) -> Vec<PathBuf> {
+        let mut list = Vec::new();
+        if let Some(readme) = self.get_man().get_ip().get_readme() {
+            // resolve a relative path
+            list.push(filesystem::resolve_rel_path2(self.get_root(), readme));
+        }
+        list
+    }
 }
 
 use crate::core::lang::vhdl::primaryunit;

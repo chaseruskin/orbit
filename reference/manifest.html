@@ -180,10 +180,13 @@
 <ul>
 <li><a href="#the-name-field">name</a> - The name of the IP.</li>
 <li><a href="#the-version-field">version</a> - The version of the IP.</li>
+<li><a href="#the-authors-field">authors</a> - The authors of the IP.</li>
 <li><a href="#the-library-field">library</a> - The HDL library for the design units within the IP.</li>
 <li><a href="#the-summary-field">summary</a> - A short description of the IP.</li>
 <li><a href="#the-keywords-field">keywords</a> - A list of simple words categorizing the IP.</li>
 <li><a href="#the-source-field">source</a> - The URL for remotely retrieving the IP.</li>
+<li><a href="#the-readme-field">readme</a> - The path to the README file.</li>
+<li><a href="#the-metadata-section">[metadata]</a> - An unchecked section for custom fields.</li>
 </ul>
 </li>
 <li><a href="#the-dependencies-section">[dependencies]</a> - IP dependencies.</li>
@@ -192,16 +195,61 @@
 <h3 id="the-ip-section"><a class="header" href="#the-ip-section">The <code>[ip]</code> section</a></h3>
 <p>The first section in a <code>Orbit.toml</code> file is <code>[ip]</code>.</p>
 <pre><code class="language-toml">[ip]
-name = &quot;lab1&quot; # the name of the package
+name = &quot;my-ip&quot; # the name of the package
 version = &quot;0.1.0&quot; # the current version
 </code></pre>
 <p>The only fields required by <code>orbit</code> are name and version.</p>
 <h3 id="the-name-field"><a class="header" href="#the-name-field">The <code>name</code> field</a></h3>
+<pre><code class="language-toml">[ip]
+name = &quot;my-ip&quot;
+# ...
+</code></pre>
 <h3 id="the-version-field"><a class="header" href="#the-version-field">The <code>version</code> field</a></h3>
+<pre><code class="language-toml">[ip]
+# ...
+version = &quot;0.1.0&quot;
+</code></pre>
+<h3 id="the-authors-field"><a class="header" href="#the-authors-field">The <code>authors</code> field</a></h3>
+<pre><code class="language-toml">[ip]
+# ...
+authors = [&quot;Duncan Idaho&quot;, &quot;Gurney Halleck&quot;]
+
+</code></pre>
 <h3 id="the-library-field"><a class="header" href="#the-library-field">The <code>library</code> field</a></h3>
+<pre><code class="language-toml">[ip]
+# ...
+library = &quot;my-lib&quot;
+</code></pre>
 <h3 id="the-summary-field"><a class="header" href="#the-summary-field">The <code>summary</code> field</a></h3>
+<pre><code class="language-toml">[ip]
+# ...
+summary = &quot;A short description of the ip&quot;
+</code></pre>
 <h3 id="the-keywords-field"><a class="header" href="#the-keywords-field">The <code>keywords</code> field</a></h3>
+<pre><code class="language-toml">[ip]
+# ...
+keywords = [&quot;cpu&quot;, &quot;risc&quot;]
+</code></pre>
 <h3 id="the-source-field"><a class="header" href="#the-source-field">The <code>source</code> field</a></h3>
+<pre><code class="language-toml">[ip]
+# ...
+source = &quot;https://github.com/c-rus/orbit/archive/refs/tags/0.9.5.zip&quot;
+</code></pre>
+<pre><code class="language-toml">[ip]
+# ...
+source = { url = &quot;https://github.com/c-rus/orbit.git&quot;, protocol = &quot;p-git&quot;, tag = &quot;0.9.5&quot; }
+</code></pre>
+<h3 id="the-readme-field"><a class="header" href="#the-readme-field">The <code>readme</code> field</a></h3>
+<pre><code class="language-toml">[ip]
+# ...
+readme = &quot;README.md&quot;
+</code></pre>
+<h3 id="the-metadata-section"><a class="header" href="#the-metadata-section">The <code>[metadata]</code> section</a></h3>
+<pre><code class="language-toml">[ip.metadata]
+my-field-1 = true
+my-field-2 = &quot;hello world&quot;
+# ...
+</code></pre>
 <h3 id="the-dependencies-section"><a class="header" href="#the-dependencies-section">The <code>[dependencies]</code> section</a></h3>
 <p>The <code>[dependencies]</code> section is a table of direct dependencies required for the current IP.</p>
 <pre><code class="language-toml">[dependencies]

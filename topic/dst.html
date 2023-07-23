@@ -181,10 +181,10 @@
 <h2 id="solution---dynamic-symbol-transformation"><a class="header" href="#solution---dynamic-symbol-transformation">Solution - Dynamic Symbol Transformation</a></h2>
 <p>The proposed algorithm solves the namespace clashing problem by rewriting conflicts with a new unique identifier without losing information in the original identifier.</p>
 <h3 id="limitations"><a class="header" href="#limitations">Limitations</a></h3>
-<p>The user never must explicitly handle resolving duplicate identifiers due to the constraints set forth by Orbit when naming primary design units. The limitations are:</p>
+<p>Orbit automatically handles resolving duplicate identifiers for primary design units due to two design contraints. The limitations are:</p>
 <ol>
-<li>A primary design unit in the current IP may not have a duplicate name within its IP.</li>
-<li>A primary design unit in the current IP may not have a duplicate name in a direct dependency of its IP.</li>
+<li>All primary design unit identifiers in the current IP must be unique within the scope of the IP.</li>
+<li>All primary design units identifiers in the current IP must be unique within the scope of the IP's direct dependencies. An identifier can be duplicated for primary design units across indirect dependencies.</li>
 </ol>
 <h2 id="example-demonstration"><a class="header" href="#example-demonstration">Example Demonstration</a></h2>
 <p>This section walks through a basic demonstration of the dynamic symbol transformation (DST) algorithm. First, it defines some terminology, and then walks through the algorithm's functionality.</p>

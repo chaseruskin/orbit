@@ -34,7 +34,7 @@ Read the [Book of Orbit](https://c-rus.github.io/orbit/) for complete documentat
 lab2/
 ├─ Orbit.toml
 ├─ rtl/
-|  ├─ reg.vhd
+│  ├─ reg.vhd
 │  └─ top.vhd
 └─ sim/
    └─ top_tb.vhd

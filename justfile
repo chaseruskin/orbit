@@ -21,7 +21,7 @@ mansync:
 
 # Generate a summary of changelog notes for the next version release
 chlog:
-    python ./tools/clgen.py
+    python ./tools/clgen.py --verbose
 
 # Run the documentation book on the local host for testing before going live
 docs:

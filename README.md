@@ -108,7 +108,7 @@ VHDL-SIM	work	/users/chase/projects/lab2/sim/top_tb.vhd
 
 - Docker images of `orbit` are available for easy integration into new or existing CI/CD pipelines.
 
-- Reproducible builds are achieved with checksums and automatic handling of a lock file `Orbit.lock`. 
+- Reproducible builds are achieved with checksums and automatic handling of a lockfile `Orbit.lock`. 
 
 - Namespace collisions, a problem inherent to VHDL and not resolved in many backend tools, is solved through a custom algorithm called [_dynamic symbol transformation_](https://c-rus.github.io/orbit/topic/dst.html).
 
@@ -142,7 +142,7 @@ The final code repositories for Hyperspace Labs are found [here](https://github.
 
 ## Installing
 
-`orbit` has pre-built binaries for MacOs, Windows, and Ubuntu. See the [releases](https://github.com/c-rus/orbit/releases) page to grab the latest release, or you can build from source with `cargo`. See the full installation instructions for complete details [here](https://c-rus.github.io/orbit/1_starting/1_installing.html).
+`orbit` has pre-built binaries for MacOS, Windows, and Ubuntu. See the [releases](https://github.com/c-rus/orbit/releases) page to grab the latest release, or you can build from source with `cargo`. See the full installation instructions for complete details [here](https://c-rus.github.io/orbit/1_starting/1_installing.html).
 
 ## Documentation
 

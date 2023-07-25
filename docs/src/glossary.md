@@ -1,108 +1,69 @@
 # Glossary
 
-## Available State (A)
-An IP's state where the project is currently not placed on the user's machine, but
-the metadata required to get it is. IP under the available state act as "pointers" to
-their projects. Manifests found in vendor registry's are marked as in the Available State.
+### Project
+A project is a collection of HDL source files and any other required files related to a specific application or library. Placing a manifest in a project makes it an IP.
 
-## Blueprint
-A blueprint is a tab-separated file that consists of paths to all files collected 
-for building an IP. It is created on `orbit plan`. Each line in blueprint consist 
-of 3 values separated by tabs (fileset, identifier, filepath). If the file is an
-HDL file, the identifier is the HDL library identifier. Otherwise, it is the file's name.
+### Package
+See [IP](#intellectual-property-ip).
 
-## Cache
-The cache hosts all IP labelled under the Installed State. The cache directory is
-abstracted away from the user and is not intended to be manually edited.
+### Intellectual Property (IP) 
+An IP is a project with a manifest file at its root directory. At a minimum, an IP has two attributes: a name and a version.
+
+### Manifest
+A manifest is a file that decscribes an IP recognized by `orbit`. Manifest files 
+are exactly named `Orbit.toml`. The manifest is intended to be written by the user.
+
+### Current Working IP (CWIP)
+The current working IP (CWIP) is the IP detected from the current working directory on the command-line. Some commands can only be executed from the CWIP, such as `plan` and `build`.
 
 ## Catalog
-The catalog is the user's entire space of currently known IP. It consists of
-the results from searching the DEV_PATH, cache, and vendor registries for manifests.
+The catalog is the user's entire space of currently known IP to `orbit`. It consists of 3 main layers: cache, downloads, channels.
 
-## Current Working IP
-An IP in the development state that the current working directory is found. Some
-commands can only be ran from a current working IP.
+### Cache
+The cache is the location where immutable references to a specific IP's version exist. Dependencies to an IP are referenced from the cache. The IP's at the cache level are considered _installed_.
 
-## Developing State (D)
-An IP's state where it can be safely mutated and edited. IP in the developing state
-can exist anywhere in the user's filesystem (excluding the cache folder and registry folder),
-but they usually exist in the user's DEV_PATH for convenience in other functions.
+### Downloads
+The downloads is the location where compressed snapshots of a specific IP's version exist. The compressed IP files are unable to be referenced as dependencies, but they are able to be _installed_ to the cache for usage. The IP's at the downloads level are considered _downloaded_.
 
-## Development Path (DEV_PATH)
-The path Orbit searches for IP labelled under the Developing State. IP in the DEV_PATH
-are intended to be edited and developed.
+### Channels
+The channels are a set of decentralized registries that store the manifests for versions of IP. No source code is stored in a channel, however, `orbit` is able to use the manifest as means to _download_ an IP to the downloads for local filesystem access. The IP's at the channels level are considered _available_. Users are encouraged to create and share their own channels.
 
-## Fileset
-A glob-style pattern for collecting files under a given identifier. Filesets are
+### Blueprint
+A blueprint is a tab-separated file that lists all the necessary files needed to perform a particular build for the CWIP. HDL files are listed in topologically-sorted order from top to bottom, while other files can be included through user-defined filesets. 
+
+Each line in a blueprint consists of 3 values separated by tabs (fileset, identifier, filepath). If the file is an HDL file, the identifier is the HDL library identifier, otherwise, it is the file's name.
+
+### Fileset
+A fileset is a glob-style pattern for collecting files under a given name. Filesets are
 used to group common files together into the blueprint during the planning phase
-for future processing.
+for future processing by a plugin during the building phase.
 
-## Installed State (I)
-An IP's state where it is immutable and can be safely included as a dependency into
-a project under the Developing State. IP in an Installed State exist in the cache
-and are not to be manually edited. If a project needs to be further developed, bring it
-into the developing state and release a new version.
+### Lockfile
+A lockfile is a file that exactly describes an IP's dependencies. It is generated and maintained by `orbit`. The lockfile should be checked into your version control system for reproducible builds. It is not to be manually edited by the user. 
 
-## Intellectual Property (IP) 
-In Orbit, an IP is a project directory with a _manifest_ file at the project's 
-root directory. In the context of a package manager, these are the "packages" 
-Orbit manages. An IP is identified by its PKGID.
+From the lockfile, `orbit` is able to download missing dependencies, install missing dependencies, and verify the data integrity of installed dependencies.
 
-## Library
-The second identifier in the PKGID. When using an IP as a dependency, the PKGID 
-library identifier is also the VHDL library identifier for all primary design 
-units within that IP.
+### IP Specification (spec)
+The spec describes the format for identifying and referencing an IP. Each IP in the user's catalog must have a unique spec. The complete spec is: `<name>[:<version>]`.
 
-## Lock File
-A special file generated and maintained by Orbit outlining the IP dependencies required
-reproduce the last plan. The lockfile should be checked into version control and
-not manually edited by a user.
+### Plugin
+A plugin is a user-defined command able to be called during the building phase. A plugin typically follows 3 steps: 
+1. Parse the blueprint
+2. Process the referenced files
+3. Generate an output product
 
-## Manifest
-The Manifest is a file used to record IP-level details for Orbit. Orbit 
-recognizes files named `Orbit.toml` as an IP's manifest. The manifest is 
-intended to be written by the developer, although most of the details can be 
-automated to Orbit.
+Plugins can accept additional arguments from the command-line and define additional filesets to be collected during the planning phase. Users are encouraged to create and share their own plugins.
 
-## Package ID (PKGID)
-The PKGID is a series of identifiers following __\<vendor>.\<library>.\<name>__. 
-PKGIDs give IP a unique identification within Orbit and the IP catalog. No two 
-IP in the catalog can have the same complete PKGID.
+### Profile
+A profile is a user-defined group of plugins, settings, and/or channels under a single directory. A profile does not necessarily have to have all listed aspects in order to be considered a "profile".
 
-## Plugin
-A plugin is a command invoked through the Orbit environment that executes a backend
-workflow on an IP. They typically process the blueprint file and can accept additional
-arguments from the command-line.
+Profiles are useful for quickly sharing and maintaining common development standards and workflows among a team environment.
 
-## Profile
-A profile is a group of plugins, templates, and configurations under a single directory.
-Profiles are useful in quickly sharing common development standards and workflows among a working
-group.
+### VHDL
+VHSIC Hardware Design Language (VHDL) is a hardware descrption language to model the behavior of digitally electronic circuits.
 
-## Status
-The status of an IP is at which it appears in the user's catalog. There are 3
-states: Developing (D), Installed (I), and/or Available (A).
+### Orbit.toml
+See [manifest](#manifest).
 
-## Store
-A directory Orbit where maintains IP repositories for quicker installations
-of subsequent IP versions.
-
-## Template
-A template is a directory available to be imported as a new IP. Templates 
-support variable subsitutiton.
-
-## Variable Subsitutiton
-@todo
-
-## Vendor
-@todo
-
-## Version
-A version consists of 3 numeric values __\<major>.\<minor>.\<patch>__ to capture a
-snapshot of an IP's given state. Versions are recognized in Orbit as git tags. A version
-can be partially specified, having at least a __major__ value. A version can also be denoted
-as `latest` or `dev`.
-
-## VHDL
-VHSIC Hardware Design Language (VHDL) is a hardware descrption language to model the
-behavior of digitally electronic circuits.
+### Orbit.lock
+See [lockfile](#lockfile).

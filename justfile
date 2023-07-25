@@ -32,3 +32,7 @@ fulltest:
     cargo check
     cargo test
     python -m unittest discover -s ./tools -p '*.py'
+
+# Sort the glossary contents
+sortgloss:
+    python ./tools/sort_gloss.py

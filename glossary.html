@@ -175,12 +175,12 @@
 <p>Each line in a blueprint consists of 3 values separated by tabs (fileset, identifier, filepath). If the file is an HDL file, the identifier is the HDL library identifier, otherwise, it is the file's name.</p>
 <h3 id="cache"><a class="header" href="#cache">Cache</a></h3>
 <p>The cache is the location where immutable references to a specific IP's version exist. Dependencies to an IP are referenced from the cache. The IP's at the cache level are considered <em>installed</em>.</p>
+<h3 id="catalog"><a class="header" href="#catalog">Catalog</a></h3>
+<p>The catalog is the user's entire space of currently known IP to <code>orbit</code>. It consists of 3 main layers: cache, downloads, channels.</p>
 <h3 id="channels"><a class="header" href="#channels">Channels</a></h3>
 <p>The channels are a set of decentralized registries that store the manifests for versions of IP. No source code is stored in a channel, however, <code>orbit</code> is able to use the manifest as means to <em>download</em> an IP to the downloads for local filesystem access. The IP's at the channels level are considered <em>available</em>. Users are encouraged to create and share their own channels.</p>
 <h3 id="current-working-ip-cwip"><a class="header" href="#current-working-ip-cwip">Current Working IP (CWIP)</a></h3>
 <p>The current working IP (CWIP) is the IP detected from the current working directory on the command-line. Some commands can only be executed from the CWIP, such as <code>plan</code> and <code>build</code>.</p>
-<h2 id="catalog"><a class="header" href="#catalog">Catalog</a></h2>
-<p>The catalog is the user's entire space of currently known IP to <code>orbit</code>. It consists of 3 main layers: cache, downloads, channels.</p>
 <h3 id="downloads"><a class="header" href="#downloads">Downloads</a></h3>
 <p>The downloads is the location where compressed snapshots of a specific IP's version exist. The compressed IP files are unable to be referenced as dependencies, but they are able to be <em>installed</em> to the cache for usage. The IP's at the downloads level are considered <em>downloaded</em>.</p>
 <h3 id="fileset"><a class="header" href="#fileset">Fileset</a></h3>

@@ -1847,90 +1847,54 @@ will delete the IP found on the DEV_PATH.</p>
 orbit uninstall kepler.util.toolbox --variant 2.1
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="glossary"><a class="header" href="#glossary">Glossary</a></h1>
-<h2 id="available-state-a"><a class="header" href="#available-state-a">Available State (A)</a></h2>
-<p>An IP's state where the project is currently not placed on the user's machine, but
-the metadata required to get it is. IP under the available state act as &quot;pointers&quot; to
-their projects. Manifests found in vendor registry's are marked as in the Available State.</p>
-<h2 id="blueprint-1"><a class="header" href="#blueprint-1">Blueprint</a></h2>
-<p>A blueprint is a tab-separated file that consists of paths to all files collected 
-for building an IP. It is created on <code>orbit plan</code>. Each line in blueprint consist 
-of 3 values separated by tabs (fileset, identifier, filepath). If the file is an
-HDL file, the identifier is the HDL library identifier. Otherwise, it is the file's name.</p>
-<h2 id="cache"><a class="header" href="#cache">Cache</a></h2>
-<p>The cache hosts all IP labelled under the Installed State. The cache directory is
-abstracted away from the user and is not intended to be manually edited.</p>
+<h3 id="project"><a class="header" href="#project">Project</a></h3>
+<p>A project is a collection of HDL source files and any other required files related to a specific application or library. Placing a manifest in a project makes it an IP.</p>
+<h3 id="package"><a class="header" href="#package">Package</a></h3>
+<p>See <a href="glossary.html#intellectual-property-ip">IP</a>.</p>
+<h3 id="intellectual-property-ip"><a class="header" href="#intellectual-property-ip">Intellectual Property (IP)</a></h3>
+<p>An IP is a project with a manifest file at its root directory. At a minimum, an IP has two attributes: a name and a version.</p>
+<h3 id="manifest-1"><a class="header" href="#manifest-1">Manifest</a></h3>
+<p>A manifest is a file that decscribes an IP recognized by <code>orbit</code>. Manifest files 
+are exactly named <code>Orbit.toml</code>. The manifest is intended to be written by the user.</p>
+<h3 id="current-working-ip-cwip"><a class="header" href="#current-working-ip-cwip">Current Working IP (CWIP)</a></h3>
+<p>The current working IP (CWIP) is the IP detected from the current working directory on the command-line. Some commands can only be executed from the CWIP, such as <code>plan</code> and <code>build</code>.</p>
 <h2 id="catalog"><a class="header" href="#catalog">Catalog</a></h2>
-<p>The catalog is the user's entire space of currently known IP. It consists of
-the results from searching the DEV_PATH, cache, and vendor registries for manifests.</p>
-<h2 id="current-working-ip"><a class="header" href="#current-working-ip">Current Working IP</a></h2>
-<p>An IP in the development state that the current working directory is found. Some
-commands can only be ran from a current working IP.</p>
-<h2 id="developing-state-d"><a class="header" href="#developing-state-d">Developing State (D)</a></h2>
-<p>An IP's state where it can be safely mutated and edited. IP in the developing state
-can exist anywhere in the user's filesystem (excluding the cache folder and registry folder),
-but they usually exist in the user's DEV_PATH for convenience in other functions.</p>
-<h2 id="development-path-dev_path"><a class="header" href="#development-path-dev_path">Development Path (DEV_PATH)</a></h2>
-<p>The path Orbit searches for IP labelled under the Developing State. IP in the DEV_PATH
-are intended to be edited and developed.</p>
-<h2 id="fileset"><a class="header" href="#fileset">Fileset</a></h2>
-<p>A glob-style pattern for collecting files under a given identifier. Filesets are
+<p>The catalog is the user's entire space of currently known IP to <code>orbit</code>. It consists of 3 main layers: cache, downloads, channels.</p>
+<h3 id="cache"><a class="header" href="#cache">Cache</a></h3>
+<p>The cache is the location where immutable references to a specific IP's version exist. Dependencies to an IP are referenced from the cache. The IP's at the cache level are considered <em>installed</em>.</p>
+<h3 id="downloads"><a class="header" href="#downloads">Downloads</a></h3>
+<p>The downloads is the location where compressed snapshots of a specific IP's version exist. The compressed IP files are unable to be referenced as dependencies, but they are able to be <em>installed</em> to the cache for usage. The IP's at the downloads level are considered <em>downloaded</em>.</p>
+<h3 id="channels"><a class="header" href="#channels">Channels</a></h3>
+<p>The channels are a set of decentralized registries that store the manifests for versions of IP. No source code is stored in a channel, however, <code>orbit</code> is able to use the manifest as means to <em>download</em> an IP to the downloads for local filesystem access. The IP's at the channels level are considered <em>available</em>. Users are encouraged to create and share their own channels.</p>
+<h3 id="blueprint-1"><a class="header" href="#blueprint-1">Blueprint</a></h3>
+<p>A blueprint is a tab-separated file that lists all the necessary files needed to perform a particular build for the CWIP. HDL files are listed in topologically-sorted order from top to bottom, while other files can be included through user-defined filesets. </p>
+<p>Each line in a blueprint consists of 3 values separated by tabs (fileset, identifier, filepath). If the file is an HDL file, the identifier is the HDL library identifier, otherwise, it is the file's name.</p>
+<h3 id="fileset"><a class="header" href="#fileset">Fileset</a></h3>
+<p>A fileset is a glob-style pattern for collecting files under a given name. Filesets are
 used to group common files together into the blueprint during the planning phase
-for future processing.</p>
-<h2 id="installed-state-i"><a class="header" href="#installed-state-i">Installed State (I)</a></h2>
-<p>An IP's state where it is immutable and can be safely included as a dependency into
-a project under the Developing State. IP in an Installed State exist in the cache
-and are not to be manually edited. If a project needs to be further developed, bring it
-into the developing state and release a new version.</p>
-<h2 id="intellectual-property-ip"><a class="header" href="#intellectual-property-ip">Intellectual Property (IP)</a></h2>
-<p>In Orbit, an IP is a project directory with a <em>manifest</em> file at the project's 
-root directory. In the context of a package manager, these are the &quot;packages&quot; 
-Orbit manages. An IP is identified by its PKGID.</p>
-<h2 id="library"><a class="header" href="#library">Library</a></h2>
-<p>The second identifier in the PKGID. When using an IP as a dependency, the PKGID 
-library identifier is also the VHDL library identifier for all primary design 
-units within that IP.</p>
-<h2 id="lock-file"><a class="header" href="#lock-file">Lock File</a></h2>
-<p>A special file generated and maintained by Orbit outlining the IP dependencies required
-reproduce the last plan. The lockfile should be checked into version control and
-not manually edited by a user.</p>
-<h2 id="manifest-1"><a class="header" href="#manifest-1">Manifest</a></h2>
-<p>The Manifest is a file used to record IP-level details for Orbit. Orbit 
-recognizes files named <code>Orbit.toml</code> as an IP's manifest. The manifest is 
-intended to be written by the developer, although most of the details can be 
-automated to Orbit.</p>
-<h2 id="package-id-pkgid"><a class="header" href="#package-id-pkgid">Package ID (PKGID)</a></h2>
-<p>The PKGID is a series of identifiers following <strong>&lt;vendor&gt;.&lt;library&gt;.&lt;name&gt;</strong>. 
-PKGIDs give IP a unique identification within Orbit and the IP catalog. No two 
-IP in the catalog can have the same complete PKGID.</p>
-<h2 id="plugin"><a class="header" href="#plugin">Plugin</a></h2>
-<p>A plugin is a command invoked through the Orbit environment that executes a backend
-workflow on an IP. They typically process the blueprint file and can accept additional
-arguments from the command-line.</p>
-<h2 id="profile"><a class="header" href="#profile">Profile</a></h2>
-<p>A profile is a group of plugins, templates, and configurations under a single directory.
-Profiles are useful in quickly sharing common development standards and workflows among a working
-group.</p>
-<h2 id="status"><a class="header" href="#status">Status</a></h2>
-<p>The status of an IP is at which it appears in the user's catalog. There are 3
-states: Developing (D), Installed (I), and/or Available (A).</p>
-<h2 id="store"><a class="header" href="#store">Store</a></h2>
-<p>A directory Orbit where maintains IP repositories for quicker installations
-of subsequent IP versions.</p>
-<h2 id="template"><a class="header" href="#template">Template</a></h2>
-<p>A template is a directory available to be imported as a new IP. Templates 
-support variable subsitutiton.</p>
-<h2 id="variable-subsitutiton"><a class="header" href="#variable-subsitutiton">Variable Subsitutiton</a></h2>
-<p>@todo</p>
-<h2 id="vendor"><a class="header" href="#vendor">Vendor</a></h2>
-<p>@todo</p>
-<h2 id="version"><a class="header" href="#version">Version</a></h2>
-<p>A version consists of 3 numeric values <strong>&lt;major&gt;.&lt;minor&gt;.&lt;patch&gt;</strong> to capture a
-snapshot of an IP's given state. Versions are recognized in Orbit as git tags. A version
-can be partially specified, having at least a <strong>major</strong> value. A version can also be denoted
-as <code>latest</code> or <code>dev</code>.</p>
-<h2 id="vhdl"><a class="header" href="#vhdl">VHDL</a></h2>
-<p>VHSIC Hardware Design Language (VHDL) is a hardware descrption language to model the
-behavior of digitally electronic circuits.</p>
+for future processing by a plugin during the building phase.</p>
+<h3 id="lockfile"><a class="header" href="#lockfile">Lockfile</a></h3>
+<p>A lockfile is a file that exactly describes an IP's dependencies. It is generated and maintained by <code>orbit</code>. The lockfile should be checked into your version control system for reproducible builds. It is not to be manually edited by the user. </p>
+<p>From the lockfile, <code>orbit</code> is able to download missing dependencies, install missing dependencies, and verify the data integrity of installed dependencies.</p>
+<h3 id="ip-specification-spec"><a class="header" href="#ip-specification-spec">IP Specification (spec)</a></h3>
+<p>The spec describes the format for identifying and referencing an IP. Each IP in the user's catalog must have a unique spec. The complete spec is: <code>&lt;name&gt;[:&lt;version&gt;]</code>.</p>
+<h3 id="plugin"><a class="header" href="#plugin">Plugin</a></h3>
+<p>A plugin is a user-defined command able to be called during the building phase. A plugin typically follows 3 steps: </p>
+<ol>
+<li>Parse the blueprint</li>
+<li>Process the referenced files</li>
+<li>Generate an output product</li>
+</ol>
+<p>Plugins can accept additional arguments from the command-line and define additional filesets to be collected during the planning phase. Users are encouraged to create and share their own plugins.</p>
+<h3 id="profile"><a class="header" href="#profile">Profile</a></h3>
+<p>A profile is a user-defined group of plugins, settings, and/or channels under a single directory. A profile does not necessarily have to have all listed aspects in order to be considered a &quot;profile&quot;.</p>
+<p>Profiles are useful for quickly sharing and maintaining common development standards and workflows among a team environment.</p>
+<h3 id="vhdl"><a class="header" href="#vhdl">VHDL</a></h3>
+<p>VHSIC Hardware Design Language (VHDL) is a hardware descrption language to model the behavior of digitally electronic circuits.</p>
+<h3 id="orbittoml"><a class="header" href="#orbittoml">Orbit.toml</a></h3>
+<p>See <a href="glossary.html#manifest">manifest</a>.</p>
+<h3 id="orbitlock-1"><a class="header" href="#orbitlock-1">Orbit.lock</a></h3>
+<p>See <a href="glossary.html#lockfile">lockfile</a>.</p>
 
                     </main>
 

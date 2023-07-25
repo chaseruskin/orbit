@@ -8,14 +8,14 @@ Each line in a blueprint consists of 3 values separated by tabs (fileset, identi
 ### Cache
 The cache is the location where immutable references to a specific IP's version exist. Dependencies to an IP are referenced from the cache. The IP's at the cache level are considered _installed_.
 
+### Catalog
+The catalog is the user's entire space of currently known IP to `orbit`. It consists of 3 main layers: cache, downloads, channels.
+
 ### Channels
 The channels are a set of decentralized registries that store the manifests for versions of IP. No source code is stored in a channel, however, `orbit` is able to use the manifest as means to _download_ an IP to the downloads for local filesystem access. The IP's at the channels level are considered _available_. Users are encouraged to create and share their own channels.
 
 ### Current Working IP (CWIP)
 The current working IP (CWIP) is the IP detected from the current working directory on the command-line. Some commands can only be executed from the CWIP, such as `plan` and `build`.
-
-## Catalog
-The catalog is the user's entire space of currently known IP to `orbit`. It consists of 3 main layers: cache, downloads, channels.
 
 ### Downloads
 The downloads is the location where compressed snapshots of a specific IP's version exist. The compressed IP files are unable to be referenced as dependencies, but they are able to be _installed_ to the cache for usage. The IP's at the downloads level are considered _downloaded_.

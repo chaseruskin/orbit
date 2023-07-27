@@ -28,5 +28,7 @@ license-header
 orbit-test.zip
 orbit-test/
 
-mansync/
 tests/playground/
+
+mansync/
+!tools/mansync/

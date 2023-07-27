@@ -1,7 +1,6 @@
-// This manual page was automatically generated from the rsmangen.py tool.
-pub const MANUAL: &str = "\
-NAME
-    plan - generate a blueprint file 
+// This manual page was automatically generated from the mangen.py tool.
+pub const MANUAL: &str = r#"NAME
+    plan - generate a blueprint file
 
 SYNOPSIS
     orbit plan [options]
@@ -21,7 +20,7 @@ DESCRIPTION
     building phase.
       
     User-defined filesets are only collected along the current working ip's 
-    path. Specifying a plugin with --plugin will collect the filesets 
+    path. Specifying a plugin with `--plugin` will collect the filesets 
     configured for that plugin.
       
     During the planning phase, a lockfile is produced outlining the exact ip
@@ -31,49 +30,46 @@ DESCRIPTION
     If the current working ip's manifest's data matches its data stored in its
     own lockfile, then Orbit will read from the lockfile to create the ip
     dependency graph. To force Orbit to build the ip dependency graph from
-    scratch, use --force.
+    scratch, use `--force`.
       
-    If only wishing to update the lockfile, using --lock-only will not require
-    a toplevel or testbench to be determined. The --lock-only flag can be
-    combined with --force to overwrite the lockfile regardless if it is
+    If only wishing to update the lockfile, using `--lock-only` will not require
+    a toplevel or testbench to be determined. The `--lock-only` flag can be
+    combined with `--force` to overwrite the lockfile regardless if it is
     already in sync with the current working ip's manifest data.
 
 OPTIONS
-    --top <unit>  
-          The top level entity to explicitly define
-      
-    --bench <tb>  
-          The top level testbench to explicitly define
-       
-    --plugin <alias>  
-          A plugin to refer to gather its declared filesets
-      
-    --build-dir <dir>  
-          The relative directory to place the blueprint.tsv file
-      
-    --filset <key=glob>...  
-          A glob-style pattern identified by a name to add into the blueprint    
-      
-    --clean  
-          Removes all files from the build directory before planning
-      
-    --list  
-          Display all available plugins and exit
-     
-    --all  
-          Ignore any design hierarchy and include all hdl files
-     
-    --disable-ssh  
-          Convert SSH to HTTPS urls when fetching external dependencies
-     
-    --force  
-          Ignore reading the lock file
-      
+    --top <unit>
+        The top level entity to explicitly define
+
+    --bench <tb>
+        The top level testbench to explicitly define
+
+    --plugin <alias>
+        A plugin to refer to gather its declared filesets
+
+    --build-dir <dir>
+        The relative directory to place the blueprint.tsv file
+
+    --fileset <key=glob>...
+        A glob-style pattern identified by a name to add into the blueprint
+
+    --clean
+        Removes all files from the build directory before execution
+
+    --list
+        Displays all available plugins and exit
+
+    --force
+        Ignore reading the precomputed lock file
+
     --lock-only
-          Only create a lock file
+        Create the lock file and exit
+
+    --all
+        Include all locally found HDL files
 
 EXAMPLES
-    orbit plan --top top_level --fileset PIN-PLAN=\"*.board\"
+    orbit plan --top and_gate --fileset PIN-PLAN="*.board"
     orbit plan --plugin vivado --clean --bench ram_tb
     orbit plan --lock-only
-";
+"#;

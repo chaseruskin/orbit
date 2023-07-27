@@ -12,7 +12,7 @@ orbit config [options]
 
 ## __DESCRIPTION__
 
-This command will alter configuration entries in Orbit's settings file named 
+This command will alter configuration entries in Orbit's settings file named
 `config.toml`. By default, it will modify the user's config located at
 $ORBIT_HOME.
   

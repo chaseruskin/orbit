@@ -1,32 +1,32 @@
-// This manual page was automatically generated from the rsmangen.py tool.
-pub const MANUAL: &str = "\
-NAME
-    init - initialize an existing directory as an ip
+// This manual page was automatically generated from the mangen.py tool.
+pub const MANUAL: &str = r#"NAME
+    init - initialize an ip from an existing project
 
 SYNOPSIS
-    orbit init [options] <ip>
+    orbit init [options] [path]
 
 DESCRIPTION
-    This command will initialize an existing directory/project into a IP
-    recognized by Orbit. By default, the current working directory will be
-    initialized.
-      
-    The --path option can be combined with --git. Then the project will be
-    cloned to the specified path. This path must either not exist or be empty.
-    If it is provided as a relative path, then it will be appended to the 
-    DEV_PATH. By default, --git will clone to the DEV_PATH under 
-    $ORBIT_DEV_PATH/<vendor>/<library>/<name>.
+    This command will initialize a new ip at the target directory [path]. If no path
+    is supplied, then it defaults to the current working directory.
+    
+    If no name is supplied, then the ip's name defaults to the final path component
+    of the path argument. Use the name option to provide a custom name.
+    
+    This command fails if the path does not exist. See the 'new' command for
+    creating an ip from a non-existing directory.
 
 OPTIONS
-    <ip>  
-          The fully specified pkgid to name to the ip
-     
-    --git <repo>  
-          A git repository to clone
-     
-    --path <path>  
-          A filesystem destination for a git repository initialization
+    [path]
+        The location to initialize an ip
+
+    --name <name>
+        The name of the ip
+
+    --force
+        Overwrite a manifest if one already exists
 
 EXAMPLES
-    orbit init ks-tech.rary.gates --git https://github.com/ks-tech/gates.git
-";
+    orbit init
+    orbit init ./projects/lab1
+    orbit init --name hello_world
+"#;

@@ -171,28 +171,28 @@
                     <main>
                         <h1 id="orbit-init"><a class="header" href="#orbit-init"><strong>orbit init</strong></a></h1>
 <h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>
-<p>init - initialize an existing directory as an ip</p>
+<p>init - initialize an ip from an existing project</p>
 <h2 id="synopsis"><a class="header" href="#synopsis"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit init [options] &lt;ip&gt;
+<pre><code>orbit init [options] [path]
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will initialize an existing directory/project into a IP
-recognized by Orbit. By default, the current working directory will be
-initialized.</p>
-<p>The <code>--path</code> option can be combined with <code>--git</code>. Then the project will be
-cloned to the specified path. This path must either not exist or be empty.
-If it is provided as a relative path, then it will be appended to the 
-DEV_PATH. By default, <code>--git</code> will clone to the DEV_PATH under 
-<code>$ORBIT_DEV_PATH/&lt;vendor&gt;/&lt;library&gt;/&lt;name&gt;</code>.</p>
+<p>This command will initialize a new ip at the target directory [path]. If no path
+is supplied, then it defaults to the current working directory.</p>
+<p>If no name is supplied, then the ip's name defaults to the final path component
+of the path argument. Use the name option to provide a custom name.</p>
+<p>This command fails if the path does not exist. See the 'new' command for
+creating an ip from a non-existing directory.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
-<p><code>&lt;ip&gt;</code><br />
-      The fully specified pkgid to name to the ip</p>
-<p><code>--git &lt;repo&gt;</code><br />
-      A git repository to clone</p>
-<p><code>--path &lt;path&gt;</code><br />
-      A filesystem destination for a git repository initialization</p>
+<p><code>[path]</code><br />
+      The location to initialize an ip</p>
+<p><code>--name &lt;name&gt;</code><br />
+      The name of the ip</p>
+<p><code>--force</code><br />
+      Overwrite a manifest if one already exists</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit init ks-tech.rary.gates --git https://github.com/ks-tech/gates.git
+<pre><code>orbit init
+orbit init ./projects/lab1
+orbit init --name hello_world
 </code></pre>
 
                     </main>

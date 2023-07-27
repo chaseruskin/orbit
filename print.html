@@ -1375,28 +1375,13 @@ Dependencies:
 <pre><code>orbit new [options] &lt;path&gt;
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will create a new ip project. The default destination path is
-the vendor/library/name relative to the DEV_PATH. If the DEV_PATH is not
-configured, then it will use the current working directory. Creating a new 
-ip involves creating a manifest file <code>Orbit.toml</code> and initializing an empty
-git repository.</p>
-<p>Use <code>--to</code> to override the destination path. This path is not allowed to
-exist unless <code>--force</code> is specified.</p>
-<p>Copying from existing files can be achieved in two ways. The recommended way
-is to configure templates, which can be viewed with <code>--list</code>. Using 
-<code>--template</code> will import the files from the template's root directory when
-creating a new ip. On the other hand, using <code>--from</code> will import files from 
-that directory.</p>
-<p>Upon creation of an ip or file, variable substitution is performed. Variable
-substitution takes form as a template processor using known information
-about orbit's state and injecting into templated files.</p>
-<p>A new file is able to be generated from within an ip under development with
-the <code>--file</code> flag. You can view available files for importing from a
-particular template by combining options <code>--template</code> and <code>--list</code>. To use
-a file from a template in creating a new file, specify the template and
-the source file's relative path with <code>--template</code> and <code>--from</code>. You can
-specify a source path not tied to a template by just using <code>--from</code>.</p>
-<p>If <code>--from</code> is omitted when creating a file, an empty file will be created.</p>
+<p>This command will create a new ip at the target directory <path>. The command
+assumes the path does not already exists. It will attempt to create a new 
+directory at the destination with a manifest. </p>
+<p>If no name is supplied, then the ip's name defaults to the final path component
+of the path argument. Use the name option to provide a custom name.</p>
+<p>This command fails if the path already exists. See the 'init' command for
+initializing an already existing project into an ip.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--name &lt;name&gt;</code><br />
       The ip name to create</p>
@@ -1406,28 +1391,28 @@ orbit new ./projects/lab1 --name adder
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-init"><a class="header" href="#orbit-init"><strong>orbit init</strong></a></h1>
 <h2 id="name-1"><a class="header" href="#name-1"><strong>NAME</strong></a></h2>
-<p>init - initialize an existing directory as an ip</p>
+<p>init - initialize an ip from an existing project</p>
 <h2 id="synopsis-1"><a class="header" href="#synopsis-1"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit init [options] &lt;ip&gt;
+<pre><code>orbit init [options] [path]
 </code></pre>
 <h2 id="description-1"><a class="header" href="#description-1"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will initialize an existing directory/project into a IP
-recognized by Orbit. By default, the current working directory will be
-initialized.</p>
-<p>The <code>--path</code> option can be combined with <code>--git</code>. Then the project will be
-cloned to the specified path. This path must either not exist or be empty.
-If it is provided as a relative path, then it will be appended to the 
-DEV_PATH. By default, <code>--git</code> will clone to the DEV_PATH under 
-<code>$ORBIT_DEV_PATH/&lt;vendor&gt;/&lt;library&gt;/&lt;name&gt;</code>.</p>
+<p>This command will initialize a new ip at the target directory [path]. If no path
+is supplied, then it defaults to the current working directory.</p>
+<p>If no name is supplied, then the ip's name defaults to the final path component
+of the path argument. Use the name option to provide a custom name.</p>
+<p>This command fails if the path does not exist. See the 'new' command for
+creating an ip from a non-existing directory.</p>
 <h2 id="options-1"><a class="header" href="#options-1"><strong>OPTIONS</strong></a></h2>
-<p><code>&lt;ip&gt;</code><br />
-      The fully specified pkgid to name to the ip</p>
-<p><code>--git &lt;repo&gt;</code><br />
-      A git repository to clone</p>
-<p><code>--path &lt;path&gt;</code><br />
-      A filesystem destination for a git repository initialization</p>
+<p><code>[path]</code><br />
+      The location to initialize an ip</p>
+<p><code>--name &lt;name&gt;</code><br />
+      The name of the ip</p>
+<p><code>--force</code><br />
+      Overwrite a manifest if one already exists</p>
 <h2 id="examples-1"><a class="header" href="#examples-1"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit init ks-tech.rary.gates --git https://github.com/ks-tech/gates.git
+<pre><code>orbit init
+orbit init ./projects/lab1
+orbit init --name hello_world
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-read"><a class="header" href="#orbit-read"><strong>orbit read</strong></a></h1>
 <h2 id="name-2"><a class="header" href="#name-2"><strong>NAME</strong></a></h2>
@@ -1805,7 +1790,7 @@ orbit env ORBIT_DEV_PATH ORBIT_HOME
 <pre><code>orbit config [options]
 </code></pre>
 <h2 id="description-12"><a class="header" href="#description-12"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will alter configuration entries in Orbit's settings file named 
+<p>This command will alter configuration entries in Orbit's settings file named
 <code>config.toml</code>. By default, it will modify the user's config located at
 $ORBIT_HOME.</p>
 <p>To access an entry (key/value pair), use dots (<code>.</code>) to delimit between 

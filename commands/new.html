@@ -176,28 +176,13 @@
 <pre><code>orbit new [options] &lt;path&gt;
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will create a new ip project. The default destination path is
-the vendor/library/name relative to the DEV_PATH. If the DEV_PATH is not
-configured, then it will use the current working directory. Creating a new 
-ip involves creating a manifest file <code>Orbit.toml</code> and initializing an empty
-git repository.</p>
-<p>Use <code>--to</code> to override the destination path. This path is not allowed to
-exist unless <code>--force</code> is specified.</p>
-<p>Copying from existing files can be achieved in two ways. The recommended way
-is to configure templates, which can be viewed with <code>--list</code>. Using 
-<code>--template</code> will import the files from the template's root directory when
-creating a new ip. On the other hand, using <code>--from</code> will import files from 
-that directory.</p>
-<p>Upon creation of an ip or file, variable substitution is performed. Variable
-substitution takes form as a template processor using known information
-about orbit's state and injecting into templated files.</p>
-<p>A new file is able to be generated from within an ip under development with
-the <code>--file</code> flag. You can view available files for importing from a
-particular template by combining options <code>--template</code> and <code>--list</code>. To use
-a file from a template in creating a new file, specify the template and
-the source file's relative path with <code>--template</code> and <code>--from</code>. You can
-specify a source path not tied to a template by just using <code>--from</code>.</p>
-<p>If <code>--from</code> is omitted when creating a file, an empty file will be created.</p>
+<p>This command will create a new ip at the target directory <path>. The command
+assumes the path does not already exists. It will attempt to create a new 
+directory at the destination with a manifest. </p>
+<p>If no name is supplied, then the ip's name defaults to the final path component
+of the path argument. Use the name option to provide a custom name.</p>
+<p>This command fails if the path already exists. See the 'init' command for
+initializing an already existing project into an ip.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--name &lt;name&gt;</code><br />
       The ip name to create</p>

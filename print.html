@@ -564,7 +564,7 @@ RULE
 <p><strong>Note:</strong> A literal tab character <code>\t</code> is used as &lt;TAB&gt;.</p>
 </blockquote>
 <p>The <em>fileset</em> is the name for a group of files to be commonly collected.</p>
-<p>The <em>identifier</em> can be 2 different values depending on the fileset context.</p>
+<p>The <em>identifier</em> can be one of two values depending on the fileset context.</p>
 <p>The <em>filepath</em> is the absolute path to the file found for the given fileset.</p>
 <p><em>example <code>blueprint.tsv</code> for a comparator IP:</em></p>
 <pre><code>XSIM-WCFG	comparator_tb	C:/users/kepler/develop/hdl/comparator/sim/wf/comparator_tb.wcfg
@@ -576,9 +576,11 @@ VHDL-SIM	work	C:/users/kepler/develop/hdl/comparator/sim/comparator_tb.vhd
 </code></pre>
 <h2 id="filesets"><a class="header" href="#filesets">Filesets</a></h2>
 <p>A fileset's name is normalized to ALL-UPPERCASE-WITH-HYPHENS-NOT-UNDERSCORES. This makes it consistent across plugins when reading the <code>blueprint.tsv</code>.</p>
-<p><em>example fileset name normalization:</em></p>
-<pre><code>py_model --{normalization}-&gt; PY-MODEL
-</code></pre>
+<div class="table-wrapper"><table><thead><tr><th>Fileset</th><th>Normalized Fileset</th></tr></thead><tbody>
+<tr><td>py_model</td><td>PY-MODEL</td></tr>
+<tr><td>do-file</td><td>DO-FILE</td></tr>
+</tbody></table>
+</div>
 <h3 id="built-in-filesets"><a class="header" href="#built-in-filesets">Built-in Filesets</a></h3>
 <p>Built-in filesets are called <strong>HDL filesets</strong>. These currently include: </p>
 <ul>
@@ -747,7 +749,7 @@ hint: To resolve this error either
 <div style="break-before: page; page-break-before: always;"></div><h1 id="manifest"><a class="header" href="#manifest">Manifest</a></h1>
 <p>The <code>Orbit.toml</code> file for each IP is called its manifest. It is written in the <a href="https://toml.io/en/">TOML</a> format. It is maintained by the developer and contains metadata that is needed to build the IP.</p>
 <blockquote>
-<p><strong>Note:</strong> The manifest's file name must exactly match the spelling &quot;Orbit.toml&quot;, including case-sensitivity.</p>
+<p><strong>Note:</strong> The manifest's file name is &quot;Orbit.toml&quot;, with respect to case-sensitivity.</p>
 </blockquote>
 <p>Every manifest file consists of the following sections:</p>
 <ul>
@@ -1136,72 +1138,146 @@ precedence:
 2. env vars
 1. command-line
 --><div style="break-before: page; page-break-before: always;"></div><h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
-<p>The configuration data Orbit processes is stored in TOML files. TOML files have a file extension <code>.toml</code> and store key-value pairs. To learn more about TOML files, visit their <a href="https://toml.io/en/">website</a>.</p>
+<p>The <code>config.toml</code> file stores settings and extends <code>orbit</code>'s functionality. It is written in the <a href="https://toml.io/en/">TOML</a> format. It is maintained by the developer and can be shared across teams for consistent development environments.</p>
 <blockquote>
-<p><strong>Note:</strong> Throughout this page, an <strong>entry</strong> refers to a key-value pair.</p>
+<p><strong>Note:</strong> The configuration's file name is &quot;config.toml&quot;, with respect to case-sensitivity.</p>
 </blockquote>
-<h2 id="configtoml"><a class="header" href="#configtoml">config.toml</a></h2>
-<p>The first config file you may come across is <code>config.toml</code>. This file is used to load initial startup settings into orbit and customize a user's program experience.</p>
-<p>Here is a very minimal and basic example config file:</p>
-<pre><code class="language-toml">include = [&quot;profiles/ks-tech/config.toml&quot;]
-
-[env]
-QUARTUS_PATH = &quot;C:/IntelFPGA_lite/19.1/quartus/bin64&quot;
-
-[[plugin]]
-alias = &quot;zipr&quot;
-summary = &quot;Compress files into a submission-like format&quot;
-command = &quot;python&quot;
-args = [&quot;./main/plugins/zipr.py&quot;]
-fileset.zip-list = &quot;submission.txt&quot;
-
-[[protocol]]
-name = &quot;zip-op&quot;
-summary = &quot;Handle zip file urls&quot;
-command = &quot;python&quot;
-args = [&quot;./main/protocols/download.py&quot;]
-</code></pre>
-<p>The <strong>home configuration</strong> is the config.toml file located at your $ORBIT_HOME path.</p>
-<p>If you have <code>cat</code> installed, you can view your home config file in the console:</p>
-<pre><code>$ cat &quot;$(orbit env ORBIT_HOME)/config.toml&quot;
-</code></pre>
+<h2 id="paths"><a class="header" href="#paths">Paths</a></h2>
+<p>When a field is expected to be a filesystem path, <code>orbit</code> has the ability to resolve relative paths. The path is determined in relation to the currently processed <code>config.toml</code>'s parent directory. This design choice was implemented in order to allow for path definitions to be valid across developer machines when sharing configurations.</p>
+<h2 id="precedence"><a class="header" href="#precedence">Precedence</a></h2>
+<p>Orbit supports multiple levels of configuration. Each level has its own order of precedence:</p>
+<ol>
+<li>
+<p>Local configuration file (location: CWIP)</p>
+</li>
+<li>
+<p>Global configuration file (location: <code>$ORBIT_HOME</code>)</p>
+</li>
+<li>
+<p>Configuration files listed in the global <code>config.toml</code>'s <a href="reference/configuration.html#the-include-field"><code>include</code></a> (items farther in the list have a higher precedence than items earlier in the list)</p>
+</li>
+</ol>
+<p>A field is overridden when a configuration file of higher precedence also defines the same field.</p>
 <blockquote>
 <p><strong>Tip:</strong> You can modify some values in the configuration file through the command-line by using the <code>orbit config</code> command.</p>
 </blockquote>
-<h2 id="paths"><a class="header" href="#paths">Paths</a></h2>
-<p>When specifying a value that is known to be a path, Orbit supports resolving relative paths in relation to the config.toml's path it is currently reading. This allows for a path value to be correct out-of-the-box across users and machines when sharing configurations.</p>
-<h2 id="precedence"><a class="header" href="#precedence">Precedence</a></h2>
-<p>Orbit supports multiple levels of configuration. The order of precedence:</p>
-<ol>
-<li>
-<p>local configuration file (located in current IP)</p>
-</li>
-<li>
-<p>global configuration file (located in $ORBIT_HOME)</p>
-</li>
-<li>
-<p>configuration files listed in <code>include</code> entry (last has higher precedence than first)</p>
-</li>
-</ol>
-<p>A key's value is overridden upon a configuration file of higher precedence also setting a previously defined key from a lower-precedence file.</p>
-<h2 id="entries"><a class="header" href="#entries">Entries</a></h2>
-<p>The following is a list of acceptable entries (key/value pairs) recognized by Orbit in configuration files (<code>config.toml</code>).</p>
-<h3 id="include--list-of-string"><a class="header" href="#include--list-of-string"><code>include</code> : <em>list</em> of <em>string</em></a></h3>
+<p>Every configuration file consists of the following sections:</p>
 <ul>
-<li>paths to other configurations files to load before the home configuration</li>
-<li>only supported in the home configuration file</li>
+<li><a href="reference/configuration.html#the-include-field">include</a> - Lists other <code>config.toml</code> files to process.</li>
+<li><a href="reference/configuration.html#the-general-section">[general]</a> - The general settings.</li>
+<li><a href="reference/configuration.html#the-env-section">[env]</a> - The runtime environment variables.</li>
+<li><a href="reference/configuration.html#the-plugin-array">[[plugin]]</a> - Define a plugin.
+<ul>
+<li><a href="reference/configuration.html#the-alias-field">alias</a> - The name of the plugin.</li>
+<li><a href="reference/configuration.html#the-summary-field">summary</a> - A short description of the plugin.</li>
+<li><a href="reference/configuration.html#the-command-field">command</a> - The command to execute the plugin.</li>
+<li><a href="reference/configuration.html#the-args-field">args</a> - Arguments to pass to the command.</li>
+<li><a href="reference/configuration.html#the-fileset-section">[fileset]</a> - Filesets to collect for the plugin.</li>
 </ul>
-<pre><code class="language-toml">include = [&quot;profiles/ks-tech/config.toml&quot;]
+</li>
+<li><a href="reference/configuration.html#the-protocol-array">[protocol]</a> - Define a protocol.
+<ul>
+<li><a href="reference/configuration.html#the-alias-field">name</a> - The name of the protocol.</li>
+<li><a href="reference/configuration.html#the-summary-field">summary</a> - A short description of the protocol.</li>
+<li><a href="reference/configuration.html#the-command-field">command</a> - The command to execute the protocol.</li>
+<li><a href="reference/configuration.html#the-args-field">args</a> - Arguments to pass to the command.</li>
+</ul>
+</li>
+</ul>
+<h3 id="the-include-field"><a class="header" href="#the-include-field">The <code>include</code> field</a></h3>
+<pre><code class="language-toml">include = [
+    &quot;profiles/p1/config.toml&quot;,
+    &quot;profiles/p2/config.toml&quot;
+]
 </code></pre>
-<h3 id="env--table"><a class="header" href="#env--table"><code>[env]</code> : <em>table</em></a></h3>
-<ul>
-<li>user-defined additional keys to set as runtime environment variables during build phase</li>
-<li>the following example would set an environment variable ORBIT_ENV_VAR_1 as &quot;100&quot; during runtime</li>
-</ul>
+<h3 id="the-general-section"><a class="header" href="#the-general-section">The <code>[general]</code> section</a></h3>
+<h3 id="the-env-section"><a class="header" href="#the-env-section">The <code>[env]</code> section</a></h3>
 <pre><code class="language-toml">[env]
-VAR_1 = &quot;100&quot;
+MY_VAR = &quot;1&quot;
 # ...
 </code></pre>
+<h3 id="the-plugin-array"><a class="header" href="#the-plugin-array">The <code>[[plugin]]</code> array</a></h3>
+<h3 id="the-alias-field"><a class="header" href="#the-alias-field">The <code>alias</code> field</a></h3>
+<h3 id="the-summary-field-1"><a class="header" href="#the-summary-field-1">The <code>summary</code> field</a></h3>
+<h3 id="the-command-field"><a class="header" href="#the-command-field">The <code>command</code> field</a></h3>
+<h3 id="the-args-field"><a class="header" href="#the-args-field">The <code>args</code> field</a></h3>
+<h3 id="the-fileset-section"><a class="header" href="#the-fileset-section">The <code>[fileset]</code> section</a></h3>
+<h3 id="the-protocol-array"><a class="header" href="#the-protocol-array">The <code>[[protocol]]</code> array</a></h3>
+<h3 id="the-name-field-1"><a class="header" href="#the-name-field-1">The <code>name</code> field</a></h3>
+<!--
+## config.toml
+
+The first config file you may come across is `config.toml`. This file is used to load initial startup settings into orbit and customize a user's program experience.
+
+Here is a very minimal and basic example config file:
+``` toml
+include = ["profiles/ks-tech/config.toml"]
+
+[env]
+QUARTUS_PATH = "C:/IntelFPGA_lite/19.1/quartus/bin64"
+
+[[plugin]]
+alias = "zipr"
+summary = "Compress files into a submission-like format"
+command = "python"
+args = ["./main/plugins/zipr.py"]
+fileset.zip-list = "submission.txt"
+
+[[protocol]]
+name = "zip-op"
+summary = "Handle zip file urls"
+command = "python"
+args = ["./main/protocols/download.py"]
+```
+
+The __home configuration__ is the config.toml file located at your $ORBIT_HOME path.
+
+If you have `cat` installed, you can view your home config file in the console:
+```
+$ cat "$(orbit env ORBIT_HOME)/config.toml"
+```
+
+> __Tip:__ You can modify some values in the configuration file through the command-line by using the `orbit config` command.
+
+## Paths
+
+When specifying a value that is known to be a path, Orbit supports resolving relative paths in relation to the config.toml's path it is currently reading. This allows for a path value to be correct out-of-the-box across users and machines when sharing configurations.
+
+## Precedence
+
+Orbit supports multiple levels of configuration. The order of precedence:
+
+1. local configuration file (located in current IP)
+
+2. global configuration file (located in $ORBIT_HOME)
+
+3. configuration files listed in `include` entry (last has higher precedence than first)
+
+A key's value is overridden upon a configuration file of higher precedence also setting a previously defined key from a lower-precedence file.
+
+## Entries
+
+The following is a list of acceptable entries (key/value pairs) recognized by Orbit in configuration files (`config.toml`).
+
+
+### `include` : _list_ of _string_
+- paths to other configurations files to load before the home configuration
+- only supported in the home configuration file
+
+``` toml
+include = ["profiles/ks-tech/config.toml"]
+```
+
+### `[env]` : _table_
+- user-defined additional keys to set as runtime environment variables during build phase
+- the following example would set an environment variable ORBIT_ENV_VAR_1 as "100" during runtime
+
+``` toml
+[env]
+VAR_1 = "100"
+# ...
+```
+
 <!-- 
 ### `core.build-dir` : _string_
 - directory to create to save blueprint file to
@@ -1233,120 +1309,88 @@ user = "Kepler [KST-001]"
 date-fmt = "%B %e, %Y" # July 8, 2001
 # ...
 ``` 
--->
-<h3 id="plugin--array-of-tables"><a class="header" href="#plugin--array-of-tables"><code>[[plugin]]</code> : <em>array of tables</em></a></h3>
-<ul>
-<li><code>alias</code> : <em>string</em> 
-<ul>
-<li>plugin name to reference when invoking</li>
-<li>required</li>
-</ul>
-</li>
-<li><code>command</code> : <em>string</em>
-<ul>
-<li>first argument to pass to subprocess</li>
-<li>required</li>
-</ul>
-</li>
-<li><code>summary</code> : <em>string</em>
-<ul>
-<li>short description about the plugin</li>
-</ul>
-</li>
-<li><code>args</code> : <em>array</em> of <em>string</em>
-<ul>
-<li>additional arguments to follow command in subprocess</li>
-</ul>
-</li>
-<li><code>fileset</code> : <em>inline table</em>
-<ul>
-<li>user-defined additional keys to store glob-style file patterns</li>
-</ul>
-</li>
-<li><code>details</code> : <em>string</em>
-<ul>
-<li>long description about the plugin</li>
-</ul>
-</li>
-</ul>
-<pre><code class="language-toml">[[plugin]]
-alias   = &quot;vvd&quot;
-command = &quot;vivado&quot;
-summary = &quot;Basic toolflow for Vivado Design Suite&quot;
-args    = [&quot;-mode&quot;, &quot;batch&quot;, &quot;-source&quot;, &quot;script.tcl&quot;]
-fileset.EDA-FLOW    = &quot;*.tcl&quot;
-fileset.CONSTRAINTS = &quot;*.xdc&quot;
-details = &quot;&quot;&quot;\
+
+### `[[plugin]]` : _array of tables_
+- `alias` : _string_ 
+    - plugin name to reference when invoking
+    - required
+- `command` : _string_
+    - first argument to pass to subprocess
+    - required
+- `summary` : _string_
+    - short description about the plugin
+- `args` : _array_ of _string_
+    - additional arguments to follow command in subprocess  
+- `fileset` : _inline table_
+    - user-defined additional keys to store glob-style file patterns
+- `details` : _string_
+    - long description about the plugin
+
+``` toml
+[[plugin]]
+alias   = "vvd"
+command = "vivado"
+summary = "Basic toolflow for Vivado Design Suite"
+args    = ["-mode", "batch", "-source", "script.tcl"]
+fileset.EDA-FLOW    = "*.tcl"
+fileset.CONSTRAINTS = "*.xdc"
+details = """\
     This plugin runs Vivado in non-project mode to perform its tasks.
 
 Usage:
     orbit build --plugin vvd -- [options]
 
 Options:
-    -tclarg mode=&lt;num&gt;      0 - synth, 1 - impl, 2 - bit
+    -tclarg mode=<num>      0 - synth, 1 - impl, 2 - bit
 
 Environment:
     ORBIT_ENV_VIVADO_PATH   Local path to Vivado binaries   
 
 Dependencies:
     Vivado Design Suite (tested: 2019.2)
-&quot;&quot;&quot;
-</code></pre>
-<h3 id="protocol--array-of-tables"><a class="header" href="#protocol--array-of-tables"><code>[[protocol]]</code> : <em>array of tables</em></a></h3>
-<ul>
-<li><code>name</code> : <em>string</em> 
-<ul>
-<li>protocol name to reference in an IP's manifest</li>
-<li>required</li>
-</ul>
-</li>
-<li><code>command</code> : <em>string</em>
-<ul>
-<li>first argument to pass to subprocess</li>
-<li>required</li>
-</ul>
-</li>
-<li><code>summary</code> : <em>string</em>
-<ul>
-<li>short description about the protocol</li>
-<li>optional</li>
-</ul>
-</li>
-<li><code>args</code> : <em>array</em> of <em>string</em>
-<ul>
-<li>additional arguments to follow command in subprocess </li>
-<li>optional </li>
-</ul>
-</li>
-<li><code>details</code> : <em>string</em>
-<ul>
-<li>long description about the protocol</li>
-<li>optional</li>
-</ul>
-</li>
-</ul>
-<pre><code class="language-toml">[[protocol]]
-name = &quot;git-op&quot;
-summary = &quot;Fetch remote repositories using git&quot;
-command = &quot;git&quot;
-args = [&quot;clone&quot;, &quot;-b&quot;, &quot;{{ orbit.ip.version }}&quot;, &quot;{{ orbit.ip.source.url }}&quot;, &quot;{{ orbit.queue }}/{{ orbit.ip.name }}&quot;]
-details = &quot;&quot;&quot;\
+"""
+```
+
+### `[[protocol]]` : _array of tables_
+- `name` : _string_ 
+    - protocol name to reference in an IP's manifest
+    - required
+- `command` : _string_
+    - first argument to pass to subprocess
+    - required
+- `summary` : _string_
+    - short description about the protocol
+    - optional
+- `args` : _array_ of _string_
+    - additional arguments to follow command in subprocess 
+    - optional 
+- `details` : _string_
+    - long description about the protocol
+    - optional
+
+``` toml
+[[protocol]]
+name = "git-op"
+summary = "Fetch remote repositories using git"
+command = "git"
+args = ["clone", "-b", "{{ orbit.ip.version }}", "{{ orbit.ip.source.url }}", "{{ orbit.queue }}/{{ orbit.ip.name }}"]
+details = """\
 This protocol tries to clone a repository defined under the source URL at a tag 
 matching the IP's version.
 
 Examples:
     [ip]
     # ...
-    name = &quot;lab1&quot;
-    version = &quot;1.0.0&quot;
-    source = { protocol = &quot;git-op&quot;, url = &quot;https://github.com/path/to/lab1.git&quot; }
+    name = "lab1"
+    version = "1.0.0"
+    source = { protocol = "git-op", url = "https://github.com/path/to/lab1.git" }
     # ...
 
 Dependencies:
     git (tested: 2.36.0)
-&quot;&quot;&quot;
-</code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="commands"><a class="header" href="#commands">Commands</a></h1>
+"""
+```
+--><div style="break-before: page; page-break-before: always;"></div><h1 id="commands"><a class="header" href="#commands">Commands</a></h1>
 <p>Commands are loosely grouped into two types: development and management. The commands are listed below in their group and in a typical order of usage for a possible workflow.</p>
 <h2 id="development"><a class="header" href="#development">Development</a></h2>
 <ul>

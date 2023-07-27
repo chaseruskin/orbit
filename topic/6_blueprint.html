@@ -187,7 +187,7 @@ RULE
 <p><strong>Note:</strong> A literal tab character <code>\t</code> is used as &lt;TAB&gt;.</p>
 </blockquote>
 <p>The <em>fileset</em> is the name for a group of files to be commonly collected.</p>
-<p>The <em>identifier</em> can be 2 different values depending on the fileset context.</p>
+<p>The <em>identifier</em> can be one of two values depending on the fileset context.</p>
 <p>The <em>filepath</em> is the absolute path to the file found for the given fileset.</p>
 <p><em>example <code>blueprint.tsv</code> for a comparator IP:</em></p>
 <pre><code>XSIM-WCFG	comparator_tb	C:/users/kepler/develop/hdl/comparator/sim/wf/comparator_tb.wcfg
@@ -199,9 +199,11 @@ VHDL-SIM	work	C:/users/kepler/develop/hdl/comparator/sim/comparator_tb.vhd
 </code></pre>
 <h2 id="filesets"><a class="header" href="#filesets">Filesets</a></h2>
 <p>A fileset's name is normalized to ALL-UPPERCASE-WITH-HYPHENS-NOT-UNDERSCORES. This makes it consistent across plugins when reading the <code>blueprint.tsv</code>.</p>
-<p><em>example fileset name normalization:</em></p>
-<pre><code>py_model --{normalization}-&gt; PY-MODEL
-</code></pre>
+<div class="table-wrapper"><table><thead><tr><th>Fileset</th><th>Normalized Fileset</th></tr></thead><tbody>
+<tr><td>py_model</td><td>PY-MODEL</td></tr>
+<tr><td>do-file</td><td>DO-FILE</td></tr>
+</tbody></table>
+</div>
 <h3 id="built-in-filesets"><a class="header" href="#built-in-filesets">Built-in Filesets</a></h3>
 <p>Built-in filesets are called <strong>HDL filesets</strong>. These currently include: </p>
 <ul>

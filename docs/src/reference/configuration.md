@@ -1,9 +1,80 @@
 # Configuration
 
-The configuration data Orbit processes is stored in TOML files. TOML files have a file extension `.toml` and store key-value pairs. To learn more about TOML files, visit their [website](https://toml.io/en/).
+The `config.toml` file stores settings and extends `orbit`'s functionality. It is written in the [TOML](https://toml.io/en/) format. It is maintained by the developer and can be shared across teams for consistent development environments.
 
-> __Note:__ Throughout this page, an __entry__ refers to a key-value pair.
+> __Note:__ The configuration's file name is "config.toml", with respect to case-sensitivity.
 
+## Paths
+
+When a field is expected to be a filesystem path, `orbit` has the ability to resolve relative paths. The path is determined in relation to the currently processed `config.toml`'s parent directory. This design choice was implemented in order to allow for path definitions to be valid across developer machines when sharing configurations.
+
+## Precedence
+
+Orbit supports multiple levels of configuration. Each level has its own order of precedence:
+
+1. Local configuration file (location: CWIP)
+
+2. Global configuration file (location: `$ORBIT_HOME`)
+
+3. Configuration files listed in the global `config.toml`'s [`include`](#the-include-field) (items farther in the list have a higher precedence than items earlier in the list)
+
+A field is overridden when a configuration file of higher precedence also defines the same field.
+
+> __Tip:__ You can modify some values in the configuration file through the command-line by using the `orbit config` command.
+
+Every configuration file consists of the following sections:
+
+- [include](#the-include-field) - Lists other `config.toml` files to process.
+- [[general]](#the-general-section) - The general settings.
+- [[env]](#the-env-section) - The runtime environment variables.
+- [[[plugin]]](#the-plugin-array) - Define a plugin.
+    - [alias](#the-alias-field) - The name of the plugin.
+    - [summary](#the-summary-field) - A short description of the plugin.
+    - [command](#the-command-field) - The command to execute the plugin.
+    - [args](#the-args-field) - Arguments to pass to the command.
+    - [[fileset]](#the-fileset-section) - Filesets to collect for the plugin.
+- [[protocol]](#the-protocol-array) - Define a protocol.
+    - [name](#the-alias-field) - The name of the protocol.
+    - [summary](#the-summary-field) - A short description of the protocol.
+    - [command](#the-command-field) - The command to execute the protocol.
+    - [args](#the-args-field) - Arguments to pass to the command.
+
+### The `include` field
+
+``` toml
+include = [
+    "profiles/p1/config.toml",
+    "profiles/p2/config.toml"
+]
+```
+
+### The `[general]` section
+
+### The `[env]` section
+
+``` toml
+[env]
+MY_VAR = "1"
+# ...
+```
+
+### The `[[plugin]]` array
+
+### The `alias` field
+
+### The `summary` field
+
+### The `command` field
+
+### The `args` field
+
+### The `[fileset]` section
+
+### The `[[protocol]]` array
+
+### The `name` field
+
+<!--
 ## config.toml
 
 The first config file you may come across is `config.toml`. This file is used to load initial startup settings into orbit and customize a user's program experience.
@@ -108,7 +179,6 @@ user = "Kepler [KST-001]"
 date-fmt = "%B %e, %Y" # July 8, 2001
 # ...
 ``` 
--->
 
 ### `[[plugin]]` : _array of tables_
 - `alias` : _string_ 
@@ -190,3 +260,4 @@ Dependencies:
     git (tested: 2.36.0)
 """
 ```
+-->

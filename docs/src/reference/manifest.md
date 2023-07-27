@@ -2,7 +2,7 @@
 
 The `Orbit.toml` file for each IP is called its manifest. It is written in the [TOML](https://toml.io/en/) format. It is maintained by the developer and contains metadata that is needed to build the IP.
 
-> __Note:__ The manifest's file name must exactly match the spelling "Orbit.toml", including case-sensitivity.
+> __Note:__ The manifest's file name is "Orbit.toml", with respect to case-sensitivity.
 
 Every manifest file consists of the following sections:
 

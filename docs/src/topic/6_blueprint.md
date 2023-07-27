@@ -25,7 +25,7 @@ RULE ::= <FILESET><TAB><IDENTIFIER><TAB><FILEPATH>
 
 The _fileset_ is the name for a group of files to be commonly collected.
 
-The _identifier_ can be 2 different values depending on the fileset context.
+The _identifier_ can be one of two values depending on the fileset context.
 
 The _filepath_ is the absolute path to the file found for the given fileset.
 
@@ -43,10 +43,10 @@ VHDL-SIM	work	C:/users/kepler/develop/hdl/comparator/sim/comparator_tb.vhd
 
 A fileset's name is normalized to ALL-UPPERCASE-WITH-HYPHENS-NOT-UNDERSCORES. This makes it consistent across plugins when reading the `blueprint.tsv`.
 
-_example fileset name normalization:_
-```
-py_model --{normalization}-> PY-MODEL
-```
+| Fileset  | Normalized Fileset |
+| -------- | ------------------ |
+| py_model | PY-MODEL           |
+| do-file  | DO-FILE            |
 
 ### Built-in Filesets
 

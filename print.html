@@ -1437,7 +1437,7 @@ orbit new ./projects/lab1 --name adder
 <h2 id="name-1"><a class="header" href="#name-1"><strong>NAME</strong></a></h2>
 <p>init - initialize an ip from an existing project</p>
 <h2 id="synopsis-1"><a class="header" href="#synopsis-1"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit init [options] [path]
+<pre><code>orbit init [options] [&lt;path&gt;]
 </code></pre>
 <h2 id="description-1"><a class="header" href="#description-1"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will initialize a new ip at the target directory [path]. If no path
@@ -1447,7 +1447,7 @@ of the path argument. Use the name option to provide a custom name.</p>
 <p>This command fails if the path does not exist. See the 'new' command for
 creating an ip from a non-existing directory.</p>
 <h2 id="options-1"><a class="header" href="#options-1"><strong>OPTIONS</strong></a></h2>
-<p><code>[path]</code><br />
+<p><code>&lt;path&gt;</code><br />
       The location to initialize an ip</p>
 <p><code>--name &lt;name&gt;</code><br />
       The name of the ip</p>
@@ -1458,13 +1458,42 @@ creating an ip from a non-existing directory.</p>
 orbit init ./projects/lab1
 orbit init --name hello_world
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-read"><a class="header" href="#orbit-read"><strong>orbit read</strong></a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-show"><a class="header" href="#orbit-show"><strong>orbit show</strong></a></h1>
 <h2 id="name-2"><a class="header" href="#name-2"><strong>NAME</strong></a></h2>
-<p>read - inspect hdl source code files</p>
+<p>show - print information about an ip</p>
 <h2 id="synopsis-2"><a class="header" href="#synopsis-2"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit read [options] &lt;unit&gt;
+<pre><code>orbit show [options] [&lt;ip&gt;]
 </code></pre>
 <h2 id="description-2"><a class="header" href="#description-2"><strong>DESCRIPTION</strong></a></h2>
+<p>This command retrieves various pieces of information about a particular ip to
+gain a better understanding of how to utilize the ip. By default, it displays
+the ip's manifest, if and only if the ip is able to be located.</p>
+<p>It will first attempt to return the information from a possible installation. If
+one does not exist, then it searches the downloads location for the ip.</p>
+<p>If '--units' is specified, then a list of the ip's HDL units are displayed.</p>
+<p>If '--versions' is specified, then a list of the ip's already available versions
+are displayed.</p>
+<p>If no spec is provided for 'ip', then it will retrieve information based on the
+current working ip, if exists.</p>
+<h2 id="options-2"><a class="header" href="#options-2"><strong>OPTIONS</strong></a></h2>
+<p><code>&lt;ip&gt;</code><br />
+      The spec of the ip to query</p>
+<p><code>--versions</code><br />
+      Display the list of possible versions</p>
+<p><code>--units</code><br />
+      Display the list of HDL primary design units associated with this ip</p>
+<h2 id="examples-2"><a class="header" href="#examples-2"><strong>EXAMPLES</strong></a></h2>
+<pre><code>orbit show --units
+orbit show gates:1.0.0 --units
+orbit show gates --versions
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-read"><a class="header" href="#orbit-read"><strong>orbit read</strong></a></h1>
+<h2 id="name-3"><a class="header" href="#name-3"><strong>NAME</strong></a></h2>
+<p>read - inspect hdl source code files</p>
+<h2 id="synopsis-3"><a class="header" href="#synopsis-3"><strong>SYNOPSIS</strong></a></h2>
+<pre><code>orbit read [options] &lt;unit&gt;
+</code></pre>
+<h2 id="description-3"><a class="header" href="#description-3"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will open a primary design units source code file for
 examination in a text editor. If the unit is from the current ip, then it
 will return the direct reference to the file. If the unit comes from 
@@ -1480,7 +1509,7 @@ the filepath becomes <code>&lt;file&gt;:&lt;line&gt;:col</code>.</p>
 the source code filepath as an argument to the configured editor. If the
 mode is 'path', then the editor is ignored and the filepath is output to
 stdout.</p>
-<h2 id="options-2"><a class="header" href="#options-2"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-3"><a class="header" href="#options-3"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;unit&gt;</code><br />
       The primary design unit identifier to access</p>
 <p><code>--ip, &lt;pkgid&gt;</code><br />
@@ -1495,17 +1524,17 @@ stdout.</p>
       Select how to read the file: options are 'open' or 'path'</p>
 <p><code>--no-clean</code><br />
       Keep previously read files existing</p>
-<h2 id="examples-2"><a class="header" href="#examples-2"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-3"><a class="header" href="#examples-3"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit read and_gate --ip ks-tech.rary.gates -v 1.0.0
 orbit read multiplier --editor code --no-clean
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-get"><a class="header" href="#orbit-get"><strong>orbit get</strong></a></h1>
-<h2 id="name-3"><a class="header" href="#name-3"><strong>NAME</strong></a></h2>
+<h2 id="name-4"><a class="header" href="#name-4"><strong>NAME</strong></a></h2>
 <p>get - pull in an hdl entity to use</p>
-<h2 id="synopsis-3"><a class="header" href="#synopsis-3"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-4"><a class="header" href="#synopsis-4"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit get [options] &lt;unit&gt;
 </code></pre>
-<h2 id="description-3"><a class="header" href="#description-3"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-4"><a class="header" href="#description-4"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will add the requested ip as a dependency to the current 
 project. It will grab information about the primary design unit to copy and
 paste into the current project.</p>
@@ -1516,7 +1545,7 @@ display the direct instantiation style code (VHDL-93 feature).</p>
 <p>By default the ip associated with the target entity is not added under the 
 current ip manifest dependency table. The ip can be written with the 
 <code>--add</code> flag.</p>
-<h2 id="options-3"><a class="header" href="#options-3"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-4"><a class="header" href="#options-4"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;unit&gt;</code><br />
       The entity identifier to access</p>
 <p><code>--variant, -v &lt;version&gt;</code><br />
@@ -1537,17 +1566,17 @@ current ip manifest dependency table. The ip can be written with the
       Write the referenced ip to the current Orbit.toml dependency table</p>
 <p><code>--name &lt;identifier&gt;</code><br />
       Specific instance identifier</p>
-<h2 id="examples-3"><a class="header" href="#examples-3"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-4"><a class="header" href="#examples-4"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit get nor_gate --ip ks-tech.rary.gates -csi
 orbit get alert_unit --ip ks-tech.util.toolbox --add -v 1.0
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-tree"><a class="header" href="#orbit-tree"><strong>orbit tree</strong></a></h1>
-<h2 id="name-4"><a class="header" href="#name-4"><strong>NAME</strong></a></h2>
+<h2 id="name-5"><a class="header" href="#name-5"><strong>NAME</strong></a></h2>
 <p>tree - view the dependency graph</p>
-<h2 id="synopsis-4"><a class="header" href="#synopsis-4"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-5"><a class="header" href="#synopsis-5"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit tree [options]
 </code></pre>
-<h2 id="description-4"><a class="header" href="#description-4"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-5"><a class="header" href="#description-5"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will show the hierarchical tree-structure starting from a node.
 By default, Orbit will attempt to automatically detect the root if it is
 unambiguous.</p>
@@ -1559,7 +1588,7 @@ file.</p>
 <p>The hdl tree does not show how many times an entity is instantiated within 
 a parent entity, and all architectures for each entity are analyzed.</p>
 <p>To view the ip dependency tree, use <code>--ip</code>.</p>
-<h2 id="options-4"><a class="header" href="#options-4"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-5"><a class="header" href="#options-5"><strong>OPTIONS</strong></a></h2>
 <p><code>--root &lt;entity&gt;</code><br />
       Top-level entity identifier to mark as the root node</p>
 <p><code>--compress</code><br />
@@ -1572,17 +1601,17 @@ a parent entity, and all architectures for each entity are analyzed.</p>
       Restricts characters to original 128 ascii set</p>
 <p><code>--ip</code><br />
       View the ip-level dependency graph</p>
-<h2 id="examples-4"><a class="header" href="#examples-4"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-5"><a class="header" href="#examples-5"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit tree --root nor_gate
 orbit tree --ip
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-plan"><a class="header" href="#orbit-plan"><strong>orbit plan</strong></a></h1>
-<h2 id="name-5"><a class="header" href="#name-5"><strong>NAME</strong></a></h2>
+<h2 id="name-6"><a class="header" href="#name-6"><strong>NAME</strong></a></h2>
 <p>plan - generate a blueprint file</p>
-<h2 id="synopsis-5"><a class="header" href="#synopsis-5"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-6"><a class="header" href="#synopsis-6"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit plan [options]
 </code></pre>
-<h2 id="description-5"><a class="header" href="#description-5"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-6"><a class="header" href="#description-6"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will set up the current ip for build processes. It will collect
 all necessary files according to their defined fileset into the 
 blueprint.tsv file.</p>
@@ -1607,7 +1636,7 @@ scratch, use <code>--force</code>.</p>
 a toplevel or testbench to be determined. The <code>--lock-only</code> flag can be
 combined with <code>--force</code> to overwrite the lockfile regardless if it is
 already in sync with the current working ip's manifest data.</p>
-<h2 id="options-5"><a class="header" href="#options-5"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-6"><a class="header" href="#options-6"><strong>OPTIONS</strong></a></h2>
 <p><code>--top &lt;unit&gt;</code><br />
       The top level entity to explicitly define</p>
 <p><code>--bench &lt;tb&gt;</code><br />
@@ -1628,18 +1657,18 @@ already in sync with the current working ip's manifest data.</p>
       Create the lock file and exit</p>
 <p><code>--all</code><br />
       Include all locally found HDL files</p>
-<h2 id="examples-5"><a class="header" href="#examples-5"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-6"><a class="header" href="#examples-6"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit plan --top and_gate --fileset PIN-PLAN=&quot;*.board&quot;
 orbit plan --plugin vivado --clean --bench ram_tb
 orbit plan --lock-only
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-build"><a class="header" href="#orbit-build"><strong>orbit build</strong></a></h1>
-<h2 id="name-6"><a class="header" href="#name-6"><strong>NAME</strong></a></h2>
+<h2 id="name-7"><a class="header" href="#name-7"><strong>NAME</strong></a></h2>
 <p>build - execute a plugin/backend tool flow</p>
-<h2 id="synopsis-6"><a class="header" href="#synopsis-6"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-7"><a class="header" href="#synopsis-7"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit build [options] [--] [args]...
 </code></pre>
-<h2 id="description-6"><a class="header" href="#description-6"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-7"><a class="header" href="#description-7"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will call a user-defined command or plugin. A plugin should
 typically require a blueprint.tsv to be generated. The command also
 should read the data from the blueprint, and then process that data
@@ -1648,7 +1677,7 @@ should read the data from the blueprint, and then process that data
 for future build commands. It will be the default plugin to use if no
 <code>--plugin</code> or <code>--command</code> is entered for the given command.</p>
 <p>The command invoked will be ran from the ip's root directory.</p>
-<h2 id="options-6"><a class="header" href="#options-6"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-7"><a class="header" href="#options-7"><strong>OPTIONS</strong></a></h2>
 <p><code>--plugin &lt;alias&gt;</code><br />
       Plugin to execute</p>
 <p><code>--command &lt;cmd&gt;</code><br />
@@ -1661,18 +1690,18 @@ for future build commands. It will be the default plugin to use if no
       Display the command being executed</p>
 <p><code>-- args...</code><br />
       Arguments to pass to the requested plugin</p>
-<h2 id="examples-6"><a class="header" href="#examples-6"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-7"><a class="header" href="#examples-7"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit build --plugin xsim -- --waves
 orbit build --command python -- ./tools/synth.py --part x70
 orbit build --verbose
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-launch"><a class="header" href="#orbit-launch"><strong>orbit launch</strong></a></h1>
-<h2 id="name-7"><a class="header" href="#name-7"><strong>NAME</strong></a></h2>
+<h2 id="name-8"><a class="header" href="#name-8"><strong>NAME</strong></a></h2>
 <p>launch - release an ip's next version </p>
-<h2 id="synopsis-7"><a class="header" href="#synopsis-7"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-8"><a class="header" href="#synopsis-8"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit launch [options]
 </code></pre>
-<h2 id="description-7"><a class="header" href="#description-7"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-8"><a class="header" href="#description-8"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will perform a series of checks against the current ip to 
 verify it is able to release a new version and the tag the latest git 
 commit with the next version number. </p>
@@ -1687,7 +1716,7 @@ Orbit.toml. To write a custom message for this commit, include the
 '--message &lt;message&gt;' option.</p>
 <p>The '--next &lt;version&gt;' option will go off of the previous version defined
 in the Orbit.toml manifest to determine the next increment. </p>
-<h2 id="options-7"><a class="header" href="#options-7"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-8"><a class="header" href="#options-8"><strong>OPTIONS</strong></a></h2>
 <p><code>--ready</code><br />
       perform a real run through the launch process</p>
 <p><code>--next &lt;version&gt;</code><br />
@@ -1696,23 +1725,23 @@ in the Orbit.toml manifest to determine the next increment. </p>
       override the default Orbit commit message when using '--next'</p>
 <p><code>--no-install</code><br />
       skip installing the newly launched version to the cache</p>
-<h2 id="examples-7"><a class="header" href="#examples-7"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-8"><a class="header" href="#examples-8"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit launch --next 1.0.0
 orbit launch --next major --ready
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-search"><a class="header" href="#orbit-search"><strong>orbit search</strong></a></h1>
-<h2 id="name-8"><a class="header" href="#name-8"><strong>NAME</strong></a></h2>
+<h2 id="name-9"><a class="header" href="#name-9"><strong>NAME</strong></a></h2>
 <p>search - browse the ip catalog</p>
-<h2 id="synopsis-8"><a class="header" href="#synopsis-8"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-9"><a class="header" href="#synopsis-9"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit search [options] [&lt;pkgid&gt;]
 </code></pre>
-<h2 id="description-8"><a class="header" href="#description-8"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-9"><a class="header" href="#description-9"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will search for all ip defined by Orbit in the catalog from all
 3 state: development, installation, and available. You can control what 
 states to search for with <code>--develop</code>, <code>--install</code>, and <code>--available</code> flags.</p>
 <p>An optional pkgid can also be provided to narrow results even further. Pkgid 
 fields can be omitted by entering an empty value.</p>
-<h2 id="options-8"><a class="header" href="#options-8"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-9"><a class="header" href="#options-9"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;pkgid&gt;</code><br />
       Identifiers to filter under vendory.library.name</p>
 <p><code>--install, -i</code><br />
@@ -1721,19 +1750,19 @@ fields can be omitted by entering an empty value.</p>
       Filter for ip in-development within the orbit path</p>
 <p><code>--available, -a</code><br />
       Filter for ip available via registries</p>
-<h2 id="examples-8"><a class="header" href="#examples-8"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-9"><a class="header" href="#examples-9"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit search --develop --install --available
 orbit search rary. -i
 orbit search gates -ia
 orbit search ks-tecth.rary.gates -d
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-download"><a class="header" href="#orbit-download"><strong>orbit download</strong></a></h1>
-<h2 id="name-9"><a class="header" href="#name-9"><strong>NAME</strong></a></h2>
+<h2 id="name-10"><a class="header" href="#name-10"><strong>NAME</strong></a></h2>
 <p>download - fetch packages from the internet</p>
-<h2 id="synopsis-9"><a class="header" href="#synopsis-9"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-10"><a class="header" href="#synopsis-10"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit download [options]
 </code></pre>
-<h2 id="description-9"><a class="header" href="#description-9"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-10"><a class="header" href="#description-10"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will get a package from the internet using the default protocol
 or a user-defined protocol. It places the package in the path defined as
 environment variable ORBIT_DOWNLOADS.</p>
@@ -1755,7 +1784,7 @@ fields for a protocol. Most notably, the queue is accessed as {{ orbit.queue }}.
 See <code>orbit help protocols</code> for more information about available variables.</p>
 <p>This action may automatically run during an install if the package is missing
 from the downloads. See <code>orbit help install</code> for more details.</p>
-<h2 id="options-9"><a class="header" href="#options-9"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-10"><a class="header" href="#options-10"><strong>OPTIONS</strong></a></h2>
 <p><code>--list</code><br />
       Print URLs and exit</p>
 <p><code>--missing</code><br />
@@ -1768,17 +1797,17 @@ from the downloads. See <code>orbit help install</code> for more details.</p>
       Display the custom protocol being executed</p>
 <p><code>--force</code><br />
       Download selected packages regardless of status</p>
-<h2 id="examples-9"><a class="header" href="#examples-9"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-10"><a class="header" href="#examples-10"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit download --missing --list
 orbit download --all --force
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-install"><a class="header" href="#orbit-install"><strong>orbit install</strong></a></h1>
-<h2 id="name-10"><a class="header" href="#name-10"><strong>NAME</strong></a></h2>
+<h2 id="name-11"><a class="header" href="#name-11"><strong>NAME</strong></a></h2>
 <p>install - store an immutable reference to an ip</p>
-<h2 id="synopsis-10"><a class="header" href="#synopsis-10"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-11"><a class="header" href="#synopsis-11"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit install [options]
 </code></pre>
-<h2 id="description-10"><a class="header" href="#description-10"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-11"><a class="header" href="#description-11"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will get move an ip's project folder to the cache. By default,
 the specified version is the 'latest' released version orbit can
 identify.</p>
@@ -1792,7 +1821,7 @@ development. Versions are recognized by Orbit as git tags following the
 semver specification (major.minor.patch).</p>
 <p>Development versions ('dev') are not allowed to be installed to the cache
 because they are considered mutable.</p>
-<h2 id="options-10"><a class="header" href="#options-10"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-11"><a class="header" href="#options-11"><strong>OPTIONS</strong></a></h2>
 <p><code>--path &lt;path&gt;</code><br />
       Directory to install ip from to place in the cache</p>
 <p><code>--ip &lt;name&gt;</code><br />
@@ -1801,39 +1830,39 @@ because they are considered mutable.</p>
       Install the ip regardless of the cache slot occupancy</p>
 <p><code>--all</code><br />
       Install all dependencies (including developmental)</p>
-<h2 id="examples-10"><a class="header" href="#examples-10"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-11"><a class="header" href="#examples-11"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit install&quot;
 orbit install --path ./projects/ram --force 
 orbit install --all
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-env"><a class="header" href="#orbit-env"><strong>orbit env</strong></a></h1>
-<h2 id="name-11"><a class="header" href="#name-11"><strong>NAME</strong></a></h2>
+<h2 id="name-12"><a class="header" href="#name-12"><strong>NAME</strong></a></h2>
 <p>env - print orbit environment information</p>
-<h2 id="synopsis-11"><a class="header" href="#synopsis-11"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-12"><a class="header" href="#synopsis-12"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit env [options]
 </code></pre>
-<h2 id="description-11"><a class="header" href="#description-11"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-12"><a class="header" href="#description-12"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will print environment information set by Orbit during runtime.
 By default, it will display all known information in the current 
 environment. </p>
 <p>Optionally passing in keys will print the value's back in the
 order they were accepted on the command line. If a variable does not exist,
 it will print an empty line.</p>
-<h2 id="options-11"><a class="header" href="#options-11"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-12"><a class="header" href="#options-12"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;key&gt;...</code><br />
       Environment variable keys to request to print</p>
-<h2 id="examples-11"><a class="header" href="#examples-11"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-12"><a class="header" href="#examples-12"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit env
 orbit env ORBIT_HOME
 orbit env ORBIT_DEV_PATH ORBIT_HOME
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-config"><a class="header" href="#orbit-config"><strong>orbit config</strong></a></h1>
-<h2 id="name-12"><a class="header" href="#name-12"><strong>NAME</strong></a></h2>
+<h2 id="name-13"><a class="header" href="#name-13"><strong>NAME</strong></a></h2>
 <p>config - modify configuration values</p>
-<h2 id="synopsis-12"><a class="header" href="#synopsis-12"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-13"><a class="header" href="#synopsis-13"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit config [options]
 </code></pre>
-<h2 id="description-12"><a class="header" href="#description-12"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-13"><a class="header" href="#description-13"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will alter configuration entries in Orbit's settings file named
 <code>config.toml</code>. By default, it will modify the user's config located at
 $ORBIT_HOME.</p>
@@ -1842,7 +1871,7 @@ intermediate table identifiers and the final key identifier.</p>
 <p>The command modifies the document in three independent stages. The first stage
 modifies the settings by iterating through all defined <code>--append</code> values. Then, 
 it will insert all <code>--set</code> values. Lastly, it will remove all <code>--unset</code> entries.</p>
-<h2 id="options-12"><a class="header" href="#options-12"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-13"><a class="header" href="#options-13"><strong>OPTIONS</strong></a></h2>
 <p><code>--global</code><br />
       Access the home configuration file</p>
 <p><code>--local</code><br />
@@ -1853,25 +1882,25 @@ it will insert all <code>--set</code> values. Lastly, it will remove all <code>-
       Write the value at the key's entry</p>
 <p><code>--unset &lt;key&gt;...</code><br />
       Delete the key's entry</p>
-<h2 id="examples-12"><a class="header" href="#examples-12"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-13"><a class="header" href="#examples-13"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit config --append include=&quot;~/.orbit/profiles/ks-tech&quot;
 orbit config --unset env.VIVADO_PATH --global
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-uninstall"><a class="header" href="#orbit-uninstall"><strong>orbit uninstall</strong></a></h1>
-<h2 id="name-13"><a class="header" href="#name-13"><strong>NAME</strong></a></h2>
+<h2 id="name-14"><a class="header" href="#name-14"><strong>NAME</strong></a></h2>
 <p>uninstall - remove an ip from the catalog</p>
-<h2 id="synopsis-13"><a class="header" href="#synopsis-13"><strong>SYNOPSIS</strong></a></h2>
+<h2 id="synopsis-14"><a class="header" href="#synopsis-14"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit uninstall [options] &lt;ip&gt;
 </code></pre>
-<h2 id="description-13"><a class="header" href="#description-13"><strong>DESCRIPTION</strong></a></h2>
+<h2 id="description-14"><a class="header" href="#description-14"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will delete the project directory of an IP. By default, Orbit
 will delete the IP found on the DEV_PATH.</p>
-<h2 id="options-13"><a class="header" href="#options-13"><strong>OPTIONS</strong></a></h2>
+<h2 id="options-14"><a class="header" href="#options-14"><strong>OPTIONS</strong></a></h2>
 <p><code>--variant, -v &lt;version&gt;</code><br />
       Access the settings to the home configuration file</p>
 <p><code>--force</code><br />
       Remove the ip regardless of conditions</p>
-<h2 id="examples-13"><a class="header" href="#examples-13"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-14"><a class="header" href="#examples-14"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit uninstall kepler.rary.gates -v dev
 orbit uninstall kepler.util.toolbox --variant 2.1
 </code></pre>

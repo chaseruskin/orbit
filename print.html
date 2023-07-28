@@ -1419,12 +1419,12 @@ Dependencies:
 <pre><code>orbit new [options] &lt;path&gt;
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will create a new ip at the target directory &lt;path&gt;. The command
+<p>This command will create a new ip at the target directory <code>&lt;path&gt;</code>. The command
 assumes the path does not already exists. It will attempt to create a new 
 directory at the destination with a manifest. </p>
 <p>If no name is supplied, then the ip's name defaults to the final path component
 of the path argument. Use the name option to provide a custom name.</p>
-<p>This command fails if the path already exists. See the 'init' command for
+<p>This command fails if the path already exists. See the <code>init</code> command for
 initializing an already existing project into an ip.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;path&gt;</code><br />
@@ -1442,11 +1442,11 @@ orbit new ./projects/dir7 --name adder
 <pre><code>orbit init [options] [&lt;path&gt;]
 </code></pre>
 <h2 id="description-1"><a class="header" href="#description-1"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will initialize a new ip at the target directory [path]. If no path
+<p>This command will initialize a new ip at the target directory <code>&lt;path&gt;</code>. If no path
 is supplied, then it defaults to the current working directory.</p>
 <p>If no name is supplied, then the ip's name defaults to the final path component
 of the path argument. Use the name option to provide a custom name.</p>
-<p>This command fails if the path does not exist. See the 'new' command for
+<p>This command fails if the path does not exist. See the <code>new</code> command for
 creating an ip from a non-existing directory.</p>
 <h2 id="options-1"><a class="header" href="#options-1"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;path&gt;</code><br />
@@ -1472,10 +1472,10 @@ gain a better understanding of how to utilize the ip. By default, it displays
 the ip's manifest, if and only if the ip is able to be located.</p>
 <p>It will first attempt to return the information from a possible installation. If
 one does not exist, then it searches the downloads location for the ip.</p>
-<p>If '--units' is specified, then a list of the ip's HDL units are displayed.</p>
-<p>If '--versions' is specified, then a list of the ip's already available versions
+<p>If <code>--units</code> is specified, then a list of the ip's HDL units are displayed.</p>
+<p>If <code>--versions</code> is specified, then a list of the ip's already available versions
 are displayed.</p>
-<p>If no spec is provided for 'ip', then it will retrieve information based on the
+<p>If no spec is provided for <code>&lt;ip&gt;</code>, then it will retrieve information based on the
 current working ip, if exists.</p>
 <h2 id="options-2"><a class="header" href="#options-2"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;ip&gt;</code><br />
@@ -1499,18 +1499,18 @@ orbit show gates --versions
 <p>This command allows the user to navigate source code to gain a quicker
 understanding of the available code. By default, it will display the code to the
 console.</p>
-<p>If no ip specification is provided through the '--ip' option, then it will
+<p>If no ip specification is provided through the <code>--ip</code> option, then it will
 assume to search the current working ip, if it exists.</p>
-<p>If '--file' is provided, then the source code will be written to a temporary
+<p>If <code>--file</code> is provided, then the source code will be written to a temporary
 read-only file. Also providing '--location' in this context will append the
 requested code segment's line and column number to the end of the generated
 filepath.</p>
-<p>The options '--start', '--end', and '--doc' all accept valid VHDL code to
-search for in the identified source code file. The '--doc' option will find the
+<p>The options <code>--start</code>, <code>--end</code>, and <code>--doc</code> all accept valid VHDL code to
+search for in the identified source code file. The <code>--doc</code> option will find the
 immediate single-line comments preceding the supplied code value.</p>
-<p>The 'read' command attempts to clean the temporary directory at every call to
+<p>The <code>read</code> command attempts to clean the temporary directory at every call to
 it. To keep existing files alive while allowing new files to appear, use the
-'--keep' flag.</p>
+<code>--keep</code> flag.</p>
 <h2 id="options-3"><a class="header" href="#options-3"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;unit&gt;</code><br />
       Primary design unit identifier</p>
@@ -1522,7 +1522,7 @@ it. To keep existing files alive while allowing new files to appear, use the
       Append the targeted code segment's line and column number to the resulting filepath </p>
 <p><code>--keep</code><br />
       Do not clean the temporary directory of existing files</p>
-<p><code>--limit &lt;limit&gt;</code><br />
+<p><code>--limit &lt;num&gt;</code><br />
       Set a maximum number of lines to write</p>
 <p><code>--start &lt;code&gt;</code><br />
       Start the code navigation upon matching this VHDL segment</p>
@@ -1778,7 +1778,7 @@ rely on accessing the internet to get IP. Downloads allow Orbit to quickly
 repair broken installations and allow users to learn about IP before installing.</p>
 <p>When using a custom protocol, Orbit expects the final fetched repository to
 exist within a special directory called the queue. By default, the queue is set
-to a temporary directory, but it can be overridden with <code>--queue \&lt;dir&gt;</code>. After a 
+to a temporary directory, but it can be overridden with <code>--queue &lt;dir&gt;</code>. After a 
 protocol is executed, Orbit resumes the download process by trying to detect the 
 target IP and then performing a compression algorithm on the path to store as a 
 single file archive. This final archive is special and packed with additional 

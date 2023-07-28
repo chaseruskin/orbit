@@ -179,18 +179,18 @@
 <p>This command allows the user to navigate source code to gain a quicker
 understanding of the available code. By default, it will display the code to the
 console.</p>
-<p>If no ip specification is provided through the '--ip' option, then it will
+<p>If no ip specification is provided through the <code>--ip</code> option, then it will
 assume to search the current working ip, if it exists.</p>
-<p>If '--file' is provided, then the source code will be written to a temporary
+<p>If <code>--file</code> is provided, then the source code will be written to a temporary
 read-only file. Also providing '--location' in this context will append the
 requested code segment's line and column number to the end of the generated
 filepath.</p>
-<p>The options '--start', '--end', and '--doc' all accept valid VHDL code to
-search for in the identified source code file. The '--doc' option will find the
+<p>The options <code>--start</code>, <code>--end</code>, and <code>--doc</code> all accept valid VHDL code to
+search for in the identified source code file. The <code>--doc</code> option will find the
 immediate single-line comments preceding the supplied code value.</p>
-<p>The 'read' command attempts to clean the temporary directory at every call to
+<p>The <code>read</code> command attempts to clean the temporary directory at every call to
 it. To keep existing files alive while allowing new files to appear, use the
-'--keep' flag.</p>
+<code>--keep</code> flag.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;unit&gt;</code><br />
       Primary design unit identifier</p>
@@ -202,7 +202,7 @@ it. To keep existing files alive while allowing new files to appear, use the
       Append the targeted code segment's line and column number to the resulting filepath </p>
 <p><code>--keep</code><br />
       Do not clean the temporary directory of existing files</p>
-<p><code>--limit &lt;limit&gt;</code><br />
+<p><code>--limit &lt;num&gt;</code><br />
       Set a maximum number of lines to write</p>
 <p><code>--start &lt;code&gt;</code><br />
       Start the code navigation upon matching this VHDL segment</p>

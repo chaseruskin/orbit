@@ -22,7 +22,7 @@ repair broken installations and allow users to learn about IP before installing.
 
 When using a custom protocol, Orbit expects the final fetched repository to
 exist within a special directory called the queue. By default, the queue is set
-to a temporary directory, but it can be overridden with `--queue <dir>`. After a 
+to a temporary directory, but it can be overridden with `--queue \<dir>`. After a 
 protocol is executed, Orbit resumes the download process by trying to detect the 
 target IP and then performing a compression algorithm on the path to store as a 
 single file archive. This final archive is special and packed with additional 

@@ -17,11 +17,13 @@ This command fails if the path already exists. See the 'init' command for
 initializing an already existing project into an ip.
 """
 
+option."<path>" = "The new directory to make"
+
 option."--name <name>" = "The ip name to create"
 
 examples = """
 orbit new gates
-orbit new ./projects/lab1 --name adder
+orbit new ./projects/dir7 --name adder
 """
 
 # ------------------------------------------------------------------------------
@@ -48,7 +50,7 @@ option."--force" = "Overwrite a manifest if one already exists"
 
 examples = """
 orbit init
-orbit init ./projects/lab1
+orbit init ./projects/gates
 orbit init --name hello_world
 """
 
@@ -89,7 +91,48 @@ orbit show gates --versions
 # ------------------------------------------------------------------------------
 # read          
 # ------------------------------------------------------------------------------
+[read]
+name = "read"
+summary = "inspect hdl design unit source code"
+synopsis = "orbit read [options] <unit>"
+description = """
+This command allows the user to navigate source code to gain a quicker
+understanding of the available code. By default, it will display the code to the
+console.
 
+If no ip specification is provided through the '--ip' option, then it will
+assume to search the current working ip, if it exists.
+
+If '--file' is provided, then the source code will be written to a temporary
+read-only file. Also providing '--location' in this context will append the
+requested code segment's line and column number to the end of the generated
+filepath.
+
+The options '--start', '--end', and '--doc' all accept valid VHDL code to
+search for in the identified source code file. The '--doc' option will find the
+immediate single-line comments preceding the supplied code value.
+
+The 'read' command attempts to clean the temporary directory at every call to
+it. To keep existing files alive while allowing new files to appear, use the
+'--keep' flag.
+"""
+
+option."<unit>" = "Primary design unit identifier"
+
+option."--ip <spec>" = "The ip specification to search in the catalog"
+option."--file" = "Copy the source code to a temporary read-only file"
+option."--location" = "Append the targeted code segment's line and column number to the resulting filepath "
+option."--keep" = "Do not clean the temporary directory of existing files"
+option."--limit <limit>" = "Set a maximum number of lines to write"
+option."--start <code>" = "Start the code navigation upon matching this VHDL segment"
+option."--end <code>" = "Stop the code navigation upon matching this VHDL segment"
+option."--doc <code>" = "Navigate to the preceding comments of this VHDL segment"
+
+examples = """
+orbit read and_gate --ip gates:1.0.0
+orbit read math_pkg --ip math --doc "function clog2"
+orbit read math_pkg --ip math --start "package math_pkg" --doc "function flog2p1" --location --file
+"""
 
 # ------------------------------------------------------------------------------ 
 # get      

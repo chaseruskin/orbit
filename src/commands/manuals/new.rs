@@ -17,10 +17,13 @@ DESCRIPTION
     initializing an already existing project into an ip.
 
 OPTIONS
+    <path>
+        The new directory to make
+
     --name <name>
         The ip name to create
 
 EXAMPLES
     orbit new gates
-    orbit new ./projects/lab1 --name adder
+    orbit new ./projects/dir7 --name adder
 "#;

@@ -62,6 +62,11 @@ impl Command<Context> for Read {
     type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
+        // verify location is only set iff the file mode is enabled
+        if self.location == true && self.file == false {
+            Err(AnyError(format!("The flag '--location' can only be set when using '--file'")))?
+        }
+
         // determine the destination
         let dest: PathBuf = c.get_home_path().join(TMP_DIR);
 
@@ -115,18 +120,6 @@ impl Read {
     fn run(&self, target: &Ip, dest: Option<&PathBuf>) -> Result<(), Fault> {
         let (path, loc) = Self::read(&self.unit, &target, dest)?;
 
-        let path = {
-            if self.location == true {
-                PathBuf::from({
-                    let mut p = path.as_os_str().to_os_string();
-                    p.push(&loc.to_string());
-                    p
-                })
-            } else {
-                path
-            }
-        };
-
         // dump the file contents of the source code to the console if there was no destination
         let print_to_console = dest.is_none();
 
@@ -163,13 +156,23 @@ impl Read {
             // limit based on starting index
             let remaining_tokens = match &start {
                 Some(pos) => src_tokens.into_iter().skip_while(|p| p.locate() <= pos).collect(),
-                None => src_tokens,
+                None => {
+                    if self.start.is_some() == true {
+                        return Err(AnyError(format!("Failed to find code segment matching 'start' code chunk")))?
+                    }
+                    src_tokens
+                },
             };
 
             let end = Self::find_location(&remaining_tokens, &end_tokens);
             let remaining_tokens = match &end {
                 Some(pos) => remaining_tokens.into_iter().take_while(|p| p.locate() < pos).collect(),
-                None => remaining_tokens,
+                None => {
+                    if self.end.is_some() == true {
+                        return Err(AnyError(format!("Failed to find code segment matching 'end' code chunk")))?
+                    }
+                    remaining_tokens
+                },
             };
 
             // find the comment
@@ -191,7 +194,10 @@ impl Read {
                     }
                 },
                 None => {
-                    return Err(AnyError(format!("Failed to find code segment matching code chunk")))?
+                    if self.comment.is_some() == true {
+                        return Err(AnyError(format!("Failed to find code segment matching 'doc' code chunk")))?
+                    }
+                    None
                 },
             };
 
@@ -234,7 +240,7 @@ impl Read {
                 true => { segment },
                 // overwrite contents and display the file path
                 false => {
-                    let cut_code = start.is_some() || end.is_some();
+                    let cut_code = (start.is_some() || end.is_some()) && self.location == false;
 
                     let file = match cut_code {
                         true => {
@@ -257,6 +263,29 @@ impl Read {
                     let mut perms = file.metadata()?.permissions();
                     perms.set_readonly(true);
                     file.set_permissions(perms)?;
+
+                    // tack on the location to the file name
+                    let path = {
+                        if self.location == true {
+                            // update the location to point to
+                            let loc = match start {
+                                Some(s) => s,
+                                None => match end {
+                                    Some(e) => e,
+                                    None => loc
+                                }
+                            };
+                            // append the location to the filepath
+                            PathBuf::from({
+                                let mut p = path.as_os_str().to_os_string();
+                                p.push(&loc.to_string());
+                                p
+                            })
+                        } else {
+                            path
+                        }
+                    };
+
                     path.display().to_string()
                 }
             }

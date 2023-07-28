@@ -81,7 +81,7 @@ def write_md(table, dest: str, command: str) -> int:
         # description section
         md.write('## __DESCRIPTION__')
         md.write(SECT_END)
-        md.write(table[DESC].strip())
+        md.write(table[DESC].strip().replace('<', '\<'))
         md.write(SECT_END)
         # options sections
         if table[OPTS] != None:

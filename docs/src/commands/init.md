@@ -36,7 +36,7 @@ creating an ip from a non-existing directory.
 
 ```
 orbit init
-orbit init ./projects/lab1
+orbit init ./projects/gates
 orbit init --name hello_world
 ```
 

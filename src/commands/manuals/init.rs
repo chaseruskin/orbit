@@ -27,6 +27,6 @@ OPTIONS
 
 EXAMPLES
     orbit init
-    orbit init ./projects/lab1
+    orbit init ./projects/gates
     orbit init --name hello_world
 "#;

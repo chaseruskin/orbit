@@ -12,7 +12,7 @@ orbit new [options] <path>
 
 ## __DESCRIPTION__
 
-This command will create a new ip at the target directory <path>. The command
+This command will create a new ip at the target directory \<path>. The command
 assumes the path does not already exists. It will attempt to create a new 
 directory at the destination with a manifest. 
 
@@ -24,6 +24,9 @@ initializing an already existing project into an ip.
 
 ## __OPTIONS__
 
+`<path>`  
+      The new directory to make
+
 `--name <name>`  
       The ip name to create
 
@@ -31,6 +34,6 @@ initializing an already existing project into an ip.
 
 ```
 orbit new gates
-orbit new ./projects/lab1 --name adder
+orbit new ./projects/dir7 --name adder
 ```
 

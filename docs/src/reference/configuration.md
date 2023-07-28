@@ -6,7 +6,7 @@ The `config.toml` file stores settings and extends `orbit`'s functionality. It i
 
 ## Paths
 
-When a field is expected to be a filesystem path, `orbit` has the ability to resolve relative paths. The path is determined in relation to the currently processed `config.toml`'s parent directory. This design choice was implemented in order to allow for path definitions to be valid across developer machines when sharing configurations.
+When a field is expected to be a filesystem path, `orbit` has the ability to resolve relative paths. The path is determined in relation to the currently processed `config.toml`'s parent directory. This design choice was implemented in order to allow for path definitions to be valid across developer machines when sharing configurations. It is recommended to use relative paths when setting a path to a field in a `config.toml`.
 
 ## Precedence
 
@@ -33,7 +33,7 @@ Every configuration file consists of the following sections:
     - [command](#the-command-field) - The command to execute the plugin.
     - [args](#the-args-field) - Arguments to pass to the command.
     - [[fileset]](#the-fileset-section) - Filesets to collect for the plugin.
-- [[protocol]](#the-protocol-array) - Define a protocol.
+- [[[protocol]]](#the-protocol-array) - Define a protocol.
     - [name](#the-alias-field) - The name of the protocol.
     - [summary](#the-summary-field) - A short description of the protocol.
     - [command](#the-command-field) - The command to execute the protocol.

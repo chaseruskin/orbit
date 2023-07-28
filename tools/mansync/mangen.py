@@ -152,18 +152,24 @@ def write_rs(table, dest, command) -> int:
     print('INFO: Rust manual page available at:', path)
     return 0
 
+
 # --- Application Code ---------------------------------------------------------
 
-# open the manual data
-data = toml.load(INPUT_TOML_PATH)
+def main():
+    # open the manual data
+    data = toml.load(INPUT_TOML_PATH)
 
-# compile all documentation
-for cmd in COMMANDS:
-    if cmd not in data:
-        print("WARNING: unknown command", cmd, "in toml document")
-        continue
-    # output the markdown files
-    write_md(data, MD_OUTPUT_DIR, cmd)
-    # output the rust files
-    write_rs(data, RS_OUTPUT_DIR, cmd)
-    pass
+    # compile all documentation
+    for cmd in COMMANDS:
+        if cmd not in data:
+            print("WARNING: unknown command", cmd, "in toml document")
+            continue
+        # output the markdown files
+        write_md(data, MD_OUTPUT_DIR, cmd)
+        # output the rust files
+        write_rs(data, RS_OUTPUT_DIR, cmd)
+        pass
+
+
+if __name__ == '__main__':
+    main()

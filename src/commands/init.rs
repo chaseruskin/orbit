@@ -1,13 +1,13 @@
 use super::new::New;
 use crate::commands::orbit::AnyResult;
 use crate::core::context::Context;
-use crate::core::manifest::Manifest;
+use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
 use crate::core::pkgid::PkgPart;
 use crate::util::anyerror::AnyError;
 use crate::util::filesystem;
 use crate::util::filesystem::Standardize;
 use crate::OrbitResult;
-use clif::arg::{Flag, Optional};
+use clif::arg::{Flag, Optional, Positional};
 use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
@@ -17,8 +17,8 @@ use std::path::PathBuf;
 #[derive(Debug, PartialEq)]
 pub struct Init {
     force: bool,
-    path: PathBuf,
     name: Option<PkgPart>,
+    path: PathBuf,
 }
 
 impl FromCli for Init {
@@ -26,10 +26,10 @@ impl FromCli for Init {
         cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
         let command = Ok(Self {
             force: cli.check_flag(Flag::new("force"))?,
+            name: cli.check_option(Optional::new("name"))?,
             path: cli
-                .check_option(Optional::new("path"))?
+                .check_positional(Positional::new("path"))?
                 .unwrap_or(PathBuf::from(".")),
-            name: cli.check_option(Optional::new("ip"))?,
         });
         command
     }
@@ -65,7 +65,7 @@ impl Init {
         // verify the directory already exists
         if self.path.is_dir() == false || self.path.exists() == false {
             return Err(Box::new(AnyError(format!(
-                "the path {:?} is not an already existing directory",
+                "The path {:?} is not an already existing directory",
                 PathBuf::standardize(self.path.clone())
             ))));
         }
@@ -73,7 +73,7 @@ impl Init {
         // create the file directly nested within the destination path
         let manifest_path = {
             let mut p = self.path.clone();
-            p.push("Orbit.toml");
+            p.push(IP_MANIFEST_FILE);
             p
         };
 
@@ -87,12 +87,12 @@ const HELP: &str = "\
 Initialize a new ip from an existing project.
 
 Usage:
-    orbit init [options]
+    orbit init [options] [<path>]
 
 Options:
-    --path <path>       destination path to initialize (default: '.')
-    --ip <ip>           the pkgid to label the existing project
-    --force             overwrite any existing manifest with a new one
+    <path>          destination path to initialize (default: '.')
+    --name <name>   the name of the ip
+    --force         overwrite any existing manifest with a new one
 
 Use 'orbit help init' to learn more about the command.
 ";

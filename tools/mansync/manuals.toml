@@ -30,7 +30,7 @@ orbit new ./projects/lab1 --name adder
 [init]
 name = "init"
 summary = "initialize an ip from an existing project"
-synopsis = "orbit init [options] [path]"
+synopsis = "orbit init [options] [<path>]"
 description = """
 This command will initialize a new ip at the target directory [path]. If no path 
 is supplied, then it defaults to the current working directory.
@@ -42,7 +42,7 @@ This command fails if the path does not exist. See the 'new' command for
 creating an ip from a non-existing directory.
 """
 
-option."[path]" = "The location to initialize an ip"
+option."<path>" = "The location to initialize an ip"
 option."--name <name>" = "The name of the ip"
 option."--force" = "Overwrite a manifest if one already exists"
 

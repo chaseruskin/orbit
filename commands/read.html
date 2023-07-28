@@ -171,44 +171,49 @@
                     <main>
                         <h1 id="orbit-read"><a class="header" href="#orbit-read"><strong>orbit read</strong></a></h1>
 <h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>
-<p>read - inspect hdl source code files</p>
+<p>read - inspect hdl design unit source code</p>
 <h2 id="synopsis"><a class="header" href="#synopsis"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit read [options] &lt;unit&gt;
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will open a primary design units source code file for
-examination in a text editor. If the unit is from the current ip, then it
-will return the direct reference to the file. If the unit comes from 
-outside the current ip, then Orbit will create a read-only copy of the 
-file in a temporary directory.</p>
-<p>By default, previous files in the temporary directory are removed on every
-new call to this command. If you are viewing multiple files at the same,
-use <code>--no-clean</code> to keep previous files being read existing.</p>
-<p>The line and column where the primary design unit code is found can be
-appended to the source code file path using <code>--location</code>. The syntax for
-the filepath becomes <code>&lt;file&gt;:&lt;line&gt;:col</code>.</p>
-<p>By default, the mode to read a source code file is 'open', which will pass
-the source code filepath as an argument to the configured editor. If the
-mode is 'path', then the editor is ignored and the filepath is output to
-stdout.</p>
+<p>This command allows the user to navigate source code to gain a quicker
+understanding of the available code. By default, it will display the code to the
+console.</p>
+<p>If no ip specification is provided through the '--ip' option, then it will
+assume to search the current working ip, if it exists.</p>
+<p>If '--file' is provided, then the source code will be written to a temporary
+read-only file. Also providing '--location' in this context will append the
+requested code segment's line and column number to the end of the generated
+filepath.</p>
+<p>The options '--start', '--end', and '--doc' all accept valid VHDL code to
+search for in the identified source code file. The '--doc' option will find the
+immediate single-line comments preceding the supplied code value.</p>
+<p>The 'read' command attempts to clean the temporary directory at every call to
+it. To keep existing files alive while allowing new files to appear, use the
+'--keep' flag.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;unit&gt;</code><br />
-      The primary design unit identifier to access</p>
-<p><code>--ip, &lt;pkgid&gt;</code><br />
-      The ip where the unit is existing</p>
-<p><code>--variant, -v &lt;version&gt;</code><br />
-      Version of ip to fetch</p>
-<p><code>--editor &lt;editor&gt;</code><br />
-      The command to invoke a text editor</p>
+      Primary design unit identifier</p>
+<p><code>--ip &lt;spec&gt;</code><br />
+      The ip specification to search in the catalog</p>
+<p><code>--file</code><br />
+      Copy the source code to a temporary read-only file</p>
 <p><code>--location</code><br />
-      Appends the :line:col to the end of the source code file path</p>
-<p><code>--mode &lt;mode&gt;</code><br />
-      Select how to read the file: options are 'open' or 'path'</p>
-<p><code>--no-clean</code><br />
-      Keep previously read files existing</p>
+      Append the targeted code segment's line and column number to the resulting filepath </p>
+<p><code>--keep</code><br />
+      Do not clean the temporary directory of existing files</p>
+<p><code>--limit &lt;limit&gt;</code><br />
+      Set a maximum number of lines to write</p>
+<p><code>--start &lt;code&gt;</code><br />
+      Start the code navigation upon matching this VHDL segment</p>
+<p><code>--end &lt;code&gt;</code><br />
+      Stop the code navigation upon matching this VHDL segment</p>
+<p><code>--doc &lt;code&gt;</code><br />
+      Navigate to the preceding comments of this VHDL segment</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit read and_gate --ip ks-tech.rary.gates -v 1.0.0
-orbit read multiplier --editor code --no-clean
+<pre><code>orbit read and_gate --ip gates:1.0.0
+orbit read math_pkg --ip math --doc &quot;function clog2&quot;
+orbit read math_pkg --ip math --start &quot;package math_pkg&quot; --doc &quot;function flog2p1&quot; --location --file
 </code></pre>
 
                     </main>

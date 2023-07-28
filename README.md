@@ -114,6 +114,8 @@ VHDL-SIM	work	/users/chase/projects/lab2/sim/top_tb.vhd
 
 - Multiple versions of the same entity (or more broadly, entities given the same identifier) are allowed in the same build under [two simple constraints](https://c-rus.github.io/orbit/topic/dst.html#limitations).
 
+- Navigate HDL source code efficiently to read its inline documentation and visit its implementation through `orbit`'s ability to locate HDL code segments
+
 - Produce VHDL code snippets with a single command to properly instantiate entities within a new design.
 
 - Quickly search through your IP catalog by filtering based on keywords, catalog status, and name.

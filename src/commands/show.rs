@@ -11,6 +11,7 @@ use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
 use std::env::current_dir;
+use crate::commands::helps::show;
 
 #[derive(Debug, PartialEq)]
 pub struct Show {
@@ -21,7 +22,7 @@ pub struct Show {
 
 impl FromCli for Show {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
+        cli.check_help(clif::Help::new().quick_text(show::HELP).ref_usage(2..4))?;
         let command = Ok(Show {
             tags: cli.check_flag(Flag::new("versions"))?,
             units: cli.check_flag(Flag::new("units"))?,
@@ -160,20 +161,6 @@ impl Show {
         header + &body
     }
 }
-
-const HELP: &str = "\
-Print information about an ip.
-
-Usage:
-    orbit show [options] [<ip>]
-
-Options:  
-    <ip>                        the spec of the ip to query       
-    --versions                  display the list of possible versions
-    --units                     display primary design units within an ip
-
-Use 'orbit help show' to learn more about the command.
-";
 
 // FUTURE FLAGS
 // ============

@@ -6,7 +6,7 @@ SYNOPSIS
     orbit init [options] [<path>]
 
 DESCRIPTION
-    This command will initialize a new ip at the target directory [path]. If no path
+    This command will initialize a new ip at the target directory '<path>'. If no path
     is supplied, then it defaults to the current working directory.
     
     If no name is supplied, then the ip's name defaults to the final path component

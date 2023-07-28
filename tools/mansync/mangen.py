@@ -94,7 +94,7 @@ def write_md_manual(table, dest: str, command: str) -> int:
         # description section
         md.write('## __DESCRIPTION__')
         md.write(SECT_END)
-        md.write(table[DESC].strip().replace('<', '\<'))
+        md.write(table[DESC].strip())
         md.write(SECT_END)
 
         # options section
@@ -167,7 +167,8 @@ def write_rs_manual(table, dest, command) -> int:
         rs.write('DESCRIPTION'+END)
         lines = table[DESC].strip().splitlines()
         for line in lines:
-            rs.write(INDENT+line+END)
+            # flip any grave ticks to single quotes
+            rs.write(INDENT+line.replace('`', '\'')+END)
         rs.write(END)
 
         # options section

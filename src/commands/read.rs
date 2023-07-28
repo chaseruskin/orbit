@@ -20,9 +20,11 @@ use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
 use crate::core::lang::lexer::Token;
-
+use crate::commands::helps::read;
 use super::get::GetError;
 use std::fs;
+
+const TMP_DIR: &str = "tmp";
 
 #[derive(Debug, PartialEq)]
 pub struct Read {
@@ -39,14 +41,14 @@ pub struct Read {
 
 impl FromCli for Read {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
+        cli.check_help(clif::Help::new().quick_text(read::HELP).ref_usage(2..4))?;
         let command = Ok(Read {
             // flags
             file: cli.check_flag(Flag::new("file"))?,
             location: cli.check_flag(Flag::new("location"))?,
             keep: cli.check_flag(Flag::new("keep"))?,
             // options
-            limit: cli.check_option(Optional::new("limit"))?,
+            limit: cli.check_option(Optional::new("limit").value("num"))?,
             ip: cli.check_option(Optional::new("ip").value("spec"))?,
             start: cli.check_option(Optional::new("start").value("code"))?,
             end: cli.check_option(Optional::new("end").value("code"))?,
@@ -410,27 +412,3 @@ impl Read {
         }
     }
 }
-
-const TMP_DIR: &str = "tmp";
-
-const HELP: &str = "\
-Inspect hdl design unit source code.
-
-Usage:
-    orbit read [options] <unit>
-
-Args:
-    <unit>                  primary design unit identifier
-
-Options:            
-    --ip <spec>             ip to reference the unit from
-    --location              append the :line:col to the filepath
-    --file                  display the path to the read-only source code
-    --keep                  prevent previous files read from being deleted
-    --limit <num>           set a maximum number of lines to print
-    --start <code>          tokens to begin reading contents from file
-    --end <code>            tokens to end reading contents from file
-    --doc <code>            series of tokens to find immediate comments for
-
-Use 'orbit help read' to learn more about the command.
-";

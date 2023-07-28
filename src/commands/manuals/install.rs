@@ -12,9 +12,9 @@ DESCRIPTION
       
     An ip can be installed from multiple locations. A common method is to
     reference the ip with its pkgid if it is already in your ip catalog with
-    `--ip`. Another method is to install by providing the remote git repository 
-    url to clone with `--git`. A third method is to provide the local filesystem
-    path to the ip with `--path`.
+    '--ip'. Another method is to install by providing the remote git repository 
+    url to clone with '--git'. A third method is to provide the local filesystem
+    path to the ip with '--path'.
       
     The version is the "snapshot" of the ip's state during that time of
     development. Versions are recognized by Orbit as git tags following the 

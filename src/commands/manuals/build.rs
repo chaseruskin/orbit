@@ -13,7 +13,7 @@ DESCRIPTION
       
     If the previous plan command accepted a plugin option, then Orbit remembers
     for future build commands. It will be the default plugin to use if no
-    `--plugin` or `--command` is entered for the given command.
+    '--plugin' or '--command' is entered for the given command.
       
     The command invoked will be ran from the ip's root directory.
 

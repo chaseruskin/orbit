@@ -6,14 +6,14 @@ name = "new"
 summary = "create a new ip"
 synopsis = "orbit new [options] <path>"
 description = """
-This command will create a new ip at the target directory <path>. The command
+This command will create a new ip at the target directory `<path>`. The command
 assumes the path does not already exists. It will attempt to create a new 
 directory at the destination with a manifest. 
 
 If no name is supplied, then the ip's name defaults to the final path component
 of the path argument. Use the name option to provide a custom name.
 
-This command fails if the path already exists. See the 'init' command for
+This command fails if the path already exists. See the `init` command for
 initializing an already existing project into an ip.
 """
 
@@ -48,13 +48,13 @@ name = "init"
 summary = "initialize an ip from an existing project"
 synopsis = "orbit init [options] [<path>]"
 description = """
-This command will initialize a new ip at the target directory [path]. If no path 
+This command will initialize a new ip at the target directory `<path>`. If no path 
 is supplied, then it defaults to the current working directory.
 
 If no name is supplied, then the ip's name defaults to the final path component
 of the path argument. Use the name option to provide a custom name.
 
-This command fails if the path does not exist. See the 'new' command for
+This command fails if the path does not exist. See the `new` command for
 creating an ip from a non-existing directory.
 """
 
@@ -66,6 +66,18 @@ examples = """
 orbit init
 orbit init ./projects/gates
 orbit init --name hello_world
+"""
+
+help = """
+Initialize a new ip from an existing project.
+
+Usage:
+    orbit init [options] [<path>]
+
+Options:
+    <path>          destination path to initialize (default: '.')
+    --name <name>   the name of the ip
+    --force         overwrite any existing manifest with a new one
 """
 
 # ------------------------------------------------------------------------------   
@@ -83,12 +95,12 @@ the ip's manifest, if and only if the ip is able to be located.
 It will first attempt to return the information from a possible installation. If
 one does not exist, then it searches the downloads location for the ip.
 
-If '--units' is specified, then a list of the ip's HDL units are displayed.
+If `--units` is specified, then a list of the ip's HDL units are displayed.
 
-If '--versions' is specified, then a list of the ip's already available versions
+If `--versions` is specified, then a list of the ip's already available versions
 are displayed.
 
-If no spec is provided for 'ip', then it will retrieve information based on the
+If no spec is provided for `<ip>`, then it will retrieve information based on the
 current working ip, if exists.
 """
 
@@ -100,6 +112,18 @@ examples = """
 orbit show --units
 orbit show gates:1.0.0 --units
 orbit show gates --versions
+"""
+
+help = """
+Print information about an ip.
+
+Usage:
+    orbit show [options] [<ip>]
+
+Options:  
+    <ip>                        the spec of the ip to query       
+    --versions                  display the list of possible versions
+    --units                     display primary design units within an ip
 """
 
 # ------------------------------------------------------------------------------
@@ -114,21 +138,21 @@ This command allows the user to navigate source code to gain a quicker
 understanding of the available code. By default, it will display the code to the
 console.
 
-If no ip specification is provided through the '--ip' option, then it will
+If no ip specification is provided through the `--ip` option, then it will
 assume to search the current working ip, if it exists.
 
-If '--file' is provided, then the source code will be written to a temporary
+If `--file` is provided, then the source code will be written to a temporary
 read-only file. Also providing '--location' in this context will append the
 requested code segment's line and column number to the end of the generated
 filepath.
 
-The options '--start', '--end', and '--doc' all accept valid VHDL code to
-search for in the identified source code file. The '--doc' option will find the
+The options `--start`, `--end`, and `--doc` all accept valid VHDL code to
+search for in the identified source code file. The `--doc` option will find the
 immediate single-line comments preceding the supplied code value.
 
-The 'read' command attempts to clean the temporary directory at every call to
+The `read` command attempts to clean the temporary directory at every call to
 it. To keep existing files alive while allowing new files to appear, use the
-'--keep' flag.
+`--keep` flag.
 """
 
 args."<unit>" = "Primary design unit identifier"
@@ -137,7 +161,7 @@ options."--ip <spec>" = "The ip specification to search in the catalog"
 options."--file" = "Copy the source code to a temporary read-only file"
 options."--location" = "Append the targeted code segment's line and column number to the resulting filepath "
 options."--keep" = "Do not clean the temporary directory of existing files"
-options."--limit <limit>" = "Set a maximum number of lines to write"
+options."--limit <num>" = "Set a maximum number of lines to write"
 options."--start <code>" = "Start the code navigation upon matching this VHDL segment"
 options."--end <code>" = "Stop the code navigation upon matching this VHDL segment"
 options."--doc <code>" = "Navigate to the preceding comments of this VHDL segment"
@@ -146,6 +170,26 @@ examples = """
 orbit read and_gate --ip gates:1.0.0
 orbit read math_pkg --ip math --doc "function clog2"
 orbit read math_pkg --ip math --start "package math_pkg" --doc "function flog2p1" --location --file
+"""
+
+help = """
+Inspect hdl design unit source code.
+
+Usage:
+    orbit read [options] <unit>
+
+Args:
+    <unit>                  primary design unit identifier
+
+Options:            
+    --ip <spec>             ip to reference the unit from
+    --location              append the :line:col to the filepath
+    --file                  display the path to the read-only source code
+    --keep                  prevent previous files read from being deleted
+    --limit <num>           set a maximum number of lines to print
+    --start <code>          tokens to begin reading contents from file
+    --end <code>            tokens to end reading contents from file
+    --doc <code>            series of tokens to find immediate comments for
 """
 
 # ------------------------------------------------------------------------------ 

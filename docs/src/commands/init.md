@@ -12,13 +12,13 @@ orbit init [options] [<path>]
 
 ## __DESCRIPTION__
 
-This command will initialize a new ip at the target directory [path]. If no path
+This command will initialize a new ip at the target directory `<path>`. If no path
 is supplied, then it defaults to the current working directory.
 
 If no name is supplied, then the ip's name defaults to the final path component
 of the path argument. Use the name option to provide a custom name.
 
-This command fails if the path does not exist. See the 'new' command for
+This command fails if the path does not exist. See the `new` command for
 creating an ip from a non-existing directory.
 
 ## __OPTIONS__

@@ -16,21 +16,21 @@ This command allows the user to navigate source code to gain a quicker
 understanding of the available code. By default, it will display the code to the
 console.
 
-If no ip specification is provided through the '--ip' option, then it will
+If no ip specification is provided through the `--ip` option, then it will
 assume to search the current working ip, if it exists.
 
-If '--file' is provided, then the source code will be written to a temporary
+If `--file` is provided, then the source code will be written to a temporary
 read-only file. Also providing '--location' in this context will append the
 requested code segment's line and column number to the end of the generated
 filepath.
 
-The options '--start', '--end', and '--doc' all accept valid VHDL code to
-search for in the identified source code file. The '--doc' option will find the
+The options `--start`, `--end`, and `--doc` all accept valid VHDL code to
+search for in the identified source code file. The `--doc` option will find the
 immediate single-line comments preceding the supplied code value.
 
-The 'read' command attempts to clean the temporary directory at every call to
+The `read` command attempts to clean the temporary directory at every call to
 it. To keep existing files alive while allowing new files to appear, use the
-'--keep' flag.
+`--keep` flag.
 
 ## __OPTIONS__
 
@@ -49,7 +49,7 @@ it. To keep existing files alive while allowing new files to appear, use the
 `--keep`  
       Do not clean the temporary directory of existing files
 
-`--limit <limit>`  
+`--limit <num>`  
       Set a maximum number of lines to write
 
 `--start <code>`  

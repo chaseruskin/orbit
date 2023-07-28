@@ -20,7 +20,7 @@ DESCRIPTION
     building phase.
       
     User-defined filesets are only collected along the current working ip's 
-    path. Specifying a plugin with `--plugin` will collect the filesets 
+    path. Specifying a plugin with '--plugin' will collect the filesets 
     configured for that plugin.
       
     During the planning phase, a lockfile is produced outlining the exact ip
@@ -30,11 +30,11 @@ DESCRIPTION
     If the current working ip's manifest's data matches its data stored in its
     own lockfile, then Orbit will read from the lockfile to create the ip
     dependency graph. To force Orbit to build the ip dependency graph from
-    scratch, use `--force`.
+    scratch, use '--force'.
       
-    If only wishing to update the lockfile, using `--lock-only` will not require
-    a toplevel or testbench to be determined. The `--lock-only` flag can be
-    combined with `--force` to overwrite the lockfile regardless if it is
+    If only wishing to update the lockfile, using '--lock-only' will not require
+    a toplevel or testbench to be determined. The '--lock-only' flag can be
+    combined with '--force' to overwrite the lockfile regardless if it is
     already in sync with the current working ip's manifest data.
 
 OPTIONS

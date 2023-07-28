@@ -19,12 +19,12 @@ the ip's manifest, if and only if the ip is able to be located.
 It will first attempt to return the information from a possible installation. If
 one does not exist, then it searches the downloads location for the ip.
 
-If '--units' is specified, then a list of the ip's HDL units are displayed.
+If `--units` is specified, then a list of the ip's HDL units are displayed.
 
-If '--versions' is specified, then a list of the ip's already available versions
+If `--versions` is specified, then a list of the ip's already available versions
 are displayed.
 
-If no spec is provided for 'ip', then it will retrieve information based on the
+If no spec is provided for `<ip>`, then it will retrieve information based on the
 current working ip, if exists.
 
 ## __OPTIONS__

@@ -13,6 +13,7 @@ use clif::Cli;
 use clif::Error as CliError;
 use std::io::Write;
 use std::path::PathBuf;
+use crate::commands::helps::init;
 
 #[derive(Debug, PartialEq)]
 pub struct Init {
@@ -23,7 +24,7 @@ pub struct Init {
 
 impl FromCli for Init {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
+        cli.check_help(clif::Help::new().quick_text(init::HELP).ref_usage(2..4))?;
         let command = Ok(Self {
             force: cli.check_flag(Flag::new("force"))?,
             name: cli.check_option(Optional::new("name"))?,
@@ -82,17 +83,3 @@ impl Init {
         Ok(())
     }
 }
-
-const HELP: &str = "\
-Initialize a new ip from an existing project.
-
-Usage:
-    orbit init [options] [<path>]
-
-Options:
-    <path>          destination path to initialize (default: '.')
-    --name <name>   the name of the ip
-    --force         overwrite any existing manifest with a new one
-
-Use 'orbit help init' to learn more about the command.
-";

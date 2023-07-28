@@ -42,7 +42,7 @@ OPTIONS
     --keep
         Do not clean the temporary directory of existing files
 
-    --limit <limit>
+    --limit <num>
         Set a maximum number of lines to write
 
     --start <code>

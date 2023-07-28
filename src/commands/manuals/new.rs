@@ -6,7 +6,7 @@ SYNOPSIS
     orbit new [options] <path>
 
 DESCRIPTION
-    This command will create a new ip at the target directory <path>. The command
+    This command will create a new ip at the target directory '<path>'. The command
     assumes the path does not already exists. It will attempt to create a new 
     directory at the destination with a manifest. 
     

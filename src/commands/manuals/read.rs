@@ -1,6 +1,6 @@
 // This manual page was automatically generated from the mangen.py tool.
 pub const MANUAL: &str = r#"NAME
-    read - inspect hdl design unit source code
+    read - navigate hdl design unit source code
 
 SYNOPSIS
     orbit read [options] <unit>

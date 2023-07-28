@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-read - inspect hdl design unit source code
+read - navigate hdl design unit source code
 
 ## __SYNOPSIS__
 

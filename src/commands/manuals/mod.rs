@@ -14,3 +14,4 @@ pub mod search;
 pub mod tree;
 pub mod uninstall;
 pub mod download;
+pub mod show;

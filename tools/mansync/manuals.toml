@@ -17,13 +17,27 @@ This command fails if the path already exists. See the 'init' command for
 initializing an already existing project into an ip.
 """
 
-option."<path>" = "The new directory to make"
+args."<path>" = "The new directory to make"
 
-option."--name <name>" = "The ip name to create"
+options."--name <name>" = "The ip name to create"
 
 examples = """
 orbit new gates
 orbit new ./projects/dir7 --name adder
+"""
+
+help = """
+Create a new orbit ip project.
+
+Usage:
+    orbit new [options] <path>
+
+Args:
+    <path>              the destination path to create ip project
+
+Options:
+    --name <name>       the ip name to create
+    --ip                create an ip (default: true)
 """
 
 # ------------------------------------------------------------------------------
@@ -44,9 +58,9 @@ This command fails if the path does not exist. See the 'new' command for
 creating an ip from a non-existing directory.
 """
 
-option."<path>" = "The location to initialize an ip"
-option."--name <name>" = "The name of the ip"
-option."--force" = "Overwrite a manifest if one already exists"
+options."<path>" = "The location to initialize an ip"
+options."--name <name>" = "The name of the ip"
+options."--force" = "Overwrite a manifest if one already exists"
 
 examples = """
 orbit init
@@ -78,9 +92,9 @@ If no spec is provided for 'ip', then it will retrieve information based on the
 current working ip, if exists.
 """
 
-option."<ip>" = "The spec of the ip to query"
-option."--versions" = "Display the list of possible versions"
-option."--units" = "Display the list of HDL primary design units associated with this ip"
+options."<ip>" = "The spec of the ip to query"
+options."--versions" = "Display the list of possible versions"
+options."--units" = "Display the list of HDL primary design units associated with this ip"
 
 examples = """
 orbit show --units
@@ -93,7 +107,7 @@ orbit show gates --versions
 # ------------------------------------------------------------------------------
 [read]
 name = "read"
-summary = "inspect hdl design unit source code"
+summary = "navigate hdl design unit source code"
 synopsis = "orbit read [options] <unit>"
 description = """
 This command allows the user to navigate source code to gain a quicker
@@ -117,16 +131,16 @@ it. To keep existing files alive while allowing new files to appear, use the
 '--keep' flag.
 """
 
-option."<unit>" = "Primary design unit identifier"
+args."<unit>" = "Primary design unit identifier"
 
-option."--ip <spec>" = "The ip specification to search in the catalog"
-option."--file" = "Copy the source code to a temporary read-only file"
-option."--location" = "Append the targeted code segment's line and column number to the resulting filepath "
-option."--keep" = "Do not clean the temporary directory of existing files"
-option."--limit <limit>" = "Set a maximum number of lines to write"
-option."--start <code>" = "Start the code navigation upon matching this VHDL segment"
-option."--end <code>" = "Stop the code navigation upon matching this VHDL segment"
-option."--doc <code>" = "Navigate to the preceding comments of this VHDL segment"
+options."--ip <spec>" = "The ip specification to search in the catalog"
+options."--file" = "Copy the source code to a temporary read-only file"
+options."--location" = "Append the targeted code segment's line and column number to the resulting filepath "
+options."--keep" = "Do not clean the temporary directory of existing files"
+options."--limit <limit>" = "Set a maximum number of lines to write"
+options."--start <code>" = "Start the code navigation upon matching this VHDL segment"
+options."--end <code>" = "Stop the code navigation upon matching this VHDL segment"
+options."--doc <code>" = "Navigate to the preceding comments of this VHDL segment"
 
 examples = """
 orbit read and_gate --ip gates:1.0.0
@@ -183,16 +197,16 @@ a toplevel or testbench to be determined. The `--lock-only` flag can be
 combined with `--force` to overwrite the lockfile regardless if it is
 already in sync with the current working ip's manifest data."""
 
-option."--top <unit>" = "The top level entity to explicitly define"
-option."--bench <tb>" = "The top level testbench to explicitly define"
-option."--plugin <alias>" = "A plugin to refer to gather its declared filesets"
-option."--build-dir <dir>" = "The relative directory to place the blueprint.tsv file"
-option."--fileset <key=glob>..." = "A glob-style pattern identified by a name to add into the blueprint"
-option."--clean" = "Removes all files from the build directory before execution"
-option."--list" = "Displays all available plugins and exit"
-option."--force" = "Ignore reading the precomputed lock file"
-option."--lock-only" = "Create the lock file and exit"
-option."--all" = "Include all locally found HDL files"
+options."--top <unit>" = "The top level entity to explicitly define"
+options."--bench <tb>" = "The top level testbench to explicitly define"
+options."--plugin <alias>" = "A plugin to refer to gather its declared filesets"
+options."--build-dir <dir>" = "The relative directory to place the blueprint.tsv file"
+options."--fileset <key=glob>..." = "A glob-style pattern identified by a name to add into the blueprint"
+options."--clean" = "Removes all files from the build directory before execution"
+options."--list" = "Displays all available plugins and exit"
+options."--force" = "Ignore reading the precomputed lock file"
+options."--lock-only" = "Create the lock file and exit"
+options."--all" = "Include all locally found HDL files"
 
 examples = """\
 orbit plan --top and_gate --fileset PIN-PLAN="*.board"
@@ -219,12 +233,12 @@ for future build commands. It will be the default plugin to use if no
   
 The command invoked will be ran from the ip's root directory."""
 
-option."--plugin <alias>" = "Plugin to execute"
-option."--command <cmd>" = "Command to execute"
-option."--list" = "View available plugins"
-option."--build-dir <dir>" = "The relative directory to locate the blueprint.tsv file"
-option."--verbose" = "Display the command being executed"
-option."-- args..." = "Arguments to pass to the requested plugin"
+options."--plugin <alias>" = "Plugin to execute"
+options."--command <cmd>" = "Command to execute"
+options."--list" = "View available plugins"
+options."--build-dir <dir>" = "The relative directory to locate the blueprint.tsv file"
+options."--verbose" = "Display the command being executed"
+options."-- args..." = "Arguments to pass to the requested plugin"
 
 examples = """\
 orbit build --plugin xsim -- --waves
@@ -276,12 +290,12 @@ See `orbit help protocols` for more information about available variables.
 This action may automatically run during an install if the package is missing
 from the downloads. See `orbit help install` for more details."""
 
-option."--list" = "Print URLs and exit"
-option."--missing" = "Filter only uninstalled packages (default: true)"
-option."--all" = "Gather packages from all dependency types"
-option."--queue <dir>" = "Set the destination directory for placing fetched repositories"
-option."--verbose" = "Display the custom protocol being executed"
-option."--force" = "Download selected packages regardless of status"
+options."--list" = "Print URLs and exit"
+options."--missing" = "Filter only uninstalled packages (default: true)"
+options."--all" = "Gather packages from all dependency types"
+options."--queue <dir>" = "Set the destination directory for placing fetched repositories"
+options."--verbose" = "Display the custom protocol being executed"
+options."--force" = "Download selected packages regardless of status"
 
 examples = """\
 orbit download --missing --list
@@ -312,10 +326,10 @@ semver specification (major.minor.patch).
 Development versions ('dev') are not allowed to be installed to the cache
 because they are considered mutable."""
 
-option."--path <path>" = "Directory to install ip from to place in the cache"
-option."--ip <name>" = "Ip to install from the queue into the cache"
-option."--force" = "Install the ip regardless of the cache slot occupancy"
-option."--all" = "Install all dependencies (including developmental)"
+options."--path <path>" = "Directory to install ip from to place in the cache"
+options."--ip <name>" = "Ip to install from the queue into the cache"
+options."--force" = "Install the ip regardless of the cache slot occupancy"
+options."--all" = "Install all dependencies (including developmental)"
 
 examples = """\
 orbit install"
@@ -346,11 +360,11 @@ The command modifies the document in three independent stages. The first stage
 modifies the settings by iterating through all defined `--append` values. Then, 
 it will insert all `--set` values. Lastly, it will remove all `--unset` entries."""
 
-option."--global" = "Access the home configuration file"
-option."--local" = "Access the current project's configuration file"
-option."--append <key>=<value>..." = "Add a value to the key storing a list"
-option."--set <key>=<value>..." = "Write the value at the key's entry"
-option."--unset <key>..." = "Delete the key's entry"
+options."--global" = "Access the home configuration file"
+options."--local" = "Access the current project's configuration file"
+options."--append <key>=<value>..." = "Add a value to the key storing a list"
+options."--set <key>=<value>..." = "Write the value at the key's entry"
+options."--unset <key>..." = "Delete the key's entry"
 
 examples = """\
 orbit config --append include="~/.orbit/profiles/ks-tech"

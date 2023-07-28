@@ -1,12 +1,7 @@
-mod config;
-mod env;
-mod help;
-mod manuals;
+// entry program
 pub mod orbit;
-mod read;
-mod search;
-mod uninstall;
 
+// commands
 mod build;
 mod download;
 mod get;
@@ -17,3 +12,13 @@ mod new;
 mod plan;
 mod show;
 mod tree;
+mod config;
+mod env;
+mod help;
+mod read;
+mod search;
+mod uninstall;
+
+// informational content for help about commands
+mod manuals;
+mod helps;

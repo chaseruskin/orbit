@@ -3,6 +3,8 @@ use crate::core::manifest::Manifest;
 use crate::core::pkgid::PkgPart;
 use crate::util::anyerror::AnyError;
 use crate::util::filesystem::Standardize;
+use crate::commands::helps::new;
+use crate::commands::orbit::AnyResult;
 use crate::OrbitResult;
 use clif::arg::{Flag, Optional, Positional};
 use clif::cmd::Command;
@@ -12,10 +14,7 @@ use clif::Error as CliError;
 use std::io::Write;
 use std::path::PathBuf;
 use std::str::FromStr;
-
 use std::borrow::Cow;
-
-use crate::commands::orbit::AnyResult;
 
 #[derive(Debug, PartialEq)]
 pub struct New {
@@ -31,7 +30,7 @@ pub struct New {
 
 impl FromCli for New {
     fn from_cli(cli: &mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
+        cli.check_help(clif::Help::new().quick_text(new::HELP).ref_usage(2..4))?;
 
         let command = Ok(Self {
             is_ip: cli.check_flag(Flag::new("ip"))?,
@@ -119,22 +118,6 @@ impl New {
         Ok(())
     }
 }
-
-const HELP: &str = "\
-Create a new orbit ip project.
-
-Usage:
-    orbit new [options] <path>
-
-Args:
-    <path>              the destination path to create ip project
-
-Options:
-    --name <name>       the ip name to create
-    --ip                create an ip (default: true)
-
-Use 'orbit help new' to read more about the command.
-";
 
 #[cfg(test)]
 mod test {

@@ -1143,7 +1143,7 @@ precedence:
 <p><strong>Note:</strong> The configuration's file name is &quot;config.toml&quot;, with respect to case-sensitivity.</p>
 </blockquote>
 <h2 id="paths"><a class="header" href="#paths">Paths</a></h2>
-<p>When a field is expected to be a filesystem path, <code>orbit</code> has the ability to resolve relative paths. The path is determined in relation to the currently processed <code>config.toml</code>'s parent directory. This design choice was implemented in order to allow for path definitions to be valid across developer machines when sharing configurations.</p>
+<p>When a field is expected to be a filesystem path, <code>orbit</code> has the ability to resolve relative paths. The path is determined in relation to the currently processed <code>config.toml</code>'s parent directory. This design choice was implemented in order to allow for path definitions to be valid across developer machines when sharing configurations. It is recommended to use relative paths when setting a path to a field in a <code>config.toml</code>.</p>
 <h2 id="precedence"><a class="header" href="#precedence">Precedence</a></h2>
 <p>Orbit supports multiple levels of configuration. Each level has its own order of precedence:</p>
 <ol>
@@ -1175,7 +1175,7 @@ precedence:
 <li><a href="reference/configuration.html#the-fileset-section">[fileset]</a> - Filesets to collect for the plugin.</li>
 </ul>
 </li>
-<li><a href="reference/configuration.html#the-protocol-array">[protocol]</a> - Define a protocol.
+<li><a href="reference/configuration.html#the-protocol-array">[[protocol]]</a> - Define a protocol.
 <ul>
 <li><a href="reference/configuration.html#the-alias-field">name</a> - The name of the protocol.</li>
 <li><a href="reference/configuration.html#the-summary-field">summary</a> - A short description of the protocol.</li>

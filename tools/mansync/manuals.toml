@@ -55,7 +55,36 @@ orbit init --name hello_world
 # ------------------------------------------------------------------------------   
 # show           
 # ------------------------------------------------------------------------------
+[show]
+name = "show"
+summary = "print information about an ip"
+synopsis = "orbit show [options] [<ip>]"
+description = """
+This command retrieves various pieces of information about a particular ip to
+gain a better understanding of how to utilize the ip. By default, it displays
+the ip's manifest, if and only if the ip is able to be located.
 
+It will first attempt to return the information from a possible installation. If
+one does not exist, then it searches the downloads location for the ip.
+
+If '--units' is specified, then a list of the ip's HDL units are displayed.
+
+If '--versions' is specified, then a list of the ip's already available versions
+are displayed.
+
+If no spec is provided for 'ip', then it will retrieve information based on the
+current working ip, if exists.
+"""
+
+option."<ip>" = "The spec of the ip to query"
+option."--versions" = "Display the list of possible versions"
+option."--units" = "Display the list of HDL primary design units associated with this ip"
+
+examples = """
+orbit show --units
+orbit show gates:1.0.0 --units
+orbit show gates --versions
+"""
 
 # ------------------------------------------------------------------------------
 # read          

@@ -7,7 +7,7 @@ init - initialize an ip from an existing project
 ## __SYNOPSIS__
 
 ```
-orbit init [options] [path]
+orbit init [options] [<path>]
 ```
 
 ## __DESCRIPTION__
@@ -23,7 +23,7 @@ creating an ip from a non-existing directory.
 
 ## __OPTIONS__
 
-`[path]`  
+`<path>`  
       The location to initialize an ip
 
 `--name <name>`  

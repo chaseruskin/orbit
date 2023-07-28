@@ -3,7 +3,7 @@ pub const MANUAL: &str = r#"NAME
     init - initialize an ip from an existing project
 
 SYNOPSIS
-    orbit init [options] [path]
+    orbit init [options] [<path>]
 
 DESCRIPTION
     This command will initialize a new ip at the target directory [path]. If no path
@@ -16,7 +16,7 @@ DESCRIPTION
     creating an ip from a non-existing directory.
 
 OPTIONS
-    [path]
+    <path>
         The location to initialize an ip
 
     --name <name>

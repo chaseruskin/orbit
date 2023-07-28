@@ -14,9 +14,9 @@ use std::env::current_dir;
 
 #[derive(Debug, PartialEq)]
 pub struct Show {
-    ip: Option<PartialIpSpec>,
     tags: bool,
     units: bool,
+    ip: Option<PartialIpSpec>,
 }
 
 impl FromCli for Show {
@@ -165,12 +165,10 @@ const HELP: &str = "\
 Print information about an ip.
 
 Usage:
-    orbit show [options] [ip]
+    orbit show [options] [<ip>]
 
-Args:
-    [ip]                        the package to request data about
-
-Options:          
+Options:  
+    <ip>                        the spec of the ip to query       
     --versions                  display the list of possible versions
     --units                     display primary design units within an ip
 

@@ -19,3 +19,9 @@ Commands are loosely grouped into two types: development and management. The com
 - [orbit uninstall](./uninstall.md)
 - [orbit config](./config.md)
 - [orbit env](./env.md)
+
+## Command Flow
+
+A development workflow is illustrated with a typical `orbit` command flow:
+
+![](./../images/command-flow.svg)

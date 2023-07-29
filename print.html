@@ -1743,28 +1743,36 @@ orbit launch --next major --ready
 <h2 id="name-9"><a class="header" href="#name-9"><strong>NAME</strong></a></h2>
 <p>search - browse the ip catalog</p>
 <h2 id="synopsis-9"><a class="header" href="#synopsis-9"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit search [options] [&lt;pkgid&gt;]
+<pre><code>orbit search [options] [&lt;ip&gt;]
 </code></pre>
 <h2 id="description-9"><a class="header" href="#description-9"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will search for all ip defined by Orbit in the catalog from all
-3 state: development, installation, and available. You can control what 
-states to search for with <code>--develop</code>, <code>--install</code>, and <code>--available</code> flags.</p>
-<p>An optional pkgid can also be provided to narrow results even further. Pkgid 
-fields can be omitted by entering an empty value.</p>
+<p>This command will display a list of all the known ip in the catalog. The catalog
+consists of 3 levels: cache, downloads, and channels.</p>
+<p>Any ip at the cache level are considered installed. Any ip at the downloads
+level are considered downloaded. Any ip at the channels level is considered
+available. An ip does not exist in the catalog if it is not found at any one
+of the three defined levels.</p>
+<p>When a package name is provided for <code>&lt;ip&gt;</code>, it will begin to partially match 
+the name with the names of the known ip. If an ip's name begins with <code>&lt;ip&gt;</code>, it
+is included in the filtered resultes. To strictly match the argument against an
+ip name, use <code>--match</code>.</p>
 <h2 id="options-9"><a class="header" href="#options-9"><strong>OPTIONS</strong></a></h2>
-<p><code>&lt;pkgid&gt;</code><br />
-      Identifiers to filter under vendory.library.name</p>
+<p><code>&lt;ip&gt;</code><br />
+      The beginning of a package name</p>
 <p><code>--install, -i</code><br />
-      Filter for ip installed to the cache</p>
-<p><code>--develop, -d</code><br />
-      Filter for ip in-development within the orbit path</p>
-<p><code>--available, -a</code><br />
-      Filter for ip available via registries</p>
+      Filter ip installed to the cache</p>
+<p><code>--download, -d</code><br />
+      Filter ip downloaded to the downloads</p>
+<p><code>--keyword &lt;term&gt;...</code><br />
+      Include ip that contain this keyword</p>
+<p><code>--limit &lt;num&gt;</code><br />
+      The maximum number of results to return</p>
+<p><code>--match</code><br />
+      Return results that only pass each filter</p>
 <h2 id="examples-9"><a class="header" href="#examples-9"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit search --develop --install --available
-orbit search rary. -i
-orbit search gates -ia
-orbit search ks-tecth.rary.gates -d
+<pre><code>orbit search axi
+orbit search --keyword memory --keyword ecc
+orbit search --keyword RF --limit 20
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-download"><a class="header" href="#orbit-download"><strong>orbit download</strong></a></h1>
 <h2 id="name-10"><a class="header" href="#name-10"><strong>NAME</strong></a></h2>

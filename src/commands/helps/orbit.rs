@@ -29,6 +29,4 @@ Options:
     --help, -h      print help information
 
 Use 'orbit help <command>' for more information about a command.
-
-Use 'orbit help orbit' to read more about the command.
 "#;

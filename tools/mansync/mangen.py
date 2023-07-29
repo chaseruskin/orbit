@@ -202,7 +202,7 @@ def write_rs_manual(table, dest, command) -> int:
     return 1
 
 
-def write_rs_help(table, dest, command) -> int:
+def write_rs_help(table, dest, command, footer=True) -> int:
     '''
     Writes the TOML `table` for a particular `command` to the `dest` folder in
     Rust format as quick help.
@@ -235,7 +235,10 @@ def write_rs_help(table, dest, command) -> int:
         # quick help body
         rs.write(table[HELP].strip())
         # add closing remark
-        rs.write(SECT_END+"Use 'orbit help "+command+"' to read more about the command."+END)
+        if footer == True:
+            rs.write(SECT_END+"Use 'orbit help "+command+"' to read more about the command."+END)
+        else:
+            rs.write(END)
         rs.write('"#;')
         pass
 
@@ -267,7 +270,7 @@ def main():
         print()
         pass
 
-    score += write_rs_help(data, RS_HELP_OUTPUT_DIR, PROGRAM)
+    score += write_rs_help(data, RS_HELP_OUTPUT_DIR, PROGRAM, footer=False)
 
     print('DOCUMENTATION SCORE:', score, '/', total)
 

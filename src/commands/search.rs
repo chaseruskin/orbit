@@ -12,6 +12,7 @@ use std::collections::BTreeMap;
 use crate::core::catalog::Catalog;
 use crate::core::catalog::IpLevel;
 use crate::core::version::AnyVersion;
+use crate::commands::helps::search;
 
 #[derive(Debug, PartialEq)]
 pub struct Search {
@@ -21,6 +22,23 @@ pub struct Search {
     keywords: Vec<String>,
     limit: Option<usize>,
     hard_match: bool,
+}
+
+impl FromCli for Search {
+    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
+        cli.check_help(clif::Help::new().quick_text(search::HELP).ref_usage(2..4))?;
+        let command = Ok(Search {
+            downloaded: cli.check_flag(Flag::new("download").switch('d'))?,
+            cached: cli.check_flag(Flag::new("install").switch('i'))?,
+            hard_match: cli.check_flag(Flag::new("match"))?,
+            limit: cli.check_option(Optional::new("limit").value("num"))?,
+            keywords: cli
+                .check_option_all(Optional::new("keyword").value("term"))?
+                .unwrap_or(Vec::new()),
+            ip: cli.check_positional(Positional::new("ip"))?,
+        });
+        command
+    }
 }
 
 impl Command<Context> for Search {
@@ -172,42 +190,6 @@ impl Search {
         header + &body
     }
 }
-
-impl FromCli for Search {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
-        let command = Ok(Search {
-            downloaded: cli.check_flag(Flag::new("download").switch('d'))?,
-            cached: cli.check_flag(Flag::new("install").switch('i'))?,
-            hard_match: cli.check_flag(Flag::new("match"))?,
-            limit: cli.check_option(Optional::new("limit"))?,
-            keywords: cli
-                .check_option_all(Optional::new("keyword").value("term"))?
-                .unwrap_or(Vec::new()),
-            ip: cli.check_positional(Positional::new("ip"))?,
-        });
-        command
-    }
-}
-
-const HELP: &str = "\
-Browse and find ip from the catalog.
-
-Usage:
-    orbit search [options] [<ip>]
-
-Args:
-    <ip>                a partially qualified pkgid to lookup ip
-
-Options:
-    --install, -i       filter for ip installed to cache
-    --download, -d      filter for ip downloaded to the queue
-    --keyword <term>... special word to filter out packages
-    --limit <count>     maximum number of results to return
-    --match             return results with each filter passed
-
-Use 'orbit help search' to learn more about the command.
-";
 
 #[cfg(test)]
 mod test {

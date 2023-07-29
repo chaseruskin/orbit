@@ -9,6 +9,9 @@ import toml, os, sys
 
 # --- Configurations -----------------------------------------------------------
 
+# the entry-level command
+PROGRAM = 'orbit'
+
 # define all commands expected to be in documentation
 COMMANDS = [
     'new',
@@ -247,7 +250,7 @@ def main():
     data = toml.load(INPUT_TOML_PATH)
     
     score = 0
-    total = 3 * len(COMMANDS)
+    total = 3 * len(COMMANDS) + 1
 
     # compile all documentation
     for cmd in COMMANDS:
@@ -263,6 +266,8 @@ def main():
         score += write_rs_help(data, RS_HELP_OUTPUT_DIR, cmd)
         print()
         pass
+
+    score += write_rs_help(data, RS_HELP_OUTPUT_DIR, PROGRAM)
 
     print('DOCUMENTATION SCORE:', score, '/', total)
 

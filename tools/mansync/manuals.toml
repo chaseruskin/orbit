@@ -265,7 +265,7 @@ orbit plan --lock-only"""
 name = "build"
 summary = "execute a plugin/backend tool flow"
 synopsis = "orbit build [options] [--] [args]..."
-description = """\
+description = """
 This command will call a user-defined command or plugin. A plugin should
 typically require a blueprint.tsv to be generated. The command also
 should read the data from the blueprint, and then process that data
@@ -275,7 +275,8 @@ If the previous plan command accepted a plugin option, then Orbit remembers
 for future build commands. It will be the default plugin to use if no
 `--plugin` or `--command` is entered for the given command.
   
-The command invoked will be ran from the ip's root directory."""
+The command invoked will be ran from the ip's root directory.
+"""
 
 options."--plugin <alias>" = "Plugin to execute"
 options."--command <cmd>" = "Command to execute"
@@ -284,10 +285,11 @@ options."--build-dir <dir>" = "The relative directory to locate the blueprint.ts
 options."--verbose" = "Display the command being executed"
 options."-- args..." = "Arguments to pass to the requested plugin"
 
-examples = """\
+examples = """
 orbit build --plugin xsim -- --waves
 orbit build --command python -- ./tools/synth.py --part x70
-orbit build --verbose"""
+orbit build --verbose
+"""
 
 # ------------------------------------------------------------------------------
 # launch          
@@ -297,7 +299,54 @@ orbit build --verbose"""
 # ------------------------------------------------------------------------------
 # search          
 # ------------------------------------------------------------------------------
+[search]
+name = "search"
+summary = "browse the ip catalog"
+synopsis = "orbit search [options] [<ip>]"
+description = """
+This command will display a list of all the known ip in the catalog. The catalog
+consists of 3 levels: cache, downloads, and channels.
 
+Any ip at the cache level are considered installed. Any ip at the downloads
+level are considered downloaded. Any ip at the channels level is considered
+available. An ip does not exist in the catalog if it is not found at any one
+of the three defined levels.
+
+When a package name is provided for `<ip>`, it will begin to partially match 
+the name with the names of the known ip. If an ip's name begins with `<ip>`, it
+is included in the filtered resultes. To strictly match the argument against an
+ip name, use `--match`.
+"""
+
+options."<ip>" = "The beginning of a package name"
+options."--install, -i" = "Filter ip installed to the cache"
+options."--download, -d" = "Filter ip downloaded to the downloads"
+options."--keyword <term>..." = "Include ip that contain this keyword"
+options."--limit <num>" = "The maximum number of results to return"
+options."--match" = "Return results that only pass each filter"
+
+examples = """
+orbit search axi
+orbit search --keyword memory --keyword ecc
+orbit search --keyword RF --limit 20
+"""
+
+help = """
+Browse the ip catalog.
+
+Usage:
+    orbit search [options] [<ip>]
+
+Args:
+    <ip>                filter the name of ip
+
+Options:
+    --install, -i       filter ip installed to cache
+    --download, -d      filter ip downloaded to downloads
+    --keyword <term>... special word to filter out packages
+    --limit <num>       maximum number of results to return
+    --match             only return results with each filter passed
+"""
 
 # ------------------------------------------------------------------------------
 # download        
@@ -417,3 +466,54 @@ orbit config --unset env.VIVADO_PATH --global"""
 # ------------------------------------------------------------------------------
 # uninstall      
 # ------------------------------------------------------------------------------
+
+
+# ------------------------------------------------------------------------------
+# orbit      
+# ------------------------------------------------------------------------------
+[orbit]
+help = """
+Orbit is a tool for hdl package management.
+
+Usage:
+    orbit [options] [command]
+
+Commands:
+    new             create a new ip
+    init            initialize an ip from an existing project
+    show            print information about an ip
+    read            navigate hdl design unit source code
+    get             fetch an entity
+    tree            view the dependency graph
+    plan, p         generate a blueprint file
+    build, b        execute a plugin
+    launch          verify an upcoming release
+    search          browse the ip catalog 
+    download        request packages from the internet
+    install         store an immutable reference to an ip
+    env             print orbit environment information
+    config          modify configuration values
+    uninstall       remove an ip from the catalog
+
+Options:
+    --version       print version information and exit
+    --upgrade       check for the latest orbit binary
+    --force         bypass interactive prompts
+    --color <when>  coloring: auto, always, never
+    --help, -h      print help information
+
+Use 'orbit help <command>' for more information about a command.
+"""
+
+# /*
+# --*-- commands to remove --*--
+#     edit            open an ip in a text editor
+#     launch          release a new ip version
+
+# --*-- commands to add --*--
+#     audit           verify a package is able to installed properly and release-able
+#     run             perform plan and build in same step
+
+
+# alt names for `probe`: -check-, -scan-, show
+# */

@@ -11,9 +11,9 @@ use clif::cmd::FromCli;
 use clif::Cli;
 use clif::Error as CliError;
 use std::env;
+use crate::commands::helps::orbit;
 
 pub type AnyResult<T> = Result<T, Box<dyn std::error::Error>>;
-
 pub type OrbitResult = AnyResult<()>;
 
 #[derive(Debug, PartialEq)]
@@ -59,14 +59,14 @@ impl Orbit {
             c.exec(&context)
         // if no command is given then print default help
         } else {
-            Ok(println!("{}", HELP))
+            Ok(println!("{}", orbit::HELP))
         }
     }
 }
 
 impl FromCli for Orbit {
     fn from_cli(cli: &mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
+        cli.check_help(clif::Help::new().quick_text(orbit::HELP).ref_usage(2..4))?;
         // need to set this coloring mode ASAP
         match cli
             .check_option(Optional::new("color").value("when"))?
@@ -214,52 +214,6 @@ impl Command<Context> for OrbitSubcommand {
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 // @TODO check for additional data such as the commit being used
-
-const HELP: &str = "\
-Orbit is a tool for hdl package management.
-
-Usage:
-    orbit [options] [command]
-
-Commands:
-    new             create a new ip
-    init            initialize an ip from an existing project
-    show            print information about an ip
-    read            inspect hdl design unit source code
-    get             fetch an entity
-    tree            view the dependency graph
-    plan, p         generate a blueprint file
-    build, b        execute a plugin
-    launch          verify an upcoming release
-    search          browse the ip catalog 
-    download        request packages from the internet
-    install         store an immutable reference to an ip
-    env             print Orbit environment information
-    config          modify configuration values
-    uninstall       remove an ip from the catalog
-
-Options:
-    --version       print version information and exit
-    --upgrade       check for the latest orbit binary
-    --force         bypass interactive prompts
-    --color <when>  coloring: auto, always, never
-    --help, -h      print help information
-
-Use 'orbit help <command>' for more information about a command.
-";
-
-/*
---*-- commands to remove --*--
-    edit            open an ip in a text editor
-    launch          release a new ip version
-
---*-- commands to add --*--
-    audit           verify a package is able to installed properly and release-able
-    run             perform plan and build in same step
-
-
-alt names for `probe`: -check-, -scan-, show
-*/
 
 use crate::core::version::Version;
 use crate::util::anyerror::Fault;

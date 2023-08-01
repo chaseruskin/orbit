@@ -15,6 +15,29 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.9.6
+
+### Changes
+- Improves priority of versions being displayed for search command
+- Allows install command to fetch from --url and installs are required dependencies
+- Improves install command to install from catalog or path
+- Enhances 'read' command with comment fetching for valid vhdl tokens
+- Fixes bug with dependency references missing when 'work' is used on external library
+- Adds new fields and sections to manifest: metadata, readme, authors
+
+### Documentation
+- Adds page for 'get' command
+- Adds page for 'read' command
+- Adds page for 'search' command
+- Adds typical command flow to commands page
+- Improves docs tooling with synchronization script
+- Adds manual for 'show' command
+- Updates glossary terms
+- Removes stale documentation
+- Updates installing page
+- Updates DST topics page
+- Updates documentation layout and information
+
 ## 0.9.5
 
 ### Changes

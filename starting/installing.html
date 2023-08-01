@@ -186,12 +186,12 @@
 <li>Open a terminal to where Orbit was downloaded.</li>
 <li>Unzip the prebuilt package.</li>
 </ol>
-<pre><code>$ unzip orbit-0.9.5-x86_64-macos.zip
+<pre><code>$ unzip orbit-0.9.6-x86_64-macos.zip
 </code></pre>
 <ol start="3">
 <li>Move the executable to a location already set in the PATH environment variable. </li>
 </ol>
-<pre><code>$ mv ./orbit-0.9.5-x86_64-macos/bin/orbit /usr/local/bin/orbit
+<pre><code>$ mv ./orbit-0.9.6-x86_64-macos/bin/orbit /usr/local/bin/orbit
 </code></pre>
 <h3 id="windows"><a class="header" href="#windows">Windows</a></h3>
 <ol>
@@ -202,7 +202,7 @@
 <p>Unzip the prebuilt package.</p>
 </li>
 </ol>
-<pre><code>$ expand-archive &quot;./orbit-0.9.5-x86_64-windows.zip&quot;
+<pre><code>$ expand-archive &quot;./orbit-0.9.6-x86_64-windows.zip&quot;
 </code></pre>
 <ol start="3">
 <li>Make a new directory to store this package.</li>
@@ -212,20 +212,20 @@
 <ol start="4">
 <li>Move the package to the new directory.</li>
 </ol>
-<pre><code>$ copy-item &quot;./orbit-0.9.5-x86_64-windows/*&quot; -destination &quot;$env:LOCALAPPDATA/Programs/orbit&quot; -recurse
+<pre><code>$ copy-item &quot;./orbit-0.9.6-x86_64-windows/*&quot; -destination &quot;$env:LOCALAPPDATA/Programs/orbit&quot; -recurse
 </code></pre>
 <ol start="5">
 <li>Edit the user-level PATH environment variable in <em><strong>Control Panel</strong></em> by adding <strong>%LOCALAPPDATA%\Programs\orbit\bin</strong>.</li>
 </ol>
 <h2 id="2-installing-with-cargo"><a class="header" href="#2-installing-with-cargo">2. Installing with Cargo</a></h2>
 <p>To install the latest version through Cargo:</p>
-<pre><code>$ cargo install --git https://github.com/c-rus/orbit.git --tag 0.9.5
+<pre><code>$ cargo install --git https://github.com/c-rus/orbit.git --tag 0.9.6
 </code></pre>
 <p>This will build the <code>orbit</code> binary and place it a path already set in the PATH environment variable.</p>
 <h2 id="checking-if-orbit-is-installed-correctly"><a class="header" href="#checking-if-orbit-is-installed-correctly">Checking if Orbit is installed correctly</a></h2>
 <p>To verify orbit is working correctly on your system, open a new terminal and run:</p>
 <pre><code>$ orbit --version
-orbit 0.9.5
+orbit 0.9.6
 </code></pre>
 <p>This should print out your version of orbit you installed. Congratulations!</p>
 

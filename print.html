@@ -1540,45 +1540,44 @@ orbit read math_pkg --ip math --start &quot;package math_pkg&quot; --doc &quot;f
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-get"><a class="header" href="#orbit-get"><strong>orbit get</strong></a></h1>
 <h2 id="name-4"><a class="header" href="#name-4"><strong>NAME</strong></a></h2>
-<p>get - pull in an hdl entity to use</p>
+<p>get - fetch an hdl entity for code integration</p>
 <h2 id="synopsis-4"><a class="header" href="#synopsis-4"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit get [options] &lt;unit&gt;
 </code></pre>
 <h2 id="description-4"><a class="header" href="#description-4"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will add the requested ip as a dependency to the current 
-project. It will grab information about the primary design unit to copy and
-paste into the current project.</p>
-<p>If the ip pkgid is omitted, it will assume to search the current working ip
-for the requested unit. </p>
-<p>If the <code>--instance</code> flag is used without the <code>--component</code> flag, it will
-display the direct instantiation style code (VHDL-93 feature).</p>
-<p>By default the ip associated with the target entity is not added under the 
-current ip manifest dependency table. The ip can be written with the 
-<code>--add</code> flag.</p>
+<p>This command will provide the relevant information about the requested HDL
+entity required to integrate the code into the current design. The command
+produces valid HDL code displayed to stdout that allows a user to copy and
+paste the results into a new hdl source code file for proper hierarchy code
+reuse.</p>
+<p>If the spec if not provided with <code>--ip</code>, then it will search the current
+working ip for the requested HDL entity.</p>
+<p>If the <code>--instance</code> flag is used without the <code>--component</code> flag, then it will
+display the direct instantiation style code for VHDL (VHDL-93 feature).</p>
+<p>It is important to note that any units referenced from ip outside of the
+current working ip are not automatically tracked as a dependency. In order to
+add an ip as a dependency to properly reference its source code files, edit
+the current working ip's manifest with a new entry under the <code>[dependencies]</code>
+table with the dependency ip and its version.</p>
 <h2 id="options-4"><a class="header" href="#options-4"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;unit&gt;</code><br />
-      The entity identifier to access</p>
-<p><code>--variant, -v &lt;version&gt;</code><br />
-      Version of ip to fetch</p>
-<p><code>--ip, &lt;pkgid&gt;</code><br />
-      The IP to search for the unit</p>
+      Primary design unit identifier</p>
+<p><code>--ip &lt;spec&gt;</code><br />
+      The ip that contains the requested unit</p>
 <p><code>--component, -c</code><br />
       Display the component declaration</p>
 <p><code>--signals, -s</code><br />
-      Display the corresponding signal declarations</p>
+      Display the constant and signal declarations</p>
 <p><code>--instance, -i</code><br />
-      Display the instance declaration</p>
-<p><code>--info</code><br />
-      Display the code file's initial comment header block</p>
+      Display the unit's instantiation</p>
 <p><code>--architecture, -a</code><br />
-      Display a list of available architectures</p>
-<p><code>--add</code><br />
-      Write the referenced ip to the current Orbit.toml dependency table</p>
+      Display the detected architectures</p>
 <p><code>--name &lt;identifier&gt;</code><br />
-      Specific instance identifier</p>
+      Set the instance's identifier</p>
 <h2 id="examples-4"><a class="header" href="#examples-4"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit get nor_gate --ip ks-tech.rary.gates -csi
-orbit get alert_unit --ip ks-tech.util.toolbox --add -v 1.0
+<pre><code>orbit get and_gate --ip gates:1.0.0 --component
+orbit get ram --ip mem:2.0.3 -csi
+orbit get uart -si --name u0
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-tree"><a class="header" href="#orbit-tree"><strong>orbit tree</strong></a></h1>
 <h2 id="name-5"><a class="header" href="#name-5"><strong>NAME</strong></a></h2>

@@ -22,6 +22,7 @@ use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
 use colored::Colorize;
+use crate::commands::helps::get;
 
 #[derive(Debug, PartialEq)]
 pub struct Get {
@@ -31,19 +32,19 @@ pub struct Get {
     component: bool,
     instance: bool,
     architectures: bool,
-    info: bool,
+    // info: bool,
     name: Option<Identifier>,
 }
 
 impl FromCli for Get {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
+        cli.check_help(clif::Help::new().quick_text(get::HELP).ref_usage(2..4))?;
         let command = Ok(Self {
             signals: cli.check_flag(Flag::new("signals").switch('s'))?,
             component: cli.check_flag(Flag::new("component").switch('c'))?,
             instance: cli.check_flag(Flag::new("instance").switch('i'))?,
             architectures: cli.check_flag(Flag::new("architecture").switch('a'))?,
-            info: cli.check_flag(Flag::new("info"))?, // @todo: implement
+            // info: cli.check_flag(Flag::new("info"))?, // @todo: implement
             ip: cli.check_option(Optional::new("ip").value("spec"))?,
             name: cli.check_option(Optional::new("name").value("identifier"))?,
             unit: cli.require_positional(Positional::new("unit"))?,
@@ -300,27 +301,6 @@ impl std::fmt::Display for GetError {
         }
     }
 }
-
-const HELP: &str = "\
-Fetch an hdl entity for code integration.
-
-Usage:
-    orbit get [options] <unit>
-
-Args:
-    <unit>                  entity identifier
-
-Options:
-    --ip <spec>             ip to reference unit from
-    --component, -c         print component declaration
-    --signals,   -s         print signal declarations
-    --instance,  -i         print instantation
-    --info                  access code file's header comment
-    --architecture, -a      print available architectures
-    --name <identifier>     specific instance identifier
-
-Use 'orbit help get' to learn more about the command.
-";
 
 //  --add                   add dependency to Orbit.toml table
 

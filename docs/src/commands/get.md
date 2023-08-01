@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-get - pull in an hdl entity to use
+get - fetch an hdl entity for code integration
 
 ## __SYNOPSIS__
 
@@ -12,55 +12,52 @@ orbit get [options] <unit>
 
 ## __DESCRIPTION__
 
-This command will add the requested ip as a dependency to the current 
-project. It will grab information about the primary design unit to copy and
-paste into the current project.
- 
-If the ip pkgid is omitted, it will assume to search the current working ip
-for the requested unit. 
- 
-If the `--instance` flag is used without the `--component` flag, it will
-display the direct instantiation style code (VHDL-93 feature).  
- 
-By default the ip associated with the target entity is not added under the 
-current ip manifest dependency table. The ip can be written with the 
-`--add` flag.
+This command will provide the relevant information about the requested HDL
+entity required to integrate the code into the current design. The command
+produces valid HDL code displayed to stdout that allows a user to copy and
+paste the results into a new hdl source code file for proper hierarchy code
+reuse.
+
+If the spec if not provided with `--ip`, then it will search the current
+working ip for the requested HDL entity.
+
+If the `--instance` flag is used without the `--component` flag, then it will
+display the direct instantiation style code for VHDL (VHDL-93 feature).
+
+It is important to note that any units referenced from ip outside of the
+current working ip are not automatically tracked as a dependency. In order to
+add an ip as a dependency to properly reference its source code files, edit
+the current working ip's manifest with a new entry under the `[dependencies]`
+table with the dependency ip and its version.
 
 ## __OPTIONS__
 
 `<unit>`  
-      The entity identifier to access
- 
-`--variant, -v <version>`  
-      Version of ip to fetch
- 
-`--ip, <pkgid>`  
-      The IP to search for the unit
- 
-`--component, -c`   
+      Primary design unit identifier
+
+`--ip <spec>`  
+      The ip that contains the requested unit
+
+`--component, -c`  
       Display the component declaration
- 
+
 `--signals, -s`  
-      Display the corresponding signal declarations
- 
+      Display the constant and signal declarations
+
 `--instance, -i`  
-      Display the instance declaration
- 
-`--info`  
-      Display the code file's initial comment header block
- 
+      Display the unit's instantiation
+
 `--architecture, -a`  
-      Display a list of available architectures
- 
-`--add`  
-      Write the referenced ip to the current Orbit.toml dependency table
- 
+      Display the detected architectures
+
 `--name <identifier>`  
-      Specific instance identifier
+      Set the instance's identifier
 
 ## __EXAMPLES__
 
 ```
-orbit get nor_gate --ip ks-tech.rary.gates -csi
-orbit get alert_unit --ip ks-tech.util.toolbox --add -v 1.0
+orbit get and_gate --ip gates:1.0.0 --component
+orbit get ram --ip mem:2.0.3 -csi
+orbit get uart -si --name u0
 ```
+

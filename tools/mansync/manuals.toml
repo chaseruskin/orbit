@@ -195,7 +195,61 @@ Options:
 # ------------------------------------------------------------------------------ 
 # get      
 # ------------------------------------------------------------------------------
+[get]
+name = "get"
+summary = "fetch an hdl entity for code integration"
+synopsis = "orbit get [options] <unit>"
+description = """
+This command will provide the relevant information about the requested HDL 
+entity required to integrate the code into the current design. The command
+produces valid HDL code displayed to stdout that allows a user to copy and
+paste the results into a new hdl source code file for proper hierarchy code
+reuse.
 
+If the spec if not provided with `--ip`, then it will search the current
+working ip for the requested HDL entity.
+
+If the `--instance` flag is used without the `--component` flag, then it will
+display the direct instantiation style code for VHDL (VHDL-93 feature).
+
+It is important to note that any units referenced from ip outside of the
+current working ip are not automatically tracked as a dependency. In order to
+add an ip as a dependency to properly reference its source code files, edit
+the current working ip's manifest with a new entry under the `[dependencies]`
+table with the dependency ip and its version.
+"""
+
+args."<unit>" = "Primary design unit identifier"
+options."--ip <spec>" = "The ip that contains the requested unit"
+options."--component, -c" = "Display the component declaration"
+options."--signals, -s" = "Display the constant and signal declarations"
+options."--instance, -i" = "Display the unit's instantiation"
+options."--architecture, -a" = "Display the detected architectures"
+options."--name <identifier>" = "Set the instance's identifier"
+
+examples = """
+orbit get and_gate --ip gates:1.0.0 --component
+orbit get ram --ip mem:2.0.3 -csi
+orbit get uart -si --name u0
+"""
+
+help = """
+Fetch an hdl entity for code integration.
+
+Usage:
+    orbit get [options] <unit>
+
+Args:
+    <unit>                  entity identifier
+
+Options:
+    --ip <spec>             ip to reference the unit from
+    --component, -c         display component declaration
+    --signals,   -s         display constant and signal declarations
+    --instance,  -i         display instantation
+    --architecture, -a      display detected architectures
+    --name <identifier>     set the instance's identifier
+"""
 
 # ------------------------------------------------------------------------------     
 # tree    
@@ -209,7 +263,7 @@ Options:
 name = "plan"
 summary = "generate a blueprint file"
 synopsis = "orbit plan [options]"
-description = """\
+description = """
 This command will set up the current ip for build processes. It will collect
 all necessary files according to their defined fileset into the 
 blueprint.tsv file.
@@ -239,7 +293,8 @@ scratch, use `--force`.
 If only wishing to update the lockfile, using `--lock-only` will not require
 a toplevel or testbench to be determined. The `--lock-only` flag can be
 combined with `--force` to overwrite the lockfile regardless if it is
-already in sync with the current working ip's manifest data."""
+already in sync with the current working ip's manifest data.
+"""
 
 options."--top <unit>" = "The top level entity to explicitly define"
 options."--bench <tb>" = "The top level testbench to explicitly define"
@@ -252,11 +307,11 @@ options."--force" = "Ignore reading the precomputed lock file"
 options."--lock-only" = "Create the lock file and exit"
 options."--all" = "Include all locally found HDL files"
 
-examples = """\
+examples = """
 orbit plan --top and_gate --fileset PIN-PLAN="*.board"
 orbit plan --plugin vivado --clean --bench ram_tb
-orbit plan --lock-only"""
-
+orbit plan --lock-only
+"""
 
 # ------------------------------------------------------------------------------
 # build, b       

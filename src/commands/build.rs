@@ -15,6 +15,7 @@ use clif::arg::{Flag, Optional};
 use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
+use crate::commands::helps::build;
 
 #[derive(Debug, PartialEq)]
 pub struct Build {
@@ -28,7 +29,7 @@ pub struct Build {
 
 impl FromCli for Build {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
+        cli.check_help(clif::Help::new().quick_text(build::HELP).ref_usage(2..4))?;
         let command = Ok(Build {
             alias: cli.check_option(Optional::new("plugin").value("alias"))?,
             list: cli.check_flag(Flag::new("list"))?,
@@ -180,20 +181,3 @@ impl Build {
         }
     }
 }
-
-const HELP: &str = "\
-Execute a backend tool/workflow.
-
-Usage:
-    orbit build [options] [--] [args]...
-
-Options:
-    --plugin <alias>    plugin to execute
-    --command <cmd>     command to execute
-    --list              view available plugins
-    --build-dir <dir>   set the output build directory
-    --verbose           display the command being executed
-    -- args...          arguments to pass to the requested command
-
-Use 'orbit help build' to learn more about the command.
-";

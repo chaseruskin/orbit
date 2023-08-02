@@ -222,7 +222,7 @@ def write_rs_help(table, dest, command, footer=True) -> int:
         mod_exists = mod.read().count('pub mod '+command+';') > 0
     if mod_exists == False:
         with open(dest+'/'+'mod.rs', 'a') as mod:
-            mod.write('pub mod '+command+';')
+            mod.write('pub mod '+command+';'+END)
         pass
 
     path = dest+'/'+command+'.rs'

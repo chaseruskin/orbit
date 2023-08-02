@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-build - execute a plugin/backend tool flow
+build - execute a backend workflow
 
 ## __SYNOPSIS__
 

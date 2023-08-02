@@ -361,12 +361,31 @@ orbit plan --plugin vivado --clean --bench ram_tb
 orbit plan --lock-only
 """
 
+help = """
+Generate a blueprint file.
+
+Usage:
+    orbit plan [options]              
+
+Options:
+    --top <unit>            override auto-detected toplevel entity
+    --bench <tb>            override auto-detected toplevel testbench
+    --plugin <alias>        collect filesets defined for a plugin
+    --build-dir <dir>       set the output build directory
+    --fileset <key=glob>... set an additional fileset
+    --clean                 remove all files from the build directory
+    --list                  view available plugins
+    --lock-only             create the lockfile and exit
+    --all                   include all found HDL files
+    --force                 skip reading from the lock file
+"""
+
 # ------------------------------------------------------------------------------
 # build, b       
 # ------------------------------------------------------------------------------
 [build]
 name = "build"
-summary = "execute a plugin/backend tool flow"
+summary = "execute a backend workflow"
 synopsis = "orbit build [options] [--] [args]..."
 description = """
 This command will call a user-defined command or plugin. A plugin should
@@ -392,6 +411,21 @@ examples = """
 orbit build --plugin xsim -- --waves
 orbit build --command python -- ./tools/synth.py --part x70
 orbit build --verbose
+"""
+
+help = """
+Execute a backend workflow.
+
+Usage:
+    orbit build [options] [--] [args]...
+
+Options:
+    --plugin <alias>    plugin to execute
+    --command <cmd>     command to execute
+    --list              view available plugins
+    --build-dir <dir>   set the output build directory
+    --verbose           display the command being executed
+    -- args...          arguments to pass to the requested command
 """
 
 # ------------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 // This manual page was automatically generated from the mangen.py tool.
 pub const MANUAL: &str = r#"NAME
-    build - execute a plugin/backend tool flow
+    build - execute a backend workflow
 
 SYNOPSIS
     orbit build [options] [--] [args]...

@@ -41,7 +41,7 @@ use crate::core::ip::Ip;
 use crate::core::ip::IpSpec;
 use crate::core::lockfile::LockEntry;
 use crate::core::lockfile::LockFile;
-
+use crate::commands::helps::plan;
 use crate::util::graphmap::Node;
 
 pub const BLUEPRINT_FILE: &str = "blueprint.tsv";
@@ -63,7 +63,7 @@ pub struct Plan {
 
 impl FromCli for Plan {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
+        cli.check_help(clif::Help::new().quick_text(plan::HELP).ref_usage(2..4))?;
         let command = Ok(Plan {
             force: cli.check_flag(Flag::new("force"))?,
             only_lock: cli.check_flag(Flag::new("lock-only"))?,
@@ -1138,27 +1138,6 @@ impl std::fmt::Display for PlanError {
         }
     }
 }
-
-const HELP: &str = "\
-Generate a blueprint file.
-
-Usage:
-    orbit plan [options]              
-
-Options:
-    --top <unit>            override auto-detected toplevel entity
-    --bench <tb>            override auto-detected toplevel testbench
-    --plugin <alias>        collect filesets defined for a plugin
-    --build-dir <dir>       set the output build directory
-    --fileset <key=glob>... set an additional fileset
-    --clean                 remove all files from the build directory
-    --list                  view available plugins
-    --lock-only             create the lockfile and exit
-    --all                   include all found HDL files
-    --force                 skip reading from the lock file
-
-Use 'orbit help plan' to learn more about the command.
-";
 
 #[cfg(test)]
 mod test {

@@ -18,6 +18,14 @@ use clif::Cli;
 use clif::Error as CliError;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use crate::core::fileset;
+use crate::core::lang::node::SubUnitNode;
+use crate::core::lang::vhdl::symbol::{VHDLParser, VHDLSymbol};
+use crate::util::graph::EdgeStatus;
+use crate::util::graphmap::GraphMap;
+use std::fs;
+use crate::commands::helps::tree;
+use super::plan::PlanError;
 
 #[derive(Debug, PartialEq)]
 pub struct Tree {
@@ -31,13 +39,13 @@ pub struct Tree {
 
 impl FromCli for Tree {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
+        cli.check_help(clif::Help::new().quick_text(tree::HELP).ref_usage(2..4))?;
         let command = Ok(Tree {
-            compress: cli.check_flag(Flag::new("compress"))?,
+            compress: cli.check_flag(Flag::new("compress"))?, // @todo: implement
             ascii: cli.check_flag(Flag::new("ascii"))?,
             ip: cli.check_flag(Flag::new("ip"))?,
             all: cli.check_flag(Flag::new("all"))?,
-            root: cli.check_option(Optional::new("root").value("entity"))?,
+            root: cli.check_option(Optional::new("root").value("unit"))?,
             format: cli.check_option(Optional::new("format").value("fmt"))?,
         });
         command
@@ -52,7 +60,7 @@ impl Command<Context> for Tree {
         c.goto_ip_path()?;
 
         if self.compress == true {
-            todo!("compression logic")
+            todo!("implement compression logic")
         }
 
         // get the ip manifest
@@ -347,29 +355,3 @@ impl Tree {
         graph
     }
 }
-
-use crate::core::fileset;
-use crate::core::lang::node::SubUnitNode;
-use crate::core::lang::vhdl::symbol::{VHDLParser, VHDLSymbol};
-use crate::util::graph::EdgeStatus;
-use crate::util::graphmap::GraphMap;
-use std::fs;
-
-use super::plan::PlanError;
-
-const HELP: &str = "\
-View the hardware design hierarchy.
-
-Usage:
-    orbit tree [options]
-
-Options:
-    --root <entity>     top entity identifier to mark as the root node
-    --compress          replace duplicate branches with a label marking
-    --all               include all possible roots in tree
-    --format <fmt>      select how to display entity names: 'long' or 'short'
-    --ascii             use chars from the original 128 ascii set
-    --ip                view the ip-level dependency graph
-
-Use 'orbit help tree' to learn more about the command.
-";

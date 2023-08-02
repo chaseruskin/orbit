@@ -1587,32 +1587,34 @@ orbit get uart -si --name u0
 </code></pre>
 <h2 id="description-5"><a class="header" href="#description-5"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will show the hierarchical tree-structure starting from a node.
-By default, Orbit will attempt to automatically detect the root if it is
-unambiguous.</p>
-<p>The hdl tree only displays the connections between entity in the graph. If
-an unidentified entity is instantiated it will appear as a leaf and is 
-denoted as a black box by a '?' character.</p>
-<p>An entity is considered a black box if Orbit cannot find its hdl source code
-file.</p>
-<p>The hdl tree does not show how many times an entity is instantiated within 
-a parent entity, and all architectures for each entity are analyzed.</p>
-<p>To view the ip dependency tree, use <code>--ip</code>.</p>
+By default, it will attempt to automatically detect the root if it is
+unambiguous and <code>--root</code> is not provided. This command only works when called
+from the current working ip.</p>
+<p>The hdl-level tree displays the connections between entities. The hdl tree does 
+not show how many times an entity is instantiated within a parent entity, and 
+all architectures for each entity are analyzed. If an unidentified entity is 
+instantiated it will appear as a leaf and is denoted as a black box by a '?' 
+character.</p>
+<p>An entity is considered a black box if it cannot find that referenced entity's 
+hdl source code file.</p>
+<p>To view the dependency tree at the ip-level, use <code>--ip</code>.</p>
 <h2 id="options-5"><a class="header" href="#options-5"><strong>OPTIONS</strong></a></h2>
-<p><code>--root &lt;entity&gt;</code><br />
-      Top-level entity identifier to mark as the root node</p>
+<p><code>--root &lt;unit&gt;</code><br />
+      The uppermost hdl unit to start the dependency tree</p>
 <p><code>--compress</code><br />
       Replace duplicate branches with a label marking</p>
 <p><code>--all</code><br />
-      Include all possible roots in hierarchical tree</p>
+      Include all possible roots in the tree</p>
 <p><code>--format &lt;fmt&gt;</code><br />
-      Select how to display entity names: 'long' or 'short'</p>
+      Determine how to display nodes ('long', 'short')</p>
 <p><code>--ascii</code><br />
-      Restricts characters to original 128 ascii set</p>
+      Limit the textual tree characters to the 128 ASCII set</p>
 <p><code>--ip</code><br />
-      View the ip-level dependency graph</p>
+      View the dependency graph at the ip level</p>
 <h2 id="examples-5"><a class="header" href="#examples-5"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit tree --root nor_gate
-orbit tree --ip
+<pre><code>orbit tree --ip
+orbit tree --root top --format long
+orbit tree --ascii --all
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-plan"><a class="header" href="#orbit-plan"><strong>orbit plan</strong></a></h1>
 <h2 id="name-6"><a class="header" href="#name-6"><strong>NAME</strong></a></h2>

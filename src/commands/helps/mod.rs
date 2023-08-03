@@ -8,3 +8,5 @@ pub mod plan;
 pub mod build;
 pub mod search;
 pub mod orbit;
+pub mod download;
+pub mod install;

@@ -47,32 +47,34 @@ use std::env;
 use std::fs;
 use crate::util::anyerror::AnyError;
 use std::path::PathBuf;
+use crate::commands::helps::install;
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
     ip: Option<PartialIpSpec>,
-    path: Option<PathBuf>,
     url: Option<String>,
+    path: Option<PathBuf>,
     protocol: Option<String>,
     tag: Option<String>,
     force: bool,
     verbose: bool,
-    deps_only: bool,
     all: bool,
 }
 
 impl FromCli for Install {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
+        cli.check_help(clif::Help::new().quick_text(install::HELP).ref_usage(2..4))?;
         let command = Ok(Install {
+            // Flags
             force: cli.check_flag(Flag::new("force"))?,
             verbose: cli.check_flag(Flag::new("verbose"))?,
-            deps_only: cli.check_flag(Flag::new("deps"))?,
             all: cli.check_flag(Flag::new("all"))?,
+            // Options
             path: cli.check_option(Optional::new("path"))?,
             url: cli.check_option(Optional::new("url"))?,
             tag: cli.check_option(Optional::new("tag"))?,
             protocol: cli.check_option(Optional::new("protocol").value("name"))?,
+            // Positionals
             ip: cli.check_positional(Positional::new("ip"))?,
         });
         command
@@ -383,23 +385,6 @@ impl Install {
         // if the lockfile is invalid, then it will only install the current request and zero dependencies
     }
 }
-
-const HELP: &str = "\
-Places an immutable version of an ip to the cache for dependency usage.
-
-Usage:
-    orbit install [options] [<ip>]
-
-Options:
-    <ip>                    ip specification to install
-    --url <url>             URL to install the of the package on the internet
-    --protocol <protocol>   custom protocol to download the package
-    --path <path>           filesystem path to local ip to install
-    --force                 install regardless of cache slot occupancy
-    --all                   install all dependencies including development
-
-Use 'orbit help install' to learn more about the command.
-";
 
 // # install from online using custom protocol
 // orbit install toolbox:1.0.1 --url https://github.com/c-rus/toolbox.git --protocol git-op

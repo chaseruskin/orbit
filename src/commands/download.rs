@@ -25,6 +25,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
+use crate::commands::helps::download;
 
 #[derive(Debug, PartialEq)]
 pub struct Download {
@@ -38,13 +39,15 @@ pub struct Download {
 
 impl FromCli for Download {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
+        cli.check_help(clif::Help::new().quick_text(download::HELP).ref_usage(2..4))?;
         let command = Ok(Download {
+            // Flags
             all: cli.check_flag(Flag::new("all"))?,
             missing: cli.check_flag(Flag::new("missing"))?,
             list: cli.check_flag(Flag::new("list"))?,
             force: cli.check_flag(Flag::new("force"))?,
             verbose: cli.check_flag(Flag::new("verbose"))?,
+            // Options
             queue_dir: cli.check_option(Optional::new("queue").value("dir"))?,
         });
         command
@@ -308,22 +311,5 @@ impl Download {
         Ok(())
     }
 }
-
-const HELP: &str = "\
-Fetch packages from the internet.
-
-Usage:
-    orbit download [options]
-
-Options:
-    --list              print URLs to the console
-    --missing           filter only uninstalled packages (default: true)
-    --all               contain all packages in list
-    --queue <dir>       set the destination directory to place fetched codebase
-    --verbose           display the command being executed
-    --force             fallback to default protocol if missing given protocol
-
-Use 'orbit help download' to learn more about the command.
-";
 
 // add <url> argument to download? with --protocol <alias> option?

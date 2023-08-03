@@ -8,7 +8,7 @@ SYNOPSIS
 DESCRIPTION
     This command will get a package from the internet using the default protocol
     or a user-defined protocol. It places the package in the path defined as
-    environment variable ORBIT_DOWNLOADS.
+    environment variable '$ORBIT_DOWNLOADS'.
     
     Downloads are vital to Orbit's management system as to avoid having to solely 
     rely on accessing the internet to get IP. Downloads allow Orbit to quickly
@@ -16,7 +16,7 @@ DESCRIPTION
     
     When using a custom protocol, Orbit expects the final fetched repository to
     exist within a special directory called the queue. By default, the queue is set
-    to a temporary directory, but it can be overridden with '--queue <dir>'. After a 
+    to a temporary directory, but it can be overridden with '--queue'. After a 
     protocol is executed, Orbit resumes the download process by trying to detect the 
     target IP and then performing a compression algorithm on the path to store as a 
     single file archive. This final archive is special and packed with additional 
@@ -27,8 +27,9 @@ DESCRIPTION
     dependencies.
     
     Variable substitution is supported when specifying the "command" and "args"
-    fields for a protocol. Most notably, the queue is accessed as {{ orbit.queue }}.
-    See 'orbit help protocols' for more information about available variables.
+    fields for a protocol. Most notably, the queue is accessed as 
+    '{{ orbit.queue }}'. See 'orbit help protocols' for more information about 
+    available variables.
     
     This action may automatically run during an install if the package is missing
     from the downloads. See 'orbit help install' for more details.

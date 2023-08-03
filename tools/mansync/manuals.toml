@@ -524,10 +524,10 @@ Options:
 name = "download"
 summary = "fetch packages from the internet"
 synopsis = "orbit download [options]"
-description = """\
+description = """
 This command will get a package from the internet using the default protocol
 or a user-defined protocol. It places the package in the path defined as
-environment variable ORBIT_DOWNLOADS.
+environment variable `$ORBIT_DOWNLOADS`.
 
 Downloads are vital to Orbit's management system as to avoid having to solely 
 rely on accessing the internet to get IP. Downloads allow Orbit to quickly
@@ -535,7 +535,7 @@ repair broken installations and allow users to learn about IP before installing.
 
 When using a custom protocol, Orbit expects the final fetched repository to
 exist within a special directory called the queue. By default, the queue is set
-to a temporary directory, but it can be overridden with `--queue <dir>`. After a 
+to a temporary directory, but it can be overridden with `--queue`. After a 
 protocol is executed, Orbit resumes the download process by trying to detect the 
 target IP and then performing a compression algorithm on the path to store as a 
 single file archive. This final archive is special and packed with additional 
@@ -546,11 +546,13 @@ A lockfile is required to exist in the current IP in order to download its
 dependencies.
 
 Variable substitution is supported when specifying the "command" and "args"
-fields for a protocol. Most notably, the queue is accessed as {{ orbit.queue }}.
-See `orbit help protocols` for more information about available variables.
+fields for a protocol. Most notably, the queue is accessed as 
+`{{ orbit.queue }}`. See `orbit help protocols` for more information about 
+available variables.
 
 This action may automatically run during an install if the package is missing
-from the downloads. See `orbit help install` for more details."""
+from the downloads. See `orbit help install` for more details.
+"""
 
 options."--list" = "Print URLs and exit"
 options."--missing" = "Filter only uninstalled packages (default: true)"
@@ -559,9 +561,25 @@ options."--queue <dir>" = "Set the destination directory for placing fetched rep
 options."--verbose" = "Display the custom protocol being executed"
 options."--force" = "Download selected packages regardless of status"
 
-examples = """\
+examples = """
 orbit download --missing --list
-orbit download --all --force"""
+orbit download --all --force
+"""
+
+help = """
+Fetch packages from the internet.
+
+Usage:
+    orbit download [options]
+
+Options:
+    --list              print URLs to the console and exit
+    --missing           filter only uninstalled packages (default: true)
+    --all               include dependencies of all types
+    --queue <dir>       set the destination directory to place fetched codebase
+    --verbose           display the command being executed
+    --force             fallback to default protocol if missing given protocol
+"""
 
 # ------------------------------------------------------------------------------
 # install         
@@ -570,7 +588,7 @@ orbit download --all --force"""
 name = "install"
 summary = "store an immutable reference to an ip"
 synopsis = "orbit install [options]"
-description = """\
+description = """
 This command will get move an ip's project folder to the cache. By default,
 the specified version is the 'latest' released version orbit can
 identify.
@@ -585,18 +603,37 @@ The version is the "snapshot" of the ip's state during that time of
 development. Versions are recognized by Orbit as git tags following the 
 semver specification (major.minor.patch).
   
-Development versions ('dev') are not allowed to be installed to the cache
-because they are considered mutable."""
+Development versions are not allowed to be installed to the cache
+because they are considered mutable.
+"""
 
 options."--path <path>" = "Directory to install ip from to place in the cache"
 options."--ip <name>" = "Ip to install from the queue into the cache"
 options."--force" = "Install the ip regardless of the cache slot occupancy"
-options."--all" = "Install all dependencies (including developmental)"
+options."--all" = "Install all dependencies (including development)"
 
-examples = """\
+examples = """
 orbit install"
 orbit install --path ./projects/ram --force 
-orbit install --all"""
+orbit install --all
+"""
+
+help = """
+Store an immutable reference to an ip.
+
+Usage:
+    orbit install [options]
+
+Options:
+    <ip>                ip specification to install from catalog
+    --url <url>         URL to install the ip from the internet
+    --path <path>       ip's local path to install from filesystem
+    --protocol <name>   defined protocol to download the package
+    --tag <tag>         unique tag to pass to the protocol
+    --all               install all dependencies including development
+    --verbose           display the command(s) being executed
+    --force             install regardless of cache slot occupancy
+"""
 
 # ------------------------------------------------------------------------------
 # env             
@@ -610,7 +647,7 @@ orbit install --all"""
 name = "config"
 summary = "modify configuration values"
 synopsis = "orbit config [options]"
-description = """\
+description = """
 This command will alter configuration entries in Orbit's settings file named 
 `config.toml`. By default, it will modify the user's config located at
 $ORBIT_HOME.
@@ -620,7 +657,8 @@ intermediate table identifiers and the final key identifier.
   
 The command modifies the document in three independent stages. The first stage
 modifies the settings by iterating through all defined `--append` values. Then, 
-it will insert all `--set` values. Lastly, it will remove all `--unset` entries."""
+it will insert all `--set` values. Lastly, it will remove all `--unset` entries.
+"""
 
 options."--global" = "Access the home configuration file"
 options."--local" = "Access the current project's configuration file"
@@ -628,9 +666,10 @@ options."--append <key>=<value>..." = "Add a value to the key storing a list"
 options."--set <key>=<value>..." = "Write the value at the key's entry"
 options."--unset <key>..." = "Delete the key's entry"
 
-examples = """\
+examples = """
 orbit config --append include="~/.orbit/profiles/ks-tech"
-orbit config --unset env.VIVADO_PATH --global"""
+orbit config --unset env.VIVADO_PATH --global
+"""
 
 # ------------------------------------------------------------------------------
 # uninstall      
@@ -655,7 +694,7 @@ Commands:
     get             fetch an entity
     tree            view the dependency graph
     plan, p         generate a blueprint file
-    build, b        execute a plugin
+    build, b        execute a backend workflow
     launch          verify an upcoming release
     search          browse the ip catalog 
     download        request packages from the internet

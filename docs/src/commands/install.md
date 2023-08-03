@@ -26,7 +26,7 @@ The version is the "snapshot" of the ip's state during that time of
 development. Versions are recognized by Orbit as git tags following the 
 semver specification (major.minor.patch).
   
-Development versions ('dev') are not allowed to be installed to the cache
+Development versions are not allowed to be installed to the cache
 because they are considered mutable.
 
 ## __OPTIONS__
@@ -41,7 +41,7 @@ because they are considered mutable.
       Install the ip regardless of the cache slot occupancy
 
 `--all`  
-      Install all dependencies (including developmental)
+      Install all dependencies (including development)
 
 ## __EXAMPLES__
 

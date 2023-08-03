@@ -20,7 +20,7 @@ DESCRIPTION
     development. Versions are recognized by Orbit as git tags following the 
     semver specification (major.minor.patch).
       
-    Development versions ('dev') are not allowed to be installed to the cache
+    Development versions are not allowed to be installed to the cache
     because they are considered mutable.
 
 OPTIONS
@@ -34,7 +34,7 @@ OPTIONS
         Install the ip regardless of the cache slot occupancy
 
     --all
-        Install all dependencies (including developmental)
+        Install all dependencies (including development)
 
 EXAMPLES
     orbit install"

@@ -12,7 +12,7 @@ Commands:
     get             fetch an entity
     tree            view the dependency graph
     plan, p         generate a blueprint file
-    build, b        execute a plugin
+    build, b        execute a backend workflow
     launch          verify an upcoming release
     search          browse the ip catalog 
     download        request packages from the internet

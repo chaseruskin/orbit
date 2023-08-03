@@ -1891,19 +1891,17 @@ orbit install --all
 <pre><code>orbit env [options]
 </code></pre>
 <h2 id="description-12"><a class="header" href="#description-12"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will print environment information set by Orbit during runtime.
-By default, it will display all known information in the current 
-environment. </p>
-<p>Optionally passing in keys will print the value's back in the
-order they were accepted on the command line. If a variable does not exist,
-it will print an empty line.</p>
+<p>This command prints environment variables relevant to <code>orbit</code>.</p>
+<p>By default, this command prins information as a shell script. If one or more
+variable names are given as arguments as <code>&lt;key&gt;</code>, then it will print the value
+of each provided variables on its own line.</p>
 <h2 id="options-12"><a class="header" href="#options-12"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;key&gt;...</code><br />
-      Environment variable keys to request to print</p>
+      Include this variable's value specifically in the environment information</p>
 <h2 id="examples-12"><a class="header" href="#examples-12"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit env
 orbit env ORBIT_HOME
-orbit env ORBIT_DEV_PATH ORBIT_HOME
+orbit env ORBIT_CACHE ORBIT_DOWNLOADS
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-config"><a class="header" href="#orbit-config"><strong>orbit config</strong></a></h1>
 <h2 id="name-13"><a class="header" href="#name-13"><strong>NAME</strong></a></h2>
@@ -1913,8 +1911,8 @@ orbit env ORBIT_DEV_PATH ORBIT_HOME
 </code></pre>
 <h2 id="description-13"><a class="header" href="#description-13"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will alter configuration entries in Orbit's settings file named
-<code>config.toml</code>. By default, it will modify the user's config located at
-$ORBIT_HOME.</p>
+<code>config.toml</code>. By default, it will modify the user's config file found at
+the path read from the environment variable <code>$ORBIT_HOME</code>.</p>
 <p>To access an entry (key/value pair), use dots (<code>.</code>) to delimit between 
 intermediate table identifiers and the final key identifier.</p>
 <p>The command modifies the document in three independent stages. The first stage
@@ -1925,9 +1923,9 @@ it will insert all <code>--set</code> values. Lastly, it will remove all <code>-
       Access the home configuration file</p>
 <p><code>--local</code><br />
       Access the current project's configuration file</p>
-<p><code>--append &lt;key&gt;=&lt;value&gt;...</code><br />
+<p><code>--append &lt;key=value&gt;...</code><br />
       Add a value to the key storing a list</p>
-<p><code>--set &lt;key&gt;=&lt;value&gt;...</code><br />
+<p><code>--set &lt;key=value&gt;...</code><br />
       Write the value at the key's entry</p>
 <p><code>--unset &lt;key&gt;...</code><br />
       Delete the key's entry</p>

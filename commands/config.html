@@ -177,8 +177,8 @@
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will alter configuration entries in Orbit's settings file named
-<code>config.toml</code>. By default, it will modify the user's config located at
-$ORBIT_HOME.</p>
+<code>config.toml</code>. By default, it will modify the user's config file found at
+the path read from the environment variable <code>$ORBIT_HOME</code>.</p>
 <p>To access an entry (key/value pair), use dots (<code>.</code>) to delimit between 
 intermediate table identifiers and the final key identifier.</p>
 <p>The command modifies the document in three independent stages. The first stage
@@ -189,9 +189,9 @@ it will insert all <code>--set</code> values. Lastly, it will remove all <code>-
       Access the home configuration file</p>
 <p><code>--local</code><br />
       Access the current project's configuration file</p>
-<p><code>--append &lt;key&gt;=&lt;value&gt;...</code><br />
+<p><code>--append &lt;key=value&gt;...</code><br />
       Add a value to the key storing a list</p>
-<p><code>--set &lt;key&gt;=&lt;value&gt;...</code><br />
+<p><code>--set &lt;key=value&gt;...</code><br />
       Write the value at the key's entry</p>
 <p><code>--unset &lt;key&gt;...</code><br />
       Delete the key's entry</p>

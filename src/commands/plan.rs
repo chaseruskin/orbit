@@ -65,14 +65,16 @@ impl FromCli for Plan {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
         cli.check_help(clif::Help::new().quick_text(plan::HELP).ref_usage(2..4))?;
         let command = Ok(Plan {
+            // flags
             force: cli.check_flag(Flag::new("force"))?,
             only_lock: cli.check_flag(Flag::new("lock-only"))?,
             all: cli.check_flag(Flag::new("all"))?,
             clean: cli.check_flag(Flag::new("clean"))?,
             list: cli.check_flag(Flag::new("list"))?,
+            // options
             top: cli.check_option(Optional::new("top").value("unit"))?,
             bench: cli.check_option(Optional::new("bench").value("tb"))?,
-            plugin: cli.check_option(Optional::new("plugin"))?,
+            plugin: cli.check_option(Optional::new("plugin").value("alias"))?,
             build_dir: cli.check_option(Optional::new("build-dir").value("dir"))?,
             filesets: cli.check_option_all(Optional::new("fileset").value("key=glob"))?,
         });

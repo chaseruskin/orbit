@@ -50,6 +50,14 @@ not require a toplevel or testbench to be determined. Using `--lock-only` with
 `--force` will overwrite the lockfile regardless if it is already in sync 
 with the current working ip's manifest data.
 
+When updating the lockfile, this command will download and install any new
+dependencies if necessary. To only download an ip, see the `download` command.
+To only install an ip, see the `install` command.
+
+If an installed dependency's computed checksum does not match the checksum
+stored in the lockfile, it assumes the installation to be corrupt and will 
+re-install the dependency to the cache.
+
 ## __OPTIONS__
 
 `--top <unit>`  

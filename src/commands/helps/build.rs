@@ -10,7 +10,7 @@ Options:
     --list              view available plugins
     --build-dir <dir>   set the output build directory
     --verbose           display the command being executed
-    -- args...          arguments to pass to the requested command
+    args                arguments to pass to the requested command
 
 Use 'orbit help build' to read more about the command.
 "#;

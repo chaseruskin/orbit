@@ -31,11 +31,14 @@ impl FromCli for Build {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
         cli.check_help(clif::Help::new().quick_text(build::HELP).ref_usage(2..4))?;
         let command = Ok(Build {
-            alias: cli.check_option(Optional::new("plugin").value("alias"))?,
+            // Flags
             list: cli.check_flag(Flag::new("list"))?,
             verbose: cli.check_flag(Flag::new("verbose"))?,
+            // Options
+            alias: cli.check_option(Optional::new("plugin").value("alias"))?,
             build_dir: cli.check_option(Optional::new("build-dir").value("dir"))?,
             command: cli.check_option(Optional::new("command").value("cmd"))?,
+            // Remaining args
             args: cli.check_remainder()?,
         });
         command

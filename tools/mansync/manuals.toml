@@ -349,6 +349,14 @@ If only needing to update the lockfile, use `--lock-only`. This flag does
 not require a toplevel or testbench to be determined. Using `--lock-only` with
 `--force` will overwrite the lockfile regardless if it is already in sync 
 with the current working ip's manifest data.
+
+When updating the lockfile, this command will download and install any new
+dependencies if necessary. To only download an ip, see the `download` command.
+To only install an ip, see the `install` command.
+
+If an installed dependency's computed checksum does not match the checksum
+stored in the lockfile, it assumes the installation to be corrupt and will 
+re-install the dependency to the cache.
 """
 
 options."--top <unit>" = "The top level entity to explicitly define"
@@ -395,28 +403,45 @@ name = "build"
 summary = "execute a backend workflow"
 synopsis = "orbit build [options] [--] [args]..."
 description = """
-This command will call a user-defined command or plugin. A plugin should
-typically require a blueprint.tsv to be generated. The command also
-should read the data from the blueprint, and then process that data
-(synthesis, simulation, etc.).
-  
-If the previous plan command accepted a plugin option, then Orbit remembers
-for future build commands. It will be the default plugin to use if no
-`--plugin` or `--command` is entered for the given command.
-  
-The command invoked will be ran from the ip's root directory.
+This command carries out the "building phase". This phase involves running a
+user-defined command or plugin as a subprocess. It is required that the
+planning phase occurs before the building phase. This command acts upon the 
+current working ip.
+
+If a plugin was previously used during the planning phase, then this command
+by default will reference and call that plugin after loading the previously
+written `.env` file from the planning phase. Either a plugin from `--plugin` 
+or a command from `--command` is required if a plugin was not previously
+specified during planning.
+
+If `--list` is used, then it will display a list of the available plugins to
+the user. Using `--list` in combination with a plugin from `--plugin` will
+display any detailed help information the plugin has documented in its 
+definition.
+
+As a refresher, a backend workflow typically performs three tasks:  
+   1. Parse the blueprint file  
+   2. Process the referenced files listed in the blueprint  
+   3. Generate an output product 
+
+Any command-line arguments entered after the terminating flag `--` will be
+passed in the received order as arguments to the subprocess's command. If a plugin already
+has defined arguments, the additional arguments passed from the command-line
+will follow the previously defined arguments.
+
+The subprocess will spawn from the current working ip's root directory.
 """
 
 options."--plugin <alias>" = "Plugin to execute"
 options."--command <cmd>" = "Command to execute"
 options."--list" = "View available plugins"
-options."--build-dir <dir>" = "The relative directory to locate the blueprint.tsv file"
+options."--build-dir <dir>" = "The relative directory to locate the blueprint file"
 options."--verbose" = "Display the command being executed"
-options."-- args..." = "Arguments to pass to the requested plugin"
+options."args" = "Arguments to pass to the plugin or command"
 
 examples = """
-orbit build --plugin xsim -- --waves
-orbit build --command python -- ./tools/synth.py --part x70
+orbit build --plugin xsim -- --elab
+orbit build --command python -- synth.py
 orbit build --verbose
 """
 
@@ -432,7 +457,7 @@ Options:
     --list              view available plugins
     --build-dir <dir>   set the output build directory
     --verbose           display the command being executed
-    -- args...          arguments to pass to the requested command
+    args                arguments to pass to the requested command
 """
 
 # ------------------------------------------------------------------------------

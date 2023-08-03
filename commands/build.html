@@ -176,14 +176,30 @@
 <pre><code>orbit build [options] [--] [args]...
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will call a user-defined command or plugin. A plugin should
-typically require a blueprint.tsv to be generated. The command also
-should read the data from the blueprint, and then process that data
-(synthesis, simulation, etc.).</p>
-<p>If the previous plan command accepted a plugin option, then Orbit remembers
-for future build commands. It will be the default plugin to use if no
-<code>--plugin</code> or <code>--command</code> is entered for the given command.</p>
-<p>The command invoked will be ran from the ip's root directory.</p>
+<p>This command carries out the &quot;building phase&quot;. This phase involves running a
+user-defined command or plugin as a subprocess. It is required that the
+planning phase occurs before the building phase. This command acts upon the 
+current working ip.</p>
+<p>If a plugin was previously used during the planning phase, then this command
+by default will reference and call that plugin after loading the previously
+written <code>.env</code> file from the planning phase. Either a plugin from <code>--plugin</code> 
+or a command from <code>--command</code> is required if a plugin was not previously
+specified during planning.</p>
+<p>If <code>--list</code> is used, then it will display a list of the available plugins to
+the user. Using <code>--list</code> in combination with a plugin from <code>--plugin</code> will
+display any detailed help information the plugin has documented in its 
+definition.</p>
+<p>As a refresher, a backend workflow typically performs three tasks:</p>
+<ol>
+<li>Parse the blueprint file</li>
+<li>Process the referenced files listed in the blueprint</li>
+<li>Generate an output product </li>
+</ol>
+<p>Any command-line arguments entered after the terminating flag <code>--</code> will be
+passed in the received order as arguments to the subprocess's command. If a plugin already
+has defined arguments, the additional arguments passed from the command-line
+will follow the previously defined arguments.</p>
+<p>The subprocess will spawn from the current working ip's root directory.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--plugin &lt;alias&gt;</code><br />
       Plugin to execute</p>
@@ -192,14 +208,14 @@ for future build commands. It will be the default plugin to use if no
 <p><code>--list</code><br />
       View available plugins</p>
 <p><code>--build-dir &lt;dir&gt;</code><br />
-      The relative directory to locate the blueprint.tsv file</p>
+      The relative directory to locate the blueprint file</p>
 <p><code>--verbose</code><br />
       Display the command being executed</p>
-<p><code>-- args...</code><br />
-      Arguments to pass to the requested plugin</p>
+<p><code>args</code><br />
+      Arguments to pass to the plugin or command</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit build --plugin xsim -- --waves
-orbit build --command python -- ./tools/synth.py --part x70
+<pre><code>orbit build --plugin xsim -- --elab
+orbit build --command python -- synth.py
 orbit build --verbose
 </code></pre>
 

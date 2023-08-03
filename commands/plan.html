@@ -176,30 +176,37 @@
 <pre><code>orbit plan [options]
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will set up the current ip for build processes. It will collect
-all necessary files according to their defined fileset into the 
-blueprint.tsv file.</p>
+<p>This command carries out the &quot;planning phase&quot;. This phase involves reading
+and writing to the lockfile and collecting all necessary files according to 
+their defined fileset into a blueprint file for future build processes. This 
+command acts upon the current working ip.</p>
 <p>By default, the top level unit and testbench are auto-detected according to
-the current design heirarchy. If there is ambiguity, it will show the user
-the possibilities.</p>
-<p>The top level unit and top level testbench will be stored in a .env file to
-be set during any following calls to the 'build' command. If a plugin was
-specified, it will also be stored in the .env file to be recalled during the
-building phase.</p>
-<p>User-defined filesets are only collected along the current working ip's 
-path. Specifying a plugin with <code>--plugin</code> will collect the filesets 
-configured for that plugin.</p>
+the current design heirarchy. If there are multiple candidates for a potential
+top level or testbench, it will exit and ask the user to explicitly select
+a candidate. To include all top levels and testbenches, use <code>-all</code>.</p>
+<p>The top level unit and testbench will be stored in a <code>.env</code> file within the
+build directory. This <code>.env</code> file is read during the build command to set
+the proper environment variables for downstream plugins and scripts that
+may require this information. If a known plugin is provided with <code>--plugin</code>,
+then it will also be stored in the <code>.env</code> file to be recalled during the
+build phase.</p>
+<p>User-defined filesets are only collected within the current working ip's 
+path. Plugins may have custom filesets defined in their configuration. When
+specifying a known plugin with <code>--plugin</code>, it will collect the filesets 
+defined for that plugin. Use <code>--fileset</code> as many times as needed to define
+additional filesets.</p>
 <p>During the planning phase, a lockfile is produced outlining the exact ip
 dependencies required, how to get them, and how to verify them. The lockfile
-should be checked into version control and not directly edited by the user.</p>
-<p>If the current working ip's manifest's data matches its data stored in its
+should be checked into version control and should not manually edited by the 
+user.</p>
+<p>If the current working ip's manifest data matches its data stored in its
 own lockfile, then Orbit will read from the lockfile to create the ip
 dependency graph. To force Orbit to build the ip dependency graph from
 scratch, use <code>--force</code>.</p>
-<p>If only wishing to update the lockfile, using <code>--lock-only</code> will not require
-a toplevel or testbench to be determined. The <code>--lock-only</code> flag can be
-combined with <code>--force</code> to overwrite the lockfile regardless if it is
-already in sync with the current working ip's manifest data.</p>
+<p>If only needing to update the lockfile, use <code>--lock-only</code>. This flag does 
+not require a toplevel or testbench to be determined. Using <code>--lock-only</code> with
+<code>--force</code> will overwrite the lockfile regardless if it is already in sync 
+with the current working ip's manifest data.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--top &lt;unit&gt;</code><br />
       The top level entity to explicitly define</p>

@@ -12,6 +12,7 @@ use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
 use colored::*;
+use crate::commands::helps::config;
 
 #[derive(Debug, PartialEq)]
 pub struct Entry(String, String);
@@ -38,18 +39,20 @@ pub struct Config {
 
 impl FromCli for Config {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
+        cli.check_help(clif::Help::new().quick_text(config::HELP).ref_usage(2..4))?;
         let command = Ok(Config {
+            // Flags
             global: cli.check_flag(Flag::new("global"))?,
             local: cli.check_flag(Flag::new("local"))?,
+            // Options
             append: cli
-                .check_option_all(Optional::new("append"))?
+                .check_option_all(Optional::new("append").value("key=value"))?
                 .unwrap_or(Vec::new()),
             set: cli
-                .check_option_all(Optional::new("set"))?
+                .check_option_all(Optional::new("set").value("key=value"))?
                 .unwrap_or(Vec::new()),
             unset: cli
-                .check_option_all(Optional::new("unset"))?
+                .check_option_all(Optional::new("unset").value("key"))?
                 .unwrap_or(Vec::new()),
         });
         command
@@ -136,19 +139,3 @@ impl Config {
         cfg.write(&file)
     }
 }
-
-const HELP: &str = "\
-Modify configuration values.
-
-Usage:
-    orbit config [options]
-    
-Options:
-    --global                    access the home configuration file
-    --local                     access the current project configuration file
-    --append <key>=<value>...   add a value to a key storing a list
-    --set <key>=<value>...      write the value at the key entry
-    --unset <key>...            delete the key's entry
-
-Use 'orbit help config' to learn more about the command.
-";

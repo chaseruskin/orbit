@@ -12,23 +12,22 @@ orbit env [options]
 
 ## __DESCRIPTION__
 
-This command will print environment information set by Orbit during runtime.
-By default, it will display all known information in the current 
-environment. 
-  
-Optionally passing in keys will print the value's back in the
-order they were accepted on the command line. If a variable does not exist,
-it will print an empty line.
+This command prints environment variables relevant to `orbit`.
+
+By default, this command prins information as a shell script. If one or more
+variable names are given as arguments as `<key>`, then it will print the value
+of each provided variables on its own line.
 
 ## __OPTIONS__
 
 `<key>...`  
-      Environment variable keys to request to print
+      Include this variable's value specifically in the environment information
 
 ## __EXAMPLES__
 
 ```
 orbit env
 orbit env ORBIT_HOME
-orbit env ORBIT_DEV_PATH ORBIT_HOME
+orbit env ORBIT_CACHE ORBIT_DOWNLOADS
 ```
+

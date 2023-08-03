@@ -14,6 +14,7 @@ use clif::arg::Positional;
 use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
+use crate::commands::helps::env;
 
 #[derive(Debug, PartialEq)]
 pub struct Env {
@@ -22,7 +23,7 @@ pub struct Env {
 
 impl FromCli for Env {
     fn from_cli(cli: &mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
+        cli.check_help(clif::Help::new().quick_text(env::HELP).ref_usage(2..4))?;
         // collect all positional arguments
         let mut keys: Vec<String> = Vec::new();
         while let Some(c) = cli.check_positional(Positional::new("key"))? {
@@ -129,15 +130,3 @@ impl Env {
         Ok(())
     }
 }
-
-const HELP: &str = "\
-Display Orbit environment information.
-
-Usage:
-    orbit env [options]
-
-Options:
-    <key>...     Lookup environment variable to display its value
-
-Use 'orbit help env' to learn more about the command.
-";

@@ -15,6 +15,19 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.9.7
+
+### Features
+- adds `--json` flag to 'get' command to export entity data as json
+
+### Documentation
+- Adds 'env' command manual page
+- Revises manual pages
+- Revises 'build' command manual
+- Revises 'plan' command manual
+- Adds quick help to manual config file
+- Adds page for 'tree' command
+
 ## 0.9.6
 
 ### Changes

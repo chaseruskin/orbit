@@ -246,6 +246,7 @@ Args:
 
 Options:
     --ip <spec>             ip to reference the unit from
+    --json                  export the entity information as valid json
     --component, -c         display component declaration
     --signals,   -s         display constant and signal declarations
     --instance,  -i         display instantation

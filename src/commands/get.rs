@@ -32,6 +32,7 @@ pub struct Get {
     component: bool,
     instance: bool,
     architectures: bool,
+    json: bool,
     // info: bool,
     name: Option<Identifier>,
 }
@@ -44,6 +45,7 @@ impl FromCli for Get {
             component: cli.check_flag(Flag::new("component").switch('c'))?,
             instance: cli.check_flag(Flag::new("instance").switch('i'))?,
             architectures: cli.check_flag(Flag::new("architecture").switch('a'))?,
+            json: cli.check_flag(Flag::new("json"))?,
             // info: cli.check_flag(Flag::new("info"))?, // @todo: implement
             ip: cli.check_option(Optional::new("ip").value("spec"))?,
             name: cli.check_option(Optional::new("name").value("identifier"))?,
@@ -179,6 +181,11 @@ impl Get {
             println!("{}", ent.into_instance(&name, lib));
         }
 
+        // print as json data
+        if self.json == true {
+            println!("{}", serde_json::to_string_pretty(&ent)?);
+        }
+
         Ok(())
     }
 
@@ -304,16 +311,51 @@ impl std::fmt::Display for GetError {
 
 //  --add                   add dependency to Orbit.toml table
 
-// #[cfg(test)]
-// mod test {
-//     // use super::*;
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::str::FromStr;
+    use std::path::PathBuf;
 
-//     // use std::str::FromStr;
-
-//     // #[test]
-//     // #[ignore]
-//     // fn fetch_entity() {
-//     //     let _ = Get::fetch_entity(&Identifier::from_str("or_gate").unwrap(), &std::path::PathBuf::from("./test/data/gates")).unwrap();
-//     //     panic!("inspect")
-//     // }
-// }
+    #[test]
+    fn serialize_entity() {
+        const EXPECTED_STR: &str = r#"{
+  "name": "or_gate",
+  "generics": [
+    {
+      "name": "N",
+      "mode": "in",
+      "type": "positive",
+      "default": "8"
+    }
+  ],
+  "ports": [
+    {
+      "name": "a",
+      "mode": "in",
+      "type": "std_logic_vector(N-1 downto 0)",
+      "default": null
+    },
+    {
+      "name": "b",
+      "mode": "in",
+      "type": "std_logic_vector(N-1 downto 0)",
+      "default": null
+    },
+    {
+      "name": "q",
+      "mode": "out",
+      "type": "std_logic_vector(N-1 downto 0)",
+      "default": null
+    }
+  ],
+  "architectures": [
+    "rtl",
+    "other"
+  ]
+}"#;
+        let ent = Get::fetch_entity(&Identifier::from_str("or_gate").unwrap(), &PathBuf::from("./tests/data/gates"), &Manifest::new()).unwrap();
+        let json_str = serde_json::to_string_pretty(&ent).unwrap();
+        assert_eq!(json_str, EXPECTED_STR);
+    }
+}

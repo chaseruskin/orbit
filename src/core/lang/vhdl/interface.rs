@@ -1,6 +1,8 @@
 use super::highlight::*;
 use super::token::{Identifier, ToColor};
 use colored::ColoredString;
+use serde_derive::Serialize;
+use serde::ser::{Serialize, Serializer, SerializeStruct};
 
 pub fn library_statement(lib: &Identifier) -> String {
     format!(
@@ -68,6 +70,19 @@ impl ColorVec {
         let item = self.0.get_mut(index).unwrap();
         *item = ColorTone::Color(color(&item.to_string(), hue));
         self
+    }
+
+    fn into_all_bland(self) -> String {
+        self.0.into_iter().map(|f| {
+            match f {
+                ColorTone::Bland(s) => {
+                    s
+                }
+                ColorTone::Color(s) => {
+                    String::from_utf8_lossy(s.as_bytes()).to_string()
+                }
+            }
+        }).collect()
     }
 }
 
@@ -163,6 +178,15 @@ impl SubtypeIndication {
     }
 }
 
+impl Serialize for SubtypeIndication {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {   
+        serializer.serialize_str(&tokens_to_string(&self.0).into_all_bland())
+    }
+}
+
 #[derive(Debug, PartialEq)]
 struct StaticExpression(Vec<VHDLToken>);
 
@@ -184,7 +208,7 @@ impl StaticExpression {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Generics(pub InterfaceDeclarations);
 
 impl Generics {
@@ -193,7 +217,7 @@ impl Generics {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Ports(pub InterfaceDeclarations);
 
 impl Ports {
@@ -217,13 +241,60 @@ impl std::fmt::Display for StaticExpression {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct Mode(Option<Keyword>);
+
+impl Serialize for Mode {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // 3 is the number of fields in the struct.
+        let mut state = serializer.serialize_struct("Mode", 1)?;
+        match &self.0 {
+            Some(kw) => {
+                state.serialize_field("mode", &kw.to_string().to_lowercase())
+            }
+            None => {
+                state.serialize_field("mode", &Keyword::In.to_string().to_lowercase())
+            }
+        }?;
+        state.end()
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Expr(Option<StaticExpression>);
+
+impl Serialize for Expr {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match &self.0 {
+            Some(expr) => {
+                serializer.serialize_str(&tokens_to_string(&expr.0).into_all_bland())
+            }
+            None => {
+                serializer.serialize_none()
+            }
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Serialize)]
 pub struct InterfaceDeclaration {
+    #[serde(skip_serializing)]
     initial_keyword: Option<Keyword>,
+    #[serde(rename = "name")]
     identifier: Identifier,
-    mode: Option<Keyword>,
+    #[serde(flatten)]
+    mode: Mode,
+    #[serde(rename = "type")]
     datatype: SubtypeIndication,
+    #[serde(skip_serializing)]
     bus_present: bool,
-    expr: Option<StaticExpression>,
+    #[serde(rename = "default")]
+    expr: Expr,
 }
 
 fn tokens_to_string(tokens: &Vec<VHDLToken>) -> ColorVec {
@@ -234,6 +305,7 @@ fn tokens_to_string(tokens: &Vec<VHDLToken>) -> ColorVec {
         | Delimiter::ParenR
         | Delimiter::Dot
         | Delimiter::SingleQuote
+        | Delimiter::DoubleStar
         | Delimiter::Dash
         | Delimiter::Plus
         | Delimiter::Star
@@ -242,7 +314,8 @@ fn tokens_to_string(tokens: &Vec<VHDLToken>) -> ColorVec {
     };
     // determine which delimiters to not add have whitespace preceed
     let no_preceeding_whitespace = |d: &Delimiter| match d {
-        Delimiter::Comma => true,
+        Delimiter::DoubleStar
+        | Delimiter::Comma => true,
         _ => false,
     };
     // iterate through the tokens
@@ -288,14 +361,14 @@ impl InterfaceDeclaration {
         result.push_color(Delimiter::Colon.to_color());
         result.push_str(" ");
         // port direction
-        if self.mode.is_none()
+        if self.mode.0.is_none()
             && self.initial_keyword.is_some()
             && self.initial_keyword.as_ref().unwrap() == &Keyword::Signal
         {
             result.push_color(Keyword::In.to_color());
             result.push_str(" ");
-        } else if self.mode.is_some() {
-            result.push_color(self.mode.as_ref().unwrap().to_color());
+        } else if self.mode.0.is_some() {
+            result.push_color(self.mode.0.as_ref().unwrap().to_color());
             result.push_str(" ");
         }
         // data type
@@ -306,9 +379,9 @@ impl InterfaceDeclaration {
             result.push_color(Keyword::Bus.to_color())
         }
         // rhs initial assignment
-        if self.expr.is_some() == true {
+        if self.expr.0.is_some() == true {
             result.push_str(" ");
-            result.append(self.expr.as_ref().unwrap().to_color_vec())
+            result.append(self.expr.0.as_ref().unwrap().to_color_vec())
         }
         return result;
     }
@@ -338,9 +411,9 @@ impl InterfaceDeclaration {
             result.push_color(Keyword::Bus.to_color())
         }
         // rhs initial assignment
-        if self.expr.is_some() == true {
+        if self.expr.0.is_some() == true {
             result.push_str(" ");
-            result.append(self.expr.as_ref().unwrap().to_color_vec())
+            result.append(self.expr.0.as_ref().unwrap().to_color_vec())
         }
         result
     }
@@ -358,7 +431,7 @@ impl InterfaceDeclaration {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct InterfaceDeclarations(Vec<InterfaceDeclaration>);
 
 impl InterfaceDeclarations {
@@ -463,13 +536,13 @@ impl InterfaceDeclarations {
             let signal = InterfaceDeclaration {
                 initial_keyword: initial_keyword.clone(),
                 identifier: identifier,
-                mode: mode.clone(),
+                mode: Mode(mode.clone()),
                 datatype: SubtypeIndication(subtype.0.iter().map(|f| f.clone()).collect()),
                 bus_present: bus_present,
-                expr: match &expr {
+                expr: Expr(match &expr {
                     Some(e) => Some(StaticExpression(e.0.iter().map(|f| f.clone()).collect())),
                     None => None,
-                },
+                }),
             };
             signals.push(signal);
         }

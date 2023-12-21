@@ -31,6 +31,9 @@ OPTIONS
     --ip <spec>
         The ip that contains the requested unit
 
+    --json
+        Export the entity information as valid json
+
     --component, -c
         Display the component declaration
 
@@ -50,4 +53,5 @@ EXAMPLES
     orbit get and_gate --ip gates:1.0.0 --component
     orbit get ram --ip mem:2.0.3 -csi
     orbit get uart -si --name u0
+    orbit get or_gate --ip gates --json
 "#;

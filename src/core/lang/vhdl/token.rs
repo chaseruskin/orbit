@@ -7,6 +7,7 @@ use crate::util::anyerror::AnyError;
 use crate::util::strcmp;
 use colored::ColoredString;
 use colored::Colorize;
+use serde_derive::Serialize;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::hash::Hash;
@@ -34,7 +35,8 @@ fn interpret_integer(s: &str) -> usize {
         .expect("integer can only contain 0..=9 or underline '_'")
 }
 
-#[derive(Debug, Clone, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialOrd, Ord, Serialize)]
+#[serde(untagged)]
 pub enum Identifier {
     Basic(String),
     Extended(String),
@@ -281,7 +283,7 @@ impl std::fmt::Display for AbstLiteral {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize)]
 pub enum Keyword {
     Abs,          // VHDL-1987 LRM - current
     Access,       // VHDL-1987 LRM - current

@@ -2,6 +2,8 @@ use std::collections::LinkedList;
 use std::fmt::Display;
 use std::hash::Hash;
 
+use serde_derive::Serialize;
+
 use super::super::lexer::*;
 use super::super::parser::*;
 
@@ -200,13 +202,15 @@ impl Display for PackageBody {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Entity {
     name: Identifier,
-    ports: Ports,
     generics: Generics,
+    ports: Ports,
     architectures: Vec<Architecture>,
+    #[serde(skip_serializing)]
     refs: IdentifierList,
+    #[serde(skip_serializing)]
     pos: Position,
 }
 
@@ -378,12 +382,17 @@ impl Entity {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize)]
+#[serde(transparent)]
 pub struct Architecture {
     name: Identifier,
+    #[serde(skip_serializing)]
     owner: Identifier,
+    #[serde(skip_serializing)]
     dependencies: IdentifierList,
+    #[serde(skip_serializing)]
     refs: IdentifierList,
+    #[serde(skip_serializing)]
     pos: Position,
 }
 

@@ -320,7 +320,7 @@ mod test {
     #[test]
     fn serialize_entity() {
         const EXPECTED_STR: &str = r#"{
-  "name": "or_gate",
+  "entity": "or_gate",
   "generics": [
     {
       "name": "N",

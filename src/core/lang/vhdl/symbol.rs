@@ -204,6 +204,7 @@ impl Display for PackageBody {
 
 #[derive(Debug, PartialEq, Serialize)]
 pub struct Entity {
+    #[serde(rename = "entity")]
     name: Identifier,
     generics: Generics,
     ports: Ports,

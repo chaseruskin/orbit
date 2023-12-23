@@ -35,7 +35,7 @@ DESCRIPTION
     The subprocess will spawn from the current working ip's root directory.
 
 OPTIONS
-    --plugin <alias>
+    --plugin <name>
         Plugin to execute
 
     --command <cmd>

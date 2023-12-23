@@ -74,7 +74,7 @@ impl FromCli for Plan {
             // options
             top: cli.check_option(Optional::new("top").value("unit"))?,
             bench: cli.check_option(Optional::new("bench").value("tb"))?,
-            plugin: cli.check_option(Optional::new("plugin").value("alias"))?,
+            plugin: cli.check_option(Optional::new("plugin").value("name"))?,
             build_dir: cli.check_option(Optional::new("build-dir").value("dir"))?,
             filesets: cli.check_option_all(Optional::new("fileset").value("key=glob"))?,
         });

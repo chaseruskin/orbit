@@ -59,7 +59,7 @@ OPTIONS
     --bench <tb>
         The top level testbench to explicitly define
 
-    --plugin <alias>
+    --plugin <name>
         A plugin to refer to gather its declared filesets
 
     --build-dir <dir>

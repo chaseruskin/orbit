@@ -5,7 +5,7 @@ Usage:
     orbit build [options] [--] [args]...
 
 Options:
-    --plugin <alias>    plugin to execute
+    --plugin <name>    plugin to execute
     --command <cmd>     command to execute
     --list              view available plugins
     --build-dir <dir>   set the output build directory

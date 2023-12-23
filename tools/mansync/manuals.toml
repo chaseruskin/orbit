@@ -364,7 +364,7 @@ re-install the dependency to the cache.
 
 options."--top <unit>" = "The top level entity to explicitly define"
 options."--bench <tb>" = "The top level testbench to explicitly define"
-options."--plugin <alias>" = "A plugin to refer to gather its declared filesets"
+options."--plugin <name>" = "A plugin to refer to gather its declared filesets"
 options."--build-dir <dir>" = "The relative directory to place the blueprint.tsv file"
 options."--fileset <key=glob>..." = "A glob-style pattern identified by a name to add into the blueprint"
 options."--clean" = "Removes all files from the build directory before execution"
@@ -388,7 +388,7 @@ Usage:
 Options:
     --top <unit>            override auto-detected toplevel entity
     --bench <tb>            override auto-detected toplevel testbench
-    --plugin <alias>        collect filesets defined for a plugin
+    --plugin <name>        collect filesets defined for a plugin
     --build-dir <dir>       set the output build directory
     --fileset <key=glob>... set an additional fileset
     --clean                 remove all files from the build directory
@@ -435,7 +435,7 @@ will follow the previously defined arguments.
 The subprocess will spawn from the current working ip's root directory.
 """
 
-options."--plugin <alias>" = "Plugin to execute"
+options."--plugin <name>" = "Plugin to execute"
 options."--command <cmd>" = "Command to execute"
 options."--list" = "View available plugins"
 options."--build-dir <dir>" = "The relative directory to locate the blueprint file"
@@ -455,7 +455,7 @@ Usage:
     orbit build [options] [--] [args]...
 
 Options:
-    --plugin <alias>    plugin to execute
+    --plugin <name>    plugin to execute
     --command <cmd>     command to execute
     --list              view available plugins
     --build-dir <dir>   set the output build directory

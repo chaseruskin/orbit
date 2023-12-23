@@ -42,7 +42,7 @@ The subprocess will spawn from the current working ip's root directory.
 
 ## __OPTIONS__
 
-`--plugin <alias>`  
+`--plugin <name>`  
       Plugin to execute
 
 `--command <cmd>`  

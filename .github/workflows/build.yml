@@ -3,7 +3,7 @@ on:
   workflow_call:
 
 env:
-  PROJECT: orbit
+  project: orbit
 
 jobs:
   build:
@@ -31,11 +31,11 @@ jobs:
       - name: Identify target triple and current version
         shell: bash
         run: |
-          echo "TARGET=$(cargo run --bin target-triple --quiet)" >> $GITHUB_ENV
-          echo "VERSION=$(python ./tools/evalver.py --version)" >> $GITHUB_ENV
+          echo "target=$(cargo run --bin target-triple --quiet)" >> $GITHUB_ENV
+          echo "version=$(python ./tools/evalver.py --version)" >> $GITHUB_ENV
 
-      - name: Update manual pages
-        run: python ./tools/rsmangen.py
+      - name: Update application documentation
+        run: python ./tools/mansync/mangen.py
 
       - name: Build orbit binary
         run: cargo build --release --bin orbit
@@ -47,10 +47,10 @@ jobs:
         run: cargo build --release --bin install
 
       - name: Package and compress binary executable
-        run: python ./tools/pack.py ${{ env.VERSION }}-${{ env.TARGET }}
+        run: python ./tools/pack.py ${{ env.version }}-${{ env.target }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ env.PROJECT }}-${{ env.VERSION }}-${{ env.TARGET }}
-          path: ./${{ env.PROJECT }}-${{ env.VERSION }}-${{ env.TARGET }}.zip
+          name: ${{ env.project }}-${{ env.version }}-${{ env.target }}
+          path: ./${{ env.project }}-${{ env.version }}-${{ env.target }}.zip

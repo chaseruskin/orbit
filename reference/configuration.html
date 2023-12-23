@@ -186,17 +186,21 @@
 <p>Global configuration file (location: <code>$ORBIT_HOME</code>)</p>
 </li>
 <li>
-<p>Configuration files listed in the global <code>config.toml</code>'s <a href="#the-include-field"><code>include</code></a> (items farther in the list have a higher precedence than items earlier in the list)</p>
+<p>Configuration files listed in the global <code>config.toml</code>'s <a href="#the-include-field"><code>include</code></a> (items in the array are processed in order; first-to-last)</p>
 </li>
 </ol>
-<p>A field is overridden when a configuration file of higher precedence also defines the same field.</p>
+<p>The configuration files are processed in the order defined above. When a configuration file defines a field, no other configuration files later in the process will be able to override its value. If a field is never provided an explicit value, the hard-coded defaults will be used.</p>
 <blockquote>
 <p><strong>Tip:</strong> You can modify some values in the configuration file through the command-line by using the <code>orbit config</code> command.</p>
 </blockquote>
 <p>Every configuration file consists of the following sections:</p>
 <ul>
 <li><a href="#the-include-field">include</a> - Lists other <code>config.toml</code> files to process.</li>
-<li><a href="#the-general-section">[general]</a> - The general settings.</li>
+<li><a href="#the-general-section">[general]</a> - The general settings.
+<ul>
+<li><a href="#the-build-dir-field">build-dir</a> - Default build directory.</li>
+</ul>
+</li>
 <li><a href="#the-vhdl-format-section">[vhdl-format]</a> - VHDL code formatting.</li>
 <li><a href="#the-env-section">[env]</a> - The runtime environment variables.</li>
 <li><a href="#the-plugin-array">[[plugin]]</a> - Define a plugin.
@@ -224,8 +228,14 @@
 ]
 </code></pre>
 <h3 id="the-general-section"><a class="header" href="#the-general-section">The <code>[general]</code> section</a></h3>
+<h3 id="the-build-dir-field"><a class="header" href="#the-build-dir-field">The <code>build-dir</code> field</a></h3>
+<p>Define the default output directory to create for the planning and building phases. This value can be overridden on the command-line when the <code>--build-dir</code> option is available. When this field is not defined, the default value for the build directory is &quot;build&quot;.</p>
+<pre><code class="language-toml">[general]
+build-dir = &quot;build&quot;
+# ...
+</code></pre>
 <h3 id="the-vhdl-format-section"><a class="header" href="#the-vhdl-format-section">The <code>[vhdl-format]</code> section</a></h3>
-<p>The currently supported entries are demonstrated in the following code snippet. Entries not present will default to their hard-coded default value.</p>
+<p>The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their hard-coded default value.</p>
 <pre><code class="language-toml">[vhdl-format]
 # number of whitespace characters per tab/indentation
 tab-size = 2

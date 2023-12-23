@@ -20,6 +20,7 @@ type Filesets = HashMap<String, Style>;
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Plugin {
+    #[serde(rename = "name")]
     alias: String,
     command: String,
     args: Option<Vec<String>>,
@@ -232,7 +233,7 @@ mod test {
     }
 
     const P_1: &str = r#" 
-alias = "ghdl"
+name = "ghdl"
 summary = "Backend script for simulating VHDL with GHDL."  
 command = "python"
 args = ["./scripts/ghdl.py"]
@@ -241,7 +242,7 @@ fileset.text = "*.txt"
 "#;
 
     const P_2: &str = r#"
-alias = "ffi"
+name = "ffi"
 command = "bash"
 args = ["~/scripts/download.bash"]    
 "#;

@@ -6,6 +6,7 @@ use serde_derive::Serialize;
 
 use super::super::lexer::*;
 use super::super::parser::*;
+use super::format::VhdlFormat;
 
 use crate::core::lang::vhdl::interface::*;
 use crate::core::lang::vhdl::token::*;
@@ -263,20 +264,33 @@ impl Entity {
     }
 
     // Generates VHDL component code from the entity.
-    pub fn into_component(&self) -> String {
+    pub fn into_component(&self, fmt: &VhdlFormat) -> String {
         let mut result = format!("{} ", Keyword::Component.to_color());
         result.push_str(&format!(
             "{}",
             color(&self.get_name().to_string(), ENTITY_NAME)
         ));
 
+        let interface_depth = match fmt.is_indented_interfaces() {
+            true => 2,
+            false => 1,
+        };
+
         if self.generics.0.len() > 0 {
-            result.push_str(&format!("\n{} ", Keyword::Generic.to_color()));
-            result.push_str(&self.generics.0.to_interface_part_string().to_string());
+            result.push('\n');
+            if fmt.is_indented_interfaces() == true && fmt.get_tab_size() > 0 {
+                result.push_str(&format!("{:<width$}", " ", width = fmt.get_tab_size() as usize));
+            }
+            result.push_str(&format!("{}", Keyword::Generic.to_color()));
+            result.push_str(&self.generics.0.to_interface_part_string(&fmt, interface_depth).to_string());
         }
         if self.ports.0.len() > 0 {
-            result.push_str(&format!("\n{} ", Keyword::Port.to_color()));
-            result.push_str(&self.ports.0.to_interface_part_string().to_string());
+            result.push('\n');
+            if fmt.is_indented_interfaces() == true && fmt.get_tab_size() > 0 {
+                result.push_str(&format!("{:<width$}", " ", width = fmt.get_tab_size() as usize));
+            }
+            result.push_str(&format!("{}", Keyword::Port.to_color()));
+            result.push_str(&self.ports.0.to_interface_part_string(&fmt, interface_depth).to_string());
         }
         result.push_str(&format!(
             "\n{} {}{}\n",
@@ -288,23 +302,23 @@ impl Entity {
     }
 
     /// Generates VHDL signal declaration code from the entity data.
-    pub fn into_signals(&self) -> String {
+    pub fn into_signals(&self, fmt: &VhdlFormat) -> String {
         self.ports
             .0
-            .to_declaration_part_string(Keyword::Signal)
+            .to_declaration_part_string(Keyword::Signal, &fmt)
             .to_string()
     }
 
     /// Generates VHDL constant declaration code from the entity data.
-    pub fn into_constants(&self) -> String {
+    pub fn into_constants(&self, fmt: &VhdlFormat) -> String {
         self.generics
             .0
-            .to_declaration_part_string(Keyword::Constant)
+            .to_declaration_part_string(Keyword::Constant, &fmt)
             .to_string()
     }
 
     /// Generates VHDL instantiation code from the entity data.
-    pub fn into_instance(&self, inst: &Identifier, library: Option<Identifier>) -> String {
+    pub fn into_instance(&self, inst: &Option<Identifier>, library: Option<Identifier>, fmt: &VhdlFormat) -> String {
         let prefix = match library {
             Some(lib) => format!(
                 "{} {}{}",
@@ -314,24 +328,44 @@ impl Entity {
             ),
             None => String::new(),
         };
-        let mut result = String::from(format!(
-            "{} {} {}{}\n",
-            inst.to_color(),
+
+        let name = match &inst {
+            Some(iden) => iden.clone(),
+            None => Identifier::Basic(fmt.get_instance_name().to_string()),
+        };
+
+        let mapping_depth = match fmt.is_indented_interfaces() {
+            true => 2,
+            false => 1,
+        };
+
+        let mut result = String::new();
+
+        result.push_str(&format!("{}", name.to_color()));
+        if fmt.get_type_offset() > 0 {
+            result.push_str(&format!("{:<width$}", " ", width = fmt.get_type_offset() as usize));
+        }
+        result.push_str(&format!("{} {}{}",             
             Delimiter::Colon.to_color(),
             prefix,
             color(&self.get_name().to_string(), ENTITY_NAME)
         ));
         if self.generics.0.len() > 0 {
-            result.push_str(&(format!("{} ", Keyword::Generic.to_color())));
-            result.push_str(&self.generics.0.to_instantiation_part().to_string())
+            result.push('\n');
+            if fmt.is_indented_interfaces() == true && fmt.get_tab_size() > 0 {
+                result.push_str(&format!("{:<width$}", " ", width = fmt.get_tab_size() as usize));
+            }
+            result.push_str(&(format!("{}", Keyword::Generic.to_color())));
+            result.push_str(&self.generics.0.to_instantiation_part(&fmt, mapping_depth).to_string())
         }
         if self.ports.0.len() > 0 {
             // add extra spacing
-            if self.generics.0.len() > 0 {
-                result.push(' ');
+            result.push('\n');
+            if fmt.is_indented_interfaces() == true && fmt.get_tab_size() > 0 {
+                result.push_str(&format!("{:<width$}", " ", width = fmt.get_tab_size() as usize));
             }
-            result.push_str(&format!("{} ", Keyword::Port.to_color()));
-            result.push_str(&self.ports.0.to_instantiation_part().to_string())
+            result.push_str(&format!("{}", Keyword::Port.to_color()));
+            result.push_str(&self.ports.0.to_instantiation_part(&fmt, mapping_depth).to_string())
         }
         result.push_str(&Delimiter::Terminator.to_string());
         result

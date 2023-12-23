@@ -10,6 +10,7 @@ use std::collections::HashSet;
 use std::error::Error;
 use std::path::PathBuf;
 use std::str::FromStr;
+use crate::core::lang::vhdl::format::VhdlFormat;
 
 use serde_derive::{Deserialize, Serialize};
 use toml_edit::Document;
@@ -242,6 +243,8 @@ pub struct Config {
     env: Option<HashMap<String, String>>,
     plugin: Option<Plugins>,
     protocol: Option<Protocols>,
+    #[serde(rename="vhdl-format")]
+    vhdl_format: Option<VhdlFormat>,
 }
 
 impl Config {
@@ -251,6 +254,7 @@ impl Config {
             env: None,
             plugin: None,
             protocol: None,
+            vhdl_format: None,
         }
     }
 
@@ -285,6 +289,11 @@ impl Config {
         match &mut self.env {
             Some(v) => v.extend(rhs.env.unwrap_or(HashMap::new()).into_iter()),
             None => self.env = rhs.env,
+        }
+        // combine "vhdl-format"
+        match &mut self.vhdl_format {
+            Some(v) => v.merge(rhs.vhdl_format),
+            None => self.vhdl_format = rhs.vhdl_format
         }
     }
 
@@ -327,6 +336,10 @@ impl Config {
             });
         }
         map
+    }
+
+    pub fn get_vhdl_formatting(&self) -> Option<&VhdlFormat> {
+        self.vhdl_format.as_ref()
     }
 }
 
@@ -395,7 +408,7 @@ include = [
 ]
     
 [[plugin]]
-alias = "quartus"
+name = "quartus"
 summary = "Complete toolflow for Intel Quartus Prime backend program"
 command = "python"
 args = ["./plugin/quartus.py"]
@@ -404,13 +417,16 @@ fileset.bdf-file = "*.bdf"
 
 [env]
 COURSE = "Reconfigurable Computing [EEL5721]"
-QUARTUS_PATH = "C:/intelFPGA_lite/19.1/quartus/bin64/"
+quartus-path = "C:/intelFPGA_lite/19.1/quartus/bin64/"
 VCD_VIEWER = "dwfv"
 
 [[protocol]]
 name = "kstp"
 command = "python"
 args = ["./download.py"]
+
+[vhdl-format]
+tab-size = 3
 "#;
 
     #[test]

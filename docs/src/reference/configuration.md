@@ -12,7 +12,7 @@ When a field is expected to be a filesystem path, `orbit` has the ability to res
 
 Orbit supports multiple levels of configuration. Each level has its own order of precedence:
 
-1. Local configuration file (location: CWIP)
+1. Local configuration file (location: current working IP)
 
 2. Global configuration file (location: `$ORBIT_HOME`)
 
@@ -26,15 +26,16 @@ Every configuration file consists of the following sections:
 
 - [include](#the-include-field) - Lists other `config.toml` files to process.
 - [[general]](#the-general-section) - The general settings.
+- [[vhdl-format]](#the-vhdl-format-section) - VHDL code formatting.
 - [[env]](#the-env-section) - The runtime environment variables.
 - [[[plugin]]](#the-plugin-array) - Define a plugin.
-    - [alias](#the-alias-field) - The name of the plugin.
+    - [name](#the-name-field) - The name of the plugin.
     - [summary](#the-summary-field) - A short description of the plugin.
     - [command](#the-command-field) - The command to execute the plugin.
     - [args](#the-args-field) - Arguments to pass to the command.
     - [[fileset]](#the-fileset-section) - Filesets to collect for the plugin.
 - [[[protocol]]](#the-protocol-array) - Define a protocol.
-    - [name](#the-alias-field) - The name of the protocol.
+    - [name](#the-name-field) - The name of the protocol.
     - [summary](#the-summary-field) - A short description of the protocol.
     - [command](#the-command-field) - The command to execute the protocol.
     - [args](#the-args-field) - Arguments to pass to the command.
@@ -50,17 +51,41 @@ include = [
 
 ### The `[general]` section
 
+### The `[vhdl-format]` section
+
+The currently supported entries are demonstrated in the following code snippet. Entries not present will default to their hard-coded default value.
+
+``` toml
+[vhdl-format]
+# number of whitespace characters per tab/indentation
+tab-size = 2
+# insert a tab before 'generic' and 'port' interface declarations
+indent-interface = true
+# automatically align a signal or constant's subtype with its other identifiers
+type-auto-alignment = false
+# number of whitespace characters after alignment (before ':' token)
+type-offset = 0
+# automatically align a instantiation's mapping with its other identifiers
+mapping-auto-alignment = false
+# number of whitespace characters after mapping (before '=>' token)
+mapping-offset = 1
+```
+
 ### The `[env]` section
+
+The user can define an arbitrary number of their own entries with their determined value represented in string format.
 
 ``` toml
 [env]
-MY_VAR = "1"
-# ...
+# accessible as ORBIT_ENV_FOO
+foo = "0"
+# accessible as ORBIT_ENV_SUPER_BAR
+super-bar = "1"
 ```
 
 ### The `[[plugin]]` array
 
-### The `alias` field
+### The `name` field
 
 ### The `summary` field
 
@@ -73,6 +98,20 @@ MY_VAR = "1"
 ### The `[[protocol]]` array
 
 ### The `name` field
+
+See [[plugin]](#the-plugin-array)'s definition.
+
+### The `summary` field
+
+See [[plugin]](#the-plugin-array)'s definition.
+
+### The `command` field
+
+See [[plugin]](#the-plugin-array)'s definition.
+
+### The `args` field
+
+See [[plugin]](#the-plugin-array)'s definition.
 
 <!--
 ## config.toml

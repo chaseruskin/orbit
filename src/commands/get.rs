@@ -23,6 +23,7 @@ use clif::Cli;
 use clif::Error as CliError;
 use colored::Colorize;
 use crate::commands::helps::get;
+use crate::core::lang::vhdl::format::VhdlFormat;
 
 #[derive(Debug, PartialEq)]
 pub struct Get {
@@ -104,12 +105,17 @@ impl Command<Context> for Get {
         // load the manifest from the path
         let man = Manifest::from_file(&ip_path.join(IP_MANIFEST_FILE))?;
 
-        self.run(man, &ip_path)
+        let default_fmt = VhdlFormat::new();
+        let fmt = match c.get_config().get_vhdl_formatting() {
+            Some(v) => v,
+            None => &default_fmt,
+        };
+        self.run(man, &ip_path, &fmt)
     }
 }
 
 impl Get {
-    fn run(&self, man: Manifest, dir: &PathBuf) -> Result<(), Fault> {
+    fn run(&self, man: Manifest, dir: &PathBuf, fmt: &VhdlFormat) -> Result<(), Fault> {
         // collect all hdl files and parse them
         let ent = match Self::fetch_entity(&self.unit, &dir, &man) {
             Ok(r) => r,
@@ -147,7 +153,7 @@ impl Get {
 
         // display component declaration
         if self.component == true {
-            println!("{}", ent.into_component());
+            println!("{}", ent.into_component(&fmt));
         // display library declaration line if displaying instance
         } else if self.instance == true {
             println!("{}", interface::library_statement(&lib));
@@ -155,11 +161,11 @@ impl Get {
 
         // display signal declarations
         if self.signals == true {
-            let constants = ent.into_constants();
+            let constants = ent.into_constants(&fmt);
             if constants.is_empty() == false {
                 println!("{}", constants);
             }
-            let signals = ent.into_signals();
+            let signals = ent.into_signals(&fmt);
             if signals.is_empty() == false {
                 println!("{}", signals);
             }
@@ -174,11 +180,7 @@ impl Get {
 
         // display instantiation code
         if self.instance == true {
-            let name = match &self.name {
-                Some(iden) => iden.clone(),
-                None => Identifier::Basic("uX".to_string()),
-            };
-            println!("{}", ent.into_instance(&name, lib));
+            println!("{}", ent.into_instance(&self.name, lib, &fmt));
         }
 
         // print as json data

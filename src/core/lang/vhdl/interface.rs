@@ -1,3 +1,4 @@
+use super::format::VhdlFormat;
 use super::highlight::*;
 use super::token::{Identifier, ToColor};
 use colored::ColoredString;
@@ -351,12 +352,15 @@ fn tokens_to_string(tokens: &Vec<VHDLToken>) -> ColorVec {
 }
 
 impl InterfaceDeclaration {
+
     fn into_interface_string(&self, offset: usize) -> ColorVec {
         let mut result = ColorVec::new();
         // identifier
         result.push_color(self.identifier.to_color());
         // whitespace
-        result.push_whitespace(offset - self.identifier.len() + 1);
+        if offset > 0 {
+            result.push_whitespace(offset);
+        }
         // colon
         result.push_color(Delimiter::Colon.to_color());
         result.push_str(" ");
@@ -391,7 +395,7 @@ impl InterfaceDeclaration {
     /// Note: `offset` is used for padding after the identifier string and before ':'.
     fn into_declaration_string(&self, def_keyword: &Keyword, offset: usize) -> ColorVec {
         let mut result = ColorVec::new();
-
+        // keyword
         result.push_color(
             self.initial_keyword
                 .as_ref()
@@ -399,8 +403,12 @@ impl InterfaceDeclaration {
                 .to_color(),
         );
         result.push_str(" ");
+        // identifier
         result.push_color(color(&self.identifier.to_string(), SIGNAL_DEC_IDENTIFIER));
-        result.push_whitespace(offset - self.identifier.len() + 1);
+        // whitespace
+        if offset > 0 {
+            result.push_whitespace(offset);
+        }
         result.push_color(Delimiter::Colon.to_color());
         result.push_str(" ");
         // data type
@@ -423,7 +431,7 @@ impl InterfaceDeclaration {
         let mut result = ColorVec::new();
 
         result.push_color(color(&self.identifier.to_string(), INSTANCE_LHS_IDENTIFIER));
-        result.push_whitespace(offset - self.identifier.len() + 1);
+        result.push_whitespace(offset);
         result.push_color(Delimiter::Arrow.to_color());
         result.push_str(" ");
         result.push_color(self.identifier.to_color());
@@ -550,10 +558,16 @@ impl InterfaceDeclarations {
     }
 
     /// Creates the body of the component list of interface connections.
-    pub fn to_interface_part_string(&self) -> ColorVec {
+    pub fn to_interface_part_string(&self, fmt: &VhdlFormat, tab_count: usize) -> ColorVec {
         let mut result = ColorVec::new();
+        if fmt.is_interface_parenthesis_spaced() == true {
+            result.push_str(" ");
+        }
         // auto-align by first finding longest offset needed
-        let offset = self.longest_identifier();
+        let offset = match fmt.is_auto_type_aligned() {
+            true => self.longest_identifier(),
+            false => fmt.get_type_offset() as usize,
+        };
         result.push_color(Delimiter::ParenL.to_color());
         result.push_str("\n");
         for port in &self.0 {
@@ -561,35 +575,58 @@ impl InterfaceDeclarations {
                 result.push_color(Delimiter::Terminator.to_color());
                 result.push_str("\n");
             }
-            result.push_whitespace(4);
-            result.append(port.into_interface_string(offset));
+            if fmt.get_tab_size() > 0 {
+                result.push_whitespace(fmt.get_tab_size() as usize * tab_count);
+            }
+            // compute the offset of the ':' and type of declaration
+            let port_offset = match fmt.is_auto_type_aligned() {
+                true => offset - port.identifier.len() + fmt.get_type_offset() as usize,
+                false => offset,
+            };
+            result.append(port.into_interface_string(port_offset));
         }
         result.push_str("\n");
+        if fmt.is_indented_interfaces() == true && fmt.get_tab_size() > 0 {
+            result.push_str(&format!("{:<width$}", " ", width = fmt.get_tab_size() as usize));
+        }
         result.push_color(Delimiter::ParenR.to_color());
         result.push_color(Delimiter::Terminator.to_color());
 
         result
     }
 
-    pub fn to_declaration_part_string(&self, def_keyword: Keyword) -> ColorVec {
+    pub fn to_declaration_part_string(&self, def_keyword: Keyword, fmt: &VhdlFormat) -> ColorVec {
         let mut result = ColorVec::new();
         // auto-align by first finding longest offset needed
-        let offset = self.longest_identifier();
+        let offset = match fmt.is_auto_type_aligned() {
+            true => self.longest_identifier(),
+            false => fmt.get_type_offset() as usize,
+        };
         for port in &self.0 {
-            result.append(port.into_declaration_string(&def_keyword, offset));
+            // compute the offset of the ':' and type of declaration
+            let port_offset = match fmt.is_auto_type_aligned() {
+                true => offset - port.identifier.len() + fmt.get_type_offset() as usize,
+                false => offset,
+            };
+            result.append(port.into_declaration_string(&def_keyword, port_offset));
             result.push_color(Delimiter::Terminator.to_color());
             result.push_str("\n");
         }
         result
     }
 
-    pub fn to_instantiation_part(&self) -> ColorVec {
+    pub fn to_instantiation_part(&self, fmt: &VhdlFormat, tab_count: usize) -> ColorVec {
         // auto-align by first finding longest offset needed
-        let offset = self.longest_identifier();
+        let offset = match fmt.is_auto_mapping_aligned() {
+            true => self.longest_identifier(),
+            false => fmt.get_mapping_offset() as usize,
+        };
         let mut result = ColorVec::new();
-
-        result.push_color(Keyword::Map.to_color());
         result.push_str(" ");
+        result.push_color(Keyword::Map.to_color());
+        if fmt.is_interface_parenthesis_spaced() == true {
+            result.push_str(" ");
+        }
         result.push_color(Delimiter::ParenL.to_color());
         result.push_str("\n");
 
@@ -598,10 +635,20 @@ impl InterfaceDeclarations {
                 result.push_color(Delimiter::Comma.to_color());
                 result.push_str("\n");
             }
-            result.push_whitespace(4);
-            result.append(port.into_instance_string(offset));
+            if fmt.get_tab_size() > 0 {
+                result.push_whitespace(fmt.get_tab_size() as usize * tab_count);
+            }
+            // compute the offset of the '=>' and connected signal
+            let port_offset = match fmt.is_auto_mapping_aligned() {
+                true => offset - port.identifier.len() + fmt.get_mapping_offset() as usize,
+                false => offset,
+            };
+            result.append(port.into_instance_string(port_offset));
         }
         result.push_str("\n");
+        if fmt.get_tab_size() > 0 && tab_count > 1 {
+            result.push_whitespace(fmt.get_tab_size() as usize * (tab_count-1));
+        }
         result.push_color(Delimiter::ParenR.to_color());
         result
     }

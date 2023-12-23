@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::path;
+use crate::core::config::General;
 use std::path::PathBuf;
 
 const CACHE_TAG_FILE: &str = "CACHEDIR.TAG";
@@ -239,8 +240,11 @@ impl Context {
     }
 
     /// Access the build directory data.
-    pub fn get_build_dir(&self) -> &String {
-        &self.build_dir
+    pub fn get_build_dir(&self) -> String {
+        match self.config.get_general() {
+            Some(g) => g.get_build_dir(),
+            None => General::new().get_build_dir()
+        }
     }
 
     /// Access the ip directory detected from the current working directory.
@@ -332,9 +336,8 @@ impl Context {
     }
 
     /// Sets the IP's build directory and the corresponding environment variable.
-    pub fn build_dir(mut self, s: &str) -> Result<Context, ContextError> {
-        self.build_dir = String::from("build");
-        env::set_var(s, &self.build_dir);
+    pub fn build_dir(self, s: &str) -> Result<Context, ContextError> {
+        env::set_var(s, &self.get_build_dir());
         Ok(self)
     }
 }

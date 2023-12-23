@@ -67,31 +67,32 @@ impl VhdlFormat {
         self.instance_name.as_ref().unwrap_or(&String::from("uX")).clone()
     }
 
-    /// Overwrites any existing values with the data present in `rhs`.
+    /// Merges any populated data from `rhs` into attributes that do not already
+    /// have data defined in `self`.
     pub fn merge(&mut self, rhs: Option<Self>) -> () {
         if let Some(rhs) = rhs {
-            if rhs.tab_size.is_some() == true {
+            if self.tab_size.is_some() == false {
                 self.tab_size = rhs.tab_size
             }
-            if rhs.type_auto_alignment.is_some() == true {
+            if self.type_auto_alignment.is_some() == false {
                 self.type_auto_alignment = rhs.type_auto_alignment
             }
-            if rhs.type_offset.is_some() == true {
+            if self.type_offset.is_some() == false {
                 self.type_offset = rhs.type_offset
             }
-            if rhs.mapping_auto_alignment.is_some() == true {
+            if self.mapping_auto_alignment.is_some() == false {
                 self.mapping_auto_alignment = rhs.mapping_auto_alignment
             }
-            if rhs.mapping_offset.is_some() == true {
+            if self.mapping_offset.is_some() == false {
                 self.mapping_offset = rhs.mapping_offset
             }
-            if rhs.indent_interfaces.is_some() == true {
+            if self.indent_interfaces.is_some() == false {
                 self.indent_interfaces = rhs.indent_interfaces
             }
-            if rhs.space_interface_parenthesis.is_some() == true {
+            if self.space_interface_parenthesis.is_some() == false {
                 self.space_interface_parenthesis = rhs.space_interface_parenthesis
             }
-            if rhs.instance_name.is_some() == true {
+            if self.instance_name.is_some() == false {
                 self.instance_name = rhs.instance_name
             }
         }

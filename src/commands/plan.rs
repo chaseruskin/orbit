@@ -151,9 +151,10 @@ impl Command<Context> for Plan {
         }
 
         // determine the build directory (command-line arg overrides configuration setting)
+        let default_build_dir = c.get_build_dir();
         let b_dir = match &self.build_dir {
             Some(dir) => dir,
-            None => c.get_build_dir(),
+            None => &default_build_dir,
         };
 
         self.run(target, b_dir, plugin, catalog)

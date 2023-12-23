@@ -16,9 +16,9 @@ Orbit supports multiple levels of configuration. Each level has its own order of
 
 2. Global configuration file (location: `$ORBIT_HOME`)
 
-3. Configuration files listed in the global `config.toml`'s [`include`](#the-include-field) (items farther in the list have a higher precedence than items earlier in the list)
+3. Configuration files listed in the global `config.toml`'s [`include`](#the-include-field) (items in the array are processed in order; first-to-last)
 
-A field is overridden when a configuration file of higher precedence also defines the same field.
+The configuration files are processed in the order defined above. When a configuration file defines a field, no other configuration files later in the process will be able to override its value. If a field is never provided an explicit value, the hard-coded defaults will be used.
 
 > __Tip:__ You can modify some values in the configuration file through the command-line by using the `orbit config` command.
 
@@ -26,6 +26,7 @@ Every configuration file consists of the following sections:
 
 - [include](#the-include-field) - Lists other `config.toml` files to process.
 - [[general]](#the-general-section) - The general settings.
+    - [build-dir](#the-build-dir-field) - Default build directory.
 - [[vhdl-format]](#the-vhdl-format-section) - VHDL code formatting.
 - [[env]](#the-env-section) - The runtime environment variables.
 - [[[plugin]]](#the-plugin-array) - Define a plugin.
@@ -51,9 +52,19 @@ include = [
 
 ### The `[general]` section
 
+### The `build-dir` field
+
+Define the default output directory to create for the planning and building phases. This value can be overridden on the command-line when the `--build-dir` option is available. When this field is not defined, the default value for the build directory is "build".
+
+``` toml
+[general]
+build-dir = "build"
+# ...
+```
+
 ### The `[vhdl-format]` section
 
-The currently supported entries are demonstrated in the following code snippet. Entries not present will default to their hard-coded default value.
+The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their hard-coded default value.
 
 ``` toml
 [vhdl-format]

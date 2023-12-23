@@ -87,7 +87,8 @@ impl Command<Context> for Build {
         c.goto_ip_path()?;
 
         // determine the build directory based on cli priority
-        let b_dir = self.build_dir.as_ref().unwrap_or(c.get_build_dir());
+        let default_build_dir = c.get_build_dir();
+        let b_dir = self.build_dir.as_ref().unwrap_or(&default_build_dir);
 
         // todo: is this necessary? -> no, but maybe add a flag/option to bypass (and also allow plugins to specify if they require blueprint in settings)
         // idea: [[plugin]] require-plan = false

@@ -256,6 +256,7 @@ impl From<Configs> for Config {
 }
 
 #[derive(PartialEq, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct General {
     #[serde(rename = "build-dir")]
     build_dir: Option<String>,

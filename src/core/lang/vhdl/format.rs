@@ -2,6 +2,7 @@ use serde_derive::Deserialize;
 use serde_derive::Serialize;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct VhdlFormat {
     #[serde(rename = "highlight-syntax")]
     highlight_syntax: Option<bool>,

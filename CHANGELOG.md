@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.9.9 - unreleased
+
+### Changes
+- denies unknown fields to the `[general]` and `[vhdl-format]` config tables
+
 ## 0.9.8
 
 ### Features

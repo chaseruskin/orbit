@@ -1148,7 +1148,7 @@ precedence:
 <p>Orbit supports multiple levels of configuration. Each level has its own order of precedence:</p>
 <ol>
 <li>
-<p>Local configuration file (location: CWIP)</p>
+<p>Local configuration file (location: current working IP)</p>
 </li>
 <li>
 <p>Global configuration file (location: <code>$ORBIT_HOME</code>)</p>
@@ -1165,10 +1165,11 @@ precedence:
 <ul>
 <li><a href="reference/configuration.html#the-include-field">include</a> - Lists other <code>config.toml</code> files to process.</li>
 <li><a href="reference/configuration.html#the-general-section">[general]</a> - The general settings.</li>
+<li><a href="reference/configuration.html#the-vhdl-format-section">[vhdl-format]</a> - VHDL code formatting.</li>
 <li><a href="reference/configuration.html#the-env-section">[env]</a> - The runtime environment variables.</li>
 <li><a href="reference/configuration.html#the-plugin-array">[[plugin]]</a> - Define a plugin.
 <ul>
-<li><a href="reference/configuration.html#the-alias-field">alias</a> - The name of the plugin.</li>
+<li><a href="reference/configuration.html#the-name-field">name</a> - The name of the plugin.</li>
 <li><a href="reference/configuration.html#the-summary-field">summary</a> - A short description of the plugin.</li>
 <li><a href="reference/configuration.html#the-command-field">command</a> - The command to execute the plugin.</li>
 <li><a href="reference/configuration.html#the-args-field">args</a> - Arguments to pass to the command.</li>
@@ -1177,7 +1178,7 @@ precedence:
 </li>
 <li><a href="reference/configuration.html#the-protocol-array">[[protocol]]</a> - Define a protocol.
 <ul>
-<li><a href="reference/configuration.html#the-alias-field">name</a> - The name of the protocol.</li>
+<li><a href="reference/configuration.html#the-name-field">name</a> - The name of the protocol.</li>
 <li><a href="reference/configuration.html#the-summary-field">summary</a> - A short description of the protocol.</li>
 <li><a href="reference/configuration.html#the-command-field">command</a> - The command to execute the protocol.</li>
 <li><a href="reference/configuration.html#the-args-field">args</a> - Arguments to pass to the command.</li>
@@ -1191,19 +1192,45 @@ precedence:
 ]
 </code></pre>
 <h3 id="the-general-section"><a class="header" href="#the-general-section">The <code>[general]</code> section</a></h3>
+<h3 id="the-vhdl-format-section"><a class="header" href="#the-vhdl-format-section">The <code>[vhdl-format]</code> section</a></h3>
+<p>The currently supported entries are demonstrated in the following code snippet. Entries not present will default to their hard-coded default value.</p>
+<pre><code class="language-toml">[vhdl-format]
+# number of whitespace characters per tab/indentation
+tab-size = 2
+# insert a tab before 'generic' and 'port' interface declarations
+indent-interface = true
+# automatically align a signal or constant's subtype with its other identifiers
+type-auto-alignment = false
+# number of whitespace characters after alignment (before ':' token)
+type-offset = 0
+# automatically align a instantiation's mapping with its other identifiers
+mapping-auto-alignment = false
+# number of whitespace characters after mapping (before '=&gt;' token)
+mapping-offset = 1
+</code></pre>
 <h3 id="the-env-section"><a class="header" href="#the-env-section">The <code>[env]</code> section</a></h3>
+<p>The user can define an arbitrary number of their own entries with their determined value represented in string format.</p>
 <pre><code class="language-toml">[env]
-MY_VAR = &quot;1&quot;
-# ...
+# accessible as ORBIT_ENV_FOO
+foo = &quot;0&quot;
+# accessible as ORBIT_ENV_SUPER_BAR
+super-bar = &quot;1&quot;
 </code></pre>
 <h3 id="the-plugin-array"><a class="header" href="#the-plugin-array">The <code>[[plugin]]</code> array</a></h3>
-<h3 id="the-alias-field"><a class="header" href="#the-alias-field">The <code>alias</code> field</a></h3>
+<h3 id="the-name-field-1"><a class="header" href="#the-name-field-1">The <code>name</code> field</a></h3>
 <h3 id="the-summary-field-1"><a class="header" href="#the-summary-field-1">The <code>summary</code> field</a></h3>
 <h3 id="the-command-field"><a class="header" href="#the-command-field">The <code>command</code> field</a></h3>
 <h3 id="the-args-field"><a class="header" href="#the-args-field">The <code>args</code> field</a></h3>
 <h3 id="the-fileset-section"><a class="header" href="#the-fileset-section">The <code>[fileset]</code> section</a></h3>
 <h3 id="the-protocol-array"><a class="header" href="#the-protocol-array">The <code>[[protocol]]</code> array</a></h3>
-<h3 id="the-name-field-1"><a class="header" href="#the-name-field-1">The <code>name</code> field</a></h3>
+<h3 id="the-name-field-2"><a class="header" href="#the-name-field-2">The <code>name</code> field</a></h3>
+<p>See <a href="reference/configuration.html#the-plugin-array">[plugin]</a>'s definition.</p>
+<h3 id="the-summary-field-2"><a class="header" href="#the-summary-field-2">The <code>summary</code> field</a></h3>
+<p>See <a href="reference/configuration.html#the-plugin-array">[plugin]</a>'s definition.</p>
+<h3 id="the-command-field-1"><a class="header" href="#the-command-field-1">The <code>command</code> field</a></h3>
+<p>See <a href="reference/configuration.html#the-plugin-array">[plugin]</a>'s definition.</p>
+<h3 id="the-args-field-1"><a class="header" href="#the-args-field-1">The <code>args</code> field</a></h3>
+<p>See <a href="reference/configuration.html#the-plugin-array">[plugin]</a>'s definition.</p>
 <!--
 ## config.toml
 

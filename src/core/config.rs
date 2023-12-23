@@ -203,7 +203,7 @@ impl Configs {
                 plugs.iter().for_each(|p| match map.get(p.get_alias()) {
                     Some(_) => (),
                     None => {
-                        map.insert(p.get_alias().clone(), p);
+                        map.insert(p.get_alias(), p);
                         ()
                     }
                 });
@@ -311,7 +311,7 @@ impl Config {
             plugs.iter().for_each(|p| match map.get(p.get_alias()) {
                 Some(_) => (),
                 None => {
-                    map.insert(p.get_alias().clone(), p);
+                    map.insert(p.get_alias(), p);
                     ()
                 }
             });
@@ -330,7 +330,7 @@ impl Config {
             plugs.iter().for_each(|p| match map.get(p.get_name()) {
                 Some(_) => (),
                 None => {
-                    map.insert(p.get_name().clone(), p);
+                    map.insert(p.get_name(), p);
                     ()
                 }
             });

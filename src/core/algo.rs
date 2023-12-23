@@ -92,7 +92,7 @@ fn graph_ip<'a>(
                                             dupe.get_iden().clone(),
                                             dep.get_man().get_ip().into_ip_spec(),
                                             PathBuf::from(
-                                                dupe.get_unit().get_source_code_file().clone(),
+                                                dupe.get_unit().get_source_code_file(),
                                             ),
                                             dupe.get_unit()
                                                 .get_symbol()

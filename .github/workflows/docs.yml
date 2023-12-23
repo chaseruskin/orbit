@@ -17,6 +17,10 @@ jobs:
         with:
           python-version: 3.x
 
+      - name: Install python packages
+        run: |
+          pip install toml
+
       - name: Setup mdbook
         uses: peaceiris/actions-mdbook@v1
         with:

@@ -15,14 +15,14 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.9.8 - unreleased
+## 0.9.8
 
 ### Features
 - `[vhdl-format]` is now a new supported entry in `config.toml` configuration files- use this to define how to format VHDL code when fetching the next entity to instantiate (see documentation for more details [here](https://c-rus.github.io/orbit/reference/configuration.html#the-vhdl-format-section))
 - adds `build-dir` field to the `[general]` section in `config.toml`
 
 ### Changes
-- `[[plugin]]` renames 'alias' entry to 'name' to be more consistent across other settings and add clarity
+- `[[plugin]]` renames 'alias' entry to 'name' to be more consistent across other settings
 
 ### Fixes
 - fixes configuration file precedence issue with some fields being incorrectly overridden by files lower in the precedence

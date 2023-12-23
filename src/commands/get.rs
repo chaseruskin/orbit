@@ -150,6 +150,11 @@ impl Get {
         if self.architectures == true {
             println!("{}", ent.get_architectures());
         }
+        
+        if fmt.is_syntax_highlighted() == false {
+            // force turn off coloring output
+            colored::control::set_override(false);
+        }
 
         // display component declaration
         if self.component == true {

@@ -68,6 +68,8 @@ The currently supported entries are demonstrated in the following code snippet. 
 
 ``` toml
 [vhdl-format]
+# enable colored output for generated vhdl code
+highlight-syntax = true
 # number of whitespace characters per tab/indentation
 tab-size = 2
 # insert a tab before 'generic' and 'port' interface declarations

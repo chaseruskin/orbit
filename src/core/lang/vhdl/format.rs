@@ -3,6 +3,8 @@ use serde_derive::Serialize;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct VhdlFormat {
+    #[serde(rename = "highlight-syntax")]
+    highlight_syntax: Option<bool>,
     #[serde(rename = "tab-size")]
     tab_size: Option<u8>,
     #[serde(rename = "type-auto-alignment")]
@@ -24,6 +26,7 @@ pub struct VhdlFormat {
 impl VhdlFormat {
     pub fn new() -> Self {
         Self {
+            highlight_syntax: Some(false),
             tab_size: Some(2),
             type_auto_alignment: Some(true),
             type_offset: Some(1),
@@ -33,6 +36,10 @@ impl VhdlFormat {
             space_interface_parenthesis: Some(false),
             instance_name: Some(String::from("uX")),
         }
+    }
+
+    pub fn is_syntax_highlighted(&self) -> bool {
+        self.highlight_syntax.unwrap_or(false)
     }
 
     pub fn get_tab_size(&self) -> u8 {
@@ -71,6 +78,9 @@ impl VhdlFormat {
     /// have data defined in `self`.
     pub fn merge(&mut self, rhs: Option<Self>) -> () {
         if let Some(rhs) = rhs {
+            if self.highlight_syntax.is_some() == false {
+                self.highlight_syntax = rhs.highlight_syntax
+            }
             if self.tab_size.is_some() == false {
                 self.tab_size = rhs.tab_size
             }

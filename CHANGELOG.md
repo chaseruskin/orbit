@@ -15,10 +15,13 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.9.9 - unreleased
+## 0.10.0 - unreleased
 
 ### Changes
 - denies unknown fields to the `[general]` and `[vhdl-format]` config tables
+
+### Fixes
+- fixes bug with topological sort during `plan` command when transforming from design units to file paths
 
 ## 0.9.8
 

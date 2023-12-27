@@ -727,55 +727,72 @@ impl Plan {
         result
     }
 
+    /// This function transforms the list of indices from `min_order` in topologically-sorted order
+    /// to the list of files in topologically-sorted order based on the information
+    /// in the `global_graph`.
+    /// 
+    /// Several files may be associated with an index in the `global_graph`, so it is important
+    /// to account for those too.
     fn determine_file_order<'a>(
         global_graph: &'a GraphMap<CompoundIdentifier, HdlNode, ()>,
         min_order: Vec<usize>,
     ) -> Vec<&'a IpFileNode<'a>> {
         // gather the files from each node in-order (multiple files can exist for a node)
-        let file_order = {
-            let mut file_map = HashMap::<String, (&IpFileNode, Vec<&HdlNode>)>::new();
-            let mut file_order = Vec::<String>::new();
+        let mut file_map = HashMap::<String, (&IpFileNode, Vec<&HdlNode>)>::new();
+        let mut file_order = Vec::<String>::new();
 
-            let mut f_list = Vec::new();
-            for i in &min_order {
-                // access the node key and access the files associated with this key (the dependencies)
-                let ipfs = global_graph
-                    .get_node_by_index(*i)
-                    .unwrap()
-                    .as_ref()
-                    .get_associated_files();
-
-                ipfs.iter().for_each(|&e| {
-                    let mut preds: Vec<&HdlNode> = global_graph
-                        .predecessors(*i)
-                        .into_iter()
-                        .map(|e| e.1)
-                        .collect();
-                    match file_map.get_mut(e.get_file()) {
-                        // merge dependencies together
-                        Some((_file_node, deps)) => {
-                            deps.append(&mut preds);
-                        }
-                        // log this node and its dependencies
-                        None => {
-                            file_order.push(e.get_file().clone());
-                            file_map.insert(e.get_file().clone(), (e, preds));
-                        }
+        for i in &min_order {
+            // access the node key and access the files associated with this key (the dependencies)
+            let ipfs = global_graph
+                .get_node_by_index(*i)
+                .unwrap()
+                .as_ref()
+                .get_associated_files();
+            // handle each associated file in the list
+            ipfs.iter().for_each(|&e| {
+                // collect all dependencies in the graph from this node
+                let mut preds: Vec<&HdlNode> = global_graph
+                    .predecessors(*i)
+                    .into_iter()
+                    .map(|e| e.1)
+                    .collect();
+                // merge dependencies together from various primary design units
+                match file_map.get_mut(e.get_file()) {
+                    // update the existing node by merging dependencies together
+                    Some((_file_node, deps)) => {
+                        deps.append(&mut preds);
                     }
-                });
-            }
-
-            for file_name in &file_order {
-                let (entry, deps) = file_map.get(file_name).unwrap();
-                for &ifn in deps {
-                    f_list
-                        .append(&mut ifn.get_associated_files().into_iter().map(|i| *i).collect());
+                    // enter the new unmarked node and its dependencies
+                    None => {
+                        file_order.push(e.get_file().clone());
+                        file_map.insert(e.get_file().clone(), (e, preds));
+                    }
                 }
-                f_list.push(entry);
+            });
+        }
+
+        // build a graph where nodes are files
+        let mut file_graph: GraphMap<&'a IpFileNode<'a>, (), ()> = GraphMap::new();
+
+        for file_name in &file_order {
+            let (node, deps) = file_map.get(file_name).unwrap();
+            // make sure the node exists in the graph before making edge connections
+            if file_graph.has_node_by_key(&node) == false {
+                file_graph.add_node(node, ());
             }
-            f_list
-        };
-        file_order
+            for &ifn in deps {
+                for pred_node in ifn.get_associated_files() {
+                    // make sure the node exists before creating edges
+                    if file_graph.has_node_by_key(&pred_node) == false {
+                        file_graph.add_node(pred_node, ());
+                    }
+                    // add edge between them (this function prevents self-loops)
+                    let _ = file_graph.add_edge_by_key(pred_node, node, ());
+                }
+            }
+        }
+        // topologically sort and transform into list of the file nodes
+        file_graph.get_graph().topological_sort().into_iter().map(|i| { *file_graph.get_key_by_index(i).unwrap() } ).collect()
     }
 
     /// Filters out the local nodes existing within the current IP from the `global_graph`.

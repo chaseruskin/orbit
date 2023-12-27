@@ -14,6 +14,11 @@ jobs:
     - name: Fetch repository
       uses: actions/checkout@v3
 
+    - name: Setup python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.x
+
     - name: Download package
       uses: actions/download-artifact@v3
       with:
@@ -35,14 +40,28 @@ jobs:
     - name: Test Orbit
       run: orbit --version
 
-    - name: Test DST algorithm
+    - name: Test dynamic symbol transformation algorithm
+      shell: bash
       run: cd ./tests/env/projects; ./dst.sh
+
+    - name: Test topological sort
+      shell: bash
+      run: cd ./tests/env/min_order; ./run.sh
+
+    - name: Test collecting associated files
+      shell: bash
+      run: cd ./tests/env/assoc_files; ./run.sh
     
   windows-test:
     runs-on: windows-latest
     steps:
     - name: Fetch repository
       uses: actions/checkout@v3
+
+    - name: Setup python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.x
 
     - name: Download package
       uses: actions/download-artifact@v3
@@ -62,7 +81,15 @@ jobs:
     - name: Test Orbit
       run: orbit --version
 
-    - name: Test DST algorithm
+    - name: Test dynamic symbol transformation algorithm
       shell: bash
       run: cd ./tests/env/projects; ./dst.sh
+
+    - name: Test topological sort
+      shell: bash
+      run: cd ./tests/env/min_order; ./run.sh
+
+    - name: Test collecting associated files
+      shell: bash
+      run: cd ./tests/env/assoc_files; ./run.sh
 

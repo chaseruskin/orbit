@@ -36,3 +36,20 @@ fulltest:
 # Sort the glossary contents
 sortgloss:
     python ./tools/sort_gloss.py
+
+# Organize commands required for end-to-end system-level tests
+
+test-plan-1:
+    just install
+    chmod +x ./tests/env/assoc_files/run.sh
+    cd ./tests/env/assoc_files; ./run.sh
+
+test-plan-2:
+    just install
+    chmod +x ./tests/env/min_order/run.sh
+    cd ./tests/env/min_order; ./run.sh
+
+test-dst:
+    just install
+    chmod +x ./tests/env/projects/dst.sh
+    cd ./tests/env/projects; ./dst.sh

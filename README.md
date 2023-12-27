@@ -22,7 +22,7 @@
 </div>
 <br>
 
-`orbit` is the package manager for Hardware Description Languages (HDL). 
+`orbit` is a package manager for Hardware Description Languages (HDL). 
 
 Read the [Book of Orbit](https://c-rus.github.io/orbit/) for complete documentation.
 
@@ -192,4 +192,4 @@ See [CONTRIBUTING](./CONTRIBUTING.md).
 
 ## License
 
-This project, which refers to all source code files created under this repository, is currently licensed under the open-source copyleft GPL-3.0 license. See [LICENSE](./LICENSE).
+This project, which refers to all of the files and source code created and stored in this repository, is currently licensed under the open-source copyleft GPL-3.0 license. See [LICENSE](./LICENSE).

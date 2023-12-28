@@ -227,7 +227,7 @@ re-install the dependency to the cache.</p>
 <p><code>--clean</code><br />
       Removes all files from the build directory before execution</p>
 <p><code>--list</code><br />
-      Displays all available plugins and exit</p>
+      Display all available plugins and exit</p>
 <p><code>--force</code><br />
       Ignore reading the precomputed lock file</p>
 <p><code>--lock-only</code><br />
@@ -235,7 +235,8 @@ re-install the dependency to the cache.</p>
 <p><code>--all</code><br />
       Include all locally found HDL files</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit plan --top and_gate --fileset PIN-PLAN=&quot;*.board&quot;
+<pre><code>orbit plan --bench my_tb
+orbit plan --top and_gate --fileset PIN-PLAN=&quot;*.board&quot;
 orbit plan --plugin vivado --clean --bench ram_tb
 orbit plan --lock-only
 </code></pre>

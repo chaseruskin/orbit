@@ -95,7 +95,7 @@ uX : entity work.nand_gate
   );
 ```
 
-A half adder can be constructed with 5 NAND gates. It's time to copy/paste our NAND gate instances into our code file "half_add.vhd".
+A half adder can be constructed with 5 NAND gates. It's time to copy/paste our NAND gate instances into our new file "half_add.vhd".
 
 Filename: half_add.vhd
 ``` vhdl
@@ -184,7 +184,7 @@ half_add (half-add:0.1.0)
 └─ nand_gate ?
 ```
 
-After introducing dependencies at the project level, it's important to maintain an up-to-date lockfile Orbit.lock.
+After introducing dependencies at the project level, it's also important to maintain an up-to-date lockfile Orbit.lock.
 ```
 $ orbit plan --lock-only
 ```

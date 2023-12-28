@@ -1131,26 +1131,26 @@ impl std::error::Error for PlanError {}
 impl std::fmt::Display for PlanError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::TestbenchNoTest(id) => write!(f, "no entities are tested in testbench {}", id),
-            Self::UnknownEntity(id) => write!(f, "no entity named '{}' in the current ip", id),
-            Self::Empty => write!(f, "no entities found"),
-            Self::BadEntity(id) => write!(f, "primary design unit '{}' is not an entity", id),
+            Self::TestbenchNoTest(id) => write!(f, "No entities are tested in testbench {}", id),
+            Self::UnknownEntity(id) => write!(f, "No entity named '{}' in the current IP", id),
+            Self::Empty => write!(f, "No entities found"),
+            Self::BadEntity(id) => write!(f, "Primary design unit '{}' is not an entity", id),
             Self::BadTestbench(id) => write!(
                 f,
-                "entity '{}' is not a testbench and cannot be bench; use --top",
+                "Entity '{}' is not a testbench and cannot be bench; use --top",
                 id
             ),
             Self::BadTop(id) => write!(
                 f,
-                "entity '{}' is a testbench and cannot be top; use --bench",
+                "Entity '{}' is a testbench and cannot be top; use --bench",
                 id
             ),
             Self::UnknownUnit(id) => {
-                write!(f, "no primary design unit named '{}' in the current ip", id)
+                write!(f, "No primary design unit named '{}' in the current IP", id)
             }
             Self::Ambiguous(name, tbs) => write!(
                 f,
-                "multiple {} were found:\n {}",
+                "Multiple {} were found:\n{}",
                 name,
                 tbs.iter()
                     .fold(String::new(), |sum, x| { sum + &format!("    {}\n", x) })

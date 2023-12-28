@@ -8,5 +8,5 @@ In this tutorial, you will learn how to:
 ## Specifying multiple dependencies for an IP
 
 
-## VHDL problems: Overcoming namespace pollution
+## Overcoming HDL problems: Namespace pollution
 

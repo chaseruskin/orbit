@@ -8,7 +8,7 @@
 
 - [Tutorials](./tutorials/tutorials.md)
     - [First Project: Gates](./tutorials/first_project.md)
-    - [First Dependency](./tutorials/first_dependency.md)
+    - [Dependencies: Half adder](./tutorials/dependencies.md)
     - [Gates: Revisited](./tutorials/gates_revisited.md)
     - [Final Project: Adder](./tutorials/final_project.md)
 

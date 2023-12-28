@@ -9,8 +9,7 @@ In this tutorial, you will learn how to:
 
 ## Creating an IP
 
-First, navigate to a directory in your file system where you would like to store the project.
-From there, let's issue our first `orbit` command:
+First, navigate to a directory in your file system where you would like to store the project. From there, let's issue our first `orbit` command:
 ```
 $ orbit new gates
 ```
@@ -264,7 +263,7 @@ gates                       0.1.0     Installed
 
 And there it is! Let's continue to the next tutorial, where we introduce dependencies across IPs.
 
-### Additional Notes on Project Structure
+### Additional notes on project structure
 
 Our final project structure looks like the following:
 ```

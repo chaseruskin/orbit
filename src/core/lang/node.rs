@@ -59,7 +59,7 @@ impl<'a> HdlNode<'a> {
             match fmt {
                 IdentifierFormat::Long => {
                     let ip = self.files.first().unwrap().get_ip();
-                    format!("{} [{}]", &name, ip.get_man().get_ip().into_ip_spec())
+                    format!("{} ({})", &name, ip.get_man().get_ip().into_ip_spec())
                 }
                 IdentifierFormat::Short => format!("{}", &name),
             }

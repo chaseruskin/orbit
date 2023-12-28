@@ -239,7 +239,7 @@ uX : entity work.nand_gate
     x =&gt; x
   );
 </code></pre>
-<p>A half adder can be constructed with 5 NAND gates. It's time to copy/paste our NAND gate instances into our code file &quot;half_add.vhd&quot;.</p>
+<p>A half adder can be constructed with 5 NAND gates. It's time to copy/paste our NAND gate instances into our new file &quot;half_add.vhd&quot;.</p>
 <p>Filename: half_add.vhd</p>
 <pre><code class="language-vhdl">library ieee;
 use ieee.std_logic_1164.all;
@@ -316,7 +316,7 @@ end architecture;
 <pre><code>half_add (half-add:0.1.0)
 └─ nand_gate ?
 </code></pre>
-<p>After introducing dependencies at the project level, it's important to maintain an up-to-date lockfile Orbit.lock.</p>
+<p>After introducing dependencies at the project level, it's also important to maintain an up-to-date lockfile Orbit.lock.</p>
 <pre><code>$ orbit plan --lock-only
 </code></pre>
 <p>The lockfile saves information for <code>orbit</code> to use later when needing to reconstruct the state of an IP. This includes saving information about all IP dependencies, their checksums, and potential sources of retrieval. Remember, the Orbit.lock file is automatically managed by <code>orbit</code> and does not require direct user editing.</p>

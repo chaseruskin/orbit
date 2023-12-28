@@ -323,7 +323,6 @@ with open('build/blueprint.tsv') as blueprint:
         fileset, lib, path = r.strip().split('\t')
         if fileset == 'VHDL-RTL':
             synth_order += [(lib, path)]
-        pass
     pass
 
 # Use the Yilinx tool to perform synthesize on the HDL files
@@ -335,8 +334,8 @@ print('YILINX:','Performing place-and-route...')
 
 # Use the Yilinx tool to generate the bitstream
 print('YILINX:', 'Generating bitstream...')
-with open('build/fpga.bit', 'w') as bistream:
-    bistream.write('011010101101' * 2)
+with open('build/fpga.bit', 'w') as bitstream:
+    bitstream.write('011010101101' * 2)
 
 print('YILINX:','Bitstream saved at: build/fpga.bit')
 

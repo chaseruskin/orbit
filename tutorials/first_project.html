@@ -171,11 +171,234 @@
                     <main>
                         <h1 id="first-project-gates"><a class="header" href="#first-project-gates">First Project: Gates</a></h1>
 <p>In this tutorial, you will learn how to:</p>
+<p><a href="#creating-an-ip">1.</a> Create an IP from scratch<br />
+<a href="#integrating-design-units">2.</a> Leverage <code>orbit</code> to integrate an entity into a larger design<br />
+<a href="#building-an-ip-for-a-scripted-workflow">3.</a> Build a design using a simple plugin<br />
+<a href="#making-an-ip-and-its-design-units-reusable">4.</a> Release a version of an IP</p>
+<h2 id="creating-an-ip"><a class="header" href="#creating-an-ip">Creating an IP</a></h2>
+<p>First, navigate to a directory in your file system where you would like to store the project.
+From there, let's issue our first <code>orbit</code> command:</p>
+<pre><code>$ orbit new gates
+</code></pre>
+<p>A directory called &quot;gates&quot; should now exist and look like the following tree structure:</p>
+<pre><code>gates/
+└─ Orbit.toml
+</code></pre>
+<p>Let's create our first design unit for describing a NAND gate. Feel free to copy the following code into a file called &quot;nand_gate.vhd&quot; that exists in our project directory &quot;gates/&quot;.</p>
+<p>Filename: nand_gate.vhd</p>
+<pre><code class="language-vhdl">library ieee;
+use ieee.std_logic_1164.all;
+
+entity nand_gate is
+  port(
+    a, b : in std_logic;
+    x : out std_logic
+  );
+end entity;
+
+architecture rtl of nand_gate is
+begin
+  x &lt;= a nand b;
+
+end architecture;
+</code></pre>
+<h2 id="integrating-design-units"><a class="header" href="#integrating-design-units">Integrating design units</a></h2>
+<p>Consider for an instant that our HDL only supports the <code>nand</code> keyword and is missing the other logic gates such as <code>or</code>, <code>and</code>, and <code>xor</code>.</p>
+<p>Recalling our basic knowledge of digital circuits, we know a NAND gate is a universal gate, so let's compose other gates using our newly created <code>nand_gate</code> entity. Create a new file for our next design unit to describe an AND gate. </p>
+<p>Filename: and_gate.vhd</p>
+<pre><code class="language-vhdl">library ieee;
+use ieee.std_logic_1164.all;
+
+entity and_gate is
+  port(
+    a, b : in std_logic;
+    y : out std_logic
+  );
+end entity;
+
+architecture rtl of and_gate is
+begin
+    -- What to put here?
+
+end architecture;
+</code></pre>
+<p>After some thinking, we realize we can use two NAND gates together to construct an AND gate. Let's use <code>orbit</code> to help us integrate our <code>nand_gate</code> entity into the <code>and_gate</code>'s architecture.</p>
+<pre><code>$ orbit get nand_gate --component --signals --instance
+</code></pre>
+<pre><code>component nand_gate
+  port(
+    a : in std_logic;
+    b : in std_logic;
+    x : out std_logic
+  );
+end component;
+
+signal a : std_logic;
+signal b : std_logic;
+signal x : std_logic;
+
+uX : nand_gate
+  port map(
+    a =&gt; a,
+    b =&gt; b,
+    x =&gt; x
+  );
+</code></pre>
+<p>With this single command, <code>orbit</code> provided us with:</p>
 <ul>
-<li>Create an IP from scratch</li>
-<li>Leverage <code>orbit</code> to integrate an entity into a larger design</li>
-<li>Build a design using a simple plugin</li>
-<li>Release a version of an IP</li>
+<li>the component declaration</li>
+<li>signals for the port interface</li>
+<li>an instantiation template</li>
+</ul>
+<p>Sweet! After some quick copy/pasting and signal renaming, we have our architecture described for an AND gate.</p>
+<p>Filename: and_gate.vhd</p>
+<pre><code class="language-vhdl">library ieee;
+use ieee.std_logic_1164.all;
+
+entity and_gate is
+  port(
+    a, b : in std_logic;
+    y : out std_logic
+  );
+end entity;
+
+architecture rtl of and_gate is
+  
+  component nand_gate
+    port(
+      a : in std_logic;
+      b : in std_logic;
+      x : out std_logic
+    );
+  end component;
+
+  signal x : std_logic;
+
+begin
+
+  u1 : nand_gate
+    port map(
+      a =&gt; a,
+      b =&gt; b,
+      x =&gt; x
+    );
+
+  u2 : nand_gate
+    port map(
+      a =&gt; x,
+      b =&gt; x,
+      x =&gt; y
+    );
+
+end architecture;
+</code></pre>
+<p>Let's make a quick check to verify our <code>and_gate</code> is using our <code>nand_gate</code>.</p>
+<pre><code>$ orbit tree
+</code></pre>
+<pre><code>and_gate
+└─ nand_gate
+</code></pre>
+<p>Cool! We got a hierarchical view of our top-most design unit.</p>
+<h2 id="building-an-ip-for-a-scripted-workflow"><a class="header" href="#building-an-ip-for-a-scripted-workflow">Building an IP for a scripted workflow</a></h2>
+<p>After all of our hard work, we are excited to show off our latest design on the newest Yilinx FPGA that just arrived in the mail. You realize you need a way to get your HDL code to the Yilinx synthesis tool in order to generate the final bitstream for your FPGA.</p>
+<p>To make this possible, <code>orbit</code> breaks down the process into two stages: <em>plan</em> and <em>build</em>.</p>
+<h3 id="planning"><a class="header" href="#planning">Planning</a></h3>
+<p>Let's create a file that lists all the files we will need to give to the Yilinx synthesis tool.</p>
+<pre><code>$ orbit plan
+</code></pre>
+<p>This command produced a file, called the <em>blueprint</em>, that lists all the required files in a <em>topologically-sorted</em> order for any backend tool that needs to know.</p>
+<p>Filename: build/blueprint.tsv</p>
+<pre><code>VHDL-RTL	work	/Users/chase/tutorials/gates/nand_gate.vhd
+VHDL-RTL	work	/Users/chase/tutorials/gates/and_gate.vhd
+
+</code></pre>
+<p>Now we just need a way for our Yilinx synthesis tool to be able to interpet and use our blueprint file. Enter <em>plugins</em>.</p>
+<h3 id="building"><a class="header" href="#building">Building</a></h3>
+<p>A plugin is a script created by us that acts as the layer between our blueprint file and the tool we want to use. Let's make one for our Yilinx synthesis tool using the Python programming language.</p>
+<p>Filename: .orbit/yilinx.py</p>
+<pre><code class="language-python">synth_order = []
+# Read and parse the blueprint file
+with open('build/blueprint.tsv') as blueprint:
+    rules = blueprint.readlines()
+    for r in rules:
+        fileset, lib, path = r.strip().split('\t')
+        if fileset == 'VHDL-RTL':
+            synth_order += [(lib, path)]
+        pass
+    pass
+
+# Use the Yilinx tool to perform synthesize on the HDL files
+for (lib, path) in synth_order:
+    print('YILINX:', 'Synthesizing file ' + str(path) +' into ' + str(lib) + '...')
+
+# Use the Yilinx tool to perform placement and routing
+print('YILINX:','Performing place-and-route...')
+
+# Use the Yilinx tool to generate the bitstream
+print('YILINX:', 'Generating bitstream...')
+with open('build/fpga.bit', 'w') as bistream:
+    bistream.write('011010101101' * 2)
+
+print('YILINX:','Bitstream saved at: build/fpga.bit')
+
+</code></pre>
+<p>In order for <code>orbit</code> to know about our plugin, we need to tell <code>orbit</code> about the plugin in a configuration file. For this project, we edit the project-level configurations.</p>
+<p>Filename: .orbit/config.toml</p>
+<pre><code class="language-toml">[[plugin]]
+name = &quot;yilinx&quot;
+summary = &quot;Generate bitstreams for Yilinx FPGAs&quot;
+command = &quot;python&quot;
+args = [&quot;yilinx.py&quot;]
+</code></pre>
+<p>Okay, all steps are in place! Let's generate a bitsream.</p>
+<pre><code>$ orbit build --plugin yilinx
+</code></pre>
+<pre><code>YILINX: Synthesizing file /Users/chase/tutorials/gates/nand_gate.vhd into work...
+YILINX: Synthesizing file /Users/chase/tutorials/gates/and_gate.vhd into work...
+YILINX: Performing place-and-route...
+YILINX: Generating bitstream...
+YILINX: Bitstream saved at: build/fpga.bit
+</code></pre>
+<p>Typically, we create plugins to interface with EDA tools which will in turn produce desired output files. We see Yilinx saved our bitstream for us to program our FPGA. Cool!</p>
+<p>Filename: build/fpga.bit</p>
+<pre><code>011010101101011010101101
+</code></pre>
+<h2 id="making-an-ip-and-its-design-units-reusable"><a class="header" href="#making-an-ip-and-its-design-units-reusable">Making an IP and its design units reusable</a></h2>
+<p>Now we are ready to move on to more advanced topics, so let's go ahead and store an immutable reference to this project to use in other projects in our developer journey. </p>
+<pre><code>$ orbit install --path .
+</code></pre>
+<p>This command ran a series of steps that packaged our project and placed it into our <em>cache</em>. Internally, <code>orbit</code> knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire IP catalog.</p>
+<pre><code>$ orbit search
+</code></pre>
+<pre><code>Package                     Latest    Status   
+--------------------------- --------- ---------- 
+gates                       0.1.0     Installed
+</code></pre>
+<p>And there it is! Let's continue to the next tutorial, where we introduce dependencies across IPs.</p>
+<h3 id="additional-notes-on-project-structure"><a class="header" href="#additional-notes-on-project-structure">Additional Notes on Project Structure</a></h3>
+<p>Our final project structure looks like the following:</p>
+<pre><code>gates/
+├─ .orbit/
+│  ├─ config.toml
+│  └─ yilinx.py
+├─ build/
+│  ├─ blueprint.tsv
+│  └─ fpga.bit
+├─ Orbit.toml
+├─ Orbit.lock
+├─ and_gate.vhd
+└─ nand_gate.vhd
+</code></pre>
+<ul>
+<li>
+<p>The configurations stored in &quot;.orbit/&quot; exist only for this project; to store configurations that persist across projects make changes to the $ORBIT_HOME directory.</p>
+</li>
+<li>
+<p><code>orbit</code> creates an output directory to store the blueprint and any tool output files during a build. These files should reside in &quot;build/&quot; and may change often during development (probably don't check this directory into version control).</p>
+</li>
+<li>
+<p><code>orbit</code> creates a lock file &quot;Orbit.lock&quot; to store all the information required to manage and recreate the exact state of this project. It is a good idea to always keep it and to not manually edit it (probably be sure to check this file into version control).</p>
+</li>
 </ul>
 
                     </main>

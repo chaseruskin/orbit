@@ -10,7 +10,7 @@
     - [First Project: Gates](./tutorials/first_project.md)
     - [Dependencies: Half adder](./tutorials/dependencies.md)
     - [Gates: Revisited](./tutorials/gates_revisited.md)
-    - [Final Project: Adder](./tutorials/final_project.md)
+    - [Final Project: Full adder](./tutorials/final_project.md)
 
 - [User Guide](./user/user.md)
     - [Develop IP](./user/develop_ip.md)

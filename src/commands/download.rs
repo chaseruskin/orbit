@@ -169,7 +169,7 @@ impl Download {
         download_dir: &PathBuf,
         protocols: &HashMap<&str, &Protocol>,
         verbose: bool,
-        force: bool,
+        _force: bool,
     ) -> Result<(), Fault> {
         // use the user-provided queue directory or simply use a temporary directory
         let queue = match queue {
@@ -209,17 +209,16 @@ impl Download {
                     }
                 }
                 None => {
-                    if force == false {
-                        fs::remove_dir_all(queue)?;
-                        return Err(
-                            Box::new(AnyError(format!("Unknown protocol \"{}\"", &proto))).into(),
-                        );
-                    }
+                    // potential to use --force here to avoid this error and try with default but not currently implemented that way
+                    fs::remove_dir_all(queue)?;
+                    return Err(
+                        Box::new(AnyError(format!("Unknown protocol \"{}\"", &proto))).into(),
+                    );
                 }
             }
         }
         // try to use default protocol
-        if force == true || src.is_default() == true {
+        if src.is_default() == true {
             println!("info: Downloading {} ...", spec);
             if let Err(err) = Protocol::single_download(src.get_url(), &queue) {
                 fs::remove_dir_all(queue)?;

@@ -52,7 +52,7 @@ impl Plugin {
         let mut list = String::from("Plugins:\n");
         plugs.sort_by(|a, b| a.alias.cmp(&b.alias));
         for plug in plugs {
-            list += &format!("    {}\n", plug.quick_info());
+            list += &format!("  {}\n", plug.quick_info());
         }
         list
     }
@@ -78,7 +78,7 @@ impl std::fmt::Display for Plugin {
         write!(
             f,
             "\
-alias:   {}
+name:    {}
 command: {} {}
 root:    {}
 filesets:
@@ -202,7 +202,7 @@ impl std::fmt::Display for PluginError {
         match self {
             Self::Missing(name) => write!(
                 f,
-                "no plugin found as '{}'\n\nTry `orbit plan --list` to see available plugins",
+                "No plugin named '{}'\n\nTry `orbit plan --list` to see available plugins",
                 name
             ),
         }

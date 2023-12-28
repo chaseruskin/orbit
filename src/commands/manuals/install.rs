@@ -6,38 +6,48 @@ SYNOPSIS
     orbit install [options]
 
 DESCRIPTION
-    This command will get move an ip's project folder to the cache. By default,
-    the specified version is the 'latest' released version orbit can
-    identify.
-      
-    An ip can be installed from multiple locations. A common method is to
-    reference the ip with its pkgid if it is already in your ip catalog with
-    '--ip'. Another method is to install by providing the remote git repository 
-    url to clone with '--git'. A third method is to provide the local filesystem
-    path to the ip with '--path'.
-      
-    The version is the "snapshot" of the ip's state during that time of
-    development. Versions are recognized by Orbit as git tags following the 
-    semver specification (major.minor.patch).
-      
-    Development versions are not allowed to be installed to the cache
-    because they are considered mutable.
+    This command will place an ip into the cache. By default, the specified version
+    is the 'latest' released version orbit can identify.
+    
+    When this command is ran without specifying the <ip> or a source (such as
+    '--url' or '--path'), it will attempt to install the current working ip, if it
+    exists.
+    
+    By default, any dependencies required only for development by the target ip are
+    omitted from installation. To also install these dependencies, use '--all'.
+    
+    If a protocol is recognized using '--protocol', then an optional tag can also 
+    be supplied to help the protocol with providing any additional information it
+    may require.
 
 OPTIONS
-    --path <path>
-        Directory to install ip from to place in the cache
+    <ip>
+        Ip specification
 
-    --ip <name>
-        Ip to install from the queue into the cache
+    --url <url>
+        URL to install the ip from the internet
+
+    --path <path>
+        Path to install the ip from local file system
+
+    --protocol <name>
+        Use a configured protocol to download ip
+
+    --tag <tag>
+        Unique tag to provide to the protocol
 
     --force
         Install the ip regardless of the cache slot occupancy
+
+    --list
+        View available protocols and exit
 
     --all
         Install all dependencies (including development)
 
 EXAMPLES
-    orbit install"
-    orbit install --path ./projects/ram --force 
-    orbit install --all
+    orbit install
+    orbit install lcd_driver:2.0
+    orbit install adder:1.0.0 --url https://my.adder/project.zip
+    orbit install alu:2.3.7 --path ./projects/alu --force
 "#;

@@ -15,6 +15,15 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.10.1 - unreleased
+
+### Features
+- display protocols and their definitions using `--list` with the `install` command
+
+### Changes
+- improves errors for install when using a path to search
+- improves implementation for download process when using `install` command
+
 ## 0.10.0
 
 ### Changes

@@ -27,10 +27,10 @@ use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::ip::PartialIpSpec;
 use crate::core::lockfile::LockEntry;
-use crate::core::manifest;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::ORBIT_SUM_FILE;
 use crate::core::iparchive::IpArchive;
+use crate::core::protocol::Protocol;
 use crate::core::source::Source;
 use crate::core::variable::VariableTable;
 use crate::core::version;
@@ -56,6 +56,7 @@ pub struct Install {
     path: Option<PathBuf>,
     protocol: Option<String>,
     tag: Option<String>,
+    list: bool,
     force: bool,
     verbose: bool,
     all: bool,
@@ -69,6 +70,7 @@ impl FromCli for Install {
             force: cli.check_flag(Flag::new("force"))?,
             verbose: cli.check_flag(Flag::new("verbose"))?,
             all: cli.check_flag(Flag::new("all"))?,
+            list: cli.check_flag(Flag::new("list"))?,
             // Options
             path: cli.check_option(Optional::new("path"))?,
             url: cli.check_option(Optional::new("url"))?,
@@ -82,21 +84,53 @@ impl FromCli for Install {
 }
 
 use crate::commands::download::ProtocolMap;
+use crate::core::protocol::ProtocolError;
 
 impl Command<Context> for Install {
     type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
+        // locate the plugin
+        let protocol = match &self.protocol {
+            // verify the plugin alias matches
+            Some(name) => match c.get_config().get_protocols().get(name.as_str()) {
+                Some(&p) => Some(p),
+                None => return Err(ProtocolError::Missing(name.to_string()))?,
+            },
+            None => None,
+        };
+
+        // display protocol list and exit
+        if self.list == true {
+            match protocol {
+                // display entire contents about the particular plugin
+                Some(proto) => println!("{}", proto),
+                // display quick overview of all plugins
+                None => println!(
+                    "{}",
+                    Protocol::list_protocols(
+                        &mut c
+                            .get_config()
+                            .get_protocols()
+                            .values()
+                            .into_iter()
+                            .collect::<Vec<&&Protocol>>()
+                    )
+                ),
+            }
+            return Ok(());
+        }
         // gather the catalog (all manifests)
         let mut catalog = Catalog::new()
             .installations(c.get_cache_path())?
             .downloads(c.get_downloads_path())?;
         
         // check if trying to download from the internet
-        let target = if let Some(url) = &self.url {
-            Self::download_target_from_url(&self, c, url)?;
+        let target = if self.url.is_some() {
+            Self::download_target_from_url(&self, c, &self.url.as_ref().unwrap())?;
             None
-        } else {
+        // check if trying to download from local filesystem
+        } else if self.path.is_some() || self.ip.is_none() {
             // verify the path points to a valid ip
             let search_path = filesystem::resolve_rel_path(
                 &env::current_dir()?,
@@ -104,40 +138,44 @@ impl Command<Context> for Install {
             );
 
             // check if specifying an Ip
-            let search_path = PathBuf::standardize(PathBuf::from(search_path));
-
+            let search_dir = PathBuf::standardize(PathBuf::from(search_path));
+            let search_path = search_dir.join(IP_MANIFEST_FILE);
+            
+            // println!("{:?}", search_path);
             // look for IP along this path
-            let result = manifest::find_file(&search_path, IP_MANIFEST_FILE, true)?;
+            //let result = manifest::find_file(&search_path, IP_MANIFEST_FILE, true)?;
             // find the IP to match
             // println!("{:?}", result);
             let target = match &self.ip {
                 Some(entry) => {
-                    result.into_iter().find_map(|m| {
-                        let ip = match Ip::load(m.parent().unwrap().to_path_buf()) {
-                            Ok(r) => r,
-                            Err(_) => return None,
-                        };
-                        if ip.get_man().get_ip().get_name() == entry.get_name()
-                            && (entry.get_version().is_latest() || version::is_compatible(entry.get_version().as_specific().unwrap(), ip.get_man().get_ip().get_version())) {
-                            Some(ip)
-                        } else {
-                            None
+                    match search_path.exists() {
+                        true => {
+                            let ip = Ip::load(search_dir.to_path_buf())?;
+                            if ip.get_man().get_ip().get_name() == entry.get_name()
+                                && (entry.get_version().is_latest() || version::is_compatible(entry.get_version().as_specific().unwrap(), ip.get_man().get_ip().get_version())) {
+                                Some(ip)
+                            } else {
+                                Err(AnyError(format!("Could not find IP \"{}\" at path \"{}\"", entry, filesystem::into_std_str(search_dir))))?
+                            }
+                        },
+                        false => {
+                            Err(AnyError(format!("Path \"{}\" does not contain an Orbit.toml file", filesystem::into_std_str(search_dir))))?
                         }
-                    })
+                    }            
                 },
                 // make sure there is only 1 IP to download
                 None => {
-                    match &result.len() {
-                        0 => Err(AnyError(format!("No IPs to install from this path")))?,
-                        1 => {
-                            Some(Ip::load(result.first().unwrap().parent().unwrap().to_path_buf())?)
-                        }
-                        _ => Err(AnyError(format!("Multiple IPs exist; specify an IP to install from this path")))?
+                    match search_path.exists() {
+                        true => Some(Ip::load(search_dir.to_path_buf())?),
+                        false => Err(AnyError(format!("Path \"{}\" does not contain an Orbit.toml file", filesystem::into_std_str(search_dir))))?,
                     }
                 },
             };
             // @todo: check if already downloaded or installed
             target
+        // attempt to find the catalog
+        } else {
+            None
         };
 
         // update the downloads
@@ -173,10 +211,11 @@ impl Command<Context> for Install {
                 } else {
                     return Err(AnyError(format!("Failed to find an IP in the catalog")))?;
                 }
+            // use the local IP if the ip spec was not provided
             } else {
                 target
             }
-        // use the path
+        // use the local IP if a path was supplied
         } else {
             target
         };

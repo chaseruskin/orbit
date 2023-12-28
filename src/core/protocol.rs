@@ -6,6 +6,7 @@ use crate::core::variable;
 use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::str::FromStr;
+use crate::util::filesystem::Standardize;
 
 pub type Protocols = Vec<Protocol>;
 
@@ -92,6 +93,27 @@ impl Protocol {
         &self.name.as_ref()
     }
 
+    /// Creates a string to display a list of plugins.
+    ///
+    /// The string lists the plugins in alphabetical order by `name`.
+    pub fn list_protocols(protos: &mut [&&Protocol]) -> String {
+        let mut list = String::from("Protocols:\n");
+        protos.sort_by(|a: &&&Protocol, b| a.name.cmp(&b.name));
+        for proto in protos {
+            list += &format!("  {}\n", proto.quick_info());
+        }
+        list
+    }
+
+    /// Displays a plugin's information in a single line for quick glance.
+    pub fn quick_info(&self) -> String {
+        format!(
+            "{:<16}{}",
+            self.name,
+            self.summary.as_ref().unwrap_or(&String::new())
+        )
+    }
+
     // /// Performs the default behavior of the download on each
     // pub fn default_execute(srcs: &[&String]) -> Result<(), Fault> {
 
@@ -132,6 +154,64 @@ impl Protocol {
         zip_archive.extract(&dst)?;
 
         Ok(())
+    }
+
+
+}
+
+impl std::fmt::Display for Protocol {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "\
+name:    {}
+command: {} {}
+root:    {}
+{}{}",
+            self.name,
+            self.command,
+            self.args
+                .as_ref()
+                .unwrap_or(&Vec::new())
+                .iter()
+                .fold(String::new(), |x, y| { x + "\"" + &y + "\" " }),
+            PathBuf::standardize(self.root.as_ref().unwrap()).display(),
+            {
+                if let Some(text) = &self.summary {
+                    format!("\n{}\n", text)
+                } else {
+                    String::new()
+                }
+            },
+            {
+                if let Some(text) = &self.details {
+                    format!("\n{}", text)
+                } else {
+                    String::new()
+                }
+            },
+        )
+    }
+}
+
+use std::error::Error;
+
+#[derive(Debug, PartialEq)]
+pub enum ProtocolError {
+    Missing(String),
+}
+
+impl Error for ProtocolError {}
+
+impl std::fmt::Display for ProtocolError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Missing(name) => write!(
+                f,
+                "No protocol named '{}'\n\nTry `orbit install --list` to see available protocols",
+                name
+            ),
+        }
     }
 }
 

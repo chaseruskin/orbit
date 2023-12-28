@@ -79,7 +79,7 @@ re-install the dependency to the cache.
       Removes all files from the build directory before execution
 
 `--list`  
-      Displays all available plugins and exit
+      Display all available plugins and exit
 
 `--force`  
       Ignore reading the precomputed lock file
@@ -93,6 +93,7 @@ re-install the dependency to the cache.
 ## __EXAMPLES__
 
 ```
+orbit plan --bench my_tb
 orbit plan --top and_gate --fileset PIN-PLAN="*.board"
 orbit plan --plugin vivado --clean --bench ram_tb
 orbit plan --lock-only

@@ -11,7 +11,7 @@ Options:
     --build-dir <dir>       set the output build directory
     --fileset <key=glob>... set an additional fileset
     --clean                 remove all files from the build directory
-    --list                  view available plugins
+    --list                  view available plugins and exit
     --lock-only             create the lockfile and exit
     --all                   include all found HDL files
     --force                 skip reading from the lock file

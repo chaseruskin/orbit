@@ -11,6 +11,7 @@ Options:
     --protocol <name>   defined protocol to download the package
     --tag <tag>         unique tag to pass to the protocol
     --all               install all dependencies including development
+    --list              view available protocols and exit
     --verbose           display the command(s) being executed
     --force             install regardless of cache slot occupancy
 

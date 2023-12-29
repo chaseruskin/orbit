@@ -453,7 +453,7 @@ end architecture;
 </code></pre>
 <p>This command produced a file, called the <em>blueprint</em>, that lists all the required files in a <em>topologically-sorted</em> order for any backend tool that needs to know.</p>
 <p>Filename: build/blueprint.tsv</p>
-<pre><code>VHDL-RTL	work	/Users/chase/tutorials/gates/nand_gate.vhd
+<pre><code class="language-text">VHDL-RTL	work	/Users/chase/tutorials/gates/nand_gate.vhd
 VHDL-RTL	work	/Users/chase/tutorials/gates/and_gate.vhd
 
 </code></pre>
@@ -505,7 +505,7 @@ YILINX: Bitstream saved at: build/fpga.bit
 </code></pre>
 <p>Typically, we create plugins to interface with EDA tools which will in turn produce desired output files. We see Yilinx saved our bitstream for us to program our FPGA. Cool!</p>
 <p>Filename: build/fpga.bit</p>
-<pre><code>011010101101011010101101
+<pre><code class="language-text">011010101101011010101101
 </code></pre>
 <h2 id="making-an-ip-and-its-design-units-reusable"><a class="header" href="#making-an-ip-and-its-design-units-reusable">Making an IP and its design units reusable</a></h2>
 <p>Now we are ready to move on to more advanced topics, so let's go ahead and store an immutable reference to this project to use in other projects in our developer journey. </p>
@@ -697,10 +697,10 @@ end architecture;
 <p>The lockfile saves information for <code>orbit</code> to use later when needing to reconstruct the state of an IP. This includes saving information about all IP dependencies, their checksums, and potential sources of retrieval. Remember, the Orbit.lock file is automatically managed by <code>orbit</code> and does not require direct user editing.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="gates-revisited"><a class="header" href="#gates-revisited">Gates: Revisited</a></h1>
 <p>In this tutorial, you will learn how to:</p>
-<p><a href="tutorials/gates_revisited.html#updating-the-gates-ip">1.</a> Update an existing IP<br />
+<p><a href="tutorials/gates_revisited.html#updating-the-gates-ip">1.</a> Edit an existing IP<br />
 <a href="tutorials/gates_revisited.html#extending-the-yilinx-plugin">2.</a> Use environment variables and command-line arguments to create more robust plugins<br />
-<a href="tutorials/gates_revisited.html#rereleasing-the-gates-ip">3.</a> Release a new version of an existing IP</p>
-<h2 id="updating-the-gates-ip"><a class="header" href="#updating-the-gates-ip">Updating the gates IP</a></h2>
+<a href="tutorials/gates_revisited.html#rereleasing-the-gates-ip">3.</a> Release the next version for an existing IP</p>
+<h2 id="editing-the-gates-ip"><a class="header" href="#editing-the-gates-ip">Editing the gates IP</a></h2>
 <p>It seems we left out some logic gates when we last worked on the gates project, so let's implement them now. Navigate to the directory in your file system where you currently store the gates project.</p>
 <p>For the rest of this tutorial, we will be working relative to the project directory &quot;gates/&quot; that currently stores the gates project.</p>
 <p>Let's implement the OR gate while restricting our design to only NAND gates like before. </p>
@@ -756,11 +756,11 @@ begin
     
   -- 2nd layer: This gate produces the final output ('a' OR 'b').
   u3 : entity work.nand_gate
-  port map(
-    a =&gt; x1,
-    b =&gt; x2,
-    x =&gt; y
-  );
+    port map(
+      a =&gt; x1,
+      b =&gt; x2,
+      x =&gt; y
+    );
 
 end architecture;
 </code></pre>
@@ -852,7 +852,7 @@ elif PROG_SRAM == True:
 
 </code></pre>
 <p>With all these changes, we can now go ahead and program our FPGA as we want!</p>
-<p>First, let's plan the OR gate design. We can specify which entity to set as the top level by using the &quot;--top&quot; command-line option. The &quot;--plugin&quot; command-line option tells orbit what additional files to collect for a future build with that plugin.</p>
+<p>First, let's plan the OR gate design. We can specify which entity is the top level by using the &quot;--top&quot; command-line option. The &quot;--plugin&quot; command-line option tells <code>orbit</code> what additional files to collect for a future build with that plugin.</p>
 <pre><code>$ orbit plan --plugin yilinx --top or_gate 
 </code></pre>
 <p>Let's take a look at the blueprint file <code>orbit</code> just created.</p>
@@ -880,14 +880,45 @@ YILINX: Programming bitstream to flash...
 <p>Filename: build/or_gate.bit</p>
 <pre><code class="language-text">1101111111001010111111100111110000111101001100101
 </code></pre>
-<p>Awesome! We added some pretty advanced settings to our yilinx plugin to make it more robust for future use.</p>
+<p>Awesome! We added some pretty advanced settings to our yilinx plugin to make it more robust for future use. Let's configure this plugin to be used with any of our ongoing projects by editing the global configuration file through the command-line.</p>
+<pre><code>$ orbit config --global --append include=&quot;$(orbit env ORBIT_IP_PATH)/.orbit/config.toml&quot;
+</code></pre>
+<p>Now when we call <code>orbit</code> from any directory, we can see our yilinx plugin is available to use.</p>
+<pre><code>$ orbit plan --list
+</code></pre>
+<pre><code>Plugins:
+  yilinx          Generate bitstreams for Yilinx FPGAs
+</code></pre>
 <h2 id="rereleasing-the-gates-ip"><a class="header" href="#rereleasing-the-gates-ip">Rereleasing the gates IP</a></h2>
+<p>We made changes to the gates IP, and now we want to have the ability to use these new updates or continue using the old changes. To do this, we want to update the version number in the manifest file. Let's edit the Orbit.toml file's version field to contain version &quot;1.0.0&quot;.</p>
+<p>Filename: Orbit.toml</p>
+<pre><code class="language-toml">[ip]
+name = &quot;gates&quot;
+version = &quot;1.0.0&quot;
+
+# See more keys and their definitions at https://c-rus.github.io/orbit/reference/manifest.html
+
+[dependencies]
+
+</code></pre>
+<p>Finally, let's release version 1.0.0 for the gates IP by installing it to our cache.</p>
+<pre><code>$ orbit install --path .
+</code></pre>
+<p>One last look at the catalog shows the latest version of gates we have installed is indeed 1.0.0. Nice work!</p>
+<pre><code>$ orbit search gates
+</code></pre>
+<pre><code>Package                     Latest    Status   
+--------------------------- --------- ---------- 
+gates                       1.0.0     Installed
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="final-project-full-adder"><a class="header" href="#final-project-full-adder">Final Project: Full adder</a></h1>
 <p>In this tutorial, you will learn how to:</p>
-<p>[1.] Depend on multiple IPs for a single project<br />
-[2.] Use orbit to overcome namespace pollution</p>
+<p><a href="tutorials/final_project.html#specifying-multiple-dependencies-for-an-ip">1.</a> Depend on multiple IPs for a single project<br />
+<a href="tutorials/final_project.html#overcoming-hdl-problems-namespace-pollution">2.</a> Use <code>orbit</code> to overcome namespace pollution<br />
+<a href="tutorials/final_project.html#using-a-plugin-from-the-global-scope">3.</a> Build a project with a globally-defined plugin</p>
 <h2 id="specifying-multiple-dependencies-for-an-ip"><a class="header" href="#specifying-multiple-dependencies-for-an-ip">Specifying multiple dependencies for an IP</a></h2>
 <h2 id="overcoming-hdl-problems-namespace-pollution"><a class="header" href="#overcoming-hdl-problems-namespace-pollution">Overcoming HDL problems: Namespace pollution</a></h2>
+<h2 id="building-a-project-with-a-globally-defind-plugin"><a class="header" href="#building-a-project-with-a-globally-defind-plugin">Building a project with a globally-defind plugin</a></h2>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="user-guide"><a class="header" href="#user-guide">User Guide</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="develop-ip"><a class="header" href="#develop-ip">Develop IP</a></h1>
 <!-- ## Creating a new IP from scratch

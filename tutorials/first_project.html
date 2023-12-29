@@ -307,7 +307,7 @@ end architecture;
 </code></pre>
 <p>This command produced a file, called the <em>blueprint</em>, that lists all the required files in a <em>topologically-sorted</em> order for any backend tool that needs to know.</p>
 <p>Filename: build/blueprint.tsv</p>
-<pre><code>VHDL-RTL	work	/Users/chase/tutorials/gates/nand_gate.vhd
+<pre><code class="language-text">VHDL-RTL	work	/Users/chase/tutorials/gates/nand_gate.vhd
 VHDL-RTL	work	/Users/chase/tutorials/gates/and_gate.vhd
 
 </code></pre>
@@ -359,7 +359,7 @@ YILINX: Bitstream saved at: build/fpga.bit
 </code></pre>
 <p>Typically, we create plugins to interface with EDA tools which will in turn produce desired output files. We see Yilinx saved our bitstream for us to program our FPGA. Cool!</p>
 <p>Filename: build/fpga.bit</p>
-<pre><code>011010101101011010101101
+<pre><code class="language-text">011010101101011010101101
 </code></pre>
 <h2 id="making-an-ip-and-its-design-units-reusable"><a class="header" href="#making-an-ip-and-its-design-units-reusable">Making an IP and its design units reusable</a></h2>
 <p>Now we are ready to move on to more advanced topics, so let's go ahead and store an immutable reference to this project to use in other projects in our developer journey. </p>

@@ -4,7 +4,7 @@ In this tutorial, you will learn how to:
 
 [1.](#specifying-multiple-dependencies-for-an-ip) Depend on multiple IPs for a single project  
 [2.](#overcoming-hdl-problems-namespace-pollution) Use `orbit` to overcome namespace pollution  
-[3.](#using-a-plugin-from-the-global-scope) Build a project with a globally-defined plugin
+[3.](#reusing-plugins-that-are-globally-configured) Build a project with a globally-configured plugin  
 
 ## Specifying multiple dependencies for an IP
 
@@ -157,7 +157,7 @@ To us though, these slight identifier renamings remain hidden because they occur
 
 This is indeed a silly example, but there is a key takeaway! Designs are constantly evolving. When creating the latest module, you never know what will come next. By allowing the state of a design to live on while also providing support for new growth, THAT is an incredible experience. Things just work. Even as projects grow in scale and complexity, things still work. Gone are the worries of trying to manage compatibility with so many interconnected dependencies, with the freedom to continue to further innovation.
 
-## Building a project with a globally-defined plugin
+## Reusing plugins that are globally-configured
 
 To conclude this mini tutorial series, let's generate a bitstream for the Yilinx FPGA with our full adder implementation. 
 

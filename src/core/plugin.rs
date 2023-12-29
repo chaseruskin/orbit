@@ -2,6 +2,7 @@
 //! in the generated blueprint file.
 
 use crate::core::context::Context;
+use crate::core::fileset::Fileset;
 use crate::core::fileset::Style;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
@@ -78,10 +79,10 @@ impl std::fmt::Display for Plugin {
         write!(
             f,
             "\
-name:    {}
-command: {} {}
-root:    {}
-filesets:
+Name:    {}
+Command: {} {}
+Root:    {}
+Filesets:
 {}{}{}",
             self.alias,
             self.command,
@@ -93,14 +94,14 @@ filesets:
             PathBuf::standardize(self.root.as_ref().unwrap()).display(),
             {
                 if self.fileset.is_none() {
-                    String::from("    None\n")
+                    String::from("  None\n")
                 } else {
                     self.fileset
                         .as_ref()
                         .unwrap()
                         .iter()
                         .fold(String::new(), |x, (n, p)| {
-                            x + &format!("    {:<16}{}\n", n, p.inner())
+                            x + &format!("  {:<16}{}\n", Fileset::standardize_name(n), p.inner())
                         })
                 }
             },
@@ -163,12 +164,12 @@ pub trait Process {
         match exit_code.code() {
             Some(num) => {
                 if num != 0 {
-                    Err(AnyError(format!("exited with error code: {}", num)))?
+                    Err(AnyError(format!("Exited with error code: {}", num)))?
                 } else {
                     Ok(())
                 }
             }
-            None => Err(AnyError(format!("terminated by signal")))?,
+            None => Err(AnyError(format!("Terminated by signal")))?,
         }
     }
 }

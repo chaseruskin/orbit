@@ -10,7 +10,6 @@ In this tutorial, you will learn how to:
 
 It seems we left out some logic gates when we last worked on the gates project, so let's implement them now. Navigate to the directory in your file system where you currently store the gates project.
 
-
 For the rest of this tutorial, we will be working relative to the project directory "gates/" that currently stores the gates project.
 
 Let's implement the OR gate while restricting our design to only NAND gates like before. 

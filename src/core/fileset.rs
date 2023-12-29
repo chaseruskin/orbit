@@ -50,7 +50,11 @@ impl FromStr for Style {
     type Err = PatternError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Style(Pattern::new(&("**/".to_owned() + s))?.into()))
+        let prefix = match s.get(0..1) {
+            Some(".") => "", 
+            _ => "**/",
+        };
+        Ok(Style(Pattern::new(&(prefix.to_owned() + s))?.into()))
     }
 }
 
@@ -165,8 +169,16 @@ impl Fileset {
     }
 
     /// Set the `Fileset` glob-style pattern.
+    /// 
+    /// If no explicit relative file path character is present (`.`), then
+    /// it implicitly sets a recursive directory glob pattern as the prefix
+    /// (`**/`).
     pub fn pattern(mut self, p: &str) -> Result<Self, PatternError> {
-        self.pattern = Pattern::new(&("**/".to_owned() + p))?.into();
+        let prefix = match p.get(0..1) {
+            Some(".") => "", 
+            _ => "**/",
+        };
+        self.pattern = Pattern::new(&(prefix.to_owned() + p))?.into();
         Ok(self)
     }
 
@@ -302,13 +314,40 @@ mod test {
     }
 
     #[test]
+    fn assemble_fileset() {
+        let fset = Fileset::new()
+            .name("hello_world")
+            .pattern("*.txt")
+            .unwrap();
+        assert_eq!(
+            fset,
+            Fileset {
+                name: String::from("HELLO-WORLD"),
+                pattern: Pattern::new("**/*.txt").unwrap().into(),
+            }
+        );
+
+        let fset = Fileset::new()
+            .name("hello_world")
+            .pattern("./some/specific/path.txt")
+            .unwrap();
+        assert_eq!(
+            fset,
+            Fileset {
+                name: String::from("HELLO-WORLD"),
+                pattern: Pattern::new("./some/specific/path.txt").unwrap().into(),
+            }
+        );
+    }
+
+    #[test]
     fn fset_from_str() {
         let s = "xsim-cfg=*.wcfg";
         let fset = Fileset::from_str(s);
         assert_eq!(
             fset.unwrap(),
             Fileset {
-                name: "XSIM-CFG".to_string(),
+                name: String::from("XSIM-CFG"),
                 pattern: Pattern::new("*.wcfg").unwrap().into()
             }
         );
@@ -340,5 +379,8 @@ mod test {
 
         let s: &str = "vhdl_rtl";
         assert_eq!(Fileset::standardize_name(s), "VHDL-RTL");
+
+        let s: &str = "board_fiLe";
+        assert_eq!(Fileset::standardize_name(s), "BOARD-FILE");
     }
 }

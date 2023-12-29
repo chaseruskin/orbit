@@ -917,8 +917,168 @@ gates                       1.0.0     Installed
 <a href="tutorials/final_project.html#overcoming-hdl-problems-namespace-pollution">2.</a> Use <code>orbit</code> to overcome namespace pollution<br />
 <a href="tutorials/final_project.html#using-a-plugin-from-the-global-scope">3.</a> Build a project with a globally-defined plugin</p>
 <h2 id="specifying-multiple-dependencies-for-an-ip"><a class="header" href="#specifying-multiple-dependencies-for-an-ip">Specifying multiple dependencies for an IP</a></h2>
+<p>After the quick detour back to the gates IP, we are ready to tackle our final challenge in this mini tutorial series: the full adder. Like our previous projects, navigate to a directory in your file system where you would like to store the project.</p>
+<pre><code>orbit new full-add
+</code></pre>
+<p>For the rest of this tutorial, we will be working relative to the project directory &quot;full-add/&quot; that currently stores our new full-add project. </p>
+<p>For this final project, we will need circuits described in both the gate IP and half-add IP. Let's quickly recall if version 1.0.0 of gates has the OR gate we will need.</p>
+<pre><code>$ orbit show gates:1.0.0 --units
+</code></pre>
+<pre><code>Identifier                          Type          Public   
+----------------------------------- ------------- -------- 
+and_gate                            entity        y 
+nand_gate                           entity        y 
+or_gate                             entity        y 
+</code></pre>
+<p>Yup! It's there, and we know we will need some half adders as well. Let's add both IPs to our manifest file.</p>
+<p>filename: Orbit.toml</p>
+<pre><code class="language-toml">[ip]
+name = &quot;full-add&quot;
+version = &quot;0.1.0&quot;
+
+# See more keys and their definitions at https://c-rus.github.io/orbit/reference/manifest.html
+
+[dependencies]
+gates = &quot;1.0.0&quot;
+half-add = &quot;0.1.0&quot;
+
+</code></pre>
+<p>Okay, time to start coding!</p>
 <h2 id="overcoming-hdl-problems-namespace-pollution"><a class="header" href="#overcoming-hdl-problems-namespace-pollution">Overcoming HDL problems: Namespace pollution</a></h2>
-<h2 id="building-a-project-with-a-globally-defind-plugin"><a class="header" href="#building-a-project-with-a-globally-defind-plugin">Building a project with a globally-defind plugin</a></h2>
+<p>Our full adder circuit will be constructed of 2 half adders and an OR gate. Let's collect some HDL code snippets to use for our full adder circuit.</p>
+<pre><code>$ orbit get half_add --ip half-add --instance
+</code></pre>
+<pre><code>library work;
+
+uX : entity work.half_add
+  port map(
+    a =&gt; a,
+    b =&gt; b,
+    c =&gt; c,
+    s =&gt; s
+  );
+</code></pre>
+<p>And let's get the code snippet for the OR gate as well.</p>
+<pre><code>orbit get or_gate --ip gates:1.0.0 --instance
+</code></pre>
+<pre><code>library work;
+
+uX : entity work.or_gate
+  port map(
+    a =&gt; a,
+    b =&gt; b,
+    y =&gt; y
+  );
+</code></pre>
+<p>Let's combine these circuits together into our new file for our full adder implementation.</p>
+<p>Filename: full_add.vhd</p>
+<pre><code class="language-vhdl">library ieee;
+use ieee.std_logic_1164.all;
+
+library work;
+
+entity full_add is
+  port(
+    a, b, cin : in std_logic;
+    cout, s : out std_logic
+  );
+end entity;
+
+architecture rtl of full_add is
+  
+  signal c_ha0, s_ha0, c_ha1 : std_logic;
+
+begin
+
+  -- 1st layer: Peform half of the addition operation.
+  u_ha0 : entity work.half_add
+    port map(
+      a =&gt; a,
+      b =&gt; b,
+      c =&gt; c_ha0,
+      s =&gt; s_ha0
+    );
+
+  -- 2nd layer: Compute the final sum term.
+  u_ha1 : entity work.half_add
+    port map(
+      a =&gt; s_ha0,
+      b =&gt; cin,
+      c =&gt; c_ha1,
+      s =&gt; s
+    );
+
+  -- 3rd layer: Check both c terms from the half adders for the final cout term.
+  u_or0 : entity work.or_gate
+    port map(
+      a =&gt; c_ha0,
+      b =&gt; c_ha1,
+      y =&gt; cout
+    );
+
+end architecture;
+</code></pre>
+<p>Our design heirarchy is getting more complex; we have full adders constructed of half adders and OR gates, half adders constructed of NAND gates, OR gates constructed of... uh-oh. More NAND gates. </p>
+<p>The NAND gate design unit used in the OR gates is different from NAND gates used in the half adders because they reside in different versions of the gates IP (essentially different IPs). So did we just define an NAND gate entity twice with the same identifier? Yes, and thanks to <code>orbit</code>, this situation is okay.</p>
+<h3 id="huh"><a class="header" href="#huh">Huh?</a></h3>
+<p>Typical EDA tools will complain and error out when primary design units share the same name. How would they know which one is being used where? Fortunately, <code>orbit</code> is one step ahead of these tools due to implementing an algorithm called <em>dynamic symbol transformation</em>.</p>
+<p>Let's take a look at the design tree hierarchy. You may notice something interesting.</p>
+<pre><code>$ orbit tree --format long
+</code></pre>
+<pre><code>full_add (full-add:0.1.0)
+├─ or_gate (gates:1.0.0)
+│  └─ nand_gate (gates:1.0.0)
+└─ half_add (half-add:0.1.0)
+   └─ nand_gate_8108cfb282 (gates:0.1.0)
+</code></pre>
+<p>The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, <code>orbit</code> appends the beginning checksum digits from the IP of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict. </p>
+<p>To us though, these slight identifier renamings remain hidden because they occur among indirect dependencies in relation to our current project. When deciding which design unit to rename, <code>orbit</code> will always choose to rename the unit that is used as an indirect dependency. This key choice allows us to keep using the original unit name when integrating design units into the current project.</p>
+<h3 id="okay-so-what"><a class="header" href="#okay-so-what">Okay, so what?</a></h3>
+<p>This is indeed a silly example, but there is a key takeaway! Designs are constantly evolving. When creating the latest module, you never know what will come next. By allowing the state of a design to live on while also providing support for new growth, THAT is an incredible experience. Things just work. Even as projects grow in scale and complexity, things still work. Gone are the worries of trying to manage compatibility with so many interconnected dependencies, with the freedom to continue to further innovation.</p>
+<h2 id="building-a-project-with-a-globally-defined-plugin"><a class="header" href="#building-a-project-with-a-globally-defined-plugin">Building a project with a globally-defined plugin</a></h2>
+<p>To conclude this mini tutorial series, let's generate a bitstream for the Yilinx FPGA with our full adder implementation. </p>
+<p>First, let's verify our yilinx plugin is available to us after appending it to our global configuration file in the previous tutorial.</p>
+<pre><code>$ orbit plan --list
+</code></pre>
+<pre><code>Plugins:
+  yilinx          Generate bitstreams for Yilinx FPGAs
+</code></pre>
+<p>We can review more details about a particular plugin by specifying it with the &quot;--plugin&quot; command-line option while providing &quot;--list&quot; as well.</p>
+<pre><code>$ orbit plan --list --plugin yilinx
+</code></pre>
+<pre><code>Name:    yilinx
+Command: python &quot;yilinx.py&quot; 
+Root:    /Users/chase/tutorials/gates/.orbit
+Filesets:
+    PIN-FILE        **/*.ydc
+
+Generate bitstreams for Yilinx FPGAs
+</code></pre>
+<p>Let's plan with the intention to build using the yilinx plugin for our full adder.</p>
+<pre><code>$ orbit plan --plugin yilinx --top full_add
+</code></pre>
+<p>Opening the blueprint file shows we are indeed using different files for the different NAND gate design units, and the files are in a topologically-sorted order.</p>
+<p>Filename: build/blueprint.tsv</p>
+<pre><code class="language-text">VHDL-RTL	work	/Users/chase/.orbit/cache/gates-0.1.0-fe9ec9d99e/nand_gate.vhd
+VHDL-RTL	work	/Users/chase/.orbit/cache/half-add-0.1.0-1c537df196/half_add.vhd
+VHDL-RTL	work	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/nand_gate.vhd
+VHDL-RTL	work	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/or_gate.vhd
+VHDL-RTL	work	/Users/chase/tutorials/full-add/full_add.vhd
+
+</code></pre>
+<p>If a plugin is specified during the most recent planning step, it can be inferred to be used in the building step and therefore we can omit the &quot;--plugin&quot; command-line option for our convenience.</p>
+<pre><code>$ orbit build
+</code></pre>
+<pre><code>YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-0.1.0-fe9ec9d99e/nand_gate.vhd into work...
+YILINX: Synthesizing file /Users/chase/.orbit/cache/half-add-0.1.0-1c537df196/half_add.vhd into work...
+YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/nand_gate.vhd into work...
+YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/or_gate.vhd into work...
+YILINX: Synthesizing file /Users/chase/tutorials/full-add/full_add.vhd into work...
+YILINX: Performing place-and-route...
+YILINX: Generating bitstream...
+YILINX: Bitstream saved at: build/full_add.bit
+</code></pre>
+<p>Great work! This marks the end to this tutorial series, but the beginning of your experience with <code>orbit</code>, an HDL package manager.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="user-guide"><a class="header" href="#user-guide">User Guide</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="develop-ip"><a class="header" href="#develop-ip">Develop IP</a></h1>
 <!-- ## Creating a new IP from scratch

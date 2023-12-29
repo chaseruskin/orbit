@@ -1,7 +1,6 @@
 # Upgrading
 
-Once Orbit is installed, it can be self-upgraded to the latest official version released found on its Github.
-
+Once Orbit is installed, it can be self-upgraded to the latest official released version found on its Github repository.
 ```
 $ orbit --upgrade
 ```
@@ -10,11 +9,11 @@ This behavior performs the following strategy:
 
 1. Removes any executable in the executable's directory starting with `orbit-` (these are considered stale binaries, such as `orbit-0.1.0`).
 
-2. Connects to https://github.com/c-rus/orbit/releases to find the most recent released version.
+2. Connects to [https://github.com/c-rus/orbit/releases](https://github.com/c-rus/orbit/releases) to find the most recent released version.
 
-3. Checks if the most recent version online is ahead of the currently installed version. 
+3. Checks if the most recent version online is ahead of the currently installed version.
 
-> __Note__: If the version online is newer, a prompt will appear to confirm you wish to install the new version. This prompt can be bypassed by adding the `--force` flag to the above command.
+> __Note__: If the version online is newer, a prompt will appear to confirm you wish to install the new version. This prompt can be bypassed by adding the `--force` flag to the previous command.
 
 4. Downloads the checksum file to a temporary directory to see if there is a prebuilt package available for the current architecture and operating system.
 

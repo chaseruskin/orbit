@@ -1,19 +1,19 @@
 # Installing
 
-There are two main methods for getting orbit running on your system: downloading a precompiled binary or using cargo.
+There are two main methods for getting Orbit running on your computer: downloading a precompiled binary or by using Cargo.
 
 > __Reminder:__ By installing and using Orbit, you accept usage under its GPL-3.0 license.
 
 ## 1. Using a precompiled binary
 
-1.  Visit Orbit's [releases](https://github.com/c-rus/orbit/releases) page on Github to find all official releases. 
-2. Download the binary for your architecture and operating system.
-3. Install Orbit. Either run the provided `install` executable or follow the manual instructions for placing the Orbit executable (`orbit` for unix and `orbit.exe` for windows) in a location recognized by the PATH environment variable.
+1.  Visit Orbit's [releases](https://github.com/c-rus/orbit/releases) page on Github to find all of its official releases. 
+2. Download the binary for your computer's architecture and operating system.
+3. Install Orbit. Either run the provided `install` executable or follow the manual instructions for placing Orbit's executable (`orbit` for Unix and `orbit.exe` for Windows) in a location recognized by the PATH environment variable.
 
-There are multiple solutions to accomplish step 3. The following outlines one way to manually install orbit depending on the user's operating system. 
+There are multiple solutions to accomplish step 3. The following outlines one way to manually install Orbit depending on the user's operating system. 
 
 ### Unix
-1. Open a terminal to where Orbit was downloaded.
+1. Open a new terminal (Bash) to where Orbit was downloaded.
 2. Unzip the prebuilt package.
 ```
 $ unzip orbit-CARGO_CRATE_VERSION-x86_64-macos.zip
@@ -24,7 +24,7 @@ $ mv ./orbit-CARGO_CRATE_VERSION-x86_64-macos/bin/orbit /usr/local/bin/orbit
 ```
 
 ### Windows
-1. Open a terminal (Powershell) to where Orbit was downloaded.
+1. Open a new terminal (Powershell) to where Orbit was downloaded.
 
 2. Unzip the prebuilt package.
 ```
@@ -54,9 +54,11 @@ This will build the `orbit` binary and place it a path already set in the PATH e
 
 ## Checking if Orbit is installed correctly
 
-To verify orbit is working correctly on your system, open a new terminal and run:
+To verify Orbit is working correctly on your system, let's open a new terminal session and print it's current version.
 ```
 $ orbit --version
+```
+```
 orbit CARGO_CRATE_VERSION
 ```
-This should print out your version of orbit you installed. Congratulations!
+This should print out your version of Orbit you installed. Congratulations! You are now ready to begin using Orbit.

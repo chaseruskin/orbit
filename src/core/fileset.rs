@@ -219,24 +219,14 @@ impl Fileset {
         &self.pattern.inner()
     }
 
-    /// Creates format for blueprint.tsv file.
+    /// Creates format for blueprint.tsv file for a custom fileset.
+    /// 
+    /// Since custom filesets are only searched within the current project, the
+    /// library will always be "work".
     ///
-    /// The format goes FILESET_NAME\tFILE_NAME\tFILE_PATH
+    /// The format goes FILESET_NAME`\t`LIBRARY_NAME`\t`FILE_PATH
     pub fn to_blueprint_string(&self, file: &str) -> String {
-        let filename = {
-            // removes root path
-            let filenode = if let Some((_, node)) = file.rsplit_once('/') {
-                node
-            } else {
-                file
-            };
-            // removes file extenstion
-            match filenode.rsplit_once('.') {
-                Some((name, _)) => name,
-                None => filenode,
-            }
-        };
-        format!("{}\t{}\t{}\n", self.name, filename, file)
+        format!("{}\t{}\t{}\n", self.name, "work", file)
     }
 }
 
@@ -275,17 +265,17 @@ mod test {
 
     #[test]
     fn to_blueprint_string() {
-        let fset = Fileset::new().name("vhdl").pattern("*.sv").unwrap();
+        let fset = Fileset::new().name("custom-name").pattern("*.sv").unwrap();
         let filepath = "c:/users/chase/develop/project/adder.sv";
         assert_eq!(
             fset.to_blueprint_string(&filepath),
-            format!("VHDL\tadder\t{}\n", filepath)
+            format!("CUSTOM-NAME\twork\t{}\n", filepath)
         );
 
         let filepath = "FILE2.sv";
         assert_eq!(
             fset.to_blueprint_string(&filepath),
-            format!("VHDL\tFILE2\t{}\n", filepath)
+            format!("CUSTOM-NAME\twork\t{}\n", filepath)
         );
     }
 

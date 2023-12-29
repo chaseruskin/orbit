@@ -13,17 +13,17 @@
     - [Final Project: Full adder](./tutorials/final_project.md)
 
 - [User Guide](./user/user.md)
-    - [Develop IP](./user/develop_ip.md)
-    - [Use IP](./user/use_ip.md)
-    - [Share IP](./user/share_ip.md)
-    - [Make Channels](./user/make_channels.md)
-    - [Create Plugins](./user/creating_plugins.md)
+    <!-- - [Develop IP](./user/develop_ip.md) -->
+    <!-- - [Use IP](./user/use_ip.md) -->
+    <!-- - [Share IP](./user/share_ip.md) -->
+    <!-- - [Make Channels](./user/make_channels.md) -->
+    <!-- - [Create Plugins](./user/creating_plugins.md) -->
 
 - [Topic Guide](./topic/topic.md)
     - [Conceptual Overview](./topic/concept.md)
     - [IP](./topic/1_ip.md)
     - [Orbit.lock](./topic/5_orbitlock.md)
-    - [Blueprint](./topic/6_blueprint.md)
+    <!-- - [Blueprint](./topic/6_blueprint.md) -->
     - [Protocols](./topic/protocols.md)
     - [Dynamic Symbol Transformation](./topic/dst.md)
     - [.orbitignore](./topic/orbitignore.md)
@@ -32,9 +32,11 @@
     - [Manifest](./reference/manifest.md)
     - [Packages](./reference/packages.md)
     - [Versions](./reference/versions.md)
-    - [Command Line](./reference/command_line.md)
+    - [Filesets](./reference/filesets.md)
+    - [Blueprint](./reference/blueprint.md)
     - [Environment Variables](./reference/environment_variables.md)
     - [Configuration](./reference/configuration.md)
+    - [Command Line](./reference/command_line.md)
 
 - [Commands](./commands/commands.md)
     - [orbit new](./commands/new.md) <!-- DONE -->

@@ -1,10 +1,9 @@
 # Tutorials
 
-The following tutorials aim to provide step-by-step instructions through examples of basic ways for interacting with `orbit`.
+This section provides step-by-step instructions through examples of basic ways for interacting with `orbit`.
 
 > ### Command Line Notation
 > Throughout the tutorials and the rest of the book, commands will be shown that are used in the terminal. Lines that are entered in a terminal are denoted by starting with a $. The $ is just a special marker; it is not to be entered with the command. Lines that don't start with a $ are typically the output of the previous command.
-
 
 Before starting the tutorials, it is assumed you possess basic knowledge of the following topics:
 

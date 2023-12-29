@@ -2,11 +2,11 @@
 
 In this tutorial, you will learn how to:
 
-[1.](#updating-the-gates-ip) Update an existing IP  
+[1.](#updating-the-gates-ip) Edit an existing IP  
 [2.](#extending-the-yilinx-plugin) Use environment variables and command-line arguments to create more robust plugins  
-[3.](#rereleasing-the-gates-ip) Release a new version of an existing IP  
+[3.](#rereleasing-the-gates-ip) Release the next version for an existing IP  
 
-## Updating the gates IP
+## Editing the gates IP
 
 It seems we left out some logic gates when we last worked on the gates project, so let's implement them now. Navigate to the directory in your file system where you currently store the gates project.
 
@@ -71,11 +71,11 @@ begin
     
   -- 2nd layer: This gate produces the final output ('a' OR 'b').
   u3 : entity work.nand_gate
-  port map(
-    a => x1,
-    b => x2,
-    x => y
-  );
+    port map(
+      a => x1,
+      b => x2,
+      x => y
+    );
 
 end architecture;
 ```
@@ -182,7 +182,7 @@ elif PROG_SRAM == True:
 
 With all these changes, we can now go ahead and program our FPGA as we want!
 
-First, let's plan the OR gate design. We can specify which entity to set as the top level by using the "--top" command-line option. The "--plugin" command-line option tells orbit what additional files to collect for a future build with that plugin.
+First, let's plan the OR gate design. We can specify which entity is the top level by using the "--top" command-line option. The "--plugin" command-line option tells `orbit` what additional files to collect for a future build with that plugin.
 ```
 $ orbit plan --plugin yilinx --top or_gate 
 ```
@@ -222,7 +222,47 @@ Filename: build/or_gate.bit
 1101111111001010111111100111110000111101001100101
 ```
 
-Awesome! We added some pretty advanced settings to our yilinx plugin to make it more robust for future use.
+Awesome! We added some pretty advanced settings to our yilinx plugin to make it more robust for future use. Let's configure this plugin to be used with any of our ongoing projects by editing the global configuration file through the command-line.
+```
+$ orbit config --global --append include="$(orbit env ORBIT_IP_PATH)/.orbit/config.toml"
+```
+
+Now when we call `orbit` from any directory, we can see our yilinx plugin is available to use.
+```
+$ orbit plan --list
+```
+```
+Plugins:
+  yilinx          Generate bitstreams for Yilinx FPGAs
+```
 
 ## Rereleasing the gates IP
 
+We made changes to the gates IP, and now we want to have the ability to use these new updates or continue using the old changes. To do this, we want to update the version number in the manifest file. Let's edit the Orbit.toml file's version field to contain version "1.0.0".
+
+Filename: Orbit.toml
+``` toml
+[ip]
+name = "gates"
+version = "1.0.0"
+
+# See more keys and their definitions at https://c-rus.github.io/orbit/reference/manifest.html
+
+[dependencies]
+
+```
+
+Finally, let's release version 1.0.0 for the gates IP by installing it to our cache.
+```
+$ orbit install --path .
+```
+
+One last look at the catalog shows the latest version of gates we have installed is indeed 1.0.0. Nice work!
+```
+$ orbit search gates
+```
+```
+Package                     Latest    Status   
+--------------------------- --------- ---------- 
+gates                       1.0.0     Installed
+```

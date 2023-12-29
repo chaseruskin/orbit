@@ -170,7 +170,7 @@ $ orbit plan
 This command produced a file, called the _blueprint_, that lists all the required files in a _topologically-sorted_ order for any backend tool that needs to know.
 
 Filename: build/blueprint.tsv
-```
+``` text
 VHDL-RTL	work	/Users/chase/tutorials/gates/nand_gate.vhd
 VHDL-RTL	work	/Users/chase/tutorials/gates/and_gate.vhd
 
@@ -237,7 +237,7 @@ YILINX: Bitstream saved at: build/fpga.bit
 Typically, we create plugins to interface with EDA tools which will in turn produce desired output files. We see Yilinx saved our bitstream for us to program our FPGA. Cool!
 
 Filename: build/fpga.bit
-```
+``` text
 011010101101011010101101
 ```
 

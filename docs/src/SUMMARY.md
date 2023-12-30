@@ -20,7 +20,7 @@
     <!-- - [Create Plugins](./user/creating_plugins.md) -->
 
 - [Topic Guide](./topic/topic.md)
-    - [Conceptual Overview](./topic/concept.md)
+    - [Key Concepts](./topic/concept.md)
     - [IP](./topic/1_ip.md)
     - [Orbit.lock](./topic/5_orbitlock.md)
     - [.orbitignore](./topic/orbitignore.md)

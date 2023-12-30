@@ -1,4 +1,4 @@
-# Conceptual Overview
+# Key Concepts
 
 Orbit is a frontend package manager for HDL development that supports any backend tooling and workflow.
 

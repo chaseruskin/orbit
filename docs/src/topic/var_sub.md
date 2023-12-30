@@ -23,11 +23,15 @@ Now given a different context when the testbench name is called "mult_tb", then 
 Variable substitution is currently supported in the following contexts:
 
 ### Fileset patterns
+
+The string pattern for a plugin's fileset configuration is allowed to contain any of the following substitution variables:
 - `orbit.top`: The top-level design unit name.
 - `orbit.bench`: The testbench design unit name.
 - `orbit.env.*`: Any environment variables loaded from configuration files.
 
 ### Protocol arguments
+
+The arguments set in a protocol's configuration are allowed to contain any of the following substitution variables:
 - `orbit.queue`: The directory that Orbit expects the IP to be downloaded to.
 - `orbit.ip.name`: The name of the IP being downloaded.
 - `orbit.ip.version`: The version of the IP being downloaded.
@@ -36,9 +40,9 @@ Variable substitution is currently supported in the following contexts:
 - `orbit.ip.source.tag`: The tag (if provided) specified by the IP being downloaded.
 - `orbit.env.*`: Any environment variables loaded from configuration files.
 
-## Examples
+## Environment variable translation examples
 
-A substitution variable key is the environment variable key but by with all letters being lowercase and replacing each "_" character with a "." character.
+A substitution variable key is the environment variable key but converted to lowercase with each "_" character replaced by a "." character.
 
 Environment variables can be set in the configuration file like so.
 ``` toml

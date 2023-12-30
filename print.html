@@ -1236,12 +1236,14 @@ source = { url = &quot;https://github.com/c-rus/orbit.git&quot;, protocol = &quo
 <h2 id="supported-variables"><a class="header" href="#supported-variables">Supported variables</a></h2>
 <p>Variable substitution is currently supported in the following contexts:</p>
 <h3 id="fileset-patterns"><a class="header" href="#fileset-patterns">Fileset patterns</a></h3>
+<p>The string pattern for a plugin's fileset configuration is allowed to contain any of the following substitution variables:</p>
 <ul>
 <li><code>orbit.top</code>: The top-level design unit name.</li>
 <li><code>orbit.bench</code>: The testbench design unit name.</li>
 <li><code>orbit.env.*</code>: Any environment variables loaded from configuration files.</li>
 </ul>
 <h3 id="protocol-arguments"><a class="header" href="#protocol-arguments">Protocol arguments</a></h3>
+<p>The arguments set in a protocol's configuration are allowed to contain any of the following substitution variables:</p>
 <ul>
 <li><code>orbit.queue</code>: The directory that Orbit expects the IP to be downloaded to.</li>
 <li><code>orbit.ip.name</code>: The name of the IP being downloaded.</li>
@@ -1251,8 +1253,8 @@ source = { url = &quot;https://github.com/c-rus/orbit.git&quot;, protocol = &quo
 <li><code>orbit.ip.source.tag</code>: The tag (if provided) specified by the IP being downloaded.</li>
 <li><code>orbit.env.*</code>: Any environment variables loaded from configuration files.</li>
 </ul>
-<h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
-<p>A substitution variable key is the environment variable key but by with all letters being lowercase and replacing each &quot;_&quot; character with a &quot;.&quot; character.</p>
+<h2 id="environment-variable-translation-examples"><a class="header" href="#environment-variable-translation-examples">Environment variable translation examples</a></h2>
+<p>A substitution variable key is the environment variable key but converted to lowercase with each &quot;_&quot; character replaced by a &quot;.&quot; character.</p>
 <p>Environment variables can be set in the configuration file like so.</p>
 <pre><code class="language-toml">[env]
 foo = &quot;bar&quot;
@@ -1711,7 +1713,7 @@ RULE
 <p>The <em>fileset</em> is the group name for the file pattern that matched the given rule's file.</p>
 <p>The <em>identifier</em> is the library for the IP which the given rule's file belongs to.</p>
 <p>The <em>filepath</em> is the absolute file system path to the given rule's file.</p>
-<h4 id="examples-1"><a class="header" href="#examples-1">Examples</a></h4>
+<h4 id="examples"><a class="header" href="#examples">Examples</a></h4>
 <pre><code class="language-text">PY-MODEL	work	/Users/chase/projects/lc3b/sim/models/alu_tb.py
 VHDL-RTL	work	/Users/chase/projects/lc3b/rtl/const_pkg.vhd
 VHDL-RTL	math	/Users/chase/.orbit/cache/base2-1.0.0-aac9159285/pkg/base2.vhd
@@ -2117,7 +2119,7 @@ Dependencies:
 <h3 id="argument-terminator"><a class="header" href="#argument-terminator"><strong>Argument terminator</strong></a></h3>
 <p>The argument terminator is a special no-op flag <code>--</code> that tells the command-line interpreter to parse up until this symbol.</p>
 <p>Some scenarios will allow you to pass arguments through <code>orbit</code> to an internally executed command. You can pass these arguments by using the <em>argument terminator</em>.</p>
-<h4 id="examples-2"><a class="header" href="#examples-2">Examples</a></h4>
+<h4 id="examples-1"><a class="header" href="#examples-1">Examples</a></h4>
 <p>An example of using the argument terminator is brought up when calling a plugin through <code>orbit</code> during the building step.</p>
 <pre><code>$ orbit build --plugin yilinx -- --sram
 </code></pre>
@@ -2166,7 +2168,7 @@ initializing an already existing project into an ip.</p>
       The new directory to make</p>
 <p><code>--name &lt;name&gt;</code><br />
       The ip name to create</p>
-<h2 id="examples-3"><a class="header" href="#examples-3"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-2"><a class="header" href="#examples-2"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit new gates
 orbit new ./projects/dir7 --name adder
 </code></pre>
@@ -2190,7 +2192,7 @@ creating an ip from a non-existing directory.</p>
       The name of the ip</p>
 <p><code>--force</code><br />
       Overwrite a manifest if one already exists</p>
-<h2 id="examples-4"><a class="header" href="#examples-4"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-3"><a class="header" href="#examples-3"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit init
 orbit init ./projects/gates
 orbit init --name hello_world
@@ -2219,7 +2221,7 @@ current working ip, if exists.</p>
       Display the list of possible versions</p>
 <p><code>--units</code><br />
       Display the list of HDL primary design units associated with this ip</p>
-<h2 id="examples-5"><a class="header" href="#examples-5"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-4"><a class="header" href="#examples-4"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit show --units
 orbit show gates:1.0.0 --units
 orbit show gates --versions
@@ -2265,7 +2267,7 @@ it. To keep existing files alive while allowing new files to appear, use the
       Stop the code navigation upon matching this VHDL segment</p>
 <p><code>--doc &lt;code&gt;</code><br />
       Navigate to the preceding comments of this VHDL segment</p>
-<h2 id="examples-6"><a class="header" href="#examples-6"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-5"><a class="header" href="#examples-5"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit read and_gate --ip gates:1.0.0
 orbit read math_pkg --ip math --doc &quot;function clog2&quot;
 orbit read math_pkg --ip math --start &quot;package math_pkg&quot; --doc &quot;function flog2p1&quot; --location --file
@@ -2308,7 +2310,7 @@ table with the dependency ip and its version.</p>
       Display the detected architectures</p>
 <p><code>--name &lt;identifier&gt;</code><br />
       Set the instance's identifier</p>
-<h2 id="examples-7"><a class="header" href="#examples-7"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-6"><a class="header" href="#examples-6"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit get and_gate --ip gates:1.0.0 --component
 orbit get ram --ip mem:2.0.3 -csi
 orbit get uart -si --name u0
@@ -2346,7 +2348,7 @@ hdl source code file.</p>
       Limit the textual tree characters to the 128 ASCII set</p>
 <p><code>--ip</code><br />
       View the dependency graph at the ip level</p>
-<h2 id="examples-8"><a class="header" href="#examples-8"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-7"><a class="header" href="#examples-7"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit tree --ip
 orbit tree --root top --format long
 orbit tree --ascii --all
@@ -2416,7 +2418,7 @@ re-install the dependency to the cache.</p>
       Create the lock file and exit</p>
 <p><code>--all</code><br />
       Include all locally found HDL files</p>
-<h2 id="examples-9"><a class="header" href="#examples-9"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-8"><a class="header" href="#examples-8"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit plan --bench my_tb
 orbit plan --top and_gate --fileset PIN-PLAN=&quot;*.board&quot;
 orbit plan --plugin vivado --clean --bench ram_tb
@@ -2466,7 +2468,7 @@ will follow the previously defined arguments.</p>
       Display the command being executed</p>
 <p><code>args</code><br />
       Arguments to pass to the plugin or command</p>
-<h2 id="examples-10"><a class="header" href="#examples-10"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-9"><a class="header" href="#examples-9"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit build --plugin xsim -- --elab
 orbit build --command python -- synth.py
 orbit build --verbose
@@ -2501,7 +2503,7 @@ in the Orbit.toml manifest to determine the next increment. </p>
       override the default Orbit commit message when using '--next'</p>
 <p><code>--no-install</code><br />
       skip installing the newly launched version to the cache</p>
-<h2 id="examples-11"><a class="header" href="#examples-11"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-10"><a class="header" href="#examples-10"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit launch --next 1.0.0
 orbit launch --next major --ready
 </code></pre>
@@ -2535,7 +2537,7 @@ ip name, use <code>--match</code>.</p>
       The maximum number of results to return</p>
 <p><code>--match</code><br />
       Return results that only pass each filter</p>
-<h2 id="examples-12"><a class="header" href="#examples-12"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-11"><a class="header" href="#examples-11"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit search axi
 orbit search --keyword memory --keyword ecc
 orbit search --keyword RF --limit 20
@@ -2582,7 +2584,7 @@ from the downloads. See <code>orbit help install</code> for more details.</p>
       Display the custom protocol being executed</p>
 <p><code>--force</code><br />
       Download selected packages regardless of status</p>
-<h2 id="examples-13"><a class="header" href="#examples-13"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-12"><a class="header" href="#examples-12"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit download --missing --list
 orbit download --all --force
 </code></pre>
@@ -2620,7 +2622,7 @@ may require.</p>
       View available protocols and exit</p>
 <p><code>--all</code><br />
       Install all dependencies (including development)</p>
-<h2 id="examples-14"><a class="header" href="#examples-14"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-13"><a class="header" href="#examples-13"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit install
 orbit install lcd_driver:2.0
 orbit install adder:1.0.0 --url https://my.adder/project.zip
@@ -2640,7 +2642,7 @@ of each provided variables on its own line.</p>
 <h2 id="options-12"><a class="header" href="#options-12"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;key&gt;...</code><br />
       Include this variable's value specifically in the environment information</p>
-<h2 id="examples-15"><a class="header" href="#examples-15"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-14"><a class="header" href="#examples-14"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit env
 orbit env ORBIT_HOME
 orbit env ORBIT_CACHE ORBIT_DOWNLOADS
@@ -2671,7 +2673,7 @@ it will insert all <code>--set</code> values. Lastly, it will remove all <code>-
       Write the value at the key's entry</p>
 <p><code>--unset &lt;key&gt;...</code><br />
       Delete the key's entry</p>
-<h2 id="examples-16"><a class="header" href="#examples-16"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-15"><a class="header" href="#examples-15"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit config --append include=&quot;~/.orbit/profiles/ks-tech&quot;
 orbit config --unset env.VIVADO_PATH --global
 </code></pre>
@@ -2689,7 +2691,7 @@ will delete the IP found on the DEV_PATH.</p>
       Access the settings to the home configuration file</p>
 <p><code>--force</code><br />
       Remove the ip regardless of conditions</p>
-<h2 id="examples-17"><a class="header" href="#examples-17"><strong>EXAMPLES</strong></a></h2>
+<h2 id="examples-16"><a class="header" href="#examples-16"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit uninstall kepler.rary.gates -v dev
 orbit uninstall kepler.util.toolbox --variant 2.1
 </code></pre>

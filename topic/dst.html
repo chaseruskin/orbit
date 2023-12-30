@@ -197,29 +197,27 @@
 <p><strong>Note:</strong> VHDL does support the concept of <em>libraries</em>, which can add 1 level of nested scope to a primary design unit, but for this example we will assume the primary design units are defined within the same library/scope.</p>
 </blockquote>
 <p>In the following code, the symbol <code>and_gate</code> corresponds to an entity.</p>
+<p>Filename: lab1/and_gate.vhd</p>
 <pre><code class="language-vhdl">entity and_gate is
-    port (
-        a : in  bit;
-        b : in  bit;
-        c : out bit
-    );
+  port(
+    a, b : in bit;
+    c : out bit
+  );
 end entity;
 </code></pre>
-<p>file: <em>/lab1/and_gate.vhd</em></p>
 <p>Remember that this identifier could appear again at the same namespace level as this exsiting entity in a different VHDL file.</p>
-<p>Now, imagine you are integrating VHDL code from various existing IPs. As you instantiate entities within larger entities, you realize there exists another entity named <code>and_gate</code> further down in the hierarchy, but this one has a different behavior than the previously defined <code>and_gate</code> circuit from the <em>/lab1</em> directory.</p>
+<p>Now imagine you are integrating VHDL code from various existing IPs. As you instantiate entities within larger entities, you realize there exists another entity named <code>and_gate</code> further down in the hierarchy, but this one has a different behavior and port interface than the previously defined <code>and_gate</code> circuit from the &quot;lab1/&quot; directory.</p>
+<p>Filename: lab3/and_gate.vhd</p>
 <pre><code class="language-vhdl">entity and_gate is
-    port (
-        a : in  bit_vector(3 downto 0);
-        b : in  bit_vector(3 downto 0);
-        c : out bit_vector(3 downto 0)
-    );
+  port(
+    a, b : in bit_vector(3 downto 0);
+    c : out bit_vector(3 downto 0)
+  );
 end entity;
 </code></pre>
-<p>file: <em>/lab3/and_gate.vhd</em></p>
 <p>Since the current IP requires both code segments, then traditionally your EDA tool would complain to you and be unable to resolve which <code>and_gate</code> to be used where. It then falls on the developer to rename one of the entities where it is defined and everywhere it is referenced, which introduces additional overhead in time and possibilities for errors. This problem is solved with DST.</p>
 <h3 id="walkthrough"><a class="header" href="#walkthrough">Walkthrough</a></h3>
-<p>Take this example dependency tree at the IP level:</p>
+<p>We present an example project-level IP dependency tree.</p>
 <pre><code>final-project
 ├─ lab3
 │  └─ lab2
@@ -227,25 +225,25 @@ end entity;
 └─ lab2
 </code></pre>
 <p>Imagine the <code>final-project</code> IP has an entity called <code>top_level</code> which is the root of circuit hierarchy. From there, it reuses entities from the other IP.</p>
-<p>Let's look at the VHDL entity hierarchy tree across the integrated IP:</p>
-<pre><code>top_level [final-project]
-├─ and_gate [lab3]
-│  └─ adder [lab2]
-|     └─ and_gate [lab1]
-└─ mux [lab2]
+<p>Let's look at the VHDL design tree hierarchy across the IPs.</p>
+<pre><code>top_level (final-project)
+├─ and_gate (lab3)
+│  └─ adder (lab2)
+|     └─ and_gate (lab1)
+└─ mux (lab2)
 </code></pre>
-<p>Notice lab1 and lab3 both have the <code>and_gate</code> entity, but their interfaces and functionality are internally different as previously mentioned. How can we allow both units in the hierarchy while resolving the namespace clash?</p>
+<p>Notice lab1 and lab3 both have the <code>and_gate</code> entity, but their interfaces and functionality are different as previously mentioned. How can we allow both units in the hierarchy while resolving the namespace clash?</p>
 <p>DST identifies namespace clashes within the current dependency graph and automatically resolve the conflicts to produce a clean unambiguous graph.</p>
-<pre><code>top_level [final-project]
-├─ and_gate [lab3]
-│  └─ adder [lab2]*
-|     └─ and_gate_fbe4720d0 [lab1]*
-└─ mux [lab2]
+<pre><code>top_level (final-project)
+├─ and_gate (lab3)
+│  └─ adder (lab2)*
+|     └─ and_gate_fbe4720d0 (lab1)*
+└─ mux (lab2)
 </code></pre>
-<p>Let's take a closer look at what happened here. DST handled the namespace clash by <em>transforming</em>, or renaming, the entity related to lab1. The entity's identifier in lab1 was appended with the first 10 digits of the original lab1 IP's checksum. This transformation occurred at that IP's source code level (lab1), and in the source code for all dependents of that entity (lab2). Therefore, DST produced new dynamic variants of the lab1 and lab2 IPs that properly reference and associate with <code>and_gate_fbe4720d0</code>.</p>
+<p>Let's dive into what happened here. DST handled the namespace clash by <em>transforming</em>, or renaming, the entity related to lab1. The entity's identifier in lab1 was appended with the first 10 digits of the original lab1 IP's checksum. This transformation occurred at that IP's source code level (lab1), and in the source code for all dependents of that entity (lab2). Therefore, DST produced new dynamic variants of the lab1 and lab2 IPs that properly reference and associate with <code>and_gate_fbe4720d0</code>.</p>
 <p>DST specifically chose not to rename the <code>and_gate</code> from lab3, or else the user would have to be burdened with trying to track and maintain the new unique identifier in the currently developed IP (final-project). As a result, DST has no additional overhead to the user and is kept abstracted away by Orbit. Direct dependencies are never chosen for DST.</p>
 <h2 id="emphasis"><a class="header" href="#emphasis">Emphasis</a></h2>
-<p>Dynamic symbol transformation lets Orbit avoid a major issue in package management: dependency hell. As projects and their dependencies become more complex, Orbit can continue to allow the user to integrate different verisons of the same package throughout the overall design. Conflicts in incompatible versions are avoided within the dependency graph. You can learn more about dependency hell <a href="https://en.wikipedia.org/wiki/Dependency_hell">here</a>.</p>
+<p>Dynamic symbol transformation lets Orbit avoid the major issues and frustrations of package management that stem from dependency incompatibility. As projects grow in complexity and the number of dependencies increases, Orbit can continue to allow users to integrate different verisons of the same package throughout the overall design while retaining dependency compatibility. Conflicts in incompatible versions are avoided within the dependency graph through DST. You can learn more dependency incompatibility <a href="https://en.wikipedia.org/wiki/Dependency_hell">here</a>.</p>
 <h2 id="further-reading"><a class="header" href="#further-reading">Further Reading</a></h2>
 <ul>
 <li>https://stephencoakley.com/2019/04/24/how-rust-solved-dependency-hell</li>

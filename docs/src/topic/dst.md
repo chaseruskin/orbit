@@ -1,7 +1,5 @@
 # Dynamic Symbol Transformation
 
-> __Note:__ This is an advanced topic and is not necessary to understand in order to use Orbit.
-
 This technique is related to _name mangling_ in programming languages. _Name mangling_ is a technique used to solve problems regarding the need to resolve unique names for programming entities. You can learn more about name mangling [here](https://en.wikipedia.org/wiki/Name_mangling).
 
 ## Problem Statement

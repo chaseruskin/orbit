@@ -38,7 +38,7 @@ The normalized fileset name is the name that will be written to the blueprint fi
 
 ## Custom pattern assumption examples
 
-| User-defined Pattern | Interpreted Pattern |
+| User-defined pattern | Interpreted pattern |
 | - | - |
 | *.txt | **/*.txt |
 | Boards/*.toml | **/Boards/*.toml |

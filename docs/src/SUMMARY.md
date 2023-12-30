@@ -23,10 +23,12 @@
     - [Conceptual Overview](./topic/concept.md)
     - [IP](./topic/1_ip.md)
     - [Orbit.lock](./topic/5_orbitlock.md)
-    <!-- - [Blueprint](./topic/6_blueprint.md) -->
-    - [Protocols](./topic/protocols.md)
-    - [Dynamic Symbol Transformation](./topic/dst.md)
     - [.orbitignore](./topic/orbitignore.md)
+    - [Protocols](./topic/protocols.md)
+    - [Caching](./topic/caching.md)
+    - [Downloading](./topic/downloading.md)
+    - [Variable Substitution](./topic/var_sub.md)
+    - [Dynamic Symbol Transformation](./topic/dst.md)
 
 - [Reference](./reference/reference.md)
     - [Manifest](./reference/manifest.md)

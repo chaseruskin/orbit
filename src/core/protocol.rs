@@ -114,12 +114,10 @@ impl Protocol {
         )
     }
 
-    // /// Performs the default behavior of the download on each
-    // pub fn default_execute(srcs: &[&String]) -> Result<(), Fault> {
-
-    // }
-
     /// Performs the default behavior for a protocol.
+    /// 
+    /// This will attempt to download the url as a zip file and extract it to
+    /// its queue directory.
     pub fn single_download(url: &str, dst: &PathBuf) -> Result<(), Fault> {
         let mut body_bytes = Vec::new();
         {

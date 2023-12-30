@@ -155,7 +155,7 @@ To us though, these slight identifier renamings remain hidden because they occur
 
 ### Okay, so what?
 
-This is indeed a silly example, but there is a key takeaway! Designs are constantly evolving. When creating the latest module, you never know what will come next. By allowing the state of a design to live on while also providing support for new growth, THAT is an incredible experience. Things just work. Even as projects grow in scale and complexity, things still work. Gone are the worries of trying to manage compatibility with so many interconnected dependencies, with the freedom to continue to further innovation.
+This may be a silly example, but there is a key takeaway here. Designs are constantly evolving. When creating the latest module, you never know what will come next. By allowing the state of a design to live on while also providing support for new growth, a user no longer spends their time trying to manage compatibility among the increasingly interconnected dependencies. Instead, there exists a freedom to continue to innovate.
 
 ## Reusing plugins that are globally-configured
 

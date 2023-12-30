@@ -104,7 +104,6 @@ impl Command<Context> for Download {
             .from_ip(&Ip::load(c.get_ip_path().unwrap().clone())?)?;
         
         let vtable = VariableTable::new().load_environment(&env)?;
-
         env.initialize();
 
         // default behavior is report only missing installations

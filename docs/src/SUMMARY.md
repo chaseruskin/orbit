@@ -24,6 +24,8 @@
     - [IP](./topic/1_ip.md)
     - [Orbit.lock](./topic/5_orbitlock.md)
     - [.orbitignore](./topic/orbitignore.md)
+    - [Planning](./topic/planning.md)
+    - [Building](./topic/building.md)
     - [Protocols](./topic/protocols.md)
     - [Caching](./topic/caching.md)
     - [Downloading](./topic/downloading.md)

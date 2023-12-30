@@ -186,7 +186,7 @@ Filename: .orbit/yilinx.py
 ``` python
 synth_order = []
 # Read and parse the blueprint file
-with open('build/blueprint.tsv') as blueprint:
+with open('blueprint.tsv') as blueprint:
     rules = blueprint.readlines()
     for r in rules:
         fileset, lib, path = r.strip().split('\t')
@@ -203,7 +203,7 @@ print('YILINX:','Performing place-and-route...')
 
 # Use the Yilinx tool to generate the bitstream
 print('YILINX:', 'Generating bitstream...')
-with open('build/fpga.bit', 'w') as bitstream:
+with open('fpga.bit', 'w') as bitstream:
     bitstream.write('011010101101' * 2)
 
 print('YILINX:','Bitstream saved at: build/fpga.bit')

@@ -139,7 +139,7 @@ pub trait Process {
     fn get_args(&self) -> Vec<&String>;
 
     /// Runs the given `command` with the set `args` for the plugin.
-    fn execute(&self, extra_args: &[String], verbose: bool) -> Result<(), Fault> {
+    fn execute(&self, extra_args: &[String], verbose: bool, dir: &str) -> Result<(), Fault> {
         // resolve the relative paths in the command and arguments defined in original configuration
         let root_path = self.get_root();
         let command = filesystem::resolve_rel_path(root_path, &self.get_command());
@@ -156,10 +156,10 @@ pub trait Process {
             let s = args
                 .iter()
                 .fold(String::new(), |x, y| x + "\"" + &y + "\" ");
-            println!("running: {} {}", command, s);
+            println!("info: Running: {} {}", command, s);
         }
         let mut proc =
-            filesystem::invoke(&command, &args, Context::enable_windows_bat_file_match())?;
+            filesystem::invoke(dir, &command, &args, Context::enable_windows_bat_file_match())?;
         let exit_code = proc.wait()?;
         match exit_code.code() {
             Some(num) => {

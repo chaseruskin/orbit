@@ -187,9 +187,10 @@ impl Download {
                         "info: Downloading {} over \"{}\" protocol ...",
                         spec, &proto
                     );
+                    let std_queue = PathBuf::standardize(&queue);
                     vtable.add(
                         "orbit.queue",
-                        PathBuf::standardize(&queue).to_str().unwrap(),
+                        std_queue.to_str().unwrap(),
                     );
                     // update variable table for this lock entry
                     vtable.add("orbit.ip.name", spec.get_name().as_ref());
@@ -202,7 +203,7 @@ impl Download {
                     );
                     // allow the user to handle placing the code in the queue
                     let entry: Protocol = entry.clone().replace_vars_in_args(&vtable);
-                    if let Err(err) = entry.execute(&[], verbose) {
+                    if let Err(err) = entry.execute(&[], verbose, &std_queue.to_str().unwrap()) {
                         fs::remove_dir_all(queue)?;
                         return Err(err);
                     }

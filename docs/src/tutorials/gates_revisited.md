@@ -131,6 +131,7 @@ PROG_SRAM = bool(sys.argv.count('--sram') > 0)
 PROG_FLASH = bool(sys.argv.count('--flash') > 0)
 
 # Get environment variables set by orbit for this particular build
+BLUEPRINT = os.environ.get("ORBIT_BLUEPRINT")
 BUILD_DIR = os.environ.get("ORBIT_BUILD_DIR")
 TOP_LEVEL = os.environ.get("ORBIT_TOP")
 
@@ -138,7 +139,7 @@ synth_order = []
 constraints_file = None
 
 # Parse the blueprint file created by orbit
-with open(BUILD_DIR + '/blueprint.tsv') as blueprint:
+with open(BLUEPRINT) as blueprint:
     rules = blueprint.readlines()
     for r in rules:
         fileset, lib, path = r.strip().split('\t')
@@ -164,12 +165,12 @@ if constraints_file != None:
 
 print('YILINX:', 'Generating bitstream...')
 
-BIT_FILE = BUILD_DIR + '/' + TOP_LEVEL + '.bit'
+BIT_FILE = TOP_LEVEL + '.bit'
 with open(BIT_FILE, 'w') as bitstream:
     for byte in [bin(b)[2:] for b in bytes(TOP_LEVEL, 'utf-8')]:
         bitstream.write(byte)
 
-print('YILINX:','Bitstream saved at: '+ str(BIT_FILE))
+print('YILINX:','Bitstream saved at: '+ str(BUILD_DIR + '/' + BIT_FILE))
 
 # Optionally allow the user to program the FPGA using flash or SRAM configuration
 if PROG_FLASH == True and PROG_SRAM == False:

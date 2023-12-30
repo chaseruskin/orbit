@@ -102,7 +102,7 @@ DST specifically chose not to rename the `and_gate` from lab3, or else the user 
 
 ## Emphasis
 
-Dynamic symbol transformation lets Orbit avoid the major issues and frustrations of package management that stem from dependency incompatibility. As projects grow in complexity and the number of dependencies increases, Orbit can continue to allow users to integrate different verisons of the same package throughout the overall design while retaining dependency compatibility. Conflicts in incompatible versions are avoided within the dependency graph through DST. You can learn more dependency incompatibility [here](https://en.wikipedia.org/wiki/Dependency_hell).
+Dynamic symbol transformation lets Orbit avoid the major issues and frustrations of package management that stem from dependency incompatibility. As projects grow in complexity and the number of dependencies increases, Orbit can continue to allow users to integrate different verisons of the same package throughout the overall design while retaining dependency compatibility. Conflicts in incompatible versions are avoided within the dependency graph through DST. You can learn more about dependency incompatibility [here](https://en.wikipedia.org/wiki/Dependency_hell).
 
 ## Further Reading
 

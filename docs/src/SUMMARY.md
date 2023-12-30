@@ -21,6 +21,7 @@
 
 - [Topic Guide](./topic/topic.md)
     - [Key Concepts](./topic/concept.md)
+    - [Catalog](./topic/catalog.md)
     - [IP](./topic/1_ip.md)
     - [Orbit.lock](./topic/5_orbitlock.md)
     - [.orbitignore](./topic/orbitignore.md)

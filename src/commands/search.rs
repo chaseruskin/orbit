@@ -45,18 +45,14 @@ impl Command<Context> for Search {
     type Status = OrbitResult;
 
     fn exec(&self, c: &Context) -> Self::Status {
-        let default = !(self.cached || self.downloaded);
         let mut catalog = Catalog::new();
 
         // collect installed IP
-        if default || self.cached {
-            catalog = catalog.installations(c.get_cache_path())?;
-        }
-
+        catalog = catalog.installations(c.get_cache_path())?;
         // collect downloaded IP
-        if default || self.downloaded {
-            catalog = catalog.downloads(c.get_downloads_path())?;
-        }
+        catalog = catalog.downloads(c.get_downloads_path())?;
+        // collect available IP
+        // @todo
 
         self.run(&catalog)
     }
@@ -129,11 +125,11 @@ impl Search {
                 tree.insert(key, status);
             });
 
-        println!("{}", Self::fmt_table(tree, self.limit));
+        println!("{}", Self::fmt_table(tree, self.limit, self.cached, self.downloaded));
         Ok(())
     }
 
-    fn fmt_table(catalog: BTreeMap<&PkgPart, &IpLevel>, limit: Option<usize>) -> String {
+    fn fmt_table(catalog: BTreeMap<&PkgPart, &IpLevel>, limit: Option<usize>, cached: bool, downloaded: bool) -> String {
         let header = format!(
             "\
 {:<28}{:<10}{:<9}
@@ -142,17 +138,23 @@ impl Search {
         );
         let mut body = String::new();
         let mut index = 0;
+
+        let default = !(cached || downloaded);
+
+        // note: There is definitely a nicer way to handle all of this logic... but this works for now.
+        
         for (name, status) in catalog {
+            // use this variable to determine if a level higher in the catalog has a higher version not displayed right now
+            let mut is_update_available = false;
             // return the highest version (return installation when they are equal in downloads and cache)
             let ip = {
                 let dld = status.get_download(&AnyVersion::Latest);
                 let ins = status.get_install(&AnyVersion::Latest);
                 if dld.is_some() && ins.is_some() {
-                    if dld.unwrap().get_man().get_ip().get_version() > ins.unwrap().get_man().get_ip().get_version() {
-                        dld
-                    } else {
-                        ins
-                    }
+                    // an update is possible if the downloads have a higher version than install
+                    is_update_available = dld.unwrap().get_man().get_ip().get_version() > ins.unwrap().get_man().get_ip().get_version() && (default == true || cached == true);
+                    // always return the installation version if one is possible
+                    if default == true || cached == true { ins } else { dld }
                 } else if dld.is_none() {
                     ins
                 } else {
@@ -173,16 +175,26 @@ impl Search {
                 }
             }
 
+            // determine if to skip this IP based on settings
+            let cleared = default == true || match ip.get_mapping() {
+                Mapping::Physical => cached == true,
+                Mapping::Virtual(_) => downloaded == true,
+            };
+            if cleared == false {
+                continue;
+            }
+
             body.push_str(&format!(
-                "{:<28}{:<10}     {:<9}\n",
+                "{:<28}{:<10}{:<9}\n",
                     name.to_string(),
                     ip
                     .get_man()
                     .get_ip()
-                    .get_version(),
+                    .get_version().to_string() + { if is_update_available == true { "*" } else { "" } },
                     match ip.get_mapping() {
                         Mapping::Physical => "Installed",
                         Mapping::Virtual(_) => "Downloaded",
+                        // Mapping::Imaginary => "Available",
                         // _ => ""
                     },
             ));
@@ -197,7 +209,7 @@ mod test {
 
     #[test]
     fn fmt_table() {
-        let t = Search::fmt_table(BTreeMap::new(), None);
+        let t = Search::fmt_table(BTreeMap::new(), None, false, false);
         let table = "\
 Package                     Latest    Status   
 --------------------------- --------- ---------- 

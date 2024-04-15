@@ -15,14 +15,18 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.10.1 - unreleased
+## 0.10.1
 
 ### Features
+- adds modelsim docker image with `orbit`
 - display protocols and their definitions using `--list` with the `install` command
 
 ### Changes
+- starts plugins and protocol processes from expected directories
+- adds asterisk to ip in catalog that have a possible update
 - improves errors for install when using a path to search
 - improves implementation for download process when using `install` command
+- adds documentation
 
 ## 0.10.0
 

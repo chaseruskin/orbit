@@ -182,7 +182,7 @@
 <li><a href="./reference/reference.html">Reference</a> - Technical information</li>
 </ol>
 <h2 id="about-the-project"><a class="header" href="#about-the-project">About the Project</a></h2>
-<p>The project is open-source under the GPL-3.0 license and is available on <a href="https://github.com/c-rus/orbit">GitHub</a>.</p>
+<p>The project is open-source under the GPL-3.0 license and is available on <a href="https://github.com/cdotrus/orbit">GitHub</a>.</p>
 <h2 id="about-the-documentation"><a class="header" href="#about-the-documentation">About the Documentation</a></h2>
 <p>Documentation system and methodology is inspired by <a href="https://documentation.divio.com">Divio</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
@@ -211,7 +211,7 @@
 </blockquote>
 <h2 id="1-using-a-precompiled-binary"><a class="header" href="#1-using-a-precompiled-binary">1. Using a precompiled binary</a></h2>
 <ol>
-<li>Visit Orbit's <a href="https://github.com/c-rus/orbit/releases">releases</a> page on Github to find all of its official releases. </li>
+<li>Visit Orbit's <a href="https://github.com/cdotrus/orbit/releases">releases</a> page on Github to find all of its official releases. </li>
 <li>Download the binary for your computer's architecture and operating system.</li>
 <li>Install Orbit. Either run the provided <code>install</code> executable or follow the manual instructions for placing Orbit's executable (<code>orbit</code> for Unix and <code>orbit.exe</code> for Windows) in a location recognized by the PATH environment variable.</li>
 </ol>
@@ -221,12 +221,12 @@
 <li>Open a new terminal (Bash) to where Orbit was downloaded.</li>
 <li>Unzip the prebuilt package.</li>
 </ol>
-<pre><code>$ unzip orbit-0.10.1-x86_64-macos.zip
+<pre><code>$ unzip orbit-0.11.0-x86_64-macos.zip
 </code></pre>
 <ol start="3">
 <li>Move the executable to a location already set in the PATH environment variable. </li>
 </ol>
-<pre><code>$ mv ./orbit-0.10.1-x86_64-macos/bin/orbit /usr/local/bin/orbit
+<pre><code>$ mv ./orbit-0.11.0-x86_64-macos/bin/orbit /usr/local/bin/orbit
 </code></pre>
 <h3 id="windows"><a class="header" href="#windows">Windows</a></h3>
 <ol>
@@ -237,7 +237,7 @@
 <p>Unzip the prebuilt package.</p>
 </li>
 </ol>
-<pre><code>$ expand-archive &quot;./orbit-0.10.1-x86_64-windows.zip&quot;
+<pre><code>$ expand-archive &quot;./orbit-0.11.0-x86_64-windows.zip&quot;
 </code></pre>
 <ol start="3">
 <li>Make a new directory to store this package.</li>
@@ -247,21 +247,21 @@
 <ol start="4">
 <li>Move the package to the new directory.</li>
 </ol>
-<pre><code>$ copy-item &quot;./orbit-0.10.1-x86_64-windows/*&quot; -destination &quot;$env:LOCALAPPDATA/Programs/orbit&quot; -recurse
+<pre><code>$ copy-item &quot;./orbit-0.11.0-x86_64-windows/*&quot; -destination &quot;$env:LOCALAPPDATA/Programs/orbit&quot; -recurse
 </code></pre>
 <ol start="5">
 <li>Edit the user-level PATH environment variable in <em><strong>Control Panel</strong></em> by adding <strong>%LOCALAPPDATA%\Programs\orbit\bin</strong>.</li>
 </ol>
 <h2 id="2-installing-with-cargo"><a class="header" href="#2-installing-with-cargo">2. Installing with Cargo</a></h2>
 <p>To install the latest version through Cargo:</p>
-<pre><code>$ cargo install --git https://github.com/c-rus/orbit.git --tag 0.10.1
+<pre><code>$ cargo install --git https://github.com/cdotrus/orbit.git --tag 0.11.0
 </code></pre>
 <p>This will build the <code>orbit</code> binary and place it a path already set in the PATH environment variable.</p>
 <h2 id="checking-if-orbit-is-installed-correctly"><a class="header" href="#checking-if-orbit-is-installed-correctly">Checking if Orbit is installed correctly</a></h2>
 <p>To verify Orbit is working correctly on your system, let's open a new terminal session and print it's current version.</p>
 <pre><code>$ orbit --version
 </code></pre>
-<pre><code>orbit 0.10.1
+<pre><code>orbit 0.11.0
 </code></pre>
 <p>This should print out your version of Orbit you installed. Congratulations! You are now ready to begin using Orbit.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="upgrading"><a class="header" href="#upgrading">Upgrading</a></h1>
@@ -274,7 +274,7 @@
 <p>Removes any executable in the executable's directory starting with <code>orbit-</code> (these are considered stale binaries, such as <code>orbit-0.1.0</code>).</p>
 </li>
 <li>
-<p>Connects to <a href="https://github.com/c-rus/orbit/releases">https://github.com/c-rus/orbit/releases</a> to find the most recent released version.</p>
+<p>Connects to <a href="https://github.com/cdotrus/orbit/releases">https://github.com/cdotrus/orbit/releases</a> to find the most recent released version.</p>
 </li>
 <li>
 <p>Checks if the most recent version online is ahead of the currently installed version.</p>
@@ -571,7 +571,7 @@ gates                       0.1.0     Installed
 name = &quot;half-add&quot;
 version = &quot;0.1.0&quot;
 
-# See more keys and their definitions at https://c-rus.github.io/orbit/reference/manifest.html
+# See more keys and their definitions at https://cdotrus.github.io/orbit/reference/manifest.html
 
 [dependencies]
 gates = &quot;0.1.0&quot;
@@ -898,7 +898,7 @@ YILINX: Programming bitstream to flash...
 name = &quot;gates&quot;
 version = &quot;1.0.0&quot;
 
-# See more keys and their definitions at https://c-rus.github.io/orbit/reference/manifest.html
+# See more keys and their definitions at https://cdotrus.github.io/orbit/reference/manifest.html
 
 [dependencies]
 
@@ -938,7 +938,7 @@ or_gate                             entity        y
 name = &quot;full-add&quot;
 version = &quot;0.1.0&quot;
 
-# See more keys and their definitions at https://c-rus.github.io/orbit/reference/manifest.html
+# See more keys and their definitions at https://cdotrus.github.io/orbit/reference/manifest.html
 
 [dependencies]
 gates = &quot;1.0.0&quot;
@@ -1207,7 +1207,7 @@ hint: To resolve this error, either
 <pre><code class="language-toml">[ip]
 name = &quot;orbit&quot;
 version = &quot;1.0.0&quot;
-source = &quot;https://github.com/c-rus/orbit/archive/refs/tags/1.0.0.zip&quot;
+source = &quot;https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip&quot;
 # ...
 </code></pre>
 <h2 id="custom-protocols"><a class="header" href="#custom-protocols">Custom protocols</a></h2>
@@ -1231,7 +1231,7 @@ args = [&quot;clone&quot;, &quot;-b&quot;, &quot;{{ orbit.ip.version }}&quot;, &
 <pre><code class="language-toml">[ip]
 name = &quot;orbit&quot;
 version = &quot;1.0.0&quot;
-source = { url = &quot;https://github.com/c-rus/orbit.git&quot;, protocol = &quot;gitit&quot; }
+source = { url = &quot;https://github.com/cdotrus/orbit.git&quot;, protocol = &quot;gitit&quot; }
 # ...
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="caching"><a class="header" href="#caching">Caching</a></h1>
@@ -1271,7 +1271,7 @@ source = { url = &quot;https://github.com/c-rus/orbit.git&quot;, protocol = &quo
 <p>Environment variables can be set in the configuration file like so.</p>
 <pre><code class="language-toml">[env]
 foo = &quot;bar&quot;
-github-user = &quot;c-rus&quot;
+github-user = &quot;cdotrus&quot;
 Yilinx_Path = &quot;/Users/chase/fpga/bin/yilinx&quot;
 </code></pre>
 <p>This configuration translates to the following variables:</p>
@@ -1425,11 +1425,11 @@ keywords = [&quot;cpu&quot;, &quot;risc&quot;]
 <h3 id="the-source-field"><a class="header" href="#the-source-field">The <code>source</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-source = &quot;https://github.com/c-rus/orbit/archive/refs/tags/0.9.5.zip&quot;
+source = &quot;https://github.com/cdotrus/orbit/archive/refs/tags/0.9.5.zip&quot;
 </code></pre>
 <pre><code class="language-toml">[ip]
 # ...
-source = { url = &quot;https://github.com/c-rus/orbit.git&quot;, protocol = &quot;p-git&quot;, tag = &quot;0.9.5&quot; }
+source = { url = &quot;https://github.com/cdotrus/orbit.git&quot;, protocol = &quot;p-git&quot;, tag = &quot;0.9.5&quot; }
 </code></pre>
 <h3 id="the-readme-field"><a class="header" href="#the-readme-field">The <code>readme</code> field</a></h3>
 <pre><code class="language-toml">[ip]

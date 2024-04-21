@@ -139,8 +139,8 @@ dependencies = [
 
 [[package]]
 name = "clif"
-version = "0.1.3"
-source = "git+https://github.com/c-rus/clif?tag=0.1.3#4e46e8ad0d8c3098edad8e6fae371659ef93e25c"
+version = "0.1.5"
+source = "git+https://github.com/cdotrus/clif?tag=0.1.5#75ff53e393158f18976d36e48629ad48baf1d916"
 dependencies = [
  "crayon",
 ]
@@ -173,8 +173,8 @@ dependencies = [
 
 [[package]]
 name = "crayon"
-version = "0.1.0"
-source = "git+https://github.com/c-rus/crayon?tag=0.1.0#1b82749de99d517c2ba996be8c0f0c9191ae9362"
+version = "0.1.1"
+source = "git+https://github.com/cdotrus/crayon?tag=0.1.1#d1ee73995f860901a45ba289ac358c59fdfedff4"
 
 [[package]]
 name = "crc32fast"
@@ -524,7 +524,7 @@ dependencies = [
 
 [[package]]
 name = "orbit"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "clif",
  "colored",

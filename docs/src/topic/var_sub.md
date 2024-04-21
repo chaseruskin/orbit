@@ -48,7 +48,7 @@ Environment variables can be set in the configuration file like so.
 ``` toml
 [env]
 foo = "bar"
-github-user = "c-rus"
+github-user = "cdotrus"
 Yilinx_Path = "/Users/chase/fpga/bin/yilinx"
 ```
 

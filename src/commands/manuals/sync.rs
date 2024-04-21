@@ -18,5 +18,5 @@ OPTIONS
 
 EXAMPLES
     orbit sync
-    orbit sync --vendor ks-tech --vendor c-rus
+    orbit sync --vendor ks-tech --vendor cdotrus
 ";

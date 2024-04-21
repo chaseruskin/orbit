@@ -85,13 +85,13 @@ keywords = ["cpu", "risc"]
 ``` toml
 [ip]
 # ...
-source = "https://github.com/c-rus/orbit/archive/refs/tags/0.9.5.zip"
+source = "https://github.com/cdotrus/orbit/archive/refs/tags/0.9.5.zip"
 ```
 
 ``` toml
 [ip]
 # ...
-source = { url = "https://github.com/c-rus/orbit.git", protocol = "p-git", tag = "0.9.5" }
+source = { url = "https://github.com/cdotrus/orbit.git", protocol = "p-git", tag = "0.9.5" }
 ```
 
 ### The `readme` field

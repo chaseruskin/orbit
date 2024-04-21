@@ -272,7 +272,7 @@ impl Orbit {
         }
 
         // check the connection to grab latest html data
-        let api_url: &str = "https://api.github.com/repos/c-rus/orbit/releases/latest";
+        let api_url: &str = "https://api.github.com/repos/cdotrus/orbit/releases/latest";
 
         let mut dst = Vec::new();
         {
@@ -332,7 +332,7 @@ impl Orbit {
             ));
         }
 
-        let base_url: &str = "https://github.com/c-rus/orbit/releases";
+        let base_url: &str = "https://github.com/cdotrus/orbit/releases";
 
         // download the list of checksums
         println!("info: downloading update...");

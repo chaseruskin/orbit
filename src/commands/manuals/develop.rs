@@ -55,5 +55,5 @@ OPTIONS
 
 EXAMPLES
     orbit install --ip ks-tech.rary.gates --version 1.0.0
-    orbit install --git https://github.com/c-rus/gates.git -v latest
+    orbit install --git https://github.com/cdotrus/gates.git -v latest
 ";

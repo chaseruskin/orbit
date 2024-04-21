@@ -17,7 +17,7 @@ Filename: Orbit.toml
 [ip]
 name = "orbit"
 version = "1.0.0"
-source = "https://github.com/c-rus/orbit/archive/refs/tags/1.0.0.zip"
+source = "https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip"
 # ...
 ```
 
@@ -54,6 +54,6 @@ Filename: Orbit.toml
 [ip]
 name = "orbit"
 version = "1.0.0"
-source = { url = "https://github.com/c-rus/orbit.git", protocol = "gitit" }
+source = { url = "https://github.com/cdotrus/orbit.git", protocol = "gitit" }
 # ...
 ```

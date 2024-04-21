@@ -25,15 +25,15 @@ NOTE: For unix, only the orbit binary is installed. For
 -----------------------------
 
 Follow the instructions at: 
-https://c-rus.github.io/orbit/1_starting/1_installing.html.
+https://cdotrus.github.io/orbit/1_starting/1_installing.html.
 
 -----------------------------
 :: RESOURCES               ::
 -----------------------------
 
-Repository: https://github.com/c-rus/orbit
+Repository: https://github.com/cdotrus/orbit
 
-Manual: https://c-rus.github.io/orbit/
+Manual: https://cdotrus.github.io/orbit/
 
 -----------------------------
 :: LICENSE                 ::

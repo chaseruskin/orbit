@@ -1,11 +1,11 @@
 <h1 align="center"><code>orbit</code></h1>
 
 <div align="center">
-  <a href="https://github.com/c-rus/orbit/actions">
-    <img src="https://github.com/c-rus/orbit/workflows/pipeline/badge.svg" alt="pipeline">
+  <a href="https://github.com/cdotrus/orbit/actions">
+    <img src="https://github.com/cdotrus/orbit/workflows/pipeline/badge.svg" alt="pipeline">
   </a>
-  <a href="https://c-rus.github.io/orbit/">
-    <img src="https://github.com/c-rus/orbit/actions/workflows/docs.yml/badge.svg" alt="docs">
+  <a href="https://cdotrus.github.io/orbit/">
+    <img src="https://github.com/cdotrus/orbit/actions/workflows/docs.yml/badge.svg" alt="docs">
   </a>
   <a href="https://www.gnu.org/licenses/gpl-3.0">
     <img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3">
@@ -13,8 +13,8 @@
   <a href="https://hub.docker.com/repository/docker/crus800/orbit/general">
     <img src="https://img.shields.io/badge/dockerhub-images-important.svg?logo=docker" alt="images">
   </a>
-  <a href="https://github.com/c-rus/orbit/releases">
-    <img src="https://img.shields.io/github/downloads/c-rus/orbit/total.svg" alt="downloads">
+  <a href="https://github.com/cdotrus/orbit/releases">
+    <img src="https://img.shields.io/github/downloads/cdotrus/orbit/total.svg" alt="downloads">
   </a>
   <a href="mailto:c.ruskin@ufl.edu?subject=Thanks%20for%20Orbit!">
     <img src="https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg" alt="say thanks">
@@ -24,7 +24,7 @@
 
 `orbit` is a package manager for Hardware Description Languages (HDL). 
 
-Read the [Book of Orbit](https://c-rus.github.io/orbit/) for complete documentation.
+Read the [Book of Orbit](https://cdotrus.github.io/orbit/) for complete documentation.
 
 <br>
 
@@ -110,9 +110,9 @@ VHDL-SIM	work	/users/chase/projects/lab2/sim/top_tb.vhd
 
 - Reproducible builds are achieved with checksums and automatic handling of a lockfile `Orbit.lock`. 
 
-- Namespace collisions, a problem inherent to VHDL and not resolved in many backend tools, is solved through a custom algorithm called [_dynamic symbol transformation_](https://c-rus.github.io/orbit/topic/dst.html).
+- Namespace collisions, a problem inherent to VHDL and not resolved in many backend tools, is solved through a custom algorithm called [_dynamic symbol transformation_](https://cdotrus.github.io/orbit/topic/dst.html).
 
-- Multiple versions of the same entity (or more broadly, entities given the same identifier) are allowed in the same build under [two simple constraints](https://c-rus.github.io/orbit/topic/dst.html#limitations).
+- Multiple versions of the same entity (or more broadly, entities given the same identifier) are allowed in the same build under [two simple constraints](https://cdotrus.github.io/orbit/topic/dst.html#limitations).
 
 - Navigate HDL source code efficiently to read its inline documentation and visit its implementation through `orbit`'s ability to locate HDL code segments
 
@@ -138,17 +138,17 @@ VHDL-SIM	work	/users/chase/projects/lab2/sim/top_tb.vhd
 
 A fictitious organization, "Hyperspace Labs", exists for the purpose of demonstrating and learning how to leverage `orbit` in a real development setting. No identification with actual persons, places, buildings, and products is intended or should be inferred. 
 
-The projects and code for Hyperspace Labs are walked through in the [tutorials](https://c-rus.github.io/orbit/tutorials/tutorials.html) section.
+The projects and code for Hyperspace Labs are walked through in the [tutorials](https://cdotrus.github.io/orbit/tutorials/tutorials.html) section.
 
 The final code repositories for Hyperspace Labs are found [here](https://github.com/orgs/hyperspace-labs/repositories). 
 
 ## Installing
 
-`orbit` has pre-built binaries for MacOS, Windows, and Ubuntu. See the [releases](https://github.com/c-rus/orbit/releases) page to grab the latest release, or you can build from source with `cargo`. See the full installation instructions for complete details [here](https://c-rus.github.io/orbit/1_starting/1_installing.html).
+`orbit` has pre-built binaries for MacOS, Windows, and Ubuntu. See the [releases](https://github.com/cdotrus/orbit/releases) page to grab the latest release, or you can build from source with `cargo`. See the full installation instructions for complete details [here](https://cdotrus.github.io/orbit/1_starting/1_installing.html).
 
 ## Documentation
 
-Read the [Book of Orbit](https://c-rus.github.io/orbit/) for comprehensive documentation composed of tutorials, user guides, topic guides, references, and command manuals.
+Read the [Book of Orbit](https://cdotrus.github.io/orbit/) for comprehensive documentation composed of tutorials, user guides, topic guides, references, and command manuals.
 
 `orbit` provides commands for every stage of the development cycle, such as exploration, integration, and automation:
 

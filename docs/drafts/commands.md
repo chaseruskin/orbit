@@ -112,7 +112,7 @@ example output:
 Vendor       Library         Name             Dev   Inst    Aval      
 ------------ --------------- ---------------- ------ ------- ----
 ks-tech      rary            gates            *      *       *
-c-rus        util            toolbox                 *       
+cdotrus        util            toolbox                 *       
 ```
 
 Examples:

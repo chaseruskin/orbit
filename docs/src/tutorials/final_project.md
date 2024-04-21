@@ -35,7 +35,7 @@ filename: Orbit.toml
 name = "full-add"
 version = "0.1.0"
 
-# See more keys and their definitions at https://c-rus.github.io/orbit/reference/manifest.html
+# See more keys and their definitions at https://cdotrus.github.io/orbit/reference/manifest.html
 
 [dependencies]
 gates = "1.0.0"

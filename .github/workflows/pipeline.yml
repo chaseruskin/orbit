@@ -6,27 +6,27 @@ on:
 
 jobs:
   build:
-    uses: c-rus/orbit/.github/workflows/build.yml@trunk
+    uses: cdotrus/orbit/.github/workflows/build.yml@trunk
 
   tools:
-    uses: c-rus/orbit/.github/workflows/tools.yml@trunk
+    uses: cdotrus/orbit/.github/workflows/tools.yml@trunk
     
   integrity:
-    uses: c-rus/orbit/.github/workflows/integrity.yml@trunk
+    uses: cdotrus/orbit/.github/workflows/integrity.yml@trunk
     needs: [tools, build]
 
   check-release:
-    uses: c-rus/orbit/.github/workflows/check-release.yml@trunk
+    uses: cdotrus/orbit/.github/workflows/check-release.yml@trunk
     needs: [tools]
 
   system-test:
-    uses: c-rus/orbit/.github/workflows/system-test.yml@trunk
+    uses: cdotrus/orbit/.github/workflows/system-test.yml@trunk
     needs: [check-release, integrity]
     with:
       version: ${{ needs.check-release.outputs.version }}
 
   docker-build:
-    uses: c-rus/orbit/.github/workflows/docker.yml@trunk
+    uses: cdotrus/orbit/.github/workflows/docker.yml@trunk
     needs: [check-release, system-test]
     secrets:
       DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
@@ -35,7 +35,7 @@ jobs:
       version: ${{ needs.check-release.outputs.version }}
 
   release:
-    uses: c-rus/orbit/.github/workflows/release.yml@trunk
+    uses: cdotrus/orbit/.github/workflows/release.yml@trunk
     if: ${{ needs.check-release.outputs.ready == '1' }}
     needs: [check-release, system-test]
     with:

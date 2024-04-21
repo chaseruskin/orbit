@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
 
 # Download Rust toolchain, compile, move orbit to bin/, and clean up Rust toolchain
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
-    && $HOME/.cargo/bin/cargo install --bin orbit --git https://github.com/c-rus/orbit.git --rev $REV \
+    && $HOME/.cargo/bin/cargo install --bin orbit --git https://github.com/cdotrus/orbit.git --rev $REV \
     && cp "$HOME/.cargo/bin/orbit" "/usr/local/bin/orbit" \
     && $HOME/.cargo/bin/rustup self uninstall -y
 

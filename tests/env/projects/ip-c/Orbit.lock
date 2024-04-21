@@ -5,7 +5,7 @@ version = 1
 name = "ip-a"
 version = "0.1.0"
 uuid = "c34799dd-9c20-4aa1-8123-687d9d692b0e"
-checksum = "457c8bfc83a079a2915263525f7f307848baea23b9485606d2c1906be9cfbf7b"
+checksum = "5ca1e20d43325740858250f3fd6c45fb8f3713967879b1b73337a6d6f46f7bbb"
 dependencies = ["ip-b:0.1.0"]
 
 [[ip]]

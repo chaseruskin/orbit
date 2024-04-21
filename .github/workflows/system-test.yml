@@ -28,9 +28,12 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: orbit-${{ inputs.version }}-checksums
+      
+    - name: Download sha256sum binary
+      run: brew install coreutils
 
     - name: Verify contents
-      run: grep $(sha256sum orbit-${{ inputs.version }}-x86_64-macos.zip) orbit-${{ inputs.version }}-checksums.txt
+      run: grep $(/usr/local/opt/coreutils/libexec/gnubin/sha256sum orbit-${{ inputs.version }}-x86_64-macos.zip) orbit-${{ inputs.version }}-checksums.txt
 
     - name: Install Orbit
       run: |

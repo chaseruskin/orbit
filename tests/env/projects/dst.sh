@@ -31,6 +31,10 @@ if [ "$STDOUT" = "$EXACT" ]; then
     echo "DST Test - PASS"
 else
     echo "DST Test - FAIL"
+    echo "--- Expected ---"
+    echo "$EXACT"
+    echo "--- Received ---"
+    echo "$STDOUT"
     exit 101
 fi
 exit 0

@@ -46,43 +46,37 @@ Adding a simple TOML file `Orbit.toml` to a directory denotes that directory as 
 
 ``` toml
 [ip]
-name = "lab2"
+name = "cpu"
 version = "1.0.0"
 
 [dependencies]
-lab1 = "1.0.4"
+gates = "2.3.0"
 ```
 
 <br>
 
 `orbit` generates VHDL code snippets able to be directly inserted into a new VHDL design for rapid reuse:
 ```
-$ orbit get adder --ip lab1:1.0.4 --component --signals --instance
+$ orbit get and_gate --ip gates:2.3.0 --component --signals --instance
 ```
 ``` vhdl
-component adder
-  port (
-    input1    : in  std_logic_vector(5 downto 0);
-    input2    : in  std_logic_vector(5 downto 0);
-    carry_in  : in  std_logic;
-    sum       : out std_logic_vector(5 downto 0);
-    carry_out : out std_logic
+component and_gate
+  port(
+    a : in std_logic;
+    b : in std_logic;
+    x : out std_logic
   );
 end component;
 
-signal input1    : std_logic_vector(5 downto 0);
-signal input2    : std_logic_vector(5 downto 0);
-signal carry_in  : std_logic;
-signal sum       : std_logic_vector(5 downto 0);
-signal carry_out : std_logic;
+signal a : std_logic;
+signal b : std_logic;
+signal x : std_logic;
 
-u_adder : adder
-  port map (
-    input1    => input1,
-    input2    => input2,
-    carry_in  => carry_in,
-    sum       => sum,
-    carry_out => carry_out
+u_and_gate : and_gate
+  port map(
+    a => a,
+    b => b,
+    x => x
   );
 ```
 
@@ -91,11 +85,11 @@ u_adder : adder
 `orbit` plans your build by generating a file list, called a blueprint, that contains a list of the required files for your given design in topologically-sorted order to act as an input to any backend toolchain:
 
 ```
-VHDL-RTL	math	/users/chase/.orbit/cache/lab1-1.0.4-7f4d8c7812/rtl/fa.vhd
-VHDL-RTL	math	/users/chase/.orbit/cache/lab1-1.0.4-7f4d8c7812/rtl/adder.vhd
-VHDL-RTL	work	/users/chase/projects/lab2/rtl/reg.vhd
-VHDL-RTL	work	/users/chase/projects/lab2/rtl/top.vhd
-VHDL-SIM	work	/users/chase/projects/lab2/sim/top_tb.vhd
+VHDL-RTL	math	/users/chase/.orbit/cache/gates-2.3.0-7f4d8c7812/rtl/nand_gate.vhd
+VHDL-RTL	math	/users/chase/.orbit/cache/gates-2.3.0-7f4d8c7812/rtl/and_gate.vhd
+VHDL-RTL	work	/users/chase/projects/cpu/rtl/reg.vhd
+VHDL-RTL	work	/users/chase/projects/cpu/rtl/top.vhd
+VHDL-SIM	work	/users/chase/projects/cpu/sim/top_tb.vhd
 ```
 
 ## Features

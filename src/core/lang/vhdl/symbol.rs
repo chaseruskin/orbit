@@ -2023,6 +2023,7 @@ impl VHDLSymbol {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::core::lang::vhdl::token::literal::*;
 
     #[test]
     fn parse_use_clause() {

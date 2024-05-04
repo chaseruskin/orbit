@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use crate::commands::helps::get;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::PartialIpSpec;
 use crate::core::lang::parser::Symbol;
+use crate::core::lang::vhdl::format::VhdlFormat;
 use crate::core::lang::vhdl::interface;
 use crate::core::lang::vhdl::primaryunit::VhdlIdentifierError;
 use crate::core::lang::vhdl::symbol::Architecture;
@@ -22,8 +24,6 @@ use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
 use colored::Colorize;
-use crate::commands::helps::get;
-use crate::core::lang::vhdl::format::VhdlFormat;
 
 #[derive(Debug, PartialEq)]
 pub struct Get {
@@ -150,7 +150,7 @@ impl Get {
         if self.architectures == true {
             println!("{}", ent.get_architectures());
         }
-        
+
         if fmt.is_syntax_highlighted() == false {
             // force turn off coloring output
             colored::control::set_override(false);
@@ -302,15 +302,15 @@ impl std::fmt::Display for GetError {
         match self {
             Self::EntityNotFound(ent, pkg, ver) => {
                 let spec = IpSpec::new(pkg.clone(), ver.clone());
-                write!(
-                    f,
-                    "Failed to find entity '{}' in IP '{}'",
-                    ent, spec
-                )
+                write!(f, "Failed to find entity '{}' in IP '{}'", ent, spec)
             }
             Self::SuggestShow(err, pkg, ver) => {
                 let spec = IpSpec::new(pkg.clone(), ver.clone());
-                write!(f, "{}\n\nTry `orbit show {} --units` to see a list of primary design units", err, spec)
+                write!(
+                    f,
+                    "{}\n\nTry `orbit show {} --units` to see a list of primary design units",
+                    err, spec
+                )
             }
         }
     }
@@ -321,8 +321,8 @@ impl std::fmt::Display for GetError {
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::str::FromStr;
     use std::path::PathBuf;
+    use std::str::FromStr;
 
     #[test]
     fn serialize_entity() {
@@ -361,7 +361,12 @@ mod test {
     "other"
   ]
 }"#;
-        let ent = Get::fetch_entity(&Identifier::from_str("or_gate").unwrap(), &PathBuf::from("./tests/data/gates"), &Manifest::new()).unwrap();
+        let ent = Get::fetch_entity(
+            &Identifier::from_str("or_gate").unwrap(),
+            &PathBuf::from("./tests/data/gates"),
+            &Manifest::new(),
+        )
+        .unwrap();
         let json_str = serde_json::to_string_pretty(&ent).unwrap();
         assert_eq!(json_str, EXPECTED_STR);
     }

@@ -1,9 +1,9 @@
 use super::format::VhdlFormat;
 use super::highlight::*;
-use super::token::{Identifier, ToColor};
+use super::token::{identifier::Identifier, ToColor};
 use colored::ColoredString;
+use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde_derive::Serialize;
-use serde::ser::{Serialize, Serializer, SerializeStruct};
 
 pub fn library_statement(lib: &Identifier) -> String {
     format!(
@@ -74,16 +74,13 @@ impl ColorVec {
     }
 
     fn into_all_bland(self) -> String {
-        self.0.into_iter().map(|f| {
-            match f {
-                ColorTone::Bland(s) => {
-                    s
-                }
-                ColorTone::Color(s) => {
-                    String::from_utf8_lossy(s.as_bytes()).to_string()
-                }
-            }
-        }).collect()
+        self.0
+            .into_iter()
+            .map(|f| match f {
+                ColorTone::Bland(s) => s,
+                ColorTone::Color(s) => String::from_utf8_lossy(s.as_bytes()).to_string(),
+            })
+            .collect()
     }
 }
 
@@ -109,7 +106,7 @@ impl<'a> std::fmt::Display for Architectures<'a> {
 // @note: identifier_list ::= identifier { , identifier }
 
 use super::super::lexer;
-use crate::core::lang::vhdl::token::{Delimiter, Keyword, VHDLToken};
+use crate::core::lang::vhdl::token::{delimiter::Delimiter, keyword::Keyword, VHDLToken};
 use std::fmt::Display;
 use std::iter::Peekable;
 
@@ -183,7 +180,7 @@ impl Serialize for SubtypeIndication {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
-    {   
+    {
         serializer.serialize_str(&tokens_to_string(&self.0).into_all_bland())
     }
 }
@@ -252,12 +249,8 @@ impl Serialize for Mode {
         // 3 is the number of fields in the struct.
         let mut state = serializer.serialize_struct("Mode", 1)?;
         match &self.0 {
-            Some(kw) => {
-                state.serialize_field("mode", &kw.to_string().to_lowercase())
-            }
-            None => {
-                state.serialize_field("mode", &Keyword::In.to_string().to_lowercase())
-            }
+            Some(kw) => state.serialize_field("mode", &kw.to_string().to_lowercase()),
+            None => state.serialize_field("mode", &Keyword::In.to_string().to_lowercase()),
         }?;
         state.end()
     }
@@ -272,12 +265,8 @@ impl Serialize for Expr {
         S: Serializer,
     {
         match &self.0 {
-            Some(expr) => {
-                serializer.serialize_str(&tokens_to_string(&expr.0).into_all_bland())
-            }
-            None => {
-                serializer.serialize_none()
-            }
+            Some(expr) => serializer.serialize_str(&tokens_to_string(&expr.0).into_all_bland()),
+            None => serializer.serialize_none(),
         }
     }
 }
@@ -315,8 +304,7 @@ fn tokens_to_string(tokens: &Vec<VHDLToken>) -> ColorVec {
     };
     // determine which delimiters to not add have whitespace preceed
     let no_preceeding_whitespace = |d: &Delimiter| match d {
-        Delimiter::DoubleStar
-        | Delimiter::Comma => true,
+        Delimiter::DoubleStar | Delimiter::Comma => true,
         _ => false,
     };
     // iterate through the tokens
@@ -352,7 +340,6 @@ fn tokens_to_string(tokens: &Vec<VHDLToken>) -> ColorVec {
 }
 
 impl InterfaceDeclaration {
-
     fn into_interface_string(&self, offset: usize) -> ColorVec {
         let mut result = ColorVec::new();
         // identifier
@@ -587,7 +574,11 @@ impl InterfaceDeclarations {
         }
         result.push_str("\n");
         if fmt.is_indented_interfaces() == true && fmt.get_tab_size() > 0 {
-            result.push_str(&format!("{:<width$}", " ", width = fmt.get_tab_size() as usize));
+            result.push_str(&format!(
+                "{:<width$}",
+                " ",
+                width = fmt.get_tab_size() as usize
+            ));
         }
         result.push_color(Delimiter::ParenR.to_color());
         result.push_color(Delimiter::Terminator.to_color());
@@ -647,7 +638,7 @@ impl InterfaceDeclarations {
         }
         result.push_str("\n");
         if fmt.get_tab_size() > 0 && tab_count > 1 {
-            result.push_whitespace(fmt.get_tab_size() as usize * (tab_count-1));
+            result.push_whitespace(fmt.get_tab_size() as usize * (tab_count - 1));
         }
         result.push_color(Delimiter::ParenR.to_color());
         result

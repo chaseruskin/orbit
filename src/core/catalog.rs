@@ -352,7 +352,11 @@ pub struct CacheSlot(PkgPart, Version, Remainder);
 impl CacheSlot {
     /// Combines the various components of a cache slot name into a `CacheSlot`.
     pub fn new(name: &PkgPart, version: &Version, checksum: &Sha256Hash) -> Self {
-        Self(name.clone(), version.clone(), checksum.to_string().get(0..10).unwrap().to_string())
+        Self(
+            name.clone(),
+            version.clone(),
+            checksum.to_string().get(0..10).unwrap().to_string(),
+        )
     }
 
     // @todo: test `try_from_str` (especially if build names get supported in versions ex: 1.0.0-alpha)
@@ -362,17 +366,20 @@ impl CacheSlot {
         // split into three components
         let parts: Vec<&str> = s.rsplitn(3, '-').collect();
         // println!("{:?}", parts);
-        if parts.len() != 3 { return None }
+        if parts.len() != 3 {
+            return None;
+        }
         Some(Self(
             match PkgPart::from_str(parts.get(2)?) {
                 Ok(r) => r,
                 Err(_) => return None,
-            }, 
+            },
             match Version::from_str(parts.get(1)?) {
                 Ok(r) => r,
                 Err(_) => return None,
-            }, 
-            parts.get(0)?.to_string()))
+            },
+            parts.get(0)?.to_string(),
+        ))
     }
 
     pub fn get_name(&self) -> &PkgPart {

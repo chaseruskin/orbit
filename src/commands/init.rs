@@ -1,4 +1,5 @@
 use super::new::New;
+use crate::commands::helps::init;
 use crate::commands::orbit::AnyResult;
 use crate::core::context::Context;
 use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
@@ -13,7 +14,6 @@ use clif::Cli;
 use clif::Error as CliError;
 use std::io::Write;
 use std::path::PathBuf;
-use crate::commands::helps::init;
 
 #[derive(Debug, PartialEq)]
 pub struct Init {

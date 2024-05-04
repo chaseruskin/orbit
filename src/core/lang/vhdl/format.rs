@@ -72,7 +72,10 @@ impl VhdlFormat {
     }
 
     pub fn get_instance_name(&self) -> String {
-        self.instance_name.as_ref().unwrap_or(&String::from("uX")).clone()
+        self.instance_name
+            .as_ref()
+            .unwrap_or(&String::from("uX"))
+            .clone()
     }
 
     /// Merges any populated data from `rhs` into attributes that do not already

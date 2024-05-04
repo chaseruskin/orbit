@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use crate::commands::helps::env;
 use crate::commands::plan::BLUEPRINT_FILE;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
@@ -14,7 +15,6 @@ use clif::arg::Positional;
 use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
-use crate::commands::helps::env;
 
 #[derive(Debug, PartialEq)]
 pub struct Env {

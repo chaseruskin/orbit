@@ -1,6 +1,6 @@
 use super::{
     symbol::{self, IdentifierList},
-    token::Identifier,
+    token::identifier::Identifier,
 };
 
 #[derive(Debug, PartialEq)]

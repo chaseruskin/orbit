@@ -32,6 +32,7 @@ use std::hash::Hash;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
+use crate::commands::helps::plan;
 use crate::commands::install::Install;
 use crate::core::algo;
 use crate::core::algo::IpFileNode;
@@ -41,7 +42,6 @@ use crate::core::ip::Ip;
 use crate::core::ip::IpSpec;
 use crate::core::lockfile::LockEntry;
 use crate::core::lockfile::LockFile;
-use crate::commands::helps::plan;
 use crate::util::graphmap::Node;
 
 pub const BLUEPRINT_FILE: &str = "blueprint.tsv";
@@ -172,7 +172,9 @@ pub fn download_missing_deps(
     // fetch all non-downloaded packages
     for entry in lf.inner() {
         // skip the current project's IP entry or any IP already in the downloads/
-        if entry.matches_target(le) == true || catalog.is_downloaded_slot(&entry.to_download_slot_key()) == true {
+        if entry.matches_target(le) == true
+            || catalog.is_downloaded_slot(&entry.to_download_slot_key()) == true
+        {
             continue;
         }
 
@@ -471,7 +473,10 @@ impl Plan {
             for dep in &references {
                 let working = Identifier::Basic("work".to_string());
                 // re-route the library prefix to the current unit's library
-                let dep_adjusted = CompoundIdentifier::new(iden.get_prefix().unwrap_or(&working).clone(), dep.get_suffix().clone());
+                let dep_adjusted = CompoundIdentifier::new(
+                    iden.get_prefix().unwrap_or(&working).clone(),
+                    dep.get_suffix().clone(),
+                );
                 // if the dep is using "work", match it with the identifier's library
                 let dep_adjusted = if let Some(lib) = dep.get_prefix() {
                     match lib == &working {
@@ -730,7 +735,7 @@ impl Plan {
     /// This function transforms the list of indices from `min_order` in topologically-sorted order
     /// to the list of files in topologically-sorted order based on the information
     /// in the `global_graph`.
-    /// 
+    ///
     /// Several files may be associated with an index in the `global_graph`, so it is important
     /// to account for those too.
     fn determine_file_order<'a>(
@@ -792,7 +797,12 @@ impl Plan {
             }
         }
         // topologically sort and transform into list of the file nodes
-        file_graph.get_graph().topological_sort().into_iter().map(|i| { *file_graph.get_key_by_index(i).unwrap() } ).collect()
+        file_graph
+            .get_graph()
+            .topological_sort()
+            .into_iter()
+            .map(|i| *file_graph.get_key_by_index(i).unwrap())
+            .collect()
     }
 
     /// Filters out the local nodes existing within the current IP from the `global_graph`.
@@ -1065,11 +1075,19 @@ impl Plan {
         // collect in-order HDL file list
         for file in file_order {
             if fileset::is_rtl(&file.get_file()) == true {
-                blueprint_data +=
-                    &format!("VHDL-RTL{0}{1}{0}{2}\n", BLUEPRINT_DELIMITER, file.get_library(), file.get_file());
+                blueprint_data += &format!(
+                    "VHDL-RTL{0}{1}{0}{2}\n",
+                    BLUEPRINT_DELIMITER,
+                    file.get_library(),
+                    file.get_file()
+                );
             } else {
-                blueprint_data +=
-                    &format!("VHDL-SIM{0}{1}{0}{2}\n", BLUEPRINT_DELIMITER, file.get_library(), file.get_file());
+                blueprint_data += &format!(
+                    "VHDL-SIM{0}{1}{0}{2}\n",
+                    BLUEPRINT_DELIMITER,
+                    file.get_library(),
+                    file.get_file()
+                );
             }
         }
 

@@ -1,3 +1,4 @@
+use crate::core::config::General;
 use crate::core::config::{Config, Configs, Locality};
 use crate::core::plugin::Plugin;
 use crate::util::anyerror::AnyError;
@@ -8,7 +9,6 @@ use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::path;
-use crate::core::config::General;
 use std::path::PathBuf;
 
 const CACHE_TAG_FILE: &str = "CACHEDIR.TAG";
@@ -243,7 +243,7 @@ impl Context {
     pub fn get_build_dir(&self) -> String {
         match self.config.get_general() {
             Some(g) => g.get_build_dir(),
-            None => General::new().get_build_dir()
+            None => General::new().get_build_dir(),
         }
     }
 

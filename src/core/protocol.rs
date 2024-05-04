@@ -3,10 +3,10 @@
 
 use crate::core::plugin::Process;
 use crate::core::variable;
+use crate::util::filesystem::Standardize;
 use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::str::FromStr;
-use crate::util::filesystem::Standardize;
 
 pub type Protocols = Vec<Protocol>;
 
@@ -115,7 +115,7 @@ impl Protocol {
     }
 
     /// Performs the default behavior for a protocol.
-    /// 
+    ///
     /// This will attempt to download the url as a zip file and extract it to
     /// its queue directory.
     pub fn single_download(url: &str, dst: &PathBuf) -> Result<(), Fault> {
@@ -153,8 +153,6 @@ impl Protocol {
 
         Ok(())
     }
-
-
 }
 
 impl std::fmt::Display for Protocol {

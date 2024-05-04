@@ -3,7 +3,7 @@ use super::symbol::VHDLSymbol;
 use crate::core::ip::IpSpec;
 use crate::core::lang::vhdl::symbol::VHDLParser;
 use crate::util::filesystem;
-use crate::{core::lang::vhdl::token::Identifier, util::anyerror::Fault};
+use crate::{core::lang::vhdl::token::identifier::Identifier, util::anyerror::Fault};
 use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use toml_edit::InlineTable;
 

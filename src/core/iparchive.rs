@@ -1,7 +1,7 @@
 use super::ip::Ip;
 use super::lockfile::LockFile;
 use super::manifest::Manifest;
-use crate::util::anyerror::{Fault, AnyError};
+use crate::util::anyerror::{AnyError, Fault};
 use crate::util::compress;
 use flate2::read::ZlibDecoder;
 use flate2::write::ZlibEncoder;
@@ -44,38 +44,36 @@ impl IpArchive {
     }
 
     /// Converts the series of bytes into the [String] to be read as the struct.
-    /// 
+    ///
     /// Returns [None] if there is any point of failure.
     fn parse_struct<T: FromStr>(bytes: &[u8], offset: usize) -> Option<(T, usize)> {
         // attempt to read the size
         let len: usize = {
             let size_bytes: [u8; 4] = match Self::slice(&bytes, offset, U32_SIZE).try_into() {
                 Ok(arr) => arr,
-                Err(_) => return None
+                Err(_) => return None,
             };
             u32::from_be_bytes(size_bytes) as usize
         };
         // attempt to parse from string
         match String::from_utf8(Self::slice(&bytes, offset + U32_SIZE, len).to_vec()) {
-            Ok(s) => {
-                match T::from_str(&s) {
-                    Ok(t) => Some((t, len + U32_SIZE)),
-                    Err(_) => None,
-                }
-            }
-            Err(_) => None
+            Ok(s) => match T::from_str(&s) {
+                Ok(t) => Some((t, len + U32_SIZE)),
+                Err(_) => None,
+            },
+            Err(_) => None,
         }
     }
 
     /// Parses according to version of [IpArchive] format.
-    /// 
+    ///
     /// The `repairing` argument should be asserted only when a repair process
     /// is occurring.
     fn parse(buf: Vec<u8>, repairing: bool, path: &PathBuf) -> Result<Self, Fault> {
         // read the marker back to verify the file is for orbit
         let marker: [u8; 4] = Self::slice(&buf, 0, ARCHIVE_MARKER.len()).try_into()?;
         if marker != ARCHIVE_MARKER {
-            return Err(AnyError(format!("{}", "The download file is corrupted")))?
+            return Err(AnyError(format!("{}", "The download file is corrupted")))?;
         }
 
         // read length of header
@@ -98,43 +96,40 @@ impl IpArchive {
         let mut offset: usize = 0;
         let (man, bytes_read): (Manifest, usize) = match Self::parse_struct(&header_bytes, offset) {
             Some(t) => t,
-            None => {
-                match repairing {
-                    true => panic!("Repairing function failed"),
-                    false => {
-                        println!("info: {}", "Failed to parse downloaded file's header bytes; running repair function ...");
-                        let repaired_bytes = Self::repair(archive, &path)?;
-                        match Self::parse(repaired_bytes, true, &path) {
-                            Ok(rp) => {
-                                println!("info: {}", "Repair successful");
-                                return Ok(rp)
-                            }
-                            Err(e) => return Err(e)?
+            None => match repairing {
+                true => panic!("Repairing function failed"),
+                false => {
+                    println!("info: {}", "Failed to parse downloaded file's header bytes; running repair function ...");
+                    let repaired_bytes = Self::repair(archive, &path)?;
+                    match Self::parse(repaired_bytes, true, &path) {
+                        Ok(rp) => {
+                            println!("info: {}", "Repair successful");
+                            return Ok(rp);
                         }
-                    },
+                        Err(e) => return Err(e)?,
+                    }
                 }
-            }
+            },
         };
         // handle lockfile
         offset += bytes_read;
-        let (lock, _bytes_read): (LockFile, usize) = match Self::parse_struct(&header_bytes, offset) {
+        let (lock, _bytes_read): (LockFile, usize) = match Self::parse_struct(&header_bytes, offset)
+        {
             Some(t) => t,
-            None => {
-                match repairing {
-                    true => panic!("Repairing function failed"),
-                    false => {
-                        println!("info: {}", "Failed to parse downloaded file's header bytes; running repair function ...");
-                        let repaired_bytes = Self::repair(archive, &path)?;
-                        match Self::parse(repaired_bytes, true, &path) {
-                            Ok(rp) => {
-                                println!("info: {}", "Repair successful");
-                                return Ok(rp)
-                            }
-                            Err(e) => return Err(e)?
+            None => match repairing {
+                true => panic!("Repairing function failed"),
+                false => {
+                    println!("info: {}", "Failed to parse downloaded file's header bytes; running repair function ...");
+                    let repaired_bytes = Self::repair(archive, &path)?;
+                    match Self::parse(repaired_bytes, true, &path) {
+                        Ok(rp) => {
+                            println!("info: {}", "Repair successful");
+                            return Ok(rp);
                         }
-                    },
+                        Err(e) => return Err(e)?,
+                    }
                 }
-            }
+            },
         };
         // offset += bytes_read;
 
@@ -146,11 +141,11 @@ impl IpArchive {
     }
 
     /// Fixes any issues with header bytes.
-    /// 
+    ///
     /// This function will skip the header bytes, unzip the archive into a
     /// temporary location, and then re-run the `write` function to update the
     /// header bytes.
-    /// 
+    ///
     /// This function is helpful whenever there is an update to the download
     /// compression algorithm and new data gets stored in the header.
     pub fn repair(archive: &[u8], path: &PathBuf) -> Result<Vec<u8>, Fault> {

@@ -1,6 +1,6 @@
-use crate::core::catalog::{Catalog, CacheSlot};
+use crate::core::catalog::{CacheSlot, Catalog};
 use crate::core::context::Context;
-use crate::core::ip::{PartialIpSpec, Ip};
+use crate::core::ip::{Ip, PartialIpSpec};
 use crate::util::anyerror::AnyError;
 use crate::OrbitResult;
 use clif::arg::{Flag, Positional};
@@ -73,9 +73,10 @@ impl Command<Context> for Uninstall {
                 let file_name = entry.file_name();
                 if let Some(cache_slot) = CacheSlot::try_from_str(&file_name.to_string_lossy()) {
                     // check if the slot is matching
-                    if target.get_man().get_ip().get_name() != cache_slot.get_name() ||
-                        target.get_man().get_ip().get_version() != cache_slot.get_version() {
-                            continue;
+                    if target.get_man().get_ip().get_name() != cache_slot.get_name()
+                        || target.get_man().get_ip().get_version() != cache_slot.get_version()
+                    {
+                        continue;
                     }
                     // check for same UUID
                     let cached_ip = Ip::load(entry.path().to_path_buf())?;
@@ -85,10 +86,12 @@ impl Command<Context> for Uninstall {
                     // remove the slot if it is dynamic
                     if cached_ip.is_dynamic() == true {
                         fs::remove_dir_all(entry.path())?;
-                        println!("info: Removed a dynamic variant of IP {} from the cache", ip_spec);
+                        println!(
+                            "info: Removed a dynamic variant of IP {} from the cache",
+                            ip_spec
+                        );
                     }
                 }
-                
             }
         }
 

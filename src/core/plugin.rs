@@ -158,8 +158,12 @@ pub trait Process {
                 .fold(String::new(), |x, y| x + "\"" + &y + "\" ");
             println!("info: Running: {} {}", command, s);
         }
-        let mut proc =
-            filesystem::invoke(dir, &command, &args, Context::enable_windows_bat_file_match())?;
+        let mut proc = filesystem::invoke(
+            dir,
+            &command,
+            &args,
+            Context::enable_windows_bat_file_match(),
+        )?;
         let exit_code = proc.wait()?;
         match exit_code.code() {
             Some(num) => {

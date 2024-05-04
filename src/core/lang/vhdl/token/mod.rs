@@ -1,18 +1,25 @@
-use super::super::lexer;
-use super::super::lexer::Position;
-use super::super::lexer::Tokenize;
 use super::super::lexer::TrainCar;
-use crate::core::pkgid::PkgPart;
-use crate::util::anyerror::AnyError;
-use crate::util::strcmp;
 use colored::ColoredString;
 use colored::Colorize;
-use serde_derive::Serialize;
 use std::fmt::Debug;
 use std::fmt::Display;
-use std::hash::Hash;
-use std::hash::Hasher;
 use std::str::FromStr;
+
+pub mod comment;
+pub mod delimiter;
+pub mod error;
+pub mod identifier;
+pub mod keyword;
+pub mod tokenizer;
+
+use tokenizer::*;
+
+pub type Identifier = identifier::Identifier;
+pub type Comment = comment::Comment;
+pub type Keyword = keyword::Keyword;
+pub type Delimiter = delimiter::Delimiter;
+pub type VHDLTokenizer = tokenizer::VHDLTokenizer;
+pub type VHDLTokenError = error::VHDLTokenError;
 
 pub trait ToColor: Display {
     fn to_color(&self) -> ColoredString;
@@ -33,217 +40,6 @@ fn interpret_integer(s: &str) -> usize {
     number
         .parse::<usize>()
         .expect("integer can only contain 0..=9 or underline '_'")
-}
-
-#[derive(Debug, Clone, PartialOrd, Ord, Serialize)]
-#[serde(untagged)]
-pub enum Identifier {
-    Basic(String),
-    Extended(String),
-}
-
-impl std::cmp::Eq for Identifier {}
-
-impl Identifier {
-    /// Creates an empty basic identifier.
-    pub fn new() -> Self {
-        Self::Basic(String::new())
-    }
-
-    /// Creates a new basic identifier for the working library: `work`.
-    pub fn new_working() -> Self {
-        Self::Basic(String::from("work"))
-    }
-
-    // Returns the reference to the inner `String` struct.
-    fn as_str(&self) -> &str {
-        match self {
-            Self::Basic(id) => id.as_ref(),
-            Self::Extended(id) => id.as_ref(),
-        }
-    }
-
-    /// Modifies the ending of the identifier with `ext` and writes as a String
-    pub fn into_extension(&self, ext: &str) -> Identifier {
-        match self {
-            Self::Basic(s) => Self::Basic(s.clone() + ext),
-            Self::Extended(s) => Self::Extended(s.clone() + ext),
-        }
-    }
-
-    /// Checks if `self` is an extended identifier or not.
-    fn is_extended(&self) -> bool {
-        match self {
-            Self::Extended(_) => true,
-            Self::Basic(_) => false,
-        }
-    }
-
-    pub fn len(&self) -> usize {
-        match self {
-            Self::Basic(id) => id.len(),
-            Self::Extended(id) => id.len() + 2 + (id.chars().filter(|c| c == &'\\').count()),
-        }
-    }
-}
-
-// @todo: test
-impl Hash for Identifier {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        match self {
-            Self::Basic(id) => id.to_lowercase().hash(state),
-            Self::Extended(id) => id.hash(state),
-        }
-    }
-}
-
-impl From<&PkgPart> for Identifier {
-    fn from(part: &PkgPart) -> Self {
-        Identifier::Basic(part.to_normal().to_string())
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum IdentifierError {
-    Empty,
-    InvalidFirstChar(char),
-    CharsAfterDelimiter(String),
-}
-
-impl std::error::Error for IdentifierError {}
-
-impl std::fmt::Display for IdentifierError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Empty => write!(f, "empty identifier"),
-            Self::CharsAfterDelimiter(s) => write!(
-                f,
-                "characters \'{}\' found following closing extended backslash, ",
-                s
-            ),
-            Self::InvalidFirstChar(c) => {
-                write!(f, "first character must be letter but found \'{}\'", c)
-            }
-        }
-    }
-}
-
-impl FromStr for Identifier {
-    type Err = IdentifierError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut chars = TrainCar::new(s.chars());
-        match chars.consume() {
-            // check what type of identifier it is
-            Some(c) => Ok(match c {
-                '\\' => {
-                    let result = Self::Extended(
-                        VHDLToken::consume_literal(&mut chars, &char_set::BACKSLASH).unwrap(),
-                    );
-                    // gather remaining characters
-                    let mut rem = String::new();
-                    while let Some(c) = chars.consume() {
-                        rem.push(c);
-                    }
-                    match rem.is_empty() {
-                        true => result,
-                        false => return Err(Self::Err::CharsAfterDelimiter(rem)),
-                    }
-                }
-                _ => {
-                    // verify the first character was a letter
-                    match char_set::is_letter(&c) {
-                        true => Self::Basic(
-                            VHDLToken::consume_value_pattern(
-                                &mut chars,
-                                Some(c),
-                                char_set::is_letter_or_digit,
-                            )
-                            .unwrap(),
-                        ),
-                        false => return Err(Self::Err::InvalidFirstChar(c)),
-                    }
-                }
-            }),
-            None => Err(Self::Err::Empty),
-        }
-    }
-}
-
-impl std::cmp::PartialEq for Identifier {
-    fn eq(&self, other: &Self) -> bool {
-        // instantly not equal if not they are not of same type
-        if self.is_extended() != other.is_extended() {
-            return false;
-        };
-        // compare with case sensitivity
-        if self.is_extended() == true {
-            self.as_str() == other.as_str()
-        // compare without case sensitivity
-        } else {
-            strcmp::cmp_ignore_case(self.as_str(), other.as_str())
-        }
-    }
-
-    fn ne(&self, other: &Self) -> bool {
-        self.eq(other) == false
-    }
-}
-
-impl Display for Identifier {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Basic(id) => write!(f, "{}", id),
-            Self::Extended(id) => write!(f, "\\{}\\", id.replace('\\', r#"\\"#)),
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum Comment {
-    Single(String),
-    Delimited(String),
-}
-
-impl Comment {
-    fn as_str(&self) -> &str {
-        match self {
-            Self::Single(note) => note.as_ref(),
-            Self::Delimited(note) => note.as_ref(),
-        }
-    }
-
-    /// Computes the ending position the cursor ends up in.
-    pub fn ending_position(&self) -> Position {
-        // begin with counting the opening delimiters (-- or /*)
-        let mut pos = Position::place(1, 2);
-        let mut chars = self.as_str().chars();
-        while let Some(c) = chars.next() {
-            if char_set::is_newline(&c) == true {
-                pos.next_line();
-            } else {
-                pos.next_col();
-            }
-        }
-        match self {
-            Self::Single(_) => (),
-            // increment to handle the closing delimiters */
-            Self::Delimited(_) => {
-                pos.next_col();
-                pos.next_col();
-            }
-        }
-        pos
-    }
-}
-
-impl Display for Comment {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Single(c) => write!(f, "--{}", c),
-            Self::Delimited(c) => write!(f, "/*{}*/", c),
-        }
-    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -283,520 +79,6 @@ impl std::fmt::Display for AbstLiteral {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Serialize)]
-pub enum Keyword {
-    Abs,          // VHDL-1987 LRM - current
-    Access,       // VHDL-1987 LRM - current
-    After,        // VHDL-1987 LRM - current
-    Alias,        // VHDL-1987 LRM - current
-    All,          // VHDL-1987 LRM - current
-    And,          // VHDL-1987 LRM - current
-    Architecture, // VHDL-1987 LRM - current
-    Array,        // VHDL-1987 LRM - current
-    Assert,       // VHDL-1987 LRM - current
-    Assume,
-    // AssumeGuarantee "assume_guarantee" is omitted from VHDL-2019 LRM
-    Attribute,     // VHDL-1987 LRM - current
-    Begin,         // VHDL-1987 LRM - current
-    Block,         // VHDL-1987 LRM - current
-    Body,          // VHDL-1987 LRM - current
-    Buffer,        // VHDL-1987 LRM - current
-    Bus,           // VHDL-1987 LRM - current
-    Case,          // VHDL-1987 LRM - current
-    Component,     // VHDL-1987 LRM - current
-    Configuration, // VHDL-1987 LRM - current
-    Constant,      // VHDL-1987 LRM - current
-    Context,
-    Cover,
-    Default,
-    Disconnect, // VHDL-1987 LRM - current
-    Downto,     // VHDL-1987 LRM - current
-    Else,       // VHDL-1987 LRM - current
-    Elsif,      // VHDL-1987 LRM - current
-    End,        // VHDL-1987 LRM - current
-    Entity,     // VHDL-1987 LRM - current
-    Exit,       // VHDL-1987 LRM - current
-    Fairness,
-    File, // VHDL-1987 LRM - current
-    For,  // VHDL-1987 LRM - current
-    Force,
-    Function, // VHDL-1987 LRM - current
-    Generate, // VHDL-1987 LRM - current
-    Generic,  // VHDL-1987 LRM - current
-    Group,
-    Guarded, // VHDL-1987 LRM - current
-    If,      // VHDL-1987 LRM - current
-    Impure,
-    In, // VHDL-1987 LRM - current
-    Inertial,
-    Inout,   // VHDL-1987 LRM - current
-    Is,      // VHDL-1987 LRM - current
-    Label,   // VHDL-1987 LRM - current
-    Library, // VHDL-1987 LRM - current
-    Linkage, // VHDL-1987 LRM - current
-    Literal,
-    Loop,    // VHDL-1987 LRM - current
-    Map,     // VHDL-1987 LRM - current
-    Mod,     // VHDL-1987 LRM - current
-    Nand,    // VHDL-1987 LRM - current
-    New,     // VHDL-1987 LRM - current
-    Next,    // VHDL-1987 LRM - current
-    Nor,     // VHDL-1987 LRM - current
-    Not,     // VHDL-1987 LRM - current
-    Null,    // VHDL-1987 LRM - current
-    Of,      // VHDL-1987 LRM - current
-    On,      // VHDL-1987 LRM - current
-    Open,    // VHDL-1987 LRM - current
-    Or,      // VHDL-1987 LRM - current
-    Others,  // VHDL-1987 LRM - current
-    Out,     // VHDL-1987 LRM - current
-    Package, // VHDL-1987 LRM - current
-    Parameter,
-    Port, // VHDL-1987 LRM - current
-    Postponed,
-    Private,
-    Procedure, // VHDL-1987 LRM - current
-    Process,   // VHDL-1987 LRM - current
-    Property,
-    Protected,
-    Pure,
-    Range,    // VHDL-1987 LRM - current
-    Record,   // VHDL-1987 LRM - current
-    Register, // VHDL-1987 LRM - current
-    Reject,
-    Release,
-    Rem,    // VHDL-1987 LRM - current
-    Report, // VHDL-1987 LRM - current
-    Restrict,
-    // RestrictGuarantee "restrict_guarantee" is omitted from VHDL-2019 LRM
-    Return, // VHDL-1987 LRM - current
-    Rol,
-    Ror,
-    Select, // VHDL-1987 LRM - current
-    Sequence,
-    Severity, // VHDL-1987 LRM - current
-    Signal,   // VHDL-1987 LRM - current
-    Shared,
-    Sla,
-    Sll,
-    Sra,
-    Srl,
-    Strong,
-    Subtype,   // VHDL-1987 LRM - current
-    Then,      // VHDL-1987 LRM - current
-    To,        // VHDL-1987 LRM - current
-    Transport, // VHDL-1987 LRM - current
-    Type,      // VHDL-1987 LRM - current
-    Unaffected,
-    Units,    // VHDL-1987 LRM - current
-    Until,    // VHDL-1987 LRM - current
-    Use,      // VHDL-1987 LRM - current
-    Variable, // VHDL-1987 LRM - current
-    View,
-    Vmode,
-    Vpkg,
-    Vprop,
-    Vunit,
-    Wait,  // VHDL-1987 LRM - current
-    When,  // VHDL-1987 LRM - current
-    While, // VHDL-1987 LRM - current
-    With,  // VHDL-1987 LRM - current
-    Xnor,
-    Xor, // VHDL-1987 LRM - current
-}
-
-impl Keyword {
-    /// Attempts to match the given string of characters `s` to a VHDL keyword.
-    ///
-    /// Compares `s` against keywords using ascii lowercase comparison.
-    fn match_keyword(s: &str) -> Option<Self> {
-        Some(match s.to_ascii_lowercase().as_ref() {
-            "abs" => Self::Abs,
-            "access" => Self::Access,
-            "after" => Self::After,
-            "alias" => Self::Alias,
-            "all" => Self::All,
-            "and" => Self::And,
-            "architecture" => Self::Architecture,
-            "array" => Self::Array,
-            "assert" => Self::Assert,
-            "assume" => Self::Assume,
-            "attribute" => Self::Attribute,
-            "begin" => Self::Begin,
-            "block" => Self::Block,
-            "body" => Self::Body,
-            "buffer" => Self::Buffer,
-            "bus" => Self::Bus,
-            "case" => Self::Case,
-            "component" => Self::Component,
-            "configuration" => Self::Configuration,
-            "constant" => Self::Constant,
-            "context" => Self::Context,
-            "cover" => Self::Cover,
-            "default" => Self::Default,
-            "disconnect" => Self::Disconnect,
-            "downto" => Self::Downto,
-            "else" => Self::Else,
-            "elsif" => Self::Elsif,
-            "end" => Self::End,
-            "entity" => Self::Entity,
-            "exit" => Self::Exit,
-            "fairness" => Self::Fairness,
-            "file" => Self::File,
-            "for" => Self::For,
-            "force" => Self::Force,
-            "function" => Self::Function,
-            "generate" => Self::Generate,
-            "generic" => Self::Generic,
-            "group" => Self::Group,
-            "guarded" => Self::Guarded,
-            "if" => Self::If,
-            "impure" => Self::Impure,
-            "in" => Self::In,
-            "inertial" => Self::Inertial,
-            "inout" => Self::Inout,
-            "is" => Self::Is,
-            "label" => Self::Label,
-            "library" => Self::Library,
-            "linkage" => Self::Linkage,
-            "literal" => Self::Literal,
-            "loop" => Self::Loop,
-            "map" => Self::Map,
-            "mod" => Self::Mod,
-            "nand" => Self::Nand,
-            "new" => Self::New,
-            "next" => Self::Next,
-            "nor" => Self::Nor,
-            "not" => Self::Not,
-            "null" => Self::Null,
-            "of" => Self::Of,
-            "on" => Self::On,
-            "open" => Self::Open,
-            "or" => Self::Or,
-            "others" => Self::Others,
-            "out" => Self::Out,
-            "package" => Self::Package,
-            "parameter" => Self::Parameter,
-            "port" => Self::Port,
-            "postponed" => Self::Postponed,
-            "private" => Self::Private,
-            "procedure" => Self::Procedure,
-            "process" => Self::Process,
-            "property" => Self::Property,
-            "protected" => Self::Protected,
-            "pure" => Self::Pure,
-            "range" => Self::Range,
-            "record" => Self::Record,
-            "register" => Self::Register,
-            "reject" => Self::Reject,
-            "release" => Self::Release,
-            "rem" => Self::Rem,
-            "report" => Self::Report,
-            "restrict" => Self::Restrict,
-            "return" => Self::Return,
-            "rol" => Self::Rol,
-            "ror" => Self::Ror,
-            "select" => Self::Select,
-            "sequence" => Self::Sequence,
-            "severity" => Self::Severity,
-            "signal" => Self::Signal,
-            "shared" => Self::Shared,
-            "sla" => Self::Sla,
-            "sll" => Self::Sll,
-            "sra" => Self::Sra,
-            "srl" => Self::Srl,
-            "strong" => Self::Strong,
-            "subtype" => Self::Subtype,
-            "then" => Self::Then,
-            "to" => Self::To,
-            "transport" => Self::Transport,
-            "type" => Self::Type,
-            "unaffected" => Self::Unaffected,
-            "units" => Self::Units,
-            "until" => Self::Until,
-            "use" => Self::Use,
-            "variable" => Self::Variable,
-            "view" => Self::View,
-            "vmode" => Self::Vmode,
-            "vpkg" => Self::Vpkg,
-            "vprop" => Self::Vprop,
-            "vunit" => Self::Vunit,
-            "wait" => Self::Wait,
-            "when" => Self::When,
-            "while" => Self::While,
-            "with" => Self::With,
-            "xnor" => Self::Xnor,
-            "xor" => Self::Xor,
-            _ => return None,
-        })
-    }
-
-    fn as_str(&self) -> &str {
-        match self {
-            Self::Abs => "abs",
-            Self::Access => "access",
-            Self::After => "after",
-            Self::Alias => "alias",
-            Self::All => "all",
-            Self::And => "and",
-            Self::Architecture => "architecture",
-            Self::Array => "array",
-            Self::Assert => "assert",
-            Self::Assume => "assume",
-            Self::Attribute => "attribute",
-            Self::Begin => "begin",
-            Self::Block => "block",
-            Self::Body => "body",
-            Self::Buffer => "buffer",
-            Self::Bus => "bus",
-            Self::Case => "case",
-            Self::Component => "component",
-            Self::Configuration => "configuration",
-            Self::Constant => "constant",
-            Self::Context => "context",
-            Self::Cover => "cover",
-            Self::Default => "default",
-            Self::Disconnect => "disconnect",
-            Self::Downto => "downto",
-            Self::Else => "else",
-            Self::Elsif => "elsif",
-            Self::End => "end",
-            Self::Entity => "entity",
-            Self::Exit => "exit",
-            Self::Fairness => "fairness",
-            Self::File => "file",
-            Self::For => "for",
-            Self::Force => "force",
-            Self::Function => "function",
-            Self::Generate => "generate",
-            Self::Generic => "generic",
-            Self::Group => "group",
-            Self::Guarded => "guarded",
-            Self::If => "if",
-            Self::Impure => "impure",
-            Self::In => "in",
-            Self::Inertial => "inertial",
-            Self::Inout => "inout",
-            Self::Is => "is",
-            Self::Label => "label",
-            Self::Library => "library",
-            Self::Linkage => "linkage",
-            Self::Literal => "literal",
-            Self::Loop => "loop",
-            Self::Map => "map",
-            Self::Mod => "mod",
-            Self::Nand => "nand",
-            Self::New => "new",
-            Self::Next => "next",
-            Self::Nor => "nor",
-            Self::Not => "not",
-            Self::Null => "null",
-            Self::Of => "of",
-            Self::On => "on",
-            Self::Open => "open",
-            Self::Or => "or",
-            Self::Others => "others",
-            Self::Out => "out",
-            Self::Package => "package",
-            Self::Parameter => "parameter",
-            Self::Port => "port",
-            Self::Postponed => "postponed",
-            Self::Private => "private",
-            Self::Procedure => "procedure",
-            Self::Process => "process",
-            Self::Property => "property",
-            Self::Protected => "protected",
-            Self::Pure => "pure",
-            Self::Range => "range",
-            Self::Record => "record",
-            Self::Register => "register",
-            Self::Reject => "reject",
-            Self::Release => "release",
-            Self::Rem => "rem",
-            Self::Report => "report",
-            Self::Restrict => "restrict",
-            Self::Return => "return",
-            Self::Rol => "rol",
-            Self::Ror => "ror",
-            Self::Select => "select",
-            Self::Sequence => "sequence",
-            Self::Severity => "severity",
-            Self::Signal => "signal",
-            Self::Shared => "shared",
-            Self::Sla => "sla",
-            Self::Sll => "sll",
-            Self::Sra => "sra",
-            Self::Srl => "srl",
-            Self::Strong => "strong",
-            Self::Subtype => "subtype",
-            Self::Then => "then",
-            Self::To => "to",
-            Self::Transport => "transport",
-            Self::Type => "type",
-            Self::Unaffected => "unaffected",
-            Self::Units => "units",
-            Self::Until => "until",
-            Self::Use => "use",
-            Self::Variable => "variable",
-            Self::View => "view",
-            Self::Vmode => "vmode",
-            Self::Vpkg => "vpkg",
-            Self::Vprop => "vprop",
-            Self::Vunit => "vunit",
-            Self::Wait => "wait",
-            Self::When => "when",
-            Self::While => "while",
-            Self::With => "with",
-            Self::Xnor => "xnor",
-            Self::Xor => "xor",
-        }
-    }
-}
-
-impl Display for Keyword {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.as_str())
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum Delimiter {
-    Ampersand,   // &
-    SingleQuote, // '
-    ParenL,      // (
-    ParenR,      // )
-    Star,        // *
-    Plus,        // +
-    Comma,       // ,
-    Dash,        // -
-    Dot,         // .
-    FwdSlash,    // /
-    Colon,       // :
-    Terminator,  // ;
-    Lt,          // <
-    Eq,          // =
-    Gt,          // >
-    BackTick,    // `
-    Pipe,        // | or ! VHDL-1993 LRM p180
-    BrackL,      // [
-    BrackR,      // ]
-    Question,    // ?
-    AtSymbol,    // @
-    Arrow,       // =>
-    DoubleStar,  // **
-    VarAssign,   // :=
-    Inequality,  // /=
-    GTE,         // >=
-    SigAssign,   // <=
-    Box,         // <>
-    SigAssoc,    // <=>
-    CondConv,    // ??
-    MatchEQ,     // ?=
-    MatchNE,     // ?/=
-    MatchLT,     // ?<
-    MatchLTE,    // ?<=
-    MatchGT,     // ?>
-    MatchGTE,    // ?>=
-    DoubleLT,    // <<
-    DoubleGT,    // >>
-}
-
-impl Delimiter {
-    /// Attempts to match the given string of characters `s` to a VHDL delimiter.
-    fn transform(s: &str) -> Option<Self> {
-        Some(match s {
-            "&" => Self::Ampersand,
-            "'" => Self::SingleQuote,
-            "(" => Self::ParenL,
-            ")" => Self::ParenR,
-            "*" => Self::Star,
-            "+" => Self::Plus,
-            "," => Self::Comma,
-            "-" => Self::Dash,
-            "." => Self::Dot,
-            "/" => Self::FwdSlash,
-            ":" => Self::Colon,
-            ";" => Self::Terminator,
-            "<" => Self::Lt,
-            "=" => Self::Eq,
-            ">" => Self::Gt,
-            "`" => Self::BackTick,
-            "!" | "|" => Self::Pipe,
-            "[" => Self::BrackL,
-            "]" => Self::BrackR,
-            "?" => Self::Question,
-            "@" => Self::AtSymbol,
-            "=>" => Self::Arrow,
-            "**" => Self::DoubleStar,
-            ":=" => Self::VarAssign,
-            "/=" => Self::Inequality,
-            ">=" => Self::GTE,
-            "<=" => Self::SigAssign,
-            "<>" => Self::Box,
-            "<=>" => Self::SigAssoc,
-            "??" => Self::CondConv,
-            "?=" => Self::MatchEQ,
-            "?/=" => Self::MatchNE,
-            "?<" => Self::MatchLT,
-            "?<=" => Self::MatchLTE,
-            "?>" => Self::MatchGT,
-            "?>=" => Self::MatchGTE,
-            "<<" => Self::DoubleLT,
-            ">>" => Self::DoubleGT,
-            _ => return None,
-        })
-    }
-
-    fn as_str(&self) -> &str {
-        match self {
-            Self::Ampersand => "&",
-            Self::SingleQuote => "'",
-            Self::ParenL => "(",
-            Self::ParenR => ")",
-            Self::Star => "*",
-            Self::Plus => "+",
-            Self::Comma => ",",
-            Self::Dash => "-",
-            Self::Dot => ".",
-            Self::FwdSlash => "/",
-            Self::Colon => ":",
-            Self::Terminator => ";",
-            Self::Lt => "<",
-            Self::Eq => "=",
-            Self::Gt => ">",
-            Self::BackTick => "`",
-            Self::Pipe => "|",
-            Self::BrackL => "[",
-            Self::BrackR => "]",
-            Self::Question => "?",
-            Self::AtSymbol => "@",
-            Self::Arrow => "=>",
-            Self::DoubleStar => "**",
-            Self::VarAssign => ":=",
-            Self::Inequality => "/=",
-            Self::GTE => ">=",
-            Self::SigAssign => "<=",
-            Self::Box => "<>",
-            Self::SigAssoc => "<=>",
-            Self::CondConv => "??",
-            Self::MatchEQ => "?=",
-            Self::MatchNE => "?/=",
-            Self::MatchLT => "?<",
-            Self::MatchLTE => "?<=",
-            Self::MatchGT => "?>",
-            Self::MatchGTE => "?>=",
-            Self::DoubleLT => "<<",
-            Self::DoubleGT => ">>",
-        }
-    }
-}
-
-impl Display for Delimiter {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.as_str())
-    }
-}
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum VHDLToken {
     Comment(Comment),             // (String)
@@ -826,18 +108,6 @@ impl ToColor for VHDLToken {
     }
 }
 
-impl ToColor for Identifier {
-    fn to_color(&self) -> ColoredString {
-        self.to_string().normal()
-    }
-}
-
-impl ToColor for Comment {
-    fn to_color(&self) -> ColoredString {
-        self.to_string().green()
-    }
-}
-
 use super::highlight::*;
 
 impl ToColor for Character {
@@ -858,18 +128,6 @@ impl ToColor for AbstLiteral {
     fn to_color(&self) -> ColoredString {
         let crayon = NUMBERS;
         self.to_string().truecolor(crayon.0, crayon.1, crayon.2)
-    }
-}
-
-impl ToColor for Keyword {
-    fn to_color(&self) -> ColoredString {
-        self.to_string().blue()
-    }
-}
-
-impl ToColor for Delimiter {
-    fn to_color(&self) -> ColoredString {
-        self.to_string().normal()
     }
 }
 
@@ -919,7 +177,7 @@ impl VHDLToken {
     }
 
     /// Checks if the current token type `self` is a delimiter.
-    fn is_delimiter(&self) -> bool {
+    pub fn is_delimiter(&self) -> bool {
         match self {
             Self::Delimiter(_) => true,
             _ => false,
@@ -935,7 +193,7 @@ impl VHDLToken {
     }
 
     /// Attempts to match a string `s` to a valid delimiter.
-    fn match_delimiter(s: &str) -> Result<Self, VHDLTokenError> {
+    pub fn match_delimiter(s: &str) -> Result<Self, VHDLTokenError> {
         match Delimiter::transform(s) {
             Some(d) => Ok(VHDLToken::Delimiter(d)),
             None => Err(VHDLTokenError::Invalid(s.to_string())),
@@ -946,7 +204,7 @@ impl VHDLToken {
     /// decimal literal, based_literal, and bit_string_literals.
     ///
     /// Assumes the incoming char `c0` was last char consumed as it a digit `0..=9`.
-    fn consume_numeric(
+    pub fn consume_numeric(
         train: &mut TrainCar<impl Iterator<Item = char>>,
         c0: char,
     ) -> Result<VHDLToken, VHDLTokenError> {
@@ -1084,7 +342,7 @@ impl VHDLToken {
     /// Captures VHDL Tokens: keywords, basic identifiers, and regular bit string literals.
     ///
     /// Assumes the first `letter` char was the last char consumed before the function call.
-    fn consume_word(
+    pub fn consume_word(
         train: &mut TrainCar<impl Iterator<Item = char>>,
         c0: char,
     ) -> Result<VHDLToken, VHDLTokenError> {
@@ -1114,7 +372,7 @@ impl VHDLToken {
     /// that a bit string literal is allowed to have no characters within the " ".
     /// - bit_string_literal ::= \[ integer ] base_specifier " \[ bit_value ] "
     /// - bit_value ::= graphic_character { [ underline ] graphic_character }
-    fn consume_bit_str_literal(
+    pub fn consume_bit_str_literal(
         train: &mut TrainCar<impl Iterator<Item = char>>,
         s0: String,
     ) -> Result<VHDLToken, VHDLTokenError> {
@@ -1137,7 +395,7 @@ impl VHDLToken {
     /// Captures an extended identifier token.
     ///
     /// Errors if the identifier is empty.
-    fn consume_extended_identifier(
+    pub fn consume_extended_identifier(
         train: &mut TrainCar<impl Iterator<Item = char>>,
     ) -> Result<VHDLToken, VHDLTokenError> {
         let id = Self::consume_literal(train, &char_set::BACKSLASH)?;
@@ -1153,7 +411,7 @@ impl VHDLToken {
     /// Captures a character literal according to VHDL-2018 LRM p231.
     ///
     /// Assumes the first single quote '\'' was the last char consumed.
-    fn consume_char_lit(
+    pub fn consume_char_lit(
         train: &mut TrainCar<impl Iterator<Item = char>>,
     ) -> Result<VHDLToken, VHDLTokenError> {
         let mut char_lit = String::with_capacity(1);
@@ -1184,7 +442,7 @@ impl VHDLToken {
     /// Captures a string literal.
     ///
     /// Assumes the first double quote '\"' was the last char consumed before entering the function.
-    fn consume_str_lit(
+    pub fn consume_str_lit(
         train: &mut TrainCar<impl Iterator<Item = char>>,
     ) -> Result<VHDLToken, VHDLTokenError> {
         let value = Self::consume_literal(train, &char_set::DOUBLE_QUOTE)?;
@@ -1195,7 +453,7 @@ impl VHDLToken {
     ///
     /// Assumes the opening '/' char was the last char consumed before entering the function.
     /// Also assumes the next char is '*'.
-    fn consume_delim_comment(
+    pub fn consume_delim_comment(
         train: &mut TrainCar<impl Iterator<Item = char>>,
     ) -> Result<VHDLToken, VHDLTokenError> {
         // skip over opening '*'
@@ -1223,7 +481,7 @@ impl VHDLToken {
     ///
     /// Assumes the opening '-' was the last char consumed before entering the function.
     /// Also assumes the next char is '-'.
-    fn consume_comment(
+    pub fn consume_comment(
         train: &mut TrainCar<impl Iterator<Item = char>>,
     ) -> Result<VHDLToken, VHDLTokenError> {
         // skip over second '-'
@@ -1245,7 +503,7 @@ impl VHDLToken {
     ///
     /// If it successfully finds a valid VHDL delimiter, it will move the `loc` the number
     /// of characters it consumed.
-    fn collect_delimiter(
+    pub fn collect_delimiter(
         train: &mut TrainCar<impl Iterator<Item = char>>,
         c0: Option<char>,
     ) -> Result<VHDLToken, VHDLTokenError> {
@@ -1548,133 +806,6 @@ mod based_integer {
     }
 }
 
-mod char_set {
-    pub const DOUBLE_QUOTE: char = '\"';
-    pub const BACKSLASH: char = '\\';
-    pub const STAR: char = '*';
-    pub const DASH: char = '-';
-    pub const FWDSLASH: char = '/';
-    pub const UNDERLINE: char = '_';
-    pub const SINGLE_QUOTE: char = '\'';
-    pub const DOT: char = '.';
-    pub const HASH: char = '#';
-    pub const COLON: char = ':';
-    pub const PLUS: char = '+';
-
-    /// Checks if `c` is a space according to VHDL-2008 LRM p225.
-    /// Set: space, nbsp
-    pub fn is_space(c: &char) -> bool {
-        c == &'\u{0020}' || c == &'\u{00A0}'
-    }
-
-    /// Checks if `c` is a digit according to VHDL-2008 LRM p225.
-    pub fn is_digit(c: &char) -> bool {
-        match c {
-            '0'..='9' => true,
-            _ => false,
-        }
-    }
-
-    /// Checks if `c` is a graphic character according to VHDL-2008 LRM p230.
-    /// - rule ::= upper_case_letter | digit | special_character | space_character
-    /// | lower_case_letter | other_special_character
-    pub fn is_graphic(c: &char) -> bool {
-        is_lower(&c)
-            || is_upper(&c)
-            || is_digit(&c)
-            || is_special(&c)
-            || is_other_special(&c)
-            || is_space(&c)
-    }
-
-    /// Checks if `c` is an upper-case letter according to VHDL-2019 LRM p257.
-    /// Set: `ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ`
-    pub fn is_upper(c: &char) -> bool {
-        match c {
-            '\u{00D7}' => false, // reject multiplication sign
-            'A'..='Z' | 'À'..='Þ' => true,
-            _ => false,
-        }
-    }
-
-    /// Checks if `c` is a new-line character.
-    pub fn is_newline(c: &char) -> bool {
-        c == &'\n'
-    }
-
-    /// Checks if `c` is a special character according to VHDL-2008 LRM p225.
-    /// Set: `"#&'()*+,-./:;<=>?@[]_`|`
-    pub fn is_special(c: &char) -> bool {
-        match c {
-            '"' | '#' | '&' | '\'' | '(' | ')' | '*' | '+' | ',' | '-' | '.' | '/' | ':' | ';'
-            | '<' | '=' | '>' | '?' | '@' | '[' | ']' | '_' | '`' | '|' => true,
-            _ => false,
-        }
-    }
-
-    /// Checks if `c` is a graphic character according to VHDL-2008 LRM p225 and
-    /// is NOT a double character ".
-    ///
-    /// This function is exclusively used in the logic for collecting a bit string literal.
-    pub fn is_graphic_and_not_double_quote(c: &char) -> bool {
-        c != &DOUBLE_QUOTE && is_graphic(&c)
-    }
-
-    /// Checks if `c` is an "other special character" according to VHDL-2008 LRM p225.
-    /// Set: `!$%\^{} ~¡¢£¤¥¦§ ̈©a«¬® ̄°±23 ́μ¶· ̧1o»1⁄41⁄23⁄4¿×÷-`
-    pub fn is_other_special(c: &char) -> bool {
-        match c {
-            '!'
-            | '$'
-            | '%'
-            | '\\'
-            | '^'
-            | '{'
-            | '}'
-            | ' '
-            | '~'
-            | '-'
-            | '\u{00A1}'..='\u{00BF}'
-            | '\u{00D7}'
-            | '\u{00F7}' => true,
-            _ => false,
-        }
-    }
-
-    /// Checks if `c` is a lower-case letter according to VHDL-2019 LRM p257.
-    /// Set: `abcdefghijklmnopqrstuvwxyzßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ`
-    pub fn is_lower(c: &char) -> bool {
-        match c {
-            '\u{00F7}' => false, // reject division sign
-            'a'..='z' | 'ß'..='ÿ' => true,
-            _ => false,
-        }
-    }
-
-    /// Checks if `c` is a letter according to VHDL-2019 LRM p257.
-    pub fn is_letter(c: &char) -> bool {
-        is_lower(&c) || is_upper(&c)
-    }
-
-    /// Checks if `c` is a digit | letter according to VHDL-2008 LRM p230.
-    pub fn is_extended_digit(c: &char) -> bool {
-        is_digit(&c) || is_letter(&c)
-    }
-
-    /// Checks if `c` is a digit | letter according to VHDL-2008 LRM p229.
-    pub fn is_letter_or_digit(c: &char) -> bool {
-        is_digit(&c) || is_letter(&c)
-    }
-
-    /// Checks if the character is a seperator according to VHDL-2019 LRM p259.
-    pub fn is_separator(c: &char) -> bool {
-        // whitespace: space, nbsp
-        c == &'\u{0020}' || c == &'\u{00A0}' ||
-        // format-effectors: ht (\t), vt, cr (\r), lf (\n)
-        c == &'\u{0009}' || c == &'\u{000B}' || c == &'\u{000D}' || c == &'\u{000A}'
-    }
-}
-
 /// Set: B | O | X | UB | UO | UX | SB | SO | SX | D
 #[derive(Debug, PartialEq)]
 enum BaseSpec {
@@ -1726,84 +857,6 @@ impl BaseSpec {
     }
 }
 
-#[derive(Debug, PartialEq)]
-struct VHDLElement(Result<lexer::Token<VHDLToken>, lexer::TokenError<VHDLTokenError>>);
-
-#[derive(PartialEq)]
-pub struct VHDLTokenizer {
-    tokens: Vec<VHDLElement>,
-}
-
-impl FromStr for VHDLTokenizer {
-    type Err = AnyError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self::from_source_code(s))
-    }
-}
-
-impl VHDLTokenizer {
-    /// Creates a new `VHDLTokenizer` struct.
-    pub fn new() -> Self {
-        Self { tokens: Vec::new() }
-    }
-
-    /// Generates a `VHDLTokenizer` struct from source code `s`.
-    ///
-    /// @TODO If `skip_err` is true, it will silently omit erroneous parsing from the
-    /// final vector and guarantee to be `Ok`.
-    pub fn from_source_code(s: &str) -> Self {
-        Self {
-            tokens: Self::tokenize(s)
-                .into_iter()
-                .map(|f| VHDLElement(f))
-                .collect(),
-        }
-    }
-
-    /// Transforms the list of results into a list of tokens, silently skipping over
-    /// errors.
-    ///
-    /// This `fn` also filters out `Comment`s. To include `Comment` tokens, see
-    /// `into_tokens_all`.
-    pub fn into_tokens(self) -> Vec<lexer::Token<VHDLToken>> {
-        self.tokens
-            .into_iter()
-            .filter_map(|f| match f.0 {
-                Ok(t) => match t.as_ref() {
-                    VHDLToken::Comment(_) => None,
-                    _ => Some(t),
-                },
-                Err(_) => None,
-            })
-            .collect()
-    }
-
-    /// Transforms the list of results into a list of tokens, silently skipping over
-    /// errors.
-    pub fn into_tokens_all(self) -> Vec<lexer::Token<VHDLToken>> {
-        self.tokens
-            .into_iter()
-            .filter_map(|f| match f.0 {
-                Ok(t) => Some(t),
-                Err(_) => None,
-            })
-            .collect()
-    }
-
-    /// Transforms the list of results into a list of tokens, silently skipping over
-    /// errors.
-    pub fn as_tokens_all(&self) -> Vec<&lexer::Token<VHDLToken>> {
-        self.tokens
-            .iter()
-            .filter_map(|f| match &f.0 {
-                Ok(t) => Some(t),
-                Err(_) => None,
-            })
-            .collect()
-    }
-}
-
 impl VHDLToken {
     /// Checks if the element is a particular keyword `kw`.
     pub fn check_keyword(&self, kw: &Keyword) -> bool {
@@ -1841,140 +894,6 @@ impl VHDLToken {
             VHDLToken::Comment(r) => Some(r),
             _ => None,
         }
-    }
-}
-
-impl std::fmt::Debug for VHDLTokenizer {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for tk in &self.tokens {
-            write!(
-                f,
-                "{}\t{:?}\n",
-                tk.0.as_ref().unwrap().locate(),
-                tk.0.as_ref().unwrap()
-            )?
-        }
-        Ok(())
-    }
-}
-
-impl Tokenize for VHDLTokenizer {
-    type TokenType = VHDLToken;
-    type Err = VHDLTokenError;
-
-    fn tokenize(
-        s: &str,
-    ) -> Vec<Result<lexer::Token<Self::TokenType>, lexer::TokenError<Self::Err>>> {
-        use lexer::{Token, TokenError};
-
-        let mut train = TrainCar::new(s.chars());
-        // store results here as we consume the characters
-        let mut tokens: Vec<Result<Token<Self::TokenType>, TokenError<Self::Err>>> = Vec::new();
-        // consume every character (lexical analysis)
-        while let Some(c) = train.consume() {
-            // skip over whitespace
-            if char_set::is_separator(&c) {
-                continue;
-            }
-            let tk_loc = train.locate().clone();
-            // build a token
-            tokens.push(if char_set::is_letter(&c) {
-                // collect general identifier
-                match Self::TokenType::consume_word(&mut train, c) {
-                    Ok(tk) => Ok(Token::new(tk, tk_loc)),
-                    Err(e) => Err(TokenError::new(e, train.locate().clone())),
-                }
-            } else if c == char_set::BACKSLASH {
-                // collect extended identifier
-                match Self::TokenType::consume_extended_identifier(&mut train) {
-                    Ok(tk) => Ok(Token::new(tk, tk_loc)),
-                    Err(e) => Err(TokenError::new(e, train.locate().clone())),
-                }
-            } else if c == char_set::DOUBLE_QUOTE {
-                // collect string literal
-                match Self::TokenType::consume_str_lit(&mut train) {
-                    Ok(tk) => Ok(Token::new(tk, tk_loc)),
-                    Err(e) => Err(TokenError::new(e, train.locate().clone())),
-                }
-            } else if c == char_set::SINGLE_QUOTE
-                && tokens.last().is_some()
-                && tokens.last().unwrap().as_ref().is_ok()
-                && tokens
-                    .last()
-                    .unwrap()
-                    .as_ref()
-                    .unwrap()
-                    .as_ref()
-                    .is_delimiter()
-            {
-                // collect character literal
-                match Self::TokenType::consume_char_lit(&mut train) {
-                    Ok(tk) => Ok(Token::new(tk, tk_loc)),
-                    Err(e) => Err(TokenError::new(e, train.locate().clone())),
-                }
-            } else if char_set::is_digit(&c) {
-                // collect decimal literal (or bit string literal or based literal)
-                match Self::TokenType::consume_numeric(&mut train, c) {
-                    Ok(tk) => Ok(Token::new(tk, tk_loc)),
-                    Err(e) => Err(TokenError::new(e, train.locate().clone())),
-                }
-            } else if c == char_set::DASH
-                && train.peek().is_some()
-                && train.peek().unwrap() == &char_set::DASH
-            {
-                // collect a single-line comment
-                match Self::TokenType::consume_comment(&mut train) {
-                    Ok(tk) => Ok(Token::new(tk, tk_loc)),
-                    Err(e) => Err(TokenError::new(e, train.locate().clone())),
-                }
-            } else if c == char_set::FWDSLASH
-                && train.peek().is_some()
-                && train.peek().unwrap() == &char_set::STAR
-            {
-                // collect delimited (multi-line) comment
-                match Self::TokenType::consume_delim_comment(&mut train) {
-                    Ok(tk) => Ok(Token::new(tk, tk_loc)),
-                    Err(e) => {
-                        let mut tk_loc = train.locate().clone();
-                        tk_loc.next_col(); // +1 col for correct alignment
-                        Err(TokenError::new(e, tk_loc))
-                    }
-                }
-            } else {
-                // collect delimiter
-                match Self::TokenType::collect_delimiter(&mut train, Some(c)) {
-                    Ok(tk) => Ok(Token::new(tk, tk_loc)),
-                    Err(e) => Err(TokenError::new(e, train.locate().clone())),
-                }
-            });
-        }
-        // push final EOF token
-        let mut tk_loc = train.locate().clone();
-        tk_loc.next_col();
-        tokens.push(Ok(Token::new(VHDLToken::EOF, tk_loc)));
-        tokens
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum VHDLTokenError {
-    Any(String),
-    Invalid(String),
-    MissingAndEmpty(char),
-    MissingClosingAndGot(char, char),
-}
-
-impl Display for VHDLTokenError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::Any(s) => s.to_string(),
-                Self::Invalid(c) => format!("invalid character '{}' ", c),
-                _ => todo!("write error message!"),
-            }
-        )
     }
 }
 

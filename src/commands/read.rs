@@ -3,11 +3,14 @@ use std::io::Read as ReadTrait;
 use std::io::Write;
 use std::path::PathBuf;
 
+use super::get::GetError;
+use crate::commands::helps::read;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::ip::PartialIpSpec;
 use crate::core::lang::lexer::Position;
+use crate::core::lang::lexer::Token;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lang::vhdl::token::VHDLToken;
 use crate::core::lang::vhdl::token::VHDLTokenizer;
@@ -19,9 +22,6 @@ use clif::arg::{Flag, Optional, Positional};
 use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
-use crate::core::lang::lexer::Token;
-use crate::commands::helps::read;
-use super::get::GetError;
 use std::fs;
 
 const TMP_DIR: &str = "tmp";
@@ -66,7 +66,9 @@ impl Command<Context> for Read {
     fn exec(&self, c: &Context) -> Self::Status {
         // verify location is only set iff the file mode is enabled
         if self.location == true && self.file == false {
-            Err(AnyError(format!("The flag '--location' can only be set when using '--file'")))?
+            Err(AnyError(format!(
+                "The flag '--location' can only be set when using '--file'"
+            )))?
         }
 
         // determine the destination
@@ -103,7 +105,7 @@ impl Command<Context> for Read {
                 }
                 None => {
                     // the ip does not exist
-                    return Err(AnyError(format!("Failed to find IP {}", tg)))?
+                    return Err(AnyError(format!("Failed to find IP {}", tg)))?;
                 }
             }
         // must be in an IP if omitting the pkgid
@@ -133,21 +135,24 @@ impl Read {
         let (start, end) = {
             // get the tokens
             let start_tokens = match &self.start {
-                Some(tokenizer) => tokenizer.as_tokens_all()
+                Some(tokenizer) => tokenizer
+                    .as_tokens_all()
                     .into_iter()
                     .filter(|t| t.as_type() != &VHDLToken::EOF)
                     .collect(),
                 None => Vec::new(),
             };
             let end_tokens = match &self.end {
-                Some(tokenizer) => tokenizer.as_tokens_all()
+                Some(tokenizer) => tokenizer
+                    .as_tokens_all()
                     .into_iter()
                     .filter(|t| t.as_type() != &VHDLToken::EOF)
                     .collect(),
                 None => Vec::new(),
             };
             let comment_tokens = match &self.comment {
-                Some(tokenizer) => tokenizer.as_tokens_all()
+                Some(tokenizer) => tokenizer
+                    .as_tokens_all()
                     .into_iter()
                     .filter(|t| t.as_type() != &VHDLToken::EOF)
                     .collect(),
@@ -157,60 +162,80 @@ impl Read {
             let start = Self::find_location(&src_tokens, &start_tokens);
             // limit based on starting index
             let remaining_tokens = match &start {
-                Some(pos) => src_tokens.into_iter().skip_while(|p| p.locate() <= pos).collect(),
+                Some(pos) => src_tokens
+                    .into_iter()
+                    .skip_while(|p| p.locate() <= pos)
+                    .collect(),
                 None => {
                     if self.start.is_some() == true {
-                        return Err(AnyError(format!("Failed to find code segment matching 'start' code chunk")))?
+                        return Err(AnyError(format!(
+                            "Failed to find code segment matching 'start' code chunk"
+                        )))?;
                     }
                     src_tokens
-                },
+                }
             };
 
             let end = Self::find_location(&remaining_tokens, &end_tokens);
             let remaining_tokens = match &end {
-                Some(pos) => remaining_tokens.into_iter().take_while(|p| p.locate() < pos).collect(),
+                Some(pos) => remaining_tokens
+                    .into_iter()
+                    .take_while(|p| p.locate() < pos)
+                    .collect(),
                 None => {
                     if self.end.is_some() == true {
-                        return Err(AnyError(format!("Failed to find code segment matching 'end' code chunk")))?
+                        return Err(AnyError(format!(
+                            "Failed to find code segment matching 'end' code chunk"
+                        )))?;
                     }
                     remaining_tokens
-                },
+                }
             };
 
             // find the comment
             let first_token = Self::find_location(&remaining_tokens, &comment_tokens);
             // grab all continuous '--' tokens immediately above/before this location
             let comment = match &first_token {
-                Some(pos) => { 
+                Some(pos) => {
                     let mut line = pos.line();
-                    // println!("{:?}", pos); 
-                    match remaining_tokens.into_iter().rev().skip_while(|p| p.locate() >= pos).take_while(|p| {
-                        // only take immediate comments grouped together
-                        line -= 1;
-                        p.as_type().as_comment().is_some() && p.locate().line() == line
-                    }).last() {
+                    // println!("{:?}", pos);
+                    match remaining_tokens
+                        .into_iter()
+                        .rev()
+                        .skip_while(|p| p.locate() >= pos)
+                        .take_while(|p| {
+                            // only take immediate comments grouped together
+                            line -= 1;
+                            p.as_type().as_comment().is_some() && p.locate().line() == line
+                        })
+                        .last()
+                    {
                         Some(token) => Some(token.locate().clone()),
                         None => {
-                            return Err(AnyError(format!("Zero comments associated with code chunk")))?
-                        },
+                            return Err(AnyError(format!(
+                                "Zero comments associated with code chunk"
+                            )))?
+                        }
                     }
-                },
+                }
                 None => {
                     if self.comment.is_some() == true {
-                        return Err(AnyError(format!("Failed to find code segment matching 'doc' code chunk")))?
+                        return Err(AnyError(format!(
+                            "Failed to find code segment matching 'doc' code chunk"
+                        )))?;
                     }
                     None
-                },
+                }
             };
 
             let end = match &comment {
                 Some(_) => first_token,
-                None => end
+                None => end,
             };
 
             let start = match comment {
                 Some(c) => Some(c),
-                None => start
+                None => start,
             };
 
             (start, end)
@@ -220,11 +245,13 @@ impl Read {
             let iter = contents.split_terminator('\n');
 
             let iter = match &start {
-                Some(p) => iter.skip(p.line()-1),
+                Some(p) => iter.skip(p.line() - 1),
                 None => iter.skip(0),
             };
             let iter = match &end {
-                Some(p) => iter.take(p.line()-start.as_ref().unwrap_or(&Position::new()).line()+1),
+                Some(p) => {
+                    iter.take(p.line() - start.as_ref().unwrap_or(&Position::new()).line() + 1)
+                }
                 None => iter.take(usize::MAX),
             };
             let iter = iter.map(|line| line.to_string() + "\n");
@@ -239,7 +266,9 @@ impl Read {
             "{}",
             match print_to_console {
                 // display the contents
-                true => { segment },
+                true => {
+                    segment
+                }
                 // overwrite contents and display the file path
                 false => {
                     let cut_code = (start.is_some() || end.is_some()) && self.location == false;
@@ -248,17 +277,15 @@ impl Read {
                         true => {
                             // create and write a temporary file
                             let mut file = std::fs::OpenOptions::new()
-                            .write(true)
-                            .truncate(true)
-                            .open(&path)?;
+                                .write(true)
+                                .truncate(true)
+                                .open(&path)?;
 
                             file.write(&segment.as_bytes())?;
                             file.flush()?;
                             file
-                        }, 
-                        false => {
-                            std::fs::OpenOptions::new().read(true).open(&path)?
-                        },
+                        }
+                        false => std::fs::OpenOptions::new().read(true).open(&path)?,
                     };
 
                     // set to read-only
@@ -274,8 +301,8 @@ impl Read {
                                 Some(s) => s,
                                 None => match end {
                                     Some(e) => e,
-                                    None => loc
-                                }
+                                    None => loc,
+                                },
                             };
                             // append the location to the filepath
                             PathBuf::from({
@@ -298,27 +325,35 @@ impl Read {
     fn check_tokens_eq(source: &VHDLToken, sub: &VHDLToken) -> bool {
         match sub {
             // skip EOF token
-            &VHDLToken::EOF => { true },
+            &VHDLToken::EOF => true,
             // only match on the fact that they are comments
-            VHDLToken::Comment(_) => { source.as_comment().is_some() },
-            _ => { source == sub },
+            VHDLToken::Comment(_) => source.as_comment().is_some(),
+            _ => source == sub,
         }
     }
 
-    fn find_location(src_tokens: &Vec<Token<VHDLToken>>, find_tokens: &Vec<&Token<VHDLToken>>) -> Option<Position> {
+    fn find_location(
+        src_tokens: &Vec<Token<VHDLToken>>,
+        find_tokens: &Vec<&Token<VHDLToken>>,
+    ) -> Option<Position> {
         let mut tracking: bool;
         let mut src_tokens_iter = src_tokens.iter();
         while let Some(t) = src_tokens_iter.next() {
             // begin to see if we start tracking
             // println!("{:?} {:?}", find_tokens.first().unwrap().as_type(), t.as_type());
 
-            if find_tokens.len() > 0 && Self::check_tokens_eq(t.as_type(), find_tokens.first().unwrap().as_type()) == true {
+            if find_tokens.len() > 0
+                && Self::check_tokens_eq(t.as_type(), find_tokens.first().unwrap().as_type())
+                    == true
+            {
                 // println!("{}", "HERE");
                 let mut find_tokens_iter = find_tokens.iter().skip(1);
                 tracking = true;
                 while let Some(find_t) = find_tokens_iter.next() {
                     // skip the EOF token
-                    if find_t.as_type() == &VHDLToken::EOF { continue; }
+                    if find_t.as_type() == &VHDLToken::EOF {
+                        continue;
+                    }
                     if let Some(source_t) = src_tokens_iter.next() {
                         // lost sight
                         if Self::check_tokens_eq(source_t.as_type(), find_t.as_type()) == false {

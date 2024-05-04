@@ -1,3 +1,4 @@
+use crate::commands::helps::orbit;
 use crate::core::config;
 use crate::core::context::Context;
 use crate::core::lang::vhdl::highlight::ColorMode;
@@ -11,7 +12,6 @@ use clif::cmd::FromCli;
 use clif::Cli;
 use clif::Error as CliError;
 use std::env;
-use crate::commands::helps::orbit;
 
 pub type AnyResult<T> = Result<T, Box<dyn std::error::Error>>;
 pub type OrbitResult = AnyResult<()>;

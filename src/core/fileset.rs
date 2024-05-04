@@ -51,7 +51,7 @@ impl FromStr for Style {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let prefix = match s.get(0..1) {
-            Some(".") => "", 
+            Some(".") => "",
             _ => "**/",
         };
         Ok(Style(Pattern::new(&(prefix.to_owned() + s))?.into()))
@@ -169,13 +169,13 @@ impl Fileset {
     }
 
     /// Set the `Fileset` glob-style pattern.
-    /// 
+    ///
     /// If no explicit relative file path character is present (`.`), then
     /// it implicitly sets a recursive directory glob pattern as the prefix
     /// (`**/`).
     pub fn pattern(mut self, p: &str) -> Result<Self, PatternError> {
         let prefix = match p.get(0..1) {
-            Some(".") => "", 
+            Some(".") => "",
             _ => "**/",
         };
         self.pattern = Pattern::new(&(prefix.to_owned() + p))?.into();
@@ -220,7 +220,7 @@ impl Fileset {
     }
 
     /// Creates format for blueprint.tsv file for a custom fileset.
-    /// 
+    ///
     /// Since custom filesets are only searched within the current project, the
     /// library will always be "work".
     ///
@@ -305,10 +305,7 @@ mod test {
 
     #[test]
     fn assemble_fileset() {
-        let fset = Fileset::new()
-            .name("hello_world")
-            .pattern("*.txt")
-            .unwrap();
+        let fset = Fileset::new().name("hello_world").pattern("*.txt").unwrap();
         assert_eq!(
             fset,
             Fileset {

@@ -81,15 +81,9 @@ pub struct Position(usize, usize);
 impl PartialOrd for Position {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match self.0.partial_cmp(&other.0).unwrap() {
-            Ordering::Equal => {
-                self.1.partial_cmp(&other.1)
-            }
-            Ordering::Greater => {
-                Some(Ordering::Greater)
-            }
-            Ordering::Less => {
-                Some(Ordering::Less)
-            }
+            Ordering::Equal => self.1.partial_cmp(&other.1),
+            Ordering::Greater => Some(Ordering::Greater),
+            Ordering::Less => Some(Ordering::Less),
         }
     }
 }

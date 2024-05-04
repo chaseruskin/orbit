@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use crate::commands::helps::config;
 use crate::core::config::ConfigDocument;
 use crate::core::config::CONFIG_FILE;
 use crate::core::context::Context;
@@ -12,7 +13,6 @@ use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
 use colored::*;
-use crate::commands::helps::config;
 
 #[derive(Debug, PartialEq)]
 pub struct Entry(String, String);

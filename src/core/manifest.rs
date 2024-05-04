@@ -29,7 +29,11 @@ pub struct Manifest {
     ip: Package,
     #[serde(skip_serializing_if = "map_is_empty", default)]
     dependencies: Dependencies,
-    #[serde(rename = "dev-dependencies", skip_serializing_if = "map_is_empty", default)]
+    #[serde(
+        rename = "dev-dependencies",
+        skip_serializing_if = "map_is_empty",
+        default
+    )]
     dev_dependencies: Dependencies,
 }
 

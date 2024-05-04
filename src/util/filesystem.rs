@@ -177,7 +177,12 @@ pub fn is_keep_override(target: &PathBuf, vip_list: &HashSet<PathBuf>) -> bool {
 ///
 /// If immutable is `true`, then read_only permissions will be enabled, else the files
 /// will be mutable. Silently skips files that could be changed with mutability/permissions.
-pub fn copy(source: &PathBuf, target: &PathBuf, minimal: bool, keep: Option<HashSet<PathBuf>>) -> Result<(), Fault> {
+pub fn copy(
+    source: &PathBuf,
+    target: &PathBuf,
+    minimal: bool,
+    keep: Option<HashSet<PathBuf>>,
+) -> Result<(), Fault> {
     // create missing directories to `target`
     std::fs::create_dir_all(&target)?;
     // gather list of paths to copy
@@ -192,7 +197,8 @@ pub fn copy(source: &PathBuf, target: &PathBuf, minimal: bool, keep: Option<Hash
             f.path().is_file() == false
                 || minimal == false
                 || is_minimal(&f.file_name().to_string_lossy()) == true
-                || (keep.is_some() && is_keep_override(&f.path().to_path_buf(), &keep.as_ref().unwrap()) == true)
+                || (keep.is_some()
+                    && is_keep_override(&f.path().to_path_buf(), &keep.as_ref().unwrap()) == true)
         })
         .build()
     {

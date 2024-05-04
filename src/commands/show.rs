@@ -1,3 +1,4 @@
+use crate::commands::helps::show;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::{Ip, PartialIpSpec};
@@ -11,7 +12,6 @@ use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
 use std::env::current_dir;
-use crate::commands::helps::show;
 
 #[derive(Debug, PartialEq)]
 pub struct Show {

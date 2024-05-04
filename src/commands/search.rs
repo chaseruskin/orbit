@@ -9,10 +9,10 @@ use clif::Cli;
 use clif::Error as CliError;
 use std::collections::BTreeMap;
 
+use crate::commands::helps::search;
 use crate::core::catalog::Catalog;
 use crate::core::catalog::IpLevel;
 use crate::core::version::AnyVersion;
-use crate::commands::helps::search;
 
 #[derive(Debug, PartialEq)]
 pub struct Search {
@@ -66,7 +66,7 @@ impl Search {
             .inner()
             .into_iter()
             // filter by name if user entered a pkgid to search
-            .filter(|(key, iplvl)| { 
+            .filter(|(key, iplvl)| {
                 if let Some(prj) = iplvl.get(true, &AnyVersion::Latest) {
                     match self.hard_match {
                         true => {
@@ -125,11 +125,19 @@ impl Search {
                 tree.insert(key, status);
             });
 
-        println!("{}", Self::fmt_table(tree, self.limit, self.cached, self.downloaded));
+        println!(
+            "{}",
+            Self::fmt_table(tree, self.limit, self.cached, self.downloaded)
+        );
         Ok(())
     }
 
-    fn fmt_table(catalog: BTreeMap<&PkgPart, &IpLevel>, limit: Option<usize>, cached: bool, downloaded: bool) -> String {
+    fn fmt_table(
+        catalog: BTreeMap<&PkgPart, &IpLevel>,
+        limit: Option<usize>,
+        cached: bool,
+        downloaded: bool,
+    ) -> String {
         let header = format!(
             "\
 {:<28}{:<10}{:<9}
@@ -142,7 +150,7 @@ impl Search {
         let default = !(cached || downloaded);
 
         // note: There is definitely a nicer way to handle all of this logic... but this works for now.
-        
+
         for (name, status) in catalog {
             // use this variable to determine if a level higher in the catalog has a higher version not displayed right now
             let mut is_update_available = false;
@@ -152,9 +160,15 @@ impl Search {
                 let ins = status.get_install(&AnyVersion::Latest);
                 if dld.is_some() && ins.is_some() {
                     // an update is possible if the downloads have a higher version than install
-                    is_update_available = dld.unwrap().get_man().get_ip().get_version() > ins.unwrap().get_man().get_ip().get_version() && (default == true || cached == true);
+                    is_update_available = dld.unwrap().get_man().get_ip().get_version()
+                        > ins.unwrap().get_man().get_ip().get_version()
+                        && (default == true || cached == true);
                     // always return the installation version if one is possible
-                    if default == true || cached == true { ins } else { dld }
+                    if default == true || cached == true {
+                        ins
+                    } else {
+                        dld
+                    }
                 } else if dld.is_none() {
                     ins
                 } else {
@@ -176,27 +190,31 @@ impl Search {
             }
 
             // determine if to skip this IP based on settings
-            let cleared = default == true || match ip.get_mapping() {
-                Mapping::Physical => cached == true,
-                Mapping::Virtual(_) => downloaded == true,
-            };
+            let cleared = default == true
+                || match ip.get_mapping() {
+                    Mapping::Physical => cached == true,
+                    Mapping::Virtual(_) => downloaded == true,
+                };
             if cleared == false {
                 continue;
             }
 
             body.push_str(&format!(
                 "{:<28}{:<10}{:<9}\n",
-                    name.to_string(),
-                    ip
-                    .get_man()
-                    .get_ip()
-                    .get_version().to_string() + { if is_update_available == true { "*" } else { "" } },
-                    match ip.get_mapping() {
-                        Mapping::Physical => "Installed",
-                        Mapping::Virtual(_) => "Downloaded",
-                        // Mapping::Imaginary => "Available",
-                        // _ => ""
-                    },
+                name.to_string(),
+                ip.get_man().get_ip().get_version().to_string() + {
+                    if is_update_available == true {
+                        "*"
+                    } else {
+                        ""
+                    }
+                },
+                match ip.get_mapping() {
+                    Mapping::Physical => "Installed",
+                    Mapping::Virtual(_) => "Downloaded",
+                    // Mapping::Imaginary => "Available",
+                    // _ => ""
+                },
             ));
         }
         header + &body

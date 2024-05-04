@@ -18,9 +18,9 @@ use crate::core::uuid::Uuid;
 use crate::util::sha256::Sha256Hash;
 use colored::Colorize;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::error::Error;
 use std::str::FromStr;
-use std::collections::HashSet;
 use toml_edit::Document;
 
 // add state to `root` (make enum) to determine if is real path or not
@@ -434,7 +434,10 @@ impl PartialIpSpec {
     }
 
     pub fn as_ip_spec(&self) -> Option<IpSpec> {
-        Some(IpSpec::new(self.0.clone(), self.1.as_specific()?.as_version()?))
+        Some(IpSpec::new(
+            self.0.clone(),
+            self.1.as_specific()?.as_version()?,
+        ))
     }
 }
 

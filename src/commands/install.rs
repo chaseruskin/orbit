@@ -19,6 +19,7 @@
 
 use super::plan::Plan;
 use crate::commands::download::Download;
+use crate::commands::helps::install;
 use crate::commands::plan;
 use crate::core::algo;
 use crate::core::catalog::CacheSlot;
@@ -26,14 +27,15 @@ use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::ip::PartialIpSpec;
+use crate::core::iparchive::IpArchive;
 use crate::core::lockfile::LockEntry;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::ORBIT_SUM_FILE;
-use crate::core::iparchive::IpArchive;
 use crate::core::protocol::Protocol;
 use crate::core::source::Source;
 use crate::core::variable::VariableTable;
 use crate::core::version;
+use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
 use crate::util::filesystem;
@@ -45,9 +47,7 @@ use clif::Cli;
 use clif::Error as CliError;
 use std::env;
 use std::fs;
-use crate::util::anyerror::AnyError;
 use std::path::PathBuf;
-use crate::commands::helps::install;
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
@@ -124,7 +124,7 @@ impl Command<Context> for Install {
         let mut catalog = Catalog::new()
             .installations(c.get_cache_path())?
             .downloads(c.get_downloads_path())?;
-        
+
         // check if trying to download from the internet
         let target = if self.url.is_some() {
             Self::download_target_from_url(&self, c, &self.url.as_ref().unwrap())?;
@@ -134,41 +134,52 @@ impl Command<Context> for Install {
             // verify the path points to a valid ip
             let search_path = filesystem::resolve_rel_path(
                 &env::current_dir()?,
-                &filesystem::into_std_str(self.path.as_ref().unwrap_or(&PathBuf::from(".")).clone()),
+                &filesystem::into_std_str(
+                    self.path.as_ref().unwrap_or(&PathBuf::from(".")).clone(),
+                ),
             );
 
             // check if specifying an Ip
             let search_dir = PathBuf::standardize(PathBuf::from(search_path));
             let search_path = search_dir.join(IP_MANIFEST_FILE);
-            
+
             // println!("{:?}", search_path);
             // look for IP along this path
             //let result = manifest::find_file(&search_path, IP_MANIFEST_FILE, true)?;
             // find the IP to match
             // println!("{:?}", result);
             let target = match &self.ip {
-                Some(entry) => {
-                    match search_path.exists() {
-                        true => {
-                            let ip = Ip::load(search_dir.to_path_buf())?;
-                            if ip.get_man().get_ip().get_name() == entry.get_name()
-                                && (entry.get_version().is_latest() || version::is_compatible(entry.get_version().as_specific().unwrap(), ip.get_man().get_ip().get_version())) {
-                                Some(ip)
-                            } else {
-                                Err(AnyError(format!("Could not find IP \"{}\" at path \"{}\"", entry, filesystem::into_std_str(search_dir))))?
-                            }
-                        },
-                        false => {
-                            Err(AnyError(format!("Path \"{}\" does not contain an Orbit.toml file", filesystem::into_std_str(search_dir))))?
+                Some(entry) => match search_path.exists() {
+                    true => {
+                        let ip = Ip::load(search_dir.to_path_buf())?;
+                        if ip.get_man().get_ip().get_name() == entry.get_name()
+                            && (entry.get_version().is_latest()
+                                || version::is_compatible(
+                                    entry.get_version().as_specific().unwrap(),
+                                    ip.get_man().get_ip().get_version(),
+                                ))
+                        {
+                            Some(ip)
+                        } else {
+                            Err(AnyError(format!(
+                                "Could not find IP \"{}\" at path \"{}\"",
+                                entry,
+                                filesystem::into_std_str(search_dir)
+                            )))?
                         }
-                    }            
+                    }
+                    false => Err(AnyError(format!(
+                        "Path \"{}\" does not contain an Orbit.toml file",
+                        filesystem::into_std_str(search_dir)
+                    )))?,
                 },
                 // make sure there is only 1 IP to download
-                None => {
-                    match search_path.exists() {
-                        true => Some(Ip::load(search_dir.to_path_buf())?),
-                        false => Err(AnyError(format!("Path \"{}\" does not contain an Orbit.toml file", filesystem::into_std_str(search_dir))))?,
-                    }
+                None => match search_path.exists() {
+                    true => Some(Ip::load(search_dir.to_path_buf())?),
+                    false => Err(AnyError(format!(
+                        "Path \"{}\" does not contain an Orbit.toml file",
+                        filesystem::into_std_str(search_dir)
+                    )))?,
                 },
             };
             // @todo: check if already downloaded or installed
@@ -180,7 +191,7 @@ impl Command<Context> for Install {
 
         // update the downloads
         catalog = catalog.downloads(c.get_downloads_path())?;
-        
+
         // use the catalog (if no path is provided)
         let target = if self.path.is_none() {
             if let Some(spec) = &self.ip {
@@ -204,9 +215,12 @@ impl Command<Context> for Install {
                             Some(unzipped_dep)
                         } else {
                             Some(Ip::load(slot.get_root().clone())?)
-                        }   
+                        }
                     } else {
-                        return Err(AnyError(format!("IP {} does not exist in the catalog", spec)))?;
+                        return Err(AnyError(format!(
+                            "IP {} does not exist in the catalog",
+                            spec
+                        )))?;
                     }
                 } else {
                     return Err(AnyError(format!("Failed to find an IP in the catalog")))?;
@@ -222,12 +236,18 @@ impl Command<Context> for Install {
         // println!("{:?},", target);
         let target = match target {
             Some(t) => t,
-            None => return Err(AnyError(format!("Failed to find an IP to install")))?
+            None => return Err(AnyError(format!("Failed to find an IP to install")))?,
         };
 
         // move the IP to the downloads folder if not already there
-        if catalog.is_downloaded_slot(&LockEntry::from((&target, true)).to_download_slot_key()) == false {
-            Download::move_to_download_dir(&target.get_root(), c.get_downloads_path(), &target.get_man().get_ip().into_ip_spec())?;
+        if catalog.is_downloaded_slot(&LockEntry::from((&target, true)).to_download_slot_key())
+            == false
+        {
+            Download::move_to_download_dir(
+                &target.get_root(),
+                c.get_downloads_path(),
+                &target.get_man().get_ip().into_ip_spec(),
+            )?;
         }
 
         // if target is not in downloads, download it
@@ -273,14 +293,20 @@ impl Install {
     fn download_target_from_url(&self, c: &Context, url: &str) -> Result<(), Fault> {
         // verify a whole spec is provided
         let spec = match &self.ip {
-            Some(spec) => {
-                match spec.as_ip_spec() {
-                    Some(full_spec) => full_spec,
-                    None => return Err(AnyError(format!("{}", "A complete IP specification is required when providing a url")))?
+            Some(spec) => match spec.as_ip_spec() {
+                Some(full_spec) => full_spec,
+                None => {
+                    return Err(AnyError(format!(
+                        "{}",
+                        "A complete IP specification is required when providing a url"
+                    )))?
                 }
             },
             None => {
-                return Err(AnyError(format!("{}", "A complete IP specification is required when providing a url")))?
+                return Err(AnyError(format!(
+                    "{}",
+                    "A complete IP specification is required when providing a url"
+                )))?
             }
         };
 
@@ -292,7 +318,10 @@ impl Install {
 
         let protocols: ProtocolMap = c.get_config().get_protocols();
 
-        let target_source = Source::new().url(url.to_string()).protocol(self.protocol.clone()).tag(self.tag.clone());
+        let target_source = Source::new()
+            .url(url.to_string())
+            .protocol(self.protocol.clone())
+            .tag(self.tag.clone());
 
         // fetch from the internet
         Download::download(
@@ -308,7 +337,6 @@ impl Install {
 
         Ok(())
     }
-
 
     pub fn is_checksum_good(root: &PathBuf) -> bool {
         // verify the checksum

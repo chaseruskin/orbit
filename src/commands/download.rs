@@ -1,3 +1,4 @@
+use crate::commands::helps::download;
 use crate::core::catalog::Catalog;
 use crate::core::catalog::DownloadSlot;
 use crate::core::context::Context;
@@ -25,7 +26,6 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
-use crate::commands::helps::download;
 
 #[derive(Debug, PartialEq)]
 pub struct Download {
@@ -81,10 +81,8 @@ impl Command<Context> for Download {
                 let mut cat = Catalog::new();
                 cat.set_downloads_path(c.get_downloads_path());
                 cat
-            },
-            false => {
-                Catalog::new().downloads(c.get_downloads_path())?
             }
+            false => Catalog::new().downloads(c.get_downloads_path())?,
         };
 
         // verify running from an IP directory and enter IP's root directory
@@ -102,7 +100,7 @@ impl Command<Context> for Download {
             .from_config(c.get_config())?
             // read ip manifest for env variables
             .from_ip(&Ip::load(c.get_ip_path().unwrap().clone())?)?;
-        
+
         let vtable = VariableTable::new().load_environment(&env)?;
         env.initialize();
 
@@ -188,10 +186,7 @@ impl Download {
                         spec, &proto
                     );
                     let std_queue = PathBuf::standardize(&queue);
-                    vtable.add(
-                        "orbit.queue",
-                        std_queue.to_str().unwrap(),
-                    );
+                    vtable.add("orbit.queue", std_queue.to_str().unwrap());
                     // update variable table for this lock entry
                     vtable.add("orbit.ip.name", spec.get_name().as_ref());
                     vtable.add("orbit.ip.version", &spec.get_version().to_string());

@@ -1,7 +1,7 @@
 //! dynamic symbol transform
 
 use super::super::lexer::{Position, Token};
-use super::token::{Identifier, VHDLToken};
+use super::token::{identifier::Identifier, VHDLToken};
 use std::collections::HashMap;
 
 /// Takes in a list of tokens, and a hashmap of the identifiers and their respective
@@ -82,7 +82,7 @@ mod test {
     use super::*;
     use crate::core::lang::vhdl::{
         dst::dyn_symbol_transform,
-        token::{Identifier, VHDLTokenizer},
+        token::{identifier::Identifier, tokenizer::VHDLTokenizer},
     };
 
     #[test]

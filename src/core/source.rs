@@ -20,7 +20,6 @@ fn set_true() -> bool {
 }
 
 impl Source {
-
     pub fn protocol(mut self, p: Option<String>) -> Self {
         self.protocol = p;
         self

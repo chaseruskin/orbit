@@ -1,3 +1,4 @@
+use crate::core::lang::vhdl::format::VhdlFormat;
 use crate::core::manifest::FromFile;
 use crate::core::plugin::{Plugin, Plugins};
 use crate::core::protocol::Protocol;
@@ -10,7 +11,6 @@ use std::collections::HashSet;
 use std::error::Error;
 use std::path::PathBuf;
 use std::str::FromStr;
-use crate::core::lang::vhdl::format::VhdlFormat;
 
 use serde_derive::{Deserialize, Serialize};
 use toml_edit::Document;
@@ -225,12 +225,12 @@ impl Configs {
 
 impl From<Configs> for Config {
     /// Transform the multi-layered configurations into a single level.
-    /// 
+    ///
     /// This function processes configurations in the following order:
     /// 1. LOCAL
     /// 2. GLOBAL
     /// 3. INCLUDES (first to last)
-    /// 
+    ///
     /// Once a value is set (not None), then it will not be overridden by any
     /// configuration file later in the processing order. The processing order is
     /// the precedence order.
@@ -264,13 +264,14 @@ pub struct General {
 
 impl General {
     pub fn new() -> Self {
-        Self {
-            build_dir: None
-        }
+        Self { build_dir: None }
     }
 
     pub fn get_build_dir(&self) -> String {
-        self.build_dir.as_ref().unwrap_or(&String::from("build")).clone()
+        self.build_dir
+            .as_ref()
+            .unwrap_or(&String::from("build"))
+            .clone()
     }
 
     /// Merges any populated data from `rhs` into attributes that do not already
@@ -293,7 +294,7 @@ pub struct Config {
     env: Option<HashMap<String, String>>,
     plugin: Option<Plugins>,
     protocol: Option<Protocols>,
-    #[serde(rename="vhdl-format")]
+    #[serde(rename = "vhdl-format")]
     vhdl_format: Option<VhdlFormat>,
     general: Option<General>,
 }
@@ -321,7 +322,7 @@ impl Config {
     }
 
     /// Adds the new information to the existing configuration to combine data.
-    /// 
+    ///
     /// Note that the struct calling this function is the root/base config file. If there is
     /// already existing data in `self`, then it has precedence over any incoming data from `rhs`.
     pub fn append(&mut self, rhs: Self) {
@@ -344,13 +345,13 @@ impl Config {
                         v.insert(key, val);
                     }
                 }
-            },
+            }
             None => self.env = rhs.env,
         }
         // combine '[vhdl-format]' table
         match &mut self.vhdl_format {
             Some(v) => v.merge(rhs.vhdl_format),
-            None => self.vhdl_format = rhs.vhdl_format
+            None => self.vhdl_format = rhs.vhdl_format,
         }
         // combine '[[plugin]]' array
         match &mut self.plugin {

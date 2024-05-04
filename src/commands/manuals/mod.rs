@@ -1,5 +1,6 @@
 pub mod build;
 pub mod config;
+pub mod download;
 pub mod env;
 pub mod get;
 pub mod init;
@@ -11,7 +12,6 @@ pub mod plan;
 pub mod probe;
 pub mod read;
 pub mod search;
+pub mod show;
 pub mod tree;
 pub mod uninstall;
-pub mod download;
-pub mod show;

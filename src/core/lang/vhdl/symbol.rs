@@ -279,18 +279,38 @@ impl Entity {
         if self.generics.0.len() > 0 {
             result.push('\n');
             if fmt.is_indented_interfaces() == true && fmt.get_tab_size() > 0 {
-                result.push_str(&format!("{:<width$}", " ", width = fmt.get_tab_size() as usize));
+                result.push_str(&format!(
+                    "{:<width$}",
+                    " ",
+                    width = fmt.get_tab_size() as usize
+                ));
             }
             result.push_str(&format!("{}", Keyword::Generic.to_color()));
-            result.push_str(&self.generics.0.to_interface_part_string(&fmt, interface_depth).to_string());
+            result.push_str(
+                &self
+                    .generics
+                    .0
+                    .to_interface_part_string(&fmt, interface_depth)
+                    .to_string(),
+            );
         }
         if self.ports.0.len() > 0 {
             result.push('\n');
             if fmt.is_indented_interfaces() == true && fmt.get_tab_size() > 0 {
-                result.push_str(&format!("{:<width$}", " ", width = fmt.get_tab_size() as usize));
+                result.push_str(&format!(
+                    "{:<width$}",
+                    " ",
+                    width = fmt.get_tab_size() as usize
+                ));
             }
             result.push_str(&format!("{}", Keyword::Port.to_color()));
-            result.push_str(&self.ports.0.to_interface_part_string(&fmt, interface_depth).to_string());
+            result.push_str(
+                &self
+                    .ports
+                    .0
+                    .to_interface_part_string(&fmt, interface_depth)
+                    .to_string(),
+            );
         }
         result.push_str(&format!(
             "\n{} {}{}\n",
@@ -318,7 +338,12 @@ impl Entity {
     }
 
     /// Generates VHDL instantiation code from the entity data.
-    pub fn into_instance(&self, inst: &Option<Identifier>, library: Option<Identifier>, fmt: &VhdlFormat) -> String {
+    pub fn into_instance(
+        &self,
+        inst: &Option<Identifier>,
+        library: Option<Identifier>,
+        fmt: &VhdlFormat,
+    ) -> String {
         let prefix = match library {
             Some(lib) => format!(
                 "{} {}{}",
@@ -343,9 +368,14 @@ impl Entity {
 
         result.push_str(&format!("{}", name.to_color()));
         if fmt.get_type_offset() > 0 {
-            result.push_str(&format!("{:<width$}", " ", width = fmt.get_type_offset() as usize));
+            result.push_str(&format!(
+                "{:<width$}",
+                " ",
+                width = fmt.get_type_offset() as usize
+            ));
         }
-        result.push_str(&format!("{} {}{}",             
+        result.push_str(&format!(
+            "{} {}{}",
             Delimiter::Colon.to_color(),
             prefix,
             color(&self.get_name().to_string(), ENTITY_NAME)
@@ -353,19 +383,39 @@ impl Entity {
         if self.generics.0.len() > 0 {
             result.push('\n');
             if fmt.is_indented_interfaces() == true && fmt.get_tab_size() > 0 {
-                result.push_str(&format!("{:<width$}", " ", width = fmt.get_tab_size() as usize));
+                result.push_str(&format!(
+                    "{:<width$}",
+                    " ",
+                    width = fmt.get_tab_size() as usize
+                ));
             }
             result.push_str(&(format!("{}", Keyword::Generic.to_color())));
-            result.push_str(&self.generics.0.to_instantiation_part(&fmt, mapping_depth).to_string())
+            result.push_str(
+                &self
+                    .generics
+                    .0
+                    .to_instantiation_part(&fmt, mapping_depth)
+                    .to_string(),
+            )
         }
         if self.ports.0.len() > 0 {
             // add extra spacing
             result.push('\n');
             if fmt.is_indented_interfaces() == true && fmt.get_tab_size() > 0 {
-                result.push_str(&format!("{:<width$}", " ", width = fmt.get_tab_size() as usize));
+                result.push_str(&format!(
+                    "{:<width$}",
+                    " ",
+                    width = fmt.get_tab_size() as usize
+                ));
             }
             result.push_str(&format!("{}", Keyword::Port.to_color()));
-            result.push_str(&self.ports.0.to_instantiation_part(&fmt, mapping_depth).to_string())
+            result.push_str(
+                &self
+                    .ports
+                    .0
+                    .to_instantiation_part(&fmt, mapping_depth)
+                    .to_string(),
+            )
         }
         result.push_str(&Delimiter::Terminator.to_string());
         result
@@ -2625,7 +2675,7 @@ begin
 end architecture sim;
         "#;
 
-        use crate::core::lang::vhdl::symbol::Identifier::Basic;
+        use crate::core::lang::vhdl::token::identifier::Identifier::Basic;
 
         let syms = VHDLParser::parse(VHDLTokenizer::from_source_code(&s).into_tokens());
         println!("{:?}", syms);

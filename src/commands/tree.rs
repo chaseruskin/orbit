@@ -1,16 +1,23 @@
+use super::plan::PlanError;
+use crate::commands::helps::tree;
 use crate::commands::plan::Plan;
 use crate::core::algo;
 use crate::core::algo::IpFileNode;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
+use crate::core::fileset;
 use crate::core::ip::Ip;
 use crate::core::lang::node::HdlNode;
 use crate::core::lang::node::IdentifierFormat;
+use crate::core::lang::node::SubUnitNode;
 use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbol::CompoundIdentifier;
 use crate::core::lang::vhdl::symbol::Entity;
+use crate::core::lang::vhdl::symbol::{VHDLParser, VHDLSymbol};
 use crate::core::lang::vhdl::token::Identifier;
 use crate::util::anyerror::Fault;
+use crate::util::graph::EdgeStatus;
+use crate::util::graphmap::GraphMap;
 use crate::OrbitResult;
 use clif::arg::{Flag, Optional};
 use clif::cmd::{Command, FromCli};
@@ -18,14 +25,7 @@ use clif::Cli;
 use clif::Error as CliError;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use crate::core::fileset;
-use crate::core::lang::node::SubUnitNode;
-use crate::core::lang::vhdl::symbol::{VHDLParser, VHDLSymbol};
-use crate::util::graph::EdgeStatus;
-use crate::util::graphmap::GraphMap;
 use std::fs;
-use crate::commands::helps::tree;
-use super::plan::PlanError;
 
 #[derive(Debug, PartialEq)]
 pub struct Tree {

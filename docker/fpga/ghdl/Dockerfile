@@ -15,7 +15,7 @@ RUN python -m pip install --upgrade pip
 COPY --from=0 / /
 
 # Stage 2: FPGA Toolchain layer (GHDL simulator)
-FROM cdotrus/ghdl:latest-ubuntu-22.04
+FROM cdotrus/ghdl-mcode:latest-ubuntu-22.04
 
 COPY --from=1 / /
 

@@ -1,10 +1,10 @@
 # Dock: Create a docker image containing tools and programs required
 #   to run FPGA toolflow (synthesis to bitstream).
 
-LABEL maintainer="Chase Ruskin"
-
-# Stage 0: Orbit layer
+# Stage 0: Orbit layer (1st step)
 FROM cdotrus/orbit:latest-ubuntu-18.04
+
+LABEL maintainer="Chase Ruskin"
 
 # Stage 1: Python layer
 FROM brunneis/python:3.8.0-ubuntu-18.04

@@ -80,7 +80,7 @@ jobs:
       run: brew install coreutils
 
     - name: Verify contents
-      run: grep $(/usr/local/opt/coreutils/libexec/gnubin/sha256sum orbit-${{ inputs.version }}-aarch64-macos.zip) orbit-${{ inputs.version }}-checksums.txt
+      run: grep $(sha256sum orbit-${{ inputs.version }}-aarch64-macos.zip) orbit-${{ inputs.version }}-checksums.txt
 
     - name: Install Orbit
       run: |

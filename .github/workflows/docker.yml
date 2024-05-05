@@ -93,7 +93,7 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:latest-ubuntu-18.04
           cache-to: type=inline
 
-  build-fpga-simulation-ghdl:
+  build-ghdl-groovy-guitar:
     needs: [build-orbit-latest-ubuntu-2204]
     runs-on: ubuntu-latest
     steps:
@@ -116,11 +116,11 @@ jobs:
           file: ./docker/fpga/ghdl/Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/fpga-simulation-ghdl:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/fpga-simulation-ghdl:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/fpga-simulation-ghdl:buildcache,mode=max
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/groovy-guitar:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/groovy-guitar:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/groovy-guitar:buildcache,mode=max
 
-  build-fpga-toolchain:
+  build-quartus-quiet-quartet:
     needs: [build-orbit-latest-ubuntu-1804]
     runs-on: ubuntu-latest
     steps:
@@ -143,11 +143,11 @@ jobs:
           file: ./docker/fpga/quartus/Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/fpga-toolchain:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/fpga-toolchain:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/fpga-toolchain:buildcache,mode=max
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/quiet-quartet:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/quiet-quartet:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/quiet-quartet:buildcache,mode=max
 
-  build-fpga-simulation-msim:
+  build-modelsim-melodic-marimba:
     needs: [build-orbit-latest-ubuntu-1804]
     runs-on: ubuntu-latest
     steps:
@@ -170,6 +170,6 @@ jobs:
           file: ./docker/fpga/modelsim/Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/fpga-simulation-msim:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/fpga-simulation-msim:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/fpga-simulation-msim:buildcache,mode=max
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/melodic-marimba:latest
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/melodic-marimba:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/melodic-marimba:buildcache,mode=max

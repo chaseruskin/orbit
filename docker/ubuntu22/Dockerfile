@@ -2,8 +2,8 @@
 FROM ubuntu:22.04
 
 # LABEL about the custom image
-LABEL maintainer="crus800"
-LABEL description="Orbit HDL package manager on Ubuntu 22.04."
+LABEL maintainer="Chase Ruskin"
+LABEL description="Minimum runtime dependencies with orbit on Ubuntu 22.04."
 
 RUN apt-get update && apt-get install -y \
     build-essential \

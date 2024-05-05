@@ -5,8 +5,8 @@ FROM ubuntu:18.04
 ARG REV
 
 # LABEL about the custom image
-LABEL maintainer="crus800"
-LABEL description="Orbit HDL package manager on Ubuntu 18.04."
+LABEL maintainer="Chase Ruskin"
+LABEL description="Minimum runtime dependencies with orbit on Ubuntu 18.04."
 
 RUN apt-get update && apt-get install -y \
     build-essential \

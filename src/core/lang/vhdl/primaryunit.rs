@@ -9,7 +9,7 @@ use toml_edit::InlineTable;
 
 pub type PrimaryUnitStore = HashMap<Identifier, PrimaryUnit>;
 
-#[derive(PartialEq, Hash, Eq)]
+#[derive(PartialEq, Hash, Eq, Debug)]
 pub enum PrimaryUnit {
     Entity(Unit),
     Package(Unit),
@@ -86,6 +86,7 @@ impl std::fmt::Display for PrimaryUnit {
     }
 }
 
+#[derive(Debug)]
 pub struct Unit {
     name: Identifier,
     symbol: Option<VHDLSymbol>,
@@ -160,7 +161,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
             for primary in units {
                 if let Some(dupe) = result.insert(primary.get_iden().clone(), primary) {
                     return Err(VhdlIdentifierError::DuplicateIdentifier(
-                        dupe.get_iden().clone(),
+                        dupe.get_iden().to_string(),
                         PathBuf::from(source_file),
                         result
                             .get(dupe.get_iden())
@@ -182,8 +183,8 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
 
 #[derive(Debug)]
 pub enum VhdlIdentifierError {
-    DuplicateIdentifier(Identifier, PathBuf, Position, PathBuf, Position),
-    DuplicateAcrossDirect(Identifier, IpSpec, PathBuf, Position),
+    DuplicateIdentifier(String, PathBuf, Position, PathBuf, Position),
+    DuplicateAcrossDirect(String, IpSpec, PathBuf, Position),
 }
 
 impl std::error::Error for VhdlIdentifierError {}

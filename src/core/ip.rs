@@ -5,11 +5,12 @@ use crate::util::anyerror::Fault;
 use std::path::PathBuf;
 
 use super::iparchive::IpArchive;
+use super::lang;
+use super::lang::LangIdentifier;
+use super::lang::LangUnit;
 use super::lockfile::LockFile;
 use super::lockfile::IP_LOCK_FILE;
 use super::manifest::FromFile;
-use crate::core::lang::vhdl::primaryunit::PrimaryUnit;
-use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lockfile::LockEntry;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::ORBIT_METADATA_FILE;
@@ -171,7 +172,7 @@ impl Ip {
             && self.get_root().join(".orbit-dynamic").exists() == true
     }
 
-    pub fn generate_dst_lut(&self) -> HashMap<Identifier, String> {
+    pub fn generate_dst_lut(&self) -> HashMap<LangIdentifier, String> {
         // compose the lut for symbol transformation
         let mut lut = HashMap::new();
 
@@ -271,7 +272,7 @@ impl Ip {
     pub fn collect_units(
         force: bool,
         dir: &PathBuf,
-    ) -> Result<HashMap<Identifier, PrimaryUnit>, Fault> {
+    ) -> Result<HashMap<LangIdentifier, LangUnit>, Fault> {
         // try to read from metadata file
         match (force == false) && Self::read_units_from_metadata(&dir).is_some() {
             // use precomputed result
@@ -279,12 +280,12 @@ impl Ip {
             false => {
                 // collect all files
                 let files = filesystem::gather_current_files(&dir, false);
-                Ok(primaryunit::collect_units(&files)?)
+                Ok(lang::collect_units(&files)?)
             }
         }
     }
 
-    pub fn read_units_from_metadata(dir: &PathBuf) -> Option<HashMap<Identifier, PrimaryUnit>> {
+    pub fn read_units_from_metadata(dir: &PathBuf) -> Option<HashMap<LangIdentifier, LangUnit>> {
         let meta_file: PathBuf = dir.join(ORBIT_METADATA_FILE);
         if Path::exists(&meta_file) == true {
             if let Ok(contents) = fs::read_to_string(&meta_file) {
@@ -292,8 +293,8 @@ impl Ip {
                     let entry = toml.get("ip")?.as_table()?.get("units")?.as_array()?;
                     let mut map = HashMap::new();
                     for unit in entry {
-                        let pdu = PrimaryUnit::from_toml(unit.as_inline_table()?)?;
-                        map.insert(pdu.get_iden().clone(), pdu);
+                        let lu = LangUnit::from_toml(unit.as_inline_table()?)?;
+                        map.insert(lu.get_name().clone(), lu);
                     }
                     Some(map)
                 } else {
@@ -319,7 +320,6 @@ impl Ip {
     }
 }
 
-use crate::core::lang::vhdl::primaryunit;
 use crate::core::pkgid::PkgPart;
 use crate::core::version::Version;
 use crate::util::filesystem;

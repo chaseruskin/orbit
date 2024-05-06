@@ -1,5 +1,6 @@
 use super::super::super::lexer::TrainCar;
 use crate::core::lang::vhdl::token::ToColor;
+use crate::core::lang::LangIdentifier;
 use crate::core::pkgid::PkgPart;
 use crate::util::strcmp;
 use colored::ColoredString;
@@ -25,6 +26,11 @@ pub enum Identifier {
 impl std::cmp::Eq for Identifier {}
 
 impl Identifier {
+
+    pub fn into_lang_id(self) -> LangIdentifier {
+        LangIdentifier::Vhdl(self)
+    }
+    
     /// Creates an empty basic identifier.
     pub fn new() -> Self {
         Self::Basic(String::new())

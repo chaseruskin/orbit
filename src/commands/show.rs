@@ -2,7 +2,7 @@ use crate::commands::helps::show;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::{Ip, PartialIpSpec};
-use crate::core::lang::vhdl::primaryunit::PrimaryUnit;
+use crate::core::lang::LangUnit;
 use crate::core::version;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
@@ -139,7 +139,7 @@ impl Show {
     }
 
     /// Creates a string for to display the primary design units for the particular ip.
-    fn format_units_table(table: Vec<PrimaryUnit>) -> String {
+    fn format_units_table(table: Vec<LangUnit>) -> String {
         let header = format!(
             "\
 {:<36}{:<14}{:<9}
@@ -149,11 +149,11 @@ impl Show {
         let mut body = String::new();
 
         let mut table = table;
-        table.sort_by(|a, b| a.get_iden().cmp(b.get_iden()));
+        table.sort_by(|a, b| a.get_name().cmp(&b.get_name()));
         for unit in table {
             body.push_str(&format!(
                 "{:<36}{:<14}{:<2}\n",
-                unit.get_iden().to_string(),
+                unit.get_name().to_string(),
                 unit.to_string(),
                 "y"
             ));

@@ -11,9 +11,9 @@ use crate::core::ip::Ip;
 use crate::core::ip::PartialIpSpec;
 use crate::core::lang::lexer::Position;
 use crate::core::lang::lexer::Token;
-use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lang::vhdl::token::VHDLToken;
 use crate::core::lang::vhdl::token::VHDLTokenizer;
+use crate::core::lang::LangIdentifier;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::sha256;
@@ -28,7 +28,7 @@ const TMP_DIR: &str = "tmp";
 
 #[derive(Debug, PartialEq)]
 pub struct Read {
-    unit: Identifier,
+    unit: LangIdentifier,
     ip: Option<PartialIpSpec>,
     location: bool,
     file: bool,
@@ -383,7 +383,7 @@ impl Read {
     /// the file to be read-only. If it is set to `None`, then it will open the
     /// file it is referencing (no copy).
     fn read(
-        unit: &Identifier,
+        unit: &LangIdentifier,
         ip: &Ip,
         dest: Option<&PathBuf>,
     ) -> Result<(PathBuf, Position), Fault> {
@@ -393,12 +393,12 @@ impl Read {
         // get the file data for the primary design unit
         let (source, position) = match units.get_key_value(unit) {
             Some((_, unit)) => (
-                unit.get_unit().get_source_code_file(),
-                unit.get_unit().get_symbol().unwrap().get_position().clone(),
+                unit.get_source_code_file(),
+                unit.get_symbol().unwrap().get_position().clone(),
             ),
             None => {
                 return Err(GetError::SuggestShow(
-                    GetError::EntityNotFound(
+                    GetError::UnitNotFound(
                         unit.clone(),
                         ip.get_man().get_ip().get_name().clone(),
                         ip.get_man().get_ip().get_version().clone(),

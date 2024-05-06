@@ -254,7 +254,7 @@ impl Get {
                     match result {
                         Some((src_file, dupe)) => {
                             return Err(VhdlIdentifierError::DuplicateIdentifier(
-                                dupe.get_name().clone(),
+                                dupe.get_name().to_string(),
                                 PathBuf::from(src_file),
                                 dupe.get_position().clone(),
                                 PathBuf::from(f),
@@ -278,8 +278,8 @@ impl Get {
                 }
                 Ok(entity)
             }
-            None => Err(GetError::EntityNotFound(
-                iden.clone(),
+            None => Err(GetError::UnitNotFound(
+                iden.clone().into_lang_id(),
                 man.get_ip().get_name().clone(),
                 man.get_ip().get_version().clone(),
             ))?,
@@ -287,9 +287,11 @@ impl Get {
     }
 }
 
+use crate::core::lang::LangIdentifier;
+
 #[derive(Debug)]
 pub enum GetError {
-    EntityNotFound(Identifier, PkgPart, Version),
+    UnitNotFound(LangIdentifier, PkgPart, Version),
     SuggestShow(String, PkgPart, Version),
 }
 
@@ -300,9 +302,9 @@ impl std::error::Error for GetError {}
 impl std::fmt::Display for GetError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::EntityNotFound(ent, pkg, ver) => {
+            Self::UnitNotFound(ent, pkg, ver) => {
                 let spec = IpSpec::new(pkg.clone(), ver.clone());
-                write!(f, "Failed to find entity '{}' in IP '{}'", ent, spec)
+                write!(f, "Failed to find unit '{}' in IP '{}'", ent, spec)
             }
             Self::SuggestShow(err, pkg, ver) => {
                 let spec = IpSpec::new(pkg.clone(), ver.clone());

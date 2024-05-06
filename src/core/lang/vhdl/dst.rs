@@ -1,5 +1,7 @@
 //! dynamic symbol transform
 
+use crate::core::lang::LangIdentifier;
+
 use super::super::lexer::{Position, Token};
 use super::token::{identifier::Identifier, VHDLToken};
 use std::collections::HashMap;
@@ -11,7 +13,7 @@ use std::collections::HashMap;
 /// new VHDL text.
 pub fn dyn_symbol_transform(
     tkns: &[Token<VHDLToken>],
-    lut: &HashMap<Identifier, String>,
+    lut: &HashMap<LangIdentifier, String>,
 ) -> String {
     let mut result = String::with_capacity(tkns.len());
     let mut tkns_iter = tkns.into_iter();
@@ -42,7 +44,7 @@ pub fn dyn_symbol_transform(
         // check if the identifier needs to be transformed
         let (diff, text) = match tkn.as_ref() {
             VHDLToken::Identifier(id) => {
-                match lut.get(id) {
+                match lut.get(&LangIdentifier::Vhdl(id.clone())) {
                     Some(ext) => {
                         let t = id.into_extension(ext).to_string();
                         // compute the extra space shifted for next token
@@ -89,11 +91,11 @@ mod test {
     fn simple() {
         let mut map = HashMap::new();
         map.insert(
-            Identifier::Basic(String::from("adder")),
+            LangIdentifier::Vhdl(Identifier::Basic(String::from("adder"))),
             "_sha12345".to_string(),
         );
         map.insert(
-            Identifier::Extended(String::from("adder_tb")),
+            LangIdentifier::Vhdl(Identifier::Extended(String::from("adder_tb"))),
             "_sha12345".to_string(),
         );
 

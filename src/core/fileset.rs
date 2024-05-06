@@ -240,6 +240,19 @@ pub fn is_vhdl(file: &str) -> bool {
     }
 }
 
+/// Checks if the `file` is a Verilog file (ending with .v, .verilog, .vlg, .vh, .vl).
+pub fn is_verilog(file: &str) -> bool {
+    if let Some((_, ending)) = file.rsplit_once('.') {
+        crate::util::strcmp::cmp_ascii_ignore_case(ending, "v")
+            || crate::util::strcmp::cmp_ascii_ignore_case(ending, "vl")
+            || crate::util::strcmp::cmp_ascii_ignore_case(ending, "verilog")
+            || crate::util::strcmp::cmp_ascii_ignore_case(ending, "vlg")
+            || crate::util::strcmp::cmp_ascii_ignore_case(ending, "vh")
+    } else {
+        false
+    }
+}
+
 /// Checks against file patterns if the file is an rtl file.
 pub fn is_rtl(file: &str) -> bool {
     let match_opts = glob::MatchOptions {

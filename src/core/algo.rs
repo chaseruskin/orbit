@@ -18,6 +18,9 @@ use crate::core::lockfile::{LockEntry, LockFile};
 use crate::core::manifest;
 use crate::core::version::AnyVersion;
 
+use super::lang::{Lang, LangIdentifier};
+use crate::core::lang::LangUnit;
+
 /// Constructs an ip-graph from a lockfile.
 pub fn graph_ip_from_lock(lock: &LockFile) -> Result<GraphMap<IpSpec, &LockEntry, ()>, Fault> {
     let mut graph = GraphMap::new();
@@ -55,7 +58,7 @@ fn graph_ip<'a>(
     );
     let mut processing = vec![(t, root)];
 
-    let mut iden_set: HashMap<Identifier, PrimaryUnit> = HashMap::new();
+    let mut iden_set: HashMap<LangIdentifier, LangUnit> = HashMap::new();
     // add root's identifiers
     Ip::collect_units(true, root.get_root())?
         .into_iter()
@@ -89,11 +92,10 @@ fn graph_ip<'a>(
                                     let dupe = iden_set.get(dupe.0).unwrap();
                                     if is_root == true {
                                         return Err(VhdlIdentifierError::DuplicateAcrossDirect(
-                                            dupe.get_iden().clone(),
+                                            dupe.get_name().to_string(),
                                             dep.get_man().get_ip().into_ip_spec(),
-                                            PathBuf::from(dupe.get_unit().get_source_code_file()),
-                                            dupe.get_unit()
-                                                .get_symbol()
+                                            PathBuf::from(dupe.get_source_code_file()),
+                                            dupe.get_symbol()
                                                 .unwrap()
                                                 .get_position()
                                                 .clone(),
@@ -157,7 +159,7 @@ pub fn compute_final_ip_graph<'a>(
     let mut rough_ip_graph = graph_ip(&target, &catalog)?;
 
     // keep track of list of neighbors that must perform dst and their lookup-tables to use after processing all direct impacts
-    let mut transforms = HashMap::<IpSpec, HashMap<Identifier, String>>::new();
+    let mut transforms = HashMap::<IpSpec, HashMap<LangIdentifier, String>>::new();
 
     // iterate through the graph to find all DST nodes to create their replacements
     {
@@ -311,7 +313,7 @@ impl<'a> IpNode<'a> {
     /// Note: this function can only be applied ip that are already installed to the cache.
     fn dynamic_symbol_transform(
         &mut self,
-        lut: &HashMap<Identifier, String>,
+        lut: &HashMap<LangIdentifier, String>,
         cache_path: &PathBuf,
     ) -> () {
         // create a temporary directory

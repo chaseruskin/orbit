@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
 
 # copy from action repository to the container
 COPY ../../orbit /usr/local/bin/orbit
-COPY ./docker/ubuntu22/entrypoint.sh /entrypoint.sh
+COPY ./docker/standalone/ubuntu22/entrypoint.sh /entrypoint.sh
 
 # Code file to execute when the docker container starts up (`entrypoint.sh`)
 ENTRYPOINT ["/entrypoint.sh"]

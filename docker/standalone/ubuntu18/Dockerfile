@@ -22,7 +22,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
     && cp "$HOME/.cargo/bin/orbit" "/usr/local/bin/orbit" \
     && $HOME/.cargo/bin/rustup self uninstall -y
 
-COPY ./docker/ubuntu18/entrypoint.sh /entrypoint.sh
+COPY ./docker/standalone/ubuntu18/entrypoint.sh /entrypoint.sh
 
 # Code file to execute when the docker container starts up (`entrypoint.sh`)
 ENTRYPOINT ["/entrypoint.sh"]

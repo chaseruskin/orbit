@@ -3,7 +3,7 @@
 use crate::core::lang::LangIdentifier;
 
 use super::super::lexer::{Position, Token};
-use super::token::{identifier::Identifier, VHDLToken};
+use super::token::VHDLToken;
 use std::collections::HashMap;
 
 /// Takes in a list of tokens, and a hashmap of the identifiers and their respective

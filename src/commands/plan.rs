@@ -10,6 +10,7 @@ use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbol::CompoundIdentifier;
 use crate::core::lang::vhdl::symbol::{Entity, PackageBody, VHDLParser, VHDLSymbol};
 use crate::core::lang::vhdl::token::Identifier;
+use crate::core::lang::LangMode;
 use crate::core::plugin::Plugin;
 use crate::core::plugin::PluginError;
 use crate::core::variable;
@@ -157,7 +158,7 @@ impl Command<Context> for Plan {
             None => &default_build_dir,
         };
 
-        self.run(target, b_dir, plugin, catalog)
+        self.run(target, b_dir, plugin, catalog, &c.get_lang_mode())
     }
 }
 
@@ -842,6 +843,7 @@ impl Plan {
         build_dir: &str,
         plug: Option<&Plugin>,
         catalog: Catalog,
+        mode: &LangMode,
     ) -> Result<(), Fault> {
         // create the build path to know where to begin storing files
         let mut build_path = target.get_root().clone();
@@ -853,7 +855,7 @@ impl Plan {
         }
 
         // build entire ip graph and resolve with dynamic symbol transformation
-        let ip_graph = algo::compute_final_ip_graph(&target, &catalog)?;
+        let ip_graph = algo::compute_final_ip_graph(&target, &catalog, mode)?;
 
         // only write lockfile and exit if flag is raised
         if self.only_lock == true {

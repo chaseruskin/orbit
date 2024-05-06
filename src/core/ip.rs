@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use super::iparchive::IpArchive;
 use super::lang;
 use super::lang::LangIdentifier;
+use super::lang::LangMode;
 use super::lang::LangUnit;
 use super::lockfile::LockFile;
 use super::lockfile::IP_LOCK_FILE;
@@ -172,7 +173,7 @@ impl Ip {
             && self.get_root().join(".orbit-dynamic").exists() == true
     }
 
-    pub fn generate_dst_lut(&self) -> HashMap<LangIdentifier, String> {
+    pub fn generate_dst_lut(&self, mode: &LangMode) -> HashMap<LangIdentifier, String> {
         // compose the lut for symbol transformation
         let mut lut = HashMap::new();
 
@@ -180,7 +181,7 @@ impl Ip {
             return lut;
         }
         // @todo: read units from metadata to speed up results
-        let units = Self::collect_units(true, self.get_root()).unwrap();
+        let units = Self::collect_units(true, self.get_root(), mode).unwrap();
         let checksum = Ip::read_checksum_proof(self.get_root()).unwrap();
 
         units.into_iter().for_each(|(key, _)| {
@@ -272,6 +273,7 @@ impl Ip {
     pub fn collect_units(
         force: bool,
         dir: &PathBuf,
+        lang_mode: &LangMode
     ) -> Result<HashMap<LangIdentifier, LangUnit>, Fault> {
         // try to read from metadata file
         match (force == false) && Self::read_units_from_metadata(&dir).is_some() {
@@ -280,7 +282,7 @@ impl Ip {
             false => {
                 // collect all files
                 let files = filesystem::gather_current_files(&dir, false);
-                Ok(lang::collect_units(&files)?)
+                Ok(lang::collect_units(&files, lang_mode)?)
             }
         }
     }

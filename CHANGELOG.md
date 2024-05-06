@@ -15,6 +15,14 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.12.0 - unreleased
+
+### Features
+- Adds `language-mode` setting under `[general]` for supporting VHDL, verilog, or mixed language projects
+
+### Changes
+- Renames docker images to more memorable names and defines clearer organization
+
 ## 0.11.0
 
 ### Changes

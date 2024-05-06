@@ -40,6 +40,8 @@ use toml_edit::Item;
 use toml_edit::Table;
 use toml_edit::Value;
 
+use super::lang::LangMode;
+
 impl ConfigDocument {
     pub fn print(&self) {
         println!("{}", self.document.to_string())
@@ -260,11 +262,13 @@ impl From<Configs> for Config {
 pub struct General {
     #[serde(rename = "build-dir")]
     build_dir: Option<String>,
+    #[serde(rename = "language-mode")]
+    lang_mode: Option<LangMode>,
 }
 
 impl General {
     pub fn new() -> Self {
-        Self { build_dir: None }
+        Self { build_dir: None, lang_mode: None, }
     }
 
     pub fn get_build_dir(&self) -> String {
@@ -272,6 +276,11 @@ impl General {
             .as_ref()
             .unwrap_or(&String::from("build"))
             .clone()
+    }
+
+    /// Access what language mode is enabled for the given configuration table.
+    pub fn get_lang_mode(&self) -> LangMode {
+        self.lang_mode.as_ref().unwrap_or(&LangMode::default()).clone()
     }
 
     /// Merges any populated data from `rhs` into attributes that do not already
@@ -282,8 +291,14 @@ impl General {
             if self.build_dir.is_some() == false {
                 self.build_dir = rhs.build_dir
             }
+            // no language mode defined so give it the value from `rhs`
+            if self.lang_mode.is_some() == false {
+                self.lang_mode = rhs.lang_mode
+            }
         }
     }
+
+
 }
 
 pub const CONFIG_FILE: &str = "config.toml";

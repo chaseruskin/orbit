@@ -7,6 +7,7 @@ pub mod parser;
 pub mod node;
 
 
+use serde_derive::Serialize;
 use vhdl::primaryunit::PrimaryUnit;
 use std::collections::HashMap;
 use crate::util::anyerror::Fault;
@@ -15,6 +16,40 @@ use toml_edit::InlineTable;
 use std::str::FromStr;
 
 type VhdlIdentifier = vhdl::token::Identifier;
+use serde_derive::Deserialize;
+
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
+pub enum LangMode {
+    #[serde(rename = "vhdl")]
+    Vhdl,
+    #[serde(rename = "verilog")]
+    Verilog,
+    #[serde(rename = "mixed")]
+    Mixed
+}
+
+impl LangMode {
+    pub fn supports_vhdl(&self) -> bool {
+        match self {
+            Self::Vhdl | Self::Mixed => true,
+            _ => false
+        }
+    }
+
+    pub fn supports_verilog(&self) -> bool {
+        match self {
+            Self::Verilog | Self::Mixed => true,
+            _ => false
+        }
+    }
+}
+
+impl Default for LangMode {
+    fn default() -> Self {
+        Self::Mixed
+    }
+}
+
 
 #[derive(Debug, PartialEq)]
 pub enum Lang {
@@ -85,7 +120,7 @@ impl LangUnit {
     pub fn get_symbol(&self) -> Option<&vhdl::symbol::VHDLSymbol> {
         match &self {
             Self::Vhdl(u) => u.get_unit().get_symbol(),
-            Self::Verilog(u) => None,
+            Self::Verilog(_u) => None,
         }
     }
   
@@ -163,17 +198,25 @@ impl Display for LangIdentifier {
     }
 }
 
-pub fn collect_units(files: &Vec<String>) -> Result<HashMap<LangIdentifier, LangUnit>, Fault> {
+pub fn collect_units(files: &Vec<String>, lang_mode: &LangMode) -> Result<HashMap<LangIdentifier, LangUnit>, Fault> {
     // collect the VHDL units
-    let vhdl_units = vhdl::primaryunit::collect_units(&files)?;
+    let vhdl_units = match lang_mode.supports_vhdl() {
+        true => vhdl::primaryunit::collect_units(&files)?,
+        false => HashMap::new(),
+    };
+
     // collect the Verilog units
-    let vlog_units = verilog::primaryunit::collect_units(&files)?;
+    let verilog_units = match lang_mode.supports_verilog() {
+        true => verilog::primaryunit::collect_units(&files)?,
+        false => HashMap::new(),
+    };
+   
     // merge the two results into a common struct
-    let mut results = HashMap::with_capacity(vhdl_units.len() + vlog_units.len());
+    let mut results = HashMap::with_capacity(vhdl_units.len() + verilog_units.len());
     for (k, v) in vhdl_units {
         results.insert(LangIdentifier::Vhdl(k), LangUnit::Vhdl(v));
     }
-    for (k, v) in vlog_units {
+    for (k, v) in verilog_units {
         results.insert(LangIdentifier::Verilog(k), LangUnit::Verilog(v));
     }
     

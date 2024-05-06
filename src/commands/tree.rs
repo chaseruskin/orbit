@@ -15,6 +15,7 @@ use crate::core::lang::vhdl::symbol::CompoundIdentifier;
 use crate::core::lang::vhdl::symbol::Entity;
 use crate::core::lang::vhdl::symbol::{VHDLParser, VHDLSymbol};
 use crate::core::lang::vhdl::token::Identifier;
+use crate::core::lang::LangMode;
 use crate::util::anyerror::Fault;
 use crate::util::graph::EdgeStatus;
 use crate::util::graphmap::GraphMap;
@@ -69,24 +70,24 @@ impl Command<Context> for Tree {
         // gather the catalog
         let catalog = Catalog::new().installations(c.get_cache_path())?;
 
-        self.run(ip, catalog)
+        self.run(ip, catalog, c.get_lang_mode())
     }
 }
 
 impl Tree {
-    fn run(&self, target: Ip, catalog: Catalog) -> Result<(), Fault> {
+    fn run(&self, target: Ip, catalog: Catalog, mode: LangMode) -> Result<(), Fault> {
         match &self.ip {
-            true => self.run_ip_graph(target, catalog),
-            false => self.run_hdl_graph(target, catalog),
+            true => self.run_ip_graph(target, catalog, &mode),
+            false => self.run_hdl_graph(target, catalog, &mode),
         }
     }
 
     /// Construct and print the graph at an HDL-entity level.
-    fn run_hdl_graph(&self, target: Ip, catalog: Catalog) -> Result<(), Fault> {
+    fn run_hdl_graph(&self, target: Ip, catalog: Catalog, mode: &LangMode) -> Result<(), Fault> {
         let working_lib = Identifier::new_working();
 
         // build graph again but with entire set of all files available from all depdendencies
-        let ip_graph = algo::compute_final_ip_graph(&target, &catalog)?;
+        let ip_graph = algo::compute_final_ip_graph(&target, &catalog, mode)?;
         let files = algo::build_ip_file_list(&ip_graph);
 
         // build the complete graph (using entities as the nodes)
@@ -197,8 +198,8 @@ impl Tree {
     }
 
     /// Construct and print the graph at an IP dependency level.
-    fn run_ip_graph(&self, target: Ip, catalog: Catalog) -> Result<(), Fault> {
-        let ip_graph = algo::compute_final_ip_graph(&target, &catalog)?;
+    fn run_ip_graph(&self, target: Ip, catalog: Catalog, mode: &LangMode) -> Result<(), Fault> {
+        let ip_graph = algo::compute_final_ip_graph(&target, &catalog, mode)?;
 
         let tree = ip_graph.get_graph().treeview(0);
         for twig in &tree {

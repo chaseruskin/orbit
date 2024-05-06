@@ -7,7 +7,7 @@ use std::hash::Hash;
 use tempfile::tempdir;
 
 use crate::core::lang::vhdl::dst;
-use crate::core::lang::vhdl::primaryunit::{PrimaryUnit, VhdlIdentifierError};
+use crate::core::lang::vhdl::primaryunit::VhdlIdentifierError;
 use crate::core::lang::vhdl::token::{Identifier, VHDLTokenizer};
 
 use crate::core::catalog::CacheSlot;
@@ -18,7 +18,7 @@ use crate::core::lockfile::{LockEntry, LockFile};
 use crate::core::manifest;
 use crate::core::version::AnyVersion;
 
-use super::lang::{Lang, LangIdentifier};
+use super::lang::{LangIdentifier, LangMode};
 use crate::core::lang::LangUnit;
 
 /// Constructs an ip-graph from a lockfile.
@@ -48,6 +48,7 @@ pub fn graph_ip_from_lock(lock: &LockFile) -> Result<GraphMap<IpSpec, &LockEntry
 fn graph_ip<'a>(
     root: &'a Ip,
     catalog: &'a Catalog<'a>,
+    mode: &LangMode
 ) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, Fault> {
     // create empty graph
     let mut g = GraphMap::new();
@@ -60,7 +61,7 @@ fn graph_ip<'a>(
 
     let mut iden_set: HashMap<LangIdentifier, LangUnit> = HashMap::new();
     // add root's identifiers
-    Ip::collect_units(true, root.get_root())?
+    Ip::collect_units(true, root.get_root(), mode)?
         .into_iter()
         .for_each(|(key, unit)| {
             iden_set.insert(key, unit);
@@ -85,7 +86,7 @@ fn graph_ip<'a>(
                                 existing_node.index()
                             } else {
                                 // check if identifiers are already taken in graph
-                                let units = Ip::collect_units(false, dep.get_root())?;
+                                let units = Ip::collect_units(false, dep.get_root(), mode)?;
                                 let dst = if let Some(dupe) =
                                     units.iter().find(|(key, _)| iden_set.contains_key(key))
                                 {
@@ -154,9 +155,10 @@ fn graph_ip<'a>(
 pub fn compute_final_ip_graph<'a>(
     target: &'a Ip,
     catalog: &'a Catalog<'a>,
+    mode: &LangMode,
 ) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, Fault> {
     // collect rough outline of ip graph
-    let mut rough_ip_graph = graph_ip(&target, &catalog)?;
+    let mut rough_ip_graph = graph_ip(&target, &catalog, mode)?;
 
     // keep track of list of neighbors that must perform dst and their lookup-tables to use after processing all direct impacts
     let mut transforms = HashMap::<IpSpec, HashMap<LangIdentifier, String>>::new();
@@ -167,7 +169,7 @@ pub fn compute_final_ip_graph<'a>(
         while let Some((key, node)) = graph_iter.next() {
             if node.as_ref().is_direct_conflict() == true {
                 // remember units if true that a transform occurred
-                let lut = node.as_ref().as_ip().generate_dst_lut();
+                let lut = node.as_ref().as_ip().generate_dst_lut(mode);
                 match transforms.get_mut(key) {
                     // update the hashmap for the key
                     Some(entry) => lut.into_iter().for_each(|pair| {
@@ -187,7 +189,7 @@ pub fn compute_final_ip_graph<'a>(
 
                 while let Some(i) = dependents.next() {
                     // remember units if true that a transform occurred on the direct conflict node
-                    let lut = node.as_ref().as_ip().generate_dst_lut();
+                    let lut = node.as_ref().as_ip().generate_dst_lut(mode);
                     // determine the neighboring node's ip spec
                     let neighbor_key = rough_ip_graph.get_key_by_index(i).unwrap();
 

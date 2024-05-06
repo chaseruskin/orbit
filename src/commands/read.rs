@@ -14,6 +14,7 @@ use crate::core::lang::lexer::Token;
 use crate::core::lang::vhdl::token::VHDLToken;
 use crate::core::lang::vhdl::token::VHDLTokenizer;
 use crate::core::lang::LangIdentifier;
+use crate::core::lang::LangMode;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::sha256;
@@ -101,7 +102,7 @@ impl Command<Context> for Read {
                         Some(i) => i,
                         None => panic!("version does not exist for this ip"),
                     };
-                    self.run(inst, dest.as_ref())
+                    self.run(inst, dest.as_ref(), &c.get_lang_mode())
                 }
                 None => {
                     // the ip does not exist
@@ -115,14 +116,14 @@ impl Command<Context> for Read {
                 None => return Err(AnyError(format!("Not within an existing ip")))?,
             };
 
-            self.run(&ip, dest.as_ref())
+            self.run(&ip, dest.as_ref(), &c.get_lang_mode())
         }
     }
 }
 
 impl Read {
-    fn run(&self, target: &Ip, dest: Option<&PathBuf>) -> Result<(), Fault> {
-        let (path, loc) = Self::read(&self.unit, &target, dest)?;
+    fn run(&self, target: &Ip, dest: Option<&PathBuf>, mode: &LangMode) -> Result<(), Fault> {
+        let (path, loc) = Self::read(&self.unit, &target, dest, mode)?;
 
         // dump the file contents of the source code to the console if there was no destination
         let print_to_console = dest.is_none();
@@ -386,9 +387,10 @@ impl Read {
         unit: &LangIdentifier,
         ip: &Ip,
         dest: Option<&PathBuf>,
+        mode: &LangMode,
     ) -> Result<(PathBuf, Position), Fault> {
         // find the unit
-        let units = Ip::collect_units(true, ip.get_root())?;
+        let units = Ip::collect_units(true, ip.get_root(), mode)?;
 
         // get the file data for the primary design unit
         let (source, position) = match units.get_key_value(unit) {

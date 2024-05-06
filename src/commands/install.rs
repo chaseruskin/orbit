@@ -281,7 +281,7 @@ impl Command<Context> for Install {
         // generate lock file if it is missing
         if target.lock_exists() == false {
             // build entire ip graph and resolve with dynamic symbol transformation
-            let ip_graph = algo::compute_final_ip_graph(&target, &catalog)?;
+            let ip_graph = algo::compute_final_ip_graph(&target, &catalog, &c.get_lang_mode())?;
             Plan::write_lockfile(&target, &ip_graph, true)?;
         }
         // install the top-level target

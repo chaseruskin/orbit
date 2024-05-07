@@ -8,7 +8,7 @@ use tempfile::tempdir;
 
 use crate::core::lang::vhdl::dst;
 use crate::core::lang::vhdl::primaryunit::VhdlIdentifierError;
-use crate::core::lang::vhdl::token::{Identifier, VHDLTokenizer};
+use crate::core::lang::vhdl::token::{Identifier, VhdlTokenizer};
 
 use crate::core::catalog::CacheSlot;
 use crate::core::catalog::Catalog;
@@ -341,7 +341,7 @@ impl<'a> IpNode<'a> {
                 // parse into tokens
                 let vhdl_path = PathBuf::from(file);
                 let code = std::fs::read_to_string(&vhdl_path).unwrap();
-                let tokens = VHDLTokenizer::from_source_code(&code).into_tokens_all();
+                let tokens = VhdlTokenizer::from_source_code(&code).into_tokens_all();
                 // perform DYNAMIC SYMBOL TRANSFORM
                 let transform = dst::dyn_symbol_transform(&tokens, &lut);
                 // rewrite the file

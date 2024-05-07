@@ -11,8 +11,8 @@ use crate::core::ip::Ip;
 use crate::core::ip::PartialIpSpec;
 use crate::core::lang::lexer::Position;
 use crate::core::lang::lexer::Token;
-use crate::core::lang::vhdl::token::VHDLToken;
-use crate::core::lang::vhdl::token::VHDLTokenizer;
+use crate::core::lang::vhdl::token::VhdlToken;
+use crate::core::lang::vhdl::token::VhdlTokenizer;
 use crate::core::lang::LangIdentifier;
 use crate::core::lang::LangMode;
 use crate::util::anyerror::AnyError;
@@ -34,9 +34,9 @@ pub struct Read {
     location: bool,
     file: bool,
     keep: bool,
-    start: Option<VHDLTokenizer>,
-    end: Option<VHDLTokenizer>,
-    comment: Option<VHDLTokenizer>,
+    start: Option<VhdlTokenizer>,
+    end: Option<VhdlTokenizer>,
+    comment: Option<VhdlTokenizer>,
     limit: Option<usize>,
 }
 
@@ -130,7 +130,7 @@ impl Read {
 
         // access the tokens
         let contents = fs::read_to_string(&path)?;
-        let src_tokens = VHDLTokenizer::from_source_code(&contents).into_tokens_all();
+        let src_tokens = VhdlTokenizer::from_source_code(&contents).into_tokens_all();
 
         // perform a search on tokens
         let (start, end) = {
@@ -139,7 +139,7 @@ impl Read {
                 Some(tokenizer) => tokenizer
                     .as_tokens_all()
                     .into_iter()
-                    .filter(|t| t.as_type() != &VHDLToken::EOF)
+                    .filter(|t| t.as_type() != &VhdlToken::EOF)
                     .collect(),
                 None => Vec::new(),
             };
@@ -147,7 +147,7 @@ impl Read {
                 Some(tokenizer) => tokenizer
                     .as_tokens_all()
                     .into_iter()
-                    .filter(|t| t.as_type() != &VHDLToken::EOF)
+                    .filter(|t| t.as_type() != &VhdlToken::EOF)
                     .collect(),
                 None => Vec::new(),
             };
@@ -155,7 +155,7 @@ impl Read {
                 Some(tokenizer) => tokenizer
                     .as_tokens_all()
                     .into_iter()
-                    .filter(|t| t.as_type() != &VHDLToken::EOF)
+                    .filter(|t| t.as_type() != &VhdlToken::EOF)
                     .collect(),
                 None => Vec::new(),
             };
@@ -323,19 +323,19 @@ impl Read {
         Ok(())
     }
 
-    fn check_tokens_eq(source: &VHDLToken, sub: &VHDLToken) -> bool {
+    fn check_tokens_eq(source: &VhdlToken, sub: &VhdlToken) -> bool {
         match sub {
             // skip EOF token
-            &VHDLToken::EOF => true,
+            &VhdlToken::EOF => true,
             // only match on the fact that they are comments
-            VHDLToken::Comment(_) => source.as_comment().is_some(),
+            VhdlToken::Comment(_) => source.as_comment().is_some(),
             _ => source == sub,
         }
     }
 
     fn find_location(
-        src_tokens: &Vec<Token<VHDLToken>>,
-        find_tokens: &Vec<&Token<VHDLToken>>,
+        src_tokens: &Vec<Token<VhdlToken>>,
+        find_tokens: &Vec<&Token<VhdlToken>>,
     ) -> Option<Position> {
         let mut tracking: bool;
         let mut src_tokens_iter = src_tokens.iter();
@@ -352,7 +352,7 @@ impl Read {
                 tracking = true;
                 while let Some(find_t) = find_tokens_iter.next() {
                     // skip the EOF token
-                    if find_t.as_type() == &VHDLToken::EOF {
+                    if find_t.as_type() == &VhdlToken::EOF {
                         continue;
                     }
                     if let Some(source_t) = src_tokens_iter.next() {

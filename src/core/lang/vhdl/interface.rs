@@ -106,7 +106,7 @@ impl<'a> std::fmt::Display for Architectures<'a> {
 // @note: identifier_list ::= identifier { , identifier }
 
 use super::super::lexer;
-use crate::core::lang::vhdl::token::{delimiter::Delimiter, keyword::Keyword, VHDLToken};
+use crate::core::lang::vhdl::token::{delimiter::Delimiter, keyword::Keyword, VhdlToken};
 use std::fmt::Display;
 use std::iter::Peekable;
 
@@ -116,7 +116,7 @@ pub struct IdentifierList(Vec<Identifier>);
 impl IdentifierList {
     fn from_tokens<I>(tokens: &mut Peekable<I>) -> Self
     where
-        I: Iterator<Item = lexer::Token<VHDLToken>>,
+        I: Iterator<Item = lexer::Token<VhdlToken>>,
     {
         let mut inner = Vec::new();
         // accept first identifier
@@ -154,12 +154,12 @@ impl IdentifierList {
 }
 
 #[derive(Debug, PartialEq)]
-struct SubtypeIndication(Vec<VHDLToken>);
+struct SubtypeIndication(Vec<VhdlToken>);
 
 impl SubtypeIndication {
     fn from_tokens<I>(tokens: &mut Peekable<I>) -> Self
     where
-        I: Iterator<Item = lexer::Token<VHDLToken>>,
+        I: Iterator<Item = lexer::Token<VhdlToken>>,
     {
         let mut inner = Vec::new();
         while let Some(tkn) = tokens.peek() {
@@ -186,12 +186,12 @@ impl Serialize for SubtypeIndication {
 }
 
 #[derive(Debug, PartialEq)]
-struct StaticExpression(Vec<VHDLToken>);
+struct StaticExpression(Vec<VhdlToken>);
 
 impl StaticExpression {
     fn from_tokens<I>(tokens: &mut Peekable<I>) -> Self
     where
-        I: Iterator<Item = lexer::Token<VHDLToken>>,
+        I: Iterator<Item = lexer::Token<VhdlToken>>,
     {
         // take remanining tokens
         Self(tokens.map(|f| f.take()).collect())
@@ -287,7 +287,7 @@ pub struct InterfaceDeclaration {
     expr: Expr,
 }
 
-fn tokens_to_string(tokens: &Vec<VHDLToken>) -> ColorVec {
+fn tokens_to_string(tokens: &Vec<VhdlToken>) -> ColorVec {
     let mut result = ColorVec::new();
     // determine which delimiters to not add trailing spaces to
     let is_spaced_token = |d: &Delimiter| match d {
@@ -312,12 +312,12 @@ fn tokens_to_string(tokens: &Vec<VHDLToken>) -> ColorVec {
     while let Some(t) = iter.next() {
         // determine if to add trailing space after the token
         let trailing_space = match t {
-            VHDLToken::Delimiter(d) => is_spaced_token(d),
+            VhdlToken::Delimiter(d) => is_spaced_token(d),
             _ => {
                 // make sure the next token is not a tight token (no-spaced)
                 if let Some(m) = iter.peek() {
                     match m {
-                        VHDLToken::Delimiter(d) => is_spaced_token(d),
+                        VhdlToken::Delimiter(d) => is_spaced_token(d),
                         _ => true,
                     }
                 } else {
@@ -451,7 +451,7 @@ impl InterfaceDeclarations {
     }
 
     /// Creates a set of `InterfaceDeclaration`s from VHDL Tokens.
-    pub fn from_double_listed_tokens(tokens: Vec<Vec<lexer::Token<VHDLToken>>>) -> Self {
+    pub fn from_double_listed_tokens(tokens: Vec<Vec<lexer::Token<VhdlToken>>>) -> Self {
         let mut inner = Vec::new();
         for statement in tokens {
             match Self::from_tokens(&mut statement.into_iter().peekable()) {
@@ -465,7 +465,7 @@ impl InterfaceDeclarations {
     /// Parses VHDL tokens into a series of `Interface` structs.
     pub fn from_tokens<I>(tokens: &mut Peekable<I>) -> Option<Self>
     where
-        I: Iterator<Item = lexer::Token<VHDLToken>>,
+        I: Iterator<Item = lexer::Token<VhdlToken>>,
     {
         // check if optional 'signal'/'constant'/'file'? keyword is present
         let token = tokens.peek()?;

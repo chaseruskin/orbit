@@ -59,7 +59,7 @@ impl FromCli for Get {
 use crate::core::lang::parser::Parse;
 use crate::core::lang::vhdl;
 use crate::core::lang::vhdl::symbols;
-use crate::core::lang::vhdl::token::VHDLTokenizer;
+use crate::core::lang::vhdl::token::VhdlTokenizer;
 use std::env;
 
 impl Command<Context> for Get {
@@ -214,7 +214,7 @@ impl Get {
 
                 // pull all architectures
                 let units: Vec<Symbol<symbols::VhdlSymbol>> = vhdl::symbols::VHDLParser::parse(
-                    VHDLTokenizer::from_source_code(&text).into_tokens(),
+                    VhdlTokenizer::from_source_code(&text).into_tokens(),
                 )
                 .into_iter()
                 .filter_map(|f| {

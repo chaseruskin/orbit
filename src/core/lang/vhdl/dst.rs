@@ -3,7 +3,7 @@
 use crate::core::lang::LangIdentifier;
 
 use super::super::lexer::{Position, Token};
-use super::token::VHDLToken;
+use super::token::VhdlToken;
 use std::collections::HashMap;
 
 /// Takes in a list of tokens, and a hashmap of the identifiers and their respective
@@ -12,7 +12,7 @@ use std::collections::HashMap;
 /// Performs a swap on the identifiers (keys) and appends their extensions (values) to write to
 /// new VHDL text.
 pub fn dyn_symbol_transform(
-    tkns: &[Token<VHDLToken>],
+    tkns: &[Token<VhdlToken>],
     lut: &HashMap<LangIdentifier, String>,
 ) -> String {
     let mut result = String::with_capacity(tkns.len());
@@ -43,7 +43,7 @@ pub fn dyn_symbol_transform(
         transform_diff = 0;
         // check if the identifier needs to be transformed
         let (diff, text) = match tkn.as_ref() {
-            VHDLToken::Identifier(id) => {
+            VhdlToken::Identifier(id) => {
                 match lut.get(&LangIdentifier::Vhdl(id.clone())) {
                     Some(ext) => {
                         let t = id.into_extension(ext).to_string();
@@ -57,7 +57,7 @@ pub fn dyn_symbol_transform(
                     }
                 }
             }
-            VHDLToken::Comment(c) => {
+            VhdlToken::Comment(c) => {
                 let tmp_pos = c.ending_position();
                 // needed to be set to balance for next token
                 comment_lines = tmp_pos.line() - 1;
@@ -84,7 +84,7 @@ mod test {
     use super::*;
     use crate::core::lang::vhdl::{
         dst::dyn_symbol_transform,
-        token::{identifier::Identifier, tokenizer::VHDLTokenizer},
+        token::{identifier::Identifier, tokenizer::VhdlTokenizer},
     };
 
     #[test]
@@ -134,7 +134,7 @@ entity adder is end entity  adder;
 
 entity \adder_tb\ is generic (WIDTH : positive := 2); end entity \adder_tb\;
         "#;
-        let tokens = VHDLTokenizer::from_source_code(&code).into_tokens_all();
+        let tokens = VhdlTokenizer::from_source_code(&code).into_tokens_all();
         let transform = dyn_symbol_transform(&tokens, &map);
         let result: &str = r#"
 --! module: adder (name here is untouched)

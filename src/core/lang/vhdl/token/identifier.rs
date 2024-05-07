@@ -14,7 +14,7 @@ use std::hash::Hasher;
 use std::str::FromStr;
 
 use crate::core::lang::vhdl::token::char_set;
-use crate::core::lang::vhdl::token::VHDLToken;
+use crate::core::lang::vhdl::token::VhdlToken;
 
 #[derive(Debug, Clone, PartialOrd, Ord, Serialize)]
 #[serde(untagged)]
@@ -124,7 +124,7 @@ impl FromStr for Identifier {
             Some(c) => Ok(match c {
                 '\\' => {
                     let result = Self::Extended(
-                        VHDLToken::consume_literal(&mut chars, &char_set::BACKSLASH).unwrap(),
+                        VhdlToken::consume_literal(&mut chars, &char_set::BACKSLASH).unwrap(),
                     );
                     // gather remaining characters
                     let mut rem = String::new();
@@ -140,7 +140,7 @@ impl FromStr for Identifier {
                     // verify the first character was a letter
                     match char_set::is_letter(&c) {
                         true => Self::Basic(
-                            VHDLToken::consume_value_pattern(
+                            VhdlToken::consume_value_pattern(
                                 &mut chars,
                                 Some(c),
                                 char_set::is_letter_or_digit,

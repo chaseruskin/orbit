@@ -32,6 +32,6 @@ impl<T> Symbol<T> {
 
 #[derive(Debug, PartialEq, Error)]
 pub enum ParseError {
-    #[error("file {0}: {1}")]
+    #[error("Failed to parse file \"{0}\": {1}")]
     SourceCodeError(String, String)
 }

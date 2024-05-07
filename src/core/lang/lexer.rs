@@ -26,6 +26,11 @@ impl<T> Token<T> {
         self.ttype
     }
 
+    /// Decouples the position and token into their separate structs.
+    pub fn decouple(self) -> (Position, T) {
+        (self.position, self.ttype)
+    }
+
     /// Returns the position in the file where the token was captured.
     pub fn locate(&self) -> &Position {
         &self.position

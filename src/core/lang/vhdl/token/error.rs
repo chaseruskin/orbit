@@ -10,6 +10,6 @@ pub enum VhdlError {
     MissingAndEmpty(char),
     #[error("expecting closing {0} but got {1}")]
     MissingClosingAndGot(char, char),
-    #[error("something is not right")]
+    #[error("invalid source code")]
     Vague
 }

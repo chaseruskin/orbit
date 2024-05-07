@@ -127,20 +127,20 @@ pub mod char_set {
 
 use super::super::super::lexer::{Token, TokenError};
 
-use super::super::token::VHDLToken;
+use super::super::token::VhdlToken;
 use super::error::VhdlError;
 use crate::core::lang::lexer::Tokenize;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq)]
-struct VHDLElement(Result<Token<VHDLToken>, TokenError<VhdlError>>);
+struct VHDLElement(Result<Token<VhdlToken>, TokenError<VhdlError>>);
 
 #[derive(PartialEq)]
-pub struct VHDLTokenizer {
+pub struct VhdlTokenizer {
     tokens: Vec<VHDLElement>,
 }
 
-impl FromStr for VHDLTokenizer {
+impl FromStr for VhdlTokenizer {
     type Err = VhdlError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -148,7 +148,7 @@ impl FromStr for VHDLTokenizer {
     }
 }
 
-impl VHDLTokenizer {
+impl VhdlTokenizer {
     /// Creates a new `VHDLTokenizer` struct.
     pub fn new() -> Self {
         Self { tokens: Vec::new() }
@@ -172,12 +172,12 @@ impl VHDLTokenizer {
     ///
     /// This `fn` also filters out `Comment`s. To include `Comment` tokens, see
     /// `into_tokens_all`.
-    pub fn into_tokens(self) -> Vec<Token<VHDLToken>> {
+    pub fn into_tokens(self) -> Vec<Token<VhdlToken>> {
         self.tokens
             .into_iter()
             .filter_map(|f| match f.0 {
                 Ok(t) => match t.as_ref() {
-                    VHDLToken::Comment(_) => None,
+                    VhdlToken::Comment(_) => None,
                     _ => Some(t),
                 },
                 Err(_) => None,
@@ -187,7 +187,7 @@ impl VHDLTokenizer {
 
     /// Transforms the list of results into a list of tokens, silently skipping over
     /// errors.
-    pub fn into_tokens_all(self) -> Vec<Token<VHDLToken>> {
+    pub fn into_tokens_all(self) -> Vec<Token<VhdlToken>> {
         self.tokens
             .into_iter()
             .filter_map(|f| match f.0 {
@@ -199,7 +199,7 @@ impl VHDLTokenizer {
 
     /// Transforms the list of results into a list of tokens, silently skipping over
     /// errors.
-    pub fn as_tokens_all(&self) -> Vec<&Token<VHDLToken>> {
+    pub fn as_tokens_all(&self) -> Vec<&Token<VhdlToken>> {
         self.tokens
             .iter()
             .filter_map(|f| match &f.0 {
@@ -210,7 +210,7 @@ impl VHDLTokenizer {
     }
 }
 
-impl std::fmt::Debug for VHDLTokenizer {
+impl std::fmt::Debug for VhdlTokenizer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for tk in &self.tokens {
             write!(
@@ -226,8 +226,8 @@ impl std::fmt::Debug for VHDLTokenizer {
 
 use crate::core::lang::lexer::TrainCar;
 
-impl Tokenize for VHDLTokenizer {
-    type TokenType = VHDLToken;
+impl Tokenize for VhdlTokenizer {
+    type TokenType = VhdlToken;
     type Err = VhdlError;
 
     fn tokenize(s: &str) -> Vec<Result<Token<Self::TokenType>, TokenError<Self::Err>>> {
@@ -315,7 +315,7 @@ impl Tokenize for VHDLTokenizer {
         // push final EOF token
         let mut tk_loc = train.locate().clone();
         tk_loc.next_col();
-        tokens.push(Ok(Token::new(VHDLToken::EOF, tk_loc)));
+        tokens.push(Ok(Token::new(VhdlToken::EOF, tk_loc)));
         tokens
     }
 }

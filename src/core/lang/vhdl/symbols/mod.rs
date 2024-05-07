@@ -3,6 +3,7 @@ use std::fmt::Display;
 use std::hash::Hash;
 
 use serde_derive::Serialize;
+use std::str::FromStr;
 
 use self::architecture::Architecture;
 use self::configuration::Configuration;
@@ -395,7 +396,7 @@ impl Entity {
     /// the END closing statement.
     fn from_tokens<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Self, VhdlError>
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         // take entity name
         let entity_name = tokens.next().take().unwrap().take();
@@ -404,16 +405,16 @@ impl Entity {
         let generics = generics
             .into_iter()
             .map(|f| f.0)
-            .collect::<Vec<Vec<Token<VHDLToken>>>>();
+            .collect::<Vec<Vec<Token<VhdlToken>>>>();
 
         let ports = ports
             .into_iter()
             .map(|f| f.0)
-            .collect::<Vec<Vec<Token<VHDLToken>>>>();
+            .collect::<Vec<Vec<Token<VhdlToken>>>>();
 
         Ok(Entity {
             name: match entity_name {
-                VHDLToken::Identifier(id) => id,
+                VhdlToken::Identifier(id) => id,
                 // expecting identifier
                 _ => return Err(VhdlError::Vague),
             },
@@ -575,12 +576,12 @@ pub struct VHDLParser {
     symbols: Vec<Symbol<VhdlSymbol>>,
 }
 
-impl Parse<VHDLToken> for VHDLParser {
+impl Parse<VhdlToken> for VHDLParser {
     type SymbolType = VhdlSymbol;
     type SymbolError = VhdlError;
 
     fn parse(
-        tokens: Vec<Token<VHDLToken>>,
+        tokens: Vec<Token<VhdlToken>>,
     ) -> Vec<Result<Symbol<Self::SymbolType>, Self::SymbolError>> {
         let mut symbols = Vec::new();
         let mut tokens = tokens.into_iter().peekable();
@@ -653,7 +654,7 @@ impl Parse<VHDLToken> for VHDLParser {
 impl VHDLParser {
     /// Quietly ignores any errors and returns the list of symbols.
     pub fn read_lazy(s: &str) -> Self {
-        let symbols = VHDLParser::parse(VHDLTokenizer::from_source_code(&s).into_tokens());
+        let symbols = VHDLParser::parse(VhdlTokenizer::from_source_code(&s).into_tokens());
         Self {
             symbols: symbols
                 .into_iter()
@@ -662,9 +663,9 @@ impl VHDLParser {
         }
     }
 
-    /// Reports an error if one is discovered in the list of symbols.
+    /// Reports an error if one is discovered in the list of symbols or in the tokenizing.
     pub fn read(s: &str) -> Result<Self, VhdlError> {
-        let symbols = VHDLParser::parse(VHDLTokenizer::from_source_code(&s).into_tokens());
+        let symbols = VHDLParser::parse(VhdlTokenizer::from_str(&s)?.into_tokens());
         let result: Result<Vec<Symbol<VhdlSymbol>>, VhdlError> = symbols.into_iter().collect();
         Ok(Self {
             symbols: result?
@@ -683,7 +684,7 @@ use super::highlight::*;
 /// A `Statement` is a vector of tokens, similiar to how a `String` is a vector
 /// of characters.
 #[derive(PartialEq, Clone)]
-struct Statement(Vec<Token<VHDLToken>>, IdentifierList);
+struct Statement(Vec<Token<VhdlToken>>, IdentifierList);
 
 impl Statement {
     /// References the mutable list of resource references.
@@ -692,7 +693,7 @@ impl Statement {
     }
 
     /// References the mutable list of vhdl tokens.
-    fn get_tokens_mut(&mut self) -> &mut Vec<Token<VHDLToken>> {
+    fn get_tokens_mut(&mut self) -> &mut Vec<Token<VhdlToken>> {
         &mut self.0
     }
 }
@@ -708,12 +709,12 @@ impl std::fmt::Display for Statement {
         let mut iter = self.0.iter().peekable();
         while let Some(t) = iter.next() {
             let trailing_space = match t.as_ref() {
-                VHDLToken::Delimiter(d) => is_spaced_token(d),
+                VhdlToken::Delimiter(d) => is_spaced_token(d),
                 _ => {
                     // make sure the next token is not a tight token (no-spaced)
                     if let Some(m) = iter.peek() {
                         match m.as_ref() {
-                            VHDLToken::Delimiter(d) => is_spaced_token(d),
+                            VhdlToken::Delimiter(d) => is_spaced_token(d),
                             _ => true,
                         }
                     } else {
@@ -745,7 +746,7 @@ impl Statement {
     }
 
     /// References the tokens as VHDLTokens.
-    fn as_types(&self) -> Vec<&VHDLToken> {
+    fn as_types(&self) -> Vec<&VhdlToken> {
         self.0.iter().map(|f| f.as_type()).collect()
     }
 
@@ -755,7 +756,7 @@ impl Statement {
     }
 
     /// References the list of tokens.
-    fn get_tokens(&self) -> &Vec<Token<VHDLToken>> {
+    fn get_tokens(&self) -> &Vec<Token<VhdlToken>> {
         &self.0
     }
 
@@ -770,7 +771,7 @@ impl VhdlSymbol {
     /// the END closing statement.
     fn parse_entity<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<VhdlSymbol, VhdlError>
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         Ok(VhdlSymbol::Entity(Entity::from_tokens(tokens, pos)?))
     }
@@ -781,7 +782,7 @@ impl VhdlSymbol {
     /// is the identifier for the package name.
     fn parse_package_declaration<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<VhdlSymbol, VhdlError>
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         let mut refs = IdentifierList::new();
         // take package name
@@ -813,7 +814,7 @@ impl VhdlSymbol {
             // construct a new package
             return Ok(VhdlSymbol::Package(Package::new(
             match pack_name {
-                    VHDLToken::Identifier(id) => id,
+                    VhdlToken::Identifier(id) => id,
                     _ => {
                         // expecting identifier
                         return Err(VhdlError::Vague)
@@ -835,7 +836,7 @@ impl VhdlSymbol {
         {
             // take the GENERIC keyword token
             tokens.next();
-            Self::parse_interface_list(tokens)
+            Self::parse_interface_list(tokens)?
         } else {
             Vec::new()
         };
@@ -848,7 +849,7 @@ impl VhdlSymbol {
         let generics = generics
             .into_iter()
             .map(|f| f.0)
-            .collect::<Vec<Vec<Token<VHDLToken>>>>();
+            .collect::<Vec<Vec<Token<VhdlToken>>>>();
 
         // compose the declarative items
         while let Some(t) = tokens.peek() {
@@ -881,7 +882,7 @@ impl VhdlSymbol {
         // println!("*--- unit {}", pack_name);
         Ok(VhdlSymbol::Package(Package::new(
             match pack_name {
-                    VHDLToken::Identifier(id) => id,
+                    VhdlToken::Identifier(id) => id,
                     _ => {
                         // expecting identifier
                         return Err(VhdlError::Vague)
@@ -897,7 +898,7 @@ impl VhdlSymbol {
     /// Assumes the next token to consume is the context's identifier.
     fn parse_context<I>(tokens: &mut Peekable<I>, pos: Position) -> ContextUsage
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         // grab the identifier name
         let iden = tokens.next().unwrap().take().take_identifier().unwrap();
@@ -910,7 +911,7 @@ impl VhdlSymbol {
             })
         // parse statement
         } else {
-            let mut subtokens = vec![Token::new(VHDLToken::Identifier(iden), Position::new())];
+            let mut subtokens = vec![Token::new(VhdlToken::Identifier(iden), Position::new())];
             while let Some(t) = tokens.next() {
                 if t.as_ref().check_delimiter(&Delimiter::Terminator) == true {
                     subtokens.push(t);
@@ -928,7 +929,7 @@ impl VhdlSymbol {
     /// Assumes the next token to consume is the keyword `IS`. Stops at the `end`.
     fn parse_context_declaration<I>(tokens: &mut Peekable<I>) -> IdentifierList
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         let mut result = IdentifierList::new();
 
@@ -955,7 +956,7 @@ impl VhdlSymbol {
     /// @dead_code
     fn compose_name<I>(tokens: &mut Peekable<I>) -> SelectedName
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         let mut selected_name = Vec::new();
         // take first token as identifier
@@ -992,7 +993,7 @@ impl VhdlSymbol {
     /// is not reached outside of the body.
     fn parse_package_body<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<PackageBody, VhdlError>
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         // take the 'body' keyword
         tokens.next();
@@ -1014,7 +1015,7 @@ impl VhdlSymbol {
         let (_, refs) = VhdlSymbol::parse_body(tokens, &Self::is_primary_ending);
         Ok(PackageBody::new(
             match pack_name {
-                VHDLToken::Identifier(id) => id,
+                VhdlToken::Identifier(id) => id,
                 _ => {
                     // panic!("expected an identifier")
                     return Err(VhdlError::Vague)
@@ -1078,11 +1079,11 @@ impl VhdlSymbol {
     /// Transforms a single statement into a list of tokens.
     ///
     /// Appends a terminator `;` to the end of the token list.
-    fn statement_to_tokens(clause: Statement) -> Vec<Token<VHDLToken>> {
+    fn statement_to_tokens(clause: Statement) -> Vec<Token<VhdlToken>> {
         let mut tokens = clause.0;
         // adds terminating delimiter ';'
         tokens.push(Token::new(
-            VHDLToken::Delimiter(Delimiter::Terminator),
+            VhdlToken::Delimiter(Delimiter::Terminator),
             Position::new(),
         ));
         tokens
@@ -1094,7 +1095,7 @@ impl VhdlSymbol {
     /// indentifier that could be a dependency, if the first dependency detects is not a compound identifier with that matching suffix.
     fn update_deps_from_statement<I>(deps: &mut IdentifierList, tokens: &mut Peekable<I>) -> ()
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         // steal the '(' if it is next to prevent performing sensitivity list
         while let Some(t) = tokens.peek() {
@@ -1121,7 +1122,7 @@ impl VhdlSymbol {
         };
         // check what is instantiated
         match tokens.peek()?.as_type() {
-            VHDLToken::Identifier(_) => {
+            VhdlToken::Identifier(_) => {
                 let mut deps = IdentifierList::new();
                 // take entity identifier
                 deps.append(&mut Self::compose_name(&mut tokens).into_compound_identifiers(true));
@@ -1129,14 +1130,14 @@ impl VhdlSymbol {
                 Self::update_deps_from_statement(&mut deps, &mut tokens);
                 Some(deps)
             }
-            VHDLToken::Keyword(kw) => {
+            VhdlToken::Keyword(kw) => {
                 if kw == &Keyword::Component
                     || kw == &Keyword::Entity
                     || kw == &Keyword::Configuration
                 {
                     tokens.next();
                     match tokens.peek()?.as_type() {
-                        VHDLToken::Identifier(_) => {
+                        VhdlToken::Identifier(_) => {
                             let mut deps = IdentifierList::new();
                             // take entity identifier
                             deps.append(
@@ -1159,16 +1160,16 @@ impl VhdlSymbol {
 
     fn parse_configuration<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<VhdlSymbol, VhdlError>
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         let config_name = match tokens.next().take().unwrap().take() {
-            VHDLToken::Identifier(id) => id,
+            VhdlToken::Identifier(id) => id,
             _ => {
                 // panic!("expected an identifier")
                 return Err(VhdlError::Vague)
             },
         };
-        let entity_name = VhdlSymbol::parse_owner_design_unit(tokens);
+        let entity_name = VhdlSymbol::parse_owner_design_unit(tokens)?;
 
         // force taking the `is` keyword
         if tokens.next().unwrap().as_type().check_keyword(&Keyword::Is) == false {
@@ -1208,7 +1209,7 @@ impl VhdlSymbol {
 
     fn parse_block_configuration<I>(tokens: &mut Peekable<I>) -> IdentifierList
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         let mut ids = IdentifierList::new();
         // take the identifier
@@ -1260,7 +1261,7 @@ impl VhdlSymbol {
     /// @dead_code
     fn parse_use_clause<I>(tokens: &mut Peekable<I>) -> UseClause
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         // collect first selected_name
         let mut imports = Vec::new();
@@ -1282,19 +1283,19 @@ impl VhdlSymbol {
     /// Assumes the next token to consume is the architecture's identifier.
     fn parse_architecture<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<VhdlSymbol, VhdlError>
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         let arch_name = match tokens.next().take().unwrap().take() {
-            VHDLToken::Identifier(id) => id,
+            VhdlToken::Identifier(id) => id,
             _ => {
                 // panic!("expected an identifier")
                 return Err(VhdlError::Vague)
             },
         };
-        let entity_name = VhdlSymbol::parse_owner_design_unit(tokens);
+        let entity_name = VhdlSymbol::parse_owner_design_unit(tokens)?;
         // println!("*--- unit {}", arch_name);
 
-        let (deps, refs) = VhdlSymbol::parse_declaration(tokens, &Self::is_primary_ending);
+        let (deps, refs) = VhdlSymbol::parse_declaration(tokens, &Self::is_primary_ending)?;
         Ok(VhdlSymbol::Architecture(Architecture::new(
             arch_name,
             entity_name,
@@ -1338,7 +1339,7 @@ impl VhdlSymbol {
     /// statement is returned.
     fn parse_statement<I>(tokens: &mut Peekable<I>) -> Statement
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         let mut clause = Statement::new();
 
@@ -1404,7 +1405,7 @@ impl VhdlSymbol {
                 return clause;
             } else {
                 // check for compound identifiers as references to other design units
-                let mut took_dot: Option<Token<VHDLToken>> = None;
+                let mut took_dot: Option<Token<VhdlToken>> = None;
                 if let Some(id) = t.as_type().as_identifier() {
                     // check if next token is a 'dot' delimiter
                     if tokens.peek().is_some()
@@ -1441,37 +1442,40 @@ impl VhdlSymbol {
     /// Parses the OF keyword and then returns the following IDENTIFIER.
     ///
     /// The Identifier should correspond to the architecture's entity name.
-    fn parse_owner_design_unit<I>(tokens: &mut Peekable<I>) -> Identifier
+    fn parse_owner_design_unit<I>(tokens: &mut Peekable<I>) -> Result<Identifier, VhdlError>
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         // force taking the 'of' keyword
         if tokens.next().unwrap().as_type().check_keyword(&Keyword::Of) == false {
-            panic!("expecting 'of' keyword")
-        }
-        // return the name of the primary design unit
-        match tokens.next().take().unwrap().take() {
-            VHDLToken::Identifier(id) => id,
-            _ => panic!("expected an identifier"),
+            // panic!("expecting 'of' keyword")
+            Err(VhdlError::Vague)
+        } else {
+            // return the name of the primary design unit
+            match tokens.next().take().unwrap().take() {
+                VhdlToken::Identifier(id) => Ok(id),
+                // panic!("expected an identifier")
+                _ => Err(VhdlError::Vague),
+            }
         }
     }
 
     /// Parses a subprogram header, stopping at first occurence of IS or BEGIN keyword
     fn parse_subprogram_header<I>(_: &mut Peekable<I>) -> ()
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         // optionally take
-        todo!("implement");
+        todo!("implement parsing for vhdl subprogram header");
     }
 
     /// Returns a list of interface items as `Statements`.
     ///
     /// Assumes the last token consumed was either GENERIC or PORT keywords and
     /// stops at the last statement in the respective list.
-    fn parse_interface_list<I>(tokens: &mut Peekable<I>) -> Vec<Statement>
+    fn parse_interface_list<I>(tokens: &mut Peekable<I>) -> Result<Vec<Statement>, VhdlError>
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         // expect the opening '('
         if tokens
@@ -1481,7 +1485,8 @@ impl VhdlSymbol {
             .check_delimiter(&Delimiter::ParenL)
             == false
         {
-            panic!("expecting '(' delimiter")
+            // panic!("expecting '(' delimiter")
+            return Err(VhdlError::Vague)
         }
         // collect statements until finding the ')', END, BEGIN, or PORT.
         let mut io: Vec<Statement> = Vec::new();
@@ -1510,10 +1515,11 @@ impl VhdlSymbol {
                         let index = io.len() - 1;
                         // pop off extra RHS parenthesis and exit
                         let last_clause = io.get_mut(index).unwrap();
-                        last_clause
-                            .get_tokens_mut()
-                            .pop()
-                            .expect("expecting closing ')'");
+                        if last_clause.get_tokens_mut().pop().is_none() == true {
+                            // .expect("expecting closing ')'");
+                            return Err(VhdlError::Vague)
+                        }
+                            
                         break;
                     }
                 }
@@ -1529,7 +1535,7 @@ impl VhdlSymbol {
             }
         }
         // println!("{:?}", statements);
-        io
+        Ok(io)
     }
 
     /// Consumes tokens after `IS` until finding `BEGIN` or `END`.
@@ -1540,7 +1546,7 @@ impl VhdlSymbol {
         tokens: &mut Peekable<I>,
     ) -> Result<(Vec<Statement>, Vec<Statement>, IdentifierList), VhdlError>
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         // println!("*--- declaration section");
         // force taking the 'is' keyword
@@ -1561,7 +1567,7 @@ impl VhdlSymbol {
             .check_keyword(&Keyword::Generic)
         {
             tokens.next();
-            Self::parse_interface_list(tokens)
+            Self::parse_interface_list(tokens)?
         } else {
             Vec::new()
         };
@@ -1577,7 +1583,7 @@ impl VhdlSymbol {
             .check_keyword(&Keyword::Port)
         {
             tokens.next();
-            Self::parse_interface_list(tokens)
+            Self::parse_interface_list(tokens)?
         } else {
             Vec::new()
         };
@@ -1664,9 +1670,9 @@ impl VhdlSymbol {
     /// Parses through a subprogram (procedure or function).
     ///
     /// Returns (`deps`, `refs`).
-    fn parse_subprogram<I>(tokens: &mut Peekable<I>) -> (IdentifierList, IdentifierList)
+    fn parse_subprogram<I>(tokens: &mut Peekable<I>) -> Result<(IdentifierList, IdentifierList), VhdlError>
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         let mut refs = IdentifierList::new();
         let mut deps = IdentifierList::new();
@@ -1680,7 +1686,7 @@ impl VhdlSymbol {
             if t.as_type().check_keyword(&Keyword::Is) {
                 // println!("OUT SUB: {:?}", t);
                 let (mut sub_deps, mut sub_refs) =
-                    Self::parse_declaration(tokens, &Self::is_subprogram_ending);
+                    Self::parse_declaration(tokens, &Self::is_subprogram_ending)?;
                 deps.append(&mut sub_deps);
                 refs.append(&mut sub_refs);
                 break;
@@ -1693,7 +1699,7 @@ impl VhdlSymbol {
             }
         }
         // @todo: capture references from declaration and body sections
-        (deps, refs)
+        Ok((deps, refs))
     }
 
     /// Consumes tokens after `IS` until finding `BEGIN` or `END`.
@@ -1704,14 +1710,15 @@ impl VhdlSymbol {
     fn parse_declaration<I>(
         tokens: &mut Peekable<I>,
         eval_exit: &dyn Fn(&Statement) -> bool,
-    ) -> (IdentifierList, IdentifierList)
+    ) -> Result<(IdentifierList, IdentifierList), VhdlError>
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         // println!("*--- declaration section");
         // force taking the 'is' keyword
         if tokens.next().unwrap().as_type().check_keyword(&Keyword::Is) == false {
-            panic!("expecting 'is' keyword")
+            // panic!("expecting 'is' keyword")
+            return Err(VhdlError::Vague)
         }
         let mut refs = IdentifierList::new();
         let mut deps = IdentifierList::new();
@@ -1748,7 +1755,7 @@ impl VhdlSymbol {
                 && Self::is_subprogram(t.as_type().as_keyword().unwrap()) == true
             {
                 // println!("{}", "sub program");
-                let (mut sub_deps, mut sub_refs) = Self::parse_subprogram(tokens);
+                let (mut sub_deps, mut sub_refs) = Self::parse_subprogram(tokens)?;
                 deps.append(&mut sub_deps);
                 refs.append(&mut sub_refs);
             // build statements to throw away
@@ -1767,7 +1774,7 @@ impl VhdlSymbol {
                 }
             }
         }
-        (deps, refs)
+        Ok((deps, refs))
     }
 
     /// Checks if the statement is a valid primary unit END statement.
@@ -1782,7 +1789,7 @@ impl VhdlSymbol {
         };
         match keyword {
             // list mandatory keywords expected after the 'end' keyword for non-primary endings
-            VHDLToken::Keyword(kw) => match kw {
+            VhdlToken::Keyword(kw) => match kw {
                 Keyword::Loop
                 | Keyword::Generate
                 | Keyword::Process
@@ -1818,9 +1825,9 @@ impl VhdlSymbol {
     /// Parses a component declaration, consuming the tokens `COMPONENT` until the end.
     ///
     /// Assumes the first token to consume is `COMPONENT`.
-    fn parse_component<I>(tokens: &mut Peekable<I>) -> CompoundIdentifier
+    fn parse_component<I>(tokens: &mut Peekable<I>) -> Result<CompoundIdentifier, VhdlError>
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         if tokens
             .next()
@@ -1829,7 +1836,8 @@ impl VhdlSymbol {
             .check_keyword(&Keyword::Component)
             == false
         {
-            panic!("assumes first token is COMPONENT keyword");
+            // panic!("assumes first token is COMPONENT keyword");
+            return Err(VhdlError::Vague)
         }
         // take component name
         let comp_name = tokens.next().take().unwrap().take();
@@ -1847,20 +1855,23 @@ impl VhdlSymbol {
             } else if t.as_type().check_keyword(&Keyword::Generic) {
                 // take the GENERIC token
                 tokens.next();
-                let _generics = Self::parse_interface_list(tokens);
+                let _generics = Self::parse_interface_list(tokens)?;
             // collect port interface
             } else if t.as_type().check_keyword(&Keyword::Port) {
                 // take the PORT token
                 tokens.next();
-                let _ports = Self::parse_interface_list(tokens);
+                let _ports = Self::parse_interface_list(tokens)?;
             } else {
                 let _stmt = Self::parse_statement(tokens);
                 // println!("{:?}", stmt);
             }
         }
         match comp_name {
-            VHDLToken::Identifier(id) => CompoundIdentifier::new_minimal(id),
-            _ => panic!("expected an identifier"),
+            VhdlToken::Identifier(id) => Ok(CompoundIdentifier::new_minimal(id)),
+            _ => {
+                // panic!("expected an identifier")
+                Err(VhdlError::Vague)
+            },
         }
     }
 
@@ -1868,9 +1879,9 @@ impl VhdlSymbol {
     /// depending on the next token being BODY keyword or identifier.
     fn route_package_parse<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<VhdlSymbol, VhdlError>
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
-        if &VHDLToken::Keyword(Keyword::Body) == tokens.peek().unwrap().as_type() {
+        if &VhdlToken::Keyword(Keyword::Body) == tokens.peek().unwrap().as_type() {
             Ok(VhdlSymbol::PackageBody(VhdlSymbol::parse_package_body(tokens, pos)?))
         } else {
             Ok(VhdlSymbol::parse_package_declaration(tokens, pos)?)
@@ -1887,7 +1898,7 @@ impl VhdlSymbol {
         eval_exit: &dyn Fn(&Statement) -> bool,
     ) -> (IdentifierList, IdentifierList)
     where
-        I: Iterator<Item = Token<VHDLToken>>,
+        I: Iterator<Item = Token<VhdlToken>>,
     {
         // collect component names
         let mut deps = IdentifierList::new();
@@ -1957,7 +1968,7 @@ mod test {
     #[test]
     fn parse_use_clause() {
         let s = "use eel4712c.pkg1, eel4712c.pkg2; entity";
-        let mut tokens = VHDLTokenizer::from_source_code(&s)
+        let mut tokens = VhdlTokenizer::from_source_code(&s)
             .into_tokens()
             .into_iter()
             .peekable();
@@ -1981,37 +1992,37 @@ mod test {
         );
         assert_eq!(
             tokens.next().unwrap().as_type(),
-            &VHDLToken::Keyword(Keyword::Entity)
+            &VhdlToken::Keyword(Keyword::Entity)
         );
     }
 
     #[test]
     fn compose_statement_2() {
         let s = "P1, P2: inout BIT); constant Delay: TIME := 1 ms;";
-        let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
+        let tokens = VhdlTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         assert_eq!(
             VhdlSymbol::parse_statement(&mut iter).as_types(),
             vec![
-                &VHDLToken::Identifier(Identifier::Basic("P1".to_owned())),
-                &VHDLToken::Delimiter(Delimiter::Comma),
-                &VHDLToken::Identifier(Identifier::Basic("P2".to_owned())),
-                &VHDLToken::Delimiter(Delimiter::Colon),
-                &VHDLToken::Keyword(Keyword::Inout),
-                &VHDLToken::Identifier(Identifier::Basic("BIT".to_owned())),
-                &VHDLToken::Delimiter(Delimiter::ParenR),
+                &VhdlToken::Identifier(Identifier::Basic("P1".to_owned())),
+                &VhdlToken::Delimiter(Delimiter::Comma),
+                &VhdlToken::Identifier(Identifier::Basic("P2".to_owned())),
+                &VhdlToken::Delimiter(Delimiter::Colon),
+                &VhdlToken::Keyword(Keyword::Inout),
+                &VhdlToken::Identifier(Identifier::Basic("BIT".to_owned())),
+                &VhdlToken::Delimiter(Delimiter::ParenR),
             ]
         );
         assert_eq!(
             iter.next().unwrap().as_type(),
-            &VHDLToken::Keyword(Keyword::Constant)
+            &VhdlToken::Keyword(Keyword::Constant)
         );
     }
 
     #[test]
     fn parse_simple_name() {
         let s = "eel4712c.nor_gate port";
-        let mut tokens = VHDLTokenizer::from_source_code(&s)
+        let mut tokens = VhdlTokenizer::from_source_code(&s)
             .into_tokens()
             .into_iter()
             .peekable();
@@ -2025,7 +2036,7 @@ mod test {
         );
         assert_eq!(
             tokens.next().unwrap().as_type(),
-            &VHDLToken::Keyword(Keyword::Port)
+            &VhdlToken::Keyword(Keyword::Port)
         );
     }
 
@@ -2033,7 +2044,7 @@ mod test {
     fn parse_simple_name_with_all() {
         // @TODO signify within a 'name' struct that the all keyword was used
         let s = "eel4712c.all +";
-        let mut tokens = VHDLTokenizer::from_source_code(&s)
+        let mut tokens = VhdlTokenizer::from_source_code(&s)
             .into_tokens()
             .into_iter()
             .peekable();
@@ -2044,7 +2055,7 @@ mod test {
         );
         assert_eq!(
             tokens.next().unwrap().as_type(),
-            &VHDLToken::Delimiter(Delimiter::Plus)
+            &VhdlToken::Delimiter(Delimiter::Plus)
         );
     }
 
@@ -2053,17 +2064,17 @@ mod test {
         let s = "\
 port (P1, P2: inout BIT); 
 constant Delay: TIME := 1 ms;";
-        let mut tokens = VHDLTokenizer::from_source_code(&s)
+        let mut tokens = VhdlTokenizer::from_source_code(&s)
             .into_tokens()
             .into_iter()
             .peekable();
         tokens.next(); // take PORT
-        let ports = VhdlSymbol::parse_interface_list(&mut tokens);
+        let ports = VhdlSymbol::parse_interface_list(&mut tokens).unwrap();
         let ports: Vec<String> = ports.into_iter().map(|m| m.to_string()).collect();
         assert_eq!(ports, vec!["P1 , P2 : inout BIT",]);
         assert_eq!(
             tokens.next().unwrap().as_type(),
-            &VHDLToken::Keyword(Keyword::Constant)
+            &VhdlToken::Keyword(Keyword::Constant)
         );
     }
 
@@ -2077,18 +2088,18 @@ port(
     c: out std_logic_vector(N-1 downto 0)
 );
 end;";
-        let mut tokens = VHDLTokenizer::from_source_code(&s)
+        let mut tokens = VhdlTokenizer::from_source_code(&s)
             .into_tokens()
             .into_iter()
             .peekable();
         tokens.next(); // take GENERIC
-        let generics = VhdlSymbol::parse_interface_list(&mut tokens);
+        let generics = VhdlSymbol::parse_interface_list(&mut tokens).unwrap();
         // convert to strings for easier verification
         let generics: Vec<String> = generics.into_iter().map(|m| m.to_string()).collect();
         assert_eq!(generics, vec!["N : positive",]);
         // take PORT
         tokens.next();
-        let ports = VhdlSymbol::parse_interface_list(&mut tokens);
+        let ports = VhdlSymbol::parse_interface_list(&mut tokens).unwrap();
         // convert to strings for easier verification
         let ports: Vec<String> = ports.into_iter().map(|m| m.to_string()).collect();
         assert_eq!(
@@ -2101,7 +2112,7 @@ end;";
         );
         assert_eq!(
             tokens.next().unwrap().as_type(),
-            &VHDLToken::Keyword(Keyword::End)
+            &VhdlToken::Keyword(Keyword::End)
         );
     }
 
@@ -2111,18 +2122,18 @@ end;";
 generic ( N: positive );
 begin
 end;";
-        let mut tokens = VHDLTokenizer::from_source_code(&s)
+        let mut tokens = VhdlTokenizer::from_source_code(&s)
             .into_tokens()
             .into_iter()
             .peekable();
         tokens.next(); // take GENERIC
-        let generics = VhdlSymbol::parse_interface_list(&mut tokens);
+        let generics = VhdlSymbol::parse_interface_list(&mut tokens).unwrap();
         // convert to strings for easier verification
         let generics: Vec<String> = generics.into_iter().map(|m| m.to_string()).collect();
         assert_eq!(generics, vec!["N : positive",]);
         assert_eq!(
             tokens.next().unwrap().as_type(),
-            &VHDLToken::Keyword(Keyword::Begin)
+            &VhdlToken::Keyword(Keyword::Begin)
         );
     }
 
@@ -2133,15 +2144,15 @@ end;";
 component nor_gate is end component nor_gate;
 
 signal ready: std_logic;";
-        let mut tokens = VHDLTokenizer::from_source_code(&s)
+        let mut tokens = VhdlTokenizer::from_source_code(&s)
             .into_tokens()
             .into_iter()
             .peekable();
-        let comp = VhdlSymbol::parse_component(&mut tokens);
+        let comp = VhdlSymbol::parse_component(&mut tokens).unwrap();
         assert_eq!(comp.to_string(), "nor_gate");
         assert_eq!(
             tokens.next().unwrap().as_type(),
-            &VHDLToken::Keyword(Keyword::Signal)
+            &VhdlToken::Keyword(Keyword::Signal)
         );
 
         // ends with 'end;' statement
@@ -2149,15 +2160,15 @@ signal ready: std_logic;";
 component nor_gate end;
 
 signal ready: std_logic;";
-        let mut tokens = VHDLTokenizer::from_source_code(&s)
+        let mut tokens = VhdlTokenizer::from_source_code(&s)
             .into_tokens()
             .into_iter()
             .peekable();
-        let comp = VhdlSymbol::parse_component(&mut tokens);
+        let comp = VhdlSymbol::parse_component(&mut tokens).unwrap();
         assert_eq!(comp.to_string(), "nor_gate");
         assert_eq!(
             tokens.next().unwrap().as_type(),
-            &VHDLToken::Keyword(Keyword::Signal)
+            &VhdlToken::Keyword(Keyword::Signal)
         );
 
         // ends with 'end component nor_gate;' statement
@@ -2173,15 +2184,15 @@ component nor_gate
 end component nor_gate;
 
 signal ready: std_logic;";
-        let mut tokens = VHDLTokenizer::from_source_code(&s)
+        let mut tokens = VhdlTokenizer::from_source_code(&s)
             .into_tokens()
             .into_iter()
             .peekable();
-        let comp = VhdlSymbol::parse_component(&mut tokens);
+        let comp = VhdlSymbol::parse_component(&mut tokens).unwrap();
         assert_eq!(comp.to_string(), "nor_gate");
         assert_eq!(
             tokens.next().unwrap().as_type(),
-            &VHDLToken::Keyword(Keyword::Signal)
+            &VhdlToken::Keyword(Keyword::Signal)
         );
     }
 
@@ -2192,10 +2203,10 @@ signal ready: std_logic;";
         // 'case' is not a primary ending
         let stmt = Statement(
             vec![
-                Token::new(VHDLToken::Keyword(Keyword::End), Position::new()),
-                Token::new(VHDLToken::Keyword(Keyword::Case), Position::new()),
+                Token::new(VhdlToken::Keyword(Keyword::End), Position::new()),
+                Token::new(VhdlToken::Keyword(Keyword::Case), Position::new()),
                 Token::new(
-                    VHDLToken::Identifier(Identifier::Basic("case_label".to_owned())),
+                    VhdlToken::Identifier(Identifier::Basic("case_label".to_owned())),
                     Position::new(),
                 ),
             ],
@@ -2206,7 +2217,7 @@ signal ready: std_logic;";
         // primary endings can omit keyword and identifier label
         let stmt = Statement(
             vec![Token::new(
-                VHDLToken::Keyword(Keyword::End),
+                VhdlToken::Keyword(Keyword::End),
                 Position::new(),
             )],
             IdentifierList::new(),
@@ -2216,10 +2227,10 @@ signal ready: std_logic;";
         // primary endings can include their keyword
         let stmt = Statement(
             vec![
-                Token::new(VHDLToken::Keyword(Keyword::End), Position::new()),
-                Token::new(VHDLToken::Keyword(Keyword::Architecture), Position::new()),
+                Token::new(VhdlToken::Keyword(Keyword::End), Position::new()),
+                Token::new(VhdlToken::Keyword(Keyword::Architecture), Position::new()),
                 Token::new(
-                    VHDLToken::Identifier(Identifier::Basic("architecture_name".to_owned())),
+                    VhdlToken::Identifier(Identifier::Basic("architecture_name".to_owned())),
                     Position::new(),
                 ),
             ],
@@ -2230,9 +2241,9 @@ signal ready: std_logic;";
         // primary endings can have their keyword omitted and also include the identifier label
         let stmt = Statement(
             vec![
-                Token::new(VHDLToken::Keyword(Keyword::End), Position::new()),
+                Token::new(VhdlToken::Keyword(Keyword::End), Position::new()),
                 Token::new(
-                    VHDLToken::Identifier(Identifier::Basic("architecture_name".to_owned())),
+                    VhdlToken::Identifier(Identifier::Basic("architecture_name".to_owned())),
                     Position::new(),
                 ),
             ],
@@ -2254,7 +2265,7 @@ signal ready: std_logic;";
         c: out std_logic_vector(N-1 downto 0)
     );
 end entity nor_gate;";
-        let mut tokens = VHDLTokenizer::from_source_code(&s)
+        let mut tokens = VhdlTokenizer::from_source_code(&s)
             .into_tokens()
             .into_iter()
             .peekable();
@@ -2270,7 +2281,7 @@ end entity nor_gate;";
     #[test]
     fn resource_refs() {
         let s = "a : in std_logic_vector(3 downto 0) := work.pack1.p1;";
-        let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
+        let tokens = VhdlTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         assert_eq!(
             VhdlSymbol::parse_statement(&mut iter).get_refs(),
@@ -2287,7 +2298,7 @@ end entity nor_gate;";
         );
 
         let s = "use work.package_name;";
-        let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
+        let tokens = VhdlTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         assert_eq!(
             VhdlSymbol::parse_statement(&mut iter).get_refs(),
@@ -2298,7 +2309,7 @@ end entity nor_gate;";
         );
 
         let s = "use MKS.MEASUREMENTS, STD.STANDARD;";
-        let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
+        let tokens = VhdlTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         assert_eq!(
             VhdlSymbol::parse_statement(&mut iter).get_refs(),
@@ -2318,62 +2329,62 @@ end entity nor_gate;";
     #[test]
     fn compose_statement() {
         let s = "a : in std_logic_vector(3 downto 0);";
-        let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
+        let tokens = VhdlTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         assert_eq!(
             VhdlSymbol::parse_statement(&mut iter).as_types(),
             vec![
-                &VHDLToken::Identifier(Identifier::Basic("a".to_owned())),
-                &VHDLToken::Delimiter(Delimiter::Colon),
-                &VHDLToken::Keyword(Keyword::In),
-                &VHDLToken::Identifier(Identifier::Basic("std_logic_vector".to_owned())),
-                &VHDLToken::Delimiter(Delimiter::ParenL),
-                &VHDLToken::AbstLiteral(AbstLiteral::Decimal("3".to_owned())),
-                &VHDLToken::Keyword(Keyword::Downto),
-                &VHDLToken::AbstLiteral(AbstLiteral::Decimal("0".to_owned())),
-                &VHDLToken::Delimiter(Delimiter::ParenR),
+                &VhdlToken::Identifier(Identifier::Basic("a".to_owned())),
+                &VhdlToken::Delimiter(Delimiter::Colon),
+                &VhdlToken::Keyword(Keyword::In),
+                &VhdlToken::Identifier(Identifier::Basic("std_logic_vector".to_owned())),
+                &VhdlToken::Delimiter(Delimiter::ParenL),
+                &VhdlToken::AbstLiteral(AbstLiteral::Decimal("3".to_owned())),
+                &VhdlToken::Keyword(Keyword::Downto),
+                &VhdlToken::AbstLiteral(AbstLiteral::Decimal("0".to_owned())),
+                &VhdlToken::Delimiter(Delimiter::ParenR),
             ]
         );
 
         let s = "a : in std_logic_vector(3 downto 0); ready: out std_logic);";
-        let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
+        let tokens = VhdlTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         assert_eq!(
             VhdlSymbol::parse_statement(&mut iter).as_types(),
             vec![
-                &VHDLToken::Identifier(Identifier::Basic("a".to_owned())),
-                &VHDLToken::Delimiter(Delimiter::Colon),
-                &VHDLToken::Keyword(Keyword::In),
-                &VHDLToken::Identifier(Identifier::Basic("std_logic_vector".to_owned())),
-                &VHDLToken::Delimiter(Delimiter::ParenL),
-                &VHDLToken::AbstLiteral(AbstLiteral::Decimal("3".to_owned())),
-                &VHDLToken::Keyword(Keyword::Downto),
-                &VHDLToken::AbstLiteral(AbstLiteral::Decimal("0".to_owned())),
-                &VHDLToken::Delimiter(Delimiter::ParenR),
+                &VhdlToken::Identifier(Identifier::Basic("a".to_owned())),
+                &VhdlToken::Delimiter(Delimiter::Colon),
+                &VhdlToken::Keyword(Keyword::In),
+                &VhdlToken::Identifier(Identifier::Basic("std_logic_vector".to_owned())),
+                &VhdlToken::Delimiter(Delimiter::ParenL),
+                &VhdlToken::AbstLiteral(AbstLiteral::Decimal("3".to_owned())),
+                &VhdlToken::Keyword(Keyword::Downto),
+                &VhdlToken::AbstLiteral(AbstLiteral::Decimal("0".to_owned())),
+                &VhdlToken::Delimiter(Delimiter::ParenR),
             ]
         );
 
         let s = "process(all) is begin end process;";
-        let mut tokens = VHDLTokenizer::from_source_code(&s)
+        let mut tokens = VhdlTokenizer::from_source_code(&s)
             .into_tokens()
             .into_iter()
             .peekable();
         let _ = VhdlSymbol::parse_statement(&mut tokens);
         assert_eq!(
             tokens.next().unwrap().as_type(),
-            &VHDLToken::Delimiter(Delimiter::ParenL)
+            &VhdlToken::Delimiter(Delimiter::ParenL)
         );
         let _ = VhdlSymbol::parse_statement(&mut tokens);
         assert_eq!(
             tokens.next().unwrap().as_type(),
-            &VHDLToken::Keyword(Keyword::End)
+            &VhdlToken::Keyword(Keyword::End)
         );
     }
 
     #[test]
     fn print_statement() {
         let s = "a : in std_logic_vector ( 3 downto 0);";
-        let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
+        let tokens = VhdlTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         let st = VhdlSymbol::parse_statement(&mut iter);
         assert_eq!(st.to_string(), "a : in std_logic_vector(3 downto 0)");
@@ -2396,7 +2407,7 @@ configuration HA_Config of HA_Entity is
     end for;
 end HA_Config;    
 "#;
-        let symbols = VHDLParser::parse(VHDLTokenizer::from_source_code(&s).into_tokens());
+        let symbols = VHDLParser::parse(VhdlTokenizer::from_source_code(&s).into_tokens());
         assert_eq!(
             symbols
                 .first()
@@ -2421,7 +2432,7 @@ for L1: XOR_GATE use entity WORK.XOR_GATE(Behavior) -- or L1 = 'others' = 'L1, L
         generic map (3 ns, 3 ns)
         port map (I1 => work.lab1_pkg.MAGIC_NUM, I2 => I2, O => O);    
 "#;
-        let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
+        let tokens = VhdlTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         let st = VhdlSymbol::parse_statement(&mut iter);
         println!("{}", st);
@@ -2448,7 +2459,7 @@ for L1: XOR_GATE use entity WORK.XOR_GATE(Behavior) -- or L1 = 'others' = 'L1, L
         let s = r#"
 for all: xor_gate use configuration cfg1;    
 "#;
-        let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
+        let tokens = VhdlTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         let st = VhdlSymbol::parse_statement(&mut iter);
         let iden = VhdlSymbol::parse_configuration_spec(st);
@@ -2607,7 +2618,7 @@ end architecture sim;
 
         use crate::core::lang::vhdl::token::identifier::Identifier::Basic;
 
-        let syms = VHDLParser::parse(VHDLTokenizer::from_source_code(&s).into_tokens());
+        let syms = VHDLParser::parse(VhdlTokenizer::from_source_code(&s).into_tokens());
         println!("{:?}", syms);
         assert_eq!(
             syms.get(1)
@@ -2796,7 +2807,7 @@ begin
 
 end architecture rtl;
 ";
-        let _ = VHDLParser::parse(VHDLTokenizer::from_source_code(&s).into_tokens());
+        let _ = VHDLParser::parse(VhdlTokenizer::from_source_code(&s).into_tokens());
         panic!("manually inspect token list")
     }
 

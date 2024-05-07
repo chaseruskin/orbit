@@ -27,6 +27,7 @@ Every configuration file consists of the following sections:
 - [include](#the-include-field) - Lists other `config.toml` files to process.
 - [[general]](#the-general-section) - The general settings.
     - [build-dir](#the-build-dir-field) - Default build directory.
+    - [language-mode](#the-language-mode-field) - HDL language(s) to enable.
 - [[vhdl-format]](#the-vhdl-format-section) - VHDL code formatting.
 - [[env]](#the-env-section) - The runtime environment variables.
 - [[[plugin]]](#the-plugin-array) - Define a plugin.
@@ -60,6 +61,15 @@ Define the default output directory to create for the planning and building phas
 [general]
 build-dir = "build"
 # ...
+```
+
+### The `language-mode` field
+
+Enable specific HDLs to be read by `orbit`. Supports the following options: "vhdl", "verilog", or "mixed". When this field is not defined, the default value for the language mode is "mixed" (enabling all supported HDLs).
+
+``` toml
+[general]
+language-mode = "mixed"
 ```
 
 ### The `[vhdl-format]` section

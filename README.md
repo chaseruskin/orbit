@@ -31,7 +31,7 @@ Read the [Book of Orbit](https://cdotrus.github.io/orbit/) for complete document
 `orbit` manages your projects, called IPs, by handling the overhead for referencing, maintaining, and integrating your hardware description files:
 
 ```
-lab2/
+cpu/
 ├─ Orbit.toml
 ├─ rtl/
 │  ├─ reg.vhd

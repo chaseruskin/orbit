@@ -1,7 +1,8 @@
 use super::super::lexer::Position;
-use super::symbol::VHDLSymbol;
+use super::symbols::VhdlSymbol;
 use crate::core::ip::IpSpec;
-use crate::core::lang::vhdl::symbol::VHDLParser;
+use crate::core::lang::parser::ParseError;
+use crate::core::lang::vhdl::symbols::VHDLParser;
 use crate::util::filesystem;
 use crate::{core::lang::vhdl::token::identifier::Identifier, util::anyerror::Fault};
 use std::{collections::HashMap, path::PathBuf, str::FromStr};
@@ -89,13 +90,13 @@ impl std::fmt::Display for PrimaryUnit {
 #[derive(Debug)]
 pub struct Unit {
     name: Identifier,
-    symbol: Option<VHDLSymbol>,
+    symbol: Option<VhdlSymbol>,
     /// source code file
     source: String,
 }
 
 impl Unit {
-    pub fn get_symbol(&self) -> Option<&VHDLSymbol> {
+    pub fn get_symbol(&self) -> Option<&VhdlSymbol> {
         self.symbol.as_ref()
     }
 
@@ -126,29 +127,32 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
         if crate::core::fileset::is_vhdl(&source_file) == true {
             // parse text into VHDL symbols
             let contents = std::fs::read_to_string(&source_file).unwrap();
-            let symbols = VHDLParser::read(&contents).into_symbols();
+            let symbols = match VHDLParser::read(&contents) {
+                Ok(s) => s.into_symbols(),
+                Err(e) => Err(ParseError::SourceCodeError(source_file.clone(), e.to_string()))?
+            };
             // transform into primary design units
             let units: Vec<PrimaryUnit> = symbols
                 .into_iter()
                 .filter_map(|sym| {
                     let name = sym.as_iden()?.clone();
                     match sym {
-                        VHDLSymbol::Entity(_) => Some(PrimaryUnit::Entity(Unit {
+                        VhdlSymbol::Entity(_) => Some(PrimaryUnit::Entity(Unit {
                             name: name,
                             symbol: Some(sym),
                             source: source_file.clone(),
                         })),
-                        VHDLSymbol::Package(_) => Some(PrimaryUnit::Package(Unit {
+                        VhdlSymbol::Package(_) => Some(PrimaryUnit::Package(Unit {
                             name: name,
                             symbol: Some(sym),
                             source: source_file.clone(),
                         })),
-                        VHDLSymbol::Configuration(_) => Some(PrimaryUnit::Configuration(Unit {
+                        VhdlSymbol::Configuration(_) => Some(PrimaryUnit::Configuration(Unit {
                             name: name,
                             symbol: Some(sym),
                             source: source_file.clone(),
                         })),
-                        VHDLSymbol::Context(_) => Some(PrimaryUnit::Context(Unit {
+                        VhdlSymbol::Context(_) => Some(PrimaryUnit::Context(Unit {
                             name: name,
                             symbol: Some(sym),
                             source: source_file.clone(),

@@ -6,9 +6,10 @@ use crate::commands::download::Download;
 use crate::core::context::Context;
 use crate::core::fileset::Fileset;
 use crate::core::iparchive::IpArchive;
+use crate::core::lang::parser::ParseError;
 use crate::core::lang::vhdl::subunit::SubUnit;
-use crate::core::lang::vhdl::symbol::CompoundIdentifier;
-use crate::core::lang::vhdl::symbol::{Entity, PackageBody, VHDLParser, VHDLSymbol};
+use crate::core::lang::vhdl::symbols::CompoundIdentifier;
+use crate::core::lang::vhdl::symbols::{Entity, packagebody::PackageBody, VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lang::LangMode;
 use crate::core::plugin::Plugin;
@@ -345,7 +346,7 @@ impl Plan {
     /// Builds a graph of design units. Used for planning.
     fn build_full_graph<'a>(
         files: &'a Vec<IpFileNode>,
-    ) -> GraphMap<CompoundIdentifier, HdlNode<'a>, ()> {
+    ) -> Result<GraphMap<CompoundIdentifier, HdlNode<'a>, ()>, Fault> {
         let mut graph_map: GraphMap<CompoundIdentifier, HdlNode, ()> = GraphMap::new();
 
         let mut sub_nodes: Vec<(Identifier, SubUnitNode)> = Vec::new();
@@ -356,7 +357,10 @@ impl Plan {
         for source_file in files {
             if fileset::is_vhdl(&source_file.get_file()) == true {
                 let contents = fs::read_to_string(&source_file.get_file()).unwrap();
-                let symbols = VHDLParser::read(&contents).into_symbols();
+                let symbols = match VHDLParser::read(&contents) {
+                    Ok(s) => s.into_symbols(),
+                    Err(e) => Err(ParseError::SourceCodeError(source_file.get_file().clone(), e.to_string()))?
+                };
 
                 let lib = source_file.get_library();
                 // println!("{} {}", source_file.get_file(), source_file.get_library());
@@ -364,21 +368,21 @@ impl Plan {
                 // add all entities to a graph and store architectures for later analysis
                 let mut iter = symbols.into_iter().filter_map(|f| {
                     match f {
-                        VHDLSymbol::Entity(_) => {
+                        VhdlSymbol::Entity(_) => {
                             component_pairs
                                 .insert(f.as_entity().unwrap().get_name().clone(), lib.clone());
                             Some(f)
                         }
-                        VHDLSymbol::Package(_) => Some(f),
-                        VHDLSymbol::Context(_) => Some(f),
-                        VHDLSymbol::Architecture(arch) => {
+                        VhdlSymbol::Package(_) => Some(f),
+                        VhdlSymbol::Context(_) => Some(f),
+                        VhdlSymbol::Architecture(arch) => {
                             sub_nodes.push((
                                 lib.clone(),
                                 SubUnitNode::new(SubUnit::from_arch(arch), source_file),
                             ));
                             None
                         }
-                        VHDLSymbol::Configuration(cfg) => {
+                        VhdlSymbol::Configuration(cfg) => {
                             sub_nodes.push((
                                 lib.clone(),
                                 SubUnitNode::new(SubUnit::from_config(cfg), source_file),
@@ -386,7 +390,7 @@ impl Plan {
                             None
                         }
                         // package bodies are usually in same design file as package
-                        VHDLSymbol::PackageBody(pb) => {
+                        VhdlSymbol::PackageBody(pb) => {
                             bodies.push((lib.clone(), pb));
                             None
                         }
@@ -493,7 +497,7 @@ impl Plan {
                 // println!("{:?}", stat);
             }
         }
-        graph_map
+        Ok(graph_map)
     }
 
     /// Writes the lockfile according to the constructed `ip_graph`. Only writes if the lockfile is
@@ -864,7 +868,7 @@ impl Plan {
         }
 
         let files = algo::build_ip_file_list(&ip_graph);
-        let global_graph = Self::build_full_graph(&files);
+        let global_graph = Self::build_full_graph(&files)?;
 
         let working_lib = Identifier::new_working();
 

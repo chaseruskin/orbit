@@ -128,12 +128,12 @@ pub mod char_set {
 use super::super::super::lexer::{Token, TokenError};
 
 use super::super::token::VHDLToken;
-use super::error::VHDLTokenError;
+use super::error::VhdlError;
 use crate::core::lang::lexer::Tokenize;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq)]
-struct VHDLElement(Result<Token<VHDLToken>, TokenError<VHDLTokenError>>);
+struct VHDLElement(Result<Token<VHDLToken>, TokenError<VhdlError>>);
 
 #[derive(PartialEq)]
 pub struct VHDLTokenizer {
@@ -141,7 +141,7 @@ pub struct VHDLTokenizer {
 }
 
 impl FromStr for VHDLTokenizer {
-    type Err = VHDLTokenError;
+    type Err = VhdlError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self::from_source_code(s))
@@ -228,7 +228,7 @@ use crate::core::lang::lexer::TrainCar;
 
 impl Tokenize for VHDLTokenizer {
     type TokenType = VHDLToken;
-    type Err = VHDLTokenError;
+    type Err = VhdlError;
 
     fn tokenize(s: &str) -> Vec<Result<Token<Self::TokenType>, TokenError<Self::Err>>> {
         let mut train = TrainCar::new(s.chars());

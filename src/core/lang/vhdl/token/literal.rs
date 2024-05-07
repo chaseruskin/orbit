@@ -1,6 +1,6 @@
 use super::super::highlight;
 use super::super::token::char_set;
-use super::error::VHDLTokenError;
+use super::error::VhdlError;
 use crate::core::lang::vhdl::token::ToColor;
 use colored::ColoredString;
 use colored::Colorize;
@@ -215,7 +215,7 @@ pub enum BaseSpec {
 }
 
 impl FromStr for BaseSpec {
-    type Err = VHDLTokenError;
+    type Err = VhdlError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
             "b" | "B" => Self::B,

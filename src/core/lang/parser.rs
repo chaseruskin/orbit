@@ -1,15 +1,13 @@
 use super::lexer::Token;
-use std::fmt::Display;
+use thiserror::Error;
 
 pub trait Parse<T> {
     type SymbolType;
-    type Err;
+    type SymbolError;
 
     fn parse(
         tokens: Vec<Token<T>>,
-    ) -> Vec<Result<Symbol<Self::SymbolType>, SymbolError<Self::Err>>>
-    where
-        <Self as Parse<T>>::Err: Display;
+    ) -> Vec<Result<Symbol<Self::SymbolType>, Self::SymbolError>>;
 }
 
 #[derive(Debug, PartialEq)]
@@ -32,20 +30,8 @@ impl<T> Symbol<T> {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub struct SymbolError<T: Display> {
-    err: T,
-}
-
-impl<T: Display> SymbolError<T> {
-    /// Creates a new `SymbolError` struct at position `loc` with error `T`.
-    pub fn new(err: T) -> Self {
-        Self { err: err }
-    }
-}
-
-impl<T: Display> Display for SymbolError<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.err)
-    }
+#[derive(Debug, PartialEq, Error)]
+pub enum ParseError {
+    #[error("file {0}: {1}")]
+    SourceCodeError(String, String)
 }

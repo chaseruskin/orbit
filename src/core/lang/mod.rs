@@ -68,7 +68,7 @@ impl Display for Lang {
 
 pub trait Code {
     fn get_source_code_file(&self) -> &str;
-    fn get_symbol(&self) -> Option<&vhdl::symbol::VHDLSymbol>;
+    fn get_symbol(&self) -> Option<&vhdl::symbols::VhdlSymbol>;
 }
 
 #[derive(Debug, PartialEq)]
@@ -117,7 +117,7 @@ impl LangUnit {
         }
     }
 
-    pub fn get_symbol(&self) -> Option<&vhdl::symbol::VHDLSymbol> {
+    pub fn get_symbol(&self) -> Option<&vhdl::symbols::VhdlSymbol> {
         match &self {
             Self::Vhdl(u) => u.get_unit().get_symbol(),
             Self::Verilog(_u) => None,

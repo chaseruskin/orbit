@@ -85,10 +85,10 @@ impl ColorVec {
 }
 
 #[derive(Debug)]
-pub struct Architectures<'a>(&'a Vec<super::symbol::Architecture>);
+pub struct Architectures<'a>(&'a Vec<super::symbols::architecture::Architecture>);
 
 impl<'a> Architectures<'a> {
-    pub fn new(archs: &'a Vec<super::symbol::Architecture>) -> Self {
+    pub fn new(archs: &'a Vec<super::symbols::architecture::Architecture>) -> Self {
         Self(archs)
     }
 }
@@ -97,7 +97,7 @@ impl<'a> std::fmt::Display for Architectures<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Architectures:\n")?;
         for arch in self.0 {
-            write!(f, "    {}\n", arch.name())?
+            write!(f, "    {}\n", arch.get_name())?
         }
         Ok(())
     }

@@ -1,20 +1,20 @@
 use super::{
-    symbol::{self, IdentifierList},
+    symbols::{self, IdentifierList},
     token::identifier::Identifier,
 };
 
 #[derive(Debug, PartialEq)]
 pub enum SubUnit {
-    Configuration(symbol::Configuration),
-    Architecture(symbol::Architecture),
+    Configuration(symbols::configuration::Configuration),
+    Architecture(symbols::architecture::Architecture),
 }
 
 impl SubUnit {
-    pub fn from_arch(arch: symbol::Architecture) -> Self {
+    pub fn from_arch(arch: symbols::architecture::Architecture) -> Self {
         Self::Architecture(arch)
     }
 
-    pub fn from_config(cfg: symbol::Configuration) -> Self {
+    pub fn from_config(cfg: symbols::configuration::Configuration) -> Self {
         Self::Configuration(cfg)
     }
 

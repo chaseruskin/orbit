@@ -10,10 +10,11 @@ use crate::core::ip::Ip;
 use crate::core::lang::node::HdlNode;
 use crate::core::lang::node::IdentifierFormat;
 use crate::core::lang::node::SubUnitNode;
+use crate::core::lang::parser::ParseError;
 use crate::core::lang::vhdl::subunit::SubUnit;
-use crate::core::lang::vhdl::symbol::CompoundIdentifier;
-use crate::core::lang::vhdl::symbol::Entity;
-use crate::core::lang::vhdl::symbol::{VHDLParser, VHDLSymbol};
+use crate::core::lang::vhdl::symbols::CompoundIdentifier;
+use crate::core::lang::vhdl::symbols::Entity;
+use crate::core::lang::vhdl::symbols::{VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lang::LangMode;
 use crate::util::anyerror::Fault;
@@ -91,7 +92,7 @@ impl Tree {
         let files = algo::build_ip_file_list(&ip_graph);
 
         // build the complete graph (using entities as the nodes)
-        let global_graph = Self::build_graph(&files);
+        let global_graph = Self::build_graph(&files)?;
 
         if self.all == false {
             let n = {
@@ -239,7 +240,7 @@ impl Tree {
     /// Constructs a graph of the design heirarchy with entity nodes.
     fn build_graph<'a>(
         files: &'a Vec<IpFileNode>,
-    ) -> GraphMap<CompoundIdentifier, HdlNode<'a>, ()> {
+    ) -> Result<GraphMap<CompoundIdentifier, HdlNode<'a>, ()>, Fault> {
         // entity identifier, HashNode (hash-node holds entity structs)
         let mut graph = GraphMap::<CompoundIdentifier, HdlNode, ()>::new();
 
@@ -256,31 +257,34 @@ impl Tree {
             }
             // parse VHDL code
             let contents = fs::read_to_string(&source_file.get_file()).unwrap();
-            let symbols = VHDLParser::read(&contents).into_symbols();
+            let symbols = match VHDLParser::read(&contents) {
+                Ok(s) => s.into_symbols(),
+                Err(e) => Err(ParseError::SourceCodeError(source_file.get_file().clone(), e.to_string()))?
+            };
 
             let lib = source_file.get_library();
             // add all entities to a graph and store architectures for later analysis
             symbols.into_iter().for_each(|sym| match sym {
-                VHDLSymbol::Entity(e) => {
+                VhdlSymbol::Entity(e) => {
                     component_pairs.insert(e.get_name().clone(), lib.clone());
                     graph.add_node(
                         CompoundIdentifier::new(lib.clone(), e.get_name().clone()),
-                        HdlNode::new(VHDLSymbol::from(e), source_file),
+                        HdlNode::new(VhdlSymbol::from(e), source_file),
                     );
                 }
-                VHDLSymbol::Architecture(arch) => {
+                VhdlSymbol::Architecture(arch) => {
                     sub_nodes.push((
                         lib.clone(),
                         SubUnitNode::new(SubUnit::from_arch(arch), source_file),
                     ));
                 }
-                VHDLSymbol::Configuration(cfg) => {
+                VhdlSymbol::Configuration(cfg) => {
                     sub_nodes.push((
                         lib.clone(),
                         SubUnitNode::new(SubUnit::from_config(cfg), source_file),
                     ));
                 }
-                VHDLSymbol::Package(_) => {
+                VhdlSymbol::Package(_) => {
                     package_identifiers.insert(sym.as_iden().unwrap().clone());
                 }
                 _ => (),
@@ -322,7 +326,7 @@ impl Tree {
 
                                 graph.add_node(
                                     dep_name.clone(),
-                                    HdlNode::black_box(VHDLSymbol::from(Entity::black_box(
+                                    HdlNode::black_box(VhdlSymbol::from(Entity::black_box(
                                         dep.get_suffix().clone(),
                                     ))),
                                 );
@@ -336,7 +340,7 @@ impl Tree {
                         if graph.has_node_by_key(dep) == false {
                             graph.add_node(
                                 dep.clone(),
-                                HdlNode::black_box(VHDLSymbol::from(Entity::black_box(
+                                HdlNode::black_box(VhdlSymbol::from(Entity::black_box(
                                     dep.get_suffix().clone(),
                                 ))),
                             );
@@ -353,6 +357,6 @@ impl Tree {
                 };
             }
         }
-        graph
+        Ok(graph)
     }
 }

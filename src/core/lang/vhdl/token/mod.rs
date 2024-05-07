@@ -22,7 +22,7 @@ pub type Comment = comment::Comment;
 pub type Keyword = keyword::Keyword;
 pub type Delimiter = delimiter::Delimiter;
 pub type VHDLTokenizer = tokenizer::VHDLTokenizer;
-pub type VHDLTokenError = error::VHDLTokenError;
+pub type VHDLTokenError = error::VhdlError;
 
 pub trait ToColor: Display {
     fn to_color(&self) -> ColoredString;

@@ -9,8 +9,8 @@ use crate::core::lang::parser::Symbol;
 use crate::core::lang::vhdl::format::VhdlFormat;
 use crate::core::lang::vhdl::interface;
 use crate::core::lang::vhdl::primaryunit::VhdlIdentifierError;
-use crate::core::lang::vhdl::symbol::Architecture;
-use crate::core::lang::vhdl::symbol::Entity;
+use crate::core::lang::vhdl::symbols::architecture::Architecture;
+use crate::core::lang::vhdl::symbols::Entity;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::manifest::FromFile;
 use crate::core::manifest::Manifest;
@@ -58,7 +58,7 @@ impl FromCli for Get {
 
 use crate::core::lang::parser::Parse;
 use crate::core::lang::vhdl;
-use crate::core::lang::vhdl::symbol;
+use crate::core::lang::vhdl::symbols;
 use crate::core::lang::vhdl::token::VHDLTokenizer;
 use std::env;
 
@@ -201,7 +201,7 @@ impl Get {
         iden: &Identifier,
         dir: &PathBuf,
         man: &Manifest,
-    ) -> Result<symbol::Entity, Fault> {
+    ) -> Result<symbols::Entity, Fault> {
         let files = crate::util::filesystem::gather_current_files(&dir, false);
         // @todo: generate all units first (store architectures, and entities, and then process)
         let mut result: Option<(String, Entity)> = None;
@@ -213,7 +213,7 @@ impl Get {
                 let text = std::fs::read_to_string(&f)?;
 
                 // pull all architectures
-                let units: Vec<Symbol<symbol::VHDLSymbol>> = vhdl::symbol::VHDLParser::parse(
+                let units: Vec<Symbol<symbols::VhdlSymbol>> = vhdl::symbols::VHDLParser::parse(
                     VHDLTokenizer::from_source_code(&text).into_tokens(),
                 )
                 .into_iter()

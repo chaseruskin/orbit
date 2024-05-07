@@ -4,6 +4,11 @@ use std::hash::Hash;
 
 use serde_derive::Serialize;
 
+use self::architecture::Architecture;
+use self::configuration::Configuration;
+use self::package::Package;
+use self::packagebody::PackageBody;
+
 use super::super::lexer::*;
 use super::super::parser::*;
 use super::format::VhdlFormat;
@@ -13,8 +18,15 @@ use crate::core::lang::vhdl::token::*;
 
 pub type IdentifierList = LinkedList<CompoundIdentifier>;
 
+pub mod entity;
+pub mod context;
+pub mod package;
+pub mod configuration;
+pub mod architecture;
+pub mod packagebody;
+
 #[derive(Debug, PartialEq)]
-pub enum VHDLSymbol {
+pub enum VhdlSymbol {
     // primary design units
     Entity(Entity),
     Context(Context),
@@ -25,21 +37,21 @@ pub enum VHDLSymbol {
     PackageBody(PackageBody),
 }
 
-impl From<Entity> for VHDLSymbol {
+impl From<Entity> for VhdlSymbol {
     fn from(value: Entity) -> Self {
         Self::Entity(value)
     }
 }
 
-impl VHDLSymbol {
+impl VhdlSymbol {
     /// Casts `self` to identifier.
     pub fn as_iden(&self) -> Option<&Identifier> {
         match self {
             Self::Entity(e) => Some(&e.name),
-            Self::Architecture(a) => Some(&a.name),
-            Self::Package(p) => Some(&p.name),
+            Self::Architecture(a) => Some(&a.get_name()),
+            Self::Package(p) => Some(&p.get_name()),
             Self::PackageBody(_) => None,
-            Self::Configuration(c) => Some(&c.name),
+            Self::Configuration(c) => Some(&c.get_name()),
             Self::Context(c) => Some(&c.name),
         }
     }
@@ -107,11 +119,11 @@ impl VHDLSymbol {
     pub fn add_refs(&mut self, refs: &mut IdentifierList) {
         match self {
             Self::Entity(e) => e.refs.append(refs),
-            Self::Architecture(a) => a.refs.append(refs),
-            Self::Package(p) => p.refs.append(refs),
-            Self::PackageBody(pb) => pb.refs.append(refs),
+            Self::Architecture(a) => a.get_refs_mut().append(refs),
+            Self::Package(p) => p.get_refs_mut().append(refs),
+            Self::PackageBody(pb) => pb.get_refs_mut().append(refs),
             Self::Context(cx) => cx.refs.append(refs),
-            Self::Configuration(cf) => cf.refs.append(refs),
+            Self::Configuration(cf) => cf.get_refs_mut().append(refs),
         }
         refs.clear();
     }
@@ -128,7 +140,7 @@ impl VHDLSymbol {
     }
 }
 
-impl std::fmt::Display for VHDLSymbol {
+impl Display for VhdlSymbol {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
             Self::Entity(e) => format!(
@@ -136,72 +148,18 @@ impl std::fmt::Display for VHDLSymbol {
                 &e.name, e.generics, e.ports
             ),
             Self::PackageBody(pb) => format!("package body- {}", pb),
-            Self::Architecture(a) => format!("architecture {} for entity {}", &a.name, &a.owner),
+            Self::Architecture(a) => format!("architecture {} for entity {}", &a.get_name(), &a.get_owner()),
             Self::Package(p) => format!("package {}", &p),
-            Self::Configuration(c) => format!("configuration {} for entity {}", &c.name, &c.owner),
+            Self::Configuration(c) => format!("configuration {} for entity {}", &c.get_name(), &c.get_owner()),
             Self::Context(c) => format!("context {}", &c.name),
         };
         write!(f, "{}", s)
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub struct Package {
-    name: Identifier,
-    generics: Generics,
-    body: Option<PackageBody>,
-    refs: IdentifierList,
-    pos: Position,
-}
 
-impl Package {
-    /// Accesses the references for the entity.
-    pub fn get_refs(&self) -> &IdentifierList {
-        &self.refs
-    }
 
-    pub fn get_position(&self) -> &Position {
-        &self.pos
-    }
-}
-
-impl Display for Package {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.name)
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct PackageBody {
-    owner: Identifier,
-    refs: IdentifierList,
-    pos: Position,
-}
-
-impl PackageBody {
-    /// Accesses the references for the entity.
-    pub fn get_refs(&self) -> &IdentifierList {
-        &self.refs
-    }
-
-    pub fn get_owner(&self) -> &Identifier {
-        &self.owner
-    }
-
-    pub fn get_position(&self) -> &Position {
-        &self.pos
-    }
-
-    pub fn take_refs(self) -> IdentifierList {
-        self.refs
-    }
-}
-
-impl Display for PackageBody {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "package body for {}", self.owner)
-    }
-}
+use super::token::error::VhdlError;
 
 #[derive(Debug, PartialEq, Serialize)]
 pub struct Entity {
@@ -435,13 +393,13 @@ impl Entity {
 
     /// Parses an `Entity` primary design unit from the entity's identifier to
     /// the END closing statement.
-    fn from_tokens<I>(tokens: &mut Peekable<I>, pos: Position) -> Self
+    fn from_tokens<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Self, VhdlError>
     where
         I: Iterator<Item = Token<VHDLToken>>,
     {
         // take entity name
         let entity_name = tokens.next().take().unwrap().take();
-        let (generics, ports, entity_refs) = VHDLSymbol::parse_entity_declaration(tokens);
+        let (generics, ports, entity_refs) = VhdlSymbol::parse_entity_declaration(tokens)?;
 
         let generics = generics
             .into_iter()
@@ -453,56 +411,22 @@ impl Entity {
             .map(|f| f.0)
             .collect::<Vec<Vec<Token<VHDLToken>>>>();
 
-        Entity {
+        Ok(Entity {
             name: match entity_name {
                 VHDLToken::Identifier(id) => id,
-                _ => panic!("expected an identifier"),
+                // expecting identifier
+                _ => return Err(VhdlError::Vague),
             },
             architectures: Vec::new(),
             generics: Generics(InterfaceDeclarations::from_double_listed_tokens(generics)),
             ports: Ports(InterfaceDeclarations::from_double_listed_tokens(ports)),
             refs: entity_refs,
             pos: pos,
-        }
+        })
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Serialize)]
-#[serde(transparent)]
-pub struct Architecture {
-    name: Identifier,
-    #[serde(skip_serializing)]
-    owner: Identifier,
-    #[serde(skip_serializing)]
-    dependencies: IdentifierList,
-    #[serde(skip_serializing)]
-    refs: IdentifierList,
-    #[serde(skip_serializing)]
-    pos: Position,
-}
 
-impl Architecture {
-    pub fn name(&self) -> &Identifier {
-        &self.name
-    }
-
-    pub fn get_position(&self) -> &Position {
-        &self.pos
-    }
-
-    pub fn entity(&self) -> &Identifier {
-        &self.owner
-    }
-
-    pub fn edges(&self) -> &IdentifierList {
-        &self.dependencies
-    }
-
-    /// Accesses the references for the entity.
-    pub fn get_refs(&self) -> &IdentifierList {
-        &self.refs
-    }
-}
 
 #[derive(Debug, PartialEq)]
 pub struct Context {
@@ -538,38 +462,6 @@ pub enum ContextStatement {
 #[derive(Debug, PartialEq)]
 pub struct UseClause {
     imports: Vec<SelectedName>,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Configuration {
-    name: Identifier,
-    owner: Identifier,
-    dependencies: IdentifierList,
-    refs: IdentifierList,
-    pos: Position,
-}
-
-impl Configuration {
-    pub fn name(&self) -> &Identifier {
-        &self.name
-    }
-
-    pub fn get_position(&self) -> &Position {
-        &self.pos
-    }
-
-    pub fn entity(&self) -> &Identifier {
-        &self.owner
-    }
-
-    pub fn edges(&self) -> &IdentifierList {
-        &self.dependencies
-    }
-
-    /// Accesses the references for the entity.
-    pub fn get_refs(&self) -> &IdentifierList {
-        &self.refs
-    }
 }
 
 /*
@@ -680,19 +572,16 @@ impl CompoundIdentifier {
 
 #[derive(Debug, PartialEq)]
 pub struct VHDLParser {
-    symbols: Vec<Symbol<VHDLSymbol>>,
+    symbols: Vec<Symbol<VhdlSymbol>>,
 }
 
 impl Parse<VHDLToken> for VHDLParser {
-    type SymbolType = VHDLSymbol;
-    type Err = String;
+    type SymbolType = VhdlSymbol;
+    type SymbolError = VhdlError;
 
     fn parse(
         tokens: Vec<Token<VHDLToken>>,
-    ) -> Vec<Result<Symbol<Self::SymbolType>, SymbolError<Self::Err>>>
-    where
-        <Self as Parse<VHDLToken>>::Err: Display,
-    {
+    ) -> Vec<Result<Symbol<Self::SymbolType>, Self::SymbolError>> {
         let mut symbols = Vec::new();
         let mut tokens = tokens.into_iter().peekable();
 
@@ -702,32 +591,45 @@ impl Parse<VHDLToken> for VHDLParser {
             // create entity symbol
             if t.as_ref().check_keyword(&Keyword::Entity) {
                 // get the position
-                let mut ent = VHDLSymbol::parse_entity(&mut tokens, t.into_position());
-                ent.add_refs(&mut global_refs);
-                // println!("info: detected {}", ent);
-                symbols.push(Ok(Symbol::new(ent)));
+                symbols.push(match VhdlSymbol::parse_entity(&mut tokens, t.into_position()) {
+                    Ok(mut ent) => {
+                        // println!("info: detected {}", ent);
+                        ent.add_refs(&mut global_refs);
+                        Ok(Symbol::new(ent))
+                    },
+                    Err(e) => Err(e)
+                });
             // create architecture symbol
             } else if t.as_ref().check_keyword(&Keyword::Architecture) {
-                let mut arch = VHDLSymbol::parse_architecture(&mut tokens, t.into_position());
-                arch.add_refs(&mut global_refs);
-                // println!("info: detected {}", arch);
-                symbols.push(Ok(Symbol::new(arch)));
+                symbols.push(match VhdlSymbol::parse_architecture(&mut tokens, t.into_position()) {
+                    Ok(mut arch) => {
+                        arch.add_refs(&mut global_refs);
+                        // println!("info: detected {}", arch);
+                        Ok(Symbol::new(arch))
+                    },
+                    Err(e) => Err(e)
+                });
             // create configuration symbol
             } else if t.as_ref().check_keyword(&Keyword::Configuration) {
-                let config = VHDLSymbol::parse_configuration(&mut tokens, t.into_position());
-                // println!("info: detected {}", config);
-                symbols.push(Ok(Symbol::new(config)));
+                symbols.push(match VhdlSymbol::parse_configuration(&mut tokens, t.into_position()) {
+                    Ok(config) => Ok(Symbol::new(config)),
+                    Err(e) => Err(e)
+                });
             // create package symbol
             } else if t.as_ref().check_keyword(&Keyword::Package) {
-                let mut pack = VHDLSymbol::route_package_parse(&mut tokens, t.into_position());
-                pack.add_refs(&mut global_refs);
-                // println!("info: detected {}", pack);
-                symbols.push(Ok(Symbol::new(pack)));
+                symbols.push(match VhdlSymbol::route_package_parse(&mut tokens, t.into_position()) {
+                    Ok(mut pack) => {
+                        pack.add_refs(&mut global_refs);
+                        // println!("info: detected {}", pack);
+                        Ok(Symbol::new(pack))
+                    }
+                    Err(e) => Err(e)
+                });
             // create a context symbol or context reference
             } else if t.as_ref().check_keyword(&Keyword::Context) {
-                match VHDLSymbol::parse_context(&mut tokens, t.into_position()) {
+                match VhdlSymbol::parse_context(&mut tokens, t.into_position()) {
                     ContextUsage::ContextDeclaration(dec) => {
-                        let mut context = VHDLSymbol::Context(dec);
+                        let mut context = VhdlSymbol::Context(dec);
                         // println!("info: detected {}", context);
                         context.add_refs(&mut global_refs);
                         symbols.push(Ok(Symbol::new(context)));
@@ -739,7 +641,7 @@ impl Parse<VHDLToken> for VHDLParser {
             // handle global statements (`USE`, `LIBRARY` statements, or invalid code)
             } else {
                 // update global references list
-                let mut clause = VHDLSymbol::parse_statement(&mut tokens);
+                let mut clause = VhdlSymbol::parse_statement(&mut tokens);
                 global_refs.append(clause.get_refs_mut());
             }
         }
@@ -749,7 +651,8 @@ impl Parse<VHDLToken> for VHDLParser {
 }
 
 impl VHDLParser {
-    pub fn read(s: &str) -> Self {
+    /// Quietly ignores any errors and returns the list of symbols.
+    pub fn read_lazy(s: &str) -> Self {
         let symbols = VHDLParser::parse(VHDLTokenizer::from_source_code(&s).into_tokens());
         Self {
             symbols: symbols
@@ -759,7 +662,16 @@ impl VHDLParser {
         }
     }
 
-    pub fn into_symbols(self) -> Vec<VHDLSymbol> {
+    /// Reports an error if one is discovered in the list of symbols.
+    pub fn read(s: &str) -> Result<Self, VhdlError> {
+        let symbols = VHDLParser::parse(VHDLTokenizer::from_source_code(&s).into_tokens());
+        let result: Result<Vec<Symbol<VhdlSymbol>>, VhdlError> = symbols.into_iter().collect();
+        Ok(Self {
+            symbols: result?
+        })
+    }
+
+    pub fn into_symbols(self) -> Vec<VhdlSymbol> {
         self.symbols.into_iter().map(|f| f.take()).collect()
     }
 }
@@ -853,21 +765,21 @@ impl Statement {
     }
 }
 
-impl VHDLSymbol {
+impl VhdlSymbol {
     /// Parses an `Entity` primary design unit from the entity's identifier to
     /// the END closing statement.
-    fn parse_entity<I>(tokens: &mut Peekable<I>, pos: Position) -> VHDLSymbol
+    fn parse_entity<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<VhdlSymbol, VhdlError>
     where
         I: Iterator<Item = Token<VHDLToken>>,
     {
-        VHDLSymbol::Entity(Entity::from_tokens(tokens, pos))
+        Ok(VhdlSymbol::Entity(Entity::from_tokens(tokens, pos)?))
     }
 
     /// Parses a package declaration, from the <package> IS to the END keyword.
     ///
     /// Assumes the last consumed token was PACKAGE keyword and the next token
     /// is the identifier for the package name.
-    fn parse_package_declaration<I>(tokens: &mut Peekable<I>, pos: Position) -> VHDLSymbol
+    fn parse_package_declaration<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<VhdlSymbol, VhdlError>
     where
         I: Iterator<Item = Token<VHDLToken>>,
     {
@@ -883,7 +795,8 @@ impl VHDLSymbol {
             .check_keyword(&Keyword::Is)
             == false
         {
-            panic!("expecting keyword IS")
+            // panic!("expecting keyword IS")
+            return Err(VhdlError::Vague)
         }
 
         // check if there is a NEW keyword to return instantiation
@@ -898,16 +811,17 @@ impl VHDLSymbol {
             // parse the statement to take the package instantiation line
             let clause = Self::parse_statement(tokens);
             // construct a new package
-            return VHDLSymbol::Package(Package {
-                name: match pack_name {
+            return Ok(VhdlSymbol::Package(Package::new(
+            match pack_name {
                     VHDLToken::Identifier(id) => id,
-                    _ => panic!("expected an identifier"),
+                    _ => {
+                        // expecting identifier
+                        return Err(VhdlError::Vague)
+                    }
                 },
-                generics: Generics::new(),
-                refs: clause.take_refs(),
-                body: None,
-                pos: pos,
-            });
+                clause.take_refs(),
+                pos
+            )));
         }
 
         // check if there is a generic clause
@@ -943,7 +857,7 @@ impl VHDLSymbol {
                 // consume PACKAGE keyword
                 let inner_pos = tokens.next().unwrap().into_position();
                 // parse nested package declaration and grab references
-                let inner_pack = Self::parse_package_declaration(tokens, inner_pos);
+                let inner_pack = Self::parse_package_declaration(tokens, inner_pos)?;
                 inner_pack
                     .as_package()
                     .unwrap()
@@ -965,16 +879,17 @@ impl VHDLSymbol {
         }
 
         // println!("*--- unit {}", pack_name);
-        VHDLSymbol::Package(Package {
-            name: match pack_name {
-                VHDLToken::Identifier(id) => id,
-                _ => panic!("expected an identifier"),
-            },
-            generics: Generics(InterfaceDeclarations::from_double_listed_tokens(generics)),
-            refs: refs,
-            body: None,
-            pos: pos,
-        })
+        Ok(VhdlSymbol::Package(Package::new(
+            match pack_name {
+                    VHDLToken::Identifier(id) => id,
+                    _ => {
+                        // expecting identifier
+                        return Err(VhdlError::Vague)
+                    }
+                },
+                refs,
+                pos
+            ).generics(Generics(InterfaceDeclarations::from_double_listed_tokens(generics)))))
     }
 
     /// Creates a `Context` struct for primary design unit: context.
@@ -1075,7 +990,7 @@ impl VHDLSymbol {
     ///
     /// Package declarations within this scope can be ignored because their visibility
     /// is not reached outside of the body.
-    fn parse_package_body<I>(tokens: &mut Peekable<I>, pos: Position) -> PackageBody
+    fn parse_package_body<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<PackageBody, VhdlError>
     where
         I: Iterator<Item = Token<VHDLToken>>,
     {
@@ -1093,17 +1008,21 @@ impl VHDLSymbol {
             .check_keyword(&Keyword::Is)
             == false
         {
-            panic!("expecting keyword IS")
+            // panic!("expecting keyword IS")
+            return Err(VhdlError::Vague)
         }
-        let (_, refs) = VHDLSymbol::parse_body(tokens, &Self::is_primary_ending);
-        PackageBody {
-            owner: match pack_name {
+        let (_, refs) = VhdlSymbol::parse_body(tokens, &Self::is_primary_ending);
+        Ok(PackageBody::new(
+            match pack_name {
                 VHDLToken::Identifier(id) => id,
-                _ => panic!("expected an identifier"),
+                _ => {
+                    // panic!("expected an identifier")
+                    return Err(VhdlError::Vague)
+                },
             },
-            refs: refs,
-            pos: pos,
-        }
+            refs,
+            pos,
+        ))
     }
 
     /// Detects identifiers configured in the configuration statement section or architecture
@@ -1238,19 +1157,23 @@ impl VHDLSymbol {
         }
     }
 
-    fn parse_configuration<I>(tokens: &mut Peekable<I>, pos: Position) -> VHDLSymbol
+    fn parse_configuration<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<VhdlSymbol, VhdlError>
     where
         I: Iterator<Item = Token<VHDLToken>>,
     {
         let config_name = match tokens.next().take().unwrap().take() {
             VHDLToken::Identifier(id) => id,
-            _ => panic!("expected an identifier"),
+            _ => {
+                // panic!("expected an identifier")
+                return Err(VhdlError::Vague)
+            },
         };
-        let entity_name = VHDLSymbol::parse_owner_design_unit(tokens);
+        let entity_name = VhdlSymbol::parse_owner_design_unit(tokens);
 
         // force taking the `is` keyword
         if tokens.next().unwrap().as_type().check_keyword(&Keyword::Is) == false {
-            panic!("expecting keyword 'is'")
+            // panic!("expecting keyword 'is'")
+            return Err(VhdlError::Vague)
         }
 
         let mut deps = IdentifierList::new();
@@ -1274,13 +1197,13 @@ impl VHDLSymbol {
             }
         }
 
-        VHDLSymbol::Configuration(Configuration {
-            name: config_name,
-            owner: entity_name,
-            dependencies: deps,
-            refs: refs,
-            pos: pos,
-        })
+        Ok(VhdlSymbol::Configuration(Configuration::new(
+            config_name,
+            entity_name,
+            deps,
+            refs,
+            pos,
+        )))
     }
 
     fn parse_block_configuration<I>(tokens: &mut Peekable<I>) -> IdentifierList
@@ -1357,25 +1280,28 @@ impl VHDLSymbol {
     /// Parses an secondary design unit: architecture.
     ///
     /// Assumes the next token to consume is the architecture's identifier.
-    fn parse_architecture<I>(tokens: &mut Peekable<I>, pos: Position) -> VHDLSymbol
+    fn parse_architecture<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<VhdlSymbol, VhdlError>
     where
         I: Iterator<Item = Token<VHDLToken>>,
     {
         let arch_name = match tokens.next().take().unwrap().take() {
             VHDLToken::Identifier(id) => id,
-            _ => panic!("expected an identifier"),
+            _ => {
+                // panic!("expected an identifier")
+                return Err(VhdlError::Vague)
+            },
         };
-        let entity_name = VHDLSymbol::parse_owner_design_unit(tokens);
+        let entity_name = VhdlSymbol::parse_owner_design_unit(tokens);
         // println!("*--- unit {}", arch_name);
 
-        let (deps, refs) = VHDLSymbol::parse_declaration(tokens, &Self::is_primary_ending);
-        VHDLSymbol::Architecture(Architecture {
-            name: arch_name,
-            owner: entity_name,
-            dependencies: deps,
-            refs: refs,
-            pos: pos,
-        })
+        let (deps, refs) = VhdlSymbol::parse_declaration(tokens, &Self::is_primary_ending);
+        Ok(VhdlSymbol::Architecture(Architecture::new(
+            arch_name,
+            entity_name,
+            deps,
+            refs,
+            pos,
+        )))
     }
 
     /// Checks if the statement `stmt` is the code to enter a valid sub-declaration section.
@@ -1612,19 +1538,21 @@ impl VHDLSymbol {
     /// search for interface lists found after GENERIC and PORT keywords.
     fn parse_entity_declaration<I>(
         tokens: &mut Peekable<I>,
-    ) -> (Vec<Statement>, Vec<Statement>, IdentifierList)
+    ) -> Result<(Vec<Statement>, Vec<Statement>, IdentifierList), VhdlError>
     where
         I: Iterator<Item = Token<VHDLToken>>,
     {
         // println!("*--- declaration section");
         // force taking the 'is' keyword
         if tokens.next().unwrap().as_type().check_keyword(&Keyword::Is) == false {
-            panic!("expecting 'is' keyword")
+            // panic!("expecting 'is' keyword")
+            return Err(VhdlError::Vague)
         }
         // check entity_header before entering entity declarative part
         // check for generics
         if tokens.peek().is_none() {
-            panic!("expecting END keyword")
+            // panic!("expecting END keyword")
+            return Err(VhdlError::Vague)
         }
         let mut generics = if tokens
             .peek()
@@ -1639,7 +1567,8 @@ impl VHDLSymbol {
         };
         // check for ports
         if tokens.peek().is_none() {
-            panic!("expecting END keyword")
+            // panic!("expecting END keyword")
+            return Err(VhdlError::Vague)
         }
         let mut ports = if tokens
             .peek()
@@ -1677,7 +1606,7 @@ impl VHDLSymbol {
             // find a nested package (throw away for now)
             } else if t.as_type().check_keyword(&Keyword::Package) {
                 let inner_pos = tokens.next().unwrap().into_position();
-                let pack_name = Self::route_package_parse(tokens, inner_pos);
+                let pack_name = Self::route_package_parse(tokens, inner_pos)?;
                 // add references found from the package
                 pack_name
                     .as_package()
@@ -1693,7 +1622,7 @@ impl VHDLSymbol {
                 entity_refs.append(clause.get_refs_mut());
             }
         }
-        (generics, ports, entity_refs)
+        Ok((generics, ports, entity_refs))
     }
 
     /// Checks if the keyword `kw` is a potential start to a subprogram.
@@ -1937,14 +1866,14 @@ impl VHDLSymbol {
 
     /// Routes the parsing to either package body or package declaration,
     /// depending on the next token being BODY keyword or identifier.
-    fn route_package_parse<I>(tokens: &mut Peekable<I>, pos: Position) -> VHDLSymbol
+    fn route_package_parse<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<VhdlSymbol, VhdlError>
     where
         I: Iterator<Item = Token<VHDLToken>>,
     {
         if &VHDLToken::Keyword(Keyword::Body) == tokens.peek().unwrap().as_type() {
-            VHDLSymbol::PackageBody(VHDLSymbol::parse_package_body(tokens, pos))
+            Ok(VhdlSymbol::PackageBody(VhdlSymbol::parse_package_body(tokens, pos)?))
         } else {
-            VHDLSymbol::parse_package_declaration(tokens, pos)
+            Ok(VhdlSymbol::parse_package_declaration(tokens, pos)?)
         }
     }
 
@@ -2034,7 +1963,7 @@ mod test {
             .peekable();
         // take USE
         tokens.next();
-        let using_imports = VHDLSymbol::parse_use_clause(&mut tokens);
+        let using_imports = VhdlSymbol::parse_use_clause(&mut tokens);
         assert_eq!(
             using_imports,
             UseClause {
@@ -2062,7 +1991,7 @@ mod test {
         let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         assert_eq!(
-            VHDLSymbol::parse_statement(&mut iter).as_types(),
+            VhdlSymbol::parse_statement(&mut iter).as_types(),
             vec![
                 &VHDLToken::Identifier(Identifier::Basic("P1".to_owned())),
                 &VHDLToken::Delimiter(Delimiter::Comma),
@@ -2086,7 +2015,7 @@ mod test {
             .into_tokens()
             .into_iter()
             .peekable();
-        let sel_name = VHDLSymbol::compose_name(&mut tokens);
+        let sel_name = VhdlSymbol::compose_name(&mut tokens);
         assert_eq!(
             sel_name,
             SelectedName(vec![
@@ -2108,7 +2037,7 @@ mod test {
             .into_tokens()
             .into_iter()
             .peekable();
-        let sel_name = VHDLSymbol::compose_name(&mut tokens);
+        let sel_name = VhdlSymbol::compose_name(&mut tokens);
         assert_eq!(
             sel_name,
             SelectedName(vec![Identifier::Basic("eel4712c".to_owned()),])
@@ -2129,7 +2058,7 @@ constant Delay: TIME := 1 ms;";
             .into_iter()
             .peekable();
         tokens.next(); // take PORT
-        let ports = VHDLSymbol::parse_interface_list(&mut tokens);
+        let ports = VhdlSymbol::parse_interface_list(&mut tokens);
         let ports: Vec<String> = ports.into_iter().map(|m| m.to_string()).collect();
         assert_eq!(ports, vec!["P1 , P2 : inout BIT",]);
         assert_eq!(
@@ -2153,13 +2082,13 @@ end;";
             .into_iter()
             .peekable();
         tokens.next(); // take GENERIC
-        let generics = VHDLSymbol::parse_interface_list(&mut tokens);
+        let generics = VhdlSymbol::parse_interface_list(&mut tokens);
         // convert to strings for easier verification
         let generics: Vec<String> = generics.into_iter().map(|m| m.to_string()).collect();
         assert_eq!(generics, vec!["N : positive",]);
         // take PORT
         tokens.next();
-        let ports = VHDLSymbol::parse_interface_list(&mut tokens);
+        let ports = VhdlSymbol::parse_interface_list(&mut tokens);
         // convert to strings for easier verification
         let ports: Vec<String> = ports.into_iter().map(|m| m.to_string()).collect();
         assert_eq!(
@@ -2187,7 +2116,7 @@ end;";
             .into_iter()
             .peekable();
         tokens.next(); // take GENERIC
-        let generics = VHDLSymbol::parse_interface_list(&mut tokens);
+        let generics = VhdlSymbol::parse_interface_list(&mut tokens);
         // convert to strings for easier verification
         let generics: Vec<String> = generics.into_iter().map(|m| m.to_string()).collect();
         assert_eq!(generics, vec!["N : positive",]);
@@ -2208,7 +2137,7 @@ signal ready: std_logic;";
             .into_tokens()
             .into_iter()
             .peekable();
-        let comp = VHDLSymbol::parse_component(&mut tokens);
+        let comp = VhdlSymbol::parse_component(&mut tokens);
         assert_eq!(comp.to_string(), "nor_gate");
         assert_eq!(
             tokens.next().unwrap().as_type(),
@@ -2224,7 +2153,7 @@ signal ready: std_logic;";
             .into_tokens()
             .into_iter()
             .peekable();
-        let comp = VHDLSymbol::parse_component(&mut tokens);
+        let comp = VhdlSymbol::parse_component(&mut tokens);
         assert_eq!(comp.to_string(), "nor_gate");
         assert_eq!(
             tokens.next().unwrap().as_type(),
@@ -2248,7 +2177,7 @@ signal ready: std_logic;";
             .into_tokens()
             .into_iter()
             .peekable();
-        let comp = VHDLSymbol::parse_component(&mut tokens);
+        let comp = VhdlSymbol::parse_component(&mut tokens);
         assert_eq!(comp.to_string(), "nor_gate");
         assert_eq!(
             tokens.next().unwrap().as_type(),
@@ -2272,7 +2201,7 @@ signal ready: std_logic;";
             ],
             IdentifierList::new(),
         );
-        assert_eq!(VHDLSymbol::is_primary_ending(&stmt), false);
+        assert_eq!(VhdlSymbol::is_primary_ending(&stmt), false);
 
         // primary endings can omit keyword and identifier label
         let stmt = Statement(
@@ -2282,7 +2211,7 @@ signal ready: std_logic;";
             )],
             IdentifierList::new(),
         );
-        assert_eq!(VHDLSymbol::is_primary_ending(&stmt), true);
+        assert_eq!(VhdlSymbol::is_primary_ending(&stmt), true);
 
         // primary endings can include their keyword
         let stmt = Statement(
@@ -2296,7 +2225,7 @@ signal ready: std_logic;";
             ],
             IdentifierList::new(),
         );
-        assert_eq!(VHDLSymbol::is_primary_ending(&stmt), true);
+        assert_eq!(VhdlSymbol::is_primary_ending(&stmt), true);
 
         // primary endings can have their keyword omitted and also include the identifier label
         let stmt = Statement(
@@ -2309,7 +2238,7 @@ signal ready: std_logic;";
             ],
             IdentifierList::new(),
         );
-        assert_eq!(VHDLSymbol::is_primary_ending(&stmt), true);
+        assert_eq!(VhdlSymbol::is_primary_ending(&stmt), true);
     }
 
     #[test]
@@ -2329,7 +2258,7 @@ end entity nor_gate;";
             .into_tokens()
             .into_iter()
             .peekable();
-        let e = Entity::from_tokens(&mut tokens, Position::place(1, 2));
+        let e = Entity::from_tokens(&mut tokens, Position::place(1, 2)).unwrap();
         assert_eq!(e.pos, Position::place(1, 2));
         assert_eq!(e.name, Identifier::Basic(String::from("nor_gate")));
         assert_eq!(e.generics.0.len(), 1);
@@ -2344,7 +2273,7 @@ end entity nor_gate;";
         let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         assert_eq!(
-            VHDLSymbol::parse_statement(&mut iter).get_refs(),
+            VhdlSymbol::parse_statement(&mut iter).get_refs(),
             &IdentifierList::from([
                 CompoundIdentifier::new(
                     Identifier::from_str("work").unwrap(),
@@ -2361,7 +2290,7 @@ end entity nor_gate;";
         let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         assert_eq!(
-            VHDLSymbol::parse_statement(&mut iter).get_refs(),
+            VhdlSymbol::parse_statement(&mut iter).get_refs(),
             &IdentifierList::from([CompoundIdentifier::new(
                 Identifier::from_str("work").unwrap(),
                 Identifier::from_str("package_name").unwrap()
@@ -2372,7 +2301,7 @@ end entity nor_gate;";
         let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         assert_eq!(
-            VHDLSymbol::parse_statement(&mut iter).get_refs(),
+            VhdlSymbol::parse_statement(&mut iter).get_refs(),
             &IdentifierList::from([
                 CompoundIdentifier::new(
                     Identifier::from_str("MKS").unwrap(),
@@ -2392,7 +2321,7 @@ end entity nor_gate;";
         let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         assert_eq!(
-            VHDLSymbol::parse_statement(&mut iter).as_types(),
+            VhdlSymbol::parse_statement(&mut iter).as_types(),
             vec![
                 &VHDLToken::Identifier(Identifier::Basic("a".to_owned())),
                 &VHDLToken::Delimiter(Delimiter::Colon),
@@ -2410,7 +2339,7 @@ end entity nor_gate;";
         let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
         assert_eq!(
-            VHDLSymbol::parse_statement(&mut iter).as_types(),
+            VhdlSymbol::parse_statement(&mut iter).as_types(),
             vec![
                 &VHDLToken::Identifier(Identifier::Basic("a".to_owned())),
                 &VHDLToken::Delimiter(Delimiter::Colon),
@@ -2429,12 +2358,12 @@ end entity nor_gate;";
             .into_tokens()
             .into_iter()
             .peekable();
-        let _ = VHDLSymbol::parse_statement(&mut tokens);
+        let _ = VhdlSymbol::parse_statement(&mut tokens);
         assert_eq!(
             tokens.next().unwrap().as_type(),
             &VHDLToken::Delimiter(Delimiter::ParenL)
         );
-        let _ = VHDLSymbol::parse_statement(&mut tokens);
+        let _ = VhdlSymbol::parse_statement(&mut tokens);
         assert_eq!(
             tokens.next().unwrap().as_type(),
             &VHDLToken::Keyword(Keyword::End)
@@ -2446,7 +2375,7 @@ end entity nor_gate;";
         let s = "a : in std_logic_vector ( 3 downto 0);";
         let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
-        let st = VHDLSymbol::parse_statement(&mut iter);
+        let st = VhdlSymbol::parse_statement(&mut iter);
         assert_eq!(st.to_string(), "a : in std_logic_vector(3 downto 0)");
     }
 
@@ -2494,9 +2423,9 @@ for L1: XOR_GATE use entity WORK.XOR_GATE(Behavior) -- or L1 = 'others' = 'L1, L
 "#;
         let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
-        let st = VHDLSymbol::parse_statement(&mut iter);
+        let st = VhdlSymbol::parse_statement(&mut iter);
         println!("{}", st);
-        let iden = VHDLSymbol::parse_configuration_spec(st);
+        let iden = VhdlSymbol::parse_configuration_spec(st);
         assert_eq!(
             iden.unwrap(),
             IdentifierList::from([
@@ -2521,8 +2450,8 @@ for all: xor_gate use configuration cfg1;
 "#;
         let tokens = VHDLTokenizer::from_source_code(&s).into_tokens();
         let mut iter = tokens.into_iter().peekable();
-        let st = VHDLSymbol::parse_statement(&mut iter);
-        let iden = VHDLSymbol::parse_configuration_spec(st);
+        let st = VhdlSymbol::parse_statement(&mut iter);
+        let iden = VhdlSymbol::parse_configuration_spec(st);
         assert_eq!(
             iden.unwrap(),
             IdentifierList::from([CompoundIdentifier::new_minimal(Identifier::Basic(
@@ -2875,16 +2804,16 @@ end architecture rtl;
     fn test_if_gen() {
         let data = std::fs::read_to_string("./tests/data/vhdl/if_gen.vhd").unwrap();
 
-        let syms = VHDLParser::read(&data).into_symbols();
+        let syms = VHDLParser::read(&data).unwrap().into_symbols();
         println!("{:?}", syms);
         // verify we captured the dependency outside the if_gen and inside the if_gen (2 * 2)
-        assert_eq!(syms[1].as_architecture().unwrap().dependencies.len(), 2 * 2);
+        assert_eq!(syms[1].as_architecture().unwrap().get_deps().len(), 2 * 2);
     }
 
     #[test]
     fn test_entity_after_package() {
         let data = std::fs::read_to_string("./tests/data/vhdl/ent_after_pkg.vhd").unwrap();
-        let syms = VHDLParser::read(&data).into_symbols();
+        let syms = VHDLParser::read(&data).unwrap().into_symbols();
         // capture all units (primary and secondary)
         assert_eq!(syms.len(), 6);
     }
@@ -2892,10 +2821,10 @@ end architecture rtl;
     #[test]
     fn test_procedure_in_process() {
         let data = std::fs::read_to_string("./tests/data/vhdl/proced_in_proc.vhd").unwrap();
-        let syms = VHDLParser::read(&data).into_symbols();
+        let syms = VHDLParser::read(&data).unwrap().into_symbols();
         // capture all units (primary and secondary)
         println!("{:?}", syms);
         // verify we captured all 3 sub-entities following procedures
-        assert_eq!(syms[1].as_architecture().unwrap().dependencies.len(), 2 * 3);
+        assert_eq!(syms[1].as_architecture().unwrap().get_deps().len(), 2 * 3);
     }
 }

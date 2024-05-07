@@ -1,18 +1,18 @@
 use crate::core::algo::IpFileNode;
 use crate::core::lang::vhdl::subunit::SubUnit;
-use crate::core::lang::vhdl::symbol::VHDLSymbol;
+use crate::core::lang::vhdl::symbols::VhdlSymbol;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::util::anyerror::AnyError;
 use colored::Colorize;
 
 #[derive(Debug, PartialEq)]
 pub struct HdlNode<'a> {
-    sym: VHDLSymbol,
+    sym: VhdlSymbol,
     files: Vec<&'a IpFileNode<'a>>, // must use a vector to retain file order in blueprint
 }
 
 impl<'a> HdlNode<'a> {
-    pub fn new(sym: VHDLSymbol, file: &'a IpFileNode) -> Self {
+    pub fn new(sym: VhdlSymbol, file: &'a IpFileNode) -> Self {
         let mut set = Vec::with_capacity(1);
         set.push(file);
         Self {
@@ -28,11 +28,11 @@ impl<'a> HdlNode<'a> {
     }
 
     /// References the VHDL symbol
-    pub fn get_symbol(&self) -> &VHDLSymbol {
+    pub fn get_symbol(&self) -> &VhdlSymbol {
         &self.sym
     }
 
-    pub fn get_symbol_mut(&mut self) -> &mut VHDLSymbol {
+    pub fn get_symbol_mut(&mut self) -> &mut VhdlSymbol {
         &mut self.sym
     }
 
@@ -44,7 +44,7 @@ impl<'a> HdlNode<'a> {
         self.files.is_empty()
     }
 
-    pub fn black_box(sym: VHDLSymbol) -> Self {
+    pub fn black_box(sym: VhdlSymbol) -> Self {
         Self {
             sym: sym,
             files: Vec::new(),

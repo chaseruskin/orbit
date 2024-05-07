@@ -199,6 +199,7 @@
 <li><a href="#the-general-section">[general]</a> - The general settings.
 <ul>
 <li><a href="#the-build-dir-field">build-dir</a> - Default build directory.</li>
+<li><a href="#the-language-mode-field">language-mode</a> - HDL language(s) to enable.</li>
 </ul>
 </li>
 <li><a href="#the-vhdl-format-section">[vhdl-format]</a> - VHDL code formatting.</li>
@@ -233,6 +234,11 @@
 <pre><code class="language-toml">[general]
 build-dir = &quot;build&quot;
 # ...
+</code></pre>
+<h3 id="the-language-mode-field"><a class="header" href="#the-language-mode-field">The <code>language-mode</code> field</a></h3>
+<p>Enable specific HDLs to be read by <code>orbit</code>. Supports the following options: &quot;vhdl&quot;, &quot;verilog&quot;, or &quot;mixed&quot;. When this field is not defined, the default value for the language mode is &quot;mixed&quot; (enabling all supported HDLs).</p>
+<pre><code class="language-toml">[general]
+language-mode = &quot;mixed&quot;
 </code></pre>
 <h3 id="the-vhdl-format-section"><a class="header" href="#the-vhdl-format-section">The <code>[vhdl-format]</code> section</a></h3>
 <p>The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their hard-coded default value.</p>

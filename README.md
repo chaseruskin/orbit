@@ -85,8 +85,8 @@ u_and_gate : and_gate
 `orbit` plans your build by generating a file list, called a blueprint, that contains a list of the required files for your given design in topologically-sorted order to act as an input to any backend toolchain:
 
 ```
-VHDL-RTL	math	/users/chase/.orbit/cache/gates-2.3.0-7f4d8c7812/rtl/nand_gate.vhd
-VHDL-RTL	math	/users/chase/.orbit/cache/gates-2.3.0-7f4d8c7812/rtl/and_gate.vhd
+VHDL-RTL	gates	/users/chase/.orbit/cache/gates-2.3.0-7f4d8c7812/rtl/nand_gate.vhd
+VHDL-RTL	gates	/users/chase/.orbit/cache/gates-2.3.0-7f4d8c7812/rtl/and_gate.vhd
 VHDL-RTL	work	/users/chase/projects/cpu/rtl/reg.vhd
 VHDL-RTL	work	/users/chase/projects/cpu/rtl/top.vhd
 VHDL-SIM	work	/users/chase/projects/cpu/sim/top_tb.vhd

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use crate::util::anyerror::{AnyError, Fault};
+use crate::util::anyerror::{AnyError, CodeFault, Fault};
 use crate::util::graphmap::GraphMap;
 use std::hash::Hash;
 use tempfile::tempdir;
@@ -49,7 +49,7 @@ fn graph_ip<'a>(
     root: &'a Ip,
     catalog: &'a Catalog<'a>,
     mode: &LangMode
-) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, Fault> {
+) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, CodeFault> {
     // create empty graph
     let mut g = GraphMap::new();
     // construct iterative approach with lists
@@ -92,7 +92,7 @@ fn graph_ip<'a>(
                                 {
                                     let dupe = iden_set.get(dupe.0).unwrap();
                                     if is_root == true {
-                                        return Err(VhdlIdentifierError::DuplicateAcrossDirect(
+                                        return Err(CodeFault(None, Box::new(VhdlIdentifierError::DuplicateAcrossDirect(
                                             dupe.get_name().to_string(),
                                             dep.get_man().get_ip().into_ip_spec(),
                                             PathBuf::from(dupe.get_source_code_file()),
@@ -100,7 +100,7 @@ fn graph_ip<'a>(
                                                 .unwrap()
                                                 .get_position()
                                                 .clone(),
-                                        ))?;
+                                        ))))?;
                                     }
                                     true
                                 } else {
@@ -129,20 +129,20 @@ fn graph_ip<'a>(
                         }
                         // todo: try to use the lock file to fill in missing pieces
                         None => {
-                            return Err(AnyError(format!(
+                            return Err(CodeFault(None, Box::new(AnyError(format!(
                                 "IP {} is not installed",
                                 IpSpec::from((pkgid.clone(), version.clone()))
-                            )))?
+                            )))))?
                         }
                     }
                 }
                 // todo: try to use the lock file to fill in missing pieces
                 // @TODO: check the queue for this IP and attempt to install
                 None => {
-                    return Err(AnyError(format!(
+                    return Err(CodeFault(None, Box::new(AnyError(format!(
                         "unknown IP {}",
                         IpSpec::from((pkgid.clone(), version.clone()))
-                    )))?
+                    )))))?
                 }
             }
         }
@@ -156,7 +156,7 @@ pub fn compute_final_ip_graph<'a>(
     target: &'a Ip,
     catalog: &'a Catalog<'a>,
     mode: &LangMode,
-) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, Fault> {
+) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, CodeFault> {
     // collect rough outline of ip graph
     let mut rough_ip_graph = graph_ip(&target, &catalog, mode)?;
 

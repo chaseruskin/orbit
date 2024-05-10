@@ -1,7 +1,7 @@
 use std::collections::HashMap;
-use crate::util::anyerror::Fault;
+use crate::util::anyerror::CodeFault;
 
-pub fn collect_units(files: &Vec<String>) -> Result<HashMap<String, String>, Fault> {
+pub fn collect_units(files: &Vec<String>) -> Result<HashMap<String, String>, CodeFault> {
     let result: HashMap<String, String> = HashMap::new();
     // iterate through all source files
     for source_file in files {

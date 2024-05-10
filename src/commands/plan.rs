@@ -859,7 +859,38 @@ impl Plan {
         }
 
         // build entire ip graph and resolve with dynamic symbol transformation
-        let ip_graph = algo::compute_final_ip_graph(&target, &catalog, mode)?;
+        let ip_graph = match algo::compute_final_ip_graph(&target, &catalog, mode) {
+            Ok(g) => g,
+            Err(e) => {
+                // generate a single blueprint
+                if e.is_source_err() == true && self.force == true {
+                    // store data in blueprint TSV format
+                    let mut blueprint_data = String::new();
+                    let file = e.as_source_file().unwrap();
+                    if fileset::is_rtl(&file) == true {
+                        blueprint_data += &format!(
+                            "VHDL-RTL{0}{1}{0}{2}\n",
+                            BLUEPRINT_DELIMITER,
+                            "work",
+                            file
+                        );
+                    } else {
+                        blueprint_data += &format!(
+                            "VHDL-SIM{0}{1}{0}{2}\n",
+                            BLUEPRINT_DELIMITER,
+                            "work",
+                            file
+                        );
+                    }
+                    let blueprint_path = self.create_outputs(&blueprint_data, build_dir, &build_path, &String::new(), &String::new(), plug)?;
+                    // create a blueprint file
+                    println!("info: Erroneous blueprint created at: {}", blueprint_path.display());
+                    return Ok(())
+                } else {
+                    return Err(e.into_fault())
+                }
+            }
+        };
 
         // only write lockfile and exit if flag is raised
         if self.only_lock == true {
@@ -868,6 +899,7 @@ impl Plan {
         }
 
         let files = algo::build_ip_file_list(&ip_graph);
+
         let global_graph = Self::build_full_graph(&files)?;
 
         let working_lib = Identifier::new_working();
@@ -1097,9 +1129,17 @@ impl Plan {
             }
         }
 
+        let blueprint_path = self.create_outputs(&blueprint_data, build_dir, &build_path, &top_name, &bench_name, plug)?;
+        // create a blueprint file
+        println!("info: Blueprint created at: {}", blueprint_path.display());
+        Ok(())
+    }
+
+    /// Writes the blueprint and env file to the build directory.
+    fn create_outputs(&self, blueprint_data: &str, build_dir: &str, build_path: &PathBuf, top_name: &str, bench_name: &str, plug: Option<&Plugin>) -> Result<PathBuf, Fault> {
         // create a output build directorie(s) if they do not exist
         if PathBuf::from(build_dir).exists() == false {
-            fs::create_dir_all(build_dir).expect("could not create build dir");
+            fs::create_dir_all(build_dir).expect("could not create build directory");
         }
 
         // [!] create the blueprint file
@@ -1131,10 +1171,7 @@ impl Plan {
             None => (),
         };
         environment::save_environment(&envs, &build_path)?;
-
-        // create a blueprint file
-        println!("info: Blueprint created at: {}", blueprint_path.display());
-        Ok(())
+        Ok(blueprint_path)
     }
 }
 

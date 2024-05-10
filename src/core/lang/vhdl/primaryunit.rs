@@ -3,8 +3,9 @@ use super::symbols::VhdlSymbol;
 use crate::core::ip::IpSpec;
 use crate::core::lang::parser::ParseError;
 use crate::core::lang::vhdl::symbols::VHDLParser;
+use crate::util::anyerror::CodeFault;
 use crate::util::filesystem;
-use crate::{core::lang::vhdl::token::identifier::Identifier, util::anyerror::Fault};
+use crate::core::lang::vhdl::token::identifier::Identifier;
 use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use toml_edit::InlineTable;
 
@@ -119,7 +120,7 @@ impl PartialEq for Unit {
 
 impl Eq for Unit {}
 
-pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryUnit>, Fault> {
+pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryUnit>, CodeFault> {
     let mut result: HashMap<Identifier, PrimaryUnit> = HashMap::new();
     // iterate through all source files
     for source_file in files {
@@ -129,7 +130,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
             let contents = std::fs::read_to_string(&source_file).unwrap();
             let symbols = match VHDLParser::read(&contents) {
                 Ok(s) => s.into_symbols(),
-                Err(e) => Err(ParseError::SourceCodeError(source_file.clone(), e.to_string()))?
+                Err(e) => Err(CodeFault(Some(source_file.clone()), Box::new(ParseError::SourceCodeError(source_file.clone(), e.to_string()))))?
             };
             // transform into primary design units
             let units: Vec<PrimaryUnit> = symbols
@@ -164,7 +165,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
 
             for primary in units {
                 if let Some(dupe) = result.insert(primary.get_iden().clone(), primary) {
-                    return Err(VhdlIdentifierError::DuplicateIdentifier(
+                    return Err(CodeFault(None, Box::new(VhdlIdentifierError::DuplicateIdentifier(
                         dupe.get_iden().to_string(),
                         PathBuf::from(source_file),
                         result
@@ -177,7 +178,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
                             .clone(),
                         PathBuf::from(dupe.get_unit().get_source_code_file()),
                         dupe.get_unit().get_symbol().unwrap().get_position().clone(),
-                    ))?;
+                    ))))?;
                 }
             }
         }

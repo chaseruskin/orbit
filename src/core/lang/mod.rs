@@ -10,7 +10,7 @@ pub mod node;
 use serde_derive::Serialize;
 use vhdl::primaryunit::PrimaryUnit;
 use std::collections::HashMap;
-use crate::util::anyerror::Fault;
+use crate::util::anyerror::CodeFault;
 use std::fmt::Display;
 use toml_edit::InlineTable;
 use std::str::FromStr;
@@ -198,7 +198,7 @@ impl Display for LangIdentifier {
     }
 }
 
-pub fn collect_units(files: &Vec<String>, lang_mode: &LangMode) -> Result<HashMap<LangIdentifier, LangUnit>, Fault> {
+pub fn collect_units(files: &Vec<String>, lang_mode: &LangMode) -> Result<HashMap<LangIdentifier, LangUnit>, CodeFault> {
     // collect the VHDL units
     let vhdl_units = match lang_mode.supports_vhdl() {
         true => vhdl::primaryunit::collect_units(&files)?,

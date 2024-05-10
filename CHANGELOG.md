@@ -19,6 +19,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ### Features
 - Adds `language-mode` setting under `[general]` for supporting VHDL, verilog, or mixed language projects
+- Allows errors during parsing to be identified by source code file and then adds ability to generate an erroneous blueprint by using `--force` with `plan` command
 
 ### Changes
 - Renames docker images to more memorable names and defines clearer organization

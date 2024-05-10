@@ -1,6 +1,7 @@
 use crate::core::manifest;
 use crate::core::manifest::Manifest;
 use crate::util::anyerror::AnyError;
+use crate::util::anyerror::CodeFault;
 use crate::util::anyerror::Fault;
 use std::path::PathBuf;
 
@@ -274,7 +275,7 @@ impl Ip {
         force: bool,
         dir: &PathBuf,
         lang_mode: &LangMode
-    ) -> Result<HashMap<LangIdentifier, LangUnit>, Fault> {
+    ) -> Result<HashMap<LangIdentifier, LangUnit>, CodeFault> {
         // try to read from metadata file
         match (force == false) && Self::read_units_from_metadata(&dir).is_some() {
             // use precomputed result

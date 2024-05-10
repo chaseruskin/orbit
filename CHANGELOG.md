@@ -23,6 +23,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ### Changes
 - Renames docker images to more memorable names and defines clearer organization
+- Updates version table to display state of each version for the specific ip
 
 ## 0.11.0
 

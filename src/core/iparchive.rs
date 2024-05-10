@@ -18,13 +18,13 @@ const ARCHIVE_MARKER: [u8; 4] = [0xc7, 0x9e, 0xf1, 0x6b];
 
 pub const ARCHIVE_EXT: &str = "ip";
 
-/// Number of bytes to read the archive version.
-const VERSION_SIZE: usize = 1;
 /// Number of bytes to read a [u32] value.
 const U32_SIZE: usize = 4;
 
 pub type IpBytesZipped = Vec<u8>;
 
+/// The IP archive stores the compressed version of a project along with any
+/// metadata in its 'header'. The format is: \[MARKER HEADER_LEN HEADER_BYTES PROJECT_DIR_BYTES].
 #[derive(Debug, PartialEq)]
 pub struct IpArchive {
     manifest: Manifest,
@@ -131,7 +131,10 @@ impl IpArchive {
                 }
             },
         };
+        // @todo: handle stats?
+        
         // offset += bytes_read;
+        
 
         Ok(Self {
             manifest: man,

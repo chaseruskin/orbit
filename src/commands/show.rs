@@ -81,13 +81,14 @@ impl Command<Context> for Show {
         // load the ip's manifest
         if self.units == true {
             if ip.get_mapping().is_physical() == true {
-                // force computing the primary design units if a development version
+                // force computing the primary design units if a physical ip (non-archived)
                 let units = Ip::collect_units(true, &ip.get_root(), &c.get_lang_mode())?;
                 println!(
                     "{}",
                     Self::format_units_table(units.into_iter().map(|(_, unit)| unit).collect())
                 );
             } else {
+                // a 'virtual' ip, so try to extract units from 
                 println!(
                     "info: {}",
                     "unable to display HDL units from a downloaded IP; try again after installing"
@@ -108,16 +109,22 @@ impl Command<Context> for Show {
                             println!("info: no versions in the cache")
                         }
                         _ => {
+                            let mut data = String::new();
+                            let header = format!("{:<10}{:<11}\n{2:->10}{2:->11}\n",
+                                "Version", "Status", " ",
+                            );
+                            data.push_str(&header);
                             // further restrict versions if a particular version is set
                             vers.iter()
                                 .filter(move |p| {
                                     specified_ver.is_none()
-                                        || version::is_compatible(specified_ver.unwrap(), &p)
+                                        || version::is_compatible(specified_ver.unwrap(), &p.get_version())
                                             == true
                                 })
                                 .for_each(|v| {
-                                    println!("{}", v);
+                                    data.push_str(&format!("{:<10}{:<11}\n", v.get_version().to_string(), v.get_state().to_string()));
                                 });
+                            println!("{}", data);
                         }
                     }
                     Ok(())

@@ -14,6 +14,58 @@ use super::{
 
 use crate::core::ip::Ip;
 use crate::core::iparchive::IpArchive;
+use std::hash::Hash;
+use std::cmp::PartialOrd;
+
+#[derive(Debug)]
+pub struct VersionItem<'a> {
+    version: &'a Version,
+    state: IpState
+}
+
+impl<'a> VersionItem<'a> {
+    pub fn new(v: &'a Version, s: IpState) -> Self {
+        Self {
+            version: v,
+            state: s,
+        }
+    }
+
+    pub fn get_version(&self) -> &Version {
+        &self.version
+    }
+
+    pub fn get_state(&self) -> &IpState {
+        &self.state
+    }
+}
+
+impl<'a> PartialOrd for VersionItem<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.version.partial_cmp(other.version)
+    }
+}
+
+impl<'a> Ord for VersionItem<'a> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.version.cmp(other.version)
+    }
+}
+
+impl<'a> PartialEq for VersionItem<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.version.eq(&other.version)
+    }
+}
+
+impl<'a> Eq for VersionItem<'a> {}
+
+impl<'a> Hash for VersionItem<'a> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.version.hash(state);
+        state.finish();
+    }
+}
 
 #[derive(Debug)]
 pub struct Catalog<'a> {
@@ -33,10 +85,10 @@ pub enum IpState {
 impl std::fmt::Display for IpState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
-            Self::Downloaded => write!(f, "downloaded"),
-            Self::Installation => write!(f, "installation"),
-            Self::Available => write!(f, "available"),
-            Self::Unknown => write!(f, "unknown"),
+            Self::Downloaded => write!(f, "Downloaded"),
+            Self::Installation => write!(f, "Installed"),
+            Self::Available => write!(f, "Available"),
+            Self::Unknown => write!(f, "Unknown"),
         }
     }
 }
@@ -215,18 +267,18 @@ impl<'a> Catalog<'a> {
     /// Returns all possible versions found for the `target` ip.
     ///
     /// Returns `None` if the id is not found in the catalog.
-    pub fn get_possible_versions(&self, id: &PkgPart) -> Option<Vec<&Version>> {
+    pub fn get_possible_versions(&self, id: &PkgPart) -> Option<Vec<VersionItem>> {
         let kaban = self.inner.get(&id)?;
         let mut set = HashSet::new();
         // read from cache
         for ip in kaban.get_installations() {
-            set.insert(ip.get_man().get_ip().get_version());
+            set.insert(VersionItem::new(ip.get_man().get_ip().get_version(), IpState::Installation));
         }
         // read from downloads
         for ip in kaban.get_downloads() {
-            set.insert(ip.get_man().get_ip().get_version());
+            set.insert(VersionItem::new(ip.get_man().get_ip().get_version(), IpState::Downloaded));
         }
-        let mut arr: Vec<&Version> = set.into_iter().collect();
+        let mut arr: Vec<VersionItem> = set.into_iter().collect();
         arr.sort();
         arr.reverse();
         Some(arr)

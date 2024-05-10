@@ -14,13 +14,13 @@ use super::{
 
 use crate::core::ip::Ip;
 use crate::core::iparchive::IpArchive;
-use std::hash::Hash;
 use std::cmp::PartialOrd;
+use std::hash::Hash;
 
 #[derive(Debug)]
 pub struct VersionItem<'a> {
     version: &'a Version,
-    state: IpState
+    state: IpState,
 }
 
 impl<'a> VersionItem<'a> {
@@ -272,11 +272,17 @@ impl<'a> Catalog<'a> {
         let mut set = HashSet::new();
         // read from cache
         for ip in kaban.get_installations() {
-            set.insert(VersionItem::new(ip.get_man().get_ip().get_version(), IpState::Installation));
+            set.insert(VersionItem::new(
+                ip.get_man().get_ip().get_version(),
+                IpState::Installation,
+            ));
         }
         // read from downloads
         for ip in kaban.get_downloads() {
-            set.insert(VersionItem::new(ip.get_man().get_ip().get_version(), IpState::Downloaded));
+            set.insert(VersionItem::new(
+                ip.get_man().get_ip().get_version(),
+                IpState::Downloaded,
+            ));
         }
         let mut arr: Vec<VersionItem> = set.into_iter().collect();
         arr.sort();

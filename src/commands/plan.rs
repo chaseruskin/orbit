@@ -9,7 +9,9 @@ use crate::core::iparchive::IpArchive;
 use crate::core::lang::parser::ParseError;
 use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbols::CompoundIdentifier;
-use crate::core::lang::vhdl::symbols::{Entity, packagebody::PackageBody, VHDLParser, VhdlSymbol};
+use crate::core::lang::vhdl::symbols::{
+    entity::Entity, packagebody::PackageBody, VHDLParser, VhdlSymbol,
+};
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lang::LangMode;
 use crate::core::plugin::Plugin;
@@ -359,7 +361,10 @@ impl Plan {
                 let contents = fs::read_to_string(&source_file.get_file()).unwrap();
                 let symbols = match VHDLParser::read(&contents) {
                     Ok(s) => s.into_symbols(),
-                    Err(e) => Err(ParseError::SourceCodeError(source_file.get_file().clone(), e.to_string()))?
+                    Err(e) => Err(ParseError::SourceCodeError(
+                        source_file.get_file().clone(),
+                        e.to_string(),
+                    ))?,
                 };
 
                 let lib = source_file.get_library();
@@ -868,26 +873,28 @@ impl Plan {
                     let mut blueprint_data = String::new();
                     let file = e.as_source_file().unwrap();
                     if fileset::is_rtl(&file) == true {
-                        blueprint_data += &format!(
-                            "VHDL-RTL{0}{1}{0}{2}\n",
-                            BLUEPRINT_DELIMITER,
-                            "work",
-                            file
-                        );
+                        blueprint_data +=
+                            &format!("VHDL-RTL{0}{1}{0}{2}\n", BLUEPRINT_DELIMITER, "work", file);
                     } else {
-                        blueprint_data += &format!(
-                            "VHDL-SIM{0}{1}{0}{2}\n",
-                            BLUEPRINT_DELIMITER,
-                            "work",
-                            file
-                        );
+                        blueprint_data +=
+                            &format!("VHDL-SIM{0}{1}{0}{2}\n", BLUEPRINT_DELIMITER, "work", file);
                     }
-                    let blueprint_path = self.create_outputs(&blueprint_data, build_dir, &build_path, &String::new(), &String::new(), plug)?;
+                    let blueprint_path = self.create_outputs(
+                        &blueprint_data,
+                        build_dir,
+                        &build_path,
+                        &String::new(),
+                        &String::new(),
+                        plug,
+                    )?;
                     // create a blueprint file
-                    println!("info: Erroneous blueprint created at: {}", blueprint_path.display());
-                    return Ok(())
+                    println!(
+                        "info: Erroneous blueprint created at: {}",
+                        blueprint_path.display()
+                    );
+                    return Ok(());
                 } else {
-                    return Err(e.into_fault())
+                    return Err(e.into_fault());
                 }
             }
         };
@@ -1129,14 +1136,29 @@ impl Plan {
             }
         }
 
-        let blueprint_path = self.create_outputs(&blueprint_data, build_dir, &build_path, &top_name, &bench_name, plug)?;
+        let blueprint_path = self.create_outputs(
+            &blueprint_data,
+            build_dir,
+            &build_path,
+            &top_name,
+            &bench_name,
+            plug,
+        )?;
         // create a blueprint file
         println!("info: Blueprint created at: {}", blueprint_path.display());
         Ok(())
     }
 
     /// Writes the blueprint and env file to the build directory.
-    fn create_outputs(&self, blueprint_data: &str, build_dir: &str, build_path: &PathBuf, top_name: &str, bench_name: &str, plug: Option<&Plugin>) -> Result<PathBuf, Fault> {
+    fn create_outputs(
+        &self,
+        blueprint_data: &str,
+        build_dir: &str,
+        build_path: &PathBuf,
+        top_name: &str,
+        bench_name: &str,
+        plug: Option<&Plugin>,
+    ) -> Result<PathBuf, Fault> {
         // create a output build directorie(s) if they do not exist
         if PathBuf::from(build_dir).exists() == false {
             fs::create_dir_all(build_dir).expect("could not create build directory");

@@ -2,7 +2,6 @@ use std::fmt::Display;
 
 use super::{packagebody::PackageBody, Generics, Identifier, IdentifierList, Position};
 
-
 #[derive(Debug, PartialEq)]
 pub struct Package {
     name: Identifier,

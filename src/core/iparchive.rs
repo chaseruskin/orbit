@@ -132,9 +132,8 @@ impl IpArchive {
             },
         };
         // @todo: handle stats?
-        
+
         // offset += bytes_read;
-        
 
         Ok(Self {
             manifest: man,

@@ -88,7 +88,7 @@ impl Command<Context> for Show {
                     Self::format_units_table(units.into_iter().map(|(_, unit)| unit).collect())
                 );
             } else {
-                // a 'virtual' ip, so try to extract units from 
+                // a 'virtual' ip, so try to extract units from
                 println!(
                     "info: {}",
                     "unable to display HDL units from a downloaded IP; try again after installing"
@@ -110,7 +110,8 @@ impl Command<Context> for Show {
                         }
                         _ => {
                             let mut data = String::new();
-                            let header = format!("{:<10}{:<11}\n{2:->10}{2:->11}\n",
+                            let header = format!(
+                                "{:<10}{:<11}\n{2:->10}{2:->11}\n",
                                 "Version", "Status", " ",
                             );
                             data.push_str(&header);
@@ -118,11 +119,17 @@ impl Command<Context> for Show {
                             vers.iter()
                                 .filter(move |p| {
                                     specified_ver.is_none()
-                                        || version::is_compatible(specified_ver.unwrap(), &p.get_version())
-                                            == true
+                                        || version::is_compatible(
+                                            specified_ver.unwrap(),
+                                            &p.get_version(),
+                                        ) == true
                                 })
                                 .for_each(|v| {
-                                    data.push_str(&format!("{:<10}{:<11}\n", v.get_version().to_string(), v.get_state().to_string()));
+                                    data.push_str(&format!(
+                                        "{:<10}{:<11}\n",
+                                        v.get_version().to_string(),
+                                        v.get_state().to_string()
+                                    ));
                                 });
                             println!("{}", data);
                         }

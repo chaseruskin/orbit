@@ -5,9 +5,7 @@ pub trait Parse<T> {
     type SymbolType;
     type SymbolError;
 
-    fn parse(
-        tokens: Vec<Token<T>>,
-    ) -> Vec<Result<Symbol<Self::SymbolType>, Self::SymbolError>>;
+    fn parse(tokens: Vec<Token<T>>) -> Vec<Result<Symbol<Self::SymbolType>, Self::SymbolError>>;
 }
 
 #[derive(Debug, PartialEq)]
@@ -33,5 +31,5 @@ impl<T> Symbol<T> {
 #[derive(Debug, PartialEq, Error)]
 pub enum ParseError {
     #[error("Failed to parse file \"{0}\": {1}")]
-    SourceCodeError(String, String)
+    SourceCodeError(String, String),
 }

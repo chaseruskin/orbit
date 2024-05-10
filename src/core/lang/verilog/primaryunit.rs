@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use crate::util::anyerror::CodeFault;
+use std::collections::HashMap;
 
 pub fn collect_units(files: &Vec<String>) -> Result<HashMap<String, String>, CodeFault> {
     let result: HashMap<String, String> = HashMap::new();

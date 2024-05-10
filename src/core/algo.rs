@@ -48,7 +48,7 @@ pub fn graph_ip_from_lock(lock: &LockFile) -> Result<GraphMap<IpSpec, &LockEntry
 fn graph_ip<'a>(
     root: &'a Ip,
     catalog: &'a Catalog<'a>,
-    mode: &LangMode
+    mode: &LangMode,
 ) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, CodeFault> {
     // create empty graph
     let mut g = GraphMap::new();
@@ -92,15 +92,15 @@ fn graph_ip<'a>(
                                 {
                                     let dupe = iden_set.get(dupe.0).unwrap();
                                     if is_root == true {
-                                        return Err(CodeFault(None, Box::new(VhdlIdentifierError::DuplicateAcrossDirect(
-                                            dupe.get_name().to_string(),
-                                            dep.get_man().get_ip().into_ip_spec(),
-                                            PathBuf::from(dupe.get_source_code_file()),
-                                            dupe.get_symbol()
-                                                .unwrap()
-                                                .get_position()
-                                                .clone(),
-                                        ))))?;
+                                        return Err(CodeFault(
+                                            None,
+                                            Box::new(VhdlIdentifierError::DuplicateAcrossDirect(
+                                                dupe.get_name().to_string(),
+                                                dep.get_man().get_ip().into_ip_spec(),
+                                                PathBuf::from(dupe.get_source_code_file()),
+                                                dupe.get_symbol().unwrap().get_position().clone(),
+                                            )),
+                                        ))?;
                                     }
                                     true
                                 } else {
@@ -129,20 +129,26 @@ fn graph_ip<'a>(
                         }
                         // todo: try to use the lock file to fill in missing pieces
                         None => {
-                            return Err(CodeFault(None, Box::new(AnyError(format!(
-                                "IP {} is not installed",
-                                IpSpec::from((pkgid.clone(), version.clone()))
-                            )))))?
+                            return Err(CodeFault(
+                                None,
+                                Box::new(AnyError(format!(
+                                    "IP {} is not installed",
+                                    IpSpec::from((pkgid.clone(), version.clone()))
+                                ))),
+                            ))?
                         }
                     }
                 }
                 // todo: try to use the lock file to fill in missing pieces
                 // @TODO: check the queue for this IP and attempt to install
                 None => {
-                    return Err(CodeFault(None, Box::new(AnyError(format!(
-                        "unknown IP {}",
-                        IpSpec::from((pkgid.clone(), version.clone()))
-                    )))))?
+                    return Err(CodeFault(
+                        None,
+                        Box::new(AnyError(format!(
+                            "unknown IP {}",
+                            IpSpec::from((pkgid.clone(), version.clone()))
+                        ))),
+                    ))?
                 }
             }
         }

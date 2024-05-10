@@ -16,19 +16,24 @@ pub struct Architecture {
 }
 
 impl Architecture {
-    pub fn new(name: Identifier, owner: Identifier, deps: IdentifierList, refs: IdentifierList, pos: Position) -> Self {
+    pub fn new(
+        name: Identifier,
+        owner: Identifier,
+        deps: IdentifierList,
+        refs: IdentifierList,
+        pos: Position,
+    ) -> Self {
         Self {
             name: name,
             owner: owner,
             dependencies: deps,
             refs: refs,
-            pos: pos
+            pos: pos,
         }
     }
 }
 
 impl Architecture {
-
     pub fn get_name(&self) -> &Identifier {
         &self.name
     }

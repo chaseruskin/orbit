@@ -1,4 +1,5 @@
 pub mod dst;
+pub mod error;
 pub mod format;
 pub mod highlight;
 pub mod interface;

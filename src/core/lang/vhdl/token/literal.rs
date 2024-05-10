@@ -1,6 +1,6 @@
+use super::super::error::VhdlError;
 use super::super::highlight;
 use super::super::token::char_set;
-use super::error::VhdlError;
 use crate::core::lang::vhdl::token::ToColor;
 use colored::ColoredString;
 use colored::Colorize;

@@ -12,8 +12,8 @@ use crate::core::lang::node::IdentifierFormat;
 use crate::core::lang::node::SubUnitNode;
 use crate::core::lang::parser::ParseError;
 use crate::core::lang::vhdl::subunit::SubUnit;
+use crate::core::lang::vhdl::symbols::entity::Entity;
 use crate::core::lang::vhdl::symbols::CompoundIdentifier;
-use crate::core::lang::vhdl::symbols::Entity;
 use crate::core::lang::vhdl::symbols::{VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lang::LangMode;
@@ -259,7 +259,10 @@ impl Tree {
             let contents = fs::read_to_string(&source_file.get_file()).unwrap();
             let symbols = match VHDLParser::read(&contents) {
                 Ok(s) => s.into_symbols(),
-                Err(e) => Err(ParseError::SourceCodeError(source_file.get_file().clone(), e.to_string()))?
+                Err(e) => Err(ParseError::SourceCodeError(
+                    source_file.get_file().clone(),
+                    e.to_string(),
+                ))?,
             };
 
             let lib = source_file.get_library();

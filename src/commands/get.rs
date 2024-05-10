@@ -10,7 +10,9 @@ use crate::core::lang::vhdl::format::VhdlFormat;
 use crate::core::lang::vhdl::interface;
 use crate::core::lang::vhdl::primaryunit::VhdlIdentifierError;
 use crate::core::lang::vhdl::symbols::architecture::Architecture;
-use crate::core::lang::vhdl::symbols::Entity;
+use crate::core::lang::vhdl::symbols::entity::Entity;
+use crate::core::lang::vhdl::symbols::VHDLParser;
+use crate::core::lang::vhdl::symbols::VhdlSymbol;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::manifest::FromFile;
 use crate::core::manifest::Manifest;
@@ -24,6 +26,7 @@ use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
 use colored::Colorize;
+use std::str::FromStr;
 
 #[derive(Debug, PartialEq)]
 pub struct Get {
@@ -57,8 +60,6 @@ impl FromCli for Get {
 }
 
 use crate::core::lang::parser::Parse;
-use crate::core::lang::vhdl;
-use crate::core::lang::vhdl::symbols;
 use crate::core::lang::vhdl::token::VhdlTokenizer;
 use std::env;
 
@@ -197,51 +198,47 @@ impl Get {
     }
 
     /// Parses through the vhdl files and returns a desired entity struct.
-    fn fetch_entity(
-        iden: &Identifier,
-        dir: &PathBuf,
-        man: &Manifest,
-    ) -> Result<symbols::Entity, Fault> {
+    fn fetch_entity(iden: &Identifier, dir: &PathBuf, man: &Manifest) -> Result<Entity, Fault> {
         let files = crate::util::filesystem::gather_current_files(&dir, false);
         // @todo: generate all units first (store architectures, and entities, and then process)
         let mut result: Option<(String, Entity)> = None;
         // store map of all architectures while parsing all code
         let mut architectures: HashMap<Identifier, Vec<Architecture>> = HashMap::new();
         for f in files {
-            // lex and parse
+            // lex and parse VHDL files
             if crate::core::fileset::is_vhdl(&f) == true {
                 let text = std::fs::read_to_string(&f)?;
 
                 // pull all architectures
-                let units: Vec<Symbol<symbols::VhdlSymbol>> = vhdl::symbols::VHDLParser::parse(
-                    VhdlTokenizer::from_source_code(&text).into_tokens(),
-                )
-                .into_iter()
-                .filter_map(|f| {
-                    if f.is_ok() {
-                        let unit = f.unwrap();
-                        match unit.as_ref().as_architecture() {
-                            Some(_) => {
-                                let arch = unit.take().into_architecture().unwrap();
-                                match architectures.get_mut(arch.entity()) {
-                                    Some(list) => {
-                                        list.push(arch);
-                                        ()
+                let units: Vec<Symbol<VhdlSymbol>> =
+                    VHDLParser::parse(VhdlTokenizer::from_str(&text)?.into_tokens())
+                        .into_iter()
+                        .filter_map(|f| {
+                            if f.is_ok() {
+                                let unit = f.unwrap();
+                                match unit.as_ref().as_architecture() {
+                                    Some(_) => {
+                                        let arch = unit.take().into_architecture().unwrap();
+                                        match architectures.get_mut(arch.entity()) {
+                                            Some(list) => {
+                                                list.push(arch);
+                                                ()
+                                            }
+                                            None => {
+                                                architectures
+                                                    .insert(arch.entity().clone(), vec![arch]);
+                                                ()
+                                            }
+                                        }
+                                        None
                                     }
-                                    None => {
-                                        architectures.insert(arch.entity().clone(), vec![arch]);
-                                        ()
-                                    }
+                                    None => Some(unit),
                                 }
+                            } else {
                                 None
                             }
-                            None => Some(unit),
-                        }
-                    } else {
-                        None
-                    }
-                })
-                .collect();
+                        })
+                        .collect();
 
                 // detect entity
                 let requested_entity = units
@@ -264,6 +261,9 @@ impl Get {
                         None => result = Some((f, ent)),
                     }
                 }
+            // lex and parse verilog files
+            } else if crate::core::fileset::is_verilog(&f) == true {
+                let _text = std::fs::read_to_string(&f)?;
             }
         }
         match result {
@@ -304,7 +304,7 @@ impl std::fmt::Display for GetError {
         match self {
             Self::UnitNotFound(ent, pkg, ver) => {
                 let spec = IpSpec::new(pkg.clone(), ver.clone());
-                write!(f, "Failed to find unit '{}' in IP '{}'", ent, spec)
+                write!(f, "Failed to find unit '{}' in ip '{}'", ent, spec)
             }
             Self::SuggestShow(err, pkg, ver) => {
                 let spec = IpSpec::new(pkg.clone(), ver.clone());

@@ -274,7 +274,7 @@ impl Ip {
     pub fn collect_units(
         force: bool,
         dir: &PathBuf,
-        lang_mode: &LangMode
+        lang_mode: &LangMode,
     ) -> Result<HashMap<LangIdentifier, LangUnit>, CodeFault> {
         // try to read from metadata file
         match (force == false) && Self::read_units_from_metadata(&dir).is_some() {

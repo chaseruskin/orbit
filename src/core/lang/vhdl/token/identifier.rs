@@ -26,11 +26,10 @@ pub enum Identifier {
 impl std::cmp::Eq for Identifier {}
 
 impl Identifier {
-
     pub fn into_lang_id(self) -> LangIdentifier {
         LangIdentifier::Vhdl(self)
     }
-    
+
     /// Creates an empty basic identifier.
     pub fn new() -> Self {
         Self::Basic(String::new())

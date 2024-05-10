@@ -7,7 +7,7 @@ use std::str::FromStr;
 
 pub mod comment;
 pub mod delimiter;
-pub mod error;
+
 pub mod identifier;
 pub mod keyword;
 pub mod literal;
@@ -22,7 +22,7 @@ pub type Comment = comment::Comment;
 pub type Keyword = keyword::Keyword;
 pub type Delimiter = delimiter::Delimiter;
 pub type VhdlTokenizer = tokenizer::VhdlTokenizer;
-pub type VhdlError = error::VhdlError;
+pub type VhdlError = super::error::VhdlError;
 
 pub trait ToColor: Display {
     fn to_color(&self) -> ColoredString;
@@ -398,9 +398,7 @@ impl VhdlToken {
             }
             note.push(c);
         }
-        Err(VhdlError::Any(String::from(
-            "missing closing delimiter */",
-        )))
+        Err(VhdlError::Any(String::from("missing closing delimiter */")))
     }
 
     /// Collects a single-line comment (all characters after a `--` up until end-of-line).
@@ -546,9 +544,7 @@ impl VhdlToken {
         // check for sign
         let sign = if let Some(c1) = train.consume() {
             if c1 != char_set::PLUS && c1 != char_set::DASH && char_set::is_digit(&c1) == false {
-                return Err(VhdlError::Any(String::from(
-                    "expecting +, -, or a digit",
-                )));
+                return Err(VhdlError::Any(String::from("expecting +, -, or a digit")));
             } else {
                 c1
             }
@@ -590,9 +586,7 @@ impl VhdlToken {
         while let Some(c) = train.consume() {
             // verify it is a graphic character
             if char_set::is_graphic(&c) == false {
-                return Err(VhdlError::Any(String::from(
-                    "invalid character in literal",
-                )));
+                return Err(VhdlError::Any(String::from("invalid character in literal")));
             }
             // detect escape sequence
             if br == &c {
@@ -609,9 +603,7 @@ impl VhdlToken {
             }
             result.push(c);
         }
-        Err(VhdlError::Any(String::from(
-            "expecting closing delimiter",
-        )))
+        Err(VhdlError::Any(String::from("expecting closing delimiter")))
     }
 }
 

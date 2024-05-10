@@ -3,9 +3,9 @@ use super::symbols::VhdlSymbol;
 use crate::core::ip::IpSpec;
 use crate::core::lang::parser::ParseError;
 use crate::core::lang::vhdl::symbols::VHDLParser;
+use crate::core::lang::vhdl::token::identifier::Identifier;
 use crate::util::anyerror::CodeFault;
 use crate::util::filesystem;
-use crate::core::lang::vhdl::token::identifier::Identifier;
 use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use toml_edit::InlineTable;
 
@@ -130,7 +130,13 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
             let contents = std::fs::read_to_string(&source_file).unwrap();
             let symbols = match VHDLParser::read(&contents) {
                 Ok(s) => s.into_symbols(),
-                Err(e) => Err(CodeFault(Some(source_file.clone()), Box::new(ParseError::SourceCodeError(source_file.clone(), e.to_string()))))?
+                Err(e) => Err(CodeFault(
+                    Some(source_file.clone()),
+                    Box::new(ParseError::SourceCodeError(
+                        source_file.clone(),
+                        e.to_string(),
+                    )),
+                ))?,
             };
             // transform into primary design units
             let units: Vec<PrimaryUnit> = symbols
@@ -165,20 +171,23 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
 
             for primary in units {
                 if let Some(dupe) = result.insert(primary.get_iden().clone(), primary) {
-                    return Err(CodeFault(None, Box::new(VhdlIdentifierError::DuplicateIdentifier(
-                        dupe.get_iden().to_string(),
-                        PathBuf::from(source_file),
-                        result
-                            .get(dupe.get_iden())
-                            .unwrap()
-                            .get_unit()
-                            .get_symbol()
-                            .unwrap()
-                            .get_position()
-                            .clone(),
-                        PathBuf::from(dupe.get_unit().get_source_code_file()),
-                        dupe.get_unit().get_symbol().unwrap().get_position().clone(),
-                    ))))?;
+                    return Err(CodeFault(
+                        None,
+                        Box::new(VhdlIdentifierError::DuplicateIdentifier(
+                            dupe.get_iden().to_string(),
+                            PathBuf::from(source_file),
+                            result
+                                .get(dupe.get_iden())
+                                .unwrap()
+                                .get_unit()
+                                .get_symbol()
+                                .unwrap()
+                                .get_position()
+                                .clone(),
+                            PathBuf::from(dupe.get_unit().get_source_code_file()),
+                            dupe.get_unit().get_symbol().unwrap().get_position().clone(),
+                        )),
+                    ))?;
                 }
             }
         }

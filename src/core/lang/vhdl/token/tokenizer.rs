@@ -127,8 +127,8 @@ pub mod char_set {
 
 use super::super::super::lexer::{Token, TokenError};
 
+use super::super::error::VhdlError;
 use super::super::token::VhdlToken;
-use super::error::VhdlError;
 use crate::core::lang::lexer::Tokenize;
 use std::str::FromStr;
 

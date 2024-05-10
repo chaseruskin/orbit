@@ -268,7 +268,10 @@ pub struct General {
 
 impl General {
     pub fn new() -> Self {
-        Self { build_dir: None, lang_mode: None, }
+        Self {
+            build_dir: None,
+            lang_mode: None,
+        }
     }
 
     pub fn get_build_dir(&self) -> String {
@@ -280,7 +283,10 @@ impl General {
 
     /// Access what language mode is enabled for the given configuration table.
     pub fn get_lang_mode(&self) -> LangMode {
-        self.lang_mode.as_ref().unwrap_or(&LangMode::default()).clone()
+        self.lang_mode
+            .as_ref()
+            .unwrap_or(&LangMode::default())
+            .clone()
     }
 
     /// Merges any populated data from `rhs` into attributes that do not already
@@ -297,8 +303,6 @@ impl General {
             }
         }
     }
-
-
 }
 
 pub const CONFIG_FILE: &str = "config.toml";

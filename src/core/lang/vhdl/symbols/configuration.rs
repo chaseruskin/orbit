@@ -1,7 +1,5 @@
 use super::{Identifier, IdentifierList, Position};
 
-
-
 #[derive(Debug, PartialEq)]
 pub struct Configuration {
     name: Identifier,
@@ -12,19 +10,24 @@ pub struct Configuration {
 }
 
 impl Configuration {
-    pub fn new(name: Identifier, owner: Identifier, deps: IdentifierList, refs: IdentifierList, pos: Position) -> Self {
+    pub fn new(
+        name: Identifier,
+        owner: Identifier,
+        deps: IdentifierList,
+        refs: IdentifierList,
+        pos: Position,
+    ) -> Self {
         Self {
             name: name,
             owner: owner,
             dependencies: deps,
             refs: refs,
-            pos: pos
+            pos: pos,
         }
     }
 }
 
 impl Configuration {
-
     pub fn get_name(&self) -> &Identifier {
         &self.name
     }

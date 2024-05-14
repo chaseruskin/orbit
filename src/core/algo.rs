@@ -61,7 +61,7 @@ fn graph_ip<'a>(
 
     let mut iden_set: HashMap<LangIdentifier, LangUnit> = HashMap::new();
     // add root's identifiers
-    Ip::collect_units(true, root.get_root(), mode)?
+    Ip::collect_units(true, root.get_root(), mode, false)?
         .into_iter()
         .for_each(|(key, unit)| {
             iden_set.insert(key, unit);
@@ -86,7 +86,12 @@ fn graph_ip<'a>(
                                 existing_node.index()
                             } else {
                                 // check if identifiers are already taken in graph
-                                let units = Ip::collect_units(false, dep.get_root(), mode)?;
+                                let units = Ip::collect_units(
+                                    false,
+                                    dep.get_root(),
+                                    mode,
+                                    dep.has_pubfile(),
+                                )?;
                                 let dst = if let Some(dupe) =
                                     units.iter().find(|(key, _)| iden_set.contains_key(key))
                                 {
@@ -234,19 +239,29 @@ pub fn compute_final_ip_graph<'a>(
 /// Take the ip graph and create the entire space of VHDL files that could be used for the current design.
 pub fn build_ip_file_list<'a>(
     ip_graph: &'a GraphMap<IpSpec, IpNode<'a>, ()>,
+    working_ip: Option<&'a Ip>,
 ) -> Vec<IpFileNode<'a>> {
     let mut files = Vec::new();
     ip_graph.get_map().iter().for_each(|(_, ip)| {
-        crate::util::filesystem::gather_current_files(&ip.as_ref().as_ip().get_root(), false)
-            .into_iter()
-            .filter(|f| crate::core::fileset::is_vhdl(f))
-            .for_each(|f| {
-                files.push(IpFileNode {
-                    file: f,
-                    ip: ip.as_ref().as_ip(),
-                    library: ip.as_ref().get_library().clone(),
-                });
-            })
+        crate::util::filesystem::gather_current_files(
+            &ip.as_ref().as_ip().get_root(),
+            false,
+            if let Some(wip) = working_ip {
+                ip.as_ref().as_ip() != wip && wip.has_pubfile()
+            } else {
+                false
+            },
+        )
+        .into_iter()
+        // @MARK: update with verilog!
+        .filter(|f| crate::core::fileset::is_vhdl(f))
+        .for_each(|f| {
+            files.push(IpFileNode {
+                file: f,
+                ip: ip.as_ref().as_ip(),
+                library: ip.as_ref().get_library().clone(),
+            });
+        })
     });
     files
 }
@@ -340,9 +355,13 @@ impl<'a> IpNode<'a> {
         let temp_ip = Ip::load(temp_path).unwrap();
 
         // edit all vhdl files
-        let files = crate::util::filesystem::gather_current_files(temp_ip.get_root(), false);
+        let files = crate::util::filesystem::gather_current_files(
+            temp_ip.get_root(),
+            false,
+            temp_ip.has_pubfile(),
+        );
         for file in &files {
-            // perform dst on the data
+            // perform dst on the data @MARK: update with verilog!
             if crate::core::fileset::is_vhdl(&file) == true {
                 // parse into tokens
                 let vhdl_path = PathBuf::from(file);

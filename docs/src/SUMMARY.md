@@ -25,6 +25,7 @@
     - [IP](./topic/1_ip.md)
     - [Orbit.lock](./topic/5_orbitlock.md)
     - [.orbitignore](./topic/orbitignore.md)
+    - [.orbitpub](./topic/orbitpub.md)
     - [Planning](./topic/planning.md)
     - [Building](./topic/building.md)
     - [Protocols](./topic/protocols.md)

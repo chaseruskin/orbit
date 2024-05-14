@@ -106,7 +106,7 @@ impl Command<Context> for Read {
                 }
                 None => {
                     // the ip does not exist
-                    return Err(AnyError(format!("Failed to find IP {}", tg)))?;
+                    return Err(AnyError(format!("Failed to find ip {}", tg)))?;
                 }
             }
         // must be in an IP if omitting the pkgid
@@ -390,7 +390,7 @@ impl Read {
         mode: &LangMode,
     ) -> Result<(PathBuf, Position), Fault> {
         // find the unit
-        let units = Ip::collect_units(true, ip.get_root(), mode)?;
+        let units = Ip::collect_units(true, ip.get_root(), mode, true)?;
 
         // get the file data for the primary design unit
         let (source, position) = match units.get_key_value(unit) {

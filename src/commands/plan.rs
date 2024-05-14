@@ -905,7 +905,7 @@ impl Plan {
             return Ok(());
         }
 
-        let files = algo::build_ip_file_list(&ip_graph);
+        let files = algo::build_ip_file_list(&ip_graph, None);
 
         let global_graph = Self::build_full_graph(&files)?;
 
@@ -1054,7 +1054,7 @@ impl Plan {
         // [!] collect user-defined filesets
         {
             let current_files: Vec<String> =
-                filesystem::gather_current_files(&target.get_root(), false);
+                filesystem::gather_current_files(&target.get_root(), false, false);
 
             let mut vtable = VariableTable::new();
             // variables could potentially store empty strings if units are not set

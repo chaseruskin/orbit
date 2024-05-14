@@ -253,7 +253,12 @@ pub fn is_verilog(file: &str) -> bool {
     }
 }
 
-/// Checks against file patterns if the file is an rtl file.
+/// Checks if the given file is one of the supported HDLs.
+pub fn is_hdl(file: &str) -> bool {
+    is_vhdl(file) || is_verilog(file)
+}
+
+/// Checks against file patterns if the file is an rtl file (not testbench).
 pub fn is_rtl(file: &str) -> bool {
     let match_opts = glob::MatchOptions {
         case_sensitive: false,
@@ -261,15 +266,14 @@ pub fn is_rtl(file: &str) -> bool {
         require_literal_leading_dot: false,
     };
 
-    let p1 = Pattern::new("*.vhd").unwrap();
-    let p2 = Pattern::new("*.vhdl").unwrap();
+    if is_hdl(file) == false {
+        return false;
+    }
 
     let tb1 = Pattern::new("tb_*").unwrap();
     let tb2 = Pattern::new("*_tb.*").unwrap();
 
-    (p1.matches_with(file, match_opts) == true || p2.matches_with(file, match_opts) == true)
-        && tb1.matches_with(file, match_opts) == false
-        && tb2.matches_with(file, match_opts) == false
+    tb1.matches_with(file, match_opts) == false && tb2.matches_with(file, match_opts) == false
 }
 
 #[cfg(test)]

@@ -319,6 +319,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "gitignore"
+version = "1.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d051488d9a601181a9b90c9ad8ae7e8251d642ddd2463008f2f5019d255bd89"
+dependencies = [
+ "glob",
+]
+
+[[package]]
 name = "glob"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -531,6 +540,7 @@ dependencies = [
  "curl",
  "flate2",
  "fs_extra",
+ "gitignore",
  "glob",
  "home",
  "ignore",

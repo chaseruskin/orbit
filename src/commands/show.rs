@@ -3,6 +3,7 @@ use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::{Ip, PartialIpSpec};
 use crate::core::lang::LangUnit;
+use crate::core::pubfile::PubFile;
 use crate::core::version;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
@@ -12,6 +13,7 @@ use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
 use std::env::current_dir;
+use std::path::PathBuf;
 
 #[derive(Debug, PartialEq)]
 pub struct Show {
@@ -47,6 +49,7 @@ impl Command<Context> for Show {
                 None => None,
             }
         };
+        let mut is_working_ip = false;
 
         // try to auto-determine the ip (check if in a working ip)
         let ip: &Ip = if let Some(spec) = &self.ip {
@@ -60,7 +63,7 @@ impl Command<Context> for Show {
                     if let Some(slot) = lvl.get_download(spec.get_version()) {
                         slot
                     } else {
-                        return Err(AnyError(format!("IP {} does not exist in the cache", spec)))?;
+                        return Err(AnyError(format!("ip {} does not exist in the cache", spec)))?;
                     }
                 }
             } else {
@@ -71,21 +74,29 @@ impl Command<Context> for Show {
                 return Err(AnyError(format!("no ip provided or detected")))?;
             } else {
                 match &dev_ip {
-                    Some(Ok(r)) => r,
+                    Some(Ok(r)) => {
+                        is_working_ip = true;
+                        r
+                    }
                     Some(Err(e)) => return Err(AnyError(format!("{}", e.to_string())))?,
                     _ => panic!("unreachable code"),
                 }
             }
         };
+        let is_working_ip = is_working_ip;
 
         // load the ip's manifest
         if self.units == true {
             if ip.get_mapping().is_physical() == true {
                 // force computing the primary design units if a physical ip (non-archived)
-                let units = Ip::collect_units(true, &ip.get_root(), &c.get_lang_mode())?;
+                let units =
+                    Ip::collect_units(true, &ip.get_root(), &c.get_lang_mode(), is_working_ip)?;
                 println!(
                     "{}",
-                    Self::format_units_table(units.into_iter().map(|(_, unit)| unit).collect())
+                    Self::format_units_table(
+                        units.into_iter().map(|(_, unit)| unit).collect(),
+                        ip.get_root()
+                    )
                 );
             } else {
                 // a 'virtual' ip, so try to extract units from
@@ -153,7 +164,7 @@ impl Show {
     }
 
     /// Creates a string for to display the primary design units for the particular ip.
-    fn format_units_table(table: Vec<LangUnit>) -> String {
+    fn format_units_table(table: Vec<LangUnit>, root: &PathBuf) -> String {
         let header = format!(
             "\
 {:<36}{:<14}{:<9}
@@ -161,6 +172,8 @@ impl Show {
             "Identifier", "Type", "Public", " "
         );
         let mut body = String::new();
+        let pub_filepath = root.join(PubFile::get_filename());
+        let pub_file = PubFile::new(&pub_filepath);
 
         let mut table = table;
         table.sort_by(|a, b| a.get_name().cmp(&b.get_name()));
@@ -169,7 +182,17 @@ impl Show {
                 "{:<36}{:<14}{:<2}\n",
                 unit.get_name().to_string(),
                 unit.to_string(),
-                "y"
+                if pub_file.is_ok()
+                    && pub_file
+                        .as_ref()
+                        .unwrap()
+                        .is_included(unit.get_source_code_file())
+                        == false
+                {
+                    " "
+                } else {
+                    "y"
+                }
             ));
         }
         header + &body

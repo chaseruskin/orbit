@@ -11,6 +11,7 @@ pub mod manifest;
 pub mod pkgid;
 pub mod plugin;
 pub mod protocol;
+pub mod pubfile;
 pub mod source;
 pub mod uuid;
 pub mod variable;

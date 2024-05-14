@@ -18,6 +18,8 @@ use vhdl::primaryunit::PrimaryUnit;
 type VhdlIdentifier = vhdl::token::Identifier;
 use serde_derive::Deserialize;
 
+use super::pubfile::PubFile;
+
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub enum LangMode {
     #[serde(rename = "vhdl")]
@@ -97,6 +99,11 @@ pub enum LangUnit {
 // }
 
 impl LangUnit {
+    /// Checks if the module is public.
+    pub fn is_public(&self, pub_file: &PubFile) -> bool {
+        pub_file.is_included(self.get_source_code_file())
+    }
+
     /// References the unit's identifier.
     pub fn get_name(&self) -> LangIdentifier {
         match &self {

@@ -109,6 +109,7 @@ mod test {
         let test_files = crate::util::filesystem::gather_current_files(
             &std::path::PathBuf::from("./tests/data/poems"),
             false,
+            false,
         );
         println!("{:?}", test_files);
         let checksum = crate::util::checksum::checksum(

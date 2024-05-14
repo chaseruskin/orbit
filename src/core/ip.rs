@@ -13,6 +13,7 @@ use super::lang::LangUnit;
 use super::lockfile::LockFile;
 use super::lockfile::IP_LOCK_FILE;
 use super::manifest::FromFile;
+use super::pubfile::PubFile;
 use crate::core::lockfile::LockEntry;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::ORBIT_METADATA_FILE;
@@ -80,6 +81,10 @@ impl From<IpArchive> for Ip {
 }
 
 impl Ip {
+    pub fn has_pubfile(&self) -> bool {
+        PubFile::exists(&self.root)
+    }
+
     pub fn get_root(&self) -> &PathBuf {
         &self.root
     }
@@ -182,7 +187,7 @@ impl Ip {
             return lut;
         }
         // @todo: read units from metadata to speed up results
-        let units = Self::collect_units(true, self.get_root(), mode).unwrap();
+        let units = Self::collect_units(true, self.get_root(), mode, self.has_pubfile()).unwrap();
         let checksum = Ip::read_checksum_proof(self.get_root()).unwrap();
 
         units.into_iter().for_each(|(key, _)| {
@@ -223,7 +228,7 @@ impl Ip {
     ///
     /// Changes the current working directory to the root for consistent computation.
     pub fn compute_checksum(dir: &PathBuf) -> Sha256Hash {
-        let ip_files = crate::util::filesystem::gather_current_files(&dir, true);
+        let ip_files = crate::util::filesystem::gather_current_files(&dir, true, false);
         let checksum = crate::util::checksum::checksum(&ip_files, &dir);
         checksum
     }
@@ -275,14 +280,16 @@ impl Ip {
         force: bool,
         dir: &PathBuf,
         lang_mode: &LangMode,
+        is_working_ip: bool,
     ) -> Result<HashMap<LangIdentifier, LangUnit>, CodeFault> {
         // try to read from metadata file
         match (force == false) && Self::read_units_from_metadata(&dir).is_some() {
             // use precomputed result
             true => Ok(Self::read_units_from_metadata(&dir).unwrap()),
             false => {
-                // collect all files
-                let files = filesystem::gather_current_files(&dir, false);
+                // collect all files (use .orbitpub if its not the working ip and it exists)
+                let use_pubfile = is_working_ip == false && PubFile::exists(&dir) == true;
+                let files = filesystem::gather_current_files(&dir, false, use_pubfile);
                 Ok(lang::collect_units(&files, lang_mode)?)
             }
         }

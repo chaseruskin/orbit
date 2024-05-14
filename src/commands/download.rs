@@ -143,7 +143,8 @@ impl Download {
         lf: &'a LockFile,
         catalog: &Catalog,
         missing_only: bool,
-    ) -> Vec<(IpSpec, &'a Source)> {
+    ) -> Vec<(IpSpec, Source)> {
+        let mut vtable = VariableTable::new();
         lf.inner()
             .iter()
             .filter(|p| p.get_source().is_some() == true)
@@ -152,7 +153,13 @@ impl Download {
                     && (missing_only == false
                         || catalog.is_downloaded_slot(&p.to_download_slot_key()) == false)
             })
-            .map(|f| (f.to_ip_spec(), f.get_source().unwrap()))
+            .map(|f| {
+                let spec = f.to_ip_spec();
+                vtable.add("orbit.ip.name", spec.get_name().as_ref());
+                vtable.add("orbit.ip.version", &spec.get_version().to_string());
+                let processed_src = f.get_source().unwrap().clone().replace_vars_in_url(&vtable);
+                (spec, processed_src)
+            })
             .collect()
     }
 
@@ -214,8 +221,13 @@ impl Download {
         }
         // try to use default protocol
         if src.is_default() == true {
+            vtable.add("orbit.ip.name", spec.get_name().as_ref());
+            vtable.add("orbit.ip.version", &spec.get_version().to_string());
+
+            let processed_src = src.clone().replace_vars_in_url(&vtable);
+
             println!("info: Downloading {} ...", spec);
-            if let Err(err) = Protocol::single_download(src.get_url(), &queue) {
+            if let Err(err) = Protocol::single_download(processed_src.get_url(), &queue) {
                 fs::remove_dir_all(queue)?;
                 return Err(err);
             }
@@ -262,7 +274,7 @@ impl Download {
     }
 
     pub fn download_all(
-        downloads: &Vec<(IpSpec, &Source)>,
+        downloads: &Vec<(IpSpec, Source)>,
         proto_map: &HashMap<&str, &Protocol>,
         vtable: VariableTable,
         verbose: bool,

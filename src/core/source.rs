@@ -70,6 +70,11 @@ impl Source {
             false => None,
         }
     }
+
+    pub fn replace_vars_in_url(mut self, vtable: &VariableTable) -> Self {
+        self.url = variable::substitute(self.url, vtable);
+        self
+    }
 }
 
 impl From<Option<Source>> for Source {
@@ -162,6 +167,8 @@ where
 }
 
 use serde::ser::SerializeMap;
+
+use super::variable::{self, VariableTable};
 
 impl Serialize for Source {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

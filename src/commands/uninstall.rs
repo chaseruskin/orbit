@@ -79,7 +79,7 @@ impl Command<Context> for Uninstall {
                         continue;
                     }
                     // check for same UUID
-                    let cached_ip = Ip::load(entry.path().to_path_buf())?;
+                    let cached_ip = Ip::load(entry.path().to_path_buf(), false)?;
                     if cached_ip.get_uuid() != target.get_uuid() {
                         continue;
                     }

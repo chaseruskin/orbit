@@ -112,7 +112,7 @@ impl Command<Context> for Read {
         // must be in an IP if omitting the pkgid
         } else {
             let ip = match c.get_ip_path() {
-                Some(p) => Ip::load(p.to_path_buf())?,
+                Some(p) => Ip::load(p.to_path_buf(), true)?,
                 None => return Err(AnyError(format!("Not within an existing ip")))?,
             };
 

@@ -125,7 +125,7 @@ impl Command<Context> for Plan {
         c.goto_ip_path()?;
 
         // create the ip manifest
-        let target = Ip::load(c.get_ip_path().unwrap().clone())?;
+        let target = Ip::load(c.get_ip_path().unwrap().clone(), true)?;
 
         // gather the catalog
         let mut catalog = Catalog::new()
@@ -314,7 +314,7 @@ fn install_ip_from_downloads(dep: &Ip, catalog: &Catalog, force: bool) -> Result
             return Err(e);
         }
         // load the IP
-        let unzipped_dep = match Ip::load(dir.clone()) {
+        let unzipped_dep = match Ip::load(dir.clone(), false) {
             Ok(x) => x,
             Err(e) => {
                 fs::remove_dir_all(dir)?;
@@ -905,7 +905,7 @@ impl Plan {
             return Ok(());
         }
 
-        let files = algo::build_ip_file_list(&ip_graph, None);
+        let files = algo::build_ip_file_list(&ip_graph);
 
         let global_graph = Self::build_full_graph(&files)?;
 
@@ -1054,7 +1054,7 @@ impl Plan {
         // [!] collect user-defined filesets
         {
             let current_files: Vec<String> =
-                filesystem::gather_current_files(&target.get_root(), false, false);
+                filesystem::gather_current_files(&target.get_root(), false);
 
             let mut vtable = VariableTable::new();
             // variables could potentially store empty strings if units are not set

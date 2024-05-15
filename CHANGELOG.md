@@ -27,6 +27,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Renames docker images to more memorable names and defines clearer organization
 - Updates version table to display state of each version for the specific ip
 - Default urls for the `source` field in manifest files can now use `orbit.ip.name` and `orbit.ip.version` variables for variable substitution
+- Adds checks for user-managed ip (development status) does not include reserved files (files starting with `.orbit-`)
 
 ### Bug Fixes
 - Fixes error during install to continue install even though there already exists an ip with same name and version in cache or downloads without `--force` present

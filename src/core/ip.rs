@@ -107,12 +107,32 @@ impl Ip {
         &self.uuid
     }
 
-    pub fn load(root: PathBuf) -> Result<Self, Box<dyn Error>> {
+    pub fn check_illegal_files(root: &PathBuf) -> Result<(), Box<dyn Error>> {
+        // verify no reserved files exist
+        if let Ok(mut rd) = std::fs::read_dir(&root) {
+            let pat = ".orbit-";
+            // upon force, will remove all installations (even dynamics)
+            while let Some(d) = rd.next() {
+                if let Ok(p) = d {
+                    if p.file_name().into_string().unwrap().starts_with(&pat) == true {
+                        return Err(AnyError(format!("Illegal file {:?} found in ip; files starting with \"{}\" are reserved for internal use", p.path(), pat)))?;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    pub fn load(root: PathBuf, is_working_ip: bool) -> Result<Self, Box<dyn Error>> {
         let man_path = root.join(IP_MANIFEST_FILE);
         if man_path.exists() == false || man_path.is_file() == false {
             return Err(AnyError(format!("A manifest file does not exist")))?;
         }
         let man = Manifest::from_file(&man_path)?;
+
+        if is_working_ip == true {
+            Self::check_illegal_files(&root)?;
+        }
 
         let lock_path = root.join(IP_LOCK_FILE);
 
@@ -157,13 +177,18 @@ impl Ip {
     /// Finds all Manifest files available in the provided path `path`.
     ///
     /// Errors if on filesystem problems.
-    fn detect_all_sub(path: &PathBuf, name: &str, is_exclusive: bool) -> Result<Vec<Self>, Fault> {
+    fn detect_all_sub(
+        path: &PathBuf,
+        name: &str,
+        is_exclusive: bool,
+        is_working: bool,
+    ) -> Result<Vec<Self>, Fault> {
         let mut result = Vec::new();
         // walk the ORBIT_PATH directory @TODO recursively walk inner directories until hitting first 'Orbit.toml' file
         for mut entry in manifest::find_file(&path, &name, is_exclusive)? {
             // remove the manifest file to access the ip's root directory
             entry.pop();
-            result.push(Ip::load(entry)?);
+            result.push(Ip::load(entry, is_working)?);
         }
         Ok(result)
     }
@@ -171,8 +196,11 @@ impl Ip {
     /// Finds all IP manifest files along the provided path `path`.
     ///
     /// Wraps Manifest::detect_all.
-    pub fn detect_all(path: &PathBuf) -> Result<Vec<Self>, Box<dyn std::error::Error>> {
-        Self::detect_all_sub(path, IP_MANIFEST_FILE, true)
+    pub fn detect_all(
+        path: &PathBuf,
+        is_working: bool,
+    ) -> Result<Vec<Self>, Box<dyn std::error::Error>> {
+        Self::detect_all_sub(path, IP_MANIFEST_FILE, true, is_working)
     }
 
     /// Checks the metadata file for a entry for `dynamic`.
@@ -230,7 +258,7 @@ impl Ip {
     ///
     /// Changes the current working directory to the root for consistent computation.
     pub fn compute_checksum(dir: &PathBuf) -> Sha256Hash {
-        let ip_files = crate::util::filesystem::gather_current_files(&dir, true, false);
+        let ip_files = crate::util::filesystem::gather_current_files(&dir, true);
         let checksum = crate::util::checksum::checksum(&ip_files, &dir);
         checksum
     }
@@ -290,7 +318,7 @@ impl Ip {
             true => Ok(Self::read_units_from_metadata(&dir).unwrap()),
             false => {
                 // collect all files
-                let files = filesystem::gather_current_files(&dir, false, false);
+                let files = filesystem::gather_current_files(&dir, false);
 
                 let mut map = lang::collect_units(&files, lang_mode)?;
                 // work to remove files that are totally private

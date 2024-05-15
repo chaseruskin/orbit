@@ -88,7 +88,7 @@ impl Command<Context> for Download {
         // verify running from an IP directory and enter IP's root directory
         c.goto_ip_path()?;
 
-        let ip = Ip::load(c.get_ip_path().unwrap().clone())?;
+        let ip = Ip::load(c.get_ip_path().unwrap().clone(), true)?;
 
         // verify a lockfile exists
         if ip.get_lock().is_empty() == true {
@@ -99,7 +99,7 @@ impl Command<Context> for Download {
             // read config.toml for setting any env variables
             .from_config(c.get_config())?
             // read ip manifest for env variables
-            .from_ip(&Ip::load(c.get_ip_path().unwrap().clone())?)?;
+            .from_ip(&Ip::load(c.get_ip_path().unwrap().clone(), true)?)?;
 
         let vtable = VariableTable::new().load_environment(&env)?;
         env.initialize();
@@ -252,7 +252,7 @@ impl Download {
         // find the IP
         for entry in manifest::find_file(&queue, IP_MANIFEST_FILE, false)? {
             // check if this is our IP
-            match Ip::load(entry.parent().unwrap().to_path_buf()) {
+            match Ip::load(entry.parent().unwrap().to_path_buf(), true) {
                 Ok(temp) => {
                     // move to downloads
                     if temp.get_man().get_ip().get_name() == spec.get_name()

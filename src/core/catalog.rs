@@ -304,7 +304,7 @@ impl<'a> Catalog<'a> {
         lvl: IpState,
     ) -> Result<Self, Fault> {
         match lvl {
-            IpState::Installation => Ip::detect_all(path),
+            IpState::Installation => Ip::detect_all(path, false),
             IpState::Available => todo!("only detect for available"),
             IpState::Downloaded => IpArchive::detect_all(path),
             _ => panic!("Unknown catalog state to find"),

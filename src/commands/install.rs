@@ -153,7 +153,7 @@ impl Command<Context> for Install {
             let target = match &self.ip {
                 Some(entry) => match search_path.exists() {
                     true => {
-                        let ip = Ip::load(search_dir.to_path_buf())?;
+                        let ip = Ip::load(search_dir.to_path_buf(), true)?;
                         if ip.get_man().get_ip().get_name() == entry.get_name()
                             && (entry.get_version().is_latest()
                                 || version::is_compatible(
@@ -177,7 +177,7 @@ impl Command<Context> for Install {
                 },
                 // make sure there is only 1 IP to download
                 None => match search_path.exists() {
-                    true => Some(Ip::load(search_dir.to_path_buf())?),
+                    true => Some(Ip::load(search_dir.to_path_buf(), true)?),
                     false => Err(AnyError(format!(
                         "Path \"{}\" does not contain an Orbit.toml file",
                         filesystem::into_std_str(search_dir)
@@ -206,7 +206,7 @@ impl Command<Context> for Install {
                                 return Err(e);
                             }
                             // load the IP
-                            let unzipped_dep = match Ip::load(dir.clone()) {
+                            let unzipped_dep = match Ip::load(dir.clone(), false) {
                                 Ok(x) => x,
                                 Err(e) => {
                                     fs::remove_dir_all(dir)?;
@@ -215,7 +215,7 @@ impl Command<Context> for Install {
                             };
                             Some(unzipped_dep)
                         } else {
-                            Some(Ip::load(slot.get_root().clone())?)
+                            Some(Ip::load(slot.get_root().clone(), false)?)
                         }
                     } else {
                         return Err(AnyError(format!(

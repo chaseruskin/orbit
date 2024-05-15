@@ -234,29 +234,20 @@ pub fn compute_final_ip_graph<'a>(
 /// Take the ip graph and create the entire space of VHDL files that could be used for the current design.
 pub fn build_ip_file_list<'a>(
     ip_graph: &'a GraphMap<IpSpec, IpNode<'a>, ()>,
-    working_ip: Option<&'a Ip>,
 ) -> Vec<IpFileNode<'a>> {
     let mut files = Vec::new();
     ip_graph.get_map().iter().for_each(|(_, ip)| {
-        crate::util::filesystem::gather_current_files(
-            &ip.as_ref().as_ip().get_root(),
-            false,
-            if let Some(wip) = working_ip {
-                ip.as_ref().as_ip() != wip && wip.has_pubfile()
-            } else {
-                false
-            },
-        )
-        .into_iter()
-        // @MARK: update with verilog!
-        .filter(|f| crate::core::fileset::is_vhdl(f))
-        .for_each(|f| {
-            files.push(IpFileNode {
-                file: f,
-                ip: ip.as_ref().as_ip(),
-                library: ip.as_ref().get_library().clone(),
-            });
-        })
+        crate::util::filesystem::gather_current_files(&ip.as_ref().as_ip().get_root(), false)
+            .into_iter()
+            // @MARK: update with verilog!
+            .filter(|f| crate::core::fileset::is_vhdl(f))
+            .for_each(|f| {
+                files.push(IpFileNode {
+                    file: f,
+                    ip: ip.as_ref().as_ip(),
+                    library: ip.as_ref().get_library().clone(),
+                });
+            })
     });
     files
 }
@@ -347,14 +338,10 @@ impl<'a> IpNode<'a> {
         .unwrap();
 
         // create the ip from the temporary dir
-        let temp_ip = Ip::load(temp_path).unwrap();
+        let temp_ip = Ip::load(temp_path, false).unwrap();
 
         // edit all vhdl files
-        let files = crate::util::filesystem::gather_current_files(
-            temp_ip.get_root(),
-            false,
-            temp_ip.has_pubfile(),
-        );
+        let files = crate::util::filesystem::gather_current_files(temp_ip.get_root(), false);
         for file in &files {
             // perform dst on the data @MARK: update with verilog!
             if crate::core::fileset::is_vhdl(&file) == true {
@@ -392,7 +379,7 @@ fn install_dst(source_ip: &Ip, root: &std::path::PathBuf) -> Ip {
 
     // check if already exists and return early with manifest if exists
     if cache_path.exists() == true {
-        return Ip::load(cache_path).unwrap();
+        return Ip::load(cache_path, false).unwrap();
     }
 
     // copy the source ip to the new location
@@ -403,7 +390,7 @@ fn install_dst(source_ip: &Ip, root: &std::path::PathBuf) -> Ip {
         Some(source_ip.get_files_to_keep()),
     )
     .unwrap();
-    let cached_ip = Ip::load(cache_path).unwrap();
+    let cached_ip = Ip::load(cache_path, false).unwrap();
 
     // @todo: cache results of primary design unit list
     // cached_ip.stash_units();

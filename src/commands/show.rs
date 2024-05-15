@@ -44,7 +44,7 @@ impl Command<Context> for Show {
 
         let dev_ip: Option<Result<Ip, Fault>> = {
             match Context::find_ip_path(&current_dir().unwrap()) {
-                Some(dir) => Some(Ip::load(dir)),
+                Some(dir) => Some(Ip::load(dir, true)),
                 None => None,
             }
         };

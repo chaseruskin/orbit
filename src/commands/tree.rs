@@ -66,7 +66,7 @@ impl Command<Context> for Tree {
         }
 
         // get the ip manifest
-        let ip = Ip::load(c.get_ip_path().unwrap().clone())?;
+        let ip = Ip::load(c.get_ip_path().unwrap().clone(), true)?;
 
         // gather the catalog
         let catalog = Catalog::new().installations(c.get_cache_path())?;
@@ -89,7 +89,7 @@ impl Tree {
 
         // build graph again but with entire set of all files available from all depdendencies
         let ip_graph = algo::compute_final_ip_graph(&target, &catalog, mode)?;
-        let files = algo::build_ip_file_list(&ip_graph, None);
+        let files = algo::build_ip_file_list(&ip_graph);
 
         // build the complete graph (using entities as the nodes)
         let global_graph = Self::build_graph(&files)?;

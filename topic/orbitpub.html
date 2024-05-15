@@ -171,7 +171,12 @@
                     <main>
                         <h1 id="orbitpub"><a class="header" href="#orbitpub">.orbitpub</a></h1>
 <p>A <em>.orbitpub</em> is a file that lists user-defined file patterns to explicitly declare the set of HDL files that are public to external IPs that use this given IP as a dependency. Orbit recognizes .orbitpub files that match &quot;.orbitpub&quot; with case-sensitivity.</p>
-<p>If no .orbitpub file exists, then all HDL files are considered public and are available to be integrated into other IPs.</p>
+<p>By default, if no .orbitpub file exists, then all HDL files are set to public visibility.</p>
+<h2 id="visibility"><a class="header" href="#visibility">Visibility</a></h2>
+<p>There are three levels of visibility for HDL files: <em>public</em>, <em>protected</em>, and <em>private</em>.</p>
+<p>Public HDL files allow users to reference any design units declared in that file from across IPs.</p>
+<p>Protected HDL files are not allowed to be referenced directly across IP, but may be referenced by a public file internally to its IP.</p>
+<p>Private HDL files are not allowed to be referenced directly across IP, and are not exposed from references in any public files. Private HDL files for an IP are removed from building the HDL graph when that IP is used as a dependency.</p>
 
                     </main>
 

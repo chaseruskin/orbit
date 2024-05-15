@@ -89,7 +89,7 @@ impl Command<Context> for Show {
         if self.units == true {
             if ip.get_mapping().is_physical() == true {
                 // force computing the primary design units if a physical ip (non-archived)
-                let units = Ip::collect_units(true, &ip.get_root(), &c.get_lang_mode(), true)?;
+                let units = Ip::collect_units(true, &ip.get_root(), &c.get_lang_mode(), false)?;
                 println!(
                     "{}",
                     Self::format_units_table(
@@ -166,9 +166,9 @@ impl Show {
     fn format_units_table(table: Vec<LangUnit>, root: &PathBuf) -> String {
         let header = format!(
             "\
-{:<36}{:<14}{:<9}
-{:->36}{3:->14}{3:->9}\n",
-            "Identifier", "Type", "Public", " "
+{:<36}{:<14}{:<12}
+{:->36}{3:->14}{3:->12}\n",
+            "Identifier", "Type", "Visibility", " "
         );
         let mut body = String::new();
         let pub_filepath = root.join(PubFile::get_filename());
@@ -182,17 +182,22 @@ impl Show {
             .collect();
         let mut pri_units: Vec<&LangUnit> = table
             .iter()
-            .filter(|p| p.is_public(&pub_file) == false)
+            .filter(|p| p.is_public(&pub_file) == false && p.is_fully_invisible() == false)
+            .collect();
+        let mut hidden_units: Vec<&LangUnit> = table
+            .iter()
+            .filter(|p| p.is_public(&pub_file) == false && p.is_fully_invisible() == true)
             .collect();
         pub_units.sort_by(|a, b| a.get_name().cmp(&b.get_name()));
         pri_units.sort_by(|a, b| a.get_name().cmp(&b.get_name()));
+        hidden_units.sort_by(|a, b| a.get_name().cmp(&b.get_name()));
 
         for unit in pub_units {
             body.push_str(&format!(
                 "{:<36}{:<14}{:<2}\n",
                 unit.get_name().to_string(),
                 unit.to_string(),
-                "y"
+                "public"
             ));
         }
         for unit in pri_units {
@@ -200,7 +205,15 @@ impl Show {
                 "{:<36}{:<14}{:<2}\n",
                 unit.get_name().to_string(),
                 unit.to_string(),
-                " "
+                "private"
+            ));
+        }
+        for unit in hidden_units {
+            body.push_str(&format!(
+                "{:<36}{:<14}{:<2}\n",
+                unit.get_name().to_string(),
+                unit.to_string(),
+                "invisible"
             ));
         }
         header + &body

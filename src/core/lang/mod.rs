@@ -77,9 +77,28 @@ pub trait Code {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct SharedData {
+    invisible: bool
+}
+
+impl SharedData {
+    pub fn new() -> Self {
+        Self { invisible: false }
+    }
+
+    pub fn set_invisible(&mut self) {
+        self.invisible = true;
+    }
+
+    pub fn is_invisible(&self) -> bool {
+        self.invisible
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub enum LangUnit {
-    Vhdl(PrimaryUnit),
-    Verilog(String),
+    Vhdl(PrimaryUnit, SharedData),
+    Verilog(String, SharedData),
 }
 
 // impl Code for LangUnit {
@@ -104,39 +123,53 @@ impl LangUnit {
         pub_file.is_included(self.get_source_code_file())
     }
 
+    pub fn set_invisible(&mut self) {
+        match self {
+            Self::Vhdl(_, sd) => sd.set_invisible(),
+            Self::Verilog(_, sd) => sd.set_invisible(),
+        };
+    }
+
+    pub fn is_fully_invisible(&self) -> bool {
+        match &self {
+            Self::Vhdl(_, sd) => sd.is_invisible(),
+            Self::Verilog(_, sd) => sd.is_invisible(),
+        }
+    }
+
     /// References the unit's identifier.
     pub fn get_name(&self) -> LangIdentifier {
         match &self {
-            Self::Vhdl(u) => LangIdentifier::Vhdl(u.get_iden().clone()),
-            Self::Verilog(u) => LangIdentifier::Verilog(u.clone()),
+            Self::Vhdl(u, _) => LangIdentifier::Vhdl(u.get_iden().clone()),
+            Self::Verilog(u, _) => LangIdentifier::Verilog(u.clone()),
         }
     }
 
     /// Denotes the HDL language that is used for this unit.
     pub fn get_lang(&self) -> Lang {
         match &self {
-            Self::Vhdl(_) => Lang::Vhdl,
-            Self::Verilog(_) => Lang::Verilog,
+            Self::Vhdl(_, _) => Lang::Vhdl,
+            Self::Verilog(_, _) => Lang::Verilog,
         }
     }
 
     pub fn get_source_code_file(&self) -> &str {
         match &self {
-            Self::Vhdl(u) => u.get_unit().get_source_code_file(),
-            Self::Verilog(u) => u.as_ref(),
+            Self::Vhdl(u, _) => u.get_unit().get_source_code_file(),
+            Self::Verilog(u, _) => u.as_ref(),
         }
     }
 
     pub fn get_symbol(&self) -> Option<&vhdl::symbols::VhdlSymbol> {
         match &self {
-            Self::Vhdl(u) => u.get_unit().get_symbol(),
-            Self::Verilog(_u) => None,
+            Self::Vhdl(u, _) => u.get_unit().get_symbol(),
+            Self::Verilog(_u, _) => None,
         }
     }
 
     pub fn get_references(&self) -> Vec<LangIdentifier> {
         match &self {
-            Self::Vhdl(u) => match u.get_unit().get_symbol() {
+            Self::Vhdl(u, _) => match u.get_unit().get_symbol() {
                 Some(sym) => sym
                     .get_refs()
                     .into_iter()
@@ -144,7 +177,7 @@ impl LangUnit {
                     .collect(),
                 None => Vec::new(),
             },
-            Self::Verilog(_u) => Vec::new(),
+            Self::Verilog(_u, _) => Vec::new(),
         }
     }
 
@@ -175,8 +208,8 @@ impl LangUnit {
     pub fn from_toml(tbl: &toml_edit::InlineTable) -> Option<Self> {
         let entry = tbl.get("language")?.as_str()?;
         match entry {
-            "vhdl" => Some(Self::Vhdl(PrimaryUnit::from_toml(tbl)?)),
-            "verilog" => Some(Self::Verilog(String::new())),
+            "vhdl" => Some(Self::Vhdl(PrimaryUnit::from_toml(tbl)?, SharedData::new())),
+            "verilog" => Some(Self::Verilog(String::new(), SharedData::new())),
             _ => panic!("unknown entry in serialized toml table {}", entry),
         }
     }
@@ -193,8 +226,8 @@ impl FromStr for LangIdentifier {
 impl Display for LangUnit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
-            Self::Vhdl(u) => write!(f, "{}", u),
-            Self::Verilog(u) => write!(f, "{}", u),
+            Self::Vhdl(u, _) => write!(f, "{}", u),
+            Self::Verilog(u, _) => write!(f, "{}", u),
         }
     }
 }
@@ -242,10 +275,10 @@ pub fn collect_units(
     // merge the two results into a common struct
     let mut results = HashMap::with_capacity(vhdl_units.len() + verilog_units.len());
     for (k, v) in vhdl_units {
-        results.insert(LangIdentifier::Vhdl(k), LangUnit::Vhdl(v));
+        results.insert(LangIdentifier::Vhdl(k), LangUnit::Vhdl(v, SharedData::new()));
     }
     for (k, v) in verilog_units {
-        results.insert(LangIdentifier::Verilog(k), LangUnit::Verilog(v));
+        results.insert(LangIdentifier::Verilog(k), LangUnit::Verilog(v, SharedData::new()));
     }
 
     Ok(results)

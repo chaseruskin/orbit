@@ -293,7 +293,7 @@ impl Ip {
 
                 let mut map = lang::collect_units(&files, lang_mode)?;
                 // work to remove files that are totally private
-                if hide_total_private == true && PubFile::exists(&dir) == true {
+                if PubFile::exists(&dir) == true {
                     let pub_filepath = &dir.join(pubfile::ORBIT_PUB_FILE);
                     let pub_file = PubFile::new(pub_filepath);
                     // track which files are private and have no references or only private references
@@ -328,11 +328,18 @@ impl Ip {
                         }
                     });
                     // println!("totally private: {:?}", private_set);
-                    // remove totally invisible units from list
-                    map = map
-                        .into_iter()
-                        .filter(|(k, _v)| private_set.contains(k) == false)
-                        .collect();
+                    for k in &private_set {
+                        if let Some(v) = map.get_mut(k) {
+                            v.set_invisible();
+                        }
+                    }
+                    if hide_total_private == true {
+                        // remove totally invisible units from list
+                        map = map
+                            .into_iter()
+                            .filter(|(k, _v)| private_set.contains(k) == false)
+                            .collect();
+                    }
                 }
                 Ok(map)
             }

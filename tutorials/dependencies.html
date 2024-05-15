@@ -206,10 +206,10 @@ gates = &quot;0.1.0&quot;
 <p>Let's remember what entities we have at our disposal.</p>
 <pre><code>$ orbit show gates --units
 </code></pre>
-<pre><code>Identifier                          Type          Public   
------------------------------------ ------------- -------- 
-and_gate                            entity        y 
-nand_gate                           entity        y 
+<pre><code>Identifier                          Type          Visibility   
+----------------------------------- ------------- ----------- 
+and_gate                            entity        public 
+nand_gate                           entity        public 
 </code></pre>
 <p>Okay, how did we implement the NAND gate architecture?</p>
 <pre><code>$ orbit read --ip gates nand_gate --start architecture

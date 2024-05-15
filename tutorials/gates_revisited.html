@@ -241,11 +241,11 @@ end architecture;
 <p>Showing the list of possible design units for the current project should now include the OR gate entity.</p>
 <pre><code>$ orbit show --units
 </code></pre>
-<pre><code>Identifier                          Type          Public   
------------------------------------ ------------- -------- 
-and_gate                            entity        y 
-nand_gate                           entity        y 
-or_gate                             entity        y 
+<pre><code>Identifier                          Type          Visibility   
+----------------------------------- ------------- ----------- 
+and_gate                            entity        public
+nand_gate                           entity        public 
+or_gate                             entity        public 
 </code></pre>
 <h2 id="extending-the-yilinx-plugin"><a class="header" href="#extending-the-yilinx-plugin">Extending the Yilinx plugin</a></h2>
 <p>Next, we want to program our Yilinx FPGA with the OR gate design to test it on the board. However, there are some quick updates we first want to apply to the &quot;.orbit/yilinx.py&quot; script.</p>

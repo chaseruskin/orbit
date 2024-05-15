@@ -182,11 +182,11 @@
 <p>For this final project, we will need circuits described in both the gate IP and half-add IP. Let's quickly recall if version 1.0.0 of gates has the OR gate we will need.</p>
 <pre><code>$ orbit show gates:1.0.0 --units
 </code></pre>
-<pre><code>Identifier                          Type          Public   
------------------------------------ ------------- -------- 
-and_gate                            entity        y 
-nand_gate                           entity        y 
-or_gate                             entity        y 
+<pre><code>Identifier                          Type          Visibility   
+----------------------------------- ------------- ----------- 
+and_gate                            entity        public 
+nand_gate                           entity        public 
+or_gate                             entity        public 
 </code></pre>
 <p>Yup! It's there, and we know we will need some half adders as well. Let's add both IPs to our manifest file.</p>
 <p>filename: Orbit.toml</p>

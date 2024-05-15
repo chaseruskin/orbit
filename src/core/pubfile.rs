@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use std::fmt::Display;
+use std::path::PathBuf;
 
 pub const ORBIT_PUB_FILE: &str = ".orbitpub";
 
@@ -51,11 +51,10 @@ impl<'a> PubFile<'a> {
 pub enum Visibility {
     Public,
     Protected,
-    Private
+    Private,
 }
 
 impl Visibility {
-
     pub fn new() -> Self {
         Self::Public
     }
@@ -75,11 +74,15 @@ impl Visibility {
 
 impl Display for Visibility {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            Self::Public => "public",
-            Self::Protected => "protected",
-            Self::Private => "private",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Public => "public",
+                Self::Protected => "protected",
+                Self::Private => "private",
+            }
+        )
     }
 }
 

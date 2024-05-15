@@ -91,9 +91,7 @@ impl Command<Context> for Show {
                 let units = Ip::collect_units(true, &ip.get_root(), &c.get_lang_mode(), false)?;
                 println!(
                     "{}",
-                    Self::format_units_table(
-                        units.into_iter().map(|(_, unit)| unit).collect()
-                    )
+                    Self::format_units_table(units.into_iter().map(|(_, unit)| unit).collect())
                 );
             } else {
                 // a 'virtual' ip, so try to extract units from
@@ -172,12 +170,10 @@ impl Show {
 
         let mut table = table;
 
-        table.sort_by(|a, b| {
-            match a.get_visibility().cmp(&b.get_visibility()) {
-                Ordering::Equal => a.get_name().cmp(&b.get_name()),
-                Ordering::Less => Ordering::Less,
-                Ordering::Greater => Ordering::Greater,
-            }
+        table.sort_by(|a, b| match a.get_visibility().cmp(&b.get_visibility()) {
+            Ordering::Equal => a.get_name().cmp(&b.get_name()),
+            Ordering::Less => Ordering::Less,
+            Ordering::Greater => Ordering::Greater,
         });
 
         for unit in table {

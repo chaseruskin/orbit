@@ -45,8 +45,10 @@ use clif::arg::{Flag, Optional, Positional};
 use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
+use std::collections::HashSet;
 use std::env;
 use std::fs;
+use std::fs::read_dir;
 use std::path::PathBuf;
 
 #[derive(Debug, PartialEq)]
@@ -162,7 +164,7 @@ impl Command<Context> for Install {
                             Some(ip)
                         } else {
                             Err(AnyError(format!(
-                                "Could not find IP \"{}\" at path \"{}\"",
+                                "Could not find ip \"{}\" at path \"{}\"",
                                 entry,
                                 filesystem::into_std_str(search_dir)
                             )))?
@@ -182,7 +184,6 @@ impl Command<Context> for Install {
                     )))?,
                 },
             };
-            // @todo: check if already downloaded or installed
             target
         // attempt to find the catalog
         } else {
@@ -218,12 +219,12 @@ impl Command<Context> for Install {
                         }
                     } else {
                         return Err(AnyError(format!(
-                            "IP {} does not exist in the catalog",
+                            "ip {} does not exist in the catalog",
                             spec
                         )))?;
                     }
                 } else {
-                    return Err(AnyError(format!("Failed to find an IP in the catalog")))?;
+                    return Err(AnyError(format!("Failed to find an ip in the catalog")))?;
                 }
             // use the local IP if the ip spec was not provided
             } else {
@@ -236,8 +237,89 @@ impl Command<Context> for Install {
         // println!("{:?},", target);
         let target = match target {
             Some(t) => t,
-            None => return Err(AnyError(format!("Failed to find an IP to install")))?,
+            None => return Err(AnyError(format!("Failed to find an ip to install")))?,
         };
+
+        // verify the ip is not already taken in the cache
+        {
+            let check = Ip::compute_checksum(&target.get_root());
+
+            let mut matches = HashSet::new();
+            let slot_name = CacheSlot::new(
+                target.get_man().get_ip().get_name(),
+                target.get_man().get_ip().get_version(),
+                &check,
+            );
+
+            if let Ok(mut rd) = read_dir(c.get_cache_path()) {
+                let pat = format!(
+                    "{}-{}",
+                    target.get_man().get_ip().get_name(),
+                    target.get_man().get_ip().get_version()
+                );
+
+                // upon force, will remove all installations (even dynamics)
+                while let Some(d) = rd.next() {
+                    if let Ok(p) = d {
+                        if p.file_name().into_string().unwrap().starts_with(&pat) == true {
+                            if self.force == true {
+                                std::fs::remove_dir_all(&p.path())?;
+                            } else {
+                                matches.insert(p.file_name().into_string().unwrap());
+                            }
+                        }
+                    }
+                }
+            }
+
+            if self.force == false {
+                if matches.contains(&slot_name.to_string()) == true {
+                    println!(
+                        "info: ip {} is already installed",
+                        target.get_man().get_ip().into_ip_spec()
+                    );
+                    return Ok(());
+                } else if matches.len() > 0 {
+                    return Err(AnyError(format!(
+                        "ip {} already exists in cache under different checksum",
+                        target.get_man().get_ip().into_ip_spec()
+                    )))?;
+                }
+            }
+        }
+
+        // verify the ip is not already taken in the downloads (and has matching uuid)
+        {
+            if let Ok(mut rd) = read_dir(c.get_downloads_path()) {
+                let pat = format!(
+                    "{}-{}",
+                    target.get_man().get_ip().get_name(),
+                    target.get_man().get_ip().get_version()
+                );
+                while let Some(d) = rd.next() {
+                    if let Ok(p) = d {
+                        if p.file_name().into_string().unwrap().starts_with(&pat) == true {
+                            if self.force == true {
+                                std::fs::remove_file(&p.path())?;
+                            // found a match, but its under a different download key
+                            } else {
+                                if catalog.is_downloaded_slot(
+                                    &LockEntry::from((&target, true)).to_download_slot_key(),
+                                ) == false
+                                {
+                                    return Err(AnyError(format!(
+                                        "ip {} already exists in downloads under different uuid",
+                                        target.get_man().get_ip().into_ip_spec()
+                                    )))?;
+                                }
+                            }
+                            // can only have one file correspond to ip in downloads directory
+                            break;
+                        }
+                    }
+                }
+            }
+        }
 
         // move the IP to the downloads folder if not already there
         if catalog.is_downloaded_slot(&LockEntry::from((&target, true)).to_download_slot_key())
@@ -298,14 +380,14 @@ impl Install {
                 None => {
                     return Err(AnyError(format!(
                         "{}",
-                        "A complete IP specification is required when providing a url"
+                        "A complete ip specification is required when providing a url"
                     )))?
                 }
             },
             None => {
                 return Err(AnyError(format!(
                     "{}",
-                    "A complete IP specification is required when providing a url"
+                    "A complete ip specification is required when providing a url"
                 )))?
             }
         };
@@ -375,7 +457,7 @@ impl Install {
         let version = src.get_man().get_ip().get_version();
         let target = src.get_man().get_ip().get_name();
         let ip_spec = src.get_man().get_ip().into_ip_spec();
-        println!("info: Installing IP {} ...", &ip_spec);
+        println!("info: Installing ip {} ...", &ip_spec);
 
         // perform sha256 on the temporary cloned directory
         let checksum = Ip::compute_checksum(&dest);
@@ -396,7 +478,7 @@ impl Install {
                     fs::remove_dir_all(dest)?;
                     return Ok(false);
                 } else {
-                    println!("info: Reinstalling IP {} due to bad checksum ...", ip_spec);
+                    println!("info: Reinstalling ip {} due to bad checksum ...", ip_spec);
 
                     // blow directory up for re-install
                     std::fs::remove_dir_all(&cache_slot)?;
@@ -423,7 +505,7 @@ impl Install {
 
         if result == false {
             println!(
-                "info: IP {} is already installed",
+                "info: ip {} is already installed",
                 target.get_man().get_ip().into_ip_spec()
             );
         }

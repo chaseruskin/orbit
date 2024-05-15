@@ -329,7 +329,6 @@ impl Ip {
                                 }
                                 visited.insert(item);
                             }
-                        
                         }
                     });
                     // println!("totally private: {:?}", private_set);

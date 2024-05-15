@@ -78,12 +78,14 @@ pub trait Code {
 
 #[derive(Debug, PartialEq)]
 pub struct SharedData {
-    visibility: Visibility
+    visibility: Visibility,
 }
 
 impl SharedData {
     pub fn new() -> Self {
-        Self { visibility: Visibility::default() }
+        Self {
+            visibility: Visibility::default(),
+        }
     }
 
     pub fn set_visibility(&mut self, v: Visibility) {
@@ -275,10 +277,16 @@ pub fn collect_units(
     // merge the two results into a common struct
     let mut results = HashMap::with_capacity(vhdl_units.len() + verilog_units.len());
     for (k, v) in vhdl_units {
-        results.insert(LangIdentifier::Vhdl(k), LangUnit::Vhdl(v, SharedData::new()));
+        results.insert(
+            LangIdentifier::Vhdl(k),
+            LangUnit::Vhdl(v, SharedData::new()),
+        );
     }
     for (k, v) in verilog_units {
-        results.insert(LangIdentifier::Verilog(k), LangUnit::Verilog(v, SharedData::new()));
+        results.insert(
+            LangIdentifier::Verilog(k),
+            LangUnit::Verilog(v, SharedData::new()),
+        );
     }
 
     Ok(results)

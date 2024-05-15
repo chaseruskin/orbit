@@ -21,6 +21,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Adds `language-mode` setting under `[general]` for supporting VHDL, verilog, or mixed language projects
 - Allows errors during parsing to be identified by source code file and then adds ability to generate an erroneous blueprint by using `--force` with `plan` command
 - Adds `.orbitpub` file, which explicitly list the hdl files which will be public to other projects that use the ip as a dependency. If no `.orbitpub` file exists, then the default is to have all hdl files be public
+- Adds visibility to HDL files (public, protected, private)
 
 ### Changes
 - Renames docker images to more memorable names and defines clearer organization

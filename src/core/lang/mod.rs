@@ -18,7 +18,7 @@ use vhdl::primaryunit::PrimaryUnit;
 type VhdlIdentifier = vhdl::token::Identifier;
 use serde_derive::Deserialize;
 
-use super::pubfile::PubFile;
+use super::pubfile::{PubFile, Visibility};
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub enum LangMode {
@@ -78,20 +78,20 @@ pub trait Code {
 
 #[derive(Debug, PartialEq)]
 pub struct SharedData {
-    invisible: bool
+    visibility: Visibility
 }
 
 impl SharedData {
     pub fn new() -> Self {
-        Self { invisible: false }
+        Self { visibility: Visibility::default() }
     }
 
-    pub fn set_invisible(&mut self) {
-        self.invisible = true;
+    pub fn set_visibility(&mut self, v: Visibility) {
+        self.visibility = v;
     }
 
-    pub fn is_invisible(&self) -> bool {
-        self.invisible
+    pub fn get_visibility(&self) -> &Visibility {
+        &self.visibility
     }
 }
 
@@ -119,22 +119,22 @@ pub enum LangUnit {
 
 impl LangUnit {
     /// Checks if the module is public.
-    pub fn is_public(&self, pub_file: &PubFile) -> bool {
+    pub fn is_listed_public(&self, pub_file: &PubFile) -> bool {
         pub_file.is_included(self.get_source_code_file())
     }
 
-    pub fn set_invisible(&mut self) {
-        match self {
-            Self::Vhdl(_, sd) => sd.set_invisible(),
-            Self::Verilog(_, sd) => sd.set_invisible(),
-        };
+    pub fn get_visibility(&self) -> &Visibility {
+        match &self {
+            Self::Vhdl(_, sd) => sd.get_visibility(),
+            Self::Verilog(_, sd) => sd.get_visibility(),
+        }
     }
 
-    pub fn is_fully_invisible(&self) -> bool {
-        match &self {
-            Self::Vhdl(_, sd) => sd.is_invisible(),
-            Self::Verilog(_, sd) => sd.is_invisible(),
-        }
+    pub fn set_visibility(&mut self, v: Visibility) {
+        match self {
+            Self::Vhdl(_, sd) => sd.set_visibility(v),
+            Self::Verilog(_, sd) => sd.set_visibility(v),
+        };
     }
 
     /// References the unit's identifier.

@@ -3,7 +3,6 @@ use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::{Ip, PartialIpSpec};
 use crate::core::lang::LangUnit;
-use crate::core::pubfile::PubFile;
 use crate::core::version;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
@@ -12,8 +11,8 @@ use clif::arg::{Flag, Positional};
 use clif::cmd::{Command, FromCli};
 use clif::Cli;
 use clif::Error as CliError;
+use std::cmp::Ordering;
 use std::env::current_dir;
-use std::path::PathBuf;
 
 #[derive(Debug, PartialEq)]
 pub struct Show {
@@ -93,8 +92,7 @@ impl Command<Context> for Show {
                 println!(
                     "{}",
                     Self::format_units_table(
-                        units.into_iter().map(|(_, unit)| unit).collect(),
-                        ip.get_root()
+                        units.into_iter().map(|(_, unit)| unit).collect()
                     )
                 );
             } else {
@@ -163,7 +161,7 @@ impl Show {
     }
 
     /// Creates a string for to display the primary design units for the particular ip.
-    fn format_units_table(table: Vec<LangUnit>, root: &PathBuf) -> String {
+    fn format_units_table(table: Vec<LangUnit>) -> String {
         let header = format!(
             "\
 {:<36}{:<14}{:<12}
@@ -171,51 +169,26 @@ impl Show {
             "Identifier", "Type", "Visibility", " "
         );
         let mut body = String::new();
-        let pub_filepath = root.join(PubFile::get_filename());
-        let pub_file = PubFile::new(&pub_filepath);
 
-        let table = table;
+        let mut table = table;
 
-        let mut pub_units: Vec<&LangUnit> = table
-            .iter()
-            .filter(|p| p.is_public(&pub_file) == true)
-            .collect();
-        let mut pri_units: Vec<&LangUnit> = table
-            .iter()
-            .filter(|p| p.is_public(&pub_file) == false && p.is_fully_invisible() == false)
-            .collect();
-        let mut hidden_units: Vec<&LangUnit> = table
-            .iter()
-            .filter(|p| p.is_public(&pub_file) == false && p.is_fully_invisible() == true)
-            .collect();
-        pub_units.sort_by(|a, b| a.get_name().cmp(&b.get_name()));
-        pri_units.sort_by(|a, b| a.get_name().cmp(&b.get_name()));
-        hidden_units.sort_by(|a, b| a.get_name().cmp(&b.get_name()));
+        table.sort_by(|a, b| {
+            match a.get_visibility().cmp(&b.get_visibility()) {
+                Ordering::Equal => a.get_name().cmp(&b.get_name()),
+                Ordering::Less => Ordering::Less,
+                Ordering::Greater => Ordering::Greater,
+            }
+        });
 
-        for unit in pub_units {
+        for unit in table {
             body.push_str(&format!(
-                "{:<36}{:<14}{:<2}\n",
+                "{:<36}{:<14}{:<12}\n",
                 unit.get_name().to_string(),
                 unit.to_string(),
-                "public"
+                unit.get_visibility().to_string(),
             ));
         }
-        for unit in pri_units {
-            body.push_str(&format!(
-                "{:<36}{:<14}{:<2}\n",
-                unit.get_name().to_string(),
-                unit.to_string(),
-                "private"
-            ));
-        }
-        for unit in hidden_units {
-            body.push_str(&format!(
-                "{:<36}{:<14}{:<2}\n",
-                unit.get_name().to_string(),
-                unit.to_string(),
-                "invisible"
-            ));
-        }
+
         header + &body
     }
 }

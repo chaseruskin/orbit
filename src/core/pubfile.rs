@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::fmt::Display;
 
 pub const ORBIT_PUB_FILE: &str = ".orbitpub";
 
@@ -43,5 +44,47 @@ impl<'a> PubFile<'a> {
 
     pub fn get_filename() -> &'static str {
         ORBIT_PUB_FILE
+    }
+}
+
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
+pub enum Visibility {
+    Public,
+    Protected,
+    Private
+}
+
+impl Visibility {
+
+    pub fn new() -> Self {
+        Self::Public
+    }
+
+    pub fn is_public(&self) -> bool {
+        self == &Self::Public
+    }
+
+    pub fn is_protected(&self) -> bool {
+        self == &Self::Protected
+    }
+
+    pub fn is_private(&self) -> bool {
+        self == &Self::Private
+    }
+}
+
+impl Display for Visibility {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            Self::Public => "public",
+            Self::Protected => "protected",
+            Self::Private => "private",
+        })
+    }
+}
+
+impl Default for Visibility {
+    fn default() -> Self {
+        Self::Public
     }
 }

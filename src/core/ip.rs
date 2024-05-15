@@ -15,6 +15,7 @@ use super::lockfile::IP_LOCK_FILE;
 use super::manifest::FromFile;
 use super::pubfile;
 use super::pubfile::PubFile;
+use super::pubfile::Visibility;
 use crate::core::lockfile::LockEntry;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::ORBIT_METADATA_FILE;
@@ -281,7 +282,7 @@ impl Ip {
         force: bool,
         dir: &PathBuf,
         lang_mode: &LangMode,
-        hide_total_private: bool,
+        hide_private: bool,
     ) -> Result<HashMap<LangIdentifier, LangUnit>, CodeFault> {
         // try to read from metadata file
         match (force == false) && Self::read_units_from_metadata(&dir).is_some() {
@@ -298,10 +299,12 @@ impl Ip {
                     let pub_file = PubFile::new(pub_filepath);
                     // track which files are private and have no references or only private references
                     let mut private_set: HashSet<LangIdentifier> = map
-                        .iter()
-                        .filter_map(|p| {
-                            if p.1.is_public(&pub_file) == false {
-                                Some(p.0.clone())
+                        .iter_mut()
+                        .filter_map(|(k, v)| {
+                            // the node is implicitly private, but so far only known to be protected
+                            if v.is_listed_public(&pub_file) == false {
+                                v.set_visibility(Visibility::Protected);
+                                Some(k.clone())
                             } else {
                                 None
                             }
@@ -309,7 +312,8 @@ impl Ip {
                         .collect();
                     let mut visited: HashSet<LangIdentifier> = HashSet::new();
                     map.iter().for_each(|(_k, v)| {
-                        if v.is_public(&pub_file) == true {
+                        // the node is explicitly public
+                        if v.is_listed_public(&pub_file) == true {
                             // if the reference is used by a public then it and its nesteddeps are not totally invisible
                             let mut stack = v.get_references();
                             while let Some(item) = stack.pop() {
@@ -325,15 +329,16 @@ impl Ip {
                                 }
                                 visited.insert(item);
                             }
+                        
                         }
                     });
                     // println!("totally private: {:?}", private_set);
                     for k in &private_set {
                         if let Some(v) = map.get_mut(k) {
-                            v.set_invisible();
+                            v.set_visibility(Visibility::Private);
                         }
                     }
-                    if hide_total_private == true {
+                    if hide_private == true {
                         // remove totally invisible units from list
                         map = map
                             .into_iter()

@@ -55,6 +55,10 @@ jobs:
       shell: bash
       run: cd ./tests/env/assoc_files; ./run.sh
 
+    - name: Test .orbitpub hiding completely invisible files
+      shell: bash
+      run: cd ./tests/env/projects; ./pub.sh
+
   macos-arm-test:
     runs-on: macos-latest
     steps:
@@ -102,6 +106,10 @@ jobs:
       shell: bash
       run: cd ./tests/env/assoc_files; ./run.sh
 
+    - name: Test .orbitpub hiding completely invisible files
+      shell: bash
+      run: cd ./tests/env/projects; ./pub.sh
+
   linux-test:
     runs-on: ubuntu-latest
     steps:
@@ -145,6 +153,10 @@ jobs:
     - name: Test collecting associated files
       shell: bash
       run: cd ./tests/env/assoc_files; ./run.sh
+
+    - name: Test .orbitpub hiding completely invisible files
+      shell: bash
+      run: cd ./tests/env/projects; ./pub.sh
     
   windows-test:
     runs-on: windows-latest
@@ -186,3 +198,7 @@ jobs:
     - name: Test collecting associated files
       shell: bash
       run: cd ./tests/env/assoc_files; ./run.sh
+
+    - name: Test .orbitpub hiding completely invisible files
+      shell: bash
+      run: cd ./tests/env/projects; ./pub.sh

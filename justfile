@@ -53,3 +53,8 @@ test-dst:
     just install
     chmod +x ./tests/env/projects/dst.sh
     cd ./tests/env/projects; ./dst.sh
+
+test-pub: 
+    just install
+    chmod +x ./tests/env/projects/pub.sh
+    cd ./tests/env/projects; ./pub.sh

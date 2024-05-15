@@ -55,24 +55,23 @@ pub fn gather_current_files(path: &PathBuf, strip_base: bool, use_pub_file: bool
     // determine what HDL files should be kept (.orbitpub acts as opposite of ignore)
     if use_pub_file == true {
         let pub_filepath = path.join(PubFile::get_filename());
-        if let Ok(pub_file) = PubFile::new(&pub_filepath) {
-            files = files
-                .into_iter()
-                .filter_map(|p| {
-                    match fileset::is_hdl(p.as_ref()) {
-                        true => {
-                            // the pub file explicitly lists the files to keep
-                            match pub_file.is_included(&p) {
-                                true => Some(p),
-                                false => None,
-                            }
+        let pub_file = PubFile::new(&pub_filepath);
+        files = files
+            .into_iter()
+            .filter_map(|p| {
+                match fileset::is_hdl(p.as_ref()) {
+                    true => {
+                        // the pub file explicitly lists the files to keep
+                        match pub_file.is_included(&p) {
+                            true => Some(p),
+                            false => None,
                         }
-                        // keep all non-hdl files
-                        false => Some(p),
                     }
-                })
-                .collect();
-        }
+                    // keep all non-hdl files
+                    false => Some(p),
+                }
+            })
+            .collect();
     }
     // sort the fileset for reproducibility purposes
     files.sort();

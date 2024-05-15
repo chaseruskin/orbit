@@ -13,6 +13,7 @@ use super::lang::LangUnit;
 use super::lockfile::LockFile;
 use super::lockfile::IP_LOCK_FILE;
 use super::manifest::FromFile;
+use super::pubfile;
 use super::pubfile::PubFile;
 use crate::core::lockfile::LockEntry;
 use crate::core::manifest::IP_MANIFEST_FILE;
@@ -280,17 +281,60 @@ impl Ip {
         force: bool,
         dir: &PathBuf,
         lang_mode: &LangMode,
-        is_working_ip: bool,
+        hide_total_private: bool,
     ) -> Result<HashMap<LangIdentifier, LangUnit>, CodeFault> {
         // try to read from metadata file
         match (force == false) && Self::read_units_from_metadata(&dir).is_some() {
             // use precomputed result
             true => Ok(Self::read_units_from_metadata(&dir).unwrap()),
             false => {
-                // collect all files (use .orbitpub if its not the working ip and it exists)
-                let use_pubfile = is_working_ip == false && PubFile::exists(&dir) == true;
-                let files = filesystem::gather_current_files(&dir, false, use_pubfile);
-                Ok(lang::collect_units(&files, lang_mode)?)
+                // collect all files
+                let files = filesystem::gather_current_files(&dir, false, false);
+
+                let mut map = lang::collect_units(&files, lang_mode)?;
+                // work to remove files that are totally private
+                if hide_total_private == true && PubFile::exists(&dir) == true {
+                    let pub_filepath = &dir.join(pubfile::ORBIT_PUB_FILE);
+                    let pub_file = PubFile::new(pub_filepath);
+                    // track which files are private and have no references or only private references
+                    let mut private_set: HashSet<LangIdentifier> = map
+                        .iter()
+                        .filter_map(|p| {
+                            if p.1.is_public(&pub_file) == false {
+                                Some(p.0.clone())
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+                    let mut visited: HashSet<LangIdentifier> = HashSet::new();
+                    map.iter().for_each(|(_k, v)| {
+                        if v.is_public(&pub_file) == true {
+                            // if the reference is used by a public then it and its nesteddeps are not totally invisible
+                            let mut stack = v.get_references();
+                            while let Some(item) = stack.pop() {
+                                // remove this item from the private map
+                                private_set.remove(&item);
+                                if visited.contains(&item) == false {
+                                    if let Some(id) = map.get(&item) {
+                                        for refer in id.get_references() {
+                                            // println!("{:?}", refer);
+                                            stack.push(refer);
+                                        }
+                                    }
+                                }
+                                visited.insert(item);
+                            }
+                        }
+                    });
+                    // println!("totally private: {:?}", private_set);
+                    // remove totally invisible units from list
+                    map = map
+                        .into_iter()
+                        .filter(|(k, _v)| private_set.contains(k) == false)
+                        .collect();
+                }
+                Ok(map)
             }
         }
     }
@@ -325,6 +369,13 @@ impl Ip {
         if let Some(readme) = self.get_man().get_ip().get_readme() {
             // resolve a relative path
             list.insert(filesystem::resolve_rel_path2(self.get_root(), readme));
+        }
+        if self.has_pubfile() == true {
+            // resolve relative path to .orbitpub
+            list.insert(filesystem::resolve_rel_path2(
+                self.get_root(),
+                &PathBuf::from(pubfile::ORBIT_PUB_FILE),
+            ));
         }
         list
     }

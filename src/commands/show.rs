@@ -83,14 +83,13 @@ impl Command<Context> for Show {
                 }
             }
         };
-        let is_working_ip = is_working_ip;
+        let _is_working_ip = is_working_ip;
 
         // load the ip's manifest
         if self.units == true {
             if ip.get_mapping().is_physical() == true {
                 // force computing the primary design units if a physical ip (non-archived)
-                let units =
-                    Ip::collect_units(true, &ip.get_root(), &c.get_lang_mode(), is_working_ip)?;
+                let units = Ip::collect_units(true, &ip.get_root(), &c.get_lang_mode(), true)?;
                 println!(
                     "{}",
                     Self::format_units_table(
@@ -175,24 +174,33 @@ impl Show {
         let pub_filepath = root.join(PubFile::get_filename());
         let pub_file = PubFile::new(&pub_filepath);
 
-        let mut table = table;
-        table.sort_by(|a, b| a.get_name().cmp(&b.get_name()));
-        for unit in table {
+        let table = table;
+
+        let mut pub_units: Vec<&LangUnit> = table
+            .iter()
+            .filter(|p| p.is_public(&pub_file) == true)
+            .collect();
+        let mut pri_units: Vec<&LangUnit> = table
+            .iter()
+            .filter(|p| p.is_public(&pub_file) == false)
+            .collect();
+        pub_units.sort_by(|a, b| a.get_name().cmp(&b.get_name()));
+        pri_units.sort_by(|a, b| a.get_name().cmp(&b.get_name()));
+
+        for unit in pub_units {
             body.push_str(&format!(
                 "{:<36}{:<14}{:<2}\n",
                 unit.get_name().to_string(),
                 unit.to_string(),
-                if pub_file.is_ok()
-                    && pub_file
-                        .as_ref()
-                        .unwrap()
-                        .is_included(unit.get_source_code_file())
-                        == false
-                {
-                    " "
-                } else {
-                    "y"
-                }
+                "y"
+            ));
+        }
+        for unit in pri_units {
+            body.push_str(&format!(
+                "{:<36}{:<14}{:<2}\n",
+                unit.get_name().to_string(),
+                unit.to_string(),
+                " "
             ));
         }
         header + &body

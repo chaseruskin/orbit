@@ -143,7 +143,8 @@ impl Get {
             true => Identifier::new_working(),
             false => match man.get_ip().get_library() {
                 Some(lib) => Identifier::from(lib),
-                None => Identifier::new_working(),
+                // default to the package's name
+                None => Identifier::from(man.get_ip().get_name()),
             },
         };
 

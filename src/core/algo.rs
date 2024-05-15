@@ -86,12 +86,7 @@ fn graph_ip<'a>(
                                 existing_node.index()
                             } else {
                                 // check if identifiers are already taken in graph
-                                let units = Ip::collect_units(
-                                    false,
-                                    dep.get_root(),
-                                    mode,
-                                    dep.has_pubfile(),
-                                )?;
+                                let units = Ip::collect_units(false, dep.get_root(), mode, true)?;
                                 let dst = if let Some(dupe) =
                                     units.iter().find(|(key, _)| iden_set.contains_key(key))
                                 {
@@ -119,7 +114,7 @@ fn graph_ip<'a>(
                                 }
                                 let lib = match dep.get_man().get_ip().get_library().as_ref() {
                                     Some(l) => Identifier::from(l),
-                                    None => Identifier::new_working(),
+                                    None => Identifier::from(dep.get_man().get_ip().get_name()),
                                 };
                                 g.add_node(
                                     dep.get_man().get_ip().into_ip_spec(),

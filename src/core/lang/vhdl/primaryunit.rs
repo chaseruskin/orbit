@@ -1,4 +1,5 @@
 use super::super::lexer::Position;
+use super::subunit::SubUnit;
 use super::symbols::VhdlSymbol;
 use crate::core::ip::IpSpec;
 use crate::core::lang::parser::ParseError;
@@ -36,6 +37,18 @@ impl PrimaryUnit {
             Self::Package(unit) => unit,
             Self::Context(unit) => unit,
             Self::Configuration(unit) => unit,
+        }
+    }
+
+    pub fn add_refs(
+        &mut self,
+        refs: &mut std::collections::LinkedList<super::symbols::CompoundIdentifier>,
+    ) {
+        match self {
+            Self::Entity(unit) => unit.get_symbol_mut().unwrap().add_refs(refs),
+            Self::Package(unit) => unit.get_symbol_mut().unwrap().add_refs(refs),
+            Self::Context(unit) => unit.get_symbol_mut().unwrap().add_refs(refs),
+            Self::Configuration(unit) => unit.get_symbol_mut().unwrap().add_refs(refs),
         }
     }
 
@@ -101,6 +114,10 @@ impl Unit {
         self.symbol.as_ref()
     }
 
+    pub fn get_symbol_mut(&mut self) -> Option<&mut VhdlSymbol> {
+        self.symbol.as_mut()
+    }
+
     pub fn get_source_code_file(&self) -> &str {
         &self.source
     }
@@ -138,38 +155,68 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
                     )),
                 ))?,
             };
+
+            let mut sub_nodes = Vec::new();
+
             // transform into primary design units
-            let units: Vec<PrimaryUnit> = symbols
+            let mut units: HashMap<Identifier, PrimaryUnit> = symbols
                 .into_iter()
                 .filter_map(|sym| {
                     let name = sym.as_iden()?.clone();
                     match sym {
-                        VhdlSymbol::Entity(_) => Some(PrimaryUnit::Entity(Unit {
-                            name: name,
-                            symbol: Some(sym),
-                            source: source_file.clone(),
-                        })),
-                        VhdlSymbol::Package(_) => Some(PrimaryUnit::Package(Unit {
-                            name: name,
-                            symbol: Some(sym),
-                            source: source_file.clone(),
-                        })),
-                        VhdlSymbol::Configuration(_) => Some(PrimaryUnit::Configuration(Unit {
-                            name: name,
-                            symbol: Some(sym),
-                            source: source_file.clone(),
-                        })),
-                        VhdlSymbol::Context(_) => Some(PrimaryUnit::Context(Unit {
-                            name: name,
-                            symbol: Some(sym),
-                            source: source_file.clone(),
-                        })),
-                        _ => None,
+                        VhdlSymbol::Entity(_) => Some((
+                            name.clone(),
+                            PrimaryUnit::Entity(Unit {
+                                name: name,
+                                symbol: Some(sym),
+                                source: source_file.clone(),
+                            }),
+                        )),
+                        VhdlSymbol::Package(_) => Some((
+                            name.clone(),
+                            PrimaryUnit::Package(Unit {
+                                name: name,
+                                symbol: Some(sym),
+                                source: source_file.clone(),
+                            }),
+                        )),
+                        VhdlSymbol::Configuration(_) => Some((
+                            name.clone(),
+                            PrimaryUnit::Configuration(Unit {
+                                name: name,
+                                symbol: Some(sym),
+                                source: source_file.clone(),
+                            }),
+                        )),
+                        VhdlSymbol::Context(_) => Some((
+                            name.clone(),
+                            PrimaryUnit::Context(Unit {
+                                name: name,
+                                symbol: Some(sym),
+                                source: source_file.clone(),
+                            }),
+                        )),
+                        VhdlSymbol::Architecture(arch) => {
+                            sub_nodes.push(SubUnit::from_arch(arch));
+                            None
+                        }
+                        // package bodies are usually in same design file as package
+                        VhdlSymbol::PackageBody(pb) => {
+                            sub_nodes.push(SubUnit::from_body(pb));
+                            None
+                        }
                     }
                 })
                 .collect();
 
-            for primary in units {
+            // update references for primary units
+            for mut sn in sub_nodes {
+                if let Some(owner) = units.get_mut(sn.get_entity()) {
+                    owner.add_refs(sn.get_refs_mut());
+                }
+            }
+
+            for (_key, primary) in units {
                 if let Some(dupe) = result.insert(primary.get_iden().clone(), primary) {
                     return Err(CodeFault(
                         None,

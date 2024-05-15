@@ -134,6 +134,20 @@ impl LangUnit {
         }
     }
 
+    pub fn get_references(&self) -> Vec<LangIdentifier> {
+        match &self {
+            Self::Vhdl(u) => match u.get_unit().get_symbol() {
+                Some(sym) => sym
+                    .get_refs()
+                    .into_iter()
+                    .map(|f| LangIdentifier::Vhdl(f.get_suffix().clone()))
+                    .collect(),
+                None => Vec::new(),
+            },
+            Self::Verilog(_u) => Vec::new(),
+        }
+    }
+
     /// Serializes the data into a toml inline table
     pub fn to_toml(&self) -> toml_edit::Value {
         let mut item = toml_edit::Value::InlineTable(InlineTable::new());

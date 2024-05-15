@@ -337,6 +337,7 @@ impl Command<Context> for Install {
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
         if target.can_use_lock() == true && self.force == false {
+            println!("info: {}", "Reading dependencies from lockfile ...");
             let env = Environment::new()
                 // read config.toml for setting any env variables
                 .from_config(c.get_config())?;
@@ -359,7 +360,10 @@ impl Command<Context> for Install {
             plan::install_missing_deps(&lf, &le, &catalog)?;
             // recollect the installations and queued items to update the catalog
             catalog = catalog.installations(c.get_cache_path())?;
+        } else if target.lock_exists() == true && target.can_use_lock() == false {
+            println!("warning: {}", "Cannot read dependencies from lockfile due to unsynchronized ip entry");
         }
+
         // generate lock file if it is missing
         if target.lock_exists() == false {
             // build entire ip graph and resolve with dynamic symbol transformation

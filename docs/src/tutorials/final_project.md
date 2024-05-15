@@ -20,11 +20,11 @@ For this final project, we will need circuits described in both the gate IP and 
 $ orbit show gates:1.0.0 --units
 ```
 ```
-Identifier                          Type          Public   
------------------------------------ ------------- -------- 
-and_gate                            entity        y 
-nand_gate                           entity        y 
-or_gate                             entity        y 
+Identifier                          Type          Visibility   
+----------------------------------- ------------- ----------- 
+and_gate                            entity        public 
+nand_gate                           entity        public 
+or_gate                             entity        public 
 ```
 
 Yup! It's there, and we know we will need some half adders as well. Let's add both IPs to our manifest file.

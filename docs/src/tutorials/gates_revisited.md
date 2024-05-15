@@ -84,11 +84,11 @@ Showing the list of possible design units for the current project should now inc
 $ orbit show --units
 ```
 ```
-Identifier                          Type          Public   
------------------------------------ ------------- -------- 
-and_gate                            entity        y 
-nand_gate                           entity        y 
-or_gate                             entity        y 
+Identifier                          Type          Visibility   
+----------------------------------- ------------- ----------- 
+and_gate                            entity        public
+nand_gate                           entity        public 
+or_gate                             entity        public 
 ```
 
 ## Extending the Yilinx plugin

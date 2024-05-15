@@ -54,10 +54,10 @@ Let's remember what entities we have at our disposal.
 $ orbit show gates --units
 ```
 ```
-Identifier                          Type          Public   
------------------------------------ ------------- -------- 
-and_gate                            entity        y 
-nand_gate                           entity        y 
+Identifier                          Type          Visibility   
+----------------------------------- ------------- ----------- 
+and_gate                            entity        public 
+nand_gate                           entity        public 
 ```
 
 Okay, how did we implement the NAND gate architecture?

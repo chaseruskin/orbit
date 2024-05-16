@@ -6,12 +6,12 @@ set -e
 # install dependencies
 cd ip-b
 orbit plan --lock-only --force
-orbit install
+orbit install --force
 cd ..
 
 cd ip-a
 orbit plan --lock-only --force
-orbit install
+orbit install --force
 cd ..
 
 cd ip-c
@@ -25,6 +25,9 @@ EXACT="entity_c
 ├─ dupe
 └─ entity_a
    └─ dupe_9b17a38c0b"
+
+orbit remove ip-b --all
+orbit remove ip-a --all
 
 # compare the output with the expected value
 if [ "$STDOUT" = "$EXACT" ]; then

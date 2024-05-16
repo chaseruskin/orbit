@@ -6,7 +6,7 @@ set -e
 # install dependencies
 cd ip10
 orbit plan --lock-only --force
-orbit install
+orbit install --force
 cd ..
 
 cd ip11
@@ -22,6 +22,8 @@ EXACT="top (ip11:0.1.0)
 
 # compare the output with the expected value
 if [ "$STDOUT" != "$EXACT" ]; then
+    orbit remove ip10 --all
+
     echo "PUB Test - FAIL"
     echo "--- Expected ---"
     echo "$EXACT"
@@ -32,6 +34,8 @@ fi
 
 # verify it runs without error
 STDOUT=$(orbit plan --top top)
-echo "PUB Test - PASS"
 
+orbit remove ip10 --all
+
+echo "PUB Test - PASS"
 exit 0

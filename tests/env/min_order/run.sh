@@ -15,7 +15,7 @@ orbit plan --force --top t1
 cd ..
 
 # Remove dependencies
-orbit uninstall lib --full
+orbit remove lib --all
 
 # Verify the correct behavior occurred without error
 python comp.py

@@ -721,9 +721,39 @@ Options:
 """
 
 # ------------------------------------------------------------------------------
-# uninstall      
+# remove      
 # ------------------------------------------------------------------------------
+[remove]
+name = "remove"
+summary = "uninstall an ip from the catalog"
+synopsis = "orbit remove [options] <ip>"
+description = """
+This command will remove known ip stored in the catalog. By default, it will
+remove the ip from the cache. This include any dynamic entries spawned from the
+requested ip to remove.
 
+To remove the ip from the cache and downloads locations, use `--all`.
+"""
+options."<ip>" = "Ip specification"
+options."--all" = "remove the ip from the cache and downloads"
+options."--recurse" = "fully remove the ip and its dependencies"
+
+examples = """
+orbit remove gates
+orbit remove gates:1.0.0 --all
+"""
+
+help = """
+Uninstall an ip from the catalog.
+
+Usage:
+    orbit remove [options] <ip>
+
+Options:
+    <ip>        ip specification to uninstall
+    --all       remove the ip from the cache and downloads
+    --recurse   fully remove the ip and its dependencies
+"""
 
 # ------------------------------------------------------------------------------
 # orbit      
@@ -750,7 +780,7 @@ Commands:
     install         store an immutable reference to an ip
     env             print orbit environment information
     config          modify configuration values
-    uninstall       remove an ip from the catalog
+    remove          uninstall an ip from the catalog
 
 Options:
     --version       print version information and exit

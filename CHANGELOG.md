@@ -22,14 +22,17 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Allows errors during parsing to be identified by source code file and then adds ability to generate an erroneous blueprint by using `--force` with `plan` command
 - Adds `.orbitpub` file, which explicitly list the hdl files which will be public to other projects that use the ip as a dependency. If no `.orbitpub` file exists, then the default is to have all hdl files be public
 - Adds visibility to HDL files (public, protected, private)
+- `remove` command now has ability to erase ip from downloads
 
 ### Changes
 - Renames docker images to more memorable names and defines clearer organization
 - Updates version table to display state of each version for the specific ip
 - Default urls for the `source` field in manifest files can now use `orbit.ip.name` and `orbit.ip.version` variables for variable substitution
 - Adds checks for user-managed ip (development status) does not include reserved files (files starting with `.orbit-`)
+- swaps `uninstall` command for new `remove` command to handle removing ip from cache as well as downloads
 
 ### Bug Fixes
+- Fixes how orbit retrieves the current project's uuid in lockfile by only looking at name and the missing checksum
 - Fixes error during install to continue install even though there already exists an ip with same name and version in cache or downloads without `--force` present
 - Squashes bug regarding library for `get` command not defaulting to ip's name when a library is not explicitly present on external ip
 

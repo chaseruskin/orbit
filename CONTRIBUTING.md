@@ -12,7 +12,7 @@ The Book of Orbit is kept in `docs/src`. There are four main sections to write:
 3. _topic guide_ - general information about how the program works
 4. _reference_ - detailed and exact information
 
-Original man pages for orbit subcommands are written in `docs/src/6_commands/`. The `rsmangen.py` script converts the formatted .md file into a nicer Rust string literal for a .rs file saved in `src/commands/manuals/`.
+Original man pages for orbit subcommands are written in `docs/src/6_commands/`. The `mangen.py` script converts the formatted .md file into a nicer Rust string literal for a .rs file saved in `src/commands/manuals/`.
 
 ## Releasing a new version of orbit
 

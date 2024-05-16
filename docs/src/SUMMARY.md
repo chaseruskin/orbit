@@ -59,6 +59,6 @@
     - [orbit install](./commands/install.md) <!-- DONE -->
     - [orbit env](./commands/env.md)
     - [orbit config](./commands/config.md) <!-- DONE -->
-    - [orbit uninstall](./commands/uninstall.md)
+    - [orbit remove](./commands/remove.md)
     
 - [Appendix: Glossary](./glossary.md)

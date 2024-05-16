@@ -361,7 +361,10 @@ impl Command<Context> for Install {
             // recollect the installations and queued items to update the catalog
             catalog = catalog.installations(c.get_cache_path())?;
         } else if target.lock_exists() == true && target.can_use_lock() == false {
-            println!("warning: {}", "Cannot read dependencies from lockfile due to unsynchronized ip entry");
+            println!(
+                "warning: {}",
+                "Cannot read dependencies from lockfile due to unsynchronized ip entry"
+            );
         }
 
         // generate lock file if it is missing

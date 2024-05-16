@@ -9,6 +9,7 @@ pub mod new;
 pub mod orbit;
 pub mod plan;
 pub mod read;
+pub mod remove;
 pub mod search;
 pub mod show;
 pub mod tree;

@@ -14,10 +14,10 @@ mod launch;
 mod new;
 mod plan;
 mod read;
+mod remove;
 mod search;
 mod show;
 mod tree;
-mod uninstall;
 
 // informational content for help about commands
 mod helps;

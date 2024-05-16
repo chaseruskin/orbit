@@ -72,7 +72,7 @@ impl Topic {
             Install => manuals::install::MANUAL,
             Init => manuals::init::MANUAL,
             Config => manuals::config::MANUAL,
-            Uninstall => manuals::uninstall::MANUAL,
+            Uninstall => manuals::remove::MANUAL,
             Read => manuals::read::MANUAL,
         }
     }

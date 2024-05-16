@@ -28,7 +28,7 @@ COMMANDS = [
     'install',
     'env',
     'config',
-    'uninstall',
+    'remove',
 ]
 
 CWD, _ = os.path.split(sys.argv[0])
@@ -240,7 +240,7 @@ def write_rs_help(table, dest, command, footer=True) -> int:
             rs.write(SECT_END+"Use 'orbit help "+command+"' to read more about the command."+END)
         else:
             rs.write(END)
-        rs.write('"#;')
+        rs.write('"#;\n')
         pass
 
     print('INFO: Rust help page available at:', path)

@@ -19,7 +19,7 @@ Commands:
     install         store an immutable reference to an ip
     env             print orbit environment information
     config          modify configuration values
-    uninstall       remove an ip from the catalog
+    remove          uninstall an ip from the catalog
 
 Options:
     --version       print version information and exit

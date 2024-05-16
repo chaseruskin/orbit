@@ -107,10 +107,10 @@ use crate::commands::launch::Launch;
 use crate::commands::new::New;
 use crate::commands::plan::Plan;
 use crate::commands::read::Read;
+use crate::commands::remove::Remove;
 use crate::commands::search::Search;
 use crate::commands::show::Show;
 use crate::commands::tree::Tree;
-use crate::commands::uninstall::Uninstall;
 
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
@@ -127,7 +127,7 @@ enum OrbitSubcommand {
     Show(Show),
     Env(Env),
     Config(Config),
-    Uninstall(Uninstall),
+    Uninstall(Remove),
     Read(Read),
     Download(Download),
 }
@@ -136,24 +136,8 @@ impl FromCli for OrbitSubcommand {
     fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
         match cli
             .match_command(&[
-                "help",
-                "new",
-                "search",
-                "plan",
-                "p",
-                "build",
-                "launch",
-                "download",
-                "install",
-                "get",
-                "init",
-                "tree",
-                "show",
-                "b",
-                "env",
-                "config",
-                "uninstall",
-                "read",
+                "help", "new", "search", "plan", "p", "build", "launch", "download", "install",
+                "get", "init", "tree", "show", "b", "env", "config", "remove", "read",
             ])?
             .as_ref()
         {
@@ -171,7 +155,7 @@ impl FromCli for OrbitSubcommand {
             "show" => Ok(OrbitSubcommand::Show(Show::from_cli(cli)?)),
             "env" => Ok(OrbitSubcommand::Env(Env::from_cli(cli)?)),
             "config" => Ok(OrbitSubcommand::Config(Config::from_cli(cli)?)),
-            "uninstall" => Ok(OrbitSubcommand::Uninstall(Uninstall::from_cli(cli)?)),
+            "remove" => Ok(OrbitSubcommand::Uninstall(Remove::from_cli(cli)?)),
             "read" => Ok(OrbitSubcommand::Read(Read::from_cli(cli)?)),
             _ => panic!("an unimplemented command was passed through!"),
         }

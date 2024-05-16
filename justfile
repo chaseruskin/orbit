@@ -11,10 +11,6 @@ install:
 codev MODS:
     cargo watch -c -x check -x "test -- {{ MODS }}" --ignore test/data
 
-# Generate strings in Rust from the docs to provide offline documentation in the tool
-rsman:
-    python ./tools/rsmangen.py
-
 # Synchronize documentation from TOML file to markdown and Rust
 mansync:
     python ./tools/mansync/mangen.py

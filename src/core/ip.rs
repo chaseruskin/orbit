@@ -68,9 +68,12 @@ pub struct Ip {
 impl From<IpArchive> for Ip {
     fn from(value: IpArchive) -> Self {
         let (man, lock, archive) = value.decouple();
-        let uuid = match lock.get(man.get_ip().get_name(), man.get_ip().get_version()) {
-            Some(entry) => entry.get_uuid().clone(),
-            None => Uuid::new(),
+        let uuid = match lock.get_self_entry(man.get_ip().get_name()) {
+                Some(entry) => entry.get_uuid().clone(),
+                None => match lock.get(man.get_ip().get_name(), man.get_ip().get_version()) {
+                    Some(entry) => entry.get_uuid().clone(),
+                    None => Uuid::new()
+                }
         };
         Self {
             mapping: Mapping::Virtual(archive),
@@ -149,9 +152,15 @@ impl Ip {
             }
         };
 
-        let uuid = match lock.get(man.get_ip().get_name(), man.get_ip().get_version()) {
-            Some(entry) => entry.get_uuid().clone(),
-            None => Uuid::new(),
+        let uuid = match is_working_ip {
+            true => match lock.get_self_entry(man.get_ip().get_name()) {
+                Some(entry) => entry.get_uuid().clone(),
+                None => Uuid::new(),
+            },
+            false => match lock.get(man.get_ip().get_name(), man.get_ip().get_version()) {
+                Some(entry) => entry.get_uuid().clone(),
+                None => Uuid::new()
+            }
         };
 
         Ok(Self {

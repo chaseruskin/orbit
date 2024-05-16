@@ -169,6 +169,11 @@ pub mod v1 {
                 .find(|&f| &f.name == target && &f.version == version)
         }
 
+        /// Returns the current working ip, denoted by not having a checksum with it.
+        pub fn get_self_entry(&self, target: &PkgPart) -> Option<&LockEntry> {
+            self.ip.iter().find(|&f| f.checksum.is_none() && &f.name == target)
+        }
+
         /// Returns the highest compatible version from the lockfile for the given `target`.
         pub fn get_highest(&self, target: &PkgPart, version: &AnyVersion) -> Option<&LockEntry> {
             // collect all versions

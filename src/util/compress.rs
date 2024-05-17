@@ -66,7 +66,11 @@ pub fn write_zip_dir(src_dir: &PathBuf, dst_file: &PathBuf) -> zip::result::ZipR
     let path = Path::new(dst_file);
     let file = File::create(path).unwrap();
 
-    let walkdir = WalkBuilder::new(src_dir).standard_filters(false).hidden(false).git_ignore(false).build();
+    let walkdir = WalkBuilder::new(src_dir)
+        .standard_filters(false)
+        .hidden(false)
+        .git_ignore(false)
+        .build();
 
     let it = walkdir.into_iter();
 

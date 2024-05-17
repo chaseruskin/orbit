@@ -361,15 +361,11 @@ impl Command<Context> for Install {
             plan::install_missing_deps(&lf, &le, &catalog)?;
             // recollect the installations and queued items to update the catalog
             catalog = catalog.installations(c.get_cache_path())?;
-        } else if target.lock_exists() == true && target.can_use_lock() == false {
-            println!(
-                "warning: {}",
-                "Cannot read dependencies from lockfile due to unsynchronized ip entry"
-            );
         }
 
-        // generate lock file if it is missing
-        if target.lock_exists() == false {
+        // @MARK: may be an issue and should error if trying to install with an out-of-date lockfile
+        // generate lock file if it is missing or out of date
+        if target.lock_exists() == false || target.can_use_lock() == false {
             // build entire ip graph and resolve with dynamic symbol transformation
             let ip_graph = algo::compute_final_ip_graph(&target, &catalog, &c.get_lang_mode())?;
             Plan::write_lockfile(&target, &ip_graph, true)?;

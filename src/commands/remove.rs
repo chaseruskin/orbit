@@ -2,6 +2,7 @@ use super::helps::remove;
 use crate::core::catalog::{CacheSlot, Catalog};
 use crate::core::context::Context;
 use crate::core::ip::{Ip, PartialIpSpec};
+use crate::core::version::AnyVersion;
 use crate::util::anyerror::AnyError;
 use crate::OrbitResult;
 use clif::arg::{Flag, Positional};
@@ -52,8 +53,30 @@ impl Command<Context> for Remove {
             None => return Err(AnyError(format!("ip '{}' does not exist", self.ip)))?,
         };
 
+        // determine the ip version (invariant of state) that matches
+        let detected_version = {
+            let install_version = status.get_install(&self.ip.get_version());
+            let download_version = status.get_download(&self.ip.get_version());
+
+            if let Some(iv) = install_version {
+                if let Some(dv) = download_version {
+                    if iv.get_man().get_ip().get_version() > dv.get_man().get_ip().get_version() {
+                        AnyVersion::Specific(iv.get_man().get_ip().get_version().to_partial_version())
+                    } else {
+                        AnyVersion::Specific(dv.get_man().get_ip().get_version().to_partial_version())
+                    }
+                } else {
+                    AnyVersion::Specific(iv.get_man().get_ip().get_version().to_partial_version())
+                }
+            } else if let Some(dv) = download_version {
+                AnyVersion::Specific(dv.get_man().get_ip().get_version().to_partial_version())
+            } else {
+                self.ip.get_version().clone()
+            }
+        };
+
         // grab the ip's manifest
-        match status.get_install(&self.ip.get_version()) {
+        match status.get_install(&detected_version) {
             Some(t) => {
                 self.remove_install(t)?;
                 self.remove_dynamics(c.get_cache_path(), t)?;
@@ -74,7 +97,7 @@ impl Command<Context> for Remove {
         // delete the project from downloads (if requested)
         if self.all == true {
             // grab the ip's manifest
-            let target = match status.get_download(&self.ip.get_version()) {
+            let target = match status.get_download(&detected_version) {
                 Some(t) => t,
                 None => {
                     return Err(AnyError(format!(

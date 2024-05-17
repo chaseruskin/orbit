@@ -11,6 +11,8 @@ use std::fmt::Display;
 use std::path::PathBuf;
 use std::{collections::HashMap, str::FromStr};
 
+use super::lang::vhdl::token::identifier::Identifier;
+
 pub type Id = PkgPart;
 pub type Version = crate::core::version::Version;
 
@@ -100,6 +102,15 @@ impl Manifest {
             },
             dependencies: Dependencies::new(),
             dev_dependencies: Dependencies::new(),
+        }
+    }
+
+    /// Returns the library name to be used for HDL. If a library is not specified,
+    /// then it chooses "work".
+    pub fn get_hdl_library(&self) -> Identifier {
+        match self.get_ip().get_library().as_ref() {
+            Some(l) => Identifier::from(l),
+            None => Identifier::new_working(), // Identifier::from(self.get_man().get_ip().get_name()),
         }
     }
 

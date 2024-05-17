@@ -112,10 +112,7 @@ fn graph_ip<'a>(
                                         iden_set.insert(key, unit);
                                     }
                                 }
-                                let lib = match dep.get_man().get_ip().get_library().as_ref() {
-                                    Some(l) => Identifier::from(l),
-                                    None => Identifier::from(dep.get_man().get_ip().get_name()),
-                                };
+                                let lib = dep.get_man().get_hdl_library();
                                 g.add_node(
                                     dep.get_man().get_ip().into_ip_spec(),
                                     match dst {

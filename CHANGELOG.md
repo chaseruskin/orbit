@@ -25,6 +25,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - `remove` command now has ability to erase ip from downloads
 
 ### Changes
+- Install command now tries to update lockfile if it exists but is out of date with current manifest
 - Renames docker images to more memorable names and defines clearer organization
 - Updates version table to display state of each version for the specific ip
 - Default urls for the `source` field in manifest files can now use `orbit.ip.name` and `orbit.ip.version` variables for variable substitution
@@ -35,7 +36,6 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Fixes issue with .orbitpub not being kept during download of an ip when zipped into archive
 - Fixes how orbit retrieves the current project's uuid in lockfile by only looking at name and the missing checksum
 - Fixes error during install to continue install even though there already exists an ip with same name and version in cache or downloads without `--force` present
-- Squashes bug regarding library for `get` command not defaulting to ip's name when a library is not explicitly present on external ip
 
 ## 0.11.0
 

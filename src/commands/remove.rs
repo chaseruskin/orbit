@@ -61,9 +61,13 @@ impl Command<Context> for Remove {
             if let Some(iv) = install_version {
                 if let Some(dv) = download_version {
                     if iv.get_man().get_ip().get_version() > dv.get_man().get_ip().get_version() {
-                        AnyVersion::Specific(iv.get_man().get_ip().get_version().to_partial_version())
+                        AnyVersion::Specific(
+                            iv.get_man().get_ip().get_version().to_partial_version(),
+                        )
                     } else {
-                        AnyVersion::Specific(dv.get_man().get_ip().get_version().to_partial_version())
+                        AnyVersion::Specific(
+                            dv.get_man().get_ip().get_version().to_partial_version(),
+                        )
                     }
                 } else {
                     AnyVersion::Specific(iv.get_man().get_ip().get_version().to_partial_version())

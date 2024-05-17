@@ -46,3 +46,5 @@ fifo_cdc      |Fifo-CDC |true       |
 
 A package can optionally belong to a _library_. A library is defined under the "library" field in the IP's manifest and follows the same rules as the package identifier. When producing a blueprint file, it will choose to associate all HDL files within a particular package with the provided library. If no library is defined in the package's manifest, then the default `work` library is provided. 
 
+The library for the current working package will always be `work`, regardless of the value of the "library" field in the manifest file. It's "library" field value will be in effect when the package is referenced as a dependency.
+

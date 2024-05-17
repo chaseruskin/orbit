@@ -1,5 +1,4 @@
 use crate::core::config::Config;
-use crate::core::lang::vhdl::token::Identifier;
 use crate::util::anyerror::Fault;
 use std::hash::Hash;
 use std::io::Read;
@@ -132,12 +131,11 @@ impl Environment {
                 .key("ORBIT_IP_VERSION")
                 .value(&ip.get_man().get_ip().get_version().to_string()),
         );
-        self.insert(EnvVar::new().key("ORBIT_IP_LIBRARY").value(
-            &match ip.get_man().get_ip().get_library() {
-                Some(lib) => lib.to_string(),
-                None => Identifier::new_working().to_string(),
-            },
-        ));
+        self.insert(
+            EnvVar::new()
+                .key("ORBIT_IP_LIBRARY")
+                .value(&ip.get_man().get_hdl_library().to_string()),
+        );
         Ok(self)
     }
 

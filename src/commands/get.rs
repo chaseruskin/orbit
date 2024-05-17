@@ -141,11 +141,7 @@ impl Get {
         // make the library reference the current working ip 'work' if its internal
         let lib = match self.ip.is_none() {
             true => Identifier::new_working(),
-            false => match man.get_ip().get_library() {
-                Some(lib) => Identifier::from(lib),
-                // default to the package's name
-                None => Identifier::from(man.get_ip().get_name()),
-            },
+            false => man.get_hdl_library(),
         };
 
         // display architectures

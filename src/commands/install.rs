@@ -200,20 +200,21 @@ impl Command<Context> for Install {
                     if let Some(slot) = lvl.get(true, spec.get_version()) {
                         if let Some(bytes) = slot.get_mapping().as_bytes() {
                             // place the dependency into a temporary directory
+                            // @MARK: fix this to cleanup manually since we forced it into_path.
                             let dir = tempfile::tempdir()?.into_path();
                             if let Err(e) = IpArchive::extract(&bytes, &dir) {
                                 fs::remove_dir_all(dir)?;
                                 return Err(e);
                             }
                             // load the IP
-                            let unzipped_dep = match Ip::load(dir.clone(), false) {
+                            let unzipped_ip = match Ip::load(dir.clone(), false) {
                                 Ok(x) => x,
                                 Err(e) => {
                                     fs::remove_dir_all(dir)?;
                                     return Err(e);
                                 }
                             };
-                            Some(unzipped_dep)
+                            Some(unzipped_ip)
                         } else {
                             Some(Ip::load(slot.get_root().clone(), false)?)
                         }
@@ -493,7 +494,7 @@ impl Install {
             }
         }
         // copy contents into cache slot from temporary destination
-        crate::util::filesystem::copy(&dest, &cache_slot, false, None)?;
+        crate::util::filesystem::copy(&dest, &cache_slot, false, Some(src.get_files_to_keep()))?;
 
         // clean up the temporary directory ourself
         fs::remove_dir_all(dest)?;

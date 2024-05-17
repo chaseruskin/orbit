@@ -414,10 +414,12 @@ impl Ip {
     /// when moving an IP around the filesystem.
     pub fn get_files_to_keep(&self) -> HashSet<PathBuf> {
         let mut list = HashSet::new();
+        // keep the readme if set in manifest
         if let Some(readme) = self.get_man().get_ip().get_readme() {
             // resolve a relative path
             list.insert(filesystem::resolve_rel_path2(self.get_root(), readme));
         }
+        // keep the pubfile if exists
         if self.has_pubfile() == true {
             // resolve relative path to .orbitpub
             list.insert(filesystem::resolve_rel_path2(

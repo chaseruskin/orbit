@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-library ip10;
+library work;
 
 entity top is
 port (
@@ -12,7 +12,7 @@ end entity;
 architecture rtl of top is
 begin
 
-  u0: entity ip10.mid
+  u0: entity work.mid
     port map(
       data => data
     );

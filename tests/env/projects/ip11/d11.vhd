@@ -1,7 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-library ip10;
+library work;
 
 entity d11 is
 port (
@@ -14,7 +14,7 @@ begin
 
   data <= '1';
 
-  uX: entity ip10.d10
+  uX: entity work.d10
     port map(
       data => data
     );

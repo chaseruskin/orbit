@@ -33,6 +33,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - swaps `uninstall` command for new `remove` command to handle removing ip from cache as well as downloads
 
 ### Bug Fixes
+- Fixes issue with building ip file list not respecting .orbitpub and forgetting to hide private design units of dependency ip
 - Fixes issue with install not finding uuid of existing ip from downloads when reinstalling
 - Fixes issue with .orbitpub not being kept during download of an ip when zipped into archive
 - Fixes how orbit retrieves the current project's uuid in lockfile by only looking at name and the missing checksum

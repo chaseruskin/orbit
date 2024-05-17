@@ -905,7 +905,7 @@ impl Plan {
             return Ok(());
         }
 
-        let files = algo::build_ip_file_list(&ip_graph);
+        let files = algo::build_ip_file_list(&ip_graph, &target);
 
         let global_graph = Self::build_full_graph(&files)?;
 

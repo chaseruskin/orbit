@@ -89,7 +89,7 @@ impl Tree {
 
         // build graph again but with entire set of all files available from all depdendencies
         let ip_graph = algo::compute_final_ip_graph(&target, &catalog, mode)?;
-        let files = algo::build_ip_file_list(&ip_graph);
+        let files = algo::build_ip_file_list(&ip_graph, &target);
 
         // build the complete graph (using entities as the nodes)
         let global_graph = Self::build_graph(&files)?;

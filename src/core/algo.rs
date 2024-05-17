@@ -19,6 +19,7 @@ use crate::core::manifest;
 use crate::core::version::AnyVersion;
 
 use super::lang::{LangIdentifier, LangMode};
+use super::pubfile::{self, PubFile};
 use crate::core::lang::LangUnit;
 
 /// Constructs an ip-graph from a lockfile.
@@ -231,17 +232,22 @@ pub fn compute_final_ip_graph<'a>(
 /// Take the ip graph and create the entire space of VHDL files that could be used for the current design.
 pub fn build_ip_file_list<'a>(
     ip_graph: &'a GraphMap<IpSpec, IpNode<'a>, ()>,
+    working_ip: &Ip,
 ) -> Vec<IpFileNode<'a>> {
     let mut files = Vec::new();
     ip_graph.get_map().iter().for_each(|(_, ip)| {
-        crate::util::filesystem::gather_current_files(&ip.as_ref().as_ip().get_root(), false)
+        let inner_ip = ip.as_ref().as_ip();
+        let pub_filepath = inner_ip.get_root().join(pubfile::ORBIT_PUB_FILE);
+        let pub_file = PubFile::new(&pub_filepath);
+        crate::util::filesystem::gather_current_files(&inner_ip.get_root(), false)
             .into_iter()
+            .filter(|f| working_ip == inner_ip || pub_file.is_included(f.as_ref()))
             // @MARK: update with verilog!
             .filter(|f| crate::core::fileset::is_vhdl(f))
             .for_each(|f| {
                 files.push(IpFileNode {
                     file: f,
-                    ip: ip.as_ref().as_ip(),
+                    ip: inner_ip,
                     library: ip.as_ref().get_library().clone(),
                 });
             })

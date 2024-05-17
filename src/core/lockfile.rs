@@ -259,13 +259,13 @@ pub mod v1 {
 
     impl From<(&Ip, bool)> for LockEntry {
         fn from(ip: (&Ip, bool)) -> Self {
-            let is_root = ip.1;
+            let is_working = ip.1;
             let ip = ip.0;
             Self {
                 name: ip.get_man().get_ip().get_name().clone(),
                 version: ip.get_man().get_ip().get_version().clone(),
                 uuid: ip.get_uuid().clone(),
-                checksum: if is_root == true {
+                checksum: if is_working == true {
                     None
                 } else {
                     Some(
@@ -274,12 +274,12 @@ pub mod v1 {
                     )
                 },
                 source: ip.get_man().get_ip().get_source().cloned(),
-                dependencies: match ip.get_man().get_deps_list(is_root).len() {
+                dependencies: match ip.get_man().get_deps_list(is_working).len() {
                     0 => Vec::new(),
                     _ => {
                         let mut result: Vec<IpSpec> = ip
                             .get_man()
-                            .get_deps_list(is_root)
+                            .get_deps_list(is_working)
                             .into_iter()
                             .map(|e| IpSpec::new(e.0.clone(), e.1.clone()))
                             .collect();

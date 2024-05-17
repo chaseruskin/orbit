@@ -143,7 +143,7 @@ impl Ip {
             Ok(l) => l,
             Err(e) => {
                 println!(
-                    "{}: failed to parse lock file \"{}\": {}",
+                    "{}: failed to parse lockfile \"{}\": {}",
                     "warning".yellow().bold(),
                     filesystem::into_std_str(lock_path),
                     e
@@ -151,7 +151,8 @@ impl Ip {
                 LockFile::new()
             }
         };
-
+        // println!("{:?}", lock);
+        // println!("{:?}", man.get_ip().into_ip_spec());
         let uuid = match is_working_ip {
             true => match lock.get_self_entry(man.get_ip().get_name()) {
                 Some(entry) => entry.get_uuid().clone(),
@@ -159,7 +160,9 @@ impl Ip {
             },
             false => match lock.get(man.get_ip().get_name(), man.get_ip().get_version()) {
                 Some(entry) => entry.get_uuid().clone(),
-                None => Uuid::new(),
+                None => {
+                    return Err(AnyError(format!("failed to get uuid for ip {} due to corrupted lockfile; remove and install again", man.get_ip().into_ip_spec())))?
+                },
             },
         };
 
@@ -218,6 +221,7 @@ impl Ip {
             && self.get_root().join(".orbit-dynamic").exists() == true
     }
 
+    /// Creates the lookup table for the DST algorithm.
     pub fn generate_dst_lut(&self, mode: &LangMode) -> HashMap<LangIdentifier, String> {
         // compose the lut for symbol transformation
         let mut lut = HashMap::new();

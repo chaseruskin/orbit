@@ -199,6 +199,7 @@ impl Command<Context> for Install {
                 if let Some(lvl) = catalog.inner().get(spec.get_name()) {
                     if let Some(slot) = lvl.get(true, spec.get_version()) {
                         if let Some(bytes) = slot.get_mapping().as_bytes() {
+                            // println!("{} {}", "using archive", slot.get_man().get_ip().into_ip_spec());
                             // place the dependency into a temporary directory
                             // @MARK: fix this to cleanup manually since we forced it into_path.
                             let dir = tempfile::tempdir()?.into_path();
@@ -240,6 +241,8 @@ impl Command<Context> for Install {
             Some(t) => t,
             None => return Err(AnyError(format!("Failed to find an ip to install")))?,
         };
+
+        // println!("{:?}", target.get_uuid());
 
         // verify the ip is not already taken in the cache
         {
@@ -289,52 +292,24 @@ impl Command<Context> for Install {
             }
         }
 
-        // verify the ip is not already taken in the downloads (and has matching uuid)
-        {
-            if let Ok(mut rd) = read_dir(c.get_downloads_path()) {
-                let pat = format!(
-                    "{}-{}",
-                    target.get_man().get_ip().get_name(),
-                    target.get_man().get_ip().get_version()
-                );
-                while let Some(d) = rd.next() {
-                    if let Ok(p) = d {
-                        if p.file_name().into_string().unwrap().starts_with(&pat) == true {
-                            if self.force == true {
-                                std::fs::remove_file(&p.path())?;
-                            // found a match, but its under a different download key
-                            } else {
-                                if catalog.is_downloaded_slot(
-                                    &LockEntry::from((&target, true)).to_download_slot_key(),
-                                ) == false
-                                {
-                                    return Err(AnyError(format!(
-                                        "ip {} already exists in downloads under different uuid",
-                                        target.get_man().get_ip().into_ip_spec()
-                                    )))?;
-                                }
-                            }
-                            // can only have one file correspond to ip in downloads directory
-                            break;
-                        }
-                    }
-                }
-            }
-        }
+        let download_slot = catalog.get_downloaded_slot(
+            target.get_man().get_ip().get_name(),
+            target.get_man().get_ip().get_version(),
+        );
+        // println!("{:?}", download_slot);
 
-        // move the IP to the downloads folder if not already there
-        if catalog.is_downloaded_slot(&LockEntry::from((&target, true)).to_download_slot_key())
-            == false
+        // remove the download slot on purpose to replace it when using --force
+        if download_slot.is_some()
+            && catalog.is_downloaded_slot(&download_slot.as_ref().unwrap())
+            && self.force == true
         {
-            Download::move_to_download_dir(
-                &target.get_root(),
-                c.get_downloads_path(),
-                &target.get_man().get_ip().into_ip_spec(),
+            std::fs::remove_file(
+                &c.get_downloads_path()
+                    .join(&download_slot.as_ref().unwrap().as_ref()),
             )?;
         }
 
-        // if target is not in downloads, download it
-        // Ip::is_valid(&search_path)?;
+        // @MARK: check for when there are multiple uuids that could potentially be for this ip
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
         if target.can_use_lock() == true && self.force == false {
@@ -370,6 +345,18 @@ impl Command<Context> for Install {
             let ip_graph = algo::compute_final_ip_graph(&target, &catalog, &c.get_lang_mode())?;
             Plan::write_lockfile(&target, &ip_graph, true)?;
         }
+
+        // move the IP to the downloads folder if not already there
+        if download_slot.is_none()
+            || catalog.is_downloaded_slot(&download_slot.as_ref().unwrap()) == false
+        {
+            Download::move_to_download_dir(
+                &target.get_root(),
+                c.get_downloads_path(),
+                &target.get_man().get_ip().into_ip_spec(),
+            )?;
+        }
+
         // install the top-level target
         self.run(&target, &catalog)
     }

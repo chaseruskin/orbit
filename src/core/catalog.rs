@@ -1,5 +1,6 @@
 use crate::core::uuid::Uuid;
 use crate::util::{anyerror::Fault, sha256::Sha256Hash};
+use std::fs::read_dir;
 use std::str::FromStr;
 use std::{
     collections::{HashMap, HashSet},
@@ -242,6 +243,32 @@ impl<'a> Catalog<'a> {
     /// Uses the download slot name to check if the file exists.
     pub fn is_downloaded_slot(&self, slot: &DownloadSlot) -> bool {
         self.get_downloads_path().join(slot.as_ref()).is_file()
+    }
+
+    pub fn get_downloaded_slot(&self, name: &PkgPart, version: &Version) -> Option<DownloadSlot> {
+        let mut ids = Vec::new();
+
+        if let Ok(mut rd) = read_dir(self.get_downloads_path()) {
+            let pat = format!("{}-", name);
+            while let Some(d) = rd.next() {
+                if let Ok(p) = d {
+                    let file_name = p.file_name().into_string().unwrap();
+                    // collect all possible UUIDs
+                    if file_name.starts_with(&pat) == true {
+                        ids.push(file_name.rsplit_once('-').unwrap().1.to_string());
+                    }
+                }
+            }
+        }
+        match ids.len() {
+            1 => Some(DownloadSlot(format!(
+                "{}-{}-{}",
+                name,
+                version,
+                ids.get(0).unwrap()
+            ))),
+            _ => None,
+        }
     }
 
     /// Searches the `path` for IP installed.

@@ -1,49 +1,59 @@
-use std::fmt::Display;
 use std::path::PathBuf;
+use std::{error::Error, fmt::Display};
 
-pub const ORBIT_PUB_FILE: &str = ".orbitpub";
+use ignore::gitignore::{Gitignore, GitignoreBuilder};
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug)]
-pub struct PubFile<'a> {
-    inner: Option<gitignore::File<'a>>,
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[serde(transparent)]
+pub struct GlobPattern {
+    inner: String,
 }
 
-impl<'a> PubFile<'a> {
-    pub fn new(path: &'a PathBuf) -> Self {
-        match path.exists() {
-            true => match gitignore::File::new(path) {
-                Ok(r) => Self { inner: Some(r) },
-                Err(_) => Self { inner: None },
-            },
-            false => Self { inner: None },
-        }
+impl GlobPattern {
+    pub fn inner(&self) -> &String {
+        &self.inner
     }
+}
 
-    pub fn is_included(&self, path: &str) -> bool {
-        if let Some(pub_file) = &self.inner {
-            // the pub file explicitly lists the files to keep (not excludes)
-            match pub_file.is_excluded(&PathBuf::from(path)) {
-                Ok(is_inc) => {
-                    match is_inc {
-                        // keep the file!
-                        true => true,
-                        // do not keep the file
-                        false => false,
-                    }
+#[derive(Debug)]
+pub struct PublicList {
+    inner: Option<Gitignore>,
+}
+
+impl Default for PublicList {
+    fn default() -> Self {
+        Self { inner: None }
+    }
+}
+
+impl PublicList {
+    pub fn new(root: &PathBuf, list: &Option<Vec<String>>) -> Result<Self, Box<dyn Error>> {
+        let plist = match list {
+            Some(globs) => {
+                let mut builder = GitignoreBuilder::new(&root);
+                for g in globs {
+                    builder.add_line(None, g)?;
                 }
-                Err(_) => true,
+                Some(builder.build()?)
             }
-        } else {
-            true
+            None => None,
+        };
+
+        Ok(Self { inner: plist })
+    }
+
+    /// Checks if the given filepath is included. If there is no public list,
+    /// then it will always return true.
+    pub fn is_included(&self, path: &str) -> bool {
+        match &self.inner {
+            Some(ig) => ig.matched(path, false).is_ignore(),
+            None => true,
         }
     }
 
-    pub fn exists(root: &PathBuf) -> bool {
-        root.join(ORBIT_PUB_FILE).exists()
-    }
-
-    pub fn get_filename() -> &'static str {
-        ORBIT_PUB_FILE
+    pub fn exists(&self) -> bool {
+        self.inner.is_some()
     }
 }
 

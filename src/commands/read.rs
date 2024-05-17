@@ -390,7 +390,7 @@ impl Read {
         mode: &LangMode,
     ) -> Result<(PathBuf, Position), Fault> {
         // find the unit
-        let units = Ip::collect_units(true, ip.get_root(), mode, true)?;
+        let units = Ip::collect_units(true, ip.get_root(), mode, true, ip.into_public_list())?;
 
         // get the file data for the primary design unit
         let (source, position) = match units.get_key_value(unit) {

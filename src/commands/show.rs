@@ -88,7 +88,13 @@ impl Command<Context> for Show {
         if self.units == true {
             if ip.get_mapping().is_physical() == true {
                 // force computing the primary design units if a physical ip (non-archived)
-                let units = Ip::collect_units(true, &ip.get_root(), &c.get_lang_mode(), false)?;
+                let units = Ip::collect_units(
+                    true,
+                    &ip.get_root(),
+                    &c.get_lang_mode(),
+                    false,
+                    ip.into_public_list(),
+                )?;
                 println!(
                     "{}",
                     Self::format_units_table(units.into_iter().map(|(_, unit)| unit).collect())

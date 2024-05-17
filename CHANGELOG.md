@@ -20,11 +20,14 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ### Features
 - Adds `language-mode` setting under `[general]` for supporting VHDL, verilog, or mixed language projects
 - Allows errors during parsing to be identified by source code file and then adds ability to generate an erroneous blueprint by using `--force` with `plan` command
-- Adds `.orbitpub` file, which explicitly list the hdl files which will be public to other projects that use the ip as a dependency. If no `.orbitpub` file exists, then the default is to have all hdl files be public
+- Adds `public` field to manifest, which explicitly list the hdl files which will be public to other projects that use the ip as a dependency. If no `public` field exists, then the default is to have all hdl files be public
 - Adds visibility to HDL files (public, protected, private)
 - `remove` command now has ability to erase ip from downloads
 
 ### Changes
+- Changes `summary` field to `description` field for manifest files and config files
+- Changes `details` field to `explanation` field for plugin and protocol entries
+- Adds `public` field in Orbit.toml in place to deprecate .orbitpub files
 - Install command now tries to update lockfile if it exists but is out of date with current manifest
 - Renames docker images to more memorable names and defines clearer organization
 - Updates version table to display state of each version for the specific ip

@@ -216,7 +216,7 @@ Filename: .orbit/config.toml
 ``` toml
 [[plugin]]
 name = "yilinx"
-summary = "Generate bitstreams for Yilinx FPGAs"
+description = "Generate bitstreams for Yilinx FPGAs"
 command = "python"
 args = ["yilinx.py"]
 ```

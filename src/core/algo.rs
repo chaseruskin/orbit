@@ -19,7 +19,6 @@ use crate::core::manifest;
 use crate::core::version::AnyVersion;
 
 use super::lang::{LangIdentifier, LangMode};
-use super::pubfile::{self, PubFile};
 use crate::core::lang::LangUnit;
 
 /// Constructs an ip-graph from a lockfile.
@@ -62,7 +61,7 @@ fn graph_ip<'a>(
 
     let mut iden_set: HashMap<LangIdentifier, LangUnit> = HashMap::new();
     // add root's identifiers
-    Ip::collect_units(true, root.get_root(), mode, false)?
+    Ip::collect_units(true, root.get_root(), mode, false, root.into_public_list())?
         .into_iter()
         .for_each(|(key, unit)| {
             iden_set.insert(key, unit);
@@ -87,7 +86,13 @@ fn graph_ip<'a>(
                                 existing_node.index()
                             } else {
                                 // check if identifiers are already taken in graph
-                                let units = Ip::collect_units(false, dep.get_root(), mode, true)?;
+                                let units = Ip::collect_units(
+                                    false,
+                                    dep.get_root(),
+                                    mode,
+                                    true,
+                                    dep.into_public_list(),
+                                )?;
                                 let dst = if let Some(dupe) =
                                     units.iter().find(|(key, _)| iden_set.contains_key(key))
                                 {
@@ -237,11 +242,10 @@ pub fn build_ip_file_list<'a>(
     let mut files = Vec::new();
     ip_graph.get_map().iter().for_each(|(_, ip)| {
         let inner_ip = ip.as_ref().as_ip();
-        let pub_filepath = inner_ip.get_root().join(pubfile::ORBIT_PUB_FILE);
-        let pub_file = PubFile::new(&pub_filepath);
+        let pub_list = inner_ip.into_public_list();
         crate::util::filesystem::gather_current_files(&inner_ip.get_root(), false)
             .into_iter()
-            .filter(|f| working_ip == inner_ip || pub_file.is_included(f.as_ref()))
+            .filter(|f| working_ip == inner_ip || pub_list.is_included(f.as_ref()))
             // @MARK: update with verilog!
             .filter(|f| crate::core::fileset::is_vhdl(f))
             .for_each(|f| {

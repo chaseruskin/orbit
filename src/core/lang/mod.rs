@@ -18,7 +18,7 @@ use vhdl::primaryunit::PrimaryUnit;
 type VhdlIdentifier = vhdl::token::Identifier;
 use serde_derive::Deserialize;
 
-use super::pubfile::{PubFile, Visibility};
+use super::pubfile::{PublicList, Visibility};
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub enum LangMode {
@@ -121,8 +121,8 @@ pub enum LangUnit {
 
 impl LangUnit {
     /// Checks if the module is public.
-    pub fn is_listed_public(&self, pub_file: &PubFile) -> bool {
-        pub_file.is_included(self.get_source_code_file())
+    pub fn is_listed_public(&self, plist: &PublicList) -> bool {
+        plist.is_included(self.get_source_code_file())
     }
 
     pub fn get_visibility(&self) -> &Visibility {

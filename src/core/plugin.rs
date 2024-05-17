@@ -21,13 +21,12 @@ type Filesets = HashMap<String, Style>;
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Plugin {
-    #[serde(rename = "name")]
-    alias: String,
+    name: String,
     command: String,
     args: Option<Vec<String>>,
     fileset: Option<Filesets>,
-    summary: Option<String>,
-    details: Option<String>,
+    description: Option<String>,
+    explanation: Option<String>,
     #[serde(skip_serializing, skip_deserializing)]
     root: Option<PathBuf>,
 }
@@ -41,8 +40,8 @@ impl Plugin {
     pub fn quick_info(&self) -> String {
         format!(
             "{:<16}{}",
-            self.alias,
-            self.summary.as_ref().unwrap_or(&String::new())
+            self.name,
+            self.description.as_ref().unwrap_or(&String::new())
         )
     }
 
@@ -51,7 +50,7 @@ impl Plugin {
     /// The string lists the plugins in alphabetical order by `alias`.
     pub fn list_plugins(plugs: &mut [&&Plugin]) -> String {
         let mut list = String::from("Plugins:\n");
-        plugs.sort_by(|a, b| a.alias.cmp(&b.alias));
+        plugs.sort_by(|a, b| a.name.cmp(&b.name));
         for plug in plugs {
             list += &format!("  {}\n", plug.quick_info());
         }
@@ -70,7 +69,7 @@ impl Plugin {
 
     /// References the alias to call this plugin.
     pub fn get_alias(&self) -> &str {
-        &self.alias
+        &self.name
     }
 }
 
@@ -84,7 +83,7 @@ Command: {} {}
 Root:    {}
 Filesets:
 {}{}{}",
-            self.alias,
+            self.name,
             self.command,
             self.args
                 .as_ref()
@@ -106,14 +105,14 @@ Filesets:
                 }
             },
             {
-                if let Some(text) = &self.summary {
+                if let Some(text) = &self.description {
                     format!("\n{}\n", text)
                 } else {
                     String::new()
                 }
             },
             {
-                if let Some(text) = &self.details {
+                if let Some(text) = &self.explanation {
                     format!("\n{}", text)
                 } else {
                     String::new()
@@ -239,7 +238,7 @@ mod test {
 
     const P_1: &str = r#" 
 name = "ghdl"
-summary = "Backend script for simulating VHDL with GHDL."  
+description = "Backend script for simulating VHDL with GHDL."  
 command = "python"
 args = ["./scripts/ghdl.py"]
 fileset.py-model = "{{orbit.bench}}.py"
@@ -258,10 +257,10 @@ args = ["~/scripts/download.bash"]
         assert_eq!(
             plug,
             Plugin {
-                alias: String::from("ghdl"),
+                name: String::from("ghdl"),
                 command: String::from("python"),
                 args: Some(vec![String::from("./scripts/ghdl.py")]),
-                summary: Some(String::from(
+                description: Some(String::from(
                     "Backend script for simulating VHDL with GHDL."
                 )),
                 fileset: Some(HashMap::from([
@@ -271,7 +270,7 @@ args = ["~/scripts/download.bash"]
                     ),
                     (String::from("text"), Style::from_str("*.txt").unwrap()),
                 ])),
-                details: None,
+                explanation: None,
                 root: None,
             }
         );
@@ -280,12 +279,12 @@ args = ["~/scripts/download.bash"]
         assert_eq!(
             plug,
             Plugin {
-                alias: String::from("ffi"),
+                name: String::from("ffi"),
                 command: String::from("bash"),
                 args: Some(vec![String::from("~/scripts/download.bash")]),
-                summary: None,
+                description: None,
                 fileset: None,
-                details: None,
+                explanation: None,
                 root: None,
             }
         );

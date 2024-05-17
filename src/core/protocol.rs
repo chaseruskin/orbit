@@ -16,8 +16,8 @@ pub struct Protocol {
     name: String,
     command: String,
     args: Option<Vec<String>>,
-    summary: Option<String>,
-    details: Option<String>,
+    description: Option<String>,
+    explanation: Option<String>,
     #[serde(skip_serializing, skip_deserializing)]
     root: Option<PathBuf>,
 }
@@ -80,8 +80,8 @@ impl Protocol {
             command: String::new(),
             root: None,
             args: None,
-            summary: None,
-            details: None,
+            description: None,
+            explanation: None,
         }
     }
 
@@ -110,7 +110,7 @@ impl Protocol {
         format!(
             "{:<16}{}",
             self.name,
-            self.summary.as_ref().unwrap_or(&String::new())
+            self.description.as_ref().unwrap_or(&String::new())
         )
     }
 
@@ -173,14 +173,14 @@ root:    {}
                 .fold(String::new(), |x, y| { x + "\"" + &y + "\" " }),
             PathBuf::standardize(self.root.as_ref().unwrap()).display(),
             {
-                if let Some(text) = &self.summary {
+                if let Some(text) = &self.description {
                     format!("\n{}\n", text)
                 } else {
                     String::new()
                 }
             },
             {
-                if let Some(text) = &self.details {
+                if let Some(text) = &self.explanation {
                     format!("\n{}", text)
                 } else {
                     String::new()
@@ -249,8 +249,8 @@ args = ["~/scripts/download.bash"]
                 command: String::from("python"),
                 args: None,
                 root: None,
-                summary: None,
-                details: None,
+                description: None,
+                explanation: None,
             }
         );
 
@@ -262,8 +262,8 @@ args = ["~/scripts/download.bash"]
                 command: String::from("bash"),
                 args: Some(vec![String::from("~/scripts/download.bash")]),
                 root: None,
-                summary: None,
-                details: None,
+                description: None,
+                explanation: None,
             }
         );
     }

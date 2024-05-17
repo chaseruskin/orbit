@@ -105,7 +105,7 @@ Filename: .orbit/config.toml
 [[plugin]]
 name = "yilinx"
 command = "python"
-summary = "Generate bitstreams for Yilinx FPGAs"
+description = "Generate bitstreams for Yilinx FPGAs"
 args = ["yilinx.py"]
 # Define the type of extra file(s) to collect during planning
 fileset.pin-file = "*.ydc"

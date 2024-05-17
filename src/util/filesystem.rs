@@ -1,7 +1,6 @@
 use crate::core::fileset;
 use crate::core::lockfile;
 use crate::core::manifest;
-use crate::core::pubfile;
 use fs_extra;
 use home::home_dir;
 use ignore::WalkBuilder;
@@ -160,10 +159,7 @@ pub fn remove_base(base: &PathBuf, full: &PathBuf) -> PathBuf {
 }
 
 pub fn is_orbit_metadata(s: &str) -> bool {
-    s == manifest::IP_MANIFEST_FILE
-        || s == ORBIT_IGNORE_FILE
-        || s == lockfile::IP_LOCK_FILE
-        || s == pubfile::ORBIT_PUB_FILE
+    s == manifest::IP_MANIFEST_FILE || s == ORBIT_IGNORE_FILE || s == lockfile::IP_LOCK_FILE
 }
 
 pub fn is_minimal(name: &str) -> bool {

@@ -61,16 +61,16 @@ impl FromFile for Manifest {
             // enter a blank lock file if failed (do not exit)
             Err(e) => {
                 return Err(AnyError(format!(
-                    "failed to parse {} file: {}",
-                    IP_MANIFEST_FILE, e
+                    "Failed to parse {} file at path {:?}: {}",
+                    IP_MANIFEST_FILE, path, e
                 )))?
             }
         };
         // verify there are no duplicate entries between tables
         if let Some(e) = man.is_deps_valid().err() {
             return Err(AnyError(format!(
-                "failed to parse {} file: {}",
-                IP_MANIFEST_FILE, e
+                "Failed to parse {} file at path {:?}: {}",
+                IP_MANIFEST_FILE, path, e
             )))?;
         }
         Ok(man)
@@ -95,6 +95,7 @@ impl Manifest {
                 source: None.into(),
                 keywords: Vec::new(),
                 summary: None,
+                public: None,
                 library: None,
                 readme: None,
                 authors: None,
@@ -198,10 +199,12 @@ pub struct Package {
     name: Id,
     version: Version,
     authors: Option<Vec<String>>,
+    #[serde(rename = "description")]
     summary: Option<String>,
     library: Option<Id>,
     #[serde(skip_serializing_if = "vec_is_empty", default)]
     keywords: Vec<String>,
+    public: Option<Vec<String>>,
     /// Describes the URL for fetching the captured state's code (expects .ZIP file)
     #[serde(deserialize_with = "source::string_or_struct", default)]
     source: Source,
@@ -214,6 +217,10 @@ pub struct Package {
 impl Package {
     pub fn get_name(&self) -> &Id {
         &self.name
+    }
+
+    pub fn get_publics(&self) -> &Option<Vec<String>> {
+        &self.public
     }
 
     pub fn get_version(&self) -> &Version {

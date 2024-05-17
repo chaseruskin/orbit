@@ -500,7 +500,7 @@ include = [
     
 [[plugin]]
 name = "quartus"
-summary = "Complete toolflow for Intel Quartus Prime backend program"
+description = "Complete toolflow for Intel Quartus Prime backend program"
 command = "python"
 args = ["./plugin/quartus.py"]
 fileset.pin-plan = "*.board"

@@ -13,8 +13,7 @@ use super::lang::LangUnit;
 use super::lockfile::LockFile;
 use super::lockfile::IP_LOCK_FILE;
 use super::manifest::FromFile;
-use super::pubfile;
-use super::pubfile::PubFile;
+use super::pubfile::PublicList;
 use super::pubfile::Visibility;
 use crate::core::lockfile::LockEntry;
 use crate::core::manifest::IP_MANIFEST_FILE;
@@ -86,8 +85,14 @@ impl From<IpArchive> for Ip {
 }
 
 impl Ip {
-    pub fn has_pubfile(&self) -> bool {
-        PubFile::exists(&self.root)
+    pub fn has_public_list(&self) -> bool {
+        PublicList::new(&self.get_root(), self.get_man().get_ip().get_publics())
+            .unwrap()
+            .exists()
+    }
+
+    pub fn into_public_list(&self) -> PublicList {
+        PublicList::new(&self.get_root(), self.get_man().get_ip().get_publics()).unwrap()
     }
 
     pub fn get_root(&self) -> &PathBuf {
@@ -132,6 +137,9 @@ impl Ip {
             return Err(AnyError(format!("A manifest file does not exist")))?;
         }
         let man = Manifest::from_file(&man_path)?;
+
+        // verify the public list is okay
+        PublicList::new(&root, man.get_ip().get_publics())?;
 
         if is_working_ip == true {
             Self::check_illegal_files(&root)?;
@@ -230,7 +238,14 @@ impl Ip {
             return lut;
         }
         // @todo: read units from metadata to speed up results
-        let units = Self::collect_units(true, self.get_root(), mode, self.has_pubfile()).unwrap();
+        let units = Self::collect_units(
+            true,
+            self.get_root(),
+            mode,
+            self.has_public_list(),
+            self.into_public_list(),
+        )
+        .unwrap();
         let checksum = Ip::read_checksum_proof(self.get_root()).unwrap();
 
         units.into_iter().for_each(|(key, _)| {
@@ -324,6 +339,7 @@ impl Ip {
         dir: &PathBuf,
         lang_mode: &LangMode,
         hide_private: bool,
+        public_list: PublicList,
     ) -> Result<HashMap<LangIdentifier, LangUnit>, CodeFault> {
         // try to read from metadata file
         match (force == false) && Self::read_units_from_metadata(&dir).is_some() {
@@ -334,16 +350,15 @@ impl Ip {
                 let files = filesystem::gather_current_files(&dir, false);
 
                 let mut map = lang::collect_units(&files, lang_mode)?;
+
                 // work to remove files that are totally private
-                if PubFile::exists(&dir) == true {
-                    let pub_filepath = &dir.join(pubfile::ORBIT_PUB_FILE);
-                    let pub_file = PubFile::new(pub_filepath);
+                if public_list.exists() == true {
                     // track which files are private and have no references or only private references
                     let mut private_set: HashSet<LangIdentifier> = map
                         .iter_mut()
                         .filter_map(|(k, v)| {
                             // the node is implicitly private, but so far only known to be protected
-                            if v.is_listed_public(&pub_file) == false {
+                            if v.is_listed_public(&public_list) == false {
                                 v.set_visibility(Visibility::Protected);
                                 Some(k.clone())
                             } else {
@@ -354,7 +369,7 @@ impl Ip {
                     let mut visited: HashSet<LangIdentifier> = HashSet::new();
                     map.iter().for_each(|(_k, v)| {
                         // the node is explicitly public
-                        if v.is_listed_public(&pub_file) == true {
+                        if v.is_listed_public(&public_list) == true {
                             // if the reference is used by a public then it and its nesteddeps are not totally invisible
                             let mut stack = v.get_references();
                             while let Some(item) = stack.pop() {
@@ -422,14 +437,6 @@ impl Ip {
         if let Some(readme) = self.get_man().get_ip().get_readme() {
             // resolve a relative path
             list.insert(filesystem::resolve_rel_path2(self.get_root(), readme));
-        }
-        // keep the pubfile if exists
-        if self.has_pubfile() == true {
-            // resolve relative path to .orbitpub
-            list.insert(filesystem::resolve_rel_path2(
-                self.get_root(),
-                &PathBuf::from(pubfile::ORBIT_PUB_FILE),
-            ));
         }
         list
     }

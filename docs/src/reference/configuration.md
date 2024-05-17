@@ -32,15 +32,17 @@ Every configuration file consists of the following sections:
 - [[env]](#the-env-section) - The runtime environment variables.
 - [[[plugin]]](#the-plugin-array) - Define a plugin.
     - [name](#the-name-field) - The name of the plugin.
-    - [summary](#the-summary-field) - A short description of the plugin.
+    - [description](#the-description-field) - A short description of the plugin.
     - [command](#the-command-field) - The command to execute the plugin.
     - [args](#the-args-field) - Arguments to pass to the command.
     - [[fileset]](#the-fileset-section) - Filesets to collect for the plugin.
+    - [explanation](#the-explanation-field) - A detailed description of the plugin. 
 - [[[protocol]]](#the-protocol-array) - Define a protocol.
     - [name](#the-name-field) - The name of the protocol.
-    - [summary](#the-summary-field) - A short description of the protocol.
+    - [description](#the-description-field) - A short description of the protocol.
     - [command](#the-command-field) - The command to execute the protocol.
     - [args](#the-args-field) - Arguments to pass to the command.
+    - [explanation](#the-explanation-field) - A detailed description of the protocol.
 
 ### The `include` field
 
@@ -110,11 +112,13 @@ super-bar = "1"
 
 ### The `name` field
 
-### The `summary` field
+### The `description` field
 
 ### The `command` field
 
 ### The `args` field
+
+### The `explanation` field
 
 ### The `[fileset]` section
 
@@ -124,7 +128,7 @@ super-bar = "1"
 
 See [[plugin]](#the-plugin-array)'s definition.
 
-### The `summary` field
+### The `description` field
 
 See [[plugin]](#the-plugin-array)'s definition.
 
@@ -150,14 +154,14 @@ QUARTUS_PATH = "C:/IntelFPGA_lite/19.1/quartus/bin64"
 
 [[plugin]]
 alias = "zipr"
-summary = "Compress files into a submission-like format"
+description = "Compress files into a submission-like format"
 command = "python"
 args = ["./main/plugins/zipr.py"]
 fileset.zip-list = "submission.txt"
 
 [[protocol]]
 name = "zip-op"
-summary = "Handle zip file urls"
+description = "Handle zip file urls"
 command = "python"
 args = ["./main/protocols/download.py"]
 ```
@@ -249,24 +253,24 @@ date-fmt = "%B %e, %Y" # July 8, 2001
 - `command` : _string_
     - first argument to pass to subprocess
     - required
-- `summary` : _string_
+- `description` : _string_
     - short description about the plugin
 - `args` : _array_ of _string_
     - additional arguments to follow command in subprocess  
 - `fileset` : _inline table_
     - user-defined additional keys to store glob-style file patterns
-- `details` : _string_
+- `explanation` : _string_
     - long description about the plugin
 
 ``` toml
 [[plugin]]
 alias   = "vvd"
 command = "vivado"
-summary = "Basic toolflow for Vivado Design Suite"
+description = "Basic toolflow for Vivado Design Suite"
 args    = ["-mode", "batch", "-source", "script.tcl"]
 fileset.EDA-FLOW    = "*.tcl"
 fileset.CONSTRAINTS = "*.xdc"
-details = """\
+explanation = """\
     This plugin runs Vivado in non-project mode to perform its tasks.
 
 Usage:
@@ -290,23 +294,23 @@ Dependencies:
 - `command` : _string_
     - first argument to pass to subprocess
     - required
-- `summary` : _string_
+- `description` : _string_
     - short description about the protocol
     - optional
 - `args` : _array_ of _string_
     - additional arguments to follow command in subprocess 
     - optional 
-- `details` : _string_
+- `explanation` : _string_
     - long description about the protocol
     - optional
 
 ``` toml
 [[protocol]]
 name = "git-op"
-summary = "Fetch remote repositories using git"
+description = "Fetch remote repositories using git"
 command = "git"
 args = ["clone", "-b", "{{ orbit.ip.version }}", "{{ orbit.ip.source.url }}", "{{ orbit.queue }}/{{ orbit.ip.name }}"]
-details = """\
+explanation = """\
 This protocol tries to clone a repository defined under the source URL at a tag 
 matching the IP's version.
 

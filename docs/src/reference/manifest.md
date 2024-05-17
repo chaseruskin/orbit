@@ -11,9 +11,10 @@ Every manifest file consists of the following sections:
     - [version](#the-version-field) - The version of the IP.
     - [authors](#the-authors-field) - The authors of the IP.
     - [library](#the-library-field) - The HDL library for the design units within the IP.
-    - [summary](#the-summary-field) - A short description of the IP.
+    - [description](#the-description-field) - A short description of the IP.
     - [keywords](#the-keywords-field) - A list of simple words categorizing the IP.
     - [source](#the-source-field) - The URL for remotely retrieving the IP.
+    - [public](#the-public-field) - The list of files to be visible to other IP.
     - [readme](#the-readme-field) - The path to the README file.
     - [[metadata]](#the-metadata-section) - An unchecked section for custom fields.
 - [[dependencies]](#the-dependencies-section) - IP dependencies.
@@ -61,15 +62,15 @@ authors = ["Duncan Idaho", "Gurney Halleck"]
 ``` toml
 [ip]
 # ...
-library = "my-lib"
+library = "work"
 ```
 
-### The `summary` field
+### The `description` field
 
 ``` toml
 [ip]
 # ...
-summary = "A short description of the ip"
+description = "A short description of the ip"
 ```
 
 ### The `keywords` field
@@ -85,13 +86,25 @@ keywords = ["cpu", "risc"]
 ``` toml
 [ip]
 # ...
-source = "https://github.com/cdotrus/orbit/archive/refs/tags/0.9.5.zip"
+source = "https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip"
 ```
+
+### The `public` field
 
 ``` toml
 [ip]
 # ...
-source = { url = "https://github.com/cdotrus/orbit.git", protocol = "p-git", tag = "0.9.5" }
+public = ["/rtl"]
+```
+
+The `public` field can be used to explicitly specify which files are visible to other IP when being when being referenced as a dependency. The list contains glob-style patterns that conform to .gitignore file semantics, and are always compared relative that IP's root directory.
+
+If no `public` field is present, then all files are implicitly specified as visible (public) to other IP when being referenced as a dependency.
+
+``` toml
+[ip]
+# ...
+source = { url = "https://github.com/cdotrus/orbit.git", protocol = "p-git", tag = "1.0.0" }
 ```
 
 ### The `readme` field

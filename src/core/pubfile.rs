@@ -2,19 +2,6 @@ use std::path::PathBuf;
 use std::{error::Error, fmt::Display};
 
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
-use serde_derive::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-#[serde(transparent)]
-pub struct GlobPattern {
-    inner: String,
-}
-
-impl GlobPattern {
-    pub fn inner(&self) -> &String {
-        &self.inner
-    }
-}
 
 #[derive(Debug)]
 pub struct PublicList {
@@ -47,7 +34,7 @@ impl PublicList {
     /// then it will always return true.
     pub fn is_included(&self, path: &str) -> bool {
         match &self.inner {
-            Some(ig) => ig.matched(path, false).is_ignore(),
+            Some(ig) => ig.matched_path_or_any_parents(path, false).is_ignore(),
             None => true,
         }
     }

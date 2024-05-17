@@ -182,7 +182,7 @@ impl Command<Context> for OrbitSubcommand {
             OrbitSubcommand::Build(c) => c.exec(context),
             OrbitSubcommand::Install(c) => c.exec(context),
             OrbitSubcommand::Help(c) => c.exec(&()),
-            OrbitSubcommand::New(c) => c.exec(&()),
+            OrbitSubcommand::New(c) => c.exec(context),
             OrbitSubcommand::Launch(c) => c.exec(context),
             OrbitSubcommand::Tree(c) => c.exec(context),
             OrbitSubcommand::Init(c) => c.exec(context),

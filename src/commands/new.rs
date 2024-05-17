@@ -1,10 +1,11 @@
 use crate::commands::helps::new;
 use crate::commands::orbit::AnyResult;
 use crate::core::context::Context;
-use crate::core::manifest::Manifest;
+use crate::core::ip::Ip;
+use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
 use crate::core::pkgid::PkgPart;
 use crate::util::anyerror::AnyError;
-use crate::util::filesystem::Standardize;
+use crate::util::filesystem::{Standardize, ORBIT_IGNORE_FILE};
 use crate::OrbitResult;
 use clif::arg::{Flag, Optional, Positional};
 use clif::cmd::Command;
@@ -68,10 +69,10 @@ impl New {
     }
 }
 
-impl Command<()> for New {
+impl Command<Context> for New {
     type Status = OrbitResult;
 
-    fn exec(&self, _: &()) -> Self::Status {
+    fn exec(&self, c: &Context) -> Self::Status {
         // verify we are not already in an ip directory
         {
             // resolve any relative path
@@ -96,25 +97,33 @@ impl Command<()> for New {
 
         let ip_name = Self::extract_name(self.name.as_ref(), &self.path)?;
 
-        self.create_ip(&ip_name)
+        self.create_ip(&ip_name, &c.get_build_dir())
     }
 }
 
 impl New {
     /// Creates a new directory at the given `dest` with a new manifest file.
-    fn create_ip(&self, ip: &PkgPart) -> AnyResult<()> {
+    fn create_ip(&self, ip: &PkgPart, build_dir: &str) -> AnyResult<()> {
         // create the directory
         std::fs::create_dir_all(&self.path)?;
 
         // create the file directly nested within the destination path
         let manifest_path = {
             let mut p = self.path.clone();
-            p.push("Orbit.toml");
+            p.push(IP_MANIFEST_FILE);
+            p
+        };
+
+        let ignore_path = {
+            let mut p = self.path.clone();
+            p.push(ORBIT_IGNORE_FILE);
             p
         };
 
         let mut manifest = std::fs::File::create(&manifest_path)?;
+        let mut ignore = std::fs::File::create(&ignore_path)?;
         manifest.write_all(Manifest::write_empty_manifest(&ip).as_bytes())?;
+        ignore.write_all(Ip::write_default_ignore_file(build_dir).as_bytes())?;
         Ok(())
     }
 }

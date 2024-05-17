@@ -440,6 +440,11 @@ impl Ip {
         }
         list
     }
+
+    /// Writes the basic .orbitignore file.
+    pub fn write_default_ignore_file(build_dir: &str) -> String {
+        format!("/{}\n", build_dir)
+    }
 }
 
 use crate::core::pkgid::PkgPart;

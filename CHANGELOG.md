@@ -18,6 +18,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.12.0 - unreleased
 
 ### Features
+- Adds `.orbitignore` file for `new` and `init` commands with the build directory listed in case the ip does not have version control
 - Adds `language-mode` setting under `[general]` for supporting VHDL, verilog, or mixed language projects
 - Allows errors during parsing to be identified by source code file and then adds ability to generate an erroneous blueprint by using `--force` with `plan` command
 - Adds `public` field to manifest, which explicitly list the hdl files which will be public to other projects that use the ip as a dependency. If no `public` field exists, then the default is to have all hdl files be public

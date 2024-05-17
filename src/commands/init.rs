@@ -2,11 +2,12 @@ use super::new::New;
 use crate::commands::helps::init;
 use crate::commands::orbit::AnyResult;
 use crate::core::context::Context;
+use crate::core::ip::Ip;
 use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
 use crate::core::pkgid::PkgPart;
 use crate::util::anyerror::AnyError;
-use crate::util::filesystem;
 use crate::util::filesystem::Standardize;
+use crate::util::filesystem::{self, ORBIT_IGNORE_FILE};
 use crate::OrbitResult;
 use clif::arg::{Flag, Optional, Positional};
 use clif::cmd::{Command, FromCli};
@@ -39,7 +40,7 @@ impl FromCli for Init {
 impl Command<Context> for Init {
     type Status = OrbitResult;
 
-    fn exec(&self, _c: &Context) -> Self::Status {
+    fn exec(&self, c: &Context) -> Self::Status {
         // @todo: verify the pkgid is not taken
 
         // @todo: refactor due to heavy overlap with 'new' command
@@ -50,23 +51,23 @@ impl Command<Context> for Init {
         {
             if let Some(p) = Context::find_ip_path(&dest) {
                 // @todo: write error
-                panic!("an ip already exists at path {:?}", p)
+                panic!("An ip already exists at path {:?}", p)
             }
         }
 
         let ip_name = New::extract_name(self.name.as_ref(), &dest)?;
 
-        self.create_ip(&ip_name)
+        self.create_ip(&ip_name, &c.get_build_dir())
     }
 }
 
 impl Init {
     /// Initializes a project at an exising path.
-    fn create_ip(&self, ip: &PkgPart) -> AnyResult<()> {
+    fn create_ip(&self, ip: &PkgPart, build_dir: &str) -> AnyResult<()> {
         // verify the directory already exists
         if self.path.is_dir() == false || self.path.exists() == false {
             return Err(Box::new(AnyError(format!(
-                "The path {:?} is not an already existing directory",
+                "The path {:?} is not an existing directory",
                 PathBuf::standardize(self.path.clone())
             ))));
         }
@@ -78,8 +79,16 @@ impl Init {
             p
         };
 
+        let ignore_path = {
+            let mut p = self.path.clone();
+            p.push(ORBIT_IGNORE_FILE);
+            p
+        };
+
         let mut manifest = std::fs::File::create(&manifest_path)?;
+        let mut ignore = std::fs::File::create(&ignore_path)?;
         manifest.write_all(Manifest::write_empty_manifest(&ip).as_bytes())?;
+        ignore.write_all(Ip::write_default_ignore_file(build_dir).as_bytes())?;
         Ok(())
     }
 }

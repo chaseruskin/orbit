@@ -204,6 +204,7 @@
 </blockquote>
 <h2 id="package-library"><a class="header" href="#package-library">Package Library</a></h2>
 <p>A package can optionally belong to a <em>library</em>. A library is defined under the &quot;library&quot; field in the IP's manifest and follows the same rules as the package identifier. When producing a blueprint file, it will choose to associate all HDL files within a particular package with the provided library. If no library is defined in the package's manifest, then the default <code>work</code> library is provided. </p>
+<p>The library for the current working package will always be <code>work</code>, regardless of the value of the &quot;library&quot; field in the manifest file. It's &quot;library&quot; field value will be in effect when the package is referenced as a dependency.</p>
 
                     </main>
 

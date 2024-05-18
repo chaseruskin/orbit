@@ -522,9 +522,14 @@ impl Plan {
                 .collect();
             let lock = LockFile::from_build_list(&mut build_list, target);
             lock.save_to_disk(target.get_root())?;
-            println!("info: Updated lockfile");
+
+            if target.get_lock() != &lock {
+                println!("info: Lockfile updated");
+            } else {
+                println!("info: Lockfile experienced no changes")
+            }
         } else {
-            println!("info: Lockfile is already up to date");
+            println!("info: Lockfile experienced no changes");
         }
         Ok(())
     }

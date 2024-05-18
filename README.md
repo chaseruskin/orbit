@@ -156,18 +156,18 @@ Commands:
     new             create a new ip
     init            initialize an ip from an existing project
     show            print information about an ip
-    read            inspect hdl design unit source code
+    read            navigate hdl design unit source code
     get             fetch an entity
     tree            view the dependency graph
     plan, p         generate a blueprint file
-    build, b        execute a plugin
+    build, b        execute a backend workflow
     launch          verify an upcoming release
     search          browse the ip catalog 
     download        request packages from the internet
     install         store an immutable reference to an ip
-    env             print Orbit environment information
+    env             print orbit environment information
     config          modify configuration values
-    uninstall       remove an ip from the catalog
+    remove          uninstall an ip from the catalog
 
 Options:
     --version       print version information and exit

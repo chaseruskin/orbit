@@ -15,7 +15,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.12.0 - unreleased
+## 0.12.0
 
 ### Features
 - Adds `--force` to build command to skip checking for blueprint to exist

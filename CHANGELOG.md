@@ -27,6 +27,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - `remove` command now has ability to erase ip from downloads
 
 ### Changes
+- Improves errors for loading configuration files
 - Changes `summary` field to `description` field for manifest files and config files
 - Changes `details` field to `explanation` field for plugin and protocol entries
 - Adds `public` field in Orbit.toml in place to deprecate .orbitpub files

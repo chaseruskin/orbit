@@ -139,9 +139,8 @@ impl FromFile for ConfigDocument {
             // enter a blank lock file if failed (do not exit)
             Err(e) => {
                 return Err(AnyError(format!(
-                    "failed to parse {} file: {}",
-                    path.display(),
-                    e
+                    "Failed to parse configuration file at path {:?}: {}",
+                    path, e
                 )))?
             }
         }
@@ -171,13 +170,22 @@ impl Configs {
         let mut configs = self.inner;
 
         // standardize the path
-        let mut to_process = vec![(PathBuf::standardize(file), lvl)];
+        let mut to_process = vec![(PathBuf::standardize(&file), lvl)];
         let mut i = 0;
+        // process all paths
         while to_process.get(i).is_some() == true {
             {
                 let (path, local) = to_process.get(i).unwrap();
                 // load the entry file
-                let cfg = Config::from_file(&path)?;
+                let cfg = match Config::from_file(&path) {
+                    Ok(r) => r,
+                    Err(e) => {
+                        return Err(AnyError(format!(
+                            "Failed to load configuration file at path {:?}: {}",
+                            path, e
+                        )))?
+                    }
+                };
                 set.insert(path.clone());
                 configs.push((path.clone(), cfg, local.clone()));
             }
@@ -308,6 +316,7 @@ impl General {
 pub const CONFIG_FILE: &str = "config.toml";
 
 #[derive(PartialEq, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Config {
     include: Option<Vec<PathBuf>>,
     env: Option<HashMap<String, String>>,
@@ -446,10 +455,7 @@ impl FromFile for Config {
     fn from_file(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
         // verify the path exists
         if path.is_file() == false {
-            return Err(AnyError(format!(
-                "failed to locate configuration file \"{}\"",
-                path.display()
-            )))?;
+            return Err(AnyError(format!("File does not exist")))?;
         }
         // open file
         let contents = std::fs::read_to_string(&path)?;
@@ -471,13 +477,7 @@ impl FromFile for Config {
                 Ok(r)
             }
             // enter a blank lock file if failed (do not exit)
-            Err(e) => {
-                return Err(AnyError(format!(
-                    "failed to parse \"{}\" file: {}",
-                    path.display(),
-                    e
-                )))?
-            }
+            Err(e) => return Err(e)?,
         }
     }
 }

@@ -38,7 +38,7 @@ passed in the received order as arguments to the subprocess's command. If a plug
 has defined arguments, the additional arguments passed from the command-line
 will follow the previously defined arguments.
 
-The subprocess will spawn from the current working ip's root directory.
+The subprocess will spawn from the current working ip's build directory.
 
 ## __OPTIONS__
 
@@ -50,6 +50,9 @@ The subprocess will spawn from the current working ip's root directory.
 
 `--list`  
       View available plugins
+
+`--force`  
+      Execute the command without checking for a blueprint
 
 `--build-dir <dir>`  
       The relative directory to locate the blueprint file
@@ -66,5 +69,6 @@ The subprocess will spawn from the current working ip's root directory.
 orbit build --plugin xsim -- --elab
 orbit build --command python -- synth.py
 orbit build --verbose
+orbit build --plugin xsim --force -- --help
 ```
 

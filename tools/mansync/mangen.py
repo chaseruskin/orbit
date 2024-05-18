@@ -196,7 +196,7 @@ def write_rs_manual(table, dest, command) -> int:
         lines = table[EXPS].strip().splitlines()
         for line in lines:
             rs.write(INDENT+line+END)
-        rs.write('"#;')
+        rs.write('"#;\n')
         pass
 
     print('INFO: Rust manual page available at:', path)

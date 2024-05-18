@@ -18,6 +18,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.12.0 - unreleased
 
 ### Features
+- Adds `--force` to build command to skip checking for blueprint to exist
 - Adds `.orbitignore` file for `new` and `init` commands with the build directory listed in case the ip does not have version control
 - Adds `language-mode` setting under `[general]` for supporting VHDL, verilog, or mixed language projects
 - Allows errors during parsing to be identified by source code file and then adds ability to generate an erroneous blueprint by using `--force` with `plan` command

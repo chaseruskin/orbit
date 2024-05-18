@@ -433,12 +433,13 @@ passed in the received order as arguments to the subprocess's command. If a plug
 has defined arguments, the additional arguments passed from the command-line
 will follow the previously defined arguments.
 
-The subprocess will spawn from the current working ip's root directory.
+The subprocess will spawn from the current working ip's build directory.
 """
 
 options."--plugin <name>" = "Plugin to execute"
 options."--command <cmd>" = "Command to execute"
 options."--list" = "View available plugins"
+options."--force" = "Execute the command without checking for a blueprint"
 options."--build-dir <dir>" = "The relative directory to locate the blueprint file"
 options."--verbose" = "Display the command being executed"
 options."args" = "Arguments to pass to the plugin or command"
@@ -447,6 +448,7 @@ examples = """
 orbit build --plugin xsim -- --elab
 orbit build --command python -- synth.py
 orbit build --verbose
+orbit build --plugin xsim --force -- --help
 """
 
 help = """

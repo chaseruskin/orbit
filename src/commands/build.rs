@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use super::plan::BLUEPRINT_FILE;
 use crate::commands::helps::build;
 use crate::core::context::Context;
@@ -21,6 +23,7 @@ use clif::Error as CliError;
 pub struct Build {
     alias: Option<String>,
     list: bool,
+    force: bool,
     command: Option<String>,
     build_dir: Option<String>,
     args: Vec<String>,
@@ -34,6 +37,7 @@ impl FromCli for Build {
             // Flags
             list: cli.check_flag(Flag::new("list"))?,
             verbose: cli.check_flag(Flag::new("verbose"))?,
+            force: cli.check_flag(Flag::new("force"))?,
             // Options
             alias: cli.check_option(Optional::new("plugin").value("alias"))?,
             build_dir: cli.check_option(Optional::new("build-dir").value("dir"))?,
@@ -99,6 +103,7 @@ impl Command<Context> for Build {
             .join(BLUEPRINT_FILE)
             .exists()
             == false
+            && self.force == false
         {
             return Err(AnyError(format!("No blueprint file to build from in directory '{}'\n\nTry `orbit plan --build-dir {0}` to generate a blueprint file", b_dir)))?;
         }
@@ -113,7 +118,13 @@ impl Command<Context> for Build {
             .initialize();
 
         // load from .env file from the correct build dir
-        let envs = Environment::new().from_env_file(&c.get_ip_path().unwrap().join(b_dir))?;
+        let envs = match Environment::new().from_env_file(&c.get_ip_path().unwrap().join(b_dir)) {
+            Ok(r) => r,
+            Err(e) => match self.force {
+                false => return Err(AnyError(format!("Failed to read .env file: {}", e)))?,
+                true => Environment::new(),
+            },
+        };
 
         // check if ORBIT_PLUGIN was set and no command option was set
         let plug = match plug {
@@ -145,6 +156,11 @@ impl Command<Context> for Build {
             return Err(AnyError(format!(
                 "Building requires a plugin or a command to process"
             )))?;
+        }
+
+        // make sure the directory exists
+        if PathBuf::from(&b_dir).exists() == false {
+            std::fs::create_dir(&b_dir)?;
         }
 
         // start command from the build directory

@@ -199,7 +199,7 @@ definition.</p>
 passed in the received order as arguments to the subprocess's command. If a plugin already
 has defined arguments, the additional arguments passed from the command-line
 will follow the previously defined arguments.</p>
-<p>The subprocess will spawn from the current working ip's root directory.</p>
+<p>The subprocess will spawn from the current working ip's build directory.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--plugin &lt;name&gt;</code><br />
       Plugin to execute</p>
@@ -207,6 +207,8 @@ will follow the previously defined arguments.</p>
       Command to execute</p>
 <p><code>--list</code><br />
       View available plugins</p>
+<p><code>--force</code><br />
+      Execute the command without checking for a blueprint</p>
 <p><code>--build-dir &lt;dir&gt;</code><br />
       The relative directory to locate the blueprint file</p>
 <p><code>--verbose</code><br />
@@ -217,6 +219,7 @@ will follow the previously defined arguments.</p>
 <pre><code>orbit build --plugin xsim -- --elab
 orbit build --command python -- synth.py
 orbit build --verbose
+orbit build --plugin xsim --force -- --help
 </code></pre>
 
                     </main>

@@ -16,9 +16,6 @@
   <a href="https://github.com/cdotrus/orbit/releases">
     <img src="https://img.shields.io/github/downloads/cdotrus/orbit/total.svg" alt="downloads">
   </a>
-  <a href="mailto:c.ruskin@ufl.edu?subject=Thanks%20for%20Orbit!">
-    <img src="https://img.shields.io/badge/Say%20Thanks-!-1EAEDB.svg" alt="say thanks">
-  </a>
 </div>
 <br>
 

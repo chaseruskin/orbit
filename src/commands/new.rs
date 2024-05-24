@@ -6,16 +6,13 @@ use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
 use crate::core::pkgid::PkgPart;
 use crate::util::anyerror::AnyError;
 use crate::util::filesystem::{Standardize, ORBIT_IGNORE_FILE};
-use crate::OrbitResult;
-use clif::arg::{Flag, Optional, Positional};
-use clif::cmd::Command;
-use clif::cmd::FromCli;
-use clif::Cli;
-use clif::Error as CliError;
 use std::borrow::Cow;
 use std::io::Write;
 use std::path::PathBuf;
 use std::str::FromStr;
+
+use cliproc::{cli, proc};
+use cliproc::{Cli, Flag, Help, Optional, Positional, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct New {
@@ -29,17 +26,43 @@ pub struct New {
     // force: bool,
 }
 
-impl FromCli for New {
-    fn from_cli(cli: &mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(new::HELP).ref_usage(2..4))?;
+impl Subcommand<Context> for New {
+    fn construct(cli: &mut Cli) -> cli::Result<Self> {
+        cli.check_help(Help::default().text(new::HELP))?;
 
-        let command = Ok(Self {
+        Ok(Self {
             is_ip: cli.check_flag(Flag::new("ip"))?,
             name: cli.check_option(Optional::new("name"))?,
             path: cli.require_positional(Positional::new("path"))?,
-        });
+        })
+    }
 
-        command
+    fn execute(self, c: &Context) -> proc::Result {
+        // verify we are not already in an ip directory
+        {
+            // resolve any relative path
+            let dest = PathBuf::standardize(self.path.clone());
+            if let Some(p) = Context::find_ip_path(&dest) {
+                // @todo: write error
+                panic!("an ip already exists at path {:?}", p)
+            }
+        }
+
+        // verify the path does not exist
+        if self.path.exists() == true {
+            // @todo give user more helpful error message
+            // 1. if the manifest already exists at this directory
+            // 2. if no manifest already exists at this directory
+            // @todo: write error
+            panic!(
+                "destination {:?} already exists, use `orbit init` to initialize directory",
+                PathBuf::standardize(self.path.clone())
+            )
+        }
+
+        let ip_name = Self::extract_name(self.name.as_ref(), &self.path)?;
+
+        self.create_ip(&ip_name, &c.get_build_dir())
     }
 }
 
@@ -66,38 +89,6 @@ impl New {
                 }
             },
         }
-    }
-}
-
-impl Command<Context> for New {
-    type Status = OrbitResult;
-
-    fn exec(&self, c: &Context) -> Self::Status {
-        // verify we are not already in an ip directory
-        {
-            // resolve any relative path
-            let dest = PathBuf::standardize(self.path.clone());
-            if let Some(p) = Context::find_ip_path(&dest) {
-                // @todo: write error
-                panic!("an ip already exists at path {:?}", p)
-            }
-        }
-
-        // verify the path does not exist
-        if self.path.exists() == true {
-            // @todo give user more helpful error message
-            // 1. if the manifest already exists at this directory
-            // 2. if no manifest already exists at this directory
-            // @todo: write error
-            panic!(
-                "destination {:?} already exists, use `orbit init` to initialize directory",
-                PathBuf::standardize(self.path.clone())
-            )
-        }
-
-        let ip_name = Self::extract_name(self.name.as_ref(), &self.path)?;
-
-        self.create_ip(&ip_name, &c.get_build_dir())
     }
 }
 

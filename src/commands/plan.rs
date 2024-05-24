@@ -1,7 +1,5 @@
 use colored::Colorize;
 
-use clif::cmd::{Command, FromCli};
-
 use crate::commands::download::Download;
 use crate::core::context::Context;
 use crate::core::fileset::Fileset;
@@ -25,10 +23,6 @@ use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
 use crate::util::filesystem;
 use crate::util::graphmap::GraphMap;
-use crate::OrbitResult;
-use clif::arg::{Flag, Optional};
-use clif::Cli;
-use clif::Error as CliError;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::fs::File;
@@ -48,6 +42,9 @@ use crate::core::lockfile::LockEntry;
 use crate::core::lockfile::LockFile;
 use crate::util::graphmap::Node;
 
+use cliproc::{cli, proc};
+use cliproc::{Cli, Flag, Help, Optional, Subcommand};
+
 pub const BLUEPRINT_FILE: &str = "blueprint.tsv";
 pub const BLUEPRINT_DELIMITER: &str = "\t";
 
@@ -65,9 +62,9 @@ pub struct Plan {
     force: bool,
 }
 
-impl FromCli for Plan {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(plan::HELP).ref_usage(2..4))?;
+impl Subcommand<Context> for Plan {
+    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
+        cli.check_help(Help::new().text(plan::HELP))?;
         let command = Ok(Plan {
             // flags
             force: cli.check_flag(Flag::new("force"))?,
@@ -84,12 +81,8 @@ impl FromCli for Plan {
         });
         command
     }
-}
 
-impl Command<Context> for Plan {
-    type Status = OrbitResult;
-
-    fn exec(&self, c: &Context) -> Self::Status {
+    fn execute(self, c: &Context) -> proc::Result {
         // locate the plugin
         let plugin = match &self.plugin {
             // verify the plugin alias matches

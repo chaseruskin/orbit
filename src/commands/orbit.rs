@@ -1,40 +1,81 @@
 use crate::commands::helps::orbit;
 use crate::core::config;
 use crate::core::context::Context;
-use crate::core::lang::vhdl::highlight::ColorMode;
+use crate::util::anyerror::AnyError;
 use crate::util::environment;
 use crate::util::prompt;
 use crate::util::sha256::Sha256Hash;
-use clif::arg::Optional;
-use clif::arg::{Flag, Positional};
-use clif::cmd::Command;
-use clif::cmd::FromCli;
-use clif::Cli;
-use clif::Error as CliError;
+
+use cliproc::{cli, proc};
+use cliproc::{Cli, Command, Flag, Optional, Positional, Subcommand};
+
 use std::env;
 
 pub type AnyResult<T> = Result<T, Box<dyn std::error::Error>>;
-pub type OrbitResult = AnyResult<()>;
 
 #[derive(Debug, PartialEq)]
-pub struct Orbit {
-    help: bool,
-    upgrade: bool,
-    version: bool,
-    force: bool,
-    command: Option<OrbitSubcommand>,
+pub enum ColorMode {
+    Always,
+    Auto,
+    Never,
 }
 
-impl Command<()> for Orbit {
-    type Status = OrbitResult;
-
-    fn exec(&self, context: &()) -> Self::Status {
-        self.run(context)
+impl Default for ColorMode {
+    fn default() -> Self {
+        Self::Auto
     }
 }
 
-impl Orbit {
-    fn run(&self, _: &()) -> OrbitResult {
+impl ColorMode {
+    pub fn sync(&self) {
+        match self {
+            Self::Always => colored::control::set_override(true),
+            Self::Never => colored::control::set_override(false),
+            Self::Auto => (),
+        }
+    }
+}
+
+impl FromStr for ColorMode {
+    type Err = AnyError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "auto" => Ok(Self::Auto),
+            "always" => Ok(Self::Always),
+            "never" => Ok(Self::Never),
+            _ => Err(AnyError(format!(
+                "value must be 'auto', 'always', or 'never'"
+            ))),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Orbit {
+    upgrade: bool,
+    version: bool,
+    force: bool,
+    cmode: ColorMode,
+    command: Option<OrbitSubcommand>,
+}
+
+impl Command for Orbit {
+    fn construct(cli: &mut Cli) -> cli::Result<Self> {
+        cli.check_help(cliproc::Help::default().text(orbit::HELP))?;
+        Ok(Orbit {
+            upgrade: cli.check_flag(Flag::new("upgrade"))?,
+            version: cli.check_flag(Flag::new("version"))?,
+            force: cli.check_flag(Flag::new("force"))?,
+            cmode: cli
+                .check_option(Optional::new("color").value("when"))?
+                .unwrap_or_default(),
+            command: cli.check_command(Positional::new("command"))?,
+        })
+    }
+
+    fn execute(self) -> proc::Result {
+        // synchronize the coloring mode
+        self.cmode.sync();
         // prioritize version information
         if self.version == true {
             println!("orbit {}", VERSION);
@@ -46,7 +87,7 @@ impl Orbit {
             println!("info: {}", info);
             Ok(())
         // run the specified command
-        } else if let Some(c) = &self.command {
+        } else if let Some(sub) = self.command {
             // set up the context (ignores the context passed in)
             let context = Context::new()
                 .home(environment::ORBIT_HOME)?
@@ -56,42 +97,11 @@ impl Orbit {
                 .settings(config::CONFIG_FILE)?
                 .build_dir(environment::ORBIT_BUILD_DIR)?;
             // pass the context to the given command
-            c.exec(&context)
+            sub.execute(&context)
         // if no command is given then print default help
         } else {
             Ok(println!("{}", orbit::HELP))
         }
-    }
-}
-
-impl FromCli for Orbit {
-    fn from_cli(cli: &mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(orbit::HELP).ref_usage(2..4))?;
-        // need to set this coloring mode ASAP
-        match cli
-            .check_option(Optional::new("color").value("when"))?
-            .unwrap_or(ColorMode::Auto)
-        {
-            ColorMode::Always => {
-                cli.use_color();
-                colored::control::set_override(true);
-            }
-            ColorMode::Never => {
-                cli.disable_color();
-                colored::control::set_override(false);
-            }
-            ColorMode::Auto => (),
-        }
-        let orbit = Ok(Orbit {
-            help: cli.check_flag(Flag::new("help").switch('h'))?,
-            upgrade: cli.check_flag(Flag::new("upgrade"))?,
-            version: cli.check_flag(Flag::new("version"))?,
-            force: cli.check_flag(Flag::new("force"))?,
-            command: cli.check_command(Positional::new("command"))?,
-        });
-        // verify there are zero unhandled arguments
-        cli.is_empty()?;
-        orbit
     }
 }
 
@@ -132,8 +142,8 @@ enum OrbitSubcommand {
     Download(Download),
 }
 
-impl FromCli for OrbitSubcommand {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
+impl Subcommand<Context> for OrbitSubcommand {
+    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
         match cli
             .match_command(&[
                 "help", "new", "search", "plan", "p", "build", "launch", "download", "install",
@@ -141,57 +151,44 @@ impl FromCli for OrbitSubcommand {
             ])?
             .as_ref()
         {
-            "get" => Ok(OrbitSubcommand::Get(Get::from_cli(cli)?)),
-            "help" => Ok(OrbitSubcommand::Help(Help::from_cli(cli)?)),
-            "new" => Ok(OrbitSubcommand::New(New::from_cli(cli)?)),
-            "search" => Ok(OrbitSubcommand::Search(Search::from_cli(cli)?)),
-            "p" | "plan" => Ok(OrbitSubcommand::Plan(Plan::from_cli(cli)?)),
-            "b" | "build" => Ok(OrbitSubcommand::Build(Build::from_cli(cli)?)),
-            "init" => Ok(OrbitSubcommand::Init(Init::from_cli(cli)?)),
-            "download" => Ok(OrbitSubcommand::Download(Download::from_cli(cli)?)),
-            "launch" => Ok(OrbitSubcommand::Launch(Launch::from_cli(cli)?)),
-            "install" => Ok(OrbitSubcommand::Install(Install::from_cli(cli)?)),
-            "tree" => Ok(OrbitSubcommand::Tree(Tree::from_cli(cli)?)),
-            "show" => Ok(OrbitSubcommand::Show(Show::from_cli(cli)?)),
-            "env" => Ok(OrbitSubcommand::Env(Env::from_cli(cli)?)),
-            "config" => Ok(OrbitSubcommand::Config(Config::from_cli(cli)?)),
-            "remove" => Ok(OrbitSubcommand::Uninstall(Remove::from_cli(cli)?)),
-            "read" => Ok(OrbitSubcommand::Read(Read::from_cli(cli)?)),
+            "get" => Ok(OrbitSubcommand::Get(Get::construct(cli)?)),
+            "help" => Ok(OrbitSubcommand::Help(Help::construct(cli)?)),
+            "new" => Ok(OrbitSubcommand::New(New::construct(cli)?)),
+            "search" => Ok(OrbitSubcommand::Search(Search::construct(cli)?)),
+            "p" | "plan" => Ok(OrbitSubcommand::Plan(Plan::construct(cli)?)),
+            "b" | "build" => Ok(OrbitSubcommand::Build(Build::construct(cli)?)),
+            "init" => Ok(OrbitSubcommand::Init(Init::construct(cli)?)),
+            "download" => Ok(OrbitSubcommand::Download(Download::construct(cli)?)),
+            "launch" => Ok(OrbitSubcommand::Launch(Launch::construct(cli)?)),
+            "install" => Ok(OrbitSubcommand::Install(Install::construct(cli)?)),
+            "tree" => Ok(OrbitSubcommand::Tree(Tree::construct(cli)?)),
+            "show" => Ok(OrbitSubcommand::Show(Show::construct(cli)?)),
+            "env" => Ok(OrbitSubcommand::Env(Env::construct(cli)?)),
+            "config" => Ok(OrbitSubcommand::Config(Config::construct(cli)?)),
+            "remove" => Ok(OrbitSubcommand::Uninstall(Remove::construct(cli)?)),
+            "read" => Ok(OrbitSubcommand::Read(Read::construct(cli)?)),
             _ => panic!("an unimplemented command was passed through!"),
         }
     }
-}
 
-impl OrbitSubcommand {
-    fn bypass_check(&self) -> bool {
+    fn execute(self, context: &Context) -> proc::Result {
         match self {
-            Self::Config(_) => true,
-            _ => false,
-        }
-    }
-}
-
-impl Command<Context> for OrbitSubcommand {
-    type Status = OrbitResult;
-
-    fn exec(&self, context: &Context) -> Self::Status {
-        match self {
-            OrbitSubcommand::Get(c) => c.exec(context),
-            OrbitSubcommand::Search(c) => c.exec(context),
-            OrbitSubcommand::Plan(c) => c.exec(context),
-            OrbitSubcommand::Build(c) => c.exec(context),
-            OrbitSubcommand::Install(c) => c.exec(context),
-            OrbitSubcommand::Help(c) => c.exec(&()),
-            OrbitSubcommand::New(c) => c.exec(context),
-            OrbitSubcommand::Launch(c) => c.exec(context),
-            OrbitSubcommand::Tree(c) => c.exec(context),
-            OrbitSubcommand::Init(c) => c.exec(context),
-            OrbitSubcommand::Show(c) => c.exec(context),
-            OrbitSubcommand::Env(c) => c.exec(context),
-            OrbitSubcommand::Config(c) => c.exec(context),
-            OrbitSubcommand::Uninstall(c) => c.exec(context),
-            OrbitSubcommand::Read(c) => c.exec(context),
-            OrbitSubcommand::Download(c) => c.exec(context),
+            OrbitSubcommand::Get(sub) => sub.execute(context),
+            OrbitSubcommand::Search(sub) => sub.execute(context),
+            OrbitSubcommand::Plan(sub) => sub.execute(context),
+            OrbitSubcommand::Build(sub) => sub.execute(context),
+            OrbitSubcommand::Install(sub) => sub.execute(context),
+            OrbitSubcommand::Help(sub) => sub.execute(&()),
+            OrbitSubcommand::New(sub) => sub.execute(context),
+            OrbitSubcommand::Launch(sub) => sub.execute(context),
+            OrbitSubcommand::Tree(sub) => sub.execute(context),
+            OrbitSubcommand::Init(sub) => sub.execute(context),
+            OrbitSubcommand::Show(sub) => sub.execute(context),
+            OrbitSubcommand::Env(sub) => sub.execute(context),
+            OrbitSubcommand::Config(sub) => sub.execute(context),
+            OrbitSubcommand::Uninstall(sub) => sub.execute(context),
+            OrbitSubcommand::Read(sub) => sub.execute(context),
+            OrbitSubcommand::Download(sub) => sub.execute(context),
         }
     }
 }

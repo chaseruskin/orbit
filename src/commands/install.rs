@@ -19,6 +19,7 @@
 
 use super::plan::Plan;
 use crate::commands::download::Download;
+use crate::commands::download::ProtocolMap;
 use crate::commands::helps::install;
 use crate::commands::plan;
 use crate::core::algo;
@@ -32,6 +33,7 @@ use crate::core::lockfile::LockEntry;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::ORBIT_SUM_FILE;
 use crate::core::protocol::Protocol;
+use crate::core::protocol::ProtocolError;
 use crate::core::source::Source;
 use crate::core::variable::VariableTable;
 use crate::core::version;
@@ -40,16 +42,14 @@ use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
 use crate::util::filesystem;
 use crate::util::filesystem::Standardize;
-use crate::OrbitResult;
-use clif::arg::{Flag, Optional, Positional};
-use clif::cmd::{Command, FromCli};
-use clif::Cli;
-use clif::Error as CliError;
 use std::collections::HashSet;
 use std::env;
 use std::fs;
 use std::fs::read_dir;
 use std::path::PathBuf;
+
+use cliproc::{cli, proc};
+use cliproc::{Cli, Flag, Help, Optional, Positional, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
@@ -64,10 +64,10 @@ pub struct Install {
     all: bool,
 }
 
-impl FromCli for Install {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(install::HELP).ref_usage(2..4))?;
-        let command = Ok(Install {
+impl Subcommand<Context> for Install {
+    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
+        cli.check_help(Help::default().text(install::HELP))?;
+        Ok(Install {
             // Flags
             force: cli.check_flag(Flag::new("force"))?,
             verbose: cli.check_flag(Flag::new("verbose"))?,
@@ -80,18 +80,10 @@ impl FromCli for Install {
             protocol: cli.check_option(Optional::new("protocol").value("name"))?,
             // Positionals
             ip: cli.check_positional(Positional::new("ip"))?,
-        });
-        command
+        })
     }
-}
 
-use crate::commands::download::ProtocolMap;
-use crate::core::protocol::ProtocolError;
-
-impl Command<Context> for Install {
-    type Status = OrbitResult;
-
-    fn exec(&self, c: &Context) -> Self::Status {
+    fn execute(self, c: &Context) -> proc::Result {
         // locate the plugin
         let protocol = match &self.protocol {
             // verify the plugin alias matches

@@ -138,11 +138,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "clif"
-version = "0.1.5"
-source = "git+https://github.com/cdotrus/clif?tag=0.1.5#75ff53e393158f18976d36e48629ad48baf1d916"
+name = "cliproc"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14da499ce0ad1d8108d35d45e62810ad2920264f695eb1f83cf3cbcd11527b9e"
 dependencies = [
- "crayon",
+ "colored",
 ]
 
 [[package]]
@@ -170,11 +171,6 @@ checksum = "3e4c1eaa2012c47becbbad2ab175484c2a84d1185b566fb2cc5b8707343dfe58"
 dependencies = [
  "libc",
 ]
-
-[[package]]
-name = "crayon"
-version = "0.1.1"
-source = "git+https://github.com/cdotrus/crayon?tag=0.1.1#d1ee73995f860901a45ba289ac358c59fdfedff4"
 
 [[package]]
 name = "crc32fast"
@@ -526,7 +522,7 @@ dependencies = [
 name = "orbit"
 version = "0.12.0"
 dependencies = [
- "clif",
+ "cliproc",
  "colored",
  "curl",
  "flate2",

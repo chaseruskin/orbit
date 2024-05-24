@@ -18,12 +18,10 @@ use crate::core::lang::LangMode;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::sha256;
-use crate::OrbitResult;
-use clif::arg::{Flag, Optional, Positional};
-use clif::cmd::{Command, FromCli};
-use clif::Cli;
-use clif::Error as CliError;
 use std::fs;
+
+use cliproc::{cli, proc};
+use cliproc::{Cli, Flag, Help, Optional, Positional, Subcommand};
 
 const TMP_DIR: &str = "tmp";
 
@@ -40,10 +38,10 @@ pub struct Read {
     limit: Option<usize>,
 }
 
-impl FromCli for Read {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(read::HELP).ref_usage(2..4))?;
-        let command = Ok(Read {
+impl Subcommand<Context> for Read {
+    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
+        cli.check_help(Help::default().text(read::HELP))?;
+        Ok(Read {
             // flags
             file: cli.check_flag(Flag::new("file"))?,
             location: cli.check_flag(Flag::new("location"))?,
@@ -56,15 +54,10 @@ impl FromCli for Read {
             comment: cli.check_option(Optional::new("doc").value("code"))?,
             // positionals
             unit: cli.require_positional(Positional::new("unit"))?,
-        });
-        command
+        })
     }
-}
 
-impl Command<Context> for Read {
-    type Status = OrbitResult;
-
-    fn exec(&self, c: &Context) -> Self::Status {
+    fn execute(self, c: &Context) -> proc::Result {
         // verify location is only set iff the file mode is enabled
         if self.location == true && self.file == false {
             Err(AnyError(format!(

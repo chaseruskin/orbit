@@ -13,11 +13,9 @@ use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
 use crate::util::environment::ORBIT_BLUEPRINT;
 use crate::util::environment::ORBIT_BUILD_DIR;
-use crate::OrbitResult;
-use clif::arg::{Flag, Optional};
-use clif::cmd::{Command, FromCli};
-use clif::Cli;
-use clif::Error as CliError;
+
+use cliproc::{cli, proc};
+use cliproc::{Cli, Flag, Help, Optional, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Build {
@@ -30,10 +28,10 @@ pub struct Build {
     verbose: bool,
 }
 
-impl FromCli for Build {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(build::HELP).ref_usage(2..4))?;
-        let command = Ok(Build {
+impl Subcommand<Context> for Build {
+    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
+        cli.check_help(Help::default().text(build::HELP))?;
+        Ok(Build {
             // Flags
             list: cli.check_flag(Flag::new("list"))?,
             verbose: cli.check_flag(Flag::new("verbose"))?,
@@ -44,15 +42,10 @@ impl FromCli for Build {
             command: cli.check_option(Optional::new("command").value("cmd"))?,
             // Remaining args
             args: cli.check_remainder()?,
-        });
-        command
+        })
     }
-}
 
-impl Command<Context> for Build {
-    type Status = OrbitResult;
-
-    fn exec(&self, c: &Context) -> Self::Status {
+    fn execute(self, c: &Context) -> proc::Result {
         // try to find plugin matching `command` name under the `alias`
         let plug = if let Some(name) = &self.alias {
             match c.get_config().get_plugins().get(name.as_str()) {

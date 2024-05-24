@@ -4,14 +4,12 @@ use crate::core::context::Context;
 use crate::core::ip::{Ip, PartialIpSpec};
 use crate::core::version::AnyVersion;
 use crate::util::anyerror::AnyError;
-use crate::OrbitResult;
-use clif::arg::{Flag, Positional};
-use clif::cmd::{Command, FromCli};
-use clif::Cli;
-use clif::Error as CliError;
 use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
+
+use cliproc::{cli, proc};
+use cliproc::{Cli, Flag, Help, Positional, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Remove {
@@ -22,22 +20,17 @@ pub struct Remove {
     // @todo:
 }
 
-impl FromCli for Remove {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(remove::HELP).ref_usage(2..4))?;
-        let command = Ok(Remove {
+impl Subcommand<Context> for Remove {
+    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
+        cli.check_help(Help::default().text(remove::HELP))?;
+        Ok(Remove {
             all: cli.check_flag(Flag::new("all"))?,
             recurse: cli.check_flag(Flag::new("recurse"))?,
             ip: cli.require_positional(Positional::new("ip"))?,
-        });
-        command
+        })
     }
-}
 
-impl Command<Context> for Remove {
-    type Status = OrbitResult;
-
-    fn exec(&self, c: &Context) -> Self::Status {
+    fn execute(self, c: &Context) -> proc::Result {
         if self.recurse == true {
             todo!("implement recursive removal")
         }

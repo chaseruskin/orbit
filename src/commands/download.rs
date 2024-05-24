@@ -17,15 +17,15 @@ use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
 use crate::util::filesystem::Standardize;
-use crate::OrbitResult;
-use clif::arg::{Flag, Optional};
-use clif::cmd::{Command, FromCli};
-use clif::Cli;
-use clif::Error as CliError;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
+
+use cliproc::{cli, proc};
+use cliproc::{Cli, Flag, Help, Optional, Subcommand};
+
+pub type ProtocolMap<'a> = HashMap<&'a str, &'a Protocol>;
 
 #[derive(Debug, PartialEq)]
 pub struct Download {
@@ -37,10 +37,10 @@ pub struct Download {
     force: bool,
 }
 
-impl FromCli for Download {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(download::HELP).ref_usage(2..4))?;
-        let command = Ok(Download {
+impl Subcommand<Context> for Download {
+    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
+        cli.check_help(Help::default().text(download::HELP))?;
+        Ok(Download {
             // Flags
             all: cli.check_flag(Flag::new("all"))?,
             missing: cli.check_flag(Flag::new("missing"))?,
@@ -49,17 +49,10 @@ impl FromCli for Download {
             verbose: cli.check_flag(Flag::new("verbose"))?,
             // Options
             queue_dir: cli.check_option(Optional::new("queue").value("dir"))?,
-        });
-        command
+        })
     }
-}
 
-pub type ProtocolMap<'a> = HashMap<&'a str, &'a Protocol>;
-
-impl Command<Context> for Download {
-    type Status = OrbitResult;
-
-    fn exec(&self, c: &Context) -> Self::Status {
+    fn execute(self, c: &Context) -> proc::Result {
         // @idea: display lock entries as JSON? or use different env var for ORBIT_DOWNLOAD_LIST and ORBIT_VERSION_LIST
 
         // cannot happen

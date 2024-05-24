@@ -1,10 +1,8 @@
 use crate::core::context::Context;
 use crate::core::version::Version;
-use crate::OrbitResult;
-use clif::arg::{Flag, Optional};
-use clif::cmd::{Command, FromCli};
-use clif::Cli;
-use clif::Error as CliError;
+
+use cliproc::{cli, proc};
+use cliproc::{Cli, Flag, Help, Optional, Subcommand};
 
 #[derive(Debug, PartialEq)]
 enum VersionField {
@@ -34,9 +32,9 @@ pub struct Launch {
     install: bool,
 }
 
-impl FromCli for Launch {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
+impl Subcommand<Context> for Launch {
+    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
+        cli.check_help(Help::default().text(HELP))?;
         let command = Ok(Launch {
             ready: cli.check_flag(Flag::new("ready"))?,
             install: cli.check_flag(Flag::new("install"))?,
@@ -44,12 +42,8 @@ impl FromCli for Launch {
         });
         command
     }
-}
 
-impl Command<Context> for Launch {
-    type Status = OrbitResult;
-
-    fn exec(&self, _c: &Context) -> Self::Status {
+    fn execute(self, _c: &Context) -> proc::Result {
         // by default, do not make any changes to the codebase/project (only print out diagnostics)
         todo!("verify the ip manifest is valid");
         // todo!("verify the lock file is generated and up to date");

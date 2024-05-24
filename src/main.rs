@@ -1,3 +1,7 @@
-fn main() -> () {
-    std::process::exit(orbit::go() as i32);
+use cliproc::*;
+use orbit::Orbit;
+use std::env;
+
+fn main() -> ExitCode {
+    Cli::default().parse(env::args()).go::<Orbit>()
 }

@@ -8,13 +8,11 @@ use crate::core::pkgid::PkgPart;
 use crate::util::anyerror::AnyError;
 use crate::util::filesystem::Standardize;
 use crate::util::filesystem::{self, ORBIT_IGNORE_FILE};
-use crate::OrbitResult;
-use clif::arg::{Flag, Optional, Positional};
-use clif::cmd::{Command, FromCli};
-use clif::Cli;
-use clif::Error as CliError;
 use std::io::Write;
 use std::path::PathBuf;
+
+use cliproc::{cli, proc};
+use cliproc::{Cli, Flag, Help, Optional, Positional, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Init {
@@ -23,24 +21,19 @@ pub struct Init {
     path: PathBuf,
 }
 
-impl FromCli for Init {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(init::HELP).ref_usage(2..4))?;
-        let command = Ok(Self {
+impl Subcommand<Context> for Init {
+    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
+        cli.check_help(Help::default().text(init::HELP))?;
+        Ok(Self {
             force: cli.check_flag(Flag::new("force"))?,
             name: cli.check_option(Optional::new("name"))?,
             path: cli
                 .check_positional(Positional::new("path"))?
                 .unwrap_or(PathBuf::from(".")),
-        });
-        command
+        })
     }
-}
 
-impl Command<Context> for Init {
-    type Status = OrbitResult;
-
-    fn exec(&self, c: &Context) -> Self::Status {
+    fn execute(self, c: &Context) -> proc::Result {
         // @todo: verify the pkgid is not taken
 
         // @todo: refactor due to heavy overlap with 'new' command

@@ -1,14 +1,26 @@
 use crate::commands::manuals;
 use crate::util::anyerror::AnyError;
-use crate::OrbitResult;
-use clif::arg::Positional;
-use clif::cmd::{Command, FromCli};
-use clif::Cli;
-use clif::Error as CliError;
+
+use cliproc::{cli, proc};
+use cliproc::{Cli, Positional, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Help {
     topic: Option<Topic>,
+}
+
+impl Subcommand<()> for Help {
+    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
+        cli.check_help(cliproc::Help::default().text(HELP))?;
+        Ok(Help {
+            topic: cli.check_positional(Positional::new("topic"))?,
+        })
+    }
+
+    fn execute(self, _: &()) -> proc::Result {
+        self.run()?;
+        Ok(())
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -17,7 +29,7 @@ enum Topic {
     Plan,
     Build,
     Launch,
-    // Edit,
+    Download,
     Install,
     Tree,
     Search,
@@ -40,7 +52,7 @@ impl std::str::FromStr for Topic {
             "build" => Self::Build,
             "search" => Self::Search,
             "launch" => Self::Launch,
-            // "edit" => Self::Edit,
+            "download" => Self::Download,
             "install" => Self::Install,
             "tree" => Self::Tree,
             "get" => Self::Get,
@@ -60,10 +72,10 @@ impl Topic {
         use Topic::*;
         match &self {
             Env => manuals::env::MANUAL,
-            Show => manuals::probe::MANUAL,
+            Show => manuals::show::MANUAL,
             Get => manuals::get::MANUAL,
             Tree => manuals::tree::MANUAL,
-            // Edit => manuals::edit::MANUAL,
+            Download => manuals::download::MANUAL,
             New => manuals::new::MANUAL,
             Plan => manuals::plan::MANUAL,
             Search => manuals::search::MANUAL,
@@ -78,15 +90,6 @@ impl Topic {
     }
 }
 
-impl Command<()> for Help {
-    type Status = OrbitResult;
-
-    fn exec(&self, _: &()) -> Self::Status {
-        self.run()?;
-        Ok(())
-    }
-}
-
 impl Help {
     fn run(&self) -> Result<(), AnyError> {
         let contents = match &self.topic {
@@ -96,16 +99,6 @@ impl Help {
         // @todo/idea: check for a pager program to pipe contents into?
         println!("{}", contents);
         Ok(())
-    }
-}
-
-impl FromCli for Help {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(HELP).ref_usage(2..4))?;
-        let command = Ok(Help {
-            topic: cli.check_positional(Positional::new("topic"))?,
-        });
-        command
     }
 }
 

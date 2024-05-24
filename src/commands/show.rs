@@ -6,13 +6,11 @@ use crate::core::lang::LangUnit;
 use crate::core::version;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
-use crate::OrbitResult;
-use clif::arg::{Flag, Positional};
-use clif::cmd::{Command, FromCli};
-use clif::Cli;
-use clif::Error as CliError;
 use std::cmp::Ordering;
 use std::env::current_dir;
+
+use cliproc::{cli, proc};
+use cliproc::{Cli, Flag, Help, Positional, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Show {
@@ -21,22 +19,17 @@ pub struct Show {
     ip: Option<PartialIpSpec>,
 }
 
-impl FromCli for Show {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(show::HELP).ref_usage(2..4))?;
-        let command = Ok(Show {
+impl Subcommand<Context> for Show {
+    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
+        cli.check_help(Help::default().text(show::HELP))?;
+        Ok(Show {
             tags: cli.check_flag(Flag::new("versions"))?,
             units: cli.check_flag(Flag::new("units"))?,
             ip: cli.check_positional(Positional::new("ip"))?,
-        });
-        command
+        })
     }
-}
 
-impl Command<Context> for Show {
-    type Status = OrbitResult;
-
-    fn exec(&self, c: &Context) -> Self::Status {
+    fn execute(self, c: &Context) -> proc::Result {
         // collect all manifests available (load catalog)
         let catalog = Catalog::new()
             .installations(c.get_cache_path())?
@@ -160,10 +153,6 @@ impl Command<Context> for Show {
 }
 
 impl Show {
-    fn run(&self) -> Result<(), Fault> {
-        Ok(())
-    }
-
     /// Creates a string for to display the primary design units for the particular ip.
     fn format_units_table(table: Vec<LangUnit>) -> String {
         let header = format!(

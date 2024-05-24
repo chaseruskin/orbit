@@ -5,6 +5,7 @@ use crate::commands::helps::get;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::PartialIpSpec;
+use crate::core::lang::parser::Parse;
 use crate::core::lang::parser::Symbol;
 use crate::core::lang::vhdl::format::VhdlFormat;
 use crate::core::lang::vhdl::interface;
@@ -14,19 +15,19 @@ use crate::core::lang::vhdl::symbols::entity::Entity;
 use crate::core::lang::vhdl::symbols::VHDLParser;
 use crate::core::lang::vhdl::symbols::VhdlSymbol;
 use crate::core::lang::vhdl::token::Identifier;
+use crate::core::lang::vhdl::token::VhdlTokenizer;
 use crate::core::manifest::FromFile;
 use crate::core::manifest::Manifest;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::pkgid::PkgPart;
 use crate::core::version::Version;
 use crate::util::anyerror::{AnyError, Fault};
-use crate::OrbitResult;
-use clif::arg::{Flag, Optional, Positional};
-use clif::cmd::{Command, FromCli};
-use clif::Cli;
-use clif::Error as CliError;
 use colored::Colorize;
+use std::env;
 use std::str::FromStr;
+
+use cliproc::{cli, proc};
+use cliproc::{Cli, Flag, Help, Optional, Positional, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Get {
@@ -41,10 +42,10 @@ pub struct Get {
     name: Option<Identifier>,
 }
 
-impl FromCli for Get {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(get::HELP).ref_usage(2..4))?;
-        let command = Ok(Self {
+impl Subcommand<Context> for Get {
+    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
+        cli.check_help(Help::default().text(get::HELP))?;
+        Ok(Self {
             signals: cli.check_flag(Flag::new("signals").switch('s'))?,
             component: cli.check_flag(Flag::new("component").switch('c'))?,
             instance: cli.check_flag(Flag::new("instance").switch('i'))?,
@@ -54,19 +55,10 @@ impl FromCli for Get {
             ip: cli.check_option(Optional::new("ip").value("spec"))?,
             name: cli.check_option(Optional::new("name").value("identifier"))?,
             unit: cli.require_positional(Positional::new("unit"))?,
-        });
-        command
+        })
     }
-}
 
-use crate::core::lang::parser::Parse;
-use crate::core::lang::vhdl::token::VhdlTokenizer;
-use std::env;
-
-impl Command<Context> for Get {
-    type Status = OrbitResult;
-
-    fn exec(&self, c: &Context) -> Self::Status {
+    fn execute(self, c: &Context) -> proc::Result {
         // --name can only be used with --instance is set
         if self.name.is_some() && self.instance == false {
             return Err(AnyError(format!(

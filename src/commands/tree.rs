@@ -20,14 +20,12 @@ use crate::core::lang::LangMode;
 use crate::util::anyerror::Fault;
 use crate::util::graph::EdgeStatus;
 use crate::util::graphmap::GraphMap;
-use crate::OrbitResult;
-use clif::arg::{Flag, Optional};
-use clif::cmd::{Command, FromCli};
-use clif::Cli;
-use clif::Error as CliError;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs;
+
+use cliproc::{cli, proc};
+use cliproc::{Cli, Flag, Help, Optional, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Tree {
@@ -39,25 +37,20 @@ pub struct Tree {
     all: bool,
 }
 
-impl FromCli for Tree {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(tree::HELP).ref_usage(2..4))?;
-        let command = Ok(Tree {
+impl Subcommand<Context> for Tree {
+    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
+        cli.check_help(Help::default().text(tree::HELP))?;
+        Ok(Tree {
             compress: cli.check_flag(Flag::new("compress"))?, // @todo: implement
             ascii: cli.check_flag(Flag::new("ascii"))?,
             ip: cli.check_flag(Flag::new("ip"))?,
             all: cli.check_flag(Flag::new("all"))?,
             root: cli.check_option(Optional::new("root").value("unit"))?,
             format: cli.check_option(Optional::new("format").value("fmt"))?,
-        });
-        command
+        })
     }
-}
 
-impl Command<Context> for Tree {
-    type Status = OrbitResult;
-
-    fn exec(&self, c: &Context) -> Self::Status {
+    fn execute(self, c: &Context) -> proc::Result {
         // go to the ip directory
         c.goto_ip_path()?;
 

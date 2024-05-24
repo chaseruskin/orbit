@@ -1,10 +1,6 @@
-use std::str::FromStr;
-
 use colored::ColoredString;
 use colored::Colorize;
 use palette::*;
-
-use crate::util::anyerror::AnyError;
 
 pub type Rgb = (u8, u8, u8);
 
@@ -48,24 +44,3 @@ pub const SIGNAL_DEC_IDENTIFIER: Rgb = LT_SKY_BLUE;
 pub const INSTANCE_LHS_IDENTIFIER: Rgb = LT_SKY_BLUE;
 pub const DATA_TYPE: Rgb = NATURE_GREEN;
 pub const ENTITY_NAME: Rgb = NATURE_GREEN;
-
-#[derive(Debug, PartialEq)]
-pub enum ColorMode {
-    Always,
-    Auto,
-    Never,
-}
-
-impl FromStr for ColorMode {
-    type Err = AnyError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "auto" => Ok(Self::Auto),
-            "always" => Ok(Self::Always),
-            "never" => Ok(Self::Never),
-            _ => Err(AnyError(format!(
-                "value must be 'auto', 'always', or 'never'"
-            ))),
-        }
-    }
-}

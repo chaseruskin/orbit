@@ -2,12 +2,10 @@ use crate::core::context::Context;
 use crate::core::ip::Mapping;
 use crate::core::pkgid::PkgPart;
 use crate::util::anyerror::Fault;
-use crate::OrbitResult;
-use clif::arg::{Flag, Optional, Positional};
-use clif::cmd::{Command, FromCli};
-use clif::Cli;
-use clif::Error as CliError;
 use std::collections::BTreeMap;
+
+use cliproc::{cli, proc};
+use cliproc::{Cli, Flag, Help, Optional, Positional, Subcommand};
 
 use crate::commands::helps::search;
 use crate::core::catalog::Catalog;
@@ -24,9 +22,9 @@ pub struct Search {
     hard_match: bool,
 }
 
-impl FromCli for Search {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(search::HELP).ref_usage(2..4))?;
+impl Subcommand<Context> for Search {
+    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
+        cli.check_help(Help::default().text(search::HELP))?;
         let command = Ok(Search {
             downloaded: cli.check_flag(Flag::new("download").switch('d'))?,
             cached: cli.check_flag(Flag::new("install").switch('i'))?,
@@ -39,21 +37,15 @@ impl FromCli for Search {
         });
         command
     }
-}
 
-impl Command<Context> for Search {
-    type Status = OrbitResult;
-
-    fn exec(&self, c: &Context) -> Self::Status {
+    fn execute(self, c: &Context) -> proc::Result {
         let mut catalog = Catalog::new();
-
         // collect installed IP
         catalog = catalog.installations(c.get_cache_path())?;
         // collect downloaded IP
         catalog = catalog.downloads(c.get_downloads_path())?;
         // collect available IP
         // @todo
-
         self.run(&catalog)
     }
 }

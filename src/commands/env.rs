@@ -10,20 +10,18 @@ use crate::util::environment::Environment;
 use crate::util::environment::ORBIT_BLUEPRINT;
 use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
 use crate::util::filesystem::Standardize;
-use crate::OrbitResult;
-use clif::arg::Positional;
-use clif::cmd::{Command, FromCli};
-use clif::Cli;
-use clif::Error as CliError;
+
+use cliproc::{cli, proc};
+use cliproc::{Cli, Help, Positional, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Env {
     keys: Vec<String>,
 }
 
-impl FromCli for Env {
-    fn from_cli(cli: &mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(env::HELP).ref_usage(2..4))?;
+impl Subcommand<Context> for Env {
+    fn construct(cli: &mut Cli) -> cli::Result<Self> {
+        cli.check_help(Help::default().text(env::HELP))?;
         // collect all positional arguments
         let mut keys: Vec<String> = Vec::new();
         while let Some(c) = cli.check_positional(Positional::new("key"))? {
@@ -32,12 +30,8 @@ impl FromCli for Env {
         let command = Ok(Env { keys: keys });
         command
     }
-}
 
-impl Command<Context> for Env {
-    type Status = OrbitResult;
-
-    fn exec(&self, c: &Context) -> Self::Status {
+    fn execute(self, c: &Context) -> proc::Result {
         // assemble environment information
         let mut env = Environment::from_vec(vec![
             // @todo: context should own an `Environment` struct instead of this data transformation

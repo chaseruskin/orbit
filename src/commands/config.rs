@@ -7,12 +7,10 @@ use crate::core::config::CONFIG_FILE;
 use crate::core::context::Context;
 use crate::core::manifest::FromFile;
 use crate::util::anyerror::AnyError;
-use crate::OrbitResult;
-use clif::arg::{Flag, Optional};
-use clif::cmd::{Command, FromCli};
-use clif::Cli;
-use clif::Error as CliError;
 use colored::*;
+
+use cliproc::{cli, proc};
+use cliproc::{Cli, Flag, Help, Optional, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Entry(String, String);
@@ -37,10 +35,10 @@ pub struct Config {
     unset: Vec<String>,
 }
 
-impl FromCli for Config {
-    fn from_cli<'c>(cli: &'c mut Cli) -> Result<Self, CliError> {
-        cli.check_help(clif::Help::new().quick_text(config::HELP).ref_usage(2..4))?;
-        let command = Ok(Config {
+impl Subcommand<Context> for Config {
+    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
+        cli.check_help(Help::default().text(config::HELP))?;
+        Ok(Config {
             // Flags
             global: cli.check_flag(Flag::new("global"))?,
             local: cli.check_flag(Flag::new("local"))?,
@@ -54,15 +52,10 @@ impl FromCli for Config {
             unset: cli
                 .check_option_all(Optional::new("unset").value("key"))?
                 .unwrap_or(Vec::new()),
-        });
-        command
+        })
     }
-}
 
-impl Command<Context> for Config {
-    type Status = OrbitResult;
-
-    fn exec(&self, c: &Context) -> Self::Status {
+    fn execute(self, c: &Context) -> proc::Result {
         // check if we are using global or local
         if self.local == true && self.global == true {
             return Err(AnyError(format!(

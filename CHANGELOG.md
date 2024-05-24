@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.13.0 - unreleased
+
+### Changes
+- Uses `cliproc` as cli dependency (deprecates `clif`)
+
 ## 0.12.0
 
 ### Features

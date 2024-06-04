@@ -31,7 +31,8 @@ Read the [Book of Orbit](https://cdotrus.github.io/orbit/) for complete document
 cpu/
 ├─ Orbit.toml
 ├─ rtl/
-│  ├─ reg.vhd
+│  ├─ ctrl.vhd
+│  ├─ datapath.vhd
 │  └─ top.vhd
 └─ sim/
    └─ top_tb.vhd
@@ -47,29 +48,23 @@ name = "cpu"
 version = "1.0.0"
 
 [dependencies]
-gates = "2.3.0"
+gates = "2.0.0"
 ```
 
 <br>
 
 `orbit` generates VHDL code snippets able to be directly inserted into a new VHDL design for rapid reuse:
 ```
-$ orbit get and_gate --ip gates:2.3.0 --component --signals --instance
+$ orbit get and_gate --ip gates:2.0.0 --signals --instance
 ```
 ``` vhdl
-component and_gate
-  port(
-    a : in std_logic;
-    b : in std_logic;
-    x : out std_logic
-  );
-end component;
+library gates;
 
 signal a : std_logic;
 signal b : std_logic;
 signal x : std_logic;
 
-u_and_gate : and_gate
+u_and_gate : entity gates.and_gate
   port map(
     a => a,
     b => b,
@@ -82,9 +77,10 @@ u_and_gate : and_gate
 `orbit` plans your build by generating a file list, called a blueprint, that contains a list of the required files for your given design in topologically-sorted order to act as an input to any backend toolchain:
 
 ```
-VHDL-RTL	gates	/users/chase/.orbit/cache/gates-2.3.0-7f4d8c7812/rtl/nand_gate.vhd
-VHDL-RTL	gates	/users/chase/.orbit/cache/gates-2.3.0-7f4d8c7812/rtl/and_gate.vhd
-VHDL-RTL	work	/users/chase/projects/cpu/rtl/reg.vhd
+VHDL-RTL	gates	/users/chase/.orbit/cache/gates-2.0.0-7f4d8c7812/rtl/nand_gate.vhd
+VHDL-RTL	gates	/users/chase/.orbit/cache/gates-2.0.0-7f4d8c7812/rtl/and_gate.vhd
+VHDL-RTL	work	/users/chase/projects/cpu/rtl/datapath.vhd
+VHDL-RTL	work	/users/chase/projects/cpu/rtl/ctrl.vhd
 VHDL-RTL	work	/users/chase/projects/cpu/rtl/top.vhd
 VHDL-SIM	work	/users/chase/projects/cpu/sim/top_tb.vhd
 ```

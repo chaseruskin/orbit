@@ -48,8 +48,8 @@ use std::fs;
 use std::fs::read_dir;
 use std::path::PathBuf;
 
-use cliproc::{cli, proc};
-use cliproc::{Cli, Flag, Help, Optional, Positional, Subcommand};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
@@ -65,21 +65,21 @@ pub struct Install {
 }
 
 impl Subcommand<Context> for Install {
-    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
-        cli.check_help(Help::default().text(install::HELP))?;
+    fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
+        cli.help(Help::with(install::HELP))?;
         Ok(Install {
             // Flags
-            force: cli.check_flag(Flag::new("force"))?,
-            verbose: cli.check_flag(Flag::new("verbose"))?,
-            all: cli.check_flag(Flag::new("all"))?,
-            list: cli.check_flag(Flag::new("list"))?,
+            force: cli.check(Arg::flag("force"))?,
+            verbose: cli.check(Arg::flag("verbose"))?,
+            all: cli.check(Arg::flag("all"))?,
+            list: cli.check(Arg::flag("list"))?,
             // Options
-            path: cli.check_option(Optional::new("path"))?,
-            url: cli.check_option(Optional::new("url"))?,
-            tag: cli.check_option(Optional::new("tag"))?,
-            protocol: cli.check_option(Optional::new("protocol").value("name"))?,
+            path: cli.get(Arg::option("path"))?,
+            url: cli.get(Arg::option("url"))?,
+            tag: cli.get(Arg::option("tag"))?,
+            protocol: cli.get(Arg::option("protocol").value("name"))?,
             // Positionals
-            ip: cli.check_positional(Positional::new("ip"))?,
+            ip: cli.get(Arg::positional("ip"))?,
         })
     }
 

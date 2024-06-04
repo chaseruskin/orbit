@@ -9,8 +9,8 @@ use crate::util::anyerror::Fault;
 use std::cmp::Ordering;
 use std::env::current_dir;
 
-use cliproc::{cli, proc};
-use cliproc::{Cli, Flag, Help, Positional, Subcommand};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Show {
@@ -20,12 +20,12 @@ pub struct Show {
 }
 
 impl Subcommand<Context> for Show {
-    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
-        cli.check_help(Help::default().text(show::HELP))?;
+    fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
+        cli.help(Help::with(show::HELP))?;
         Ok(Show {
-            tags: cli.check_flag(Flag::new("versions"))?,
-            units: cli.check_flag(Flag::new("units"))?,
-            ip: cli.check_positional(Positional::new("ip"))?,
+            tags: cli.check(Arg::flag("versions"))?,
+            units: cli.check(Arg::flag("units"))?,
+            ip: cli.get(Arg::positional("ip"))?,
         })
     }
 

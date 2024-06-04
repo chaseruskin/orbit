@@ -22,8 +22,8 @@ use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
 
-use cliproc::{cli, proc};
-use cliproc::{Cli, Flag, Help, Optional, Subcommand};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Help, Subcommand};
 
 pub type ProtocolMap<'a> = HashMap<&'a str, &'a Protocol>;
 
@@ -38,17 +38,17 @@ pub struct Download {
 }
 
 impl Subcommand<Context> for Download {
-    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
-        cli.check_help(Help::default().text(download::HELP))?;
+    fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
+        cli.help(Help::with(download::HELP))?;
         Ok(Download {
             // Flags
-            all: cli.check_flag(Flag::new("all"))?,
-            missing: cli.check_flag(Flag::new("missing"))?,
-            list: cli.check_flag(Flag::new("list"))?,
-            force: cli.check_flag(Flag::new("force"))?,
-            verbose: cli.check_flag(Flag::new("verbose"))?,
+            all: cli.check(Arg::flag("all"))?,
+            missing: cli.check(Arg::flag("missing"))?,
+            list: cli.check(Arg::flag("list"))?,
+            force: cli.check(Arg::flag("force"))?,
+            verbose: cli.check(Arg::flag("verbose"))?,
             // Options
-            queue_dir: cli.check_option(Optional::new("queue").value("dir"))?,
+            queue_dir: cli.get(Arg::option("queue").value("dir"))?,
         })
     }
 

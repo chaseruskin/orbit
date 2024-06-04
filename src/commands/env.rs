@@ -11,8 +11,8 @@ use crate::util::environment::ORBIT_BLUEPRINT;
 use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
 use crate::util::filesystem::Standardize;
 
-use cliproc::{cli, proc};
-use cliproc::{Cli, Help, Positional, Subcommand};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Env {
@@ -20,11 +20,11 @@ pub struct Env {
 }
 
 impl Subcommand<Context> for Env {
-    fn construct(cli: &mut Cli) -> cli::Result<Self> {
-        cli.check_help(Help::default().text(env::HELP))?;
+    fn interpret(cli: &mut Cli<Memory>) -> cli::Result<Self> {
+        cli.help(Help::with(env::HELP))?;
         // collect all positional arguments
         let mut keys: Vec<String> = Vec::new();
-        while let Some(c) = cli.check_positional(Positional::new("key"))? {
+        while let Some(c) = cli.get(Arg::positional("key"))? {
             keys.push(c);
         }
         let command = Ok(Env { keys: keys });

@@ -14,8 +14,8 @@ use crate::util::environment::Environment;
 use crate::util::environment::ORBIT_BLUEPRINT;
 use crate::util::environment::ORBIT_BUILD_DIR;
 
-use cliproc::{cli, proc};
-use cliproc::{Cli, Flag, Help, Optional, Subcommand};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Build {
@@ -29,19 +29,19 @@ pub struct Build {
 }
 
 impl Subcommand<Context> for Build {
-    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
-        cli.check_help(Help::default().text(build::HELP))?;
+    fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
+        cli.help(Help::with(build::HELP))?;
         Ok(Build {
             // Flags
-            list: cli.check_flag(Flag::new("list"))?,
-            verbose: cli.check_flag(Flag::new("verbose"))?,
-            force: cli.check_flag(Flag::new("force"))?,
+            list: cli.check(Arg::flag("list"))?,
+            verbose: cli.check(Arg::flag("verbose"))?,
+            force: cli.check(Arg::flag("force"))?,
             // Options
-            alias: cli.check_option(Optional::new("plugin").value("alias"))?,
-            build_dir: cli.check_option(Optional::new("build-dir").value("dir"))?,
-            command: cli.check_option(Optional::new("command").value("cmd"))?,
+            alias: cli.get(Arg::option("plugin").value("alias"))?,
+            build_dir: cli.get(Arg::option("build-dir").value("dir"))?,
+            command: cli.get(Arg::option("command").value("cmd"))?,
             // Remaining args
-            args: cli.check_remainder()?,
+            args: cli.remainder()?,
         })
     }
 

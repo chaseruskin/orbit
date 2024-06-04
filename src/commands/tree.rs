@@ -24,8 +24,8 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fs;
 
-use cliproc::{cli, proc};
-use cliproc::{Cli, Flag, Help, Optional, Subcommand};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Tree {
@@ -38,15 +38,15 @@ pub struct Tree {
 }
 
 impl Subcommand<Context> for Tree {
-    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
-        cli.check_help(Help::default().text(tree::HELP))?;
+    fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
+        cli.help(Help::with(tree::HELP))?;
         Ok(Tree {
-            compress: cli.check_flag(Flag::new("compress"))?, // @todo: implement
-            ascii: cli.check_flag(Flag::new("ascii"))?,
-            ip: cli.check_flag(Flag::new("ip"))?,
-            all: cli.check_flag(Flag::new("all"))?,
-            root: cli.check_option(Optional::new("root").value("unit"))?,
-            format: cli.check_option(Optional::new("format").value("fmt"))?,
+            compress: cli.check(Arg::flag("compress"))?, // @todo: implement
+            ascii: cli.check(Arg::flag("ascii"))?,
+            ip: cli.check(Arg::flag("ip"))?,
+            all: cli.check(Arg::flag("all"))?,
+            root: cli.get(Arg::option("root").value("unit"))?,
+            format: cli.get(Arg::option("format").value("fmt"))?,
         })
     }
 

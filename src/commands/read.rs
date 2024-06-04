@@ -20,8 +20,8 @@ use crate::util::anyerror::Fault;
 use crate::util::sha256;
 use std::fs;
 
-use cliproc::{cli, proc};
-use cliproc::{Cli, Flag, Help, Optional, Positional, Subcommand};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Help, Subcommand};
 
 const TMP_DIR: &str = "tmp";
 
@@ -39,21 +39,21 @@ pub struct Read {
 }
 
 impl Subcommand<Context> for Read {
-    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
-        cli.check_help(Help::default().text(read::HELP))?;
+    fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
+        cli.help(Help::with(read::HELP))?;
         Ok(Read {
             // flags
-            file: cli.check_flag(Flag::new("file"))?,
-            location: cli.check_flag(Flag::new("location"))?,
-            keep: cli.check_flag(Flag::new("keep"))?,
+            file: cli.check(Arg::flag("file"))?,
+            location: cli.check(Arg::flag("location"))?,
+            keep: cli.check(Arg::flag("keep"))?,
             // options
-            limit: cli.check_option(Optional::new("limit").value("num"))?,
-            ip: cli.check_option(Optional::new("ip").value("spec"))?,
-            start: cli.check_option(Optional::new("start").value("code"))?,
-            end: cli.check_option(Optional::new("end").value("code"))?,
-            comment: cli.check_option(Optional::new("doc").value("code"))?,
+            limit: cli.get(Arg::option("limit").value("num"))?,
+            ip: cli.get(Arg::option("ip").value("spec"))?,
+            start: cli.get(Arg::option("start").value("code"))?,
+            end: cli.get(Arg::option("end").value("code"))?,
+            comment: cli.get(Arg::option("doc").value("code"))?,
             // positionals
-            unit: cli.require_positional(Positional::new("unit"))?,
+            unit: cli.require(Arg::positional("unit"))?,
         })
     }
 

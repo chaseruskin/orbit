@@ -1,8 +1,8 @@
 use crate::commands::manuals;
 use crate::util::anyerror::AnyError;
 
-use cliproc::{cli, proc};
-use cliproc::{Cli, Positional, Subcommand};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Help {
@@ -10,10 +10,10 @@ pub struct Help {
 }
 
 impl Subcommand<()> for Help {
-    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
-        cli.check_help(cliproc::Help::default().text(HELP))?;
+    fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
+        cli.help(cliproc::Help::with(HELP))?;
         Ok(Help {
-            topic: cli.check_positional(Positional::new("topic"))?,
+            topic: cli.get(Arg::positional("topic"))?,
         })
     }
 

@@ -26,8 +26,8 @@ use colored::Colorize;
 use std::env;
 use std::str::FromStr;
 
-use cliproc::{cli, proc};
-use cliproc::{Cli, Flag, Help, Optional, Positional, Subcommand};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Get {
@@ -43,18 +43,18 @@ pub struct Get {
 }
 
 impl Subcommand<Context> for Get {
-    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
-        cli.check_help(Help::default().text(get::HELP))?;
+    fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
+        cli.help(Help::with(get::HELP))?;
         Ok(Self {
-            signals: cli.check_flag(Flag::new("signals").switch('s'))?,
-            component: cli.check_flag(Flag::new("component").switch('c'))?,
-            instance: cli.check_flag(Flag::new("instance").switch('i'))?,
-            architectures: cli.check_flag(Flag::new("architecture").switch('a'))?,
-            json: cli.check_flag(Flag::new("json"))?,
-            // info: cli.check_flag(Flag::new("info"))?, // @todo: implement
-            ip: cli.check_option(Optional::new("ip").value("spec"))?,
-            name: cli.check_option(Optional::new("name").value("identifier"))?,
-            unit: cli.require_positional(Positional::new("unit"))?,
+            signals: cli.check(Arg::flag("signals").switch('s'))?,
+            component: cli.check(Arg::flag("component").switch('c'))?,
+            instance: cli.check(Arg::flag("instance").switch('i'))?,
+            architectures: cli.check(Arg::flag("architecture").switch('a'))?,
+            json: cli.check(Arg::flag("json"))?,
+            // info: cli.check(Arg::flag("info"))?, // @todo: implement
+            ip: cli.get(Arg::option("ip").value("spec"))?,
+            name: cli.get(Arg::option("name").value("identifier"))?,
+            unit: cli.require(Arg::positional("unit"))?,
         })
     }
 

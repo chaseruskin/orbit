@@ -4,8 +4,8 @@ use crate::core::pkgid::PkgPart;
 use crate::util::anyerror::Fault;
 use std::collections::BTreeMap;
 
-use cliproc::{cli, proc};
-use cliproc::{Cli, Flag, Help, Optional, Positional, Subcommand};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Help, Subcommand};
 
 use crate::commands::helps::search;
 use crate::core::catalog::Catalog;
@@ -23,19 +23,18 @@ pub struct Search {
 }
 
 impl Subcommand<Context> for Search {
-    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
-        cli.check_help(Help::default().text(search::HELP))?;
-        let command = Ok(Search {
-            downloaded: cli.check_flag(Flag::new("download").switch('d'))?,
-            cached: cli.check_flag(Flag::new("install").switch('i'))?,
-            hard_match: cli.check_flag(Flag::new("match"))?,
-            limit: cli.check_option(Optional::new("limit").value("num"))?,
+    fn interpret(cli: &mut Cli<Memory>) -> cli::Result<Self> {
+        cli.help(Help::with(search::HELP))?;
+        Ok(Search {
+            downloaded: cli.check(Arg::flag("download").switch('d'))?,
+            cached: cli.check(Arg::flag("install").switch('i'))?,
+            hard_match: cli.check(Arg::flag("match"))?,
+            limit: cli.get(Arg::option("limit").value("num"))?,
             keywords: cli
-                .check_option_all(Optional::new("keyword").value("term"))?
+                .get_all(Arg::option("keyword").value("term"))?
                 .unwrap_or(Vec::new()),
-            ip: cli.check_positional(Positional::new("ip"))?,
-        });
-        command
+            ip: cli.get(Arg::positional("ip"))?,
+        })
     }
 
     fn execute(self, c: &Context) -> proc::Result {

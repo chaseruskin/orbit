@@ -42,8 +42,8 @@ use crate::core::lockfile::LockEntry;
 use crate::core::lockfile::LockFile;
 use crate::util::graphmap::Node;
 
-use cliproc::{cli, proc};
-use cliproc::{Cli, Flag, Help, Optional, Subcommand};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Help, Subcommand};
 
 pub const BLUEPRINT_FILE: &str = "blueprint.tsv";
 pub const BLUEPRINT_DELIMITER: &str = "\t";
@@ -63,21 +63,21 @@ pub struct Plan {
 }
 
 impl Subcommand<Context> for Plan {
-    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
-        cli.check_help(Help::new().text(plan::HELP))?;
+    fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
+        cli.help(Help::with(plan::HELP))?;
         let command = Ok(Plan {
             // flags
-            force: cli.check_flag(Flag::new("force"))?,
-            only_lock: cli.check_flag(Flag::new("lock-only"))?,
-            all: cli.check_flag(Flag::new("all"))?,
-            clean: cli.check_flag(Flag::new("clean"))?,
-            list: cli.check_flag(Flag::new("list"))?,
+            force: cli.check(Arg::flag("force"))?,
+            only_lock: cli.check(Arg::flag("lock-only"))?,
+            all: cli.check(Arg::flag("all"))?,
+            clean: cli.check(Arg::flag("clean"))?,
+            list: cli.check(Arg::flag("list"))?,
             // options
-            top: cli.check_option(Optional::new("top").value("unit"))?,
-            bench: cli.check_option(Optional::new("bench").value("tb"))?,
-            plugin: cli.check_option(Optional::new("plugin").value("name"))?,
-            build_dir: cli.check_option(Optional::new("build-dir").value("dir"))?,
-            filesets: cli.check_option_all(Optional::new("fileset").value("key=glob"))?,
+            top: cli.get(Arg::option("top").value("unit"))?,
+            bench: cli.get(Arg::option("bench").value("tb"))?,
+            plugin: cli.get(Arg::option("plugin").value("name"))?,
+            build_dir: cli.get(Arg::option("build-dir").value("dir"))?,
+            filesets: cli.get_all(Arg::option("fileset").value("key=glob"))?,
         });
         command
     }

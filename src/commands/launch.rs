@@ -1,8 +1,8 @@
 use crate::core::context::Context;
 use crate::core::version::Version;
 
-use cliproc::{cli, proc};
-use cliproc::{Cli, Flag, Help, Optional, Subcommand};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 enum VersionField {
@@ -33,14 +33,13 @@ pub struct Launch {
 }
 
 impl Subcommand<Context> for Launch {
-    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
-        cli.check_help(Help::default().text(HELP))?;
-        let command = Ok(Launch {
-            ready: cli.check_flag(Flag::new("ready"))?,
-            install: cli.check_flag(Flag::new("install"))?,
-            next: cli.check_option(Optional::new("next").value("version"))?,
-        });
-        command
+    fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
+        cli.help(Help::with(HELP))?;
+        Ok(Launch {
+            ready: cli.check(Arg::flag("ready"))?,
+            install: cli.check(Arg::flag("install"))?,
+            next: cli.get(Arg::option("next").value("version"))?,
+        })
     }
 
     fn execute(self, _c: &Context) -> proc::Result {

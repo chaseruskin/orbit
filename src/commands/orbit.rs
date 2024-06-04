@@ -6,8 +6,8 @@ use crate::util::environment;
 use crate::util::prompt;
 use crate::util::sha256::Sha256Hash;
 
-use cliproc::{cli, proc};
-use cliproc::{Cli, Command, Flag, Optional, Positional, Subcommand};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Command, Subcommand};
 
 use std::env;
 
@@ -60,16 +60,16 @@ pub struct Orbit {
 }
 
 impl Command for Orbit {
-    fn construct(cli: &mut Cli) -> cli::Result<Self> {
-        cli.check_help(cliproc::Help::default().text(orbit::HELP))?;
+    fn interpret(cli: &mut Cli<Memory>) -> cli::Result<Self> {
+        cli.help(cliproc::Help::with(orbit::HELP))?;
         Ok(Orbit {
-            upgrade: cli.check_flag(Flag::new("upgrade"))?,
-            version: cli.check_flag(Flag::new("version"))?,
-            force: cli.check_flag(Flag::new("force"))?,
+            upgrade: cli.check(Arg::flag("upgrade"))?,
+            version: cli.check(Arg::flag("version"))?,
+            force: cli.check(Arg::flag("force"))?,
             cmode: cli
-                .check_option(Optional::new("color").value("when"))?
+                .get(Arg::option("color").value("when"))?
                 .unwrap_or_default(),
-            command: cli.check_command(Positional::new("command"))?,
+            command: cli.nest(Arg::subcommand("command"))?,
         })
     }
 
@@ -143,30 +143,30 @@ enum OrbitSubcommand {
 }
 
 impl Subcommand<Context> for OrbitSubcommand {
-    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
+    fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
         match cli
-            .match_command(&[
+            .select(&[
                 "help", "new", "search", "plan", "p", "build", "launch", "download", "install",
                 "get", "init", "tree", "show", "b", "env", "config", "remove", "read",
             ])?
             .as_ref()
         {
-            "get" => Ok(OrbitSubcommand::Get(Get::construct(cli)?)),
-            "help" => Ok(OrbitSubcommand::Help(Help::construct(cli)?)),
-            "new" => Ok(OrbitSubcommand::New(New::construct(cli)?)),
-            "search" => Ok(OrbitSubcommand::Search(Search::construct(cli)?)),
-            "p" | "plan" => Ok(OrbitSubcommand::Plan(Plan::construct(cli)?)),
-            "b" | "build" => Ok(OrbitSubcommand::Build(Build::construct(cli)?)),
-            "init" => Ok(OrbitSubcommand::Init(Init::construct(cli)?)),
-            "download" => Ok(OrbitSubcommand::Download(Download::construct(cli)?)),
-            "launch" => Ok(OrbitSubcommand::Launch(Launch::construct(cli)?)),
-            "install" => Ok(OrbitSubcommand::Install(Install::construct(cli)?)),
-            "tree" => Ok(OrbitSubcommand::Tree(Tree::construct(cli)?)),
-            "show" => Ok(OrbitSubcommand::Show(Show::construct(cli)?)),
-            "env" => Ok(OrbitSubcommand::Env(Env::construct(cli)?)),
-            "config" => Ok(OrbitSubcommand::Config(Config::construct(cli)?)),
-            "remove" => Ok(OrbitSubcommand::Uninstall(Remove::construct(cli)?)),
-            "read" => Ok(OrbitSubcommand::Read(Read::construct(cli)?)),
+            "get" => Ok(OrbitSubcommand::Get(Get::interpret(cli)?)),
+            "help" => Ok(OrbitSubcommand::Help(Help::interpret(cli)?)),
+            "new" => Ok(OrbitSubcommand::New(New::interpret(cli)?)),
+            "search" => Ok(OrbitSubcommand::Search(Search::interpret(cli)?)),
+            "p" | "plan" => Ok(OrbitSubcommand::Plan(Plan::interpret(cli)?)),
+            "b" | "build" => Ok(OrbitSubcommand::Build(Build::interpret(cli)?)),
+            "init" => Ok(OrbitSubcommand::Init(Init::interpret(cli)?)),
+            "download" => Ok(OrbitSubcommand::Download(Download::interpret(cli)?)),
+            "launch" => Ok(OrbitSubcommand::Launch(Launch::interpret(cli)?)),
+            "install" => Ok(OrbitSubcommand::Install(Install::interpret(cli)?)),
+            "tree" => Ok(OrbitSubcommand::Tree(Tree::interpret(cli)?)),
+            "show" => Ok(OrbitSubcommand::Show(Show::interpret(cli)?)),
+            "env" => Ok(OrbitSubcommand::Env(Env::interpret(cli)?)),
+            "config" => Ok(OrbitSubcommand::Config(Config::interpret(cli)?)),
+            "remove" => Ok(OrbitSubcommand::Uninstall(Remove::interpret(cli)?)),
+            "read" => Ok(OrbitSubcommand::Read(Read::interpret(cli)?)),
             _ => panic!("an unimplemented command was passed through!"),
         }
     }

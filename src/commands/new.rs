@@ -11,8 +11,8 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use cliproc::{cli, proc};
-use cliproc::{Cli, Flag, Help, Optional, Positional, Subcommand};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct New {
@@ -27,13 +27,12 @@ pub struct New {
 }
 
 impl Subcommand<Context> for New {
-    fn construct(cli: &mut Cli) -> cli::Result<Self> {
-        cli.check_help(Help::default().text(new::HELP))?;
-
+    fn interpret(cli: &mut Cli<Memory>) -> cli::Result<Self> {
+        cli.help(Help::with(new::HELP))?;
         Ok(Self {
-            is_ip: cli.check_flag(Flag::new("ip"))?,
-            name: cli.check_option(Optional::new("name"))?,
-            path: cli.require_positional(Positional::new("path"))?,
+            is_ip: cli.check(Arg::flag("ip"))?,
+            name: cli.get(Arg::option("name"))?,
+            path: cli.require(Arg::positional("path"))?,
         })
     }
 

@@ -9,8 +9,8 @@ use crate::core::manifest::FromFile;
 use crate::util::anyerror::AnyError;
 use colored::*;
 
-use cliproc::{cli, proc};
-use cliproc::{Cli, Flag, Help, Optional, Subcommand};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Entry(String, String);
@@ -36,21 +36,21 @@ pub struct Config {
 }
 
 impl Subcommand<Context> for Config {
-    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
-        cli.check_help(Help::default().text(config::HELP))?;
+    fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
+        cli.help(Help::with(config::HELP))?;
         Ok(Config {
             // Flags
-            global: cli.check_flag(Flag::new("global"))?,
-            local: cli.check_flag(Flag::new("local"))?,
+            global: cli.check(Arg::flag("global"))?,
+            local: cli.check(Arg::flag("local"))?,
             // Options
             append: cli
-                .check_option_all(Optional::new("append").value("key=value"))?
+                .get_all(Arg::option("append").value("key=value"))?
                 .unwrap_or(Vec::new()),
             set: cli
-                .check_option_all(Optional::new("set").value("key=value"))?
+                .get_all(Arg::option("set").value("key=value"))?
                 .unwrap_or(Vec::new()),
             unset: cli
-                .check_option_all(Optional::new("unset").value("key"))?
+                .get_all(Arg::option("unset").value("key"))?
                 .unwrap_or(Vec::new()),
         })
     }

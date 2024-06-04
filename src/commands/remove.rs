@@ -8,8 +8,8 @@ use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
 
-use cliproc::{cli, proc};
-use cliproc::{Cli, Flag, Help, Positional, Subcommand};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Remove {
@@ -21,12 +21,12 @@ pub struct Remove {
 }
 
 impl Subcommand<Context> for Remove {
-    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
-        cli.check_help(Help::default().text(remove::HELP))?;
+    fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
+        cli.help(Help::with(remove::HELP))?;
         Ok(Remove {
-            all: cli.check_flag(Flag::new("all"))?,
-            recurse: cli.check_flag(Flag::new("recurse"))?,
-            ip: cli.require_positional(Positional::new("ip"))?,
+            all: cli.check(Arg::flag("all"))?,
+            recurse: cli.check(Arg::flag("recurse"))?,
+            ip: cli.require(Arg::positional("ip"))?,
         })
     }
 

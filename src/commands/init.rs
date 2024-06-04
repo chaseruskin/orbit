@@ -11,8 +11,8 @@ use crate::util::filesystem::{self, ORBIT_IGNORE_FILE};
 use std::io::Write;
 use std::path::PathBuf;
 
-use cliproc::{cli, proc};
-use cliproc::{Cli, Flag, Help, Optional, Positional, Subcommand};
+use cliproc::{cli, proc, stage::*};
+use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Init {
@@ -22,13 +22,13 @@ pub struct Init {
 }
 
 impl Subcommand<Context> for Init {
-    fn construct<'c>(cli: &'c mut Cli) -> cli::Result<Self> {
-        cli.check_help(Help::default().text(init::HELP))?;
+    fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
+        cli.help(Help::with(init::HELP))?;
         Ok(Self {
-            force: cli.check_flag(Flag::new("force"))?,
-            name: cli.check_option(Optional::new("name"))?,
+            force: cli.check(Arg::flag("force"))?,
+            name: cli.get(Arg::option("name"))?,
             path: cli
-                .check_positional(Positional::new("path"))?
+                .get(Arg::positional("path"))?
                 .unwrap_or(PathBuf::from(".")),
         })
     }

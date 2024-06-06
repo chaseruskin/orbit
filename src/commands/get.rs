@@ -36,6 +36,7 @@ pub struct Get {
     signals: bool,
     component: bool,
     instance: bool,
+    library: bool,
     architectures: bool,
     json: bool,
     // info: bool,
@@ -49,6 +50,7 @@ impl Subcommand<Context> for Get {
             signals: cli.check(Arg::flag("signals").switch('s'))?,
             component: cli.check(Arg::flag("component").switch('c'))?,
             instance: cli.check(Arg::flag("instance").switch('i'))?,
+            library: cli.check(Arg::flag("library").switch('l'))?,
             architectures: cli.check(Arg::flag("architecture").switch('a'))?,
             json: cli.check(Arg::flag("json"))?,
             // info: cli.check(Arg::flag("info"))?, // @todo: implement
@@ -81,7 +83,7 @@ impl Subcommand<Context> for Get {
                 if let Some(slot) = lvl.get_install(spec.get_version()) {
                     slot.get_root().clone()
                 } else {
-                    return Err(AnyError(format!("IP {} does not exist in the cache", spec)))?;
+                    return Err(AnyError(format!("ip {} does not exist in the cache", spec)))?;
                 }
             } else {
                 return Err(AnyError(format!("no ip found in cache")))?;
@@ -146,12 +148,14 @@ impl Get {
             colored::control::set_override(false);
         }
 
+        // display library declaration line if displaying instance
+        if self.library == true {
+            println!("{}", interface::library_statement(&lib));
+        }
+
         // display component declaration
         if self.component == true {
             println!("{}", ent.into_component(&fmt));
-        // display library declaration line if displaying instance
-        } else if self.instance == true {
-            println!("{}", interface::library_statement(&lib));
         }
 
         // display signal declarations

@@ -50,6 +50,9 @@ table with the dependency ip and its version.
 `--instance, -i`  
       Display the unit's instantiation
 
+`--library, -l`  
+      Display the unit's library declaration
+
 `--architecture, -a`  
       Display the detected architectures
 

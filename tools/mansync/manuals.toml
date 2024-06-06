@@ -225,6 +225,7 @@ options."--json" = "Export the entity information as valid json"
 options."--component, -c" = "Display the component declaration"
 options."--signals, -s" = "Display the constant and signal declarations"
 options."--instance, -i" = "Display the unit's instantiation"
+options."--library, -l" = "Display the unit's library declaration"
 options."--architecture, -a" = "Display the detected architectures"
 options."--name <identifier>" = "Set the instance's identifier"
 
@@ -250,6 +251,7 @@ Options:
     --component, -c         display component declaration
     --signals,   -s         display constant and signal declarations
     --instance,  -i         display instantation
+    --library,   -l         display library declaration
     --architecture, -a      display detected architectures
     --name <identifier>     set the instance's identifier
 """

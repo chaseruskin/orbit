@@ -55,7 +55,7 @@ gates = "2.0.0"
 
 `orbit` generates VHDL code snippets able to be directly inserted into a new VHDL design for rapid reuse:
 ```
-$ orbit get and_gate --ip gates:2.0.0 --signals --instance
+$ orbit get and_gate --ip gates:2.0.0 --library --signals --instance
 ```
 ``` vhdl
 library gates;

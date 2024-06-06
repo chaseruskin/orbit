@@ -43,6 +43,9 @@ OPTIONS
     --instance, -i
         Display the unit's instantiation
 
+    --library, -l
+        Display the unit's library declaration
+
     --architecture, -a
         Display the detected architectures
 

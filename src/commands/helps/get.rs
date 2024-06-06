@@ -13,6 +13,7 @@ Options:
     --component, -c         display component declaration
     --signals,   -s         display constant and signal declarations
     --instance,  -i         display instantation
+    --library,   -l         display library declaration
     --architecture, -a      display detected architectures
     --name <identifier>     set the instance's identifier
 

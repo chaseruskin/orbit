@@ -190,6 +190,11 @@ current working ip are not automatically tracked as a dependency. In order to
 add an ip as a dependency to properly reference its source code files, edit
 the current working ip's manifest with a new entry under the <code>[dependencies]</code>
 table with the dependency ip and its version.</p>
+<p>An identifier prefix or suffix can be attached to the signal declarations and
+the instantiation's port connection signals by using <code>--signal-prefix</code> and 
+<code>--signal-suffix</code> respectively. These optional texts are treated as normal
+strings and are not checked for correct syntax. The same is true for using
+<code>--const-prefix</code> and <code>--const-suffix</code>.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;unit&gt;</code><br />
       Primary design unit identifier</p>
@@ -209,6 +214,10 @@ table with the dependency ip and its version.</p>
       Display the detected architectures</p>
 <p><code>--name &lt;identifier&gt;</code><br />
       Set the instance's identifier</p>
+<p><code>--signal-prefix &lt;value&gt;</code><br />
+      Prepend information to the instance's signals</p>
+<p><code>--signal-suffix &lt;value&gt;</code><br />
+      Append information to the instance's signals</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit get and_gate --ip gates:1.0.0 --component
 orbit get ram --ip mem:2.0.3 -csi

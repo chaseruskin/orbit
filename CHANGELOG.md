@@ -17,6 +17,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## 0.13.0 - unreleased
 
+### Features
+- Adds ability to rename instantiation port connection signals with prefixes and suffixes using `--signal-prefix` and `--signal-suffix` options for `get` command
+
 ### Changes
 - Displaying library declaration for hdl unit now requires `--library` flag for `get` command
 - Uses `cliproc` as cli dependency (deprecates `clif`)

@@ -2,6 +2,7 @@ use super::format::VhdlFormat;
 use super::highlight::*;
 use super::token::{identifier::Identifier, ToColor};
 use colored::ColoredString;
+use colored::Colorize;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde_derive::Serialize;
 
@@ -380,7 +381,13 @@ impl InterfaceDeclaration {
     /// Creates a declaration string to be copied into architecture declaration parts.
     ///
     /// Note: `offset` is used for padding after the identifier string and before ':'.
-    fn into_declaration_string(&self, def_keyword: &Keyword, offset: usize) -> ColorVec {
+    fn into_declaration_string(
+        &self,
+        def_keyword: &Keyword,
+        offset: usize,
+        prefix: &str,
+        suffix: &str,
+    ) -> ColorVec {
         let mut result = ColorVec::new();
         // keyword
         result.push_color(
@@ -390,8 +397,12 @@ impl InterfaceDeclaration {
                 .to_color(),
         );
         result.push_str(" ");
+        // identifier prefix
+        result.push_color(color(&prefix.to_string(), SIGNAL_DEC_IDENTIFIER));
         // identifier
         result.push_color(color(&self.identifier.to_string(), SIGNAL_DEC_IDENTIFIER));
+        // identifier suffix
+        result.push_color(color(&suffix.to_string(), SIGNAL_DEC_IDENTIFIER));
         // whitespace
         if offset > 0 {
             result.push_whitespace(offset);
@@ -414,14 +425,16 @@ impl InterfaceDeclaration {
     }
 
     /// Creates an instantiation line to be copied into an architecture region.
-    fn into_instance_string(&self, offset: usize) -> ColorVec {
+    fn into_instance_string(&self, offset: usize, prefix: &str, suffix: &str) -> ColorVec {
         let mut result = ColorVec::new();
 
         result.push_color(color(&self.identifier.to_string(), INSTANCE_LHS_IDENTIFIER));
         result.push_whitespace(offset);
         result.push_color(Delimiter::Arrow.to_color());
         result.push_str(" ");
+        result.push_color(prefix.to_string().normal());
         result.push_color(self.identifier.to_color());
+        result.push_color(suffix.to_string().normal());
         result
     }
 }
@@ -586,7 +599,13 @@ impl InterfaceDeclarations {
         result
     }
 
-    pub fn to_declaration_part_string(&self, def_keyword: Keyword, fmt: &VhdlFormat) -> ColorVec {
+    pub fn to_declaration_part_string(
+        &self,
+        def_keyword: Keyword,
+        fmt: &VhdlFormat,
+        prefix: &str,
+        suffix: &str,
+    ) -> ColorVec {
         let mut result = ColorVec::new();
         // auto-align by first finding longest offset needed
         let offset = match fmt.is_auto_type_aligned() {
@@ -599,14 +618,25 @@ impl InterfaceDeclarations {
                 true => offset - port.identifier.len() + fmt.get_type_offset() as usize,
                 false => offset,
             };
-            result.append(port.into_declaration_string(&def_keyword, port_offset));
+            result.append(port.into_declaration_string(
+                &def_keyword,
+                port_offset,
+                &prefix,
+                &suffix,
+            ));
             result.push_color(Delimiter::Terminator.to_color());
             result.push_str("\n");
         }
         result
     }
 
-    pub fn to_instantiation_part(&self, fmt: &VhdlFormat, tab_count: usize) -> ColorVec {
+    pub fn to_instantiation_part(
+        &self,
+        fmt: &VhdlFormat,
+        tab_count: usize,
+        prefix: &str,
+        suffix: &str,
+    ) -> ColorVec {
         // auto-align by first finding longest offset needed
         let offset = match fmt.is_auto_mapping_aligned() {
             true => self.longest_identifier(),
@@ -634,7 +664,9 @@ impl InterfaceDeclarations {
                 true => offset - port.identifier.len() + fmt.get_mapping_offset() as usize,
                 false => offset,
             };
-            result.append(port.into_instance_string(port_offset));
+
+            // append the actual signal
+            result.append(port.into_instance_string(port_offset, &prefix, &suffix));
         }
         result.push_str("\n");
         if fmt.get_tab_size() > 0 && tab_count > 1 {

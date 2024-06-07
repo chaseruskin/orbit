@@ -39,6 +39,11 @@ pub struct Get {
     library: bool,
     architectures: bool,
     json: bool,
+    signal_prefix: String,
+    signal_suffix: String,
+    // @note: not done yet... requires more work with detecting generics in the datatype of the signals
+    // const_prefix: String,
+    // const_suffix: String,
     // info: bool,
     name: Option<Identifier>,
 }
@@ -54,6 +59,18 @@ impl Subcommand<Context> for Get {
             architectures: cli.check(Arg::flag("architecture").switch('a'))?,
             json: cli.check(Arg::flag("json"))?,
             // info: cli.check(Arg::flag("info"))?, // @todo: implement
+            signal_prefix: cli
+                .get(Arg::option("signal-prefix").value("value"))?
+                .unwrap_or_default(),
+            signal_suffix: cli
+                .get(Arg::option("signal-suffix").value("value"))?
+                .unwrap_or_default(),
+            // const_prefix: cli
+            //     .get(Arg::option("const-prefix").value("value"))?
+            //     .unwrap_or_default(),
+            // const_suffix: cli
+            //     .get(Arg::option("const-suffix").value("value"))?
+            //     .unwrap_or_default(),
             ip: cli.get(Arg::option("ip").value("spec"))?,
             name: cli.get(Arg::option("name").value("identifier"))?,
             unit: cli.require(Arg::positional("unit"))?,
@@ -160,11 +177,11 @@ impl Get {
 
         // display signal declarations
         if self.signals == true {
-            let constants = ent.into_constants(&fmt);
+            let constants = ent.into_constants(&fmt, "", "");
             if constants.is_empty() == false {
                 println!("{}", constants);
             }
-            let signals = ent.into_signals(&fmt);
+            let signals = ent.into_signals(&fmt, &self.signal_prefix, &self.signal_suffix);
             if signals.is_empty() == false {
                 println!("{}", signals);
             }
@@ -179,7 +196,18 @@ impl Get {
 
         // display instantiation code
         if self.instance == true {
-            println!("{}", ent.into_instance(&self.name, lib, &fmt));
+            println!(
+                "{}",
+                ent.into_instance(
+                    &self.name,
+                    lib,
+                    &fmt,
+                    &self.signal_prefix,
+                    &self.signal_suffix,
+                    "",
+                    "",
+                )
+            );
         }
 
         // print as json data

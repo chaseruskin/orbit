@@ -16,6 +16,8 @@ Options:
     --library,   -l         display library declaration
     --architecture, -a      display detected architectures
     --name <identifier>     set the instance's identifier
+    --signal-prefix <value> prepend information to the instance's signals
+    --signal-suffix <value> append information to the instance's signals
 
 Use 'orbit help get' to read more about the command.
 "#;

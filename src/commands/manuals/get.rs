@@ -23,6 +23,12 @@ DESCRIPTION
     add an ip as a dependency to properly reference its source code files, edit
     the current working ip's manifest with a new entry under the '[dependencies]'
     table with the dependency ip and its version.
+    
+    An identifier prefix or suffix can be attached to the signal declarations and
+    the instantiation's port connection signals by using '--signal-prefix' and 
+    '--signal-suffix' respectively. These optional texts are treated as normal
+    strings and are not checked for correct syntax. The same is true for using
+    '--const-prefix' and '--const-suffix'.
 
 OPTIONS
     <unit>
@@ -51,6 +57,12 @@ OPTIONS
 
     --name <identifier>
         Set the instance's identifier
+
+    --signal-prefix <value>
+        Prepend information to the instance's signals
+
+    --signal-suffix <value>
+        Append information to the instance's signals
 
 EXAMPLES
     orbit get and_gate --ip gates:1.0.0 --component

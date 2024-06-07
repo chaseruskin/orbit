@@ -139,18 +139,18 @@ impl Entity {
     }
 
     /// Generates VHDL signal declaration code from the entity data.
-    pub fn into_signals(&self, fmt: &VhdlFormat) -> String {
+    pub fn into_signals(&self, fmt: &VhdlFormat, prefix: &str, suffix: &str) -> String {
         self.ports
             .0
-            .to_declaration_part_string(Keyword::Signal, &fmt)
+            .to_declaration_part_string(Keyword::Signal, &fmt, &prefix, &suffix)
             .to_string()
     }
 
     /// Generates VHDL constant declaration code from the entity data.
-    pub fn into_constants(&self, fmt: &VhdlFormat) -> String {
+    pub fn into_constants(&self, fmt: &VhdlFormat, prefix: &str, suffix: &str) -> String {
         self.generics
             .0
-            .to_declaration_part_string(Keyword::Constant, &fmt)
+            .to_declaration_part_string(Keyword::Constant, &fmt, &prefix, &suffix)
             .to_string()
     }
 
@@ -160,6 +160,10 @@ impl Entity {
         inst: &Option<Identifier>,
         library: Option<Identifier>,
         fmt: &VhdlFormat,
+        signal_prefix: &str,
+        signal_suffix: &str,
+        const_prefix: &str,
+        const_suffix: &str,
     ) -> String {
         let prefix = match library {
             Some(lib) => format!(
@@ -211,7 +215,7 @@ impl Entity {
                 &self
                     .generics
                     .0
-                    .to_instantiation_part(&fmt, mapping_depth)
+                    .to_instantiation_part(&fmt, mapping_depth, &const_prefix, &const_suffix)
                     .to_string(),
             )
         }
@@ -230,7 +234,7 @@ impl Entity {
                 &self
                     .ports
                     .0
-                    .to_instantiation_part(&fmt, mapping_depth)
+                    .to_instantiation_part(&fmt, mapping_depth, &signal_prefix, &signal_suffix)
                     .to_string(),
             )
         }

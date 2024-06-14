@@ -15,7 +15,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.13.0 - unreleased
+## 0.13.0
 
 ### Features
 - Adds ability to rename instantiation port connection signals with prefixes and suffixes using `--signal-prefix` and `--signal-suffix` options for `get` command

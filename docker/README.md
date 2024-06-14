@@ -1,4 +1,4 @@
-# `docker`
+# /docker
 
 This folder contains Dockerfiles to automate the creation of docker images to be used with Orbit.
 

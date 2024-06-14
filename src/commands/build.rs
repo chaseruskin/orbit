@@ -172,7 +172,7 @@ impl Build {
                     .args
                     .iter()
                     .fold(String::new(), |x, y| x + "\"" + &y + "\" ");
-                println!("info: Running: {} {}", cmd, s);
+                println!("info: running: {} {}", cmd, s);
             }
             let mut proc = crate::util::filesystem::invoke(
                 dir,

@@ -155,7 +155,7 @@ pub trait Process {
             let s = args
                 .iter()
                 .fold(String::new(), |x, y| x + "\"" + &y + "\" ");
-            println!("info: Running: {} {}", command, s);
+            println!("info: running: {} {}", command, s);
         }
         let mut proc = filesystem::invoke(
             dir,

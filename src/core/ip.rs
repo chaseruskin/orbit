@@ -470,6 +470,13 @@ impl IpSpec {
     pub fn get_version(&self) -> &Version {
         &self.1
     }
+
+    pub fn to_partial_ip_spec(&self) -> PartialIpSpec {
+        PartialIpSpec(
+            self.0.clone(),
+            AnyVersion::Specific(self.1.to_partial_version()),
+        )
+    }
 }
 
 impl FromStr for IpSpec {

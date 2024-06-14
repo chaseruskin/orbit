@@ -23,6 +23,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ### Changes
 - Displaying library declaration for hdl unit now requires `--library` flag for `get` command
 - Uses `cliproc` as cli dependency (deprecates `clif`)
+- Allows partial versions for downloading ip when `--url` is supplied for `orbit install`
 
 ## 0.12.0
 

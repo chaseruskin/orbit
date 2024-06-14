@@ -99,11 +99,11 @@ impl IpArchive {
             None => match repairing {
                 true => panic!("Repairing function failed"),
                 false => {
-                    println!("info: {}", "Failed to parse downloaded file's header bytes; running repair function ...");
+                    println!("info: {}", "failed to parse downloaded file's header bytes; running repair function ...");
                     let repaired_bytes = Self::repair(archive, &path)?;
                     match Self::parse(repaired_bytes, true, &path) {
                         Ok(rp) => {
-                            println!("info: {}", "Repair successful");
+                            println!("info: {}", "repair successful");
                             return Ok(rp);
                         }
                         Err(e) => return Err(e)?,
@@ -119,11 +119,11 @@ impl IpArchive {
             None => match repairing {
                 true => panic!("Repairing function failed"),
                 false => {
-                    println!("info: {}", "Failed to parse downloaded file's header bytes; running repair function ...");
+                    println!("info: {}", "failed to parse downloaded file's header bytes; running repair function ...");
                     let repaired_bytes = Self::repair(archive, &path)?;
                     match Self::parse(repaired_bytes, true, &path) {
                         Ok(rp) => {
-                            println!("info: {}", "Repair successful");
+                            println!("info: {}", "repair successful");
                             return Ok(rp);
                         }
                         Err(e) => return Err(e)?,

@@ -80,7 +80,7 @@ impl Subcommand<Context> for Remove {
             }
             None => match self.all {
                 true => {
-                    println!("info: ip {} already removed from cache", self.ip);
+                    println!("info: ip {} is already removed from the cache", self.ip);
                 }
                 false => {
                     return Err(AnyError(format!(
@@ -115,7 +115,7 @@ impl Subcommand<Context> for Remove {
                         .as_ref(),
                 ),
             )?;
-            println!("info: Removed ip {} from downloads", ip_spec);
+            println!("info: removed ip {} from downloads", ip_spec);
         }
 
         self.run()
@@ -134,7 +134,7 @@ impl Remove {
 
         // delete the project from the cache (default behavior)
         fs::remove_dir_all(target.get_root())?;
-        println!("info: Removed ip {} from the cache", ip_spec);
+        println!("info: removed ip {} from the cache", ip_spec);
         Ok(())
     }
 

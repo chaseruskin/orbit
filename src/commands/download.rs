@@ -4,6 +4,7 @@ use crate::core::catalog::DownloadSlot;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::ip::IpSpec;
+use crate::core::ip::PartialIpSpec;
 use crate::core::iparchive::IpArchive;
 use crate::core::lockfile::LockEntry;
 use crate::core::lockfile::LockFile;
@@ -160,7 +161,7 @@ impl Download {
     /// the downloads folder.
     pub fn download(
         vtable: &mut VariableTable,
-        spec: &IpSpec,
+        spec: &PartialIpSpec,
         src: &Source,
         queue: Option<&PathBuf>,
         download_dir: &PathBuf,
@@ -219,7 +220,7 @@ impl Download {
 
             let processed_src = src.clone().replace_vars_in_url(&vtable);
 
-            println!("info: Downloading {} ...", spec);
+            println!("info: downloading {} ...", spec);
             if let Err(err) = Protocol::single_download(processed_src.get_url(), &queue) {
                 fs::remove_dir_all(queue)?;
                 return Err(err);
@@ -238,7 +239,7 @@ impl Download {
     pub fn move_to_download_dir(
         queue: &PathBuf,
         downloads: &PathBuf,
-        spec: &IpSpec,
+        spec: &PartialIpSpec,
     ) -> Result<(), Fault> {
         // code is in the queue now, move it to the downloads/ folder
 
@@ -247,13 +248,23 @@ impl Download {
             // check if this is our IP
             match Ip::load(entry.parent().unwrap().to_path_buf(), true) {
                 Ok(temp) => {
+                    let manifest_version =
+                        temp.get_man().get_ip().get_version().to_partial_version();
                     // move to downloads
                     if temp.get_man().get_ip().get_name() == spec.get_name()
-                        && temp.get_man().get_ip().get_version() == spec.get_version()
+                        && manifest_version.in_domain(
+                            spec.get_version()
+                                .as_specific()
+                                .unwrap_or(&manifest_version),
+                        )
                     {
+                        println!("info: found ip {}", temp.get_man().get_ip().into_ip_spec());
                         // zip the project to the downloads directory
-                        let download_slot_name =
-                            DownloadSlot::new(spec.get_name(), spec.get_version(), temp.get_uuid());
+                        let download_slot_name = DownloadSlot::new(
+                            spec.get_name(),
+                            temp.get_man().get_ip().get_version(),
+                            temp.get_uuid(),
+                        );
                         let full_download_path = downloads.join(&download_slot_name.as_ref());
                         IpArchive::write(&temp, &full_download_path)?;
                         return Ok(());
@@ -263,7 +274,10 @@ impl Download {
             }
         }
         // could not find the IP
-        Err(AnyError(format!("Failed to detect/load the IP's manifest")))?
+        Err(AnyError(format!(
+            "failed to find a manifest for ip {}",
+            spec
+        )))?
     }
 
     pub fn download_all(
@@ -277,21 +291,21 @@ impl Download {
     ) -> Result<(), Fault> {
         match downloads.len() {
             0 => {
-                println!("info: No missing downloads");
+                println!("info: no missing downloads");
                 return Ok(());
             }
             1 => {
-                println!("info: Downloading 1 package ...")
+                println!("info: downloading 1 package ...")
             }
             _ => {
-                println!("info: Downloading {} packages ...", downloads.len())
+                println!("info: downloading {} packages ...", downloads.len())
             }
         }
         let mut vtable = vtable;
         let mut results = downloads.iter().filter_map(|e| {
             match Self::download(
                 &mut vtable,
-                &e.0,
+                &e.0.to_partial_ip_spec(),
                 &e.1,
                 queue,
                 &download_dir,

@@ -305,7 +305,7 @@ impl Subcommand<Context> for Install {
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
         if target.can_use_lock() == true && self.force == false {
-            println!("info: {}", "Reading dependencies from lockfile ...");
+            println!("info: {}", "reading dependencies from lockfile ...");
             let env = Environment::new()
                 // read config.toml for setting any env variables
                 .from_config(c.get_config())?;
@@ -345,7 +345,11 @@ impl Subcommand<Context> for Install {
             Download::move_to_download_dir(
                 &target.get_root(),
                 c.get_downloads_path(),
-                &target.get_man().get_ip().into_ip_spec(),
+                &target
+                    .get_man()
+                    .get_ip()
+                    .into_ip_spec()
+                    .to_partial_ip_spec(),
             )?;
         }
 
@@ -356,25 +360,6 @@ impl Subcommand<Context> for Install {
 
 impl Install {
     fn download_target_from_url(&self, c: &Context, url: &str) -> Result<(), Fault> {
-        // verify a whole spec is provided
-        let spec = match &self.ip {
-            Some(spec) => match spec.as_ip_spec() {
-                Some(full_spec) => full_spec,
-                None => {
-                    return Err(AnyError(format!(
-                        "{}",
-                        "A complete ip specification is required when providing a url"
-                    )))?
-                }
-            },
-            None => {
-                return Err(AnyError(format!(
-                    "{}",
-                    "A complete ip specification is required when providing a url"
-                )))?
-            }
-        };
-
         let env = Environment::new()
             // read config.toml for setting any env variables
             .from_config(c.get_config())?;
@@ -391,7 +376,7 @@ impl Install {
         // fetch from the internet
         Download::download(
             &mut vtable,
-            &spec,
+            &self.ip.as_ref().unwrap(),
             &target_source,
             None,
             c.get_downloads_path(),
@@ -440,7 +425,7 @@ impl Install {
         let version = src.get_man().get_ip().get_version();
         let target = src.get_man().get_ip().get_name();
         let ip_spec = src.get_man().get_ip().into_ip_spec();
-        println!("info: Installing ip {} ...", &ip_spec);
+        println!("info: installing ip {} ...", &ip_spec);
 
         // perform sha256 on the temporary cloned directory
         let checksum = Ip::compute_checksum(&dest);
@@ -461,7 +446,7 @@ impl Install {
                     fs::remove_dir_all(dest)?;
                     return Ok(false);
                 } else {
-                    println!("info: Reinstalling ip {} due to bad checksum ...", ip_spec);
+                    println!("info: reinstalling ip {} due to bad checksum ...", ip_spec);
 
                     // blow directory up for re-install
                     std::fs::remove_dir_all(&cache_slot)?;

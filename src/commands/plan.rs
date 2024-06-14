@@ -216,7 +216,7 @@ pub fn download_missing_deps(
                     // fetch from the internet
                     Download::download(
                         &mut vtable,
-                        &entry.to_ip_spec(),
+                        &entry.to_ip_spec().to_partial_ip_spec(),
                         src,
                         None,
                         catalog.get_downloads_path(),
@@ -517,12 +517,12 @@ impl Plan {
             lock.save_to_disk(target.get_root())?;
 
             if target.get_lock() != &lock {
-                println!("info: Lockfile updated");
+                println!("info: lockfile updated");
             } else {
-                println!("info: Lockfile experienced no changes")
+                println!("info: lockfile experienced no changes")
             }
         } else {
-            println!("info: Lockfile experienced no changes");
+            println!("info: lockfile experienced no changes");
         }
         Ok(())
     }
@@ -1143,7 +1143,7 @@ impl Plan {
             plug,
         )?;
         // create a blueprint file
-        println!("info: Blueprint created at: {}", blueprint_path.display());
+        println!("info: blueprint created at: {}", blueprint_path.display());
         Ok(())
     }
 

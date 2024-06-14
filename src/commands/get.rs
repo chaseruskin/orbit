@@ -140,6 +140,14 @@ impl Get {
             }
         };
 
+        // determine if default print should appear
+        let default_output = self.architectures == false
+            && self.instance == false
+            && self.json == false
+            && self.signals == false
+            && self.component == false
+            && self.library == false;
+
         // add to dependency list if within a ip and `self.add` is `true`
         // if let Some(mut cur_ip) = current_ip {
         //     // verify it is the not the same package! and we explicitly want to add
@@ -171,7 +179,7 @@ impl Get {
         }
 
         // display component declaration
-        if self.component == true {
+        if self.component == true || default_output == true {
             println!("{}", ent.into_component(&fmt));
         }
 

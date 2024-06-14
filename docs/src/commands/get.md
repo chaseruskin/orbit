@@ -36,6 +36,9 @@ the instantiation's port connection signals by using `--signal-prefix` and
 strings and are not checked for correct syntax. The same is true for using
 `--const-prefix` and `--const-suffix`.
 
+When no output options are specified, this command by default will display the
+entity's component declaration.
+
 ## __OPTIONS__
 
 `<unit>`  

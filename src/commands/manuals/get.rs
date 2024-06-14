@@ -29,6 +29,9 @@ DESCRIPTION
     '--signal-suffix' respectively. These optional texts are treated as normal
     strings and are not checked for correct syntax. The same is true for using
     '--const-prefix' and '--const-suffix'.
+    
+    When no output options are specified, this command by default will display the
+    entity's component declaration.
 
 OPTIONS
     <unit>

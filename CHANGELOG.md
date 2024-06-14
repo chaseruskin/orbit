@@ -24,6 +24,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Displaying library declaration for hdl unit now requires `--library` flag for `get` command
 - Uses `cliproc` as cli dependency (deprecates `clif`)
 - Allows partial versions for downloading ip when `--url` is supplied for `orbit install`
+- Default behavior for `orbit get` is to new display component declaration when no other output options are specified
 
 ## 0.12.0
 

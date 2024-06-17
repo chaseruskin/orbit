@@ -221,8 +221,7 @@ table with the dependency ip and its version.
 An identifier prefix or suffix can be attached to the signal declarations and
 the instantiation's port connection signals by using `--signal-prefix` and 
 `--signal-suffix` respectively. These optional texts are treated as normal
-strings and are not checked for correct syntax. The same is true for using
-`--const-prefix` and `--const-suffix`.
+strings and are not checked for correct syntax.
 
 When no output options are specified, this command by default will display the
 entity's component declaration.
@@ -231,10 +230,10 @@ entity's component declaration.
 args."<unit>" = "Primary design unit identifier"
 options."--ip <spec>" = "The ip that contains the requested unit"
 options."--json" = "Export the entity information as valid json"
+options."--library, -l" = "Display the unit's library declaration"
 options."--component, -c" = "Display the component declaration"
 options."--signals, -s" = "Display the constant and signal declarations"
 options."--instance, -i" = "Display the unit's instantiation"
-options."--library, -l" = "Display the unit's library declaration"
 options."--architecture, -a" = "Display the detected architectures"
 options."--name <identifier>" = "Set the instance's identifier"
 options."--signal-prefix <value>" = "Prepend information to the instance's signals"
@@ -259,10 +258,10 @@ Args:
 Options:
     --ip <spec>             ip to reference the unit from
     --json                  export the entity information as valid json
+    --library,   -l         display library declaration
     --component, -c         display component declaration
     --signals,   -s         display constant and signal declarations
     --instance,  -i         display instantation
-    --library,   -l         display library declaration
     --architecture, -a      display detected architectures
     --name <identifier>     set the instance's identifier
     --signal-prefix <value> prepend information to the instance's signals

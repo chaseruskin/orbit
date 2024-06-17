@@ -12,7 +12,7 @@ use super::{
 
 #[derive(Debug, PartialEq, Serialize)]
 pub struct Entity {
-    #[serde(rename = "entity")]
+    #[serde(rename = "identifier")]
     name: Identifier,
     generics: Generics,
     ports: Ports,
@@ -21,6 +21,7 @@ pub struct Entity {
     refs: IdentifierList,
     #[serde(skip_serializing)]
     pos: Position,
+    language: String,
 }
 
 impl Entity {
@@ -33,6 +34,7 @@ impl Entity {
             architectures: Vec::new(),
             refs: LinkedList::new(),
             pos: Position::new(),
+            language: String::from("vhdl"),
         }
     }
 
@@ -46,6 +48,7 @@ impl Entity {
             architectures: Vec::new(),
             refs: LinkedList::new(),
             pos: Position::new(),
+            language: String::from("vhdl"),
         }
     }
 
@@ -285,6 +288,7 @@ impl Entity {
             ports: Ports(InterfaceDeclarations::from_double_listed_tokens(ports)),
             refs: entity_refs,
             pos: pos,
+            language: String::from("vhdl"),
         })
     }
 

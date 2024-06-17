@@ -27,8 +27,7 @@ DESCRIPTION
     An identifier prefix or suffix can be attached to the signal declarations and
     the instantiation's port connection signals by using '--signal-prefix' and 
     '--signal-suffix' respectively. These optional texts are treated as normal
-    strings and are not checked for correct syntax. The same is true for using
-    '--const-prefix' and '--const-suffix'.
+    strings and are not checked for correct syntax.
     
     When no output options are specified, this command by default will display the
     entity's component declaration.
@@ -43,6 +42,9 @@ OPTIONS
     --json
         Export the entity information as valid json
 
+    --library, -l
+        Display the unit's library declaration
+
     --component, -c
         Display the component declaration
 
@@ -51,9 +53,6 @@ OPTIONS
 
     --instance, -i
         Display the unit's instantiation
-
-    --library, -l
-        Display the unit's library declaration
 
     --architecture, -a
         Display the detected architectures

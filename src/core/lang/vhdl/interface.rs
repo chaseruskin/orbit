@@ -276,7 +276,7 @@ impl Serialize for Expr {
 pub struct InterfaceDeclaration {
     #[serde(skip_serializing)]
     initial_keyword: Option<Keyword>,
-    #[serde(rename = "name")]
+    #[serde(rename = "identifier")]
     identifier: Identifier,
     #[serde(flatten)]
     mode: Mode,

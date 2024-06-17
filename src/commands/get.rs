@@ -360,10 +360,10 @@ mod test {
     #[test]
     fn serialize_entity() {
         const EXPECTED_STR: &str = r#"{
-  "entity": "or_gate",
+  "identifier": "or_gate",
   "generics": [
     {
-      "name": "N",
+      "identifier": "N",
       "mode": "in",
       "type": "positive",
       "default": "8"
@@ -371,19 +371,19 @@ mod test {
   ],
   "ports": [
     {
-      "name": "a",
+      "identifier": "a",
       "mode": "in",
       "type": "std_logic_vector(N-1 downto 0)",
       "default": null
     },
     {
-      "name": "b",
+      "identifier": "b",
       "mode": "in",
       "type": "std_logic_vector(N-1 downto 0)",
       "default": null
     },
     {
-      "name": "q",
+      "identifier": "q",
       "mode": "out",
       "type": "std_logic_vector(N-1 downto 0)",
       "default": null
@@ -392,7 +392,8 @@ mod test {
   "architectures": [
     "rtl",
     "other"
-  ]
+  ],
+  "language": "vhdl"
 }"#;
         let ent = Get::fetch_entity(
             &Identifier::from_str("or_gate").unwrap(),

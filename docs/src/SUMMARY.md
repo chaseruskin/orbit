@@ -41,6 +41,7 @@
     - [Blueprint](./reference/blueprint.md)
     - [Environment Variables](./reference/environment_variables.md)
     - [Configuration](./reference/configuration.md)
+    - [Exporting Interfaces](./reference/exporting_interfaces.md)
     - [Command Line](./reference/command_line.md)
 
 - [Commands](./commands/commands.md)

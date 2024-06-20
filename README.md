@@ -95,6 +95,8 @@ VHDL-SIM	work	/users/chase/projects/cpu/sim/top_tb.vhd
 
 - Docker images of `orbit` are available for easy integration into new or existing CI/CD pipelines.
 
+- A GitHub Action is available to install orbit for GitHub workflows using [`cdotrus/setup-orbit`](https://github.com/cdotrus/setup-orbit.git).
+
 - Reproducible builds are achieved with checksums and automatic handling of a lockfile `Orbit.lock`. 
 
 - Namespace collisions, a problem inherent to VHDL and not resolved in many backend tools, is solved through a custom algorithm called [_dynamic symbol transformation_](https://cdotrus.github.io/orbit/topic/dst.html).

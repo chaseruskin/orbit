@@ -12,20 +12,20 @@ jobs:
     runs-on: macos-13
     steps:
     - name: Fetch repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Setup python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: 3.x
 
     - name: Download package
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: orbit-${{ inputs.version }}-x86_64-macos
 
     - name: Download checksums
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: orbit-${{ inputs.version }}-checksums
       
@@ -63,20 +63,20 @@ jobs:
     runs-on: macos-latest
     steps:
     - name: Fetch repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Setup python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: 3.x
 
     - name: Download package
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: orbit-${{ inputs.version }}-aarch64-macos
 
     - name: Download checksums
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: orbit-${{ inputs.version }}-checksums
       
@@ -114,20 +114,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Fetch repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Setup python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: 3.x
 
     - name: Download package
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: orbit-${{ inputs.version }}-x86_64-linux
 
     - name: Download checksums
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: orbit-${{ inputs.version }}-checksums
 
@@ -162,15 +162,15 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Fetch repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Setup python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: 3.x
 
     - name: Download package
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: orbit-${{ inputs.version }}-x86_64-windows
 

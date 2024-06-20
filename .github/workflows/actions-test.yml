@@ -3,7 +3,7 @@ on:
   workflow_call:
 
 jobs:
-  build:
+  setup-orbit:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-13, macos-latest]

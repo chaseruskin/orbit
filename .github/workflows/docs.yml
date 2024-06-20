@@ -10,10 +10,10 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.x
 
@@ -22,10 +22,9 @@ jobs:
           pip install toml
 
       - name: Setup mdbook
-        uses: peaceiris/actions-mdbook@v1
+        uses: peaceiris/actions-mdbook@v2
         with:
-          mdbook-version: '0.4.31'
-          # mdbook-version: 'latest'
+          mdbook-version: 'latest'
 
       - name: Update manual pages
         run: python ./tools/mansync/mangen.py
@@ -37,7 +36,7 @@ jobs:
         run: mdbook build ./docs/
 
       - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         if: ${{ github.ref == 'refs/heads/trunk' }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

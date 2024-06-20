@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js light">
+<html lang="en" class="light" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -14,7 +14,7 @@
         </style>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#ffffff">
 
         <link rel="shortcut icon" href="../favicon.png">
         <link rel="stylesheet" href="../css/variables.css">
@@ -34,7 +34,7 @@
         <!-- Custom theme stylesheets -->
 
     </head>
-    <body>
+    <body class="sidebar-visible no-js">
     <div id="body-container">
         <!-- Provide site root to javascript -->
         <script>
@@ -64,31 +64,38 @@
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             var html = document.querySelector('html');
-            html.classList.remove('no-js')
             html.classList.remove('light')
             html.classList.add(theme);
-            html.classList.add('js');
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
         </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
-            var html = document.querySelector('html');
+            var body = document.querySelector('body');
             var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
             } else {
                 sidebar = 'hidden';
             }
-            html.classList.remove('sidebar-visible');
-            html.classList.add("sidebar-" + sidebar);
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
                 <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../starting/starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../starting/installing.html"><strong aria-hidden="true">1.1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="../starting/upgrading.html"><strong aria-hidden="true">1.2.</strong> Upgrading</a></li></ol></li><li class="chapter-item expanded "><a href="../tutorials/tutorials.html"><strong aria-hidden="true">2.</strong> Tutorials</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../tutorials/first_project.html"><strong aria-hidden="true">2.1.</strong> First Project: Gates</a></li><li class="chapter-item expanded "><a href="../tutorials/dependencies.html"><strong aria-hidden="true">2.2.</strong> Dependencies: Half adder</a></li><li class="chapter-item expanded "><a href="../tutorials/gates_revisited.html"><strong aria-hidden="true">2.3.</strong> Gates: Revisited</a></li><li class="chapter-item expanded "><a href="../tutorials/final_project.html"><strong aria-hidden="true">2.4.</strong> Final Project: Full adder</a></li></ol></li><li class="chapter-item expanded "><a href="../user/user.html"><strong aria-hidden="true">3.</strong> User Guide</a></li><li class="chapter-item expanded "><a href="../topic/topic.html"><strong aria-hidden="true">4.</strong> Topic Guide</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../topic/concept.html"><strong aria-hidden="true">4.1.</strong> Key Concepts</a></li><li class="chapter-item expanded "><a href="../topic/catalog.html"><strong aria-hidden="true">4.2.</strong> Catalog</a></li><li class="chapter-item expanded "><a href="../topic/1_ip.html"><strong aria-hidden="true">4.3.</strong> IP</a></li><li class="chapter-item expanded "><a href="../topic/5_orbitlock.html"><strong aria-hidden="true">4.4.</strong> Orbit.lock</a></li><li class="chapter-item expanded "><a href="../topic/orbitignore.html"><strong aria-hidden="true">4.5.</strong> .orbitignore</a></li><li class="chapter-item expanded "><a href="../topic/planning.html"><strong aria-hidden="true">4.6.</strong> Planning</a></li><li class="chapter-item expanded "><a href="../topic/building.html"><strong aria-hidden="true">4.7.</strong> Building</a></li><li class="chapter-item expanded "><a href="../topic/protocols.html"><strong aria-hidden="true">4.8.</strong> Protocols</a></li><li class="chapter-item expanded "><a href="../topic/caching.html"><strong aria-hidden="true">4.9.</strong> Caching</a></li><li class="chapter-item expanded "><a href="../topic/downloading.html"><strong aria-hidden="true">4.10.</strong> Downloading</a></li><li class="chapter-item expanded "><a href="../topic/var_sub.html"><strong aria-hidden="true">4.11.</strong> Variable Substitution</a></li><li class="chapter-item expanded "><a href="../topic/dst.html"><strong aria-hidden="true">4.12.</strong> Dynamic Symbol Transformation</a></li></ol></li><li class="chapter-item expanded "><a href="../reference/reference.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference/manifest.html" class="active"><strong aria-hidden="true">5.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="../reference/packages.html"><strong aria-hidden="true">5.2.</strong> Packages</a></li><li class="chapter-item expanded "><a href="../reference/versions.html"><strong aria-hidden="true">5.3.</strong> Versions</a></li><li class="chapter-item expanded "><a href="../reference/filesets.html"><strong aria-hidden="true">5.4.</strong> Filesets</a></li><li class="chapter-item expanded "><a href="../reference/blueprint.html"><strong aria-hidden="true">5.5.</strong> Blueprint</a></li><li class="chapter-item expanded "><a href="../reference/environment_variables.html"><strong aria-hidden="true">5.6.</strong> Environment Variables</a></li><li class="chapter-item expanded "><a href="../reference/configuration.html"><strong aria-hidden="true">5.7.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="../reference/exporting_interfaces.html"><strong aria-hidden="true">5.8.</strong> Exporting Interfaces</a></li><li class="chapter-item expanded "><a href="../reference/command_line.html"><strong aria-hidden="true">5.9.</strong> Command Line</a></li></ol></li><li class="chapter-item expanded "><a href="../commands/commands.html"><strong aria-hidden="true">6.</strong> Commands</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../commands/new.html"><strong aria-hidden="true">6.1.</strong> orbit new</a></li><li class="chapter-item expanded "><a href="../commands/init.html"><strong aria-hidden="true">6.2.</strong> orbit init</a></li><li class="chapter-item expanded "><a href="../commands/show.html"><strong aria-hidden="true">6.3.</strong> orbit show</a></li><li class="chapter-item expanded "><a href="../commands/read.html"><strong aria-hidden="true">6.4.</strong> orbit read</a></li><li class="chapter-item expanded "><a href="../commands/get.html"><strong aria-hidden="true">6.5.</strong> orbit get</a></li><li class="chapter-item expanded "><a href="../commands/tree.html"><strong aria-hidden="true">6.6.</strong> orbit tree</a></li><li class="chapter-item expanded "><a href="../commands/plan.html"><strong aria-hidden="true">6.7.</strong> orbit plan</a></li><li class="chapter-item expanded "><a href="../commands/build.html"><strong aria-hidden="true">6.8.</strong> orbit build</a></li><li class="chapter-item expanded "><a href="../commands/launch.html"><strong aria-hidden="true">6.9.</strong> orbit launch</a></li><li class="chapter-item expanded "><a href="../commands/search.html"><strong aria-hidden="true">6.10.</strong> orbit search</a></li><li class="chapter-item expanded "><a href="../commands/download.html"><strong aria-hidden="true">6.11.</strong> orbit download</a></li><li class="chapter-item expanded "><a href="../commands/install.html"><strong aria-hidden="true">6.12.</strong> orbit install</a></li><li class="chapter-item expanded "><a href="../commands/env.html"><strong aria-hidden="true">6.13.</strong> orbit env</a></li><li class="chapter-item expanded "><a href="../commands/config.html"><strong aria-hidden="true">6.14.</strong> orbit config</a></li><li class="chapter-item expanded "><a href="../commands/remove.html"><strong aria-hidden="true">6.15.</strong> orbit remove</a></li></ol></li><li class="chapter-item expanded "><a href="../glossary.html"><strong aria-hidden="true">7.</strong> Appendix: Glossary</a></li></ol>
             </div>
-            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
         </nav>
 
         <!-- Track and set sidebar scroll position -->
@@ -119,9 +126,9 @@
                                 <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
-                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
                             <i class="fa fa-bars"></i>
-                        </button>
+                        </label>
                         <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
                             <i class="fa fa-paint-brush"></i>
                         </button>
@@ -172,7 +179,7 @@
                         <h1 id="manifest"><a class="header" href="#manifest">Manifest</a></h1>
 <p>The <code>Orbit.toml</code> file for each IP is called its manifest. It is written in the <a href="https://toml.io/en/">TOML</a> format. It is maintained by the developer and contains metadata that is needed to build the IP.</p>
 <blockquote>
-<p><strong>Note:</strong> The manifest's file name is &quot;Orbit.toml&quot;, with respect to case-sensitivity.</p>
+<p><strong>Note:</strong> The manifest's file name is "Orbit.toml", with respect to case-sensitivity.</p>
 </blockquote>
 <p>Every manifest file consists of the following sections:</p>
 <ul>
@@ -196,80 +203,80 @@
 <h3 id="the-ip-section"><a class="header" href="#the-ip-section">The <code>[ip]</code> section</a></h3>
 <p>The first section in a <code>Orbit.toml</code> file is <code>[ip]</code>.</p>
 <pre><code class="language-toml">[ip]
-name = &quot;my-ip&quot; # the name of the package
-version = &quot;0.1.0&quot; # the current version
+name = "my-ip" # the name of the package
+version = "0.1.0" # the current version
 </code></pre>
 <p>The only fields required by <code>orbit</code> are name and version.</p>
 <h3 id="the-name-field"><a class="header" href="#the-name-field">The <code>name</code> field</a></h3>
 <pre><code class="language-toml">[ip]
-name = &quot;my-ip&quot;
+name = "my-ip"
 # ...
 </code></pre>
 <h3 id="the-version-field"><a class="header" href="#the-version-field">The <code>version</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-version = &quot;0.1.0&quot;
+version = "0.1.0"
 </code></pre>
 <h3 id="the-authors-field"><a class="header" href="#the-authors-field">The <code>authors</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-authors = [&quot;Duncan Idaho&quot;, &quot;Gurney Halleck&quot;]
+authors = ["Duncan Idaho", "Gurney Halleck"]
 
 </code></pre>
 <h3 id="the-library-field"><a class="header" href="#the-library-field">The <code>library</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-library = &quot;work&quot;
+library = "work"
 </code></pre>
 <h3 id="the-description-field"><a class="header" href="#the-description-field">The <code>description</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-description = &quot;A short description of the ip&quot;
+description = "A short description of the ip"
 </code></pre>
 <h3 id="the-keywords-field"><a class="header" href="#the-keywords-field">The <code>keywords</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-keywords = [&quot;cpu&quot;, &quot;risc&quot;]
+keywords = ["cpu", "risc"]
 </code></pre>
 <h3 id="the-source-field"><a class="header" href="#the-source-field">The <code>source</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-source = &quot;https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip&quot;
+source = "https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip"
 </code></pre>
 <h3 id="the-public-field"><a class="header" href="#the-public-field">The <code>public</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-public = [&quot;/rtl&quot;]
+public = ["/rtl"]
 </code></pre>
 <p>The <code>public</code> field can be used to explicitly specify which files are visible to other IP when being when being referenced as a dependency. The list contains glob-style patterns that conform to .gitignore file semantics, and are always compared relative that IP's root directory.</p>
 <p>If no <code>public</code> field is present, then all files are implicitly specified as visible (public) to other IP when being referenced as a dependency.</p>
 <pre><code class="language-toml">[ip]
 # ...
-source = { url = &quot;https://github.com/cdotrus/orbit.git&quot;, protocol = &quot;p-git&quot;, tag = &quot;1.0.0&quot; }
+source = { url = "https://github.com/cdotrus/orbit.git", protocol = "p-git", tag = "1.0.0" }
 </code></pre>
 <h3 id="the-readme-field"><a class="header" href="#the-readme-field">The <code>readme</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-readme = &quot;README.md&quot;
+readme = "README.md"
 </code></pre>
 <h3 id="the-metadata-section"><a class="header" href="#the-metadata-section">The <code>[metadata]</code> section</a></h3>
 <pre><code class="language-toml">[ip.metadata]
 my-field-1 = true
-my-field-2 = &quot;hello world&quot;
+my-field-2 = "hello world"
 # ...
 </code></pre>
 <h3 id="the-dependencies-section"><a class="header" href="#the-dependencies-section">The <code>[dependencies]</code> section</a></h3>
 <p>The <code>[dependencies]</code> section is a table of direct dependencies required for the current IP.</p>
 <pre><code class="language-toml">[dependencies]
-gates = &quot;1.0.0&quot;
-uart = &quot;2.3.1&quot;
+gates = "1.0.0"
+uart = "2.3.1"
 </code></pre>
 <p>If the IP has no dependencies, the section can be omitted from the manifest. The IPs listed in this section will always be included in the build graph.</p>
 <h3 id="the-dev-dependencies-section"><a class="header" href="#the-dev-dependencies-section">The <code>[dev-dependencies]</code> section</a></h3>
 <p>The <code>[dev-dependencies]</code> section is a table of direct dependencies required for the current IP.</p>
 <pre><code class="language-toml">[dev-dependencies]
-testkit = &quot;1.3.7&quot;
-logic-analyzer = &quot;4.8.0&quot;
+testkit = "1.3.7"
+logic-analyzer = "4.8.0"
 </code></pre>
 <p>If the IP has no development dependencies, the section can be omitted from the manifest. The IPs listed in this section will not be included in the build graph for when this IP is used as a dependency itself.</p>
 <!-- 
@@ -373,7 +380,7 @@ ks-tech.util.toolbox = "3.0.4"
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next" href="../reference/packages.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../reference/packages.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -387,7 +394,7 @@ ks-tech.util.toolbox = "3.0.4"
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next" href="../reference/packages.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../reference/packages.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

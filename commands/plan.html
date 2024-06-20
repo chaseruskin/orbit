@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js light">
+<html lang="en" class="light" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -14,7 +14,7 @@
         </style>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#ffffff">
 
         <link rel="shortcut icon" href="../favicon.png">
         <link rel="stylesheet" href="../css/variables.css">
@@ -34,7 +34,7 @@
         <!-- Custom theme stylesheets -->
 
     </head>
-    <body>
+    <body class="sidebar-visible no-js">
     <div id="body-container">
         <!-- Provide site root to javascript -->
         <script>
@@ -64,31 +64,38 @@
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             var html = document.querySelector('html');
-            html.classList.remove('no-js')
             html.classList.remove('light')
             html.classList.add(theme);
-            html.classList.add('js');
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
         </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
-            var html = document.querySelector('html');
+            var body = document.querySelector('body');
             var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
             } else {
                 sidebar = 'hidden';
             }
-            html.classList.remove('sidebar-visible');
-            html.classList.add("sidebar-" + sidebar);
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
                 <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../starting/starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../starting/installing.html"><strong aria-hidden="true">1.1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="../starting/upgrading.html"><strong aria-hidden="true">1.2.</strong> Upgrading</a></li></ol></li><li class="chapter-item expanded "><a href="../tutorials/tutorials.html"><strong aria-hidden="true">2.</strong> Tutorials</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../tutorials/first_project.html"><strong aria-hidden="true">2.1.</strong> First Project: Gates</a></li><li class="chapter-item expanded "><a href="../tutorials/dependencies.html"><strong aria-hidden="true">2.2.</strong> Dependencies: Half adder</a></li><li class="chapter-item expanded "><a href="../tutorials/gates_revisited.html"><strong aria-hidden="true">2.3.</strong> Gates: Revisited</a></li><li class="chapter-item expanded "><a href="../tutorials/final_project.html"><strong aria-hidden="true">2.4.</strong> Final Project: Full adder</a></li></ol></li><li class="chapter-item expanded "><a href="../user/user.html"><strong aria-hidden="true">3.</strong> User Guide</a></li><li class="chapter-item expanded "><a href="../topic/topic.html"><strong aria-hidden="true">4.</strong> Topic Guide</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../topic/concept.html"><strong aria-hidden="true">4.1.</strong> Key Concepts</a></li><li class="chapter-item expanded "><a href="../topic/catalog.html"><strong aria-hidden="true">4.2.</strong> Catalog</a></li><li class="chapter-item expanded "><a href="../topic/1_ip.html"><strong aria-hidden="true">4.3.</strong> IP</a></li><li class="chapter-item expanded "><a href="../topic/5_orbitlock.html"><strong aria-hidden="true">4.4.</strong> Orbit.lock</a></li><li class="chapter-item expanded "><a href="../topic/orbitignore.html"><strong aria-hidden="true">4.5.</strong> .orbitignore</a></li><li class="chapter-item expanded "><a href="../topic/planning.html"><strong aria-hidden="true">4.6.</strong> Planning</a></li><li class="chapter-item expanded "><a href="../topic/building.html"><strong aria-hidden="true">4.7.</strong> Building</a></li><li class="chapter-item expanded "><a href="../topic/protocols.html"><strong aria-hidden="true">4.8.</strong> Protocols</a></li><li class="chapter-item expanded "><a href="../topic/caching.html"><strong aria-hidden="true">4.9.</strong> Caching</a></li><li class="chapter-item expanded "><a href="../topic/downloading.html"><strong aria-hidden="true">4.10.</strong> Downloading</a></li><li class="chapter-item expanded "><a href="../topic/var_sub.html"><strong aria-hidden="true">4.11.</strong> Variable Substitution</a></li><li class="chapter-item expanded "><a href="../topic/dst.html"><strong aria-hidden="true">4.12.</strong> Dynamic Symbol Transformation</a></li></ol></li><li class="chapter-item expanded "><a href="../reference/reference.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference/manifest.html"><strong aria-hidden="true">5.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="../reference/packages.html"><strong aria-hidden="true">5.2.</strong> Packages</a></li><li class="chapter-item expanded "><a href="../reference/versions.html"><strong aria-hidden="true">5.3.</strong> Versions</a></li><li class="chapter-item expanded "><a href="../reference/filesets.html"><strong aria-hidden="true">5.4.</strong> Filesets</a></li><li class="chapter-item expanded "><a href="../reference/blueprint.html"><strong aria-hidden="true">5.5.</strong> Blueprint</a></li><li class="chapter-item expanded "><a href="../reference/environment_variables.html"><strong aria-hidden="true">5.6.</strong> Environment Variables</a></li><li class="chapter-item expanded "><a href="../reference/configuration.html"><strong aria-hidden="true">5.7.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="../reference/exporting_interfaces.html"><strong aria-hidden="true">5.8.</strong> Exporting Interfaces</a></li><li class="chapter-item expanded "><a href="../reference/command_line.html"><strong aria-hidden="true">5.9.</strong> Command Line</a></li></ol></li><li class="chapter-item expanded "><a href="../commands/commands.html"><strong aria-hidden="true">6.</strong> Commands</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../commands/new.html"><strong aria-hidden="true">6.1.</strong> orbit new</a></li><li class="chapter-item expanded "><a href="../commands/init.html"><strong aria-hidden="true">6.2.</strong> orbit init</a></li><li class="chapter-item expanded "><a href="../commands/show.html"><strong aria-hidden="true">6.3.</strong> orbit show</a></li><li class="chapter-item expanded "><a href="../commands/read.html"><strong aria-hidden="true">6.4.</strong> orbit read</a></li><li class="chapter-item expanded "><a href="../commands/get.html"><strong aria-hidden="true">6.5.</strong> orbit get</a></li><li class="chapter-item expanded "><a href="../commands/tree.html"><strong aria-hidden="true">6.6.</strong> orbit tree</a></li><li class="chapter-item expanded "><a href="../commands/plan.html" class="active"><strong aria-hidden="true">6.7.</strong> orbit plan</a></li><li class="chapter-item expanded "><a href="../commands/build.html"><strong aria-hidden="true">6.8.</strong> orbit build</a></li><li class="chapter-item expanded "><a href="../commands/launch.html"><strong aria-hidden="true">6.9.</strong> orbit launch</a></li><li class="chapter-item expanded "><a href="../commands/search.html"><strong aria-hidden="true">6.10.</strong> orbit search</a></li><li class="chapter-item expanded "><a href="../commands/download.html"><strong aria-hidden="true">6.11.</strong> orbit download</a></li><li class="chapter-item expanded "><a href="../commands/install.html"><strong aria-hidden="true">6.12.</strong> orbit install</a></li><li class="chapter-item expanded "><a href="../commands/env.html"><strong aria-hidden="true">6.13.</strong> orbit env</a></li><li class="chapter-item expanded "><a href="../commands/config.html"><strong aria-hidden="true">6.14.</strong> orbit config</a></li><li class="chapter-item expanded "><a href="../commands/remove.html"><strong aria-hidden="true">6.15.</strong> orbit remove</a></li></ol></li><li class="chapter-item expanded "><a href="../glossary.html"><strong aria-hidden="true">7.</strong> Appendix: Glossary</a></li></ol>
             </div>
-            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
         </nav>
 
         <!-- Track and set sidebar scroll position -->
@@ -119,9 +126,9 @@
                                 <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
-                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
                             <i class="fa fa-bars"></i>
-                        </button>
+                        </label>
                         <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
                             <i class="fa fa-paint-brush"></i>
                         </button>
@@ -176,9 +183,9 @@
 <pre><code>orbit plan [options]
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command carries out the &quot;planning phase&quot;. This phase involves reading
-and writing to the lockfile and collecting all necessary files according to 
-their defined fileset into a blueprint file for future build processes. This 
+<p>This command carries out the "planning phase". This phase involves reading
+and writing to the lockfile and collecting all necessary files according to
+their defined fileset into a blueprint file for future build processes. This
 command acts upon the current working ip.</p>
 <p>By default, the top level unit and testbench are auto-detected according to
 the current design heirarchy. If there are multiple candidates for a potential
@@ -190,28 +197,28 @@ the proper environment variables for downstream plugins and scripts that
 may require this information. If a known plugin is provided with <code>--plugin</code>,
 then it will also be stored in the <code>.env</code> file to be recalled during the
 build phase.</p>
-<p>User-defined filesets are only collected within the current working ip's 
+<p>User-defined filesets are only collected within the current working ip's
 path. Plugins may have custom filesets defined in their configuration. When
-specifying a known plugin with <code>--plugin</code>, it will collect the filesets 
+specifying a known plugin with <code>--plugin</code>, it will collect the filesets
 defined for that plugin. Use <code>--fileset</code> as many times as needed to define
 additional filesets.</p>
 <p>During the planning phase, a lockfile is produced outlining the exact ip
 dependencies required, how to get them, and how to verify them. The lockfile
-should be checked into version control and should not manually edited by the 
+should be checked into version control and should not manually edited by the
 user.</p>
 <p>If the current working ip's manifest data matches its data stored in its
 own lockfile, then Orbit will read from the lockfile to create the ip
 dependency graph. To force Orbit to build the ip dependency graph from
 scratch, use <code>--force</code>.</p>
-<p>If only needing to update the lockfile, use <code>--lock-only</code>. This flag does 
+<p>If only needing to update the lockfile, use <code>--lock-only</code>. This flag does
 not require a toplevel or testbench to be determined. Using <code>--lock-only</code> with
-<code>--force</code> will overwrite the lockfile regardless if it is already in sync 
+<code>--force</code> will overwrite the lockfile regardless if it is already in sync
 with the current working ip's manifest data.</p>
 <p>When updating the lockfile, this command will download and install any new
 dependencies if necessary. To only download an ip, see the <code>download</code> command.
 To only install an ip, see the <code>install</code> command.</p>
 <p>If an installed dependency's computed checksum does not match the checksum
-stored in the lockfile, it assumes the installation to be corrupt and will 
+stored in the lockfile, it assumes the installation to be corrupt and will
 re-install the dependency to the cache.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--top &lt;unit&gt;</code><br />
@@ -236,7 +243,7 @@ re-install the dependency to the cache.</p>
       Include all locally found HDL files</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit plan --bench my_tb
-orbit plan --top and_gate --fileset PIN-PLAN=&quot;*.board&quot;
+orbit plan --top and_gate --fileset PIN-PLAN="*.board"
 orbit plan --plugin vivado --clean --bench ram_tb
 orbit plan --lock-only
 </code></pre>
@@ -249,7 +256,7 @@ orbit plan --lock-only
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next" href="../commands/build.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../commands/build.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -263,7 +270,7 @@ orbit plan --lock-only
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next" href="../commands/build.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../commands/build.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

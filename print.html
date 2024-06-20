@@ -1,10 +1,10 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js light">
+<html lang="en" class="light" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
         <title>The Book of Orbit</title>
-        <meta name="robots" content="noindex" />
+        <meta name="robots" content="noindex">
 
 
         <!-- Custom HTML head -->
@@ -15,7 +15,7 @@
         </style>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#ffffff">
 
         <link rel="shortcut icon" href="favicon.png">
         <link rel="stylesheet" href="css/variables.css">
@@ -35,7 +35,7 @@
         <!-- Custom theme stylesheets -->
 
     </head>
-    <body>
+    <body class="sidebar-visible no-js">
     <div id="body-container">
         <!-- Provide site root to javascript -->
         <script>
@@ -65,31 +65,38 @@
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             var html = document.querySelector('html');
-            html.classList.remove('no-js')
             html.classList.remove('light')
             html.classList.add(theme);
-            html.classList.add('js');
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
         </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
-            var html = document.querySelector('html');
+            var body = document.querySelector('body');
             var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
             } else {
                 sidebar = 'hidden';
             }
-            html.classList.remove('sidebar-visible');
-            html.classList.add("sidebar-" + sidebar);
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
                 <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Introduction</a></li><li class="chapter-item expanded "><a href="starting/starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="starting/installing.html"><strong aria-hidden="true">1.1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="starting/upgrading.html"><strong aria-hidden="true">1.2.</strong> Upgrading</a></li></ol></li><li class="chapter-item expanded "><a href="tutorials/tutorials.html"><strong aria-hidden="true">2.</strong> Tutorials</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorials/first_project.html"><strong aria-hidden="true">2.1.</strong> First Project: Gates</a></li><li class="chapter-item expanded "><a href="tutorials/dependencies.html"><strong aria-hidden="true">2.2.</strong> Dependencies: Half adder</a></li><li class="chapter-item expanded "><a href="tutorials/gates_revisited.html"><strong aria-hidden="true">2.3.</strong> Gates: Revisited</a></li><li class="chapter-item expanded "><a href="tutorials/final_project.html"><strong aria-hidden="true">2.4.</strong> Final Project: Full adder</a></li></ol></li><li class="chapter-item expanded "><a href="user/user.html"><strong aria-hidden="true">3.</strong> User Guide</a></li><li class="chapter-item expanded "><a href="topic/topic.html"><strong aria-hidden="true">4.</strong> Topic Guide</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="topic/concept.html"><strong aria-hidden="true">4.1.</strong> Key Concepts</a></li><li class="chapter-item expanded "><a href="topic/catalog.html"><strong aria-hidden="true">4.2.</strong> Catalog</a></li><li class="chapter-item expanded "><a href="topic/1_ip.html"><strong aria-hidden="true">4.3.</strong> IP</a></li><li class="chapter-item expanded "><a href="topic/5_orbitlock.html"><strong aria-hidden="true">4.4.</strong> Orbit.lock</a></li><li class="chapter-item expanded "><a href="topic/orbitignore.html"><strong aria-hidden="true">4.5.</strong> .orbitignore</a></li><li class="chapter-item expanded "><a href="topic/planning.html"><strong aria-hidden="true">4.6.</strong> Planning</a></li><li class="chapter-item expanded "><a href="topic/building.html"><strong aria-hidden="true">4.7.</strong> Building</a></li><li class="chapter-item expanded "><a href="topic/protocols.html"><strong aria-hidden="true">4.8.</strong> Protocols</a></li><li class="chapter-item expanded "><a href="topic/caching.html"><strong aria-hidden="true">4.9.</strong> Caching</a></li><li class="chapter-item expanded "><a href="topic/downloading.html"><strong aria-hidden="true">4.10.</strong> Downloading</a></li><li class="chapter-item expanded "><a href="topic/var_sub.html"><strong aria-hidden="true">4.11.</strong> Variable Substitution</a></li><li class="chapter-item expanded "><a href="topic/dst.html"><strong aria-hidden="true">4.12.</strong> Dynamic Symbol Transformation</a></li></ol></li><li class="chapter-item expanded "><a href="reference/reference.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="reference/manifest.html"><strong aria-hidden="true">5.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="reference/packages.html"><strong aria-hidden="true">5.2.</strong> Packages</a></li><li class="chapter-item expanded "><a href="reference/versions.html"><strong aria-hidden="true">5.3.</strong> Versions</a></li><li class="chapter-item expanded "><a href="reference/filesets.html"><strong aria-hidden="true">5.4.</strong> Filesets</a></li><li class="chapter-item expanded "><a href="reference/blueprint.html"><strong aria-hidden="true">5.5.</strong> Blueprint</a></li><li class="chapter-item expanded "><a href="reference/environment_variables.html"><strong aria-hidden="true">5.6.</strong> Environment Variables</a></li><li class="chapter-item expanded "><a href="reference/configuration.html"><strong aria-hidden="true">5.7.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="reference/exporting_interfaces.html"><strong aria-hidden="true">5.8.</strong> Exporting Interfaces</a></li><li class="chapter-item expanded "><a href="reference/command_line.html"><strong aria-hidden="true">5.9.</strong> Command Line</a></li></ol></li><li class="chapter-item expanded "><a href="commands/commands.html"><strong aria-hidden="true">6.</strong> Commands</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="commands/new.html"><strong aria-hidden="true">6.1.</strong> orbit new</a></li><li class="chapter-item expanded "><a href="commands/init.html"><strong aria-hidden="true">6.2.</strong> orbit init</a></li><li class="chapter-item expanded "><a href="commands/show.html"><strong aria-hidden="true">6.3.</strong> orbit show</a></li><li class="chapter-item expanded "><a href="commands/read.html"><strong aria-hidden="true">6.4.</strong> orbit read</a></li><li class="chapter-item expanded "><a href="commands/get.html"><strong aria-hidden="true">6.5.</strong> orbit get</a></li><li class="chapter-item expanded "><a href="commands/tree.html"><strong aria-hidden="true">6.6.</strong> orbit tree</a></li><li class="chapter-item expanded "><a href="commands/plan.html"><strong aria-hidden="true">6.7.</strong> orbit plan</a></li><li class="chapter-item expanded "><a href="commands/build.html"><strong aria-hidden="true">6.8.</strong> orbit build</a></li><li class="chapter-item expanded "><a href="commands/launch.html"><strong aria-hidden="true">6.9.</strong> orbit launch</a></li><li class="chapter-item expanded "><a href="commands/search.html"><strong aria-hidden="true">6.10.</strong> orbit search</a></li><li class="chapter-item expanded "><a href="commands/download.html"><strong aria-hidden="true">6.11.</strong> orbit download</a></li><li class="chapter-item expanded "><a href="commands/install.html"><strong aria-hidden="true">6.12.</strong> orbit install</a></li><li class="chapter-item expanded "><a href="commands/env.html"><strong aria-hidden="true">6.13.</strong> orbit env</a></li><li class="chapter-item expanded "><a href="commands/config.html"><strong aria-hidden="true">6.14.</strong> orbit config</a></li><li class="chapter-item expanded "><a href="commands/remove.html"><strong aria-hidden="true">6.15.</strong> orbit remove</a></li></ol></li><li class="chapter-item expanded "><a href="glossary.html"><strong aria-hidden="true">7.</strong> Appendix: Glossary</a></li></ol>
             </div>
-            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
         </nav>
 
         <!-- Track and set sidebar scroll position -->
@@ -120,9 +127,9 @@
                                 <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
-                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
                             <i class="fa fa-bars"></i>
-                        </button>
+                        </label>
                         <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
                             <i class="fa fa-paint-brush"></i>
                         </button>
@@ -177,7 +184,7 @@
 <p>The following documentation will be mainly divided into 4 sections:</p>
 <ol>
 <li><a href="./tutorials/tutorials.html">Tutorials</a> - Step-by-step lessons working with <code>orbit</code></li>
-<li><a href="./user/user.html">User Guide</a> - General procedures for &quot;how-to&quot; solve common problems</li>
+<li><a href="./user/user.html">User Guide</a> - General procedures for "how-to" solve common problems</li>
 <li><a href="./topic/topic.html">Topic Guide</a> - Explanations that clarify and provide more detail to particular topics</li>
 <li><a href="./reference/reference.html">Reference</a> - Technical information</li>
 </ol>
@@ -211,11 +218,11 @@
 </blockquote>
 <h2 id="1-using-a-precompiled-binary"><a class="header" href="#1-using-a-precompiled-binary">1. Using a precompiled binary</a></h2>
 <ol>
-<li>Visit Orbit's <a href="https://github.com/cdotrus/orbit/releases">releases</a> page on Github to find all of its official releases. </li>
+<li>Visit Orbit's <a href="https://github.com/cdotrus/orbit/releases">releases</a> page on Github to find all of its official releases.</li>
 <li>Download the binary for your computer's architecture and operating system.</li>
 <li>Install Orbit. Either run the provided <code>install</code> executable or follow the manual instructions for placing Orbit's executable (<code>orbit</code> for Unix and <code>orbit.exe</code> for Windows) in a location recognized by the PATH environment variable.</li>
 </ol>
-<p>There are multiple solutions to accomplish step 3. The following outlines one way to manually install Orbit depending on the user's operating system. </p>
+<p>There are multiple solutions to accomplish step 3. The following outlines one way to manually install Orbit depending on the user's operating system.</p>
 <h3 id="unix"><a class="header" href="#unix">Unix</a></h3>
 <ol>
 <li>Open a new terminal (Bash) to where Orbit was downloaded.</li>
@@ -224,7 +231,7 @@
 <pre><code>$ unzip orbit-0.13.0-x86_64-macos.zip
 </code></pre>
 <ol start="3">
-<li>Move the executable to a location already set in the PATH environment variable. </li>
+<li>Move the executable to a location already set in the PATH environment variable.</li>
 </ol>
 <pre><code>$ mv ./orbit-0.13.0-x86_64-macos/bin/orbit /usr/local/bin/orbit
 </code></pre>
@@ -237,17 +244,17 @@
 <p>Unzip the prebuilt package.</p>
 </li>
 </ol>
-<pre><code>$ expand-archive &quot;./orbit-0.13.0-x86_64-windows.zip&quot;
+<pre><code>$ expand-archive "./orbit-0.13.0-x86_64-windows.zip"
 </code></pre>
 <ol start="3">
 <li>Make a new directory to store this package.</li>
 </ol>
-<pre><code>$ new-item -path &quot;$env:LOCALAPPDATA/Programs/orbit&quot; -itemtype directory
+<pre><code>$ new-item -path "$env:LOCALAPPDATA/Programs/orbit" -itemtype directory
 </code></pre>
 <ol start="4">
 <li>Move the package to the new directory.</li>
 </ol>
-<pre><code>$ copy-item &quot;./orbit-0.13.0-x86_64-windows/*&quot; -destination &quot;$env:LOCALAPPDATA/Programs/orbit&quot; -recurse
+<pre><code>$ copy-item "./orbit-0.13.0-x86_64-windows/*" -destination "$env:LOCALAPPDATA/Programs/orbit" -recurse
 </code></pre>
 <ol start="5">
 <li>Edit the user-level PATH environment variable in <em><strong>Control Panel</strong></em> by adding <strong>%LOCALAPPDATA%\Programs\orbit\bin</strong>.</li>
@@ -326,11 +333,11 @@
 <p>First, navigate to a directory in your file system where you would like to store the project. From there, let's issue our first <code>orbit</code> command:</p>
 <pre><code>$ orbit new gates
 </code></pre>
-<p>A directory called &quot;gates&quot; should now exist and look like the following tree structure:</p>
+<p>A directory called "gates" should now exist and look like the following tree structure:</p>
 <pre><code>gates/
 └─ Orbit.toml
 </code></pre>
-<p>Let's create our first design unit for describing a NAND gate. Feel free to copy the following code into a file called &quot;nand_gate.vhd&quot; that exists in our project directory &quot;gates/&quot;.</p>
+<p>Let's create our first design unit for describing a NAND gate. Feel free to copy the following code into a file called "nand_gate.vhd" that exists in our project directory "gates/".</p>
 <p>Filename: nand_gate.vhd</p>
 <pre><code class="language-vhdl">library ieee;
 use ieee.std_logic_1164.all;
@@ -350,7 +357,7 @@ end architecture;
 </code></pre>
 <h2 id="integrating-design-units"><a class="header" href="#integrating-design-units">Integrating design units</a></h2>
 <p>Consider for an instant that our HDL only supports the <code>nand</code> keyword and is missing the other logic gates such as <code>or</code>, <code>and</code>, and <code>xor</code>.</p>
-<p>Recalling our basic knowledge of digital circuits, we know a NAND gate is a universal gate, so let's compose other gates using our newly created <code>nand_gate</code> entity. Create a new file for our next design unit to describe an AND gate. </p>
+<p>Recalling our basic knowledge of digital circuits, we know a NAND gate is a universal gate, so let's compose other gates using our newly created <code>nand_gate</code> entity. Create a new file for our next design unit to describe an AND gate.</p>
 <p>Filename: and_gate.vhd</p>
 <pre><code class="language-vhdl">library ieee;
 use ieee.std_logic_1164.all;
@@ -490,10 +497,10 @@ print('YILINX:','Bitstream saved at: build/fpga.bit')
 <p>In order for <code>orbit</code> to know about our plugin, we need to tell <code>orbit</code> about the plugin in a configuration file. For this project, we edit the project-level configurations.</p>
 <p>Filename: .orbit/config.toml</p>
 <pre><code class="language-toml">[[plugin]]
-name = &quot;yilinx&quot;
-description = &quot;Generate bitstreams for Yilinx FPGAs&quot;
-command = &quot;python&quot;
-args = [&quot;yilinx.py&quot;]
+name = "yilinx"
+description = "Generate bitstreams for Yilinx FPGAs"
+command = "python"
+args = ["yilinx.py"]
 </code></pre>
 <p>Okay, all steps are in place! Let's generate a bitsream.</p>
 <pre><code>$ orbit build --plugin yilinx
@@ -509,7 +516,7 @@ YILINX: Bitstream saved at: build/fpga.bit
 <pre><code class="language-text">011010101101011010101101
 </code></pre>
 <h2 id="making-an-ip-and-its-design-units-reusable"><a class="header" href="#making-an-ip-and-its-design-units-reusable">Making an IP and its design units reusable</a></h2>
-<p>Now we are ready to move on to more advanced topics, so let's go ahead and store an immutable reference to this project to use in other projects in our developer journey. </p>
+<p>Now we are ready to move on to more advanced topics, so let's go ahead and store an immutable reference to this project to use in other projects in our developer journey.</p>
 <pre><code>$ orbit install --path .
 </code></pre>
 <p>This command ran a series of steps that packaged our project and placed it into our <em>cache</em>. Internally, <code>orbit</code> knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire IP catalog.</p>
@@ -536,13 +543,13 @@ gates                       0.1.0     Installed
 </code></pre>
 <ul>
 <li>
-<p>The configurations stored in &quot;.orbit/&quot; exist only for this project; to store configurations that persist across projects make changes to the $ORBIT_HOME directory.</p>
+<p>The configurations stored in ".orbit/" exist only for this project; to store configurations that persist across projects make changes to the $ORBIT_HOME directory.</p>
 </li>
 <li>
-<p><code>orbit</code> creates an output directory to store the blueprint and any tool output files during a build. These files should reside in &quot;build/&quot; and may change often during development (probably don't check this directory into version control).</p>
+<p><code>orbit</code> creates an output directory to store the blueprint and any tool output files during a build. These files should reside in "build/" and may change often during development (probably don't check this directory into version control).</p>
 </li>
 <li>
-<p><code>orbit</code> creates a lock file &quot;Orbit.lock&quot; to store all the information required to manage and recreate the exact state of this project. It is a good idea to always keep it and to not manually edit it (probably be sure to check this file into version control).</p>
+<p><code>orbit</code> creates a lock file "Orbit.lock" to store all the information required to manage and recreate the exact state of this project. It is a good idea to always keep it and to not manually edit it (probably be sure to check this file into version control).</p>
 </li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="dependencies-half-adder"><a class="header" href="#dependencies-half-adder">Dependencies: Half adder</a></h1>
@@ -555,7 +562,7 @@ gates                       0.1.0     Installed
 <p>Let's create a new project. Navigate to a directory in your file system where you would like to store the project.</p>
 <pre><code>$ orbit new half-add
 </code></pre>
-<p>For the rest of this tutorial, we will be working relative to the project directory &quot;half-add/&quot; that was created by the previous command.</p>
+<p>For the rest of this tutorial, we will be working relative to the project directory "half-add/" that was created by the previous command.</p>
 <p>Remembering our impressive work with the gates project, we realize we can reuse some of the already designed and tested components from there. Let's make sure it's installed so that we can use it.</p>
 <pre><code>$ orbit search gates
 </code></pre>
@@ -568,13 +575,13 @@ gates                       0.1.0     Installed
 <p>Add a new entry for gates to the dependencies table in our project's manifest, Orbit.toml.</p>
 <p>Filename: Orbit.toml</p>
 <pre><code class="language-toml">[ip]
-name = &quot;half-add&quot;
-version = &quot;0.1.0&quot;
+name = "half-add"
+version = "0.1.0"
 
 # See more keys and their definitions at https://cdotrus.github.io/orbit/reference/manifest.html
 
 [dependencies]
-gates = &quot;0.1.0&quot;
+gates = "0.1.0"
 </code></pre>
 <p>We've referenced it, now we have to use it!</p>
 <h2 id="learning-about-ips"><a class="header" href="#learning-about-ips">Learning about IPs</a></h2>
@@ -615,7 +622,7 @@ uX : entity work.nand_gate
     x =&gt; x
   );
 </code></pre>
-<p>A half adder can be constructed with 5 NAND gates. It's time to copy/paste our NAND gate instances into our new file &quot;half_add.vhd&quot;.</p>
+<p>A half adder can be constructed with 5 NAND gates. It's time to copy/paste our NAND gate instances into our new file "half_add.vhd".</p>
 <p>Filename: half_add.vhd</p>
 <pre><code class="language-vhdl">library ieee;
 use ieee.std_logic_1164.all;
@@ -703,8 +710,8 @@ end architecture;
 <a href="tutorials/gates_revisited.html#rereleasing-the-gates-ip">3.</a> Release the next version for an existing IP</p>
 <h2 id="editing-the-gates-ip"><a class="header" href="#editing-the-gates-ip">Editing the gates IP</a></h2>
 <p>It seems we left out some logic gates when we last worked on the gates project, so let's implement them now. Navigate to the directory in your file system where you currently store the gates project.</p>
-<p>For the rest of this tutorial, we will be working relative to the project directory &quot;gates/&quot; that currently stores the gates project.</p>
-<p>Let's implement the OR gate while restricting our design to only NAND gates like before. </p>
+<p>For the rest of this tutorial, we will be working relative to the project directory "gates/" that currently stores the gates project.</p>
+<p>Let's implement the OR gate while restricting our design to only NAND gates like before.</p>
 <pre><code>$ orbit get nand_gate --signals --instance
 </code></pre>
 <pre><code>library work;
@@ -720,7 +727,7 @@ uX : entity work.nand_gate
     x =&gt; x
   );
 </code></pre>
-<p>An OR gate can be constructed using 3 NAND gates. Let's copy/paste our NAND gate instances into our new file &quot;or_gate.vhd&quot;.</p>
+<p>An OR gate can be constructed using 3 NAND gates. Let's copy/paste our NAND gate instances into our new file "or_gate.vhd".</p>
 <p>Filename: or_gate.vhd</p>
 <pre><code class="language-vhdl">library ieee;
 use ieee.std_logic_1164.all;
@@ -775,7 +782,7 @@ nand_gate                           entity        public
 or_gate                             entity        public 
 </code></pre>
 <h2 id="extending-the-yilinx-plugin"><a class="header" href="#extending-the-yilinx-plugin">Extending the Yilinx plugin</a></h2>
-<p>Next, we want to program our Yilinx FPGA with the OR gate design to test it on the board. However, there are some quick updates we first want to apply to the &quot;.orbit/yilinx.py&quot; script.</p>
+<p>Next, we want to program our Yilinx FPGA with the OR gate design to test it on the board. However, there are some quick updates we first want to apply to the ".orbit/yilinx.py" script.</p>
 <ul>
 <li>We want a way to specify which I/O pins of the FPGA will be used during placement and routing</li>
 <li>We want a way to specify whether to program the FPGA bitstream to SRAM storage (volatile) or flash storage (nonvolatile).</li>
@@ -783,12 +790,12 @@ or_gate                             entity        public
 <p>After searching through Yilinx documentation for hours, you learn that the Yilinx design tool can accept .ydc files for FPGA pin assignments. Let's edit our yilinx plugin to collect any .ydc files our project may have during <code>orbit</code>'s planning step.</p>
 <p>Filename: .orbit/config.toml</p>
 <pre><code class="language-toml">[[plugin]]
-name = &quot;yilinx&quot;
-command = &quot;python&quot;
-description = &quot;Generate bitstreams for Yilinx FPGAs&quot;
-args = [&quot;yilinx.py&quot;]
+name = "yilinx"
+command = "python"
+description = "Generate bitstreams for Yilinx FPGAs"
+args = ["yilinx.py"]
 # Define the type of extra file(s) to collect during planning
-fileset.pin-file = &quot;*.ydc&quot;
+fileset.pin-file = "*.ydc"
 </code></pre>
 <p>Now let's create our pin assignment file for our OR gate design.</p>
 <p>Filename: pins.ydc</p>
@@ -805,9 +812,9 @@ PROG_SRAM = bool(sys.argv.count('--sram') &gt; 0)
 PROG_FLASH = bool(sys.argv.count('--flash') &gt; 0)
 
 # Get environment variables set by orbit for this particular build
-BLUEPRINT = os.environ.get(&quot;ORBIT_BLUEPRINT&quot;)
-BUILD_DIR = os.environ.get(&quot;ORBIT_BUILD_DIR&quot;)
-TOP_LEVEL = os.environ.get(&quot;ORBIT_TOP&quot;)
+BLUEPRINT = os.environ.get("ORBIT_BLUEPRINT")
+BUILD_DIR = os.environ.get("ORBIT_BUILD_DIR")
+TOP_LEVEL = os.environ.get("ORBIT_TOP")
 
 synth_order = []
 constraints_file = None
@@ -854,7 +861,7 @@ elif PROG_SRAM == True:
 
 </code></pre>
 <p>With all these changes, we can now go ahead and program our FPGA as we want!</p>
-<p>First, let's plan the OR gate design. We can specify which entity is the top level by using the &quot;--top&quot; command-line option. The &quot;--plugin&quot; command-line option tells <code>orbit</code> what additional files to collect for a future build with that plugin.</p>
+<p>First, let's plan the OR gate design. We can specify which entity is the top level by using the "--top" command-line option. The "--plugin" command-line option tells <code>orbit</code> what additional files to collect for a future build with that plugin.</p>
 <pre><code>$ orbit plan --plugin yilinx --top or_gate 
 </code></pre>
 <p>Let's take a look at the blueprint file <code>orbit</code> just created.</p>
@@ -865,7 +872,7 @@ VHDL-RTL	work	/Users/chase/tutorials/gates/or_gate.vhd
 
 </code></pre>
 <p>Inspecting our latest blueprint file reveals our .ydc file was successfully collected.</p>
-<p>Finally, let's build our design. We can pass command-line arguments directly to the plugin by entering them after the &quot;--&quot; argument.</p>
+<p>Finally, let's build our design. We can pass command-line arguments directly to the plugin by entering them after the "--" argument.</p>
 <pre><code>$ orbit build --plugin yilinx -- --flash
 </code></pre>
 <pre><code>YILINX: Synthesizing file /Users/chase/tutorials/gates/nand_gate.vhd into work...
@@ -883,7 +890,7 @@ YILINX: Programming bitstream to flash...
 <pre><code class="language-text">1101111111001010111111100111110000111101001100101
 </code></pre>
 <p>Awesome! We added some pretty advanced settings to our yilinx plugin to make it more robust for future use. Let's configure this plugin to be used with any of our ongoing projects by editing the global configuration file through the command-line.</p>
-<pre><code>$ orbit config --global --append include=&quot;$(orbit env ORBIT_IP_PATH)/.orbit/config.toml&quot;
+<pre><code>$ orbit config --global --append include="$(orbit env ORBIT_IP_PATH)/.orbit/config.toml"
 </code></pre>
 <p>Now when we call <code>orbit</code> from any directory, we can see our yilinx plugin is available to use.</p>
 <pre><code>$ orbit plan --list
@@ -892,11 +899,11 @@ YILINX: Programming bitstream to flash...
   yilinx          Generate bitstreams for Yilinx FPGAs
 </code></pre>
 <h2 id="rereleasing-the-gates-ip"><a class="header" href="#rereleasing-the-gates-ip">Rereleasing the gates IP</a></h2>
-<p>We made changes to the gates IP, and now we want to have the ability to use these new updates or continue using the old changes. To do this, we want to update the version number in the manifest file. Let's edit the Orbit.toml file's version field to contain version &quot;1.0.0&quot;.</p>
+<p>We made changes to the gates IP, and now we want to have the ability to use these new updates or continue using the old changes. To do this, we want to update the version number in the manifest file. Let's edit the Orbit.toml file's version field to contain version "1.0.0".</p>
 <p>Filename: Orbit.toml</p>
 <pre><code class="language-toml">[ip]
-name = &quot;gates&quot;
-version = &quot;1.0.0&quot;
+name = "gates"
+version = "1.0.0"
 
 # See more keys and their definitions at https://cdotrus.github.io/orbit/reference/manifest.html
 
@@ -922,7 +929,7 @@ gates                       1.0.0     Installed
 <p>After the quick detour back to the gates IP, we are ready to tackle our final challenge in this mini tutorial series: the full adder. Like our previous projects, navigate to a directory in your file system where you would like to store the project.</p>
 <pre><code>orbit new full-add
 </code></pre>
-<p>For the rest of this tutorial, we will be working relative to the project directory &quot;full-add/&quot; that currently stores our new full-add project. </p>
+<p>For the rest of this tutorial, we will be working relative to the project directory "full-add/" that currently stores our new full-add project.</p>
 <p>For this final project, we will need circuits described in both the gate IP and half-add IP. Let's quickly recall if version 1.0.0 of gates has the OR gate we will need.</p>
 <pre><code>$ orbit show gates:1.0.0 --units
 </code></pre>
@@ -935,14 +942,14 @@ or_gate                             entity        public
 <p>Yup! It's there, and we know we will need some half adders as well. Let's add both IPs to our manifest file.</p>
 <p>filename: Orbit.toml</p>
 <pre><code class="language-toml">[ip]
-name = &quot;full-add&quot;
-version = &quot;0.1.0&quot;
+name = "full-add"
+version = "0.1.0"
 
 # See more keys and their definitions at https://cdotrus.github.io/orbit/reference/manifest.html
 
 [dependencies]
-gates = &quot;1.0.0&quot;
-half-add = &quot;0.1.0&quot;
+gates = "1.0.0"
+half-add = "0.1.0"
 
 </code></pre>
 <p>Okay, time to start coding!</p>
@@ -1020,7 +1027,7 @@ begin
 
 end architecture;
 </code></pre>
-<p>Our design heirarchy is getting more complex; we have full adders constructed of half adders and OR gates, half adders constructed of NAND gates, OR gates constructed of... uh-oh. More NAND gates. </p>
+<p>Our design heirarchy is getting more complex; we have full adders constructed of half adders and OR gates, half adders constructed of NAND gates, OR gates constructed of... uh-oh. More NAND gates.</p>
 <p>The NAND gate design unit used in the OR gates is different from NAND gates used in the half adders because they reside in different versions of the gates IP (essentially different IPs). So did we just define an NAND gate entity twice with the same identifier? Yes, and thanks to <code>orbit</code>, this situation is okay.</p>
 <h3 id="huh"><a class="header" href="#huh">Huh?</a></h3>
 <p>Typical EDA tools will complain and error out when primary design units share the same name. How would they know which one is being used where? Fortunately, <code>orbit</code> is one step ahead of these tools due to implementing an algorithm called <em>dynamic symbol transformation</em>.</p>
@@ -1033,23 +1040,23 @@ end architecture;
 └─ half_add (half-add:0.1.0)
    └─ nand_gate_8108cfb282 (gates:0.1.0)
 </code></pre>
-<p>The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, <code>orbit</code> appends the beginning checksum digits from the IP of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict. </p>
+<p>The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, <code>orbit</code> appends the beginning checksum digits from the IP of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict.</p>
 <p>To us though, these slight identifier renamings remain hidden because they occur among indirect dependencies in relation to our current project. When deciding which design unit to rename, <code>orbit</code> will always choose to rename the unit that is used as an indirect dependency. This key choice allows us to keep using the original unit name when integrating design units into the current project.</p>
 <h3 id="okay-so-what"><a class="header" href="#okay-so-what">Okay, so what?</a></h3>
 <p>This may be a silly example, but there is a key takeaway here. Designs are constantly evolving. When creating the latest module, you never know what will come next. By allowing the state of a design to live on while also providing support for new growth, a user no longer spends their time trying to manage compatibility among the increasingly interconnected dependencies. Instead, there exists a freedom to continue to innovate.</p>
 <h2 id="reusing-plugins-that-are-globally-configured"><a class="header" href="#reusing-plugins-that-are-globally-configured">Reusing plugins that are globally-configured</a></h2>
-<p>To conclude this mini tutorial series, let's generate a bitstream for the Yilinx FPGA with our full adder implementation. </p>
+<p>To conclude this mini tutorial series, let's generate a bitstream for the Yilinx FPGA with our full adder implementation.</p>
 <p>First, let's verify our yilinx plugin is available to us after appending it to our global configuration file in the previous tutorial.</p>
 <pre><code>$ orbit plan --list
 </code></pre>
 <pre><code>Plugins:
   yilinx          Generate bitstreams for Yilinx FPGAs
 </code></pre>
-<p>We can review more details about a particular plugin by specifying it with the &quot;--plugin&quot; command-line option while providing &quot;--list&quot; as well.</p>
+<p>We can review more details about a particular plugin by specifying it with the "--plugin" command-line option while providing "--list" as well.</p>
 <pre><code>$ orbit plan --list --plugin yilinx
 </code></pre>
 <pre><code>Name:    yilinx
-Command: python &quot;yilinx.py&quot; 
+Command: python "yilinx.py" 
 Root:    /Users/chase/tutorials/gates/.orbit
 Filesets:
     PIN-FILE        **/*.ydc
@@ -1068,7 +1075,7 @@ VHDL-RTL	work	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/or_gate.vhd
 VHDL-RTL	work	/Users/chase/tutorials/full-add/full_add.vhd
 
 </code></pre>
-<p>If a plugin is specified during the most recent planning step, it can be inferred to be used in the building step and therefore we can omit the &quot;--plugin&quot; command-line option for our convenience.</p>
+<p>If a plugin is specified during the most recent planning step, it can be inferred to be used in the building step and therefore we can omit the "--plugin" command-line option for our convenience.</p>
 <pre><code>$ orbit build
 </code></pre>
 <pre><code>YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-0.1.0-fe9ec9d99e/nand_gate.vhd into work...
@@ -1165,10 +1172,10 @@ The current working IP (CWIP) is the IP project currently being developed. It is
 <p><strong>Note:</strong> An IP will only read its own lock file and not the lock file of any of its dependencies when needing data to reproduce a build.</p>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbitignore"><a class="header" href="#orbitignore">.orbitignore</a></h1>
-<p>A <em>.orbitignore</em> is a file that lists user-defined file patterns to ignore during the execution of <code>orbit</code>. Orbit recognizes .orbitignore files that match &quot;.orbitignore&quot; with case-sensitivity.</p>
+<p>A <em>.orbitignore</em> is a file that lists user-defined file patterns to ignore during the execution of <code>orbit</code>. Orbit recognizes .orbitignore files that match ".orbitignore" with case-sensitivity.</p>
 <p>.orbitignore files are typically encouraged to be checked into version control.</p>
 <h2 id="syntax"><a class="header" href="#syntax">Syntax</a></h2>
-<p>.orbitignore files follow the same syntax as .gitignore files. See the pattern format for more information: </p>
+<p>.orbitignore files follow the same syntax as .gitignore files. See the pattern format for more information:</p>
 <ul>
 <li><a href="https://git-scm.com/docs/gitignore#_pattern_format">.gitignore pattern format</a></li>
 </ul>
@@ -1189,15 +1196,15 @@ hint: To resolve this error, either
 <pre><code>rtl/my_entity_file2.vhd
 
 </code></pre>
-<p>The .orbitignore will prevent Orbit from seeing the file &quot;rtl/my_entity_file2.vhd&quot; during program execution, which circumvents the previous error.</p>
+<p>The .orbitignore will prevent Orbit from seeing the file "rtl/my_entity_file2.vhd" during program execution, which circumvents the previous error.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="planning-1"><a class="header" href="#planning-1">Planning</a></h1>
 <p>The <em>plan stage</em> is the first step (1/2) in <code>orbit</code>'s run system. Planning refers to the process of collecting the necessary files to write to a blueprint file for a particular workflow. This step occurs before the building step.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="building-1"><a class="header" href="#building-1">Building</a></h1>
-<p>The <em>build stage</em> is the final step (2/2) in <code>orbit</code>'s run system. Building refers to the process of calling a plugin within <code>orbit</code> to perform a workflow. This step occurs after the planning step. </p>
+<p>The <em>build stage</em> is the final step (2/2) in <code>orbit</code>'s run system. Building refers to the process of calling a plugin within <code>orbit</code> to perform a workflow. This step occurs after the planning step.</p>
 <h2 id="plugin-execution"><a class="header" href="#plugin-execution">Plugin execution</a></h2>
-<p>A plugin starts its execution within the build directory. Therefore, all relative file paths inside the plugin's script will always be relative to the build directory. </p>
+<p>A plugin starts its execution within the build directory. Therefore, all relative file paths inside the plugin's script will always be relative to the build directory.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="protocols"><a class="header" href="#protocols">Protocols</a></h1>
-<p>A <em>protocol</em> is a series of steps requried to get a package from the internet. Protocols exist because there are numerous ways to access data from the internet depending on your development environment. Orbit tries to be as modular and flexible as possible by introducing protocols. </p>
+<p>A <em>protocol</em> is a series of steps requried to get a package from the internet. Protocols exist because there are numerous ways to access data from the internet depending on your development environment. Orbit tries to be as modular and flexible as possible by introducing protocols.</p>
 <p>Protocols are required during the download process to acquire a package for potential cache installation.</p>
 <h2 id="default-protocol"><a class="header" href="#default-protocol">Default protocol</a></h2>
 <p>Orbit has a default protocol that relies on the Rust <a href="https://crates.io/crates/curl"><code>curl</code></a> crate to make HTTP requests. This protocol assumes the provided URLs point to a zip archive containing the targeted package. The protocol will extract the zip file to the <em>queue</em>, which is a special temporary directory handled by Orbit. Orbit generates and manages a different queue directory for each package that must be downloaded.</p>
@@ -1205,9 +1212,9 @@ hint: To resolve this error, either
 <p>To use the default protocol, modify the desired project's manifest to only specify the URL as the source. The default protocol assumes the URL points to a publicly accessible zip archive.</p>
 <p>Filename: Orbit.toml</p>
 <pre><code class="language-toml">[ip]
-name = &quot;orbit&quot;
-version = &quot;1.0.0&quot;
-source = &quot;https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip&quot;
+name = "orbit"
+version = "1.0.0"
+source = "https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip"
 # ...
 </code></pre>
 <h2 id="custom-protocols"><a class="header" href="#custom-protocols">Custom protocols</a></h2>
@@ -1218,10 +1225,10 @@ This means when a custom protocol is executed, whatever files it downloads and e
 <p>One possible protocol relies on using the <code>git</code> command-line tool.</p>
 <p>Filename: config.toml</p>
 <pre><code class="language-toml">[[protocol]]
-name = &quot;gitit&quot;
-summary = &quot;Access packages through git to handle remote repositories&quot;
-command = &quot;git&quot;
-args = [&quot;clone&quot;, &quot;-b&quot;, &quot;{{ orbit.ip.version }}&quot;, &quot;{{ orbit.ip.source.url }}&quot;]
+name = "gitit"
+summary = "Access packages through git to handle remote repositories"
+command = "git"
+args = ["clone", "-b", "{{ orbit.ip.version }}", "{{ orbit.ip.source.url }}"]
 </code></pre>
 <p>This protocol calls <code>git</code> and clones from the IP's URL while checking out the branch/tag that matches the IP's version number. These values are resolved at runtime by Orbit through variable substitution.</p>
 <p>More complex protocols may require using a scripting language such as Python to perform the necessary steps.</p>
@@ -1229,23 +1236,23 @@ args = [&quot;clone&quot;, &quot;-b&quot;, &quot;{{ orbit.ip.version }}&quot;, &
 <p>To use a custom protocol, modify the desired project's manifest file to specify the URL as well as the defined protocol's name. It is each user of the package's responsibility to ensure the necessary protocol(s) are properly configured in their settings.</p>
 <p>Filename: Orbit.toml</p>
 <pre><code class="language-toml">[ip]
-name = &quot;orbit&quot;
-version = &quot;1.0.0&quot;
-source = { url = &quot;https://github.com/cdotrus/orbit.git&quot;, protocol = &quot;gitit&quot; }
+name = "orbit"
+version = "1.0.0"
+source = { url = "https://github.com/cdotrus/orbit.git", protocol = "gitit" }
 # ...
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="caching"><a class="header" href="#caching">Caching</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="downloading"><a class="header" href="#downloading">Downloading</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="variable-substitution"><a class="header" href="#variable-substitution">Variable Substitution</a></h1>
-<p><em>Variable substitution</em> is the process of injecting runtime information into specific locations. </p>
+<p><em>Variable substitution</em> is the process of injecting runtime information into specific locations.</p>
 <p>To have a variable be substituted with its value, use double opening curly brackets <code>{{</code> to denote the beginning of a variable key and double closing curly brackets <code>}}</code> to end the variable key. Whitespace is ignored around the variable key within the curly bracket sequences.</p>
 <p>When Orbit gets a string in a context supported by variable substitution, it will parse the characters to check if a variable should be substituted. If it finds a valid variable with the same name, then it replaces everything from and within the curly bracket sequences with the variable's value. If it cannot find a valid variable that matches the name, it leaves that sequence of the string unmodified.</p>
 <h3 id="example-1"><a class="header" href="#example-1">Example</a></h3>
 <p>Consider a plugin with the following fileset defined.</p>
-<pre><code class="language-toml">fileset.python-model = &quot;{{ orbit.bench }}.py&quot;
+<pre><code class="language-toml">fileset.python-model = "{{ orbit.bench }}.py"
 </code></pre>
-<p>Given the context that the testbench name is &quot;add_tb&quot;, then at runtime the fileset &quot;PYTHON-MODEL&quot; will resolve its file pattern to look for files that match &quot;add_tb.py&quot;.</p>
-<p>Now given a different context when the testbench name is called &quot;mult_tb&quot;, then at runtime the same fileset &quot;PYTHON-MODEL&quot; will resolve its file pattern to look for files that match &quot;mult_tb.py&quot;.</p>
+<p>Given the context that the testbench name is "add_tb", then at runtime the fileset "PYTHON-MODEL" will resolve its file pattern to look for files that match "add_tb.py".</p>
+<p>Now given a different context when the testbench name is called "mult_tb", then at runtime the same fileset "PYTHON-MODEL" will resolve its file pattern to look for files that match "mult_tb.py".</p>
 <h2 id="supported-variables"><a class="header" href="#supported-variables">Supported variables</a></h2>
 <p>Variable substitution is currently supported in the following contexts:</p>
 <h3 id="fileset-patterns"><a class="header" href="#fileset-patterns">Fileset patterns</a></h3>
@@ -1267,12 +1274,12 @@ source = { url = &quot;https://github.com/cdotrus/orbit.git&quot;, protocol = &q
 <li><code>orbit.env.*</code>: Any environment variables loaded from configuration files.</li>
 </ul>
 <h2 id="environment-variable-translation-examples"><a class="header" href="#environment-variable-translation-examples">Environment variable translation examples</a></h2>
-<p>A substitution variable key is the environment variable key but converted to lowercase with each &quot;_&quot; character replaced by a &quot;.&quot; character.</p>
+<p>A substitution variable key is the environment variable key but converted to lowercase with each "_" character replaced by a "." character.</p>
 <p>Environment variables can be set in the configuration file like so.</p>
 <pre><code class="language-toml">[env]
-foo = &quot;bar&quot;
-github-user = &quot;cdotrus&quot;
-Yilinx_Path = &quot;/Users/chase/fpga/bin/yilinx&quot;
+foo = "bar"
+github-user = "cdotrus"
+Yilinx_Path = "/Users/chase/fpga/bin/yilinx"
 </code></pre>
 <p>This configuration translates to the following variables:</p>
 <div class="table-wrapper"><table><thead><tr><th>TOML <code>[env]</code> entry</th><th>Environment variable</th><th>Substitution variable</th></tr></thead><tbody>
@@ -1317,7 +1324,7 @@ Yilinx_Path = &quot;/Users/chase/fpga/bin/yilinx&quot;
 end entity;
 </code></pre>
 <p>Remember that this identifier could appear again at the same namespace level as this exsiting entity in a different VHDL file.</p>
-<p>Now imagine you are integrating VHDL code from various existing IPs. As you instantiate entities within larger entities, you realize there exists another entity named <code>and_gate</code> further down in the hierarchy, but this one has a different behavior and port interface than the previously defined <code>and_gate</code> circuit from the &quot;lab1/&quot; directory.</p>
+<p>Now imagine you are integrating VHDL code from various existing IPs. As you instantiate entities within larger entities, you realize there exists another entity named <code>and_gate</code> further down in the hierarchy, but this one has a different behavior and port interface than the previously defined <code>and_gate</code> circuit from the "lab1/" directory.</p>
 <p>Filename: lab3/and_gate.vhd</p>
 <pre><code class="language-vhdl">entity and_gate is
   port(
@@ -1364,7 +1371,7 @@ end entity;
 <div style="break-before: page; page-break-before: always;"></div><h1 id="manifest"><a class="header" href="#manifest">Manifest</a></h1>
 <p>The <code>Orbit.toml</code> file for each IP is called its manifest. It is written in the <a href="https://toml.io/en/">TOML</a> format. It is maintained by the developer and contains metadata that is needed to build the IP.</p>
 <blockquote>
-<p><strong>Note:</strong> The manifest's file name is &quot;Orbit.toml&quot;, with respect to case-sensitivity.</p>
+<p><strong>Note:</strong> The manifest's file name is "Orbit.toml", with respect to case-sensitivity.</p>
 </blockquote>
 <p>Every manifest file consists of the following sections:</p>
 <ul>
@@ -1388,80 +1395,80 @@ end entity;
 <h3 id="the-ip-section"><a class="header" href="#the-ip-section">The <code>[ip]</code> section</a></h3>
 <p>The first section in a <code>Orbit.toml</code> file is <code>[ip]</code>.</p>
 <pre><code class="language-toml">[ip]
-name = &quot;my-ip&quot; # the name of the package
-version = &quot;0.1.0&quot; # the current version
+name = "my-ip" # the name of the package
+version = "0.1.0" # the current version
 </code></pre>
 <p>The only fields required by <code>orbit</code> are name and version.</p>
 <h3 id="the-name-field"><a class="header" href="#the-name-field">The <code>name</code> field</a></h3>
 <pre><code class="language-toml">[ip]
-name = &quot;my-ip&quot;
+name = "my-ip"
 # ...
 </code></pre>
 <h3 id="the-version-field"><a class="header" href="#the-version-field">The <code>version</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-version = &quot;0.1.0&quot;
+version = "0.1.0"
 </code></pre>
 <h3 id="the-authors-field"><a class="header" href="#the-authors-field">The <code>authors</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-authors = [&quot;Duncan Idaho&quot;, &quot;Gurney Halleck&quot;]
+authors = ["Duncan Idaho", "Gurney Halleck"]
 
 </code></pre>
 <h3 id="the-library-field"><a class="header" href="#the-library-field">The <code>library</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-library = &quot;work&quot;
+library = "work"
 </code></pre>
 <h3 id="the-description-field"><a class="header" href="#the-description-field">The <code>description</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-description = &quot;A short description of the ip&quot;
+description = "A short description of the ip"
 </code></pre>
 <h3 id="the-keywords-field"><a class="header" href="#the-keywords-field">The <code>keywords</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-keywords = [&quot;cpu&quot;, &quot;risc&quot;]
+keywords = ["cpu", "risc"]
 </code></pre>
 <h3 id="the-source-field"><a class="header" href="#the-source-field">The <code>source</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-source = &quot;https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip&quot;
+source = "https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip"
 </code></pre>
 <h3 id="the-public-field"><a class="header" href="#the-public-field">The <code>public</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-public = [&quot;/rtl&quot;]
+public = ["/rtl"]
 </code></pre>
 <p>The <code>public</code> field can be used to explicitly specify which files are visible to other IP when being when being referenced as a dependency. The list contains glob-style patterns that conform to .gitignore file semantics, and are always compared relative that IP's root directory.</p>
 <p>If no <code>public</code> field is present, then all files are implicitly specified as visible (public) to other IP when being referenced as a dependency.</p>
 <pre><code class="language-toml">[ip]
 # ...
-source = { url = &quot;https://github.com/cdotrus/orbit.git&quot;, protocol = &quot;p-git&quot;, tag = &quot;1.0.0&quot; }
+source = { url = "https://github.com/cdotrus/orbit.git", protocol = "p-git", tag = "1.0.0" }
 </code></pre>
 <h3 id="the-readme-field"><a class="header" href="#the-readme-field">The <code>readme</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-readme = &quot;README.md&quot;
+readme = "README.md"
 </code></pre>
 <h3 id="the-metadata-section"><a class="header" href="#the-metadata-section">The <code>[metadata]</code> section</a></h3>
 <pre><code class="language-toml">[ip.metadata]
 my-field-1 = true
-my-field-2 = &quot;hello world&quot;
+my-field-2 = "hello world"
 # ...
 </code></pre>
 <h3 id="the-dependencies-section"><a class="header" href="#the-dependencies-section">The <code>[dependencies]</code> section</a></h3>
 <p>The <code>[dependencies]</code> section is a table of direct dependencies required for the current IP.</p>
 <pre><code class="language-toml">[dependencies]
-gates = &quot;1.0.0&quot;
-uart = &quot;2.3.1&quot;
+gates = "1.0.0"
+uart = "2.3.1"
 </code></pre>
 <p>If the IP has no dependencies, the section can be omitted from the manifest. The IPs listed in this section will always be included in the build graph.</p>
 <h3 id="the-dev-dependencies-section"><a class="header" href="#the-dev-dependencies-section">The <code>[dev-dependencies]</code> section</a></h3>
 <p>The <code>[dev-dependencies]</code> section is a table of direct dependencies required for the current IP.</p>
 <pre><code class="language-toml">[dev-dependencies]
-testkit = &quot;1.3.7&quot;
-logic-analyzer = &quot;4.8.0&quot;
+testkit = "1.3.7"
+logic-analyzer = "4.8.0"
 </code></pre>
 <p>If the IP has no development dependencies, the section can be omitted from the manifest. The IPs listed in this section will not be included in the build graph for when this IP is used as a dependency itself.</p>
 <!-- 
@@ -1559,7 +1566,7 @@ ks-tech.util.toolbox = "3.0.4"
 <div style="break-before: page; page-break-before: always;"></div><h1 id="packages"><a class="header" href="#packages">Packages</a></h1>
 <p>Packages are a group of related files that fall within the same scope. Packages are more commonly called <em>intellectual property</em>, or IP, in the hardware design space.</p>
 <h2 id="package-identifier"><a class="header" href="#package-identifier">Package Identifier</a></h2>
-<p>The package identifier is a project's unique string of characters following a specification. It is a single name and is defined under the &quot;name&quot; field in the IP's manifest. Every IP is required to have a name.</p>
+<p>The package identifier is a project's unique string of characters following a specification. It is a single name and is defined under the "name" field in the IP's manifest. Every IP is required to have a name.</p>
 <h3 id="rules"><a class="header" href="#rules">Rules</a></h3>
 <p>The following rules currently apply to a package identifier:</p>
 <ul>
@@ -1590,8 +1597,8 @@ ks-tech.util.toolbox = "3.0.4"
 <p><strong>Note:</strong> A resolution to this problem is to add an IP's UUID to the package specification. While each IP already has a UUID auto-assigned in their lock file, this is a proposed feature that has yet to be implemented.</p>
 </blockquote>
 <h2 id="package-library"><a class="header" href="#package-library">Package Library</a></h2>
-<p>A package can optionally belong to a <em>library</em>. A library is defined under the &quot;library&quot; field in the IP's manifest and follows the same rules as the package identifier. When producing a blueprint file, it will choose to associate all HDL files within a particular package with the provided library. If no library is defined in the package's manifest, then the default <code>work</code> library is provided. </p>
-<p>The library for the current working package will always be <code>work</code>, regardless of the value of the &quot;library&quot; field in the manifest file. It's &quot;library&quot; field value will be in effect when the package is referenced as a dependency.</p>
+<p>A package can optionally belong to a <em>library</em>. A library is defined under the "library" field in the IP's manifest and follows the same rules as the package identifier. When producing a blueprint file, it will choose to associate all HDL files within a particular package with the provided library. If no library is defined in the package's manifest, then the default <code>work</code> library is provided.</p>
+<p>The library for the current working package will always be <code>work</code>, regardless of the value of the "library" field in the manifest file. It's "library" field value will be in effect when the package is referenced as a dependency.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="versions"><a class="header" href="#versions">Versions</a></h1>
 <p>Code evolves over time, and versions provide a method for capturing a project's state at a given time stamp.</p>
 <p>Orbit uses the <em>semantic versioning</em> scheme for capturing project's state at given time periods. Semantic versioning uses 3 numeric values to signify different levels of change.</p>
@@ -1603,7 +1610,7 @@ ks-tech.util.toolbox = "3.0.4"
 <tr><td>Micro</td><td>Fixing bugs in backward-compatible way</td></tr>
 </tbody></table>
 </div>
-<p>To learn more about semantic versioning, visit the official <a href="https://semver.org">website</a>. </p>
+<p>To learn more about semantic versioning, visit the official <a href="https://semver.org">website</a>.</p>
 <p>Since everyone's stance on what code changes affect which version level may differ, it's important to keep a changelog highlighting differences among versions.</p>
 <blockquote>
 <p><strong>Note:</strong> An alternative to <em>semantic versioning</em> is <em>calender versioning</em>, which
@@ -1616,11 +1623,11 @@ also operates on the basis of using 3 digits. To learn more about <em>calender v
 <p>All 3 levels must be given a numeric value consisting of only digits separated by a dot (<code>.</code>) character. This is considered a <em>fully qualified</em> version.</p>
 <pre><code>1.0.0
 </code></pre>
-<p>In some scenarios a <em>partially qualified</em> version can be accepted. This means one or more of the version's levels are omitted. </p>
+<p>In some scenarios a <em>partially qualified</em> version can be accepted. This means one or more of the version's levels are omitted.</p>
 <pre><code>1
 1.0
 </code></pre>
-<p>When given a partially qualified version, Orbit references the maximum version available that satifies the partially qualified version. If no version is specified, it assumes the request is for the latest known version. The latest known version can also be explicitly requested by inputting <code>latest</code> as the version. Assume the known released versions for a given IP are as listed: </p>
+<p>When given a partially qualified version, Orbit references the maximum version available that satifies the partially qualified version. If no version is specified, it assumes the request is for the latest known version. The latest known version can also be explicitly requested by inputting <code>latest</code> as the version. Assume the known released versions for a given IP are as listed:</p>
 <div class="table-wrapper"><table><thead><tr><th>Versions</th></tr></thead><tbody>
 <tr><td>2.1.0</td></tr>
 <tr><td>1.5.0</td></tr>
@@ -1644,7 +1651,7 @@ also operates on the basis of using 3 digits. To learn more about <em>calender v
 <p>A fully qualified version must be written in every project's manifest file.</p>
 <pre><code class="language-toml">[ip]
 # ...
-version = &quot;1.5.4&quot;
+version = "1.5.4"
 # ...
 </code></pre>
 <p>A specific (or partially speific) version can be requested for an IP on the command-line by placing a colon <code>:</code> character between the package's name and the requested version.</p>
@@ -1652,7 +1659,7 @@ version = &quot;1.5.4&quot;
 $ orbit get nor_gate --ip gates:1.5
 </code></pre>
 <h3 id="comparing-versions"><a class="header" href="#comparing-versions">Comparing versions</a></h3>
-<p>The following pseudocode provides additional help in learning about how versions are compared (selecting a &quot;higher&quot; version).</p>
+<p>The following pseudocode provides additional help in learning about how versions are compared (selecting a "higher" version).</p>
 <pre><code>IF major levels are not equal:
     RETURN version with larger major level value.
 ELSE IF minor levels are not equal:
@@ -1662,7 +1669,7 @@ ELSE:
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="filesets"><a class="header" href="#filesets">Filesets</a></h1>
 <p>A <em>fileset</em> is group of files identified by a common file pattern. Typically they are denoted by a common file extension, such as <code>.txt</code>, but a fileset can more broadly be grouped under any glob-style pattern.</p>
-<p>A fileset itself consists of a name and a pattern. </p>
+<p>A fileset itself consists of a name and a pattern.</p>
 <ul>
 <li>The name is a string that is normalized to ALL-UPPERCASE-WITH-HYPENS. It is used to identify which fileset a file belongs to.</li>
 <li>The pattern is a glob-style pattern. It is used to perform glob-style matching when searching the file system for files to add to a fileset.</li>
@@ -1670,7 +1677,7 @@ ELSE:
 <h2 id="built-in-filesets"><a class="header" href="#built-in-filesets">Built-in filesets</a></h2>
 <p>There are built-in filesets that <code>orbit</code> uses that have special rules and work across all IP, including dependencies. The filesets built into <code>orbit</code> that are currently supported are:</p>
 <ul>
-<li><code>VHDL-RTL</code>: VHDL files (.vhd, .vhdl) that contain zero entities without a port interface. </li>
+<li><code>VHDL-RTL</code>: VHDL files (.vhd, .vhdl) that contain zero entities without a port interface.</li>
 <li><code>VHDL-SIM</code>: VHDL files (.vhd, .vhdl) that contain at least one entity without a port interface.</li>
 </ul>
 <h2 id="reserved-filesets"><a class="header" href="#reserved-filesets">Reserved filesets</a></h2>
@@ -1700,7 +1707,7 @@ ELSE:
 </div>
 <p>The custom patterns begin their search for files at the root directory of the current working IP. The interpreted pattern is the actual glob-style pattern used when collecting files for custom filesets.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="blueprint"><a class="header" href="#blueprint">Blueprint</a></h1>
-<p>The <em>blueprint</em> is a file containing a list of files required for a particular backend. It is the main way <code>orbit</code> communicates to a backend system. </p>
+<p>The <em>blueprint</em> is a file containing a list of files required for a particular backend. It is the main way <code>orbit</code> communicates to a backend system.</p>
 <p>When the blueprint is created, it is saved to the current working IP's build directory.</p>
 <h2 id="formats"><a class="header" href="#formats">Formats</a></h2>
 <p>The currently supported formats are:</p>
@@ -1742,7 +1749,7 @@ VHDL-SIM	work	/Users/chase/projects/lc3b/sim/alu_tb.vhd
 
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="environment-variables"><a class="header" href="#environment-variables">Environment Variables</a></h1>
-<p>Orbit's configuration can be customized with the setting of specific environment variables. </p>
+<p>Orbit's configuration can be customized with the setting of specific environment variables.</p>
 <ul>
 <li>
 <p><code>ORBIT_HOME</code> - directory where orbit stores its data. By default it is <code>$HOME/.orbit</code> on Unix systems and <code>%USERPROFILE%/.orbit</code> on Windows systems.</p>
@@ -1764,7 +1771,7 @@ VHDL-SIM	work	/Users/chase/projects/lc3b/sim/alu_tb.vhd
 </li>
 </ul>
 <h2 id="runtime-environment-variables"><a class="header" href="#runtime-environment-variables">Runtime environment variables</a></h2>
-<p>Orbit also sets environment variables during runtime so a plugin has access to runtime information. </p>
+<p>Orbit also sets environment variables during runtime so a plugin has access to runtime information.</p>
 <ul>
 <li>
 <p><code>ORBIT_BUILD_DIR</code> - directory to place the <code>blueprint.tsv</code> file relative to the current IP path. Default is <code>build</code>.</p>
@@ -1805,7 +1812,7 @@ precedence:
 --><div style="break-before: page; page-break-before: always;"></div><h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
 <p>The <code>config.toml</code> file stores settings and extends <code>orbit</code>'s functionality. It is written in the <a href="https://toml.io/en/">TOML</a> format. It is maintained by the developer and can be shared across teams for consistent development environments.</p>
 <blockquote>
-<p><strong>Note:</strong> The configuration's file name is &quot;config.toml&quot;, with respect to case-sensitivity.</p>
+<p><strong>Note:</strong> The configuration's file name is "config.toml", with respect to case-sensitivity.</p>
 </blockquote>
 <h2 id="paths"><a class="header" href="#paths">Paths</a></h2>
 <p>When a field is expected to be a filesystem path, <code>orbit</code> has the ability to resolve relative paths. The path is determined in relation to the currently processed <code>config.toml</code>'s parent directory. This design choice was implemented in order to allow for path definitions to be valid across developer machines when sharing configurations. It is recommended to use relative paths when setting a path to a field in a <code>config.toml</code>.</p>
@@ -1844,7 +1851,7 @@ precedence:
 <li><a href="reference/configuration.html#the-command-field">command</a> - The command to execute the plugin.</li>
 <li><a href="reference/configuration.html#the-args-field">args</a> - Arguments to pass to the command.</li>
 <li><a href="reference/configuration.html#the-fileset-section">[fileset]</a> - Filesets to collect for the plugin.</li>
-<li><a href="reference/configuration.html#the-explanation-field">explanation</a> - A detailed description of the plugin. </li>
+<li><a href="reference/configuration.html#the-explanation-field">explanation</a> - A detailed description of the plugin.</li>
 </ul>
 </li>
 <li><a href="reference/configuration.html#the-protocol-array">[[protocol]]</a> - Define a protocol.
@@ -1859,21 +1866,21 @@ precedence:
 </ul>
 <h3 id="the-include-field"><a class="header" href="#the-include-field">The <code>include</code> field</a></h3>
 <pre><code class="language-toml">include = [
-    &quot;profiles/p1/config.toml&quot;,
-    &quot;profiles/p2/config.toml&quot;
+    "profiles/p1/config.toml",
+    "profiles/p2/config.toml"
 ]
 </code></pre>
 <h3 id="the-general-section"><a class="header" href="#the-general-section">The <code>[general]</code> section</a></h3>
 <h3 id="the-build-dir-field"><a class="header" href="#the-build-dir-field">The <code>build-dir</code> field</a></h3>
-<p>Define the default output directory to create for the planning and building phases. This value can be overridden on the command-line when the <code>--build-dir</code> option is available. When this field is not defined, the default value for the build directory is &quot;build&quot;.</p>
+<p>Define the default output directory to create for the planning and building phases. This value can be overridden on the command-line when the <code>--build-dir</code> option is available. When this field is not defined, the default value for the build directory is "build".</p>
 <pre><code class="language-toml">[general]
-build-dir = &quot;build&quot;
+build-dir = "build"
 # ...
 </code></pre>
 <h3 id="the-language-mode-field"><a class="header" href="#the-language-mode-field">The <code>language-mode</code> field</a></h3>
-<p>Enable specific HDLs to be read by <code>orbit</code>. Supports the following options: &quot;vhdl&quot;, &quot;verilog&quot;, or &quot;mixed&quot;. When this field is not defined, the default value for the language mode is &quot;mixed&quot; (enabling all supported HDLs).</p>
+<p>Enable specific HDLs to be read by <code>orbit</code>. Supports the following options: "vhdl", "verilog", or "mixed". When this field is not defined, the default value for the language mode is "mixed" (enabling all supported HDLs).</p>
 <pre><code class="language-toml">[general]
-language-mode = &quot;mixed&quot;
+language-mode = "mixed"
 </code></pre>
 <h3 id="the-vhdl-format-section"><a class="header" href="#the-vhdl-format-section">The <code>[vhdl-format]</code> section</a></h3>
 <p>The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their hard-coded default value.</p>
@@ -1897,9 +1904,9 @@ mapping-offset = 1
 <p>The user can define an arbitrary number of their own entries with their determined value represented in string format.</p>
 <pre><code class="language-toml">[env]
 # accessible as ORBIT_ENV_FOO
-foo = &quot;0&quot;
+foo = "0"
 # accessible as ORBIT_ENV_SUPER_BAR
-super-bar = &quot;1&quot;
+super-bar = "1"
 </code></pre>
 <h3 id="the-plugin-array"><a class="header" href="#the-plugin-array">The <code>[[plugin]]</code> array</a></h3>
 <h3 id="the-name-field-1"><a class="header" href="#the-name-field-1">The <code>name</code> field</a></h3>
@@ -2109,27 +2116,27 @@ Dependencies:
 <h2 id="schema"><a class="header" href="#schema">Schema</a></h2>
 <p>The following schema is implemented for the json output:</p>
 <pre><code class="language-json">{
-  &quot;identifier&quot;: string
-  &quot;generics&quot;: [
+  "identifier": string
+  "generics": [
     {
-        &quot;identifier&quot;: string
-        &quot;mode&quot;: string
-        &quot;type&quot;: string
-        &quot;default&quot;: string // null if blank
+        "identifier": string
+        "mode": string
+        "type": string
+        "default": string // null if blank
     }
   ]
-  &quot;ports&quot;: [
+  "ports": [
     {
-        &quot;identifier&quot;: string
-        &quot;mode&quot;: string
-        &quot;type&quot;: string
-        &quot;default&quot;: string // null if blank
+        "identifier": string
+        "mode": string
+        "type": string
+        "default": string // null if blank
     }
   ]
-  &quot;architectures&quot;: [
+  "architectures": [
       string
   ],
-  &quot;language&quot;: string
+  "language": string
 }
 </code></pre>
 <h2 id="references"><a class="header" href="#references">References</a></h2>
@@ -2153,7 +2160,7 @@ Dependencies:
 <pre><code>orbit search [&lt;ip&gt;]
 </code></pre>
 <h3 id="flag"><a class="header" href="#flag"><strong>Flag</strong></a></h3>
-<p>A flag is a simple boolean on-off conditional to alter a command's behavior, that is true when present and false otherwise. </p>
+<p>A flag is a simple boolean on-off conditional to alter a command's behavior, that is true when present and false otherwise.</p>
 <pre><code>--help
 </code></pre>
 <p>Flags are options that do not take an argument and can be omitted.</p>
@@ -2183,7 +2190,7 @@ Dependencies:
 <p>An example of using the argument terminator is brought up when calling a plugin through <code>orbit</code> during the building step.</p>
 <pre><code>$ orbit build --plugin yilinx -- --sram
 </code></pre>
-<p>In this command, <code>orbit</code> does not interpret the &quot;--sram&quot; flag, but instead passes it to the plugin named &quot;yilinx&quot; to handle.</p>
+<p>In this command, <code>orbit</code> does not interpret the "--sram" flag, but instead passes it to the plugin named "yilinx" to handle.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="commands"><a class="header" href="#commands">Commands</a></h1>
 <p>Commands are loosely grouped into two types: development and management. The commands are listed below in their group and in a typical order of usage for a possible workflow.</p>
 <h2 id="development"><a class="header" href="#development">Development</a></h2>
@@ -2217,8 +2224,8 @@ Dependencies:
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
 <p>This command will create a new ip at the target directory <code>&lt;path&gt;</code>. The command
-assumes the path does not already exists. It will attempt to create a new 
-directory at the destination with a manifest. </p>
+assumes the path does not already exists. It will attempt to create a new
+directory at the destination with a manifest.</p>
 <p>If no name is supplied, then the ip's name defaults to the final path component
 of the path argument. Use the name option to provide a custom name.</p>
 <p>This command fails if the path already exists. See the <code>init</code> command for
@@ -2316,7 +2323,7 @@ it. To keep existing files alive while allowing new files to appear, use the
 <p><code>--file</code><br />
       Copy the source code to a temporary read-only file</p>
 <p><code>--location</code><br />
-      Append the targeted code segment's line and column number to the resulting filepath </p>
+      Append the targeted code segment's line and column number to the resulting filepath</p>
 <p><code>--keep</code><br />
       Do not clean the temporary directory of existing files</p>
 <p><code>--limit &lt;num&gt;</code><br />
@@ -2329,8 +2336,8 @@ it. To keep existing files alive while allowing new files to appear, use the
       Navigate to the preceding comments of this VHDL segment</p>
 <h2 id="examples-5"><a class="header" href="#examples-5"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit read and_gate --ip gates:1.0.0
-orbit read math_pkg --ip math --doc &quot;function clog2&quot;
-orbit read math_pkg --ip math --start &quot;package math_pkg&quot; --doc &quot;function flog2p1&quot; --location --file
+orbit read math_pkg --ip math --doc "function clog2"
+orbit read math_pkg --ip math --start "package math_pkg" --doc "function flog2p1" --location --file
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-get"><a class="header" href="#orbit-get"><strong>orbit get</strong></a></h1>
 <h2 id="name-4"><a class="header" href="#name-4"><strong>NAME</strong></a></h2>
@@ -2354,7 +2361,7 @@ add an ip as a dependency to properly reference its source code files, edit
 the current working ip's manifest with a new entry under the <code>[dependencies]</code>
 table with the dependency ip and its version.</p>
 <p>An identifier prefix or suffix can be attached to the signal declarations and
-the instantiation's port connection signals by using <code>--signal-prefix</code> and 
+the instantiation's port connection signals by using <code>--signal-prefix</code> and
 <code>--signal-suffix</code> respectively. These optional texts are treated as normal
 strings and are not checked for correct syntax.</p>
 <p>When no output options are specified, this command by default will display the
@@ -2399,12 +2406,12 @@ orbit get or_gate --ip gates --json
 By default, it will attempt to automatically detect the root if it is
 unambiguous and <code>--root</code> is not provided. This command only works when called
 from the current working ip.</p>
-<p>The hdl-level tree displays the connections between entities. The hdl tree does 
-not show how many times an entity is instantiated within a parent entity, and 
-all architectures for each entity are analyzed. If an unidentified entity is 
-instantiated it will appear as a leaf and is denoted as a black box by a '?' 
+<p>The hdl-level tree displays the connections between entities. The hdl tree does
+not show how many times an entity is instantiated within a parent entity, and
+all architectures for each entity are analyzed. If an unidentified entity is
+instantiated it will appear as a leaf and is denoted as a black box by a '?'
 character.</p>
-<p>An entity is considered a black box if it cannot find that referenced entity's 
+<p>An entity is considered a black box if it cannot find that referenced entity's
 hdl source code file.</p>
 <p>To view the dependency tree at the ip-level, use <code>--ip</code>.</p>
 <h2 id="options-5"><a class="header" href="#options-5"><strong>OPTIONS</strong></a></h2>
@@ -2432,9 +2439,9 @@ orbit tree --ascii --all
 <pre><code>orbit plan [options]
 </code></pre>
 <h2 id="description-6"><a class="header" href="#description-6"><strong>DESCRIPTION</strong></a></h2>
-<p>This command carries out the &quot;planning phase&quot;. This phase involves reading
-and writing to the lockfile and collecting all necessary files according to 
-their defined fileset into a blueprint file for future build processes. This 
+<p>This command carries out the "planning phase". This phase involves reading
+and writing to the lockfile and collecting all necessary files according to
+their defined fileset into a blueprint file for future build processes. This
 command acts upon the current working ip.</p>
 <p>By default, the top level unit and testbench are auto-detected according to
 the current design heirarchy. If there are multiple candidates for a potential
@@ -2446,28 +2453,28 @@ the proper environment variables for downstream plugins and scripts that
 may require this information. If a known plugin is provided with <code>--plugin</code>,
 then it will also be stored in the <code>.env</code> file to be recalled during the
 build phase.</p>
-<p>User-defined filesets are only collected within the current working ip's 
+<p>User-defined filesets are only collected within the current working ip's
 path. Plugins may have custom filesets defined in their configuration. When
-specifying a known plugin with <code>--plugin</code>, it will collect the filesets 
+specifying a known plugin with <code>--plugin</code>, it will collect the filesets
 defined for that plugin. Use <code>--fileset</code> as many times as needed to define
 additional filesets.</p>
 <p>During the planning phase, a lockfile is produced outlining the exact ip
 dependencies required, how to get them, and how to verify them. The lockfile
-should be checked into version control and should not manually edited by the 
+should be checked into version control and should not manually edited by the
 user.</p>
 <p>If the current working ip's manifest data matches its data stored in its
 own lockfile, then Orbit will read from the lockfile to create the ip
 dependency graph. To force Orbit to build the ip dependency graph from
 scratch, use <code>--force</code>.</p>
-<p>If only needing to update the lockfile, use <code>--lock-only</code>. This flag does 
+<p>If only needing to update the lockfile, use <code>--lock-only</code>. This flag does
 not require a toplevel or testbench to be determined. Using <code>--lock-only</code> with
-<code>--force</code> will overwrite the lockfile regardless if it is already in sync 
+<code>--force</code> will overwrite the lockfile regardless if it is already in sync
 with the current working ip's manifest data.</p>
 <p>When updating the lockfile, this command will download and install any new
 dependencies if necessary. To only download an ip, see the <code>download</code> command.
 To only install an ip, see the <code>install</code> command.</p>
 <p>If an installed dependency's computed checksum does not match the checksum
-stored in the lockfile, it assumes the installation to be corrupt and will 
+stored in the lockfile, it assumes the installation to be corrupt and will
 re-install the dependency to the cache.</p>
 <h2 id="options-6"><a class="header" href="#options-6"><strong>OPTIONS</strong></a></h2>
 <p><code>--top &lt;unit&gt;</code><br />
@@ -2492,7 +2499,7 @@ re-install the dependency to the cache.</p>
       Include all locally found HDL files</p>
 <h2 id="examples-8"><a class="header" href="#examples-8"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit plan --bench my_tb
-orbit plan --top and_gate --fileset PIN-PLAN=&quot;*.board&quot;
+orbit plan --top and_gate --fileset PIN-PLAN="*.board"
 orbit plan --plugin vivado --clean --bench ram_tb
 orbit plan --lock-only
 </code></pre>
@@ -2503,24 +2510,24 @@ orbit plan --lock-only
 <pre><code>orbit build [options] [--] [args]...
 </code></pre>
 <h2 id="description-7"><a class="header" href="#description-7"><strong>DESCRIPTION</strong></a></h2>
-<p>This command carries out the &quot;building phase&quot;. This phase involves running a
+<p>This command carries out the "building phase". This phase involves running a
 user-defined command or plugin as a subprocess. It is required that the
-planning phase occurs before the building phase. This command acts upon the 
+planning phase occurs before the building phase. This command acts upon the
 current working ip.</p>
 <p>If a plugin was previously used during the planning phase, then this command
 by default will reference and call that plugin after loading the previously
-written <code>.env</code> file from the planning phase. Either a plugin from <code>--plugin</code> 
+written <code>.env</code> file from the planning phase. Either a plugin from <code>--plugin</code>
 or a command from <code>--command</code> is required if a plugin was not previously
 specified during planning.</p>
 <p>If <code>--list</code> is used, then it will display a list of the available plugins to
 the user. Using <code>--list</code> in combination with a plugin from <code>--plugin</code> will
-display any detailed help information the plugin has documented in its 
+display any detailed help information the plugin has documented in its
 definition.</p>
 <p>As a refresher, a backend workflow typically performs three tasks:</p>
 <ol>
 <li>Parse the blueprint file</li>
 <li>Process the referenced files listed in the blueprint</li>
-<li>Generate an output product </li>
+<li>Generate an output product</li>
 </ol>
 <p>Any command-line arguments entered after the terminating flag <code>--</code> will be
 passed in the received order as arguments to the subprocess's command. If a plugin already
@@ -2550,25 +2557,25 @@ orbit build --plugin xsim --force -- --help
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-launch"><a class="header" href="#orbit-launch"><strong>orbit launch</strong></a></h1>
 <h2 id="name-8"><a class="header" href="#name-8"><strong>NAME</strong></a></h2>
-<p>launch - release an ip's next version </p>
+<p>launch - release an ip's next version</p>
 <h2 id="synopsis-8"><a class="header" href="#synopsis-8"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit launch [options]
 </code></pre>
 <h2 id="description-8"><a class="header" href="#description-8"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will perform a series of checks against the current ip to 
-verify it is able to release a new version and the tag the latest git 
-commit with the next version number. </p>
-<p>By default, it will only perform a dry run of the launch process to verify 
+<p>This command will perform a series of checks against the current ip to
+verify it is able to release a new version and the tag the latest git
+commit with the next version number.</p>
+<p>By default, it will only perform a dry run of the launch process to verify
 the procedure will run with no errors. To proceed with a launch to tag the
 latest commit, include the '--ready' flag.</p>
-<p>The next version it will release is the one defined in the Orbit.toml 
-manifest file. You can also set the next version on the command-line by 
+<p>The next version it will release is the one defined in the Orbit.toml
+manifest file. You can also set the next version on the command-line by
 using the '--next &lt;version&gt;' option. If this option is used, then a new git
-commit will be created by Orbit to save the version change it makes to the 
-Orbit.toml. To write a custom message for this commit, include the 
+commit will be created by Orbit to save the version change it makes to the
+Orbit.toml. To write a custom message for this commit, include the
 '--message &lt;message&gt;' option.</p>
 <p>The '--next &lt;version&gt;' option will go off of the previous version defined
-in the Orbit.toml manifest to determine the next increment. </p>
+in the Orbit.toml manifest to determine the next increment.</p>
 <h2 id="options-8"><a class="header" href="#options-8"><strong>OPTIONS</strong></a></h2>
 <p><code>--ready</code><br />
       perform a real run through the launch process</p>
@@ -2595,7 +2602,7 @@ consists of 3 levels: cache, downloads, and channels.</p>
 level are considered downloaded. Any ip at the channels level is considered
 available. An ip does not exist in the catalog if it is not found at any one
 of the three defined levels.</p>
-<p>When a package name is provided for <code>&lt;ip&gt;</code>, it will begin to partially match 
+<p>When a package name is provided for <code>&lt;ip&gt;</code>, it will begin to partially match
 the name with the names of the known ip. If an ip's name begins with <code>&lt;ip&gt;</code>, it
 is included in the filtered resultes. To strictly match the argument against an
 ip name, use <code>--match</code>.</p>
@@ -2627,22 +2634,22 @@ orbit search --keyword RF --limit 20
 <p>This command will get a package from the internet using the default protocol
 or a user-defined protocol. It places the package in the path defined as
 environment variable <code>$ORBIT_DOWNLOADS</code>.</p>
-<p>Downloads are vital to Orbit's management system as to avoid having to solely 
+<p>Downloads are vital to Orbit's management system as to avoid having to solely
 rely on accessing the internet to get IP. Downloads allow Orbit to quickly
 repair broken installations and allow users to learn about IP before installing.</p>
 <p>When using a custom protocol, Orbit expects the final fetched repository to
 exist within a special directory called the queue. By default, the queue is set
-to a temporary directory, but it can be overridden with <code>--queue</code>. After a 
-protocol is executed, Orbit resumes the download process by trying to detect the 
-target IP and then performing a compression algorithm on the path to store as a 
-single file archive. This final archive is special and packed with additional 
-bytes, which makes it unsuitable to easily unzip with existing compression 
+to a temporary directory, but it can be overridden with <code>--queue</code>. After a
+protocol is executed, Orbit resumes the download process by trying to detect the
+target IP and then performing a compression algorithm on the path to store as a
+single file archive. This final archive is special and packed with additional
+bytes, which makes it unsuitable to easily unzip with existing compression
 tools.</p>
-<p>A lockfile is required to exist in the current IP in order to download its 
+<p>A lockfile is required to exist in the current IP in order to download its
 dependencies.</p>
-<p>Variable substitution is supported when specifying the &quot;command&quot; and &quot;args&quot;
-fields for a protocol. Most notably, the queue is accessed as 
-<code>{{ orbit.queue }}</code>. See <code>orbit help protocols</code> for more information about 
+<p>Variable substitution is supported when specifying the "command" and "args"
+fields for a protocol. Most notably, the queue is accessed as
+<code>{{ orbit.queue }}</code>. See <code>orbit help protocols</code> for more information about
 available variables.</p>
 <p>This action may automatically run during an install if the package is missing
 from the downloads. See <code>orbit help install</code> for more details.</p>
@@ -2677,7 +2684,7 @@ is the 'latest' released version orbit can identify.</p>
 exists.</p>
 <p>By default, any dependencies required only for development by the target ip are
 omitted from installation. To also install these dependencies, use <code>--all</code>.</p>
-<p>If a protocol is recognized using <code>--protocol</code>, then an optional tag can also 
+<p>If a protocol is recognized using <code>--protocol</code>, then an optional tag can also
 be supplied to help the protocol with providing any additional information it
 may require.</p>
 <h2 id="options-11"><a class="header" href="#options-11"><strong>OPTIONS</strong></a></h2>
@@ -2732,10 +2739,10 @@ orbit env ORBIT_CACHE ORBIT_DOWNLOADS
 <p>This command will alter configuration entries in Orbit's settings file named
 <code>config.toml</code>. By default, it will modify the user's config file found at
 the path read from the environment variable <code>$ORBIT_HOME</code>.</p>
-<p>To access an entry (key/value pair), use dots (<code>.</code>) to delimit between 
+<p>To access an entry (key/value pair), use dots (<code>.</code>) to delimit between
 intermediate table identifiers and the final key identifier.</p>
 <p>The command modifies the document in three independent stages. The first stage
-modifies the settings by iterating through all defined <code>--append</code> values. Then, 
+modifies the settings by iterating through all defined <code>--append</code> values. Then,
 it will insert all <code>--set</code> values. Lastly, it will remove all <code>--unset</code> entries.</p>
 <h2 id="options-13"><a class="header" href="#options-13"><strong>OPTIONS</strong></a></h2>
 <p><code>--global</code><br />
@@ -2749,7 +2756,7 @@ it will insert all <code>--set</code> values. Lastly, it will remove all <code>-
 <p><code>--unset &lt;key&gt;...</code><br />
       Delete the key's entry</p>
 <h2 id="examples-15"><a class="header" href="#examples-15"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit config --append include=&quot;~/.orbit/profiles/ks-tech&quot;
+<pre><code>orbit config --append include="~/.orbit/profiles/ks-tech"
 orbit config --unset env.VIVADO_PATH --global
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-remove"><a class="header" href="#orbit-remove"><strong>orbit remove</strong></a></h1>
@@ -2776,7 +2783,7 @@ orbit remove gates:1.0.0 --all
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="glossary"><a class="header" href="#glossary">Glossary</a></h1>
 <h3 id="blueprint-1"><a class="header" href="#blueprint-1">Blueprint</a></h3>
-<p>A blueprint is a tab-separated file that lists all the necessary files needed to perform a particular build for the CWIP. HDL files are listed in topologically-sorted order from top to bottom, while other files can be included through user-defined filesets. </p>
+<p>A blueprint is a tab-separated file that lists all the necessary files needed to perform a particular build for the CWIP. HDL files are listed in topologically-sorted order from top to bottom, while other files can be included through user-defined filesets.</p>
 <p>Each line in a blueprint consists of 3 values separated by tabs (fileset, identifier, filepath). If the file is an HDL file, the identifier is the HDL library identifier, otherwise, it is the file's name.</p>
 <h3 id="cache"><a class="header" href="#cache">Cache</a></h3>
 <p>The cache is the location where immutable references to a specific IP's version exist. Dependencies to an IP are referenced from the cache. The IP's at the cache level are considered <em>installed</em>.</p>
@@ -2797,10 +2804,10 @@ for future processing by a plugin during the building phase.</p>
 <h3 id="intellectual-property-ip"><a class="header" href="#intellectual-property-ip">Intellectual Property (IP)</a></h3>
 <p>An IP is a project with a manifest file at its root directory. At a minimum, an IP has two attributes: a name and a version.</p>
 <h3 id="lockfile"><a class="header" href="#lockfile">Lockfile</a></h3>
-<p>A lockfile is a file that exactly describes an IP's dependencies. It is generated and maintained by <code>orbit</code>. The lockfile should be checked into your version control system for reproducible builds. It is not to be manually edited by the user. </p>
+<p>A lockfile is a file that exactly describes an IP's dependencies. It is generated and maintained by <code>orbit</code>. The lockfile should be checked into your version control system for reproducible builds. It is not to be manually edited by the user.</p>
 <p>From the lockfile, <code>orbit</code> is able to download missing dependencies, install missing dependencies, and verify the data integrity of installed dependencies.</p>
 <h3 id="manifest-1"><a class="header" href="#manifest-1">Manifest</a></h3>
-<p>A manifest is a file that decscribes an IP recognized by <code>orbit</code>. Manifest files 
+<p>A manifest is a file that decscribes an IP recognized by <code>orbit</code>. Manifest files
 are exactly named <code>Orbit.toml</code>. The manifest is intended to be written by the user.</p>
 <h3 id="orbitlock-1"><a class="header" href="#orbitlock-1">Orbit.lock</a></h3>
 <p>See <a href="glossary.html#lockfile">lockfile</a>.</p>
@@ -2809,7 +2816,7 @@ are exactly named <code>Orbit.toml</code>. The manifest is intended to be writte
 <h3 id="package"><a class="header" href="#package">Package</a></h3>
 <p>See <a href="glossary.html#intellectual-property-ip">IP</a>.</p>
 <h3 id="plugin"><a class="header" href="#plugin">Plugin</a></h3>
-<p>A plugin is a user-defined command able to be called during the building phase. A plugin typically follows 3 steps: </p>
+<p>A plugin is a user-defined command able to be called during the building phase. A plugin typically follows 3 steps:</p>
 <ol>
 <li>Parse the blueprint</li>
 <li>Process the referenced files</li>
@@ -2817,7 +2824,7 @@ are exactly named <code>Orbit.toml</code>. The manifest is intended to be writte
 </ol>
 <p>Plugins can accept additional arguments from the command-line and define additional filesets to be collected during the planning phase. Users are encouraged to create and share their own plugins.</p>
 <h3 id="profile"><a class="header" href="#profile">Profile</a></h3>
-<p>A profile is a user-defined group of plugins, settings, and/or channels under a single directory. A profile does not necessarily have to have all listed aspects in order to be considered a &quot;profile&quot;.</p>
+<p>A profile is a user-defined group of plugins, settings, and/or channels under a single directory. A profile does not necessarily have to have all listed aspects in order to be considered a "profile".</p>
 <p>Profiles are useful for quickly sharing and maintaining common development standards and workflows among a team environment.</p>
 <h3 id="project"><a class="header" href="#project">Project</a></h3>
 <p>A project is a collection of HDL source files and any other required files related to a specific application or library. Placing a manifest in a project makes it an IP.</p>

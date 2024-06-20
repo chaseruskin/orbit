@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js light">
+<html lang="en" class="light" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -14,7 +14,7 @@
         </style>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#ffffff">
 
         <link rel="shortcut icon" href="../favicon.png">
         <link rel="stylesheet" href="../css/variables.css">
@@ -34,7 +34,7 @@
         <!-- Custom theme stylesheets -->
 
     </head>
-    <body>
+    <body class="sidebar-visible no-js">
     <div id="body-container">
         <!-- Provide site root to javascript -->
         <script>
@@ -64,31 +64,38 @@
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             var html = document.querySelector('html');
-            html.classList.remove('no-js')
             html.classList.remove('light')
             html.classList.add(theme);
-            html.classList.add('js');
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
         </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
-            var html = document.querySelector('html');
+            var body = document.querySelector('body');
             var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
             } else {
                 sidebar = 'hidden';
             }
-            html.classList.remove('sidebar-visible');
-            html.classList.add("sidebar-" + sidebar);
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
                 <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../starting/starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../starting/installing.html"><strong aria-hidden="true">1.1.</strong> Installing</a></li><li class="chapter-item expanded "><a href="../starting/upgrading.html"><strong aria-hidden="true">1.2.</strong> Upgrading</a></li></ol></li><li class="chapter-item expanded "><a href="../tutorials/tutorials.html"><strong aria-hidden="true">2.</strong> Tutorials</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../tutorials/first_project.html"><strong aria-hidden="true">2.1.</strong> First Project: Gates</a></li><li class="chapter-item expanded "><a href="../tutorials/dependencies.html"><strong aria-hidden="true">2.2.</strong> Dependencies: Half adder</a></li><li class="chapter-item expanded "><a href="../tutorials/gates_revisited.html"><strong aria-hidden="true">2.3.</strong> Gates: Revisited</a></li><li class="chapter-item expanded "><a href="../tutorials/final_project.html" class="active"><strong aria-hidden="true">2.4.</strong> Final Project: Full adder</a></li></ol></li><li class="chapter-item expanded "><a href="../user/user.html"><strong aria-hidden="true">3.</strong> User Guide</a></li><li class="chapter-item expanded "><a href="../topic/topic.html"><strong aria-hidden="true">4.</strong> Topic Guide</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../topic/concept.html"><strong aria-hidden="true">4.1.</strong> Key Concepts</a></li><li class="chapter-item expanded "><a href="../topic/catalog.html"><strong aria-hidden="true">4.2.</strong> Catalog</a></li><li class="chapter-item expanded "><a href="../topic/1_ip.html"><strong aria-hidden="true">4.3.</strong> IP</a></li><li class="chapter-item expanded "><a href="../topic/5_orbitlock.html"><strong aria-hidden="true">4.4.</strong> Orbit.lock</a></li><li class="chapter-item expanded "><a href="../topic/orbitignore.html"><strong aria-hidden="true">4.5.</strong> .orbitignore</a></li><li class="chapter-item expanded "><a href="../topic/planning.html"><strong aria-hidden="true">4.6.</strong> Planning</a></li><li class="chapter-item expanded "><a href="../topic/building.html"><strong aria-hidden="true">4.7.</strong> Building</a></li><li class="chapter-item expanded "><a href="../topic/protocols.html"><strong aria-hidden="true">4.8.</strong> Protocols</a></li><li class="chapter-item expanded "><a href="../topic/caching.html"><strong aria-hidden="true">4.9.</strong> Caching</a></li><li class="chapter-item expanded "><a href="../topic/downloading.html"><strong aria-hidden="true">4.10.</strong> Downloading</a></li><li class="chapter-item expanded "><a href="../topic/var_sub.html"><strong aria-hidden="true">4.11.</strong> Variable Substitution</a></li><li class="chapter-item expanded "><a href="../topic/dst.html"><strong aria-hidden="true">4.12.</strong> Dynamic Symbol Transformation</a></li></ol></li><li class="chapter-item expanded "><a href="../reference/reference.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference/manifest.html"><strong aria-hidden="true">5.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="../reference/packages.html"><strong aria-hidden="true">5.2.</strong> Packages</a></li><li class="chapter-item expanded "><a href="../reference/versions.html"><strong aria-hidden="true">5.3.</strong> Versions</a></li><li class="chapter-item expanded "><a href="../reference/filesets.html"><strong aria-hidden="true">5.4.</strong> Filesets</a></li><li class="chapter-item expanded "><a href="../reference/blueprint.html"><strong aria-hidden="true">5.5.</strong> Blueprint</a></li><li class="chapter-item expanded "><a href="../reference/environment_variables.html"><strong aria-hidden="true">5.6.</strong> Environment Variables</a></li><li class="chapter-item expanded "><a href="../reference/configuration.html"><strong aria-hidden="true">5.7.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="../reference/exporting_interfaces.html"><strong aria-hidden="true">5.8.</strong> Exporting Interfaces</a></li><li class="chapter-item expanded "><a href="../reference/command_line.html"><strong aria-hidden="true">5.9.</strong> Command Line</a></li></ol></li><li class="chapter-item expanded "><a href="../commands/commands.html"><strong aria-hidden="true">6.</strong> Commands</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../commands/new.html"><strong aria-hidden="true">6.1.</strong> orbit new</a></li><li class="chapter-item expanded "><a href="../commands/init.html"><strong aria-hidden="true">6.2.</strong> orbit init</a></li><li class="chapter-item expanded "><a href="../commands/show.html"><strong aria-hidden="true">6.3.</strong> orbit show</a></li><li class="chapter-item expanded "><a href="../commands/read.html"><strong aria-hidden="true">6.4.</strong> orbit read</a></li><li class="chapter-item expanded "><a href="../commands/get.html"><strong aria-hidden="true">6.5.</strong> orbit get</a></li><li class="chapter-item expanded "><a href="../commands/tree.html"><strong aria-hidden="true">6.6.</strong> orbit tree</a></li><li class="chapter-item expanded "><a href="../commands/plan.html"><strong aria-hidden="true">6.7.</strong> orbit plan</a></li><li class="chapter-item expanded "><a href="../commands/build.html"><strong aria-hidden="true">6.8.</strong> orbit build</a></li><li class="chapter-item expanded "><a href="../commands/launch.html"><strong aria-hidden="true">6.9.</strong> orbit launch</a></li><li class="chapter-item expanded "><a href="../commands/search.html"><strong aria-hidden="true">6.10.</strong> orbit search</a></li><li class="chapter-item expanded "><a href="../commands/download.html"><strong aria-hidden="true">6.11.</strong> orbit download</a></li><li class="chapter-item expanded "><a href="../commands/install.html"><strong aria-hidden="true">6.12.</strong> orbit install</a></li><li class="chapter-item expanded "><a href="../commands/env.html"><strong aria-hidden="true">6.13.</strong> orbit env</a></li><li class="chapter-item expanded "><a href="../commands/config.html"><strong aria-hidden="true">6.14.</strong> orbit config</a></li><li class="chapter-item expanded "><a href="../commands/remove.html"><strong aria-hidden="true">6.15.</strong> orbit remove</a></li></ol></li><li class="chapter-item expanded "><a href="../glossary.html"><strong aria-hidden="true">7.</strong> Appendix: Glossary</a></li></ol>
             </div>
-            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
         </nav>
 
         <!-- Track and set sidebar scroll position -->
@@ -119,9 +126,9 @@
                                 <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
-                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
                             <i class="fa fa-bars"></i>
-                        </button>
+                        </label>
                         <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
                             <i class="fa fa-paint-brush"></i>
                         </button>
@@ -178,7 +185,7 @@
 <p>After the quick detour back to the gates IP, we are ready to tackle our final challenge in this mini tutorial series: the full adder. Like our previous projects, navigate to a directory in your file system where you would like to store the project.</p>
 <pre><code>orbit new full-add
 </code></pre>
-<p>For the rest of this tutorial, we will be working relative to the project directory &quot;full-add/&quot; that currently stores our new full-add project. </p>
+<p>For the rest of this tutorial, we will be working relative to the project directory "full-add/" that currently stores our new full-add project.</p>
 <p>For this final project, we will need circuits described in both the gate IP and half-add IP. Let's quickly recall if version 1.0.0 of gates has the OR gate we will need.</p>
 <pre><code>$ orbit show gates:1.0.0 --units
 </code></pre>
@@ -191,14 +198,14 @@ or_gate                             entity        public
 <p>Yup! It's there, and we know we will need some half adders as well. Let's add both IPs to our manifest file.</p>
 <p>filename: Orbit.toml</p>
 <pre><code class="language-toml">[ip]
-name = &quot;full-add&quot;
-version = &quot;0.1.0&quot;
+name = "full-add"
+version = "0.1.0"
 
 # See more keys and their definitions at https://cdotrus.github.io/orbit/reference/manifest.html
 
 [dependencies]
-gates = &quot;1.0.0&quot;
-half-add = &quot;0.1.0&quot;
+gates = "1.0.0"
+half-add = "0.1.0"
 
 </code></pre>
 <p>Okay, time to start coding!</p>
@@ -276,7 +283,7 @@ begin
 
 end architecture;
 </code></pre>
-<p>Our design heirarchy is getting more complex; we have full adders constructed of half adders and OR gates, half adders constructed of NAND gates, OR gates constructed of... uh-oh. More NAND gates. </p>
+<p>Our design heirarchy is getting more complex; we have full adders constructed of half adders and OR gates, half adders constructed of NAND gates, OR gates constructed of... uh-oh. More NAND gates.</p>
 <p>The NAND gate design unit used in the OR gates is different from NAND gates used in the half adders because they reside in different versions of the gates IP (essentially different IPs). So did we just define an NAND gate entity twice with the same identifier? Yes, and thanks to <code>orbit</code>, this situation is okay.</p>
 <h3 id="huh"><a class="header" href="#huh">Huh?</a></h3>
 <p>Typical EDA tools will complain and error out when primary design units share the same name. How would they know which one is being used where? Fortunately, <code>orbit</code> is one step ahead of these tools due to implementing an algorithm called <em>dynamic symbol transformation</em>.</p>
@@ -289,23 +296,23 @@ end architecture;
 └─ half_add (half-add:0.1.0)
    └─ nand_gate_8108cfb282 (gates:0.1.0)
 </code></pre>
-<p>The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, <code>orbit</code> appends the beginning checksum digits from the IP of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict. </p>
+<p>The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, <code>orbit</code> appends the beginning checksum digits from the IP of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict.</p>
 <p>To us though, these slight identifier renamings remain hidden because they occur among indirect dependencies in relation to our current project. When deciding which design unit to rename, <code>orbit</code> will always choose to rename the unit that is used as an indirect dependency. This key choice allows us to keep using the original unit name when integrating design units into the current project.</p>
 <h3 id="okay-so-what"><a class="header" href="#okay-so-what">Okay, so what?</a></h3>
 <p>This may be a silly example, but there is a key takeaway here. Designs are constantly evolving. When creating the latest module, you never know what will come next. By allowing the state of a design to live on while also providing support for new growth, a user no longer spends their time trying to manage compatibility among the increasingly interconnected dependencies. Instead, there exists a freedom to continue to innovate.</p>
 <h2 id="reusing-plugins-that-are-globally-configured"><a class="header" href="#reusing-plugins-that-are-globally-configured">Reusing plugins that are globally-configured</a></h2>
-<p>To conclude this mini tutorial series, let's generate a bitstream for the Yilinx FPGA with our full adder implementation. </p>
+<p>To conclude this mini tutorial series, let's generate a bitstream for the Yilinx FPGA with our full adder implementation.</p>
 <p>First, let's verify our yilinx plugin is available to us after appending it to our global configuration file in the previous tutorial.</p>
 <pre><code>$ orbit plan --list
 </code></pre>
 <pre><code>Plugins:
   yilinx          Generate bitstreams for Yilinx FPGAs
 </code></pre>
-<p>We can review more details about a particular plugin by specifying it with the &quot;--plugin&quot; command-line option while providing &quot;--list&quot; as well.</p>
+<p>We can review more details about a particular plugin by specifying it with the "--plugin" command-line option while providing "--list" as well.</p>
 <pre><code>$ orbit plan --list --plugin yilinx
 </code></pre>
 <pre><code>Name:    yilinx
-Command: python &quot;yilinx.py&quot; 
+Command: python "yilinx.py" 
 Root:    /Users/chase/tutorials/gates/.orbit
 Filesets:
     PIN-FILE        **/*.ydc
@@ -324,7 +331,7 @@ VHDL-RTL	work	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/or_gate.vhd
 VHDL-RTL	work	/Users/chase/tutorials/full-add/full_add.vhd
 
 </code></pre>
-<p>If a plugin is specified during the most recent planning step, it can be inferred to be used in the building step and therefore we can omit the &quot;--plugin&quot; command-line option for our convenience.</p>
+<p>If a plugin is specified during the most recent planning step, it can be inferred to be used in the building step and therefore we can omit the "--plugin" command-line option for our convenience.</p>
 <pre><code>$ orbit build
 </code></pre>
 <pre><code>YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-0.1.0-fe9ec9d99e/nand_gate.vhd into work...
@@ -346,7 +353,7 @@ YILINX: Bitstream saved at: build/full_add.bit
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next" href="../user/user.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../user/user.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -360,7 +367,7 @@ YILINX: Bitstream saved at: build/full_add.bit
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next" href="../user/user.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../user/user.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

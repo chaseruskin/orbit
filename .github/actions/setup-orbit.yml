@@ -1,0 +1,18 @@
+name: "setup-orbit"
+author: "Chase Ruskin"
+description: Install the orbit HDL package manager
+inputs:
+  orbit-version:
+    description: 'A valid semver specifier of the orbit version to install'
+    required: false
+    default: null
+    
+runs:
+  using: "composite"
+  steps:
+    - name: Install orbit from remote repository
+      uses: baptiste0928/cargo-install@v3
+      with:
+        crate: orbit
+        git: https://github.com/cdotrus/orbit
+        tag: ${{ inputs.orbit-version }}

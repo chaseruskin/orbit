@@ -1,0 +1,19 @@
+name: actions-test
+on:
+  workflow_call:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-13, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+        - name: Print a message
+          run: echo "Hello world!"
+
+    #   - name: Setup orbit
+    #     uses: cdotrus/orbit/actions/setup-orbit@v1
+
+    #   - name: Check orbit version
+    #     run: orbit --version

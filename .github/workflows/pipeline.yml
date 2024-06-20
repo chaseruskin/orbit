@@ -25,6 +25,10 @@ jobs:
     with:
       version: ${{ needs.check-release.outputs.version }}
 
+  actions-test:
+    uses: cdotrus/orbit/.github/workflows/actions-test.yml@trunk
+    needs: [check-release, integrity]
+
   docker-build:
     uses: cdotrus/orbit/.github/workflows/docker.yml@trunk
     needs: [check-release, system-test]

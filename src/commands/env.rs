@@ -41,7 +41,7 @@ impl Subcommand<Context> for Env {
             EnvVar::new()
                 .key(environment::ORBIT_CACHE)
                 .value(PathBuf::standardize(c.get_cache_path()).to_str().unwrap()),
-            EnvVar::new().key(environment::ORBIT_DOWNLOADS).value(
+            EnvVar::new().key(environment::ORBIT_ARCHIVE).value(
                 PathBuf::standardize(c.get_downloads_path())
                     .to_str()
                     .unwrap(),

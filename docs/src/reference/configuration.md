@@ -30,13 +30,13 @@ Every configuration file consists of the following sections:
     - [language-mode](#the-language-mode-field) - HDL language(s) to enable.
 - [[vhdl-format]](#the-vhdl-format-section) - VHDL code formatting.
 - [[env]](#the-env-section) - The runtime environment variables.
-- [[[plugin]]](#the-plugin-array) - Define a plugin.
-    - [name](#the-name-field) - The name of the plugin.
-    - [description](#the-description-field) - A short description of the plugin.
-    - [command](#the-command-field) - The command to execute the plugin.
+- [[[target]]](#the-target-array) - Define a target.
+    - [name](#the-name-field) - The name of the target.
+    - [description](#the-description-field) - A short description of the target.
+    - [command](#the-command-field) - The command to execute the target.
     - [args](#the-args-field) - Arguments to pass to the command.
-    - [[fileset]](#the-fileset-section) - Filesets to collect for the plugin.
-    - [explanation](#the-explanation-field) - A detailed description of the plugin. 
+    - [[fileset]](#the-fileset-section) - Filesets to collect for the target.
+    - [explanation](#the-explanation-field) - A detailed description of the target. 
 - [[[protocol]]](#the-protocol-array) - Define a protocol.
     - [name](#the-name-field) - The name of the protocol.
     - [description](#the-description-field) - A short description of the protocol.
@@ -108,7 +108,7 @@ foo = "0"
 super-bar = "1"
 ```
 
-### The `[[plugin]]` array
+### The `[[target]]` array
 
 ### The `name` field
 

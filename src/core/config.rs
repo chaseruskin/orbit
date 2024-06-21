@@ -1,8 +1,8 @@
 use crate::core::lang::vhdl::format::VhdlFormat;
 use crate::core::manifest::FromFile;
-use crate::core::plugin::{Plugin, Plugins};
 use crate::core::protocol::Protocol;
 use crate::core::protocol::Protocols;
+use crate::core::target::{Target, Targets};
 use crate::util::anyerror::AnyError;
 use crate::util::filesystem;
 use crate::util::filesystem::Standardize;
@@ -204,7 +204,7 @@ impl Configs {
         Ok(Self { inner: configs })
     }
 
-    pub fn get_plugins(&self) -> HashMap<&str, &Plugin> {
+    pub fn get_plugins(&self) -> HashMap<&str, &Target> {
         // iterate through all linked configs
         let mut map = HashMap::new();
 
@@ -320,7 +320,7 @@ pub const CONFIG_FILE: &str = "config.toml";
 pub struct Config {
     include: Option<Vec<PathBuf>>,
     env: Option<HashMap<String, String>>,
-    plugin: Option<Plugins>,
+    plugin: Option<Targets>,
     protocol: Option<Protocols>,
     #[serde(rename = "vhdl-format")]
     vhdl_format: Option<VhdlFormat>,
@@ -400,7 +400,7 @@ impl Config {
         }
     }
 
-    pub fn get_plugins(&self) -> HashMap<&str, &Plugin> {
+    pub fn get_plugins(&self) -> HashMap<&str, &Target> {
         let mut map = HashMap::new();
 
         if let Some(plugs) = &self.plugin {

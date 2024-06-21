@@ -86,10 +86,10 @@ pub enum IpState {
 impl std::fmt::Display for IpState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
-            Self::Downloaded => write!(f, "Downloaded"),
-            Self::Installation => write!(f, "Installed"),
-            Self::Available => write!(f, "Available"),
-            Self::Unknown => write!(f, "Unknown"),
+            Self::Downloaded => write!(f, "download"),
+            Self::Installation => write!(f, "install"),
+            Self::Available => write!(f, "available"),
+            Self::Unknown => write!(f, "unknown"),
         }
     }
 }

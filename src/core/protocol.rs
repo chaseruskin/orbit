@@ -1,7 +1,7 @@
 //! A protocol is a series of steps defined for requesting files/packages
 //! from the internet.
 
-use crate::core::plugin::Process;
+use crate::core::target::Process;
 use crate::core::variable;
 use crate::util::filesystem::Standardize;
 use serde_derive::{Deserialize, Serialize};

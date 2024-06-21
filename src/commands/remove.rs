@@ -25,7 +25,7 @@ impl Subcommand<Context> for Remove {
         cli.help(Help::with(remove::HELP))?;
         Ok(Remove {
             all: cli.check(Arg::flag("all"))?,
-            recurse: cli.check(Arg::flag("recurse"))?,
+            recurse: cli.check(Arg::flag("recurse").switch('r'))?,
             ip: cli.require(Arg::positional("ip"))?,
         })
     }

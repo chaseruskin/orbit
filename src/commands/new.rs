@@ -4,7 +4,7 @@ use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
 use crate::core::pkgid::PkgPart;
-use crate::util::anyerror::AnyError;
+use crate::error::Error;
 use crate::util::filesystem::{Standardize, ORBIT_IGNORE_FILE};
 use std::borrow::Cow;
 use std::io::Write;
@@ -42,8 +42,7 @@ impl Subcommand<Context> for New {
             // resolve any relative path
             let dest = PathBuf::standardize(self.path.clone());
             if let Some(p) = Context::find_ip_path(&dest) {
-                // @todo: write error
-                panic!("an ip already exists at path {:?}", p)
+                return Err(Error::IpExistsAtPath(p))?;
             }
         }
 
@@ -52,16 +51,18 @@ impl Subcommand<Context> for New {
             // @todo give user more helpful error message
             // 1. if the manifest already exists at this directory
             // 2. if no manifest already exists at this directory
-            // @todo: write error
-            panic!(
-                "destination {:?} already exists, use `orbit init` to initialize directory",
-                PathBuf::standardize(self.path.clone())
-            )
+            return Err(Error::PathAlreadyExists(
+                self.path.clone(),
+                Error::hint("use `orbit init` to initialize a directory"),
+            ))?;
         }
 
         let ip_name = Self::extract_name(self.name.as_ref(), &self.path)?;
 
-        self.create_ip(&ip_name, &c.get_build_dir())
+        match self.create_ip(&ip_name, &c.get_build_dir()) {
+            Ok(r) => Ok(r),
+            Err(e) => Err(Error::FailedToCreateNewIp(e.to_string()))?,
+        }
     }
 }
 
@@ -80,11 +81,11 @@ impl New {
                     let s = fname.to_string_lossy();
                     match PkgPart::from_str(s.as_ref()) {
                             Ok(r) => Ok(Cow::Owned(r)),
-                            Err(e) => Err(Box::new(AnyError(format!("the name '{}' cannot be used as an ip name because {}\n\nTo have an ip name not match the directory name, use the '--name' flag.", s, e))))
-                        }
+                            Err(e) => Err(Error::CannotAutoExtractNameFromPath(s.to_string(), e.to_string(), Error::hint("To have an ip name separate from the directory name, use the \"--name\" flag")))?,
+                    }
                 }
                 None => {
-                    panic!("path does not have a file name")
+                    Err(Error::MissingFileSystemPathName(path.clone(), Error::hint("To have an ip name separate from the directory name, use the \"--name\" flag")))?
                 }
             },
         }

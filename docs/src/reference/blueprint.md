@@ -1,6 +1,6 @@
 # Blueprint
 
-The _blueprint_ is a file containing a list of files required for a particular backend. It is the main way `orbit` communicates to a backend system. 
+The _blueprint_ is a file containing a list of files required for a particular back end. It is the main way `orbit` communicates to a back end system. 
 
 When the blueprint is created, it is saved to the current working IP's build directory.
 
@@ -16,7 +16,7 @@ Each blueprint format may contain different information and store it in a differ
 ### Tab-separated values
 
 - Advantages
-    - Simple and easy to parse for backends
+    - Simple and easy to parse for back ends
 - Disadvantages
     - Limited information is sent
 

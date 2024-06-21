@@ -26,7 +26,7 @@ To remove the ip from the cache and downloads locations, use `--all`.
 `--all`  
       remove the ip from the cache and downloads
 
-`--recurse`  
+`--recurse, -r`  
       fully remove the ip and its dependencies
 
 ## __EXAMPLES__

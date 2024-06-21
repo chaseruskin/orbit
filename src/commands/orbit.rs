@@ -92,7 +92,8 @@ impl Command for Orbit {
             let context = Context::new()
                 .home(environment::ORBIT_HOME)?
                 .cache(environment::ORBIT_CACHE)?
-                .downloads(environment::ORBIT_DOWNLOADS)?
+                .archive(environment::ORBIT_ARCHIVE)?
+                .channels(environment::ORBIT_CHANNELS)?
                 .current_ip_dir(environment::ORBIT_IP_PATH)? // must come before .settings() call
                 .settings(config::CONFIG_FILE)?
                 .build_dir(environment::ORBIT_BUILD_DIR)?;
@@ -118,6 +119,7 @@ use crate::commands::new::New;
 use crate::commands::plan::Plan;
 use crate::commands::read::Read;
 use crate::commands::remove::Remove;
+use crate::commands::run::Run;
 use crate::commands::search::Search;
 use crate::commands::show::Show;
 use crate::commands::tree::Tree;
@@ -129,6 +131,7 @@ enum OrbitSubcommand {
     Search(Search),
     Plan(Plan),
     Build(Build),
+    Run(Run),
     Launch(Launch),
     Install(Install),
     Tree(Tree),
@@ -146,8 +149,9 @@ impl Subcommand<Context> for OrbitSubcommand {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
         match cli
             .select(&[
-                "help", "new", "search", "plan", "p", "build", "launch", "download", "install",
-                "get", "init", "tree", "show", "b", "env", "config", "remove", "read",
+                "help", "new", "search", "plan", "p", "build", "run", "launch", "download",
+                "install", "get", "init", "tree", "show", "b", "env", "config", "remove", "read",
+                "r",
             ])?
             .as_ref()
         {
@@ -157,6 +161,7 @@ impl Subcommand<Context> for OrbitSubcommand {
             "search" => Ok(OrbitSubcommand::Search(Search::interpret(cli)?)),
             "p" | "plan" => Ok(OrbitSubcommand::Plan(Plan::interpret(cli)?)),
             "b" | "build" => Ok(OrbitSubcommand::Build(Build::interpret(cli)?)),
+            "r" | "run" => Ok(OrbitSubcommand::Run(Run::interpret(cli)?)),
             "init" => Ok(OrbitSubcommand::Init(Init::interpret(cli)?)),
             "download" => Ok(OrbitSubcommand::Download(Download::interpret(cli)?)),
             "launch" => Ok(OrbitSubcommand::Launch(Launch::interpret(cli)?)),
@@ -180,6 +185,7 @@ impl Subcommand<Context> for OrbitSubcommand {
             OrbitSubcommand::Install(sub) => sub.execute(context),
             OrbitSubcommand::Help(sub) => sub.execute(&()),
             OrbitSubcommand::New(sub) => sub.execute(context),
+            OrbitSubcommand::Run(sub) => sub.execute(context),
             OrbitSubcommand::Launch(sub) => sub.execute(context),
             OrbitSubcommand::Tree(sub) => sub.execute(context),
             OrbitSubcommand::Init(sub) => sub.execute(context),

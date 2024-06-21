@@ -28,6 +28,6 @@ of each provided variables on its own line.
 ```
 orbit env
 orbit env ORBIT_HOME
-orbit env ORBIT_CACHE ORBIT_DOWNLOADS
+orbit env ORBIT_CACHE ORBIT_ARCHIVE
 ```
 

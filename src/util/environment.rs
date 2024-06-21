@@ -217,16 +217,20 @@ impl Environment {
     }
 }
 
-pub const ORBIT_PLUGIN: &str = "ORBIT_PLUGIN";
+pub const ORBIT_HOME: &str = "ORBIT_HOME";
+pub const ORBIT_CACHE: &str = "ORBIT_CACHE";
+pub const ORBIT_ARCHIVE: &str = "ORBIT_ARCHIVE";
+pub const ORBIT_CHANNELS: &str = "ORBIT_CHANNELS";
+
+pub const ORBIT_IP_PATH: &str = "ORBIT_IP_PATH";
+pub const ORBIT_BUILD_DIR: &str = "ORBIT_BUILD_DIR";
 pub const ORBIT_TOP: &str = "ORBIT_TOP";
 pub const ORBIT_BENCH: &str = "ORBIT_BENCH";
-pub const ORBIT_BUILD_DIR: &str = "ORBIT_BUILD_DIR";
-pub const ORBIT_CACHE: &str = "ORBIT_CACHE";
-pub const ORBIT_QUEUE: &str = "ORBIT_QUEUE";
-pub const ORBIT_DOWNLOADS: &str = "ORBIT_DOWNLOADS";
-pub const ORBIT_HOME: &str = "ORBIT_HOME";
-pub const ORBIT_IP_PATH: &str = "ORBIT_IP_PATH";
+pub const ORBIT_PLUGIN: &str = "ORBIT_PLUGIN";
 pub const ORBIT_BLUEPRINT: &str = "ORBIT_BLUEPRINT";
+
+pub const ORBIT_QUEUE: &str = "ORBIT_QUEUE";
+
 pub const ORBIT_WIN_LITERAL_CMD: &str = "ORBIT_WIN_LITERAL_CMD";
 
 pub const ORBIT_ENV_PREFIX: &str = "ORBIT_ENV_";

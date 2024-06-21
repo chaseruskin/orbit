@@ -1,6 +1,6 @@
 use crate::core::config::General;
 use crate::core::config::{Config, Configs, Locality};
-use crate::core::plugin::Plugin;
+use crate::core::target::Target;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
@@ -23,12 +23,14 @@ Signature: 8a477f597d28d172789f06886806bc55
 
 /// Shared attributes about the surrounding user run-time environment.
 pub struct Context {
-    /// Path to a "hidden" directory for internal Orbit operations.
+    /// File system path directing to root of orbit data and configurations.
     home_path: PathBuf,
-    /// Directory holding installed immutable tags of git repositories.
+    /// File system path directing to ip installations
     cache_path: PathBuf,
-    /// Directory holding orbit IP downloaded
-    download_path: PathBuf,
+    /// File system path directing to ip downloads
+    archive_path: PathBuf,
+    /// File system path directing to ip channels
+    channels_path: PathBuf,
     /// The parent path to the current ip `Orbit.toml` manifest file.
     ip_path: Option<PathBuf>,
     /// Directory name for the intermediate build processes and outputs.    
@@ -40,18 +42,20 @@ pub struct Context {
     /// Entire list of configuration settings.
     all_configs: Configs,
     // @idea: optionally move hashmap out of context and create it from fn to allow dynamic loading
-    plugins: HashMap<String, Plugin>,
+    plugins: HashMap<String, Target>,
 }
 
 impl Context {
     pub fn new() -> Context {
         let home = std::env::temp_dir();
         let cache = home.join("cache");
-        let downloads = home.join("downloads");
+        let downloads = home.join("archive");
+        let channels = home.join("channels");
         Context {
             home_path: home,
             cache_path: cache,
-            download_path: downloads,
+            archive_path: downloads,
+            channels_path: channels,
             ip_path: None,
             plugins: HashMap::new(),
             all_configs: Configs::new(),
@@ -101,6 +105,24 @@ impl Context {
         Ok(self)
     }
 
+    /// Sets the downloads directory. If it was set from `var`, it assumes the path
+    /// exists. If setting by default (within HOME), it assumes HOME is already existing.
+    pub fn archive(mut self, key: &str) -> Result<Context, Fault> {
+        self.archive_path = self.folder(key, "archive")?;
+        // create a cache tag file if does not exist
+        match Self::is_cache_tag_valid(&self.archive_path) {
+            Ok(_) => (),
+            Err(e) => fs::write(&e, CACHE_TAG)?,
+        }
+        Ok(self)
+    }
+
+    /// Sets the channels directory.
+    pub fn channels(mut self, key: &str) -> Result<Context, Fault> {
+        self.channels_path = self.folder(key, "channels")?;
+        Ok(self)
+    }
+
     /// Checks if the cache tag file is properly configured in the set cache directory.
     ///
     /// Returns an `Err` holding the path to the needed cache file if the path was
@@ -117,13 +139,6 @@ impl Context {
                 },
             },
         }
-    }
-
-    /// Sets the downloads directory. If it was set from `var`, it assumes the path
-    /// exists. If setting by default (within HOME), it assumes HOME is already existing.
-    pub fn downloads(mut self, key: &str) -> Result<Context, Fault> {
-        self.download_path = self.folder(key, "downloads")?;
-        Ok(self)
     }
 
     /// Checks if windows literal command is enabled.
@@ -179,7 +194,7 @@ impl Context {
 
     /// References the downloads directory
     pub fn get_downloads_path(&self) -> &PathBuf {
-        &self.download_path
+        &self.archive_path
     }
 
     /// Configures and reads data from the settings object to return a `Settings` struct

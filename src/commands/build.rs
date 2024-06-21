@@ -4,9 +4,9 @@ use super::plan::BLUEPRINT_FILE;
 use crate::commands::helps::build;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
-use crate::core::plugin::Plugin;
-use crate::core::plugin::PluginError;
-use crate::core::plugin::Process;
+use crate::core::target::PluginError;
+use crate::core::target::Process;
+use crate::core::target::Target;
 use crate::util::anyerror::AnyError;
 use crate::util::environment;
 use crate::util::environment::EnvVar;
@@ -37,8 +37,8 @@ impl Subcommand<Context> for Build {
             verbose: cli.check(Arg::flag("verbose"))?,
             force: cli.check(Arg::flag("force"))?,
             // Options
-            alias: cli.get(Arg::option("plugin").value("alias"))?,
-            build_dir: cli.get(Arg::option("build-dir").value("dir"))?,
+            alias: cli.get(Arg::option("target").value("name"))?,
+            build_dir: cli.get(Arg::option("target-dir").value("dir"))?,
             command: cli.get(Arg::option("command").value("cmd"))?,
             // Remaining args
             args: cli.remainder()?,
@@ -61,13 +61,13 @@ impl Subcommand<Context> for Build {
                 Some(plg) => println!("{}", plg),
                 None => println!(
                     "{}",
-                    Plugin::list_plugins(
+                    Target::list_targets(
                         &mut c
                             .get_config()
                             .get_plugins()
                             .values()
                             .into_iter()
-                            .collect::<Vec<&&Plugin>>()
+                            .collect::<Vec<&&Target>>()
                     )
                 ),
             }
@@ -77,7 +77,7 @@ impl Subcommand<Context> for Build {
         // verify only 1 option is provided
         if self.command.is_some() && self.alias.is_some() {
             return Err(AnyError(format!(
-                "Cannot execute both a plugin and command"
+                "cannot execute target and command together"
             )))?;
         }
         // verify running from an IP directory and enter IP's root directory
@@ -98,7 +98,7 @@ impl Subcommand<Context> for Build {
             == false
             && self.force == false
         {
-            return Err(AnyError(format!("No blueprint file to build from in directory '{}'\n\nTry `orbit plan --build-dir {0}` to generate a blueprint file", b_dir)))?;
+            return Err(AnyError(format!("no blueprint file to build from in directory '{}'\n\nTry `orbit plan --target-dir {0}` to generate a blueprint file", b_dir)))?;
         }
 
         Environment::new()
@@ -114,7 +114,7 @@ impl Subcommand<Context> for Build {
         let envs = match Environment::new().from_env_file(&c.get_ip_path().unwrap().join(b_dir)) {
             Ok(r) => r,
             Err(e) => match self.force {
-                false => return Err(AnyError(format!("Failed to read .env file: {}", e)))?,
+                false => return Err(AnyError(format!("failed to read .env file: {}", e)))?,
                 true => Environment::new(),
             },
         };
@@ -147,7 +147,7 @@ impl Subcommand<Context> for Build {
 
         if plug.is_none() && self.command.is_none() {
             return Err(AnyError(format!(
-                "Building requires a plugin or a command to process"
+                "building requires a target or a command to process"
             )))?;
         }
 
@@ -162,7 +162,7 @@ impl Subcommand<Context> for Build {
 }
 
 impl Build {
-    fn run(&self, plug: Option<&Plugin>, dir: &str) -> Result<(), Box<dyn std::error::Error>> {
+    fn run(&self, plug: Option<&Target>, dir: &str) -> Result<(), Box<dyn std::error::Error>> {
         // if there is a match run with the plugin then run it
         if let Some(p) = plug {
             p.execute(&self.args, self.verbose, dir)
@@ -184,12 +184,12 @@ impl Build {
             match exit_code.code() {
                 Some(num) => {
                     if num != 0 {
-                        Err(AnyError(format!("Exited with error code: {}", num)))?
+                        Err(AnyError(format!("exited with error code: {}", num)))?
                     } else {
                         Ok(())
                     }
                 }
-                None => Err(AnyError(format!("Terminated by signal")))?,
+                None => Err(AnyError(format!("terminated by signal")))?,
             }
         } else {
             Ok(())

@@ -18,15 +18,15 @@ DESCRIPTION
     
     The top level unit and testbench will be stored in a '.env' file within the
     build directory. This '.env' file is read during the build command to set
-    the proper environment variables for downstream plugins and scripts that
-    may require this information. If a known plugin is provided with '--plugin',
+    the proper environment variables for downstream targets and scripts that
+    may require this information. If a known target is provided with '--target',
     then it will also be stored in the '.env' file to be recalled during the
     build phase.
     
     User-defined filesets are only collected within the current working ip's 
-    path. Plugins may have custom filesets defined in their configuration. When
-    specifying a known plugin with '--plugin', it will collect the filesets 
-    defined for that plugin. Use '--fileset' as many times as needed to define
+    path. Targets may have custom filesets defined in their configuration. When
+    specifying a known target with '--target', it will collect the filesets 
+    defined for that target. Use '--fileset' as many times as needed to define
     additional filesets.
     
     During the planning phase, a lockfile is produced outlining the exact ip
@@ -56,13 +56,13 @@ OPTIONS
     --top <unit>
         The top level entity to explicitly define
 
-    --bench <tb>
+    --bench <unit>
         The top level testbench to explicitly define
 
-    --plugin <name>
-        A plugin to refer to gather its declared filesets
+    --target <name>
+        A target to refer to gather its declared filesets
 
-    --build-dir <dir>
+    --target-dir <dir>
         The relative directory to place the blueprint.tsv file
 
     --fileset <key=glob>...
@@ -72,7 +72,7 @@ OPTIONS
         Removes all files from the build directory before execution
 
     --list
-        Display all available plugins and exit
+        Display all available targets and exit
 
     --force
         Ignore reading the precomputed lock file
@@ -86,6 +86,6 @@ OPTIONS
 EXAMPLES
     orbit plan --bench my_tb
     orbit plan --top and_gate --fileset PIN-PLAN="*.board"
-    orbit plan --plugin vivado --clean --bench ram_tb
+    orbit plan --target vivado --clean --bench ram_tb
     orbit plan --lock-only
 "#;

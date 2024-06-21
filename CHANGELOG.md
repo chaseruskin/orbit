@@ -15,6 +15,17 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.14.0 - unreleased
+
+### Changes
+- renames "plugin" to "target" to more closely align with software language terminology relating to back end processed
+- renames "downloads" directory to "archive" to better describe what is stored in that catalog level
+- makes `run` command available (although not working)
+
+### Documents
+- Adds information about catalog
+- Adds information about targets
+
 ## 0.13.0
 
 ### Features

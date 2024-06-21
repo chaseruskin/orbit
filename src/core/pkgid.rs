@@ -66,7 +66,7 @@ impl std::str::FromStr for PkgPart {
 
         if let Some(c) = s.chars().next() {
             if c.is_ascii_alphabetic() == false {
-                return Err(NotAlphabeticFirst(s.to_owned()));
+                return Err(NotAlphabeticFirst(c));
             }
         }
         // find first char in pkgid part not following spec
@@ -74,7 +74,7 @@ impl std::str::FromStr for PkgPart {
             .chars()
             .find(|&c| !c.is_ascii_alphanumeric() && !(c == '_') && !(c == '-'));
         if let Some(r) = result {
-            Err(InvalidChar(s.to_owned(), r))
+            Err(InvalidChar(r))
         } else {
             Ok(PkgPart(s.to_owned()))
         }
@@ -343,10 +343,10 @@ impl FromStr for PkgId {
 
 #[derive(Debug, PartialEq)]
 pub enum PkgIdError {
-    NotAlphabeticFirst(String),
+    NotAlphabeticFirst(char),
     BadLen(String, usize),
     Empty,
-    InvalidChar(String, char),
+    InvalidChar(char),
     MissingVendor,
     MissingLibrary,
 }
@@ -357,10 +357,22 @@ impl Display for PkgIdError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         use PkgIdError::*;
         match self {
-            NotAlphabeticFirst(part) => write!(f, "pkgid part '{}' must begin with alphabetic character", part),
-            BadLen(id, len) => write!(f, "bad length for pkgid '{}'; expecting 3 parts but found {}", id, len),
-            InvalidChar(part, ch) => write!(f, "invalid character '{}' in pkgid part '{}'; can only contain alphanumeric characters, dashes, or underscores", ch, part),
-            Empty => write!(f, "missing name part"),
+            NotAlphabeticFirst(ch) => write!(
+                f,
+                "expects first character to be alphabetic but found '{}'",
+                ch
+            ),
+            InvalidChar(ch) => write!(
+                f,
+                "character '{}' is not alphanumeric, a dash, or an underscore",
+                ch
+            ),
+            Empty => write!(f, "cannot be empty"),
+            BadLen(id, len) => write!(
+                f,
+                "bad length for pkgid '{}'; expecting 3 parts but found {}",
+                id, len
+            ),
             MissingLibrary => write!(f, "missing library part"),
             MissingVendor => write!(f, "missing vendor part"),
         }

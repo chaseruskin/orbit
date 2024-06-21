@@ -4,9 +4,11 @@ Orbit's configuration can be customized with the setting of specific environment
 
 - `ORBIT_HOME` - directory where orbit stores its data. By default it is `$HOME/.orbit` on Unix systems and `%USERPROFILE%/.orbit` on Windows systems.
 
-- `ORBIT_CACHE` - directory where orbit caches installed IP. By default it is `$ORBIT_HOME/cache`.
+- `ORBIT_CACHE` - directory where orbit caches installed ip. By default it is `$ORBIT_HOME/cache`.
 
-- `ORBIT_DOWNLOADS` - directory where orbit saves archived snapshots of IP at a particular version. By default it is `$ORBIT_HOME/downloads`
+- `ORBIT_ARCHIVE` - directory where orbit saves archived snapshots of ip at a particular version. By default it is `$ORBIT_HOME/archive`.
+
+- `ORBIT_CHANNELS` - directory where orbit checks for channels that point to available ip. By default it is `$ORBIT_HOME/channels`.
 
 - `NO_COLOR` - does not print colorized output when set to a value.
 
@@ -18,9 +20,9 @@ Orbit's configuration can be customized with the setting of specific environment
 
 Orbit also sets environment variables during runtime so a plugin has access to runtime information. 
 
-- `ORBIT_BUILD_DIR` - directory to place the `blueprint.tsv` file relative to the current IP path. Default is `build`.
+- `ORBIT_BUILD_DIR` - directory to place the `blueprint.tsv` file relative to the current ip path. Default is `build`.
 
-- `ORBIT_IP_PATH` - path to the IP that is detected under the current working directory. If its not immediately detected at the current directory, it will continue to search the parent directory until it finds a `Orbit.toml` manifest file.
+- `ORBIT_IP_PATH` - path to the ip that is detected under the current working directory. If its not immediately detected at the current directory, it will continue to search the parent directory until it finds a `Orbit.toml` manifest file.
 
 - `ORBIT_PLUGIN` - last referenced plugin from the planning phase
 

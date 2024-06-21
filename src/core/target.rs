@@ -1,4 +1,4 @@
-//! A plugin is a user-defined backend workflow for processing the files collected
+//! A target is a user-defined backend workflow for processing the files collected
 //! in the generated blueprint file.
 
 use crate::core::context::Context;
@@ -14,13 +14,13 @@ use std::error::Error;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-pub type Plugins = Vec<Plugin>;
+pub type Targets = Vec<Target>;
 
 type Filesets = HashMap<String, Style>;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct Plugin {
+pub struct Target {
     name: String,
     command: String,
     args: Option<Vec<String>>,
@@ -31,7 +31,7 @@ pub struct Plugin {
     root: Option<PathBuf>,
 }
 
-impl Plugin {
+impl Target {
     pub fn get_filesets(&self) -> Option<&Filesets> {
         self.fileset.as_ref()
     }
@@ -48,11 +48,11 @@ impl Plugin {
     /// Creates a string to display a list of plugins.
     ///
     /// The string lists the plugins in alphabetical order by `alias`.
-    pub fn list_plugins(plugs: &mut [&&Plugin]) -> String {
-        let mut list = String::from("Plugins:\n");
-        plugs.sort_by(|a, b| a.name.cmp(&b.name));
-        for plug in plugs {
-            list += &format!("  {}\n", plug.quick_info());
+    pub fn list_targets(targets: &mut [&&Target]) -> String {
+        let mut list = String::new();
+        targets.sort_by(|a, b| a.name.cmp(&b.name));
+        for t in targets {
+            list += &format!("{}\n", t.quick_info());
         }
         list
     }
@@ -73,7 +73,7 @@ impl Plugin {
     }
 }
 
-impl std::fmt::Display for Plugin {
+impl std::fmt::Display for Target {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -122,7 +122,7 @@ Filesets:
     }
 }
 
-impl FromStr for Plugin {
+impl FromStr for Target {
     type Err = toml::de::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -177,7 +177,7 @@ pub trait Process {
     }
 }
 
-impl Process for Plugin {
+impl Process for Target {
     fn get_root(&self) -> &PathBuf {
         &self.root.as_ref().unwrap()
     }
@@ -219,7 +219,7 @@ mod test {
 
     #[derive(Debug, PartialEq, Serialize, Deserialize)]
     pub struct Plugins {
-        plugin: Vec<Plugin>,
+        plugin: Vec<Target>,
     }
 
     impl Plugins {
@@ -253,10 +253,10 @@ args = ["~/scripts/download.bash"]
 
     #[test]
     fn from_toml_string() {
-        let plug = Plugin::from_str(P_1).unwrap();
+        let plug = Target::from_str(P_1).unwrap();
         assert_eq!(
             plug,
-            Plugin {
+            Target {
                 name: String::from("ghdl"),
                 command: String::from("python"),
                 args: Some(vec![String::from("./scripts/ghdl.py")]),
@@ -275,10 +275,10 @@ args = ["~/scripts/download.bash"]
             }
         );
 
-        let plug = Plugin::from_str(P_2).unwrap();
+        let plug = Target::from_str(P_2).unwrap();
         assert_eq!(
             plug,
-            Plugin {
+            Target {
                 name: String::from("ffi"),
                 command: String::from("bash"),
                 args: Some(vec![String::from("~/scripts/download.bash")]),
@@ -299,8 +299,8 @@ args = ["~/scripts/download.bash"]
             plugs,
             Plugins {
                 plugin: vec![
-                    Plugin::from_str(P_1).unwrap(),
-                    Plugin::from_str(P_2).unwrap()
+                    Target::from_str(P_1).unwrap(),
+                    Target::from_str(P_2).unwrap()
                 ],
             }
         );

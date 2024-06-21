@@ -3,6 +3,7 @@
 [Introduction](./index.md)
 
 - [Getting Started](./starting/starting.md)
+    - [Motivation](./starting/motivation.md)
     - [Installing](./starting/installing.md)
     - [Upgrading](./starting/upgrading.md)
 
@@ -20,7 +21,7 @@
     <!-- - [Create Plugins](./user/creating_plugins.md) -->
 
 - [Topic Guide](./topic/topic.md)
-    - [Key Concepts](./topic/concept.md)
+    - [Overview](./topic/overview.md)
     - [Catalog](./topic/catalog.md)
     - [IP](./topic/1_ip.md)
     - [Orbit.lock](./topic/5_orbitlock.md)
@@ -41,7 +42,7 @@
     - [Blueprint](./reference/blueprint.md)
     - [Environment Variables](./reference/environment_variables.md)
     - [Configuration](./reference/configuration.md)
-    - [Exporting Interfaces](./reference/exporting_interfaces.md)
+    - [JSON Output](./reference/json.md)
     - [Command Line](./reference/command_line.md)
 
 - [Commands](./commands/commands.md)

@@ -14,7 +14,7 @@ orbit download [options]
 
 This command will get a package from the internet using the default protocol
 or a user-defined protocol. It places the package in the path defined as
-environment variable `$ORBIT_DOWNLOADS`.
+environment variable `$ORBIT_ARCHIVE`.
 
 Downloads are vital to Orbit's management system as to avoid having to solely 
 rely on accessing the internet to get IP. Downloads allow Orbit to quickly

@@ -5,6 +5,7 @@ use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
 use crate::core::pkgid::PkgPart;
+use crate::error::Error;
 use crate::util::anyerror::AnyError;
 use crate::util::filesystem::Standardize;
 use crate::util::filesystem::{self, ORBIT_IGNORE_FILE};
@@ -43,14 +44,16 @@ impl Subcommand<Context> for Init {
         // verify we are not already in an ip directory
         {
             if let Some(p) = Context::find_ip_path(&dest) {
-                // @todo: write error
-                panic!("An ip already exists at path {:?}", p)
+                return Err(Error::IpExistsAtPath(p))?;
             }
         }
 
         let ip_name = New::extract_name(self.name.as_ref(), &dest)?;
 
-        self.create_ip(&ip_name, &c.get_build_dir())
+        match self.create_ip(&ip_name, &c.get_build_dir()) {
+            Ok(r) => Ok(r),
+            Err(e) => Err(Error::FailedToInitIp(e.to_string()))?,
+        }
     }
 }
 
@@ -60,7 +63,7 @@ impl Init {
         // verify the directory already exists
         if self.path.is_dir() == false || self.path.exists() == false {
             return Err(Box::new(AnyError(format!(
-                "The path {:?} is not an existing directory",
+                "the path {:?} is not an existing directory",
                 PathBuf::standardize(self.path.clone())
             ))));
         }

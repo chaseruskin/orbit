@@ -10,9 +10,9 @@ use crate::core::lockfile::LockEntry;
 use crate::core::lockfile::LockFile;
 use crate::core::manifest;
 use crate::core::manifest::IP_MANIFEST_FILE;
-use crate::core::plugin::Process;
 use crate::core::protocol::Protocol;
 use crate::core::source::Source;
+use crate::core::target::Process;
 use crate::core::variable::VariableTable;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
@@ -183,7 +183,7 @@ impl Download {
             match protocols.get(proto.as_str()) {
                 Some(&entry) => {
                     println!(
-                        "info: Downloading {} over \"{}\" protocol ...",
+                        "info: downloading {} over \"{}\" protocol ...",
                         spec, &proto
                     );
                     let std_queue = PathBuf::standardize(&queue);
@@ -208,7 +208,7 @@ impl Download {
                     // potential to use --force here to avoid this error and try with default but not currently implemented that way
                     fs::remove_dir_all(queue)?;
                     return Err(
-                        Box::new(AnyError(format!("Unknown protocol \"{}\"", &proto))).into(),
+                        Box::new(AnyError(format!("unknown protocol \"{}\"", &proto))).into(),
                     );
                 }
             }
@@ -295,10 +295,10 @@ impl Download {
                 return Ok(());
             }
             1 => {
-                println!("info: downloading 1 package ...")
+                println!("info: downloading 1 ip ...")
             }
             _ => {
-                println!("info: downloading {} packages ...", downloads.len())
+                println!("info: downloading {} ips ...", downloads.len())
             }
         }
         let mut vtable = vtable;

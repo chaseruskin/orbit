@@ -1,4 +1,4 @@
-# Exporting Interfaces
+# JSON Output
 
 The `orbit get` command allows a user to receive various pieces of information related to a design unit, such its component declaration, defined architectures, or entity instantiation.
 

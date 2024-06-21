@@ -19,7 +19,7 @@ OPTIONS
     --all
         remove the ip from the cache and downloads
 
-    --recurse
+    --recurse, -r
         fully remove the ip and its dependencies
 
 EXAMPLES

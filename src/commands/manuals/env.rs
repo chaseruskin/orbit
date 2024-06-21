@@ -19,5 +19,5 @@ OPTIONS
 EXAMPLES
     orbit env
     orbit env ORBIT_HOME
-    orbit env ORBIT_CACHE ORBIT_DOWNLOADS
+    orbit env ORBIT_CACHE ORBIT_ARCHIVE
 "#;

@@ -12,8 +12,8 @@ use crate::core::lang::vhdl::symbols::{
 };
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lang::LangMode;
-use crate::core::plugin::Plugin;
-use crate::core::plugin::PluginError;
+use crate::core::target::PluginError;
+use crate::core::target::Target;
 use crate::core::variable;
 use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
@@ -74,9 +74,9 @@ impl Subcommand<Context> for Plan {
             list: cli.check(Arg::flag("list"))?,
             // options
             top: cli.get(Arg::option("top").value("unit"))?,
-            bench: cli.get(Arg::option("bench").value("tb"))?,
-            plugin: cli.get(Arg::option("plugin").value("name"))?,
-            build_dir: cli.get(Arg::option("build-dir").value("dir"))?,
+            bench: cli.get(Arg::option("bench").value("unit"))?,
+            plugin: cli.get(Arg::option("target").value("name"))?,
+            build_dir: cli.get(Arg::option("target-dir").value("dir"))?,
             filesets: cli.get_all(Arg::option("fileset").value("key=glob"))?,
         });
         command
@@ -101,13 +101,13 @@ impl Subcommand<Context> for Plan {
                 // display quick overview of all plugins
                 None => println!(
                     "{}",
-                    Plugin::list_plugins(
+                    Target::list_targets(
                         &mut c
                             .get_config()
                             .get_plugins()
                             .values()
                             .into_iter()
-                            .collect::<Vec<&&Plugin>>()
+                            .collect::<Vec<&&Target>>()
                     )
                 ),
             }
@@ -186,7 +186,7 @@ pub fn download_missing_deps(
                         // verify the checksum
                         if Install::is_checksum_good(&dep.get_root()) == false {
                             println!(
-                                "info: Redownloading IP {} due to bad checksum ...",
+                                "info: Redownloading ip {} due to bad checksum ...",
                                 dep.get_man().get_ip().into_ip_spec()
                             );
                             require_download = true;
@@ -227,7 +227,7 @@ pub fn download_missing_deps(
                 }
                 None => {
                     return Err(AnyError(format!(
-                        "unable to fetch IP {} from the internet due to missing source",
+                        "unable to fetch ip {} from the internet due to missing source",
                         entry.to_ip_spec()
                     )))?;
                 }
@@ -259,7 +259,7 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                             match status.get_download(&ver) {
                                 Some(dep) => {
                                     println!(
-                                        "info: Reinstalling IP {} due to bad checksum ...",
+                                        "info: reinstalling IP {} due to bad checksum ...",
                                         dep.get_man().get_ip().into_ip_spec()
                                     );
                                     // perform extra work if the Ip is virtual (from downloads)
@@ -848,7 +848,7 @@ impl Plan {
         &self,
         target: Ip,
         build_dir: &str,
-        plug: Option<&Plugin>,
+        plug: Option<&Target>,
         catalog: Catalog,
         mode: &LangMode,
     ) -> Result<(), Fault> {
@@ -887,7 +887,7 @@ impl Plan {
                     )?;
                     // create a blueprint file
                     println!(
-                        "info: Erroneous blueprint created at: {}",
+                        "info: erroneous blueprint created at: {}",
                         blueprint_path.display()
                     );
                     return Ok(());
@@ -1003,7 +1003,7 @@ impl Plan {
                     Some(b) => b,
                     None => match top {
                         Some(t) => t,
-                        None => return Err(AnyError(format!("No top-level unit exists")))?,
+                        None => return Err(AnyError(format!("no top-level unit exists")))?,
                     },
                 };
                 global_graph
@@ -1155,7 +1155,7 @@ impl Plan {
         build_path: &PathBuf,
         top_name: &str,
         bench_name: &str,
-        plug: Option<&Plugin>,
+        plug: Option<&Target>,
     ) -> Result<PathBuf, Fault> {
         // create a output build directorie(s) if they do not exist
         if PathBuf::from(build_dir).exists() == false {

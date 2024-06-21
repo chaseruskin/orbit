@@ -341,15 +341,15 @@ a candidate. To include all top levels and testbenches, use `-all`.
 
 The top level unit and testbench will be stored in a `.env` file within the
 build directory. This `.env` file is read during the build command to set
-the proper environment variables for downstream plugins and scripts that
-may require this information. If a known plugin is provided with `--plugin`,
+the proper environment variables for downstream targets and scripts that
+may require this information. If a known target is provided with `--target`,
 then it will also be stored in the `.env` file to be recalled during the
 build phase.
 
 User-defined filesets are only collected within the current working ip's 
-path. Plugins may have custom filesets defined in their configuration. When
-specifying a known plugin with `--plugin`, it will collect the filesets 
-defined for that plugin. Use `--fileset` as many times as needed to define
+path. Targets may have custom filesets defined in their configuration. When
+specifying a known target with `--target`, it will collect the filesets 
+defined for that target. Use `--fileset` as many times as needed to define
 additional filesets.
 
 During the planning phase, a lockfile is produced outlining the exact ip
@@ -377,12 +377,12 @@ re-install the dependency to the cache.
 """
 
 options."--top <unit>" = "The top level entity to explicitly define"
-options."--bench <tb>" = "The top level testbench to explicitly define"
-options."--plugin <name>" = "A plugin to refer to gather its declared filesets"
-options."--build-dir <dir>" = "The relative directory to place the blueprint.tsv file"
+options."--bench <unit>" = "The top level testbench to explicitly define"
+options."--target <name>" = "A target to refer to gather its declared filesets"
+options."--target-dir <dir>" = "The relative directory to place the blueprint.tsv file"
 options."--fileset <key=glob>..." = "A glob-style pattern identified by a name to add into the blueprint"
 options."--clean" = "Removes all files from the build directory before execution"
-options."--list" = "Display all available plugins and exit"
+options."--list" = "Display all available targets and exit"
 options."--force" = "Ignore reading the precomputed lock file"
 options."--lock-only" = "Create the lock file and exit"
 options."--all" = "Include all locally found HDL files"
@@ -390,7 +390,7 @@ options."--all" = "Include all locally found HDL files"
 examples = """
 orbit plan --bench my_tb
 orbit plan --top and_gate --fileset PIN-PLAN="*.board"
-orbit plan --plugin vivado --clean --bench ram_tb
+orbit plan --target vivado --clean --bench ram_tb
 orbit plan --lock-only
 """
 
@@ -402,12 +402,12 @@ Usage:
 
 Options:
     --top <unit>            override auto-detected toplevel entity
-    --bench <tb>            override auto-detected toplevel testbench
-    --plugin <name>        collect filesets defined for a plugin
-    --build-dir <dir>       set the output build directory
+    --bench <unit>            override auto-detected toplevel testbench
+    --target <name>        collect filesets defined for a target
+    --target-dir <dir>       set the output build directory
     --fileset <key=glob>... set an additional fileset
     --clean                 remove all files from the build directory
-    --list                  view available plugins and exit
+    --list                  view available targets and exit
     --lock-only             create the lockfile and exit
     --all                   include all found HDL files
     --force                 skip reading from the lock file
@@ -422,19 +422,19 @@ summary = "execute a backend workflow"
 synopsis = "orbit build [options] [--] [args]..."
 description = """
 This command carries out the "building phase". This phase involves running a
-user-defined command or plugin as a subprocess. It is required that the
+user-defined command or target as a subprocess. It is required that the
 planning phase occurs before the building phase. This command acts upon the 
 current working ip.
 
-If a plugin was previously used during the planning phase, then this command
-by default will reference and call that plugin after loading the previously
-written `.env` file from the planning phase. Either a plugin from `--plugin` 
-or a command from `--command` is required if a plugin was not previously
+If a target was previously used during the planning phase, then this command
+by default will reference and call that target after loading the previously
+written `.env` file from the planning phase. Either a target from `--target` 
+or a command from `--command` is required if a target was not previously
 specified during planning.
 
-If `--list` is used, then it will display a list of the available plugins to
-the user. Using `--list` in combination with a plugin from `--plugin` will
-display any detailed help information the plugin has documented in its 
+If `--list` is used, then it will display a list of the available targets to
+the user. Using `--list` in combination with a target from `--target` will
+display any detailed help information the target has documented in its 
 definition.
 
 As a refresher, a backend workflow typically performs three tasks:  
@@ -443,26 +443,26 @@ As a refresher, a backend workflow typically performs three tasks:
    3. Generate an output product 
 
 Any command-line arguments entered after the terminating flag `--` will be
-passed in the received order as arguments to the subprocess's command. If a plugin already
+passed in the received order as arguments to the subprocess's command. If a target already
 has defined arguments, the additional arguments passed from the command-line
 will follow the previously defined arguments.
 
 The subprocess will spawn from the current working ip's build directory.
 """
 
-options."--plugin <name>" = "Plugin to execute"
+options."--target <name>" = "Target to execute"
 options."--command <cmd>" = "Command to execute"
-options."--list" = "View available plugins"
+options."--list" = "View available targets"
 options."--force" = "Execute the command without checking for a blueprint"
-options."--build-dir <dir>" = "The relative directory to locate the blueprint file"
+options."--target-dir <dir>" = "The relative directory to locate the blueprint file"
 options."--verbose" = "Display the command being executed"
-options."args" = "Arguments to pass to the plugin or command"
+options."args" = "Arguments to pass to the target or command"
 
 examples = """
-orbit build --plugin xsim -- --elab
+orbit build --target xsim -- --elab
 orbit build --command python -- synth.py
 orbit build --verbose
-orbit build --plugin xsim --force -- --help
+orbit build --target xsim --force -- --help
 """
 
 help = """
@@ -472,12 +472,55 @@ Usage:
     orbit build [options] [--] [args]...
 
 Options:
-    --plugin <name>    plugin to execute
+    --target <name>     target to execute
     --command <cmd>     command to execute
-    --list              view available plugins
-    --build-dir <dir>   set the output build directory
+    --list              view available targets
+    --target-dir <dir>  set the output target directory
     --verbose           display the command being executed
     args                arguments to pass to the requested command
+"""
+
+# ------------------------------------------------------------------------------
+# run      
+# ------------------------------------------------------------------------------
+[run]
+name = "run"
+summary = "plan and build a target in a single step"
+synopsis = "orbit run [options] [--] [args]..."
+description = """
+This command will plan and build for the given target.
+"""
+
+options."--top <unit>" = "Set the top level design unit"
+options."--bench <unit>" = "Set the top level testbench unit"
+options."--fileset <key=glob>..." = "A glob-style pattern identified by name to include in the blueprint"
+options."--clean" = "Remove all previous files from the target directory before execution"
+options."--force" = "Ignore reading the precomputed lock file"
+options."--target <name>" = "Target to execute"
+options."--all" = "Include all locally found HDL files"
+options."--command <cmd>" = "Command to execute"
+options."--list" = "View available targets"
+options."--target-dir <dir>" = "The relative directory to locate the blueprint file"
+options."--verbose" = "Display the command being executed"
+options."args" = "Arguments to pass to the target"
+
+examples = """
+orbit run --top top --target quartus -- --synth
+"""
+
+help = """
+Plan and build a target in a single step.
+
+Usage:
+    orbit run [options] [--] [args]...
+
+Options:
+    --target <name>         target to execute
+    --command <cmd>         command to execute
+    --list                  view available targets and exit
+    --target-dir <dir>      relative directory to place the blueprint
+    --verbose               print the commands being executed
+    args                    arguments to pass to the target
 """
 
 # ------------------------------------------------------------------------------
@@ -547,7 +590,7 @@ synopsis = "orbit download [options]"
 description = """
 This command will get a package from the internet using the default protocol
 or a user-defined protocol. It places the package in the path defined as
-environment variable `$ORBIT_DOWNLOADS`.
+environment variable `$ORBIT_ARCHIVE`.
 
 Downloads are vital to Orbit's management system as to avoid having to solely 
 rely on accessing the internet to get IP. Downloads allow Orbit to quickly
@@ -678,7 +721,7 @@ options."<key>..." = "Include this variable's value specifically in the environm
 examples = """
 orbit env
 orbit env ORBIT_HOME
-orbit env ORBIT_CACHE ORBIT_DOWNLOADS
+orbit env ORBIT_CACHE ORBIT_ARCHIVE
 """
 
 help = """
@@ -752,7 +795,7 @@ To remove the ip from the cache and downloads locations, use `--all`.
 """
 options."<ip>" = "Ip specification"
 options."--all" = "remove the ip from the cache and downloads"
-options."--recurse" = "fully remove the ip and its dependencies"
+options."--recurse, -r" = "fully remove the ip and its dependencies"
 
 examples = """
 orbit remove gates
@@ -790,6 +833,7 @@ Commands:
     tree            view the dependency graph
     plan, p         generate a blueprint file
     build, b        execute a backend workflow
+    run, r          plan and build in a single step
     launch          verify an upcoming release
     search          browse the ip catalog 
     download        request packages from the internet
@@ -808,6 +852,8 @@ Options:
 Use 'orbit help <command>' for more information about a command.
 """
 
+
+
 # /*
 # --*-- commands to remove --*--
 #     edit            open an ip in a text editor
@@ -815,7 +861,6 @@ Use 'orbit help <command>' for more information about a command.
 
 # --*-- commands to add --*--
 #     audit           verify a package is able to installed properly and release-able
-#     run             perform plan and build in same step
 
 
 # alt names for `probe`: -check-, -scan-, show

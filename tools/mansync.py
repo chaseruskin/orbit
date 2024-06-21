@@ -1,10 +1,9 @@
-# ------------------------------------------------------------------------------
-# File      : mangen.py
-# Author    : Chase Ruskin
-# Details   :
-#   Reads a TOML file to write various forms of documentation (markdown, rust).
-# Usage     : python mangen.py
-# ------------------------------------------------------------------------------
+# Project: Orbit
+# Script: mansync.py
+# Usage: python mansync.py
+#
+# Reads a TOML file to write various forms of documentation (markdown, rust).
+
 import toml, os, sys
 
 # --- Configurations -----------------------------------------------------------
@@ -33,7 +32,7 @@ COMMANDS = [
 
 CWD, _ = os.path.split(sys.argv[0])
 # define the path to the TOML file
-INPUT_TOML_PATH = str(CWD)+"/manuals.toml"
+INPUT_TOML_PATH = "./docs/manuals.toml"
 
 # set the location of where to place the MD files
 MD_OUTPUT_DIR = './docs/src/commands' # './mansync/md'

@@ -39,7 +39,7 @@ jobs:
           echo "version=$(python ./tools/evalver.py --version)" >> $GITHUB_ENV
 
       - name: Update application documentation
-        run: python ./tools/mansync/mangen.py
+        run: python ./tools/mansync.py
 
       - name: Build orbit binary
         run: cargo build --release --bin orbit

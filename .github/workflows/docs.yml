@@ -27,7 +27,7 @@ jobs:
           mdbook-version: 'latest'
 
       - name: Update manual pages
-        run: python ./tools/mansync/mangen.py
+        run: python ./tools/mansync.py
         
       - name: Insert current version into docs
         run: python ./tools/sync_docs_version.py ./docs/src/starting/installing.md

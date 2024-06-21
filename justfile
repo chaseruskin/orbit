@@ -13,7 +13,7 @@ codev MODS:
 
 # Synchronize documentation from TOML file to markdown and Rust
 mansync:
-    python ./tools/mansync/mangen.py
+    python ./tools/mansync.py
 
 # Generate a summary of changelog notes for the next version release
 chlog:

@@ -14,5 +14,9 @@ jobs:
         with:
           python-version: 3.x
 
+      - name: Install python packages
+        run: |
+          pip install toml
+
       - name: Test python scripts
         run: python -m unittest discover -s ./tools -p "*.py"

@@ -178,24 +178,22 @@
                     <main>
                         <h1 id="final-project-full-adder"><a class="header" href="#final-project-full-adder">Final Project: Full adder</a></h1>
 <p>In this tutorial, you will learn how to:</p>
-<p><a href="#specifying-multiple-dependencies-for-an-ip">1.</a> Depend on multiple IPs for a single project<br />
+<p><a href="#specifying-multiple-dependencies-for-an-ip">1.</a> Depend on multiple ips for a single project<br />
 <a href="#overcoming-hdl-problems-namespace-pollution">2.</a> Use <code>orbit</code> to overcome namespace pollution<br />
-<a href="#reusing-plugins-that-are-globally-configured">3.</a> Build a project with a globally-configured plugin</p>
-<h2 id="specifying-multiple-dependencies-for-an-ip"><a class="header" href="#specifying-multiple-dependencies-for-an-ip">Specifying multiple dependencies for an IP</a></h2>
-<p>After the quick detour back to the gates IP, we are ready to tackle our final challenge in this mini tutorial series: the full adder. Like our previous projects, navigate to a directory in your file system where you would like to store the project.</p>
+<a href="#reusing-targets-that-are-globally-configured">3.</a> Build a project with a globally-configured target</p>
+<h2 id="specifying-multiple-dependencies-for-an-ip"><a class="header" href="#specifying-multiple-dependencies-for-an-ip">Specifying multiple dependencies for an ip</a></h2>
+<p>After the quick detour back to the gates ip, we are ready to tackle our final challenge in this mini tutorial series: the full adder. Like our previous projects, navigate to a directory in your file system where you would like to store the project.</p>
 <pre><code>orbit new full-add
 </code></pre>
 <p>For the rest of this tutorial, we will be working relative to the project directory "full-add/" that currently stores our new full-add project.</p>
-<p>For this final project, we will need circuits described in both the gate IP and half-add IP. Let's quickly recall if version 1.0.0 of gates has the OR gate we will need.</p>
-<pre><code>$ orbit show gates:1.0.0 --units
+<p>For this final project, we will need circuits described in both the gate ip and half-add ip. Let's quickly recall if version 1.0.0 of gates has the OR gate we will need.</p>
+<pre><code>$ orbit view gates:1.0.0 --units
 </code></pre>
-<pre><code>Identifier                          Type          Visibility   
------------------------------------ ------------- ----------- 
-and_gate                            entity        public 
+<pre><code>and_gate                            entity        public 
 nand_gate                           entity        public 
 or_gate                             entity        public 
 </code></pre>
-<p>Yup! It's there, and we know we will need some half adders as well. Let's add both IPs to our manifest file.</p>
+<p>Yup! It's there, and we know we will need some half adders as well. Let's add both ips to our manifest file.</p>
 <p>filename: Orbit.toml</p>
 <pre><code class="language-toml">[ip]
 name = "full-add"
@@ -211,7 +209,7 @@ half-add = "0.1.0"
 <p>Okay, time to start coding!</p>
 <h2 id="overcoming-hdl-problems-namespace-pollution"><a class="header" href="#overcoming-hdl-problems-namespace-pollution">Overcoming HDL problems: Namespace pollution</a></h2>
 <p>Our full adder circuit will be constructed of 2 half adders and an OR gate. Let's collect some HDL code snippets to use for our full adder circuit.</p>
-<pre><code>$ orbit get half_add --ip half-add --instance
+<pre><code>$ orbit get half_add --ip half-add --library --instance
 </code></pre>
 <pre><code>library work;
 
@@ -284,7 +282,7 @@ begin
 end architecture;
 </code></pre>
 <p>Our design heirarchy is getting more complex; we have full adders constructed of half adders and OR gates, half adders constructed of NAND gates, OR gates constructed of... uh-oh. More NAND gates.</p>
-<p>The NAND gate design unit used in the OR gates is different from NAND gates used in the half adders because they reside in different versions of the gates IP (essentially different IPs). So did we just define an NAND gate entity twice with the same identifier? Yes, and thanks to <code>orbit</code>, this situation is okay.</p>
+<p>The NAND gate design unit used in the OR gates is different from NAND gates used in the half adders because they reside in different versions of the gates ip (essentially different ips). So did we just define an NAND gate entity twice with the same identifier? Yes, and thanks to <code>orbit</code>, this situation is okay.</p>
 <h3 id="huh"><a class="header" href="#huh">Huh?</a></h3>
 <p>Typical EDA tools will complain and error out when primary design units share the same name. How would they know which one is being used where? Fortunately, <code>orbit</code> is one step ahead of these tools due to implementing an algorithm called <em>dynamic symbol transformation</em>.</p>
 <p>Let's take a look at the design tree hierarchy. You may notice something interesting.</p>
@@ -296,20 +294,19 @@ end architecture;
 └─ half_add (half-add:0.1.0)
    └─ nand_gate_8108cfb282 (gates:0.1.0)
 </code></pre>
-<p>The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, <code>orbit</code> appends the beginning checksum digits from the IP of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict.</p>
+<p>The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, <code>orbit</code> appends the beginning checksum digits from the ip of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict.</p>
 <p>To us though, these slight identifier renamings remain hidden because they occur among indirect dependencies in relation to our current project. When deciding which design unit to rename, <code>orbit</code> will always choose to rename the unit that is used as an indirect dependency. This key choice allows us to keep using the original unit name when integrating design units into the current project.</p>
 <h3 id="okay-so-what"><a class="header" href="#okay-so-what">Okay, so what?</a></h3>
 <p>This may be a silly example, but there is a key takeaway here. Designs are constantly evolving. When creating the latest module, you never know what will come next. By allowing the state of a design to live on while also providing support for new growth, a user no longer spends their time trying to manage compatibility among the increasingly interconnected dependencies. Instead, there exists a freedom to continue to innovate.</p>
-<h2 id="reusing-plugins-that-are-globally-configured"><a class="header" href="#reusing-plugins-that-are-globally-configured">Reusing plugins that are globally-configured</a></h2>
+<h2 id="reusing-targets-that-are-globally-configured"><a class="header" href="#reusing-targets-that-are-globally-configured">Reusing targets that are globally-configured</a></h2>
 <p>To conclude this mini tutorial series, let's generate a bitstream for the Yilinx FPGA with our full adder implementation.</p>
-<p>First, let's verify our yilinx plugin is available to us after appending it to our global configuration file in the previous tutorial.</p>
+<p>First, let's verify our yilinx target is available to us after appending it to our global configuration file in the previous tutorial.</p>
 <pre><code>$ orbit plan --list
 </code></pre>
-<pre><code>Plugins:
-  yilinx          Generate bitstreams for Yilinx FPGAs
+<pre><code>yilinx          Generate bitstreams for Yilinx FPGAs
 </code></pre>
-<p>We can review more details about a particular plugin by specifying it with the "--plugin" command-line option while providing "--list" as well.</p>
-<pre><code>$ orbit plan --list --plugin yilinx
+<p>We can review more details about a particular target by specifying it with the "--target" command-line option while providing "--list" as well.</p>
+<pre><code>$ orbit plan --list --target yilinx
 </code></pre>
 <pre><code>Name:    yilinx
 Command: python "yilinx.py" 
@@ -319,11 +316,11 @@ Filesets:
 
 Generate bitstreams for Yilinx FPGAs
 </code></pre>
-<p>Let's plan with the intention to build using the yilinx plugin for our full adder.</p>
-<pre><code>$ orbit plan --plugin yilinx --top full_add
+<p>Let's plan with the intention to build using the yilinx target for our full adder.</p>
+<pre><code>$ orbit plan --target yilinx --top full_add
 </code></pre>
 <p>Opening the blueprint file shows we are indeed using different files for the different NAND gate design units, and the files are in a topologically-sorted order.</p>
-<p>Filename: build/blueprint.tsv</p>
+<p>Filename: target/blueprint.tsv</p>
 <pre><code class="language-text">VHDL-RTL	work	/Users/chase/.orbit/cache/gates-0.1.0-fe9ec9d99e/nand_gate.vhd
 VHDL-RTL	work	/Users/chase/.orbit/cache/half-add-0.1.0-1c537df196/half_add.vhd
 VHDL-RTL	work	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/nand_gate.vhd
@@ -331,7 +328,7 @@ VHDL-RTL	work	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/or_gate.vhd
 VHDL-RTL	work	/Users/chase/tutorials/full-add/full_add.vhd
 
 </code></pre>
-<p>If a plugin is specified during the most recent planning step, it can be inferred to be used in the building step and therefore we can omit the "--plugin" command-line option for our convenience.</p>
+<p>If a target is specified during the most recent planning step, it can be inferred to be used in the building step and therefore we can omit the "--target" command-line option for our convenience.</p>
 <pre><code>$ orbit build
 </code></pre>
 <pre><code>YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-0.1.0-fe9ec9d99e/nand_gate.vhd into work...
@@ -341,7 +338,7 @@ YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/or_ga
 YILINX: Synthesizing file /Users/chase/tutorials/full-add/full_add.vhd into work...
 YILINX: Performing place-and-route...
 YILINX: Generating bitstream...
-YILINX: Bitstream saved at: build/full_add.bit
+YILINX: Bitstream saved at: target/full_add.bit
 </code></pre>
 <p>Great work! This marks the end to this tutorial series, but the beginning of your experience with <code>orbit</code>, an HDL package manager.</p>
 

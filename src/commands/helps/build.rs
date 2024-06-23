@@ -1,5 +1,5 @@
 // This help page was automatically generated from the mangen.py tool.
-pub const HELP: &str = r#"Execute a backend workflow.
+pub const HELP: &str = r#"Execute a target.
 
 Usage:
     orbit build [options] [--] [args]...

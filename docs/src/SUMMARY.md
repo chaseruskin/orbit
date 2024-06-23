@@ -22,10 +22,11 @@
 
 - [Topic Guide](./topic/topic.md)
     - [Overview](./topic/overview.md)
-    - [Catalog](./topic/catalog.md)
-    - [IP](./topic/1_ip.md)
-    - [Orbit.lock](./topic/5_orbitlock.md)
-    - [.orbitignore](./topic/orbitignore.md)
+    - [Catalog](./topic/catalog.md) <!-- good -->
+    - [Ip](./topic/ip.md) <!-- good -->
+    - [Orbit.lock](./topic/orbitlock.md) <!-- good -->
+    - [.orbitignore](./topic/orbitignore.md) <!-- good -->
+    - [Targets](./topic/targets.md)
     - [Planning](./topic/planning.md)
     - [Building](./topic/building.md)
     - [Protocols](./topic/protocols.md)
@@ -35,8 +36,8 @@
     - [Dynamic Symbol Transformation](./topic/dst.md)
 
 - [Reference](./reference/reference.md)
-    - [Manifest](./reference/manifest.md)
-    - [Packages](./reference/packages.md)
+    - [Manifest](./reference/manifest.md) <!-- good -->
+    - [Ip Names](./reference/ip.md) <!-- good -->
     - [Versions](./reference/versions.md)
     - [Filesets](./reference/filesets.md)
     - [Blueprint](./reference/blueprint.md)

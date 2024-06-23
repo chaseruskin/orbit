@@ -4,7 +4,7 @@ A _.orbitignore_ is a file that lists user-defined file patterns to ignore durin
 
 .orbitignore files are typically encouraged to be checked into version control.
 
-## Syntax
+## Format
 
 .orbitignore files follow the same syntax as .gitignore files. See the pattern format for more information: 
 - [.gitignore pattern format](https://git-scm.com/docs/gitignore#_pattern_format)

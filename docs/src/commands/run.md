@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-run - plan and build a target in a single step
+run - prepare and execute a target
 
 ## __SYNOPSIS__
 

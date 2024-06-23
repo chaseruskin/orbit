@@ -1,6 +1,6 @@
 // This manual page was automatically generated from the mangen.py tool.
 pub const MANUAL: &str = r#"NAME
-    show - print information about an ip
+    view - display metadata of an ip
 
 SYNOPSIS
     orbit show [options] [<ip>]
@@ -25,14 +25,14 @@ OPTIONS
     <ip>
         The spec of the ip to query
 
-    --versions
+    --versions, -v
         Display the list of possible versions
 
-    --units
+    --units, -u
         Display the list of HDL primary design units associated with this ip
 
 EXAMPLES
-    orbit show --units
-    orbit show gates:1.0.0 --units
-    orbit show gates --versions
+    orbit view --units
+    orbit view gates:1.0.0 -u
+    orbit view gates --versions
 "#;

@@ -15,7 +15,7 @@ PROGRAM = 'orbit'
 COMMANDS = [
     'new',
     'init',
-    'show',
+    'view',
     'read',
     'get',
     'tree',

@@ -21,8 +21,10 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - renames "plugin" to "target" to more closely align with software language terminology relating to back end processed
 - renames "downloads" directory to "archive" to better describe what is stored in that catalog level
 - makes `run` command available (although not working)
+- renames `show` command to `view` and adds new switches (`-u`, `-v`) for faster lookups for units and versions of an ip
 
 ### Documents
+- Adds information about ip and their naming
 - Adds information about catalog
 - Adds information about targets
 

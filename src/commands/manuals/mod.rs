@@ -13,5 +13,5 @@ pub mod read;
 pub mod remove;
 pub mod run;
 pub mod search;
-pub mod show;
 pub mod tree;
+pub mod view;

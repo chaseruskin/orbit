@@ -1,6 +1,6 @@
 // This manual page was automatically generated from the mangen.py tool.
 pub const MANUAL: &str = r#"NAME
-    plan - generate a blueprint file
+    plan - prepare a target
 
 SYNOPSIS
     orbit plan [options]

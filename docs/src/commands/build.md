@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-build - execute a backend workflow
+build - execute a target
 
 ## __SYNOPSIS__
 

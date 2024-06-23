@@ -17,8 +17,8 @@ mod read;
 mod remove;
 mod run;
 mod search;
-mod show;
 mod tree;
+mod view;
 
 // informational content for help about commands
 mod helps;

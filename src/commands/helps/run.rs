@@ -1,5 +1,5 @@
 // This help page was automatically generated from the mangen.py tool.
-pub const HELP: &str = r#"Plan and build a target in a single step.
+pub const HELP: &str = r#"Prepare and execute a target.
 
 Usage:
     orbit run [options] [--] [args]...

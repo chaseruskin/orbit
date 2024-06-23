@@ -1,8 +1,9 @@
-use crate::commands::helps::show;
+use crate::commands::helps::view;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::{Ip, PartialIpSpec};
 use crate::core::lang::LangUnit;
+use crate::core::pubfile::Visibility;
 use crate::core::version;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
@@ -13,18 +14,20 @@ use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
-pub struct Show {
+pub struct View {
     tags: bool,
     units: bool,
     ip: Option<PartialIpSpec>,
+    all: bool,
 }
 
-impl Subcommand<Context> for Show {
+impl Subcommand<Context> for View {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
-        cli.help(Help::with(show::HELP))?;
-        Ok(Show {
-            tags: cli.check(Arg::flag("versions"))?,
-            units: cli.check(Arg::flag("units"))?,
+        cli.help(Help::with(view::HELP))?;
+        Ok(View {
+            all: cli.check(Arg::flag("all").switch('a'))?,
+            tags: cli.check(Arg::flag("versions").switch('v'))?,
+            units: cli.check(Arg::flag("units").switch('u'))?,
             ip: cli.get(Arg::positional("ip"))?,
         })
     }
@@ -90,7 +93,10 @@ impl Subcommand<Context> for Show {
                 )?;
                 println!(
                     "{}",
-                    Self::format_units_table(units.into_iter().map(|(_, unit)| unit).collect())
+                    Self::format_units_table(
+                        units.into_iter().map(|(_, unit)| unit).collect(),
+                        self.all
+                    )
                 );
             } else {
                 // a 'virtual' ip, so try to extract units from
@@ -115,11 +121,11 @@ impl Subcommand<Context> for Show {
                         }
                         _ => {
                             let mut data = String::new();
-                            let header = format!(
-                                "{:<10}{:<11}\n{2:->10}{2:->11}\n",
-                                "Version", "Status", " ",
-                            );
-                            data.push_str(&header);
+                            // let header = format!(
+                            //     "{:<10}{:<11}\n{2:->10}{2:->11}\n",
+                            //     "Version", "Status", " ",
+                            // );
+                            // data.push_str(&header);
                             // further restrict versions if a particular version is set
                             vers.iter()
                                 .filter(move |p| {
@@ -152,16 +158,17 @@ impl Subcommand<Context> for Show {
     }
 }
 
-impl Show {
+impl View {
     /// Creates a string for to display the primary design units for the particular ip.
-    fn format_units_table(table: Vec<LangUnit>) -> String {
-        let header = format!(
-            "\
-{:<36}{:<14}{:<12}
-{:->36}{3:->14}{3:->12}\n",
-            "Identifier", "Type", "Visibility", " "
-        );
-        let mut body = String::new();
+    fn format_units_table(table: Vec<LangUnit>, all: bool) -> String {
+        let mut result = String::new();
+        //         let header = format!(
+        //             "\
+        // {:<36}{:<14}{:<12}
+        // {:->36}{3:->14}{3:->12}\n",
+        //             "Identifier", "Type", "Visibility", " "
+        //         );
+        //         result.push_str(&header);
 
         let mut table = table;
 
@@ -172,7 +179,11 @@ impl Show {
         });
 
         for unit in table {
-            body.push_str(&format!(
+            // skip this unit if it is not listed public and all is not provided
+            if all == false && unit.get_visibility() != &Visibility::Public {
+                continue;
+            }
+            result.push_str(&format!(
                 "{:<36}{:<14}{:<12}\n",
                 unit.get_name().to_string(),
                 unit.to_string(),
@@ -180,7 +191,7 @@ impl Show {
             ));
         }
 
-        header + &body
+        result
     }
 }
 

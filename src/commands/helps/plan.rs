@@ -1,5 +1,5 @@
 // This help page was automatically generated from the mangen.py tool.
-pub const HELP: &str = r#"Generate a blueprint file.
+pub const HELP: &str = r#"Prepare a target.
 
 Usage:
     orbit plan [options]              

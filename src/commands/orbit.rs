@@ -121,8 +121,8 @@ use crate::commands::read::Read;
 use crate::commands::remove::Remove;
 use crate::commands::run::Run;
 use crate::commands::search::Search;
-use crate::commands::show::Show;
 use crate::commands::tree::Tree;
+use crate::commands::view::View;
 
 #[derive(Debug, PartialEq)]
 enum OrbitSubcommand {
@@ -137,7 +137,7 @@ enum OrbitSubcommand {
     Tree(Tree),
     Get(Get),
     Init(Init),
-    Show(Show),
+    View(View),
     Env(Env),
     Config(Config),
     Uninstall(Remove),
@@ -150,7 +150,7 @@ impl Subcommand<Context> for OrbitSubcommand {
         match cli
             .select(&[
                 "help", "new", "search", "plan", "p", "build", "run", "launch", "download",
-                "install", "get", "init", "tree", "show", "b", "env", "config", "remove", "read",
+                "install", "get", "init", "tree", "view", "b", "env", "config", "remove", "read",
                 "r",
             ])?
             .as_ref()
@@ -167,7 +167,7 @@ impl Subcommand<Context> for OrbitSubcommand {
             "launch" => Ok(OrbitSubcommand::Launch(Launch::interpret(cli)?)),
             "install" => Ok(OrbitSubcommand::Install(Install::interpret(cli)?)),
             "tree" => Ok(OrbitSubcommand::Tree(Tree::interpret(cli)?)),
-            "show" => Ok(OrbitSubcommand::Show(Show::interpret(cli)?)),
+            "view" => Ok(OrbitSubcommand::View(View::interpret(cli)?)),
             "env" => Ok(OrbitSubcommand::Env(Env::interpret(cli)?)),
             "config" => Ok(OrbitSubcommand::Config(Config::interpret(cli)?)),
             "remove" => Ok(OrbitSubcommand::Uninstall(Remove::interpret(cli)?)),
@@ -189,7 +189,7 @@ impl Subcommand<Context> for OrbitSubcommand {
             OrbitSubcommand::Launch(sub) => sub.execute(context),
             OrbitSubcommand::Tree(sub) => sub.execute(context),
             OrbitSubcommand::Init(sub) => sub.execute(context),
-            OrbitSubcommand::Show(sub) => sub.execute(context),
+            OrbitSubcommand::View(sub) => sub.execute(context),
             OrbitSubcommand::Env(sub) => sub.execute(context),
             OrbitSubcommand::Config(sub) => sub.execute(context),
             OrbitSubcommand::Uninstall(sub) => sub.execute(context),

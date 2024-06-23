@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-plan - generate a blueprint file
+plan - prepare a target
 
 ## __SYNOPSIS__
 

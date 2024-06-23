@@ -54,3 +54,9 @@ test-pub:
     just install
     chmod +x ./tests/env/projects/pub.sh
     cd ./tests/env/projects; ./pub.sh
+
+test-all:
+    just test-plan-1
+    just test-plan-2
+    just test-dst
+    just test-pub

@@ -2,11 +2,11 @@
 
 In this tutorial, you will learn how to:
 
-[1.](#updating-the-gates-ip) Edit an existing IP  
-[2.](#extending-the-yilinx-plugin) Use environment variables and command-line arguments to create more robust plugins  
-[3.](#rereleasing-the-gates-ip) Release the next version for an existing IP  
+[1.](#updating-the-gates-ip) Edit an existing ip  
+[2.](#extending-the-yilinx-target) Use environment variables and command-line arguments to create more robust targets  
+[3.](#rereleasing-the-gates-ip) Release the next version for an existing ip  
 
-## Editing the gates IP
+## Editing the gates ip
 
 It seems we left out some logic gates when we last worked on the gates project, so let's implement them now. Navigate to the directory in your file system where you currently store the gates project.
 
@@ -81,28 +81,26 @@ end architecture;
 
 Showing the list of possible design units for the current project should now include the OR gate entity.
 ```
-$ orbit show --units
+$ orbit view --units
 ```
 ```
-Identifier                          Type          Visibility   
------------------------------------ ------------- ----------- 
 and_gate                            entity        public
 nand_gate                           entity        public 
 or_gate                             entity        public 
 ```
 
-## Extending the Yilinx plugin
+## Extending the Yilinx target
 
 
 Next, we want to program our Yilinx FPGA with the OR gate design to test it on the board. However, there are some quick updates we first want to apply to the ".orbit/yilinx.py" script.
 - We want a way to specify which I/O pins of the FPGA will be used during placement and routing
 - We want a way to specify whether to program the FPGA bitstream to SRAM storage (volatile) or flash storage (nonvolatile).
 
-After searching through Yilinx documentation for hours, you learn that the Yilinx design tool can accept .ydc files for FPGA pin assignments. Let's edit our yilinx plugin to collect any .ydc files our project may have during `orbit`'s planning step.
+After searching through Yilinx documentation for hours, you learn that the Yilinx design tool can accept .ydc files for FPGA pin assignments. Let's edit our yilinx target to collect any .ydc files our project may have during `orbit`'s planning step.
 
 Filename: .orbit/config.toml
 ``` toml
-[[plugin]]
+[[target]]
 name = "yilinx"
 command = "python"
 description = "Generate bitstreams for Yilinx FPGAs"
@@ -120,7 +118,7 @@ A2=b
 C7=y
 ```
 
-Next, let's edit the Python script for the yilinx plugin to allow the Yilinx tool to use our .ydc file if we ever collect one into our blueprint file. We also want to accept command-line arguments to optionally program our FPGA using SRAM or flash storage.
+Next, let's edit the Python script for the yilinx target to allow the Yilinx tool to use our .ydc file if we ever collect one into our blueprint file. We also want to accept command-line arguments to optionally program our FPGA using SRAM or flash storage.
 
 Filename: .orbit/yilinx.py
 ``` Python
@@ -182,14 +180,14 @@ elif PROG_SRAM == True:
 
 With all these changes, we can now go ahead and program our FPGA as we want!
 
-First, let's plan the OR gate design. We can specify which entity is the top level by using the "--top" command-line option. The "--plugin" command-line option tells `orbit` what additional files to collect for a future build with that plugin.
+First, let's plan the OR gate design. We can specify which entity is the top level by using the "--top" command-line option. The "--target" command-line option tells `orbit` what additional files to collect for a future build with that target.
 ```
-$ orbit plan --plugin yilinx --top or_gate 
+$ orbit plan --target yilinx --top or_gate 
 ```
 
 Let's take a look at the blueprint file `orbit` just created.
 
-Filename: build/blueprint.tsv
+Filename: target/blueprint.tsv
 ``` text
 PIN-FILE	work	/Users/chase/tutorials/gates/pins.ydc
 VHDL-RTL	work	/Users/chase/tutorials/gates/nand_gate.vhd
@@ -199,9 +197,9 @@ VHDL-RTL	work	/Users/chase/tutorials/gates/or_gate.vhd
 
 Inspecting our latest blueprint file reveals our .ydc file was successfully collected.
 
-Finally, let's build our design. We can pass command-line arguments directly to the plugin by entering them after the "--" argument.
+Finally, let's build our design. We can pass command-line arguments directly to the target by entering them after the "--" argument.
 ```
-$ orbit build --plugin yilinx -- --flash
+$ orbit build --target yilinx -- --flash
 ```
 ```
 YILINX: Synthesizing file /Users/chase/tutorials/gates/nand_gate.vhd into work...
@@ -211,23 +209,23 @@ YILINX: Mapping pin A1 to port a...
 YILINX: Mapping pin A2 to port b...
 YILINX: Mapping pin C7 to port y...
 YILINX: Generating bitstream...
-YILINX: Bitstream saved at: build/or_gate.bit
+YILINX: Bitstream saved at: target/or_gate.bit
 YILINX: Programming bitstream to flash...
 ```
 
-As expected, the bitstream is written and saved in our build directory.
+As expected, the bitstream is written and saved in our target directory.
 
-Filename: build/or_gate.bit
+Filename: target/or_gate.bit
 ``` text
 1101111111001010111111100111110000111101001100101
 ```
 
-Awesome! We added some pretty advanced settings to our yilinx plugin to make it more robust for future use. Let's configure this plugin to be used with any of our ongoing projects by editing the global configuration file through the command-line.
+Awesome! We added some pretty advanced settings to our yilinx target to make it more robust for future use. Let's configure this target to be used with any of our ongoing projects by editing the global configuration file through the command-line.
 ```
 $ orbit config --global --append include="$(orbit env ORBIT_IP_PATH)/.orbit/config.toml"
 ```
 
-Now when we call `orbit` from any directory, we can see our yilinx plugin is available to use.
+Now when we call `orbit` from any directory, we can see our yilinx target is available to use.
 ```
 $ orbit plan --list
 ```
@@ -236,9 +234,9 @@ Plugins:
   yilinx          Generate bitstreams for Yilinx FPGAs
 ```
 
-## Rereleasing the gates IP
+## Rereleasing the gates ip
 
-We made changes to the gates IP, and now we want to have the ability to use these new updates or continue using the old changes. To do this, we want to update the version number in the manifest file. Let's edit the Orbit.toml file's version field to contain version "1.0.0".
+We made changes to the gates ip, and now we want to have the ability to use these new updates or continue using the old changes. To do this, we want to update the version number in the manifest file. Let's edit the Orbit.toml file's version field to contain version "1.0.0".
 
 Filename: Orbit.toml
 ``` toml
@@ -252,7 +250,7 @@ version = "1.0.0"
 
 ```
 
-Finally, let's release version 1.0.0 for the gates IP by installing it to our cache.
+Finally, let's release version 1.0.0 for the gates ip by installing it to our cache.
 ```
 $ orbit install --path .
 ```
@@ -262,7 +260,5 @@ One last look at the catalog shows the latest version of gates we have installed
 $ orbit search gates
 ```
 ```
-Package                     Latest    Status   
---------------------------- --------- ---------- 
-gates                       1.0.0     Installed
+gates                       1.0.0     install
 ```

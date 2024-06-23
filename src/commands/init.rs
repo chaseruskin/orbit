@@ -59,7 +59,7 @@ impl Subcommand<Context> for Init {
 
 impl Init {
     /// Initializes a project at an exising path.
-    fn create_ip(&self, ip: &PkgPart, build_dir: &str) -> AnyResult<()> {
+    fn create_ip(&self, ip: &PkgPart, target_dir: &str) -> AnyResult<()> {
         // verify the directory already exists
         if self.path.is_dir() == false || self.path.exists() == false {
             return Err(Box::new(AnyError(format!(
@@ -84,7 +84,7 @@ impl Init {
         let mut manifest = std::fs::File::create(&manifest_path)?;
         let mut ignore = std::fs::File::create(&ignore_path)?;
         manifest.write_all(Manifest::write_empty_manifest(&ip).as_bytes())?;
-        ignore.write_all(Ip::write_default_ignore_file(build_dir).as_bytes())?;
+        ignore.write_all(Ip::write_default_ignore_file(target_dir).as_bytes())?;
         Ok(())
     }
 }

@@ -1,4 +1,4 @@
-# IP
+# Ip
 
 Ips are the core component that Orbit operates on as a package manager. First, let's understand some key terms related to ip in the context of Orbit.
 

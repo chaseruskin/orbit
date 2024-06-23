@@ -268,8 +268,8 @@ impl From<Configs> for Config {
 #[derive(PartialEq, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct General {
-    #[serde(rename = "build-dir")]
-    build_dir: Option<String>,
+    #[serde(rename = "target-dir")]
+    target_dir: Option<String>,
     #[serde(rename = "language-mode")]
     lang_mode: Option<LangMode>,
 }
@@ -277,15 +277,15 @@ pub struct General {
 impl General {
     pub fn new() -> Self {
         Self {
-            build_dir: None,
+            target_dir: None,
             lang_mode: None,
         }
     }
 
     pub fn get_build_dir(&self) -> String {
-        self.build_dir
+        self.target_dir
             .as_ref()
-            .unwrap_or(&String::from("build"))
+            .unwrap_or(&String::from("target"))
             .clone()
     }
 
@@ -302,8 +302,8 @@ impl General {
     pub fn merge(&mut self, rhs: Option<Self>) {
         if let Some(rhs) = rhs {
             // no build dir defined so give it the value from `rhs`
-            if self.build_dir.is_some() == false {
-                self.build_dir = rhs.build_dir
+            if self.target_dir.is_some() == false {
+                self.target_dir = rhs.target_dir
             }
             // no language mode defined so give it the value from `rhs`
             if self.lang_mode.is_some() == false {

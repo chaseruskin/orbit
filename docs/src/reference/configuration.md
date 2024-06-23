@@ -26,7 +26,7 @@ Every configuration file consists of the following sections:
 
 - [include](#the-include-field) - Lists other `config.toml` files to process.
 - [[general]](#the-general-section) - The general settings.
-    - [build-dir](#the-build-dir-field) - Default build directory.
+    - [target-dir](#the-target-dir-field) - Default target directory.
     - [language-mode](#the-language-mode-field) - HDL language(s) to enable.
 - [[vhdl-format]](#the-vhdl-format-section) - VHDL code formatting.
 - [[env]](#the-env-section) - The runtime environment variables.
@@ -55,13 +55,13 @@ include = [
 
 ### The `[general]` section
 
-### The `build-dir` field
+### The `target-dir` field
 
-Define the default output directory to create for the planning and building phases. This value can be overridden on the command-line when the `--build-dir` option is available. When this field is not defined, the default value for the build directory is "build".
+Define the default output directory to create for the planning and building phases. This value can be overridden on the command-line when the `--target-dir` option is available. When this field is not defined, the default value for the build directory is "target".
 
 ``` toml
 [general]
-build-dir = "build"
+target-dir = "target"
 # ...
 ```
 
@@ -126,19 +126,19 @@ super-bar = "1"
 
 ### The `name` field
 
-See [[plugin]](#the-plugin-array)'s definition.
+See [[target]](#the-target-array)'s definition.
 
 ### The `description` field
 
-See [[plugin]](#the-plugin-array)'s definition.
+See [[target]](#the-target-array)'s definition.
 
 ### The `command` field
 
-See [[plugin]](#the-plugin-array)'s definition.
+See [[target]](#the-target-array)'s definition.
 
 ### The `args` field
 
-See [[plugin]](#the-plugin-array)'s definition.
+See [[target]](#the-target-array)'s definition.
 
 <!--
 ## config.toml

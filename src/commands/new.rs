@@ -94,7 +94,7 @@ impl New {
 
 impl New {
     /// Creates a new directory at the given `dest` with a new manifest file.
-    fn create_ip(&self, ip: &PkgPart, build_dir: &str) -> AnyResult<()> {
+    fn create_ip(&self, ip: &PkgPart, target_dir: &str) -> AnyResult<()> {
         // create the directory
         std::fs::create_dir_all(&self.path)?;
 
@@ -114,7 +114,7 @@ impl New {
         let mut manifest = std::fs::File::create(&manifest_path)?;
         let mut ignore = std::fs::File::create(&ignore_path)?;
         manifest.write_all(Manifest::write_empty_manifest(&ip).as_bytes())?;
-        ignore.write_all(Ip::write_default_ignore_file(build_dir).as_bytes())?;
+        ignore.write_all(Ip::write_default_ignore_file(target_dir).as_bytes())?;
         Ok(())
     }
 }

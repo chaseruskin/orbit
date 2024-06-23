@@ -442,8 +442,8 @@ impl Ip {
     }
 
     /// Writes the basic .orbitignore file.
-    pub fn write_default_ignore_file(build_dir: &str) -> String {
-        format!("/{}\n", build_dir)
+    pub fn write_default_ignore_file(target_dir: &str) -> String {
+        format!("/{}\n", target_dir)
     }
 }
 

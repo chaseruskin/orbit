@@ -154,7 +154,20 @@ impl Subcommand<Context> for Plan {
             None => &default_build_dir,
         };
 
-        self.run(target, b_dir, plugin, catalog, &c.get_lang_mode())
+        Self::run(
+            target,
+            b_dir,
+            plugin,
+            catalog,
+            &c.get_lang_mode(),
+            self.clean,
+            self.force,
+            self.only_lock,
+            self.all,
+            &self.bench,
+            &self.top,
+            &self.filesets,
+        )
     }
 }
 
@@ -541,12 +554,13 @@ impl Plan {
     }
 
     fn detect_bench(
-        &self,
         _graph: &GraphMap<CompoundIdentifier, HdlNode, ()>,
         local: &GraphMap<&CompoundIdentifier, &HdlNode, &()>,
         working_lib: &Identifier,
+        bench: &Option<Identifier>,
+        top: &Option<Identifier>,
     ) -> Result<(Option<usize>, Option<usize>), PlanError> {
-        Ok(if let Some(t) = &self.bench {
+        Ok(if let Some(t) = &bench {
             match local.get_node_by_key(&&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
                 // verify the unit is an entity that is a testbench
                 Some(node) => {
@@ -563,7 +577,7 @@ impl Plan {
                 None => return Err(PlanError::UnknownEntity(t.clone()))?,
             }
         // try to find the naturally occurring top-level if user did not provide --bench and did not provide --top
-        } else if self.top.is_none() {
+        } else if top.is_none() {
             match local.find_root() {
                 // only detected a single root
                 Ok(n) => {
@@ -607,15 +621,15 @@ impl Plan {
     /// This function looks and checks if there is a single predecessor to the
     /// `bench` node.
     fn detect_top(
-        &self,
         _graph: &GraphMap<CompoundIdentifier, HdlNode, ()>,
         local: &GraphMap<&CompoundIdentifier, &HdlNode, &()>,
         working_lib: &Identifier,
         natural_top: Option<usize>,
         mut bench: Option<usize>,
+        top: &Option<Identifier>,
     ) -> Result<(Option<usize>, Option<usize>), PlanError> {
         // determine the top-level node index
-        let top: Option<usize> = if let Some(t) = &self.top {
+        let top: Option<usize> = if let Some(t) = &top {
             match local.get_node_by_key(&&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
                 Some(node) => {
                     // verify the unit is an entity that is not a testbench
@@ -844,20 +858,26 @@ impl Plan {
     }
 
     /// Performs the backend logic for creating a blueprint file (planning a design).
-    fn run(
-        &self,
+    pub fn run(
         target: Ip,
         build_dir: &str,
         plug: Option<&Target>,
         catalog: Catalog,
         mode: &LangMode,
+        clean: bool,
+        force: bool,
+        only_lock: bool,
+        all: bool,
+        bench_name: &Option<Identifier>,
+        top_name: &Option<Identifier>,
+        filesets: &Option<Vec<Fileset>>,
     ) -> Result<(), Fault> {
         // create the build path to know where to begin storing files
         let mut build_path = target.get_root().clone();
         build_path.push(build_dir);
 
         // check if to clean the directory
-        if self.clean == true && Path::exists(&build_path) == true {
+        if clean == true && Path::exists(&build_path) == true {
             fs::remove_dir_all(&build_path)?;
         }
 
@@ -866,7 +886,7 @@ impl Plan {
             Ok(g) => g,
             Err(e) => {
                 // generate a single blueprint
-                if e.is_source_err() == true && self.force == true {
+                if e.is_source_err() == true && force == true {
                     // store data in blueprint TSV format
                     let mut blueprint_data = String::new();
                     let file = e.as_source_file().unwrap();
@@ -877,7 +897,7 @@ impl Plan {
                         blueprint_data +=
                             &format!("VHDL-SIM{0}{1}{0}{2}\n", BLUEPRINT_DELIMITER, "work", file);
                     }
-                    let blueprint_path = self.create_outputs(
+                    let blueprint_path = Self::create_outputs(
                         &blueprint_data,
                         build_dir,
                         &build_path,
@@ -898,8 +918,8 @@ impl Plan {
         };
 
         // only write lockfile and exit if flag is raised
-        if self.only_lock == true {
-            Self::write_lockfile(&target, &ip_graph, self.force)?;
+        if only_lock == true {
+            Self::write_lockfile(&target, &ip_graph, force)?;
             return Ok(());
         }
 
@@ -913,11 +933,17 @@ impl Plan {
         let local_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> =
             Self::compute_local_graph(&global_graph, &working_lib, &target);
 
-        let (top, bench) = match self.detect_bench(&global_graph, &local_graph, &working_lib) {
+        let (top, bench) = match Self::detect_bench(
+            &global_graph,
+            &local_graph,
+            &working_lib,
+            &bench_name,
+            &top_name,
+        ) {
             Ok(r) => r,
             Err(e) => match e {
                 PlanError::Ambiguous(_, _) => {
-                    if self.all == true {
+                    if all == true {
                         (None, None)
                     } else {
                         return Err(e)?;
@@ -927,20 +953,26 @@ impl Plan {
             },
         };
         // determine the top-level node index
-        let (top, bench) =
-            match self.detect_top(&global_graph, &local_graph, &working_lib, top, bench) {
-                Ok(r) => r,
-                Err(e) => match e {
-                    PlanError::Ambiguous(_, _) => {
-                        if self.all == true {
-                            (top, bench)
-                        } else {
-                            return Err(e)?;
-                        }
+        let (top, bench) = match Self::detect_top(
+            &global_graph,
+            &local_graph,
+            &working_lib,
+            top,
+            bench,
+            &top_name,
+        ) {
+            Ok(r) => r,
+            Err(e) => match e {
+                PlanError::Ambiguous(_, _) => {
+                    if all == true {
+                        (top, bench)
+                    } else {
+                        return Err(e)?;
                     }
-                    _ => return Err(e)?,
-                },
-            };
+                }
+                _ => return Err(e)?,
+            },
+        };
 
         let top = match top {
             Some(i) => Some(Self::local_to_global(i, &global_graph, &local_graph).index()),
@@ -956,7 +988,7 @@ impl Plan {
         // error if the user-defined top is not instantiated in the testbench. Say this can be fixed by adding '--all'
         if let Some(b) = &bench {
             // @idea: merge two topological sorted lists together by running top sort from bench and top sort from top if in this situation
-            if self.all == false
+            if all == false
                 && global_graph
                     .get_graph()
                     .successors(top.unwrap())
@@ -971,7 +1003,7 @@ impl Plan {
         Self::write_lockfile(&target, &ip_graph, true)?;
 
         // compute minimal topological ordering
-        let min_order = match self.all {
+        let min_order = match all {
             // perform topological sort on the entire graph
             true => {
                 match local_graph.find_root() {
@@ -1063,7 +1095,7 @@ impl Plan {
             let mut cli_fset_map: HashMap<&String, &Fileset> = HashMap::new();
 
             // use command-line set filesets
-            if let Some(fsets) = &self.filesets {
+            if let Some(fsets) = filesets {
                 for fset in fsets {
                     // insert into map structure
                     cli_fset_map.insert(fset.get_name(), &fset);
@@ -1134,7 +1166,7 @@ impl Plan {
             }
         }
 
-        let blueprint_path = self.create_outputs(
+        let blueprint_path = Self::create_outputs(
             &blueprint_data,
             build_dir,
             &build_path,
@@ -1149,7 +1181,6 @@ impl Plan {
 
     /// Writes the blueprint and env file to the build directory.
     fn create_outputs(
-        &self,
         blueprint_data: &str,
         build_dir: &str,
         build_path: &PathBuf,

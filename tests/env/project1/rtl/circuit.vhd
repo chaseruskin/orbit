@@ -5,7 +5,7 @@ entity circuit is
 port (
     clk : in std_logic;
     d_in : in std_logic_vector(3 downto 0);
-    d_out : out std_logic_vector(3 downto 0);
+    d_out : out std_logic_vector(3 downto 0)
 );
 end entity;
 

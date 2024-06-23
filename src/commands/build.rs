@@ -157,19 +157,24 @@ impl Subcommand<Context> for Build {
         }
 
         // start command from the build directory
-        self.run(plug, &b_dir)
+        Self::run(plug, &b_dir, &self.command, &self.args, self.verbose)
     }
 }
 
 impl Build {
-    fn run(&self, plug: Option<&Target>, dir: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn run(
+        plug: Option<&Target>,
+        dir: &str,
+        command: &Option<String>,
+        args: &Vec<String>,
+        verbose: bool,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // if there is a match run with the plugin then run it
         if let Some(p) = plug {
-            p.execute(&self.args, self.verbose, dir)
-        } else if let Some(cmd) = &self.command {
-            if self.verbose == true {
-                let s = self
-                    .args
+            p.execute(&args, verbose, dir)
+        } else if let Some(cmd) = &command {
+            if verbose == true {
+                let s = args
                     .iter()
                     .fold(String::new(), |x, y| x + "\"" + &y + "\" ");
                 println!("info: running: {} {}", cmd, s);
@@ -177,7 +182,7 @@ impl Build {
             let mut proc = crate::util::filesystem::invoke(
                 dir,
                 cmd,
-                &self.args,
+                &args,
                 Context::enable_windows_bat_file_match(),
             )?;
             let exit_code = proc.wait()?;

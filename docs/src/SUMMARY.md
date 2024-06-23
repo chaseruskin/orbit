@@ -49,7 +49,7 @@
 - [Commands](./commands/commands.md)
     - [orbit new](./commands/new.md) <!-- DONE -->
     - [orbit init](./commands/init.md) 
-    - [orbit show](./commands/show.md)
+    - [orbit view](./commands/view.md)
     - [orbit read](./commands/read.md)
     - [orbit get](./commands/get.md)
     - [orbit tree](./commands/tree.md)

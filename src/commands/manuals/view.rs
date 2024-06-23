@@ -31,6 +31,9 @@ OPTIONS
     --units, -u
         Display the list of HDL primary design units associated with this ip
 
+    --all, -a
+        Include any private or hidden results
+
 EXAMPLES
     orbit view --units
     orbit view gates:1.0.0 -u

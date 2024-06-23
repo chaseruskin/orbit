@@ -107,6 +107,7 @@ current working ip, if exists.
 options."<ip>" = "The spec of the ip to query"
 options."--versions, -v" = "Display the list of possible versions"
 options."--units, -u" = "Display the list of HDL primary design units associated with this ip"
+options."--all, -a" = "Include any private or hidden results"
 
 examples = """
 orbit view --units

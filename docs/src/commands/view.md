@@ -38,6 +38,9 @@ current working ip, if exists.
 `--units, -u`  
       Display the list of HDL primary design units associated with this ip
 
+`--all, -a`  
+      Include any private or hidden results
+
 ## __EXAMPLES__
 
 ```

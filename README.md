@@ -1,25 +1,12 @@
-<h1 align="center"><code>orbit</code></h1>
+# Orbit
 
-<div align="center">
-  <a href="https://github.com/cdotrus/orbit/actions">
-    <img src="https://github.com/cdotrus/orbit/workflows/pipeline/badge.svg" alt="pipeline">
-  </a>
-  <a href="https://cdotrus.github.io/orbit/">
-    <img src="https://github.com/cdotrus/orbit/actions/workflows/docs.yml/badge.svg" alt="docs">
-  </a>
-  <a href="https://www.gnu.org/licenses/gpl-3.0">
-    <img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3">
-  </a>
-  <a href="https://hub.docker.com/repository/docker/cdotrus/orbit/general">
-    <img src="https://img.shields.io/badge/dockerhub-images-important.svg?logo=docker" alt="images">
-  </a>
-  <a href="https://github.com/cdotrus/orbit/releases">
-    <img src="https://img.shields.io/github/downloads/cdotrus/orbit/total.svg" alt="downloads">
-  </a>
-</div>
-<br>
+[![Pipeline](https://github.com/cdotrus/orbit/workflows/pipeline/badge.svg)](https://github.com/cdotrus/orbit/actions) 
+[![Documentation](https://github.com/cdotrus/orbit/actions/workflows/docs.yml/badge.svg)](https://cdotrus.github.io/orbit) 
+[![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) 
+[![Docker Hub](https://img.shields.io/badge/dockerhub-images-important.svg?logo=docker)](https://hub.docker.com/repository/docker/cdotrus/orbit/general) 
+[![Downloads](https://img.shields.io/github/downloads/cdotrus/orbit/total.svg)](https://github.com/cdotrus/orbit/releases)
 
-Orbit is a package manager for hardware description languages (HDL).
+Orbit is an agile package manager for hardware description languages (HDL).
 
 ### Live at the cutting edge of hardware design
 
@@ -33,7 +20,7 @@ However, using just any package management system does not guarantee that techni
 
 ### Free and open-source
 
-Prebuilt binaries are available for Linux, MacOS, and Windows with no dependencies. Check out the [releases page](https://github.com/cdotrus/orbit/releases) for the latest version. Working on a different platform? No problem, building from source is easy with [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html), Rust's default package manager. Use docker? We have [docker images](https://hub.docker.com/repository/docker/cdotrus/orbit/general) available too. See [Installing](https://cdotrus.github.io/orbit/starting/installing.html) for complete details.
+Prebuilt binaries are available for Linux, MacOS, and Windows with no dependencies. Visit the [releases page](https://github.com/cdotrus/orbit/releases) for the latest version. Working on a different platform? No problem, building from source is easy with [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html), Rust's default package manager. Use docker? We have [docker images](https://hub.docker.com/repository/docker/cdotrus/orbit/general) available too. See [Installing](https://cdotrus.github.io/orbit/starting/installing.html) for complete details.
 
 For more information on getting started and how to use Orbit in your workflow, check out the [Book of Orbit](https://cdotrus.github.io/orbit/).
 

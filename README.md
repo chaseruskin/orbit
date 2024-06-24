@@ -10,7 +10,7 @@
   <a href="https://www.gnu.org/licenses/gpl-3.0">
     <img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL v3">
   </a>
-  <a href="https://hub.docker.com/repository/docker/crus800/orbit/general">
+  <a href="https://hub.docker.com/repository/docker/cdotrus/orbit/general">
     <img src="https://img.shields.io/badge/dockerhub-images-important.svg?logo=docker" alt="images">
   </a>
   <a href="https://github.com/cdotrus/orbit/releases">
@@ -23,17 +23,17 @@ Orbit is a package manager for hardware description languages (HDL).
 
 ### Live at the cutting edge of hardware design
 
-The boom of AI and emerging workloads have shown just how fast new advancements can be made in models and algorithms. Today's hardware is no longer good enough to meet the immediate demands of tomorrow's innovations. It's time to build tomorrow's hardware, today. It's time to __live at the cutting edge of hardware design.__
+The boom of AI and emerging workloads have shown just how fast new advancements can be made in models and algorithms. Today's hardware is no longer good enough to meet the immediate demands of tomorrow's innovations; today's hardware must shift to a more agile development approach. It's time to build tomorrow's hardware, today. It's time to __live at the cutting edge of hardware design.__
 
-### A package manager designed for minimizing technical debt 
+### An agile package manager designed for minimizing technical debt 
 
 As codebases scale and increase in complexity, it becomes of upmost importance to have the right system in place to efficiently manage the increasing number of resources. Without the right system, the codebase can be bogged down by _technical debt_, leaving you stuck in yesterday's designs.
 
-However, using just any package management system does not guarantee that technical debt is minimized. Poorly-designed package managers will simply shift the technical debt to different resources, while a well-designed package manager will minimize the overall amount of technical debt. With minimal technical debt, you can bring up tomorrow's hardware today. Orbit is __a package manager designed for minimizing technical debt.__
+However, using just any package management system does not guarantee that technical debt is minimized. Poorly-designed package managers will simply shift the technical debt to different resources, while a well-designed package manager will minimize the overall amount of technical debt. With minimal technical debt, you can bring up tomorrow's hardware today. Orbit is __an agile package manager designed for minimizing technical debt.__
 
 ### Free and open-source
 
-Automated builds are available for Linux, MacOS, and Windows with no dependencies. Check out the [releases page](https://github.com/cdotrus/orbit/releases) for the latest version. Working on a different platform? No problem, building from source is easy with [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html), Rust's default package manager. Use docker? We have a docker image available too. See [Installing]((https://cdotrus.github.io/orbit/starting/installing.html)) for complete details.
+Prebuilt binaries are available for Linux, MacOS, and Windows with no dependencies. Check out the [releases page](https://github.com/cdotrus/orbit/releases) for the latest version. Working on a different platform? No problem, building from source is easy with [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html), Rust's default package manager. Use docker? We have [docker images](https://hub.docker.com/repository/docker/cdotrus/orbit/general) available too. See [Installing](https://cdotrus.github.io/orbit/starting/installing.html) for complete details.
 
 For more information on getting started and how to use Orbit in your workflow, check out the [Book of Orbit](https://cdotrus.github.io/orbit/).
 
@@ -90,12 +90,12 @@ u_and_gate : entity gates.and_gate
 Since Orbit only focuses on efficiently managing the HDL source code and minimizing its associated technical debt, users have the power to define their own back end processes. This is achieved with Orbit passing off a file that lists the topologically-sorted order of HDL source code files for a user's back end process to accept. 
 
 ```
-VHDL-RTL	gates	/users/chase/.orbit/cache/gates-2.0.0-7f4d8c7812/rtl/nand_gate.vhd
-VHDL-RTL	gates	/users/chase/.orbit/cache/gates-2.0.0-7f4d8c7812/rtl/and_gate.vhd
-VHDL-RTL	work	/users/chase/projects/cpu/rtl/datapath.vhd
-VHDL-RTL	work	/users/chase/projects/cpu/rtl/ctrl.vhd
-VHDL-RTL	work	/users/chase/projects/cpu/rtl/top.vhd
-VHDL-SIM	work	/users/chase/projects/cpu/sim/top_tb.vhd
+VHDL	gates	/users/chase/.orbit/cache/gates-2.0.0-7f4d8c7812/rtl/nand_gate.vhd
+VHDL	gates	/users/chase/.orbit/cache/gates-2.0.0-7f4d8c7812/rtl/and_gate.vhd
+VHDL	work	/users/chase/projects/cpu/rtl/datapath.vhd
+VHDL	work	/users/chase/projects/cpu/rtl/ctrl.vhd
+VHDL	work	/users/chase/projects/cpu/rtl/top.vhd
+VHDL	work	/users/chase/projects/cpu/sim/top_tb.vhd
 ```
 
 Write a script to accept Orbit's output file for whatever EDA tools you prefer once, and use it across all future ips.  

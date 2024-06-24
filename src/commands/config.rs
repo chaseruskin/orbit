@@ -31,6 +31,7 @@ pub struct Config {
     global: bool,
     local: bool,
     append: Vec<Entry>,
+    pop: Vec<String>,
     set: Vec<Entry>,
     unset: Vec<String>,
 }
@@ -45,6 +46,9 @@ impl Subcommand<Context> for Config {
             // Options
             append: cli
                 .get_all(Arg::option("append").value("key=value"))?
+                .unwrap_or(Vec::new()),
+            pop: cli
+                .get_all(Arg::option("pop").value("key"))?
                 .unwrap_or(Vec::new()),
             set: cli
                 .get_all(Arg::option("set").value("key=value"))?
@@ -103,6 +107,18 @@ impl Config {
                     return Err(AnyError(format!(
                         "unsupported key '{}' cannot be appended",
                         entry.0
+                    )))?
+                }
+            };
+        }
+        // check list for popping
+        for key in &self.pop {
+            match key.as_ref() {
+                "include" => cfg.pop_include(),
+                _ => {
+                    return Err(AnyError(format!(
+                        "unsupported key '{}' cannot be popped",
+                        key
                     )))?
                 }
             };

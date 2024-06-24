@@ -18,6 +18,8 @@ pub enum Error {
     FailedToCreateNewIp(LastError),
     #[error("failed to initialize ip: {0}")]
     FailedToInitIp(LastError),
+    #[error("a target must be defined")]
+    MissingRequiredTarget,
 }
 
 impl Error {

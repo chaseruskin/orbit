@@ -17,6 +17,7 @@ use crate::core::target::Target;
 use crate::core::variable;
 use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
+use crate::error::Error;
 use crate::util::anyerror::Fault;
 use crate::util::environment;
 use crate::util::environment::EnvVar;
@@ -50,13 +51,13 @@ pub const BLUEPRINT_DELIMITER: &str = "\t";
 
 #[derive(Debug, PartialEq)]
 pub struct Plan {
-    plugin: Option<String>,
+    target: Option<String>,
     bench: Option<Identifier>,
     top: Option<Identifier>,
     clean: bool,
     list: bool,
     all: bool,
-    build_dir: Option<String>,
+    target_dir: Option<String>,
     filesets: Option<Vec<Fileset>>,
     only_lock: bool,
     force: bool,
@@ -75,36 +76,42 @@ impl Subcommand<Context> for Plan {
             // options
             top: cli.get(Arg::option("top").value("unit"))?,
             bench: cli.get(Arg::option("bench").value("unit"))?,
-            plugin: cli.get(Arg::option("target").value("name"))?,
-            build_dir: cli.get(Arg::option("target-dir").value("dir"))?,
+            target: cli.get(Arg::option("target").value("name"))?,
+            target_dir: cli.get(Arg::option("target-dir").value("dir"))?,
             filesets: cli.get_all(Arg::option("fileset").value("key=glob"))?,
         });
         command
     }
 
     fn execute(self, c: &Context) -> proc::Result {
-        // locate the plugin
-        let plugin = match &self.plugin {
-            // verify the plugin alias matches
-            Some(alias) => match c.get_config().get_plugins().get(alias.as_str()) {
+        // locate the target provided from the command-line
+        let target = match &self.target {
+            // verify the target name matches
+            Some(name) => match c.get_config().get_targets().get(name.as_str()) {
                 Some(&p) => Some(p),
-                None => return Err(PluginError::Missing(alias.to_string()))?,
+                None => return Err(PluginError::Missing(name.to_string()))?,
             },
-            None => None,
+            None => {
+                if self.list == false {
+                    return Err(Error::MissingRequiredTarget)?;
+                } else {
+                    None
+                }
+            }
         };
 
-        // display plugin list and exit
+        // display targets list and exit
         if self.list == true {
-            match plugin {
+            match target {
                 // display entire contents about the particular plugin
-                Some(plg) => println!("{}", plg),
+                Some(tg) => println!("{}", tg),
                 // display quick overview of all plugins
                 None => println!(
                     "{}",
                     Target::list_targets(
                         &mut c
                             .get_config()
-                            .get_plugins()
+                            .get_targets()
                             .values()
                             .into_iter()
                             .collect::<Vec<&&Target>>()
@@ -114,13 +121,16 @@ impl Subcommand<Context> for Plan {
             return Ok(());
         }
 
+        // unwrap because at this point the target must exist
+        let target = target.unwrap();
+
         // check that user is in an IP directory
         c.goto_ip_path()?;
 
-        // create the ip manifest
-        let target = Ip::load(c.get_ip_path().unwrap().clone(), true)?;
+        // store the working ip struct
+        let working_ip = Ip::load(c.get_ip_path().unwrap().clone(), true)?;
 
-        // gather the catalog
+        // assemble the catalog
         let mut catalog = Catalog::new()
             .installations(c.get_cache_path())?
             .downloads(c.get_downloads_path())?;
@@ -129,9 +139,9 @@ impl Subcommand<Context> for Plan {
         // see Install::install_from_lock_file
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
-        if target.can_use_lock() == true && self.force == false {
-            let le: LockEntry = LockEntry::from((&target, true));
-            let lf = target.get_lock();
+        if working_ip.can_use_lock() == true && self.force == false {
+            let le: LockEntry = LockEntry::from((&working_ip, true));
+            let lf = working_ip.get_lock();
 
             let env = Environment::new()
                 // read config.toml for setting any env variables
@@ -148,18 +158,20 @@ impl Subcommand<Context> for Plan {
         }
 
         // determine the build directory (command-line arg overrides configuration setting)
-        let default_build_dir = c.get_build_dir();
-        let b_dir = match &self.build_dir {
-            Some(dir) => dir,
-            None => &default_build_dir,
+        let default_target_dir = c.get_target_dir();
+        let target_dir = match &self.target_dir {
+            Some(t_dir) => t_dir,
+            None => &default_target_dir,
         };
 
+        let language_mode = c.get_lang_mode();
+
         Self::run(
+            &working_ip,
+            target_dir,
             target,
-            b_dir,
-            plugin,
             catalog,
-            &c.get_lang_mode(),
+            &language_mode,
             self.clean,
             self.force,
             self.only_lock,
@@ -168,6 +180,329 @@ impl Subcommand<Context> for Plan {
             &self.top,
             &self.filesets,
         )
+    }
+}
+
+impl Plan {
+    /// Performs the backend logic for creating a blueprint file (planning a design).
+    pub fn run(
+        working_ip: &Ip,
+        target_dir: &str,
+        target: &Target,
+        catalog: Catalog,
+        mode: &LangMode,
+        clean: bool,
+        force: bool,
+        only_lock: bool,
+        all: bool,
+        bench_name: &Option<Identifier>,
+        top_name: &Option<Identifier>,
+        filesets: &Option<Vec<Fileset>>,
+    ) -> Result<(), Fault> {
+        // create the output path to know where to begin storing files
+        let mut output_path = working_ip.get_root().clone();
+        output_path.push(target_dir);
+        output_path.push(target.get_name());
+
+        // check if to clean the directory
+        if clean == true && Path::exists(&output_path) == true {
+            fs::remove_dir_all(&output_path)?;
+        }
+
+        // build entire ip graph and resolve with dynamic symbol transformation
+        let ip_graph = match algo::compute_final_ip_graph(&working_ip, &catalog, mode) {
+            Ok(g) => g,
+            Err(e) => {
+                // generate a single blueprint
+                if e.is_source_err() == true && force == true {
+                    // store data in blueprint TSV format
+                    let mut blueprint_data = String::new();
+                    let file = e.as_source_file().unwrap();
+                    if fileset::is_rtl(&file) == true {
+                        blueprint_data +=
+                            &format!("VHDL-RTL{0}{1}{0}{2}\n", BLUEPRINT_DELIMITER, "work", file);
+                    } else {
+                        blueprint_data +=
+                            &format!("VHDL-SIM{0}{1}{0}{2}\n", BLUEPRINT_DELIMITER, "work", file);
+                    }
+                    let blueprint_path = Self::create_outputs(
+                        &blueprint_data,
+                        &output_path,
+                        &String::new(),
+                        &String::new(),
+                        target,
+                    )?;
+                    // create a blueprint file
+                    println!(
+                        "info: erroneous blueprint created at: {}",
+                        blueprint_path.display()
+                    );
+                    return Ok(());
+                } else {
+                    return Err(e.into_fault());
+                }
+            }
+        };
+
+        // only write lockfile and exit if flag is raised
+        if only_lock == true {
+            Self::write_lockfile(&working_ip, &ip_graph, force)?;
+            return Ok(());
+        }
+
+        let files = algo::build_ip_file_list(&ip_graph, &working_ip);
+
+        let global_graph = Self::build_full_graph(&files)?;
+
+        let working_lib = Identifier::new_working();
+
+        // restrict graph to units only found within the current IP
+        let local_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> =
+            Self::compute_local_graph(&global_graph, &working_lib, &working_ip);
+
+        let (top, bench) = match Self::detect_bench(
+            &global_graph,
+            &local_graph,
+            &working_lib,
+            &bench_name,
+            &top_name,
+        ) {
+            Ok(r) => r,
+            Err(e) => match e {
+                PlanError::Ambiguous(_, _) => {
+                    if all == true {
+                        (None, None)
+                    } else {
+                        return Err(e)?;
+                    }
+                }
+                _ => return Err(e)?,
+            },
+        };
+        // determine the top-level node index
+        let (top, bench) = match Self::detect_top(
+            &global_graph,
+            &local_graph,
+            &working_lib,
+            top,
+            bench,
+            &top_name,
+        ) {
+            Ok(r) => r,
+            Err(e) => match e {
+                PlanError::Ambiguous(_, _) => {
+                    if all == true {
+                        (top, bench)
+                    } else {
+                        return Err(e)?;
+                    }
+                }
+                _ => return Err(e)?,
+            },
+        };
+
+        let top = match top {
+            Some(i) => Some(Self::local_to_global(i, &global_graph, &local_graph).index()),
+            None => None,
+        };
+
+        let bench = match bench {
+            Some(i) => Some(Self::local_to_global(i, &global_graph, &local_graph).index()),
+            None => None,
+        };
+        // guarantees top exists if not using --all
+
+        // error if the user-defined top is not instantiated in the testbench. Say this can be fixed by adding '--all'
+        if let Some(b) = &bench {
+            // @idea: merge two topological sorted lists together by running top sort from bench and top sort from top if in this situation
+            if all == false
+                && global_graph
+                    .get_graph()
+                    .successors(top.unwrap())
+                    .find(|i| i == b)
+                    .is_none()
+            {
+                return Err(AnyError(format!("top unit '{}' is not tested in testbench '{}'\n\nIf you wish to continue, add the `--all` flag", global_graph.get_key_by_index(top.unwrap()).unwrap().get_suffix(), global_graph.get_key_by_index(*b).unwrap().get_suffix())))?;
+            }
+        }
+
+        // [!] write the lock file
+        Self::write_lockfile(&working_ip, &ip_graph, true)?;
+
+        // compute minimal topological ordering
+        let min_order = match all {
+            // perform topological sort on the entire graph
+            true => {
+                match local_graph.find_root() {
+                    // only one topological sorting to compute
+                    Ok(r) => {
+                        let id = Self::local_to_global(r.index(), &global_graph, &local_graph);
+                        global_graph
+                            .get_graph()
+                            .minimal_topological_sort(id.index())
+                    }
+                    // exclude roots that do not belong to the local graph
+                    Err(rs) => {
+                        let mut order = Vec::new();
+                        rs.into_iter().for_each(|r| {
+                            let id = Self::local_to_global(r.index(), &global_graph, &local_graph);
+                            let mut subset = global_graph
+                                .get_graph()
+                                .minimal_topological_sort(id.index());
+                            order.append(&mut subset);
+                        });
+                        order
+                    }
+                }
+            }
+            // perform topological sort on minimal subset of the graph
+            false => {
+                // determine which point is the upmost root
+                let highest_point = match bench {
+                    Some(b) => b,
+                    None => match top {
+                        Some(t) => t,
+                        None => return Err(AnyError(format!("no top-level unit exists")))?,
+                    },
+                };
+                global_graph
+                    .get_graph()
+                    .minimal_topological_sort(highest_point)
+            }
+        };
+
+        // generate the file order while merging dependencies for common file path names together
+        let file_order = Self::determine_file_order(&global_graph, min_order);
+
+        // remove duplicate files from list while perserving order
+        let file_order = Self::remove_multi_occurences(&file_order);
+
+        // grab the names as strings
+        let top_name = match top {
+            Some(i) => global_graph
+                .get_key_by_index(i)
+                .unwrap()
+                .get_suffix()
+                .to_string(),
+            None => String::new(),
+        };
+        let bench_name = match bench {
+            Some(i) => global_graph
+                .get_key_by_index(i)
+                .unwrap()
+                .get_suffix()
+                .to_string(),
+            None => String::new(),
+        };
+
+        // print information (maybe also print the plugin saved to .env too?)
+        match top_name.is_empty() {
+            false => println!("info: top-level set to {}", top_name.blue()),
+            true => println!("{} no top-level set", "warning:".yellow()),
+        }
+        match bench_name.is_empty() {
+            false => println!("info: testbench set to {}", bench_name.blue()),
+            true => println!("{} no testbench set", "warning:".yellow()),
+        }
+
+        // store data in blueprint TSV format
+        let mut blueprint_data = String::new();
+
+        // [!] collect user-defined filesets
+        {
+            let current_files: Vec<String> =
+                filesystem::gather_current_files(&working_ip.get_root(), false);
+
+            let mut vtable = VariableTable::new();
+            // variables could potentially store empty strings if units are not set
+            vtable.add("orbit.bench", &bench_name);
+            vtable.add("orbit.top", &top_name);
+
+            // store data in a map for quicker look-ups when comparing to plugin-defind filesets
+            let mut cli_fset_map: HashMap<&String, &Fileset> = HashMap::new();
+
+            // use command-line set filesets
+            if let Some(fsets) = filesets {
+                for fset in fsets {
+                    // insert into map structure
+                    cli_fset_map.insert(fset.get_name(), &fset);
+                }
+            }
+
+            // collect data for the given plugin
+            if let Some(filesets) = target.get_filesets() {
+                for (name, pattern) in filesets {
+                    let proper_key = Fileset::standardize_name(name);
+                    // check if appeared in cli arguments
+                    let (f_name, f_patt) = match cli_fset_map.contains_key(&proper_key) {
+                        // override with fileset provided by command-line if conflicting names
+                        true => {
+                            // pull from map to ensure it is not double-counted when just writing command-line filesets
+                            let entry = cli_fset_map.remove(&proper_key);
+                            (name, entry.unwrap().get_pattern())
+                        }
+                        false => (name, pattern.inner()),
+                    };
+                    // perform variable substitution
+                    let fset = Fileset::new()
+                        .name(f_name)
+                        .pattern(&variable::substitute(f_patt.to_string(), &vtable))?;
+                    // match files
+                    fset.collect_files(&current_files)
+                        .into_iter()
+                        .for_each(|f| {
+                            blueprint_data += &fset.to_blueprint_string(&f);
+                        });
+                }
+            }
+
+            // check against every defined fileset in the command-line (call remaining filesets)
+            for (_key, fset) in cli_fset_map {
+                // perform variable substitution
+                let fset = Fileset::new()
+                    .name(fset.get_name())
+                    .pattern(&variable::substitute(
+                        fset.get_pattern().to_string(),
+                        &vtable,
+                    ))?;
+                // match files
+                fset.collect_files(&current_files)
+                    .into_iter()
+                    .for_each(|f| {
+                        blueprint_data += &fset.to_blueprint_string(&f);
+                    });
+            }
+        }
+
+        // collect in-order HDL file list
+        for file in file_order {
+            if fileset::is_rtl(&file.get_file()) == true {
+                blueprint_data += &format!(
+                    "VHDL-RTL{0}{1}{0}{2}\n",
+                    BLUEPRINT_DELIMITER,
+                    file.get_library(),
+                    file.get_file()
+                );
+            } else {
+                blueprint_data += &format!(
+                    "VHDL-SIM{0}{1}{0}{2}\n",
+                    BLUEPRINT_DELIMITER,
+                    file.get_library(),
+                    file.get_file()
+                );
+            }
+        }
+
+        let blueprint_path = Self::create_outputs(
+            &blueprint_data,
+            &output_path,
+            &top_name,
+            &bench_name,
+            target,
+        )?;
+        // create a blueprint file
+        println!("info: blueprint created at: {}", blueprint_path.display());
+        Ok(())
     }
 }
 
@@ -857,344 +1192,21 @@ impl Plan {
         local_graph
     }
 
-    /// Performs the backend logic for creating a blueprint file (planning a design).
-    pub fn run(
-        target: Ip,
-        build_dir: &str,
-        plug: Option<&Target>,
-        catalog: Catalog,
-        mode: &LangMode,
-        clean: bool,
-        force: bool,
-        only_lock: bool,
-        all: bool,
-        bench_name: &Option<Identifier>,
-        top_name: &Option<Identifier>,
-        filesets: &Option<Vec<Fileset>>,
-    ) -> Result<(), Fault> {
-        // create the build path to know where to begin storing files
-        let mut build_path = target.get_root().clone();
-        build_path.push(build_dir);
-
-        // check if to clean the directory
-        if clean == true && Path::exists(&build_path) == true {
-            fs::remove_dir_all(&build_path)?;
-        }
-
-        // build entire ip graph and resolve with dynamic symbol transformation
-        let ip_graph = match algo::compute_final_ip_graph(&target, &catalog, mode) {
-            Ok(g) => g,
-            Err(e) => {
-                // generate a single blueprint
-                if e.is_source_err() == true && force == true {
-                    // store data in blueprint TSV format
-                    let mut blueprint_data = String::new();
-                    let file = e.as_source_file().unwrap();
-                    if fileset::is_rtl(&file) == true {
-                        blueprint_data +=
-                            &format!("VHDL-RTL{0}{1}{0}{2}\n", BLUEPRINT_DELIMITER, "work", file);
-                    } else {
-                        blueprint_data +=
-                            &format!("VHDL-SIM{0}{1}{0}{2}\n", BLUEPRINT_DELIMITER, "work", file);
-                    }
-                    let blueprint_path = Self::create_outputs(
-                        &blueprint_data,
-                        build_dir,
-                        &build_path,
-                        &String::new(),
-                        &String::new(),
-                        plug,
-                    )?;
-                    // create a blueprint file
-                    println!(
-                        "info: erroneous blueprint created at: {}",
-                        blueprint_path.display()
-                    );
-                    return Ok(());
-                } else {
-                    return Err(e.into_fault());
-                }
-            }
-        };
-
-        // only write lockfile and exit if flag is raised
-        if only_lock == true {
-            Self::write_lockfile(&target, &ip_graph, force)?;
-            return Ok(());
-        }
-
-        let files = algo::build_ip_file_list(&ip_graph, &target);
-
-        let global_graph = Self::build_full_graph(&files)?;
-
-        let working_lib = Identifier::new_working();
-
-        // restrict graph to units only found within the current IP
-        let local_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> =
-            Self::compute_local_graph(&global_graph, &working_lib, &target);
-
-        let (top, bench) = match Self::detect_bench(
-            &global_graph,
-            &local_graph,
-            &working_lib,
-            &bench_name,
-            &top_name,
-        ) {
-            Ok(r) => r,
-            Err(e) => match e {
-                PlanError::Ambiguous(_, _) => {
-                    if all == true {
-                        (None, None)
-                    } else {
-                        return Err(e)?;
-                    }
-                }
-                _ => return Err(e)?,
-            },
-        };
-        // determine the top-level node index
-        let (top, bench) = match Self::detect_top(
-            &global_graph,
-            &local_graph,
-            &working_lib,
-            top,
-            bench,
-            &top_name,
-        ) {
-            Ok(r) => r,
-            Err(e) => match e {
-                PlanError::Ambiguous(_, _) => {
-                    if all == true {
-                        (top, bench)
-                    } else {
-                        return Err(e)?;
-                    }
-                }
-                _ => return Err(e)?,
-            },
-        };
-
-        let top = match top {
-            Some(i) => Some(Self::local_to_global(i, &global_graph, &local_graph).index()),
-            None => None,
-        };
-
-        let bench = match bench {
-            Some(i) => Some(Self::local_to_global(i, &global_graph, &local_graph).index()),
-            None => None,
-        };
-        // guarantees top exists if not using --all
-
-        // error if the user-defined top is not instantiated in the testbench. Say this can be fixed by adding '--all'
-        if let Some(b) = &bench {
-            // @idea: merge two topological sorted lists together by running top sort from bench and top sort from top if in this situation
-            if all == false
-                && global_graph
-                    .get_graph()
-                    .successors(top.unwrap())
-                    .find(|i| i == b)
-                    .is_none()
-            {
-                return Err(AnyError(format!("top unit '{}' is not tested in testbench '{}'\n\nIf you wish to continue, add the `--all` flag", global_graph.get_key_by_index(top.unwrap()).unwrap().get_suffix(), global_graph.get_key_by_index(*b).unwrap().get_suffix())))?;
-            }
-        }
-
-        // [!] write the lock file
-        Self::write_lockfile(&target, &ip_graph, true)?;
-
-        // compute minimal topological ordering
-        let min_order = match all {
-            // perform topological sort on the entire graph
-            true => {
-                match local_graph.find_root() {
-                    // only one topological sorting to compute
-                    Ok(r) => {
-                        let id = Self::local_to_global(r.index(), &global_graph, &local_graph);
-                        global_graph
-                            .get_graph()
-                            .minimal_topological_sort(id.index())
-                    }
-                    // exclude roots that do not belong to the local graph
-                    Err(rs) => {
-                        let mut order = Vec::new();
-                        rs.into_iter().for_each(|r| {
-                            let id = Self::local_to_global(r.index(), &global_graph, &local_graph);
-                            let mut subset = global_graph
-                                .get_graph()
-                                .minimal_topological_sort(id.index());
-                            order.append(&mut subset);
-                        });
-                        order
-                    }
-                }
-            }
-            // perform topological sort on minimal subset of the graph
-            false => {
-                // determine which point is the upmost root
-                let highest_point = match bench {
-                    Some(b) => b,
-                    None => match top {
-                        Some(t) => t,
-                        None => return Err(AnyError(format!("no top-level unit exists")))?,
-                    },
-                };
-                global_graph
-                    .get_graph()
-                    .minimal_topological_sort(highest_point)
-            }
-        };
-
-        // generate the file order while merging dependencies for common file path names together
-        let file_order = Self::determine_file_order(&global_graph, min_order);
-
-        // remove duplicate files from list while perserving order
-        let file_order = Self::remove_multi_occurences(&file_order);
-
-        // grab the names as strings
-        let top_name = match top {
-            Some(i) => global_graph
-                .get_key_by_index(i)
-                .unwrap()
-                .get_suffix()
-                .to_string(),
-            None => String::new(),
-        };
-        let bench_name = match bench {
-            Some(i) => global_graph
-                .get_key_by_index(i)
-                .unwrap()
-                .get_suffix()
-                .to_string(),
-            None => String::new(),
-        };
-
-        // print information (maybe also print the plugin saved to .env too?)
-        match top_name.is_empty() {
-            false => println!("info: top-level set to {}", top_name.blue()),
-            true => println!("{} no top-level set", "warning:".yellow()),
-        }
-        match bench_name.is_empty() {
-            false => println!("info: testbench set to {}", bench_name.blue()),
-            true => println!("{} no testbench set", "warning:".yellow()),
-        }
-
-        // store data in blueprint TSV format
-        let mut blueprint_data = String::new();
-
-        // [!] collect user-defined filesets
-        {
-            let current_files: Vec<String> =
-                filesystem::gather_current_files(&target.get_root(), false);
-
-            let mut vtable = VariableTable::new();
-            // variables could potentially store empty strings if units are not set
-            vtable.add("orbit.bench", &bench_name);
-            vtable.add("orbit.top", &top_name);
-
-            // store data in a map for quicker look-ups when comparing to plugin-defind filesets
-            let mut cli_fset_map: HashMap<&String, &Fileset> = HashMap::new();
-
-            // use command-line set filesets
-            if let Some(fsets) = filesets {
-                for fset in fsets {
-                    // insert into map structure
-                    cli_fset_map.insert(fset.get_name(), &fset);
-                }
-            }
-
-            // collect data for the given plugin
-            if plug.is_some() == true && plug.unwrap().get_filesets().is_some() == true {
-                for (name, pattern) in plug.unwrap().get_filesets().unwrap() {
-                    let proper_key = Fileset::standardize_name(name);
-                    // check if appeared in cli arguments
-                    let (f_name, f_patt) = match cli_fset_map.contains_key(&proper_key) {
-                        // override with fileset provided by command-line if conflicting names
-                        true => {
-                            // pull from map to ensure it is not double-counted when just writing command-line filesets
-                            let entry = cli_fset_map.remove(&proper_key);
-                            (name, entry.unwrap().get_pattern())
-                        }
-                        false => (name, pattern.inner()),
-                    };
-                    // perform variable substitution
-                    let fset = Fileset::new()
-                        .name(f_name)
-                        .pattern(&variable::substitute(f_patt.to_string(), &vtable))?;
-                    // match files
-                    fset.collect_files(&current_files)
-                        .into_iter()
-                        .for_each(|f| {
-                            blueprint_data += &fset.to_blueprint_string(&f);
-                        });
-                }
-            }
-
-            // check against every defined fileset in the command-line (call remaining filesets)
-            for (_key, fset) in cli_fset_map {
-                // perform variable substitution
-                let fset = Fileset::new()
-                    .name(fset.get_name())
-                    .pattern(&variable::substitute(
-                        fset.get_pattern().to_string(),
-                        &vtable,
-                    ))?;
-                // match files
-                fset.collect_files(&current_files)
-                    .into_iter()
-                    .for_each(|f| {
-                        blueprint_data += &fset.to_blueprint_string(&f);
-                    });
-            }
-        }
-
-        // collect in-order HDL file list
-        for file in file_order {
-            if fileset::is_rtl(&file.get_file()) == true {
-                blueprint_data += &format!(
-                    "VHDL-RTL{0}{1}{0}{2}\n",
-                    BLUEPRINT_DELIMITER,
-                    file.get_library(),
-                    file.get_file()
-                );
-            } else {
-                blueprint_data += &format!(
-                    "VHDL-SIM{0}{1}{0}{2}\n",
-                    BLUEPRINT_DELIMITER,
-                    file.get_library(),
-                    file.get_file()
-                );
-            }
-        }
-
-        let blueprint_path = Self::create_outputs(
-            &blueprint_data,
-            build_dir,
-            &build_path,
-            &top_name,
-            &bench_name,
-            plug,
-        )?;
-        // create a blueprint file
-        println!("info: blueprint created at: {}", blueprint_path.display());
-        Ok(())
-    }
-
     /// Writes the blueprint and env file to the build directory.
     fn create_outputs(
         blueprint_data: &str,
-        build_dir: &str,
-        build_path: &PathBuf,
+        output_path: &PathBuf,
         top_name: &str,
         bench_name: &str,
-        plug: Option<&Target>,
+        target: &Target,
     ) -> Result<PathBuf, Fault> {
         // create a output build directorie(s) if they do not exist
-        if PathBuf::from(build_dir).exists() == false {
-            fs::create_dir_all(build_dir).expect("could not create build directory");
+        if PathBuf::from(output_path).exists() == false {
+            fs::create_dir_all(output_path).expect("could not create output directory");
         }
 
         // [!] create the blueprint file
-        let blueprint_path = build_path.join(BLUEPRINT_FILE);
+        let blueprint_path = output_path.join(BLUEPRINT_FILE);
         let mut blueprint_file =
             File::create(&blueprint_path).expect("could not create blueprint file");
         // write the data
@@ -1210,18 +1222,12 @@ impl Plan {
                 .value(&bench_name),
         ]);
         // conditionally set the plugin used to plan
-        match plug {
-            Some(p) => {
-                envs.insert(
-                    EnvVar::new()
-                        .key(environment::ORBIT_PLUGIN)
-                        .value(&p.get_alias()),
-                );
-                ()
-            }
-            None => (),
-        };
-        environment::save_environment(&envs, &build_path)?;
+        envs.insert(
+            EnvVar::new()
+                .key(environment::ORBIT_PLUGIN)
+                .value(&target.get_name()),
+        );
+        environment::save_environment(&envs, &output_path)?;
         Ok(blueprint_path)
     }
 }

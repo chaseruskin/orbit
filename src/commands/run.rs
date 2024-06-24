@@ -50,7 +50,7 @@ impl Subcommand<Context> for Run {
         // locate the plugin
         let target = match &self.target {
             // verify the plugin alias matches
-            Some(name) => match c.get_config().get_plugins().get(name.as_str()) {
+            Some(name) => match c.get_config().get_targets().get(name.as_str()) {
                 Some(&t) => Some(t),
                 None => return Err(PluginError::Missing(name.to_string()))?,
             },
@@ -68,7 +68,7 @@ impl Subcommand<Context> for Run {
                     Target::list_targets(
                         &mut c
                             .get_config()
-                            .get_plugins()
+                            .get_targets()
                             .values()
                             .into_iter()
                             .collect::<Vec<&&Target>>()
@@ -93,7 +93,7 @@ impl Subcommand<Context> for Run {
         // see Install::install_from_lock_file
 
         // determine the build directory (command-line arg overrides configuration setting)
-        let default_build_dir = c.get_build_dir();
+        let default_build_dir = c.get_target_dir();
         let target_dir = match &self.target_dir {
             Some(dir) => dir,
             None => &default_build_dir,
@@ -137,20 +137,11 @@ impl Run {
         catalog: Catalog,
         mode: &LangMode,
     ) -> Result<(), Fault> {
-        // prepare for build
-        let env = Environment::new()
-            // read ip manifest for env variables
-            .from_ip(&ip)?
-            .add(EnvVar::new().key(ORBIT_BLUEPRINT).value(BLUEPRINT_FILE))
-            .add(EnvVar::new().key(ORBIT_BUILD_DIR).value(target_dir));
-
-        let env_path = ip.get_root().join(target_dir);
-
         // plan the target
         Plan::run(
-            ip,
+            &ip,
             target_dir,
-            target,
+            target.as_ref().unwrap(),
             catalog,
             mode,
             self.clean,
@@ -162,7 +153,15 @@ impl Run {
             &None,
         )?;
 
-        env.initialize();
+        // prepare for build
+        Environment::new()
+            // read ip manifest for env variables
+            .from_ip(&ip)?
+            .add(EnvVar::new().key(ORBIT_BLUEPRINT).value(BLUEPRINT_FILE))
+            .add(EnvVar::new().key(ORBIT_BUILD_DIR).value(target_dir))
+            .initialize();
+
+        let env_path = ip.get_root().join(target_dir);
 
         // load from .env file from the correct build dir
         let envs: Environment = match Environment::new().from_env_file(&env_path) {

@@ -2,7 +2,7 @@
 EXPECTED = ['ent1.vhd', 'arch1.vhd', 'arch2.vhd', 'top.vhd', 'top_arch.vhd']
 
 order = []
-with open('./build/blueprint.tsv') as f:
+with open('./target/foo/blueprint.tsv') as f:
     import os
 
     for line in f.readlines():

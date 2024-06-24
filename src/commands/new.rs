@@ -59,7 +59,7 @@ impl Subcommand<Context> for New {
 
         let ip_name = Self::extract_name(self.name.as_ref(), &self.path)?;
 
-        match self.create_ip(&ip_name, &c.get_build_dir()) {
+        match self.create_ip(&ip_name, &c.get_target_dir()) {
             Ok(r) => Ok(r),
             Err(e) => Err(Error::FailedToCreateNewIp(e.to_string()))?,
         }

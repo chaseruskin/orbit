@@ -52,7 +52,7 @@ impl Subcommand<Context> for Env {
             //     .value(PathBuf::standardize(c.get_queue_path()).to_str().unwrap()),
             EnvVar::new()
                 .key(environment::ORBIT_BUILD_DIR)
-                .value(&c.get_build_dir()),
+                .value(&c.get_target_dir()),
             EnvVar::new().key(environment::ORBIT_IP_PATH).value(
                 PathBuf::standardize(c.get_ip_path().unwrap_or(&PathBuf::new()))
                     .to_str()
@@ -84,7 +84,7 @@ impl Subcommand<Context> for Env {
                 env = env.from_ip(&ip)?;
             }
             // check the build directory
-            env = env.from_env_file(&std::path::PathBuf::from(c.get_build_dir()))?;
+            env = env.from_env_file(&std::path::PathBuf::from(c.get_target_dir()))?;
         }
 
         self.run(env)

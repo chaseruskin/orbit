@@ -5,13 +5,13 @@ set -e
 
 # Install dependencies
 cd lib
-orbit plan --lock-only --force
+orbit plan --target foo --lock-only --force
 orbit install --force
 cd ..
 
 # Run application workflow
 cd app
-orbit plan --force --top t1
+orbit plan --target foo --force --top t1
 cd ..
 
 # Remove dependencies

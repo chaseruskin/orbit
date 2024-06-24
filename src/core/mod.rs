@@ -1,4 +1,5 @@
 pub mod algo;
+pub mod blueprint;
 pub mod catalog;
 pub mod config;
 pub mod context;

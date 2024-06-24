@@ -8,7 +8,7 @@ set -e
 
 # Run tested workflow
 cd .
-orbit plan --force
+orbit plan --force --target foo
 
 # Verify the correct behavior occurred without error
 python comp.py

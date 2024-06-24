@@ -2,7 +2,7 @@
 EXPECTED = ['casting.vhd', 'drivers.vhd', 't1_tb.vhd']
 
 order = []
-with open('./app/build/blueprint.tsv') as f:
+with open('./app/target/foo/blueprint.tsv') as f:
     import os
 
     for line in f.readlines():

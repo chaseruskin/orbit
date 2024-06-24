@@ -3,14 +3,16 @@
 # Set the -e option
 set -e
 
+orbit config --append include="$PWD/.orbit/config.toml"
+
 # install dependencies
 cd ip10
-orbit plan --lock-only --force
+orbit plan --lock-only --force --target foo
 orbit install --force
 cd ..
 
 cd ip11
-orbit plan --lock-only --force
+orbit plan --lock-only --force --target foo
 
 # verify it runs without error
 STDOUT=$(orbit tree --root top --format long)
@@ -23,6 +25,7 @@ EXACT="top (ip11:0.1.0)
 # compare the output with the expected value
 if [ "$STDOUT" != "$EXACT" ]; then
     orbit remove ip10 --all
+    orbit config --pop include
 
     echo "PUB Test - FAIL"
     echo "--- Expected ---"
@@ -33,9 +36,10 @@ if [ "$STDOUT" != "$EXACT" ]; then
 fi
 
 # verify it runs without error
-STDOUT=$(orbit plan --top top)
+STDOUT=$(orbit plan --top top --target foo)
 
 orbit remove ip10 --all
+orbit config --pop include
 
 echo "PUB Test - PASS"
 exit 0

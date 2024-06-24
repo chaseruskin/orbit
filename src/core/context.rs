@@ -260,7 +260,7 @@ impl Context {
     }
 
     /// Access the build directory data.
-    pub fn get_build_dir(&self) -> String {
+    pub fn get_target_dir(&self) -> String {
         match self.config.get_general() {
             Some(g) => g.get_build_dir(),
             None => General::new().get_build_dir(),
@@ -365,7 +365,7 @@ impl Context {
 
     /// Sets the IP's build directory and the corresponding environment variable.
     pub fn build_dir(self, s: &str) -> Result<Context, ContextError> {
-        env::set_var(s, &self.get_build_dir());
+        env::set_var(s, &self.get_target_dir());
         Ok(self)
     }
 }

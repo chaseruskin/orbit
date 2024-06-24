@@ -68,6 +68,21 @@ impl ConfigDocument {
         Self::append_list(&mut self.document, INCLUDE_KEY, item);
     }
 
+    /// Pops the last value from the `include` entry.
+    pub fn pop_include(&mut self) -> bool {
+        let size = self.document[INCLUDE_KEY].as_array_mut().unwrap().len();
+        match size {
+            0 => false,
+            _ => {
+                self.document[INCLUDE_KEY]
+                    .as_array_mut()
+                    .unwrap()
+                    .remove(size - 1);
+                true
+            }
+        }
+    }
+
     /// Sets a value for the given entry in the toml document.
     ///
     /// Creates parent table and/or key if does not exist.
@@ -181,8 +196,8 @@ impl Configs {
                     Ok(r) => r,
                     Err(e) => {
                         return Err(AnyError(format!(
-                            "Failed to load configuration file at path {:?}: {}",
-                            path, e
+                            "failed to load \"include\" key for configuration file at path {:?}: failed to load configuration file at path {:?}: {}",
+                            file, path, e
                         )))?
                     }
                 };
@@ -209,11 +224,11 @@ impl Configs {
         let mut map = HashMap::new();
 
         self.inner.iter().for_each(|(_path, cfg, _lvl)| {
-            if let Some(plugs) = &cfg.plugin {
-                plugs.iter().for_each(|p| match map.get(p.get_alias()) {
+            if let Some(plugs) = &cfg.target {
+                plugs.iter().for_each(|p| match map.get(p.get_name()) {
                     Some(_) => (),
                     None => {
-                        map.insert(p.get_alias(), p);
+                        map.insert(p.get_name(), p);
                         ()
                     }
                 });
@@ -320,7 +335,7 @@ pub const CONFIG_FILE: &str = "config.toml";
 pub struct Config {
     include: Option<Vec<PathBuf>>,
     env: Option<HashMap<String, String>>,
-    plugin: Option<Targets>,
+    target: Option<Targets>,
     protocol: Option<Protocols>,
     #[serde(rename = "vhdl-format")]
     vhdl_format: Option<VhdlFormat>,
@@ -332,7 +347,7 @@ impl Config {
         Self {
             include: None,
             env: None,
-            plugin: None,
+            target: None,
             protocol: None,
             vhdl_format: None,
             general: None,
@@ -382,9 +397,9 @@ impl Config {
             None => self.vhdl_format = rhs.vhdl_format,
         }
         // combine '[[plugin]]' array
-        match &mut self.plugin {
-            Some(v) => v.append(&mut rhs.plugin.unwrap_or(Vec::new())),
-            None => self.plugin = rhs.plugin,
+        match &mut self.target {
+            Some(v) => v.append(&mut rhs.target.unwrap_or(Vec::new())),
+            None => self.target = rhs.target,
         }
         // combine '[[protocol]]' array
         match &mut self.protocol {
@@ -400,14 +415,14 @@ impl Config {
         }
     }
 
-    pub fn get_plugins(&self) -> HashMap<&str, &Target> {
+    pub fn get_targets(&self) -> HashMap<&str, &Target> {
         let mut map = HashMap::new();
 
-        if let Some(plugs) = &self.plugin {
-            plugs.iter().for_each(|p| match map.get(p.get_alias()) {
+        if let Some(plugs) = &self.target {
+            plugs.iter().for_each(|p| match map.get(p.get_name()) {
                 Some(_) => (),
                 None => {
-                    map.insert(p.get_alias(), p);
+                    map.insert(p.get_name(), p);
                     ()
                 }
             });
@@ -469,7 +484,7 @@ impl FromFile for Config {
                         p.set_root(base.clone());
                     });
                 }
-                if let Some(plugs) = &mut r.plugin {
+                if let Some(plugs) = &mut r.target {
                     plugs.iter_mut().for_each(|p| {
                         p.set_root(base.clone());
                     });
@@ -498,11 +513,11 @@ include = [
     "path/to/other/config.toml",
 ]
     
-[[plugin]]
+[[target]]
 name = "quartus"
 description = "Complete toolflow for Intel Quartus Prime backend program"
 command = "python"
-args = ["./plugin/quartus.py"]
+args = ["./targets/quartus.py"]
 fileset.pin-plan = "*.board"
 fileset.bdf-file = "*.bdf"
 

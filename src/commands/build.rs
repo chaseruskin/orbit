@@ -48,7 +48,7 @@ impl Subcommand<Context> for Build {
     fn execute(self, c: &Context) -> proc::Result {
         // try to find plugin matching `command` name under the `alias`
         let plug = if let Some(name) = &self.alias {
-            match c.get_config().get_plugins().get(name.as_str()) {
+            match c.get_config().get_targets().get(name.as_str()) {
                 Some(&p) => Some(p),
                 None => return Err(PluginError::Missing(name.to_string()))?,
             }
@@ -64,7 +64,7 @@ impl Subcommand<Context> for Build {
                     Target::list_targets(
                         &mut c
                             .get_config()
-                            .get_plugins()
+                            .get_targets()
                             .values()
                             .into_iter()
                             .collect::<Vec<&&Target>>()
@@ -84,7 +84,7 @@ impl Subcommand<Context> for Build {
         c.goto_ip_path()?;
 
         // determine the build directory based on cli priority
-        let default_build_dir = c.get_build_dir();
+        let default_build_dir = c.get_target_dir();
         let b_dir = self.build_dir.as_ref().unwrap_or(&default_build_dir);
 
         // todo: is this necessary? -> no, but maybe add a flag/option to bypass (and also allow plugins to specify if they require blueprint in settings)
@@ -128,7 +128,7 @@ impl Subcommand<Context> for Build {
                 if let Some(plug) = envs.get(environment::ORBIT_PLUGIN) {
                     // verify there was no command option to override default plugin call
                     if self.command.is_none() {
-                        match c.get_config().get_plugins().get(plug.get_value()) {
+                        match c.get_config().get_targets().get(plug.get_value()) {
                             Some(&p) => Some(p),
                             None => {
                                 return Err(PluginError::Missing(plug.get_value().to_string()))?

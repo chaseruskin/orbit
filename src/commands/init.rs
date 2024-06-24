@@ -50,7 +50,7 @@ impl Subcommand<Context> for Init {
 
         let ip_name = New::extract_name(self.name.as_ref(), &dest)?;
 
-        match self.create_ip(&ip_name, &c.get_build_dir()) {
+        match self.create_ip(&ip_name, &c.get_target_dir()) {
             Ok(r) => Ok(r),
             Err(e) => Err(Error::FailedToInitIp(e.to_string()))?,
         }

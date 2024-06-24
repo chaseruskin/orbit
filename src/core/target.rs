@@ -68,7 +68,7 @@ impl Target {
     }
 
     /// References the alias to call this plugin.
-    pub fn get_alias(&self) -> &str {
+    pub fn get_name(&self) -> &str {
         &self.name
     }
 }

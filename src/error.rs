@@ -1,8 +1,6 @@
 use colored::Colorize;
 use std::{fmt::Display, path::PathBuf};
 
-type LastError = String;
-
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error("an ip already exists at {0:?}")]
@@ -27,14 +25,29 @@ pub enum Error {
     IpNotFoundInCache(String),
     #[error("ip {0:?} does not exist in the catalog{1}")]
     IpNotFoundAnywhere(String, Hint),
-    #[error("child process exited with error code: {0}")]
+    #[error("exited with error code: {0}")]
     ChildProcErrorCode(i32),
-    #[error("child process terminated by signal")]
+    #[error("terminated by signal")]
     ChildProcTerminated,
     #[error("no target named {0:?}{1}")]
     TargetNotFound(String, Hint),
     #[error("a target must be specified{0}")]
     TargetNotSpecified(Hint),
+    #[error("failed to execute target process: {0}")]
+    TargetProcFailed(LastError),
+    #[error("failed to execute protocol process: {0}")]
+    ProtocolProcFailed(LastError),
+    #[error("no protocol named {0:?}")]
+    ProtocolNotFound(String),
+}
+
+#[derive(Debug, PartialEq)]
+pub struct LastError(pub String);
+
+impl Display for LastError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", Error::lowerize(self.0.to_string()))
+    }
 }
 
 impl Error {

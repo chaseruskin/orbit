@@ -4,7 +4,7 @@ use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
 use crate::core::pkgid::PkgPart;
-use crate::error::{Error, Hint};
+use crate::error::{Error, Hint, LastError};
 use crate::util::filesystem::{Standardize, ORBIT_IGNORE_FILE};
 use std::borrow::Cow;
 use std::io::Write;
@@ -61,7 +61,7 @@ impl Subcommand<Context> for New {
 
         match self.create_ip(&ip_name, &c.get_target_dir()) {
             Ok(r) => Ok(r),
-            Err(e) => Err(Error::FailedToCreateNewIp(e.to_string()))?,
+            Err(e) => Err(Error::FailedToCreateNewIp(LastError(e.to_string())))?,
         }
     }
 }
@@ -83,7 +83,7 @@ impl New {
                         Ok(r) => Ok(Cow::Owned(r)),
                         Err(e) => Err(Error::CannotAutoExtractNameFromPath(
                             s.to_string(),
-                            e.to_string(),
+                            LastError(e.to_string()),
                             Hint::IpNameSeparate,
                         ))?,
                     }

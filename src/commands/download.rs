@@ -14,6 +14,8 @@ use crate::core::protocol::Protocol;
 use crate::core::source::Source;
 use crate::core::target::Process;
 use crate::core::variable::VariableTable;
+use crate::error::Error;
+use crate::error::LastError;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
@@ -183,7 +185,7 @@ impl Download {
             match protocols.get(proto.as_str()) {
                 Some(&entry) => {
                     println!(
-                        "info: downloading {} over \"{}\" protocol ...",
+                        "info: downloading ip {} over \"{}\" protocol ...",
                         spec, &proto
                     );
                     let std_queue = PathBuf::standardize(&queue);
@@ -201,15 +203,13 @@ impl Download {
                     let entry: Protocol = entry.clone().replace_vars_in_args(&vtable);
                     if let Err(err) = entry.execute(&None, &[], verbose, &std_queue) {
                         fs::remove_dir_all(queue)?;
-                        return Err(err);
+                        return Err(Error::ProtocolProcFailed(LastError(err.to_string())))?;
                     }
                 }
                 None => {
                     // potential to use --force here to avoid this error and try with default but not currently implemented that way
                     fs::remove_dir_all(queue)?;
-                    return Err(
-                        Box::new(AnyError(format!("unknown protocol \"{}\"", &proto))).into(),
-                    );
+                    return Err(Error::ProtocolNotFound(proto.to_string()))?;
                 }
             }
         }
@@ -220,7 +220,7 @@ impl Download {
 
             let processed_src = src.clone().replace_vars_in_url(&vtable);
 
-            println!("info: downloading {} ...", spec);
+            println!("info: downloading ip {} ...", spec);
             if let Err(err) = Protocol::single_download(processed_src.get_url(), &queue) {
                 fs::remove_dir_all(queue)?;
                 return Err(err);

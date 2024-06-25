@@ -9,6 +9,8 @@ use crate::core::ip::Ip;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::target::Process;
 use crate::core::target::Target;
+use crate::error::Error;
+use crate::error::LastError;
 use crate::util::anyerror::AnyError;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
@@ -103,7 +105,7 @@ impl Subcommand<Context> for Build {
             target,
             catalog,
             &c.get_lang_mode(),
-            false,
+            true,
             self.force,
             false,
             self.all,
@@ -132,6 +134,9 @@ impl Subcommand<Context> for Build {
         .initialize();
 
         // run the command from the output path
-        target.execute(&self.command, &self.args, self.verbose, &output_path)
+        match target.execute(&self.command, &self.args, self.verbose, &output_path) {
+            Ok(()) => Ok(()),
+            Err(e) => Err(Error::TargetProcFailed(LastError(e.to_string())))?,
+        }
     }
 }

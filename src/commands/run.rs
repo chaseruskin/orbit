@@ -8,6 +8,8 @@ use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lang::LangMode;
 use crate::core::target::Process;
 use crate::core::target::Target;
+use crate::error::Error;
+use crate::error::LastError;
 use crate::util::anyerror::{AnyError, Fault};
 use crate::util::environment::{EnvVar, Environment, ORBIT_BLUEPRINT, ORBIT_BUILD_DIR};
 
@@ -147,6 +149,9 @@ impl Run {
         let output_path = ip.get_root().join(target_dir).join(&target.get_name());
 
         // run the command from the output path
-        target.execute(&None, &self.args, self.verbose, &output_path)
+        match target.execute(&None, &self.args, self.verbose, &output_path) {
+            Ok(()) => Ok(()),
+            Err(e) => Err(Error::TargetProcFailed(LastError(e.to_string())))?,
+        }
     }
 }

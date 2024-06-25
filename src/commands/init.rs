@@ -5,7 +5,7 @@ use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
 use crate::core::pkgid::PkgPart;
-use crate::error::Error;
+use crate::error::{Error, LastError};
 use crate::util::anyerror::AnyError;
 use crate::util::filesystem::Standardize;
 use crate::util::filesystem::{self, ORBIT_IGNORE_FILE};
@@ -52,7 +52,7 @@ impl Subcommand<Context> for Init {
 
         match self.create_ip(&ip_name, &c.get_target_dir()) {
             Ok(r) => Ok(r),
-            Err(e) => Err(Error::FailedToInitIp(e.to_string()))?,
+            Err(e) => Err(Error::FailedToInitIp(LastError(e.to_string())))?,
         }
     }
 }

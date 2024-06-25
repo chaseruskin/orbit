@@ -12,13 +12,15 @@ Orbit is an agile package manager for hardware description languages (HDL).
 
 The boom of AI and emerging workloads have shown just how fast new advancements can be made in models and algorithms. Today's hardware is no longer good enough to meet the immediate demands of tomorrow's innovations; today's hardware must shift to a more agile development approach. It's time to build tomorrow's hardware, today. It's time to __live at the cutting edge of hardware design.__
 
-### An agile package manager designed for minimizing technical debt 
+### An agile package manager designed to minimize technical debt 
 
 As codebases scale and increase in complexity, it becomes of upmost importance to have the right system in place to efficiently manage the increasing number of resources. Without the right system, the codebase can be bogged down by _technical debt_, leaving you stuck in yesterday's designs.
 
-However, using just any package management system does not guarantee that technical debt is minimized. Poorly-designed package managers will simply shift the technical debt to different resources, while a well-designed package manager will minimize the overall amount of technical debt. With minimal technical debt, you can bring up tomorrow's hardware today. Orbit is __an agile package manager designed for minimizing technical debt.__
+However, using just any package management system does not guarantee that technical debt is minimized. Poorly-designed package managers will simply shift the technical debt to different resources, while a well-designed package manager will minimize the overall amount of technical debt. With minimal technical debt, you can bring up tomorrow's hardware today. Orbit is __an agile package manager designed to minimize technical debt.__
 
-### Free and open-source
+### Free and open source
+
+Orbit is available free to use and open source to encourage adoption, contribution, and integration among the hardware community. We rely on the open source community for feedback and new ideas, and are very grateful to our sponsors who keep this project going.
 
 Prebuilt binaries are available for Linux, MacOS, and Windows with no dependencies. Visit the [releases page](https://github.com/cdotrus/orbit/releases) for the latest version. Working on a different platform? No problem, building from source is easy with [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html), Rust's default package manager. Use docker? We have [docker images](https://hub.docker.com/repository/docker/cdotrus/orbit/general) available too. See [Installing](https://cdotrus.github.io/orbit/starting/installing.html) for complete details.
 
@@ -26,7 +28,7 @@ For more information on getting started and how to use Orbit in your workflow, c
 
 ## Simple and intuitive to use
 
-Orbit manages your projects by turning them into packages (referred to as ips) with the addition of a single manifest file: "Orbit.toml".
+Orbit manages your project by turning it into a package (referred to as an ip) with the addition of a single file: "Orbit.toml."
 
 ```
 cpu/
@@ -39,7 +41,7 @@ cpu/
    └─ top_tb.vhd
 ```
 
-The "Orbit.toml" file is a TOML file that requires only a couple fields, such as the ip's `name` and `version`, to get setup. 
+The "Orbit.toml" file is a simple file written in TOML syntax that requires only a couple fields, such as the ip's `name` and `version`, to get setup. 
 
 ``` toml
 [ip]
@@ -52,7 +54,7 @@ gates = "2.0.0"
 
 ## Low effort integration
 
-To encourage code reuse and faster development cycles, Orbit includes HDL-specific commands to integrate designs across ips. For example, Orbit can display HDL code snippets of other known designs to be used in the current working ip.
+To encourage code reuse and faster development cycles, Orbit includes HDL-specific commands to integrate designs across ips. For example, Orbit can display HDL code snippets of other known design units to be instantiated within the current working ip.
 
 ```
 $ orbit get and_gate --ip gates:2.0.0 --library --signals --instance
@@ -87,43 +89,45 @@ VHDL	work	/users/chase/projects/cpu/sim/top_tb.vhd
 
 Write a script to accept Orbit's output file for whatever EDA tools you prefer once, and use it across all future ips.  
 
-## Features
+## Highlights
 
-Orbit has a lot more useful features relating to HDL package management and development:
+What makes Orbit an agile package manager for HDLs? Here's some of its key features:
 
-- Orbit only focuses on source code management, allowing users to define and automate their own HDL back end processes.
+- Orbit acts as the intermediary between your source code and back end EDA tools, automating the upkeep process to minimize technical debt as your codebase evolves over time
 
-- Linux, MacOS, and Windows are supported with no additional dependencies.
+- Reproduce results across any environment with Orbit through its automatic handling of lockfiles and checksums
 
-- Docker images of Orbit are available for easy integration into new or existing CI/CD pipelines.
+- Overcome namespace collisions, a problem inherent to VHDL and Verilog, through a custom aglorithm that dynamically transforms conflicting design names called [_dynamic symbol transformation_](https://cdotrus.github.io/orbit/topic/dst.html)
 
-- A GitHub Action is available to install orbit for GitHub workflows using [`cdotrus/setup-orbit`](https://github.com/cdotrus/setup-orbit.git).
+- Because of dynamic symbol transformation, multiple versions of the same design unit (or more broadly, design units given the same identifier) are allowed in the same build under [two simple constraints](https://cdotrus.github.io/orbit/topic/dst.html#limitations)
 
-- Reproducible builds are achieved with checksums and automatic handling of a lockfile `Orbit.lock`. 
+- Quickly navigate through HDL source code to read its inline documentation and review a design unit's implementation with Orbit's ability to jump to and display HDL code segments
 
-- Namespace collisions, a problem inherent to VHDL and not resolved in many backend tools, is solved through a custom algorithm called [_dynamic symbol transformation_](https://cdotrus.github.io/orbit/topic/dst.html).
+- Integrate existing design units across projects faster than ever with Orbit's ability to display valid HDL code snippets for design unit instantiation
 
-- Multiple versions of the same entity (or more broadly, entities given the same identifier) are allowed in the same build under [two simple constraints](https://cdotrus.github.io/orbit/topic/dst.html#limitations).
+- Explore your evolving codebase to identify the projects you need next with Orbit's ability to quickly search through known ip by filtering based on keywords, status, and name
 
-- Navigate HDL source code efficiently to read its inline documentation and visit its implementation through Orbit's ability to locate HDL code segments
+- Keep your source code independent of vendor tools and avoid vendor lock-in with Orbit's vendor-agnostic interface to back end EDA tools
 
-- Produce VHDL code snippets with a single command to properly instantiate entities within a new design.
+- Continue to use your preferred version control system (or none) due to Orbit's flexible approach to being version control system agnostic
 
-- Quickly search through your IP catalog by filtering based on keywords, catalog status, and name.
+- Review high-level design unit circuit tree hierarchies at the HDL level or ip level
 
-- Avoid being locked into a specific vendor's tooling through Orbit's common interface with a flexible build command to adapt to any workflow.
-  
-- Orbit is version control system (VCS) agnostic through defining custom protocols for fetching IP. Continue to use your current VCS (or none).
+- No longer worry about manually organizing a design unit's order of dependencies with Orbit's built-in ability to tokenize HDL source code and automatically identify valid references to other design units
 
-- Minimal user upkeep is required to maintain a manifest file `Orbit.toml` that identifies an IP, its metadata, and any dependencies from your catalog.
+- Linux, MacOS, and Windows are fully supported with zero dependencies
 
-- View the current design's tree hierarchy at an HDL entity level or at an IP level.
+- Docker images and GitHub Actions are available to support CI/CD workflows
 
-- Implement custom scripted workflows through a plugin system.
+- Manifest files that mark a project as an ip only require a few user-defined fields to get setup
 
-- Specify additional supportive files to be passed to your backend workflows with filesets.
+- Write a target for your preferred EDA tools once, and reuse across projects with Orbit's support for configuration files
 
-- Dependencies at the HDL level are automatically identified and resolved by tokenizing file contents for valid primary design unit references across IP. The user is only responsible for specifying direct dependencies at the IP level.
+And these are only a few of Orbit's features! Download Orbit and read its documentation today to discover everything Orbit provides as an agile package manager for HDLs. 
+
+## Installing
+
+Orbit has prebuilt binaries for MacOS, Windows, and Linux. See the [releases page](https://github.com/cdotrus/orbit/releases) to download the latest version, or build from source using [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)- Rust's default package manager. See [Installing](https://cdotrus.github.io/orbit/starting/installing.html) for more details on getting Orbit up and running.
 
 ## Examples
 
@@ -133,16 +137,11 @@ The projects and code for Hyperspace Labs are walked through in the [tutorials](
 
 The final code repositories for Hyperspace Labs are found [here](https://github.com/orgs/hyperspace-labs/repositories). 
 
-## Installing
-
-Orbit has pre-built binaries for MacOS, Windows, and Ubuntu. See the [releases](https://github.com/cdotrus/orbit/releases) page to grab the latest release, or you can build from source with `cargo`. See the full installation instructions for complete details [here](https://cdotrus.github.io/orbit/starting/installing.html).
-
 ## Documentation
 
 Read the [Book of Orbit](https://cdotrus.github.io/orbit/) for comprehensive documentation composed of tutorials, user guides, topic guides, references, and command manuals.
 
-Orbit provides commands for every stage of the development cycle, such as exploration, integration, and automation:
-
+Orbit brings an agile approach to hardware development that minimizes technical debt through its available commands related to ip exploration, integration, and automation:
 ```
 Orbit is a tool for hdl package management.
 

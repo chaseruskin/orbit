@@ -33,7 +33,7 @@ COMMANDS = [
 
 CWD, _ = os.path.split(sys.argv[0])
 # define the path to the TOML file
-INPUT_TOML_PATH = "./docs/manuals.toml"
+INPUT_TOML_PATH = "./docs/commands.toml"
 
 # set the location of where to place the MD files
 MD_OUTPUT_DIR = './docs/src/commands' # './mansync/md'

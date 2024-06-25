@@ -4,13 +4,12 @@
 use crate::core::context::Context;
 use crate::core::fileset::Fileset;
 use crate::core::fileset::Style;
-use crate::util::anyerror::AnyError;
+use crate::error::Error;
 use crate::util::anyerror::Fault;
 use crate::util::filesystem;
 use crate::util::filesystem::Standardize;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::error::Error;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -43,6 +42,13 @@ impl Target {
             self.name,
             self.description.as_ref().unwrap_or(&String::new())
         )
+    }
+
+    pub fn explain(&self) -> String {
+        self.explanation
+            .as_ref()
+            .unwrap_or(&String::default())
+            .to_string()
     }
 
     /// Creates a string to display a list of plugins.
@@ -138,10 +144,23 @@ pub trait Process {
     fn get_args(&self) -> Vec<&String>;
 
     /// Runs the given `command` with the set `args` for the plugin.
-    fn execute(&self, extra_args: &[String], verbose: bool, dir: &str) -> Result<(), Fault> {
+    fn execute(
+        &self,
+        overloaded_command: &Option<String>,
+        extra_args: &[String],
+        verbose: bool,
+        cwd: &PathBuf,
+    ) -> Result<(), Fault> {
         // resolve the relative paths in the command and arguments defined in original configuration
+        let command = match overloaded_command {
+            Some(c) => c,
+            None => self.get_command(),
+        };
+
         let root_path = self.get_root();
-        let command = filesystem::resolve_rel_path(root_path, &self.get_command());
+
+        let command = filesystem::resolve_rel_path(root_path, command);
+
         let arguments: Vec<String> = self
             .get_args()
             .iter()
@@ -158,7 +177,7 @@ pub trait Process {
             println!("info: running: {} {}", command, s);
         }
         let mut proc = filesystem::invoke(
-            dir,
+            cwd,
             &command,
             &args,
             Context::enable_windows_bat_file_match(),
@@ -167,12 +186,12 @@ pub trait Process {
         match exit_code.code() {
             Some(num) => {
                 if num != 0 {
-                    Err(AnyError(format!("Exited with error code: {}", num)))?
+                    Err(Error::ChildProcErrorCode(num))?
                 } else {
                     Ok(())
                 }
             }
-            None => Err(AnyError(format!("Terminated by signal")))?,
+            None => Err(Error::ChildProcTerminated)?,
         }
     }
 }
@@ -191,25 +210,6 @@ impl Process for Target {
 
     fn get_command(&self) -> &String {
         &self.command
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum PluginError {
-    Missing(String),
-}
-
-impl Error for PluginError {}
-
-impl std::fmt::Display for PluginError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Missing(name) => write!(
-                f,
-                "No plugin named '{}'\n\nTry `orbit plan --list` to see available plugins",
-                name
-            ),
-        }
     }
 }
 

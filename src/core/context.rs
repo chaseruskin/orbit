@@ -1,9 +1,10 @@
 use crate::core::config::General;
 use crate::core::config::{Config, Configs, Locality};
 use crate::core::target::Target;
+use crate::error::{Error, Hint};
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
-use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
+use crate::util::environment::{self, Environment, ORBIT_WIN_LITERAL_CMD};
 use crate::util::filesystem::Standardize;
 use std::collections::HashMap;
 use std::env;
@@ -15,7 +16,7 @@ use super::lang::LangMode;
 
 const CACHE_TAG_FILE: &str = "CACHEDIR.TAG";
 
-const CACHE_TAG: &str = "\
+pub const CACHE_TAG: &str = "\
 Signature: 8a477f597d28d172789f06886806bc55
 # This file is a cache directory tag created by orbit.
 # For information about cache directory tags see https://bford.info/cachedir/
@@ -303,7 +304,7 @@ impl Context {
     /// Changes current working directory to the detected IP path.
     ///
     /// Returns an error if ip_path is `None`.
-    pub fn goto_ip_path(&self) -> Result<(), ContextError> {
+    pub fn jump_to_working_ip(&self) -> Result<(), Error> {
         match self.get_ip_path() {
             Some(cwd) => {
                 // set the current working directory to here
@@ -311,9 +312,7 @@ impl Context {
             }
             None => {
                 // @IDEA also give information about reading about ip-dir sensitive commands as a topic?
-                return Err(ContextError(format!(
-                    "no orbit IP detected in current directory or any parent directory"
-                )));
+                return Err(Error::NoWorkingIpFound);
             }
         }
         Ok(())
@@ -367,6 +366,28 @@ impl Context {
     pub fn build_dir(self, s: &str) -> Result<Context, ContextError> {
         env::set_var(s, &self.get_target_dir());
         Ok(self)
+    }
+
+    pub fn select_target(
+        &self,
+        target: &Option<String>,
+        required: bool,
+    ) -> Result<Option<&Target>, Error> {
+        let target = match target {
+            Some(t) => Some(t.to_string()),
+            None => Environment::read(environment::ORBIT_TARGET),
+        };
+        match target {
+            // verify the target name matches
+            Some(name) => match self.get_config().get_targets().get(name.as_str()) {
+                Some(&t) => Ok(Some(t)),
+                None => Err(Error::TargetNotFound(name.to_string(), Hint::TargetsList)),
+            },
+            None => match required {
+                true => Err(Error::MissingRequiredTarget),
+                false => Ok(None),
+            },
+        }
     }
 }
 

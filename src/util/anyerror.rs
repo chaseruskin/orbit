@@ -30,6 +30,7 @@ impl From<&str> for AnyError {
 pub type Fault = Box<dyn Error>;
 
 #[derive(Debug, thiserror::Error)]
+/// Stores the (source code file, error message)
 pub struct CodeFault(pub Option<String>, pub Fault);
 
 impl From<Fault> for CodeFault {

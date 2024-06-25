@@ -80,7 +80,7 @@ impl Subcommand<Context> for Download {
         };
 
         // verify running from an IP directory and enter IP's root directory
-        c.goto_ip_path()?;
+        c.jump_to_working_ip()?;
 
         let ip = Ip::load(c.get_ip_path().unwrap().clone(), true)?;
 
@@ -199,7 +199,7 @@ impl Download {
                     );
                     // allow the user to handle placing the code in the queue
                     let entry: Protocol = entry.clone().replace_vars_in_args(&vtable);
-                    if let Err(err) = entry.execute(&[], verbose, &std_queue.to_str().unwrap()) {
+                    if let Err(err) = entry.execute(&None, &[], verbose, &std_queue) {
                         fs::remove_dir_all(queue)?;
                         return Err(err);
                     }

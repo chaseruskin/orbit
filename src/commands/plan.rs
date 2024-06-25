@@ -1,7 +1,8 @@
 use colored::Colorize;
 
 use crate::commands::download::Download;
-use crate::core::context::Context;
+use crate::core::blueprint::{Blueprint, Instruction};
+use crate::core::context::{self, Context};
 use crate::core::fileset::Fileset;
 use crate::core::iparchive::IpArchive;
 use crate::core::lang::parser::ParseError;
@@ -12,12 +13,10 @@ use crate::core::lang::vhdl::symbols::{
 };
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lang::LangMode;
-use crate::core::target::PluginError;
 use crate::core::target::Target;
 use crate::core::variable;
 use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
-use crate::error::Error;
 use crate::util::anyerror::Fault;
 use crate::util::environment;
 use crate::util::environment::EnvVar;
@@ -26,9 +25,7 @@ use crate::util::filesystem;
 use crate::util::graphmap::GraphMap;
 use std::collections::{HashMap, HashSet};
 use std::fs;
-use std::fs::File;
 use std::hash::Hash;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use crate::commands::helps::plan;
@@ -85,20 +82,7 @@ impl Subcommand<Context> for Plan {
 
     fn execute(self, c: &Context) -> proc::Result {
         // locate the target provided from the command-line
-        let target = match &self.target {
-            // verify the target name matches
-            Some(name) => match c.get_config().get_targets().get(name.as_str()) {
-                Some(&p) => Some(p),
-                None => return Err(PluginError::Missing(name.to_string()))?,
-            },
-            None => {
-                if self.list == false {
-                    return Err(Error::MissingRequiredTarget)?;
-                } else {
-                    None
-                }
-            }
-        };
+        let target = c.select_target(&self.target, self.list == false)?;
 
         // display targets list and exit
         if self.list == true {
@@ -125,7 +109,7 @@ impl Subcommand<Context> for Plan {
         let target = target.unwrap();
 
         // check that user is in an IP directory
-        c.goto_ip_path()?;
+        c.jump_to_working_ip()?;
 
         // store the working ip struct
         let working_ip = Ip::load(c.get_ip_path().unwrap().clone(), true)?;
@@ -200,9 +184,9 @@ impl Plan {
         filesets: &Option<Vec<Fileset>>,
     ) -> Result<(), Fault> {
         // create the output path to know where to begin storing files
-        let mut output_path = working_ip.get_root().clone();
-        output_path.push(target_dir);
-        output_path.push(target.get_name());
+        let working_ip_path = working_ip.get_root().clone();
+        let target_path = working_ip_path.join(target_dir);
+        let output_path = target_path.join(target.get_name());
 
         // check if to clean the directory
         if clean == true && Path::exists(&output_path) == true {
@@ -215,19 +199,17 @@ impl Plan {
             Err(e) => {
                 // generate a single blueprint
                 if e.is_source_err() == true && force == true {
-                    // store data in blueprint TSV format
-                    let mut blueprint_data = String::new();
-                    let file = e.as_source_file().unwrap();
-                    if fileset::is_rtl(&file) == true {
-                        blueprint_data +=
-                            &format!("VHDL-RTL{0}{1}{0}{2}\n", BLUEPRINT_DELIMITER, "work", file);
-                    } else {
-                        blueprint_data +=
-                            &format!("VHDL-SIM{0}{1}{0}{2}\n", BLUEPRINT_DELIMITER, "work", file);
-                    }
+                    let mut blueprint = Blueprint::default();
+                    let ip_file_node = IpFileNode::new(
+                        e.as_source_file().unwrap().to_string(),
+                        &working_ip,
+                        Identifier::new_working(),
+                    );
+                    blueprint.add(Instruction::Hdl(&ip_file_node));
+
                     let blueprint_path = Self::create_outputs(
-                        &blueprint_data,
-                        &output_path,
+                        &blueprint,
+                        &target_path,
                         &String::new(),
                         &String::new(),
                         target,
@@ -405,8 +387,8 @@ impl Plan {
             true => println!("{} no testbench set", "warning:".yellow()),
         }
 
-        // store data in blueprint TSV format
-        let mut blueprint_data = String::new();
+        // store data in blueprint
+        let mut blueprint = Blueprint::default();
 
         // [!] collect user-defined filesets
         {
@@ -451,7 +433,8 @@ impl Plan {
                     fset.collect_files(&current_files)
                         .into_iter()
                         .for_each(|f| {
-                            blueprint_data += &fset.to_blueprint_string(&f);
+                            blueprint
+                                .add(Instruction::Supportive(fset.get_name().clone(), f.clone()));
                         });
                 }
             }
@@ -469,40 +452,53 @@ impl Plan {
                 fset.collect_files(&current_files)
                     .into_iter()
                     .for_each(|f| {
-                        blueprint_data += &fset.to_blueprint_string(&f);
+                        blueprint.add(Instruction::Supportive(fset.get_name().clone(), f.clone()));
                     });
             }
         }
 
         // collect in-order HDL file list
-        for file in file_order {
-            if fileset::is_rtl(&file.get_file()) == true {
-                blueprint_data += &format!(
-                    "VHDL-RTL{0}{1}{0}{2}\n",
-                    BLUEPRINT_DELIMITER,
-                    file.get_library(),
-                    file.get_file()
-                );
+        for ip_file_node in file_order {
+            if fileset::is_rtl(&ip_file_node.get_file()) == true {
+                blueprint.add(Instruction::Hdl(ip_file_node));
             } else {
-                blueprint_data += &format!(
-                    "VHDL-SIM{0}{1}{0}{2}\n",
-                    BLUEPRINT_DELIMITER,
-                    file.get_library(),
-                    file.get_file()
-                );
+                blueprint.add(Instruction::Hdl(ip_file_node));
             }
         }
 
-        let blueprint_path = Self::create_outputs(
-            &blueprint_data,
-            &output_path,
-            &top_name,
-            &bench_name,
-            target,
-        )?;
+        let blueprint_path =
+            Self::create_outputs(&blueprint, &target_path, &top_name, &bench_name, target)?;
         // create a blueprint file
         println!("info: blueprint created at: {}", blueprint_path.display());
         Ok(())
+    }
+}
+
+pub fn resolve_missing_deps<'a>(
+    c: &'a Context,
+    working_ip: &'a Ip,
+    mut catalog: Catalog<'a>,
+    force: bool,
+) -> Result<Catalog<'a>, Fault> {
+    // this code is only ran if the lock file matches the manifest and we aren't force to recompute
+    if working_ip.can_use_lock() == true && force == false {
+        let le: LockEntry = LockEntry::from((working_ip, true));
+        let lf = working_ip.get_lock();
+
+        let env = Environment::new()
+            // read config.toml for setting any env variables
+            .from_config(c.get_config())?;
+        let vtable = VariableTable::new().load_environment(&env)?;
+
+        download_missing_deps(vtable, &lf, &le, &catalog, &c.get_config().get_protocols())?;
+        // recollect the downloaded items to update the catalog for installations
+        catalog = catalog.downloads(c.get_downloads_path())?;
+
+        install_missing_deps(&lf, &le, &catalog)?;
+        // recollect the installations to update the catalog for dependency graphing
+        catalog.installations(c.get_cache_path())
+    } else {
+        Ok(catalog)
     }
 }
 
@@ -534,7 +530,7 @@ pub fn download_missing_deps(
                         // verify the checksum
                         if Install::is_checksum_good(&dep.get_root()) == false {
                             println!(
-                                "info: Redownloading ip {} due to bad checksum ...",
+                                "info: redownloading ip {} due to bad checksum ...",
                                 dep.get_man().get_ip().into_ip_spec()
                             );
                             require_download = true;
@@ -1083,7 +1079,7 @@ impl Plan {
 
         for elem in list {
             if set.insert(elem) == true {
-                result.push(elem)
+                result.push(elem);
             }
         }
         result
@@ -1111,23 +1107,23 @@ impl Plan {
                 .as_ref()
                 .get_associated_files();
             // handle each associated file in the list
-            ipfs.iter().for_each(|&e| {
+            ipfs.into_iter().for_each(|&ip_file_node| {
                 // collect all dependencies in the graph from this node
                 let mut preds: Vec<&HdlNode> = global_graph
                     .predecessors(*i)
                     .into_iter()
-                    .map(|e| e.1)
+                    .map(|ip_file_node| ip_file_node.1)
                     .collect();
                 // merge dependencies together from various primary design units
-                match file_map.get_mut(e.get_file()) {
+                match file_map.get_mut(ip_file_node.get_file()) {
                     // update the existing node by merging dependencies together
                     Some((_file_node, deps)) => {
                         deps.append(&mut preds);
                     }
                     // enter the new unmarked node and its dependencies
                     None => {
-                        file_order.push(e.get_file().clone());
-                        file_map.insert(e.get_file().clone(), (e, preds));
+                        file_order.push(ip_file_node.get_file().clone());
+                        file_map.insert(ip_file_node.get_file().clone(), (ip_file_node, preds));
                     }
                 }
             });
@@ -1194,25 +1190,26 @@ impl Plan {
 
     /// Writes the blueprint and env file to the build directory.
     fn create_outputs(
-        blueprint_data: &str,
-        output_path: &PathBuf,
+        blueprint: &Blueprint,
+        target_path: &PathBuf,
         top_name: &str,
         bench_name: &str,
         target: &Target,
     ) -> Result<PathBuf, Fault> {
+        let output_path = target_path.join(target.get_name());
         // create a output build directorie(s) if they do not exist
-        if PathBuf::from(output_path).exists() == false {
-            fs::create_dir_all(output_path).expect("could not create output directory");
+        if output_path.exists() == false {
+            fs::create_dir_all(&output_path).expect("could not create output directory");
         }
 
-        // [!] create the blueprint file
-        let blueprint_path = output_path.join(BLUEPRINT_FILE);
-        let mut blueprint_file =
-            File::create(&blueprint_path).expect("could not create blueprint file");
-        // write the data
-        blueprint_file
-            .write_all(blueprint_data.as_bytes())
-            .expect("failed to write data to blueprint");
+        // create a cache tag file if does not exist
+        match Context::is_cache_tag_valid(target_path) {
+            Ok(_) => (),
+            Err(e) => fs::write(&e, context::CACHE_TAG)?,
+        }
+
+        // create the blueprint file
+        let (blueprint_path, _) = blueprint.write(&output_path)?;
 
         // create environment variables to .env file
         let mut envs = Environment::from_vec(vec![
@@ -1224,7 +1221,7 @@ impl Plan {
         // conditionally set the plugin used to plan
         envs.insert(
             EnvVar::new()
-                .key(environment::ORBIT_PLUGIN)
+                .key(environment::ORBIT_TARGET)
                 .value(&target.get_name()),
         );
         environment::save_environment(&envs, &output_path)?;

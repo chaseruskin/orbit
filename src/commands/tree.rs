@@ -52,7 +52,7 @@ impl Subcommand<Context> for Tree {
 
     fn execute(self, c: &Context) -> proc::Result {
         // go to the ip directory
-        c.goto_ip_path()?;
+        c.jump_to_working_ip()?;
 
         if self.compress == true {
             todo!("implement compression logic")

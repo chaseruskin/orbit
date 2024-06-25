@@ -1,8 +1,7 @@
 use colored::Colorize;
-use std::path::PathBuf;
+use std::{fmt::Display, path::PathBuf};
 
 type LastError = String;
-type Hint = String;
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum Error {
@@ -20,16 +19,55 @@ pub enum Error {
     FailedToInitIp(LastError),
     #[error("a target must be defined")]
     MissingRequiredTarget,
+    #[error("command must be ran from the current working ip: no ip found in current directory or any parent directory")]
+    NoWorkingIpFound,
+    #[error("command must be ran from the current working ip when an ip is not explicitly defined: no ip found in current directory or any parent directory")]
+    NoAssumedWorkingIpFound,
+    #[error("ip {0:?} does not exist in the cache")]
+    IpNotFoundInCache(String),
+    #[error("ip {0:?} does not exist in the catalog{1}")]
+    IpNotFoundAnywhere(String, Hint),
+    #[error("child process exited with error code: {0}")]
+    ChildProcErrorCode(i32),
+    #[error("child process terminated by signal")]
+    ChildProcTerminated,
+    #[error("no target named {0:?}{1}")]
+    TargetNotFound(String, Hint),
+    #[error("a target must be specified{0}")]
+    TargetNotSpecified(Hint),
 }
 
 impl Error {
-    pub fn hint(s: &str) -> String {
-        format!("\n\n{}: {}", "hint".green(), Self::lowerize(s.to_string()))
-    }
-
     pub fn lowerize(s: String) -> String {
         s.char_indices()
             .map(|(i, c)| if i == 0 { c.to_ascii_lowercase() } else { c })
             .collect()
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Hint {
+    TargetsList,
+    CatalogList,
+    InitNotNew,
+    IpNameSeparate,
+}
+
+impl Display for Hint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let message = match self {
+            Self::CatalogList => "use `orbit search` to see the list of known ips",
+            Self::TargetsList => "use `orbit build --list` to see the list of defined targets",
+            Self::InitNotNew => "use `orbit init` to initialize an existing directory",
+            Self::IpNameSeparate => {
+                "see the \"--name\" flag for making an ip name separate from the directory name"
+            }
+        };
+        write!(
+            f,
+            "\n\n{}: {}",
+            "hint".green(),
+            Error::lowerize(message.to_string())
+        )
     }
 }

@@ -5,6 +5,7 @@ use crate::core::ip::{Ip, PartialIpSpec};
 use crate::core::lang::LangUnit;
 use crate::core::pubfile::Visibility;
 use crate::core::version;
+use crate::error::{Error, Hint};
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use std::cmp::Ordering;
@@ -58,15 +59,18 @@ impl Subcommand<Context> for View {
                     if let Some(slot) = lvl.get_download(spec.get_version()) {
                         slot
                     } else {
-                        return Err(AnyError(format!("ip {} does not exist in the cache", spec)))?;
+                        return Err(Error::IpNotFoundInCache(spec.to_string()))?;
                     }
                 }
             } else {
-                return Err(AnyError(format!("no ip found anywhere")))?;
+                return Err(Error::IpNotFoundAnywhere(
+                    spec.to_string(),
+                    Hint::CatalogList,
+                ))?;
             }
         } else {
             if dev_ip.is_none() == true {
-                return Err(AnyError(format!("no ip provided or detected")))?;
+                return Err(Error::NoAssumedWorkingIpFound)?;
             } else {
                 match &dev_ip {
                     Some(Ok(r)) => {

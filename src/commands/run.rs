@@ -6,13 +6,11 @@ use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lang::LangMode;
-use crate::core::lockfile::LockEntry;
-use crate::core::target::{PluginError, Target};
-use crate::core::variable::VariableTable;
+use crate::core::target::Process;
+use crate::core::target::Target;
 use crate::util::anyerror::{AnyError, Fault};
 use crate::util::environment::{EnvVar, Environment, ORBIT_BLUEPRINT, ORBIT_BUILD_DIR};
 
-use super::build::Build;
 use super::plan::{self, Plan, BLUEPRINT_FILE};
 
 #[derive(Debug, PartialEq)]
@@ -24,6 +22,7 @@ pub struct Run {
     force: bool,
     all: bool,
     clean: bool,
+    verbose: bool,
     top: Option<Identifier>,
     bench: Option<Identifier>,
 }
@@ -36,6 +35,7 @@ impl Subcommand<Context> for Run {
             list: cli.check(Arg::flag("list"))?,
             force: cli.check(Arg::flag("force"))?,
             all: cli.check(Arg::flag("all"))?,
+            verbose: cli.check(Arg::flag("verbose"))?,
             clean: cli.check(Arg::flag("clean"))?,
             target_dir: cli.get(Arg::option("target-dir"))?,
             top: cli.get(Arg::option("top").value("unit"))?,
@@ -48,14 +48,7 @@ impl Subcommand<Context> for Run {
 
     fn execute(self, c: &Context) -> proc::Result {
         // locate the plugin
-        let target = match &self.target {
-            // verify the plugin alias matches
-            Some(name) => match c.get_config().get_targets().get(name.as_str()) {
-                Some(&t) => Some(t),
-                None => return Err(PluginError::Missing(name.to_string()))?,
-            },
-            None => None,
-        };
+        let target = c.select_target(&self.target, self.list == false)?;
 
         // display plugin list and exit
         if self.list == true {
@@ -78,16 +71,13 @@ impl Subcommand<Context> for Run {
             return Ok(());
         }
 
+        let target = target.unwrap();
+
         // check that user is in an IP directory
-        c.goto_ip_path()?;
+        c.jump_to_working_ip()?;
 
         // create the ip manifest
         let ip = Ip::load(c.get_ip_path().unwrap().clone(), true)?;
-
-        // gather the catalog
-        let mut catalog = Catalog::new()
-            .installations(c.get_cache_path())?
-            .downloads(c.get_downloads_path())?;
 
         // @todo: recreate the ip graph from the lockfile, then read each installation
         // see Install::install_from_lock_file
@@ -99,41 +89,22 @@ impl Subcommand<Context> for Run {
             None => &default_build_dir,
         };
 
-        // this code is only ran if the lock file matches the manifest and we aren't force to recompute
-        if ip.can_use_lock() == true && self.force == false {
-            let le: LockEntry = LockEntry::from((&ip, true));
-            let lf = ip.get_lock();
+        // gather the catalog and resolve any missing dependencies
+        let catalog = Catalog::new()
+            .installations(c.get_cache_path())?
+            .downloads(c.get_downloads_path())?;
+        let catalog = plan::resolve_missing_deps(c, &ip, catalog, self.force)?;
 
-            let env = Environment::new()
-                // read config.toml for setting any env variables
-                .from_config(c.get_config())?;
-            let vtable = VariableTable::new().load_environment(&env)?;
-
-            plan::download_missing_deps(
-                vtable,
-                &lf,
-                &le,
-                &catalog,
-                &c.get_config().get_protocols(),
-            )?;
-            // recollect the downloaded items to update the catalog for installations
-            catalog = catalog.downloads(c.get_downloads_path())?;
-
-            plan::install_missing_deps(&lf, &le, &catalog)?;
-            // recollect the installations to update the catalog for dependency graphing
-            catalog = catalog.installations(c.get_cache_path())?;
-        }
-
-        self.run(ip, target_dir, target, catalog, &c.get_lang_mode())
+        self.run(&ip, target_dir, target, catalog, &c.get_lang_mode())
     }
 }
 
 impl Run {
     fn run(
         &self,
-        ip: Ip,
+        ip: &Ip,
         target_dir: &str,
-        target: Option<&Target>,
+        target: &Target,
         catalog: Catalog,
         mode: &LangMode,
     ) -> Result<(), Fault> {
@@ -141,7 +112,7 @@ impl Run {
         Plan::run(
             &ip,
             target_dir,
-            target.as_ref().unwrap(),
+            target,
             catalog,
             mode,
             self.clean,
@@ -173,7 +144,9 @@ impl Run {
         };
         envs.initialize();
 
-        // build the target
-        Build::run(target, target_dir, &None, &self.args, false)
+        let output_path = ip.get_root().join(target_dir).join(&target.get_name());
+
+        // run the command from the output path
+        target.execute(&None, &self.args, self.verbose, &output_path)
     }
 }

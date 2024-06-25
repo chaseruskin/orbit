@@ -364,13 +364,13 @@ impl Standardize for PathBuf {
 /// Performs a fix to allow .bat files to be searched on windows given the option
 /// is enabled through environment variables.
 pub fn invoke(
-    dir: &str,
+    cwd: &PathBuf,
     cmd: &String,
     args: &Vec<String>,
     try_again: bool,
 ) -> std::io::Result<std::process::Child> {
     match std::process::Command::new(cmd)
-        .current_dir(dir)
+        .current_dir(cwd)
         .args(args)
         .stdout(std::process::Stdio::inherit())
         .stderr(std::process::Stdio::inherit())
@@ -385,7 +385,7 @@ pub fn invoke(
                     None => true,
                 };
             if repeat == true && e.kind() == std::io::ErrorKind::NotFound {
-                invoke(dir, &format!("{}.bat", cmd), args, false)
+                invoke(cwd, &format!("{}.bat", cmd), args, false)
             } else {
                 Err(e)
             }

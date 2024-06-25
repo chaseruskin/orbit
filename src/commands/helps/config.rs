@@ -8,6 +8,7 @@ Options:
     --global                    access the home configuration file
     --local                     access the current project configuration file
     --append <key>=<value>...   add a value to a key storing a list
+    --pop <key>...              remove the last value to a key storing a list
     --set <key>=<value>...      write the value at the key entry
     --unset <key>...            delete the key's entry
 

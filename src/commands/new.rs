@@ -4,7 +4,7 @@ use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
 use crate::core::pkgid::PkgPart;
-use crate::error::Error;
+use crate::error::{Error, Hint};
 use crate::util::filesystem::{Standardize, ORBIT_IGNORE_FILE};
 use std::borrow::Cow;
 use std::io::Write;
@@ -53,7 +53,7 @@ impl Subcommand<Context> for New {
             // 2. if no manifest already exists at this directory
             return Err(Error::PathAlreadyExists(
                 self.path.clone(),
-                Error::hint("use `orbit init` to initialize a directory"),
+                Hint::InitNotNew,
             ))?;
         }
 
@@ -80,13 +80,18 @@ impl New {
                 Some(fname) => {
                     let s = fname.to_string_lossy();
                     match PkgPart::from_str(s.as_ref()) {
-                            Ok(r) => Ok(Cow::Owned(r)),
-                            Err(e) => Err(Error::CannotAutoExtractNameFromPath(s.to_string(), e.to_string(), Error::hint("To have an ip name separate from the directory name, use the \"--name\" flag")))?,
+                        Ok(r) => Ok(Cow::Owned(r)),
+                        Err(e) => Err(Error::CannotAutoExtractNameFromPath(
+                            s.to_string(),
+                            e.to_string(),
+                            Hint::IpNameSeparate,
+                        ))?,
                     }
                 }
-                None => {
-                    Err(Error::MissingFileSystemPathName(path.clone(), Error::hint("To have an ip name separate from the directory name, use the \"--name\" flag")))?
-                }
+                None => Err(Error::MissingFileSystemPathName(
+                    path.clone(),
+                    Hint::IpNameSeparate,
+                ))?,
             },
         }
     }

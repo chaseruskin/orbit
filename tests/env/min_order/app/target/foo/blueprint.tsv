@@ -1,3 +1,3 @@
-VHDL-RTL	lib	/Users/chase/.orbit/cache/lib-0.1.0-685615fd5d/casting.vhd
-VHDL-RTL	lib	/Users/chase/.orbit/cache/lib-0.1.0-685615fd5d/drivers.vhd
-VHDL-SIM	work	/Users/chase/Develop/rust/orbit/tests/env/min_order/app/t1_tb.vhd
+VHDL	lib	/Users/chase/.orbit/cache/lib-0.1.0-685615fd5d/casting.vhd
+VHDL	lib	/Users/chase/.orbit/cache/lib-0.1.0-685615fd5d/drivers.vhd
+VHDL	work	/Users/chase/Develop/rust/orbit/tests/env/min_order/app/t1_tb.vhd

@@ -161,6 +161,13 @@ impl Environment {
         self.into_iter()
             .for_each(|e| std::env::set_var(e.key, e.value));
     }
+
+    pub fn read(key: &str) -> Option<String> {
+        match std::env::var(key) {
+            Ok(v) => Some(v),
+            Err(_) => None,
+        }
+    }
 }
 
 /// Stores a list of `EnvVar` at root in a file named ".env".
@@ -226,7 +233,7 @@ pub const ORBIT_IP_PATH: &str = "ORBIT_IP_PATH";
 pub const ORBIT_BUILD_DIR: &str = "ORBIT_BUILD_DIR";
 pub const ORBIT_TOP: &str = "ORBIT_TOP";
 pub const ORBIT_BENCH: &str = "ORBIT_BENCH";
-pub const ORBIT_PLUGIN: &str = "ORBIT_PLUGIN";
+pub const ORBIT_TARGET: &str = "ORBIT_TARGET";
 pub const ORBIT_BLUEPRINT: &str = "ORBIT_BLUEPRINT";
 
 pub const ORBIT_QUEUE: &str = "ORBIT_QUEUE";

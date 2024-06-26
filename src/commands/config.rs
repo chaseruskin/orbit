@@ -120,12 +120,7 @@ impl Config {
             match entry.0.as_ref() {
                 "include" => cfg.append_include(&entry.1),
                 "general.languages" => cfg.append_languages(&entry.1),
-                _ => {
-                    return Err(AnyError(format!(
-                        "unsupported key '{}' cannot be appended",
-                        entry.0
-                    )))?
-                }
+                _ => return Err(Error::ConfigFieldNotList(entry.0.to_string()))?,
             };
         }
         // check list for popping
@@ -133,12 +128,7 @@ impl Config {
             match key.as_ref() {
                 "include" => cfg.pop_include(),
                 "general.languages" => cfg.pop_languages(),
-                _ => {
-                    return Err(AnyError(format!(
-                        "unsupported key '{}' cannot be popped",
-                        key
-                    )))?
-                }
+                _ => return Err(Error::ConfigFieldNotList(key.to_string()))?,
             };
         }
 
@@ -165,7 +155,7 @@ impl Config {
 
         // is the config file is okay?
         if let Err(e) = core::config::Config::from_str(&cfg.to_string()) {
-            return Err(Error::ConfigNotSaved(LastError(e.to_string())))?
+            return Err(Error::ConfigNotSaved(LastError(e.to_string())))?;
         }
 
         cfg.write(&file)

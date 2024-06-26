@@ -41,6 +41,8 @@ pub enum Error {
     ProtocolNotFound(String),
     #[error("failed to modify configuration: {0}")]
     ConfigNotSaved(LastError),
+    #[error("configuration field {0:?} does not store a list")]
+    ConfigFieldNotList(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -57,12 +59,17 @@ impl Error {
         // get the first word
         let first_word = s.split_whitespace().into_iter().next().unwrap();
         // retain punctuation if the first word is all-caps and longer than 1 character
-        if first_word.len() > 1 && first_word.chars().find(|c| c.is_ascii_lowercase() == true).is_none() {
+        if first_word.len() > 1
+            && first_word
+                .chars()
+                .find(|c| c.is_ascii_lowercase() == true)
+                .is_none()
+        {
             s.to_string()
         } else {
             s.char_indices()
-            .map(|(i, c)| if i == 0 { c.to_ascii_lowercase() } else { c })
-            .collect()
+                .map(|(i, c)| if i == 0 { c.to_ascii_lowercase() } else { c })
+                .collect()
         }
     }
 }

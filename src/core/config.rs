@@ -56,25 +56,50 @@ impl ConfigDocument {
         println!("{}", self.document.to_string())
     }
 
-    fn append_list(table: &mut Table, key: &str, item: &str) -> () {
+    fn append_list(table: &mut Table, key: &str, item: &str, on_newline: bool) -> () {
         // verify the key/entry exists (make empty array)
         if table.contains_key(key) == false {
             table.insert(key, Item::Value(Value::Array(Array::new())));
         }
         table[key].as_array_mut().unwrap().push(item);
         // before neat formatting of an item on every line
-        table[key].as_array_mut().unwrap().iter_mut().for_each(|f| {
-            f.decor_mut().set_prefix("\n    ");
-            f.decor_mut().set_suffix("");
-        });
-        table[key].as_array_mut().unwrap().set_trailing("\n");
+        table[key]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .enumerate()
+            .for_each(|(i, f)| {
+                if on_newline == true {
+                    f.decor_mut().set_prefix("\n    ")
+                } else {
+                    if i > 0 {
+                        f.decor_mut().set_prefix(" ")
+                    } else {
+                        f.decor_mut().set_prefix("")
+                    }
+                };
+                if on_newline == true {
+                    f.decor_mut().set_suffix("")
+                } else {
+                    f.decor_mut().set_suffix("")
+                };
+            });
+        table[key]
+            .as_array_mut()
+            .unwrap()
+            .set_trailing_comma(on_newline);
+        if on_newline == true {
+            table[key].as_array_mut().unwrap().set_trailing("\n")
+        } else {
+            table[key].as_array_mut().unwrap().set_trailing("")
+        };
     }
 
     /// Adds a new value to the `include` entry.
     ///
     /// Automatically creates the new key if it does not exist.
     pub fn append_include(&mut self, item: &str) -> () {
-        Self::append_list(&mut self.document, INCLUDE_KEY, item);
+        Self::append_list(&mut self.document, INCLUDE_KEY, item, true);
     }
 
     pub fn append_languages(&mut self, item: &str) -> () {
@@ -86,7 +111,7 @@ impl ConfigDocument {
                 self.document[GENERAL_KEY].as_table_mut().unwrap()
             }
         };
-        Self::append_list(g, LANGUAGES_KEY, item)
+        Self::append_list(g, LANGUAGES_KEY, item, false)
     }
 
     /// Pops the last value from the `include` entry.

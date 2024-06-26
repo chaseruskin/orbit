@@ -210,22 +210,30 @@ will follow the previously defined arguments.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--target &lt;name&gt;</code><br />
       Target to execute</p>
-<p><code>--command &lt;cmd&gt;</code><br />
-      Command to execute</p>
-<p><code>--list</code><br />
-      View available targets</p>
-<p><code>--force</code><br />
-      Execute the command without checking for a blueprint</p>
+<p><code>--top &lt;unit&gt;</code><br />
+      Set the top level design unit</p>
+<p><code>--bench &lt;unit&gt;</code><br />
+      Set the top level testbench unit</p>
 <p><code>--target-dir &lt;dir&gt;</code><br />
-      The relative directory to locate the blueprint file</p>
+      The relative directory where the target starts</p>
+<p><code>--command &lt;path&gt;</code><br />
+      Overwrite the target's command</p>
+<p><code>--list</code><br />
+      View available targets and exit</p>
+<p><code>--all</code><br />
+      Include all hdl files of the working ip</p>
+<p><code>--fileset &lt;key=glob&gt;...</code><br />
+      A glob-style pattern identified by name to include in the blueprint</p>
+<p><code>--force</code><br />
+      Force the target to execute</p>
 <p><code>--verbose</code><br />
       Display the command being executed</p>
 <p><code>args</code><br />
-      Arguments to pass to the target or command</p>
+      Arguments to pass to the target</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit build --target xsim -- --elab
-orbit build --command python -- synth.py
-orbit build --verbose
+orbit build --command python3 --target pysim
+orbit build --all --target-dir build --target ghdl
 orbit build --target xsim --force -- --help
 </code></pre>
 

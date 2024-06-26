@@ -104,7 +104,7 @@ impl Subcommand<Context> for Build {
             target_dir,
             target,
             catalog,
-            &c.get_lang_mode(),
+            &c.get_languages(),
             true,
             self.force,
             false,

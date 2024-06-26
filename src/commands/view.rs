@@ -91,7 +91,7 @@ impl Subcommand<Context> for View {
                 let units = Ip::collect_units(
                     true,
                     &ip.get_root(),
-                    &c.get_lang_mode(),
+                    &c.get_languages(),
                     false,
                     ip.into_public_list(),
                 )?;

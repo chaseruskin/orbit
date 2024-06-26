@@ -93,7 +93,7 @@ Write a script to accept Orbit's output file for whatever EDA tools you prefer o
 
 ## Highlights
 
-What makes Orbit an agile package manager for HDLs? Here's some of its key features:
+What makes Orbit an agile package manager for HDLs? Here are some of its key features:
 
 - Orbit acts as the intermediary between your source code and back end EDA tools, automating the upkeep process to minimize technical debt as your codebase evolves over time
 

@@ -7,7 +7,7 @@ pub mod parser;
 pub mod node;
 pub mod unit;
 
-use crate::util::anyerror::CodeFault;
+use crate::util::anyerror::{AnyError, CodeFault};
 use serde_derive::Serialize;
 use std::collections::HashMap;
 use std::fmt::Display;
@@ -18,44 +18,29 @@ use vhdl::primaryunit::PrimaryUnit;
 type VhdlIdentifier = vhdl::token::Identifier;
 use serde_derive::Deserialize;
 
-use super::pubfile::{PublicList, Visibility};
+use super::{
+    config::Languages,
+    pubfile::{PublicList, Visibility},
+};
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
-pub enum LangMode {
+pub enum Lang {
     #[serde(rename = "vhdl")]
     Vhdl,
     #[serde(rename = "verilog")]
     Verilog,
-    #[serde(rename = "mixed")]
-    Mixed,
 }
 
-impl LangMode {
-    pub fn supports_vhdl(&self) -> bool {
-        match self {
-            Self::Vhdl | Self::Mixed => true,
-            _ => false,
+impl FromStr for Lang {
+    type Err = AnyError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "vhdl" => Ok(Self::Vhdl),
+            "verilog" => Ok(Self::Verilog),
+            _ => Err(AnyError(format!("unsupported language {:?}", s))),
         }
     }
-
-    pub fn supports_verilog(&self) -> bool {
-        match self {
-            Self::Verilog | Self::Mixed => true,
-            _ => false,
-        }
-    }
-}
-
-impl Default for LangMode {
-    fn default() -> Self {
-        Self::Mixed
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Lang {
-    Vhdl,
-    Verilog,
 }
 
 impl Display for Lang {
@@ -260,7 +245,7 @@ impl Display for LangIdentifier {
 
 pub fn collect_units(
     files: &Vec<String>,
-    lang_mode: &LangMode,
+    lang_mode: &Languages,
 ) -> Result<HashMap<LangIdentifier, LangUnit>, CodeFault> {
     // collect the VHDL units
     let vhdl_units = match lang_mode.supports_vhdl() {

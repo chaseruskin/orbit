@@ -334,7 +334,7 @@ impl Subcommand<Context> for Install {
         // generate lock file if it is missing or out of date
         if target.lock_exists() == false || target.can_use_lock() == false {
             // build entire ip graph and resolve with dynamic symbol transformation
-            let ip_graph = algo::compute_final_ip_graph(&target, &catalog, &c.get_lang_mode())?;
+            let ip_graph = algo::compute_final_ip_graph(&target, &catalog, &c.get_languages())?;
             Plan::write_lockfile(&target, &ip_graph, true)?;
         }
 

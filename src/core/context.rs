@@ -12,7 +12,7 @@ use std::fs;
 use std::path;
 use std::path::PathBuf;
 
-use super::lang::LangMode;
+use super::config::Languages;
 
 const CACHE_TAG_FILE: &str = "CACHEDIR.TAG";
 
@@ -37,7 +37,7 @@ pub struct Context {
     /// Directory name for the intermediate build processes and outputs.    
     build_dir: String,
     /// Language support mode.
-    lang_mode: LangMode,
+    languages: Languages,
     /// Flattened view of the current configuration settings.
     config: Config,
     /// Entire list of configuration settings.
@@ -62,7 +62,7 @@ impl Context {
             all_configs: Configs::new(),
             config: Config::new(),
             build_dir: String::new(),
-            lang_mode: LangMode::default(),
+            languages: Languages::default(),
         }
     }
 
@@ -269,10 +269,10 @@ impl Context {
     }
 
     /// Access the language mode data.
-    pub fn get_lang_mode(&self) -> LangMode {
+    pub fn get_languages(&self) -> Languages {
         match self.config.get_general() {
-            Some(g) => g.get_lang_mode(),
-            None => General::new().get_lang_mode(),
+            Some(g) => g.get_languages(),
+            None => General::new().get_languages(),
         }
     }
 

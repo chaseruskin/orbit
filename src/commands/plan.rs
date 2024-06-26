@@ -2,6 +2,7 @@ use colored::Colorize;
 
 use crate::commands::download::Download;
 use crate::core::blueprint::{Blueprint, Instruction};
+use crate::core::config::Languages;
 use crate::core::context::{self, Context};
 use crate::core::fileset::Fileset;
 use crate::core::iparchive::IpArchive;
@@ -12,7 +13,6 @@ use crate::core::lang::vhdl::symbols::{
     entity::Entity, packagebody::PackageBody, VHDLParser, VhdlSymbol,
 };
 use crate::core::lang::vhdl::token::Identifier;
-use crate::core::lang::LangMode;
 use crate::core::target::Target;
 use crate::core::variable;
 use crate::core::variable::VariableTable;
@@ -148,7 +148,7 @@ impl Subcommand<Context> for Plan {
             None => &default_target_dir,
         };
 
-        let language_mode = c.get_lang_mode();
+        let language_mode = c.get_languages();
 
         Self::run(
             &working_ip,
@@ -174,7 +174,7 @@ impl Plan {
         target_dir: &str,
         target: &Target,
         catalog: Catalog,
-        mode: &LangMode,
+        mode: &Languages,
         clean: bool,
         force: bool,
         only_lock: bool,

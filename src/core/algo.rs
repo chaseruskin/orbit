@@ -18,7 +18,8 @@ use crate::core::lockfile::{LockEntry, LockFile};
 use crate::core::manifest;
 use crate::core::version::AnyVersion;
 
-use super::lang::{LangIdentifier, LangMode};
+use super::config::Languages;
+use super::lang::LangIdentifier;
 use crate::core::lang::LangUnit;
 
 /// Constructs an ip-graph from a lockfile.
@@ -48,7 +49,7 @@ pub fn graph_ip_from_lock(lock: &LockFile) -> Result<GraphMap<IpSpec, &LockEntry
 fn graph_ip<'a>(
     root: &'a Ip,
     catalog: &'a Catalog<'a>,
-    mode: &LangMode,
+    mode: &Languages,
 ) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, CodeFault> {
     // create empty graph
     let mut g = GraphMap::new();
@@ -164,7 +165,7 @@ fn graph_ip<'a>(
 pub fn compute_final_ip_graph<'a>(
     target: &'a Ip,
     catalog: &'a Catalog<'a>,
-    mode: &LangMode,
+    mode: &Languages,
 ) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, CodeFault> {
     // collect rough outline of ip graph
     let mut rough_ip_graph = graph_ip(&target, &catalog, mode)?;

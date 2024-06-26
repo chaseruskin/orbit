@@ -2,10 +2,10 @@ use cliproc::{cli, proc, stage::Memory, Arg, Cli, Help, Subcommand};
 
 use crate::commands::helps::run;
 use crate::core::catalog::Catalog;
+use crate::core::config::Languages;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::lang::vhdl::token::Identifier;
-use crate::core::lang::LangMode;
 use crate::core::target::Process;
 use crate::core::target::Target;
 use crate::error::Error;
@@ -97,7 +97,7 @@ impl Subcommand<Context> for Run {
             .downloads(c.get_downloads_path())?;
         let catalog = plan::resolve_missing_deps(c, &ip, catalog, self.force)?;
 
-        self.run(&ip, target_dir, target, catalog, &c.get_lang_mode())
+        self.run(&ip, target_dir, target, catalog, &c.get_languages())
     }
 }
 
@@ -108,7 +108,7 @@ impl Run {
         target_dir: &str,
         target: &Target,
         catalog: Catalog,
-        mode: &LangMode,
+        mode: &Languages,
     ) -> Result<(), Fault> {
         // plan the target
         Plan::run(

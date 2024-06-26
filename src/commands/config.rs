@@ -2,10 +2,13 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use crate::commands::helps::config;
+use crate::core;
 use crate::core::config::ConfigDocument;
 use crate::core::config::CONFIG_FILE;
 use crate::core::context::Context;
 use crate::core::manifest::FromFile;
+use crate::error::Error;
+use crate::error::LastError;
 use crate::util::anyerror::AnyError;
 use colored::*;
 
@@ -94,15 +97,29 @@ impl Subcommand<Context> for Config {
 }
 
 impl Config {
+    fn no_options_selected(&self) -> bool {
+        self.append.is_empty()
+            && self.pop.is_empty()
+            && self.set.is_empty()
+            && self.unset.is_empty()
+    }
+
     fn run(
         &self,
         cfg: &mut ConfigDocument,
         file: &PathBuf,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        // display configuration and exit
+        if self.no_options_selected() == true {
+            cfg.print();
+            return Ok(());
+        }
+
         // check for list appending
         for entry in &self.append {
             match entry.0.as_ref() {
                 "include" => cfg.append_include(&entry.1),
+                "general.languages" => cfg.append_languages(&entry.1),
                 _ => {
                     return Err(AnyError(format!(
                         "unsupported key '{}' cannot be appended",
@@ -115,6 +132,7 @@ impl Config {
         for key in &self.pop {
             match key.as_ref() {
                 "include" => cfg.pop_include(),
+                "general.languages" => cfg.pop_languages(),
                 _ => {
                     return Err(AnyError(format!(
                         "unsupported key '{}' cannot be popped",
@@ -143,6 +161,11 @@ impl Config {
             } else {
                 return Err(AnyError(format!("unsupported key '{}' cannot be set", key)))?;
             }
+        }
+
+        // is the config file is okay?
+        if let Err(e) = core::config::Config::from_str(&cfg.to_string()) {
+            return Err(Error::ConfigNotSaved(LastError(e.to_string())))?
         }
 
         cfg.write(&file)

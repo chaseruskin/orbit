@@ -5,10 +5,10 @@ use crate::util::anyerror::CodeFault;
 use crate::util::anyerror::Fault;
 use std::path::PathBuf;
 
+use super::config::Languages;
 use super::iparchive::IpArchive;
 use super::lang;
 use super::lang::LangIdentifier;
-use super::lang::LangMode;
 use super::lang::LangUnit;
 use super::lockfile::LockFile;
 use super::lockfile::IP_LOCK_FILE;
@@ -230,7 +230,7 @@ impl Ip {
     }
 
     /// Creates the lookup table for the DST algorithm.
-    pub fn generate_dst_lut(&self, mode: &LangMode) -> HashMap<LangIdentifier, String> {
+    pub fn generate_dst_lut(&self, mode: &Languages) -> HashMap<LangIdentifier, String> {
         // compose the lut for symbol transformation
         let mut lut = HashMap::new();
 
@@ -337,7 +337,7 @@ impl Ip {
     pub fn collect_units(
         force: bool,
         dir: &PathBuf,
-        lang_mode: &LangMode,
+        lang_mode: &Languages,
         hide_private: bool,
         public_list: PublicList,
     ) -> Result<HashMap<LangIdentifier, LangUnit>, CodeFault> {

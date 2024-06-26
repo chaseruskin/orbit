@@ -9,11 +9,11 @@ use crate::util::filesystem::Standardize;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::error::Error;
+use std::fmt::Display;
 use std::path::PathBuf;
 use std::str::FromStr;
 
 use serde_derive::{Deserialize, Serialize};
-use toml_edit::Document;
 
 #[derive(Debug)]
 pub struct ConfigDocument {
@@ -33,14 +33,23 @@ impl FromStr for ConfigDocument {
 }
 
 const INCLUDE_KEY: &str = "include";
+const GENERAL_KEY: &str = "general";
+const LANGUAGES_KEY: &str = "languages";
 use crate::util::anyerror::Fault;
 use toml_edit::Array;
+use toml_edit::Document;
 use toml_edit::Formatted;
 use toml_edit::Item;
 use toml_edit::Table;
 use toml_edit::Value;
 
-use super::lang::LangMode;
+use super::lang::Lang;
+
+impl Display for ConfigDocument {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.document.to_string())
+    }
+}
 
 impl ConfigDocument {
     pub fn print(&self) {
@@ -68,16 +77,50 @@ impl ConfigDocument {
         Self::append_list(&mut self.document, INCLUDE_KEY, item);
     }
 
+    pub fn append_languages(&mut self, item: &str) -> () {
+        let general = self.document[GENERAL_KEY].as_table_mut();
+        let g = match general {
+            Some(g) => g,
+            None => {
+                self.document[GENERAL_KEY] = Item::Table(Table::new());
+                self.document[GENERAL_KEY].as_table_mut().unwrap()
+            }
+        };
+        Self::append_list(g, LANGUAGES_KEY, item)
+    }
+
     /// Pops the last value from the `include` entry.
     pub fn pop_include(&mut self) -> bool {
-        let size = self.document[INCLUDE_KEY].as_array_mut().unwrap().len();
+        let arr = match self.document[INCLUDE_KEY].as_array_mut() {
+            Some(arr) => arr,
+            None => return false,
+        };
+        let size = arr.len();
         match size {
             0 => false,
             _ => {
-                self.document[INCLUDE_KEY]
-                    .as_array_mut()
-                    .unwrap()
-                    .remove(size - 1);
+                arr.remove(size - 1);
+                true
+            }
+        }
+    }
+
+    /// Pops the last value from the `general.languages` entry.
+    pub fn pop_languages(&mut self) -> bool {
+        let general = self.document[GENERAL_KEY].as_table_mut();
+        let g = match general {
+            Some(g) => g,
+            None => return false,
+        };
+        let arr = match g[LANGUAGES_KEY].as_array_mut() {
+            Some(arr) => arr,
+            None => return false,
+        };
+        let size = arr.len();
+        match size {
+            0 => false,
+            _ => {
+                arr.remove(size - 1);
                 true
             }
         }
@@ -280,13 +323,37 @@ impl From<Configs> for Config {
     }
 }
 
-#[derive(PartialEq, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
+#[serde(transparent)]
+pub struct Languages {
+    modes: Vec<Lang>,
+}
+
+impl Languages {
+    pub fn supports_vhdl(&self) -> bool {
+        self.modes.contains(&Lang::Vhdl)
+    }
+
+    pub fn supports_verilog(&self) -> bool {
+        self.modes.contains(&Lang::Verilog)
+    }
+}
+
+impl Default for Languages {
+    fn default() -> Self {
+        Self {
+            modes: vec![Lang::Vhdl],
+        }
+    }
+}
+
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct General {
     #[serde(rename = "target-dir")]
     target_dir: Option<String>,
-    #[serde(rename = "language-mode")]
-    lang_mode: Option<LangMode>,
+    #[serde(rename = "languages")]
+    lang_mode: Option<Languages>,
 }
 
 impl General {
@@ -305,10 +372,10 @@ impl General {
     }
 
     /// Access what language mode is enabled for the given configuration table.
-    pub fn get_lang_mode(&self) -> LangMode {
+    pub fn get_languages(&self) -> Languages {
         self.lang_mode
             .as_ref()
-            .unwrap_or(&LangMode::default())
+            .unwrap_or(&Languages::default())
             .clone()
     }
 
@@ -362,6 +429,34 @@ impl Config {
             true => self.include.as_mut().unwrap().push(PathBuf::from(path)),
             false => self.include = Some(vec![PathBuf::from(path)]),
         }
+    }
+
+    /// Adds `lang` to the end of the list for the include attribute.
+    ///
+    /// This function creates some vector if no vector originally exists.
+    pub fn append_languages(&mut self, lang: &str) -> Result<(), Fault> {
+        self.general = match &self.general {
+            Some(g) => Some(g.clone()),
+            None => Some(General::new()),
+        };
+
+        match &self.general.as_ref().unwrap().lang_mode.is_some() {
+            true => self
+                .general
+                .as_mut()
+                .unwrap()
+                .lang_mode
+                .as_mut()
+                .unwrap()
+                .modes
+                .push(Lang::from_str(lang)?),
+            false => {
+                self.general.as_mut().unwrap().lang_mode = Some(Languages {
+                    modes: vec![Lang::from_str(lang)?],
+                })
+            }
+        }
+        Ok(())
     }
 
     /// Adds the new information to the existing configuration to combine data.

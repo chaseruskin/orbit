@@ -7,6 +7,7 @@ pub struct GraphMap<K: Eq + Hash + Clone, V, E> {
     map: HashMap<K, Node<V>>,
 }
 
+#[derive(Clone)]
 pub struct Node<V>(V, usize);
 
 impl<V> Node<V> {
@@ -90,13 +91,10 @@ impl<K: Eq + Hash + Clone, V, E> GraphMap<K, V, E> {
         &mut self.map
     }
 
-    pub fn find_root(&self) -> Result<&Node<V>, Vec<&Node<V>>> {
+    pub fn find_root(&self) -> Result<&Node<V>, Vec<usize>> {
         match self.graph.find_root() {
             Ok(n) => Ok(self.map.get(self.graph.get_node(n).unwrap()).unwrap()),
-            Err(e) => Err(e
-                .into_iter()
-                .map(|f| self.map.get(self.graph.get_node(f).unwrap()).unwrap())
-                .collect()),
+            Err(e) => Err(e),
         }
     }
 

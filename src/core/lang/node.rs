@@ -27,6 +27,10 @@ impl<'a> HdlNode<'a> {
         }
     }
 
+    pub fn get_library(&self) -> Identifier {
+        self.files.get(0).as_ref().unwrap().get_library()
+    }
+
     /// References the VHDL symbol
     pub fn get_symbol(&self) -> &VhdlSymbol {
         &self.sym

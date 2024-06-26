@@ -449,7 +449,7 @@ impl<'a> IpFileNode<'a> {
     }
 
     /// References the library identifier.
-    pub fn get_library(&self) -> &Identifier {
-        &self.library
+    pub fn get_library(&self) -> Identifier {
+        self.ip.get_man().get_hdl_library()
     }
 }

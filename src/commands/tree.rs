@@ -90,7 +90,7 @@ impl Tree {
         if self.all == false {
             let n = {
                 // restrict graph to units only found within the current IP
-                let local_graph = Plan::compute_local_graph(&global_graph, &working_lib, &target);
+                let local_graph = Plan::compute_local_graph(&global_graph, &target);
 
                 let root_index = if let Some(ent) = &self.root {
                     // check if the identifier exists in the entity graph
@@ -116,7 +116,10 @@ impl Tree {
                                     "roots".to_string(),
                                     e.into_iter()
                                         .map(|f| {
-                                            f.as_ref()
+                                            local_graph
+                                                .get_node_by_index(f)
+                                                .unwrap()
+                                                .as_ref()
                                                 .get_symbol()
                                                 .as_entity()
                                                 .unwrap()
@@ -151,7 +154,7 @@ impl Tree {
             }
         } else {
             // restrict graph to units only found within the current IP
-            let local_graph = Plan::compute_local_graph(&global_graph, &working_lib, &target);
+            let local_graph = Plan::compute_local_graph(&global_graph, &target);
             // compile list of all roots
             let mut roots = Vec::new();
             match local_graph.find_root() {
@@ -160,9 +163,7 @@ impl Tree {
                 Err(e) => match e.len() {
                     0 => return Err(PlanError::Empty)?,
                     _ => e.into_iter().for_each(|f| {
-                        roots.push(
-                            Plan::local_to_global(f.index(), &global_graph, &local_graph).index(),
-                        )
+                        roots.push(Plan::local_to_global(f, &global_graph, &local_graph).index())
                     }),
                 },
             }

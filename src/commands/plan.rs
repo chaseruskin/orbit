@@ -8,9 +8,7 @@ use crate::core::iparchive::IpArchive;
 use crate::core::lang::parser::ParseError;
 use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbols::CompoundIdentifier;
-use crate::core::lang::vhdl::symbols::{
-    entity::Entity, packagebody::PackageBody, VHDLParser, VhdlSymbol,
-};
+use crate::core::lang::vhdl::symbols::{entity::Entity, VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lang::Languages;
 use crate::core::target::Target;
@@ -189,11 +187,6 @@ impl Plan {
         let target_path = working_ip_path.join(target_dir);
         let output_path = target_path.join(target.get_name());
 
-        // check if to clean the directory
-        if clean == true && Path::exists(&output_path) == true {
-            fs::remove_dir_all(&output_path)?;
-        }
-
         // build entire ip graph and resolve with dynamic symbol transformation
         let ip_graph = match algo::compute_final_ip_graph(&working_ip, &catalog, lang) {
             Ok(g) => g,
@@ -240,15 +233,20 @@ impl Plan {
             return Ok(());
         }
 
+        // check if to clean the directory
+        if clean == true && Path::exists(&output_path) == true {
+            fs::remove_dir_all(&output_path)?;
+        }
+
         let files = algo::build_ip_file_list(&ip_graph, &working_ip);
 
         let global_graph = Self::build_full_graph(&files)?;
 
-        let working_lib = Identifier::new_working();
+        let working_lib = working_ip.get_man().get_hdl_library();
 
         // restrict graph to units only found within the current IP
         let local_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> =
-            Self::compute_local_graph(&global_graph, &working_lib, &working_ip);
+            Self::compute_local_graph(&global_graph, &working_ip);
 
         let (top, bench) = match Self::detect_bench(
             &global_graph,
@@ -287,6 +285,7 @@ impl Plan {
                         return Err(e)?;
                     }
                 }
+                PlanError::TestbenchNoTest(_) => (None, bench),
                 _ => return Err(e)?,
             },
         };
@@ -306,6 +305,7 @@ impl Plan {
         if let Some(b) = &bench {
             // @idea: merge two topological sorted lists together by running top sort from bench and top sort from top if in this situation
             if all == false
+                && top.is_some()
                 && global_graph
                     .get_graph()
                     .successors(top.unwrap())
@@ -332,10 +332,12 @@ impl Plan {
                             .minimal_topological_sort(id.index())
                     }
                     // exclude roots that do not belong to the local graph
-                    Err(rs) => {
+                    Err(roots) => {
+                        // println!("{:?}", roots);
                         let mut order = Vec::new();
-                        rs.into_iter().for_each(|r| {
-                            let id = Self::local_to_global(r.index(), &global_graph, &local_graph);
+                        // create dummy node to rely on all known roots
+                        roots.iter().for_each(|r| {
+                            let id = Self::local_to_global(*r, &global_graph, &local_graph);
                             let mut subset = global_graph
                                 .get_graph()
                                 .minimal_topological_sort(id.index());
@@ -360,6 +362,8 @@ impl Plan {
                     .minimal_topological_sort(highest_point)
             }
         };
+
+        // println!("{:?}", min_order);
 
         // generate the file order while merging dependencies for common file path names together
         let file_order = Self::determine_file_order(&global_graph, min_order);
@@ -697,7 +701,7 @@ impl Plan {
         let mut graph_map: GraphMap<CompoundIdentifier, HdlNode, ()> = GraphMap::new();
 
         let mut sub_nodes: Vec<(Identifier, SubUnitNode)> = Vec::new();
-        let mut bodies: Vec<(Identifier, PackageBody)> = Vec::new();
+
         // store the (suffix, prefix) for all entities
         let mut component_pairs: HashMap<Identifier, Identifier> = HashMap::new();
         // read all files
@@ -741,7 +745,10 @@ impl Plan {
                         }
                         // package bodies are usually in same design file as package
                         VhdlSymbol::PackageBody(pb) => {
-                            bodies.push((lib.clone(), pb));
+                            sub_nodes.push((
+                                lib.clone(),
+                                SubUnitNode::new(SubUnit::from_body(pb), source_file),
+                            ));
                             None
                         }
                     }
@@ -756,21 +763,6 @@ impl Plan {
                         HdlNode::new(e, source_file),
                     );
                 }
-            }
-        }
-
-        // go through all package bodies and update package dependencies
-        let mut bodies = bodies.into_iter();
-        while let Some((lib, pb)) = bodies.next() {
-            // verify the package exists
-            if let Some(p_node) =
-                graph_map.get_node_by_key_mut(&CompoundIdentifier::new(lib, pb.get_owner().clone()))
-            {
-                // link to package owner by adding refs
-                p_node
-                    .as_ref_mut()
-                    .get_symbol_mut()
-                    .add_refs(&mut pb.take_refs());
             }
         }
 
@@ -826,7 +818,7 @@ impl Plan {
                 .collect();
 
             for dep in &references {
-                let working = Identifier::Basic("work".to_string());
+                let working = Identifier::new_working();
                 // re-route the library prefix to the current unit's library
                 let dep_adjusted = CompoundIdentifier::new(
                     iden.get_prefix().unwrap_or(&working).clone(),
@@ -844,7 +836,7 @@ impl Plan {
                 // println!("{} {} ... {}", iden, dep, dep_adjusted);
                 // verify the dep exists
                 let _stat = graph_map.add_edge_by_key(dep_adjusted, &iden, ());
-                // println!("{:?}", stat);
+                // println!("{:?} -> {:?} ... {:?}", dep_adjusted.to_string(), &iden.to_string(), stat);
             }
         }
         Ok(graph_map)
@@ -942,7 +934,17 @@ impl Plan {
                         return Err(PlanError::Ambiguous(
                             "roots".to_string(),
                             e.into_iter()
-                                .map(|f| f.as_ref().get_symbol().as_iden().unwrap().clone())
+                                .map(|f| {
+                                    local
+                                        .get_map()
+                                        .get(local.get_graph().get_node(f).unwrap())
+                                        .unwrap()
+                                        .as_ref()
+                                        .get_symbol()
+                                        .as_iden()
+                                        .unwrap()
+                                        .clone()
+                                })
                                 .collect(),
                         ))?
                     }
@@ -1042,7 +1044,7 @@ impl Plan {
                             })
                             .collect();
                         match entities.len() {
-                            // todo: do not make this an error if no entities are tested in testbench
+                            // catch this error when it occurs during plan to allow for tbs without entities
                             0 => {
                                 return Err(PlanError::TestbenchNoTest(
                                     local.get_key_by_index(b).unwrap().get_suffix().clone(),
@@ -1169,15 +1171,15 @@ impl Plan {
     /// Filters out the local nodes existing within the current IP from the `global_graph`.
     pub fn compute_local_graph<'a>(
         global_graph: &'a GraphMap<CompoundIdentifier, HdlNode, ()>,
-        working_lib: &Identifier,
         target: &Ip,
     ) -> GraphMap<&'a CompoundIdentifier, &'a HdlNode<'a>, &'a ()> {
+        let working_lib = target.get_man().get_hdl_library();
         // restrict graph to units only found within the current IP
         let local_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> = global_graph
             .iter()
             // traverse subset of graph by filtering only for working library entities (current lib)
             .filter(|f| match f.0.get_prefix() {
-                Some(iden) => iden == working_lib,
+                Some(iden) => iden == &working_lib,
                 None => false,
             })
             // filter by checking if the node's ip is the same as target
@@ -1220,7 +1222,7 @@ impl Plan {
         let (blueprint_path, _) = blueprint.write(&output_path)?;
 
         // create environment variables to .env file
-        let mut envs = Environment::from_vec(vec![
+        let mut envs: Environment = Environment::from_vec(vec![
             EnvVar::new().key(environment::ORBIT_TOP).value(&top_name),
             EnvVar::new()
                 .key(environment::ORBIT_BENCH)
@@ -1255,7 +1257,7 @@ impl std::fmt::Display for PlanError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::TestbenchNoTest(id) => write!(f, "No entities are tested in testbench {}", id),
-            Self::UnknownEntity(id) => write!(f, "No entity named '{}' in the current IP", id),
+            Self::UnknownEntity(id) => write!(f, "No entity named '{}' in the current ip", id),
             Self::Empty => write!(f, "No entities found"),
             Self::BadEntity(id) => write!(f, "Primary design unit '{}' is not an entity", id),
             Self::BadTestbench(id) => write!(
@@ -1269,7 +1271,7 @@ impl std::fmt::Display for PlanError {
                 id
             ),
             Self::UnknownUnit(id) => {
-                write!(f, "No primary design unit named '{}' in the current IP", id)
+                write!(f, "No primary design unit named '{}' in the current ip", id)
             }
             Self::Ambiguous(name, tbs) => write!(
                 f,

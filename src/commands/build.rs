@@ -28,6 +28,7 @@ pub struct Build {
     all: bool,
     command: Option<String>,
     top: Option<Identifier>,
+    bench: Option<Identifier>,
     target_dir: Option<String>,
     args: Vec<String>,
     verbose: bool,
@@ -45,6 +46,7 @@ impl Subcommand<Context> for Build {
             all: cli.check(Arg::flag("all"))?,
             // Options
             top: cli.get(Arg::option("top").value("unit"))?,
+            bench: cli.get(Arg::option("bench").value("unit"))?,
             target: cli.get(Arg::option("target").value("name"))?,
             target_dir: cli.get(Arg::option("target-dir").value("dir"))?,
             command: cli.get(Arg::option("command").value("path"))?,
@@ -109,7 +111,7 @@ impl Subcommand<Context> for Build {
             self.force,
             false,
             self.all,
-            &None,
+            &self.bench,
             &self.top,
             &self.filesets,
         )?;

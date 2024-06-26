@@ -6,18 +6,18 @@ use std::{fs::File, path::PathBuf, str::FromStr};
 use super::algo::IpFileNode;
 
 #[derive(Debug, PartialEq)]
-pub enum Format {
+pub enum Scheme {
     Tsv,
     Json,
 }
 
-impl Default for Format {
+impl Default for Scheme {
     fn default() -> Self {
         Self::Tsv
     }
 }
 
-impl FromStr for Format {
+impl FromStr for Scheme {
     type Err = AnyError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -36,13 +36,17 @@ pub enum Instruction<'a, 'b> {
 }
 
 impl<'a, 'b> Instruction<'a, 'b> {
-    pub fn write(&self, format: &Format) -> String {
+    pub fn write(&self, format: &Scheme) -> String {
         match &format {
-            Format::Tsv => match &self {
-                Self::Hdl(node) => format!("VHDL\t{}\t{}", node.get_library(), node.get_file()),
+            Scheme::Tsv => match &self {
+                Self::Hdl(node) => format!(
+                    "VHDL\t{}\t{}",
+                    node.get_ip().get_man().get_hdl_library(),
+                    node.get_file()
+                ),
                 Self::Supportive(key, file) => format!("{}\twork\t{}", key, file),
             },
-            Format::Json => {
+            Scheme::Json => {
                 todo!()
             }
         }
@@ -51,31 +55,31 @@ impl<'a, 'b> Instruction<'a, 'b> {
 
 #[derive(Debug, PartialEq)]
 pub struct Blueprint<'a, 'b> {
-    format: Format,
+    scheme: Scheme,
     steps: Vec<Instruction<'a, 'b>>,
 }
 
 impl<'a, 'b> Default for Blueprint<'a, 'b> {
     fn default() -> Self {
         Self {
-            format: Format::default(),
+            scheme: Scheme::default(),
             steps: Vec::default(),
         }
     }
 }
 
 impl<'a, 'b> Blueprint<'a, 'b> {
-    pub fn new(format: Format) -> Self {
+    pub fn new(scheme: Scheme) -> Self {
         Self {
-            format: format,
+            scheme: scheme,
             steps: Vec::new(),
         }
     }
 
     pub fn get_filename(&self) -> String {
-        String::from(match self.format {
-            Format::Tsv => "blueprint.tsv",
-            Format::Json => "blueprint.json",
+        String::from(match self.scheme {
+            Scheme::Tsv => "blueprint.tsv",
+            Scheme::Json => "blueprint.json",
         })
     }
 
@@ -89,7 +93,7 @@ impl<'a, 'b> Blueprint<'a, 'b> {
         let mut fd = File::create(&blueprint_path).expect("could not create blueprint file");
         // write the data
         let data = self.steps.iter().fold(String::new(), |mut acc, i| {
-            acc.push_str(i.write(&self.format).as_ref());
+            acc.push_str(i.write(&self.scheme).as_ref());
             acc.push('\n');
             acc
         });

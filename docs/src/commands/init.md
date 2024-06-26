@@ -29,6 +29,9 @@ creating an ip from a non-existing directory.
 `--name <name>`  
       The name of the ip
 
+`--library <library>`  
+      The ip library
+
 `--force`  
       Overwrite a manifest if one already exists
 

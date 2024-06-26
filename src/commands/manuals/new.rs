@@ -23,6 +23,9 @@ OPTIONS
     --name <name>
         The ip name to create
 
+    --library <library>
+        The ip library
+
 EXAMPLES
     orbit new gates
     orbit new ./projects/dir7 --name adder

@@ -8,8 +8,8 @@ Args:
     <path>              the destination path to create ip project
 
 Options:
-    --name <name>       the ip name to create
-    --ip                create an ip (default: true)
+    --name <name>           the ip name to create
+    --library <library>     the ip library
 
 Use 'orbit help new' to read more about the command.
 "#;

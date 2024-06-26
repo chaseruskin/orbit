@@ -3,6 +3,7 @@ use crate::commands::helps::init;
 use crate::commands::orbit::AnyResult;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
+use crate::core::lang::vhdl::token::Identifier;
 use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
 use crate::core::pkgid::PkgPart;
 use crate::error::{Error, LastError};
@@ -19,6 +20,7 @@ use cliproc::{Arg, Cli, Help, Subcommand};
 pub struct Init {
     force: bool,
     name: Option<PkgPart>,
+    library: Option<Identifier>,
     path: PathBuf,
 }
 
@@ -28,6 +30,7 @@ impl Subcommand<Context> for Init {
         Ok(Self {
             force: cli.check(Arg::flag("force"))?,
             name: cli.get(Arg::option("name"))?,
+            library: cli.get(Arg::option("library"))?,
             path: cli
                 .get(Arg::positional("path"))?
                 .unwrap_or(PathBuf::from(".")),
@@ -81,9 +84,14 @@ impl Init {
             p
         };
 
+        let lib_str = match &self.library {
+            Some(s) => Some(s.to_string()),
+            None => None,
+        };
+
         let mut manifest = std::fs::File::create(&manifest_path)?;
         let mut ignore = std::fs::File::create(&ignore_path)?;
-        manifest.write_all(Manifest::write_empty_manifest(&ip).as_bytes())?;
+        manifest.write_all(Manifest::write_empty_manifest(&ip, &lib_str).as_bytes())?;
         ignore.write_all(Ip::write_default_ignore_file(target_dir).as_bytes())?;
         Ok(())
     }

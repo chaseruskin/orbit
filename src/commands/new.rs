@@ -2,6 +2,7 @@ use crate::commands::helps::new;
 use crate::commands::orbit::AnyResult;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
+use crate::core::lang::vhdl::token::Identifier;
 use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
 use crate::core::pkgid::PkgPart;
 use crate::error::{Error, Hint, LastError};
@@ -20,8 +21,8 @@ pub struct New {
     path: PathBuf,
     /// Optionally give the name for the ip, by default tries to be the parent folder's name.
     name: Option<PkgPart>,
-    /// Create an ip directory with an `Orbit.toml` manifest file.
-    is_ip: bool,
+    /// Optionally set a library for the ip
+    library: Option<Identifier>,
     // /// Overwrite any existing manifest at the given directory and do not error if the directory exists.
     // force: bool,
 }
@@ -30,8 +31,8 @@ impl Subcommand<Context> for New {
     fn interpret(cli: &mut Cli<Memory>) -> cli::Result<Self> {
         cli.help(Help::with(new::HELP))?;
         Ok(Self {
-            is_ip: cli.check(Arg::flag("ip"))?,
             name: cli.get(Arg::option("name"))?,
+            library: cli.get(Arg::option("library"))?,
             path: cli.require(Arg::positional("path"))?,
         })
     }
@@ -116,9 +117,14 @@ impl New {
             p
         };
 
+        let lib_str = match &self.library {
+            Some(s) => Some(s.to_string()),
+            None => None,
+        };
+
         let mut manifest = std::fs::File::create(&manifest_path)?;
         let mut ignore = std::fs::File::create(&ignore_path)?;
-        manifest.write_all(Manifest::write_empty_manifest(&ip).as_bytes())?;
+        manifest.write_all(Manifest::write_empty_manifest(&ip, &lib_str).as_bytes())?;
         ignore.write_all(Ip::write_default_ignore_file(target_dir).as_bytes())?;
         Ok(())
     }

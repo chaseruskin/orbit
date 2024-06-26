@@ -30,6 +30,9 @@ initializing an already existing project into an ip.
 `--name <name>`  
       The ip name to create
 
+`--library <library>`  
+      The ip library
+
 ## __EXAMPLES__
 
 ```

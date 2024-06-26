@@ -18,8 +18,8 @@ initializing an already existing project into an ip.
 """
 
 args."<path>" = "The new directory to make"
-
 options."--name <name>" = "The ip name to create"
+options."--library <library>" = "The ip library"
 
 examples = """
 orbit new gates
@@ -36,8 +36,8 @@ Args:
     <path>              the destination path to create ip project
 
 Options:
-    --name <name>       the ip name to create
-    --ip                create an ip (default: true)
+    --name <name>           the ip name to create
+    --library <library>     the ip library
 """
 
 # ------------------------------------------------------------------------------
@@ -60,6 +60,7 @@ creating an ip from a non-existing directory.
 
 options."<path>" = "The location to initialize an ip"
 options."--name <name>" = "The name of the ip"
+options."--library <library>" = "The ip library"
 options."--force" = "Overwrite a manifest if one already exists"
 
 examples = """
@@ -75,9 +76,10 @@ Usage:
     orbit init [options] [<path>]
 
 Options:
-    <path>          destination path to initialize (default: '.')
-    --name <name>   the name of the ip
-    --force         overwrite any existing manifest with a new one
+    <path>                  destination path to initialize (default: '.')
+    --name <name>           the name of the ip
+    --library <library>     the ip library
+    --force                 overwrite any existing manifest with a new one
 """
 
 # ------------------------------------------------------------------------------   

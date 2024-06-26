@@ -116,9 +116,11 @@ impl Manifest {
     }
 
     /// Composes a [String] to write to a clean manifest file.
-    pub fn write_empty_manifest(name: &Id) -> String {
-        format!(
-            r#"[ip]
+    pub fn write_empty_manifest(name: &Id, lib: &Option<String>) -> String {
+        match lib {
+            None => {
+                format!(
+                    r#"[ip]
 name = "{}"
 version = "0.1.0"
 
@@ -126,8 +128,24 @@ version = "0.1.0"
 
 [dependencies]
 "#,
-            name
-        )
+                    name
+                )
+            }
+            Some(lib) => {
+                format!(
+                    r#"[ip]
+name = "{}"
+library = "{}"
+version = "0.1.0"
+
+# See more keys and their definitions at https://cdotrus.github.io/orbit/reference/manifest.html
+
+[dependencies]
+"#,
+                    name, lib
+                )
+            }
+        }
     }
 
     pub fn get_ip(&self) -> &Package {

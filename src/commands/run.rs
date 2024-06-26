@@ -2,10 +2,10 @@ use cliproc::{cli, proc, stage::Memory, Arg, Cli, Help, Subcommand};
 
 use crate::commands::helps::run;
 use crate::core::catalog::Catalog;
-use crate::core::config::Languages;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::lang::vhdl::token::Identifier;
+use crate::core::lang::Languages;
 use crate::core::target::Process;
 use crate::core::target::Target;
 use crate::error::Error;

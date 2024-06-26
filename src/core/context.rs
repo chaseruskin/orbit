@@ -12,7 +12,7 @@ use std::fs;
 use std::path;
 use std::path::PathBuf;
 
-use super::config::Languages;
+use super::lang::Languages;
 
 const CACHE_TAG_FILE: &str = "CACHEDIR.TAG";
 

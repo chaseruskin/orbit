@@ -18,9 +18,8 @@ use crate::core::lockfile::{LockEntry, LockFile};
 use crate::core::manifest;
 use crate::core::version::AnyVersion;
 
-use super::config::Languages;
 use super::lang::LangIdentifier;
-use crate::core::lang::LangUnit;
+use crate::core::lang::{LangUnit, Languages};
 
 /// Constructs an ip-graph from a lockfile.
 pub fn graph_ip_from_lock(lock: &LockFile) -> Result<GraphMap<IpSpec, &LockEntry, ()>, Fault> {

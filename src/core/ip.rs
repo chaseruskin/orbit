@@ -5,11 +5,10 @@ use crate::util::anyerror::CodeFault;
 use crate::util::anyerror::Fault;
 use std::path::PathBuf;
 
-use super::config::Languages;
 use super::iparchive::IpArchive;
 use super::lang;
 use super::lang::LangIdentifier;
-use super::lang::LangUnit;
+use super::lang::{LangUnit, Languages};
 use super::lockfile::LockFile;
 use super::lockfile::IP_LOCK_FILE;
 use super::manifest::FromFile;

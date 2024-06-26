@@ -44,6 +44,7 @@ use toml_edit::Table;
 use toml_edit::Value;
 
 use super::lang::Lang;
+use super::lang::Languages;
 
 impl Display for ConfigDocument {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -349,43 +350,18 @@ impl From<Configs> for Config {
 }
 
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
-#[serde(transparent)]
-pub struct Languages {
-    modes: Vec<Lang>,
-}
-
-impl Languages {
-    pub fn supports_vhdl(&self) -> bool {
-        self.modes.contains(&Lang::Vhdl)
-    }
-
-    pub fn supports_verilog(&self) -> bool {
-        self.modes.contains(&Lang::Verilog)
-    }
-}
-
-impl Default for Languages {
-    fn default() -> Self {
-        Self {
-            modes: vec![Lang::Vhdl],
-        }
-    }
-}
-
-#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct General {
     #[serde(rename = "target-dir")]
     target_dir: Option<String>,
-    #[serde(rename = "languages")]
-    lang_mode: Option<Languages>,
+    languages: Option<Languages>,
 }
 
 impl General {
     pub fn new() -> Self {
         Self {
             target_dir: None,
-            lang_mode: None,
+            languages: None,
         }
     }
 
@@ -398,7 +374,7 @@ impl General {
 
     /// Access what language mode is enabled for the given configuration table.
     pub fn get_languages(&self) -> Languages {
-        self.lang_mode
+        self.languages
             .as_ref()
             .unwrap_or(&Languages::default())
             .clone()
@@ -413,8 +389,8 @@ impl General {
                 self.target_dir = rhs.target_dir
             }
             // no language mode defined so give it the value from `rhs`
-            if self.lang_mode.is_some() == false {
-                self.lang_mode = rhs.lang_mode
+            if self.languages.is_some() == false {
+                self.languages = rhs.languages
             }
         }
     }
@@ -465,20 +441,18 @@ impl Config {
             None => Some(General::new()),
         };
 
-        match &self.general.as_ref().unwrap().lang_mode.is_some() {
+        match &self.general.as_ref().unwrap().languages.is_some() {
             true => self
                 .general
                 .as_mut()
                 .unwrap()
-                .lang_mode
+                .languages
                 .as_mut()
                 .unwrap()
-                .modes
                 .push(Lang::from_str(lang)?),
             false => {
-                self.general.as_mut().unwrap().lang_mode = Some(Languages {
-                    modes: vec![Lang::from_str(lang)?],
-                })
+                self.general.as_mut().unwrap().languages =
+                    Some(Languages::with(vec![Lang::from_str(lang)?]))
             }
         }
         Ok(())

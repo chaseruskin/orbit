@@ -2,7 +2,6 @@ use colored::Colorize;
 
 use crate::commands::download::Download;
 use crate::core::blueprint::{Blueprint, Instruction};
-use crate::core::config::Languages;
 use crate::core::context::{self, Context};
 use crate::core::fileset::Fileset;
 use crate::core::iparchive::IpArchive;
@@ -13,6 +12,7 @@ use crate::core::lang::vhdl::symbols::{
     entity::Entity, packagebody::PackageBody, VHDLParser, VhdlSymbol,
 };
 use crate::core::lang::vhdl::token::Identifier;
+use crate::core::lang::Languages;
 use crate::core::target::Target;
 use crate::core::variable;
 use crate::core::variable::VariableTable;

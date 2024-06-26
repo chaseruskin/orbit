@@ -18,10 +18,47 @@ use vhdl::primaryunit::PrimaryUnit;
 type VhdlIdentifier = vhdl::token::Identifier;
 use serde_derive::Deserialize;
 
-use super::{
-    config::Languages,
-    pubfile::{PublicList, Visibility},
-};
+use super::pubfile::{PublicList, Visibility};
+
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
+#[serde(transparent)]
+pub struct Languages {
+    modes: Vec<Lang>,
+}
+
+impl Languages {
+    pub fn with(langs: Vec<Lang>) -> Self {
+        Self { modes: langs }
+    }
+
+    pub fn new() -> Self {
+        Self { modes: Vec::new() }
+    }
+
+    pub fn push(&mut self, lang: Lang) {
+        self.modes.push(lang);
+    }
+
+    pub fn pop(&mut self) -> bool {
+        self.modes.pop().is_some()
+    }
+
+    pub fn supports_vhdl(&self) -> bool {
+        self.modes.contains(&Lang::Vhdl)
+    }
+
+    pub fn supports_verilog(&self) -> bool {
+        self.modes.contains(&Lang::Verilog)
+    }
+}
+
+impl Default for Languages {
+    fn default() -> Self {
+        Self {
+            modes: vec![Lang::Vhdl],
+        }
+    }
+}
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub enum Lang {

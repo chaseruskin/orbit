@@ -20,7 +20,9 @@ However, using just any package management system does not guarantee that techni
 
 ### Free and open source
 
-Orbit is available free to use and open source to encourage adoption, contribution, and integration among the hardware community. We rely on the open source community for feedback and new ideas, and are very grateful to our sponsors who keep this project going.
+Orbit is available free to use and open source to encourage adoption, contribution, and integration among the hardware community. We rely on the open source community for feedback and new ideas, while remaining focused on our design goals and principles.
+
+Orbit's use case is targeted toward anyone interested in developing digital hardware; this includes industrial, academic, and personal settings. Create your next commerical product, university lab assignment, or personal project, using a tool that is tailored to today's advanced development process.
 
 Prebuilt binaries are available for Linux, MacOS, and Windows with no dependencies. Visit the [releases page](https://github.com/cdotrus/orbit/releases) for the latest version. Working on a different platform? No problem, building from source is easy with [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html), Rust's default package manager. Use docker? We have [docker images](https://hub.docker.com/repository/docker/cdotrus/orbit/general) available too. See [Installing](https://cdotrus.github.io/orbit/starting/installing.html) for complete details.
 
@@ -176,6 +178,12 @@ Options:
 Use 'orbit help <command>' for more information about a command.
 
 ```
+
+## Sponsoring
+
+Orbit has yet to have its first sponsor! I first started this project during my undergraduate studies at the University of Florida, and since then I have continued to work on this project whenever possible throughout my graduate school for over two years without direct funding. If you use Orbit, please consider sponsoring; any amount is very much appreciated.
+
+Being a sponsor not only keeps this project going, but enables you or your organization to have additional perks, such as prioritized issues and feature requests, being advertised in our documentation, and direct support for configuring Orbit for your specialized use case. See [SPONSORING](./SPONSORING.md).
 
 ## Contributing
 

@@ -129,7 +129,7 @@ And these are only a few of Orbit's features! Download Orbit and read its docume
 
 ## Installing
 
-Orbit has prebuilt binaries for MacOS, Windows, and Linux. See the [releases page](https://github.com/cdotrus/orbit/releases) to download the latest version, or build from source using [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)- Rust's default package manager. See [Installing](https://cdotrus.github.io/orbit/starting/installing.html) for more details on getting Orbit up and running.
+Orbit has prebuilt binaries for MacOS, Windows, and Linux. See the [releases page](https://github.com/cdotrus/orbit/releases) to download the latest version, or build from source using [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html), Rust's default package manager. See [Installing](https://cdotrus.github.io/orbit/starting/installing.html) for more details on getting Orbit up and running.
 
 ## Examples
 
@@ -181,7 +181,7 @@ Use 'orbit help <command>' for more information about a command.
 
 ## Sponsoring
 
-Orbit has yet to have its first sponsor! I initially got inspiration for this project during my first internship with NASA Glenn Research Center in 2021, and started working on this project in my free time throughout my undergraduate studies at the University of Florida. Since then, I have continued to work on this project whenever possible throughout my graduate studies without direct funding. If you use Orbit, please consider sponsoring; any amount is very much appreciated.
+Orbit has yet to have its first sponsor! I initially got inspiration for this project during my first internship with NASA Glenn Research Center in 2021, and started working on this project in my free time throughout my undergraduate studies at the University of Florida. Since then, I have continued to work on this project whenever possible throughout my graduate studies without any direct funding. If you use Orbit, please consider sponsoring; any amount is very much appreciated.
 
 Being a sponsor not only keeps this project going, but enables you or your organization to have additional perks, such as prioritized issues and feature requests, being advertised in our documentation, and direct support for configuring Orbit for your specialized use case. See [SPONSORING](./SPONSORING.md).
 

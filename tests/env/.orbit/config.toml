@@ -1,0 +1,5 @@
+[[target]]
+name = "foo"
+description = "Print bar to the console"
+command = "echo"
+args = ["bar"]

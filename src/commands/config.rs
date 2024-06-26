@@ -106,28 +106,28 @@ impl Config {
 
     fn run(
         &self,
-        cfg: &mut ConfigDocument,
+        config: &mut ConfigDocument,
         file: &PathBuf,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // display configuration and exit
         if self.no_options_selected() == true {
-            cfg.print();
+            println!("{}", config.to_string());
             return Ok(());
         }
 
         // check for list appending
         for entry in &self.append {
             match entry.0.as_ref() {
-                "include" => cfg.append_include(&entry.1),
-                "general.languages" => cfg.append_languages(&entry.1),
+                "include" => config.append_include(&entry.1),
+                "general.languages" => config.append_languages(&entry.1),
                 _ => return Err(Error::ConfigFieldNotList(entry.0.to_string()))?,
             };
         }
         // check list for popping
         for key in &self.pop {
             match key.as_ref() {
-                "include" => cfg.pop_include(),
-                "general.languages" => cfg.pop_languages(),
+                "include" => config.pop_include(),
+                "general.languages" => config.pop_languages(),
                 _ => return Err(Error::ConfigFieldNotList(key.to_string()))?,
             };
         }
@@ -135,7 +135,7 @@ impl Config {
         for entry in &self.set {
             // split by dots to get table.key (silently ignores improper parsing)
             if let Some((table, key)) = entry.0.split_once('.') {
-                cfg.set(table, key, &entry.1)
+                config.set(table, key, &entry.1)
             } else {
                 return Err(AnyError(format!(
                     "unsupported key '{}' cannot be set",
@@ -147,17 +147,17 @@ impl Config {
         for key in &self.unset {
             // split by dots to get table.key (silently ignores improper parsing)
             if let Some((table, key)) = key.split_once('.') {
-                cfg.unset(table, key)?
+                config.unset(table, key)?
             } else {
                 return Err(AnyError(format!("unsupported key '{}' cannot be set", key)))?;
             }
         }
 
         // is the config file is okay?
-        if let Err(e) = core::config::Config::from_str(&cfg.to_string()) {
+        if let Err(e) = core::config::Config::from_str(&config.to_string()) {
             return Err(Error::ConfigNotSaved(LastError(e.to_string())))?;
         }
 
-        cfg.write(&file)
+        config.write(&file)
     }
 }

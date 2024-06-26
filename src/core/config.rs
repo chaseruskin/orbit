@@ -3,12 +3,13 @@ use crate::core::manifest::FromFile;
 use crate::core::protocol::Protocol;
 use crate::core::protocol::Protocols;
 use crate::core::target::{Target, Targets};
+use crate::error::Error;
+use crate::error::LastError;
 use crate::util::anyerror::AnyError;
 use crate::util::filesystem;
 use crate::util::filesystem::Standardize;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::error::Error;
 use std::fmt::Display;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -53,10 +54,6 @@ impl Display for ConfigDocument {
 }
 
 impl ConfigDocument {
-    pub fn print(&self) {
-        println!("{}", self.document.to_string())
-    }
-
     fn append_list(table: &mut Table, key: &str, item: &str, on_newline: bool) -> () {
         // verify the key/entry exists (make empty array)
         if table.contains_key(key) == false {
@@ -214,7 +211,7 @@ impl ConfigDocument {
 }
 
 impl FromFile for ConfigDocument {
-    fn from_file(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
+    fn from_file(path: &PathBuf) -> Result<Self, Fault> {
         // open file
         let contents = std::fs::read_to_string(&path)?;
         // parse toml syntax
@@ -235,7 +232,8 @@ impl FromFile for ConfigDocument {
 pub enum Locality {
     Global,
     Local,
-    Other,
+    Parent,
+    Include,
 }
 
 #[derive(Debug, PartialEq)]
@@ -248,44 +246,61 @@ impl Configs {
         Self { inner: Vec::new() }
     }
 
-    pub fn load(self, file: PathBuf, lvl: Locality) -> Result<Self, Box<dyn Error>> {
+    pub fn load(mut self, base_config_path: PathBuf, lvl: Locality) -> Result<Self, Fault> {
         // create a set to remember what paths are already loaded
         let mut set = HashSet::new();
-        let mut configs = self.inner;
+
+        let mut processed = Vec::new();
 
         // standardize the path
-        let mut to_process = vec![(PathBuf::standardize(&file), lvl)];
+        let mut to_process = vec![(PathBuf::standardize(&base_config_path), lvl)];
         let mut i = 0;
         // process all paths
         while to_process.get(i).is_some() == true {
             {
-                let (path, local) = to_process.get(i).unwrap();
+                let (config_path, local) = to_process.get(i).unwrap();
                 // load the entry file
-                let cfg = match Config::from_file(&path) {
+                let cfg = match Config::from_file(&config_path) {
                     Ok(r) => r,
-                    Err(e) => {
-                        return Err(AnyError(format!(
-                            "failed to load \"include\" key for configuration file at path {:?}: failed to load configuration file at path {:?}: {}",
-                            file, path, e
-                        )))?
-                    }
+                    Err(e) => match local {
+                        Locality::Include => {
+                            return Err(Error::ConfigIncludeFailed(
+                                base_config_path.clone(),
+                                config_path.clone(),
+                                LastError(e.to_string()),
+                            ))?
+                        }
+                        _ => {
+                            return Err(Error::ConfigLoadFailed(
+                                config_path.clone(),
+                                LastError(e.to_string()),
+                            ))?
+                        }
+                    },
                 };
-                set.insert(path.clone());
-                configs.push((path.clone(), cfg, local.clone()));
+                set.insert(config_path.clone());
+                processed.push((config_path.clone(), cfg, local.clone()));
             }
-            let base = configs.last().unwrap().0.parent().unwrap().to_path_buf();
+
+            let base = processed.last().unwrap().0.parent().unwrap().to_path_buf();
             // access its neighboring files (check "include" key)
-            for next in configs.last().unwrap().1.get_includes() {
+            for next in processed.last().unwrap().1.get_includes() {
                 // avoid processing the same files
                 let std_next = filesystem::resolve_rel_path2(&base, next);
                 if set.contains(&std_next) == false {
-                    to_process.push((std_next, Locality::Other));
+                    to_process.push((std_next, Locality::Include));
                 }
             }
             i += 1;
         }
-
-        Ok(Self { inner: configs })
+        // swap the first and last elements
+        let last_index = processed.len() - 1;
+        processed.swap(0, last_index);
+        // reverse the list
+        processed.reverse();
+        // apped the previous values
+        processed.append(&mut self.inner);
+        Ok(Self { inner: processed })
     }
 
     pub fn get_plugins(&self) -> HashMap<&str, &Target> {
@@ -320,30 +335,20 @@ impl Configs {
 impl From<Configs> for Config {
     /// Transform the multi-layered configurations into a single level.
     ///
-    /// This function processes configurations in the following order:
+    /// This function processes configurations with the following precedence:
     /// 1. LOCAL
-    /// 2. GLOBAL
-    /// 3. INCLUDES (first to last)
+    /// 2. PARENT
+    /// 3. GLOBAL
+    /// 4. INCLUDES (order-preserving)
     ///
     /// Once a value is set (not None), then it will not be overridden by any
     /// configuration file later in the processing order. The processing order is
     /// the precedence order.
     fn from(value: Configs) -> Self {
         let mut single = Config::new();
-        let mut value = value;
-        // process local file
-        let local = value.inner.iter().position(|p| p.2 == Locality::Local);
-        if let Some(i) = local {
-            single.append(value.inner.remove(i).1);
-        }
-        // process global file
-        let global = value.inner.iter().position(|p| p.2 == Locality::Global);
-        if let Some(i) = global {
-            single.append(value.inner.remove(i).1);
-        }
-        // process includes in the order they were read
-        value.inner.into_iter().for_each(|p| {
-            single.append(p.1);
+        // process the highest precedence first
+        value.inner.into_iter().for_each(|(_, config, _)| {
+            single.append(config);
         });
         single
     }
@@ -561,7 +566,7 @@ impl FromStr for Config {
 }
 
 impl FromFile for Config {
-    fn from_file(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
+    fn from_file(path: &PathBuf) -> Result<Self, Fault> {
         // verify the path exists
         if path.is_file() == false {
             return Err(AnyError(format!("File does not exist")))?;

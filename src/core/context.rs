@@ -202,29 +202,35 @@ impl Context {
         &self.archive_path
     }
 
-    fn collect_configs(
-        &self,
-        global_path: &PathBuf,
-        working_path: &PathBuf,
-        name: &str,
-    ) -> Result<Configs, Fault> {
+    fn collect_configs(&self, global_path: &PathBuf, name: &str) -> Result<Configs, Fault> {
         // initialize and load the global configuration
-        let cfg = Configs::new().load(global_path.clone(), Locality::Global)?;
+        let mut configs = Configs::new().load(global_path.clone(), Locality::Global)?;
 
-        // go through all parent directories
-        // @todo
-
-        // if in ip, also look along current directory for a /.orbit/config.toml file to load (local configuration)
-        Ok(if let Some(ip_dir) = self.get_ip_path() {
-            let local_path = ip_dir.join(ORBIT_HIDDEN_DIR).join(name);
-            if local_path.exists() == true {
-                cfg.load(local_path, Locality::Local)?
-            } else {
-                cfg
+        // current working directory and its parent directories
+        let mut work_dirs = vec![std::env::current_dir()?];
+        while let Some(p) = work_dirs.last().unwrap().parent() {
+            work_dirs.push(p.to_path_buf());
+        }
+        work_dirs.reverse();
+        for upper_path in work_dirs {
+            let parent_path = upper_path.join(ORBIT_HIDDEN_DIR).join(name);
+            if parent_path.exists() == true {
+                let locality = match self.get_ip_path() {
+                    Some(ip_path) => match &parent_path == ip_path {
+                        true => Locality::Local,
+                        false => Locality::Parent,
+                    },
+                    None => Locality::Parent,
+                };
+                // skip global path
+                if &parent_path == global_path {
+                    continue;
+                }
+                configs = configs.load(parent_path, locality)?;
             }
-        } else {
-            cfg
-        })
+        }
+
+        Ok(configs)
     }
 
     /// Configures and reads data from the settings object to return a `Settings` struct
@@ -241,17 +247,12 @@ impl Context {
         if global_path.exists() == false {
             std::fs::write(&global_path, Vec::new())?;
         }
-        println!("{:?}", std::env::current_dir().unwrap());
-
-        let working_path = std::env::current_dir().unwrap();
 
         // produce the layered variant
-        self.all_configs = self.collect_configs(&global_path, &working_path, name)?;
+        self.all_configs = self.collect_configs(&global_path, name)?;
 
         // produce the flatten variant
-        self.config = self
-            .collect_configs(&global_path, &working_path, name)?
-            .into();
+        self.config = self.collect_configs(&global_path, name)?.into();
 
         // @todo: dynamically set from environment variables from configuration data
         Ok(self)

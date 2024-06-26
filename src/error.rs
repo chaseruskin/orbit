@@ -43,6 +43,10 @@ pub enum Error {
     ConfigNotSaved(LastError),
     #[error("configuration field {0:?} does not store a list")]
     ConfigFieldNotList(String),
+    #[error("failed to process value {1:?} for configuration field \"include\" at {0:?}: {2}")]
+    ConfigIncludeFailed(PathBuf, PathBuf, LastError),
+    #[error("failed to load configuration file at {0:?}: {1}")]
+    ConfigLoadFailed(PathBuf, LastError),
 }
 
 #[derive(Debug, PartialEq)]

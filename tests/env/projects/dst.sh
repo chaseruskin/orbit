@@ -3,8 +3,6 @@
 # Set the -e option
 set -e
 
-orbit config --append include="$PWD/.orbit/config.toml"
-
 # install dependencies
 cd ip-b
 orbit plan --lock-only --force --target foo
@@ -30,8 +28,6 @@ EXACT="entity_c
 
 orbit remove ip-b --all
 orbit remove ip-a --all
-
-orbit config --pop include
 
 # compare the output with the expected value
 if [ "$STDOUT" = "$EXACT" ]; then

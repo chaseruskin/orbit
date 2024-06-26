@@ -1,6 +1,6 @@
 // This manual page was automatically generated from the mangen.py tool.
 pub const MANUAL: &str = r#"NAME
-    lock - save the state of the world for the ip
+    lock - save the world state of an ip
 
 SYNOPSIS
     orbit lock [options]

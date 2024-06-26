@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-lock - save the state of the world for the ip
+lock - save the world state of an ip
 
 ## __SYNOPSIS__
 

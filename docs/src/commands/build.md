@@ -45,30 +45,42 @@ The subprocess will spawn from the current working ip's build directory.
 `--target <name>`  
       Target to execute
 
-`--command <cmd>`  
-      Command to execute
+`--top <unit>`  
+      Set the top level design unit
 
-`--list`  
-      View available targets
-
-`--force`  
-      Execute the command without checking for a blueprint
+`--bench <unit>`  
+      Set the top level testbench unit
 
 `--target-dir <dir>`  
-      The relative directory to locate the blueprint file
+      The relative directory where the target starts
+
+`--command <path>`  
+      Overwrite the target's command
+
+`--list`  
+      View available targets and exit
+
+`--all`  
+      Include all hdl files of the working ip
+
+`--fileset <key=glob>...`  
+      A glob-style pattern identified by name to include in the blueprint
+
+`--force`  
+      Force the target to execute 
 
 `--verbose`  
       Display the command being executed
 
 `args`  
-      Arguments to pass to the target or command
+      Arguments to pass to the target
 
 ## __EXAMPLES__
 
 ```
 orbit build --target xsim -- --elab
-orbit build --command python -- synth.py
-orbit build --verbose
+orbit build --command python3 --target pysim
+orbit build --all --target-dir build --target ghdl
 orbit build --target xsim --force -- --help
 ```
 

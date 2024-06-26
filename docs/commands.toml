@@ -328,7 +328,7 @@ Options:
 # ------------------------------------------------------------------------------
 [lock]
 name = "lock"
-summary = "save the state of the world for the ip"
+summary = "save the world state of an ip"
 synopsis = "orbit lock [options]"
 description = """
 This command saves the state of the world according to the working ip. To
@@ -404,17 +404,21 @@ The subprocess will spawn from the current working ip's build directory.
 """
 
 options."--target <name>" = "Target to execute"
-options."--command <cmd>" = "Command to execute"
-options."--list" = "View available targets"
-options."--force" = "Execute the command without checking for a blueprint"
-options."--target-dir <dir>" = "The relative directory to locate the blueprint file"
+options."--top <unit>" = "Set the top level design unit"
+options."--bench <unit>" = "Set the top level testbench unit"
+options."--target-dir <dir>" = "The relative directory where the target starts"
+options."--command <path>" = "Overwrite the target's command"
+options."--list" = "View available targets and exit"
+options."--all" = "Include all hdl files of the working ip"
+options."--fileset <key=glob>..." = "A glob-style pattern identified by name to include in the blueprint"
+options."--force" = "Force the target to execute "
 options."--verbose" = "Display the command being executed"
-options."args" = "Arguments to pass to the target or command"
+options."args" = "Arguments to pass to the target"
 
 examples = """
 orbit build --target xsim -- --elab
-orbit build --command python -- synth.py
-orbit build --verbose
+orbit build --command python3 --target pysim
+orbit build --all --target-dir build --target ghdl
 orbit build --target xsim --force -- --help
 """
 
@@ -425,12 +429,17 @@ Usage:
     orbit build [options] [--] [args]...
 
 Options:
-    --target <name>     target to execute
-    --command <cmd>     command to execute
-    --list              view available targets
-    --target-dir <dir>  set the output target directory
-    --verbose           display the command being executed
-    args                arguments to pass to the requested command
+    --target <name>         target to execute
+    --top <unit>            set the top level design unit
+    --bench <unit>          set the top level testbench unit
+    --target-dir <dir>      the relative directory where the target starts
+    --command <path>        overwrite the target's command
+    --list                  view available targets and exit
+    --all                   include all hdl files of the working ip
+    --fileset <key=glob>... set filesets for the target
+    --force                 force the target to execute
+    --verbose               display the command being executed
+    args                    arguments to pass to the requested command
 """
 
 # ------------------------------------------------------------------------------
@@ -785,7 +794,7 @@ Commands:
     read            navigate hdl design unit source code
     get             fetch an entity
     tree            view the dependency graph
-    lock            save the state of the world for the ip
+    lock            save the world state of an ip
     build, b        execute a target
     run, r          prepare and execute a target
     launch          verify an upcoming release

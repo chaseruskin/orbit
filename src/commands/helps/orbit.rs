@@ -11,7 +11,7 @@ Commands:
     read            navigate hdl design unit source code
     get             fetch an entity
     tree            view the dependency graph
-    lock            save the state of the world for the ip
+    lock            save the world state of an ip
     build, b        execute a target
     run, r          prepare and execute a target
     launch          verify an upcoming release

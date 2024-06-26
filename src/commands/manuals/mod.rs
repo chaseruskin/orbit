@@ -6,6 +6,7 @@ pub mod get;
 pub mod init;
 pub mod install;
 pub mod launch;
+pub mod lock;
 pub mod new;
 pub mod orbit;
 pub mod plan;

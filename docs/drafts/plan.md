@@ -1,18 +1,4 @@
-# __orbit plan__
-
-## __NAME__
-
-plan - prepare a target
-
-## __SYNOPSIS__
-
-```
-orbit plan [options]
-```
-
-## __DESCRIPTION__
-
-This command carries out the "planning phase". This phase involves reading
+This command carries out the "planning phase". This phase involves reading 
 and writing to the lockfile and collecting all necessary files according to 
 their defined fileset into a blueprint file for future build processes. This 
 command acts upon the current working ip.
@@ -57,45 +43,3 @@ To only install an ip, see the `install` command.
 If an installed dependency's computed checksum does not match the checksum
 stored in the lockfile, it assumes the installation to be corrupt and will 
 re-install the dependency to the cache.
-
-## __OPTIONS__
-
-`--top <unit>`  
-      The top level entity to explicitly define
-
-`--bench <unit>`  
-      The top level testbench to explicitly define
-
-`--target <name>`  
-      A target to refer to gather its declared filesets
-
-`--target-dir <dir>`  
-      The relative directory to place the blueprint.tsv file
-
-`--fileset <key=glob>...`  
-      A glob-style pattern identified by a name to add into the blueprint
-
-`--clean`  
-      Removes all files from the build directory before execution
-
-`--list`  
-      Display all available targets and exit
-
-`--force`  
-      Ignore reading the precomputed lock file
-
-`--lock-only`  
-      Create the lock file and exit
-
-`--all`  
-      Include all locally found HDL files
-
-## __EXAMPLES__
-
-```
-orbit plan --bench my_tb
-orbit plan --top and_gate --fileset PIN-PLAN="*.board"
-orbit plan --target vivado --clean --bench ram_tb
-orbit plan --lock-only
-```
-

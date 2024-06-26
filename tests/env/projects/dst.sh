@@ -5,17 +5,17 @@ set -e
 
 # install dependencies
 cd ip-b
-orbit plan --lock-only --force --target foo
+orbit lock --force
 orbit install --force
 cd ..
 
 cd ip-a
-orbit plan --lock-only --force --target foo
+orbit lock --force
 orbit install --force
 cd ..
 
 cd ip-c
-orbit plan --lock-only --force --target foo
+orbit lock --force
 
 # verify DST runs without error
 STDOUT=$(orbit tree --root entity_c)

@@ -19,7 +19,7 @@ COMMANDS = [
     'read',
     'get',
     'tree',
-    'plan',
+    'lock',
     'build',
     'run',
     'launch',

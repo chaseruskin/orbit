@@ -5,12 +5,12 @@ set -e
 
 # install dependencies
 cd ip10
-orbit plan --lock-only --force --target foo
+orbit lock --force
 orbit install --force
 cd ..
 
 cd ip11
-orbit plan --lock-only --force --target foo
+orbit lock --force
 
 # verify it runs without error
 STDOUT=$(orbit tree --root top --format long)
@@ -33,7 +33,7 @@ if [ "$STDOUT" != "$EXACT" ]; then
 fi
 
 # verify it runs without error
-STDOUT=$(orbit plan --top top --target foo)
+STDOUT=$(orbit build --top top --target foo)
 
 orbit remove ip10 --all
 

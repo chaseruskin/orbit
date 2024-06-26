@@ -153,11 +153,11 @@ Usage:
 Commands:
     new             create a new ip
     init            initialize an ip from an existing project
-    view            display information about an ip
+    view            display metadata of an ip
     read            navigate hdl design unit source code
     get             fetch an entity
     tree            view the dependency graph
-    plan, p         prepare a target for processing
+    lock            save the state of the world for the ip
     build, b        execute a target
     run, r          prepare and execute a target
     launch          verify an upcoming release

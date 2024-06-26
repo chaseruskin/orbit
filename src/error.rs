@@ -47,6 +47,10 @@ pub enum Error {
     ConfigIncludeFailed(PathBuf, PathBuf, LastError),
     #[error("failed to load configuration file at {0:?}: {1}")]
     ConfigLoadFailed(PathBuf, LastError),
+    #[error("failed to parse source code file {0:?}: {1}")]
+    SourceCodeInvalidSyntax(PathBuf, LastError),
+    #[error("failed to process ip graph: {0}")]
+    IpGraphFailed(LastError),
 }
 
 #[derive(Debug, PartialEq)]
@@ -84,6 +88,8 @@ pub enum Hint {
     CatalogList,
     InitNotNew,
     IpNameSeparate,
+    ResolveDuplicateIds1,
+    ResolveDuplicateIds2,
 }
 
 impl Display for Hint {
@@ -95,6 +101,8 @@ impl Display for Hint {
             Self::IpNameSeparate => {
                 "see the \"--name\" flag for making an ip name separate from the directory name"
             }
+            Self::ResolveDuplicateIds1 => HINT_1,
+            Self::ResolveDuplicateIds2 => HINT_2,
         };
         write!(
             f,
@@ -104,3 +112,12 @@ impl Display for Hint {
         )
     }
 }
+
+const HINT_1: &str = "to resolve this error, either
+    1) rename one of the units to a unique identifier
+    2) add one of the file paths to a .orbitignore file";
+
+const HINT_2: &str = "to resolve this error, either
+    1) rename the unit in the working ip to a unique identifier
+    2) remove the direct dependency from Orbit.toml
+    3) add the file path for the working ip's unit to a .orbitignore file";

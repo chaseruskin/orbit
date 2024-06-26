@@ -135,7 +135,7 @@ fn graph_ip<'a>(
                             return Err(CodeFault(
                                 None,
                                 Box::new(AnyError(format!(
-                                    "IP {} is not installed",
+                                    "ip {} is not installed",
                                     IpSpec::from((pkgid.clone(), version.clone()))
                                 ))),
                             ))?
@@ -148,7 +148,7 @@ fn graph_ip<'a>(
                     return Err(CodeFault(
                         None,
                         Box::new(AnyError(format!(
-                            "unknown IP {}",
+                            "unknown ip {}",
                             IpSpec::from((pkgid.clone(), version.clone()))
                         ))),
                     ))?

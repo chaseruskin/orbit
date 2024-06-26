@@ -1,12 +1,11 @@
 use super::super::lexer::Position;
 use super::subunit::SubUnit;
 use super::symbols::VhdlSymbol;
-use crate::core::ip::IpSpec;
-use crate::core::lang::parser::ParseError;
 use crate::core::lang::vhdl::symbols::VHDLParser;
 use crate::core::lang::vhdl::token::identifier::Identifier;
 use crate::util::anyerror::CodeFault;
 use crate::util::filesystem;
+use crate::{core::ip::IpSpec, error::Hint};
 use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use toml_edit::InlineTable;
 
@@ -147,13 +146,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
             let contents = std::fs::read_to_string(&source_file).unwrap();
             let symbols = match VHDLParser::read(&contents) {
                 Ok(s) => s.into_symbols(),
-                Err(e) => Err(CodeFault(
-                    Some(source_file.clone()),
-                    Box::new(ParseError::SourceCodeError(
-                        source_file.clone(),
-                        e.to_string(),
-                    )),
-                ))?,
+                Err(e) => Err(CodeFault(Some(source_file.clone()), Box::new(e)))?,
             };
 
             let mut sub_nodes = Vec::new();
@@ -257,30 +250,21 @@ impl std::fmt::Display for VhdlIdentifierError {
                 let current_dir = std::env::current_dir().unwrap();
                 let location_1 = filesystem::remove_base(&current_dir, &path1);
                 let location_2 = filesystem::remove_base(&current_dir, &path2);
-                write!(f, "duplicate primary design units identified as '{}'\n\nlocation 1: {}{}\nlocation 2: {}{}\n\n{}", 
+                write!(f, "duplicate primary design units identified as \"{}\"\n\nlocation 1: {}{}\nlocation 2: {}{}{}", 
                     iden,
                     filesystem::into_std_str(location_1), loc1,
                     filesystem::into_std_str(location_2), loc2,
-                    HINT)
+                    Hint::ResolveDuplicateIds1)
             }
             Self::DuplicateAcrossDirect(iden, dep, path, pos) => {
                 let current_dir = std::env::current_dir().unwrap();
                 let location = filesystem::remove_base(&current_dir, &path);
-                write!(f, "duplicate primary design units identified as '{}'\n\nlocation: {}{}\nconflicts with direct dependency {}\n\n{}", 
+                write!(f, "duplicate primary design units identified as \"{}\"\n\nlocation: {}{}\nconflicts with direct dependency {}{}", 
                 iden,
                 filesystem::into_std_str(location), pos,
                 dep,
-                HINT_2)
+                Hint::ResolveDuplicateIds1)
             }
         }
     }
 }
-
-const HINT: &str = "hint: To resolve this error either
-    1) rename one of the units to a unique identifier
-    2) add one of the file paths to a .orbitignore file";
-
-const HINT_2: &str = "hint: To resolve this error either
-    1) rename the unit in the current ip to a unique identifier
-    2) remove the direct dependency from Orbit.toml
-    3) add the file path for the unit from the current ip to a .orbitignore file";

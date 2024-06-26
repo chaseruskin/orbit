@@ -17,6 +17,7 @@ use crate::core::target::Target;
 use crate::core::variable;
 use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
+use crate::error::{Error, LastError};
 use crate::util::anyerror::Fault;
 use crate::util::environment;
 use crate::util::environment::EnvVar;
@@ -174,7 +175,7 @@ impl Plan {
         target_dir: &str,
         target: &Target,
         catalog: Catalog,
-        mode: &Languages,
+        lang: &Languages,
         clean: bool,
         force: bool,
         only_lock: bool,
@@ -194,7 +195,7 @@ impl Plan {
         }
 
         // build entire ip graph and resolve with dynamic symbol transformation
-        let ip_graph = match algo::compute_final_ip_graph(&working_ip, &catalog, mode) {
+        let ip_graph = match algo::compute_final_ip_graph(&working_ip, &catalog, lang) {
             Ok(g) => g,
             Err(e) => {
                 // generate a single blueprint
@@ -216,12 +217,19 @@ impl Plan {
                     )?;
                     // create a blueprint file
                     println!(
-                        "info: erroneous blueprint created at: {}",
+                        "{}: erroneous blueprint created at: {:?}",
+                        "warning".yellow(),
                         blueprint_path.display()
                     );
                     return Ok(());
                 } else {
-                    return Err(e.into_fault());
+                    return match e.is_source_err() {
+                        true => Err(Error::SourceCodeInvalidSyntax(
+                            e.as_source_file().unwrap().clone().into(),
+                            LastError(e.into_fault().to_string()),
+                        ))?,
+                        false => Err(Error::IpGraphFailed(LastError(e.into_fault().to_string())))?,
+                    };
                 }
             }
         };
@@ -469,7 +477,7 @@ impl Plan {
         let blueprint_path =
             Self::create_outputs(&blueprint, &target_path, &top_name, &bench_name, target)?;
         // create a blueprint file
-        println!("info: blueprint created at: {}", blueprint_path.display());
+        println!("info: blueprint created at: {:?}", blueprint_path.display());
         Ok(())
     }
 }

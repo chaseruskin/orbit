@@ -115,8 +115,8 @@ use crate::commands::help::Help;
 use crate::commands::init::Init;
 use crate::commands::install::Install;
 use crate::commands::launch::Launch;
+use crate::commands::lock::Lock;
 use crate::commands::new::New;
-use crate::commands::plan::Plan;
 use crate::commands::read::Read;
 use crate::commands::remove::Remove;
 use crate::commands::run::Run;
@@ -129,7 +129,7 @@ enum OrbitSubcommand {
     Help(Help),
     New(New),
     Search(Search),
-    Plan(Plan),
+    Lock(Lock),
     Build(Build),
     Run(Run),
     Launch(Launch),
@@ -149,9 +149,8 @@ impl Subcommand<Context> for OrbitSubcommand {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
         match cli
             .select(&[
-                "help", "new", "search", "plan", "p", "build", "run", "launch", "download",
-                "install", "get", "init", "tree", "view", "b", "env", "config", "remove", "read",
-                "r",
+                "help", "new", "search", "lock", "build", "run", "launch", "download", "install",
+                "get", "init", "tree", "view", "b", "env", "config", "remove", "read", "r",
             ])?
             .as_ref()
         {
@@ -159,7 +158,7 @@ impl Subcommand<Context> for OrbitSubcommand {
             "help" => Ok(OrbitSubcommand::Help(Help::interpret(cli)?)),
             "new" => Ok(OrbitSubcommand::New(New::interpret(cli)?)),
             "search" => Ok(OrbitSubcommand::Search(Search::interpret(cli)?)),
-            "p" | "plan" => Ok(OrbitSubcommand::Plan(Plan::interpret(cli)?)),
+            "lock" => Ok(OrbitSubcommand::Lock(Lock::interpret(cli)?)),
             "b" | "build" => Ok(OrbitSubcommand::Build(Build::interpret(cli)?)),
             "r" | "run" => Ok(OrbitSubcommand::Run(Run::interpret(cli)?)),
             "init" => Ok(OrbitSubcommand::Init(Init::interpret(cli)?)),
@@ -180,7 +179,7 @@ impl Subcommand<Context> for OrbitSubcommand {
         match self {
             OrbitSubcommand::Get(sub) => sub.execute(context),
             OrbitSubcommand::Search(sub) => sub.execute(context),
-            OrbitSubcommand::Plan(sub) => sub.execute(context),
+            OrbitSubcommand::Lock(sub) => sub.execute(context),
             OrbitSubcommand::Build(sub) => sub.execute(context),
             OrbitSubcommand::Install(sub) => sub.execute(context),
             OrbitSubcommand::Help(sub) => sub.execute(&()),

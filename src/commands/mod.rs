@@ -22,4 +22,5 @@ mod view;
 
 // informational content for help about commands
 mod helps;
+mod lock;
 mod manuals;

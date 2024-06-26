@@ -16,6 +16,8 @@ use super::lang::Languages;
 
 const CACHE_TAG_FILE: &str = "CACHEDIR.TAG";
 
+const ORBIT_HIDDEN_DIR: &str = ".orbit";
+
 pub const CACHE_TAG: &str = "\
 Signature: 8a477f597d28d172789f06886806bc55
 # This file is a cache directory tag created by orbit.
@@ -178,8 +180,10 @@ impl Context {
             let ep = self.home_path.join(&folder);
             // create the directory if does not exist
             if ep.exists() == false {
-                std::fs::create_dir(&ep)
-                    .expect(&format!("failed to create .orbit/{} directory", folder));
+                std::fs::create_dir(&ep).expect(&format!(
+                    "failed to create {}/{} directory",
+                    ORBIT_HIDDEN_DIR, folder
+                ));
             }
             ep
         };
@@ -198,6 +202,31 @@ impl Context {
         &self.archive_path
     }
 
+    fn collect_configs(
+        &self,
+        global_path: &PathBuf,
+        working_path: &PathBuf,
+        name: &str,
+    ) -> Result<Configs, Fault> {
+        // initialize and load the global configuration
+        let cfg = Configs::new().load(global_path.clone(), Locality::Global)?;
+
+        // go through all parent directories
+        // @todo
+
+        // if in ip, also look along current directory for a /.orbit/config.toml file to load (local configuration)
+        Ok(if let Some(ip_dir) = self.get_ip_path() {
+            let local_path = ip_dir.join(ORBIT_HIDDEN_DIR).join(name);
+            if local_path.exists() == true {
+                cfg.load(local_path, Locality::Local)?
+            } else {
+                cfg
+            }
+        } else {
+            cfg
+        })
+    }
+
     /// Configures and reads data from the settings object to return a `Settings` struct
     /// in the `Context`.
     ///
@@ -208,40 +237,22 @@ impl Context {
     /// Note: the `self.ip_path` must already be determined before invocation.
     pub fn settings(mut self, name: &str) -> Result<Context, Fault> {
         // check if global file exists first
-        let global_file = self.home_path.join(name);
-        if global_file.exists() == false {
-            std::fs::write(&global_file, Vec::new())?;
+        let global_path = self.home_path.join(name);
+        if global_path.exists() == false {
+            std::fs::write(&global_path, Vec::new())?;
         }
+        println!("{:?}", std::env::current_dir().unwrap());
 
-        // initialize and load the global configuration
-        let cfg = Configs::new().load(global_file, Locality::Global)?;
-        // if in ip, also look along current directory for a /.orbit/config.toml file to load (local configuration)
-        self.all_configs = if let Some(ip_dir) = self.get_ip_path() {
-            let local_path = ip_dir.join(".orbit").join(name);
-            if local_path.exists() == true {
-                cfg.load(local_path, Locality::Local)?
-            } else {
-                cfg
-            }
-        } else {
-            cfg
-        };
+        let working_path = std::env::current_dir().unwrap();
 
-        // @TODO: FIXME (clone?)
-        // initialize and load the global configuration
-        let cfg = Configs::new().load(self.home_path.join(name), Locality::Global)?;
-        // if in ip, also look along current directory for a /.orbit/config.toml file to load (local configuration)
-        self.config = if let Some(ip_dir) = self.get_ip_path() {
-            let local_path = ip_dir.join(".orbit").join(name);
-            if local_path.exists() == true {
-                cfg.load(local_path, Locality::Local)?
-            } else {
-                cfg
-            }
-        } else {
-            cfg
-        }
-        .into();
+        // produce the layered variant
+        self.all_configs = self.collect_configs(&global_path, &working_path, name)?;
+
+        // produce the flatten variant
+        self.config = self
+            .collect_configs(&global_path, &working_path, name)?
+            .into();
+
         // @todo: dynamically set from environment variables from configuration data
         Ok(self)
     }

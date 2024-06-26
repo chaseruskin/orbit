@@ -44,11 +44,11 @@ impl Languages {
     }
 
     pub fn supports_vhdl(&self) -> bool {
-        self.modes.contains(&Lang::Vhdl)
+        self.modes.contains(&Lang::Vhdl) || self.modes.is_empty()
     }
 
     pub fn supports_verilog(&self) -> bool {
-        self.modes.contains(&Lang::Verilog)
+        self.modes.contains(&Lang::Verilog) || self.modes.is_empty()
     }
 }
 

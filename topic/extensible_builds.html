@@ -177,7 +177,14 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="extensible-builds"><a class="header" href="#extensible-builds">Extensible Builds</a></h1>
-<p>Orbit is an extensible build tool for HDLs.</p>
+<p>Orbit is an extensible build tool for HDLs. Orbit separates the build process into two stages: planning and execution. Both stages are operated together when <code>orbit build</code> is called.</p>
+<p>Users can add their own execution processes, called <em>targets</em>. By default, Orbit does not have any built-in targets. A target can be added by editing the configuration file.</p>
+<h2 id="planning"><a class="header" href="#planning">Planning</a></h2>
+<p>During the planning stage, Orbit resolves all source code dependencies to generate a single file that lists all the necessary source files in topologically sorted order. This file that stores the ordered list of source file paths is called the <em>blueprint</em>.</p>
+<p>Orbit sets runtime environment variables that can be accessed during the execution stage by the specified target.</p>
+<h2 id="execution"><a class="header" href="#execution">Execution</a></h2>
+<p>The execution stage occurs after the planning stage. During the execution stage, Orbit invokes the specified target's command with its set of determined arguments. The arguments to include are taken from the predefined list in the configuration file as well as any additional arguments found on the command line that appear after an empty double switch (<code>--</code>).</p>
+<p>Typically, the target's process involves reading the blueprint previously generated from the planning stage and performing some task to generate an <em>artifact</em>. An artifact is what the build produces at the end of its execution, which may be anything, from a synthesis report to a bitstream file.</p>
 
                     </main>
 

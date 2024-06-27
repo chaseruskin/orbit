@@ -344,7 +344,7 @@
 <div style="break-before: page; page-break-before: always;"></div><h1 id="first-project-gates"><a class="header" href="#first-project-gates">First Project: Gates</a></h1>
 <p>In this tutorial, you will learn how to:</p>
 <p><a href="tutorials/first_project.html#creating-an-ip">1.</a> Create an ip from scratch<br />
-<a href="tutorials/first_project.html#integrating-design-units">2.</a> Leverage <code>orbit</code> to integrate an entity into a larger design<br />
+<a href="tutorials/first_project.html#integrating-design-units">2.</a> Use Orbit to integrate an entity into a larger design<br />
 <a href="tutorials/first_project.html#building-an-ip-for-a-scripted-workflow">3.</a> Build a design using a simple target<br />
 <a href="tutorials/first_project.html#making-an-ip-and-its-design-units-reusable">4.</a> Release a version of an ip</p>
 <h2 id="creating-an-ip"><a class="header" href="#creating-an-ip">Creating an ip</a></h2>
@@ -393,7 +393,7 @@ begin
 
 end architecture;
 </code></pre>
-<p>After some thinking, we realize we can use two NAND gates together to construct an AND gate. Let's use <code>orbit</code> to help us integrate our <code>nand_gate</code> entity into the <code>and_gate</code>'s architecture.</p>
+<p>After some thinking, we realize we can use two NAND gates together to construct an AND gate. Let's use Orbit to help us integrate our <code>nand_gate</code> entity into the <code>and_gate</code>'s architecture.</p>
 <pre><code>$ orbit get nand_gate --component --signals --instance
 </code></pre>
 <pre><code>component nand_gate
@@ -415,7 +415,7 @@ uX : nand_gate
     x =&gt; x
   );
 </code></pre>
-<p>With this single command, <code>orbit</code> provided us with:</p>
+<p>With this single command, Orbit provided us with:</p>
 <ul>
 <li>the component declaration</li>
 <li>signals for the port interface</li>
@@ -472,20 +472,9 @@ end architecture;
 <p>Cool! We got a hierarchical view of our top-most design unit.</p>
 <h2 id="building-an-ip-for-a-scripted-workflow"><a class="header" href="#building-an-ip-for-a-scripted-workflow">Building an ip for a scripted workflow</a></h2>
 <p>After all of our hard work, we are excited to show off our latest design on the newest Yilinx FPGA that just arrived in the mail. You realize you need a way to get your HDL code to the Yilinx synthesis tool in order to generate the final bitstream for your FPGA.</p>
-<p>To make this possible, <code>orbit</code> breaks down the process into two stages: <em>plan</em> and <em>build</em>.</p>
-<h3 id="planning"><a class="header" href="#planning">Planning</a></h3>
-<p>Let's create a file that lists all the files we will need to give to the Yilinx synthesis tool.</p>
-<pre><code>$ orbit plan
-</code></pre>
-<p>This command produced a file, called the <em>blueprint</em>, that lists all the required files in a <em>topologically-sorted</em> order for any backend tool that needs to know.</p>
-<p>Filename: target/blueprint.tsv</p>
-<pre><code class="language-text">VHDL-RTL	work	/Users/chase/tutorials/gates/nand_gate.vhd
-VHDL-RTL	work	/Users/chase/tutorials/gates/and_gate.vhd
-
-</code></pre>
-<p>Now we just need a way for our Yilinx synthesis tool to be able to interpet and use our blueprint file. Enter <em>targets</em>.</p>
-<h3 id="building"><a class="header" href="#building">Building</a></h3>
-<p>A target is a script created by us that acts as the layer between our blueprint file and the tool we want to use. You could say were are <em>targeting</em> the Yilinx tool. Let's make a simple target for our Yilinx synthesis tool using the Python programming language.</p>
+<p>To make this possible, Orbit builds a project through two stages: planning and execution. Although both stages occur together, users must define their own targets to be invoked during execution. This explicit separation of layers between planning and execution enable the user to tailor the build process to their specific requirements.</p>
+<h3 id="creating-a-target"><a class="header" href="#creating-a-target">Creating a target</a></h3>
+<p>A target is a command invoked by Orbit for execution during the build process. In this example, we will write a script and have our target's command call our script to execute our process. In other words, you could say we are <em>targeting</em> the Yilinx tool. Let's make a simple target for our Yilinx synthesis tool using the Python programming language.</p>
 <p>Filename: .orbit/yilinx.py</p>
 <pre><code class="language-python">synth_order = []
 # Read and parse the blueprint file
@@ -512,7 +501,7 @@ with open('fpga.bit', 'w') as bitstream:
 print('YILINX:','Bitstream saved at: target/fpga.bit')
 
 </code></pre>
-<p>In order for <code>orbit</code> to know about our target, we need to tell <code>orbit</code> about the target in a configuration file. For this project, we edit the project-level configurations.</p>
+<p>For Orbit to know about our target, we need to give information to Orbit about the target. This is done in a configuration file. For this example, we edit the project-level configurations.</p>
 <p>Filename: .orbit/config.toml</p>
 <pre><code class="language-toml">[[target]]
 name = "yilinx"
@@ -520,7 +509,7 @@ description = "Generate bitstreams for Yilinx FPGAs"
 command = "python"
 args = ["yilinx.py"]
 </code></pre>
-<p>Okay, all steps are in place! Let's generate a bitsream.</p>
+<h3 id="calling-a-target"><a class="header" href="#calling-a-target">Calling a target</a></h3>
 <pre><code>$ orbit build --target yilinx
 </code></pre>
 <pre><code>YILINX: Synthesizing file /Users/chase/tutorials/gates/nand_gate.vhd into work...
@@ -529,7 +518,7 @@ YILINX: Performing place-and-route...
 YILINX: Generating bitstream...
 YILINX: Bitstream saved at: target/fpga.bit
 </code></pre>
-<p>Typically, we create targets to interface with EDA tools which will in turn produce desired output files. We see Yilinx saved our bitstream for us to program our FPGA. Cool!</p>
+<p>Typically, we create targets to interface with EDA tools which will in turn produce desired output files, called artifacts. We see Yilinx saved our bitstream artifact for us to program our FPGA. Cool!</p>
 <p>Filename: target/fpga.bit</p>
 <pre><code class="language-text">011010101101011010101101
 </code></pre>
@@ -537,7 +526,7 @@ YILINX: Bitstream saved at: target/fpga.bit
 <p>Now we are ready to move on to more advanced topics, so let's go ahead and store an immutable reference to this project to use in other projects in our developer journey.</p>
 <pre><code>$ orbit install --path .
 </code></pre>
-<p>This command ran a series of steps that packaged our project and placed it into our <em>cache</em>. Internally, <code>orbit</code> knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire ip catalog.</p>
+<p>This command ran a series of steps that packaged our project and placed it into our <em>cache</em>. Internally, Orbit knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire ip catalog.</p>
 <pre><code>$ orbit search
 </code></pre>
 <pre><code>gates                       0.1.0     install
@@ -562,10 +551,10 @@ YILINX: Bitstream saved at: target/fpga.bit
 <p>The configurations stored in ".orbit/" exist only for this project; to store configurations that persist across projects make changes to the $ORBIT_HOME directory.</p>
 </li>
 <li>
-<p><code>orbit</code> creates an output directory to store the blueprint and any tool output files during a build. These files should reside in "target/" and may change often during development (probably don't check this directory into version control).</p>
+<p>Orbit creates an output directory to store the blueprint and any tool output files during a build. These files should reside in "target/" and may change often during development (probably don't check this directory into version control).</p>
 </li>
 <li>
-<p><code>orbit</code> creates a lock file "Orbit.lock" to store all the information required to manage and recreate the exact state of this project. It is a good idea to always keep it and to not manually edit it (probably be sure to check this file into version control).</p>
+<p>Orbit creates a lock file "Orbit.lock" to store all the information required to manage and recreate the exact state of this project. It is a good idea to always keep it and to not manually edit it (probably be sure to check this file into version control).</p>
 </li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="dependencies-half-adder"><a class="header" href="#dependencies-half-adder">Dependencies: Half adder</a></h1>
@@ -1137,9 +1126,34 @@ YILINX: Bitstream saved at: target/full_add.bit
 </li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="agile-package-management"><a class="header" href="#agile-package-management">Agile Package Management</a></h1>
-<p>Orbit is an agile package manager for HDLs.</p>
+<p>Orbit is an agile package manager for HDLs. Orbit supports a wide range of commands to the user to automate codebase management processes for installing ip, referencing ip, and removing ip.</p>
+<h2 id="installing-1"><a class="header" href="#installing-1">Installing</a></h2>
+<p><code>orbit download</code> <code>orbit install</code></p>
+<p>Before you can reference an ip in your current project, you must first make sure the ip exists on your local filesystem. Orbit manages ip through its <em>ip catalog</em>. The catalog consists of multiple file paths that Orbit maintains for ips at varying states of accessibility.</p>
+<p>To make an ip accessible by another project, it must first be installed to your ip catalog.</p>
+<h2 id="referencing"><a class="header" href="#referencing">Referencing</a></h2>
+<p><code>orbit view</code>, <code>orbit get</code></p>
+<p>Once an ip is installed to your ip catalog, the design units of that ip are available to be referenced in the current design.</p>
+<ol>
+<li>
+<p>Tell Orbit which installed ip you wish to use by providing the name and version under the <code>[dependencies]</code> table in the Orbit.toml file.</p>
+</li>
+<li>
+<p>Instantiate one of the available design units from the dependency in your source code. At this point, any build that uses this HDL source code will be correctly sorted during the planning stage in topological order.</p>
+</li>
+</ol>
+<h2 id="removing"><a class="header" href="#removing">Removing</a></h2>
+<p><code>orbit remove</code></p>
+<p>An ip can be removed from the catalog when it is no longer supported or needed to be used again. By removing the ip, Orbit deletes the ip's contents stored in the catalog, effectively forgetting that it existed.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="extensible-builds"><a class="header" href="#extensible-builds">Extensible Builds</a></h1>
-<p>Orbit is an extensible build tool for HDLs.</p>
+<p>Orbit is an extensible build tool for HDLs. Orbit separates the build process into two stages: planning and execution. Both stages are operated together when <code>orbit build</code> is called.</p>
+<p>Users can add their own execution processes, called <em>targets</em>. By default, Orbit does not have any built-in targets. A target can be added by editing the configuration file.</p>
+<h2 id="planning"><a class="header" href="#planning">Planning</a></h2>
+<p>During the planning stage, Orbit resolves all source code dependencies to generate a single file that lists all the necessary source files in topologically sorted order. This file that stores the ordered list of source file paths is called the <em>blueprint</em>.</p>
+<p>Orbit sets runtime environment variables that can be accessed during the execution stage by the specified target.</p>
+<h2 id="execution"><a class="header" href="#execution">Execution</a></h2>
+<p>The execution stage occurs after the planning stage. During the execution stage, Orbit invokes the specified target's command with its set of determined arguments. The arguments to include are taken from the predefined list in the configuration file as well as any additional arguments found on the command line that appear after an empty double switch (<code>--</code>).</p>
+<p>Typically, the target's process involves reading the blueprint previously generated from the planning stage and performing some task to generate an <em>artifact</em>. An artifact is what the build produces at the end of its execution, which may be anything, from a synthesis report to a bitstream file.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="catalog"><a class="header" href="#catalog">Catalog</a></h1>
 <p>As a package manager, Orbit must know what ips are available and where ips are stored on your local file system so that they can be operated on. Orbit stores your ips in the <em>catalog</em>. The <em>catalog</em> is a set of directories on your local file system maintained by orbit. These directories are typically hidden from the user because they are not regularly interfacing with the file system contents at these locations and manually tampering the contents may cause trouble for Orbit when it tries to use them.</p>
 <p>There are three levels to the catalog: the cache, the archive, and channels.</p>
@@ -1156,62 +1170,42 @@ YILINX: Bitstream saved at: target/full_add.bit
 <div style="break-before: page; page-break-before: always;"></div><h1 id="ip"><a class="header" href="#ip">Ip</a></h1>
 <p>Ips are the core component that Orbit operates on as a package manager. First, let's understand some key terms related to ip in the context of Orbit.</p>
 <h2 id="anatomy-of-an-ip"><a class="header" href="#anatomy-of-an-ip">Anatomy of an ip</a></h2>
-<p>Developers daily tasks involve interfacing with a collection of closely related files (source code, scripts, text files). This collection of closely related files is typically stored under a single directory, and we will call this collection of files a <em>project</em>.</p>
-<p>The core component a package manager operates on is called a <em>package</em>. A <em>package</em> is a project <em>with additional information provided by the developer</em>. This "additional information" is called <em>metadata</em>, and it is written to a special file called a <em>manifest</em>. The manifest must be placed at the project's root directory. Without manifests, a package manager would not know which projects it should manage and what the project's current state is in relation to being a package.</p>
+<p>A developer's tasks often involve interfacing with a collection of closely related files (source code, scripts, text files). This collection of closely related files is typically stored under a single directory and is called a <em>project</em>.</p>
+<p>The core operations of a package manager revolve around <em>packages</em>. A <em>package</em> is a project <em>with additional information provided by the developer</em>. This "additional information" is called <em>metadata</em>, and it is written to a special file called a <em>manifest</em>. The manifest must be placed at the project's root directory. Without a manifests, a package manager would not know which projects it should manage and what each project's current state is in relation to being a package.</p>
 <p>In the context of being a package manager for digital hardware, Orbit calls a package an <em>ip</em>. An ip's manifest file is "Orbit.toml", with case-sensitivity.</p>
-<p>Typically, developers work on one project at a time. The <em>working ip</em> is the ip that is currently being developed at a given moment. Some Orbit commands only work when they are called within the working ip (<code>orbit lock</code>, <code>orbit build</code>).</p>
+<h2 id="working-ip"><a class="header" href="#working-ip">Working ip</a></h2>
+<p>Typically, developers work on one project at a given time (while we can work on projects concurrently, we unfortunately are not parallel processors...yet). The <em>working ip</em> is the ip that is currently being developed at a given moment. The working ip is found by Orbit by checking along the working directory and its parent directories. Some Orbit commands only work when they are called within the working ip (<code>orbit lock</code>, <code>orbit build</code>).</p>
 <h2 id="types-of-files-inside-an-ip"><a class="header" href="#types-of-files-inside-an-ip">Types of files inside an ip</a></h2>
-<p>Since Orbit focuses on digital hardware projects, it automatically detects and manages HDL source code files. Any other files are considered <em>supportive files</em>. Therefore, there are three different types of files within a given ip:</p>
+<p>Since Orbit focuses on digital hardware projects, it automatically detects and manages files that store HDL source code. Files that store HDL source code are called <em>source files</em>. Any other files, such as scripts and test vectors, are considered <em>auxiliary files</em>.</p>
+<p>Auxiliary files can be injected into the planning stage by specifying <em>filesets</em> for the given target. A <em>fileset</em> is glob-style pattern that collects matching files under a common name within the working ip. These matched files will appear in the target's generated blueprint file for future execution.</p>
+<p>So, what files are inside an ip?</p>
 <ul>
-<li>HDL source code files (automatically configured for management)</li>
-<li>Manifest (automatically detected for management)</li>
-<li>Supportive files (automatically ignored unless manually configured for management)</li>
+<li><em>Source files</em>: Stores HDL source code (VHDL, Verilog)</li>
+<li><em>Auxiliary files</em>: Any additional files that do not store source code</li>
+<li><em>Manifest file</em> (<code>Orbit.toml</code>): Stores the ip's metadata provided by the user</li>
+<li><em>Lock file</em> (<code>Orbit.lock</code>): Saves the ip's world state for reproducibility purposes</li>
+<li><em>Ignore file</em> (<code>.orbitignore</code>): Stores a list of file patterns that Orbit uses to ignore matching file paths during file discovery</li>
 </ul>
-<p>Supportive files can be filtered and manually configured for management for a particular target by defining filesets. A <em>fileset</em> is glob-style pattern that collects matching files under a common name within the working ip. These matched files will appear in the target's generated blueprint file for future execution.</p>
+<p>All files <strong>except the lock file</strong> are expected to be edited by the user. Orbit automatically maintains the lock file to ensure it can reproduce the ip's world state in the future.</p>
 <h3 id="reserved-names"><a class="header" href="#reserved-names">Reserved names</a></h3>
-<p>File names that begin with ".orbit-" are reserved for internal use and are not allowed at the root directory of an ip. Files that are named with this pattern are used by Orbit to store additional metadata about an ip at different levels within the ip catalog.</p>
+<p>File names that begin with ".orbit-" are reserved for internal use and are not allowed at the root directory of an ip. Files that are named with this pattern are used by Orbit in the ip catalog to store additional metadata about the ip.</p>
 <h2 id="ip-names"><a class="header" href="#ip-names">Ip names</a></h2>
-<!-- Orbit refers to the packages it manages as _IP_. Orbit recognizes a directory to be an IP by finding the `Orbit.toml` manifest file at the IP's root.
-
-Here is an example IP directory structure:
-```
-/gates
-├─ /rtl
-│   └─ and_gate.vhd
-├─ /sim
-│   ├─ test_vectors.txt
-│   └─ and_gate_tb.vhd
-└─ Orbit.toml 
-```
-
-## IP Levels
-
-An IP can exist at 3 different levels:
-1. __developing___: the IP is in-progress/mutable and its location on disk is known (DEV_PATH).
-2. __installed__: the IP is immutable and its location on disk is abstracted away from the user (CACHE).
-3. __available__: the IP is not stored on disk but has the ability to be pulled from a git remote. Only the IP's manifest is stored locally on disk through a _vendor_.
-
-## Inside an IP
-
-An IP is a HDL project recognized by Orbit. Therefore, an IP's files can be grouped into 3 sections.
-
-- HDL source code files
-- manifest file (`Orbit.toml`)
-- Supportive files
-
-Supportive files are the files needed within particular HDL workflows. This is a very generic term because there are a lot of different workflows, some require constraints files, python scripts, text files, configuration files, etc.
-
-## Current Working IP (CWIP)
-
-The current working IP (CWIP) is the IP project currently being developed. It is detected within the path from where Orbit was invoked. Some commands, such as `orbit plan` and `orbit build`, require you to call Orbit from within a working IP. --><div style="break-before: page; page-break-before: always;"></div><h1 id="orbitlock"><a class="header" href="#orbitlock">Orbit.lock</a></h1>
-<p><code>Orbit.lock</code> is a special file automatically created and updated by Orbit. It is not intended to be manually edited. Orbit writes this file every time it needs to prepare for a target's execution (typically during <code>orbit plan</code> or <code>orbit run</code>). The purpose of the lock file is store the information necessary to reproduce the state in how Orbit prepared the target for execution. Ideally, if a project has a lock file, then the project can be prepared again in exactly the same way (and therefore rebuilt in the same way) on any machine to reproduce identical results from that particular target on all machines.</p>
-<p>Orbit uses the lock file when it determines the current ip's <code>Orbit.toml</code> manifest data matches with the lock file entry written for the current ip. When this comparison is true it signals that there has been no change to the state of the system. Any change to <code>Orbit.toml</code> may result in an updated <code>Orbit.lock</code> file.</p>
+<p>An ip's name is a human-readable name given to an ip so users can easily recall and locate relevant packages.</p>
+<pre><code>gates
+</code></pre>
+<p>An ip's <em>specification</em>, more commonly called a <em>spec</em>, is the full resolved name of an ip. As of now, the spec involves the ip's name and ip's version separated by a <code>:</code> character.</p>
+<pre><code>gates:1.0.0
+</code></pre>
+<p>When asking Orbit to operate on a particular ip outside of the working ip, Orbit will usually ask you to provide the ip's spec. Orbit uses the spec to lookup the ip in the catalog and then continues operation.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="orbitlock"><a class="header" href="#orbitlock">Orbit.lock</a></h1>
+<p>A <em>Orbit.lock</em> is a special file automatically created and updated by Orbit. It is not intended to be manually edited. Orbit writes this file every time it needs to prepare for a target's execution (<code>orbit build</code>). The purpose of the lock file is store the information necessary to reproduce the world state around the working ip. Ideally, if a project has a lock file, then the project can be planned again in the same way (and therefore rebuilt in the same way) on any machine. This is highly beneficial when collaboratively working on a project and across different systems because it enables build artifacts and results to be reproduced independent of the system it is available on.</p>
+<p>Orbit uses the lock file when it determines the working ip's <code>Orbit.toml</code> manifest data matches with the lock file entry written for the current ip. When this comparison is true, it signals that there has been no change to the state of the system. Any change to <code>Orbit.toml</code> may result in an updated <code>Orbit.lock</code> file.</p>
 <p>It is recommended to check in the lock file to version control to ensure the project can be rebuilt on other machines when the repository is cloned.</p>
 <blockquote>
 <p><strong>Note:</strong> An ip will only read its own lock file and not the lock file of any of its dependencies when needing data to reproduce a build.</p>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbitignore"><a class="header" href="#orbitignore">.orbitignore</a></h1>
-<p>A <em>.orbitignore</em> is a file that lists user-defined file patterns to ignore during the execution of <code>orbit</code>. Orbit recognizes .orbitignore files that match ".orbitignore" with case-sensitivity.</p>
+<p>A <em>.orbitignore</em> is a file that lists user-defined file patterns for Orbit to ignore during file discovery. Orbit recognizes .orbitignore files that match ".orbitignore" with case-sensitivity.</p>
 <p>.orbitignore files are typically encouraged to be checked into version control.</p>
 <h2 id="format"><a class="header" href="#format">Format</a></h2>
 <p>.orbitignore files follow the same syntax as .gitignore files. See the pattern format for more information:</p>
@@ -1221,21 +1215,21 @@ The current working IP (CWIP) is the IP project currently being developed. It is
 <h2 id="resolving-errors"><a class="header" href="#resolving-errors">Resolving errors</a></h2>
 <p>Orbit prevents duplicate primary design units to be identified within certain situations. For example, duplicate design unit names are not allowed within the same project because Orbit cannot resolve ambiguity in which unit is used where.</p>
 <p>An error may look like the following:</p>
-<pre><code>error: Duplicate primary design units identified as 'my_entity'
+<pre><code>error: duplicate primary design units identified as "foo"
 
-location 1: rtl/my_entity_file1.vhd:20:1
-location 2: rtl/my_entity_file2.vhd:1:1
+location 1: rtl/foo1.vhd:20:1
+location 2: rtl/foo2.vhd:1:1
 
-hint: To resolve this error, either
-    1) Rename one of the units to a unique identifier
-    2) Add one of the file paths to a .orbitignore file
+hint: resolve this error by either
+    1) renaming one of the units to a unique identifier
+    2) adding one of the file paths to a .orbitignore file
 </code></pre>
-<p>A .orbitignore file can be used in this scenario to tell Orbit to ignore reading a particular file during HDL analysis.</p>
+<p>A .orbitignore file can be used in this scenario to tell Orbit to ignore reading a particular file during HDL source code dependency resolution.</p>
 <p>Filename: .orbitignore</p>
-<pre><code>rtl/my_entity_file2.vhd
+<pre><code>rtl/foo2.vhd
 
 </code></pre>
-<p>The .orbitignore will prevent Orbit from seeing the file "rtl/my_entity_file2.vhd" during program execution, which circumvents the previous error.</p>
+<p>This example .orbitignore will resolve the previous error because it prevents Orbit from seeing the file "rtl/foo2.vhd" during any file discovery operations.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="targets"><a class="header" href="#targets">Targets</a></h1>
 <p>Orbit operates at the <em>front end</em> of hardware development. At the <em>back end</em> of hardware development is where the true "processing" occurs. A particular "process" that occurs in the back end and produces some result is called a <em>target</em>.</p>
 <p>Orbit has no built-in targets. Since hardware development varies widely in the tools available, the systems on which it happens, and the processes that occur, Orbit has not built-in targets. This design choice gives users flexibility in configuring the types of workflows that are most important to them.</p>
@@ -1245,7 +1239,7 @@ hint: To resolve this error, either
 <p>Users can setup a target in the configuration file <code>config.toml</code>. For all the available parameters to define a target, see <a href="topic/./../reference/configuration.html#the-target-array">[[target]]</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="planning-1"><a class="header" href="#planning-1">Planning</a></h1>
 <p>The <em>plan stage</em> is the first step (1/2) in <code>orbit</code>'s run system. Planning refers to the process of collecting the necessary files to write to a blueprint file for a particular workflow. This step occurs before the building step.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="building-1"><a class="header" href="#building-1">Building</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="building"><a class="header" href="#building">Building</a></h1>
 <p>The <em>build stage</em> is the final step (2/2) in <code>orbit</code>'s run system. Building refers to the process of calling a plugin within <code>orbit</code> to perform a workflow. This step occurs after the planning step.</p>
 <h2 id="plugin-execution"><a class="header" href="#plugin-execution">Plugin execution</a></h2>
 <p>A plugin starts its execution within the build directory. Therefore, all relative file paths inside the plugin's script will always be relative to the build directory.</p>

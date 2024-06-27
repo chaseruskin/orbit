@@ -113,11 +113,11 @@ impl Display for Hint {
     }
 }
 
-const HINT_1: &str = "to resolve this error, either
-    1) rename one of the units to a unique identifier
-    2) add one of the file paths to a .orbitignore file";
+const HINT_1: &str = "resolve this error by either
+    1) renaming one of the units to a unique identifier
+    2) adding one of the file paths to a .orbitignore file";
 
-const HINT_2: &str = "to resolve this error, either
-    1) rename the unit in the working ip to a unique identifier
-    2) remove the direct dependency from Orbit.toml
-    3) add the file path for the working ip's unit to a .orbitignore file";
+const HINT_2: &str = "resolve this error by either
+    1) renaming the unit in the working ip to a unique identifier
+    2) removing the direct dependency from Orbit.toml
+    3) adding the file path for the working ip's unit to a .orbitignore file";

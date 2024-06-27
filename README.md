@@ -20,7 +20,7 @@ However, using just any package management system does not guarantee that techni
 
 ### An extensible build tool designed to support any workflow
 
-Hardware development involves many complex processes, from running simulations to generating bitstreams. Orbit simplifies the build process into two stages: planning and execution. Orbit performs the planning of a build by resolving all HDL source code dependencies to produce a single file listing the topologically sorted source code file order. From here, Orbit invokes any user-configured target to execute and process the planned list of source code files. By allowing users to add their own execution processes, Orbit is __an extensible build tool designed to support any workflow.__
+Hardware development involves many complex processes, from running simulations to generating bitstreams. Orbit simplifies the build process into two stages: planning and execution. Orbit performs the planning of a build by resolving all HDL source code dependencies to produce a single file listing the topologically sorted source file order. From here, Orbit invokes any user-configured target to execute and process the planned list of source files. By allowing users to add their own execution processes, Orbit is __an extensible build tool designed to support any workflow.__
 
 ### Free and open source
 
@@ -82,7 +82,7 @@ u_and_gate : entity gates.and_gate
 
 ## Flexibility in use
 
-Since Orbit focuses on efficiently managing the HDL source code and minimizing its associated technical debt, users have the power to add their own execution targets to the build process. This is accomplished by Orbit performing the planning of a build process to generate a single file listing the topologically-sorted order of source code files. After planning the build, Orbit invokes the user's target to perform the execution process on the list of source code files.
+Since Orbit focuses on efficiently managing the HDL source code and minimizing its associated technical debt, users have the power to add their own execution targets to the build process. This is accomplished by Orbit performing the planning of a build process to generate a single file listing the topologically-sorted order of source files. After planning the build, Orbit invokes the user's target to perform the execution process on the list of source files.
 
 ```
 VHDL	gates	/users/chase/.orbit/cache/gates-2.0.0-7f4d8c7812/rtl/nand_gate.vhd

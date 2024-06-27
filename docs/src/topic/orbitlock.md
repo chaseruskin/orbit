@@ -1,8 +1,8 @@
 # Orbit.lock
 
-`Orbit.lock` is a special file automatically created and updated by Orbit. It is not intended to be manually edited. Orbit writes this file every time it needs to prepare for a target's execution (typically during `orbit plan` or `orbit run`). The purpose of the lock file is store the information necessary to reproduce the state in how Orbit prepared the target for execution. Ideally, if a project has a lock file, then the project can be prepared again in exactly the same way (and therefore rebuilt in the same way) on any machine to reproduce identical results from that particular target on all machines.
+A _Orbit.lock_ is a special file automatically created and updated by Orbit. It is not intended to be manually edited. Orbit writes this file every time it needs to prepare for a target's execution (`orbit build`). The purpose of the lock file is store the information necessary to reproduce the world state around the working ip. Ideally, if a project has a lock file, then the project can be planned again in the same way (and therefore rebuilt in the same way) on any machine. This is highly beneficial when collaboratively working on a project and across different systems because it enables build artifacts and results to be reproduced independent of the system it is available on.
 
-Orbit uses the lock file when it determines the current ip's `Orbit.toml` manifest data matches with the lock file entry written for the current ip. When this comparison is true it signals that there has been no change to the state of the system. Any change to `Orbit.toml` may result in an updated `Orbit.lock` file.
+Orbit uses the lock file when it determines the working ip's `Orbit.toml` manifest data matches with the lock file entry written for the current ip. When this comparison is true, it signals that there has been no change to the state of the system. Any change to `Orbit.toml` may result in an updated `Orbit.lock` file.
 
 It is recommended to check in the lock file to version control to ensure the project can be rebuilt on other machines when the repository is cloned.
 

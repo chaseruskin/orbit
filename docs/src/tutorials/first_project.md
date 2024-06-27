@@ -3,7 +3,7 @@
 In this tutorial, you will learn how to:
 
 [1.](#creating-an-ip) Create an ip from scratch  
-[2.](#integrating-design-units) Leverage `orbit` to integrate an entity into a larger design  
+[2.](#integrating-design-units) Use Orbit to integrate an entity into a larger design  
 [3.](#building-an-ip-for-a-scripted-workflow) Build a design using a simple target  
 [4.](#making-an-ip-and-its-design-units-reusable) Release a version of an ip
 
@@ -66,7 +66,7 @@ begin
 end architecture;
 ```
 
-After some thinking, we realize we can use two NAND gates together to construct an AND gate. Let's use `orbit` to help us integrate our `nand_gate` entity into the `and_gate`'s architecture.
+After some thinking, we realize we can use two NAND gates together to construct an AND gate. Let's use Orbit to help us integrate our `nand_gate` entity into the `and_gate`'s architecture.
 
 ```
 $ orbit get nand_gate --component --signals --instance
@@ -92,7 +92,7 @@ uX : nand_gate
   );
 ```
 
-With this single command, `orbit` provided us with:
+With this single command, Orbit provided us with:
 - the component declaration
 - signals for the port interface
 - an instantiation template
@@ -158,29 +158,11 @@ Cool! We got a hierarchical view of our top-most design unit.
 
 After all of our hard work, we are excited to show off our latest design on the newest Yilinx FPGA that just arrived in the mail. You realize you need a way to get your HDL code to the Yilinx synthesis tool in order to generate the final bitstream for your FPGA.
 
-To make this possible, `orbit` breaks down the process into two stages: _plan_ and _build_.
+To make this possible, Orbit builds a project through two stages: planning and execution. Although both stages occur together, users must define their own targets to be invoked during execution. This explicit separation of layers between planning and execution enable the user to tailor the build process to their specific requirements.
 
-### Planning
+### Creating a target
 
-Let's create a file that lists all the files we will need to give to the Yilinx synthesis tool.
-```
-$ orbit plan
-```
-
-This command produced a file, called the _blueprint_, that lists all the required files in a _topologically-sorted_ order for any backend tool that needs to know.
-
-Filename: target/blueprint.tsv
-``` text
-VHDL-RTL	work	/Users/chase/tutorials/gates/nand_gate.vhd
-VHDL-RTL	work	/Users/chase/tutorials/gates/and_gate.vhd
-
-```
-
-Now we just need a way for our Yilinx synthesis tool to be able to interpet and use our blueprint file. Enter _targets_.
-
-### Building
-
-A target is a script created by us that acts as the layer between our blueprint file and the tool we want to use. You could say were are _targeting_ the Yilinx tool. Let's make a simple target for our Yilinx synthesis tool using the Python programming language.
+A target is a command invoked by Orbit for execution during the build process. In this example, we will write a script and have our target's command call our script to execute our process. In other words, you could say we are _targeting_ the Yilinx tool. Let's make a simple target for our Yilinx synthesis tool using the Python programming language.
 
 Filename: .orbit/yilinx.py
 ``` python
@@ -210,7 +192,7 @@ print('YILINX:','Bitstream saved at: target/fpga.bit')
 
 ```
 
-In order for `orbit` to know about our target, we need to tell `orbit` about the target in a configuration file. For this project, we edit the project-level configurations.
+For Orbit to know about our target, we need to give information to Orbit about the target. This is done in a configuration file. For this example, we edit the project-level configurations.
 
 Filename: .orbit/config.toml
 ``` toml
@@ -221,7 +203,7 @@ command = "python"
 args = ["yilinx.py"]
 ```
 
-Okay, all steps are in place! Let's generate a bitsream.
+### Calling a target
 
 ```
 $ orbit build --target yilinx
@@ -234,7 +216,7 @@ YILINX: Generating bitstream...
 YILINX: Bitstream saved at: target/fpga.bit
 ```
 
-Typically, we create targets to interface with EDA tools which will in turn produce desired output files. We see Yilinx saved our bitstream for us to program our FPGA. Cool!
+Typically, we create targets to interface with EDA tools which will in turn produce desired output files, called artifacts. We see Yilinx saved our bitstream artifact for us to program our FPGA. Cool!
 
 Filename: target/fpga.bit
 ``` text
@@ -249,7 +231,7 @@ Now we are ready to move on to more advanced topics, so let's go ahead and store
 $ orbit install --path .
 ```
 
-This command ran a series of steps that packaged our project and placed it into our _cache_. Internally, `orbit` knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire ip catalog.
+This command ran a series of steps that packaged our project and placed it into our _cache_. Internally, Orbit knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire ip catalog.
 
 ```
 $ orbit search
@@ -279,6 +261,6 @@ gates/
 
 - The configurations stored in ".orbit/" exist only for this project; to store configurations that persist across projects make changes to the $ORBIT_HOME directory.
 
-- `orbit` creates an output directory to store the blueprint and any tool output files during a build. These files should reside in "target/" and may change often during development (probably don't check this directory into version control).
+- Orbit creates an output directory to store the blueprint and any tool output files during a build. These files should reside in "target/" and may change often during development (probably don't check this directory into version control).
 
-- `orbit` creates a lock file "Orbit.lock" to store all the information required to manage and recreate the exact state of this project. It is a good idea to always keep it and to not manually edit it (probably be sure to check this file into version control).
+- Orbit creates a lock file "Orbit.lock" to store all the information required to manage and recreate the exact state of this project. It is a good idea to always keep it and to not manually edit it (probably be sure to check this file into version control).

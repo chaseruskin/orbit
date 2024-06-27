@@ -1,6 +1,6 @@
 // This manual page was automatically generated from the mangen.py tool.
 pub const MANUAL: &str = r#"NAME
-    build - execute a target
+    build - plan and execute a target
 
 SYNOPSIS
     orbit build [options] [--] [args]...

@@ -22,6 +22,8 @@
 
 - [Topic Guide](./topic/topic.md)
     - [Overview](./topic/overview.md)
+    - [Agile Package Management](./topic/package_management.md)
+    - [Extensible Builds](./topic/extensible_builds.md)
     - [Catalog](./topic/catalog.md) <!-- good -->
     - [Ip](./topic/ip.md) <!-- good -->
     - [Orbit.lock](./topic/orbitlock.md) <!-- good -->

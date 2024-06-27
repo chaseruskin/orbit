@@ -10,7 +10,7 @@ The core component a package manager operates on is called a _package_. A _packa
 
 In the context of being a package manager for digital hardware, Orbit calls a package an _ip_. An ip's manifest file is "Orbit.toml", with case-sensitivity.
 
-Typically, developers work on one project at a time. The _working ip_ is the ip that is currently being developed at a given moment. Some Orbit commands only work when they are called from within the working ip (`orbit plan`, `orbit build`).
+Typically, developers work on one project at a time. The _working ip_ is the ip that is currently being developed at a given moment. Some Orbit commands only work when they are called within the working ip (`orbit lock`, `orbit build`).
 
 ## Types of files inside an ip
 
@@ -22,7 +22,12 @@ Since Orbit focuses on digital hardware projects, it automatically detects and m
 
 Supportive files can be filtered and manually configured for management for a particular target by defining filesets. A _fileset_ is glob-style pattern that collects matching files under a common name within the working ip. These matched files will appear in the target's generated blueprint file for future execution.
 
+### Reserved names
+
+File names that begin with ".orbit-" are reserved for internal use and are not allowed at the root directory of an ip. Files that are named with this pattern are used by Orbit to store additional metadata about an ip at different levels within the ip catalog.
+
 ## Ip names
+
 
 
 

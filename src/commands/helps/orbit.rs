@@ -12,7 +12,7 @@ Commands:
     get             fetch an entity
     tree            view the dependency graph
     lock            save the world state of an ip
-    build, b        execute a target
+    build, b        plan and execute a target
     run, r          prepare and execute a target
     launch          verify an upcoming release
     search          browse the ip catalog 

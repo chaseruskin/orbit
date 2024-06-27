@@ -6,7 +6,7 @@
 [![Docker Hub](https://img.shields.io/badge/dockerhub-images-important.svg?logo=docker)](https://hub.docker.com/repository/docker/cdotrus/orbit/general) 
 [![Downloads](https://img.shields.io/github/downloads/cdotrus/orbit/total.svg)](https://github.com/cdotrus/orbit/releases)
 
-Orbit is an agile package manager for hardware description languages (HDL).
+Orbit is an agile package manager and extensible build tool for hardware description languages (HDL).
 
 ### Live at the cutting edge of hardware design
 
@@ -17,6 +17,10 @@ The boom of AI and emerging workloads have shown just how fast new advancements 
 As codebases scale and increase in complexity, it becomes of upmost importance to have the right system in place to efficiently manage the increasing number of resources. Without the right system, the codebase can become bogged down by _technical debt_, leaving you stuck in yesterday's designs.
 
 However, using just any package management system does not guarantee that technical debt is minimized. Poorly-designed package managers will simply shift the technical debt to different resources, while a well-designed package manager will minimize the overall amount of technical debt. With minimal technical debt, you can bring up tomorrow's hardware today. Orbit is __an agile package manager designed to minimize technical debt.__
+
+### An extensible build tool designed to support any workflow
+
+Hardware development involves many complex processes, from running simulations to generating bitstreams. Orbit simplifies the build process into two stages: planning and execution. Orbit performs the planning of a build by resolving all HDL source code dependencies to produce a single file listing the topologically sorted source code file order. From here, Orbit invokes any user-configured target to execute and process the planned list of source code files. By allowing users to add their own execution processes, Orbit is __an extensible build tool designed to support any workflow.__
 
 ### Free and open source
 
@@ -78,7 +82,7 @@ u_and_gate : entity gates.and_gate
 
 ## Flexibility in use
 
-Since Orbit only focuses on efficiently managing the HDL source code and minimizing its associated technical debt, users have the power to define their own back end processes. This is achieved with Orbit passing off a file that lists the topologically-sorted order of HDL source code files for a user's back end process to accept. 
+Since Orbit focuses on efficiently managing the HDL source code and minimizing its associated technical debt, users have the power to add their own execution targets to the build process. This is accomplished by Orbit performing the planning of a build process to generate a single file listing the topologically-sorted order of source code files. After planning the build, Orbit invokes the user's target to perform the execution process on the list of source code files.
 
 ```
 VHDL	gates	/users/chase/.orbit/cache/gates-2.0.0-7f4d8c7812/rtl/nand_gate.vhd
@@ -89,7 +93,7 @@ VHDL	work	/users/chase/projects/cpu/rtl/top.vhd
 VHDL	work	/users/chase/projects/cpu/sim/top_tb.vhd
 ```
 
-Write a script to accept Orbit's output file for whatever EDA tools you prefer once, and use it across all future ips.  
+Add a target by writing a script to accept Orbit's output file for whatever EDA tools you prefer once, and use it across all future ips.  
 
 ## Highlights
 
@@ -143,7 +147,7 @@ The final code repositories for Hyperspace Labs are found [here](https://github.
 
 Read the [Book of Orbit](https://cdotrus.github.io/orbit/) for comprehensive documentation composed of tutorials, user guides, topic guides, references, and command manuals.
 
-Orbit brings an agile approach to hardware development that minimizes technical debt through its available commands related to ip exploration, integration, and automation:
+Orbit brings an agile approach to hardware development that minimizes technical debt through its available commands related to ip integration and build automation:
 ```
 Orbit is a tool for hdl package management.
 
@@ -158,7 +162,7 @@ Commands:
     get             fetch an entity
     tree            view the dependency graph
     lock            save the world state of an ip
-    build, b        execute a target
+    build, b        plan and execute a target
     run, r          prepare and execute a target
     launch          verify an upcoming release
     search          browse the ip catalog 

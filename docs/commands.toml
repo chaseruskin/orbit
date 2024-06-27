@@ -373,7 +373,7 @@ Options:
 # ------------------------------------------------------------------------------
 [build]
 name = "build"
-summary = "execute a target"
+summary = "plan and execute a target"
 synopsis = "orbit build [options] [--] [args]..."
 description = """
 This command carries out the "building phase". This phase involves running a
@@ -425,7 +425,7 @@ orbit build --target xsim --force -- --help
 """
 
 help = """
-Execute a target.
+Plan and execute a target.
 
 Usage:
     orbit build [options] [--] [args]...
@@ -797,7 +797,7 @@ Commands:
     get             fetch an entity
     tree            view the dependency graph
     lock            save the world state of an ip
-    build, b        execute a target
+    build, b        plan and execute a target
     run, r          prepare and execute a target
     launch          verify an upcoming release
     search          browse the ip catalog 

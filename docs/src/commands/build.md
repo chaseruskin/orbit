@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-build - execute a target
+build - plan and execute a target
 
 ## __SYNOPSIS__
 

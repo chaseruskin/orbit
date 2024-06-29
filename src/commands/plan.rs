@@ -445,8 +445,11 @@ impl Plan {
                     fset.collect_files(&current_files)
                         .into_iter()
                         .for_each(|f| {
-                            blueprint
-                                .add(Instruction::Supportive(fset.get_name().clone(), f.clone()));
+                            blueprint.add(Instruction::Auxiliary(
+                                fset.get_name().clone(),
+                                working_lib.to_string(),
+                                f.clone(),
+                            ));
                         });
                 }
             }
@@ -464,7 +467,11 @@ impl Plan {
                 fset.collect_files(&current_files)
                     .into_iter()
                     .for_each(|f| {
-                        blueprint.add(Instruction::Supportive(fset.get_name().clone(), f.clone()));
+                        blueprint.add(Instruction::Auxiliary(
+                            fset.get_name().clone(),
+                            working_lib.to_string(),
+                            f.clone(),
+                        ));
                     });
             }
         }

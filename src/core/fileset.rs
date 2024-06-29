@@ -253,6 +253,16 @@ pub fn is_verilog(file: &str) -> bool {
     }
 }
 
+/// Checks if the `file` is a Verilog file (ending with .sv, .svh).
+pub fn is_systemverilog(file: &str) -> bool {
+    if let Some((_, ending)) = file.rsplit_once('.') {
+        crate::util::strcmp::cmp_ascii_ignore_case(ending, "sv")
+            || crate::util::strcmp::cmp_ascii_ignore_case(ending, "svh")
+    } else {
+        false
+    }
+}
+
 /// Checks if the given file is one of the supported HDLs.
 pub fn is_hdl(file: &str) -> bool {
     is_vhdl(file) || is_verilog(file)

@@ -1,3 +1,4 @@
+use crate::core::fileset;
 use crate::util::anyerror::AnyError;
 use cliproc::cli::Error;
 use std::io::Write;
@@ -32,19 +33,32 @@ impl FromStr for Scheme {
 #[derive(Debug, PartialEq)]
 pub enum Instruction<'a, 'b> {
     Hdl(&'b IpFileNode<'a>),
-    Supportive(String, String),
+    Auxiliary(String, String, String),
 }
 
 impl<'a, 'b> Instruction<'a, 'b> {
     pub fn write(&self, format: &Scheme) -> String {
         match &format {
             Scheme::Tsv => match &self {
-                Self::Hdl(node) => format!(
-                    "VHDL\t{}\t{}",
-                    node.get_ip().get_man().get_hdl_library(),
-                    node.get_file()
-                ),
-                Self::Supportive(key, file) => format!("{}\twork\t{}", key, file),
+                Self::Hdl(node) => {
+                    // match on what type of file we have
+                    let source_set = if fileset::is_verilog(node.get_file()) == true {
+                        "VLOG"
+                    } else if fileset::is_vhdl(node.get_file()) == true {
+                        "VHDL"
+                    } else if fileset::is_systemverilog(node.get_file()) == true {
+                        "SYSV"
+                    } else {
+                        panic!("unknown file in source file set")
+                    };
+                    format!(
+                        "{}\t{}\t{}",
+                        source_set,
+                        node.get_ip().get_man().get_hdl_library(),
+                        node.get_file()
+                    )
+                }
+                Self::Auxiliary(key, lib, file) => format!("{}\t{}\t{}", key, lib, file),
             },
             Scheme::Json => {
                 todo!()

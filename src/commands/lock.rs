@@ -4,7 +4,7 @@ use crate::core::algo;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
-use crate::core::lang::Languages;
+use crate::core::lang::Language;
 use crate::core::lockfile::LockEntry;
 use crate::core::variable::VariableTable;
 use crate::util::anyerror::Fault;
@@ -79,7 +79,7 @@ impl Lock {
     pub fn run(
         working_ip: &Ip,
         catalog: &Catalog,
-        lang: &Languages,
+        lang: &Language,
         force: bool,
     ) -> Result<(), Fault> {
         // build entire ip graph and resolve with dynamic symbol transformation

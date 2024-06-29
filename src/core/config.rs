@@ -35,7 +35,7 @@ impl FromStr for ConfigDocument {
 
 const INCLUDE_KEY: &str = "include";
 const GENERAL_KEY: &str = "general";
-const LANGUAGES_KEY: &str = "languages";
+const LANGUAGES_KEY: &str = "language";
 use crate::util::anyerror::Fault;
 use toml_edit::Array;
 use toml_edit::Document;
@@ -44,8 +44,7 @@ use toml_edit::Item;
 use toml_edit::Table;
 use toml_edit::Value;
 
-use super::lang::Lang;
-use super::lang::Languages;
+use super::lang::Language;
 
 impl Display for ConfigDocument {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -128,27 +127,6 @@ impl ConfigDocument {
         }
     }
 
-    /// Pops the last value from the `general.languages` entry.
-    pub fn pop_languages(&mut self) -> bool {
-        let general = self.document[GENERAL_KEY].as_table_mut();
-        let g = match general {
-            Some(g) => g,
-            None => return false,
-        };
-        let arr = match g[LANGUAGES_KEY].as_array_mut() {
-            Some(arr) => arr,
-            None => return false,
-        };
-        let size = arr.len();
-        match size {
-            0 => false,
-            _ => {
-                arr.remove(size - 1);
-                true
-            }
-        }
-    }
-
     /// Sets a value for the given entry in the toml document.
     ///
     /// Creates parent table and/or key if does not exist.
@@ -164,11 +142,20 @@ impl ConfigDocument {
             .unwrap()
             .as_table_mut()
             .unwrap();
-        // insert/overwrite into the table
-        table.insert(
-            key,
-            Item::Value(Value::String(Formatted::<String>::new(value.to_string()))),
-        );
+        // insert/overwrite into the table (make sure to use the correct type)
+        if let Ok(v) = FromStr::from_str(value) {
+            table.insert(key, Item::Value(Value::Integer(Formatted::<i64>::new(v))));
+        } else if let Ok(v) = FromStr::from_str(value) {
+            table.insert(key, Item::Value(Value::Float(Formatted::<f64>::new(v))));
+        } else if let Ok(v) = FromStr::from_str(&value.to_lowercase()) {
+            table.insert(key, Item::Value(Value::Boolean(Formatted::<bool>::new(v))));
+        // last reserve/fallback to just storing the string
+        } else {
+            table.insert(
+                key,
+                Item::Value(Value::String(Formatted::<String>::new(value.to_string()))),
+            );
+        }
     }
 
     /// Removes an entry from the toml document.
@@ -303,13 +290,13 @@ impl Configs {
         Ok(Self { inner: processed })
     }
 
-    pub fn get_plugins(&self) -> HashMap<&str, &Target> {
+    pub fn get_targets(&self) -> HashMap<&str, &Target> {
         // iterate through all linked configs
         let mut map = HashMap::new();
 
         self.inner.iter().for_each(|(_path, cfg, _lvl)| {
-            if let Some(plugs) = &cfg.target {
-                plugs.iter().for_each(|p| match map.get(p.get_name()) {
+            if let Some(tars) = &cfg.target {
+                tars.iter().for_each(|p| match map.get(p.get_name()) {
                     Some(_) => (),
                     None => {
                         map.insert(p.get_name(), p);
@@ -359,29 +346,17 @@ impl From<Configs> for Config {
 pub struct General {
     #[serde(rename = "target-dir")]
     target_dir: Option<String>,
-    languages: Option<Languages>,
 }
 
 impl General {
     pub fn new() -> Self {
-        Self {
-            target_dir: None,
-            languages: None,
-        }
+        Self { target_dir: None }
     }
 
     pub fn get_build_dir(&self) -> String {
         self.target_dir
             .as_ref()
             .unwrap_or(&String::from("target"))
-            .clone()
-    }
-
-    /// Access what language mode is enabled for the given configuration table.
-    pub fn get_languages(&self) -> Languages {
-        self.languages
-            .as_ref()
-            .unwrap_or(&Languages::default())
             .clone()
     }
 
@@ -392,10 +367,6 @@ impl General {
             // no build dir defined so give it the value from `rhs`
             if self.target_dir.is_some() == false {
                 self.target_dir = rhs.target_dir
-            }
-            // no language mode defined so give it the value from `rhs`
-            if self.languages.is_some() == false {
-                self.languages = rhs.languages
             }
         }
     }
@@ -413,6 +384,7 @@ pub struct Config {
     #[serde(rename = "vhdl-format")]
     vhdl_format: Option<VhdlFormat>,
     general: Option<General>,
+    language: Option<Language>,
 }
 
 impl Config {
@@ -424,6 +396,7 @@ impl Config {
             protocol: None,
             vhdl_format: None,
             general: None,
+            language: None,
         }
     }
 
@@ -435,32 +408,6 @@ impl Config {
             true => self.include.as_mut().unwrap().push(PathBuf::from(path)),
             false => self.include = Some(vec![PathBuf::from(path)]),
         }
-    }
-
-    /// Adds `lang` to the end of the list for the include attribute.
-    ///
-    /// This function creates some vector if no vector originally exists.
-    pub fn append_languages(&mut self, lang: &str) -> Result<(), Fault> {
-        self.general = match &self.general {
-            Some(g) => Some(g.clone()),
-            None => Some(General::new()),
-        };
-
-        match &self.general.as_ref().unwrap().languages.is_some() {
-            true => self
-                .general
-                .as_mut()
-                .unwrap()
-                .languages
-                .as_mut()
-                .unwrap()
-                .push(Lang::from_str(lang)?),
-            false => {
-                self.general.as_mut().unwrap().languages =
-                    Some(Languages::with(vec![Lang::from_str(lang)?]))
-            }
-        }
-        Ok(())
     }
 
     /// Adds the new information to the existing configuration to combine data.
@@ -527,6 +474,14 @@ impl Config {
             });
         }
         map
+    }
+
+    /// Access what language mode is enabled for the given configuration table.
+    pub fn get_languages(&self) -> Language {
+        self.language
+            .as_ref()
+            .unwrap_or(&Language::default())
+            .clone()
     }
 
     pub fn get_env(&self) -> &Option<HashMap<String, String>> {

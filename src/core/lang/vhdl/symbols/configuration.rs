@@ -57,4 +57,8 @@ impl Configuration {
     pub fn get_refs_mut(&mut self) -> &mut IdentifierList {
         &mut self.refs
     }
+
+    pub fn into_refs(self) -> IdentifierList {
+        self.refs
+    }
 }

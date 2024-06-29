@@ -5,7 +5,7 @@ use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::lang::vhdl::token::Identifier;
-use crate::core::lang::Languages;
+use crate::core::lang::Language;
 use crate::core::target::Process;
 use crate::core::target::Target;
 use crate::error::Error;
@@ -108,7 +108,7 @@ impl Run {
         target_dir: &str,
         target: &Target,
         catalog: Catalog,
-        mode: &Languages,
+        mode: &Language,
     ) -> Result<(), Fault> {
         // plan the target
         Plan::run(

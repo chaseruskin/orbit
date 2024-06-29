@@ -172,7 +172,7 @@ with open('blueprint.tsv') as blueprint:
     rules = blueprint.readlines()
     for r in rules:
         fileset, lib, path = r.strip().split('\t')
-        if fileset == 'VHDL-RTL':
+        if fileset == 'VHDL':
             synth_order += [(lib, path)]
     pass
 
@@ -188,7 +188,7 @@ print('YILINX:', 'Generating bitstream...')
 with open('fpga.bit', 'w') as bitstream:
     bitstream.write('011010101101' * 2)
 
-print('YILINX:','Bitstream saved at: target/fpga.bit')
+print('YILINX:','Bitstream saved at: target/yilinx/fpga.bit')
 
 ```
 
@@ -213,12 +213,12 @@ YILINX: Synthesizing file /Users/chase/tutorials/gates/nand_gate.vhd into work..
 YILINX: Synthesizing file /Users/chase/tutorials/gates/and_gate.vhd into work...
 YILINX: Performing place-and-route...
 YILINX: Generating bitstream...
-YILINX: Bitstream saved at: target/fpga.bit
+YILINX: Bitstream saved at: target/yilinx/fpga.bit
 ```
 
 Typically, we create targets to interface with EDA tools which will in turn produce desired output files, called artifacts. We see Yilinx saved our bitstream artifact for us to program our FPGA. Cool!
 
-Filename: target/fpga.bit
+Filename: target/yilinx/fpga.bit
 ``` text
 011010101101011010101101
 ```
@@ -251,8 +251,10 @@ gates/
 │  ├─ config.toml
 │  └─ yilinx.py
 ├─ target/
-│  ├─ blueprint.tsv
-│  └─ fpga.bit
+│  ├─ CACHEDIR.TAG
+|  └─ yilinx/
+│     ├─ blueprint.tsv
+│     └─ fpga.bit
 ├─ Orbit.toml
 ├─ Orbit.lock
 ├─ and_gate.vhd

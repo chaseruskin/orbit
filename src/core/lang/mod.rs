@@ -7,6 +7,8 @@ pub mod parser;
 pub mod node;
 pub mod unit;
 
+pub mod cross;
+
 use crate::util::anyerror::{AnyError, CodeFault};
 use serde_derive::Serialize;
 use std::collections::HashMap;
@@ -21,41 +23,45 @@ use serde_derive::Deserialize;
 use super::pubfile::{PublicList, Visibility};
 
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
-#[serde(transparent)]
-pub struct Languages {
-    modes: Vec<Lang>,
+#[serde(deny_unknown_fields)]
+pub struct Language {
+    vhdl: bool,
+    verilog: bool,
+    systemverilog: bool,
 }
 
-impl Languages {
-    pub fn with(langs: Vec<Lang>) -> Self {
-        Self { modes: langs }
+impl Language {
+    pub fn with(vhdl: bool, verilog: bool, systemverilog: bool) -> Self {
+        Self {
+            vhdl: vhdl,
+            verilog: verilog,
+            systemverilog: systemverilog,
+        }
     }
 
     pub fn new() -> Self {
-        Self { modes: Vec::new() }
-    }
-
-    pub fn push(&mut self, lang: Lang) {
-        self.modes.push(lang);
-    }
-
-    pub fn pop(&mut self) -> bool {
-        self.modes.pop().is_some()
+        Self {
+            vhdl: true,
+            verilog: false,
+            systemverilog: false,
+        }
     }
 
     pub fn supports_vhdl(&self) -> bool {
-        self.modes.contains(&Lang::Vhdl) || self.modes.is_empty()
+        self.vhdl
     }
 
     pub fn supports_verilog(&self) -> bool {
-        self.modes.contains(&Lang::Verilog) || self.modes.is_empty()
+        self.verilog
     }
 }
 
-impl Default for Languages {
+impl Default for Language {
     fn default() -> Self {
         Self {
-            modes: vec![Lang::Vhdl],
+            vhdl: true,
+            verilog: false,
+            systemverilog: false,
         }
     }
 }
@@ -282,7 +288,7 @@ impl Display for LangIdentifier {
 
 pub fn collect_units(
     files: &Vec<String>,
-    lang_mode: &Languages,
+    lang_mode: &Language,
 ) -> Result<HashMap<LangIdentifier, LangUnit>, CodeFault> {
     // collect the VHDL units
     let vhdl_units = match lang_mode.supports_vhdl() {

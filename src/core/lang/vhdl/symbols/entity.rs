@@ -1,4 +1,4 @@
-use std::{collections::LinkedList, iter::Peekable};
+use std::iter::Peekable;
 
 use serde_derive::Serialize;
 
@@ -32,7 +32,7 @@ impl Entity {
             ports: Ports::new(),
             generics: Generics::new(),
             architectures: Vec::new(),
-            refs: LinkedList::new(),
+            refs: IdentifierList::new(),
             pos: Position::new(),
             language: String::from("vhdl"),
         }
@@ -46,7 +46,7 @@ impl Entity {
             ports: Ports::new(),
             generics: Generics::new(),
             architectures: Vec::new(),
-            refs: LinkedList::new(),
+            refs: IdentifierList::new(),
             pos: Position::new(),
             language: String::from("vhdl"),
         }

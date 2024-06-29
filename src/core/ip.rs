@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use super::iparchive::IpArchive;
 use super::lang;
 use super::lang::LangIdentifier;
-use super::lang::{LangUnit, Languages};
+use super::lang::{LangUnit, Language};
 use super::lockfile::LockFile;
 use super::lockfile::IP_LOCK_FILE;
 use super::manifest::FromFile;
@@ -229,7 +229,7 @@ impl Ip {
     }
 
     /// Creates the lookup table for the DST algorithm.
-    pub fn generate_dst_lut(&self, mode: &Languages) -> HashMap<LangIdentifier, String> {
+    pub fn generate_dst_lut(&self, mode: &Language) -> HashMap<LangIdentifier, String> {
         // compose the lut for symbol transformation
         let mut lut = HashMap::new();
 
@@ -336,7 +336,7 @@ impl Ip {
     pub fn collect_units(
         force: bool,
         dir: &PathBuf,
-        lang_mode: &Languages,
+        lang_mode: &Language,
         hide_private: bool,
         public_list: PublicList,
     ) -> Result<HashMap<LangIdentifier, LangUnit>, CodeFault> {

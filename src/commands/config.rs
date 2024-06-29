@@ -119,7 +119,6 @@ impl Config {
         for entry in &self.append {
             match entry.0.as_ref() {
                 "include" => config.append_include(&entry.1),
-                "general.languages" => config.append_languages(&entry.1),
                 _ => return Err(Error::ConfigFieldNotList(entry.0.to_string()))?,
             };
         }
@@ -127,7 +126,6 @@ impl Config {
         for key in &self.pop {
             match key.as_ref() {
                 "include" => config.pop_include(),
-                "general.languages" => config.pop_languages(),
                 _ => return Err(Error::ConfigFieldNotList(key.to_string()))?,
             };
         }

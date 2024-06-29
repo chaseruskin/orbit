@@ -14,7 +14,7 @@ use crate::core::lang::lexer::Token;
 use crate::core::lang::vhdl::token::VhdlToken;
 use crate::core::lang::vhdl::token::VhdlTokenizer;
 use crate::core::lang::LangIdentifier;
-use crate::core::lang::Languages;
+use crate::core::lang::Language;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::sha256;
@@ -115,7 +115,7 @@ impl Subcommand<Context> for Read {
 }
 
 impl Read {
-    fn run(&self, target: &Ip, dest: Option<&PathBuf>, mode: &Languages) -> Result<(), Fault> {
+    fn run(&self, target: &Ip, dest: Option<&PathBuf>, mode: &Language) -> Result<(), Fault> {
         let (path, loc) = Self::read(&self.unit, &target, dest, mode)?;
 
         // dump the file contents of the source code to the console if there was no destination
@@ -380,7 +380,7 @@ impl Read {
         unit: &LangIdentifier,
         ip: &Ip,
         dest: Option<&PathBuf>,
-        mode: &Languages,
+        mode: &Language,
     ) -> Result<(PathBuf, Position), Fault> {
         // find the unit
         let units = Ip::collect_units(true, ip.get_root(), mode, true, ip.into_public_list())?;

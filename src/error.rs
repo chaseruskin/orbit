@@ -51,6 +51,8 @@ pub enum Error {
     SourceCodeInvalidSyntax(PathBuf, LastError),
     #[error("failed to process ip graph: {0}")]
     IpGraphFailed(LastError),
+    #[error("failed to parse identifier: {0}")]
+    CrossIdentifierParsingFailed(LastError),
 }
 
 #[derive(Debug, PartialEq)]

@@ -16,7 +16,7 @@ use crate::core::lang::vhdl::symbols::entity::Entity;
 use crate::core::lang::vhdl::symbols::CompoundIdentifier;
 use crate::core::lang::vhdl::symbols::{VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
-use crate::core::lang::Languages;
+use crate::core::lang::Language;
 use crate::util::anyerror::Fault;
 use crate::util::graph::EdgeStatus;
 use crate::util::graphmap::GraphMap;
@@ -69,7 +69,7 @@ impl Subcommand<Context> for Tree {
 }
 
 impl Tree {
-    fn run(&self, target: Ip, catalog: Catalog, mode: Languages) -> Result<(), Fault> {
+    fn run(&self, target: Ip, catalog: Catalog, mode: Language) -> Result<(), Fault> {
         match &self.ip {
             true => self.run_ip_graph(target, catalog, &mode),
             false => self.run_hdl_graph(target, catalog, &mode),
@@ -77,7 +77,7 @@ impl Tree {
     }
 
     /// Construct and print the graph at an HDL-entity level.
-    fn run_hdl_graph(&self, target: Ip, catalog: Catalog, mode: &Languages) -> Result<(), Fault> {
+    fn run_hdl_graph(&self, target: Ip, catalog: Catalog, mode: &Language) -> Result<(), Fault> {
         let working_lib = Identifier::new_working();
 
         // build graph again but with entire set of all files available from all depdendencies
@@ -193,7 +193,7 @@ impl Tree {
     }
 
     /// Construct and print the graph at an IP dependency level.
-    fn run_ip_graph(&self, target: Ip, catalog: Catalog, mode: &Languages) -> Result<(), Fault> {
+    fn run_ip_graph(&self, target: Ip, catalog: Catalog, mode: &Language) -> Result<(), Fault> {
         let ip_graph = algo::compute_final_ip_graph(&target, &catalog, mode)?;
 
         let tree = ip_graph.get_graph().treeview(0);

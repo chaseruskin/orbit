@@ -10,7 +10,7 @@ use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbols::CompoundIdentifier;
 use crate::core::lang::vhdl::symbols::{entity::Entity, VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
-use crate::core::lang::Languages;
+use crate::core::lang::Language;
 use crate::core::target::Target;
 use crate::core::variable;
 use crate::core::variable::VariableTable;
@@ -173,7 +173,7 @@ impl Plan {
         target_dir: &str,
         target: &Target,
         catalog: Catalog,
-        lang: &Languages,
+        lang: &Language,
         clean: bool,
         force: bool,
         only_lock: bool,
@@ -778,8 +778,8 @@ impl Plan {
                 None => continue,
             };
             entity_node.as_ref_mut().add_file(node.get_file());
-            // create edges
-            for dep in node.get_sub().get_edges() {
+            // create edges (this is very important)
+            for dep in node.get_sub().get_edge_list() {
                 // need to locate the key with a suffix matching `dep` if it was a component instantiation
                 if dep.get_prefix().is_none() {
                     if let Some(lib) = component_pairs.get(dep.get_suffix()) {
@@ -792,11 +792,6 @@ impl Plan {
                 } else {
                     graph_map.add_edge_by_key(dep, &node_name, ());
                 };
-            }
-            // add edges for reference calls
-            for dep in node.get_sub().get_refs() {
-                // note: verify the dependency exists (occurs within function)
-                graph_map.add_edge_by_key(dep, &node_name, ());
             }
         }
 

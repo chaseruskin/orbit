@@ -1,6 +1,7 @@
 use super::super::lexer::Position;
 use super::subunit::SubUnit;
 use super::symbols::VhdlSymbol;
+use crate::core::lang::vhdl::symbols::IdentifierList;
 use crate::core::lang::vhdl::symbols::VHDLParser;
 use crate::core::lang::vhdl::token::identifier::Identifier;
 use crate::util::anyerror::CodeFault;
@@ -39,16 +40,13 @@ impl PrimaryUnit {
         }
     }
 
-    pub fn add_refs(
-        &mut self,
-        refs: &mut std::collections::LinkedList<super::symbols::CompoundIdentifier>,
-    ) {
+    pub fn add_refs(&mut self, refs: IdentifierList) {
         match self {
             Self::Entity(unit) => unit.get_symbol_mut().unwrap().add_refs(refs),
             Self::Package(unit) => unit.get_symbol_mut().unwrap().add_refs(refs),
             Self::Context(unit) => unit.get_symbol_mut().unwrap().add_refs(refs),
             Self::Configuration(unit) => unit.get_symbol_mut().unwrap().add_refs(refs),
-        }
+        };
     }
 
     /// Serializes the data into a toml inline table
@@ -203,9 +201,9 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
                 .collect();
 
             // update references for primary units
-            for mut sn in sub_nodes {
+            for sn in sub_nodes {
                 if let Some(owner) = units.get_mut(sn.get_entity()) {
-                    owner.add_refs(sn.get_refs_mut());
+                    owner.add_refs(sn.into_refs());
                 }
             }
 

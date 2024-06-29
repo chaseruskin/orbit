@@ -1,5 +1,5 @@
 use super::{
-    symbols::{self, IdentifierList},
+    symbols::{self, CompoundIdentifier, IdentifierList},
     token::identifier::Identifier,
 };
 
@@ -23,12 +23,30 @@ impl SubUnit {
         Self::PackageBody(body)
     }
 
+    pub fn into_refs(self) -> IdentifierList {
+        match self {
+            Self::Architecture(u) => u.into_refs(),
+            Self::Configuration(u) => u.into_refs(),
+            Self::PackageBody(u) => u.into_refs(),
+        }
+    }
+
     pub fn get_edges(&self) -> &IdentifierList {
         match self {
             Self::Architecture(u) => u.edges(),
             Self::Configuration(u) => u.edges(),
             Self::PackageBody(u) => u.get_refs(),
         }
+    }
+
+    /// Returns an ordered list of compound indentifiers for consist graph building.
+    pub fn get_edge_list(&self) -> Vec<&CompoundIdentifier> {
+        let mut list = Vec::with_capacity(self.get_refs().len());
+        self.get_refs().iter().for_each(|f| {
+            list.push(f);
+        });
+        list.sort();
+        list
     }
 
     pub fn get_entity(&self) -> &Identifier {

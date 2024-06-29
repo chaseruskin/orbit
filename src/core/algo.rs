@@ -8,7 +8,7 @@ use tempfile::tempdir;
 
 use crate::core::lang::vhdl::dst;
 use crate::core::lang::vhdl::primaryunit::VhdlIdentifierError;
-use crate::core::lang::vhdl::token::{Identifier, VhdlTokenizer};
+use crate::core::lang::vhdl::token::VhdlTokenizer;
 
 use crate::core::catalog::CacheSlot;
 use crate::core::catalog::Catalog;
@@ -55,7 +55,7 @@ fn graph_ip<'a>(
     // construct iterative approach with lists
     let t = g.add_node(
         root.get_man().get_ip().into_ip_spec(),
-        IpNode::new_keep(root, Identifier::new_working()),
+        IpNode::new_keep(root, LangIdentifier::new_working()),
     );
     let mut processing = vec![(t, root)];
 
@@ -267,7 +267,7 @@ pub struct IpNode<'a> {
     dyn_state: DynState,
     original: &'a Ip,
     transform: Option<Ip>,
-    library: Identifier,
+    library: LangIdentifier,
 }
 
 #[derive(Debug, PartialEq)]
@@ -277,7 +277,7 @@ pub enum DynState {
 }
 
 impl<'a> IpNode<'a> {
-    fn new_keep(og: &'a Ip, lib: Identifier) -> Self {
+    fn new_keep(og: &'a Ip, lib: LangIdentifier) -> Self {
         Self {
             dyn_state: DynState::Keep,
             original: og,
@@ -286,7 +286,7 @@ impl<'a> IpNode<'a> {
         }
     }
 
-    fn new_alter(og: &'a Ip, lib: Identifier) -> Self {
+    fn new_alter(og: &'a Ip, lib: LangIdentifier) -> Self {
         Self {
             dyn_state: DynState::Alter,
             original: og,
@@ -312,7 +312,7 @@ impl<'a> IpNode<'a> {
         &self.original
     }
 
-    fn get_library(&self) -> &Identifier {
+    fn get_library(&self) -> &LangIdentifier {
         &self.library
     }
 
@@ -422,7 +422,7 @@ fn install_dst(source_ip: &Ip, root: &std::path::PathBuf) -> Ip {
 #[derive(Debug, PartialEq)]
 pub struct IpFileNode<'a> {
     file: String,
-    library: Identifier,
+    library: LangIdentifier,
     ip: &'a Ip,
 }
 
@@ -435,7 +435,7 @@ impl<'a> Hash for IpFileNode<'a> {
 }
 
 impl<'a> IpFileNode<'a> {
-    pub fn new(file: String, ip: &'a Ip, lib: Identifier) -> Self {
+    pub fn new(file: String, ip: &'a Ip, lib: LangIdentifier) -> Self {
         Self {
             file: file,
             ip: ip,
@@ -452,7 +452,7 @@ impl<'a> IpFileNode<'a> {
     }
 
     /// References the library identifier.
-    pub fn get_library(&self) -> Identifier {
+    pub fn get_library(&self) -> LangIdentifier {
         self.ip.get_man().get_hdl_library()
     }
 }

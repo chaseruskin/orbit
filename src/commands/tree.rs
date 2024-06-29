@@ -260,6 +260,8 @@ impl Tree {
             };
 
             let lib = source_file.get_library();
+            let lib = lib.as_vhdl_name().take().unwrap();
+
             // add all entities to a graph and store architectures for later analysis
             symbols.into_iter().for_each(|sym| match sym {
                 VhdlSymbol::Entity(e) => {

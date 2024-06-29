@@ -15,6 +15,7 @@ use super::super::parser::*;
 
 use crate::core::lang::vhdl::interface::*;
 use crate::core::lang::vhdl::token::*;
+use crate::core::lang::LangIdentifier;
 
 pub type IdentifierList = HashSet<CompoundIdentifier>;
 

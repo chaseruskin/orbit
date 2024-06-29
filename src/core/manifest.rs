@@ -12,6 +12,7 @@ use std::path::PathBuf;
 use std::{collections::HashMap, str::FromStr};
 
 use super::lang::vhdl::token::identifier::Identifier;
+use super::lang::LangIdentifier;
 
 pub type Id = PkgPart;
 pub type Version = crate::core::version::Version;
@@ -108,10 +109,11 @@ impl Manifest {
 
     /// Returns the library name to be used for HDL. If a library is not specified,
     /// then it chooses "work".
-    pub fn get_hdl_library(&self) -> Identifier {
+    pub fn get_hdl_library(&self) -> LangIdentifier {
         match self.get_ip().get_library().as_ref() {
-            Some(l) => Identifier::from(l),
-            None => Identifier::new_working(), // Identifier::from(self.get_man().get_ip().get_name()),
+            Some(l) => LangIdentifier::Vhdl(Identifier::from(l)),
+            // IDEA: or for none -> Identifier::from(self.get_man().get_ip().get_name()),
+            None => LangIdentifier::Vhdl(Identifier::new_working()),
         }
     }
 

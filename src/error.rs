@@ -54,7 +54,7 @@ pub enum Error {
     #[error("failed to parse identifier: {0}")]
     CrossIdentifierParsingFailed(LastError),
     #[error("duplicate identifier \"{0}\" found in the following source files:\n\n  location 1: {1:?}\n  location 2: {2:?}{3}")]
-    DuplicateIdentifiersCrossLang(String, String, String, Hint)
+    DuplicateIdentifiersCrossLang(String, String, String, Hint),
 }
 
 #[derive(Debug, PartialEq)]

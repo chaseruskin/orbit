@@ -10,7 +10,7 @@ use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbols::CompoundIdentifier;
 use crate::core::lang::vhdl::symbols::{entity::Entity, VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
-use crate::core::lang::Language;
+use crate::core::lang::{LangIdentifier, Language};
 use crate::core::target::Target;
 use crate::core::variable;
 use crate::core::variable::VariableTable;
@@ -197,7 +197,7 @@ impl Plan {
                     let ip_file_node = IpFileNode::new(
                         e.as_source_file().unwrap().to_string(),
                         &working_ip,
-                        Identifier::new_working(),
+                        LangIdentifier::new_working(),
                     );
                     blueprint.add(Instruction::Hdl(&ip_file_node));
 
@@ -721,24 +721,25 @@ impl Plan {
 
                 // add all entities to a graph and store architectures for later analysis
                 let mut iter = symbols.into_iter().filter_map(|f| {
+                    let vhdl_lib = lib.as_vhdl_name().unwrap().clone();
                     match f {
                         VhdlSymbol::Entity(_) => {
                             component_pairs
-                                .insert(f.as_entity().unwrap().get_name().clone(), lib.clone());
+                                .insert(f.as_entity().unwrap().get_name().clone(), vhdl_lib);
                             Some(f)
                         }
                         VhdlSymbol::Package(_) => Some(f),
                         VhdlSymbol::Context(_) => Some(f),
                         VhdlSymbol::Architecture(arch) => {
                             sub_nodes.push((
-                                lib.clone(),
+                                vhdl_lib,
                                 SubUnitNode::new(SubUnit::from_arch(arch), source_file),
                             ));
                             None
                         }
                         VhdlSymbol::Configuration(cfg) => {
                             sub_nodes.push((
-                                lib.clone(),
+                                vhdl_lib,
                                 SubUnitNode::new(SubUnit::from_config(cfg), source_file),
                             ));
                             None
@@ -746,7 +747,7 @@ impl Plan {
                         // package bodies are usually in same design file as package
                         VhdlSymbol::PackageBody(pb) => {
                             sub_nodes.push((
-                                lib.clone(),
+                                vhdl_lib,
                                 SubUnitNode::new(SubUnit::from_body(pb), source_file),
                             ));
                             None
@@ -757,7 +758,7 @@ impl Plan {
                     // add primary design units into the graph
                     graph_map.add_node(
                         CompoundIdentifier::new(
-                            Identifier::from(lib.clone()),
+                            lib.as_vhdl_name().unwrap().clone(),
                             e.get_name().unwrap().clone(),
                         ),
                         HdlNode::new(e, source_file),
@@ -882,12 +883,15 @@ impl Plan {
     fn detect_bench(
         _graph: &GraphMap<CompoundIdentifier, HdlNode, ()>,
         local: &GraphMap<&CompoundIdentifier, &HdlNode, &()>,
-        working_lib: &Identifier,
+        working_lib: &LangIdentifier,
         bench: &Option<Identifier>,
         top: &Option<Identifier>,
     ) -> Result<(Option<usize>, Option<usize>), PlanError> {
         Ok(if let Some(t) = &bench {
-            match local.get_node_by_key(&&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
+            match local.get_node_by_key(&&CompoundIdentifier::new(
+                working_lib.as_vhdl_name().unwrap().clone(),
+                t.clone(),
+            )) {
                 // verify the unit is an entity that is a testbench
                 Some(node) => {
                     if let Some(e) = node.as_ref().get_symbol().as_entity() {
@@ -959,14 +963,17 @@ impl Plan {
     fn detect_top(
         _graph: &GraphMap<CompoundIdentifier, HdlNode, ()>,
         local: &GraphMap<&CompoundIdentifier, &HdlNode, &()>,
-        working_lib: &Identifier,
+        working_lib: &LangIdentifier,
         natural_top: Option<usize>,
         mut bench: Option<usize>,
         top: &Option<Identifier>,
     ) -> Result<(Option<usize>, Option<usize>), PlanError> {
         // determine the top-level node index
         let top: Option<usize> = if let Some(t) = &top {
-            match local.get_node_by_key(&&CompoundIdentifier::new(working_lib.clone(), t.clone())) {
+            match local.get_node_by_key(&&CompoundIdentifier::new(
+                working_lib.as_vhdl_name().unwrap().clone(),
+                t.clone(),
+            )) {
                 Some(node) => {
                     // verify the unit is an entity that is not a testbench
                     if let Some(e) = node.as_ref().get_symbol().as_entity() {
@@ -1174,7 +1181,7 @@ impl Plan {
             .iter()
             // traverse subset of graph by filtering only for working library entities (current lib)
             .filter(|f| match f.0.get_prefix() {
-                Some(iden) => iden == &working_lib,
+                Some(iden) => &LangIdentifier::from(iden.clone()) == &working_lib,
                 None => false,
             })
             // filter by checking if the node's ip is the same as target

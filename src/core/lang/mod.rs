@@ -15,8 +15,8 @@ use crate::util::anyerror::AnyError;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 use std::collections::HashMap;
-use std::hash::Hash;
 use std::fmt::Display;
+use std::hash::Hash;
 use std::str::FromStr;
 use toml_edit::InlineTable;
 use verilog::symbols::VerilogSymbol;
@@ -325,14 +325,29 @@ impl PartialEq for LangIdentifier {
     }
 }
 
-
 impl Hash for LangIdentifier {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.as_str().hash(state)
     }
 }
 
+impl From<VhdlIdentifier> for LangIdentifier {
+    fn from(value: VhdlIdentifier) -> Self {
+        Self::Vhdl(value)
+    }
+}
+
+impl From<VerilogIdentifier> for LangIdentifier {
+    fn from(value: VerilogIdentifier) -> Self {
+        Self::Verilog(value)
+    }
+}
+
 impl LangIdentifier {
+    pub fn new_working() -> Self {
+        Self::Vhdl(VhdlIdentifier::new_working())
+    }
+
     pub fn as_vhdl_name(&self) -> Option<&VhdlIdentifier> {
         match &self {
             Self::Vhdl(name) => Some(name),
@@ -350,7 +365,7 @@ impl LangIdentifier {
     fn as_str(&self) -> &str {
         match &self {
             Self::Verilog(name) => name.as_str(),
-            Self::Vhdl(name) => name.as_str()
+            Self::Vhdl(name) => name.as_str(),
         }
     }
 }
@@ -396,7 +411,12 @@ pub fn collect_units(
         );
         if let Some(existing_unit) = existing {
             // return duplicate id error
-            return Err(Error::DuplicateIdentifiersCrossLang(existing_unit.get_name().to_string(), existing_unit.get_source_file().to_string(), source_file, Hint::ResolveDuplicateIds1))?
+            return Err(Error::DuplicateIdentifiersCrossLang(
+                existing_unit.get_name().to_string(),
+                existing_unit.get_source_file().to_string(),
+                source_file,
+                Hint::ResolveDuplicateIds1,
+            ))?;
         }
     }
     Ok(results)

@@ -161,7 +161,7 @@ impl Entity {
     pub fn into_instance(
         &self,
         inst: &Option<Identifier>,
-        library: Option<Identifier>,
+        library: &Option<&Identifier>,
         fmt: &VhdlFormat,
         signal_prefix: &str,
         signal_suffix: &str,

@@ -5,6 +5,8 @@ use crate::core::lang::vhdl::token::Identifier;
 use crate::util::anyerror::AnyError;
 use colored::Colorize;
 
+use super::LangIdentifier;
+
 #[derive(Debug, PartialEq)]
 pub struct HdlNode<'a> {
     sym: VhdlSymbol,
@@ -27,7 +29,7 @@ impl<'a> HdlNode<'a> {
         }
     }
 
-    pub fn get_library(&self) -> Identifier {
+    pub fn get_library(&self) -> LangIdentifier {
         self.files.get(0).as_ref().unwrap().get_library()
     }
 

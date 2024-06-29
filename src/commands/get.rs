@@ -159,7 +159,7 @@ impl Get {
 
         // make the library reference the current working ip 'work' if its internal
         let lib = match self.ip.is_none() {
-            true => Identifier::new_working(),
+            true => LangIdentifier::new_working(),
             false => man.get_hdl_library(),
         };
 
@@ -175,7 +175,10 @@ impl Get {
 
         // display library declaration line if displaying instance
         if self.library == true {
-            println!("{}", interface::library_statement(&lib));
+            println!(
+                "{}",
+                interface::library_statement(&lib.as_vhdl_name().as_ref().unwrap())
+            );
         }
 
         // display component declaration
@@ -199,7 +202,7 @@ impl Get {
         let lib = if self.component == true {
             None
         } else {
-            Some(lib)
+            Some(lib.as_vhdl_name().unwrap())
         };
 
         // display instantiation code
@@ -208,7 +211,7 @@ impl Get {
                 "{}",
                 ent.into_instance(
                     &self.name,
-                    lib,
+                    &lib,
                     &fmt,
                     &self.signal_prefix,
                     &self.signal_suffix,

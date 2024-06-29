@@ -2,7 +2,7 @@
 
 This technique is related to _name mangling_ in programming languages. _Name mangling_ is a technique used to solve problems regarding the need to resolve unique names for programming entities. You can learn more about name mangling [here](https://en.wikipedia.org/wiki/Name_mangling).
 
-## Problem Statement
+## Problem
 
 Before we begin, it is important to understand the problem we are trying to solve. An issue inherent to VHDL and many other languages is _namespace pollution_, which is when many programming language variables/identifiers/units/classes are defined at the global level. To learn more about namespace pollution, [here](https://stackoverflow.com/questions/8862665/what-does-it-mean-global-namespace-would-be-polluted/13352212) is a StackOverflow post that explains it in relation to Javascript.
 
@@ -10,19 +10,20 @@ Namespace pollution can lead to _namespace clashes_. As you define more primary 
 
 In VHDL, a common example of a namespace clash is when different files define an entity by the same name, which may have different behaviors. Namespace clashes may start to appear when a higher-level IP requires the same entity from an IP but as different versions throughout its dependency tree.
 
-## Solution - Dynamic Symbol Transformation
+## Solution
 
-The proposed algorithm solves the namespace clashing problem by rewriting conflicts with a new unique identifier without losing information in the original identifier.
+We solve the namespace pollution problem with an algorithm called _dynamic symbol transformation_ (DST). The DST algorithm solves the namespace clashing problem by rewriting conflicts with a new unique identifier without losing information in the original identifier.
 
 ### Limitations
+
 Orbit automatically handles resolving duplicate identifiers for primary design units due to two design contraints. The limitations are:
-1. All primary design unit identifiers in the current IP must be unique within the scope of the IP.
-2. All primary design units identifiers in the current IP must be unique within the scope of the IP's direct dependencies. An identifier can be duplicated for primary design units across indirect dependencies.
+1. All primary design unit identifiers in the current ip must be unique within the scope of the ip.
+2. All primary design units identifiers in the current ip must be unique within the scope of the ip's direct dependencies. An identifier can be duplicated for primary design units across indirect dependencies.
 
 
-## Example Demonstration
+## Example
 
-This section walks through a basic demonstration of the dynamic symbol transformation (DST) algorithm. First, it defines some terminology, and then walks through the algorithm's functionality.
+This section walks through a basic demonstration of the DST algorithm. First, it defines some terminology, and then walks through the algorithm's functionality.
 
 ### Symbols
 
@@ -48,7 +49,7 @@ end entity;
 
 Remember that this identifier could appear again at the same namespace level as this exsiting entity in a different VHDL file.  
 
-Now imagine you are integrating VHDL code from various existing IPs. As you instantiate entities within larger entities, you realize there exists another entity named `and_gate` further down in the hierarchy, but this one has a different behavior and port interface than the previously defined `and_gate` circuit from the "lab1/" directory.
+Now imagine you are integrating VHDL code from various existing ips. As you instantiate entities within larger entities, you realize there exists another entity named `and_gate` further down in the hierarchy, but this one has a different behavior and port interface than the previously defined `and_gate` circuit from the "lab1/" directory.
 
 Filename: lab3/and_gate.vhd
 ``` vhdl
@@ -60,11 +61,11 @@ entity and_gate is
 end entity;
 ```
 
-Since the current IP requires both code segments, then traditionally your EDA tool would complain to you and be unable to resolve which `and_gate` to be used where. It then falls on the developer to rename one of the entities where it is defined and everywhere it is referenced, which introduces additional overhead in time and possibilities for errors. This problem is solved with DST.
+Since the current ip requires both code segments, then traditionally your EDA tool would complain to you and be unable to resolve which `and_gate` to be used where. It then falls on the developer to rename one of the entities where it is defined and everywhere it is referenced, which introduces additional overhead in time and possibilities for errors. This problem is solved with DST.
 
 ### Walkthrough
 
-We present an example project-level IP dependency tree.
+We present an example project-level ip dependency tree.
 ```
 final-project
 ├─ lab3
@@ -73,9 +74,9 @@ final-project
 └─ lab2
 ```
 
-Imagine the `final-project` IP has an entity called `top_level` which is the root of circuit hierarchy. From there, it reuses entities from the other IP.
+Imagine the `final-project` ip has an entity called `top_level` which is the root of circuit hierarchy. From there, it reuses entities from the other ip.
 
-Let's look at the VHDL design tree hierarchy across the IPs.
+Let's look at the VHDL design tree hierarchy across the ips.
 ```
 top_level (final-project)
 ├─ and_gate (lab3)
@@ -96,7 +97,7 @@ top_level (final-project)
 └─ mux (lab2)
 ```
 
-Let's dive into what happened here. DST handled the namespace clash by _transforming_, or renaming, the entity related to lab1. The entity's identifier in lab1 was appended with the first 10 digits of the original lab1 IP's checksum. This transformation occurred at that IP's source code level (lab1), and in the source code for all dependents of that entity (lab2). Therefore, DST produced new dynamic variants of the lab1 and lab2 IPs that properly reference and associate with `and_gate_fbe4720d0`.
+Let's dive into what happened here. DST handled the namespace clash by _transforming_, or renaming, the entity related to lab1. The entity's identifier in lab1 was appended with the first 10 digits of the original lab1 ip's checksum. This transformation occurred at that ip's source code level (lab1), and in the source code for all dependents of that entity (lab2). Therefore, DST produced new dynamic variants of the lab1 and lab2 ips that properly reference and associate with `and_gate_fbe4720d0`.
 
 DST specifically chose not to rename the `and_gate` from lab3, or else the user would have to be burdened with trying to track and maintain the new unique identifier in the currently developed IP (final-project). As a result, DST has no additional overhead to the user and is kept abstracted away by Orbit. Direct dependencies are never chosen for DST.
 

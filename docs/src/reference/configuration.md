@@ -1,22 +1,24 @@
 # Configuration
 
-The `config.toml` file stores settings and extends `orbit`'s functionality. It is written in the [TOML](https://toml.io/en/) format. It is maintained by the developer and can be shared across teams for consistent development environments.
+The `config.toml` file stores settings and extends Orbit's functionality. It is written in the [TOML](https://toml.io/en/) format. It is maintained by the developer and can be shared across teams for consistent development environments.
 
 > __Note:__ The configuration's file name is "config.toml", with respect to case-sensitivity.
 
 ## Paths
 
-When a field is expected to be a filesystem path, `orbit` has the ability to resolve relative paths. The path is determined in relation to the currently processed `config.toml`'s parent directory. This design choice was implemented in order to allow for path definitions to be valid across developer machines when sharing configurations. It is recommended to use relative paths when setting a path to a field in a `config.toml`.
+When a field is expected to be a file system path, Orbit has the ability to resolve relative paths. The path is determined in relation to the currently processed `config.toml`'s parent directory. This design choice was implemented in order to allow for path definitions to be valid across developer machines when sharing configurations. It is recommended to use relative paths when setting a path to a field in a `config.toml`.
 
 ## Precedence
 
 Orbit supports multiple levels of configuration. Each level has its own order of precedence:
 
-1. Local configuration file (location: current working IP)
+1. Local configuration file (working ip's directory)
 
-2. Global configuration file (location: `$ORBIT_HOME`)
+2. Local parent configuration files (parent directories of the working ip's directory)
 
-3. Configuration files listed in the global `config.toml`'s [`include`](#the-include-field) (items in the array are processed in order; first-to-last)
+3. Included configurations (order-preserving) listed in the global `config.toml`'s [`include`](#the-include-field)
+
+4. Global configuration file (location: `$ORBIT_HOME`)
 
 The configuration files are processed in the order defined above. When a configuration file defines a field, no other configuration files later in the process will be able to override its value. If a field is never provided an explicit value, the hard-coded defaults will be used.
 
@@ -25,9 +27,11 @@ The configuration files are processed in the order defined above. When a configu
 Every configuration file consists of the following sections:
 
 - [include](#the-include-field) - Lists other `config.toml` files to process.
+- [[language]](#the-language-section) - The language settings.
+    - [vhdl](#the-vhdl-field) - Enable/disable VHDL support.
+    - [verilog](#the-verilog-field) - Enable/disable Verilog support.
 - [[general]](#the-general-section) - The general settings.
     - [target-dir](#the-target-dir-field) - Default target directory.
-    - [language-mode](#the-language-mode-field) - HDL language(s) to enable.
 - [[vhdl-format]](#the-vhdl-format-section) - VHDL code formatting.
 - [[env]](#the-env-section) - The runtime environment variables.
 - [[[target]]](#the-target-array) - Define a target.
@@ -53,6 +57,26 @@ include = [
 ]
 ```
 
+### The `[language]` section
+
+### The `vhdl` field
+
+Enable or disable VHDL language support. Disabling this field will prevent Orbit from recognizing files with .vhd and .vhdl extensions. If this field is omitted, the default value is `true`.
+
+``` toml
+[language]
+vhdl = true
+```
+
+### The `verilog` field
+
+Enable or disable Verilog language support. Disabling this field will prevent Orbit from recognizing files with .v and .verilog extensions. If this field is omitted, the default value is `true`.
+
+``` toml
+[language]
+verilog = true
+```
+
 ### The `[general]` section
 
 ### The `target-dir` field
@@ -63,15 +87,6 @@ Define the default output directory to create for the planning and building phas
 [general]
 target-dir = "target"
 # ...
-```
-
-### The `language-mode` field
-
-Enable specific HDLs to be read by `orbit`. Supports the following options: "vhdl", "verilog", or "mixed". When this field is not defined, the default value for the language mode is "mixed" (enabling all supported HDLs).
-
-``` toml
-[general]
-language-mode = "mixed"
 ```
 
 ### The `[vhdl-format]` section

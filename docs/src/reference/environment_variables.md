@@ -20,11 +20,11 @@ Orbit's configuration can be customized with the setting of specific environment
 
 Orbit also sets environment variables during runtime so a plugin has access to runtime information. 
 
-- `ORBIT_BUILD_DIR` - directory to place the `blueprint.tsv` file relative to the current ip path. Default is `build`.
+- `ORBIT_TARGET_DIR` - directory to perform the build process relative to the current ip path. Default is `target`.
 
 - `ORBIT_IP_PATH` - path to the ip that is detected under the current working directory. If its not immediately detected at the current directory, it will continue to search the parent directory until it finds a `Orbit.toml` manifest file.
 
-- `ORBIT_PLUGIN` - last referenced plugin from the planning phase
+- `ORBIT_TARGET` - specified target to plan and execute
 
 - `ORBIT_TOP` - toplevel design unit identifier
 
@@ -36,7 +36,7 @@ Orbit also sets environment variables during runtime so a plugin has access to r
 
 - `ORBIT_IP_VERSION` - specific version of current working directory's IP
 
-- `ORBIT_BLUEPRINT` - the filename for the blueprint: `blueprint.tsv`
+- `ORBIT_BLUEPRINT` - the filename for the blueprint created during the planning stage
 
 ## Checking the environment
 

@@ -14,11 +14,8 @@
     - [Final Project: Full adder](./tutorials/final_project.md)
 
 - [User Guide](./user/user.md)
-    <!-- - [Develop IP](./user/develop_ip.md) -->
-    <!-- - [Use IP](./user/use_ip.md) -->
-    <!-- - [Share IP](./user/share_ip.md) -->
-    <!-- - [Make Channels](./user/make_channels.md) -->
-    <!-- - [Create Plugins](./user/creating_plugins.md) -->
+    - [Managing Ip](./user/managing_ip.md)
+    - [Targeting Builds](./user/targeting_builds.md)
 
 - [Topic Guide](./topic/topic.md)
     - [Overview](./topic/overview.md) <!-- good -->
@@ -26,14 +23,10 @@
     - [Extensible Builds](./topic/extensible_builds.md) <!-- good -->
     - [Catalog](./topic/catalog.md) <!-- good -->
     - [Ip](./topic/ip.md) <!-- good -->
+    - [Targets](./topic/targets.md)
+    - [Protocols](./topic/protocols.md)
     - [Orbit.lock](./topic/orbitlock.md) <!-- good -->
     - [.orbitignore](./topic/orbitignore.md) <!-- good -->
-    - [Targets](./topic/targets.md)
-    - [Planning](./topic/planning.md)
-    - [Building](./topic/building.md)
-    - [Protocols](./topic/protocols.md)
-    - [Caching](./topic/caching.md)
-    - [Downloading](./topic/downloading.md)
     - [Variable Substitution](./topic/var_sub.md)
     - [Dynamic Symbol Transformation](./topic/dst.md)
 

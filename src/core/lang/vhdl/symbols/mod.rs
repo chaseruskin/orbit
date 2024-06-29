@@ -45,7 +45,7 @@ impl From<Entity> for VhdlSymbol {
 
 impl VhdlSymbol {
     /// Casts `self` to identifier.
-    pub fn as_iden(&self) -> Option<&Identifier> {
+    pub fn get_name(&self) -> Option<&Identifier> {
         match self {
             Self::Entity(e) => Some(&e.get_name()),
             Self::Architecture(a) => Some(&a.get_name()),

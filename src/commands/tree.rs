@@ -282,7 +282,7 @@ impl Tree {
                     ));
                 }
                 VhdlSymbol::Package(_) => {
-                    package_identifiers.insert(sym.as_iden().unwrap().clone());
+                    package_identifiers.insert(sym.get_name().unwrap().clone());
                 }
                 _ => (),
             });
@@ -301,8 +301,8 @@ impl Tree {
                 None => continue,
             };
             entity_node.as_ref_mut().add_file(node.get_file());
-            // create edges
-            for dep in node.get_sub().get_edges() {
+            // create edges by ordered edge list
+            for dep in node.get_sub().get_edge_list() {
                 // verify we are not a package (will mismatch and make inaccurate graph)
                 if package_identifiers.contains(dep.get_suffix()) == true {
                     continue;

@@ -56,7 +56,11 @@ impl<'a> HdlNode<'a> {
     }
 
     pub fn display(&self, fmt: &IdentifierFormat) -> String {
-        let name = self.sym.as_iden().unwrap_or(&Identifier::new()).to_string();
+        let name = self
+            .sym
+            .get_name()
+            .unwrap_or(&Identifier::new())
+            .to_string();
         if self.is_black_box() == true {
             format!("{} {}", &name.yellow(), "?".yellow())
         } else {

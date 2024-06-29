@@ -758,7 +758,7 @@ impl Plan {
                     graph_map.add_node(
                         CompoundIdentifier::new(
                             Identifier::from(lib.clone()),
-                            e.as_iden().unwrap().clone(),
+                            e.get_name().unwrap().clone(),
                         ),
                         HdlNode::new(e, source_file),
                     );
@@ -936,7 +936,7 @@ impl Plan {
                                         .unwrap()
                                         .as_ref()
                                         .get_symbol()
-                                        .as_iden()
+                                        .get_name()
                                         .unwrap()
                                         .clone()
                                 })

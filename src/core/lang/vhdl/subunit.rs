@@ -31,14 +31,6 @@ impl SubUnit {
         }
     }
 
-    pub fn get_edges(&self) -> &IdentifierList {
-        match self {
-            Self::Architecture(u) => u.edges(),
-            Self::Configuration(u) => u.edges(),
-            Self::PackageBody(u) => u.get_refs(),
-        }
-    }
-
     /// Returns an ordered list of compound indentifiers for consist graph building.
     pub fn get_edge_list(&self) -> Vec<&CompoundIdentifier> {
         let mut list = Vec::with_capacity(self.get_refs().len());

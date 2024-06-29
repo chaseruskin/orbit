@@ -153,7 +153,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
             let mut units: HashMap<Identifier, PrimaryUnit> = symbols
                 .into_iter()
                 .filter_map(|sym| {
-                    let name = sym.as_iden()?.clone();
+                    let name = sym.get_name()?.clone();
                     match sym {
                         VhdlSymbol::Entity(_) => Some((
                             name.clone(),

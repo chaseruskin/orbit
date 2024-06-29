@@ -35,7 +35,7 @@ impl Module {
     {
         // take module name
         let mod_name = tokens.next().take().unwrap().take();
-        println!("{:?}", mod_name);
+        // println!("{:?}", mod_name);
         let mut refs = Vec::new();
         // parse the interface/declaration of the module
         let (parameters, ports, d_refs) = VerilogSymbol::parse_module_declaration(tokens)?;

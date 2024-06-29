@@ -41,10 +41,10 @@ impl Identifier {
     }
 
     // Returns the reference to the inner `String` struct.
-    fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         match self {
-            Self::Basic(id) => id.as_ref(),
-            Self::Extended(id) => id.as_ref(),
+            Self::Basic(name) => name.as_ref(),
+            Self::Extended(name) => name.as_ref(),
         }
     }
 

@@ -68,6 +68,14 @@ impl VhdlSymbol {
         }
     }
 
+    /// Checks if the symbol is a primary design unit.
+    pub fn is_primary(&self) -> bool {
+        self.as_package().is_some()
+            || self.as_entity().is_some()
+            || self.as_configuration().is_some()
+            || self.as_context().is_some()
+    }
+
     /// Casts `self` to package.
     pub fn as_package(&self) -> Option<&Package> {
         match self {
@@ -88,6 +96,14 @@ impl VhdlSymbol {
     pub fn as_configuration(&self) -> Option<&Configuration> {
         match self {
             Self::Configuration(cfg) => Some(cfg),
+            _ => None,
+        }
+    }
+
+    /// Casts `self` to context.
+    pub fn as_context(&self) -> Option<&Context> {
+        match self {
+            Self::Context(cxt) => Some(cxt),
             _ => None,
         }
     }
@@ -124,7 +140,7 @@ impl VhdlSymbol {
         }
     }
 
-    pub fn add_refs(&mut self, refs: IdentifierList) -> IdentifierList {
+    pub fn steal_refs(&mut self, refs: IdentifierList) -> IdentifierList {
         match self {
             Self::Entity(e) => e.get_refs_mut().extend(refs),
             Self::Architecture(a) => a.get_refs_mut().extend(refs),
@@ -344,7 +360,7 @@ impl Parse<VhdlToken> for VHDLParser {
                     match VhdlSymbol::parse_entity(&mut tokens, t.into_position()) {
                         Ok(mut ent) => {
                             // println!("info: detected {}", ent);
-                            global_refs = ent.add_refs(global_refs);
+                            global_refs = ent.steal_refs(global_refs);
                             Ok(Symbol::new(ent))
                         }
                         Err(e) => Err(e),
@@ -355,7 +371,7 @@ impl Parse<VhdlToken> for VHDLParser {
                 symbols.push(
                     match VhdlSymbol::parse_architecture(&mut tokens, t.into_position()) {
                         Ok(mut arch) => {
-                            global_refs = arch.add_refs(global_refs);
+                            global_refs = arch.steal_refs(global_refs);
                             // println!("info: detected {}", arch);
                             Ok(Symbol::new(arch))
                         }
@@ -375,7 +391,7 @@ impl Parse<VhdlToken> for VHDLParser {
                 symbols.push(
                     match VhdlSymbol::route_package_parse(&mut tokens, t.into_position()) {
                         Ok(mut pack) => {
-                            global_refs = pack.add_refs(global_refs);
+                            global_refs = pack.steal_refs(global_refs);
                             // println!("info: detected {}", pack);
                             Ok(Symbol::new(pack))
                         }
@@ -388,7 +404,7 @@ impl Parse<VhdlToken> for VHDLParser {
                     ContextUsage::ContextDeclaration(dec) => {
                         let mut context = VhdlSymbol::Context(dec);
                         // println!("info: detected {}", context);
-                        global_refs = context.add_refs(global_refs);
+                        global_refs = context.steal_refs(global_refs);
                         symbols.push(Ok(Symbol::new(context)));
                     }
                     ContextUsage::ContextReference(c_refs) => {

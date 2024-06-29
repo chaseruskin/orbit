@@ -4,13 +4,13 @@ use std::collections::HashMap;
 use super::{symbols::VerilogSymbol, token::identifier::Identifier};
 
 #[derive(PartialEq, Hash, Eq, Debug)]
-pub enum PrimaryUnitType {
+pub enum PrimaryShape {
     Module,
 }
 
 #[derive(PartialEq, Hash, Eq, Debug)]
 pub struct PrimaryUnit {
-    dtype: PrimaryUnitType,
+    shape: PrimaryShape,
     unit: Unit,
 }
 
@@ -29,8 +29,8 @@ impl std::fmt::Display for PrimaryUnit {
         write!(
             f,
             "{}",
-            match self.dtype {
-                PrimaryUnitType::Module => "module",
+            match self.shape {
+                PrimaryShape::Module => "module",
             }
         )
     }
@@ -53,7 +53,7 @@ impl Unit {
         self.symbol.as_mut()
     }
 
-    pub fn get_source_code_file(&self) -> &str {
+    pub fn get_source_file(&self) -> &str {
         &self.source
     }
 }
@@ -78,9 +78,8 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
     for source_file in files {
         // only read the HDL files
         if crate::core::fileset::is_verilog(&source_file) == true {
-            println!("parse verilog: {:?}", source_file);
+            // println!("parse verilog: {:?}", source_file);
             // parse text into Verilog symbols
-            // println!("Detected verilog file: {}", source_file);
             let contents = std::fs::read_to_string(&source_file).unwrap();
             let symbols = match VerilogParser::read(&contents) {
                 Ok(s) => s.into_symbols(),
@@ -96,7 +95,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
                         VerilogSymbol::Module(_) => Some((
                             name.clone(),
                             PrimaryUnit {
-                                dtype: PrimaryUnitType::Module,
+                                shape: PrimaryShape::Module,
                                 unit: Unit {
                                     name: name,
                                     symbol: Some(sym),

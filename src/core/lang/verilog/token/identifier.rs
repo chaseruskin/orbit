@@ -20,7 +20,7 @@ impl Eq for Identifier {}
 
 impl Identifier {
     // Returns the reference to the inner `String` struct.
-    fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         match self {
             Self::Basic(id) => id.as_ref(),
             Self::Escaped(id) => id.as_ref(),

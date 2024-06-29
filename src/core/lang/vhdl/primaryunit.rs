@@ -13,40 +13,31 @@ use toml_edit::InlineTable;
 pub type PrimaryUnitStore = HashMap<Identifier, PrimaryUnit>;
 
 #[derive(PartialEq, Hash, Eq, Debug)]
-pub enum PrimaryUnit {
-    Entity(Unit),
-    Package(Unit),
-    Context(Unit),
-    Configuration(Unit),
+pub enum PrimaryShape {
+    Entity,
+    Package,
+    Context,
+    Configuration,
+}
+
+#[derive(PartialEq, Hash, Eq, Debug)]
+pub struct PrimaryUnit {
+    shape: PrimaryShape,
+    unit: Unit,
 }
 
 impl PrimaryUnit {
     /// References the unit's identifier.
     pub fn get_iden(&self) -> &Identifier {
-        match self {
-            Self::Entity(u) => &u.name,
-            Self::Package(u) => &u.name,
-            Self::Context(u) => &u.name,
-            Self::Configuration(u) => &u.name,
-        }
+        &self.unit.name
     }
 
     pub fn get_unit(&self) -> &Unit {
-        match self {
-            Self::Entity(unit) => unit,
-            Self::Package(unit) => unit,
-            Self::Context(unit) => unit,
-            Self::Configuration(unit) => unit,
-        }
+        &self.unit
     }
 
-    pub fn add_refs(&mut self, refs: IdentifierList) {
-        match self {
-            Self::Entity(unit) => unit.get_symbol_mut().unwrap().add_refs(refs),
-            Self::Package(unit) => unit.get_symbol_mut().unwrap().add_refs(refs),
-            Self::Context(unit) => unit.get_symbol_mut().unwrap().add_refs(refs),
-            Self::Configuration(unit) => unit.get_symbol_mut().unwrap().add_refs(refs),
-        };
+    pub fn steal_refs(&mut self, refs: IdentifierList) -> () {
+        let _ = &self.unit.get_symbol_mut().unwrap().steal_refs(refs);
     }
 
     /// Serializes the data into a toml inline table
@@ -73,12 +64,16 @@ impl PrimaryUnit {
             symbol: None,
             source: String::new(),
         };
-        Some(match tbl.get("type")?.as_str()? {
-            "entity" => Self::Entity(unit),
-            "package" => Self::Package(unit),
-            "context" => Self::Context(unit),
-            "configuration" => Self::Configuration(unit),
+        let shape = match tbl.get("type")?.as_str()? {
+            "entity" => PrimaryShape::Entity,
+            "package" => PrimaryShape::Package,
+            "context" => PrimaryShape::Context,
+            "configuration" => PrimaryShape::Configuration,
             _ => return None,
+        };
+        Some(Self {
+            shape: shape,
+            unit: unit,
         })
     }
 }
@@ -88,11 +83,11 @@ impl std::fmt::Display for PrimaryUnit {
         write!(
             f,
             "{}",
-            match self {
-                Self::Entity(_) => "entity",
-                Self::Package(_) => "package",
-                Self::Context(_) => "context",
-                Self::Configuration(_) => "configuration",
+            match self.shape {
+                PrimaryShape::Entity => "entity",
+                PrimaryShape::Package => "package",
+                PrimaryShape::Context => "context",
+                PrimaryShape::Configuration => "configuration",
             }
         )
     }
@@ -115,7 +110,7 @@ impl Unit {
         self.symbol.as_mut()
     }
 
-    pub fn get_source_code_file(&self) -> &str {
+    pub fn get_source_file(&self) -> &str {
         &self.source
     }
 }
@@ -147,67 +142,59 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
                 Err(e) => Err(CodeFault(Some(source_file.clone()), Box::new(e)))?,
             };
 
-            let mut sub_nodes = Vec::new();
+            let (pri_nodes, sub_nodes): (Vec<VhdlSymbol>, Vec<VhdlSymbol>) =
+                symbols.into_iter().partition(|s| s.is_primary());
 
-            // transform into primary design units
-            let mut units: HashMap<Identifier, PrimaryUnit> = symbols
+            // assemble primary nodes
+            let mut pri_units: HashMap<Identifier, PrimaryUnit> = pri_nodes
                 .into_iter()
-                .filter_map(|sym| {
-                    let name = sym.get_name()?.clone();
-                    match sym {
-                        VhdlSymbol::Entity(_) => Some((
-                            name.clone(),
-                            PrimaryUnit::Entity(Unit {
-                                name: name,
-                                symbol: Some(sym),
-                                source: source_file.clone(),
-                            }),
-                        )),
-                        VhdlSymbol::Package(_) => Some((
-                            name.clone(),
-                            PrimaryUnit::Package(Unit {
-                                name: name,
-                                symbol: Some(sym),
-                                source: source_file.clone(),
-                            }),
-                        )),
-                        VhdlSymbol::Configuration(_) => Some((
-                            name.clone(),
-                            PrimaryUnit::Configuration(Unit {
-                                name: name,
-                                symbol: Some(sym),
-                                source: source_file.clone(),
-                            }),
-                        )),
-                        VhdlSymbol::Context(_) => Some((
-                            name.clone(),
-                            PrimaryUnit::Context(Unit {
-                                name: name,
-                                symbol: Some(sym),
-                                source: source_file.clone(),
-                            }),
-                        )),
-                        VhdlSymbol::Architecture(arch) => {
-                            sub_nodes.push(SubUnit::from_arch(arch));
-                            None
+                .map(|sym| {
+                    let name = sym.get_name().unwrap().clone();
+                    let shape = match &sym {
+                        VhdlSymbol::Entity(_) => Some(PrimaryShape::Entity),
+                        VhdlSymbol::Package(_) => Some(PrimaryShape::Package),
+                        VhdlSymbol::Configuration(_) => Some(PrimaryShape::Configuration),
+                        VhdlSymbol::Context(_) => Some(PrimaryShape::Configuration),
+                        VhdlSymbol::Architecture(_) => {
+                            panic!("architectures cannot be here")
                         }
                         // package bodies are usually in same design file as package
-                        VhdlSymbol::PackageBody(pb) => {
-                            sub_nodes.push(SubUnit::from_body(pb));
-                            None
+                        VhdlSymbol::PackageBody(_) => {
+                            panic!("package bodies cannot be here")
                         }
+                    };
+                    match shape {
+                        Some(s) => (
+                            name.clone(),
+                            PrimaryUnit {
+                                shape: s,
+                                unit: Unit {
+                                    name: name,
+                                    symbol: Some(sym),
+                                    source: source_file.clone(),
+                                },
+                            },
+                        ),
+                        None => panic!("must be a primary design unit"),
                     }
                 })
                 .collect();
 
-            // update references for primary units
-            for sn in sub_nodes {
-                if let Some(owner) = units.get_mut(sn.get_entity()) {
-                    owner.add_refs(sn.into_refs());
-                }
-            }
+            // assemble secondary nodes
+            sub_nodes
+                .into_iter()
+                .map(|n| match n {
+                    VhdlSymbol::Architecture(arch) => SubUnit::from_arch(arch),
+                    VhdlSymbol::PackageBody(pkg_body) => SubUnit::from_body(pkg_body),
+                    _ => panic!("primary design units cannot be here"),
+                })
+                .for_each(|n| {
+                    if let Some(owner) = pri_units.get_mut(n.get_entity()) {
+                        owner.steal_refs(n.into_refs());
+                    }
+                });
 
-            for (_key, primary) in units {
+            for (_key, primary) in pri_units {
                 if let Some(dupe) = result.insert(primary.get_iden().clone(), primary) {
                     return Err(CodeFault(
                         None,
@@ -222,7 +209,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
                                 .unwrap()
                                 .get_position()
                                 .clone(),
-                            PathBuf::from(dupe.get_unit().get_source_code_file()),
+                            PathBuf::from(dupe.get_unit().get_source_file()),
                             dupe.get_unit().get_symbol().unwrap().get_position().clone(),
                         )),
                     ))?;

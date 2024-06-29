@@ -120,11 +120,6 @@ impl Subcommand<Context> for View {
                         }
                         _ => {
                             let mut data = String::new();
-                            // let header = format!(
-                            //     "{:<10}{:<11}\n{2:->10}{2:->11}\n",
-                            //     "Version", "Status", " ",
-                            // );
-                            // data.push_str(&header);
                             // further restrict versions if a particular version is set
                             vers.iter()
                                 .filter(move |p| {
@@ -161,14 +156,6 @@ impl View {
     /// Creates a string for to display the primary design units for the particular ip.
     fn format_units_table(table: Vec<LangUnit>, all: bool) -> String {
         let mut result = String::new();
-        //         let header = format!(
-        //             "\
-        // {:<36}{:<14}{:<12}
-        // {:->36}{3:->14}{3:->12}\n",
-        //             "Identifier", "Type", "Visibility", " "
-        //         );
-        //         result.push_str(&header);
-
         let mut table = table;
 
         table.sort_by(|a, b| match a.get_visibility().cmp(&b.get_visibility()) {

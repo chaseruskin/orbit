@@ -113,7 +113,10 @@ impl VerilogSymbol {
     where
         I: Iterator<Item = Token<VerilogToken>>,
     {
-        todo!()
+        let mut params = Vec::new();
+        let mut ports = Vec::new();
+        let mut refs = HashSet::new();
+        Ok((params, ports, refs))
     }
 
     pub fn parse_module_architecture<I>(
@@ -122,7 +125,10 @@ impl VerilogSymbol {
     where
         I: Iterator<Item = Token<VerilogToken>>,
     {
-        todo!()
+        let mut params = Vec::new();
+        let mut ports = Vec::new();
+        let mut refs = HashSet::new();
+        Ok((params, ports, refs))
     }
 }
 

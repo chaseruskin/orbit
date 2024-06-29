@@ -9,13 +9,18 @@ pub mod unit;
 
 pub mod cross;
 
-use crate::util::anyerror::{AnyError, CodeFault};
+use crate::error::Error;
+use crate::error::Hint;
+use crate::util::anyerror::AnyError;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 use std::collections::HashMap;
+use std::hash::Hash;
 use std::fmt::Display;
 use std::str::FromStr;
 use toml_edit::InlineTable;
+use verilog::symbols::VerilogSymbol;
+use vhdl::symbols::VhdlSymbol;
 
 type VhdlIdentifier = vhdl::token::Identifier;
 type VerilogIdentifier = verilog::token::identifier::Identifier;
@@ -174,7 +179,7 @@ pub enum LangUnit {
 impl LangUnit {
     /// Checks if the module is public.
     pub fn is_listed_public(&self, plist: &PublicList) -> bool {
-        plist.is_included(self.get_source_code_file())
+        plist.is_included(self.get_source_file())
     }
 
     pub fn get_visibility(&self) -> &Visibility {
@@ -207,17 +212,24 @@ impl LangUnit {
         }
     }
 
-    pub fn get_source_code_file(&self) -> &str {
+    pub fn get_source_file(&self) -> &str {
         match &self {
-            Self::Vhdl(u, _) => u.get_unit().get_source_code_file(),
-            Self::Verilog(u, _) => u.get_unit().get_source_code_file(),
+            Self::Vhdl(u, _) => u.get_unit().get_source_file(),
+            Self::Verilog(u, _) => u.get_unit().get_source_file(),
         }
     }
 
-    pub fn get_symbol(&self) -> Option<&vhdl::symbols::VhdlSymbol> {
+    pub fn get_vhdl_symbol(&self) -> Option<&VhdlSymbol> {
         match &self {
             Self::Vhdl(u, _) => u.get_unit().get_symbol(),
-            Self::Verilog(_u, _) => None,
+            Self::Verilog(_, _) => None,
+        }
+    }
+
+    pub fn get_verilog_symbol(&self) -> Option<&VerilogSymbol> {
+        match &self {
+            Self::Vhdl(_, _) => None,
+            Self::Verilog(u, _) => u.get_unit().get_symbol(),
         }
     }
 
@@ -292,17 +304,53 @@ impl Display for LangUnit {
     }
 }
 
-#[derive(Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
+#[derive(Debug, Eq, Clone, PartialOrd, Ord)]
 pub enum LangIdentifier {
     Vhdl(VhdlIdentifier),
     Verilog(VerilogIdentifier),
 }
 
+impl PartialEq for LangIdentifier {
+    fn eq(&self, other: &Self) -> bool {
+        match &self {
+            Self::Vhdl(l_vhdl_name) => match &other {
+                Self::Vhdl(r_vhdl_name) => l_vhdl_name == r_vhdl_name,
+                Self::Verilog(r_verilog_name) => l_vhdl_name.as_str() == r_verilog_name.as_str(),
+            },
+            Self::Verilog(l_verilog_name) => match &other {
+                Self::Verilog(r_verilog_name) => l_verilog_name == r_verilog_name,
+                Self::Vhdl(r_vhdl_name) => l_verilog_name.as_str() == r_vhdl_name.as_str(),
+            },
+        }
+    }
+}
+
+
+impl Hash for LangIdentifier {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.as_str().hash(state)
+    }
+}
+
 impl LangIdentifier {
-    pub fn as_vhdl_id(&self) -> Option<&VhdlIdentifier> {
+    pub fn as_vhdl_name(&self) -> Option<&VhdlIdentifier> {
         match &self {
             Self::Vhdl(name) => Some(name),
             _ => None,
+        }
+    }
+
+    pub fn as_verilog_name(&self) -> Option<&VerilogIdentifier> {
+        match &self {
+            Self::Verilog(name) => Some(name),
+            _ => None,
+        }
+    }
+
+    fn as_str(&self) -> &str {
+        match &self {
+            Self::Verilog(name) => name.as_str(),
+            Self::Vhdl(name) => name.as_str()
         }
     }
 }
@@ -319,7 +367,7 @@ impl Display for LangIdentifier {
 pub fn collect_units(
     files: &Vec<String>,
     lang_mode: &Language,
-) -> Result<HashMap<LangIdentifier, LangUnit>, CodeFault> {
+) -> Result<HashMap<LangIdentifier, LangUnit>, Box<dyn std::error::Error>> {
     // collect the VHDL units
     let vhdl_units = match lang_mode.supports_vhdl() {
         true => vhdl::primaryunit::collect_units(&files)?,
@@ -341,11 +389,15 @@ pub fn collect_units(
         );
     }
     for (k, v) in verilog_units {
-        results.insert(
+        let source_file = v.get_unit().get_source_file().to_string();
+        let existing = results.insert(
             LangIdentifier::Verilog(k),
             LangUnit::Verilog(v, SharedData::new()),
         );
+        if let Some(existing_unit) = existing {
+            // return duplicate id error
+            return Err(Error::DuplicateIdentifiersCrossLang(existing_unit.get_name().to_string(), existing_unit.get_source_file().to_string(), source_file, Hint::ResolveDuplicateIds1))?
+        }
     }
-
     Ok(results)
 }

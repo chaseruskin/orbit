@@ -103,8 +103,11 @@ fn graph_ip<'a>(
                                             Box::new(VhdlIdentifierError::DuplicateAcrossDirect(
                                                 dupe.get_name().to_string(),
                                                 dep.get_man().get_ip().into_ip_spec(),
-                                                PathBuf::from(dupe.get_source_code_file()),
-                                                dupe.get_symbol().unwrap().get_position().clone(),
+                                                PathBuf::from(dupe.get_source_file()),
+                                                dupe.get_vhdl_symbol()
+                                                    .unwrap()
+                                                    .get_position()
+                                                    .clone(),
                                             )),
                                         ))?;
                                     }

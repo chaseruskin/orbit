@@ -388,8 +388,8 @@ impl Read {
         // get the file data for the primary design unit
         let (source, position) = match units.get_key_value(unit) {
             Some((_, unit)) => (
-                unit.get_source_code_file(),
-                unit.get_symbol().unwrap().get_position().clone(),
+                unit.get_source_file(),
+                unit.get_vhdl_symbol().unwrap().get_position().clone(),
             ),
             None => {
                 return Err(GetError::SuggestShow(

@@ -420,6 +420,11 @@ impl Config {
             Some(v) => v.append(&mut rhs.include.unwrap_or(Vec::new())),
             None => self.include = rhs.include,
         }
+        // combine the '[language]' table
+        match &mut self.language {
+            Some(v) => v.merge(rhs.language),
+            None => self.language = rhs.language,
+        }
         // combine '[general]' table
         match &mut self.general {
             Some(v) => v.merge(rhs.general),

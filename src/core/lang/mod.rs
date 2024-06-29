@@ -10,58 +10,82 @@ pub mod unit;
 pub mod cross;
 
 use crate::util::anyerror::{AnyError, CodeFault};
+use serde_derive::Deserialize;
 use serde_derive::Serialize;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::str::FromStr;
 use toml_edit::InlineTable;
-use vhdl::primaryunit::PrimaryUnit;
 
 type VhdlIdentifier = vhdl::token::Identifier;
-use serde_derive::Deserialize;
+type VerilogIdentifier = verilog::token::identifier::Identifier;
+
+type VhdlPrimaryUnit = vhdl::primaryunit::PrimaryUnit;
+type VerilogPrimaryUnit = verilog::primaryunit::PrimaryUnit;
 
 use super::pubfile::{PublicList, Visibility};
 
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Language {
-    vhdl: bool,
-    verilog: bool,
-    systemverilog: bool,
+    vhdl: Option<bool>,
+    verilog: Option<bool>,
+    systemverilog: Option<bool>,
 }
 
 impl Language {
     pub fn with(vhdl: bool, verilog: bool, systemverilog: bool) -> Self {
         Self {
-            vhdl: vhdl,
-            verilog: verilog,
-            systemverilog: systemverilog,
+            vhdl: Some(vhdl),
+            verilog: Some(verilog),
+            systemverilog: Some(systemverilog),
         }
     }
 
     pub fn new() -> Self {
         Self {
-            vhdl: true,
-            verilog: false,
-            systemverilog: false,
+            vhdl: None,
+            verilog: None,
+            systemverilog: None,
+        }
+    }
+
+    /// Merges any populated data from `rhs` into attributes that do not already
+    /// have data defined in `self`.
+    pub fn merge(&mut self, rhs: Option<Self>) {
+        if let Some(rhs) = rhs {
+            // no build dir defined so give it the value from `rhs`
+            if self.vhdl.is_some() == false {
+                self.vhdl = rhs.vhdl;
+            }
+            if self.verilog.is_some() == false {
+                self.verilog = rhs.verilog;
+            }
+            if self.systemverilog.is_some() == false {
+                self.systemverilog = rhs.systemverilog;
+            }
         }
     }
 
     pub fn supports_vhdl(&self) -> bool {
-        self.vhdl
+        self.vhdl.unwrap_or(true)
     }
 
     pub fn supports_verilog(&self) -> bool {
-        self.verilog
+        self.verilog.unwrap_or(true)
+    }
+
+    pub fn supports_systemverilog(&self) -> bool {
+        self.systemverilog.unwrap_or(true)
     }
 }
 
 impl Default for Language {
     fn default() -> Self {
         Self {
-            vhdl: true,
-            verilog: false,
-            systemverilog: false,
+            vhdl: None,
+            verilog: None,
+            systemverilog: None,
         }
     }
 }
@@ -127,8 +151,8 @@ impl SharedData {
 
 #[derive(Debug, PartialEq)]
 pub enum LangUnit {
-    Vhdl(PrimaryUnit, SharedData),
-    Verilog(String, SharedData),
+    Vhdl(VhdlPrimaryUnit, SharedData),
+    Verilog(VerilogPrimaryUnit, SharedData),
 }
 
 // impl Code for LangUnit {
@@ -171,7 +195,7 @@ impl LangUnit {
     pub fn get_name(&self) -> LangIdentifier {
         match &self {
             Self::Vhdl(u, _) => LangIdentifier::Vhdl(u.get_iden().clone()),
-            Self::Verilog(u, _) => LangIdentifier::Verilog(u.clone()),
+            Self::Verilog(u, _) => LangIdentifier::Verilog(u.get_name().clone()),
         }
     }
 
@@ -186,7 +210,7 @@ impl LangUnit {
     pub fn get_source_code_file(&self) -> &str {
         match &self {
             Self::Vhdl(u, _) => u.get_unit().get_source_code_file(),
-            Self::Verilog(u, _) => u.as_ref(),
+            Self::Verilog(u, _) => u.get_unit().get_source_code_file(),
         }
     }
 
@@ -238,8 +262,14 @@ impl LangUnit {
     pub fn from_toml(tbl: &toml_edit::InlineTable) -> Option<Self> {
         let entry = tbl.get("language")?.as_str()?;
         match entry {
-            "vhdl" => Some(Self::Vhdl(PrimaryUnit::from_toml(tbl)?, SharedData::new())),
-            "verilog" => Some(Self::Verilog(String::new(), SharedData::new())),
+            "vhdl" => Some(Self::Vhdl(
+                VhdlPrimaryUnit::from_toml(tbl)?,
+                SharedData::new(),
+            )),
+            "verilog" => Some(Self::Verilog(
+                todo!("deserialize toml for verilog"),
+                SharedData::new(),
+            )),
             _ => panic!("unknown entry in serialized toml table {}", entry),
         }
     }
@@ -265,7 +295,7 @@ impl Display for LangUnit {
 #[derive(Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
 pub enum LangIdentifier {
     Vhdl(VhdlIdentifier),
-    Verilog(String),
+    Verilog(VerilogIdentifier),
 }
 
 impl LangIdentifier {

@@ -45,7 +45,6 @@ impl Subcommand<Context> for View {
                 None => None,
             }
         };
-        let mut is_working_ip = false;
 
         // try to auto-determine the ip (check if in a working ip)
         let ip: &Ip = if let Some(spec) = &self.ip {
@@ -73,16 +72,12 @@ impl Subcommand<Context> for View {
                 return Err(Error::NoAssumedWorkingIpFound)?;
             } else {
                 match &dev_ip {
-                    Some(Ok(r)) => {
-                        is_working_ip = true;
-                        r
-                    }
+                    Some(Ok(r)) => r,
                     Some(Err(e)) => return Err(AnyError(format!("{}", e.to_string())))?,
                     _ => panic!("unreachable code"),
                 }
             }
         };
-        let _is_working_ip = is_working_ip;
 
         // load the ip's manifest
         if self.units == true {

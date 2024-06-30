@@ -445,14 +445,15 @@ Options:
 """
 
 # ------------------------------------------------------------------------------
-# run      
+# test      
 # ------------------------------------------------------------------------------
-[run]
-name = "run"
-summary = "prepare and execute a target"
-synopsis = "orbit run [options] [--] [args]..."
+[test]
+name = "test"
+summary = "run a test"
+synopsis = "orbit test [options] [--] [args]..."
 description = """
-This command will plan and build for the given target.
+This command will plan and build for the given target under the assumption it 
+is a test.
 """
 
 options."--top <unit>" = "Set the top level design unit"
@@ -469,14 +470,14 @@ options."--verbose" = "Display the command being executed"
 options."args" = "Arguments to pass to the target"
 
 examples = """
-orbit run --top top --target quartus -- --synth
+orbit test --top top --target modelsim -- --lint
 """
 
 help = """
-Prepare and execute a target.
+Run a test.
 
 Usage:
-    orbit run [options] [--] [args]...
+    orbit test [options] [--] [args]...
 
 Options:
     --target <name>         target to execute
@@ -784,7 +785,7 @@ Options:
 # ------------------------------------------------------------------------------
 [orbit]
 help = """
-Orbit is a tool for hdl package management.
+Orbit is an hdl package manager and build tool.
 
 Usage:
     orbit [options] [command]
@@ -796,9 +797,9 @@ Commands:
     read            navigate hdl design unit source code
     get             fetch an entity
     tree            view the dependency graph
-    lock            save the world state of an ip
+    lock            save the world state of the current ip
+    test, t         run a test
     build, b        plan and execute a target
-    run, r          prepare and execute a target
     launch          verify an upcoming release
     search          browse the ip catalog 
     download        request packages from the internet

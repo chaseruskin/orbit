@@ -1,12 +1,13 @@
 // This manual page was automatically generated from the mangen.py tool.
 pub const MANUAL: &str = r#"NAME
-    run - prepare and execute a target
+    test - run a test
 
 SYNOPSIS
-    orbit run [options] [--] [args]...
+    orbit test [options] [--] [args]...
 
 DESCRIPTION
-    This command will plan and build for the given target.
+    This command will plan and build for the given target under the assumption it
+    is a test.
 
 OPTIONS
     --top <unit>
@@ -46,5 +47,5 @@ OPTIONS
         Arguments to pass to the target
 
 EXAMPLES
-    orbit run --top top --target quartus -- --synth
+    orbit test --top top --target modelsim -- --lint
 "#;

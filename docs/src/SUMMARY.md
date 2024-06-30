@@ -49,6 +49,7 @@
     - [orbit get](./commands/get.md)
     - [orbit tree](./commands/tree.md)
     - [orbit lock](./commands/lock.md) <!-- DONE -->
+    - [orbit test](./commands/test.md)
     - [orbit build](./commands/build.md) <!-- DONE -->
     - [orbit launch](./commands/launch.md)
     - [orbit search](./commands/search.md)

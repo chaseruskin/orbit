@@ -30,6 +30,7 @@ Every configuration file consists of the following sections:
 - [[language]](#the-language-section) - The language settings.
     - [vhdl](#the-vhdl-field) - Enable/disable VHDL support.
     - [verilog](#the-verilog-field) - Enable/disable Verilog support.
+    - [systemverilog](#the-systemverilog-field) - Enable/disable SystemVerilog support.
 - [[general]](#the-general-section) - The general settings.
     - [target-dir](#the-target-dir-field) - Default target directory.
 - [[vhdl-format]](#the-vhdl-format-section) - VHDL code formatting.
@@ -39,6 +40,7 @@ Every configuration file consists of the following sections:
     - [description](#the-description-field) - A short description of the target.
     - [command](#the-command-field) - The command to execute the target.
     - [args](#the-args-field) - Arguments to pass to the command.
+    - [blueprint-schemes](#the-blueprint-schemes-field) - The list of supported blueprint file types.
     - [[fileset]](#the-fileset-section) - Filesets to collect for the target.
     - [explanation](#the-explanation-field) - A detailed description of the target. 
 - [[[protocol]]](#the-protocol-array) - Define a protocol.
@@ -70,11 +72,22 @@ vhdl = true
 
 ### The `verilog` field
 
-Enable or disable Verilog language support. Disabling this field will prevent Orbit from recognizing files with .v and .verilog extensions. If this field is omitted, the default value is `true`.
+Enable or disable Verilog language support. Disabling this field will prevent Orbit from recognizing files with .v and .vh extensions. If this field is omitted, the default value is `true`.
 
 ``` toml
 [language]
+# ...
 verilog = true
+```
+
+### The `systemverilog` field
+
+Enable or disable SystemVerilog language support. Disabling this field will prevent Orbit from recognizing files with .sv and .svh extensions. If this field is omitted, the default value is `true`.
+
+``` toml
+[language]
+# ...
+systemverilog = true
 ```
 
 ### The `[general]` section
@@ -127,15 +140,63 @@ super-bar = "1"
 
 ### The `name` field
 
+``` toml
+[[target]]
+name = "dump-blueprint"
+```
+
 ### The `description` field
+
+``` toml
+[[target]]
+# ...
+description = "Print the blueprint contents to the screen"
+```
 
 ### The `command` field
 
+``` toml
+[[target]]
+# ...
+command = "cat"
+```
+
 ### The `args` field
+
+``` toml
+[[target]]
+# ...
+args = ["blueprint.tsv"]
+```
+
+### The `blueprint-schemes` field
+
+``` toml
+[[target]]
+# ...
+blueprint-schemes = ["tsv"]
+```
+
+The type of blueprint files supported by the particular target. If a list is provided, the default scheme used is the first item in the list. If a scheme is provided on the command-line, then it must be a valid scheme and found within the target's explicit list.
+
+If this field is left blank or not defined, then the default scheme is "tsv".
 
 ### The `explanation` field
 
+``` toml
+explanation = """
+A very long explanation about what this target does 
+and how to possibly get more information about using it.
+"""
+```
+
 ### The `[fileset]` section
+
+``` toml
+[[target]]
+# ...
+fileset.pymdl = "{{ orbit.bench }}.py"
+```
 
 ### The `[[protocol]]` array
 

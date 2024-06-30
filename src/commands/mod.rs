@@ -15,8 +15,8 @@ mod new;
 mod plan;
 mod read;
 mod remove;
-mod run;
 mod search;
+mod test;
 mod tree;
 mod view;
 

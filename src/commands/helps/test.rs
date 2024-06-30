@@ -1,8 +1,8 @@
 // This help page was automatically generated from the mangen.py tool.
-pub const HELP: &str = r#"Prepare and execute a target.
+pub const HELP: &str = r#"Run a test.
 
 Usage:
-    orbit run [options] [--] [args]...
+    orbit test [options] [--] [args]...
 
 Options:
     --target <name>         target to execute
@@ -12,5 +12,5 @@ Options:
     --verbose               print the commands being executed
     args                    arguments to pass to the target
 
-Use 'orbit help run' to read more about the command.
+Use 'orbit help test' to read more about the command.
 "#;

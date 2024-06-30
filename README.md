@@ -149,7 +149,7 @@ Read the [Book of Orbit](https://cdotrus.github.io/orbit/) for comprehensive doc
 
 Orbit brings an agile approach to hardware development that minimizes technical debt through its available commands related to ip integration and build automation:
 ```
-Orbit is a tool for hdl package management.
+Orbit is an hdl package manager and build tool.
 
 Usage:
     orbit [options] [command]
@@ -161,9 +161,9 @@ Commands:
     read            navigate hdl design unit source code
     get             fetch an entity
     tree            view the dependency graph
-    lock            save the world state of an ip
+    lock            save the world state of the current ip
+    test, t         run a test
     build, b        plan and execute a target
-    run, r          prepare and execute a target
     launch          verify an upcoming release
     search          browse the ip catalog 
     download        request packages from the internet

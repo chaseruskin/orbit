@@ -1,6 +1,6 @@
 use cliproc::{cli, proc, stage::Memory, Arg, Cli, Help, Subcommand};
 
-use crate::commands::helps::run;
+use crate::commands::helps::test;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
@@ -16,7 +16,7 @@ use crate::util::environment::{EnvVar, Environment, ORBIT_BLUEPRINT, ORBIT_BUILD
 use super::plan::{self, Plan, BLUEPRINT_FILE};
 
 #[derive(Debug, PartialEq)]
-pub struct Run {
+pub struct Test {
     target: Option<String>,
     args: Vec<String>,
     list: bool,
@@ -29,10 +29,10 @@ pub struct Run {
     bench: Option<Identifier>,
 }
 
-impl Subcommand<Context> for Run {
+impl Subcommand<Context> for Test {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
-        cli.help(Help::with(run::HELP))?;
-        Ok(Run {
+        cli.help(Help::with(test::HELP))?;
+        Ok(Test {
             // Flags
             list: cli.check(Arg::flag("list"))?,
             force: cli.check(Arg::flag("force"))?,
@@ -101,7 +101,7 @@ impl Subcommand<Context> for Run {
     }
 }
 
-impl Run {
+impl Test {
     fn run(
         &self,
         ip: &Ip,

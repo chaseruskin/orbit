@@ -21,7 +21,7 @@ COMMANDS = [
     'tree',
     'lock',
     'build',
-    'run',
+    'test',
     'launch',
     'search',
     'download',

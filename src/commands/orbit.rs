@@ -119,8 +119,8 @@ use crate::commands::lock::Lock;
 use crate::commands::new::New;
 use crate::commands::read::Read;
 use crate::commands::remove::Remove;
-use crate::commands::run::Run;
 use crate::commands::search::Search;
+use crate::commands::test::Test;
 use crate::commands::tree::Tree;
 use crate::commands::view::View;
 
@@ -131,7 +131,7 @@ enum OrbitSubcommand {
     Search(Search),
     Lock(Lock),
     Build(Build),
-    Run(Run),
+    Test(Test),
     Launch(Launch),
     Install(Install),
     Tree(Tree),
@@ -149,8 +149,8 @@ impl Subcommand<Context> for OrbitSubcommand {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
         match cli
             .select(&[
-                "help", "new", "search", "lock", "build", "run", "launch", "download", "install",
-                "get", "init", "tree", "view", "b", "env", "config", "remove", "read", "r",
+                "help", "new", "search", "lock", "build", "test", "t", "launch", "download",
+                "install", "get", "init", "tree", "view", "b", "env", "config", "remove", "read",
             ])?
             .as_ref()
         {
@@ -160,7 +160,7 @@ impl Subcommand<Context> for OrbitSubcommand {
             "search" => Ok(OrbitSubcommand::Search(Search::interpret(cli)?)),
             "lock" => Ok(OrbitSubcommand::Lock(Lock::interpret(cli)?)),
             "b" | "build" => Ok(OrbitSubcommand::Build(Build::interpret(cli)?)),
-            "r" | "run" => Ok(OrbitSubcommand::Run(Run::interpret(cli)?)),
+            "t" | "test" => Ok(OrbitSubcommand::Test(Test::interpret(cli)?)),
             "init" => Ok(OrbitSubcommand::Init(Init::interpret(cli)?)),
             "download" => Ok(OrbitSubcommand::Download(Download::interpret(cli)?)),
             "launch" => Ok(OrbitSubcommand::Launch(Launch::interpret(cli)?)),
@@ -184,7 +184,7 @@ impl Subcommand<Context> for OrbitSubcommand {
             OrbitSubcommand::Install(sub) => sub.execute(context),
             OrbitSubcommand::Help(sub) => sub.execute(&()),
             OrbitSubcommand::New(sub) => sub.execute(context),
-            OrbitSubcommand::Run(sub) => sub.execute(context),
+            OrbitSubcommand::Test(sub) => sub.execute(context),
             OrbitSubcommand::Launch(sub) => sub.execute(context),
             OrbitSubcommand::Tree(sub) => sub.execute(context),
             OrbitSubcommand::Init(sub) => sub.execute(context),

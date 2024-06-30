@@ -6,9 +6,10 @@ use crate::core::context::{self, Context};
 use crate::core::fileset::Fileset;
 use crate::core::iparchive::IpArchive;
 use crate::core::lang::parser::ParseError;
+use crate::core::lang::reference::CompoundIdentifier;
+use crate::core::lang::verilog::symbols::{VerilogParser, VerilogSymbol};
 use crate::core::lang::vhdl::subunit::SubUnit;
-use crate::core::lang::vhdl::symbols::CompoundIdentifier;
-use crate::core::lang::vhdl::symbols::{entity::Entity, VHDLParser, VhdlSymbol};
+use crate::core::lang::vhdl::symbols::{VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lang::{LangIdentifier, Language};
 use crate::core::target::Target;
@@ -238,7 +239,7 @@ impl Plan {
             fs::remove_dir_all(&output_path)?;
         }
 
-        let files = algo::build_ip_file_list(&ip_graph, &working_ip);
+        let files = algo::build_ip_file_list(&ip_graph, &working_ip, &lang);
 
         let global_graph = Self::build_full_graph(&files)?;
 
@@ -697,8 +698,8 @@ use crate::util::anyerror::AnyError;
 
 use super::download::ProtocolMap;
 
-use crate::core::lang::node::HdlNode;
 use crate::core::lang::node::SubUnitNode;
+use crate::core::lang::node::{HdlNode, HdlSymbol};
 
 impl Plan {
     /// Builds a graph of design units. Used for planning.
@@ -707,12 +708,13 @@ impl Plan {
     ) -> Result<GraphMap<CompoundIdentifier, HdlNode<'a>, ()>, Fault> {
         let mut graph_map: GraphMap<CompoundIdentifier, HdlNode, ()> = GraphMap::new();
 
-        let mut sub_nodes: Vec<(Identifier, SubUnitNode)> = Vec::new();
+        let mut sub_nodes: Vec<(LangIdentifier, SubUnitNode)> = Vec::new();
 
         // store the (suffix, prefix) for all entities
-        let mut component_pairs: HashMap<Identifier, Identifier> = HashMap::new();
+        let mut component_pairs: HashMap<LangIdentifier, LangIdentifier> = HashMap::new();
         // read all files
         for source_file in files {
+            // assemble VHDL files
             if fileset::is_vhdl(&source_file.get_file()) == true {
                 let contents = fs::read_to_string(&source_file.get_file()).unwrap();
                 let symbols = match VHDLParser::read(&contents) {
@@ -724,29 +726,31 @@ impl Plan {
                 };
 
                 let lib = source_file.get_library();
+                let vhdl_lib = lib.as_vhdl_name().unwrap().clone();
                 // println!("{} {}", source_file.get_file(), source_file.get_library());
 
                 // add all entities to a graph and store architectures for later analysis
                 let mut iter = symbols.into_iter().filter_map(|f| {
-                    let vhdl_lib = lib.as_vhdl_name().unwrap().clone();
                     match f {
                         VhdlSymbol::Entity(_) => {
-                            component_pairs
-                                .insert(f.as_entity().unwrap().get_name().clone(), vhdl_lib);
+                            component_pairs.insert(
+                                LangIdentifier::Vhdl(f.as_entity().unwrap().get_name().clone()),
+                                LangIdentifier::Vhdl(vhdl_lib.clone()),
+                            );
                             Some(f)
                         }
                         VhdlSymbol::Package(_) => Some(f),
                         VhdlSymbol::Context(_) => Some(f),
                         VhdlSymbol::Architecture(arch) => {
                             sub_nodes.push((
-                                vhdl_lib,
+                                LangIdentifier::Vhdl(vhdl_lib.clone()),
                                 SubUnitNode::new(SubUnit::from_arch(arch), source_file),
                             ));
                             None
                         }
                         VhdlSymbol::Configuration(cfg) => {
                             sub_nodes.push((
-                                vhdl_lib,
+                                LangIdentifier::Vhdl(vhdl_lib.clone()),
                                 SubUnitNode::new(SubUnit::from_config(cfg), source_file),
                             ));
                             None
@@ -754,7 +758,7 @@ impl Plan {
                         // package bodies are usually in same design file as package
                         VhdlSymbol::PackageBody(pb) => {
                             sub_nodes.push((
-                                vhdl_lib,
+                                LangIdentifier::Vhdl(vhdl_lib.clone()),
                                 SubUnitNode::new(SubUnit::from_body(pb), source_file),
                             ));
                             None
@@ -764,20 +768,56 @@ impl Plan {
                 while let Some(e) = iter.next() {
                     // add primary design units into the graph
                     graph_map.add_node(
-                        CompoundIdentifier::new(
+                        CompoundIdentifier::new_vhdl(
                             lib.as_vhdl_name().unwrap().clone(),
                             e.get_name().unwrap().clone(),
                         ),
-                        HdlNode::new(e, source_file),
+                        HdlNode::new(HdlSymbol::Vhdl(e), source_file),
                     );
                 }
+            } else if fileset::is_verilog(&source_file.get_file()) == true {
+                let contents = fs::read_to_string(&source_file.get_file()).unwrap();
+                let symbols = match VerilogParser::read(&contents) {
+                    Ok(s) => s.into_symbols(),
+                    Err(e) => Err(ParseError::SourceCodeError(
+                        source_file.get_file().clone(),
+                        e.to_string(),
+                    ))?,
+                };
+
+                let lib = source_file.get_library();
+                let vhdl_lib = lib.as_vhdl_name().unwrap().clone();
+                // println!("{} {}", source_file.get_file(), source_file.get_library());
+
+                // add all entities to a graph and store architectures for later analysis
+                symbols.into_iter().for_each(|f| {
+                    let name = f.as_name().clone();
+                    match f {
+                        VerilogSymbol::Module(_) => {
+                            component_pairs.insert(
+                                LangIdentifier::Verilog(name.clone()),
+                                LangIdentifier::Vhdl(vhdl_lib.clone()),
+                            );
+                            // add primary design units into the graph
+                            graph_map.add_node(
+                                CompoundIdentifier::new(lib.clone(), LangIdentifier::Verilog(name)),
+                                HdlNode::new(HdlSymbol::Verilog(f), source_file),
+                            );
+                        }
+                    }
+                });
+            } else if fileset::is_systemverilog(&source_file.get_file()) == true {
+                todo!("parse sv into graph")
             }
         }
 
         // go through all architectures and make the connections
         let mut sub_nodes_iter = sub_nodes.into_iter();
         while let Some((lib, node)) = sub_nodes_iter.next() {
-            let node_name = CompoundIdentifier::new(lib, node.get_sub().get_entity().clone());
+            let node_name = CompoundIdentifier::new(
+                lib,
+                LangIdentifier::Vhdl(node.get_sub().get_entity().clone()),
+            );
 
             // link to the owner and add architecture's source file
             let entity_node = match graph_map.get_node_by_key_mut(&node_name) {
@@ -788,8 +828,9 @@ impl Plan {
             entity_node.as_ref_mut().add_file(node.get_file());
             // create edges (this is very important)
             for dep in node.get_sub().get_edge_list() {
+                // println!("{:?}", dep);
                 // need to locate the key with a suffix matching `dep` if it was a component instantiation
-                if dep.get_prefix().is_none() {
+                if dep.get_prefix().is_none() == true {
                     if let Some(lib) = component_pairs.get(dep.get_suffix()) {
                         graph_map.add_edge_by_key(
                             &CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone()),
@@ -821,7 +862,7 @@ impl Plan {
                 .collect();
 
             for dep in &references {
-                let working = Identifier::new_working();
+                let working = LangIdentifier::new_working();
                 // re-route the library prefix to the current unit's library
                 let dep_adjusted = CompoundIdentifier::new(
                     iden.get_prefix().unwrap_or(&working).clone(),
@@ -895,14 +936,14 @@ impl Plan {
         top: &Option<Identifier>,
     ) -> Result<(Option<usize>, Option<usize>), PlanError> {
         Ok(if let Some(t) = &bench {
-            match local.get_node_by_key(&&CompoundIdentifier::new(
+            match local.get_node_by_key(&&CompoundIdentifier::new_vhdl(
                 working_lib.as_vhdl_name().unwrap().clone(),
                 t.clone(),
             )) {
                 // verify the unit is an entity that is a testbench
                 Some(node) => {
-                    if let Some(e) = node.as_ref().get_symbol().as_entity() {
-                        if e.is_testbench() == false {
+                    if node.as_ref().get_symbol().is_component() == true {
+                        if node.as_ref().get_symbol().is_testbench() == false {
                             return Err(PlanError::BadTestbench(t.clone()))?;
                         }
                         // return the id from the local graph
@@ -922,8 +963,8 @@ impl Plan {
                         .get_node_by_key(local.get_key_by_index(n.index()).unwrap())
                         .unwrap();
                     // verify the root is a testbench
-                    if let Some(ent) = n.as_ref().get_symbol().as_entity() {
-                        if ent.is_testbench() == true {
+                    if n.as_ref().get_symbol().is_component() == true {
+                        if n.as_ref().get_symbol().is_testbench() == true {
                             (None, Some(n.index()))
                         // otherwise we found the toplevel node that is not a testbench "natural top"
                         } else {
@@ -948,7 +989,6 @@ impl Plan {
                                         .as_ref()
                                         .get_symbol()
                                         .get_name()
-                                        .unwrap()
                                         .clone()
                                 })
                                 .collect(),
@@ -977,14 +1017,14 @@ impl Plan {
     ) -> Result<(Option<usize>, Option<usize>), PlanError> {
         // determine the top-level node index
         let top: Option<usize> = if let Some(t) = &top {
-            match local.get_node_by_key(&&CompoundIdentifier::new(
+            match local.get_node_by_key(&&CompoundIdentifier::new_vhdl(
                 working_lib.as_vhdl_name().unwrap().clone(),
                 t.clone(),
             )) {
                 Some(node) => {
                     // verify the unit is an entity that is not a testbench
-                    if let Some(e) = node.as_ref().get_symbol().as_entity() {
-                        if e.is_testbench() == true {
+                    if node.as_ref().get_symbol().is_component() == true {
+                        if node.as_ref().get_symbol().is_testbench() == true {
                             return Err(PlanError::BadTop(t.clone()))?;
                         }
                     } else {
@@ -1003,8 +1043,6 @@ impl Plan {
                                     .unwrap()
                                     .as_ref()
                                     .get_symbol()
-                                    .as_entity()
-                                    .unwrap()
                                     .is_testbench()
                             })
                             .collect();
@@ -1018,7 +1056,12 @@ impl Plan {
                                     benches
                                         .into_iter()
                                         .map(|f| {
-                                            local.get_key_by_index(f).unwrap().get_suffix().clone()
+                                            local
+                                                .get_node_by_index(f)
+                                                .unwrap()
+                                                .as_ref()
+                                                .get_symbol()
+                                                .get_name()
                                         })
                                         .collect(),
                                 ))?
@@ -1035,18 +1078,21 @@ impl Plan {
                 Some(nt) => Some(nt),
                 None => {
                     if let Some(b) = bench {
-                        let entities: Vec<(usize, &Entity)> = local
+                        let entities: Vec<(usize, &HdlSymbol)> = local
                             .get_graph()
                             .predecessors(b)
                             .filter_map(|f| {
-                                if let Some(e) = local
+                                if local
                                     .get_node_by_index(f)
                                     .unwrap()
                                     .as_ref()
                                     .get_symbol()
-                                    .as_entity()
+                                    .is_component()
                                 {
-                                    Some((f, e))
+                                    Some((
+                                        f,
+                                        local.get_node_by_index(f).unwrap().as_ref().get_symbol(),
+                                    ))
                                 } else {
                                     None
                                 }
@@ -1067,10 +1113,11 @@ impl Plan {
                                         .into_iter()
                                         .map(|f| {
                                             local
-                                                .get_key_by_index(f.0)
+                                                .get_node_by_index(f.0)
                                                 .unwrap()
-                                                .get_suffix()
-                                                .clone()
+                                                .as_ref()
+                                                .get_symbol()
+                                                .get_name()
                                         })
                                         .collect(),
                                 ))?
@@ -1253,10 +1300,10 @@ pub enum PlanError {
     BadTestbench(Identifier),
     BadTop(Identifier),
     BadEntity(Identifier),
-    TestbenchNoTest(Identifier),
+    TestbenchNoTest(LangIdentifier),
     UnknownUnit(Identifier),
     UnknownEntity(Identifier),
-    Ambiguous(String, Vec<Identifier>),
+    Ambiguous(String, Vec<LangIdentifier>),
     Empty,
 }
 

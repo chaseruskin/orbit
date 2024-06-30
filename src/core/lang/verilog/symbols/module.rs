@@ -2,6 +2,7 @@ use std::iter::Peekable;
 
 use crate::core::lang::{
     lexer::{Position, Token},
+    reference::RefSet,
     verilog::{
         error::VerilogError,
         token::{identifier::Identifier, token::VerilogToken},
@@ -15,7 +16,7 @@ pub struct Module {
     name: Identifier,
     parameters: Vec<String>,
     ports: Vec<String>,
-    refs: Vec<Identifier>,
+    refs: RefSet,
     pos: Position,
     language: String,
 }
@@ -23,6 +24,14 @@ pub struct Module {
 impl Module {
     pub fn get_name(&self) -> &Identifier {
         &self.name
+    }
+
+    pub fn is_testbench(&self) -> bool {
+        self.ports.is_empty()
+    }
+
+    pub fn get_refs(&self) -> &RefSet {
+        &self.refs
     }
 }
 
@@ -36,7 +45,7 @@ impl Module {
         // take module name
         let mod_name = tokens.next().take().unwrap().take();
         // println!("{:?}", mod_name);
-        let mut refs = Vec::new();
+        let mut refs = RefSet::new();
         // parse the interface/declaration of the module
         let (parameters, ports, d_refs) = VerilogSymbol::parse_module_declaration(tokens)?;
         refs.extend(d_refs);

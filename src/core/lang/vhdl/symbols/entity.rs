@@ -2,12 +2,15 @@ use std::iter::Peekable;
 
 use serde_derive::Serialize;
 
-use crate::core::lang::vhdl::{error::VhdlError, format::VhdlFormat};
+use crate::core::lang::{
+    reference::RefSet,
+    vhdl::{error::VhdlError, format::VhdlFormat},
+};
 
 use super::{
     architecture::Architecture, color, Architectures, Delimiter, Generics, Identifier,
-    IdentifierList, InterfaceDeclarations, Keyword, Ports, Position, ToColor, Token, VhdlSymbol,
-    VhdlToken, ENTITY_NAME,
+    InterfaceDeclarations, Keyword, Ports, Position, ToColor, Token, VhdlSymbol, VhdlToken,
+    ENTITY_NAME,
 };
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -17,8 +20,12 @@ pub struct Entity {
     generics: Generics,
     ports: Ports,
     architectures: Vec<Architecture>,
+    /// The set of names that were referenced in the entity.
     #[serde(skip_serializing)]
-    refs: IdentifierList,
+    refs: RefSet,
+    /// The set of references that were identified as components.
+    #[serde(skip_serializing)]
+    deps: RefSet,
     #[serde(skip_serializing)]
     pos: Position,
     language: String,
@@ -32,7 +39,8 @@ impl Entity {
             ports: Ports::new(),
             generics: Generics::new(),
             architectures: Vec::new(),
-            refs: IdentifierList::new(),
+            refs: RefSet::new(),
+            deps: RefSet::new(),
             pos: Position::new(),
             language: String::from("vhdl"),
         }
@@ -46,7 +54,8 @@ impl Entity {
             ports: Ports::new(),
             generics: Generics::new(),
             architectures: Vec::new(),
-            refs: IdentifierList::new(),
+            refs: RefSet::new(),
+            deps: RefSet::new(),
             pos: Position::new(),
             language: String::from("vhdl"),
         }
@@ -79,7 +88,7 @@ impl Entity {
     }
 
     /// References the references for the entity.
-    pub fn get_refs(&self) -> &IdentifierList {
+    pub fn get_refs(&self) -> &RefSet {
         &self.refs
     }
 
@@ -265,7 +274,8 @@ impl Entity {
     {
         // take entity name
         let entity_name = tokens.next().take().unwrap().take();
-        let (generics, ports, entity_refs) = VhdlSymbol::parse_entity_declaration(tokens)?;
+        let (generics, ports, entity_refs, entity_deps) =
+            VhdlSymbol::parse_entity_declaration(tokens)?;
 
         let generics = generics
             .into_iter()
@@ -287,13 +297,14 @@ impl Entity {
             generics: Generics(InterfaceDeclarations::from_double_listed_tokens(generics)),
             ports: Ports(InterfaceDeclarations::from_double_listed_tokens(ports)),
             refs: entity_refs,
+            deps: entity_deps,
             pos: pos,
             language: String::from("vhdl"),
         })
     }
 
     /// Accesses the references as mutable for the entity.
-    pub fn get_refs_mut(&mut self) -> &mut IdentifierList {
+    pub fn get_refs_mut(&mut self) -> &mut RefSet {
         &mut self.refs
     }
 }

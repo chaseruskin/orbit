@@ -1,7 +1,7 @@
 use super::super::lexer::Position;
 use super::subunit::SubUnit;
 use super::symbols::VhdlSymbol;
-use crate::core::lang::vhdl::symbols::IdentifierList;
+use crate::core::lang::reference::RefSet;
 use crate::core::lang::vhdl::symbols::VHDLParser;
 use crate::core::lang::vhdl::token::identifier::Identifier;
 use crate::util::anyerror::CodeFault;
@@ -36,7 +36,7 @@ impl PrimaryUnit {
         &self.unit
     }
 
-    pub fn steal_refs(&mut self, refs: IdentifierList) -> () {
+    pub fn steal_refs(&mut self, refs: RefSet) -> () {
         let _ = &self.unit.get_symbol_mut().unwrap().steal_refs(refs);
     }
 

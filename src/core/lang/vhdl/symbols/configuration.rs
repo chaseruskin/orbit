@@ -1,11 +1,13 @@
-use super::{Identifier, IdentifierList, Position};
+use crate::core::lang::reference::RefSet;
+
+use super::{Identifier, Position};
 
 #[derive(Debug, PartialEq)]
 pub struct Configuration {
     name: Identifier,
     owner: Identifier,
-    dependencies: IdentifierList,
-    refs: IdentifierList,
+    dependencies: RefSet,
+    refs: RefSet,
     pos: Position,
 }
 
@@ -13,8 +15,8 @@ impl Configuration {
     pub fn new(
         name: Identifier,
         owner: Identifier,
-        deps: IdentifierList,
-        refs: IdentifierList,
+        deps: RefSet,
+        refs: RefSet,
         pos: Position,
     ) -> Self {
         Self {
@@ -44,21 +46,21 @@ impl Configuration {
         &self.owner
     }
 
-    pub fn edges(&self) -> &IdentifierList {
+    pub fn edges(&self) -> &RefSet {
         &self.dependencies
     }
 
     /// Accesses the references for the entity.
-    pub fn get_refs(&self) -> &IdentifierList {
+    pub fn get_refs(&self) -> &RefSet {
         &self.refs
     }
 
     /// Accesses the references as mutable for the entity.
-    pub fn get_refs_mut(&mut self) -> &mut IdentifierList {
+    pub fn get_refs_mut(&mut self) -> &mut RefSet {
         &mut self.refs
     }
 
-    pub fn into_refs(self) -> IdentifierList {
+    pub fn into_refs(self) -> RefSet {
         self.refs
     }
 }

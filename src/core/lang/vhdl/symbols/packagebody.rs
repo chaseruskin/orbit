@@ -1,16 +1,18 @@
 use std::fmt::Display;
 
-use super::{Identifier, IdentifierList, Position};
+use crate::core::lang::reference::RefSet;
+
+use super::{Identifier, Position};
 
 #[derive(Debug, PartialEq)]
 pub struct PackageBody {
     owner: Identifier,
-    refs: IdentifierList,
+    refs: RefSet,
     pos: Position,
 }
 
 impl PackageBody {
-    pub fn new(owner: Identifier, refs: IdentifierList, pos: Position) -> Self {
+    pub fn new(owner: Identifier, refs: RefSet, pos: Position) -> Self {
         Self {
             owner: owner,
             refs: refs,
@@ -21,7 +23,7 @@ impl PackageBody {
 
 impl PackageBody {
     /// Accesses the references for the entity.
-    pub fn get_refs(&self) -> &IdentifierList {
+    pub fn get_refs(&self) -> &RefSet {
         &self.refs
     }
 
@@ -33,16 +35,16 @@ impl PackageBody {
         &self.pos
     }
 
-    pub fn take_refs(self) -> IdentifierList {
+    pub fn take_refs(self) -> RefSet {
         self.refs
     }
 
     /// Accesses the references as mutable for the entity.
-    pub fn get_refs_mut(&mut self) -> &mut IdentifierList {
+    pub fn get_refs_mut(&mut self) -> &mut RefSet {
         &mut self.refs
     }
 
-    pub fn into_refs(self) -> IdentifierList {
+    pub fn into_refs(self) -> RefSet {
         self.refs
     }
 }

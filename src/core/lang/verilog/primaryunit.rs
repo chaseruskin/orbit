@@ -1,7 +1,7 @@
+use super::{symbols::VerilogSymbol, token::identifier::Identifier};
 use crate::{core::lang::verilog::symbols::VerilogParser, util::anyerror::CodeFault};
 use std::collections::HashMap;
-
-use super::{symbols::VerilogSymbol, token::identifier::Identifier};
+use std::str::FromStr;
 
 #[derive(PartialEq, Hash, Eq, Debug)]
 pub enum PrimaryShape {
@@ -21,6 +21,23 @@ impl PrimaryUnit {
 
     pub fn get_unit(&self) -> &Unit {
         &self.unit
+    }
+
+    /// Deserializes the data from a toml inline table.
+    pub fn from_toml(tbl: &toml_edit::InlineTable) -> Option<Self> {
+        let unit = Unit {
+            name: Identifier::from_str(tbl.get("identifier")?.as_str()?).unwrap(),
+            symbol: None,
+            source: String::new(),
+        };
+        let shape = match tbl.get("type")?.as_str()? {
+            "module" => PrimaryShape::Module,
+            _ => return None,
+        };
+        Some(Self {
+            shape: shape,
+            unit: unit,
+        })
     }
 }
 

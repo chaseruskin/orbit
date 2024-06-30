@@ -6,7 +6,6 @@ use crate::util::graphmap::GraphMap;
 use std::hash::Hash;
 use tempfile::tempdir;
 
-use crate::core::lang::vhdl::dst;
 use crate::core::lang::vhdl::primaryunit::VhdlIdentifierError;
 use crate::core::lang::vhdl::token::VhdlTokenizer;
 
@@ -18,8 +17,10 @@ use crate::core::lockfile::{LockEntry, LockFile};
 use crate::core::manifest;
 use crate::core::version::AnyVersion;
 
-use super::lang::LangIdentifier;
-use crate::core::lang::{LangUnit, Language};
+use super::fileset;
+use super::lang::verilog::token::tokenizer::VerilogTokenizer;
+use super::lang::{verilog, vhdl, LangIdentifier};
+use crate::core::lang::Language;
 
 /// Constructs an ip-graph from a lockfile.
 pub fn graph_ip_from_lock(lock: &LockFile) -> Result<GraphMap<IpSpec, &LockEntry, ()>, Fault> {
@@ -59,13 +60,9 @@ fn graph_ip<'a>(
     );
     let mut processing = vec![(t, root)];
 
-    let mut iden_set: HashMap<LangIdentifier, LangUnit> = HashMap::new();
-    // add root's identifiers
-    Ip::collect_units(true, root.get_root(), mode, false, root.into_public_list())?
-        .into_iter()
-        .for_each(|(key, unit)| {
-            iden_set.insert(key, unit);
-        });
+    // add root's identifiers and parse files according to the correct language settings
+    let mut unit_map =
+        Ip::collect_units(true, root.get_root(), mode, false, root.into_public_list())?;
 
     let mut is_root: bool = true;
 
@@ -94,9 +91,9 @@ fn graph_ip<'a>(
                                     dep.into_public_list(),
                                 )?;
                                 let dst = if let Some(dupe) =
-                                    units.iter().find(|(key, _)| iden_set.contains_key(key))
+                                    units.iter().find(|(key, _)| unit_map.contains_key(key))
                                 {
-                                    let dupe = iden_set.get(dupe.0).unwrap();
+                                    let dupe = unit_map.get(dupe.0).unwrap();
                                     if is_root == true {
                                         return Err(CodeFault(
                                             None,
@@ -118,7 +115,7 @@ fn graph_ip<'a>(
                                 // update the hashset with the new unique non-taken identifiers
                                 if dst == false {
                                     for (key, unit) in units {
-                                        iden_set.insert(key, unit);
+                                        unit_map.insert(key, unit);
                                     }
                                 }
                                 let lib = dep.get_man().get_hdl_library();
@@ -169,7 +166,7 @@ pub fn compute_final_ip_graph<'a>(
     catalog: &'a Catalog<'a>,
     mode: &Language,
 ) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, CodeFault> {
-    // collect rough outline of ip graph
+    // collect rough outline of ip graph (after this function, the correct files according to language are kept)
     let mut rough_ip_graph = graph_ip(&target, &catalog, mode)?;
 
     // keep track of list of neighbors that must perform dst and their lookup-tables to use after processing all direct impacts
@@ -241,6 +238,7 @@ pub fn compute_final_ip_graph<'a>(
 pub fn build_ip_file_list<'a>(
     ip_graph: &'a GraphMap<IpSpec, IpNode<'a>, ()>,
     working_ip: &Ip,
+    mode: &Language,
 ) -> Vec<IpFileNode<'a>> {
     let mut files = Vec::new();
     ip_graph.get_map().iter().for_each(|(_, ip)| {
@@ -249,8 +247,11 @@ pub fn build_ip_file_list<'a>(
         crate::util::filesystem::gather_current_files(&inner_ip.get_root(), false)
             .into_iter()
             .filter(|f| working_ip == inner_ip || pub_list.is_included(f.as_ref()))
-            // @MARK: update with verilog!
-            .filter(|f| crate::core::fileset::is_vhdl(f))
+            .filter(|f| {
+                (fileset::is_vhdl(f) && mode.supports_vhdl())
+                    || (fileset::is_verilog(f) && mode.supports_verilog())
+                    || (fileset::is_systemverilog(f) && mode.supports_systemverilog())
+            })
             .for_each(|f| {
                 files.push(IpFileNode {
                     file: f,
@@ -353,16 +354,27 @@ impl<'a> IpNode<'a> {
         // edit all vhdl files
         let files = crate::util::filesystem::gather_current_files(temp_ip.get_root(), false);
         for file in &files {
-            // perform dst on the data @MARK: update with verilog!
-            if crate::core::fileset::is_vhdl(&file) == true {
+            // perform dst on the data
+            if fileset::is_vhdl(&file) == true {
                 // parse into tokens
                 let vhdl_path = PathBuf::from(file);
                 let code = std::fs::read_to_string(&vhdl_path).unwrap();
                 let tokens = VhdlTokenizer::from_source_code(&code).into_tokens_all();
                 // perform DYNAMIC SYMBOL TRANSFORM
-                let transform = dst::dyn_symbol_transform(&tokens, &lut);
+                let transform = vhdl::dst::dyn_symbol_transform(&tokens, &lut);
                 // rewrite the file
                 std::fs::write(&vhdl_path, transform).unwrap();
+            } else if fileset::is_verilog(&file) == true {
+                // parse into tokens
+                let verilog_path = PathBuf::from(file);
+                let code = std::fs::read_to_string(&verilog_path).unwrap();
+                let tokens = VerilogTokenizer::from_source_code(&code).into_tokens_all();
+                // perform DYNAMIC SYMBOL TRANSFORM
+                let transform = verilog::dst::dyn_symbol_transform(&tokens, &lut);
+                // rewrite the file
+                std::fs::write(&verilog_path, transform).unwrap();
+            } else if fileset::is_systemverilog(&file) == true {
+                todo!("dst for systemverilog")
             }
         }
         // update the slot with a transformed IP manifest

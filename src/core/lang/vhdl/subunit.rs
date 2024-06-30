@@ -1,7 +1,6 @@
-use super::{
-    symbols::{self, CompoundIdentifier, IdentifierList},
-    token::identifier::Identifier,
-};
+use crate::core::lang::reference::{CompoundIdentifier, RefSet};
+
+use super::{symbols, token::identifier::Identifier};
 
 #[derive(Debug, PartialEq)]
 pub enum SubUnit {
@@ -23,7 +22,7 @@ impl SubUnit {
         Self::PackageBody(body)
     }
 
-    pub fn into_refs(self) -> IdentifierList {
+    pub fn into_refs(self) -> RefSet {
         match self {
             Self::Architecture(u) => u.into_refs(),
             Self::Configuration(u) => u.into_refs(),
@@ -37,6 +36,17 @@ impl SubUnit {
         self.get_refs().iter().for_each(|f| {
             list.push(f);
         });
+        list.extend(self.get_edge_list_entities());
+        list.sort();
+        list
+    }
+
+    /// Returns the list of compound identifiers that were parsed from entity instantiations.
+    pub fn get_edge_list_entities(&self) -> Vec<&CompoundIdentifier> {
+        let mut list = match self {
+            Self::Architecture(arch) => arch.get_deps().into_iter().collect(),
+            _ => Vec::new(),
+        };
         list.sort();
         list
     }
@@ -49,7 +59,7 @@ impl SubUnit {
         }
     }
 
-    pub fn get_refs(&self) -> &IdentifierList {
+    pub fn get_refs(&self) -> &RefSet {
         match self {
             Self::Architecture(u) => u.get_refs(),
             Self::Configuration(u) => u.get_refs(),
@@ -57,7 +67,7 @@ impl SubUnit {
         }
     }
 
-    pub fn get_refs_mut(&mut self) -> &mut IdentifierList {
+    pub fn get_refs_mut(&mut self) -> &mut RefSet {
         match self {
             Self::Architecture(u) => u.get_refs_mut(),
             Self::Configuration(u) => u.get_refs_mut(),

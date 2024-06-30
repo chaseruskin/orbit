@@ -8,14 +8,15 @@ use crate::core::context::Context;
 use crate::core::fileset;
 use crate::core::ip::Ip;
 use crate::core::lang::node::HdlNode;
+use crate::core::lang::node::HdlSymbol;
 use crate::core::lang::node::IdentifierFormat;
 use crate::core::lang::node::SubUnitNode;
 use crate::core::lang::parser::ParseError;
+use crate::core::lang::reference::CompoundIdentifier;
 use crate::core::lang::vhdl::subunit::SubUnit;
-use crate::core::lang::vhdl::symbols::entity::Entity;
-use crate::core::lang::vhdl::symbols::CompoundIdentifier;
 use crate::core::lang::vhdl::symbols::{VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
+use crate::core::lang::LangIdentifier;
 use crate::core::lang::Language;
 use crate::util::anyerror::Fault;
 use crate::util::graph::EdgeStatus;
@@ -82,7 +83,7 @@ impl Tree {
 
         // build graph again but with entire set of all files available from all depdendencies
         let ip_graph = algo::compute_final_ip_graph(&target, &catalog, mode)?;
-        let files = algo::build_ip_file_list(&ip_graph, &target);
+        let files = algo::build_ip_file_list(&ip_graph, &target, &mode);
 
         // build the complete graph (using entities as the nodes)
         let global_graph = Self::build_graph(&files)?;
@@ -95,7 +96,7 @@ impl Tree {
                 let root_index = if let Some(ent) = &self.root {
                     // check if the identifier exists in the entity graph
                     let i = match local_graph
-                        .get_node_by_key(&&CompoundIdentifier::new(working_lib, ent.clone()))
+                        .get_node_by_key(&&CompoundIdentifier::new_vhdl(working_lib, ent.clone()))
                     {
                         Some(id) => id.index(),
                         None => return Err(PlanError::UnknownEntity(ent.clone()))?,
@@ -121,8 +122,6 @@ impl Tree {
                                                 .unwrap()
                                                 .as_ref()
                                                 .get_symbol()
-                                                .as_entity()
-                                                .unwrap()
                                                 .get_name()
                                                 .clone()
                                         })
@@ -238,62 +237,73 @@ impl Tree {
         // entity identifier, HashNode (hash-node holds entity structs)
         let mut graph = GraphMap::<CompoundIdentifier, HdlNode, ()>::new();
 
-        let mut sub_nodes: Vec<(Identifier, SubUnitNode)> = Vec::new();
+        let mut sub_nodes: Vec<(LangIdentifier, SubUnitNode)> = Vec::new();
         // store the (suffix, prefix) for all entities
-        let mut component_pairs: HashMap<Identifier, Identifier> = HashMap::new();
+        let mut component_pairs: HashMap<LangIdentifier, LangIdentifier> = HashMap::new();
 
-        let mut package_identifiers: HashSet<Identifier> = HashSet::new();
-        // read all files
+        let mut package_identifiers: HashSet<LangIdentifier> = HashSet::new();
+        // read all files (same as planning)
         for source_file in files {
-            // skip files that are not VHDL
-            if fileset::is_vhdl(&source_file.get_file()) == false {
-                continue;
+            // parse VHDL files
+            if fileset::is_vhdl(&source_file.get_file()) == true {
+                // parse VHDL code
+                let contents = fs::read_to_string(&source_file.get_file()).unwrap();
+                let symbols = match VHDLParser::read(&contents) {
+                    Ok(s) => s.into_symbols(),
+                    Err(e) => Err(ParseError::SourceCodeError(
+                        source_file.get_file().clone(),
+                        e.to_string(),
+                    ))?,
+                };
+
+                let lib = source_file.get_library();
+
+                // add all entities to a graph and store architectures for later analysis
+                symbols.into_iter().for_each(|sym| match sym {
+                    VhdlSymbol::Entity(e) => {
+                        component_pairs
+                            .insert(LangIdentifier::Vhdl(e.get_name().clone()), lib.clone());
+                        graph.add_node(
+                            CompoundIdentifier::new(
+                                lib.clone(),
+                                LangIdentifier::Vhdl(e.get_name().clone()),
+                            ),
+                            HdlNode::new(HdlSymbol::Vhdl(VhdlSymbol::from(e)), source_file),
+                        );
+                    }
+                    VhdlSymbol::Architecture(arch) => {
+                        sub_nodes.push((
+                            lib.clone(),
+                            SubUnitNode::new(SubUnit::from_arch(arch), source_file),
+                        ));
+                    }
+                    VhdlSymbol::Configuration(cfg) => {
+                        sub_nodes.push((
+                            lib.clone(),
+                            SubUnitNode::new(SubUnit::from_config(cfg), source_file),
+                        ));
+                    }
+                    VhdlSymbol::Package(_) => {
+                        package_identifiers
+                            .insert(LangIdentifier::Vhdl(sym.get_name().unwrap().clone()));
+                    }
+                    _ => (),
+                });
+            } else if fileset::is_verilog(source_file.get_file()) == true {
+                todo!()
+            } else if fileset::is_systemverilog(source_file.get_file()) == true {
+                todo!()
             }
-            // parse VHDL code
-            let contents = fs::read_to_string(&source_file.get_file()).unwrap();
-            let symbols = match VHDLParser::read(&contents) {
-                Ok(s) => s.into_symbols(),
-                Err(e) => Err(ParseError::SourceCodeError(
-                    source_file.get_file().clone(),
-                    e.to_string(),
-                ))?,
-            };
-
-            let lib = source_file.get_library();
-            let lib = lib.as_vhdl_name().take().unwrap();
-
-            // add all entities to a graph and store architectures for later analysis
-            symbols.into_iter().for_each(|sym| match sym {
-                VhdlSymbol::Entity(e) => {
-                    component_pairs.insert(e.get_name().clone(), lib.clone());
-                    graph.add_node(
-                        CompoundIdentifier::new(lib.clone(), e.get_name().clone()),
-                        HdlNode::new(VhdlSymbol::from(e), source_file),
-                    );
-                }
-                VhdlSymbol::Architecture(arch) => {
-                    sub_nodes.push((
-                        lib.clone(),
-                        SubUnitNode::new(SubUnit::from_arch(arch), source_file),
-                    ));
-                }
-                VhdlSymbol::Configuration(cfg) => {
-                    sub_nodes.push((
-                        lib.clone(),
-                        SubUnitNode::new(SubUnit::from_config(cfg), source_file),
-                    ));
-                }
-                VhdlSymbol::Package(_) => {
-                    package_identifiers.insert(sym.get_name().unwrap().clone());
-                }
-                _ => (),
-            });
         }
+
+        // differs from planning below
 
         // go through all subunits and make the connections
         let mut sub_nodes_iter = sub_nodes.into_iter();
-        while let Some((lib, node)) = sub_nodes_iter.next() {
-            let node_name = CompoundIdentifier::new(lib, node.get_sub().get_entity().clone());
+        while let Some((lang_lib, node)) = sub_nodes_iter.next() {
+            let hdl_lib = lang_lib.as_vhdl_name().unwrap();
+            let node_name =
+                CompoundIdentifier::new_vhdl(hdl_lib.clone(), node.get_sub().get_entity().clone());
 
             // link to the owner and add subunit's source file
             // note: this also occurs in `plan.rs`
@@ -303,8 +313,8 @@ impl Tree {
                 None => continue,
             };
             entity_node.as_ref_mut().add_file(node.get_file());
-            // create edges by ordered edge list
-            for dep in node.get_sub().get_edge_list() {
+            // create edges by ordered edge list (for entities)
+            for dep in node.get_sub().get_edge_list_entities() {
                 // verify we are not a package (will mismatch and make inaccurate graph)
                 if package_identifiers.contains(dep.get_suffix()) == true {
                     continue;
@@ -325,9 +335,9 @@ impl Tree {
 
                                 graph.add_node(
                                     dep_name.clone(),
-                                    HdlNode::black_box(VhdlSymbol::from(Entity::black_box(
-                                        dep.get_suffix().clone(),
-                                    ))),
+                                    HdlNode::black_box(HdlSymbol::BlackBox(
+                                        dep.get_suffix().to_string(),
+                                    )),
                                 );
                                 graph.add_edge_by_key(&dep_name, &node_name, ());
                             }
@@ -339,9 +349,9 @@ impl Tree {
                         if graph.has_node_by_key(dep) == false {
                             graph.add_node(
                                 dep.clone(),
-                                HdlNode::black_box(VhdlSymbol::from(Entity::black_box(
-                                    dep.get_suffix().clone(),
-                                ))),
+                                HdlNode::black_box(HdlSymbol::BlackBox(
+                                    dep.get_suffix().to_string(),
+                                )),
                             );
                         }
                         graph.add_edge_by_key(&dep, &node_name, ());
@@ -356,6 +366,7 @@ impl Tree {
                 };
             }
         }
+
         Ok(graph)
     }
 }

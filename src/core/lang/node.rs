@@ -1,20 +1,75 @@
 use crate::core::algo::IpFileNode;
 use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbols::VhdlSymbol;
-use crate::core::lang::vhdl::token::Identifier;
 use crate::util::anyerror::AnyError;
 use colored::Colorize;
 
-use super::LangIdentifier;
+use super::reference::RefSet;
+use super::verilog::symbols::VerilogSymbol;
+use super::{LangIdentifier, VhdlIdentifier};
+
+#[derive(Debug, PartialEq)]
+pub enum HdlSymbol {
+    Verilog(VerilogSymbol),
+    Vhdl(VhdlSymbol),
+    BlackBox(String),
+}
+
+impl HdlSymbol {
+    pub fn get_name(&self) -> LangIdentifier {
+        match &self {
+            Self::Verilog(v) => LangIdentifier::Verilog(v.as_name().clone()),
+            Self::Vhdl(v) => LangIdentifier::Vhdl(v.get_name().unwrap().clone()),
+            Self::BlackBox(s) => LangIdentifier::Vhdl(VhdlIdentifier::Basic(s.to_string())),
+        }
+    }
+
+    /// Checks if this symbol is a component/module/entity.
+    pub fn is_component(&self) -> bool {
+        match &self {
+            Self::Verilog(v) => v.as_module().is_some(),
+            Self::Vhdl(v) => v.as_entity().is_some(),
+            Self::BlackBox(_) => true,
+        }
+    }
+
+    pub fn get_refs(&self) -> &RefSet {
+        match &self {
+            Self::Verilog(v) => v.get_refs(),
+            Self::Vhdl(v) => v.get_refs(),
+            Self::BlackBox(_) => todo!(),
+        }
+    }
+
+    pub fn is_testbench(&self) -> bool {
+        match &self {
+            Self::Verilog(v) => {
+                if let Some(m) = v.as_module() {
+                    m.is_testbench()
+                } else {
+                    false
+                }
+            }
+            Self::Vhdl(v) => {
+                if let Some(e) = v.as_entity() {
+                    e.is_testbench()
+                } else {
+                    false
+                }
+            }
+            Self::BlackBox(_) => false,
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub struct HdlNode<'a> {
-    sym: VhdlSymbol,
+    sym: HdlSymbol,
     files: Vec<&'a IpFileNode<'a>>, // must use a vector to retain file order in blueprint
 }
 
 impl<'a> HdlNode<'a> {
-    pub fn new(sym: VhdlSymbol, file: &'a IpFileNode) -> Self {
+    pub fn new(sym: HdlSymbol, file: &'a IpFileNode) -> Self {
         let mut set = Vec::with_capacity(1);
         set.push(file);
         Self {
@@ -34,11 +89,11 @@ impl<'a> HdlNode<'a> {
     }
 
     /// References the VHDL symbol
-    pub fn get_symbol(&self) -> &VhdlSymbol {
+    pub fn get_symbol(&self) -> &HdlSymbol {
         &self.sym
     }
 
-    pub fn get_symbol_mut(&mut self) -> &mut VhdlSymbol {
+    pub fn get_symbol_mut(&mut self) -> &mut HdlSymbol {
         &mut self.sym
     }
 
@@ -50,7 +105,7 @@ impl<'a> HdlNode<'a> {
         self.files.is_empty()
     }
 
-    pub fn black_box(sym: VhdlSymbol) -> Self {
+    pub fn black_box(sym: HdlSymbol) -> Self {
         Self {
             sym: sym,
             files: Vec::new(),
@@ -58,11 +113,7 @@ impl<'a> HdlNode<'a> {
     }
 
     pub fn display(&self, fmt: &IdentifierFormat) -> String {
-        let name = self
-            .sym
-            .get_name()
-            .unwrap_or(&Identifier::new())
-            .to_string();
+        let name = self.sym.get_name().to_string();
         if self.is_black_box() == true {
             format!("{} {}", &name.yellow(), "?".yellow())
         } else {

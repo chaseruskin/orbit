@@ -8,6 +8,7 @@ pub mod node;
 pub mod unit;
 
 pub mod cross;
+pub mod reference;
 
 use crate::error::Error;
 use crate::error::Hint;
@@ -239,7 +240,7 @@ impl LangUnit {
                 Some(sym) => sym
                     .get_refs()
                     .into_iter()
-                    .map(|f| LangIdentifier::Vhdl(f.get_suffix().clone()))
+                    .map(|f| f.get_suffix().clone())
                     .collect(),
                 None => Vec::new(),
             },
@@ -279,7 +280,7 @@ impl LangUnit {
                 SharedData::new(),
             )),
             "verilog" => Some(Self::Verilog(
-                todo!("deserialize toml for verilog"),
+                VerilogPrimaryUnit::from_toml(tbl)?,
                 SharedData::new(),
             )),
             _ => panic!("unknown entry in serialized toml table {}", entry),

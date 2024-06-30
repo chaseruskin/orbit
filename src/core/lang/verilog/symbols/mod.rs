@@ -6,6 +6,7 @@ use super::token::identifier::Identifier;
 use super::token::tokenizer::VerilogTokenizer;
 use crate::core::lang::lexer::{Position, Token};
 use crate::core::lang::parser::{Parse, Symbol};
+use crate::core::lang::reference::RefSet;
 use crate::core::lang::verilog::token::keyword::Keyword;
 use crate::core::lang::verilog::token::token::VerilogToken;
 use std::str::FromStr;
@@ -24,6 +25,19 @@ impl VerilogSymbol {
     pub fn as_name(&self) -> &Identifier {
         match &self {
             Self::Module(m) => m.get_name(),
+        }
+    }
+
+    pub fn as_module(&self) -> Option<&Module> {
+        match &self {
+            Self::Module(m) => Some(m),
+            _ => None,
+        }
+    }
+
+    pub fn get_refs(&self) -> &RefSet {
+        match &self {
+            Self::Module(m) => m.get_refs(),
         }
     }
 }
@@ -109,7 +123,7 @@ impl VerilogSymbol {
 
     pub fn parse_module_declaration<I>(
         tokens: &mut Peekable<I>,
-    ) -> Result<(Vec<Statement>, Vec<Statement>, IdentifierList), VerilogError>
+    ) -> Result<(Vec<Statement>, Vec<Statement>, RefSet), VerilogError>
     where
         I: Iterator<Item = Token<VerilogToken>>,
     {
@@ -121,7 +135,7 @@ impl VerilogSymbol {
 
     pub fn parse_module_architecture<I>(
         tokens: &mut Peekable<I>,
-    ) -> Result<(Vec<Statement>, Vec<Statement>, IdentifierList), VerilogError>
+    ) -> Result<(Vec<Statement>, Vec<Statement>, RefSet), VerilogError>
     where
         I: Iterator<Item = Token<VerilogToken>>,
     {
@@ -131,8 +145,6 @@ impl VerilogSymbol {
         Ok((params, ports, refs))
     }
 }
-
-pub type IdentifierList = HashSet<Identifier>;
 
 #[derive(Debug, PartialEq)]
 pub struct Statement(Vec<Token<VerilogToken>>);

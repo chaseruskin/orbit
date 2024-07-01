@@ -19,7 +19,7 @@ use crate::core::version::AnyVersion;
 
 use super::fileset;
 use super::lang::verilog::token::tokenizer::VerilogTokenizer;
-use super::lang::{verilog, vhdl, LangIdentifier};
+use super::lang::{verilog, vhdl, Lang, LangIdentifier};
 use crate::core::lang::Language;
 
 /// Constructs an ip-graph from a lockfile.
@@ -253,11 +253,11 @@ pub fn build_ip_file_list<'a>(
                     || (fileset::is_systemverilog(f) && mode.supports_systemverilog())
             })
             .for_each(|f| {
-                files.push(IpFileNode {
-                    file: f,
-                    ip: inner_ip,
-                    library: ip.as_ref().get_library().clone(),
-                });
+                files.push(IpFileNode::new(
+                    f,
+                    inner_ip,
+                    ip.as_ref().get_library().clone(),
+                ));
             })
     });
     files
@@ -436,6 +436,7 @@ pub struct IpFileNode<'a> {
     file: String,
     library: LangIdentifier,
     ip: &'a Ip,
+    lang: Lang,
 }
 
 impl<'a> Eq for IpFileNode<'a> {}
@@ -448,10 +449,20 @@ impl<'a> Hash for IpFileNode<'a> {
 
 impl<'a> IpFileNode<'a> {
     pub fn new(file: String, ip: &'a Ip, lib: LangIdentifier) -> Self {
+        let lang = if fileset::is_vhdl(&file) == true {
+            Lang::Vhdl
+        } else if fileset::is_verilog(&file) == true {
+            Lang::Verilog
+        } else if fileset::is_systemverilog(&file) == true {
+            Lang::SystemVerilog
+        } else {
+            panic!("unsupported language in ip file node")
+        };
         Self {
             file: file,
             ip: ip,
             library: lib,
+            lang: lang,
         }
     }
 
@@ -461,6 +472,10 @@ impl<'a> IpFileNode<'a> {
 
     pub fn get_ip(&self) -> &Ip {
         &self.ip
+    }
+
+    pub fn get_language(&self) -> &Lang {
+        &self.lang
     }
 
     /// References the library identifier.

@@ -11,7 +11,7 @@ use crate::core::lang::verilog::symbols::{VerilogParser, VerilogSymbol};
 use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbols::{VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
-use crate::core::lang::{LangIdentifier, Language};
+use crate::core::lang::{Lang, LangIdentifier, Language};
 use crate::core::target::Target;
 use crate::core::variable;
 use crate::core::variable::VariableTable;
@@ -702,6 +702,120 @@ use crate::core::lang::node::SubUnitNode;
 use crate::core::lang::node::{HdlNode, HdlSymbol};
 
 impl Plan {
+    fn create_verilog_node<'a, 'b>(
+        graph_map: &'b mut GraphMap<CompoundIdentifier, HdlNode<'a>, ()>,
+        node: &'a IpFileNode,
+        component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
+    ) -> Result<(), Fault> {
+        let contents = fs::read_to_string(&node.get_file()).unwrap();
+        let symbols = match VerilogParser::read(&contents) {
+            Ok(s) => s.into_symbols(),
+            Err(e) => Err(ParseError::SourceCodeError(
+                node.get_file().clone(),
+                e.to_string(),
+            ))?,
+        };
+
+        let lib = node.get_library();
+        let vhdl_lib = lib.as_vhdl_name().unwrap().clone();
+        // println!("{} {}", source_file.get_file(), source_file.get_library());
+
+        // add all entities to a graph and store architectures for later analysis
+        symbols.into_iter().for_each(|f| {
+            let name = f.as_name().clone();
+            match f {
+                VerilogSymbol::Module(_) => {
+                    component_pairs.insert(
+                        LangIdentifier::Verilog(name.clone()),
+                        LangIdentifier::Vhdl(vhdl_lib.clone()),
+                    );
+                    // add primary design units into the graph
+                    graph_map.add_node(
+                        CompoundIdentifier::new(lib.clone(), LangIdentifier::Verilog(name)),
+                        HdlNode::new(HdlSymbol::Verilog(f), node),
+                    );
+                }
+            }
+        });
+        Ok(())
+    }
+
+    fn create_systemverilog_node<'a, 'b>(
+        _graph_map: &'b mut GraphMap<CompoundIdentifier, HdlNode<'a>, ()>,
+        _node: &'a IpFileNode,
+        _component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
+    ) -> Result<(), Fault> {
+        todo!("parse files into nodes")
+    }
+
+    fn create_vhdl_node<'a, 'b>(
+        graph_map: &'b mut GraphMap<CompoundIdentifier, HdlNode<'a>, ()>,
+        node: &'a IpFileNode,
+        component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
+        sub_nodes: &'b mut Vec<(LangIdentifier, SubUnitNode<'a>)>,
+    ) -> Result<(), Fault> {
+        let contents = fs::read_to_string(&node.get_file()).unwrap();
+        let symbols = match VHDLParser::read(&contents) {
+            Ok(s) => s.into_symbols(),
+            Err(e) => Err(ParseError::SourceCodeError(
+                node.get_file().clone(),
+                e.to_string(),
+            ))?,
+        };
+
+        let lib = node.get_library();
+        let vhdl_lib = lib.as_vhdl_name().unwrap().clone();
+        // println!("{} {}", source_file.get_file(), source_file.get_library());
+
+        // add all entities to a graph and store architectures for later analysis
+        let mut iter = symbols.into_iter().filter_map(|f| {
+            match f {
+                VhdlSymbol::Entity(_) => {
+                    component_pairs.insert(
+                        LangIdentifier::Vhdl(f.as_entity().unwrap().get_name().clone()),
+                        LangIdentifier::Vhdl(vhdl_lib.clone()),
+                    );
+                    Some(f)
+                }
+                VhdlSymbol::Package(_) => Some(f),
+                VhdlSymbol::Context(_) => Some(f),
+                VhdlSymbol::Architecture(arch) => {
+                    sub_nodes.push((
+                        LangIdentifier::Vhdl(vhdl_lib.clone()),
+                        SubUnitNode::new(SubUnit::from_arch(arch), node),
+                    ));
+                    None
+                }
+                VhdlSymbol::Configuration(cfg) => {
+                    sub_nodes.push((
+                        LangIdentifier::Vhdl(vhdl_lib.clone()),
+                        SubUnitNode::new(SubUnit::from_config(cfg), node),
+                    ));
+                    None
+                }
+                // package bodies are usually in same design file as package
+                VhdlSymbol::PackageBody(pb) => {
+                    sub_nodes.push((
+                        LangIdentifier::Vhdl(vhdl_lib.clone()),
+                        SubUnitNode::new(SubUnit::from_body(pb), node),
+                    ));
+                    None
+                }
+            }
+        });
+        while let Some(e) = iter.next() {
+            // add primary design units into the graph
+            graph_map.add_node(
+                CompoundIdentifier::new_vhdl(
+                    lib.as_vhdl_name().unwrap().clone(),
+                    e.get_name().unwrap().clone(),
+                ),
+                HdlNode::new(HdlSymbol::Vhdl(e), node),
+            );
+        }
+        Ok(())
+    }
+
     /// Builds a graph of design units. Used for planning.
     fn build_full_graph<'a>(
         files: &'a Vec<IpFileNode>,
@@ -714,100 +828,21 @@ impl Plan {
         let mut component_pairs: HashMap<LangIdentifier, LangIdentifier> = HashMap::new();
         // read all files
         for source_file in files {
-            // assemble VHDL files
-            if fileset::is_vhdl(&source_file.get_file()) == true {
-                let contents = fs::read_to_string(&source_file.get_file()).unwrap();
-                let symbols = match VHDLParser::read(&contents) {
-                    Ok(s) => s.into_symbols(),
-                    Err(e) => Err(ParseError::SourceCodeError(
-                        source_file.get_file().clone(),
-                        e.to_string(),
-                    ))?,
-                };
-
-                let lib = source_file.get_library();
-                let vhdl_lib = lib.as_vhdl_name().unwrap().clone();
-                // println!("{} {}", source_file.get_file(), source_file.get_library());
-
-                // add all entities to a graph and store architectures for later analysis
-                let mut iter = symbols.into_iter().filter_map(|f| {
-                    match f {
-                        VhdlSymbol::Entity(_) => {
-                            component_pairs.insert(
-                                LangIdentifier::Vhdl(f.as_entity().unwrap().get_name().clone()),
-                                LangIdentifier::Vhdl(vhdl_lib.clone()),
-                            );
-                            Some(f)
-                        }
-                        VhdlSymbol::Package(_) => Some(f),
-                        VhdlSymbol::Context(_) => Some(f),
-                        VhdlSymbol::Architecture(arch) => {
-                            sub_nodes.push((
-                                LangIdentifier::Vhdl(vhdl_lib.clone()),
-                                SubUnitNode::new(SubUnit::from_arch(arch), source_file),
-                            ));
-                            None
-                        }
-                        VhdlSymbol::Configuration(cfg) => {
-                            sub_nodes.push((
-                                LangIdentifier::Vhdl(vhdl_lib.clone()),
-                                SubUnitNode::new(SubUnit::from_config(cfg), source_file),
-                            ));
-                            None
-                        }
-                        // package bodies are usually in same design file as package
-                        VhdlSymbol::PackageBody(pb) => {
-                            sub_nodes.push((
-                                LangIdentifier::Vhdl(vhdl_lib.clone()),
-                                SubUnitNode::new(SubUnit::from_body(pb), source_file),
-                            ));
-                            None
-                        }
-                    }
-                });
-                while let Some(e) = iter.next() {
-                    // add primary design units into the graph
-                    graph_map.add_node(
-                        CompoundIdentifier::new_vhdl(
-                            lib.as_vhdl_name().unwrap().clone(),
-                            e.get_name().unwrap().clone(),
-                        ),
-                        HdlNode::new(HdlSymbol::Vhdl(e), source_file),
-                    );
+            match source_file.get_language() {
+                Lang::Vhdl => Self::create_vhdl_node(
+                    &mut graph_map,
+                    source_file,
+                    &mut component_pairs,
+                    &mut sub_nodes,
+                )?,
+                Lang::Verilog => {
+                    Self::create_verilog_node(&mut graph_map, source_file, &mut component_pairs)?
                 }
-            } else if fileset::is_verilog(&source_file.get_file()) == true {
-                let contents = fs::read_to_string(&source_file.get_file()).unwrap();
-                let symbols = match VerilogParser::read(&contents) {
-                    Ok(s) => s.into_symbols(),
-                    Err(e) => Err(ParseError::SourceCodeError(
-                        source_file.get_file().clone(),
-                        e.to_string(),
-                    ))?,
-                };
-
-                let lib = source_file.get_library();
-                let vhdl_lib = lib.as_vhdl_name().unwrap().clone();
-                // println!("{} {}", source_file.get_file(), source_file.get_library());
-
-                // add all entities to a graph and store architectures for later analysis
-                symbols.into_iter().for_each(|f| {
-                    let name = f.as_name().clone();
-                    match f {
-                        VerilogSymbol::Module(_) => {
-                            component_pairs.insert(
-                                LangIdentifier::Verilog(name.clone()),
-                                LangIdentifier::Vhdl(vhdl_lib.clone()),
-                            );
-                            // add primary design units into the graph
-                            graph_map.add_node(
-                                CompoundIdentifier::new(lib.clone(), LangIdentifier::Verilog(name)),
-                                HdlNode::new(HdlSymbol::Verilog(f), source_file),
-                            );
-                        }
-                    }
-                });
-            } else if fileset::is_systemverilog(&source_file.get_file()) == true {
-                todo!("parse sv into graph")
+                Lang::SystemVerilog => Self::create_systemverilog_node(
+                    &mut graph_map,
+                    source_file,
+                    &mut component_pairs,
+                )?,
             }
         }
 

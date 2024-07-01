@@ -102,6 +102,8 @@ pub enum Lang {
     Vhdl,
     #[serde(rename = "verilog")]
     Verilog,
+    #[serde(rename = "systemverilog")]
+    SystemVerilog,
 }
 
 impl FromStr for Lang {
@@ -111,6 +113,7 @@ impl FromStr for Lang {
         match s {
             "vhdl" => Ok(Self::Vhdl),
             "verilog" => Ok(Self::Verilog),
+            "systemverilog" => Ok(Self::SystemVerilog),
             _ => Err(AnyError(format!("unsupported language {:?}", s))),
         }
     }
@@ -124,6 +127,7 @@ impl Display for Lang {
             match self {
                 Self::Vhdl => "vhdl",
                 Self::Verilog => "verilog",
+                Self::SystemVerilog => "systemverilog",
             }
         )
     }

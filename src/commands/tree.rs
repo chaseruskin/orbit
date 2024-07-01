@@ -5,25 +5,20 @@ use crate::core::algo;
 use crate::core::algo::IpFileNode;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
-use crate::core::fileset;
 use crate::core::ip::Ip;
 use crate::core::lang::node::HdlNode;
 use crate::core::lang::node::HdlSymbol;
 use crate::core::lang::node::IdentifierFormat;
 use crate::core::lang::node::SubUnitNode;
-use crate::core::lang::parser::ParseError;
 use crate::core::lang::reference::CompoundIdentifier;
-use crate::core::lang::vhdl::subunit::SubUnit;
-use crate::core::lang::vhdl::symbols::{VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
+use crate::core::lang::Lang;
 use crate::core::lang::LangIdentifier;
 use crate::core::lang::Language;
 use crate::util::anyerror::Fault;
 use crate::util::graph::EdgeStatus;
 use crate::util::graphmap::GraphMap;
 use std::collections::HashMap;
-use std::collections::HashSet;
-use std::fs;
 
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
@@ -235,64 +230,29 @@ impl Tree {
         files: &'a Vec<IpFileNode>,
     ) -> Result<GraphMap<CompoundIdentifier, HdlNode<'a>, ()>, Fault> {
         // entity identifier, HashNode (hash-node holds entity structs)
-        let mut graph = GraphMap::<CompoundIdentifier, HdlNode, ()>::new();
+        let mut graph_map = GraphMap::<CompoundIdentifier, HdlNode, ()>::new();
 
         let mut sub_nodes: Vec<(LangIdentifier, SubUnitNode)> = Vec::new();
         // store the (suffix, prefix) for all entities
         let mut component_pairs: HashMap<LangIdentifier, LangIdentifier> = HashMap::new();
 
-        let mut package_identifiers: HashSet<LangIdentifier> = HashSet::new();
         // read all files (same as planning)
         for source_file in files {
-            // parse VHDL files
-            if fileset::is_vhdl(&source_file.get_file()) == true {
-                // parse VHDL code
-                let contents = fs::read_to_string(&source_file.get_file()).unwrap();
-                let symbols = match VHDLParser::read(&contents) {
-                    Ok(s) => s.into_symbols(),
-                    Err(e) => Err(ParseError::SourceCodeError(
-                        source_file.get_file().clone(),
-                        e.to_string(),
-                    ))?,
-                };
-
-                let lib = source_file.get_library();
-
-                // add all entities to a graph and store architectures for later analysis
-                symbols.into_iter().for_each(|sym| match sym {
-                    VhdlSymbol::Entity(e) => {
-                        component_pairs
-                            .insert(LangIdentifier::Vhdl(e.get_name().clone()), lib.clone());
-                        graph.add_node(
-                            CompoundIdentifier::new(
-                                lib.clone(),
-                                LangIdentifier::Vhdl(e.get_name().clone()),
-                            ),
-                            HdlNode::new(HdlSymbol::Vhdl(VhdlSymbol::from(e)), source_file),
-                        );
-                    }
-                    VhdlSymbol::Architecture(arch) => {
-                        sub_nodes.push((
-                            lib.clone(),
-                            SubUnitNode::new(SubUnit::from_arch(arch), source_file),
-                        ));
-                    }
-                    VhdlSymbol::Configuration(cfg) => {
-                        sub_nodes.push((
-                            lib.clone(),
-                            SubUnitNode::new(SubUnit::from_config(cfg), source_file),
-                        ));
-                    }
-                    VhdlSymbol::Package(_) => {
-                        package_identifiers
-                            .insert(LangIdentifier::Vhdl(sym.get_name().unwrap().clone()));
-                    }
-                    _ => (),
-                });
-            } else if fileset::is_verilog(source_file.get_file()) == true {
-                todo!()
-            } else if fileset::is_systemverilog(source_file.get_file()) == true {
-                todo!()
+            match source_file.get_language() {
+                Lang::Vhdl => Plan::create_vhdl_node(
+                    &mut graph_map,
+                    source_file,
+                    &mut component_pairs,
+                    &mut sub_nodes,
+                )?,
+                Lang::Verilog => {
+                    Plan::create_verilog_node(&mut graph_map, source_file, &mut component_pairs)?
+                }
+                Lang::SystemVerilog => Plan::create_systemverilog_node(
+                    &mut graph_map,
+                    source_file,
+                    &mut component_pairs,
+                )?,
             }
         }
 
@@ -307,7 +267,7 @@ impl Tree {
 
             // link to the owner and add subunit's source file
             // note: this also occurs in `plan.rs`
-            let entity_node = match graph.get_node_by_key_mut(&node_name) {
+            let entity_node = match graph_map.get_node_by_key_mut(&node_name) {
                 Some(en) => en,
                 // @todo: issue error because the entity (owner) is not declared
                 None => continue,
@@ -315,14 +275,10 @@ impl Tree {
             entity_node.as_ref_mut().add_file(node.get_file());
             // create edges by ordered edge list (for entities)
             for dep in node.get_sub().get_edge_list_entities() {
-                // verify we are not a package (will mismatch and make inaccurate graph)
-                if package_identifiers.contains(dep.get_suffix()) == true {
-                    continue;
-                }
                 // need to locate the key with a suffix matching `dep` if it was a component instantiation
                 if dep.get_prefix().is_none() {
                     if let Some(lib) = component_pairs.get(dep.get_suffix()) {
-                        let b = graph.add_edge_by_key(
+                        let b = graph_map.add_edge_by_key(
                             &CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone()),
                             &node_name,
                             (),
@@ -333,40 +289,36 @@ impl Tree {
                                 let dep_name =
                                     CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone());
 
-                                graph.add_node(
+                                graph_map.add_node(
                                     dep_name.clone(),
                                     HdlNode::black_box(HdlSymbol::BlackBox(
                                         dep.get_suffix().to_string(),
                                     )),
                                 );
-                                graph.add_edge_by_key(&dep_name, &node_name, ());
+                                graph_map.add_edge_by_key(&dep_name, &node_name, ());
                             }
                             _ => (),
                         }
                     // this entity does not exist or was not logged
                     } else {
                         // create new node for black box entity
-                        if graph.has_node_by_key(dep) == false {
-                            graph.add_node(
+                        if graph_map.has_node_by_key(dep) == false {
+                            graph_map.add_node(
                                 dep.clone(),
                                 HdlNode::black_box(HdlSymbol::BlackBox(
                                     dep.get_suffix().to_string(),
                                 )),
                             );
                         }
-                        graph.add_edge_by_key(&dep, &node_name, ());
+                        graph_map.add_edge_by_key(&dep, &node_name, ());
                     }
                 // the dependency has a prefix (a library) with it
                 } else {
-                    // verify we are not coming from a package (will mismatch and make inaccurate graph)
-                    if package_identifiers.contains(dep.get_prefix().unwrap()) == true {
-                        continue;
-                    }
-                    graph.add_edge_by_key(dep, &node_name, ());
+                    graph_map.add_edge_by_key(dep, &node_name, ());
                 };
             }
         }
 
-        Ok(graph)
+        Ok(graph_map)
     }
 }

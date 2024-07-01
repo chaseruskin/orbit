@@ -51,7 +51,7 @@ impl Subcommand<Context> for Env {
             //     .key(environment::ORBIT_QUEUE)
             //     .value(PathBuf::standardize(c.get_queue_path()).to_str().unwrap()),
             EnvVar::new()
-                .key(environment::ORBIT_BUILD_DIR)
+                .key(environment::ORBIT_TARGET_DIR)
                 .value(&c.get_target_dir()),
             EnvVar::new().key(environment::ORBIT_IP_PATH).value(
                 PathBuf::standardize(c.get_ip_path().unwrap_or(&PathBuf::new()))

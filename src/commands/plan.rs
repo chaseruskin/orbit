@@ -702,7 +702,7 @@ use crate::core::lang::node::SubUnitNode;
 use crate::core::lang::node::{HdlNode, HdlSymbol};
 
 impl Plan {
-    fn create_verilog_node<'a, 'b>(
+    pub fn create_verilog_node<'a, 'b>(
         graph_map: &'b mut GraphMap<CompoundIdentifier, HdlNode<'a>, ()>,
         node: &'a IpFileNode,
         component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
@@ -740,7 +740,7 @@ impl Plan {
         Ok(())
     }
 
-    fn create_systemverilog_node<'a, 'b>(
+    pub fn create_systemverilog_node<'a, 'b>(
         _graph_map: &'b mut GraphMap<CompoundIdentifier, HdlNode<'a>, ()>,
         _node: &'a IpFileNode,
         _component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
@@ -748,7 +748,7 @@ impl Plan {
         todo!("parse files into nodes")
     }
 
-    fn create_vhdl_node<'a, 'b>(
+    pub fn create_vhdl_node<'a, 'b>(
         graph_map: &'b mut GraphMap<CompoundIdentifier, HdlNode<'a>, ()>,
         node: &'a IpFileNode,
         component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,

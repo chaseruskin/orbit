@@ -230,7 +230,7 @@ pub const ORBIT_ARCHIVE: &str = "ORBIT_ARCHIVE";
 pub const ORBIT_CHANNELS: &str = "ORBIT_CHANNELS";
 
 pub const ORBIT_IP_PATH: &str = "ORBIT_IP_PATH";
-pub const ORBIT_BUILD_DIR: &str = "ORBIT_BUILD_DIR";
+pub const ORBIT_TARGET_DIR: &str = "ORBIT_TARGET_DIR";
 pub const ORBIT_TOP: &str = "ORBIT_TOP";
 pub const ORBIT_BENCH: &str = "ORBIT_BENCH";
 pub const ORBIT_TARGET: &str = "ORBIT_TARGET";

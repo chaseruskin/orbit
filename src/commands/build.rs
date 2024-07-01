@@ -120,7 +120,7 @@ impl Subcommand<Context> for Build {
             // read config.toml for setting any env variables
             .from_config(c.get_config())?
             // read ip manifest for env variables
-            .from_ip(&Ip::load(c.get_ip_path().unwrap().clone(), true)?)?
+            .from_ip(&working_ip)?
             .add(EnvVar::new().key(ORBIT_BLUEPRINT).value(BLUEPRINT_FILE))
             .add(EnvVar::new().key(ORBIT_TARGET).value(target.get_name()))
             .initialize();

@@ -96,7 +96,7 @@ impl Command for Orbit {
                 .channels(environment::ORBIT_CHANNELS)?
                 .current_ip_dir(environment::ORBIT_IP_PATH)? // must come before .settings() call
                 .settings(config::CONFIG_FILE)?
-                .build_dir(environment::ORBIT_BUILD_DIR)?;
+                .build_dir(environment::ORBIT_TARGET_DIR)?;
             // pass the context to the given command
             sub.execute(&context)
         // if no command is given then print default help

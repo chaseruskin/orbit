@@ -376,33 +376,33 @@ name = "build"
 summary = "plan and execute a target"
 synopsis = "orbit build [options] [--] [args]..."
 description = """
-This command carries out the "building phase". This phase involves running a
-user-defined command or target as a subprocess. It is required that the
-planning phase occurs before the building phase. This command acts upon the 
-current working ip.
+This command prepares a given target and then executes the target.
 
-If a target was previously used during the planning phase, then this command
-by default will reference and call that target after loading the previously
-written `.env` file from the planning phase. Either a target from `--target` 
-or a command from `--command` is required if a target was not previously
-specified during planning.
+While this command functions the same as `orbit test`, the targets that are 
+encouraged to be used with this command are ones that produce artifacts at the
+end of their execution process.
+
+A target must be provided for the build command to run. A default target can
+be specified in a configuration file, which will be used when a target is
+omitted from the command-line.
 
 If `--list` is used, then it will display a list of the available targets to
 the user. Using `--list` in combination with a target from `--target` will
 display any detailed help information the target has documented in its 
 definition.
 
-As a refresher, a backend workflow typically performs three tasks:  
+A target typically goes through three steps for the building process:  
    1. Parse the blueprint file  
    2. Process the referenced files listed in the blueprint  
-   3. Generate an output product 
+   3. Generate a artifact(s)
 
 Any command-line arguments entered after the terminating flag `--` will be
-passed in the received order as arguments to the subprocess's command. If a target already
-has defined arguments, the additional arguments passed from the command-line
-will follow the previously defined arguments.
+passed in the received order as arguments to the subprocess's command. If a 
+target already has defined arguments, the additional arguments passed from the 
+command-line will follow the previously defined arguments.
 
-The subprocess will spawn from the current working ip's build directory.
+The target's process will spawn from the current working ip's output directory,
+which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.
 """
 
 options."--target <name>" = "Target to execute"
@@ -452,20 +452,44 @@ name = "test"
 summary = "run a test"
 synopsis = "orbit test [options] [--] [args]..."
 description = """
-This command will plan and build for the given target under the assumption it 
-is a test.
+This command prepares a given target and then executes the target.
+
+While this command functions the same as `orbit build`, the targets that are 
+encouraged to be used with this command are ones that are designed to either
+"pass" or "fail", typically through a return code.
+
+A target must be provided for the test command to run. A default target can
+be specified in a configuration file, which will be used when a target is
+omitted from the command-line.
+
+If `--list` is used, then it will display a list of the available targets to
+the user. Using `--list` in combination with a target from `--target` will
+display any detailed help information the target has documented in its 
+definition.
+
+A target typically goes through three steps for the testing process:  
+   1. Parse the blueprint file  
+   2. Process the referenced files listed in the blueprint  
+   3. Verify the hdl source code passes all tests
+
+Any command-line arguments entered after the terminating flag `--` will be
+passed in the received order as arguments to the subprocess's command. If a 
+target already has defined arguments, the additional arguments passed from the 
+command-line will follow the previously defined arguments.
+
+The target's process will spawn from the current working ip's output directory,
+which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.
 """
 
+options."--target <name>" = "Target to execute"
 options."--top <unit>" = "Set the top level design unit"
 options."--bench <unit>" = "Set the top level testbench unit"
+options."--target-dir <dir>" = "The relative directory where the target starts"
+options."--command <path>" = "Overwrite the target's command"
+options."--list" = "View available targets and exit"
+options."--all" = "Include all hdl files of the working ip"
 options."--fileset <key=glob>..." = "A glob-style pattern identified by name to include in the blueprint"
-options."--clean" = "Remove all previous files from the target directory before execution"
-options."--force" = "Ignore reading the precomputed lock file"
-options."--target <name>" = "Target to execute"
-options."--all" = "Include all locally found HDL files"
-options."--command <cmd>" = "Command to execute"
-options."--list" = "View available targets"
-options."--target-dir <dir>" = "The relative directory to locate the blueprint file"
+options."--force" = "Force the target to execute "
 options."--verbose" = "Display the command being executed"
 options."args" = "Arguments to pass to the target"
 
@@ -481,11 +505,16 @@ Usage:
 
 Options:
     --target <name>         target to execute
-    --command <cmd>         command to execute
+    --top <unit>            set the top level design unit
+    --bench <unit>          set the top level testbench unit
+    --target-dir <dir>      the relative directory where the target starts
+    --command <path>        overwrite the target's command
     --list                  view available targets and exit
-    --target-dir <dir>      relative directory to place the blueprint
-    --verbose               print the commands being executed
-    args                    arguments to pass to the target
+    --all                   include all hdl files of the working ip
+    --fileset <key=glob>... set filesets for the target
+    --force                 force the target to execute
+    --verbose               display the command being executed
+    args                    arguments to pass to the requested command
 """
 
 # ------------------------------------------------------------------------------

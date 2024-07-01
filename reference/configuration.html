@@ -236,7 +236,7 @@
 <li><a href="#the-description-field">description</a> - A short description of the target.</li>
 <li><a href="#the-command-field">command</a> - The command to execute the target.</li>
 <li><a href="#the-args-field">args</a> - Arguments to pass to the command.</li>
-<li><a href="#the-blueprint-schemes-field">blueprint-schemes</a> - The list of supported blueprint file types.</li>
+<li><a href="#the-plans-field">plans</a> - The list of supported blueprint file formats.</li>
 <li><a href="#the-fileset-section">[fileset]</a> - Filesets to collect for the target.</li>
 <li><a href="#the-explanation-field">explanation</a> - A detailed description of the target.</li>
 </ul>
@@ -340,13 +340,13 @@ command = "cat"
 # ...
 args = ["blueprint.tsv"]
 </code></pre>
-<h3 id="the-blueprint-schemes-field"><a class="header" href="#the-blueprint-schemes-field">The <code>blueprint-schemes</code> field</a></h3>
+<h3 id="the-plans-field"><a class="header" href="#the-plans-field">The <code>plans</code> field</a></h3>
 <pre><code class="language-toml">[[target]]
 # ...
-blueprint-schemes = ["tsv"]
+plans = ["tsv"]
 </code></pre>
-<p>The type of blueprint files supported by the particular target. If a list is provided, the default scheme used is the first item in the list. If a scheme is provided on the command-line, then it must be a valid scheme and found within the target's explicit list.</p>
-<p>If this field is left blank or not defined, then the default scheme is "tsv".</p>
+<p>The type of blueprint files supported by the particular target. If a list is provided, the default plan used is the first item in the list. If a plan is provided on the command-line, then it must be a valid plan and found within the target's defined list.</p>
+<p>If this field is left blank or not defined, then the default plan is "tsv".</p>
 <h3 id="the-explanation-field"><a class="header" href="#the-explanation-field">The <code>explanation</code> field</a></h3>
 <pre><code class="language-toml">explanation = """
 A very long explanation about what this target does 

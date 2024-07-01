@@ -120,6 +120,7 @@ impl Subcommand<Context> for Build {
             &self.bench,
             &self.top,
             &self.filesets,
+            &plan,
         )?;
 
         Environment::new()

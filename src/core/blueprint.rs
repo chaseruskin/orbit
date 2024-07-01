@@ -2,6 +2,7 @@ use crate::core::fileset;
 use crate::util::anyerror::AnyError;
 use cliproc::cli::Error;
 use serde_derive::{Deserialize, Serialize};
+use std::fmt::Display;
 use std::io::Write;
 use std::{fs::File, path::PathBuf, str::FromStr};
 
@@ -16,6 +17,18 @@ pub enum Scheme {
 impl Default for Scheme {
     fn default() -> Self {
         Self::Tsv
+    }
+}
+
+impl Display for Scheme {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Tsv => "tsv",
+            }
+        )
     }
 }
 

@@ -38,7 +38,7 @@ impl Target {
         self.fileset.as_ref()
     }
 
-    pub fn coordinate_plan(&self, plan: &Option<Scheme>) -> Result<Scheme, Fault> {
+    pub fn coordinate_plan(&self, plan: &Option<Scheme>) -> Result<Scheme, Error> {
         match plan {
             Some(p) => {
                 // verify the plan is supported by the target
@@ -46,12 +46,15 @@ impl Target {
                     // plans are listed for the target
                     Some(ps) => match ps.into_iter().find(|&i| i == p).is_some() {
                         true => Ok(p.clone()),
-                        false => panic!("plan not one of those listed"),
+                        false => Err(Error::BlueprintPlanNotSupported(p.clone(), ps.clone())),
                     },
                     // no plans are listed for the target
                     None => match p == &Scheme::default() {
                         true => Ok(p.clone()),
-                        false => panic!("target does not list plans so can only assume default"),
+                        false => Err(Error::BlueprintPlanMustBeDefault(
+                            p.clone(),
+                            Scheme::default(),
+                        )),
                     },
                 }
             }

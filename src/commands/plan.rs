@@ -1,7 +1,7 @@
 use colored::Colorize;
 
 use crate::commands::download::Download;
-use crate::core::blueprint::{Blueprint, Instruction};
+use crate::core::blueprint::{Blueprint, Instruction, Scheme};
 use crate::core::context::{self, Context};
 use crate::core::fileset::Fileset;
 use crate::core::iparchive::IpArchive;
@@ -163,6 +163,7 @@ impl Subcommand<Context> for Plan {
             &self.bench,
             &self.top,
             &self.filesets,
+            &Scheme::default(),
         )
     }
 }
@@ -182,6 +183,7 @@ impl Plan {
         bench_name: &Option<Identifier>,
         top_name: &Option<Identifier>,
         filesets: &Option<Vec<Fileset>>,
+        scheme: &Scheme,
     ) -> Result<(), Fault> {
         // create the output path to know where to begin storing files
         let working_ip_path = working_ip.get_root().clone();
@@ -194,7 +196,7 @@ impl Plan {
             Err(e) => {
                 // generate a single blueprint
                 if e.is_source_err() == true && force == true {
-                    let mut blueprint = Blueprint::default();
+                    let mut blueprint = Blueprint::new(scheme.clone());
                     let ip_file_node = IpFileNode::new(
                         e.as_source_file().unwrap().to_string(),
                         &working_ip,
@@ -401,7 +403,7 @@ impl Plan {
         }
 
         // store data in blueprint
-        let mut blueprint = Blueprint::default();
+        let mut blueprint = Blueprint::new(scheme.clone());
 
         // [!] collect user-defined filesets
         {

@@ -107,7 +107,15 @@ impl Subcommand<Context> for Test {
             .downloads(c.get_downloads_path())?;
         let catalog = plan::resolve_missing_deps(c, &ip, catalog, self.force)?;
 
-        self.run(&ip, target_dir, target, catalog, &c.get_languages(), &c)
+        self.run(
+            &ip,
+            target_dir,
+            target,
+            catalog,
+            &c.get_languages(),
+            &c,
+            &plan,
+        )
     }
 }
 
@@ -120,6 +128,7 @@ impl Test {
         catalog: Catalog,
         mode: &Language,
         c: &Context,
+        scheme: &Scheme,
     ) -> Result<(), Fault> {
         // plan the target
         Plan::run(
@@ -135,6 +144,7 @@ impl Test {
             &self.bench,
             &self.top,
             &self.filesets,
+            &scheme,
         )?;
 
         // prepare for build

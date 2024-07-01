@@ -1,6 +1,8 @@
 use colored::Colorize;
 use std::{fmt::Display, path::PathBuf};
 
+use crate::core::blueprint::Scheme;
+
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error("an ip already exists at {0:?}")]
@@ -55,6 +57,12 @@ pub enum Error {
     CrossIdentifierParsingFailed(LastError),
     #[error("duplicate identifier \"{0}\" found in the following source files:\n\n  location 1: {1:?}\n  location 2: {2:?}{3}")]
     DuplicateIdentifiersCrossLang(String, String, String, Hint),
+    #[error(
+        "blueprint plan \"{0}\" not supported by the current target; supported plans are: {1:?}"
+    )]
+    BlueprintPlanNotSupported(Scheme, Vec<Scheme>),
+    #[error("blueprint plan \"{0}\" not supported by the current target; no plans are defined so it can only accept \"{1}\"")]
+    BlueprintPlanMustBeDefault(Scheme, Scheme),
 }
 
 #[derive(Debug, PartialEq)]

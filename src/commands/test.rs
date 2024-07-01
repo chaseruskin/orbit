@@ -1,6 +1,7 @@
 use cliproc::{cli, proc, stage::Memory, Arg, Cli, Help, Subcommand};
 
 use crate::commands::helps::test;
+use crate::core::blueprint::Scheme;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::fileset::Fileset;
@@ -24,6 +25,7 @@ pub struct Test {
     target_dir: Option<String>,
     force: bool,
     all: bool,
+    plan: Option<Scheme>,
     verbose: bool,
     top: Option<Identifier>,
     command: Option<String>,
@@ -43,6 +45,7 @@ impl Subcommand<Context> for Test {
             // Options
             top: cli.get(Arg::option("top").value("unit"))?,
             bench: cli.get(Arg::option("bench").value("unit"))?,
+            plan: cli.get(Arg::option("plan").value("format"))?,
             target: cli.get(Arg::option("target"))?,
             target_dir: cli.get(Arg::option("target-dir"))?,
             command: cli.get(Arg::option("command").value("path"))?,
@@ -60,7 +63,7 @@ impl Subcommand<Context> for Test {
         if self.list == true {
             match target {
                 // display entire contents about the particular plugin
-                Some(tar) => println!("{}", tar),
+                Some(tar) => println!("{}", tar.to_string()),
                 // display quick overview of all plugins
                 None => println!(
                     "{}",
@@ -78,6 +81,9 @@ impl Subcommand<Context> for Test {
         }
 
         let target = target.unwrap();
+
+        // coordinate the plan
+        let plan = target.coordinate_plan(&self.plan)?;
 
         // check that user is in an IP directory
         c.jump_to_working_ip()?;

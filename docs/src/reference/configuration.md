@@ -44,7 +44,7 @@ Every configuration file consists of the following sections:
     - [description](#the-description-field) - A short description of the target.
     - [command](#the-command-field) - The command to execute the target.
     - [args](#the-args-field) - Arguments to pass to the command.
-    - [blueprint-schemes](#the-blueprint-schemes-field) - The list of supported blueprint file types.
+    - [plans](#the-plans-field) - The list of supported blueprint file formats.
     - [[fileset]](#the-fileset-section) - Filesets to collect for the target.
     - [explanation](#the-explanation-field) - A detailed description of the target. 
 - [[[protocol]]](#the-protocol-array) - Define a protocol.
@@ -195,17 +195,17 @@ command = "cat"
 args = ["blueprint.tsv"]
 ```
 
-### The `blueprint-schemes` field
+### The `plans` field
 
 ``` toml
 [[target]]
 # ...
-blueprint-schemes = ["tsv"]
+plans = ["tsv"]
 ```
 
-The type of blueprint files supported by the particular target. If a list is provided, the default scheme used is the first item in the list. If a scheme is provided on the command-line, then it must be a valid scheme and found within the target's explicit list.
+The type of blueprint files supported by the particular target. If a list is provided, the default plan used is the first item in the list. If a plan is provided on the command-line, then it must be a valid plan and found within the target's defined list.
 
-If this field is left blank or not defined, then the default scheme is "tsv".
+If this field is left blank or not defined, then the default plan is "tsv".
 
 ### The `explanation` field
 

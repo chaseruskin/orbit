@@ -13,6 +13,8 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use super::blueprint::Scheme;
+
 pub type Targets = Vec<Target>;
 
 type Filesets = HashMap<String, Style>;
@@ -25,6 +27,7 @@ pub struct Target {
     args: Option<Vec<String>>,
     fileset: Option<Filesets>,
     description: Option<String>,
+    plans: Option<Vec<Scheme>>,
     explanation: Option<String>,
     #[serde(skip_serializing, skip_deserializing)]
     root: Option<PathBuf>,
@@ -33,6 +36,37 @@ pub struct Target {
 impl Target {
     pub fn get_filesets(&self) -> Option<&Filesets> {
         self.fileset.as_ref()
+    }
+
+    pub fn coordinate_plan(&self, plan: &Option<Scheme>) -> Result<Scheme, Fault> {
+        match plan {
+            Some(p) => {
+                // verify the plan is supported by the target
+                match &self.plans {
+                    // plans are listed for the target
+                    Some(ps) => match ps.into_iter().find(|&i| i == p).is_some() {
+                        true => Ok(p.clone()),
+                        false => panic!("plan not one of those listed"),
+                    },
+                    // no plans are listed for the target
+                    None => match p == &Scheme::default() {
+                        true => Ok(p.clone()),
+                        false => panic!("target does not list plans so can only assume default"),
+                    },
+                }
+            }
+            None => {
+                match &self.plans {
+                    // choose the first plan in the list
+                    Some(ps) => match ps.first() {
+                        Some(item) => Ok(item.clone()),
+                        None => Ok(Scheme::default()),
+                    },
+                    // choose the default plan
+                    None => Ok(Scheme::default()),
+                }
+            }
+        }
     }
 
     /// Displays a plugin's information in a single line for quick glance.
@@ -259,6 +293,7 @@ args = ["~/scripts/download.bash"]
             Target {
                 name: String::from("ghdl"),
                 command: String::from("python"),
+                plans: None,
                 args: Some(vec![String::from("./scripts/ghdl.py")]),
                 description: Some(String::from(
                     "Backend script for simulating VHDL with GHDL."
@@ -283,6 +318,7 @@ args = ["~/scripts/download.bash"]
                 command: String::from("bash"),
                 args: Some(vec![String::from("~/scripts/download.bash")]),
                 description: None,
+                plans: None,
                 fileset: None,
                 explanation: None,
                 root: None,

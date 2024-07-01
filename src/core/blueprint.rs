@@ -1,15 +1,16 @@
 use crate::core::fileset;
 use crate::util::anyerror::AnyError;
 use cliproc::cli::Error;
+use serde_derive::{Deserialize, Serialize};
 use std::io::Write;
 use std::{fs::File, path::PathBuf, str::FromStr};
 
 use super::algo::IpFileNode;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub enum Scheme {
     Tsv,
-    Json,
+    // Json,
 }
 
 impl Default for Scheme {
@@ -24,7 +25,7 @@ impl FromStr for Scheme {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_ascii_lowercase().as_ref() {
             "tsv" => Ok(Self::Tsv),
-            "json" => Ok(Self::Json),
+            // "json" => Ok(Self::Json),
             _ => Err(AnyError(format!("unknown file format: {}", s))),
         }
     }
@@ -60,9 +61,9 @@ impl<'a, 'b> Instruction<'a, 'b> {
                 }
                 Self::Auxiliary(key, lib, file) => format!("{}\t{}\t{}", key, lib, file),
             },
-            Scheme::Json => {
-                todo!()
-            }
+            // Scheme::Json => {
+            //     todo!()
+            // }
         }
     }
 }
@@ -93,7 +94,7 @@ impl<'a, 'b> Blueprint<'a, 'b> {
     pub fn get_filename(&self) -> String {
         String::from(match self.scheme {
             Scheme::Tsv => "blueprint.tsv",
-            Scheme::Json => "blueprint.json",
+            // Scheme::Json => "blueprint.json",
         })
     }
 

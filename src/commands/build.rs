@@ -2,6 +2,7 @@ use super::plan;
 use super::plan::Plan;
 use super::plan::BLUEPRINT_FILE;
 use crate::commands::helps::build;
+use crate::core::blueprint::Scheme;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::fileset::Fileset;
@@ -28,6 +29,7 @@ pub struct Build {
     all: bool,
     command: Option<String>,
     top: Option<Identifier>,
+    plan: Option<Scheme>,
     bench: Option<Identifier>,
     target_dir: Option<String>,
     args: Vec<String>,
@@ -47,6 +49,7 @@ impl Subcommand<Context> for Build {
             // Options
             top: cli.get(Arg::option("top").value("unit"))?,
             bench: cli.get(Arg::option("bench").value("unit"))?,
+            plan: cli.get(Arg::option("plan").value("format"))?,
             target: cli.get(Arg::option("target").value("name"))?,
             target_dir: cli.get(Arg::option("target-dir").value("dir"))?,
             command: cli.get(Arg::option("command").value("path"))?,
@@ -62,7 +65,7 @@ impl Subcommand<Context> for Build {
         // display target list and exit
         if self.list == true {
             match target {
-                Some(t) => println!("{}", t.explain()),
+                Some(t) => println!("{}", t.to_string()),
                 None => println!(
                     "{}",
                     Target::list_targets(
@@ -79,6 +82,9 @@ impl Subcommand<Context> for Build {
         }
 
         let target = target.unwrap();
+
+        // coordinate the plan
+        let plan = target.coordinate_plan(&self.plan)?;
 
         // verify running from an ip directory and enter ip's root directory
         c.jump_to_working_ip()?;

@@ -51,6 +51,9 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.
 `--bench <unit>`  
       Set the top level testbench unit
 
+`--plan <format>`  
+      Set the blueprint file format
+
 `--target-dir <dir>`  
       The relative directory where the target starts
 

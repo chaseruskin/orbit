@@ -381,10 +381,25 @@ impl Context {
         &self,
         target: &Option<String>,
         required: bool,
+        is_build: bool,
     ) -> Result<Option<&Target>, Error> {
+        let env_target = Environment::read(environment::ORBIT_TARGET);
         let target = match target {
-            Some(t) => Some(t.to_string()),
-            None => Environment::read(environment::ORBIT_TARGET),
+            Some(t) => Some(t),
+            None => {
+                match required {
+                    true => {
+                        // try to use an environment variable
+                        match &env_target {
+                            Some(r) => Some(r),
+                            // try to use the default
+                            None => self.get_config().get_default_target(is_build),
+                        }
+                    }
+                    // allow the list to be printed
+                    false => None,
+                }
+            }
         };
         match target {
             // verify the target name matches

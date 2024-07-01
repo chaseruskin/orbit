@@ -36,6 +36,11 @@ impl FromStr for ConfigDocument {
 const INCLUDE_KEY: &str = "include";
 const GENERAL_KEY: &str = "general";
 const LANGUAGES_KEY: &str = "language";
+const BUILD_KEY: &str = "build";
+const TEST_KEY: &str = "test";
+
+const TOP_KEYS: [&str; 5] = [INCLUDE_KEY, GENERAL_KEY, LANGUAGES_KEY, BUILD_KEY, TEST_KEY];
+
 use crate::util::anyerror::Fault;
 use toml_edit::Array;
 use toml_edit::Document;
@@ -207,7 +212,7 @@ impl FromFile for ConfigDocument {
             // enter a blank lock file if failed (do not exit)
             Err(e) => {
                 return Err(AnyError(format!(
-                    "Failed to parse configuration file at path {:?}: {}",
+                    "failed to parse configuration file at path {:?}: {}",
                     path, e
                 )))?
             }
@@ -372,6 +377,66 @@ impl General {
     }
 }
 
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct Build {
+    #[serde(rename = "default-target")]
+    default_target: Option<String>,
+}
+
+impl Build {
+    pub fn new() -> Self {
+        Self {
+            default_target: None,
+        }
+    }
+
+    pub fn get_default_target(&self) -> Option<&String> {
+        self.default_target.as_ref()
+    }
+
+    /// Merges any populated data from `rhs` into attributes that do not already
+    /// have data defined in `self`.
+    pub fn merge(&mut self, rhs: Option<Self>) {
+        if let Some(rhs) = rhs {
+            // no build dir defined so give it the value from `rhs`
+            if self.default_target.is_some() == false {
+                self.default_target = rhs.default_target
+            }
+        }
+    }
+}
+
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct Test {
+    #[serde(rename = "default-target")]
+    default_target: Option<String>,
+}
+
+impl Test {
+    pub fn new() -> Self {
+        Self {
+            default_target: None,
+        }
+    }
+
+    pub fn get_default_target(&self) -> Option<&String> {
+        self.default_target.as_ref()
+    }
+
+    /// Merges any populated data from `rhs` into attributes that do not already
+    /// have data defined in `self`.
+    pub fn merge(&mut self, rhs: Option<Self>) {
+        if let Some(rhs) = rhs {
+            // no build dir defined so give it the value from `rhs`
+            if self.default_target.is_some() == false {
+                self.default_target = rhs.default_target
+            }
+        }
+    }
+}
+
 pub const CONFIG_FILE: &str = "config.toml";
 
 #[derive(PartialEq, Debug, Serialize, Deserialize)]
@@ -384,6 +449,8 @@ pub struct Config {
     #[serde(rename = "vhdl-format")]
     vhdl_format: Option<VhdlFormat>,
     general: Option<General>,
+    build: Option<Build>,
+    test: Option<Test>,
     language: Option<Language>,
 }
 
@@ -397,6 +464,8 @@ impl Config {
             vhdl_format: None,
             general: None,
             language: None,
+            build: None,
+            test: None,
         }
     }
 
@@ -442,12 +511,22 @@ impl Config {
             }
             None => self.env = rhs.env,
         }
+        // combine '[build]' table
+        match &mut self.build {
+            Some(v) => v.merge(rhs.build),
+            None => self.build = rhs.build,
+        }
+        // combine '[test]' table
+        match &mut self.test {
+            Some(v) => v.merge(rhs.test),
+            None => self.test = rhs.test,
+        }
         // combine '[vhdl-format]' table
         match &mut self.vhdl_format {
             Some(v) => v.merge(rhs.vhdl_format),
             None => self.vhdl_format = rhs.vhdl_format,
         }
-        // combine '[[plugin]]' array
+        // combine '[[target]]' array
         match &mut self.target {
             Some(v) => v.append(&mut rhs.target.unwrap_or(Vec::new())),
             None => self.target = rhs.target,
@@ -479,6 +558,19 @@ impl Config {
             });
         }
         map
+    }
+
+    pub fn get_default_target(&self, is_build: bool) -> Option<&String> {
+        match is_build {
+            true => match &self.build {
+                Some(m) => m.get_default_target(),
+                None => None,
+            },
+            false => match &self.test {
+                Some(m) => m.get_default_target(),
+                None => None,
+            },
+        }
     }
 
     /// Access what language mode is enabled for the given configuration table.

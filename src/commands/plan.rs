@@ -82,7 +82,7 @@ impl Subcommand<Context> for Plan {
 
     fn execute(self, c: &Context) -> proc::Result {
         // locate the target provided from the command-line
-        let target = c.select_target(&self.target, self.list == false)?;
+        let target = c.select_target(&self.target, self.list == false, true)?;
 
         // display targets list and exit
         if self.list == true {

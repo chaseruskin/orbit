@@ -50,7 +50,7 @@ impl Subcommand<Context> for Test {
 
     fn execute(self, c: &Context) -> proc::Result {
         // locate the plugin
-        let target = c.select_target(&self.target, self.list == false)?;
+        let target = c.select_target(&self.target, self.list == false, false)?;
 
         // display plugin list and exit
         if self.list == true {

@@ -58,7 +58,7 @@ impl Subcommand<Context> for Build {
 
     fn execute(self, c: &Context) -> proc::Result {
         // select the target
-        let target = c.select_target(&self.target, self.list == false)?;
+        let target = c.select_target(&self.target, self.list == false, true)?;
         // display target list and exit
         if self.list == true {
             match target {

@@ -33,6 +33,10 @@ Every configuration file consists of the following sections:
     - [systemverilog](#the-systemverilog-field) - Enable/disable SystemVerilog support.
 - [[general]](#the-general-section) - The general settings.
     - [target-dir](#the-target-dir-field) - Default target directory.
+- [[test]](#the-test-section) - The test settings.
+    - [default-target](#the-default-target-field) - Set the default target for tests.
+- [[build]](#the-build-section) - The build settings.
+    - [default-target](#the-default-target-field) - Set the default target for builds.
 - [[vhdl-format]](#the-vhdl-format-section) - VHDL code formatting.
 - [[env]](#the-env-section) - The runtime environment variables.
 - [[[target]]](#the-target-array) - Define a target.
@@ -100,6 +104,28 @@ Define the default output directory to create for the planning and building phas
 [general]
 target-dir = "target"
 # ...
+```
+
+### The `[test]` section
+
+### The `default-target` field
+
+Sets the default target when calling `orbit test`. If the default target is set to be used and it cannot be found among the known targets, it will error.
+
+``` toml
+[test]
+default-target = "foo"
+```
+
+### The `[build]` section
+
+### The `default-target` field
+
+Sets the default target when calling `orbit build`. If the default target is set to be used and it cannot be found among the known targets, it will error.
+
+``` toml
+[build]
+default-target = "bar"
 ```
 
 ### The `[vhdl-format]` section

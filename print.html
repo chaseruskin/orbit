@@ -1890,6 +1890,16 @@ precedence:
 <li><a href="reference/configuration.html#the-target-dir-field">target-dir</a> - Default target directory.</li>
 </ul>
 </li>
+<li><a href="reference/configuration.html#the-test-section">[test]</a> - The test settings.
+<ul>
+<li><a href="reference/configuration.html#the-default-target-field">default-target</a> - Set the default target for tests.</li>
+</ul>
+</li>
+<li><a href="reference/configuration.html#the-build-section">[build]</a> - The build settings.
+<ul>
+<li><a href="reference/configuration.html#the-default-target-field">default-target</a> - Set the default target for builds.</li>
+</ul>
+</li>
 <li><a href="reference/configuration.html#the-vhdl-format-section">[vhdl-format]</a> - VHDL code formatting.</li>
 <li><a href="reference/configuration.html#the-env-section">[env]</a> - The runtime environment variables.</li>
 <li><a href="reference/configuration.html#the-target-array">[[target]]</a> - Define a target.
@@ -1943,6 +1953,18 @@ systemverilog = true
 <pre><code class="language-toml">[general]
 target-dir = "target"
 # ...
+</code></pre>
+<h3 id="the-test-section"><a class="header" href="#the-test-section">The <code>[test]</code> section</a></h3>
+<h3 id="the-default-target-field"><a class="header" href="#the-default-target-field">The <code>default-target</code> field</a></h3>
+<p>Sets the default target when calling <code>orbit test</code>. If the default target is set to be used and it cannot be found among the known targets, it will error.</p>
+<pre><code class="language-toml">[test]
+default-target = "foo"
+</code></pre>
+<h3 id="the-build-section"><a class="header" href="#the-build-section">The <code>[build]</code> section</a></h3>
+<h3 id="the-default-target-field-1"><a class="header" href="#the-default-target-field-1">The <code>default-target</code> field</a></h3>
+<p>Sets the default target when calling <code>orbit build</code>. If the default target is set to be used and it cannot be found among the known targets, it will error.</p>
+<pre><code class="language-toml">[build]
+default-target = "bar"
 </code></pre>
 <h3 id="the-vhdl-format-section"><a class="header" href="#the-vhdl-format-section">The <code>[vhdl-format]</code> section</a></h3>
 <p>The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their hard-coded default value.</p>

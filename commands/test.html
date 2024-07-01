@@ -183,29 +183,48 @@
 <pre><code>orbit test [options] [--] [args]...
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will plan and build for the given target under the assumption it
-is a test.</p>
+<p>This command prepares a given target and then executes the target.</p>
+<p>While this command functions the same as <code>orbit build</code>, the targets that are
+encouraged to be used with this command are ones that are designed to either
+"pass" or "fail", typically through a return code.</p>
+<p>A target must be provided for the test command to run. A default target can
+be specified in a configuration file, which will be used when a target is
+omitted from the command-line.</p>
+<p>If <code>--list</code> is used, then it will display a list of the available targets to
+the user. Using <code>--list</code> in combination with a target from <code>--target</code> will
+display any detailed help information the target has documented in its
+definition.</p>
+<p>A target typically goes through three steps for the testing process:</p>
+<ol>
+<li>Parse the blueprint file</li>
+<li>Process the referenced files listed in the blueprint</li>
+<li>Verify the hdl source code passes all tests</li>
+</ol>
+<p>Any command-line arguments entered after the terminating flag <code>--</code> will be
+passed in the received order as arguments to the subprocess's command. If a
+target already has defined arguments, the additional arguments passed from the
+command-line will follow the previously defined arguments.</p>
+<p>The target's process will spawn from the current working ip's output directory,
+which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
+<p><code>--target &lt;name&gt;</code><br />
+      Target to execute</p>
 <p><code>--top &lt;unit&gt;</code><br />
       Set the top level design unit</p>
 <p><code>--bench &lt;unit&gt;</code><br />
       Set the top level testbench unit</p>
+<p><code>--target-dir &lt;dir&gt;</code><br />
+      The relative directory where the target starts</p>
+<p><code>--command &lt;path&gt;</code><br />
+      Overwrite the target's command</p>
+<p><code>--list</code><br />
+      View available targets and exit</p>
+<p><code>--all</code><br />
+      Include all hdl files of the working ip</p>
 <p><code>--fileset &lt;key=glob&gt;...</code><br />
       A glob-style pattern identified by name to include in the blueprint</p>
-<p><code>--clean</code><br />
-      Remove all previous files from the target directory before execution</p>
 <p><code>--force</code><br />
-      Ignore reading the precomputed lock file</p>
-<p><code>--target &lt;name&gt;</code><br />
-      Target to execute</p>
-<p><code>--all</code><br />
-      Include all locally found HDL files</p>
-<p><code>--command &lt;cmd&gt;</code><br />
-      Command to execute</p>
-<p><code>--list</code><br />
-      View available targets</p>
-<p><code>--target-dir &lt;dir&gt;</code><br />
-      The relative directory to locate the blueprint file</p>
+      Force the target to execute</p>
 <p><code>--verbose</code><br />
       Display the command being executed</p>
 <p><code>args</code><br />

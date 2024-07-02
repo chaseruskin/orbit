@@ -1,0 +1,20 @@
+[[target]]
+name = "foo"
+description = "Print bar to the console"
+command = "echo"
+args = ["bar"]
+
+[[target]]
+name = "ao"
+description = "Print the blueprint contents"
+command = "cat"
+args = ["blueprint.tsv"]
+
+[[target]]
+name = "vlit"
+description = "Simulate verilog with Verilator"
+command = "python"
+args = ["vlit.py"]
+
+[test]
+default-target = "ao"

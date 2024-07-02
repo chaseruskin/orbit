@@ -164,6 +164,8 @@ impl Subcommand<Context> for Plan {
             &self.top,
             &self.filesets,
             &Scheme::default(),
+            false,
+            true,
         )
     }
 }
@@ -184,6 +186,8 @@ impl Plan {
         top_name: &Option<Identifier>,
         filesets: &Option<Vec<Fileset>>,
         scheme: &Scheme,
+        require_bench: bool,
+        allow_bench: bool,
     ) -> Result<(), Fault> {
         // create the output path to know where to begin storing files
         let working_ip_path = working_ip.get_root().clone();
@@ -251,25 +255,31 @@ impl Plan {
         let local_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> =
             Self::compute_local_graph(&global_graph, &working_ip);
 
-        let (top, bench) = match Self::detect_bench(
-            &global_graph,
-            &local_graph,
-            &working_lib,
-            &bench_name,
-            &top_name,
-        ) {
-            Ok(r) => r,
-            Err(e) => match e {
-                PlanError::Ambiguous(_, _) => {
-                    if all == true {
-                        (None, None)
-                    } else {
-                        return Err(e)?;
-                    }
+        let (top, bench) = match allow_bench {
+            true => {
+                match Self::detect_bench(
+                    &global_graph,
+                    &local_graph,
+                    &working_lib,
+                    &bench_name,
+                    &top_name,
+                ) {
+                    Ok(r) => r,
+                    Err(e) => match e {
+                        PlanError::Ambiguous(_, _) => {
+                            if all == true {
+                                (None, None)
+                            } else {
+                                return Err(e)?;
+                            }
+                        }
+                        _ => return Err(e)?,
+                    },
                 }
-                _ => return Err(e)?,
-            },
+            }
+            false => (None, None),
         };
+
         // determine the top-level node index
         let (top, bench) = match Self::detect_top(
             &global_graph,
@@ -278,6 +288,7 @@ impl Plan {
             top,
             bench,
             &top_name,
+            allow_bench,
         ) {
             Ok(r) => r,
             Err(e) => match e {
@@ -317,6 +328,8 @@ impl Plan {
             {
                 return Err(AnyError(format!("top unit '{}' is not tested in testbench '{}'\n\nIf you wish to continue, add the `--all` flag", global_graph.get_key_by_index(top.unwrap()).unwrap().get_suffix(), global_graph.get_key_by_index(*b).unwrap().get_suffix())))?;
             }
+        } else if bench.is_none() == true && require_bench == true {
+            panic!("a testbench is required to test")
         }
 
         // [!] write the lock file
@@ -818,7 +831,7 @@ impl Plan {
         Ok(())
     }
 
-    /// Builds a graph of design units. Used for planning.
+    /// Builds a graph of design units. Used for planning
     fn build_full_graph<'a>(
         files: &'a Vec<IpFileNode>,
     ) -> Result<GraphMap<CompoundIdentifier, HdlNode<'a>, ()>, Fault> {
@@ -1015,21 +1028,40 @@ impl Plan {
                 Err(e) => match e.len() {
                     0 => (None, None),
                     _ => {
-                        return Err(PlanError::Ambiguous(
-                            "roots".to_string(),
-                            e.into_iter()
-                                .map(|f| {
-                                    local
-                                        .get_map()
-                                        .get(local.get_graph().get_node(f).unwrap())
-                                        .unwrap()
-                                        .as_ref()
-                                        .get_symbol()
-                                        .get_name()
-                                        .clone()
-                                })
-                                .collect(),
-                        ))?
+                        // filter to only testbenches
+                        let tbs: Vec<&usize> = e
+                            .iter()
+                            .filter(|i| {
+                                local
+                                    .get_node_by_index(**i)
+                                    .unwrap()
+                                    .as_ref()
+                                    .get_symbol()
+                                    .is_testbench()
+                                    == true
+                            })
+                            .collect();
+                        match tbs.len() {
+                            0 => (None, None),
+                            1 => (None, Some(*tbs[0])),
+                            _ => {
+                                return Err(PlanError::Ambiguous(
+                                    "testbenches".to_string(),
+                                    tbs.into_iter()
+                                        .map(|f| {
+                                            local
+                                                .get_map()
+                                                .get(local.get_graph().get_node(*f).unwrap())
+                                                .unwrap()
+                                                .as_ref()
+                                                .get_symbol()
+                                                .get_name()
+                                                .clone()
+                                        })
+                                        .collect(),
+                                ))?
+                            }
+                        }
                     }
                 },
             }
@@ -1051,6 +1083,7 @@ impl Plan {
         natural_top: Option<usize>,
         mut bench: Option<usize>,
         top: &Option<Identifier>,
+        allow_bench: bool,
     ) -> Result<(Option<usize>, Option<usize>), PlanError> {
         // determine the top-level node index
         let top: Option<usize> = if let Some(t) = &top {
@@ -1069,7 +1102,7 @@ impl Plan {
                     }
                     let n: usize = node.index();
                     // try to detect top level testbench
-                    if bench.is_none() {
+                    if bench.is_none() == true && allow_bench == true {
                         // check if only 1 is a testbench
                         let benches: Vec<usize> = local
                             .get_graph()
@@ -1161,7 +1194,59 @@ impl Plan {
                             }
                         }
                     } else {
-                        None
+                        // auto-detect top-level if no testbench was given
+                        let tops: Vec<(usize, &HdlSymbol)> = local
+                            .get_map()
+                            .iter()
+                            .filter_map(|(_k, v)| {
+                                if v.as_ref().get_symbol().is_testbench() == false {
+                                    Some((v.index(), v.as_ref().get_symbol()))
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+                        // filter out all non-top entities to get only top ones
+                        let tops: Vec<(usize, &HdlSymbol)> = tops
+                            .into_iter()
+                            .filter(|(i, _v)| {
+                                local
+                                    .get_graph()
+                                    .successors(*i)
+                                    .filter(|k| {
+                                        local
+                                            .get_node_by_index(*k)
+                                            .unwrap()
+                                            .as_ref()
+                                            .get_symbol()
+                                            .is_testbench()
+                                            == false
+                                    })
+                                    .count()
+                                    == 0
+                            })
+                            .collect();
+
+                        match tops.len() {
+                            // catch this error when it occurs during plan to allow for tbs without entities
+                            0 => None,
+                            1 => Some(tops[0].0),
+                            _ => {
+                                return Err(PlanError::Ambiguous(
+                                    "top-level design units".to_string(),
+                                    tops.into_iter()
+                                        .map(|f| {
+                                            local
+                                                .get_node_by_index(f.0)
+                                                .unwrap()
+                                                .as_ref()
+                                                .get_symbol()
+                                                .get_name()
+                                        })
+                                        .collect(),
+                                ))?
+                            }
+                        }
                     }
                 }
             }

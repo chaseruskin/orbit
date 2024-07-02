@@ -14,9 +14,10 @@ orbit test [options] [--] [args]...
 
 This command prepares a given target and then executes the target.
 
-While this command functions the same as `orbit build`, the targets that are 
+While this command functions similar to `orbit build`, the targets that are 
 encouraged to be used with this command are ones that are designed to either
-"pass" or "fail", typically through a return code.
+"pass" or "fail", typically through a return code. This command requires a
+testbench, if you do not want to set a testbench, see `orbit build`.
 
 A target must be provided for the test command to run. A default target can
 be specified in a configuration file, which will be used when a target is
@@ -45,8 +46,8 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.
 `--target <name>`  
       Target to execute
 
-`--top <unit>`  
-      Set the top level design unit
+`--dut <unit>`  
+      Set the design under test
 
 `--bench <unit>`  
       Set the top level testbench unit

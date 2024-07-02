@@ -27,7 +27,7 @@ pub struct Test {
     all: bool,
     plan: Option<Scheme>,
     verbose: bool,
-    top: Option<Identifier>,
+    dut: Option<Identifier>,
     command: Option<String>,
     filesets: Option<Vec<Fileset>>,
     bench: Option<Identifier>,
@@ -43,7 +43,7 @@ impl Subcommand<Context> for Test {
             force: cli.check(Arg::flag("force"))?,
             all: cli.check(Arg::flag("all"))?,
             // Options
-            top: cli.get(Arg::option("top").value("unit"))?,
+            dut: cli.get(Arg::option("dut").value("unit"))?,
             bench: cli.get(Arg::option("bench").value("unit"))?,
             plan: cli.get(Arg::option("plan").value("format"))?,
             target: cli.get(Arg::option("target"))?,
@@ -142,9 +142,11 @@ impl Test {
             false,
             self.all,
             &self.bench,
-            &self.top,
+            &self.dut,
             &self.filesets,
             &scheme,
+            true,
+            true,
         )?;
 
         // prepare for build

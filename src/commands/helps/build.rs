@@ -7,7 +7,6 @@ Usage:
 Options:
     --target <name>         target to execute
     --top <unit>            set the top level design unit
-    --bench <unit>          set the top level testbench unit
     --plan <format>         set the blueprint file format
     --target-dir <dir>      the relative directory where the target starts
     --command <path>        overwrite the target's command

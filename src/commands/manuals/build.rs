@@ -8,9 +8,10 @@ SYNOPSIS
 DESCRIPTION
     This command prepares a given target and then executes the target.
     
-    While this command functions the same as 'orbit test', the targets that are 
+    While this command functions similar to 'orbit test', the targets that are 
     encouraged to be used with this command are ones that produce artifacts at the
-    end of their execution process.
+    end of their execution process. This command does not allow the top to be a
+    testbench, if you want to set a testbench, see 'orbit test'.
     
     A target must be provided for the build command to run. A default target can
     be specified in a configuration file, which will be used when a target is
@@ -40,9 +41,6 @@ OPTIONS
 
     --top <unit>
         Set the top level design unit
-
-    --bench <unit>
-        Set the top level testbench unit
 
     --plan <format>
         Set the blueprint file format

@@ -378,9 +378,10 @@ synopsis = "orbit build [options] [--] [args]..."
 description = """
 This command prepares a given target and then executes the target.
 
-While this command functions the same as `orbit test`, the targets that are 
+While this command functions similar to `orbit test`, the targets that are 
 encouraged to be used with this command are ones that produce artifacts at the
-end of their execution process.
+end of their execution process. This command does not allow the top to be a
+testbench, if you want to set a testbench, see `orbit test`.
 
 A target must be provided for the build command to run. A default target can
 be specified in a configuration file, which will be used when a target is
@@ -407,7 +408,6 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.
 
 options."--target <name>" = "Target to execute"
 options."--top <unit>" = "Set the top level design unit"
-options."--bench <unit>" = "Set the top level testbench unit"
 options."--plan <format>" = "Set the blueprint file format"
 options."--target-dir <dir>" = "The relative directory where the target starts"
 options."--command <path>" = "Overwrite the target's command"
@@ -434,7 +434,6 @@ Usage:
 Options:
     --target <name>         target to execute
     --top <unit>            set the top level design unit
-    --bench <unit>          set the top level testbench unit
     --plan <format>         set the blueprint file format
     --target-dir <dir>      the relative directory where the target starts
     --command <path>        overwrite the target's command
@@ -456,9 +455,10 @@ synopsis = "orbit test [options] [--] [args]..."
 description = """
 This command prepares a given target and then executes the target.
 
-While this command functions the same as `orbit build`, the targets that are 
+While this command functions similar to `orbit build`, the targets that are 
 encouraged to be used with this command are ones that are designed to either
-"pass" or "fail", typically through a return code.
+"pass" or "fail", typically through a return code. This command requires a
+testbench, if you do not want to set a testbench, see `orbit build`.
 
 A target must be provided for the test command to run. A default target can
 be specified in a configuration file, which will be used when a target is
@@ -484,7 +484,7 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.
 """
 
 options."--target <name>" = "Target to execute"
-options."--top <unit>" = "Set the top level design unit"
+options."--dut <unit>" = "Set the design under test"
 options."--bench <unit>" = "Set the top level testbench unit"
 options."--plan <format>" = "Set the blueprint file format"
 options."--target-dir <dir>" = "The relative directory where the target starts"
@@ -508,7 +508,7 @@ Usage:
 
 Options:
     --target <name>         target to execute
-    --top <unit>            set the top level design unit
+    --dut <unit>            set the design under test
     --bench <unit>          set the top level testbench unit
     --plan <format>         set the blueprint file format
     --target-dir <dir>      the relative directory where the target starts

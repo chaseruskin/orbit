@@ -11,7 +11,7 @@ cd ..
 
 # Run application workflow
 cd app
-orbit build --target foo --force --top t1
+orbit test --target foo --force --dut t1
 cd ..
 
 # Remove dependencies

@@ -6,7 +6,7 @@ Usage:
 
 Options:
     --target <name>         target to execute
-    --top <unit>            set the top level design unit
+    --dut <unit>            set the design under test
     --bench <unit>          set the top level testbench unit
     --plan <format>         set the blueprint file format
     --target-dir <dir>      the relative directory where the target starts

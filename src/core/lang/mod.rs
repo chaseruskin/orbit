@@ -1,3 +1,4 @@
+pub mod sv;
 pub mod verilog;
 pub mod vhdl;
 
@@ -164,22 +165,6 @@ pub enum LangUnit {
     Vhdl(VhdlPrimaryUnit, SharedData),
     Verilog(VerilogPrimaryUnit, SharedData),
 }
-
-// impl Code for LangUnit {
-//     fn get_source_code_file(&self) -> &str {
-//         match &self {
-//             Self::Vhdl(u) => u.get_unit().get_source_code_file(),
-//             Self::Verilog(u) => u.as_ref(),
-//         }
-//     }
-
-//     fn get_symbol(&self) -> Option<&vhdl::symbol::VHDLSymbol> {
-//         match &self {
-//             Self::Vhdl(u) => u.get_unit().get_symbol(),
-//             Self::Verilog(u) => None,
-//         }
-//     }
-// }
 
 impl LangUnit {
     /// Checks if the module is public.

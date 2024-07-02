@@ -17,16 +17,31 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## 0.14.0 - unreleased
 
+### Features
+- adds new environment variable `ORBIT_DUT` set during `orbit test`
+- allow targets to define what types of blueprints they can handle
+- adds `--library` option to `orbit get` command
+- allows configuration file to be found on parent directories of the current working path with appropriate precedence
+- adds `orbit lock` command to save the state of the local ip by writing the Orbit.lock file
+- verilog files can now be detected and written to blueprints
+
 ### Changes
-- renames "plugin" to "target" to more closely align with software language terminology relating to back end processed
+- targets are new spawned inside a folder with their name within the `TARGET_DIR` directory (this is where the blueprint and .env file are written during the planning stage as well)
+- `orbit test` forces user to have a testbench, if there is not one, see `orbit build`
+- no longer allows `orbit build` to specify a testbench, see `orbit test`
+- fixes configuration precedence
+- renames "plugin" to "target" to more closely align with software language terminology relating to back end processes
 - renames "downloads" directory to "archive" to better describe what is stored in that catalog level
-- makes `run` command available (although not working)
+- deprecates `plan` command- this step is now integrated into the `build` and `test` commands for a more unified development approach
 - renames `show` command to `view` and adds new switches (`-u`, `-v`) for faster lookups for units and versions of an ip
+- Adds more error messages
 
 ### Documents
-- Adds information about ip and their naming
-- Adds information about catalog
-- Adds information about targets
+- adds information about ip and their naming
+- adds information about catalog
+- adds information about targets
+- adds information of configurations
+- updates tutorial
 
 ## 0.13.0
 

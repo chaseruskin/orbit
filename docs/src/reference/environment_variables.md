@@ -24,17 +24,19 @@ Orbit also sets environment variables during runtime so a plugin has access to r
 
 - `ORBIT_IP_PATH` - path to the ip that is detected under the current working directory. If its not immediately detected at the current directory, it will continue to search the parent directory until it finds a `Orbit.toml` manifest file.
 
-- `ORBIT_TARGET` - specified target to plan and execute
+- `ORBIT_TARGET` - selected target to plan and execute
 
-- `ORBIT_TOP` - toplevel design unit identifier
+- `ORBIT_TOP` - top level design unit identifier
 
-- `ORBIT_BENCH` - toplevel design's testbench identifier
+- `ORBIT_BENCH` - the testbench identifier
 
-- `ORBIT_IP_NAME` - name field of the manifest for the IP package
+- `ORBIT_DUT` - the device under test's identifier
 
-- `ORBIT_IP_LIBRARY` - optional HDL library defined in the manifest for the IP package
+- `ORBIT_IP_NAME` - name field of the manifest for the ip package
 
-- `ORBIT_IP_VERSION` - specific version of current working directory's IP
+- `ORBIT_IP_LIBRARY` - optional HDL library defined in the manifest for the ip
+
+- `ORBIT_IP_VERSION` - specific version of current working directory's ip
 
 - `ORBIT_BLUEPRINT` - the filename for the blueprint created during the planning stage
 

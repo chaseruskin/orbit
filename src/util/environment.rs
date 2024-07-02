@@ -232,6 +232,7 @@ pub const ORBIT_CHANNELS: &str = "ORBIT_CHANNELS";
 pub const ORBIT_IP_PATH: &str = "ORBIT_IP_PATH";
 pub const ORBIT_TARGET_DIR: &str = "ORBIT_TARGET_DIR";
 pub const ORBIT_TOP: &str = "ORBIT_TOP";
+pub const ORBIT_DUT: &str = "ORBIT_DUT";
 pub const ORBIT_BENCH: &str = "ORBIT_BENCH";
 pub const ORBIT_TARGET: &str = "ORBIT_TARGET";
 pub const ORBIT_BLUEPRINT: &str = "ORBIT_BLUEPRINT";

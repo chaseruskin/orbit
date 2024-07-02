@@ -40,7 +40,7 @@ OPTIONS
         Target to execute
 
     --dut <unit>
-        Set the design under test
+        Set the device under test
 
     --bench <unit>
         Set the top level testbench unit
@@ -73,5 +73,5 @@ OPTIONS
         Arguments to pass to the target
 
 EXAMPLES
-    orbit test --top top --target modelsim -- --lint
+    orbit test --dut adder --bench adder_tb --target modelsim -- --lint
 "#;

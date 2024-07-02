@@ -214,6 +214,7 @@ impl Plan {
                         &String::new(),
                         &String::new(),
                         target,
+                        require_bench,
                     )?;
                     // create a blueprint file
                     println!(
@@ -502,7 +503,7 @@ impl Plan {
         }
 
         let blueprint_path =
-            Self::create_outputs(&blueprint, &target_path, &top_name, &bench_name, target)?;
+            Self::create_outputs(&blueprint, &target_path, &top_name, &bench_name, target, require_bench)?;
         // create a blueprint file
         println!("info: blueprint created at: {:?}", blueprint_path.display());
         Ok(())
@@ -1383,6 +1384,7 @@ impl Plan {
         top_name: &str,
         bench_name: &str,
         target: &Target,
+        require_bench: bool,
     ) -> Result<PathBuf, Fault> {
         let output_path = target_path.join(target.get_name());
         // create a output build directorie(s) if they do not exist
@@ -1401,7 +1403,8 @@ impl Plan {
 
         // create environment variables to .env file
         let mut envs: Environment = Environment::from_vec(vec![
-            EnvVar::new().key(environment::ORBIT_TOP).value(&top_name),
+            EnvVar::new().key(environment::ORBIT_TOP).value(if require_bench == false { &top_name } else { "" }),
+            EnvVar::new().key(environment::ORBIT_DUT).value(if require_bench == true { &top_name } else { "" }),
             EnvVar::new()
                 .key(environment::ORBIT_BENCH)
                 .value(&bench_name),

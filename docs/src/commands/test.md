@@ -47,7 +47,7 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.
       Target to execute
 
 `--dut <unit>`  
-      Set the design under test
+      Set the device under test
 
 `--bench <unit>`  
       Set the top level testbench unit
@@ -82,6 +82,6 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.
 ## __EXAMPLES__
 
 ```
-orbit test --top top --target modelsim -- --lint
+orbit test --dut adder --bench adder_tb --target modelsim -- --lint
 ```
 

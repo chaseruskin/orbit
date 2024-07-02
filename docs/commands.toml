@@ -484,7 +484,7 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.
 """
 
 options."--target <name>" = "Target to execute"
-options."--dut <unit>" = "Set the design under test"
+options."--dut <unit>" = "Set the device under test"
 options."--bench <unit>" = "Set the top level testbench unit"
 options."--plan <format>" = "Set the blueprint file format"
 options."--target-dir <dir>" = "The relative directory where the target starts"
@@ -497,7 +497,7 @@ options."--verbose" = "Display the command being executed"
 options."args" = "Arguments to pass to the target"
 
 examples = """
-orbit test --top top --target modelsim -- --lint
+orbit test --dut adder --bench adder_tb --target modelsim -- --lint
 """
 
 help = """
@@ -508,7 +508,7 @@ Usage:
 
 Options:
     --target <name>         target to execute
-    --dut <unit>            set the design under test
+    --dut <unit>            set the device under test
     --bench <unit>          set the top level testbench unit
     --plan <format>         set the blueprint file format
     --target-dir <dir>      the relative directory where the target starts

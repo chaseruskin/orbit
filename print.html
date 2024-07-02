@@ -1819,22 +1819,25 @@ VHDL-SIM	work	/Users/chase/projects/lc3b/sim/alu_tb.vhd
 <p><code>ORBIT_IP_PATH</code> - path to the ip that is detected under the current working directory. If its not immediately detected at the current directory, it will continue to search the parent directory until it finds a <code>Orbit.toml</code> manifest file.</p>
 </li>
 <li>
-<p><code>ORBIT_TARGET</code> - specified target to plan and execute</p>
+<p><code>ORBIT_TARGET</code> - selected target to plan and execute</p>
 </li>
 <li>
-<p><code>ORBIT_TOP</code> - toplevel design unit identifier</p>
+<p><code>ORBIT_TOP</code> - top level design unit identifier</p>
 </li>
 <li>
-<p><code>ORBIT_BENCH</code> - toplevel design's testbench identifier</p>
+<p><code>ORBIT_BENCH</code> - the testbench identifier</p>
 </li>
 <li>
-<p><code>ORBIT_IP_NAME</code> - name field of the manifest for the IP package</p>
+<p><code>ORBIT_DUT</code> - the device under test's identifier</p>
 </li>
 <li>
-<p><code>ORBIT_IP_LIBRARY</code> - optional HDL library defined in the manifest for the IP package</p>
+<p><code>ORBIT_IP_NAME</code> - name field of the manifest for the ip package</p>
 </li>
 <li>
-<p><code>ORBIT_IP_VERSION</code> - specific version of current working directory's IP</p>
+<p><code>ORBIT_IP_LIBRARY</code> - optional HDL library defined in the manifest for the ip</p>
+</li>
+<li>
+<p><code>ORBIT_IP_VERSION</code> - specific version of current working directory's ip</p>
 </li>
 <li>
 <p><code>ORBIT_BLUEPRINT</code> - the filename for the blueprint created during the planning stage</p>
@@ -2615,7 +2618,7 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.</p>
 <p><code>--target &lt;name&gt;</code><br />
       Target to execute</p>
 <p><code>--dut &lt;unit&gt;</code><br />
-      Set the design under test</p>
+      Set the device under test</p>
 <p><code>--bench &lt;unit&gt;</code><br />
       Set the top level testbench unit</p>
 <p><code>--plan &lt;format&gt;</code><br />
@@ -2637,7 +2640,7 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.</p>
 <p><code>args</code><br />
       Arguments to pass to the target</p>
 <h2 id="examples-9"><a class="header" href="#examples-9"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit test --top top --target modelsim -- --lint
+<pre><code>orbit test --dut adder --bench adder_tb --target modelsim -- --lint
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-build"><a class="header" href="#orbit-build"><strong>orbit build</strong></a></h1>
 <h2 id="name-8"><a class="header" href="#name-8"><strong>NAME</strong></a></h2>

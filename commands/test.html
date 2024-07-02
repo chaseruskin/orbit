@@ -211,7 +211,7 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.</p>
 <p><code>--target &lt;name&gt;</code><br />
       Target to execute</p>
 <p><code>--dut &lt;unit&gt;</code><br />
-      Set the design under test</p>
+      Set the device under test</p>
 <p><code>--bench &lt;unit&gt;</code><br />
       Set the top level testbench unit</p>
 <p><code>--plan &lt;format&gt;</code><br />
@@ -233,7 +233,7 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.</p>
 <p><code>args</code><br />
       Arguments to pass to the target</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit test --top top --target modelsim -- --lint
+<pre><code>orbit test --dut adder --bench adder_tb --target modelsim -- --lint
 </code></pre>
 
                     </main>

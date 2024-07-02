@@ -184,9 +184,10 @@
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
 <p>This command prepares a given target and then executes the target.</p>
-<p>While this command functions the same as <code>orbit test</code>, the targets that are
+<p>While this command functions similar to <code>orbit test</code>, the targets that are
 encouraged to be used with this command are ones that produce artifacts at the
-end of their execution process.</p>
+end of their execution process. This command does not allow the top to be a
+testbench, if you want to set a testbench, see <code>orbit test</code>.</p>
 <p>A target must be provided for the build command to run. A default target can
 be specified in a configuration file, which will be used when a target is
 omitted from the command-line.</p>
@@ -211,8 +212,6 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.</p>
       Target to execute</p>
 <p><code>--top &lt;unit&gt;</code><br />
       Set the top level design unit</p>
-<p><code>--bench &lt;unit&gt;</code><br />
-      Set the top level testbench unit</p>
 <p><code>--plan &lt;format&gt;</code><br />
       Set the blueprint file format</p>
 <p><code>--target-dir &lt;dir&gt;</code><br />

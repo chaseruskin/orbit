@@ -184,9 +184,10 @@
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
 <p>This command prepares a given target and then executes the target.</p>
-<p>While this command functions the same as <code>orbit build</code>, the targets that are
+<p>While this command functions similar to <code>orbit build</code>, the targets that are
 encouraged to be used with this command are ones that are designed to either
-"pass" or "fail", typically through a return code.</p>
+"pass" or "fail", typically through a return code. This command requires a
+testbench, if you do not want to set a testbench, see <code>orbit build</code>.</p>
 <p>A target must be provided for the test command to run. A default target can
 be specified in a configuration file, which will be used when a target is
 omitted from the command-line.</p>
@@ -209,8 +210,8 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--target &lt;name&gt;</code><br />
       Target to execute</p>
-<p><code>--top &lt;unit&gt;</code><br />
-      Set the top level design unit</p>
+<p><code>--dut &lt;unit&gt;</code><br />
+      Set the design under test</p>
 <p><code>--bench &lt;unit&gt;</code><br />
       Set the top level testbench unit</p>
 <p><code>--plan &lt;format&gt;</code><br />

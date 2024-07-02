@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Operator {
     ConcatL,
     ConcatR,
@@ -50,6 +50,7 @@ pub enum Operator {
     At,
     AttrL,
     AttrR,
+    GraveAccent,
 }
 
 impl Operator {
@@ -103,6 +104,7 @@ impl Operator {
             "@" => Self::At,
             "(*" => Self::AttrL,
             "*)" => Self::AttrR,
+            "`" => Self::GraveAccent,
             _ => return None,
         })
     }
@@ -156,6 +158,7 @@ impl Operator {
             Self::At => "@",
             Self::AttrL => "(*",
             Self::AttrR => "*)",
+            Self::GraveAccent => "`",
         }
     }
 }

@@ -19,6 +19,10 @@ pub enum Identifier {
 impl Eq for Identifier {}
 
 impl Identifier {
+    pub fn new() -> Self {
+        Self::Basic(String::new())
+    }
+
     // Returns the reference to the inner `String` struct.
     pub fn as_str(&self) -> &str {
         match self {

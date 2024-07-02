@@ -18,7 +18,7 @@ pub enum HdlSymbol {
 impl HdlSymbol {
     pub fn get_name(&self) -> LangIdentifier {
         match &self {
-            Self::Verilog(v) => LangIdentifier::Verilog(v.as_name().clone()),
+            Self::Verilog(v) => LangIdentifier::Verilog(v.as_name().unwrap().clone()),
             Self::Vhdl(v) => LangIdentifier::Vhdl(v.get_name().unwrap().clone()),
             Self::BlackBox(s) => LangIdentifier::Vhdl(VhdlIdentifier::Basic(s.to_string())),
         }

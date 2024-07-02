@@ -502,8 +502,14 @@ impl Plan {
             }
         }
 
-        let blueprint_path =
-            Self::create_outputs(&blueprint, &target_path, &top_name, &bench_name, target, require_bench)?;
+        let blueprint_path = Self::create_outputs(
+            &blueprint,
+            &target_path,
+            &top_name,
+            &bench_name,
+            target,
+            require_bench,
+        )?;
         // create a blueprint file
         println!("info: blueprint created at: {:?}", blueprint_path.display());
         Ok(())
@@ -738,19 +744,23 @@ impl Plan {
 
         // add all entities to a graph and store architectures for later analysis
         symbols.into_iter().for_each(|f| {
-            let name = f.as_name().clone();
+            let name = f.as_name();
             match f {
                 VerilogSymbol::Module(_) => {
                     component_pairs.insert(
-                        LangIdentifier::Verilog(name.clone()),
+                        LangIdentifier::Verilog(name.unwrap().clone()),
                         LangIdentifier::Vhdl(vhdl_lib.clone()),
                     );
                     // add primary design units into the graph
                     graph_map.add_node(
-                        CompoundIdentifier::new(lib.clone(), LangIdentifier::Verilog(name)),
+                        CompoundIdentifier::new(
+                            lib.clone(),
+                            LangIdentifier::Verilog(name.unwrap().clone()),
+                        ),
                         HdlNode::new(HdlSymbol::Verilog(f), node),
                     );
                 }
+                _ => (),
             }
         });
         Ok(())
@@ -1403,8 +1413,16 @@ impl Plan {
 
         // create environment variables to .env file
         let mut envs: Environment = Environment::from_vec(vec![
-            EnvVar::new().key(environment::ORBIT_TOP).value(if require_bench == false { &top_name } else { "" }),
-            EnvVar::new().key(environment::ORBIT_DUT).value(if require_bench == true { &top_name } else { "" }),
+            EnvVar::new()
+                .key(environment::ORBIT_TOP)
+                .value(if require_bench == false {
+                    &top_name
+                } else {
+                    ""
+                }),
+            EnvVar::new()
+                .key(environment::ORBIT_DUT)
+                .value(if require_bench == true { &top_name } else { "" }),
             EnvVar::new()
                 .key(environment::ORBIT_BENCH)
                 .value(&bench_name),

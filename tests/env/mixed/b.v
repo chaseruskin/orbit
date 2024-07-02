@@ -1,5 +1,12 @@
+`define WOW
+
+module my_pkg;
+    const int A = 10;
+endmodule
+
 // Source file for behavioral mux selector
-module b(
+(* hello *)
+module b # (WIDTH = A) (
     din_0,      // Mux 1st input
     din_1,      // Mux 2nd input
     sel,        // Selector
@@ -13,3 +20,8 @@ module b(
     assign mux_out = (sel) ? din_1 : din_0;
 
 endmodule 
+
+
+module c;
+
+endmodule

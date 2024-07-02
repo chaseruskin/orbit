@@ -107,19 +107,20 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
             let units: HashMap<Identifier, PrimaryUnit> = symbols
                 .into_iter()
                 .filter_map(|sym: VerilogSymbol| {
-                    let name = sym.as_name().clone();
+                    let name = sym.as_name();
                     match sym {
                         VerilogSymbol::Module(_) => Some((
-                            name.clone(),
+                            name.unwrap().clone(),
                             PrimaryUnit {
                                 shape: PrimaryShape::Module,
                                 unit: Unit {
-                                    name: name,
+                                    name: name.unwrap().clone(),
                                     symbol: Some(sym),
                                     source: source_file.clone(),
                                 },
                             },
                         )),
+                        _ => None,
                     }
                 })
                 .collect();

@@ -12,7 +12,7 @@ use super::operator::Operator;
 use super::tokenizer::char_set;
 use std::fmt::Display;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum VerilogToken {
     WhiteSpace(WhiteSpace),
     Comment(Comment),
@@ -38,6 +38,13 @@ impl VerilogToken {
     pub fn is_eof(&self) -> bool {
         match self {
             VerilogToken::EOF => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_directive(&self) -> bool {
+        match self {
+            VerilogToken::Directive(_) => true,
             _ => false,
         }
     }
@@ -581,7 +588,7 @@ impl Display for Comment {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct WhiteSpace {}
 
 #[cfg(test)]

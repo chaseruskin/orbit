@@ -56,12 +56,12 @@ impl Module {
 
         let parameters = parameters
             .into_iter()
-            .map(|f| f.0)
+            .map(|f| f)
             .collect::<Vec<Vec<Token<VerilogToken>>>>();
 
         let ports = ports
             .into_iter()
-            .map(|f| f.0)
+            .map(|f| f)
             .collect::<Vec<Vec<Token<VerilogToken>>>>();
 
         Ok(Module {

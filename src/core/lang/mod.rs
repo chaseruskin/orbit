@@ -8,7 +8,6 @@ pub mod parser;
 pub mod node;
 pub mod unit;
 
-pub mod cross;
 pub mod reference;
 
 use crate::error::Error;
@@ -233,7 +232,14 @@ impl LangUnit {
                     .collect(),
                 None => Vec::new(),
             },
-            Self::Verilog(_u, _) => Vec::new(),
+            Self::Verilog(u, _) => match u.get_unit().get_symbol() {
+                Some(sym) => sym
+                    .get_refs()
+                    .into_iter()
+                    .map(|f| f.get_suffix().clone())
+                    .collect(),
+                None => Vec::new(),
+            },
         }
     }
 

@@ -55,6 +55,13 @@ impl CompoundIdentifier {
         }
     }
 
+    pub fn new_minimal_verilog(suffix: VerilogIdentifier) -> Self {
+        Self {
+            prefix: None,
+            suffix: LangIdentifier::Verilog(suffix),
+        }
+    }
+
     pub fn entity(prefix: VhdlIdentifier, suffix: VhdlIdentifier) -> Self {
         Self {
             prefix: Some(LangIdentifier::Vhdl(prefix)),

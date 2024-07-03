@@ -2,21 +2,21 @@
 /* verilator lint_off MULTITOP */
 
 module my_pkg;
-    const int A = 10;
+    const integer A = 10;
 endmodule
 
 // Source file for behavioral mux selector
 (* hello *)
-module b # (parameter NUM = 10) (
+module b # (parameter integer NUM = 10, X = 5) (
     din_0,      // Mux 1st input
     din_1,      // Mux 2nd input
     sel = 1,        // Selector
-    mux_out = 1     // Mux chosen output
+    mux_out     // Mux chosen output
 );
     input din_0, din_1, sel ;
     output mux_out;
 
-    wire  mux_out  = 1;
+    wire mux_out = 1;
 
     assign mux_out = (sel) ? din_1 : din_0;
 
@@ -41,7 +41,7 @@ module register #(parameter WIDTH = 8)
 
 	always@(posedge clk)
 	begin
-		if(rst)
+		if (rst)
 			val<=0;
 		else if(wen)
 			val<=D;

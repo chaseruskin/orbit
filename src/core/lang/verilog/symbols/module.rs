@@ -2,10 +2,10 @@ use std::iter::Peekable;
 
 use crate::core::lang::{
     lexer::{Position, Token},
-    reference::RefSet,
+    reference::{CompoundIdentifier, RefSet},
     verilog::{
         error::VerilogError,
-        interface::PortList,
+        interface::{self, ParamList, PortList},
         token::{identifier::Identifier, token::VerilogToken},
     },
 };
@@ -15,9 +15,10 @@ use super::VerilogSymbol;
 #[derive(Debug, PartialEq)]
 pub struct Module {
     name: Identifier,
-    parameters: Vec<String>,
+    parameters: ParamList,
     ports: PortList,
     refs: RefSet,
+    deps: RefSet,
     pos: Position,
     language: String,
 }
@@ -25,6 +26,10 @@ pub struct Module {
 impl Module {
     pub fn get_name(&self) -> &Identifier {
         &self.name
+    }
+
+    pub fn get_deps(&self) -> &RefSet {
+        &self.deps
     }
 
     pub fn is_testbench(&self) -> bool {
@@ -37,6 +42,19 @@ impl Module {
 }
 
 impl Module {
+    /// Returns the list of compound identifiers that were parsed from entity instantiations.
+    pub fn get_edge_list_entities(&self) -> Vec<CompoundIdentifier> {
+        let mut list: Vec<CompoundIdentifier> = self.deps.iter().map(|f| f.clone()).collect();
+        list.sort();
+        list
+    }
+
+    pub fn get_edge_list(&self) -> Vec<CompoundIdentifier> {
+        let mut list: Vec<CompoundIdentifier> = self.refs.iter().map(|f| f.clone()).collect();
+        list.sort();
+        list
+    }
+
     /// Parses an `Entity` primary design unit from the entity's identifier to
     /// the END closing statement.
     pub fn from_tokens<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Self, VerilogError>
@@ -48,19 +66,22 @@ impl Module {
         // println!("{:?}", mod_name);
         let mut refs = RefSet::new();
         // parse the interface/declaration of the module
-        let (parameters, mut ports, d_refs) = VerilogSymbol::parse_module_declaration(tokens)?;
+        let (mut params, mut ports, d_refs) = VerilogSymbol::parse_module_declaration(tokens)?;
         refs.extend(d_refs);
         // parse the body of the module
-        let (body_parameters, body_ports, b_refs) =
+        let (body_params, body_ports, b_refs, deps) =
             VerilogSymbol::parse_module_architecture(tokens)?;
         refs.extend(b_refs);
 
-        // TOOD: update declared ports from any architecture port definitions
-
-        let parameters = parameters
+        // update declared ports from any architecture port definitions
+        body_ports
             .into_iter()
-            .map(|f| f)
-            .collect::<Vec<Vec<Token<VerilogToken>>>>();
+            .for_each(|p| interface::update_port_list(&mut ports, p));
+
+        // update declared params from any architecture param definitions
+        body_params
+            .into_iter()
+            .for_each(|p| interface::update_port_list(&mut params, p));
 
         Ok(Module {
             name: match mod_name {
@@ -68,9 +89,10 @@ impl Module {
                 // expecting identifier
                 _ => return Err(VerilogError::Vague),
             },
-            parameters: Vec::new(),
+            parameters: params,
             ports: ports,
             refs: refs,
+            deps: deps,
             pos: pos,
             language: String::from("verilog"),
         })

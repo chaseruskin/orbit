@@ -120,7 +120,6 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
                                 },
                             },
                         )),
-                        _ => None,
                     }
                 })
                 .collect();

@@ -11,7 +11,7 @@ use crate::core::lang::node::HdlSymbol;
 use crate::core::lang::node::IdentifierFormat;
 use crate::core::lang::node::SubUnitNode;
 use crate::core::lang::reference::CompoundIdentifier;
-use crate::core::lang::vhdl::token::Identifier;
+use crate::core::lang::vhdl::token::Identifier as VhdlIdentifier;
 use crate::core::lang::Lang;
 use crate::core::lang::LangIdentifier;
 use crate::core::lang::Language;
@@ -25,7 +25,7 @@ use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Tree {
-    root: Option<Identifier>,
+    root: Option<VhdlIdentifier>,
     compress: bool,
     format: Option<IdentifierFormat>,
     ascii: bool,
@@ -74,7 +74,7 @@ impl Tree {
 
     /// Construct and print the graph at an HDL-entity level.
     fn run_hdl_graph(&self, target: Ip, catalog: Catalog, mode: &Language) -> Result<(), Fault> {
-        let working_lib = Identifier::new_working();
+        let working_lib = VhdlIdentifier::new_working();
 
         // build graph again but with entire set of all files available from all depdendencies
         let ip_graph = algo::compute_final_ip_graph(&target, &catalog, mode)?;
@@ -257,6 +257,9 @@ impl Tree {
         }
 
         // differs from planning below
+
+        // add edges according to verilog
+        Plan::connect_edges_from_verilog(&mut graph_map, &mut component_pairs, true);
 
         // go through all subunits and make the connections
         let mut sub_nodes_iter = sub_nodes.into_iter();

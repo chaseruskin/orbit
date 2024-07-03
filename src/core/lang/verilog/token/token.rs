@@ -14,7 +14,6 @@ use std::fmt::Display;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum VerilogToken {
-    WhiteSpace(WhiteSpace), // not used
     Comment(Comment),
     Operator(Operator),
     Number(Number),
@@ -24,6 +23,26 @@ pub enum VerilogToken {
     StringLiteral(String),
     Directive(String),
     EOF,
+}
+
+impl Display for VerilogToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Comment(c) => c.to_string(),
+                Self::Operator(o) => o.to_string(),
+                Self::Number(n) => n.to_string(),
+                Self::String(s) => s.to_string(),
+                Self::Identifier(i) => i.to_string(),
+                Self::Keyword(k) => k.to_string(),
+                Self::StringLiteral(s) => s.to_string(),
+                Self::Directive(d) => d.to_string(),
+                Self::EOF => String::new(),
+            }
+        )
+    }
 }
 
 impl VerilogToken {
@@ -456,17 +475,17 @@ impl VerilogToken {
                             let e = train.consume().unwrap();
                             let expon = Self::consume_exponent(train, e)?;
                             number.push_str(&expon);
-                            return Ok(Self::Number(Number::Real(number)));
+                            return Ok(Self::Number(Number::Real(number.trim().to_string())));
                         // no exponent (so we are done with the number)
                         } else {
-                            return Ok(Self::Number(Number::Real(number)));
+                            return Ok(Self::Number(Number::Real(number.trim().to_string())));
                         }
                     // take the exponent (no fraction)
                     } else {
                         let e = train.consume().unwrap();
                         let expon = Self::consume_exponent(train, e)?;
                         number.push_str(&expon);
-                        return Ok(Self::Number(Number::Real(number)));
+                        return Ok(Self::Number(Number::Real(number.trim().to_string())));
                     }
                 } else {
                     let mut d = *c;
@@ -480,12 +499,12 @@ impl VerilogToken {
                             d = *f;
                         } else {
                             // no more characters
-                            return Ok(Self::Number(Number::Decimal(number)));
+                            return Ok(Self::Number(Number::Decimal(number.trim().to_string())));
                         }
                     }
                     // check the next character
                     if d != char_set::SINGLE_QUOTE {
-                        return Ok(Self::Number(Number::Decimal(number)));
+                        return Ok(Self::Number(Number::Decimal(number.trim().to_string())));
                     } else {
                         number.push(train.consume().unwrap());
                     }
@@ -543,7 +562,7 @@ impl VerilogToken {
             0 => Err(VerilogError::EmptyBaseConstNumber),
             _ => {
                 number.push_str(&value);
-                Ok(Self::Number(Number::Based(number)))
+                Ok(Self::Number(Number::Based(number.trim().to_string())))
             }
         }
     }
@@ -595,9 +614,3 @@ impl Display for Comment {
         }
     }
 }
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct WhiteSpace {}
-
-#[cfg(test)]
-mod tests {}

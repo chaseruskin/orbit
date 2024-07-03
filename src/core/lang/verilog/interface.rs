@@ -6,6 +6,7 @@ use super::{
 };
 
 pub type PortList = Vec<Port>;
+pub type ParamList = Vec<Port>;
 
 pub fn get_port_by_name_mut<'a>(
     port_list: &'a mut PortList,
@@ -13,6 +14,16 @@ pub fn get_port_by_name_mut<'a>(
 ) -> Option<&'a mut Port> {
     let port = port_list.iter_mut().find(|i| &i.name == name)?;
     Some(port)
+}
+
+/// Updates the port list by either letting the existing port with its identifier inherit its defined
+/// attributes.
+pub fn update_port_list<'a>(port_list: &'a mut PortList, new_port: Port) -> () {
+    let port = port_list.iter_mut().find(|i| &i.name == &new_port.name);
+    match port {
+        Some(p) => p.inherit(&new_port),
+        None => port_list.push(new_port),
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -59,24 +70,40 @@ impl Port {
     }
 
     pub fn inherit(&mut self, rhs: &Port) {
-        self.direction = rhs.direction.clone();
-        self.net_type = rhs.net_type.clone();
-        self.is_reg = rhs.is_reg;
-        self.is_signed = rhs.is_signed;
-        if let Some(r) = &rhs.range {
-            self.range = Some(
-                r.iter()
-                    .map(|f| Token::new(f.as_type().clone(), f.locate().clone()))
-                    .collect(),
-            )
+        if self.direction.is_none() {
+            self.direction = rhs.direction.clone();
         }
 
-        if let Some(r) = &rhs.value {
-            self.value = Some(
-                r.iter()
-                    .map(|f| Token::new(f.as_type().clone(), f.locate().clone()))
-                    .collect(),
-            )
+        if self.net_type.is_none() {
+            self.net_type = rhs.net_type.clone();
+        }
+
+        if self.is_reg == false {
+            self.is_reg = rhs.is_reg;
+        }
+
+        if self.is_signed == false {
+            self.is_signed = rhs.is_signed;
+        }
+
+        if self.range.is_none() {
+            if let Some(r) = &rhs.range {
+                self.range = Some(
+                    r.iter()
+                        .map(|f| Token::new(f.as_type().clone(), f.locate().clone()))
+                        .collect(),
+                )
+            }
+        }
+
+        if self.value.is_none() {
+            if let Some(r) = &rhs.value {
+                self.value = Some(
+                    r.iter()
+                        .map(|f| Token::new(f.as_type().clone(), f.locate().clone()))
+                        .collect(),
+                )
+            }
         }
     }
 

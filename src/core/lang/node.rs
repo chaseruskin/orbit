@@ -5,8 +5,9 @@ use crate::util::anyerror::AnyError;
 use colored::Colorize;
 
 use super::reference::RefSet;
+use super::verilog::symbols::module::Module;
 use super::verilog::symbols::VerilogSymbol;
-use super::{LangIdentifier, VhdlIdentifier};
+use super::{Lang, LangIdentifier, VhdlIdentifier};
 
 #[derive(Debug, PartialEq)]
 pub enum HdlSymbol {
@@ -38,6 +39,13 @@ impl HdlSymbol {
             Self::Verilog(v) => v.get_refs(),
             Self::Vhdl(v) => v.get_refs(),
             Self::BlackBox(_) => todo!(),
+        }
+    }
+
+    pub fn as_module(&self) -> Option<&Module> {
+        match &self {
+            Self::Verilog(v) => v.as_module(),
+            _ => None,
         }
     }
 
@@ -75,6 +83,14 @@ impl<'a> HdlNode<'a> {
         Self {
             sym: sym,
             files: set,
+        }
+    }
+
+    pub fn get_lang(&self) -> Lang {
+        match self.sym {
+            HdlSymbol::Verilog(_) => Lang::Verilog,
+            HdlSymbol::Vhdl(_) => Lang::Vhdl,
+            HdlSymbol::BlackBox(_) => Lang::Vhdl,
         }
     }
 

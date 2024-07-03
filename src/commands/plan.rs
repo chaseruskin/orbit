@@ -8,6 +8,7 @@ use crate::core::iparchive::IpArchive;
 use crate::core::lang::parser::ParseError;
 use crate::core::lang::reference::CompoundIdentifier;
 use crate::core::lang::verilog::symbols::{VerilogParser, VerilogSymbol};
+use crate::core::lang::verilog::token::identifier::Identifier as VerilogIdentifier;
 use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbols::{VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
@@ -22,6 +23,7 @@ use crate::util::environment;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
 use crate::util::filesystem;
+use crate::util::graph::EdgeStatus;
 use crate::util::graphmap::GraphMap;
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -408,12 +410,20 @@ impl Plan {
 
         // print information (maybe also print the plugin saved to .env too?)
         match top_name.is_empty() {
-            false => println!("info: top-level set to {}", top_name.blue()),
-            true => println!("{} no top-level set", "warning:".yellow()),
+            false => match require_bench {
+                true => println!("info: dut set to {}", top_name.blue()),
+                false => println!("info: top-level set to {}", top_name.blue()),
+            },
+            true => match require_bench {
+                true => println!("{} no dut set", "warning:".yellow()),
+                false => println!("{} no top-level set", "warning:".yellow()),
+            },
         }
-        match bench_name.is_empty() {
-            false => println!("info: testbench set to {}", bench_name.blue()),
-            true => println!("{} no testbench set", "warning:".yellow()),
+        if require_bench == true {
+            match bench_name.is_empty() {
+                false => println!("info: testbench set to {}", bench_name.blue()),
+                true => println!("{} no testbench set", "warning:".yellow()),
+            }
         }
 
         // store data in blueprint
@@ -428,6 +438,7 @@ impl Plan {
             // variables could potentially store empty strings if units are not set
             vtable.add("orbit.bench", &bench_name);
             vtable.add("orbit.top", &top_name);
+            vtable.add("orbit.dut", &top_name);
 
             // store data in a map for quicker look-ups when comparing to plugin-defind filesets
             let mut cli_fset_map: HashMap<&String, &Fileset> = HashMap::new();
@@ -760,10 +771,92 @@ impl Plan {
                         HdlNode::new(HdlSymbol::Verilog(f), node),
                     );
                 }
-                _ => (),
             }
         });
         Ok(())
+    }
+
+    pub fn connect_edges_from_verilog<'b, 'a>(
+        graph_map: &'b mut GraphMap<CompoundIdentifier, HdlNode<'a>, ()>,
+        component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
+        only_components: bool,
+    ) -> () {
+        let mut module_nodes_iter = graph_map
+            .get_map()
+            .values()
+            .filter_map(|f| {
+                if f.as_ref().get_lang() == Lang::Verilog {
+                    match f.as_ref().get_symbol().as_module() {
+                        Some(m) => {
+                            if only_components == true {
+                                Some((
+                                    f.as_ref().get_library().clone(),
+                                    m.get_name().clone(),
+                                    m.get_edge_list_entities(),
+                                ))
+                            } else {
+                                Some((
+                                    f.as_ref().get_library().clone(),
+                                    m.get_name().clone(),
+                                    m.get_edge_list(),
+                                ))
+                            }
+                        }
+                        None => None,
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<(LangIdentifier, VerilogIdentifier, Vec<CompoundIdentifier>)>>()
+            .into_iter();
+        while let Some((lib, name, deps)) = module_nodes_iter.next() {
+            let node_name = CompoundIdentifier::new(lib, LangIdentifier::Verilog(name));
+            // create edges by ordered edge list (for entities)
+            for dep in &deps {
+                // need to locate the key with a suffix matching `dep` if it was a component instantiation
+                if dep.get_prefix().is_none() {
+                    if let Some(lib) = component_pairs.get(dep.get_suffix()) {
+                        let b = graph_map.add_edge_by_key(
+                            &CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone()),
+                            &node_name,
+                            (),
+                        );
+                        match b {
+                            // create black box entity
+                            EdgeStatus::MissingSource => {
+                                let dep_name =
+                                    CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone());
+
+                                graph_map.add_node(
+                                    dep_name.clone(),
+                                    HdlNode::black_box(HdlSymbol::BlackBox(
+                                        dep.get_suffix().to_string(),
+                                    )),
+                                );
+                                graph_map.add_edge_by_key(&dep_name, &node_name, ());
+                            }
+                            _ => (),
+                        }
+                    // this entity does not exist or was not logged
+                    } else {
+                        // create new node for black box entity
+                        if graph_map.has_node_by_key(dep) == false {
+                            graph_map.add_node(
+                                dep.clone(),
+                                HdlNode::black_box(HdlSymbol::BlackBox(
+                                    dep.get_suffix().to_string(),
+                                )),
+                            );
+                        }
+                        graph_map.add_edge_by_key(&dep, &node_name, ());
+                    }
+                // the dependency has a prefix (a library) with it
+                } else {
+                    graph_map.add_edge_by_key(dep, &node_name, ());
+                };
+            }
+        }
     }
 
     pub fn create_systemverilog_node<'a, 'b>(
@@ -871,6 +964,8 @@ impl Plan {
                 )?,
             }
         }
+
+        Self::connect_edges_from_verilog(&mut graph_map, &mut component_pairs, false);
 
         // go through all architectures and make the connections
         let mut sub_nodes_iter = sub_nodes.into_iter();

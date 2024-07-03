@@ -34,11 +34,11 @@ impl HdlSymbol {
         }
     }
 
-    pub fn get_refs(&self) -> &RefSet {
+    pub fn get_refs(&self) -> Option<&RefSet> {
         match &self {
-            Self::Verilog(v) => v.get_refs(),
-            Self::Vhdl(v) => v.get_refs(),
-            Self::BlackBox(_) => todo!(),
+            Self::Verilog(v) => Some(v.get_refs()),
+            Self::Vhdl(v) => Some(v.get_refs()),
+            Self::BlackBox(_) => None,
         }
     }
 

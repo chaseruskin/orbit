@@ -1007,15 +1007,18 @@ impl Plan {
             .map(|(k, _)| k.clone())
             .collect();
         for iden in idens {
-            let references: Vec<CompoundIdentifier> = graph_map
+            let references: Vec<CompoundIdentifier> = if let Some(refs) = graph_map
                 .get_node_by_key(&iden)
                 .unwrap()
                 .as_ref()
                 .get_symbol()
                 .get_refs()
-                .into_iter()
-                .map(|rr| rr.clone())
-                .collect();
+            {
+                refs.into_iter().map(|rr| rr.clone()).collect()
+            } else {
+                // skip this unit
+                continue;
+            };
 
             for dep in &references {
                 let working = LangIdentifier::new_working();

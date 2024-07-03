@@ -102,8 +102,6 @@ impl Parse<VerilogToken> for VerilogParser {
         let mut symbols = Vec::new();
         let mut tokens = tokens.into_iter().peekable();
 
-        let mut module_attr: Option<Statement> = None;
-
         while let Some(t) = tokens.next() {
             // println!("{:?}", t);
             // take directives and ignore if okay
@@ -113,7 +111,7 @@ impl Parse<VerilogToken> for VerilogParser {
             // take attribute and ignore if okay
             else if t.as_ref().check_delimiter(&Operator::AttrL) {
                 match VerilogSymbol::parse_attr(&mut tokens, t.into_position()) {
-                    Ok(r) => module_attr = Some(r),
+                    Ok(r) => (),
                     Err(e) => symbols.push(Err(e)),
                 }
             }
@@ -131,7 +129,6 @@ impl Parse<VerilogToken> for VerilogParser {
                         Err(e) => Err(e),
                     },
                 );
-                module_attr = None;
             // skip comments
             } else if t.as_type().as_comment().is_some() == true {
                 continue;
@@ -385,6 +382,13 @@ impl VerilogSymbol {
             deps.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
             refs.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
         }
+        // take ALL identifiers as potential links to others
+        // stmt.iter()
+        //     .filter_map(|t| t.as_ref().as_identifier())
+        //     .for_each(|i| {
+        //         refs.insert(CompoundIdentifier::new_minimal_verilog(i.clone()));
+        //     });
+
         // reset the statement
         stmt.clear();
         Ok(())

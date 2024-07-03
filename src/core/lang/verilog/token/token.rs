@@ -14,7 +14,7 @@ use std::fmt::Display;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum VerilogToken {
-    WhiteSpace(WhiteSpace),
+    WhiteSpace(WhiteSpace), // not used
     Comment(Comment),
     Operator(Operator),
     Number(Number),
@@ -71,6 +71,14 @@ impl VerilogToken {
             _ => None,
         }
     }
+
+    pub fn is_comment(&self) -> bool {
+        match self {
+            VerilogToken::Comment(_) => true,
+            _ => false,
+        }
+    }
+
     /// Takes the identifier from the token.
     pub fn take_identifier(self) -> Option<Identifier> {
         match self {

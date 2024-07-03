@@ -7,6 +7,14 @@ use super::{
 
 pub type PortList = Vec<Port>;
 
+pub fn get_port_by_name_mut<'a>(
+    port_list: &'a mut PortList,
+    name: &Identifier,
+) -> Option<&'a mut Port> {
+    let port = port_list.iter_mut().find(|i| &i.name == name)?;
+    Some(port)
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Direction {
     Inout,
@@ -22,6 +30,7 @@ pub struct Port {
     is_signed: bool,
     range: Option<Statement>,
     name: Identifier,
+    value: Option<Statement>,
 }
 
 impl Port {
@@ -33,6 +42,7 @@ impl Port {
             is_signed: false,
             range: None,
             name: name,
+            value: None,
         }
     }
 
@@ -44,6 +54,7 @@ impl Port {
             is_signed: false,
             range: None,
             name: Identifier::new(),
+            value: None,
         }
     }
 
@@ -59,6 +70,22 @@ impl Port {
                     .collect(),
             )
         }
+
+        if let Some(r) = &rhs.value {
+            self.value = Some(
+                r.iter()
+                    .map(|f| Token::new(f.as_type().clone(), f.locate().clone()))
+                    .collect(),
+            )
+        }
+    }
+
+    pub fn set_default(&mut self, stmt: Statement) {
+        self.value = Some(stmt);
+    }
+
+    pub fn clear_default(&mut self) {
+        self.value = None;
     }
 
     pub fn set_direction(&mut self, kw: Keyword) {

@@ -67,7 +67,13 @@ impl VerilogParser {
 
     /// Reports an error if one is discovered in the list of symbols or in the tokenizing.
     pub fn read(s: &str) -> Result<Self, VerilogError> {
-        let symbols = VerilogParser::parse(VerilogTokenizer::from_str(&s)?.into_tokens());
+        let symbols = VerilogParser::parse(
+            VerilogTokenizer::from_str(&s)?
+                .into_tokens()
+                .into_iter()
+                .filter(|s| s.as_type().is_comment() == false)
+                .collect(),
+        );
         let result: Result<Vec<Symbol<VerilogSymbol>>, VerilogError> =
             symbols.into_iter().collect();
         Ok(Self { symbols: result? })
@@ -91,6 +97,7 @@ impl Parse<VerilogToken> for VerilogParser {
         let mut module_attr: Option<Statement> = None;
 
         while let Some(t) = tokens.next() {
+            // println!("{:?}", t);
             // take directives and ignore if okay
             if t.as_ref().is_directive() == true {
                 continue;
@@ -150,6 +157,76 @@ impl VerilogSymbol {
     //     Ok(())
     // }
 
+    fn parse_assignment<I>(tokens: &mut Peekable<I>) -> Result<Statement, VerilogError>
+    where
+        I: Iterator<Item = Token<VerilogToken>>,
+    {
+        let mut stmt = Vec::new();
+        // keep taking tokens until the closing attribute
+        while let Some(t) = tokens.next() {
+            if t.as_ref().check_delimiter(&Operator::Terminator)
+                || t.as_ref().check_delimiter(&Operator::Comma)
+                || t.as_ref().check_delimiter(&Operator::ParenR)
+            {
+                // do not take the ';' operator or ',' operator
+                break;
+            } else if t.as_ref().is_eof() == true {
+                // expecting closing attribute operator
+                return Err(VerilogError::ExpectingOperator(Operator::Terminator));
+            // parse nested parentheses
+            } else if t.as_ref().check_delimiter(&Operator::ParenL) {
+                stmt.extend(Self::parse_until_operator(tokens, t, Operator::ParenR)?);
+            } else {
+                stmt.push(t);
+            }
+        }
+        Ok(stmt)
+    }
+
+    fn parse_until_operator<I>(
+        tokens: &mut Peekable<I>,
+        beg_t: Token<VerilogToken>,
+        end_op: Operator,
+    ) -> Result<Statement, VerilogError>
+    where
+        I: Iterator<Item = Token<VerilogToken>>,
+    {
+        let mut counter = 1;
+        let mut stmt = vec![beg_t];
+        let beg_op = stmt
+            .first()
+            .unwrap()
+            .as_type()
+            .as_delimiter()
+            .unwrap()
+            .clone();
+        // keep taking tokens until the closing attribute
+        while let Some(t) = tokens.next() {
+            if t.as_ref().check_delimiter(&end_op) == true {
+                stmt.push(t);
+                if counter == 1 {
+                    break;
+                }
+                counter -= 1;
+            } else if t.as_ref().check_delimiter(&beg_op) {
+                counter += 1;
+                stmt.push(t);
+            } else if t.as_ref().is_eof() == true {
+                // expecting closing attribute operator
+                if counter > 1 {
+                    return Err(VerilogError::ExpectingOperator(Operator::ParenR));
+                } else if counter < 1 {
+                    return Err(VerilogError::ExpectingOperator(Operator::ParenL));
+                } else {
+                    return Err(VerilogError::ExpectingOperator(end_op));
+                }
+            } else {
+                stmt.push(t);
+            }
+        }
+        Ok(stmt)
+    }
+
     fn parse_attr<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Statement, VerilogError>
     where
         I: Iterator<Item = Token<VerilogToken>>,
@@ -183,7 +260,7 @@ impl VerilogSymbol {
 
     pub fn parse_module_declaration<I>(
         tokens: &mut Peekable<I>,
-    ) -> Result<(Vec<Statement>, Vec<Statement>, RefSet), VerilogError>
+    ) -> Result<(Vec<Statement>, PortList, RefSet), VerilogError>
     where
         I: Iterator<Item = Token<VerilogToken>>,
     {
@@ -207,7 +284,7 @@ impl VerilogSymbol {
             // parse port list (optional?)
             } else if t.as_ref().check_delimiter(&Operator::ParenL) == true {
                 Self::parse_module_port_list(tokens)?;
-            // stop parsing the
+            // stop parsing the declaration
             } else if t.as_ref().check_delimiter(&Operator::Terminator) == true {
                 break;
             }
@@ -251,10 +328,10 @@ impl VerilogSymbol {
                 return Err(VerilogError::ExpectingOperator(Operator::ParenR));
             // exit the parameter checking
             } else if t.as_ref().check_delimiter(&Operator::ParenR) == true {
-                counter -= 1;
-                if counter == 0 {
+                if counter == 1 {
                     break;
                 }
+                counter -= 1;
             } else if t.as_ref().check_delimiter(&Operator::ParenL) == true {
                 counter += 1;
             }
@@ -264,7 +341,7 @@ impl VerilogSymbol {
 
     fn parse_module_port_list<I>(
         tokens: &mut Peekable<I>,
-    ) -> Result<(Vec<Statement>, Vec<Statement>, RefSet), VerilogError>
+    ) -> Result<(PortList, RefSet), VerilogError>
     where
         I: Iterator<Item = Token<VerilogToken>>,
     {
@@ -277,13 +354,13 @@ impl VerilogSymbol {
         let mut counter = 1;
         while let Some(t) = tokens.next() {
             if t.as_ref().is_eof() == true {
-                return Err(VerilogError::ExpectingOperator(Operator::ParenR));
-            // exit the parameter checking
+                return Err(VerilogError::Vague);
+            // exit the port checking
             } else if t.as_ref().check_delimiter(&Operator::ParenR) == true {
-                counter -= 1;
-                if counter == 0 {
+                if counter == 1 {
                     break;
                 }
+                counter -= 1;
             } else if t.as_ref().check_delimiter(&Operator::ParenL) == true {
                 counter += 1;
             // we are dealing with a port list
@@ -293,10 +370,12 @@ impl VerilogSymbol {
                 port_map.last_mut().unwrap().inherit(&current_port_config);
             } else if t.as_ref().check_delimiter(&Operator::Comma) {
                 // proceed
+                // clear the default value (if exists
+                current_port_config.clear_default();
                 continue;
             // we are dealing with port connections
             } else if t.as_ref().check_delimiter(&Operator::Dot) {
-                todo!();
+                todo!("handle port connections with dot operator");
             // handle an attribute
             } else if t.as_ref().check_delimiter(&Operator::AttrL) {
                 Self::parse_attr(tokens, t.into_position())?;
@@ -307,10 +386,26 @@ impl VerilogSymbol {
             {
                 current_port_config = Port::new();
                 current_port_config.set_direction(t.as_ref().as_keyword().unwrap().clone());
+            // collect a range
+            } else if t.as_ref().check_delimiter(&Operator::BrackL) {
+                let stmt = Self::parse_until_operator(tokens, t, Operator::BrackR)?;
+                current_port_config.set_range(stmt);
+            // collect a default value
+            } else if t.as_ref().check_delimiter(&Operator::BlockAssign) {
+                let stmt = Self::parse_assignment(tokens)?;
+                current_port_config.set_default(stmt);
+            } else if t.as_ref().check_keyword(&Keyword::Reg) {
+                current_port_config.set_reg();
+            } else if t.as_ref().check_keyword(&Keyword::Signed) {
+                current_port_config.set_signed();
+            } else if t.as_ref().as_keyword().is_some() {
+                current_port_config.set_net_type(t.as_ref().as_keyword().unwrap().clone());
+            } else if t.as_ref().check_delimiter(&Operator::Terminator) {
+                break;
             }
         }
         println!("{:?}", port_map);
-        Ok((Vec::new(), Vec::new(), RefSet::new()))
+        Ok((port_map, RefSet::new()))
     }
 
     fn parse_port_connection<I>(

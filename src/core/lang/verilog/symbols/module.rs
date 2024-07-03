@@ -5,6 +5,7 @@ use crate::core::lang::{
     reference::RefSet,
     verilog::{
         error::VerilogError,
+        interface::PortList,
         token::{identifier::Identifier, token::VerilogToken},
     },
 };
@@ -15,7 +16,7 @@ use super::VerilogSymbol;
 pub struct Module {
     name: Identifier,
     parameters: Vec<String>,
-    ports: Vec<String>,
+    ports: PortList,
     refs: RefSet,
     pos: Position,
     language: String,
@@ -47,19 +48,16 @@ impl Module {
         // println!("{:?}", mod_name);
         let mut refs = RefSet::new();
         // parse the interface/declaration of the module
-        let (parameters, ports, d_refs) = VerilogSymbol::parse_module_declaration(tokens)?;
+        let (parameters, mut ports, d_refs) = VerilogSymbol::parse_module_declaration(tokens)?;
         refs.extend(d_refs);
         // parse the body of the module
         let (body_parameters, body_ports, b_refs) =
             VerilogSymbol::parse_module_architecture(tokens)?;
         refs.extend(b_refs);
 
-        let parameters = parameters
-            .into_iter()
-            .map(|f| f)
-            .collect::<Vec<Vec<Token<VerilogToken>>>>();
+        // TOOD: update declared ports from any architecture port definitions
 
-        let ports = ports
+        let parameters = parameters
             .into_iter()
             .map(|f| f)
             .collect::<Vec<Vec<Token<VerilogToken>>>>();
@@ -71,7 +69,7 @@ impl Module {
                 _ => return Err(VerilogError::Vague),
             },
             parameters: Vec::new(),
-            ports: Vec::new(),
+            ports: ports,
             refs: refs,
             pos: pos,
             language: String::from("verilog"),

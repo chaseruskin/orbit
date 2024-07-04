@@ -2,7 +2,7 @@
 version = 1
 
 [[ip]]
-name = "vlog-examples"
+name = "verilog-examples"
 version = "0.1.0"
-uuid = "e07d7eb1-ace7-4c6c-a350-6909d3a7a6c5"
+uuid = "b740b6b9-2533-4e11-8baa-542e53233612"
 dependencies = []

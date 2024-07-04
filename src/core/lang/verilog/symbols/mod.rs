@@ -1,7 +1,7 @@
 use std::iter::Peekable;
 
 use super::error::VerilogError;
-use super::interface::ParamList;
+use super::interface::{self, ParamList};
 use super::token::identifier::Identifier;
 use super::token::operator::Operator;
 use super::token::tokenizer::VerilogTokenizer;
@@ -38,14 +38,14 @@ impl VerilogSymbol {
     pub fn as_name(&self) -> Option<&Identifier> {
         match &self {
             Self::Module(m) => Some(m.get_name()),
-            _ => None,
+            // _ => None,
         }
     }
 
     pub fn as_module(&self) -> Option<&Module> {
         match &self {
             Self::Module(m) => Some(m),
-            _ => None,
+            // _ => None,
         }
     }
 
@@ -111,7 +111,7 @@ impl Parse<VerilogToken> for VerilogParser {
             // take attribute and ignore if okay
             else if t.as_ref().check_delimiter(&Operator::AttrL) {
                 match VerilogSymbol::parse_attr(&mut tokens, t.into_position()) {
-                    Ok(r) => (),
+                    Ok(_) => (),
                     Err(e) => symbols.push(Err(e)),
                 }
             }
@@ -323,6 +323,7 @@ impl VerilogSymbol {
         let mut deps = RefSet::new();
 
         let mut current_stmt = Statement::new();
+        let mut prev_stmt_used_begin = false;
 
         while let Some(t) = tokens.next() {
             if t.as_ref().is_eof() == true {
@@ -331,7 +332,21 @@ impl VerilogSymbol {
             // exit from the module architecture
             } else if t.as_ref().check_keyword(&Keyword::Endmodule) == true {
                 break;
+            // take a block's name
+            } else if prev_stmt_used_begin && t.as_ref().check_delimiter(&Operator::Colon) {
+                current_stmt.push(t);
+                current_stmt.push(tokens.next().unwrap());
+                prev_stmt_used_begin = false;
+                Self::handle_statement(
+                    &mut current_stmt,
+                    &mut params,
+                    &mut ports,
+                    &mut refs,
+                    &mut deps,
+                )?;
             } else if Self::is_statement_separator(t.as_ref()) {
+                // check if it is 'begin' and has a trailing ':'
+                prev_stmt_used_begin = t.as_ref().check_keyword(&Keyword::Begin);
                 // handle current statement
                 Self::handle_statement(
                     &mut current_stmt,
@@ -345,12 +360,14 @@ impl VerilogSymbol {
                 current_stmt.push(t);
                 // expecting '('
                 let opening_p = tokens.next().unwrap();
-                // take the parentheses
-                current_stmt.extend(Self::parse_until_operator(
-                    tokens,
-                    opening_p,
-                    Operator::ParenR,
-                )?);
+                if opening_p.as_ref().check_delimiter(&Operator::ParenL) {
+                    // take the parentheses
+                    current_stmt.extend(Self::parse_until_operator(
+                        tokens,
+                        opening_p,
+                        Operator::ParenR,
+                    )?);
+                }
                 // handle the statement
                 Self::handle_statement(
                     &mut current_stmt,
@@ -359,6 +376,7 @@ impl VerilogSymbol {
                     &mut refs,
                     &mut deps,
                 )?;
+                prev_stmt_used_begin = false;
             } else {
                 current_stmt.push(t);
             }
@@ -368,37 +386,295 @@ impl VerilogSymbol {
 
     fn handle_statement(
         stmt: &mut Statement,
-        params: &mut ParamList,
-        ports: &mut PortList,
+        mut params: &mut ParamList,
+        mut ports: &mut PortList,
         refs: &mut RefSet,
         deps: &mut RefSet,
     ) -> Result<(), VerilogError> {
-        println!("{:?}", statement_to_string(&stmt));
+        // println!("{:?}", statement_to_string(&stmt));
         if stmt.is_empty() == true {
             return Ok(());
         }
-        if let Some(dep) = stmt.first().unwrap().as_ref().as_identifier() {
-            println!("detected dependency! {}", dep);
+        if let Some(dep) = Self::as_module_instance(&stmt) {
+            // println!("detected dependency! {}", dep);
             deps.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
             refs.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
         }
-        // take ALL identifiers as potential links to others
-        // stmt.iter()
-        //     .filter_map(|t| t.as_ref().as_identifier())
-        //     .for_each(|i| {
-        //         refs.insert(CompoundIdentifier::new_minimal_verilog(i.clone()));
-        //     });
+        // try as a port
+        if let Some(def_ports) = Self::as_port_definition(&stmt) {
+            def_ports
+                .into_iter()
+                .for_each(|p| interface::update_port_list(&mut ports, p, true));
+        }
+        if let Some(def_params) = Self::as_param_definition(&stmt) {
+            def_params
+                .into_iter()
+                .for_each(|p| interface::update_port_list(&mut params, p, true));
+        }
 
         // reset the statement
         stmt.clear();
         Ok(())
     }
 
+    fn as_port_definition(stmt: &Statement) -> Option<PortList> {
+        let mut ports = PortList::new();
+        let mut current_port_config = Port::new();
+
+        let mut counter = 0;
+        let mut state = 0;
+        let mut sub_stmt = Statement::new();
+        let mut stmt_iter = stmt.iter();
+        while let Some(t) = stmt_iter.next() {
+            match state {
+                0 => {
+                    // we are dealing with a param list
+                    if let Some(name) = t.as_ref().as_identifier() {
+                        // collect all names until something else is hit
+                        ports.push(Port::with(name.clone()));
+                        ports.last_mut().unwrap().inherit(&current_port_config);
+                    } else if t.as_ref().check_delimiter(&Operator::Comma) {
+                        // proceed
+                        // clear the default value (if exists)
+                        current_port_config.clear_default();
+                        continue;
+                    // we are dealing with parameter declarations
+                    } else if t.as_ref().check_keyword(&Keyword::Input)
+                        || t.as_ref().check_keyword(&Keyword::Output)
+                        || t.as_ref().check_keyword(&Keyword::Inout)
+                    {
+                        current_port_config = Port::new();
+                        current_port_config.set_direction(t.as_ref().as_keyword().unwrap().clone());
+                    // collect a range
+                    } else if t.as_ref().check_delimiter(&Operator::BrackL) {
+                        sub_stmt.push(t.clone());
+                        state = 1;
+                    // collect a default value
+                    } else if t.as_ref().check_delimiter(&Operator::BlockAssign) {
+                        state = 2;
+                    } else if t.as_ref().check_keyword(&Keyword::Reg) {
+                        current_port_config.set_reg();
+                    } else if t.as_ref().check_keyword(&Keyword::Signed) {
+                        current_port_config.set_signed();
+                    } else if Self::is_valid_net_type(t.as_ref().as_keyword()) {
+                        current_port_config.set_net_type(t.as_ref().as_keyword().unwrap().clone());
+                    } else {
+                        state = -1;
+                    }
+                }
+                // collect a range
+                1 => {
+                    sub_stmt.push(t.clone());
+                    if t.as_ref().check_delimiter(&Operator::BrackL) {
+                        counter += 1;
+                    } else if t.as_ref().check_delimiter(&Operator::BrackR) {
+                        if counter == 0 {
+                            current_port_config.set_range(sub_stmt.clone());
+                            sub_stmt.clear();
+                            state = 0;
+                        } else {
+                            counter -= 1;
+                        }
+                    }
+                }
+                // collect an assignment
+                2 => {
+                    if t.as_ref().check_delimiter(&Operator::Comma) {
+                        // set the default for the last known port!
+                        ports.last_mut().unwrap().set_default(sub_stmt.clone());
+                        sub_stmt.clear();
+                        state = 0;
+                    // parse nested parentheses
+                    } else {
+                        sub_stmt.push(t.clone());
+                    }
+                }
+                _ => break,
+            }
+        }
+        // fill the final default value if broke out of loop during that state (no more tokens)
+        if sub_stmt.is_empty() == false && state == 2 {
+            ports.last_mut().unwrap().set_default(sub_stmt);
+        }
+        match state >= 0 && counter == 0 {
+            true => Some(ports),
+            false => None,
+        }
+    }
+
+    fn is_valid_net_type(op: Option<&Keyword>) -> bool {
+        let op = match op {
+            Some(op) => op,
+            None => return false,
+        };
+        match op {
+            // supply0 | supply1 | tri | triand | trior | tri0 | tri1 | uwire | wire | wand | wor
+            Keyword::Wire
+            | Keyword::Reg
+            | Keyword::Supply0
+            | Keyword::Supply1
+            | Keyword::Tri
+            | Keyword::Triand
+            | Keyword::Trior
+            | Keyword::Tri0
+            | Keyword::Tri1
+            | Keyword::Uwire
+            | Keyword::Wand
+            | Keyword::Wor => true,
+            _ => false,
+        }
+    }
+
+    fn as_param_definition(stmt: &Statement) -> Option<ParamList> {
+        let mut params = PortList::new();
+        let mut current_param_config = Port::new();
+
+        let mut counter = 0;
+        let mut state = 0;
+        let mut sub_stmt = Statement::new();
+        let mut stmt_iter = stmt.iter();
+        while let Some(t) = stmt_iter.next() {
+            match state {
+                0 => {
+                    // we are dealing with a param list
+                    if let Some(name) = t.as_ref().as_identifier() {
+                        // collect all names until something else is hit
+                        params.push(Port::with(name.clone()));
+                        params.last_mut().unwrap().inherit(&current_param_config);
+                    } else if t.as_ref().check_delimiter(&Operator::Comma) {
+                        // proceed
+                        // clear the default value (if exists)
+                        current_param_config.clear_default();
+                        continue;
+                    // we are dealing with parameter declarations
+                    } else if t.as_ref().check_keyword(&Keyword::Parameter) {
+                        current_param_config = Port::new();
+                        current_param_config
+                            .set_direction(t.as_ref().as_keyword().unwrap().clone());
+                    // collect a range
+                    } else if t.as_ref().check_delimiter(&Operator::BrackL) {
+                        sub_stmt.push(t.clone());
+                        state = 1;
+                    // collect a default value
+                    } else if t.as_ref().check_delimiter(&Operator::BlockAssign) {
+                        state = 2;
+                    } else if t.as_ref().check_keyword(&Keyword::Reg) {
+                        current_param_config.set_reg();
+                    } else if t.as_ref().check_keyword(&Keyword::Signed) {
+                        current_param_config.set_signed();
+                    // this is the datatype...? for the parameter
+                    } else if t.as_ref().as_keyword().is_some() {
+                        current_param_config.set_net_type(t.as_ref().as_keyword().unwrap().clone());
+                    } else {
+                        state = -1;
+                    }
+                }
+                // collect a range
+                1 => {
+                    sub_stmt.push(t.clone());
+                    if t.as_ref().check_delimiter(&Operator::BrackL) {
+                        counter += 1;
+                    } else if t.as_ref().check_delimiter(&Operator::BrackR) {
+                        if counter == 0 {
+                            current_param_config.set_range(sub_stmt.clone());
+                            sub_stmt.clear();
+                            state = 0;
+                        } else {
+                            counter -= 1;
+                        }
+                    }
+                }
+                // collect an assignment
+                2 => {
+                    if t.as_ref().check_delimiter(&Operator::Comma) {
+                        // set the default for the last known port!
+                        params.last_mut().unwrap().set_default(sub_stmt.clone());
+                        sub_stmt.clear();
+                        state = 0;
+                    // parse nested parentheses
+                    } else {
+                        sub_stmt.push(t.clone());
+                    }
+                }
+                _ => break,
+            }
+        }
+        // fill the final default value if broke out of loop during that state (no more tokens)
+        if sub_stmt.is_empty() == false && state == 2 {
+            params.last_mut().unwrap().set_default(sub_stmt);
+        }
+        match state >= 0 && counter == 0 {
+            true => Some(params),
+            false => None,
+        }
+    }
+
+    /// Returns the name of the module that is being instantiated in this statement, if
+    /// one exists.
+    fn as_module_instance(stmt: &Statement) -> Option<&Identifier> {
+        let mod_name = stmt.first()?.as_ref().as_identifier()?;
+        // are there parameters defined
+        let mut stmt_iter = stmt.iter().skip(1);
+
+        let mut state = 0;
+        let mut counter = 0;
+        while let Some(t) = stmt_iter.next() {
+            // println!("{}", t.as_ref().to_string());
+            // take the parameters
+            match state {
+                // take either name or parameters
+                0 => {
+                    if t.as_ref().check_delimiter(&Operator::Pound) {
+                        state = 1;
+                    } else if t.as_ref().as_identifier().is_some() {
+                        state = 1;
+                    } else if t.as_ref().check_delimiter(&Operator::Comma) {
+                        state = 0;
+                    } else {
+                        state = -1;
+                    }
+                }
+                // enter parameters or ports listings
+                1 => {
+                    if t.as_ref().check_delimiter(&Operator::ParenL) {
+                        counter = 0;
+                        state = 3;
+                    } else {
+                        state = -1;
+                    }
+                }
+                // take until closing parenthesis
+                3 => {
+                    if t.as_ref().check_delimiter(&Operator::ParenL) {
+                        counter += 1;
+                    } else if t.as_ref().check_delimiter(&Operator::ParenR) {
+                        if counter == 0 {
+                            state = 0;
+                        } else {
+                            counter -= 1;
+                        }
+                    }
+                }
+                _ => break,
+            }
+        }
+        match state >= 0 && counter == 0 {
+            true => Some(mod_name),
+            false => None,
+        }
+    }
+
     /// Checks if this is special token to take a statement using parentheses
     fn is_start_to_parentheses_statement(t: &VerilogToken) -> bool {
         match t {
             VerilogToken::Keyword(k) => match k {
-                Keyword::If | Keyword::For | Keyword::Case => true,
+                Keyword::If
+                | Keyword::For
+                | Keyword::Casex
+                | Keyword::Casez
+                | Keyword::While
+                | Keyword::Repeat
+                | Keyword::Case => true,
                 _ => false,
             },
             VerilogToken::Operator(o) => match o {
@@ -416,11 +692,19 @@ impl VerilogSymbol {
                 | Keyword::Begin
                 | Keyword::End
                 | Keyword::Else
+                | Keyword::Endconfig
+                | Keyword::Endfunction
+                | Keyword::Endgenerate
+                | Keyword::Endmodule
+                | Keyword::Endprimitive
+                | Keyword::Endspecify
+                | Keyword::Endtable
+                | Keyword::Endtask
                 | Keyword::Endcase => true,
                 _ => false,
             },
             VerilogToken::Operator(o) => match o {
-                Operator::Terminator => true,
+                Operator::Terminator | Operator::AttrR => true,
                 _ => false,
             },
             _ => false,
@@ -433,7 +717,7 @@ impl VerilogSymbol {
     where
         I: Iterator<Item = Token<VerilogToken>>,
     {
-        println!("{}", "PARSE PARAMS");
+        // println!("{}", "PARSE PARAMS");
 
         let mut params = ParamList::new();
         let mut current_param_config = Port::new();
@@ -484,7 +768,7 @@ impl VerilogSymbol {
                 current_param_config.set_net_type(t.as_ref().as_keyword().unwrap().clone());
             }
         }
-        println!("{:?}", params);
+        // println!("{:?}", params);
         Ok((params, RefSet::new()))
     }
 
@@ -494,7 +778,7 @@ impl VerilogSymbol {
     where
         I: Iterator<Item = Token<VerilogToken>>,
     {
-        println!("{}", "PARSE PORTS");
+        // println!("{}", "PARSE PORTS");
 
         let mut ports = PortList::new();
 
@@ -552,12 +836,12 @@ impl VerilogSymbol {
                 current_port_config.set_net_type(t.as_ref().as_keyword().unwrap().clone());
             }
         }
-        println!("{:?}", ports);
+        // println!("{:?}", ports);
         Ok((ports, RefSet::new()))
     }
 
     fn parse_port_connection<I>(
-        tokens: &mut Peekable<I>,
+        _tokens: &mut Peekable<I>,
     ) -> Result<(Vec<Statement>, Vec<Statement>, RefSet), VerilogError>
     where
         I: Iterator<Item = Token<VerilogToken>>,

@@ -6,17 +6,14 @@ module my_pkg;
 endmodule
 
 // Source file for behavioral mux selector
-(* hello *)
-module b # (parameter integer NUM = 10, X = 5) (
+module mux_gp (
     din_0,      // Mux 1st input
     din_1,      // Mux 2nd input
-    sel = 1,        // Selector
+    sel,        // Selector
     mux_out     // Mux chosen output
 );
-    input din_0, din_1, sel ;
+    input din_0, din_1, sel;
     output mux_out;
-
-    wire mux_out = 1;
 
     assign mux_out = (sel) ? din_1 : din_0;
 
@@ -46,8 +43,5 @@ module register #(parameter WIDTH = 8)
 		else if(wen)
 			val<=D;
 	end
-
-	
-	
 
 endmodule

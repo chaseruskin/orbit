@@ -16,13 +16,23 @@ pub fn get_port_by_name_mut<'a>(
     Some(port)
 }
 
-/// Updates the port list by either letting the existing port with its identifier inherit its defined
-/// attributes.
-pub fn update_port_list<'a>(port_list: &'a mut PortList, new_port: Port) -> () {
+/// Updates the port list by letting the existing port with its identifier inherit its defined
+/// attributes. If the new port is not found, then it is not added to the list if `add_if_missing` is false.
+pub fn update_port_list<'a>(
+    port_list: &'a mut PortList,
+    new_port: Port,
+    add_if_missing: bool,
+) -> () {
     let port = port_list.iter_mut().find(|i| &i.name == &new_port.name);
     match port {
         Some(p) => p.inherit(&new_port),
-        None => port_list.push(new_port),
+        None => {
+            if add_if_missing == true {
+                port_list.push(new_port)
+            } else {
+                ()
+            }
+        }
     }
 }
 

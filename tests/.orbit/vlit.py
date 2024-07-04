@@ -6,11 +6,14 @@
 import subprocess
 import os
 
+v_src = []
 with open(os.environ.get('ORBIT_BLUEPRINT'), 'r') as fd:
     steps = fd.readlines()
     for step in steps:
         fset, lib, path = step.strip().split('\t')
         if fset == 'VLOG':
-            child = subprocess.Popen(['verilator', '--lint-only', path])
-            child.wait()
+            v_src += [path]
         pass
+
+child = subprocess.Popen(['verilator', '--lint-only'] + v_src)
+child.wait()

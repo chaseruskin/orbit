@@ -76,13 +76,15 @@ impl Module {
         // update declared ports from any architecture port definitions
         body_ports
             .into_iter()
-            .for_each(|p| interface::update_port_list(&mut ports, p));
+            .for_each(|p| interface::update_port_list(&mut ports, p, false));
 
         // update declared params from any architecture param definitions
         body_params
             .into_iter()
-            .for_each(|p| interface::update_port_list(&mut params, p));
-
+            .for_each(|p| interface::update_port_list(&mut params, p, false));
+        // println!("{}", mod_name);
+        // println!("{:?}", ports);
+        // println!("{:?}", params);
         Ok(Module {
             name: match mod_name {
                 VerilogToken::Identifier(id) => id,

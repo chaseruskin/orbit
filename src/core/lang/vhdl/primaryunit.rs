@@ -106,6 +106,13 @@ impl Unit {
         self.symbol.as_ref()
     }
 
+    pub fn is_usable_component(&self) -> Option<()> {
+        match self.get_symbol()?.as_entity()?.is_testbench() {
+            true => None,
+            false => Some(()),
+        }
+    }
+
     pub fn get_symbol_mut(&mut self) -> Option<&mut VhdlSymbol> {
         self.symbol.as_mut()
     }

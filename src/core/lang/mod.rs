@@ -166,6 +166,13 @@ pub enum LangUnit {
 }
 
 impl LangUnit {
+    pub fn is_usable_component(&self) -> bool {
+        match &self {
+            Self::Verilog(m, _) => m.get_unit().is_usable_component().is_some(),
+            Self::Vhdl(m, _) => m.get_unit().is_usable_component().is_some(),
+        }
+    }
+
     /// Checks if the module is public.
     pub fn is_listed_public(&self, plist: &PublicList) -> bool {
         plist.is_included(self.get_source_file())

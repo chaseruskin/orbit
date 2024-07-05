@@ -4,9 +4,12 @@ use std::path::PathBuf;
 use crate::commands::helps::get;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
+use crate::core::ip::Ip;
 use crate::core::ip::PartialIpSpec;
 use crate::core::lang::parser::Parse;
 use crate::core::lang::parser::Symbol;
+use crate::core::lang::verilog::symbols::module::Module;
+use crate::core::lang::verilog::token::identifier::Identifier as VerilogIdentifier;
 use crate::core::lang::vhdl::format::VhdlFormat;
 use crate::core::lang::vhdl::interface;
 use crate::core::lang::vhdl::primaryunit::VhdlIdentifierError;
@@ -14,11 +17,12 @@ use crate::core::lang::vhdl::symbols::architecture::Architecture;
 use crate::core::lang::vhdl::symbols::entity::Entity;
 use crate::core::lang::vhdl::symbols::VHDLParser;
 use crate::core::lang::vhdl::symbols::VhdlSymbol;
-use crate::core::lang::vhdl::token::Identifier;
+use crate::core::lang::vhdl::token::Identifier as VhdlIdentifier;
 use crate::core::lang::vhdl::token::VhdlTokenizer;
-use crate::core::manifest::FromFile;
+use crate::core::lang::Lang;
+use crate::core::lang::LangUnit;
+use crate::core::lang::Language;
 use crate::core::manifest::Manifest;
-use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::pkgid::PkgPart;
 use crate::core::version::Version;
 use crate::util::anyerror::{AnyError, Fault};
@@ -31,7 +35,7 @@ use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Get {
-    unit: Identifier,
+    unit: VhdlIdentifier,
     ip: Option<PartialIpSpec>,
     signals: bool,
     component: bool,
@@ -45,7 +49,7 @@ pub struct Get {
     // const_prefix: String,
     // const_suffix: String,
     // info: bool,
-    name: Option<Identifier>,
+    name: Option<VhdlIdentifier>,
 }
 
 impl Subcommand<Context> for Get {
@@ -93,6 +97,7 @@ impl Subcommand<Context> for Get {
             // .development(c.get_development_path().unwrap())?
             .installations(c.get_cache_path())?;
 
+        let mut is_local_ip = false;
         // try to auto-determine the ip (check if in a working ip)
         let ip_path = if let Some(spec) = &self.ip {
             // @todo: find the path to the provided ip by searching through the catalog
@@ -107,6 +112,7 @@ impl Subcommand<Context> for Get {
             }
         } else {
             let ip = Context::find_ip_path(&env::current_dir().unwrap());
+            is_local_ip = true;
             if ip.is_none() == true {
                 return Err(AnyError(format!("no ip provided or detected")))?;
             } else {
@@ -115,31 +121,84 @@ impl Subcommand<Context> for Get {
         };
 
         // load the manifest from the path
-        let man = Manifest::from_file(&ip_path.join(IP_MANIFEST_FILE))?;
+        let ip = Ip::load(ip_path, is_local_ip)?;
 
         let default_fmt = VhdlFormat::new();
         let fmt = match c.get_config().get_vhdl_formatting() {
             Some(v) => v,
             None => &default_fmt,
         };
-        self.run(man, &ip_path, &fmt)
+        self.run(&ip, &fmt, &c.get_languages(), is_local_ip)
     }
 }
 
 impl Get {
-    fn run(&self, man: Manifest, dir: &PathBuf, fmt: &VhdlFormat) -> Result<(), Fault> {
+    fn run(
+        &self,
+        ip: &Ip,
+        vhdl_fmt: &VhdlFormat,
+        lang: &Language,
+        is_local: bool,
+    ) -> Result<(), Fault> {
         // collect all hdl files and parse them
-        let ent = match Self::fetch_entity(&self.unit, &dir, &man) {
-            Ok(r) => r,
-            Err(e) => {
-                return Err(GetError::SuggestShow(
-                    e.to_string(),
-                    man.get_ip().get_name().clone(),
-                    man.get_ip().get_version().clone(),
-                ))?
+        let selected_unit = Self::fetch_entity_2(
+            &ip,
+            &LangIdentifier::Vhdl(self.unit.clone()),
+            lang,
+            is_local,
+        )?;
+        let unit = match selected_unit {
+            Some(r) => {
+                // check to make sure it is a component
+                if r.is_usable_component() {
+                    r
+                } else {
+                    panic!("is not a usable component")
+                }
+            }
+            None => {
+                panic!("could not find matching unit")
             }
         };
 
+        // determine how to handle unit display
+        let result = match unit.get_lang() {
+            Lang::Vhdl => self.display_vhdl_entity(
+                &ip,
+                unit.get_vhdl_symbol().unwrap().as_entity().unwrap(),
+                is_local,
+                vhdl_fmt,
+            ),
+            Lang::Verilog => self.display_verilog_module(
+                &ip,
+                unit.get_verilog_symbol().unwrap().as_module().unwrap(),
+            ),
+            Lang::SystemVerilog => {
+                todo!()
+            }
+        }?;
+
+        // let ent = match Self::fetch_entity(&self.unit, &dir, &man) {
+        //     Ok(r) => r,
+        //     Err(e) => {
+        //         return Err(GetError::SuggestShow(
+        //             e.to_string(),
+        //             man.get_ip().get_name().clone(),
+        //             man.get_ip().get_version().clone(),
+        //         ))?
+        //     }
+        // };
+
+        Ok(())
+    }
+
+    fn display_vhdl_entity(
+        &self,
+        ip: &Ip,
+        entity: &Entity,
+        is_local: bool,
+        fmt: &VhdlFormat,
+    ) -> Result<(), Fault> {
         // determine if default print should appear
         let default_output = self.architectures == false
             && self.instance == false
@@ -148,24 +207,20 @@ impl Get {
             && self.component == false
             && self.library == false;
 
-        // add to dependency list if within a ip and `self.add` is `true`
-        // if let Some(mut cur_ip) = current_ip {
-        //     // verify it is the not the same package! and we explicitly want to add
-        //     if cur_ip.get_pkgid() != ip.get_pkgid() && self.add == true {
-        //         cur_ip.insert_dependency(ip.get_pkgid().clone(), self.version.as_ref().unwrap_or(&AnyVersion::Latest).clone());
-        //         cur_ip.get_manifest_mut().save()?;
-        //     }
-        // }
-
-        // make the library reference the current working ip 'work' if its internal
-        let lib = match self.ip.is_none() {
-            true => LangIdentifier::new_working(),
-            false => man.get_hdl_library(),
+        // make the library reference the current worki ng ip 'work' if its internal
+        let lib = match is_local {
+            true => VhdlIdentifier::new_working(),
+            false => ip
+                .get_man()
+                .get_hdl_library()
+                .as_vhdl_name()
+                .unwrap()
+                .clone(),
         };
 
         // display architectures
         if self.architectures == true {
-            println!("{}", ent.get_architectures());
+            println!("{}", entity.get_architectures());
         }
 
         if fmt.is_syntax_highlighted() == false {
@@ -175,24 +230,21 @@ impl Get {
 
         // display library declaration line if displaying instance
         if self.library == true {
-            println!(
-                "{}",
-                interface::library_statement(&lib.as_vhdl_name().as_ref().unwrap())
-            );
+            println!("{}", interface::library_statement(&lib));
         }
 
         // display component declaration
         if self.component == true || default_output == true {
-            println!("{}", ent.into_component(&fmt));
+            println!("{}", entity.into_component(&fmt));
         }
 
         // display signal declarations
         if self.signals == true {
-            let constants = ent.into_constants(&fmt, "", "");
+            let constants = entity.into_constants(&fmt, "", "");
             if constants.is_empty() == false {
                 println!("{}", constants);
             }
-            let signals = ent.into_signals(&fmt, &self.signal_prefix, &self.signal_suffix);
+            let signals = entity.into_signals(&fmt, &self.signal_prefix, &self.signal_suffix);
             if signals.is_empty() == false {
                 println!("{}", signals);
             }
@@ -202,14 +254,14 @@ impl Get {
         let lib = if self.component == true {
             None
         } else {
-            Some(lib.as_vhdl_name().unwrap())
+            Some(lib)
         };
 
         // display instantiation code
         if self.instance == true {
             println!(
                 "{}",
-                ent.into_instance(
+                entity.into_instance(
                     &self.name,
                     &lib,
                     &fmt,
@@ -223,19 +275,51 @@ impl Get {
 
         // print as json data
         if self.json == true {
-            println!("{}", serde_json::to_string_pretty(&ent)?);
+            println!("{}", serde_json::to_string_pretty(&entity)?);
+        }
+        todo!()
+    }
+
+    fn display_verilog_module(&self, ip: &Ip, module: &Module) -> Result<(), Fault> {
+        // determine if default print should appear
+        let default_output = self.architectures == false
+            && self.instance == false
+            && self.json == false
+            && self.signals == false
+            && self.component == false
+            && self.library == false;
+
+        if self.component == true || default_output == true {
+            println!("{}", module.into_declaration());
         }
 
         Ok(())
     }
 
+    fn fetch_entity_2(
+        ip: &Ip,
+        name: &LangIdentifier,
+        lang: &Language,
+        is_local: bool,
+    ) -> Result<Option<LangUnit>, Fault> {
+        let mut files = Ip::collect_units(
+            true,
+            ip.get_root(),
+            lang,
+            is_local == false,
+            ip.into_public_list(),
+        )?;
+        let result = files.remove(name);
+        Ok(result)
+    }
+
     /// Parses through the vhdl files and returns a desired entity struct.
-    fn fetch_entity(iden: &Identifier, dir: &PathBuf, man: &Manifest) -> Result<Entity, Fault> {
+    fn fetch_entity(iden: &VhdlIdentifier, dir: &PathBuf, man: &Manifest) -> Result<Entity, Fault> {
         let files = crate::util::filesystem::gather_current_files(&dir, false);
         // @todo: generate all units first (store architectures, and entities, and then process)
         let mut result: Option<(String, Entity)> = None;
         // store map of all architectures while parsing all code
-        let mut architectures: HashMap<Identifier, Vec<Architecture>> = HashMap::new();
+        let mut architectures: HashMap<VhdlIdentifier, Vec<Architecture>> = HashMap::new();
         for f in files {
             // lex and parse VHDL files
             if crate::core::fileset::is_vhdl(&f) == true {
@@ -344,7 +428,7 @@ impl std::fmt::Display for GetError {
                 let spec = IpSpec::new(pkg.clone(), ver.clone());
                 write!(
                     f,
-                    "{}\n\nTry `orbit show {} --units` to see a list of primary design units",
+                    "{}\n\ntry `orbit view {} --units` to see a list of primary design units",
                     err, spec
                 )
             }
@@ -352,7 +436,17 @@ impl std::fmt::Display for GetError {
     }
 }
 
-//  --add                   add dependency to Orbit.toml table
+#[derive(Debug, PartialEq)]
+pub enum HdlComponent {
+    Entity(Entity),
+    Module(Module),
+}
+
+impl HdlComponent {
+    pub fn get_name(&self) -> &LangIdentifier {
+        todo!()
+    }
+}
 
 #[cfg(test)]
 mod test {
@@ -399,7 +493,7 @@ mod test {
   "language": "vhdl"
 }"#;
         let ent = Get::fetch_entity(
-            &Identifier::from_str("or_gate").unwrap(),
+            &VhdlIdentifier::from_str("or_gate").unwrap(),
             &PathBuf::from("./tests/data/gates"),
             &Manifest::new(),
         )

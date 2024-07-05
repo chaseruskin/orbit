@@ -24,6 +24,19 @@ pub struct Module {
 }
 
 impl Module {
+    pub fn into_declaration(&self) -> String {
+        let mut result = String::new();
+
+        result.push_str(&format!("module "));
+        result.push_str(&self.name.to_string());
+        result.push_str(&interface::display_param_list(&self.parameters));
+        result.push_str(&interface::display_port_list(&self.ports));
+        result.push(';');
+        result
+    }
+}
+
+impl Module {
     pub fn get_name(&self) -> &Identifier {
         &self.name
     }

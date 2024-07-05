@@ -2,7 +2,7 @@ use crate::core::lang::lexer::Token;
 
 use super::{
     symbols::Statement,
-    token::{identifier::Identifier, keyword::Keyword},
+    token::{identifier::Identifier, keyword::Keyword, operator::Operator},
 };
 
 pub type PortList = Vec<Port>;
@@ -36,6 +36,51 @@ pub fn update_port_list<'a>(
     }
 }
 
+pub fn display_param_list(param_list: &ParamList) -> String {
+    let mut result = String::new();
+    if param_list.is_empty() == false {
+        result.push(' ');
+        result.push('#');
+        result.push('(');
+    }
+
+    param_list.iter().enumerate().for_each(|(i, p)| {
+        result.push_str("\n  ");
+        result.push_str(&p.display_as_param());
+        if i != param_list.len() - 1 {
+            result.push_str(",")
+        };
+    });
+
+    if param_list.is_empty() == false {
+        result.push('\n');
+        result.push(')');
+    }
+    result
+}
+
+pub fn display_port_list(port_list: &PortList) -> String {
+    let mut result = String::new();
+    if port_list.is_empty() == false {
+        result.push(' ');
+        result.push('(');
+    }
+
+    port_list.iter().enumerate().for_each(|(i, p)| {
+        result.push_str("\n  ");
+        result.push_str(&&p.display_as_port());
+        if i != port_list.len() - 1 {
+            result.push_str(",")
+        };
+    });
+
+    if port_list.is_empty() == false {
+        result.push('\n');
+        result.push(')');
+    }
+    result
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Direction {
     Inout,
@@ -54,7 +99,45 @@ pub struct Port {
     value: Option<Statement>,
 }
 
+fn display_statement(stmt: &Statement) -> String {
+    stmt.iter().fold(String::new(), |mut acc, x| {
+        acc.push_str(&x.as_type().to_string());
+        acc
+    })
+}
+
 impl Port {
+    pub fn display_as_param(&self) -> String {
+        let mut result = String::new();
+        result.push_str(
+            &self
+                .direction
+                .as_ref()
+                .unwrap_or(&Keyword::Parameter)
+                .to_string(),
+        );
+        result.push(' ');
+        result.push_str(&self.name.to_string());
+        if let Some(v) = &self.value {
+            result.push_str(&format!(" = {}", display_statement(v)));
+        }
+        result
+    }
+
+    pub fn display_as_port(&self) -> String {
+        let mut result = String::new();
+        result.push_str(
+            &self
+                .direction
+                .as_ref()
+                .unwrap_or(&Keyword::Input)
+                .to_string(),
+        );
+        result.push(' ');
+        result.push_str(&self.name.to_string());
+        result
+    }
+
     pub fn with(name: Identifier) -> Self {
         Self {
             direction: None,

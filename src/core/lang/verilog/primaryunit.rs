@@ -73,6 +73,13 @@ impl Unit {
     pub fn get_source_file(&self) -> &str {
         &self.source
     }
+
+    pub fn is_usable_component(&self) -> Option<()> {
+        match self.get_symbol()?.as_module()?.is_testbench() {
+            true => None,
+            false => Some(()),
+        }
+    }
 }
 
 impl std::hash::Hash for Unit {

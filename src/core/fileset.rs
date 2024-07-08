@@ -265,7 +265,7 @@ pub fn is_systemverilog(file: &str) -> bool {
 
 /// Checks if the given file is one of the supported HDLs.
 pub fn is_hdl(file: &str) -> bool {
-    is_vhdl(file) || is_verilog(file)
+    is_vhdl(file) || is_verilog(file) || is_systemverilog(file)
 }
 
 /// Checks against file patterns if the file is an rtl file (not testbench).

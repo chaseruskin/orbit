@@ -23,11 +23,12 @@ STDOUT=$(orbit tree --root entity_c)
 # store the ideal value for later comparison
 EXACT="entity_c
 ├─ entity_a
-│  └─ dupe_b9425ed471
+│  ├─ dupe_b15408e997
+│  └─ dupe2_b15408e997
 └─ dupe"
 
-orbit remove ip-b --all
-orbit remove ip-a --all
+# orbit remove ip-b --all
+# orbit remove ip-a --all
 
 # compare the output with the expected value
 if [ "$STDOUT" = "$EXACT" ]; then

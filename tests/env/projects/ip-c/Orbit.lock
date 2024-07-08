@@ -5,14 +5,14 @@ version = 1
 name = "ip-a"
 version = "0.1.0"
 uuid = "c34799dd-9c20-4aa1-8123-687d9d692b0e"
-checksum = "afb55e180ccb30290972c12d18448d5841a92e65e823f5a0de37306ac24d64fe"
+checksum = "d731af507bea552ae39603e29fb0f20fadff49f4722e9c38dc928b2292d4399b"
 dependencies = ["ip-b:0.1.0"]
 
 [[ip]]
 name = "ip-b"
 version = "0.1.0"
 uuid = "0fe73b27-07f1-4068-9e4f-9032ecf72829"
-checksum = "b9425ed471432994b55e3e7bb660588fd9e705ff6bcc5a39df0a708297917822"
+checksum = "b15408e99700797944a4ee94dc6f1f069a22c6b2d189bcad39854189fdb9e1b4"
 dependencies = []
 
 [[ip]]

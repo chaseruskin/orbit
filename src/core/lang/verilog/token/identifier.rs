@@ -32,6 +32,23 @@ impl Identifier {
         }
     }
 
+    /// Modifies the ending of the identifier with `ext` and writes as a String
+    pub fn into_extension(&self, ext: &str) -> Identifier {
+        match self {
+            Self::Basic(s) => Self::Basic(s.clone() + ext),
+            Self::Escaped(s) => Self::Escaped(s.clone() + ext),
+            Self::System(s) => Self::System(s.clone() + ext),
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        match self {
+            Self::Basic(s) => s.len(),
+            Self::Escaped(s) => s.len(),
+            Self::System(s) => s.len(),
+        }
+    }
+
     /// Checks if the identifier is a system task/function.
     fn is_system(&self) -> bool {
         match self {

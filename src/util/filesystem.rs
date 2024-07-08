@@ -163,7 +163,7 @@ pub fn is_orbit_metadata(s: &str) -> bool {
 }
 
 pub fn is_minimal(name: &str) -> bool {
-    fileset::is_vhdl(&name) == true || is_orbit_metadata(&name) == true
+    fileset::is_hdl(&name) == true || is_orbit_metadata(&name) == true
 }
 
 pub fn is_keep_override(target: &PathBuf, vip_list: &HashSet<PathBuf>) -> bool {

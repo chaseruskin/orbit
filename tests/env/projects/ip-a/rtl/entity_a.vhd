@@ -16,13 +16,12 @@ end entity entity_a;
 
 architecture rtl of entity_a is
 
-    -- component dupe
-    --     port (
-    --         data   : in std_logic;
-    --         data_a : out std_logic;
-    --         data_b : out std_logic
-    --     );
-    -- end component;
+    component dupe2
+        port (
+            en  : in std_logic;
+            led : out std_logic
+        );
+    end component;
 
     signal data   : std_logic;
     signal data_a : std_logic;
@@ -32,10 +31,15 @@ begin
 
     data <= '1';
 
-    uX : entity dupe.dupe(rtl) port map (
+    u_vhdl_dupe : entity dupe.dupe(rtl) port map (
         data   => data,
         data_a => data_a,
         data_b => data_b
+    );
+
+    u_verilog_dupe : dupe2 port map (
+        en => '1',
+        led => open
     );
 
     high <= data_a and data_b;

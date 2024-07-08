@@ -15,7 +15,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.14.0
+## 0.14.0 - unreleased
 
 This update brings a lot of breaking changes, a smoother workflow, and the first initial support for Verilog!
 

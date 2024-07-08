@@ -6,6 +6,7 @@ LABEL maintainer="Chase Ruskin"
 LABEL description="Minimum runtime dependencies for Orbit on Ubuntu 22.04."
 
 RUN apt-get update && apt-get install -y \
+    curl \
     build-essential \
     git \
     libssl-dev \

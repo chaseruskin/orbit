@@ -188,9 +188,10 @@
 </code></pre>
 <p>A directory called "gates" should now exist and look like the following tree structure:</p>
 <pre><code>gates/
+├─ .orbitignore
 └─ Orbit.toml
 </code></pre>
-<p>Let's create our first design unit for describing a NAND gate. Feel free to copy the following code into a file called "nand_gate.vhd" that exists in our project directory "gates/".</p>
+<p>Let's create our first design unit for describing a NAND gate. Feel free to copy the following code into a file called "nand_gate.vhd" that exists in our project directory "/gates".</p>
 <p>Filename: nand_gate.vhd</p>
 <pre><code class="language-vhdl">library ieee;
 use ieee.std_logic_1164.all;
@@ -311,18 +312,18 @@ end architecture;
 <h3 id="creating-a-target"><a class="header" href="#creating-a-target">Creating a target</a></h3>
 <p>A target is a command invoked by Orbit for execution during the build process. In this example, we will write a script and have our target's command call our script to execute our process. In other words, you could say we are <em>targeting</em> the Yilinx tool. Let's make a simple target for our Yilinx synthesis tool using the Python programming language.</p>
 <p>Filename: .orbit/yilinx.py</p>
-<pre><code class="language-python">synth_order = []
+<pre><code class="language-python">file_order = []
 # Read and parse the blueprint file
 with open('blueprint.tsv') as blueprint:
     rules = blueprint.readlines()
     for r in rules:
         fileset, lib, path = r.strip().split('\t')
         if fileset == 'VHDL':
-            synth_order += [(lib, path)]
+            file_order += [(lib, path)]
     pass
 
 # Use the Yilinx tool to perform synthesize on the HDL files
-for (lib, path) in synth_order:
+for (lib, path) in file_order:
     print('YILINX:', 'Synthesizing file ' + str(path) +' into ' + str(lib) + '...')
 
 # Use the Yilinx tool to perform placement and routing
@@ -359,7 +360,7 @@ YILINX: Bitstream saved at: target/yilinx/fpga.bit
 </code></pre>
 <h2 id="making-an-ip-and-its-design-units-reusable"><a class="header" href="#making-an-ip-and-its-design-units-reusable">Making an ip and its design units reusable</a></h2>
 <p>Now we are ready to move on to more advanced topics, so let's go ahead and store an immutable reference to this project to use in other projects in our developer journey.</p>
-<pre><code>$ orbit install --path .
+<pre><code>$ orbit install
 </code></pre>
 <p>This command ran a series of steps that packaged our project and placed it into our <em>cache</em>. Internally, Orbit knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire ip catalog.</p>
 <pre><code>$ orbit search
@@ -376,6 +377,7 @@ YILINX: Bitstream saved at: target/yilinx/fpga.bit
 ├─ target/
 │  ├─ CACHEDIR.TAG
 |  └─ yilinx/
+│     ├─ .env
 │     ├─ blueprint.tsv
 │     └─ fpga.bit
 ├─ Orbit.toml
@@ -385,10 +387,10 @@ YILINX: Bitstream saved at: target/yilinx/fpga.bit
 </code></pre>
 <ul>
 <li>
-<p>The configurations stored in ".orbit/" exist only for this project; to store configurations that persist across projects make changes to the $ORBIT_HOME directory.</p>
+<p>The configurations stored in "/.orbit" exist only for this project; to store configurations that persist across projects make changes to the $ORBIT_HOME directory.</p>
 </li>
 <li>
-<p>Orbit creates an output directory to store the blueprint and any tool output files during a build. These files should reside in "target/" and may change often during development (probably don't check this directory into version control).</p>
+<p>Orbit creates an output directory to store the blueprint and any tool output files during a build. These files should reside in "/target" and may change often during development (probably don't check this directory into version control).</p>
 </li>
 <li>
 <p>Orbit creates a lock file "Orbit.lock" to store all the information required to manage and recreate the exact state of this project. It is a good idea to always keep it and to not manually edit it (probably be sure to check this file into version control).</p>

@@ -179,21 +179,21 @@
                         <h1 id="dependencies-half-adder"><a class="header" href="#dependencies-half-adder">Dependencies: Half adder</a></h1>
 <p>In this tutorial, you will learn how to:</p>
 <p><a href="#referencing-external-ips">1.</a> Specify an external ip as a dependency<br />
-<a href="#learning-about-ips">2.</a> Use <code>orbit</code> to learn more about external ips and their design units<br />
-<a href="#integrating-design-units-across-ips">3.</a> Leverage <code>orbit</code> across ips to integrate an entity into a separate ip</p>
+<a href="#learning-about-ips">2.</a> Use Orbit to learn more about external ips and their design units<br />
+<a href="#integrating-design-units-across-ips">3.</a> Leverage Orbit across ips to integrate an entity into a separate ip</p>
 <h2 id="referencing-external-ips"><a class="header" href="#referencing-external-ips">Referencing external ips</a></h2>
 <p>After completing the gates project from the previous tutorial ahead of schedule, you take a well deserved vacation. Now you have returned to work and are tasked with building a half adder.</p>
 <p>Let's create a new project. Navigate to a directory in your file system where you would like to store the project.</p>
 <pre><code>$ orbit new half-add
 </code></pre>
-<p>For the rest of this tutorial, we will be working relative to the project directory "half-add/" that was created by the previous command.</p>
+<p>For the rest of this tutorial, we will be working relative to the project directory "/half-add" that was created by the previous command.</p>
 <p>Remembering our impressive work with the gates project, we realize we can reuse some of the already designed and tested components from there. Let's make sure it's installed so that we can use it.</p>
 <pre><code>$ orbit search gates
 </code></pre>
 <pre><code>gates                       0.1.0     install
 
 </code></pre>
-<p>Awesome! Our next step is tell <code>orbit</code> that our current project, half-add, wants to use gates as a dependency.</p>
+<p>Awesome! Our next step is tell Orbit that our current project, half-add, wants to use gates as a dependency.</p>
 <p>Add a new entry for gates to the dependencies table in our project's manifest, Orbit.toml.</p>
 <p>Filename: Orbit.toml</p>
 <pre><code class="language-toml">[ip]
@@ -207,7 +207,7 @@ gates = "0.1.0"
 </code></pre>
 <p>We've referenced it, now we have to use it!</p>
 <h2 id="learning-about-ips"><a class="header" href="#learning-about-ips">Learning about ips</a></h2>
-<p>Your memory is a little foggy on what gates actually did, and what entities were available. Luckily, we can query for information through <code>orbit</code> about ips and their design units.</p>
+<p>Your memory is a little foggy on what gates actually did, and what entities were available. Luckily, we can query for information through Orbit about ips and their design units.</p>
 <p>Let's remember what entities we have at our disposal.</p>
 <pre><code>$ orbit view gates --units
 </code></pre>
@@ -224,7 +224,7 @@ begin
 
 end architecture;
 </code></pre>
-<p>Cool, we used the VHDL keyword. Sometimes it may be insightful to read code snippets and comments from external design units when trying to integrate them into a new project.</p>
+<p>Cool, we used the VHDL keyword <code>nand</code> to describe that particular circuit. Sometimes it may be insightful to read code snippets and comments from external design units when trying to integrate them into a new project.</p>
 <h2 id="integrating-design-units-across-ips"><a class="header" href="#integrating-design-units-across-ips">Integrating design units across ips</a></h2>
 <p>Let's use the NAND gate we previously defined to construct a half adder circuit.</p>
 <pre><code>$ orbit get --ip gates nand_gate --library --signals --instance
@@ -304,25 +304,25 @@ begin
 
 end architecture;
 </code></pre>
-<p>Let's inspect the design hierarchy to make sure our circuit and its components are identified by <code>orbit</code>.</p>
+<p>Let's inspect the design hierarchy to make sure our circuit and its components are identified by Orbit.</p>
 <pre><code>$ orbit tree --format long
 </code></pre>
 <pre><code>half_add (half-add:0.1.0)
 └─ nand_gate (gates:0.1.0)
 </code></pre>
 <p>Finally, let's install this ip to the cache for future reuse as well.</p>
-<pre><code>$ orbit install --path .
+<pre><code>$ orbit install
 </code></pre>
 <p>Nice, now we have successfully reused designs across ips! However, maybe we should have designed all the logic gates in the gates ip...</p>
 <h3 id="additional-notes-on-dependencies"><a class="header" href="#additional-notes-on-dependencies">Additional notes on dependencies</a></h3>
-<p>Before integrating a design unit from an external ip into a separate project, it's important to first update the Orbit.toml file. This manifest file has a dependencies section, which allows you to tell <code>orbit</code> which ips to bring into the current project scope. Without the ips in scope, <code>orbit</code> may be unable to identify where you got a reference for a particular design unit. <code>orbit</code> denotes an unknown design unit with a ? when displaying the design hierarchy.</p>
+<p>Before integrating a design unit from an external ip into a separate project, it's important to first update the Orbit.toml file. This manifest file has a dependencies section, which allows you to tell Orbit which ips to bring into the current project scope. Without the ips in scope, Orbit may be unable to identify where you got a reference for a particular design unit. Orbit denotes an unknown design unit with a ? when displaying the design hierarchy.</p>
 <pre><code>half_add (half-add:0.1.0)
 └─ nand_gate ?
 </code></pre>
-<p>After introducing dependencies at the project level, it's also important to maintain an up-to-date lockfile Orbit.lock.</p>
-<pre><code>$ orbit plan --lock-only
+<p>After introducing dependencies at the project level, it's also important to maintain an up-to-date lockfile, Orbit.lock. In most cases, Orbit will automatically generate it when it needs it, however, you as the user can also explicitly request Orbit to update the lockfile.</p>
+<pre><code>$ orbit lock
 </code></pre>
-<p>The lockfile saves information for <code>orbit</code> to use later when needing to reconstruct the state of an ip. This includes saving information about all ip dependencies, their checksums, and potential sources of retrieval. Remember, the Orbit.lock file is automatically managed by <code>orbit</code> and does not require direct user editing.</p>
+<p>The lockfile saves information for Orbit to use later when needing to reconstruct the state of an ip. This includes saving information about all ip dependencies, their checksums, and potential sources of retrieval. Remember, the Orbit.lock file is automatically managed by Orbit and does not require direct user editing.</p>
 
                     </main>
 

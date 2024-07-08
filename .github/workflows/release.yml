@@ -16,20 +16,17 @@ jobs:
 
     - name: Download artifacts
       uses: actions/download-artifact@v4
-
-    - name: Setup python
-      uses: actions/setup-python@v5
       with:
-        python-version: 3.x
+        pattern: orbit-${{ inputs.version }}-*,orbit-${{ inputs.version }}-checksums
 
     - name: Display filesystem contents
       run: ls -R
 
     - name: Validate release notes
-      run: ./tools/autocl.py ${{ inputs.version }}
+      run: python ./tools/autocl.py ${{ inputs.version }}
 
     - name: Write release notes
-      run: echo "$(./tools/autocl.py ${{ inputs.version }})" > ./RELEASE_NOTES.md
+      run: echo "$(python ./tools/autocl.py ${{ inputs.version }})" > ./RELEASE_NOTES.md
 
     - name: Tag commit as version
       run: git tag ${{ inputs.version }}
@@ -40,7 +37,7 @@ jobs:
     - name: Upload releases
       uses: ncipollo/release-action@v1
       with:
-        artifacts: '**/orbit-*.zip,**/orbit-*-checksums.txt'
+        artifacts: '**/orbit-${{ inputs.version }}-*.zip,**/orbit-${{ inputs.version }}-checksums.txt'
         bodyFile: ./RELEASE_NOTES.md
         token: ${{ secrets.GITHUB_TOKEN }}
         tag: ${{ inputs.version }}

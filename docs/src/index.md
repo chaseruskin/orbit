@@ -2,7 +2,7 @@
 
 ![](./images/orbit_logo_128px.png)
 
-Orbit is an agile package manager and extensible build tool for hardware description languages (HDL). It's design is driven by two core principles:
+Orbit is an agile package manager and extensible build tool for hardware description languages (HDL). Its design is driven by two core principles:
 
 - minimize technical debt associated with evolving HDL codebases
 - tailor to the wide range of users and their possible workflows with a high degree of modularity and extensibility 

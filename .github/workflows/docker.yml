@@ -23,27 +23,6 @@ jobs:
       - name: Checkout 
         uses: actions/checkout@v4
 
-      - name: Download package
-        uses: actions/download-artifact@v4
-        with:
-          name: orbit-${{ inputs.version }}-x86_64-linux
-
-      - name: Download checksums
-        uses: actions/download-artifact@v4
-        with:
-          name: orbit-${{ inputs.version }}-checksums
-
-      - name: Verify contents
-        run: grep $(sha256sum orbit-${{ inputs.version }}-x86_64-linux.zip) orbit-${{ inputs.version }}-checksums.txt
-
-      - name: Install Orbit
-        run: |
-          unzip ./orbit-${{ inputs.version }}-x86_64-linux.zip
-          cp ./orbit-${{ inputs.version }}-x86_64-linux/bin/orbit ./orbit
-
-      - name: Test Orbit
-        run: ./orbit --version
-
       - name: Modify entrypoint file permission to executable
         run: chmod +x ./docker/standalone/ubuntu22/entrypoint.sh
         

@@ -228,6 +228,19 @@ impl Ip {
             && self.get_root().join(".orbit-dynamic").exists() == true
     }
 
+    /// Gets the proper library name for the ip. If there is a "collision" with the library name and an identifier that
+    /// required symbol transformation, this function will return the transformed name for the library name as well.
+    pub fn get_hdl_library(&self) -> LangIdentifier {
+        match self.is_dynamic() {
+            // check if we made a match with a name under contention
+            true => match self.library_collides_with_dst() {
+                Some(transform) => LangIdentifier::from_str(&transform).unwrap(),
+                None => self.get_man().get_hdl_library(),
+            },
+            false => self.get_man().get_hdl_library(),
+        }
+    }
+
     /// Creates the lookup table for the DST algorithm.
     pub fn generate_dst_lut(&self, mode: &Language) -> HashMap<LangIdentifier, String> {
         // compose the lut for symbol transformation
@@ -256,8 +269,31 @@ impl Ip {
         lut
     }
 
-    pub fn set_as_dynamic(&self) -> () {
-        let _ = std::fs::write(self.get_root().join(".orbit-dynamic"), "").unwrap();
+    pub fn set_as_dynamic(&self, mapping: &HashMap<LangIdentifier, String>) -> () {
+        let contents = mapping.iter().fold(String::new(), |mut acc, (k, v)| {
+            acc.push_str(&format!("{}\t{}\n", k, v));
+            acc
+        });
+        let _ = std::fs::write(self.get_root().join(".orbit-dynamic"), &contents).unwrap();
+    }
+
+    fn library_collides_with_dst(&self) -> Option<String> {
+        match self.is_dynamic() {
+            // check the list of symbols
+            true => {
+                let words =
+                    std::fs::read_to_string(self.get_root().join(".orbit-dynamic")).unwrap();
+                let lib = self.get_man().get_hdl_library().to_string();
+                words.split_terminator('\n').find_map(|entry| {
+                    let (key, val) = entry.split_once('\t').unwrap();
+                    match key == &lib {
+                        true => Some(format!("{}{}", key, val)),
+                        false => None,
+                    }
+                })
+            }
+            false => None,
+        }
     }
 
     /// Checks if needing to read off the lock file.

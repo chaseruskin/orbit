@@ -11,5 +11,5 @@ dependencies = ["ip-b:0.1.0"]
 name = "ip-b"
 version = "0.1.0"
 uuid = "0fe73b27-07f1-4068-9e4f-9032ecf72829"
-checksum = "9b17a38c0ba911354f38a5c2faefc87cccb1c6d53a600be22ac7f94af4093f3a"
+checksum = "b9425ed471432994b55e3e7bb660588fd9e705ff6bcc5a39df0a708297917822"
 dependencies = []

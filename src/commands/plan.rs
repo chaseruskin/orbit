@@ -252,7 +252,7 @@ impl Plan {
 
         let global_graph = Self::build_full_graph(&files)?;
 
-        let working_lib = working_ip.get_man().get_hdl_library();
+        let working_lib = working_ip.get_hdl_library();
 
         // restrict graph to units only found within the current IP
         let local_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> =
@@ -1460,7 +1460,7 @@ impl Plan {
         global_graph: &'a GraphMap<CompoundIdentifier, HdlNode, ()>,
         target: &Ip,
     ) -> GraphMap<&'a CompoundIdentifier, &'a HdlNode<'a>, &'a ()> {
-        let working_lib = target.get_man().get_hdl_library();
+        let working_lib = target.get_hdl_library();
         // restrict graph to units only found within the current IP
         let local_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> = global_graph
             .iter()

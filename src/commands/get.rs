@@ -11,6 +11,7 @@ use crate::core::lang::parser::Symbol;
 use crate::core::lang::verilog::symbols::module::Module;
 use crate::core::lang::vhdl::format::VhdlFormat;
 use crate::core::lang::vhdl::interface;
+use crate::core::lang::vhdl::interface::Architectures;
 use crate::core::lang::vhdl::primaryunit::VhdlIdentifierError;
 use crate::core::lang::vhdl::symbols::architecture::Architecture;
 use crate::core::lang::vhdl::symbols::entity::Entity;
@@ -300,8 +301,20 @@ impl Get {
             && self.component == false
             && self.library == false;
 
+        // display architectures
+        if self.architectures == true {
+            println!("{}N/A\n", Architectures::new(&Vec::new()));
+        }
+
         if self.component == true || default_output == true {
             println!("{}\n", module.into_declaration());
+        }
+
+        if self.signals == true {
+            println!(
+                "{}",
+                module.into_wires(&self.signal_prefix, &self.signal_suffix)
+            );
         }
 
         if self.instance == true {

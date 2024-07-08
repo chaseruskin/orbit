@@ -68,7 +68,7 @@ impl<'a, 'b> Instruction<'a, 'b> {
                     format!(
                         "{}\t{}\t{}",
                         source_set,
-                        node.get_ip().get_man().get_hdl_library(),
+                        node.get_library(),
                         node.get_file()
                     )
                 }

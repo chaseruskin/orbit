@@ -59,4 +59,11 @@ test-all:
     just test-plan-1
     just test-plan-2
     just test-dst
+    just test-dst-local
     just test-pub
+
+# Run a DST test to verify library mappings work when using a simulator
+test-dst-local:
+    just install
+    chmod +x ./tests/env/projects/dst-local.sh
+    cd ./tests/env/projects; ./dst-local.sh

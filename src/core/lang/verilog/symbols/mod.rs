@@ -137,9 +137,11 @@ impl Parse<VerilogToken> for VerilogParser {
             } else if t.as_type().as_comment().is_some() == true {
                 continue;
             } else if t.as_type().is_eof() == false {
-                println!("{:?}", t);
+                // skip any potential illegal/unknown tokens at global scale
+                // println!("{:?}", t);
                 // illegal tokens at global scope?
-                symbols.push(Err(VerilogError::Vague))
+                // symbols.push(Err(VerilogError::Vague))
+                continue;
             }
         }
         // println!("{:#?}", symbols);

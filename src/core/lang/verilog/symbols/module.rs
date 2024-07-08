@@ -6,7 +6,7 @@ use crate::core::lang::{
     verilog::{
         error::VerilogError,
         interface::{self, ParamList, PortList},
-        token::{identifier::Identifier, token::VerilogToken},
+        token::{identifier::Identifier, operator::Operator, token::VerilogToken},
     },
 };
 
@@ -68,6 +68,24 @@ impl Module {
             signal_suffix,
         ));
         result.push(';');
+        result
+    }
+
+    pub fn into_wires(&self, wire_prefix: &str, wire_suffix: &str) -> String {
+        let mut result = String::new();
+        self.parameters.iter().for_each(|p| {
+            result.push_str(&&&p.into_declaration(false, true, "", ""));
+            result.push_str(&Operator::Terminator.to_string());
+            result.push('\n');
+        });
+        if self.parameters.is_empty() == false {
+            result.push('\n');
+        }
+        self.ports.iter().for_each(|p| {
+            result.push_str(&&&p.into_declaration(false, false, wire_prefix, wire_suffix));
+            result.push_str(&Operator::Terminator.to_string());
+            result.push('\n');
+        });
         result
     }
 }

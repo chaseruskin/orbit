@@ -1,6 +1,5 @@
-use super::{
-    symbols::Statement,
-    token::{identifier::Identifier, keyword::Keyword, operator::Operator, token::VerilogToken},
+use super::token::{
+    identifier::Identifier, keyword::Keyword, operator::Operator, token::VerilogToken,
 };
 
 type Tokens = Vec<VerilogToken>;
@@ -25,17 +24,29 @@ fn tokens_to_string(tokens: &Vec<VerilogToken>) -> String {
         | Operator::Div => false,
         _ => true,
     };
+
     // determine which delimiters to not add have whitespace preceed
     let no_preceeding_whitespace = |d: &Operator| match d {
         Operator::Pow | Operator::Comma => true,
         _ => false,
     };
+
+    let force_trailing_whitespace = |d: &Operator| match d {
+        Operator::Gt | Operator::Gte | Operator::Lt | Operator::Lte => true,
+        _ => false,
+    };
+
     // iterate through the tokens
     let mut iter = tokens.iter().peekable();
+
     while let Some(t) = iter.next() {
+        let mut force_space = false;
         // determine if to add trailing space after the token
         let trailing_space = match t {
-            VerilogToken::Operator(d) => is_spaced_token(d),
+            VerilogToken::Operator(d) => {
+                force_space = force_trailing_whitespace(d);
+                force_space || is_spaced_token(d)
+            }
             VerilogToken::Number(_) => false,
             _ => {
                 // make sure the next token is not a tight token (no-spaced)
@@ -49,15 +60,21 @@ fn tokens_to_string(tokens: &Vec<VerilogToken>) -> String {
                 }
             }
         };
+
+        // push the token to the string
         result.push_str(&t.to_string());
+        // handle adding whitespace after the token
         if trailing_space == true && iter.peek().is_some() {
-            if let Some(d) = iter.peek().unwrap().as_delimiter() {
-                // skip whitespace addition
-                if no_preceeding_whitespace(d) == true {
+            if force_space == false {
+                // check what the next token is to determine if whitespace should be added before it
+                if let Some(d) = iter.peek().unwrap().as_delimiter() {
+                    // skip whitespace addition
+                    if no_preceeding_whitespace(d) == true {
+                        continue;
+                    }
+                } else if let Some(_n) = iter.peek().unwrap().as_number() {
                     continue;
                 }
-            } else if let Some(_n) = iter.peek().unwrap().as_number() {
-                continue;
             }
             result.push_str(" ");
         }
@@ -140,7 +157,7 @@ pub fn display_interface(port_list: &Vec<Port>, is_params: bool) -> String {
 
     port_list.iter().enumerate().for_each(|(i, p)| {
         result.push_str("\n  ");
-        result.push_str(&&&p.into_declaration(is_params));
+        result.push_str(&&&p.into_declaration(true, is_params, "", ""));
         if i != port_list.len() - 1 {
             result.push_str(",")
         };
@@ -171,13 +188,6 @@ pub struct Port {
     value: Option<Tokens>,
 }
 
-fn display_statement(stmt: &Statement) -> String {
-    stmt.iter().fold(String::new(), |mut acc, x| {
-        acc.push_str(&x.as_type().to_string());
-        acc
-    })
-}
-
 impl Port {
     pub fn into_connection(&self, prefix: &str, suffix: &str) -> String {
         let mut result = String::new();
@@ -192,43 +202,69 @@ impl Port {
         result
     }
 
-    pub fn into_declaration(&self, is_param: bool) -> String {
+    pub fn into_declaration(
+        &self,
+        use_mode: bool,
+        is_param: bool,
+        prefix: &str,
+        suffix: &str,
+    ) -> String {
         let mut result = String::new();
 
-        // display the port direction
-        match is_param {
-            true => {
-                result.push_str(
-                    &self
-                        .direction
-                        .as_ref()
-                        .unwrap_or(&Keyword::Parameter)
-                        .to_string(),
-                );
+        if use_mode == true {
+            // display the port direction
+            match is_param {
+                true => {
+                    result.push_str(
+                        &self
+                            .direction
+                            .as_ref()
+                            .unwrap_or(&Keyword::Parameter)
+                            .to_string(),
+                    );
+                }
+                false => {
+                    result.push_str(
+                        &self
+                            .direction
+                            .as_ref()
+                            .unwrap_or(&Keyword::Input)
+                            .to_string(),
+                    );
+                }
             }
-            false => {
-                result.push_str(
-                    &self
-                        .direction
-                        .as_ref()
-                        .unwrap_or(&Keyword::Input)
-                        .to_string(),
-                );
-            }
+            result.push(' ');
         }
-
-        result.push(' ');
 
         // display the net type
-        if let Some(n) = &self.net_type {
-            result.push_str(&n.to_string());
-            result.push(' ');
-        }
+        if use_mode == true {
+            if let Some(n) = &self.net_type {
+                result.push_str(&n.to_string());
+                result.push(' ');
+            }
 
-        // display the reg keyword
-        if self.is_reg == true {
-            result.push_str(&Keyword::Reg.to_string());
-            result.push(' ');
+            // display the reg keyword
+            if self.is_reg == true {
+                result.push_str(&Keyword::Reg.to_string());
+                result.push(' ');
+            }
+        } else {
+            match is_param {
+                true => {
+                    result.push_str(
+                        &self
+                            .direction
+                            .as_ref()
+                            .unwrap_or(&Keyword::Parameter)
+                            .to_string(),
+                    );
+                    result.push(' ');
+                }
+                false => {
+                    result.push_str(&Keyword::Wire.to_string());
+                    result.push(' ');
+                }
+            }
         }
 
         // display if signed
@@ -243,8 +279,14 @@ impl Port {
             result.push(' ');
         }
 
+        // prepend any prefix
+        result.push_str(&prefix);
+
         // display the identifier
         result.push_str(&self.name.to_string());
+
+        // append any suffix
+        result.push_str(&suffix);
 
         // display the default value
         if let Some(v) = &self.value {

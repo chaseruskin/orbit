@@ -378,14 +378,14 @@ impl<'a> IpNode<'a> {
             }
         }
         // update the slot with a transformed IP manifest
-        self.transform = Some(install_dst(&temp_ip, &cache_path));
+        self.transform = Some(install_dst(&temp_ip, &cache_path, &lut));
     }
 }
 
 /// Creates a ip manifest that undergoes dynamic symbol transformation.
 ///
 /// Returns the DST ip for reference.
-fn install_dst(source_ip: &Ip, root: &std::path::PathBuf) -> Ip {
+fn install_dst(source_ip: &Ip, root: &PathBuf, mapping: &HashMap<LangIdentifier, String>) -> Ip {
     // compute the new checksum on the new ip and its transformed hdl files
     let sum = Ip::compute_checksum(source_ip.get_root());
 
@@ -417,7 +417,7 @@ fn install_dst(source_ip: &Ip, root: &std::path::PathBuf) -> Ip {
     // @todo: cache results of primary design unit list
     // cached_ip.stash_units();
     // // indicate this installation is dynamic in the metadata
-    cached_ip.set_as_dynamic();
+    cached_ip.set_as_dynamic(mapping);
     // // save and write the new metadata
     // cached_ip.write_metadata().unwrap();
 
@@ -480,6 +480,6 @@ impl<'a> IpFileNode<'a> {
 
     /// References the library identifier.
     pub fn get_library(&self) -> LangIdentifier {
-        self.ip.get_man().get_hdl_library()
+        self.ip.get_hdl_library()
     }
 }

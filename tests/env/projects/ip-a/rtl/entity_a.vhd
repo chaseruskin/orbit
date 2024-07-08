@@ -6,6 +6,7 @@
 --! ****************************************************************************
 library ieee;
 use ieee.std_logic_1164.all;
+library dupe;
 
 entity entity_a is
 port (
@@ -15,13 +16,13 @@ end entity entity_a;
 
 architecture rtl of entity_a is
 
-    component dupe
-        port (
-            data   : in std_logic;
-            data_a : out std_logic;
-            data_b : out std_logic
-        );
-    end component;
+    -- component dupe
+    --     port (
+    --         data   : in std_logic;
+    --         data_a : out std_logic;
+    --         data_b : out std_logic
+    --     );
+    -- end component;
 
     signal data   : std_logic;
     signal data_a : std_logic;
@@ -31,7 +32,7 @@ begin
 
     data <= '1';
 
-    uX : dupe port map (
+    uX : entity dupe.dupe(rtl) port map (
         data   => data,
         data_a => data_a,
         data_b => data_b

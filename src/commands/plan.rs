@@ -222,7 +222,7 @@ impl Plan {
                     println!(
                         "{}: erroneous blueprint created at: {:?}",
                         "warning".yellow(),
-                        blueprint_path.display()
+                        filesystem::into_std_str(blueprint_path)
                     );
                     return Ok(());
                 } else {
@@ -522,7 +522,7 @@ impl Plan {
             require_bench,
         )?;
         // create a blueprint file
-        println!("info: blueprint created at: {:?}", blueprint_path.display());
+        println!("info: blueprint created at: {:?}", filesystem::into_std_str(blueprint_path));
         Ok(())
     }
 }

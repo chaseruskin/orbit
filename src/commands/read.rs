@@ -2,6 +2,7 @@ use std::io::BufReader;
 use std::io::Read as ReadTrait;
 use std::io::Write;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 use super::get::GetError;
 use crate::commands::helps::read;
@@ -11,8 +12,11 @@ use crate::core::ip::Ip;
 use crate::core::ip::PartialIpSpec;
 use crate::core::lang::lexer::Position;
 use crate::core::lang::lexer::Token;
+use crate::core::lang::verilog::token::token::VerilogToken;
+use crate::core::lang::verilog::token::tokenizer::VerilogTokenizer;
 use crate::core::lang::vhdl::token::VhdlToken;
 use crate::core::lang::vhdl::token::VhdlTokenizer;
+use crate::core::lang::Lang;
 use crate::core::lang::LangIdentifier;
 use crate::core::lang::Language;
 use crate::util::anyerror::AnyError;
@@ -32,9 +36,9 @@ pub struct Read {
     location: bool,
     file: bool,
     keep: bool,
-    start: Option<VhdlTokenizer>,
-    end: Option<VhdlTokenizer>,
-    comment: Option<VhdlTokenizer>,
+    start: Option<String>,
+    end: Option<String>,
+    comment: Option<String>,
     limit: Option<usize>,
 }
 
@@ -116,124 +120,19 @@ impl Subcommand<Context> for Read {
 
 impl Read {
     fn run(&self, target: &Ip, dest: Option<&PathBuf>, mode: &Language) -> Result<(), Fault> {
-        let (path, loc) = Self::read(&self.unit, &target, dest, mode)?;
+        let (path, loc, lang) = Self::read(&self.unit, &target, dest, mode)?;
 
         // dump the file contents of the source code to the console if there was no destination
         let print_to_console = dest.is_none();
 
-        // access the tokens
+        // access the string contents
         let contents = fs::read_to_string(&path)?;
-        let src_tokens = VhdlTokenizer::from_source_code(&contents).into_tokens_all();
 
-        // perform a search on tokens
-        let (start, end) = {
-            // get the tokens
-            let start_tokens = match &self.start {
-                Some(tokenizer) => tokenizer
-                    .as_tokens_all()
-                    .into_iter()
-                    .filter(|t| t.as_type() != &VhdlToken::EOF)
-                    .collect(),
-                None => Vec::new(),
-            };
-            let end_tokens = match &self.end {
-                Some(tokenizer) => tokenizer
-                    .as_tokens_all()
-                    .into_iter()
-                    .filter(|t| t.as_type() != &VhdlToken::EOF)
-                    .collect(),
-                None => Vec::new(),
-            };
-            let comment_tokens = match &self.comment {
-                Some(tokenizer) => tokenizer
-                    .as_tokens_all()
-                    .into_iter()
-                    .filter(|t| t.as_type() != &VhdlToken::EOF)
-                    .collect(),
-                None => Vec::new(),
-            };
-            // search over the source code tokens
-            let start = Self::find_location(&src_tokens, &start_tokens);
-            // limit based on starting index
-            let remaining_tokens = match &start {
-                Some(pos) => src_tokens
-                    .into_iter()
-                    .skip_while(|p| p.locate() <= pos)
-                    .collect(),
-                None => {
-                    if self.start.is_some() == true {
-                        return Err(AnyError(format!(
-                            "Failed to find code segment matching 'start' code chunk"
-                        )))?;
-                    }
-                    src_tokens
-                }
-            };
-
-            let end = Self::find_location(&remaining_tokens, &end_tokens);
-            let remaining_tokens = match &end {
-                Some(pos) => remaining_tokens
-                    .into_iter()
-                    .take_while(|p| p.locate() < pos)
-                    .collect(),
-                None => {
-                    if self.end.is_some() == true {
-                        return Err(AnyError(format!(
-                            "Failed to find code segment matching 'end' code chunk"
-                        )))?;
-                    }
-                    remaining_tokens
-                }
-            };
-
-            // find the comment
-            let first_token = Self::find_location(&remaining_tokens, &comment_tokens);
-            // grab all continuous '--' tokens immediately above/before this location
-            let comment = match &first_token {
-                Some(pos) => {
-                    let mut line = pos.line();
-                    // println!("{:?}", pos);
-                    match remaining_tokens
-                        .into_iter()
-                        .rev()
-                        .skip_while(|p| p.locate() >= pos)
-                        .take_while(|p| {
-                            // only take immediate comments grouped together
-                            line -= 1;
-                            p.as_type().as_comment().is_some() && p.locate().line() == line
-                        })
-                        .last()
-                    {
-                        Some(token) => Some(token.locate().clone()),
-                        None => {
-                            return Err(AnyError(format!(
-                                "Zero comments associated with code chunk"
-                            )))?
-                        }
-                    }
-                }
-                None => {
-                    if self.comment.is_some() == true {
-                        return Err(AnyError(format!(
-                            "Failed to find code segment matching 'doc' code chunk"
-                        )))?;
-                    }
-                    None
-                }
-            };
-
-            let end = match &comment {
-                Some(_) => first_token,
-                None => end,
-            };
-
-            let start = match comment {
-                Some(c) => Some(c),
-                None => start,
-            };
-
-            (start, end)
-        };
+        let (start, end) = match lang {
+            Lang::Vhdl => self.read_vhdl(&contents),
+            Lang::Verilog => self.read_verilog(&contents),
+            Lang::SystemVerilog => todo!(),
+        }?;
 
         let segment: String = {
             let iter = contents.split_terminator('\n');
@@ -316,60 +215,6 @@ impl Read {
         Ok(())
     }
 
-    fn check_tokens_eq(source: &VhdlToken, sub: &VhdlToken) -> bool {
-        match sub {
-            // skip EOF token
-            &VhdlToken::EOF => true,
-            // only match on the fact that they are comments
-            VhdlToken::Comment(_) => source.as_comment().is_some(),
-            _ => source == sub,
-        }
-    }
-
-    fn find_location(
-        src_tokens: &Vec<Token<VhdlToken>>,
-        find_tokens: &Vec<&Token<VhdlToken>>,
-    ) -> Option<Position> {
-        let mut tracking: bool;
-        let mut src_tokens_iter = src_tokens.iter();
-        while let Some(t) = src_tokens_iter.next() {
-            // begin to see if we start tracking
-            // println!("{:?} {:?}", find_tokens.first().unwrap().as_type(), t.as_type());
-
-            if find_tokens.len() > 0
-                && Self::check_tokens_eq(t.as_type(), find_tokens.first().unwrap().as_type())
-                    == true
-            {
-                // println!("{}", "HERE");
-                let mut find_tokens_iter = find_tokens.iter().skip(1);
-                tracking = true;
-                while let Some(find_t) = find_tokens_iter.next() {
-                    // skip the EOF token
-                    if find_t.as_type() == &VhdlToken::EOF {
-                        continue;
-                    }
-                    if let Some(source_t) = src_tokens_iter.next() {
-                        // lost sight
-                        if Self::check_tokens_eq(source_t.as_type(), find_t.as_type()) == false {
-                            tracking = false;
-                            break;
-                        }
-                    } else {
-                        tracking = false;
-                        break;
-                    }
-                }
-                // initiate lock
-                if tracking == true {
-                    // @todo: return last index of list for skipping purposes
-                    return Some(t.locate().clone());
-                }
-            }
-            // @todo: handle follow better (keep iterating until hitting a wrong one)
-        }
-        None
-    }
-
     /// Finds the filepath and file position for the provided primary design unit `unit`
     /// under the project `ip`.
     ///
@@ -381,7 +226,7 @@ impl Read {
         ip: &Ip,
         dest: Option<&PathBuf>,
         mode: &Language,
-    ) -> Result<(PathBuf, Position), Fault> {
+    ) -> Result<(PathBuf, Position, Lang), Fault> {
         // find the unit
         let units = Ip::collect_units(true, ip.get_root(), mode, true, ip.into_public_list())?;
 
@@ -389,7 +234,11 @@ impl Read {
         let (source, position) = match units.get_key_value(unit) {
             Some((_, unit)) => (
                 unit.get_source_file(),
-                unit.get_vhdl_symbol().unwrap().get_position().clone(),
+                match unit.get_lang() {
+                    Lang::Vhdl => unit.get_vhdl_symbol().unwrap().get_position().clone(),
+                    Lang::Verilog => unit.get_verilog_symbol().unwrap().get_position().clone(),
+                    Lang::SystemVerilog => todo!(),
+                },
             ),
             None => {
                 return Err(GetError::SuggestShow(
@@ -418,7 +267,7 @@ impl Read {
 
         match dest {
             // return direct reference if no `dest` (within current ip)
-            None => return Ok((src, position)),
+            None => return Ok((src, position, units.get(unit).unwrap().get_lang())),
             Some(dest) => {
                 // create new file under checksum directory
                 let dest = dest.join(&checksum.to_string().get(0..10).unwrap());
@@ -437,8 +286,383 @@ impl Read {
                     file.write(&bytes)?;
                     file.flush()?;
                 }
-                Ok((dest, position))
+                Ok((dest, position, units.get(unit).unwrap().get_lang()))
             }
         }
+    }
+}
+
+// VHDL support
+impl Read {
+    fn read_vhdl(&self, contents: &str) -> Result<(Option<Position>, Option<Position>), Fault> {
+        let start: Option<VhdlTokenizer> = match &self.start {
+            Some(s) => Some(VhdlTokenizer::from_str(s)?),
+            None => None,
+        };
+        let end: Option<VhdlTokenizer> = match &self.end {
+            Some(s) => Some(VhdlTokenizer::from_str(s)?),
+            None => None,
+        };
+        let comment: Option<VhdlTokenizer> = match &self.comment {
+            Some(s) => Some(VhdlTokenizer::from_str(s)?),
+            None => None,
+        };
+
+        let src_tokens = VhdlTokenizer::from_source_code(&contents).into_tokens_all();
+
+        // perform a search on tokens
+        let (start, end) = {
+            // get the tokens
+            let start_tokens = match &start {
+                Some(tokenizer) => tokenizer
+                    .as_tokens_all()
+                    .into_iter()
+                    .filter(|t| t.as_type() != &VhdlToken::EOF)
+                    .collect(),
+                None => Vec::new(),
+            };
+            let end_tokens = match &end {
+                Some(tokenizer) => tokenizer
+                    .as_tokens_all()
+                    .into_iter()
+                    .filter(|t| t.as_type() != &VhdlToken::EOF)
+                    .collect(),
+                None => Vec::new(),
+            };
+            let comment_tokens = match &comment {
+                Some(tokenizer) => tokenizer
+                    .as_tokens_all()
+                    .into_iter()
+                    .filter(|t| t.as_type() != &VhdlToken::EOF)
+                    .collect(),
+                None => Vec::new(),
+            };
+            // search over the source code tokens
+            let start = Self::find_location_vhdl(&src_tokens, &start_tokens);
+            // limit based on starting index
+            let remaining_tokens = match &start {
+                Some(pos) => src_tokens
+                    .into_iter()
+                    .skip_while(|p| p.locate() <= pos)
+                    .collect(),
+                None => {
+                    if self.start.is_some() == true {
+                        return Err(AnyError(format!(
+                            "Failed to find code segment matching 'start' code chunk"
+                        )))?;
+                    }
+                    src_tokens
+                }
+            };
+
+            let end = Self::find_location_vhdl(&remaining_tokens, &end_tokens);
+            let remaining_tokens = match &end {
+                Some(pos) => remaining_tokens
+                    .into_iter()
+                    .take_while(|p| p.locate() < pos)
+                    .collect(),
+                None => {
+                    if self.end.is_some() == true {
+                        return Err(AnyError(format!(
+                            "Failed to find code segment matching 'end' code chunk"
+                        )))?;
+                    }
+                    remaining_tokens
+                }
+            };
+
+            // find the comment
+            let first_token = Self::find_location_vhdl(&remaining_tokens, &comment_tokens);
+            // grab all continuous '--' tokens immediately above/before this location
+            let comment = match &first_token {
+                Some(pos) => {
+                    let mut line = pos.line();
+                    // println!("{:?}", pos);
+                    match remaining_tokens
+                        .into_iter()
+                        .rev()
+                        .skip_while(|p| p.locate() >= pos)
+                        .take_while(|p| {
+                            // only take immediate comments grouped together
+                            line -= 1;
+                            p.as_type().as_comment().is_some() && p.locate().line() == line
+                        })
+                        .last()
+                    {
+                        Some(token) => Some(token.locate().clone()),
+                        None => {
+                            return Err(AnyError(format!(
+                                "Zero comments associated with code chunk"
+                            )))?
+                        }
+                    }
+                }
+                None => {
+                    if self.comment.is_some() == true {
+                        return Err(AnyError(format!(
+                            "Failed to find code segment matching 'doc' code chunk"
+                        )))?;
+                    }
+                    None
+                }
+            };
+
+            let end = match &comment {
+                Some(_) => first_token,
+                None => end,
+            };
+
+            let start = match comment {
+                Some(c) => Some(c),
+                None => start,
+            };
+
+            (start, end)
+        };
+        Ok((start, end))
+    }
+
+    fn check_tokens_eq_vhdl(source: &VhdlToken, sub: &VhdlToken) -> bool {
+        match sub {
+            // skip EOF token
+            &VhdlToken::EOF => true,
+            // only match on the fact that they are comments
+            VhdlToken::Comment(_) => source.as_comment().is_some(),
+            _ => source == sub,
+        }
+    }
+
+    fn find_location_vhdl(
+        src_tokens: &Vec<Token<VhdlToken>>,
+        find_tokens: &Vec<&Token<VhdlToken>>,
+    ) -> Option<Position> {
+        let mut tracking: bool;
+        let mut src_tokens_iter = src_tokens.iter();
+        while let Some(t) = src_tokens_iter.next() {
+            // begin to see if we start tracking
+            // println!("{:?} {:?}", find_tokens.first().unwrap().as_type(), t.as_type());
+
+            if find_tokens.len() > 0
+                && Self::check_tokens_eq_vhdl(t.as_type(), find_tokens.first().unwrap().as_type())
+                    == true
+            {
+                // println!("{}", "HERE");
+                let mut find_tokens_iter = find_tokens.iter().skip(1);
+                tracking = true;
+                while let Some(find_t) = find_tokens_iter.next() {
+                    // skip the EOF token
+                    if find_t.as_type() == &VhdlToken::EOF {
+                        continue;
+                    }
+                    if let Some(source_t) = src_tokens_iter.next() {
+                        // lost sight
+                        if Self::check_tokens_eq_vhdl(source_t.as_type(), find_t.as_type()) == false
+                        {
+                            tracking = false;
+                            break;
+                        }
+                    } else {
+                        tracking = false;
+                        break;
+                    }
+                }
+                // initiate lock
+                if tracking == true {
+                    // @todo: return last index of list for skipping purposes
+                    return Some(t.locate().clone());
+                }
+            }
+            // @todo: handle follow better (keep iterating until hitting a wrong one)
+        }
+        None
+    }
+}
+
+// Verilog support
+impl Read {
+    fn read_verilog(&self, contents: &str) -> Result<(Option<Position>, Option<Position>), Fault> {
+        let start: Option<VerilogTokenizer> = match &self.start {
+            Some(s) => Some(VerilogTokenizer::from_str(s)?),
+            None => None,
+        };
+        let end: Option<VerilogTokenizer> = match &self.end {
+            Some(s) => Some(VerilogTokenizer::from_str(s)?),
+            None => None,
+        };
+        let comment: Option<VerilogTokenizer> = match &self.comment {
+            Some(s) => Some(VerilogTokenizer::from_str(s)?),
+            None => None,
+        };
+
+        let src_tokens = VerilogTokenizer::from_source_code(&contents).into_tokens_all();
+
+        // perform a search on tokens
+        let (start, end) = {
+            // get the tokens
+            let start_tokens = match &start {
+                Some(tokenizer) => tokenizer
+                    .as_tokens_all()
+                    .into_iter()
+                    .filter(|t| t.as_type() != &VerilogToken::EOF)
+                    .collect(),
+                None => Vec::new(),
+            };
+            let end_tokens = match &end {
+                Some(tokenizer) => tokenizer
+                    .as_tokens_all()
+                    .into_iter()
+                    .filter(|t| t.as_type() != &VerilogToken::EOF)
+                    .collect(),
+                None => Vec::new(),
+            };
+            let comment_tokens = match &comment {
+                Some(tokenizer) => tokenizer
+                    .as_tokens_all()
+                    .into_iter()
+                    .filter(|t| t.as_type() != &VerilogToken::EOF)
+                    .collect(),
+                None => Vec::new(),
+            };
+            // search over the source code tokens
+            let start = Self::find_location_verilog(&src_tokens, &start_tokens);
+            // limit based on starting index
+            let remaining_tokens = match &start {
+                Some(pos) => src_tokens
+                    .into_iter()
+                    .skip_while(|p| p.locate() <= pos)
+                    .collect(),
+                None => {
+                    if self.start.is_some() == true {
+                        return Err(AnyError(format!(
+                            "Failed to find code segment matching 'start' code chunk"
+                        )))?;
+                    }
+                    src_tokens
+                }
+            };
+
+            let end = Self::find_location_verilog(&remaining_tokens, &end_tokens);
+            let remaining_tokens = match &end {
+                Some(pos) => remaining_tokens
+                    .into_iter()
+                    .take_while(|p| p.locate() < pos)
+                    .collect(),
+                None => {
+                    if self.end.is_some() == true {
+                        return Err(AnyError(format!(
+                            "Failed to find code segment matching 'end' code chunk"
+                        )))?;
+                    }
+                    remaining_tokens
+                }
+            };
+
+            // find the comment
+            let first_token = Self::find_location_verilog(&remaining_tokens, &comment_tokens);
+            // grab all continuous '--' tokens immediately above/before this location
+            let comment = match &first_token {
+                Some(pos) => {
+                    let mut line = pos.line();
+                    // println!("{:?}", pos);
+                    match remaining_tokens
+                        .into_iter()
+                        .rev()
+                        .skip_while(|p| p.locate() >= pos)
+                        .take_while(|p| {
+                            // only take immediate comments grouped together
+                            line -= 1;
+                            p.as_type().as_comment().is_some() && p.locate().line() == line
+                        })
+                        .last()
+                    {
+                        Some(token) => Some(token.locate().clone()),
+                        None => {
+                            return Err(AnyError(format!(
+                                "Zero comments associated with code chunk"
+                            )))?
+                        }
+                    }
+                }
+                None => {
+                    if self.comment.is_some() == true {
+                        return Err(AnyError(format!(
+                            "Failed to find code segment matching 'doc' code chunk"
+                        )))?;
+                    }
+                    None
+                }
+            };
+
+            let end = match &comment {
+                Some(_) => first_token,
+                None => end,
+            };
+
+            let start = match comment {
+                Some(c) => Some(c),
+                None => start,
+            };
+
+            (start, end)
+        };
+        Ok((start, end))
+    }
+
+    fn check_tokens_eq_verilog(source: &VerilogToken, sub: &VerilogToken) -> bool {
+        match sub {
+            // skip EOF token
+            &VerilogToken::EOF => true,
+            // only match on the fact that they are comments
+            VerilogToken::Comment(_) => source.as_comment().is_some(),
+            _ => source == sub,
+        }
+    }
+
+    fn find_location_verilog(
+        src_tokens: &Vec<Token<VerilogToken>>,
+        find_tokens: &Vec<&Token<VerilogToken>>,
+    ) -> Option<Position> {
+        let mut tracking: bool;
+        let mut src_tokens_iter = src_tokens.iter();
+        while let Some(t) = src_tokens_iter.next() {
+            // begin to see if we start tracking
+            // println!("{:?} {:?}", find_tokens.first().unwrap().as_type(), t.as_type());
+
+            if find_tokens.len() > 0
+                && Self::check_tokens_eq_verilog(
+                    t.as_type(),
+                    find_tokens.first().unwrap().as_type(),
+                ) == true
+            {
+                // println!("{}", "HERE");
+                let mut find_tokens_iter = find_tokens.iter().skip(1);
+                tracking = true;
+                while let Some(find_t) = find_tokens_iter.next() {
+                    // skip the EOF token
+                    if find_t.as_type() == &VerilogToken::EOF {
+                        continue;
+                    }
+                    if let Some(source_t) = src_tokens_iter.next() {
+                        // lost sight
+                        if Self::check_tokens_eq_verilog(source_t.as_type(), find_t.as_type())
+                            == false
+                        {
+                            tracking = false;
+                            break;
+                        }
+                    } else {
+                        tracking = false;
+                        break;
+                    }
+                }
+                // initiate lock
+                if tracking == true {
+                    // @todo: return last index of list for skipping purposes
+                    return Some(t.locate().clone());
+                }
+            }
+            // @todo: handle follow better (keep iterating until hitting a wrong one)
+        }
+        None
     }
 }

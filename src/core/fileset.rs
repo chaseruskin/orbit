@@ -19,12 +19,6 @@ impl From<HashMap<String, Style>> for Filesets {
     }
 }
 
-impl Filesets {
-    // pub fn inner(&self) -> &Vec<Fileset> {
-
-    // }
-}
-
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Fileset {
     name: String,

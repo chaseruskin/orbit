@@ -46,6 +46,13 @@ impl VerilogSymbol {
         }
     }
 
+    pub fn get_position(&self) -> &Position {
+        match self {
+            Self::Module(m) => m.get_position(),
+            // _ => todo!()
+        }
+    }
+
     pub fn as_module(&self) -> Option<&Module> {
         match &self {
             Self::Module(m) => Some(m),

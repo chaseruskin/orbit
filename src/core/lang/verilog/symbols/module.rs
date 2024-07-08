@@ -26,6 +26,10 @@ pub struct Module {
 }
 
 impl Module {
+    pub fn get_position(&self) -> &Position {
+        &self.pos
+    }
+
     pub fn into_declaration(&self) -> String {
         let mut result = String::new();
 
@@ -53,6 +57,11 @@ impl Module {
             "",
             "",
         ));
+        // leave whitespace between module name and instance if no parameters are available
+        if self.parameters.is_empty() == true {
+            result.push(' ');
+        }
+
         // instance name
         if let Some(n) = name {
             result.push_str(&n.to_string());

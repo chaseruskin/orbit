@@ -17,10 +17,14 @@ endmodule
 
 // Source file for behavioral mux selector
 module mux_gp (
-    din_0,      // Mux 1st input
-    din_1,      // Mux 2nd input
-    sel,        // Selector
-    mux_out     // Mux chosen output
+    // Mux 1st input
+    din_0,
+    // Mux 2nd input   
+    din_1,
+    // Selector     
+    sel,
+    // Mux chosen output
+    mux_out
 );
     input din_0, din_1, sel;
     output mux_out;

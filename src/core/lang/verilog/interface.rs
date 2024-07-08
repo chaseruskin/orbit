@@ -36,7 +36,7 @@ fn tokens_to_string(tokens: &Vec<VerilogToken>) -> String {
         // determine if to add trailing space after the token
         let trailing_space = match t {
             VerilogToken::Operator(d) => is_spaced_token(d),
-            VerilogToken::Number(n) => false,
+            VerilogToken::Number(_) => false,
             _ => {
                 // make sure the next token is not a tight token (no-spaced)
                 if let Some(m) = iter.peek() {
@@ -93,39 +93,54 @@ pub fn update_port_list<'a>(
     }
 }
 
-pub fn display_param_list(param_list: &ParamList) -> String {
+pub fn display_connections(
+    port_list: &Vec<Port>,
+    is_params: bool,
+    prefix: &str,
+    suffix: &str,
+) -> String {
     let mut result = String::new();
-    if param_list.is_empty() == false {
-        result.push(' ');
-        result.push('#');
-        result.push('(');
-    }
 
-    param_list.iter().enumerate().for_each(|(i, p)| {
-        result.push_str("\n  ");
-        result.push_str(&p.display_as_param());
-        if i != param_list.len() - 1 {
-            result.push_str(",")
-        };
-    });
-
-    if param_list.is_empty() == false {
-        result.push('\n');
-        result.push(')');
-    }
-    result
-}
-
-pub fn display_port_list(port_list: &PortList) -> String {
-    let mut result = String::new();
     if port_list.is_empty() == false {
         result.push(' ');
+        if is_params == true {
+            result.push('#');
+        }
         result.push('(');
     }
 
     port_list.iter().enumerate().for_each(|(i, p)| {
         result.push_str("\n  ");
-        result.push_str(&&p.display_as_port());
+        result.push_str(&&&p.into_connection(prefix, suffix));
+        if i != port_list.len() - 1 {
+            result.push_str(",")
+        };
+    });
+
+    if port_list.is_empty() == false {
+        result.push('\n');
+        result.push(')');
+        if is_params == true {
+            result.push(' ');
+        }
+    }
+
+    result
+}
+
+pub fn display_interface(port_list: &Vec<Port>, is_params: bool) -> String {
+    let mut result = String::new();
+    if port_list.is_empty() == false {
+        result.push(' ');
+        if is_params == true {
+            result.push('#');
+        }
+        result.push('(');
+    }
+
+    port_list.iter().enumerate().for_each(|(i, p)| {
+        result.push_str("\n  ");
+        result.push_str(&&&p.into_declaration(is_params));
         if i != port_list.len() - 1 {
             result.push_str(",")
         };
@@ -164,34 +179,44 @@ fn display_statement(stmt: &Statement) -> String {
 }
 
 impl Port {
-    pub fn display_as_param(&self) -> String {
+    pub fn into_connection(&self, prefix: &str, suffix: &str) -> String {
         let mut result = String::new();
-        result.push_str(
-            &self
-                .direction
-                .as_ref()
-                .unwrap_or(&Keyword::Parameter)
-                .to_string(),
-        );
-        result.push(' ');
+
+        result.push_str(&Operator::Dot.to_string());
         result.push_str(&self.name.to_string());
-        if let Some(v) = &self.value {
-            result.push_str(&format!(" = {}", tokens_to_string(v)));
-        }
+        result.push_str(&Operator::ParenL.to_string());
+        result.push_str(prefix);
+        result.push_str(&self.name.to_string());
+        result.push_str(suffix);
+        result.push_str(&Operator::ParenR.to_string());
         result
     }
 
-    pub fn display_as_port(&self) -> String {
+    pub fn into_declaration(&self, is_param: bool) -> String {
         let mut result = String::new();
 
         // display the port direction
-        result.push_str(
-            &self
-                .direction
-                .as_ref()
-                .unwrap_or(&Keyword::Input)
-                .to_string(),
-        );
+        match is_param {
+            true => {
+                result.push_str(
+                    &self
+                        .direction
+                        .as_ref()
+                        .unwrap_or(&Keyword::Parameter)
+                        .to_string(),
+                );
+            }
+            false => {
+                result.push_str(
+                    &self
+                        .direction
+                        .as_ref()
+                        .unwrap_or(&Keyword::Input)
+                        .to_string(),
+                );
+            }
+        }
+
         result.push(' ');
 
         // display the net type
@@ -220,6 +245,12 @@ impl Port {
 
         // display the identifier
         result.push_str(&self.name.to_string());
+
+        // display the default value
+        if let Some(v) = &self.value {
+            result.push_str(&format!(" = {}", tokens_to_string(v)));
+        }
+
         result
     }
 

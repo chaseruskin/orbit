@@ -10,6 +10,8 @@ use crate::core::lang::{
     },
 };
 
+use super::super::super::vhdl::token::Identifier as VhdlIdentifier;
+
 use super::VerilogSymbol;
 
 #[derive(Debug, PartialEq)]
@@ -29,8 +31,42 @@ impl Module {
 
         result.push_str(&format!("module "));
         result.push_str(&self.name.to_string());
-        result.push_str(&interface::display_param_list(&self.parameters));
-        result.push_str(&interface::display_port_list(&self.ports));
+        result.push_str(&interface::display_interface(&self.parameters, true));
+        result.push_str(&interface::display_interface(&self.ports, false));
+        result.push(';');
+        result
+    }
+
+    pub fn into_instance(
+        &self,
+        name: &Option<VhdlIdentifier>,
+        signal_prefix: &str,
+        signal_suffix: &str,
+    ) -> String {
+        let mut result = String::new();
+        // module name
+        result.push_str(&self.name.to_string());
+        // parameters
+        result.push_str(&interface::display_connections(
+            &self.parameters,
+            true,
+            "",
+            "",
+        ));
+        // instance name
+        if let Some(n) = name {
+            result.push_str(&n.to_string());
+        } else {
+            result.push_str("uX");
+        }
+
+        // ports
+        result.push_str(&interface::display_connections(
+            &self.ports,
+            false,
+            signal_prefix,
+            signal_suffix,
+        ));
         result.push(';');
         result
     }

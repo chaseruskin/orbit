@@ -9,7 +9,6 @@ use crate::core::ip::PartialIpSpec;
 use crate::core::lang::parser::Parse;
 use crate::core::lang::parser::Symbol;
 use crate::core::lang::verilog::symbols::module::Module;
-use crate::core::lang::verilog::token::identifier::Identifier as VerilogIdentifier;
 use crate::core::lang::vhdl::format::VhdlFormat;
 use crate::core::lang::vhdl::interface;
 use crate::core::lang::vhdl::primaryunit::VhdlIdentifierError;
@@ -174,7 +173,7 @@ impl Get {
         };
 
         // determine how to handle unit display
-        let result = match unit.get_lang() {
+        match unit.get_lang() {
             Lang::Vhdl => self.display_vhdl_entity(
                 &ip,
                 unit.get_vhdl_symbol().unwrap().as_entity().unwrap(),
@@ -292,7 +291,7 @@ impl Get {
         todo!()
     }
 
-    fn display_verilog_module(&self, ip: &Ip, module: &Module) -> Result<(), Fault> {
+    fn display_verilog_module(&self, _ip: &Ip, module: &Module) -> Result<(), Fault> {
         // determine if default print should appear
         let default_output = self.architectures == false
             && self.instance == false
@@ -302,7 +301,14 @@ impl Get {
             && self.library == false;
 
         if self.component == true || default_output == true {
-            println!("{}", module.into_declaration());
+            println!("{}\n", module.into_declaration());
+        }
+
+        if self.instance == true {
+            println!(
+                "{}",
+                module.into_instance(&self.name, &self.signal_prefix, &self.signal_suffix)
+            );
         }
 
         Ok(())

@@ -3,7 +3,7 @@
 In this tutorial, you will learn how to:
 
 [1.](#specifying-multiple-dependencies-for-an-ip) Depend on multiple ips for a single project  
-[2.](#overcoming-hdl-problems-namespace-pollution) Use `orbit` to overcome namespace pollution  
+[2.](#overcoming-hdl-problems-namespace-pollution) Use Orbit to overcome namespace pollution  
 [3.](#reusing-targets-that-are-globally-configured) Build a project with a globally-configured target  
 
 ## Specifying multiple dependencies for an ip
@@ -13,7 +13,7 @@ After the quick detour back to the gates ip, we are ready to tackle our final ch
 orbit new full-add
 ```
 
-For the rest of this tutorial, we will be working relative to the project directory "full-add/" that currently stores our new full-add project. 
+For the rest of this tutorial, we will be working relative to the project directory "/full-add" that currently stores our new full-add project. 
 
 For this final project, we will need circuits described in both the gate ip and half-add ip. Let's quickly recall if version 1.0.0 of gates has the OR gate we will need.
 ```
@@ -63,7 +63,7 @@ uX : entity work.half_add
 
 And let's get the code snippet for the OR gate as well.
 ```
-orbit get or_gate --ip gates:1.0.0 --instance
+$ orbit get or_gate --ip gates:1.0.0 --library --instance
 ```
 ```
 library work;
@@ -129,11 +129,11 @@ end architecture;
 
 Our design heirarchy is getting more complex; we have full adders constructed of half adders and OR gates, half adders constructed of NAND gates, OR gates constructed of... uh-oh. More NAND gates. 
 
-The NAND gate design unit used in the OR gates is different from NAND gates used in the half adders because they reside in different versions of the gates ip (essentially different ips). So did we just define an NAND gate entity twice with the same identifier? Yes, and thanks to `orbit`, this situation is okay.
+The NAND gate design unit used in the OR gates is different from NAND gates used in the half adders because they reside in different versions of the gates ip (essentially different ips). So did we just define an NAND gate entity twice with the same identifier? Yes, and thanks to Orbit, this situation is okay.
 
 ### Huh?
 
-Typical EDA tools will complain and error out when primary design units share the same name. How would they know which one is being used where? Fortunately, `orbit` is one step ahead of these tools due to implementing an algorithm called _dynamic symbol transformation_.
+Typical EDA tools will complain and error out when primary design units share the same name. How would they know which one is being used where? Fortunately, Orbit is one step ahead of these tools due to implementing an algorithm called _dynamic symbol transformation_.
 
 Let's take a look at the design tree hierarchy. You may notice something interesting.
 ```
@@ -144,12 +144,12 @@ full_add (full-add:0.1.0)
 ├─ or_gate (gates:1.0.0)
 │  └─ nand_gate (gates:1.0.0)
 └─ half_add (half-add:0.1.0)
-   └─ nand_gate_8108cfb282 (gates:0.1.0)
+   └─ nand_gate_56ade36a78 (gates:0.1.0)
 ```
 
-The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, `orbit` appends the beginning checksum digits from the ip of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict. 
+The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, Orbit appends the beginning checksum digits from the ip of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict. 
 
-To us though, these slight identifier renamings remain hidden because they occur among indirect dependencies in relation to our current project. When deciding which design unit to rename, `orbit` will always choose to rename the unit that is used as an indirect dependency. This key choice allows us to keep using the original unit name when integrating design units into the current project.
+To us though, these slight identifier renamings remain hidden because they occur among indirect dependencies in relation to our current project. When deciding which design unit to rename, Orbit will always choose to rename the unit that is used as an indirect dependency. This key choice allows us to keep using the original unit name when integrating design units into the current project.
 
 ### Okay, so what?
 
@@ -161,14 +161,14 @@ To conclude this mini tutorial series, let's generate a bitstream for the Yilinx
 
 First, let's verify our yilinx target is available to us after appending it to our global configuration file in the previous tutorial.
 ```
-$ orbit plan --list
+$ orbit build --list
 ```
 ```
 yilinx          Generate bitstreams for Yilinx FPGAs
 ```
 We can review more details about a particular target by specifying it with the "--target" command-line option while providing "--list" as well.
 ```
-$ orbit plan --list --target yilinx
+$ orbit build --list --target yilinx
 ```
 ```
 Name:    yilinx
@@ -180,27 +180,25 @@ Filesets:
 Generate bitstreams for Yilinx FPGAs
 ```
 
-Let's plan with the intention to build using the yilinx target for our full adder.
+Let's build our current project using the yilinx target for our full adder.
 ```
-$ orbit plan --target yilinx --top full_add
+$ orbit build --target yilinx --top full_add
 ```
 
-Opening the blueprint file shows we are indeed using different files for the different NAND gate design units, and the files are in a topologically-sorted order.
+Opening the blueprint file created by Orbit during the planning stage shows we are indeed using different files for the different NAND gate design units, and the files are in a topologically-sorted order.
 
-Filename: target/blueprint.tsv
+Filename: target/yilinx/blueprint.tsv
 ``` text
-VHDL-RTL	work	/Users/chase/.orbit/cache/gates-0.1.0-fe9ec9d99e/nand_gate.vhd
-VHDL-RTL	work	/Users/chase/.orbit/cache/half-add-0.1.0-1c537df196/half_add.vhd
-VHDL-RTL	work	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/nand_gate.vhd
-VHDL-RTL	work	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/or_gate.vhd
-VHDL-RTL	work	/Users/chase/tutorials/full-add/full_add.vhd
+VHDL	work	/Users/chase/.orbit/cache/gates-0.1.0-fe9ec9d99e/nand_gate.vhd
+VHDL	work	/Users/chase/.orbit/cache/half-add-0.1.0-1c537df196/half_add.vhd
+VHDL	work	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/nand_gate.vhd
+VHDL	work	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/or_gate.vhd
+VHDL	work	/Users/chase/tutorials/full-add/full_add.vhd
 
 ```
 
-If a target is specified during the most recent planning step, it can be inferred to be used in the building step and therefore we can omit the "--target" command-line option for our convenience.
-```
-$ orbit build
-```
+Inspecting the output displayed to the console shows our target executed it's process successfully with the creation of a .bit file.
+
 ```
 YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-0.1.0-fe9ec9d99e/nand_gate.vhd into work...
 YILINX: Synthesizing file /Users/chase/.orbit/cache/half-add-0.1.0-1c537df196/half_add.vhd into work...
@@ -209,7 +207,7 @@ YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/or_ga
 YILINX: Synthesizing file /Users/chase/tutorials/full-add/full_add.vhd into work...
 YILINX: Performing place-and-route...
 YILINX: Generating bitstream...
-YILINX: Bitstream saved at: target/full_add.bit
+YILINX: Bitstream saved at: target/yilinx/full_add.bit
 ```
 
-Great work! This marks the end to this tutorial series, but the beginning of your experience with `orbit`, an HDL package manager.
+Great work! This marks the end to this tutorial series, but the beginning of your experience with Orbit, an agile package manager and extensible build tool for HDLs.

@@ -287,9 +287,9 @@ impl Get {
 
         // print as json data
         if self.json == true {
-            println!("{}", serde_json::to_string_pretty(&entity)?);
+            println!("{}", serde_json::to_string(&entity)?);
         }
-        todo!()
+        Ok(())
     }
 
     fn display_verilog_module(&self, _ip: &Ip, module: &Module) -> Result<(), Fault> {

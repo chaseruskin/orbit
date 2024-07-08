@@ -3,8 +3,8 @@
 In this tutorial, you will learn how to:
 
 [1.](#referencing-external-ips) Specify an external ip as a dependency  
-[2.](#learning-about-ips) Use `orbit` to learn more about external ips and their design units  
-[3.](#integrating-design-units-across-ips) Leverage `orbit` across ips to integrate an entity into a separate ip  
+[2.](#learning-about-ips) Use Orbit to learn more about external ips and their design units  
+[3.](#integrating-design-units-across-ips) Leverage Orbit across ips to integrate an entity into a separate ip  
 
 ## Referencing external ips
 
@@ -14,7 +14,7 @@ Let's create a new project. Navigate to a directory in your file system where yo
 ```
 $ orbit new half-add
 ```
-For the rest of this tutorial, we will be working relative to the project directory "half-add/" that was created by the previous command.
+For the rest of this tutorial, we will be working relative to the project directory "/half-add" that was created by the previous command.
 
 Remembering our impressive work with the gates project, we realize we can reuse some of the already designed and tested components from there. Let's make sure it's installed so that we can use it.
 ```
@@ -24,7 +24,7 @@ $ orbit search gates
 gates                       0.1.0     install
 
 ```
-Awesome! Our next step is tell `orbit` that our current project, half-add, wants to use gates as a dependency.
+Awesome! Our next step is tell Orbit that our current project, half-add, wants to use gates as a dependency.
 
 Add a new entry for gates to the dependencies table in our project's manifest, Orbit.toml.
 
@@ -44,7 +44,7 @@ We've referenced it, now we have to use it!
 
 ## Learning about ips
 
-Your memory is a little foggy on what gates actually did, and what entities were available. Luckily, we can query for information through `orbit` about ips and their design units.
+Your memory is a little foggy on what gates actually did, and what entities were available. Luckily, we can query for information through Orbit about ips and their design units.
 
 Let's remember what entities we have at our disposal.
 
@@ -68,7 +68,7 @@ begin
 
 end architecture;
 ```
-Cool, we used the VHDL keyword. Sometimes it may be insightful to read code snippets and comments from external design units when trying to integrate them into a new project.
+Cool, we used the VHDL keyword `nand` to describe that particular circuit. Sometimes it may be insightful to read code snippets and comments from external design units when trying to integrate them into a new project.
 
 ## Integrating design units across ips
 
@@ -156,7 +156,7 @@ begin
 end architecture;
 ```
 
-Let's inspect the design hierarchy to make sure our circuit and its components are identified by `orbit`.
+Let's inspect the design hierarchy to make sure our circuit and its components are identified by Orbit.
 ```
 $ orbit tree --format long
 ```
@@ -167,22 +167,22 @@ half_add (half-add:0.1.0)
 
 Finally, let's install this ip to the cache for future reuse as well.
 ```
-$ orbit install --path .
+$ orbit install
 ```
 
 Nice, now we have successfully reused designs across ips! However, maybe we should have designed all the logic gates in the gates ip...
 
 ### Additional notes on dependencies
 
-Before integrating a design unit from an external ip into a separate project, it's important to first update the Orbit.toml file. This manifest file has a dependencies section, which allows you to tell `orbit` which ips to bring into the current project scope. Without the ips in scope, `orbit` may be unable to identify where you got a reference for a particular design unit. `orbit` denotes an unknown design unit with a ? when displaying the design hierarchy.
+Before integrating a design unit from an external ip into a separate project, it's important to first update the Orbit.toml file. This manifest file has a dependencies section, which allows you to tell Orbit which ips to bring into the current project scope. Without the ips in scope, Orbit may be unable to identify where you got a reference for a particular design unit. Orbit denotes an unknown design unit with a ? when displaying the design hierarchy.
 ```
 half_add (half-add:0.1.0)
 └─ nand_gate ?
 ```
 
-After introducing dependencies at the project level, it's also important to maintain an up-to-date lockfile Orbit.lock.
+After introducing dependencies at the project level, it's also important to maintain an up-to-date lockfile, Orbit.lock. In most cases, Orbit will automatically generate it when it needs it, however, you as the user can also explicitly request Orbit to update the lockfile.
 ```
-$ orbit plan --lock-only
+$ orbit lock
 ```
 
-The lockfile saves information for `orbit` to use later when needing to reconstruct the state of an ip. This includes saving information about all ip dependencies, their checksums, and potential sources of retrieval. Remember, the Orbit.lock file is automatically managed by `orbit` and does not require direct user editing.
+The lockfile saves information for Orbit to use later when needing to reconstruct the state of an ip. This includes saving information about all ip dependencies, their checksums, and potential sources of retrieval. Remember, the Orbit.lock file is automatically managed by Orbit and does not require direct user editing.

@@ -13,7 +13,9 @@ use crate::core::target::Target;
 use crate::error::Error;
 use crate::error::LastError;
 use crate::util::anyerror::{AnyError, Fault};
+use crate::util::environment::ORBIT_OUTPUT_PATH;
 use crate::util::environment::{EnvVar, Environment, ORBIT_BLUEPRINT, ORBIT_TARGET_DIR};
+use crate::util::filesystem;
 
 use super::plan::{self, Plan, BLUEPRINT_FILE};
 
@@ -149,6 +151,11 @@ impl Test {
             true,
         )?;
 
+        let output_path = working_ip
+            .get_root()
+            .join(target_dir)
+            .join(&target.get_name());
+
         // prepare for build
         Environment::new()
             // read config.toml for setting any env variables
@@ -156,6 +163,11 @@ impl Test {
             // read ip manifest for env variables
             .from_ip(&working_ip)?
             .add(EnvVar::new().key(ORBIT_BLUEPRINT).value(BLUEPRINT_FILE))
+            .add(
+                EnvVar::new()
+                    .key(ORBIT_OUTPUT_PATH)
+                    .value(&filesystem::into_std_str(output_path.clone())),
+            )
             .add(EnvVar::new().key(ORBIT_TARGET_DIR).value(target_dir))
             .initialize();
 
@@ -170,11 +182,6 @@ impl Test {
             },
         };
         envs.initialize();
-
-        let output_path = working_ip
-            .get_root()
-            .join(target_dir)
-            .join(&target.get_name());
 
         // load from .env file from the correct build dir
         match Environment::new().from_env_file(&output_path) {

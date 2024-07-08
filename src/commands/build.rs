@@ -16,7 +16,9 @@ use crate::util::anyerror::AnyError;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
 use crate::util::environment::ORBIT_BLUEPRINT;
+use crate::util::environment::ORBIT_OUTPUT_PATH;
 use crate::util::environment::ORBIT_TARGET;
+use crate::util::filesystem;
 
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
@@ -129,6 +131,11 @@ impl Subcommand<Context> for Build {
             // read ip manifest for env variables
             .from_ip(&working_ip)?
             .add(EnvVar::new().key(ORBIT_BLUEPRINT).value(BLUEPRINT_FILE))
+            .add(
+                EnvVar::new()
+                    .key(ORBIT_OUTPUT_PATH)
+                    .value(&filesystem::into_std_str(output_path.clone())),
+            )
             .add(EnvVar::new().key(ORBIT_TARGET).value(target.get_name()))
             .initialize();
 

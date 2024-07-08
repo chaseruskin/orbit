@@ -17,13 +17,16 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## 0.14.0 - unreleased
 
+This update brings a lot of breaking changes, a smoother workflow, and the first initial support for Verilog!
+
 ### Features
+- initial verilog support includes: module declarations, instantiations, wire declarations, recognition within VHDL files, DST, reading verilog files using `orbit read`, setting them as top level units or testbenches for the build process 
 - adds new environment variable `ORBIT_DUT` set during `orbit test`
 - allow targets to define what types of blueprints they can handle
 - adds `--library` option to `orbit get` command
 - allows configuration file to be found on parent directories of the current working path with appropriate precedence
 - adds `orbit lock` command to save the state of the local ip by writing the Orbit.lock file
-- verilog files can now be detected and written to blueprints
+- allows `orbit config` to change the language support mode
 
 ### Changes
 - targets are new spawned inside a folder with their name within the `TARGET_DIR` directory (this is where the blueprint and .env file are written during the planning stage as well)
@@ -36,12 +39,16 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - renames `show` command to `view` and adds new switches (`-u`, `-v`) for faster lookups for units and versions of an ip
 - Adds more error messages
 
+### Fixes
+- renames library in blueprint if it is a matching identifier to one that is a design unit that underwent DST in that particular ip during the planning stage of the build process
+
 ### Documents
+- updates tutorials with latest changes
 - adds information about ip and their naming
 - adds information about catalog
 - adds information about targets
 - adds information of configurations
-- updates tutorial
+
 
 ## 0.13.0
 

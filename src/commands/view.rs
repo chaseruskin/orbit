@@ -101,7 +101,7 @@ impl Subcommand<Context> for View {
                 // a 'virtual' ip, so try to extract units from
                 println!(
                     "info: {}",
-                    "unable to display HDL units from a downloaded IP; try again after installing"
+                    "unable to display HDL units from a downloaded ip; try again after installing"
                 );
             }
 
@@ -110,7 +110,11 @@ impl Subcommand<Context> for View {
 
         // display all installed versions in the cache
         if self.tags == true {
-            let specified_ver = self.ip.as_ref().unwrap().get_version().as_specific();
+            let specified_ver = if let Some(spec) = self.ip.as_ref() {
+                spec.get_version().as_specific()
+            } else {
+                None
+            };
 
             return match catalog.get_possible_versions(ip.get_man().get_ip().get_name()) {
                 Some(vers) => {

@@ -40,6 +40,8 @@ Orbit also sets environment variables during runtime so a plugin has access to r
 
 - `ORBIT_BLUEPRINT` - the filename for the blueprint created during the planning stage
 
+- `ORBIT_OUTPUT_PATH` - path to the selected target's build process working directory
+
 ## Checking the environment
 
 You can review the known environment variables within Orbit with `orbit env`.

@@ -10,7 +10,7 @@ In this tutorial, you will learn how to:
 
 It seems we left out some logic gates when we last worked on the gates project, so let's implement them now. Navigate to the directory in your file system where you currently store the gates project.
 
-For the rest of this tutorial, we will be working relative to the project directory "gates/" that currently stores the gates project.
+For the rest of this tutorial, we will be working relative to the project directory "/gates" that currently stores the gates project.
 
 Let's implement the OR gate while restricting our design to only NAND gates like before. 
 ```
@@ -96,7 +96,7 @@ Next, we want to program our Yilinx FPGA with the OR gate design to test it on t
 - We want a way to specify which I/O pins of the FPGA will be used during placement and routing
 - We want a way to specify whether to program the FPGA bitstream to SRAM storage (volatile) or flash storage (nonvolatile).
 
-After searching through Yilinx documentation for hours, you learn that the Yilinx design tool can accept .ydc files for FPGA pin assignments. Let's edit our yilinx target to collect any .ydc files our project may have during `orbit`'s planning step.
+After searching through Yilinx documentation for hours, you learn that the Yilinx design tool can accept .ydc files for FPGA pin assignments. Let's edit our yilinx target to collect any .ydc files our project may have during Orbit's planning step.
 
 Filename: .orbit/config.toml
 ``` toml
@@ -106,7 +106,7 @@ command = "python"
 description = "Generate bitstreams for Yilinx FPGAs"
 args = ["yilinx.py"]
 # Define the type of extra file(s) to collect during planning
-fileset.pin-file = "*.ydc"
+fileset.pinout = "*.ydc"
 ```
 
 Now let's create our pin assignment file for our OR gate design.
@@ -130,7 +130,7 @@ PROG_FLASH = bool(sys.argv.count('--flash') > 0)
 
 # Get environment variables set by orbit for this particular build
 BLUEPRINT = os.environ.get("ORBIT_BLUEPRINT")
-BUILD_DIR = os.environ.get("ORBIT_BUILD_DIR")
+OUTPUT_PATH = os.environ.get("ORBIT_OUTPUT_PATH")
 TOP_LEVEL = os.environ.get("ORBIT_TOP")
 
 synth_order = []
@@ -141,9 +141,9 @@ with open(BLUEPRINT) as blueprint:
     rules = blueprint.readlines()
     for r in rules:
         fileset, lib, path = r.strip().split('\t')
-        if fileset == 'VHDL-RTL':
+        if fileset == 'VHDL':
             synth_order += [(lib, path)]
-        if fileset == 'PIN-FILE':
+        if fileset == 'PINOUT':
             constraints_file = path
     pass
 
@@ -168,39 +168,38 @@ with open(BIT_FILE, 'w') as bitstream:
     for byte in [bin(b)[2:] for b in bytes(TOP_LEVEL, 'utf-8')]:
         bitstream.write(byte)
 
-print('YILINX:','Bitstream saved at: '+ str(BUILD_DIR + '/' + BIT_FILE))
+print('YILINX:','Bitstream saved at: '+ str(OUTPUT_PATH + '/' + BIT_FILE))
 
 # Optionally allow the user to program the FPGA using flash or SRAM configuration
 if PROG_FLASH == True and PROG_SRAM == False:
     print('YILINX:', 'Programming bitstream to flash...')
 elif PROG_SRAM == True:
     print('YILINX:', 'Programming bitstream to SRAM...')
-
+  
 ```
 
 With all these changes, we can now go ahead and program our FPGA as we want!
 
-First, let's plan the OR gate design. We can specify which entity is the top level by using the "--top" command-line option. The "--target" command-line option tells `orbit` what additional files to collect for a future build with that target.
+To execute our latest changes to our Yilinx target build process, let's use `orbit build`. Recall that this command can be divided into two distinct stages: planning and execution. Planning is completed by Orbit once it generates a blueprint file. During planning, it looked at what files the target also requests under it's `fileset` TOML configuration.
+
 ```
-$ orbit plan --target yilinx --top or_gate 
+$ orbit build --target yilinx --top or_gate -- --flash
 ```
 
-Let's take a look at the blueprint file `orbit` just created.
+Let's take a look at the blueprint file Orbit created during the build process.
 
-Filename: target/blueprint.tsv
+Filename: target/yilinx/blueprint.tsv
 ``` text
-PIN-FILE	work	/Users/chase/tutorials/gates/pins.ydc
-VHDL-RTL	work	/Users/chase/tutorials/gates/nand_gate.vhd
-VHDL-RTL	work	/Users/chase/tutorials/gates/or_gate.vhd
+PINOUT	work	/Users/chase/tutorials/gates/pins.ydc
+VHDL	work	/Users/chase/tutorials/gates/nand_gate.vhd
+VHDL	work	/Users/chase/tutorials/gates/or_gate.vhd
 
 ```
 
-Inspecting our latest blueprint file reveals our .ydc file was successfully collected.
+Notice also how we passed a command-line argument `--flash`, to our target process for execution. Any arguments that are found after `--` are ignored by Orbit and sent directly to the targeted process. 
 
-Finally, let's build our design. We can pass command-line arguments directly to the target by entering them after the "--" argument.
-```
-$ orbit build --target yilinx -- --flash
-```
+Reviewing the output from our target's execution, we see that our FPGA was programmed successfully.
+
 ```
 YILINX: Synthesizing file /Users/chase/tutorials/gates/nand_gate.vhd into work...
 YILINX: Synthesizing file /Users/chase/tutorials/gates/or_gate.vhd into work...
@@ -213,9 +212,9 @@ YILINX: Bitstream saved at: target/or_gate.bit
 YILINX: Programming bitstream to flash...
 ```
 
-As expected, the bitstream is written and saved in our target directory.
+As expected, the bitstream is also written and saved within our target's output path.
 
-Filename: target/or_gate.bit
+Filename: target/yilinx/or_gate.bit
 ``` text
 1101111111001010111111100111110000111101001100101
 ```
@@ -225,13 +224,12 @@ Awesome! We added some pretty advanced settings to our yilinx target to make it 
 $ orbit config --global --append include="$(orbit env ORBIT_IP_PATH)/.orbit/config.toml"
 ```
 
-Now when we call `orbit` from any directory, we can see our yilinx target is available to use.
+Now when we call Orbit from any directory, we can see our yilinx target is available to use.
 ```
-$ orbit plan --list
+$ orbit build --list
 ```
 ```
-Plugins:
-  yilinx          Generate bitstreams for Yilinx FPGAs
+yilinx          Generate bitstreams for Yilinx FPGAs
 ```
 
 ## Rereleasing the gates ip
@@ -252,7 +250,7 @@ version = "1.0.0"
 
 Finally, let's release version 1.0.0 for the gates ip by installing it to our cache.
 ```
-$ orbit install --path .
+$ orbit install
 ```
 
 One last look at the catalog shows the latest version of gates we have installed is indeed 1.0.0. Nice work!

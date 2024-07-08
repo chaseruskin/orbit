@@ -17,10 +17,11 @@ $ orbit new gates
 A directory called "gates" should now exist and look like the following tree structure:
 ```
 gates/
+├─ .orbitignore
 └─ Orbit.toml
 ```
 
-Let's create our first design unit for describing a NAND gate. Feel free to copy the following code into a file called "nand_gate.vhd" that exists in our project directory "gates/".
+Let's create our first design unit for describing a NAND gate. Feel free to copy the following code into a file called "nand_gate.vhd" that exists in our project directory "/gates".
 
 Filename: nand_gate.vhd
 ``` vhdl
@@ -166,18 +167,18 @@ A target is a command invoked by Orbit for execution during the build process. I
 
 Filename: .orbit/yilinx.py
 ``` python
-synth_order = []
+file_order = []
 # Read and parse the blueprint file
 with open('blueprint.tsv') as blueprint:
     rules = blueprint.readlines()
     for r in rules:
         fileset, lib, path = r.strip().split('\t')
         if fileset == 'VHDL':
-            synth_order += [(lib, path)]
+            file_order += [(lib, path)]
     pass
 
 # Use the Yilinx tool to perform synthesize on the HDL files
-for (lib, path) in synth_order:
+for (lib, path) in file_order:
     print('YILINX:', 'Synthesizing file ' + str(path) +' into ' + str(lib) + '...')
 
 # Use the Yilinx tool to perform placement and routing
@@ -228,7 +229,7 @@ Filename: target/yilinx/fpga.bit
 Now we are ready to move on to more advanced topics, so let's go ahead and store an immutable reference to this project to use in other projects in our developer journey. 
 
 ```
-$ orbit install --path .
+$ orbit install
 ```
 
 This command ran a series of steps that packaged our project and placed it into our _cache_. Internally, Orbit knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire ip catalog.
@@ -253,6 +254,7 @@ gates/
 ├─ target/
 │  ├─ CACHEDIR.TAG
 |  └─ yilinx/
+│     ├─ .env
 │     ├─ blueprint.tsv
 │     └─ fpga.bit
 ├─ Orbit.toml
@@ -261,8 +263,8 @@ gates/
 └─ nand_gate.vhd
 ```
 
-- The configurations stored in ".orbit/" exist only for this project; to store configurations that persist across projects make changes to the $ORBIT_HOME directory.
+- The configurations stored in "/.orbit" exist only for this project; to store configurations that persist across projects make changes to the $ORBIT_HOME directory.
 
-- Orbit creates an output directory to store the blueprint and any tool output files during a build. These files should reside in "target/" and may change often during development (probably don't check this directory into version control).
+- Orbit creates an output directory to store the blueprint and any tool output files during a build. These files should reside in "/target" and may change often during development (probably don't check this directory into version control).
 
 - Orbit creates a lock file "Orbit.lock" to store all the information required to manage and recreate the exact state of this project. It is a good idea to always keep it and to not manually edit it (probably be sure to check this file into version control).

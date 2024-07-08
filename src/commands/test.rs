@@ -12,7 +12,7 @@ use crate::core::target::Process;
 use crate::core::target::Target;
 use crate::error::Error;
 use crate::error::LastError;
-use crate::util::anyerror::{AnyError, Fault};
+use crate::util::anyerror::Fault;
 use crate::util::environment::ORBIT_OUTPUT_PATH;
 use crate::util::environment::{EnvVar, Environment, ORBIT_BLUEPRINT, ORBIT_TARGET_DIR};
 use crate::util::filesystem;
@@ -157,7 +157,7 @@ impl Test {
             .join(&target.get_name());
 
         // prepare for build
-        Environment::new()
+        let envs = Environment::new()
             // read config.toml for setting any env variables
             .from_config(c.get_config())?
             // read ip manifest for env variables
@@ -169,32 +169,16 @@ impl Test {
                     .value(&filesystem::into_std_str(output_path.clone())),
             )
             .add(EnvVar::new().key(ORBIT_TARGET_DIR).value(target_dir))
-            .initialize();
-
-        let env_path = working_ip.get_root().join(target_dir);
-
-        // load from .env file from the correct build dir
-        let envs: Environment = match Environment::new().from_env_file(&env_path) {
-            Ok(r) => r,
-            Err(e) => match self.force {
-                false => return Err(AnyError(format!("failed to read .env file: {}", e)))?,
-                true => Environment::new(),
-            },
-        };
-        envs.initialize();
-
-        // load from .env file from the correct build dir
-        match Environment::new().from_env_file(&output_path) {
-            Ok(r) => r,
-            Err(e) => match self.force {
-                false => return Err(AnyError(format!("failed to read .env file: {}", e)))?,
-                true => Environment::new(),
-            },
-        }
-        .initialize();
+            .from_env_file(&output_path)?;
 
         // run the command from the output path
-        match target.execute(&self.command, &self.args, self.verbose, &output_path) {
+        match target.execute(
+            &self.command,
+            &self.args,
+            self.verbose,
+            &output_path,
+            envs.into_map(),
+        ) {
             Ok(()) => Ok(()),
             Err(e) => Err(Error::TargetProcFailed(LastError(e.to_string())))?,
         }

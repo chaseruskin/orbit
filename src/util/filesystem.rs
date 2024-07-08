@@ -4,6 +4,7 @@ use crate::core::manifest;
 use fs_extra;
 use home::home_dir;
 use ignore::WalkBuilder;
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::env;
 use std::env::current_dir;
@@ -368,10 +369,12 @@ pub fn invoke(
     cmd: &String,
     args: &Vec<String>,
     try_again: bool,
+    envs: HashMap<String, String>,
 ) -> std::io::Result<std::process::Child> {
     match std::process::Command::new(cmd)
         .current_dir(cwd)
         .args(args)
+        .envs(&envs)
         .stdout(std::process::Stdio::inherit())
         .stderr(std::process::Stdio::inherit())
         .spawn()
@@ -385,7 +388,7 @@ pub fn invoke(
                     None => true,
                 };
             if repeat == true && e.kind() == std::io::ErrorKind::NotFound {
-                invoke(cwd, &format!("{}.bat", cmd), args, false)
+                invoke(cwd, &format!("{}.bat", cmd), args, false, envs)
             } else {
                 Err(e)
             }

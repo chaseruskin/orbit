@@ -12,7 +12,6 @@ use crate::core::target::Process;
 use crate::core::target::Target;
 use crate::error::Error;
 use crate::error::LastError;
-use crate::util::anyerror::AnyError;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
 use crate::util::environment::ORBIT_BLUEPRINT;
@@ -125,7 +124,7 @@ impl Subcommand<Context> for Build {
             false,
         )?;
 
-        Environment::new()
+        let envs = Environment::new()
             // read config.toml for setting any env variables
             .from_config(c.get_config())?
             // read ip manifest for env variables
@@ -137,20 +136,16 @@ impl Subcommand<Context> for Build {
                     .value(&filesystem::into_std_str(output_path.clone())),
             )
             .add(EnvVar::new().key(ORBIT_TARGET).value(target.get_name()))
-            .initialize();
-
-        // load from .env file from the correct build dir
-        match Environment::new().from_env_file(&output_path) {
-            Ok(r) => r,
-            Err(e) => match self.force {
-                false => return Err(AnyError(format!("failed to read .env file: {}", e)))?,
-                true => Environment::new(),
-            },
-        }
-        .initialize();
+            .from_env_file(&output_path)?;
 
         // run the command from the output path
-        match target.execute(&self.command, &self.args, self.verbose, &output_path) {
+        match target.execute(
+            &self.command,
+            &self.args,
+            self.verbose,
+            &output_path,
+            envs.into_map(),
+        ) {
             Ok(()) => Ok(()),
             Err(e) => Err(Error::TargetProcFailed(LastError(e.to_string())))?,
         }

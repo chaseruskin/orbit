@@ -1,5 +1,6 @@
 use crate::core::config::Config;
 use crate::util::anyerror::Fault;
+use std::collections::HashMap;
 use std::hash::Hash;
 use std::io::Read;
 use std::io::Write;
@@ -117,6 +118,10 @@ impl Environment {
             }
         }
         Ok(self)
+    }
+
+    pub fn into_map(self) -> HashMap<String, String> {
+        self.0.into_iter().map(|v| (v.key, v.value)).collect()
     }
 
     /// Loads environment variables from a target [Ip].

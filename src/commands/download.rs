@@ -201,7 +201,8 @@ impl Download {
                     );
                     // allow the user to handle placing the code in the queue
                     let entry: Protocol = entry.clone().replace_vars_in_args(&vtable);
-                    if let Err(err) = entry.execute(&None, &[], verbose, &std_queue) {
+                    if let Err(err) = entry.execute(&None, &[], verbose, &std_queue, HashMap::new())
+                    {
                         fs::remove_dir_all(queue)?;
                         return Err(Error::ProtocolProcFailed(LastError(err.to_string())))?;
                     }

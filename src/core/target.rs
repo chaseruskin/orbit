@@ -187,6 +187,7 @@ pub trait Process {
         extra_args: &[String],
         verbose: bool,
         cwd: &PathBuf,
+        envs: HashMap<String, String>,
     ) -> Result<(), Fault> {
         // resolve the relative paths in the command and arguments defined in original configuration
         let command = match overloaded_command {
@@ -218,6 +219,7 @@ pub trait Process {
             &command,
             &args,
             Context::enable_windows_bat_file_match(),
+            envs,
         )?;
         let exit_code = proc.wait()?;
         match exit_code.code() {

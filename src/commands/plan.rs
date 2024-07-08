@@ -522,7 +522,10 @@ impl Plan {
             require_bench,
         )?;
         // create a blueprint file
-        println!("info: blueprint created at: {:?}", filesystem::into_std_str(blueprint_path));
+        println!(
+            "info: blueprint created at: {:?}",
+            filesystem::into_std_str(blueprint_path)
+        );
         Ok(())
     }
 }

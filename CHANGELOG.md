@@ -15,9 +15,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.14.0 - unreleased
+## 0.14.0
 
-This update brings a lot of breaking changes, a smoother workflow, and the first initial support for Verilog!
+This update brings a more streamlined command sequence/development process, better error messages, and the first initial support for Verilog!
 
 ### Features
 - initial verilog support includes: module declarations, instantiations, wire declarations, recognition within VHDL files, DST, reading verilog files using `orbit read`, setting them as top level units or testbenches for the build process 

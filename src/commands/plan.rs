@@ -864,7 +864,8 @@ impl Plan {
         _node: &'a IpFileNode,
         _component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
     ) -> Result<(), Fault> {
-        todo!("parse files into nodes")
+        // todo!("parse files into nodes")
+        Ok(())
     }
 
     pub fn create_vhdl_node<'a, 'b>(

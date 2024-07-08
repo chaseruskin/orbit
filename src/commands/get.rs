@@ -25,6 +25,8 @@ use crate::core::lang::Language;
 use crate::core::manifest::Manifest;
 use crate::core::pkgid::PkgPart;
 use crate::core::version::Version;
+use crate::error::Error;
+use crate::error::Hint;
 use crate::util::anyerror::{AnyError, Fault};
 use colored::Colorize;
 use std::env;
@@ -153,11 +155,21 @@ impl Get {
                 if r.is_usable_component() {
                     r
                 } else {
-                    panic!("is not a usable component")
+                    let hint = match is_local {
+                        true => Hint::ShowAvailableUnitsLocal,
+                        false => {
+                            Hint::ShowAvailableUnitsExternal(ip.get_man().get_ip().into_ip_spec())
+                        }
+                    };
+                    return Err(Error::GetUnitNotComponent(r.get_name().to_string(), hint))?;
                 }
             }
             None => {
-                panic!("could not find matching unit")
+                let hint = match is_local {
+                    true => Hint::ShowAvailableUnitsLocal,
+                    false => Hint::ShowAvailableUnitsExternal(ip.get_man().get_ip().into_ip_spec()),
+                };
+                return Err(Error::GetUnitNotFound(self.unit.to_string(), hint))?;
             }
         };
 

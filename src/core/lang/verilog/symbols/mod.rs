@@ -19,6 +19,10 @@ use module::Module;
 
 pub type Statement = Vec<Token<VerilogToken>>;
 
+fn into_tokens(stmt: Statement) -> Vec<VerilogToken> {
+    stmt.into_iter().map(|t| t.take()).collect()
+}
+
 fn statement_to_string(stmt: &Statement) -> String {
     stmt.iter().fold(String::new(), |mut acc, x| {
         acc.push_str(&x.as_type().to_string());
@@ -469,7 +473,7 @@ impl VerilogSymbol {
                         counter += 1;
                     } else if t.as_ref().check_delimiter(&Operator::BrackR) {
                         if counter == 0 {
-                            current_port_config.set_range(sub_stmt.clone());
+                            current_port_config.set_range(into_tokens(sub_stmt.clone()));
                             sub_stmt.clear();
                             state = 0;
                         } else {
@@ -481,7 +485,10 @@ impl VerilogSymbol {
                 2 => {
                     if t.as_ref().check_delimiter(&Operator::Comma) {
                         // set the default for the last known port!
-                        ports.last_mut().unwrap().set_default(sub_stmt.clone());
+                        ports
+                            .last_mut()
+                            .unwrap()
+                            .set_default(into_tokens(sub_stmt.clone()));
                         sub_stmt.clear();
                         state = 0;
                     // parse nested parentheses
@@ -494,7 +501,10 @@ impl VerilogSymbol {
         }
         // fill the final default value if broke out of loop during that state (no more tokens)
         if sub_stmt.is_empty() == false && state == 2 {
-            ports.last_mut().unwrap().set_default(sub_stmt);
+            ports
+                .last_mut()
+                .unwrap()
+                .set_default(into_tokens(sub_stmt.clone()));
         }
         match state >= 0 && counter == 0 {
             true => Some(ports),
@@ -576,7 +586,7 @@ impl VerilogSymbol {
                         counter += 1;
                     } else if t.as_ref().check_delimiter(&Operator::BrackR) {
                         if counter == 0 {
-                            current_param_config.set_range(sub_stmt.clone());
+                            current_param_config.set_range(into_tokens(sub_stmt.clone()));
                             sub_stmt.clear();
                             state = 0;
                         } else {
@@ -588,7 +598,10 @@ impl VerilogSymbol {
                 2 => {
                     if t.as_ref().check_delimiter(&Operator::Comma) {
                         // set the default for the last known port!
-                        params.last_mut().unwrap().set_default(sub_stmt.clone());
+                        params
+                            .last_mut()
+                            .unwrap()
+                            .set_default(into_tokens(sub_stmt.clone()));
                         sub_stmt.clear();
                         state = 0;
                     // parse nested parentheses
@@ -601,7 +614,10 @@ impl VerilogSymbol {
         }
         // fill the final default value if broke out of loop during that state (no more tokens)
         if sub_stmt.is_empty() == false && state == 2 {
-            params.last_mut().unwrap().set_default(sub_stmt);
+            params
+                .last_mut()
+                .unwrap()
+                .set_default(into_tokens(sub_stmt.clone()));
         }
         match state >= 0 && counter == 0 {
             true => Some(params),
@@ -754,12 +770,15 @@ impl VerilogSymbol {
             // collect a range
             } else if t.as_ref().check_delimiter(&Operator::BrackL) {
                 let stmt = Self::parse_until_operator(tokens, t, Operator::BrackR)?;
-                current_param_config.set_range(stmt);
+                current_param_config.set_range(into_tokens(stmt.clone()));
             // collect a default value
             } else if t.as_ref().check_delimiter(&Operator::BlockAssign) {
                 let stmt = Self::parse_assignment(tokens, false)?;
                 // set the default for the last known port!
-                params.last_mut().unwrap().set_default(stmt);
+                params
+                    .last_mut()
+                    .unwrap()
+                    .set_default(into_tokens(stmt.clone()));
             } else if t.as_ref().check_keyword(&Keyword::Reg) {
                 current_param_config.set_reg();
             } else if t.as_ref().check_keyword(&Keyword::Signed) {
@@ -822,12 +841,15 @@ impl VerilogSymbol {
             // collect a range
             } else if t.as_ref().check_delimiter(&Operator::BrackL) {
                 let stmt = Self::parse_until_operator(tokens, t, Operator::BrackR)?;
-                current_port_config.set_range(stmt);
+                current_port_config.set_range(into_tokens(stmt.clone()));
             // collect a default value
             } else if t.as_ref().check_delimiter(&Operator::BlockAssign) {
                 let stmt = Self::parse_assignment(tokens, false)?;
                 // set the default for the last known port!
-                ports.last_mut().unwrap().set_default(stmt);
+                ports
+                    .last_mut()
+                    .unwrap()
+                    .set_default(into_tokens(stmt.clone()));
             } else if t.as_ref().check_keyword(&Keyword::Reg) {
                 current_port_config.set_reg();
             } else if t.as_ref().check_keyword(&Keyword::Signed) {

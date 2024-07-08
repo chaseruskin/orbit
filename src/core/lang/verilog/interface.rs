@@ -1,12 +1,69 @@
-use crate::core::lang::lexer::Token;
-
 use super::{
     symbols::Statement,
-    token::{identifier::Identifier, keyword::Keyword, operator::Operator},
+    token::{identifier::Identifier, keyword::Keyword, operator::Operator, token::VerilogToken},
 };
+
+type Tokens = Vec<VerilogToken>;
 
 pub type PortList = Vec<Port>;
 pub type ParamList = Vec<Port>;
+
+fn tokens_to_string(tokens: &Vec<VerilogToken>) -> String {
+    let mut result = String::new();
+    // determine which delimiters to not add trailing spaces to
+    let is_spaced_token = |d: &Operator| match d {
+        Operator::ParenL
+        | Operator::ParenR
+        | Operator::BrackL
+        | Operator::BrackR
+        | Operator::Dot
+        | Operator::Pow
+        | Operator::Minus
+        | Operator::Plus
+        | Operator::Mult
+        | Operator::Colon
+        | Operator::Div => false,
+        _ => true,
+    };
+    // determine which delimiters to not add have whitespace preceed
+    let no_preceeding_whitespace = |d: &Operator| match d {
+        Operator::Pow | Operator::Comma => true,
+        _ => false,
+    };
+    // iterate through the tokens
+    let mut iter = tokens.iter().peekable();
+    while let Some(t) = iter.next() {
+        // determine if to add trailing space after the token
+        let trailing_space = match t {
+            VerilogToken::Operator(d) => is_spaced_token(d),
+            VerilogToken::Number(n) => false,
+            _ => {
+                // make sure the next token is not a tight token (no-spaced)
+                if let Some(m) = iter.peek() {
+                    match m {
+                        VerilogToken::Operator(d) => is_spaced_token(d),
+                        _ => true,
+                    }
+                } else {
+                    true
+                }
+            }
+        };
+        result.push_str(&t.to_string());
+        if trailing_space == true && iter.peek().is_some() {
+            if let Some(d) = iter.peek().unwrap().as_delimiter() {
+                // skip whitespace addition
+                if no_preceeding_whitespace(d) == true {
+                    continue;
+                }
+            } else if let Some(_n) = iter.peek().unwrap().as_number() {
+                continue;
+            }
+            result.push_str(" ");
+        }
+    }
+    result
+}
 
 pub fn get_port_by_name_mut<'a>(
     port_list: &'a mut PortList,
@@ -94,9 +151,9 @@ pub struct Port {
     net_type: Option<Keyword>,
     is_reg: bool,
     is_signed: bool,
-    range: Option<Statement>,
+    range: Option<Tokens>,
     name: Identifier,
-    value: Option<Statement>,
+    value: Option<Tokens>,
 }
 
 fn display_statement(stmt: &Statement) -> String {
@@ -119,13 +176,15 @@ impl Port {
         result.push(' ');
         result.push_str(&self.name.to_string());
         if let Some(v) = &self.value {
-            result.push_str(&format!(" = {}", display_statement(v)));
+            result.push_str(&format!(" = {}", tokens_to_string(v)));
         }
         result
     }
 
     pub fn display_as_port(&self) -> String {
         let mut result = String::new();
+
+        // display the port direction
         result.push_str(
             &self
                 .direction
@@ -134,6 +193,32 @@ impl Port {
                 .to_string(),
         );
         result.push(' ');
+
+        // display the net type
+        if let Some(n) = &self.net_type {
+            result.push_str(&n.to_string());
+            result.push(' ');
+        }
+
+        // display the reg keyword
+        if self.is_reg == true {
+            result.push_str(&Keyword::Reg.to_string());
+            result.push(' ');
+        }
+
+        // display if signed
+        if self.is_signed == true {
+            result.push_str(&Keyword::Signed.to_string());
+            result.push(' ');
+        }
+
+        // display the range
+        if let Some(r) = &self.range {
+            result.push_str(&tokens_to_string(r));
+            result.push(' ');
+        }
+
+        // display the identifier
         result.push_str(&self.name.to_string());
         result
     }
@@ -181,27 +266,19 @@ impl Port {
 
         if self.range.is_none() {
             if let Some(r) = &rhs.range {
-                self.range = Some(
-                    r.iter()
-                        .map(|f| Token::new(f.as_type().clone(), f.locate().clone()))
-                        .collect(),
-                )
+                self.range = Some(r.clone());
             }
         }
 
         if self.value.is_none() {
             if let Some(r) = &rhs.value {
-                self.value = Some(
-                    r.iter()
-                        .map(|f| Token::new(f.as_type().clone(), f.locate().clone()))
-                        .collect(),
-                )
+                self.value = Some(r.clone());
             }
         }
     }
 
-    pub fn set_default(&mut self, stmt: Statement) {
-        self.value = Some(stmt);
+    pub fn set_default(&mut self, tkns: Tokens) {
+        self.value = Some(tkns);
     }
 
     pub fn clear_default(&mut self) {
@@ -224,7 +301,7 @@ impl Port {
         self.is_signed = true;
     }
 
-    pub fn set_range(&mut self, stmt: Statement) {
-        self.range = Some(stmt);
+    pub fn set_range(&mut self, tkns: Tokens) {
+        self.range = Some(tkns);
     }
 }

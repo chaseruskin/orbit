@@ -7,6 +7,28 @@ pub enum Number {
     Real(String),
 }
 
+impl Number {
+    pub fn is_negative(&self) -> bool {
+        match self {
+            Self::Based(s) => s
+                .chars()
+                .enumerate()
+                .find(|(i, c)| i == &0 && c == &'-')
+                .is_some(),
+            Self::Decimal(s) => s
+                .chars()
+                .enumerate()
+                .find(|(i, c)| i == &0 && c == &'-')
+                .is_some(),
+            Self::Real(s) => s
+                .chars()
+                .enumerate()
+                .find(|(i, c)| i == &0 && c == &'-')
+                .is_some(),
+        }
+    }
+}
+
 impl Display for Number {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(

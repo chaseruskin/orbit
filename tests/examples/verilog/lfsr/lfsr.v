@@ -18,7 +18,7 @@ module LFSR #(parameter NUM_BITS = 5)
    input i_Enable,
 
    // Optional Seed Value
-   input i_Seed_DV,
+   input wire i_Seed_DV,
    input [NUM_BITS-1:0] i_Seed_Data,
 
    output [NUM_BITS-1:0] o_LFSR_Data,

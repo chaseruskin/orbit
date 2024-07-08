@@ -76,6 +76,14 @@ impl VerilogToken {
         }
     }
 
+    /// Accesses the underlying `Number`, if one exists.
+    pub fn as_number(&self) -> Option<&Number> {
+        match self {
+            VerilogToken::Number(num) => Some(num),
+            _ => None,
+        }
+    }
+
     /// Checks if the element is a particular delimiter `d`.
     pub fn check_delimiter(&self, d: &Operator) -> bool {
         match self {

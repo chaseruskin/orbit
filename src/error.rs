@@ -1,7 +1,7 @@
 use colored::Colorize;
 use std::{fmt::Display, path::PathBuf};
 
-use crate::core::blueprint::Scheme;
+use crate::core::{blueprint::Scheme, ip::IpSpec};
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum Error {
@@ -63,6 +63,10 @@ pub enum Error {
     BlueprintPlanNotSupported(Scheme, Vec<Scheme>),
     #[error("blueprint plan \"{0}\" not supported by the current target; no plans are defined so it can only accept \"{1}\"")]
     BlueprintPlanMustBeDefault(Scheme, Scheme),
+    #[error("failed to find unit with matching name \"{0}\"{1}")]
+    GetUnitNotFound(String, Hint),
+    #[error("unit \"{0}\" is not a usable design component{1}")]
+    GetUnitNotComponent(String, Hint),
 }
 
 #[derive(Debug, PartialEq)]
@@ -102,10 +106,19 @@ pub enum Hint {
     IpNameSeparate,
     ResolveDuplicateIds1,
     ResolveDuplicateIds2,
+    ShowAvailableUnitsLocal,
+    ShowAvailableUnitsExternal(IpSpec),
 }
 
 impl Display for Hint {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mixed_prompt = match self {
+            Self::ShowAvailableUnitsExternal(spec) => Some(format!(
+                "use `orbit view {0} --units` to display available units",
+                spec
+            )),
+            _ => None,
+        };
         let message = match self {
             Self::CatalogList => "use `orbit search` to see the list of known ips",
             Self::TargetsList => "use `orbit build --list` to see the list of defined targets",
@@ -115,6 +128,8 @@ impl Display for Hint {
             }
             Self::ResolveDuplicateIds1 => HINT_1,
             Self::ResolveDuplicateIds2 => HINT_2,
+            Self::ShowAvailableUnitsLocal => "use `orbit view --units` to display available units",
+            Self::ShowAvailableUnitsExternal(_) => mixed_prompt.as_ref().unwrap(),
         };
         write!(
             f,

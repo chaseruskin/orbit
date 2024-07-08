@@ -17,7 +17,7 @@ jobs:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
-        pattern: orbit-${{ inputs.version }}-*,orbit-${{ inputs.version }}-checksums
+        pattern: orbit-${{ inputs.version }}-*
 
     - name: Display filesystem contents
       run: ls -R

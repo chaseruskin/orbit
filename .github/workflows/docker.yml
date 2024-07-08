@@ -6,6 +6,10 @@ on:
         description: 'Version released'
         required: true
         type: string
+      is_release:
+        description: 'Is this commit a version being released'
+        required: true
+        type: string
     secrets:
       DOCKER_HUB_USERNAME:
         required: true
@@ -52,7 +56,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
+      - name: Build and push for latest
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -61,6 +65,18 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orbit:latest-ubuntu-22.04
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:latest-ubuntu-22.04
+          cache-to: type=inline
+
+      - name: Build and push for specific version
+        if: ${{ inputs.is_release == '1' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./docker/standalone/ubuntu22/Dockerfile
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orbit:${{ inputs.version }}-ubuntu-22.04
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:${{ inputs.version }}-ubuntu-22.04
           cache-to: type=inline
 
   build-orbit-latest-ubuntu-1804:
@@ -93,6 +109,18 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:latest-ubuntu-18.04
           cache-to: type=inline
 
+      - name: Build and push for specific version
+        if: ${{ inputs.is_release == '1' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./docker/standalone/ubuntu18/Dockerfile
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/orbit:${{ inputs.version }}-ubuntu-18.04
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:${{ inputs.version }}-ubuntu-18.04
+          cache-to: type=inline
+
   build-ghdl-groovy-guitar:
     needs: [build-orbit-latest-ubuntu-2204]
     runs-on: ubuntu-latest
@@ -109,7 +137,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
+      - name: Build and push for latest
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -117,8 +145,23 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/groovy-guitar:latest
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/groovy-guitar:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/groovy-guitar:buildcache,mode=max
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/groovy-guitar:latest-buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/groovy-guitar:latest-buildcache,mode=max
+        
+      - name: Set current date as env variable
+        run: echo "NOW=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Build and push for stable release date
+        if: ${{ inputs.is_release == '1' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./docker/integrated/ghdl/Dockerfile
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/groovy-guitar:${{ env.NOW }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/groovy-guitar:${{ env.NOW }}-buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/groovy-guitar:${{ env.NOW }}-buildcache,mode=max
 
   build-quartus-quiet-quartet:
     needs: [build-orbit-latest-ubuntu-1804]
@@ -136,7 +179,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
+      - name: Build and push for latest
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -146,6 +189,21 @@ jobs:
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/quiet-quartet:latest
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/quiet-quartet:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/quiet-quartet:buildcache,mode=max
+
+      - name: Set current date as env variable
+        run: echo "NOW=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Build and push for stable release date
+        if: ${{ inputs.is_release == '1' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./docker/integrated/quartus/Dockerfile
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/quiet-quartet:${{ env.NOW }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/quiet-quartet:${{ env.NOW }}-buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/quiet-quartet:${{ env.NOW }}-buildcache,mode=max
 
   build-modelsim-melodic-marimba:
     needs: [build-orbit-latest-ubuntu-1804]
@@ -163,7 +221,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push
+      - name: Build and push for latest
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -173,3 +231,18 @@ jobs:
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/melodic-marimba:latest
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/melodic-marimba:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/melodic-marimba:buildcache,mode=max
+
+      - name: Set current date as env variable
+        run: echo "NOW=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      - name: Build and push for stable release date
+        if: ${{ inputs.is_release == '1' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./docker/integrated/modelsim/Dockerfile
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/melodic-marimba:${{ env.NOW }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/melodic-marimba:${{ env.NOW }}-buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/melodic-marimba:${{ env.NOW }}-buildcache,mode=max

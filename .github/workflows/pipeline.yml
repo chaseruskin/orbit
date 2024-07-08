@@ -33,6 +33,7 @@ jobs:
       DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
     with:
       version: ${{ needs.check-release.outputs.version }}
+      is_release: ${{ needs.check-release.outputs.ready }}
 
   release:
     uses: cdotrus/orbit/.github/workflows/release.yml@trunk

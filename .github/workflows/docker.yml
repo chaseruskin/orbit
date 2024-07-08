@@ -17,7 +17,7 @@ on:
         required: true
 
 jobs:
-  build-orbit-latest-ubuntu-2204:
+  build-orbit-ubuntu-2204:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 
@@ -79,7 +79,7 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/orbit:${{ inputs.version }}-ubuntu-22.04
           cache-to: type=inline
 
-  build-orbit-latest-ubuntu-1804:
+  build-orbit-ubuntu-1804:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 
@@ -122,7 +122,7 @@ jobs:
           cache-to: type=inline
 
   build-ghdl-groovy-guitar:
-    needs: [build-orbit-latest-ubuntu-2204]
+    needs: [build-orbit-ubuntu-2204]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 
@@ -164,7 +164,7 @@ jobs:
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/groovy-guitar:${{ env.NOW }}-buildcache,mode=max
 
   build-quartus-quiet-quartet:
-    needs: [build-orbit-latest-ubuntu-1804]
+    needs: [build-orbit-ubuntu-1804]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 
@@ -206,7 +206,7 @@ jobs:
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/quiet-quartet:${{ env.NOW }}-buildcache,mode=max
 
   build-modelsim-melodic-marimba:
-    needs: [build-orbit-latest-ubuntu-1804]
+    needs: [build-orbit-ubuntu-1804]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout 

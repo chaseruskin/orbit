@@ -1,3 +1,3 @@
 #!/bin/sh
 
-echo "### Using orbit version: $(orbit --version) ###"
+echo "### Orbit version: $(orbit --version) ###"

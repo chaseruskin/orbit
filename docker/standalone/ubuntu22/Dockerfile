@@ -1,6 +1,9 @@
 # download base image ubuntu 18.04
 FROM ubuntu:22.04
 
+# Specific commit to use when installing from git
+ARG REV
+
 # LABEL about the custom image
 LABEL maintainer="Chase Ruskin"
 LABEL description="Minimum runtime dependencies for Orbit on Ubuntu 22.04."

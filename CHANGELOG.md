@@ -15,6 +15,14 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.16.0 - unreleased
+
+### Changes
+- viewing design units of a local ip now display the private units by default without having to specify `--all`; private units are typically hidden on views of ip outside the local path
+
+### Fixes
+- properly detects module instances that use the range specificer in verilog and systemverilog files
+
 ## 0.15.0
 
 This update brings initial support for SystemVerilog! Now Orbit can recognize and sort the order of design units across VHDL, Verilog, and SystemVerilog source code.

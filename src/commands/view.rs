@@ -46,6 +46,8 @@ impl Subcommand<Context> for View {
             }
         };
 
+        let mut is_local_ip = false;
+
         // try to auto-determine the ip (check if in a working ip)
         let ip: &Ip = if let Some(spec) = &self.ip {
             // find the path to the provided ip by searching through the catalog
@@ -72,7 +74,10 @@ impl Subcommand<Context> for View {
                 return Err(Error::NoAssumedWorkingIpFound)?;
             } else {
                 match &dev_ip {
-                    Some(Ok(r)) => r,
+                    Some(Ok(r)) => {
+                        is_local_ip = true;
+                        r
+                    },
                     Some(Err(e)) => return Err(AnyError(format!("{}", e.to_string())))?,
                     _ => panic!("unreachable code"),
                 }
@@ -94,7 +99,8 @@ impl Subcommand<Context> for View {
                     "{}",
                     Self::format_units_table(
                         units.into_iter().map(|(_, unit)| unit).collect(),
-                        self.all
+                        self.all,
+                        is_local_ip,
                     )
                 );
             } else {
@@ -158,7 +164,7 @@ impl Subcommand<Context> for View {
 
 impl View {
     /// Creates a string for to display the primary design units for the particular ip.
-    fn format_units_table(table: Vec<LangUnit>, all: bool) -> String {
+    fn format_units_table(table: Vec<LangUnit>, all: bool, is_local_ip: bool) -> String {
         let mut result = String::new();
         let mut table = table;
 
@@ -170,7 +176,7 @@ impl View {
 
         for unit in table {
             // skip this unit if it is not listed public and all is not provided
-            if all == false && unit.get_visibility() != &Visibility::Public {
+            if is_local_ip == false && all == false && unit.get_visibility() != &Visibility::Public {
                 continue;
             }
             result.push_str(&format!(

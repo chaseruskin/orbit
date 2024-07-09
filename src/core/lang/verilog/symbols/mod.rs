@@ -696,9 +696,14 @@ impl VerilogSymbol {
                 }
                 // enter parameters or ports listings
                 1 => {
+                    // take port/parameter list
                     if t.as_ref().check_delimiter(&Operator::ParenL) {
                         counter = 0;
                         state = 3;
+                    // take range specification
+                    } else if t.as_ref().check_delimiter(&Operator::BrackL) {
+                        counter = 0;
+                        state = 4;
                     } else {
                         state = -1;
                     }
@@ -710,6 +715,19 @@ impl VerilogSymbol {
                     } else if t.as_ref().check_delimiter(&Operator::ParenR) {
                         if counter == 0 {
                             state = 0;
+                        } else {
+                            counter -= 1;
+                        }
+                    }
+                }
+                // take until closing bracket
+                4 => { 
+                    if t.as_ref().check_delimiter(&Operator::BrackL) {
+                        counter += 1;
+                    } else if t.as_ref().check_delimiter(&Operator::BrackR) {
+                        if counter == 0 {
+                            // go to state 1 next
+                            state = 1;
                         } else {
                             counter -= 1;
                         }

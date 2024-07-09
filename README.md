@@ -101,6 +101,8 @@ What makes Orbit an agile package manager for HDLs? Here are some of its key fea
 
 - Orbit acts as the intermediary between your source code and back end EDA tools, automating the upkeep process to minimize technical debt as your codebase evolves over time
 
+- Supports VHDL, Verilog, and SystemVerilog hardware description languages
+
 - Reproduce results across any environment with Orbit through its automatic handling of lockfiles and checksums
 
 - Overcome namespace collisions, a problem inherent to VHDL and Verilog, through a custom aglorithm that dynamically transforms conflicting design names called [_dynamic symbol transformation_](https://cdotrus.github.io/orbit/topic/dst.html)

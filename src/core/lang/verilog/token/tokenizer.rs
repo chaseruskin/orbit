@@ -331,7 +331,7 @@ endmodule"#;
             .map(|f| f.unwrap())
             .collect();
         println!("{:?}", tokens);
-        assert_eq!(68, tokens.len());
+        assert_eq!(73, tokens.len());
     }
 
     #[test]
@@ -473,7 +473,7 @@ endmodule"#;
 
     #[test]
     fn ut_directive_valid() {
-        let valid_cases = vec!["`timescale 1ns/1ps", "`MY_MACRO"];
+        let valid_cases = vec!["`timescale 1ns/1ps", "`MY_MACRO <= 2;"];
 
         for s in valid_cases {
             println!("{:?}", s);
@@ -482,7 +482,7 @@ endmodule"#;
                 .map(|f| f.unwrap())
                 .collect();
 
-            assert_eq!(tokens.len(), 2);
+            assert_eq!(tokens.len(), 5);
         }
     }
 

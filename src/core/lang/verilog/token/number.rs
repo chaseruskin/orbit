@@ -5,26 +5,14 @@ pub enum Number {
     Decimal(String),
     Based(String),
     Real(String),
+    Time(String),
 }
 
 impl Number {
-    pub fn is_negative(&self) -> bool {
-        match self {
-            Self::Based(s) => s
-                .chars()
-                .enumerate()
-                .find(|(i, c)| i == &0 && c == &'-')
-                .is_some(),
-            Self::Decimal(s) => s
-                .chars()
-                .enumerate()
-                .find(|(i, c)| i == &0 && c == &'-')
-                .is_some(),
-            Self::Real(s) => s
-                .chars()
-                .enumerate()
-                .find(|(i, c)| i == &0 && c == &'-')
-                .is_some(),
+    pub fn is_valid_time_units(s: &str) -> bool {
+        match s {
+            "s" | "ms" | "us" | "ns" | "ps" | "fs" => true,
+            _ => false,
         }
     }
 }
@@ -38,6 +26,7 @@ impl Display for Number {
                 Self::Decimal(s) => s.to_string(),
                 Self::Based(b) => b.to_string(),
                 Self::Real(r) => r.to_string(),
+                Self::Time(t) => t.to_string(),
             }
         )
     }

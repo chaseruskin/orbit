@@ -37,7 +37,7 @@ impl Identifier {
         match self {
             Self::Basic(s) => Self::Basic(s.clone() + ext),
             Self::Escaped(s) => Self::Escaped(s.clone() + ext),
-            Self::System(s) => Self::System(s.clone() + ext),
+            Self::System(s) => Self::System(s.clone()),
         }
     }
 
@@ -99,7 +99,7 @@ impl FromStr for Identifier {
                     }
                 }
             }),
-            None => panic!("No more characters"),
+            None => panic!("no more characters"),
         }
     }
 }

@@ -276,20 +276,20 @@ impl VerilogToken {
     pub fn consume_compiler_directive(
         train: &mut TrainCar<impl Iterator<Item = char>>,
     ) -> Result<Self, VerilogError> {
-        let mut word = Self::consume_value_pattern(train, None, char_set::is_identifier_character)?;
+        let word = Self::consume_value_pattern(train, None, char_set::is_identifier_character)?;
         match word.as_ref() {
-            // consume the remaining characters on the line (if exists)
-            "define" | "include" | "timescale" | "ifdef" | "else" | "endif" => {
-                while let Some(c) = train.consume() {
-                    // cannot be vt, cr (\r), lf (\n)
-                    if c == '\u{000B}' || c == '\u{000D}' || c == '\u{000A}' {
-                        break;
-                    } else {
-                        word.push(c);
-                    }
-                }
-                Ok(Self::Directive(word))
-            }
+            // // consume the remaining characters on the line (if exists)
+            // "define" | "include" | "timescale" | "ifdef" | "else" | "endif" => {
+            //     while let Some(c) = train.consume() {
+            //         // cannot be vt, cr (\r), lf (\n)
+            //         if c == '\u{000B}' || c == '\u{000D}' || c == '\u{000A}' {
+            //             break;
+            //         } else {
+            //             word.push(c);
+            //         }
+            //     }
+            //     Ok(Self::Directive(word))
+            // }
             // a sequence of characters must follow the grave accent
             "" => Err(VerilogError::EmptyCompilerDirective),
             // assumed it was used to call macro identifier
@@ -497,22 +497,51 @@ impl VerilogToken {
                     }
                 } else {
                     let mut d = *c;
-                    if char_set::is_letter(&d) == true {
-                        return Err(VerilogError::InvalidCharInNumber(d));
-                    }
-                    // consume any whitespace
-                    while char_set::is_whitespace(&d) == true {
-                        number.push(train.consume().unwrap());
+                    // consume characters
+                    let mut time_unit = String::new();
+                    while char_set::is_letter(&d) == true {
+                        time_unit.push(train.consume().unwrap());
                         if let Some(f) = train.peek() {
                             d = *f;
                         } else {
+                            break;
+                        }
+                    }
+                    // skip any whitespace
+                    while char_set::is_whitespace(&d) == true {
+                        train.consume().unwrap();
+                        if let Some(f) = train.peek() {
+                            d = *f;
+                        } else {
+                            // verify the units are legal
+                            if time_unit.is_empty() == false {
+                                if Number::is_valid_time_units(&time_unit) == true {
+                                    number.push_str(&time_unit);
+                                    return Ok(Self::Number(Number::Time(number.to_string())));
+                                } else {
+                                    return Err(VerilogError::InvalidCharInNumber(
+                                        time_unit.chars().next().unwrap(),
+                                    ));
+                                }
+                            }
                             // no more characters
-                            return Ok(Self::Number(Number::Decimal(number.trim().to_string())));
+                            return Ok(Self::Number(Number::Decimal(number.to_string())));
                         }
                     }
                     // check the next character
                     if d != char_set::SINGLE_QUOTE {
-                        return Ok(Self::Number(Number::Decimal(number.trim().to_string())));
+                        // verify the units are legal
+                        if time_unit.is_empty() == false {
+                            if Number::is_valid_time_units(&time_unit) == true {
+                                number.push_str(&time_unit);
+                                return Ok(Self::Number(Number::Time(number.to_string())));
+                            } else {
+                                return Err(VerilogError::InvalidCharInNumber(
+                                    time_unit.chars().next().unwrap(),
+                                ));
+                            }
+                        }
+                        return Ok(Self::Number(Number::Decimal(number.to_string())));
                     } else {
                         number.push(train.consume().unwrap());
                     }

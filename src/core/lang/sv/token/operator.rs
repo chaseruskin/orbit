@@ -1,0 +1,231 @@
+use std::fmt::Display;
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum Operator {
+    ConcatL,
+    ConcatR,
+    ReplicateL,
+    ReplicateR,
+    Plus,
+    Minus,
+    Mult,
+    Div,
+    Pow,
+    Modulus,
+    Lt,
+    Gt,
+    Lte,
+    Gte,
+    LogicNeg,
+    LogicAnd,
+    LogicOr,
+    LogicEq,
+    LogicIneq,
+    CaseEq,
+    CaseIneq,
+    BitNeg,
+    BitReductAnd,
+    BitReductOr,
+    BitReductXor,
+    BitEquivReductXnor1,
+    BitEquivReductXnor2,
+    ReductNand,
+    ReductNor,
+    LogicShiftL,
+    LogicShiftR,
+    ArithShiftL,
+    ArithShiftR,
+    Question,
+    Colon,
+    // not operators per say, but they are delimiters
+    Comma,
+    Terminator,
+    ParenL,
+    ParenR,
+    Dot,
+    BrackL,
+    BrackR,
+    Pound,
+    BlockAssign,
+    At,
+    AttrL,
+    AttrR,
+    GraveAccent,
+    // SV additions
+    DoublePlus,         // ++
+    DoubleMinus,        // --
+    DoubleEqQuestion,   // ==?
+    NotEqQuestion,      // !=?
+    ArrowR,             // ->
+    DoubleArrow,        // <->
+    QuestionColon,      // ?:
+    TripleShiftAssignR, // >>>=
+    TripleShiftAssignL, // <<<=
+    DoubleShiftAssignR, // >>=
+    DoubleShiftAssignL, // <<=
+    AndAssign,          // &=
+    OrAssign,           // |=
+    XorAssign,          // ^=
+    ModuloAssign,       // %=
+    AddAssign,          // +=
+    SubAssign,          // -=
+    MultAssign,         // *=
+    DivAssign,          // /=
+    ScopeResolution,    // ::
+}
+
+impl Operator {
+    /// Attempts to match the given string of characters `s` to a Verilog operator.
+    pub fn transform(s: &str) -> Option<Self> {
+        Some(match s {
+            "{" => Self::ConcatL,
+            "}" => Self::ConcatR,
+            "{{" => Self::ReplicateL,
+            "}}" => Self::ReplicateR,
+            "+" => Self::Plus,
+            "-" => Self::Minus,
+            "*" => Self::Mult,
+            "/" => Self::Div,
+            "**" => Self::Pow,
+            "%" => Self::Modulus,
+            "<" => Self::Lt,
+            ">" => Self::Gt,
+            "<=" => Self::Lte,
+            ">=" => Self::Gte,
+            "!" => Self::LogicNeg,
+            "&&" => Self::LogicAnd,
+            "||" => Self::LogicOr,
+            "==" => Self::LogicEq,
+            "!=" => Self::LogicIneq,
+            "===" => Self::CaseEq,
+            "!==" => Self::CaseIneq,
+            "~" => Self::BitNeg,
+            "&" => Self::BitReductAnd,
+            "|" => Self::BitReductOr,
+            "^" => Self::BitReductXor,
+            "^~" => Self::BitEquivReductXnor1,
+            "~^" => Self::BitEquivReductXnor2,
+            "~&" => Self::ReductNand,
+            "~|" => Self::ReductNor,
+            "<<" => Self::LogicShiftL,
+            ">>" => Self::LogicShiftR,
+            "<<<" => Self::ArithShiftL,
+            ">>>" => Self::ArithShiftR,
+            "?" => Self::Question,
+            ":" => Self::Colon,
+            "," => Self::Comma,
+            ";" => Self::Terminator,
+            "(" => Self::ParenL,
+            ")" => Self::ParenR,
+            "." => Self::Dot,
+            "[" => Self::BrackL,
+            "]" => Self::BrackR,
+            "#" => Self::Pound,
+            "=" => Self::BlockAssign,
+            "@" => Self::At,
+            "(*" => Self::AttrL,
+            "*)" => Self::AttrR,
+            "`" => Self::GraveAccent,
+            "++" => Self::DoublePlus,
+            "--" => Self::DoubleMinus,
+            "==?" => Self::DoubleEqQuestion,
+            "!=?" => Self::NotEqQuestion,
+            "->" => Self::ArrowR,
+            "<->" => Self::DoubleArrow,
+            "?:" => Self::QuestionColon,
+            ">>>=" => Self::TripleShiftAssignR,
+            "<<<=" => Self::TripleShiftAssignL,
+            ">>=" => Self::DoubleShiftAssignR,
+            "<<=" => Self::DoubleShiftAssignL,
+            "&=" => Self::AndAssign,
+            "|=" => Self::OrAssign,
+            "^=" => Self::XorAssign,
+            "%=" => Self::ModuloAssign,
+            "+=" => Self::AddAssign,
+            "-=" => Self::SubAssign,
+            "*=" => Self::MultAssign,
+            "/=" => Self::DivAssign,
+            "::" => Self::ScopeResolution,
+            _ => return None,
+        })
+    }
+
+    fn as_str(&self) -> &str {
+        match self {
+            Self::ConcatL => "{",
+            Self::ConcatR => "}",
+            Self::ReplicateL => "{{",
+            Self::ReplicateR => "}}",
+            Self::Plus => "+",
+            Self::Minus => "-",
+            Self::Mult => "*",
+            Self::Div => "/",
+            Self::Pow => "**",
+            Self::Modulus => "%",
+            Self::Lt => "<",
+            Self::Gt => ">",
+            Self::Lte => "<=",
+            Self::Gte => ">=",
+            Self::LogicNeg => "!",
+            Self::LogicAnd => "&&",
+            Self::LogicOr => "||",
+            Self::LogicEq => "==",
+            Self::LogicIneq => "!=",
+            Self::CaseEq => "===",
+            Self::CaseIneq => "!==",
+            Self::BitNeg => "~",
+            Self::BitReductAnd => "&",
+            Self::BitReductOr => "|",
+            Self::BitReductXor => "^",
+            Self::BitEquivReductXnor1 => "^~",
+            Self::BitEquivReductXnor2 => "~^",
+            Self::ReductNand => "~&",
+            Self::ReductNor => "~|",
+            Self::LogicShiftL => "<<",
+            Self::LogicShiftR => ">>",
+            Self::ArithShiftL => "<<<",
+            Self::ArithShiftR => ">>>",
+            Self::Question => "?",
+            Self::Colon => ":",
+            Self::Comma => ",",
+            Self::Terminator => ";",
+            Self::ParenL => "(",
+            Self::ParenR => ")",
+            Self::Dot => ".",
+            Self::BrackL => "[",
+            Self::BrackR => "]",
+            Self::Pound => "#",
+            Self::BlockAssign => "=",
+            Self::At => "@",
+            Self::AttrL => "(*",
+            Self::AttrR => "*)",
+            Self::GraveAccent => "`",
+            Self::DoublePlus => "++",
+            Self::DoubleMinus => "--",
+            Self::DoubleEqQuestion => "==?",
+            Self::NotEqQuestion => "!=?",
+            Self::ArrowR => "->",
+            Self::DoubleArrow => "<->",
+            Self::QuestionColon => "?:",
+            Self::TripleShiftAssignR => ">>>=",
+            Self::TripleShiftAssignL => "<<<=",
+            Self::DoubleShiftAssignR => ">>=",
+            Self::DoubleShiftAssignL => "<<=",
+            Self::AndAssign => "&=",
+            Self::OrAssign => "|=",
+            Self::XorAssign => "^=",
+            Self::ModuloAssign => "%=",
+            Self::AddAssign => "+=",
+            Self::SubAssign => "-=",
+            Self::MultAssign => "*=",
+            Self::DivAssign => "/=",
+            Self::ScopeResolution => "::",
+        }
+    }
+}
+
+impl Display for Operator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}

@@ -6,6 +6,8 @@ pub enum Number {
     Based(String),
     Real(String),
     Time(String),
+    Unbased(String),
+    OnlyBase(String),
 }
 
 impl Number {
@@ -27,6 +29,8 @@ impl Display for Number {
                 Self::Based(b) => b.to_string(),
                 Self::Real(r) => r.to_string(),
                 Self::Time(t) => t.to_string(),
+                Self::Unbased(t) => t.to_string(),
+                Self::OnlyBase(t) => t.to_string(),
             }
         )
     }

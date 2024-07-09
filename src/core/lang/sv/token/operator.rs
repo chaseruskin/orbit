@@ -72,6 +72,7 @@ pub enum Operator {
     MultAssign,         // *=
     DivAssign,          // /=
     ScopeResolution,    // ::
+    SingleQuote,
 }
 
 impl Operator {
@@ -146,6 +147,7 @@ impl Operator {
             "*=" => Self::MultAssign,
             "/=" => Self::DivAssign,
             "::" => Self::ScopeResolution,
+            "'" => Self::SingleQuote,
             _ => return None,
         })
     }
@@ -220,6 +222,7 @@ impl Operator {
             Self::MultAssign => "*=",
             Self::DivAssign => "/=",
             Self::ScopeResolution => "::",
+            Self::SingleQuote => "'",
         }
     }
 }

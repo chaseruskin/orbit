@@ -19,15 +19,18 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::hash::Hash;
 use std::str::FromStr;
+use sv::symbols::SystemVerilogSymbol;
 use toml_edit::InlineTable;
 use verilog::symbols::VerilogSymbol;
 use vhdl::symbols::VhdlSymbol;
 
-type VhdlIdentifier = vhdl::token::Identifier;
+type VhdlIdentifier = vhdl::token::identifier::Identifier;
+type SystemVerilogIdentifier = sv::token::identifier::Identifier;
 type VerilogIdentifier = verilog::token::identifier::Identifier;
 
 type VhdlPrimaryUnit = vhdl::primaryunit::PrimaryUnit;
 type VerilogPrimaryUnit = verilog::primaryunit::PrimaryUnit;
+type SystemVerilogPrimaryUnit = sv::primaryunit::PrimaryUnit;
 
 use super::pubfile::{PublicList, Visibility};
 
@@ -163,6 +166,7 @@ impl SharedData {
 pub enum LangUnit {
     Vhdl(VhdlPrimaryUnit, SharedData),
     Verilog(VerilogPrimaryUnit, SharedData),
+    SystemVerilog(SystemVerilogPrimaryUnit, SharedData),
 }
 
 impl LangUnit {
@@ -170,6 +174,7 @@ impl LangUnit {
         match &self {
             Self::Verilog(m, _) => m.get_unit().is_usable_component().is_some(),
             Self::Vhdl(m, _) => m.get_unit().is_usable_component().is_some(),
+            Self::SystemVerilog(m, _) => m.get_unit().is_usable_component().is_some(),
         }
     }
 
@@ -182,6 +187,7 @@ impl LangUnit {
         match &self {
             Self::Vhdl(_, sd) => sd.get_visibility(),
             Self::Verilog(_, sd) => sd.get_visibility(),
+            Self::SystemVerilog(_, ds) => ds.get_visibility(),
         }
     }
 
@@ -189,6 +195,7 @@ impl LangUnit {
         match self {
             Self::Vhdl(_, sd) => sd.set_visibility(v),
             Self::Verilog(_, sd) => sd.set_visibility(v),
+            Self::SystemVerilog(_, ds) => ds.set_visibility(v),
         };
     }
 
@@ -197,6 +204,7 @@ impl LangUnit {
         match &self {
             Self::Vhdl(u, _) => LangIdentifier::Vhdl(u.get_iden().clone()),
             Self::Verilog(u, _) => LangIdentifier::Verilog(u.get_name().clone()),
+            Self::SystemVerilog(u, _) => LangIdentifier::SystemVerilog(u.get_name().clone()),
         }
     }
 
@@ -205,6 +213,7 @@ impl LangUnit {
         match &self {
             Self::Vhdl(_, _) => Lang::Vhdl,
             Self::Verilog(_, _) => Lang::Verilog,
+            Self::SystemVerilog(_, _) => Lang::SystemVerilog,
         }
     }
 
@@ -212,20 +221,28 @@ impl LangUnit {
         match &self {
             Self::Vhdl(u, _) => u.get_unit().get_source_file(),
             Self::Verilog(u, _) => u.get_unit().get_source_file(),
+            Self::SystemVerilog(u, _) => u.get_unit().get_source_file(),
         }
     }
 
     pub fn get_vhdl_symbol(&self) -> Option<&VhdlSymbol> {
         match &self {
             Self::Vhdl(u, _) => u.get_unit().get_symbol(),
-            Self::Verilog(_, _) => None,
+            _ => None,
         }
     }
 
     pub fn get_verilog_symbol(&self) -> Option<&VerilogSymbol> {
         match &self {
-            Self::Vhdl(_, _) => None,
             Self::Verilog(u, _) => u.get_unit().get_symbol(),
+            _ => None,
+        }
+    }
+
+    pub fn get_systemverilog_symbol(&self) -> Option<&SystemVerilogSymbol> {
+        match &self {
+            Self::SystemVerilog(u, _) => u.get_unit().get_symbol(),
+            _ => None,
         }
     }
 
@@ -240,6 +257,14 @@ impl LangUnit {
                 None => Vec::new(),
             },
             Self::Verilog(u, _) => match u.get_unit().get_symbol() {
+                Some(sym) => sym
+                    .get_refs()
+                    .into_iter()
+                    .map(|f| f.get_suffix().clone())
+                    .collect(),
+                None => Vec::new(),
+            },
+            Self::SystemVerilog(u, _) => match u.get_unit().get_symbol() {
                 Some(sym) => sym
                     .get_refs()
                     .into_iter()
@@ -303,6 +328,7 @@ impl Display for LangUnit {
         match &self {
             Self::Vhdl(u, _) => write!(f, "{}", u),
             Self::Verilog(u, _) => write!(f, "{}", u),
+            Self::SystemVerilog(u, _) => write!(f, "{}", u),
         }
     }
 }
@@ -311,6 +337,7 @@ impl Display for LangUnit {
 pub enum LangIdentifier {
     Vhdl(VhdlIdentifier),
     Verilog(VerilogIdentifier),
+    SystemVerilog(SystemVerilogIdentifier),
 }
 
 impl PartialEq for LangIdentifier {
@@ -319,10 +346,17 @@ impl PartialEq for LangIdentifier {
             Self::Vhdl(l_vhdl_name) => match &other {
                 Self::Vhdl(r_vhdl_name) => l_vhdl_name == r_vhdl_name,
                 Self::Verilog(r_verilog_name) => l_vhdl_name.as_str() == r_verilog_name.as_str(),
+                Self::SystemVerilog(r_sv_name) => l_vhdl_name.as_str() == r_sv_name.as_str(),
             },
             Self::Verilog(l_verilog_name) => match &other {
                 Self::Verilog(r_verilog_name) => l_verilog_name == r_verilog_name,
                 Self::Vhdl(r_vhdl_name) => l_verilog_name.as_str() == r_vhdl_name.as_str(),
+                Self::SystemVerilog(r_sv_name) => l_verilog_name == r_sv_name,
+            },
+            Self::SystemVerilog(l_sv_name) => match &other {
+                Self::SystemVerilog(r_sv_name) => l_sv_name == r_sv_name,
+                Self::Verilog(r_verilog_name) => l_sv_name == r_verilog_name,
+                Self::Vhdl(r_vhdl_name) => l_sv_name.as_str() == r_vhdl_name.as_str(),
             },
         }
     }
@@ -369,6 +403,7 @@ impl LangIdentifier {
         match &self {
             Self::Verilog(name) => name.as_str(),
             Self::Vhdl(name) => name.as_str(),
+            Self::SystemVerilog(name) => name.as_str(),
         }
     }
 }
@@ -378,6 +413,7 @@ impl Display for LangIdentifier {
         match &self {
             Self::Vhdl(u) => write!(f, "{}", u),
             Self::Verilog(u) => write!(f, "{}", u),
+            Self::SystemVerilog(u) => write!(f, "{}", u),
         }
     }
 }
@@ -398,8 +434,14 @@ pub fn collect_units(
         false => HashMap::new(),
     };
 
+    let systemverilog_units = match lang_mode.supports_systemverilog() {
+        true => sv::primaryunit::collect_units(&files)?,
+        false => HashMap::new(),
+    };
+
     // merge the two results into a common struct
-    let mut results = HashMap::with_capacity(vhdl_units.len() + verilog_units.len());
+    let mut results =
+        HashMap::with_capacity(vhdl_units.len() + verilog_units.len() + systemverilog_units.len());
     for (k, v) in vhdl_units {
         results.insert(
             LangIdentifier::Vhdl(k),
@@ -411,6 +453,22 @@ pub fn collect_units(
         let existing = results.insert(
             LangIdentifier::Verilog(k),
             LangUnit::Verilog(v, SharedData::new()),
+        );
+        if let Some(existing_unit) = existing {
+            // return duplicate id error
+            return Err(Error::DuplicateIdentifiersCrossLang(
+                existing_unit.get_name().to_string(),
+                existing_unit.get_source_file().to_string(),
+                source_file,
+                Hint::ResolveDuplicateIds1,
+            ))?;
+        }
+    }
+    for (k, v) in systemverilog_units {
+        let source_file = v.get_unit().get_source_file().to_string();
+        let existing = results.insert(
+            LangIdentifier::SystemVerilog(k),
+            LangUnit::SystemVerilog(v, SharedData::new()),
         );
         if let Some(existing_unit) = existing {
             // return duplicate id error

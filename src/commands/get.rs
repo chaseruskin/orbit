@@ -185,9 +185,13 @@ impl Get {
                 &ip,
                 unit.get_verilog_symbol().unwrap().as_module().unwrap(),
             ),
-            Lang::SystemVerilog => {
-                todo!()
-            }
+            Lang::SystemVerilog => self.display_verilog_module(
+                &ip,
+                unit.get_systemverilog_symbol()
+                    .unwrap()
+                    .as_module()
+                    .unwrap(),
+            ),
         }?;
 
         // let ent = match Self::fetch_entity(&self.unit, &dir, &man) {

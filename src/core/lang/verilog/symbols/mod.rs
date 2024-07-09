@@ -1,15 +1,16 @@
 use std::iter::Peekable;
 
+use super::super::sv::token::operator::Operator;
 use super::error::VerilogError;
 use super::interface::{self, ParamList};
 use super::token::identifier::Identifier;
-use super::token::operator::Operator;
 use super::token::tokenizer::VerilogTokenizer;
 use crate::core::lang::lexer::{Position, Token};
 use crate::core::lang::parser::{Parse, Symbol};
 use crate::core::lang::reference::{CompoundIdentifier, RefSet};
+use crate::core::lang::sv::token::keyword::Keyword;
+use crate::core::lang::sv::token::token::SystemVerilogToken;
 use crate::core::lang::verilog::interface::{Port, PortList};
-use crate::core::lang::verilog::token::keyword::Keyword;
 use crate::core::lang::verilog::token::token::VerilogToken;
 use std::str::FromStr;
 
@@ -17,9 +18,9 @@ pub mod module;
 
 use module::Module;
 
-pub type Statement = Vec<Token<VerilogToken>>;
+pub type Statement = Vec<Token<SystemVerilogToken>>;
 
-fn into_tokens(stmt: Statement) -> Vec<VerilogToken> {
+fn into_tokens(stmt: Statement) -> Vec<SystemVerilogToken> {
     stmt.into_iter().map(|t| t.take()).collect()
 }
 
@@ -110,17 +111,20 @@ impl Parse<VerilogToken> for VerilogParser {
     fn parse(
         tokens: Vec<Token<VerilogToken>>,
     ) -> Vec<Result<Symbol<Self::SymbolType>, Self::SymbolError>> {
+        let tokens: Vec<Token<SystemVerilogToken>> = tokens
+            .into_iter()
+            .map(|m| {
+                let (pos, tkn) = m.decouple();
+                Token::new(SystemVerilogToken::from(tkn), pos)
+            })
+            .collect();
+
         let mut symbols = Vec::new();
         let mut tokens = tokens.into_iter().peekable();
 
         while let Some(t) = tokens.next() {
-            // println!("{:?}", t);
-            // take directives and ignore if okay
-            if t.as_ref().is_directive() == true {
-                continue;
-            }
             // take attribute and ignore if okay
-            else if t.as_ref().check_delimiter(&Operator::AttrL) {
+            if t.as_ref().check_delimiter(&Operator::AttrL) {
                 match VerilogSymbol::parse_attr(&mut tokens, t.into_position()) {
                     Ok(_) => (),
                     Err(e) => symbols.push(Err(e)),
@@ -162,7 +166,7 @@ impl VerilogSymbol {
     //     pos: Position,
     // ) -> Result<(), VerilogError>
     // where
-    //     I: Iterator<Item = Token<VerilogToken>>,
+    //     I: Iterator<Item = Token<SystemVerilogToken>>,
     // {
     //     // take until a newline (this is not formally correct but will be OK for now)
     //     while let Some(t) = tokens.peek() {
@@ -180,7 +184,7 @@ impl VerilogSymbol {
         take_separator: bool,
     ) -> Result<Statement, VerilogError>
     where
-        I: Iterator<Item = Token<VerilogToken>>,
+        I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         let mut stmt = Vec::new();
         // keep taking tokens until the closing attribute
@@ -212,11 +216,11 @@ impl VerilogSymbol {
 
     fn parse_until_operator<I>(
         tokens: &mut Peekable<I>,
-        beg_t: Token<VerilogToken>,
+        beg_t: Token<SystemVerilogToken>,
         end_op: Operator,
     ) -> Result<Statement, VerilogError>
     where
-        I: Iterator<Item = Token<VerilogToken>>,
+        I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         let mut counter = 0;
         let mut stmt = vec![beg_t];
@@ -256,9 +260,12 @@ impl VerilogSymbol {
 
     fn parse_attr<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Statement, VerilogError>
     where
-        I: Iterator<Item = Token<VerilogToken>>,
+        I: Iterator<Item = Token<SystemVerilogToken>>,
     {
-        let mut stmt = vec![Token::new(VerilogToken::Operator(Operator::AttrL), pos)];
+        let mut stmt = vec![Token::new(
+            SystemVerilogToken::Operator(Operator::AttrL),
+            pos,
+        )];
         // keep taking tokens until the closing attribute
         while let Some(t) = tokens.next() {
             if t.as_ref().check_delimiter(&Operator::AttrR) == true {
@@ -280,7 +287,7 @@ impl VerilogSymbol {
         pos: Position,
     ) -> Result<VerilogSymbol, VerilogError>
     where
-        I: Iterator<Item = Token<VerilogToken>>,
+        I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         Ok(VerilogSymbol::Module(Module::from_tokens(tokens, pos)?))
     }
@@ -289,7 +296,7 @@ impl VerilogSymbol {
         tokens: &mut Peekable<I>,
     ) -> Result<(ParamList, PortList, RefSet), VerilogError>
     where
-        I: Iterator<Item = Token<VerilogToken>>,
+        I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         let mut param_list = ParamList::new();
         let mut port_list = PortList::new();
@@ -328,7 +335,7 @@ impl VerilogSymbol {
         tokens: &mut Peekable<I>,
     ) -> Result<(ParamList, PortList, RefSet, RefSet), VerilogError>
     where
-        I: Iterator<Item = Token<VerilogToken>>,
+        I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         let mut params = ParamList::new();
         let mut ports = PortList::new();
@@ -437,12 +444,15 @@ impl VerilogSymbol {
         let mut counter = 0;
         let mut state = 0;
         let mut sub_stmt = Statement::new();
-        let mut stmt_iter = stmt.iter();
-        while let Some(t) = stmt_iter.next() {
+        let mut stmt_iter = stmt.iter().enumerate();
+        while let Some((i, t)) = stmt_iter.next() {
             match state {
                 0 => {
                     // we are dealing with a param list
                     if let Some(name) = t.as_ref().as_identifier() {
+                        if i == 0 {
+                            state = -1;
+                        }
                         // collect all names until something else is hit
                         ports.push(Port::with(name.clone()));
                         ports.last_mut().unwrap().inherit(&current_port_config);
@@ -471,6 +481,8 @@ impl VerilogSymbol {
                         current_port_config.set_signed();
                     } else if Self::is_valid_net_type(t.as_ref().as_keyword()) {
                         current_port_config.set_net_type(t.as_ref().as_keyword().unwrap().clone());
+                    } else if Self::is_valid_data_type(t.as_ref()) {
+                        current_port_config.set_data_type(t.as_ref().clone());
                     } else {
                         state = -1;
                     }
@@ -541,6 +553,29 @@ impl VerilogSymbol {
             | Keyword::Wand
             | Keyword::Wor => true,
             _ => false,
+        }
+    }
+
+    fn is_valid_data_type(tkn: &SystemVerilogToken) -> bool {
+        match tkn.as_identifier().is_some() {
+            true => true,
+            false => match tkn.as_keyword() {
+                Some(kw) => match kw {
+                    Keyword::Integer
+                    | Keyword::Real
+                    | Keyword::Time
+                    | Keyword::Realtime
+                    | Keyword::Logic
+                    | Keyword::Bit
+                    | Keyword::Byte
+                    | Keyword::Shortint
+                    | Keyword::Int
+                    | Keyword::Longint
+                    | Keyword::Shortreal => true,
+                    _ => false,
+                },
+                None => false,
+            },
         }
     }
 
@@ -690,9 +725,9 @@ impl VerilogSymbol {
     }
 
     /// Checks if this is special token to take a statement using parentheses
-    fn is_start_to_parentheses_statement(t: &VerilogToken) -> bool {
+    fn is_start_to_parentheses_statement(t: &SystemVerilogToken) -> bool {
         match t {
-            VerilogToken::Keyword(k) => match k {
+            SystemVerilogToken::Keyword(k) => match k {
                 Keyword::If
                 | Keyword::For
                 | Keyword::Casex
@@ -702,7 +737,7 @@ impl VerilogSymbol {
                 | Keyword::Case => true,
                 _ => false,
             },
-            VerilogToken::Operator(o) => match o {
+            SystemVerilogToken::Operator(o) => match o {
                 Operator::At => true,
                 _ => false,
             },
@@ -710,9 +745,9 @@ impl VerilogSymbol {
         }
     }
 
-    fn is_statement_separator(t: &VerilogToken) -> bool {
+    fn is_statement_separator(t: &SystemVerilogToken) -> bool {
         match t {
-            VerilogToken::Keyword(k) => match k {
+            SystemVerilogToken::Keyword(k) => match k {
                 Keyword::Initial
                 | Keyword::Begin
                 | Keyword::End
@@ -728,7 +763,7 @@ impl VerilogSymbol {
                 | Keyword::Endcase => true,
                 _ => false,
             },
-            VerilogToken::Operator(o) => match o {
+            SystemVerilogToken::Operator(o) => match o {
                 Operator::Terminator | Operator::AttrR => true,
                 _ => false,
             },
@@ -740,7 +775,7 @@ impl VerilogSymbol {
         tokens: &mut Peekable<I>,
     ) -> Result<(ParamList, RefSet), VerilogError>
     where
-        I: Iterator<Item = Token<VerilogToken>>,
+        I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         // println!("{}", "PARSE PARAMS");
 
@@ -792,8 +827,10 @@ impl VerilogSymbol {
                 current_param_config.set_reg();
             } else if t.as_ref().check_keyword(&Keyword::Signed) {
                 current_param_config.set_signed();
-            } else if t.as_ref().as_keyword().is_some() {
+            } else if Self::is_valid_net_type(t.as_ref().as_keyword()) {
                 current_param_config.set_net_type(t.as_ref().as_keyword().unwrap().clone());
+            } else if Self::is_valid_data_type(t.as_ref()) {
+                current_param_config.set_data_type(t.as_ref().clone());
             }
         }
         // println!("{:?}", params);
@@ -804,7 +841,7 @@ impl VerilogSymbol {
         tokens: &mut Peekable<I>,
     ) -> Result<(PortList, RefSet), VerilogError>
     where
-        I: Iterator<Item = Token<VerilogToken>>,
+        I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         // println!("{}", "PARSE PORTS");
 
@@ -863,8 +900,10 @@ impl VerilogSymbol {
                 current_port_config.set_reg();
             } else if t.as_ref().check_keyword(&Keyword::Signed) {
                 current_port_config.set_signed();
-            } else if t.as_ref().as_keyword().is_some() {
+            } else if Self::is_valid_net_type(t.as_ref().as_keyword()) {
                 current_port_config.set_net_type(t.as_ref().as_keyword().unwrap().clone());
+            } else if Self::is_valid_data_type(t.as_ref()) {
+                current_port_config.set_data_type(t.as_ref().clone());
             }
         }
         // println!("{:?}", ports);
@@ -875,7 +914,7 @@ impl VerilogSymbol {
         _tokens: &mut Peekable<I>,
     ) -> Result<(Vec<Statement>, Vec<Statement>, RefSet), VerilogError>
     where
-        I: Iterator<Item = Token<VerilogToken>>,
+        I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         todo!()
     }

@@ -18,8 +18,9 @@ use crate::core::manifest;
 use crate::core::version::AnyVersion;
 
 use super::fileset;
+use super::lang::sv::token::tokenizer::SystemVerilogTokenizer;
 use super::lang::verilog::token::tokenizer::VerilogTokenizer;
-use super::lang::{verilog, vhdl, Lang, LangIdentifier};
+use super::lang::{sv, verilog, vhdl, Lang, LangIdentifier};
 use crate::core::lang::Language;
 
 /// Constructs an ip-graph from a lockfile.
@@ -354,7 +355,7 @@ impl<'a> IpNode<'a> {
         // edit all vhdl files
         let files = crate::util::filesystem::gather_current_files(temp_ip.get_root(), false);
         for file in &files {
-            // perform dst on the data
+            // perform dst on the data (VHDL)
             if fileset::is_vhdl(&file) == true {
                 // parse into tokens
                 let vhdl_path = PathBuf::from(file);
@@ -364,6 +365,7 @@ impl<'a> IpNode<'a> {
                 let transform = vhdl::dst::dyn_symbol_transform(&tokens, &lut);
                 // rewrite the file
                 std::fs::write(&vhdl_path, transform).unwrap();
+            // HANDLE VERILOG DST ALGORITHM
             } else if fileset::is_verilog(&file) == true {
                 // parse into tokens
                 let verilog_path = PathBuf::from(file);
@@ -373,8 +375,16 @@ impl<'a> IpNode<'a> {
                 let transform = verilog::dst::dyn_symbol_transform(&tokens, &lut);
                 // rewrite the file
                 std::fs::write(&verilog_path, transform).unwrap();
+            // handle SV DST ALGORITHM
             } else if fileset::is_systemverilog(&file) == true {
-                todo!("dst for systemverilog")
+                // parse into tokens
+                let systemverilog_path = PathBuf::from(file);
+                let code = std::fs::read_to_string(&systemverilog_path).unwrap();
+                let tokens = SystemVerilogTokenizer::from_source_code(&code).into_tokens_all();
+                // perform DYNAMIC SYMBOL TRANSFORM
+                let transform = sv::dst::dyn_symbol_transform(&tokens, &lut);
+                // rewrite the file
+                std::fs::write(&systemverilog_path, transform).unwrap();
             }
         }
         // update the slot with a transformed IP manifest

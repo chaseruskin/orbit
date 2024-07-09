@@ -3,10 +3,11 @@ use std::iter::Peekable;
 use crate::core::lang::{
     lexer::{Position, Token},
     reference::{CompoundIdentifier, RefSet},
+    sv::token::token::SystemVerilogToken,
     verilog::{
         error::VerilogError,
         interface::{self, ParamList, PortList},
-        token::{identifier::Identifier, operator::Operator, token::VerilogToken},
+        token::{identifier::Identifier, operator::Operator},
     },
 };
 
@@ -135,7 +136,7 @@ impl Module {
     /// the END closing statement.
     pub fn from_tokens<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Self, VerilogError>
     where
-        I: Iterator<Item = Token<VerilogToken>>,
+        I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         // take module name
         let mod_name = tokens.next().take().unwrap().take();
@@ -163,7 +164,7 @@ impl Module {
         // println!("{:?}", params);
         Ok(Module {
             name: match mod_name {
-                VerilogToken::Identifier(id) => id,
+                SystemVerilogToken::Identifier(id) => id,
                 // expecting identifier
                 _ => return Err(VerilogError::Vague),
             },

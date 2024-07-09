@@ -50,7 +50,7 @@ pub enum Operator {
     At,
     AttrL,
     AttrR,
-    GraveAccent,
+    SingleQuote,
 }
 
 impl Operator {
@@ -104,7 +104,7 @@ impl Operator {
             "@" => Self::At,
             "(*" => Self::AttrL,
             "*)" => Self::AttrR,
-            "`" => Self::GraveAccent,
+            "'" => Self::SingleQuote,
             _ => return None,
         })
     }
@@ -158,7 +158,7 @@ impl Operator {
             Self::At => "@",
             Self::AttrL => "(*",
             Self::AttrR => "*)",
-            Self::GraveAccent => "`",
+            Self::SingleQuote => "'",
         }
     }
 }

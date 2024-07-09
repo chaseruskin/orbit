@@ -122,7 +122,7 @@ impl Display for Identifier {
         match self {
             Self::Basic(id) => write!(f, "{}", id),
             Self::Escaped(id) => write!(f, "\\{}", id),
-            Self::System(id) => write!(f, "${}", id),
+            Self::System(id) => write!(f, "{}", id),
         }
     }
 }

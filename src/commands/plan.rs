@@ -7,6 +7,7 @@ use crate::core::fileset::Fileset;
 use crate::core::iparchive::IpArchive;
 use crate::core::lang::parser::ParseError;
 use crate::core::lang::reference::CompoundIdentifier;
+use crate::core::lang::sv::symbols::{SystemVerilogParser, SystemVerilogSymbol};
 use crate::core::lang::verilog::symbols::{VerilogParser, VerilogSymbol};
 use crate::core::lang::verilog::token::identifier::Identifier as VerilogIdentifier;
 use crate::core::lang::vhdl::subunit::SubUnit;
@@ -788,7 +789,9 @@ impl Plan {
             .get_map()
             .values()
             .filter_map(|f| {
-                if f.as_ref().get_lang() == Lang::Verilog {
+                if f.as_ref().get_lang() == Lang::Verilog
+                    || f.as_ref().get_lang() == Lang::SystemVerilog
+                {
                     match f.as_ref().get_symbol().as_module() {
                         Some(m) => {
                             if only_components == true {
@@ -863,11 +866,43 @@ impl Plan {
     }
 
     pub fn create_systemverilog_node<'a, 'b>(
-        _graph_map: &'b mut GraphMap<CompoundIdentifier, HdlNode<'a>, ()>,
-        _node: &'a IpFileNode,
-        _component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
+        graph_map: &'b mut GraphMap<CompoundIdentifier, HdlNode<'a>, ()>,
+        node: &'a IpFileNode,
+        component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
     ) -> Result<(), Fault> {
-        // todo!("parse files into nodes")
+        let contents = fs::read_to_string(&node.get_file()).unwrap();
+        let symbols = match SystemVerilogParser::read(&contents) {
+            Ok(s) => s.into_symbols(),
+            Err(e) => Err(ParseError::SourceCodeError(
+                node.get_file().clone(),
+                e.to_string(),
+            ))?,
+        };
+
+        let lib = node.get_library();
+        let vhdl_lib = lib.as_vhdl_name().unwrap().clone();
+        // println!("{} {}", source_file.get_file(), source_file.get_library());
+
+        // add all entities to a graph and store architectures for later analysis
+        symbols.into_iter().for_each(|f| {
+            let name = f.as_name();
+            match f {
+                SystemVerilogSymbol::Module(_) => {
+                    component_pairs.insert(
+                        LangIdentifier::SystemVerilog(name.unwrap().clone()),
+                        LangIdentifier::Vhdl(vhdl_lib.clone()),
+                    );
+                    // add primary design units into the graph
+                    graph_map.add_node(
+                        CompoundIdentifier::new(
+                            lib.clone(),
+                            LangIdentifier::SystemVerilog(name.unwrap().clone()),
+                        ),
+                        HdlNode::new(HdlSymbol::SystemVerilog(f), node),
+                    );
+                }
+            }
+        });
         Ok(())
     }
 
@@ -969,6 +1004,7 @@ impl Plan {
             }
         }
 
+        // add connections for verilog and systemverilog
         Self::connect_edges_from_verilog(&mut graph_map, &mut component_pairs, false);
 
         // go through all architectures and make the connections

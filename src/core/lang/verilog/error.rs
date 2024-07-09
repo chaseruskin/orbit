@@ -1,4 +1,4 @@
-use super::token::{keyword::Keyword, operator::Operator};
+use super::super::sv::token::{keyword::Keyword, operator::Operator};
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]

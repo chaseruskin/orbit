@@ -1,13 +1,13 @@
-use super::token::{
-    identifier::Identifier, keyword::Keyword, operator::Operator, token::VerilogToken,
+use super::super::sv::token::{
+    identifier::Identifier, keyword::Keyword, operator::Operator, token::SystemVerilogToken,
 };
 
-type Tokens = Vec<VerilogToken>;
+type Tokens = Vec<SystemVerilogToken>;
 
 pub type PortList = Vec<Port>;
 pub type ParamList = Vec<Port>;
 
-fn tokens_to_string(tokens: &Vec<VerilogToken>) -> String {
+fn tokens_to_string(tokens: &Vec<SystemVerilogToken>) -> String {
     let mut result = String::new();
     // determine which delimiters to not add trailing spaces to
     let is_spaced_token = |d: &Operator| match d {
@@ -27,7 +27,7 @@ fn tokens_to_string(tokens: &Vec<VerilogToken>) -> String {
 
     // determine which delimiters to not add have whitespace preceed
     let no_preceeding_whitespace = |d: &Operator| match d {
-        Operator::Pow | Operator::Comma => true,
+        Operator::Pow | Operator::Comma | Operator::BrackL => true,
         _ => false,
     };
 
@@ -43,16 +43,16 @@ fn tokens_to_string(tokens: &Vec<VerilogToken>) -> String {
         let mut force_space = false;
         // determine if to add trailing space after the token
         let trailing_space = match t {
-            VerilogToken::Operator(d) => {
+            SystemVerilogToken::Operator(d) => {
                 force_space = force_trailing_whitespace(d);
                 force_space || is_spaced_token(d)
             }
-            VerilogToken::Number(_) => false,
+            SystemVerilogToken::Number(_) => false,
             _ => {
                 // make sure the next token is not a tight token (no-spaced)
                 if let Some(m) = iter.peek() {
                     match m {
-                        VerilogToken::Operator(d) => is_spaced_token(d),
+                        SystemVerilogToken::Operator(d) => is_spaced_token(d),
                         _ => true,
                     }
                 } else {
@@ -181,6 +181,7 @@ pub enum Direction {
 pub struct Port {
     direction: Option<Keyword>,
     net_type: Option<Keyword>,
+    data_type: Option<SystemVerilogToken>,
     is_reg: bool,
     is_signed: bool,
     range: Option<Tokens>,
@@ -236,19 +237,8 @@ impl Port {
             result.push(' ');
         }
 
-        // display the net type
-        if use_mode == true {
-            if let Some(n) = &self.net_type {
-                result.push_str(&n.to_string());
-                result.push(' ');
-            }
-
-            // display the reg keyword
-            if self.is_reg == true {
-                result.push_str(&Keyword::Reg.to_string());
-                result.push(' ');
-            }
-        } else {
+        // we previously omitted the mode
+        if use_mode == false {
             match is_param {
                 true => {
                     result.push_str(
@@ -261,10 +251,29 @@ impl Port {
                     result.push(' ');
                 }
                 false => {
-                    result.push_str(&Keyword::Wire.to_string());
-                    result.push(' ');
+                    if self.data_type.is_none() {
+                        result.push_str(&Keyword::Wire.to_string());
+                        result.push(' ');
+                    }
                 }
             }
+        } else {
+            if let Some(n) = &self.net_type {
+                result.push_str(&n.to_string());
+                result.push(' ');
+            }
+
+            // display the reg keyword
+            if self.is_reg == true {
+                result.push_str(&Keyword::Reg.to_string());
+                result.push(' ');
+            }
+        }
+
+        // display the datatype
+        if let Some(d) = &self.data_type {
+            result.push_str(&d.to_string());
+            result.push(' ');
         }
 
         // display if signed
@@ -275,6 +284,10 @@ impl Port {
 
         // display the range
         if let Some(r) = &self.range {
+            // remove the space the comes before the range
+            if result.is_empty() == false {
+                result.pop();
+            }
             result.push_str(&tokens_to_string(r));
             result.push(' ');
         }
@@ -303,6 +316,7 @@ impl Port {
             is_reg: false,
             is_signed: false,
             range: None,
+            data_type: None,
             name: name,
             value: None,
         }
@@ -314,6 +328,7 @@ impl Port {
             net_type: None,
             is_reg: false,
             is_signed: false,
+            data_type: None,
             range: None,
             name: Identifier::new(),
             value: None,
@@ -327,6 +342,10 @@ impl Port {
 
         if self.net_type.is_none() {
             self.net_type = rhs.net_type.clone();
+        }
+
+        if self.data_type.is_none() {
+            self.data_type = rhs.data_type.clone();
         }
 
         if self.is_reg == false {
@@ -376,5 +395,9 @@ impl Port {
 
     pub fn set_range(&mut self, tkns: Tokens) {
         self.range = Some(tkns);
+    }
+
+    pub fn set_data_type(&mut self, tkn: SystemVerilogToken) {
+        self.data_type = Some(tkn);
     }
 }

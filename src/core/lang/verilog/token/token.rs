@@ -17,7 +17,6 @@ pub enum VerilogToken {
     Comment(Comment),
     Operator(Operator),
     Number(Number),
-    String(String),
     Identifier(Identifier),
     Keyword(Keyword),
     StringLiteral(String),
@@ -34,7 +33,6 @@ impl Display for VerilogToken {
                 Self::Comment(c) => c.to_string(),
                 Self::Operator(o) => o.to_string(),
                 Self::Number(n) => n.to_string(),
-                Self::String(s) => s.to_string(),
                 Self::Identifier(i) => i.to_string(),
                 Self::Keyword(k) => k.to_string(),
                 Self::StringLiteral(s) => s.to_string(),
@@ -483,17 +481,17 @@ impl VerilogToken {
                             let e = train.consume().unwrap();
                             let expon = Self::consume_exponent(train, e)?;
                             number.push_str(&expon);
-                            return Ok(Self::Number(Number::Real(number.trim().to_string())));
+                            return Ok(Self::Number(Number::Real(number.to_string())));
                         // no exponent (so we are done with the number)
                         } else {
-                            return Ok(Self::Number(Number::Real(number.trim().to_string())));
+                            return Ok(Self::Number(Number::Real(number.to_string())));
                         }
                     // take the exponent (no fraction)
                     } else {
                         let e = train.consume().unwrap();
                         let expon = Self::consume_exponent(train, e)?;
                         number.push_str(&expon);
-                        return Ok(Self::Number(Number::Real(number.trim().to_string())));
+                        return Ok(Self::Number(Number::Real(number.to_string())));
                     }
                 } else {
                     let mut d = *c;
@@ -549,14 +547,19 @@ impl VerilogToken {
             }
         } else {
             number.push(c0);
+            if let Some(c) = train.peek() {
+                if c == &'(' {
+                    return Ok(Self::Operator(Operator::SingleQuote));
+                }
+            }
         }
         // handle based constant
 
         // the character to immediately come next must be a valid base specifier
-        if let Some(c) = train.consume() {
+        if let Some(c) = train.peek() {
             match c {
                 's' | 'S' => {
-                    number.push(c);
+                    number.push(train.consume().unwrap());
                     if let Some(c) = train.consume() {
                         match c {
                             'd' | 'D' | 'o' | 'O' | 'h' | 'H' | 'b' | 'B' => number.push(c),
@@ -566,8 +569,21 @@ impl VerilogToken {
                         return Err(VerilogError::MissingBaseSpecifier);
                     }
                 }
-                'd' | 'D' | 'o' | 'O' | 'h' | 'H' | 'b' | 'B' => number.push(c),
-                _ => return Err(VerilogError::InvalidBaseSpecifier(c)),
+                'd' | 'D' | 'o' | 'O' | 'h' | 'H' | 'b' | 'B' => {
+                    number.push(train.consume().unwrap())
+                }
+                // handle unbased
+                '1' | '0' | 'x' | 'X' | 'z' | 'Z' => {
+                    number.push(train.consume().unwrap());
+                    return Ok(Self::Number(Number::Unbased(number.to_string())));
+                }
+                '(' => {
+                    return Ok(Self::Number(Number::OnlyBase(number.to_string())));
+                }
+                _ => {
+                    println!("- {}", c);
+                    return Err(VerilogError::InvalidBaseSpecifier(*c));
+                }
             }
         } else {
             return Err(VerilogError::MissingBaseSpecifier);
@@ -576,7 +592,7 @@ impl VerilogToken {
         if let Some(mut d) = train.peek() {
             // consume any whitespace
             while char_set::is_whitespace(&d) == true {
-                number.push(train.consume().unwrap());
+                train.consume().unwrap();
                 if let Some(f) = train.peek() {
                     d = f;
                 } else {
@@ -599,7 +615,7 @@ impl VerilogToken {
             0 => Err(VerilogError::EmptyBaseConstNumber),
             _ => {
                 number.push_str(&value);
-                Ok(Self::Number(Number::Based(number.trim().to_string())))
+                Ok(Self::Number(Number::Based(number.to_string())))
             }
         }
     }

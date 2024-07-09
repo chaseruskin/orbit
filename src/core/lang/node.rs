@@ -5,6 +5,7 @@ use crate::util::anyerror::AnyError;
 use colored::Colorize;
 
 use super::reference::RefSet;
+use super::sv::symbols::SystemVerilogSymbol;
 use super::verilog::symbols::module::Module;
 use super::verilog::symbols::VerilogSymbol;
 use super::{Lang, LangIdentifier, VhdlIdentifier};
@@ -13,6 +14,7 @@ use super::{Lang, LangIdentifier, VhdlIdentifier};
 pub enum HdlSymbol {
     Verilog(VerilogSymbol),
     Vhdl(VhdlSymbol),
+    SystemVerilog(SystemVerilogSymbol),
     BlackBox(String),
 }
 
@@ -20,6 +22,7 @@ impl HdlSymbol {
     pub fn get_name(&self) -> LangIdentifier {
         match &self {
             Self::Verilog(v) => LangIdentifier::Verilog(v.as_name().unwrap().clone()),
+            Self::SystemVerilog(v) => LangIdentifier::SystemVerilog(v.as_name().unwrap().clone()),
             Self::Vhdl(v) => LangIdentifier::Vhdl(v.get_name().unwrap().clone()),
             Self::BlackBox(s) => LangIdentifier::Vhdl(VhdlIdentifier::Basic(s.to_string())),
         }
@@ -30,6 +33,7 @@ impl HdlSymbol {
         match &self {
             Self::Verilog(v) => v.as_module().is_some(),
             Self::Vhdl(v) => v.as_entity().is_some(),
+            Self::SystemVerilog(v) => v.as_module().is_some(),
             Self::BlackBox(_) => true,
         }
     }
@@ -38,6 +42,7 @@ impl HdlSymbol {
         match &self {
             Self::Verilog(v) => Some(v.get_refs()),
             Self::Vhdl(v) => Some(v.get_refs()),
+            Self::SystemVerilog(v) => Some(v.get_refs()),
             Self::BlackBox(_) => None,
         }
     }
@@ -45,6 +50,7 @@ impl HdlSymbol {
     pub fn as_module(&self) -> Option<&Module> {
         match &self {
             Self::Verilog(v) => v.as_module(),
+            Self::SystemVerilog(v) => v.as_module(),
             _ => None,
         }
     }
@@ -52,6 +58,13 @@ impl HdlSymbol {
     pub fn is_testbench(&self) -> bool {
         match &self {
             Self::Verilog(v) => {
+                if let Some(m) = v.as_module() {
+                    m.is_testbench()
+                } else {
+                    false
+                }
+            }
+            Self::SystemVerilog(v) => {
                 if let Some(m) = v.as_module() {
                     m.is_testbench()
                 } else {
@@ -90,6 +103,7 @@ impl<'a> HdlNode<'a> {
         match self.sym {
             HdlSymbol::Verilog(_) => Lang::Verilog,
             HdlSymbol::Vhdl(_) => Lang::Vhdl,
+            HdlSymbol::SystemVerilog(_) => Lang::SystemVerilog,
             HdlSymbol::BlackBox(_) => Lang::Vhdl,
         }
     }

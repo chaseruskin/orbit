@@ -230,7 +230,7 @@ endmodule
 
 
 //! Top-level for synthesis. Change the comments to synthesize each module.
-module asserted_bit_count
+module \asserted_bit_count
 #(
     parameter int WIDTH = 32
 )

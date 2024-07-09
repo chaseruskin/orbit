@@ -1,3 +1,4 @@
+pub mod identifier;
 pub mod keyword;
 pub mod operator;
 pub mod token;

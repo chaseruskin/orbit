@@ -15,6 +15,16 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.15.0
+
+This update brings initial support for SystemVerilog! Now Orbit can recognize and sort the order of design units across VHDL, Verilog, and SystemVerilog source code.
+
+### Features
+- initial systemverilog support includes: module declarations, instantiations, wire declarations, recognition within Verilog and VHDL files (TODO: handle import statements, classes, packages, structs, allow reading of systemverilog source code using `orbit read`)
+
+### Fixes
+- the path displayed for the blueprint file after the planning stage in the build process now is unified across platforms and will use '/' and never '\' in path
+
 ## 0.14.0
 
 This update brings a more streamlined command sequence/development process, better error messages, and the first initial support for Verilog!

@@ -6,10 +6,9 @@ use super::token::operator::Operator;
 use super::token::tokenizer::SystemVerilogTokenizer;
 use crate::core::lang::lexer::{Position, Token};
 use crate::core::lang::parser::{Parse, Symbol};
-use crate::core::lang::reference::{CompoundIdentifier, RefSet};
+use crate::core::lang::reference::RefSet;
 use crate::core::lang::sv::token::keyword::Keyword;
 use crate::core::lang::sv::token::token::SystemVerilogToken;
-use crate::core::lang::verilog::interface::{Port, PortList};
 use std::str::FromStr;
 
 use super::super::verilog::symbols::module::Module;

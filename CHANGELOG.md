@@ -26,6 +26,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - viewing design units of a local ip now display the private units by default without having to specify `--all`; private units are typically hidden on views of ip outside the local path
 
 ### Fixes
+- adds hints and clearer error messages around build process (`orbit build`, `orbit test`) and tree viewing (`orbit tree`)
 - adds proper error message when a source file does not contain valid UTF-8 data instead of panicking
 - properly detects module instances that use the range specificer in verilog and systemverilog files
 

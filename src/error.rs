@@ -108,6 +108,12 @@ pub enum Hint {
     ResolveDuplicateIds2,
     ShowAvailableUnitsLocal,
     ShowAvailableUnitsExternal(IpSpec),
+    DutSpecify,
+    WantsTestbench,
+    WantsTop,
+    TopSpecify,
+    BenchSpecify,
+    RootSpecify,
 }
 
 impl Display for Hint {
@@ -124,12 +130,22 @@ impl Display for Hint {
             Self::TargetsList => "use `orbit build --list` to see the list of defined targets",
             Self::InitNotNew => "use `orbit init` to initialize an existing directory",
             Self::IpNameSeparate => {
-                "see the \"--name\" flag for making an ip name separate from the directory name"
+                "use the \"--name\" option for making an ip name separate from the directory name"
             }
             Self::ResolveDuplicateIds1 => HINT_1,
             Self::ResolveDuplicateIds2 => HINT_2,
             Self::ShowAvailableUnitsLocal => "use `orbit view --units` to display available units",
             Self::ShowAvailableUnitsExternal(_) => mixed_prompt.as_ref().unwrap(),
+            Self::DutSpecify => "use the \"--dut\" option to specify the design under test",
+            Self::WantsTestbench => {
+                "use `orbit test` and its \"--bench\" option to select testbenches"
+            }
+            Self::WantsTop => {
+                "use `orbit build` and its \"--top\" option to select top-level designs"
+            }
+            Self::TopSpecify => "use the \"--top\" option to specify the top-level design",
+            Self::BenchSpecify => "use the \"--bench\" option to specify the testbench",
+            Self::RootSpecify => "use the \"--root\" option to specify the root design unit",
         };
         write!(
             f,

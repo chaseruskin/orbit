@@ -17,7 +17,7 @@ use crate::core::target::Target;
 use crate::core::variable;
 use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
-use crate::error::{Error, LastError};
+use crate::error::{Error, Hint, LastError};
 use crate::util::anyerror::Fault;
 use crate::util::environment;
 use crate::util::environment::EnvVar;
@@ -269,7 +269,7 @@ impl Plan {
                 ) {
                     Ok(r) => r,
                     Err(e) => match e {
-                        PlanError::Ambiguous(_, _) => {
+                        PlanError::Ambiguous(_, _, _) => {
                             if all == true {
                                 (None, None)
                             } else {
@@ -295,7 +295,7 @@ impl Plan {
         ) {
             Ok(r) => r,
             Err(e) => match e {
-                PlanError::Ambiguous(_, _) => {
+                PlanError::Ambiguous(_, _, _) => {
                     if all == true {
                         (top, bench)
                     } else {
@@ -1181,7 +1181,7 @@ impl Plan {
                 Some(node) => {
                     if node.as_ref().get_symbol().is_component() == true {
                         if node.as_ref().get_symbol().is_testbench() == false {
-                            return Err(PlanError::BadTestbench(t.clone()))?;
+                            return Err(PlanError::BadTestbench(t.clone(), Hint::WantsTop))?;
                         }
                         // return the id from the local graph
                         (None, Some(node.index()))
@@ -1246,6 +1246,7 @@ impl Plan {
                                                 .clone()
                                         })
                                         .collect(),
+                                    Hint::BenchSpecify,
                                 ))?
                             }
                         }
@@ -1282,7 +1283,11 @@ impl Plan {
                     // verify the unit is an entity that is not a testbench
                     if node.as_ref().get_symbol().is_component() == true {
                         if node.as_ref().get_symbol().is_testbench() == true {
-                            return Err(PlanError::BadTop(t.clone()))?;
+                            if allow_bench == true {
+                                return Err(PlanError::BadDut(t.clone(), Hint::BenchSpecify))?;
+                            } else {
+                                return Err(PlanError::BadTop(t.clone(), Hint::WantsTestbench))?;
+                            }
                         }
                     } else {
                         // return Err(PlanError::BadEntity(t.clone()))?;
@@ -1321,6 +1326,7 @@ impl Plan {
                                                 .get_name()
                                         })
                                         .collect(),
+                                    Hint::BenchSpecify,
                                 ))?
                             }
                         };
@@ -1365,7 +1371,7 @@ impl Plan {
                             1 => Some(entities[0].0),
                             _ => {
                                 return Err(PlanError::Ambiguous(
-                                    "entities instantiated in the testbench".to_string(),
+                                    "components instantiated in the testbench".to_string(),
                                     entities
                                         .into_iter()
                                         .map(|f| {
@@ -1377,6 +1383,7 @@ impl Plan {
                                                 .get_name()
                                         })
                                         .collect(),
+                                    Hint::DutSpecify,
                                 ))?
                             }
                         }
@@ -1431,6 +1438,7 @@ impl Plan {
                                                 .get_name()
                                         })
                                         .collect(),
+                                    Hint::TopSpecify,
                                 ))?
                             }
                         }
@@ -1616,13 +1624,14 @@ impl Plan {
 
 #[derive(Debug)]
 pub enum PlanError {
-    BadTestbench(Identifier),
-    BadTop(Identifier),
+    BadTestbench(Identifier, Hint),
+    BadTop(Identifier, Hint),
+    BadDut(Identifier, Hint),
     BadEntity(Identifier),
-    TestbenchNoTest(LangIdentifier),
+    TestbenchNoTest(LangIdentifier), // this error gets skipped
     UnknownUnit(Identifier),
     UnknownEntity(Identifier),
-    Ambiguous(String, Vec<LangIdentifier>),
+    Ambiguous(String, Vec<LangIdentifier>, Hint),
     Empty,
 }
 
@@ -1631,29 +1640,46 @@ impl std::error::Error for PlanError {}
 impl std::fmt::Display for PlanError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::TestbenchNoTest(id) => write!(f, "No entities are tested in testbench {}", id),
-            Self::UnknownEntity(id) => write!(f, "No entity named '{}' in the current ip", id),
-            Self::Empty => write!(f, "No entities found"),
-            Self::BadEntity(id) => write!(f, "Primary design unit '{}' is not an entity", id),
-            Self::BadTestbench(id) => write!(
+            Self::TestbenchNoTest(id) => {
+                write!(f, "zero entities are tested in testbench \"{}\"", id)
+            }
+            Self::UnknownEntity(id) => write!(
                 f,
-                "Entity '{}' is not a testbench and cannot be bench; use --top",
+                "local ip does not contain any component named \"{}\"",
                 id
             ),
-            Self::BadTop(id) => write!(
+            Self::Empty => write!(f, "zero components found in the local ip"),
+            Self::BadEntity(id) => write!(f, "design element \"{}\" is not a component", id),
+            Self::BadTestbench(id, hint) => write!(
                 f,
-                "Entity '{}' is a testbench and cannot be top; use --bench",
-                id
+                "component \"{}\" is not a testbench and cannot be bench{}",
+                id, hint,
+            ),
+            Self::BadTop(id, hint) => write!(
+                f,
+                "component \"{}\" is a testbench and cannot be top{}",
+                id, hint
+            ),
+            Self::BadDut(id, hint) => write!(
+                f,
+                "component \"{}\" is a testbench and cannot be dut{}",
+                id, hint
             ),
             Self::UnknownUnit(id) => {
-                write!(f, "No primary design unit named '{}' in the current ip", id)
+                write!(
+                    f,
+                    "no primary design unit named \"{}\" in the current ip",
+                    id
+                )
             }
-            Self::Ambiguous(name, tbs) => write!(
+            Self::Ambiguous(name, tbs, hint) => write!(
                 f,
-                "Multiple {} were found:\n{}",
+                "multiple {} were found:\n{}{}",
                 name,
-                tbs.iter()
-                    .fold(String::new(), |sum, x| { sum + &format!("    {}\n", x) })
+                tbs.iter().enumerate().fold(String::new(), |sum, (i, x)| {
+                    sum + &format!("    {}{}", x, if i + 1 < tbs.len() { "\n" } else { "" })
+                }),
+                hint,
             ),
         }
     }

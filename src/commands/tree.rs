@@ -15,6 +15,7 @@ use crate::core::lang::vhdl::token::Identifier as VhdlIdentifier;
 use crate::core::lang::Lang;
 use crate::core::lang::LangIdentifier;
 use crate::core::lang::Language;
+use crate::error::Hint;
 use crate::util::anyerror::Fault;
 use crate::util::graph::EdgeStatus;
 use crate::util::graphmap::GraphMap;
@@ -121,6 +122,7 @@ impl Tree {
                                                 .clone()
                                         })
                                         .collect(),
+                                    Hint::RootSpecify,
                                 ))?
                             }
                         },

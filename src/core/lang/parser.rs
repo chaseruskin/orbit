@@ -26,6 +26,10 @@ impl<T> Symbol<T> {
     pub fn as_ref(&self) -> &T {
         &self.stype
     }
+
+    pub fn as_ref_mut(&mut self) -> &mut T {
+        &mut self.stype
+    }
 }
 
 #[derive(Debug, PartialEq, Error)]

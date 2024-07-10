@@ -9,6 +9,8 @@ use crate::core::lang::{
     },
 };
 
+use super::SystemVerilogSymbol;
+
 #[derive(Debug, PartialEq)]
 pub struct Package {
     name: Identifier,
@@ -27,6 +29,10 @@ impl Package {
 
     pub fn get_refs(&self) -> &RefSet {
         &self.refs
+    }
+
+    pub fn extend_refs(&mut self, refs: RefSet) {
+        self.refs.extend(refs);
     }
 }
 
@@ -47,18 +53,19 @@ impl Package {
         // take terminator ';'
         tokens.next().take().unwrap();
 
-        let refs = RefSet::new();
+        let mut refs = RefSet::new();
 
-        // parse until finding `endconfig`
+        // parse until finding `endpackage`
         while let Some(t) = tokens.next() {
             if t.as_type().is_eof() == true {
                 return Err(SystemVerilogError::ExpectingKeyword(Keyword::Endpackage));
             } else if t.as_type().check_keyword(&Keyword::Endpackage) {
-                // exit the loop for parsing the config
+                // exit the loop for parsing the package
                 break;
             // parse other references
             } else if t.as_type().check_keyword(&Keyword::Import) {
-                // TODO
+                let i_refs = SystemVerilogSymbol::parse_import_statement(tokens)?;
+                refs.extend(i_refs);
             }
         }
 

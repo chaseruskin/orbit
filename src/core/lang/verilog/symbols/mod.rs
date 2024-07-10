@@ -8,6 +8,7 @@ use super::token::tokenizer::VerilogTokenizer;
 use crate::core::lang::lexer::{Position, Token};
 use crate::core::lang::parser::{Parse, Symbol};
 use crate::core::lang::reference::{CompoundIdentifier, RefSet};
+use crate::core::lang::sv::symbols::SystemVerilogSymbol;
 use crate::core::lang::sv::token::keyword::Keyword;
 use crate::core::lang::sv::token::token::SystemVerilogToken;
 use crate::core::lang::verilog::interface::{Port, PortList};
@@ -351,19 +352,19 @@ impl VerilogSymbol {
         let mut prev_stmt_used_begin = false;
 
         while let Some(t) = tokens.next() {
+            // expecting `endmodule`
             if t.as_ref().is_eof() == true {
-                // expecting `endmodule`
                 return Err(VerilogError::ExpectingKeyword(Keyword::Endmodule));
             // exit from the module architecture
             } else if t.as_ref().check_keyword(&Keyword::Endmodule) == true {
                 break;
-            // take a block's name
+            // take a block's optional name
             } else if prev_stmt_used_begin && t.as_ref().check_delimiter(&Operator::Colon) {
                 current_stmt.push(t);
                 current_stmt.push(tokens.next().unwrap());
                 prev_stmt_used_begin = false;
-                Self::handle_statement(
-                    &mut current_stmt,
+                current_stmt = Self::handle_statement(
+                    current_stmt,
                     &mut params,
                     &mut ports,
                     &mut refs,
@@ -373,8 +374,8 @@ impl VerilogSymbol {
                 // check if it is 'begin' and has a trailing ':'
                 prev_stmt_used_begin = t.as_ref().check_keyword(&Keyword::Begin);
                 // handle current statement
-                Self::handle_statement(
-                    &mut current_stmt,
+                current_stmt = Self::handle_statement(
+                    current_stmt,
                     &mut params,
                     &mut ports,
                     &mut refs,
@@ -394,8 +395,8 @@ impl VerilogSymbol {
                     )?);
                 }
                 // handle the statement
-                Self::handle_statement(
-                    &mut current_stmt,
+                current_stmt = Self::handle_statement(
+                    current_stmt,
                     &mut params,
                     &mut ports,
                     &mut refs,
@@ -410,16 +411,22 @@ impl VerilogSymbol {
     }
 
     fn handle_statement(
-        stmt: &mut Statement,
+        stmt: Statement,
         mut params: &mut ParamList,
         mut ports: &mut PortList,
         refs: &mut RefSet,
         deps: &mut RefSet,
-    ) -> Result<(), VerilogError> {
+    ) -> Result<Statement, VerilogError> {
         // println!("{:?}", statement_to_string(&stmt));
         if stmt.is_empty() == true {
-            return Ok(());
+            return Ok(Statement::new());
         }
+
+        // update references that may appear in the statement
+        if let Some(s_refs) = SystemVerilogSymbol::extract_refs_from_statement(&stmt) {
+            refs.extend(s_refs);
+        }
+
         if let Some(dep) = Self::as_module_instance(&stmt) {
             // println!("detected dependency! {}", dep);
             deps.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
@@ -436,10 +443,19 @@ impl VerilogSymbol {
                 .into_iter()
                 .for_each(|p| interface::update_port_list(&mut params, p, true));
         }
+        if stmt
+            .first()
+            .unwrap()
+            .as_type()
+            .check_keyword(&Keyword::Import)
+        {
+            let mut tokens = stmt.into_iter().skip(1).peekable();
+            let i_refs = SystemVerilogSymbol::parse_import_statement(&mut tokens)?;
+            refs.extend(i_refs);
+        }
 
         // reset the statement
-        stmt.clear();
-        Ok(())
+        Ok(Statement::new())
     }
 
     fn as_port_definition(stmt: &Statement) -> Option<PortList> {
@@ -470,6 +486,7 @@ impl VerilogSymbol {
                     } else if t.as_ref().check_keyword(&Keyword::Input)
                         || t.as_ref().check_keyword(&Keyword::Output)
                         || t.as_ref().check_keyword(&Keyword::Inout)
+                        || t.as_ref().check_keyword(&Keyword::Ref)
                     {
                         current_port_config = Port::new();
                         current_port_config.set_direction(t.as_ref().as_keyword().unwrap().clone());
@@ -805,6 +822,8 @@ impl VerilogSymbol {
         let mut params = ParamList::new();
         let mut current_param_config = Port::new();
 
+        let mut refs = RefSet::new();
+
         let mut counter = 0;
         while let Some(t) = tokens.next() {
             if t.as_ref().is_eof() == true {
@@ -837,15 +856,20 @@ impl VerilogSymbol {
             // collect a range
             } else if t.as_ref().check_delimiter(&Operator::BrackL) {
                 let stmt = Self::parse_until_operator(tokens, t, Operator::BrackR)?;
-                current_param_config.set_range(into_tokens(stmt.clone()));
+                // update references that might have appeared in range
+                if let Some(s_refs) = SystemVerilogSymbol::extract_refs_from_statement(&stmt) {
+                    refs.extend(s_refs);
+                }
+                current_param_config.set_range(into_tokens(stmt));
             // collect a default value
             } else if t.as_ref().check_delimiter(&Operator::BlockAssign) {
                 let stmt = Self::parse_assignment(tokens, false)?;
+                // update references that may appear in the assignment
+                if let Some(s_refs) = SystemVerilogSymbol::extract_refs_from_statement(&stmt) {
+                    refs.extend(s_refs);
+                }
                 // set the default for the last known port!
-                params
-                    .last_mut()
-                    .unwrap()
-                    .set_default(into_tokens(stmt.clone()));
+                params.last_mut().unwrap().set_default(into_tokens(stmt));
             } else if t.as_ref().check_keyword(&Keyword::Reg) {
                 current_param_config.set_reg();
             } else if t.as_ref().check_keyword(&Keyword::Signed) {
@@ -857,7 +881,7 @@ impl VerilogSymbol {
             }
         }
         // println!("{:?}", params);
-        Ok((params, RefSet::new()))
+        Ok((params, refs))
     }
 
     fn parse_module_port_list<I>(
@@ -869,8 +893,8 @@ impl VerilogSymbol {
         // println!("{}", "PARSE PORTS");
 
         let mut ports = PortList::new();
-
         let mut current_port_config = Port::new();
+        let mut refs = RefSet::new();
 
         let mut counter = 0;
         while let Some(t) = tokens.next() {
@@ -904,21 +928,27 @@ impl VerilogSymbol {
             } else if t.as_ref().check_keyword(&Keyword::Input)
                 || t.as_ref().check_keyword(&Keyword::Output)
                 || t.as_ref().check_keyword(&Keyword::Inout)
+                || t.as_ref().check_keyword(&Keyword::Ref)
             {
                 current_port_config = Port::new();
                 current_port_config.set_direction(t.as_ref().as_keyword().unwrap().clone());
             // collect a range
             } else if t.as_ref().check_delimiter(&Operator::BrackL) {
                 let stmt = Self::parse_until_operator(tokens, t, Operator::BrackR)?;
-                current_port_config.set_range(into_tokens(stmt.clone()));
+                // update references that may appear in the assignment
+                if let Some(s_refs) = SystemVerilogSymbol::extract_refs_from_statement(&stmt) {
+                    refs.extend(s_refs);
+                }
+                current_port_config.set_range(into_tokens(stmt));
             // collect a default value
             } else if t.as_ref().check_delimiter(&Operator::BlockAssign) {
                 let stmt = Self::parse_assignment(tokens, false)?;
+                // update references that may appear in the assignment
+                if let Some(s_refs) = SystemVerilogSymbol::extract_refs_from_statement(&stmt) {
+                    refs.extend(s_refs);
+                }
                 // set the default for the last known port!
-                ports
-                    .last_mut()
-                    .unwrap()
-                    .set_default(into_tokens(stmt.clone()));
+                ports.last_mut().unwrap().set_default(into_tokens(stmt));
             } else if t.as_ref().check_keyword(&Keyword::Reg) {
                 current_port_config.set_reg();
             } else if t.as_ref().check_keyword(&Keyword::Signed) {
@@ -929,8 +959,8 @@ impl VerilogSymbol {
                 current_port_config.set_data_type(t.as_ref().clone());
             }
         }
-        // println!("{:?}", ports);
-        Ok((ports, RefSet::new()))
+
+        Ok((ports, refs))
     }
 
     fn parse_port_connection<I>(

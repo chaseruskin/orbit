@@ -3,7 +3,10 @@ use std::iter::Peekable;
 use crate::core::lang::{
     lexer::{Position, Token},
     reference::{CompoundIdentifier, RefSet},
-    sv::token::token::SystemVerilogToken,
+    sv::{
+        symbols::SystemVerilogSymbol,
+        token::{keyword::Keyword, token::SystemVerilogToken},
+    },
     verilog::{
         error::VerilogError,
         interface::{self, ParamList, PortList},
@@ -37,6 +40,10 @@ impl Module {
 
     pub fn get_refs(&self) -> &RefSet {
         &self.refs
+    }
+
+    pub fn extend_refs(&mut self, refs: RefSet) {
+        self.refs.extend(refs);
     }
 }
 
@@ -141,12 +148,29 @@ impl Module {
         I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         // take module name
-        let mod_name = tokens.next().take().unwrap().take();
-        // println!("{:?}", mod_name);
+        let mod_name = match tokens.next().take().unwrap().take() {
+            SystemVerilogToken::Identifier(id) => id,
+            _ => return Err(VerilogError::Vague),
+        };
+
+        // initialize container for references to other design elements
         let mut refs = RefSet::new();
+
+        // take all import statements
+        while let Some(t) = tokens.peek() {
+            if t.as_type().check_keyword(&Keyword::Import) {
+                let _ = tokens.next().unwrap();
+                let i_refs = SystemVerilogSymbol::parse_import_statement(tokens)?;
+                refs.extend(i_refs);
+            } else {
+                break;
+            }
+        }
+
         // parse the interface/declaration of the module
         let (mut params, mut ports, d_refs) = VerilogSymbol::parse_module_declaration(tokens)?;
         refs.extend(d_refs);
+
         // parse the body of the module
         let (body_params, body_ports, b_refs, deps) =
             VerilogSymbol::parse_module_architecture(tokens)?;
@@ -165,11 +189,7 @@ impl Module {
         // println!("{:?}", ports);
         // println!("{:?}", params);
         Ok(Module {
-            name: match mod_name {
-                SystemVerilogToken::Identifier(id) => id,
-                // expecting identifier
-                _ => return Err(VerilogError::Vague),
-            },
+            name: mod_name,
             parameters: params,
             ports: ports,
             refs: refs,

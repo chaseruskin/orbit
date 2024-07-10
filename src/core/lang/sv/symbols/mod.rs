@@ -8,7 +8,7 @@ use super::token::operator::Operator;
 use super::token::tokenizer::SystemVerilogTokenizer;
 use crate::core::lang::lexer::{Position, Token};
 use crate::core::lang::parser::{Parse, Symbol};
-use crate::core::lang::reference::RefSet;
+use crate::core::lang::reference::{CompoundIdentifier, RefSet};
 use crate::core::lang::sv::token::keyword::Keyword;
 use crate::core::lang::sv::token::token::SystemVerilogToken;
 use crate::core::lang::verilog::symbols::config::Config;
@@ -71,6 +71,14 @@ impl SystemVerilogSymbol {
             Self::Package(p) => p.get_refs(),
         }
     }
+
+    pub fn extend_refs(&mut self, refs: RefSet) {
+        match self {
+            Self::Module(m) => m.extend_refs(refs),
+            Self::Config(c) => c.extend_refs(refs),
+            Self::Package(p) => p.extend_refs(refs),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -120,16 +128,11 @@ impl Parse<SystemVerilogToken> for SystemVerilogParser {
         let mut symbols = Vec::new();
         let mut tokens = tokens.into_iter().peekable();
 
+        let mut global_refs = RefSet::new();
+
         while let Some(t) = tokens.next() {
-            // take attribute and ignore if okay
-            if t.as_type().check_delimiter(&Operator::AttrL) {
-                match SystemVerilogSymbol::parse_attr(&mut tokens, t.into_position()) {
-                    Ok(_) => (),
-                    Err(e) => symbols.push(Err(e)),
-                }
-            }
             // create module design element
-            else if t.as_type().check_keyword(&Keyword::Module)
+            if t.as_type().check_keyword(&Keyword::Module)
                 || t.as_type().check_keyword(&Keyword::Macromodule)
             {
                 symbols.push(
@@ -154,15 +157,46 @@ impl Parse<SystemVerilogToken> for SystemVerilogParser {
                         Err(e) => Err(e),
                     },
                 )
+            // take a global import statement
+            } else if t.as_type().check_keyword(&Keyword::Import) {
+                // verify the import statement parsed okay
+                let i_refs = match SystemVerilogSymbol::parse_import_statement(&mut tokens) {
+                    Ok(i) => Some(i),
+                    Err(e) => {
+                        symbols.push(Err(e));
+                        None
+                    }
+                };
+                // append to this file's global references
+                if let Some(i_refs) = i_refs {
+                    global_refs.extend(i_refs);
+                }
+            // take attribute and ignore if okay
+            } else if t.as_type().check_delimiter(&Operator::AttrL) {
+                match SystemVerilogSymbol::parse_attr(&mut tokens, t.into_position()) {
+                    Ok(_) => (),
+                    Err(e) => symbols.push(Err(e)),
+                }
+            // skip any potential illegal/unknown tokens at global scale
             } else if t.as_type().is_eof() == false {
-                // skip any potential illegal/unknown tokens at global scale
-                // println!("{:?}", t);
-                // illegal tokens at global scope?
                 // symbols.push(Err(VerilogError::Vague))
                 continue;
             }
         }
-        // println!("{:#?}", symbols);
+
+        // update all known symbols with the global reference statements
+        if global_refs.is_empty() == false {
+            symbols
+                .iter_mut()
+                .filter_map(|s| match s {
+                    Ok(r) => Some(r.as_ref_mut()),
+                    Err(_) => None,
+                })
+                .for_each(|s| {
+                    s.extend_refs(global_refs.clone());
+                });
+        }
+
         symbols
     }
 }
@@ -212,5 +246,67 @@ impl SystemVerilogSymbol {
             stmt.push(t);
         }
         Ok(stmt)
+    }
+
+    /// Parses a statement that is for importing packages.
+    ///
+    /// This function assumes the last token consumed was the `import` keyword.
+    /// The last token this function will consume is the `;` operator.
+    pub fn parse_import_statement<I>(tokens: &mut Peekable<I>) -> Result<RefSet, SystemVerilogError>
+    where
+        I: Iterator<Item = Token<SystemVerilogToken>>,
+    {
+        let mut refs = RefSet::new();
+        let mut is_start_of_item = true;
+        while let Some(t) = tokens.next() {
+            // whoops... this shouldn't be the end of the file!
+            if t.as_type().is_eof() {
+                return Err(SystemVerilogError::ExpectingOperator(Operator::Terminator));
+            // insert the package identifier!
+            } else if is_start_of_item && t.as_type().as_identifier().is_some() {
+                refs.insert(CompoundIdentifier::new_minimal_verilog(
+                    t.take().take_identifier().unwrap(),
+                ));
+                is_start_of_item = false;
+            // reset the package item marker
+            } else if t.as_type().check_delimiter(&Operator::Comma) {
+                is_start_of_item = true;
+            // stop parsing tokens
+            } else if t.as_type().check_delimiter(&Operator::Terminator) {
+                break;
+            }
+        }
+
+        Ok(refs)
+    }
+
+    /// Extracts any references found in a statement, if they exist.
+    ///
+    /// References can be found hidden in statements where the package identifier is
+    /// the token immediately before a scope resolution operator `::`.
+    pub fn extract_refs_from_statement(stmt: &Statement) -> Option<RefSet> {
+        // return none if we cannot find the scope resolution operator
+        stmt.iter()
+            .find(|c| c.as_type().check_delimiter(&Operator::ScopeResolution))?;
+
+        let mut refs = RefSet::new();
+        let mut iter = stmt.iter();
+
+        let mut prev_t = iter.next()?;
+        // check if there is a scope resolution operator, then chec
+        while let Some(t) = iter.next() {
+            // if currently at `::`, then the previous token was a package identifier!
+            if t.as_type().check_delimiter(&Operator::ScopeResolution) {
+                if let Some(pkg_id) = prev_t.as_type().as_identifier() {
+                    refs.insert(CompoundIdentifier::new_minimal_verilog(pkg_id.clone()));
+                }
+                // update the previous token
+                prev_t = t;
+            }
+        }
+        match refs.is_empty() {
+            true => None,
+            false => Some(refs),
+        }
     }
 }

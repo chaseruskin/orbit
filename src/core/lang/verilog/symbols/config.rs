@@ -26,6 +26,10 @@ impl Config {
     pub fn get_refs(&self) -> &RefSet {
         &self.refs
     }
+
+    pub fn extend_refs(&mut self, refs: RefSet) {
+        self.refs.extend(refs);
+    }
 }
 
 impl Config {

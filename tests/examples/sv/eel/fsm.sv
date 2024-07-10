@@ -31,7 +31,7 @@ module fsm
         end
     end
 
-    always_comb begin
+    always_comb begin : hello
         // defaults
         next_state = state_r;
         en_num = 1'b0;
@@ -84,5 +84,6 @@ module fsm
                 end
             end
         endcase
-    end
+    end : hello
+
 endmodule

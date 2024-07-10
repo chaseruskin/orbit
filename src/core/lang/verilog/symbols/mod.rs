@@ -220,6 +220,11 @@ impl VerilogSymbol {
         Ok(stmt)
     }
 
+    /// Parses evenly until finding the balancing operator `end_op` to counter-act all
+    /// of the equivalent `beg_t` operators.
+    ///
+    /// This function's last token to consume is the `end_op`, if it exists in balance with
+    /// `beg_t`.
     fn parse_until_operator<I>(
         tokens: &mut Peekable<I>,
         beg_t: Token<SystemVerilogToken>,
@@ -298,6 +303,10 @@ impl VerilogSymbol {
         Ok(VerilogSymbol::Module(Module::from_tokens(tokens, pos)?))
     }
 
+    /// Parses a systemverilog-style "module" declaration, which can include a parameter list, and port list.
+    ///
+    /// It assumes the first token to consume is the start of one of these lists ('#' or '('), or is just the terminator ';'.
+    /// The last token to be consumed by this function is the ';' delimiter.
     pub fn parse_module_declaration<I>(
         tokens: &mut Peekable<I>,
     ) -> Result<(ParamList, PortList, RefSet), VerilogError>
@@ -348,9 +357,6 @@ impl VerilogSymbol {
         let mut refs = RefSet::new();
         let mut deps = RefSet::new();
 
-        let mut current_stmt = Statement::new();
-        let mut prev_stmt_used_begin = false;
-
         while let Some(t) = tokens.next() {
             // expecting `endmodule`
             if t.as_ref().is_eof() == true {
@@ -358,68 +364,78 @@ impl VerilogSymbol {
             // exit from the module architecture
             } else if t.as_ref().check_keyword(&Keyword::Endmodule) == true {
                 break;
-            // take a block's optional name
-            } else if prev_stmt_used_begin && t.as_ref().check_delimiter(&Operator::Colon) {
-                current_stmt.push(t);
-                current_stmt.push(tokens.next().unwrap());
-                prev_stmt_used_begin = false;
-                current_stmt = Self::handle_statement(
-                    current_stmt,
-                    &mut params,
-                    &mut ports,
-                    &mut refs,
-                    &mut deps,
-                )?;
-            } else if Self::is_statement_separator(t.as_ref()) {
-                // check if it is 'begin' and has a trailing ':'
-                prev_stmt_used_begin = t.as_ref().check_keyword(&Keyword::Begin);
-                // handle current statement
-                current_stmt = Self::handle_statement(
-                    current_stmt,
-                    &mut params,
-                    &mut ports,
-                    &mut refs,
-                    &mut deps,
-                )?;
-            } else if Self::is_start_to_parentheses_statement(t.as_ref()) {
-                // push token to the statement
-                current_stmt.push(t);
-                // expecting '('
-                let opening_p = tokens.next().unwrap();
-                if opening_p.as_ref().check_delimiter(&Operator::ParenL) {
-                    // take the parentheses
-                    current_stmt.extend(Self::parse_until_operator(
-                        tokens,
-                        opening_p,
-                        Operator::ParenR,
-                    )?);
-                }
-                // handle the statement
-                current_stmt = Self::handle_statement(
-                    current_stmt,
-                    &mut params,
-                    &mut ports,
-                    &mut refs,
-                    &mut deps,
-                )?;
-                prev_stmt_used_begin = false;
-            } else {
-                current_stmt.push(t);
+            } else if let Some(stmt) = Self::into_next_statement(t, tokens)? {
+                // println!("{}", statement_to_string(&stmt));
+                Self::handle_statement(stmt, &mut params, &mut ports, &mut refs, Some(&mut deps))?;
             }
         }
         Ok((params, ports, refs, deps))
     }
 
-    fn handle_statement(
+    pub fn into_next_statement<I>(
+        init: Token<SystemVerilogToken>,
+        tokens: &mut Peekable<I>,
+    ) -> Result<Option<Statement>, VerilogError>
+    where
+        I: Iterator<Item = Token<SystemVerilogToken>>,
+    {
+        let mut stmt = Statement::new();
+        stmt.push(init);
+
+        loop {
+            // review the last token we have added to the current statement
+            let t = stmt.last().unwrap();
+
+            // whoops... we should not have ran out of tokens here!
+            if t.as_ref().is_eof() == true {
+                return Err(VerilogError::Vague);
+            // finish this statement
+            } else if Self::is_statement_separator(t.as_type()) {
+                let has_code_label = if let Some(t_next) = tokens.peek() {
+                    // take the optional code segment's label
+                    t_next.as_type().check_delimiter(&Operator::Colon)
+                } else {
+                    false
+                };
+                // take the `:` `label`
+                if has_code_label == true {
+                    stmt.push(tokens.next().unwrap());
+                    stmt.push(tokens.next().unwrap());
+                }
+                break;
+            // take a parentheses
+            } else if Self::is_start_to_parentheses_statement(t.as_type()) {
+                // expecting '('
+                let opening_p = tokens.next().unwrap();
+                if opening_p.as_ref().check_delimiter(&Operator::ParenL) {
+                    // take the parentheses
+                    stmt.extend(Self::parse_until_operator(
+                        tokens,
+                        opening_p,
+                        Operator::ParenR,
+                    )?);
+                }
+            }
+
+            // push a new token onto the statment
+            if let Some(t_next) = tokens.next() {
+                stmt.push(t_next);
+            } else {
+                break;
+            }
+        }
+        Ok(Some(stmt))
+    }
+
+    pub fn handle_statement(
         stmt: Statement,
         mut params: &mut ParamList,
         mut ports: &mut PortList,
         refs: &mut RefSet,
-        deps: &mut RefSet,
-    ) -> Result<Statement, VerilogError> {
-        // println!("{:?}", statement_to_string(&stmt));
+        deps: Option<&mut RefSet>,
+    ) -> Result<(), VerilogError> {
         if stmt.is_empty() == true {
-            return Ok(Statement::new());
+            return Ok(());
         }
 
         // update references that may appear in the statement
@@ -429,7 +445,9 @@ impl VerilogSymbol {
 
         if let Some(dep) = Self::as_module_instance(&stmt) {
             // println!("detected dependency! {}", dep);
-            deps.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
+            if let Some(deps) = deps {
+                deps.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
+            }
             refs.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
         }
         // try as a port
@@ -438,11 +456,13 @@ impl VerilogSymbol {
                 .into_iter()
                 .for_each(|p| interface::update_port_list(&mut ports, p, true));
         }
+        // try as a paramater
         if let Some(def_params) = Self::as_param_definition(&stmt) {
             def_params
                 .into_iter()
                 .for_each(|p| interface::update_port_list(&mut params, p, true));
         }
+        // try as import statement
         if stmt
             .first()
             .unwrap()
@@ -455,7 +475,7 @@ impl VerilogSymbol {
         }
 
         // reset the statement
-        Ok(Statement::new())
+        Ok(())
     }
 
     fn as_port_definition(stmt: &Statement) -> Option<PortList> {
@@ -712,6 +732,8 @@ impl VerilogSymbol {
                         state = 1;
                     } else if t.as_ref().check_delimiter(&Operator::Comma) {
                         state = 0;
+                    } else if t.as_ref().check_delimiter(&Operator::Terminator) {
+                        break;
                     } else {
                         state = -1;
                     }
@@ -797,7 +819,15 @@ impl VerilogSymbol {
                 | Keyword::Endgenerate
                 | Keyword::Endmodule
                 | Keyword::Endprimitive
+                | Keyword::Endclocking
+                | Keyword::Endinterface
+                | Keyword::Endchecker
+                | Keyword::Endsequence
                 | Keyword::Endspecify
+                | Keyword::Endclass
+                | Keyword::Endgroup
+                | Keyword::Endproperty
+                | Keyword::Endprogram
                 | Keyword::Endtable
                 | Keyword::Endtask
                 | Keyword::Endcase => true,
@@ -838,9 +868,19 @@ impl VerilogSymbol {
                 counter += 1;
             // we are dealing with a param list
             } else if let Some(name) = t.as_ref().as_identifier() {
-                // collect all names until something else is hit
-                params.push(Port::with(name.clone()));
-                params.last_mut().unwrap().inherit(&current_param_config);
+                if let Some(t_next) = tokens.peek() {
+                    // then this is indeed the name of a port
+                    if t_next.as_type().check_delimiter(&Operator::Comma)
+                        || t_next.as_type().check_delimiter(&Operator::BlockAssign)
+                        || t_next.as_type().check_delimiter(&Operator::ParenR)
+                    {
+                        params.push(Port::with(name.clone()));
+                        params.last_mut().unwrap().inherit(&current_param_config);
+                    // this may be a datatype!
+                    } else {
+                        current_param_config.set_data_type(t.as_ref().clone());
+                    }
+                }
             } else if t.as_ref().check_delimiter(&Operator::Comma) {
                 // proceed
                 // clear the default value (if exists)
@@ -895,7 +935,6 @@ impl VerilogSymbol {
         let mut ports = PortList::new();
         let mut current_port_config = Port::new();
         let mut refs = RefSet::new();
-
         let mut counter = 0;
         while let Some(t) = tokens.next() {
             if t.as_ref().is_eof() == true {
@@ -910,9 +949,19 @@ impl VerilogSymbol {
                 counter += 1;
             // we are dealing with a port list
             } else if let Some(name) = t.as_ref().as_identifier() {
-                // collect all names until something else is hit
-                ports.push(Port::with(name.clone()));
-                ports.last_mut().unwrap().inherit(&current_port_config);
+                if let Some(t_next) = tokens.peek() {
+                    // then this is indeed the name of a port
+                    if t_next.as_type().check_delimiter(&Operator::Comma)
+                        || t_next.as_type().check_delimiter(&Operator::BlockAssign)
+                        || t_next.as_type().check_delimiter(&Operator::ParenR)
+                    {
+                        ports.push(Port::with(name.clone()));
+                        ports.last_mut().unwrap().inherit(&current_port_config);
+                    // this may be a datatype!
+                    } else {
+                        current_port_config.set_data_type(t.as_ref().clone());
+                    }
+                }
             } else if t.as_ref().check_delimiter(&Operator::Comma) {
                 // proceed
                 // clear the default value (if exists

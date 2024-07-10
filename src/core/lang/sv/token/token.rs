@@ -217,7 +217,9 @@ impl SystemVerilogToken {
                 0 => match c {
                     // ambiguous characters...read another character (could be a 2 or 3 length operator)
                     '(' | ')' | '{' | '}' | '*' | '>' | '<' | '&' | '|' | '=' | '!' | '^' | '~'
-                    | '+' | '-' | '?' | '%' | ':' | '/' => op_buf.push(train.consume().unwrap()),
+                    | '+' | '-' | '?' | '%' | ':' | '/' | '.' => {
+                        op_buf.push(train.consume().unwrap())
+                    }
                     // if it was an operator, take the character and increment the location
                     _ => return Self::match_delimiter(&String::from(train.consume().unwrap())),
                 },

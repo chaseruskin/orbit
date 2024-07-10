@@ -185,8 +185,24 @@ impl Module {
         body_params
             .into_iter()
             .for_each(|p| interface::update_port_list(&mut params, p, false));
+
+        // for all ports and their datatypes, try to see if any are references to interfaces
+        ports
+            .iter()
+            .filter_map(|p| p.as_user_defined_data_type())
+            .for_each(|intf| {
+                refs.insert(CompoundIdentifier::new_minimal_verilog(intf.clone()));
+            });
+        params
+            .iter()
+            .filter_map(|p| p.as_user_defined_data_type())
+            .for_each(|intf| {
+                refs.insert(CompoundIdentifier::new_minimal_verilog(intf.clone()));
+            });
+
         // println!("{}", mod_name);
         // println!("{:?}", ports);
+        // println!("{:?}", refs);
         // println!("{:?}", params);
         Ok(Module {
             name: mod_name,

@@ -1,5 +1,6 @@
 use std::iter::Peekable;
 
+use interface::Interface;
 use package::Package;
 
 use super::error::SystemVerilogError;
@@ -18,7 +19,11 @@ use super::super::verilog::symbols::module::Module;
 
 pub type Statement = Vec<Token<SystemVerilogToken>>;
 
+pub mod checker;
+pub mod interface;
 pub mod package;
+pub mod primitive;
+pub mod program;
 
 fn into_tokens(stmt: Statement) -> Vec<SystemVerilogToken> {
     stmt.into_iter().map(|t| t.take()).collect()
@@ -38,6 +43,7 @@ pub enum SystemVerilogSymbol {
     Module(Module),
     Config(Config),
     Package(Package),
+    Interface(Interface),
 }
 
 impl SystemVerilogSymbol {
@@ -46,6 +52,7 @@ impl SystemVerilogSymbol {
             Self::Module(m) => Some(m.get_name()),
             Self::Config(c) => Some(c.get_name()),
             Self::Package(p) => Some(p.get_name()),
+            Self::Interface(p) => Some(p.get_name()),
         }
     }
 
@@ -54,6 +61,7 @@ impl SystemVerilogSymbol {
             Self::Module(m) => m.get_position(),
             Self::Config(c) => c.get_position(),
             Self::Package(p) => p.get_position(),
+            Self::Interface(p) => p.get_position(),
         }
     }
 
@@ -69,6 +77,7 @@ impl SystemVerilogSymbol {
             Self::Module(m) => m.get_refs(),
             Self::Config(c) => c.get_refs(),
             Self::Package(p) => p.get_refs(),
+            Self::Interface(p) => p.get_refs(),
         }
     }
 
@@ -77,6 +86,7 @@ impl SystemVerilogSymbol {
             Self::Module(m) => m.extend_refs(refs),
             Self::Config(c) => c.extend_refs(refs),
             Self::Package(p) => p.extend_refs(refs),
+            Self::Interface(p) => p.extend_refs(refs),
         }
     }
 }
@@ -157,6 +167,14 @@ impl Parse<SystemVerilogToken> for SystemVerilogParser {
                         Err(e) => Err(e),
                     },
                 )
+            // create interface design element
+            } else if t.as_type().check_keyword(&Keyword::Interface) {
+                symbols.push(
+                    match SystemVerilogSymbol::parse_interface(&mut tokens, t.into_position()) {
+                        Ok(intf) => Ok(Symbol::new(intf)),
+                        Err(e) => Err(e),
+                    },
+                )
             // take a global import statement
             } else if t.as_type().check_keyword(&Keyword::Import) {
                 // verify the import statement parsed okay
@@ -223,6 +241,18 @@ impl SystemVerilogSymbol {
         Ok(Self::Config(Config::from_tokens(tokens, pos)?))
     }
 
+    fn parse_interface<I>(
+        tokens: &mut Peekable<I>,
+        pos: Position,
+    ) -> Result<Self, SystemVerilogError>
+    where
+        I: Iterator<Item = Token<SystemVerilogToken>>,
+    {
+        Ok(Self::Interface(Interface::from_tokens(tokens, pos)?))
+    }
+}
+
+impl SystemVerilogSymbol {
     fn parse_attr<I>(
         tokens: &mut Peekable<I>,
         pos: Position,

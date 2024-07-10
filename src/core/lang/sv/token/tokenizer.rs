@@ -207,7 +207,7 @@ mod tests {
 
         let tests = vec![
             "<<<=", "<->", ">>>=", "<<", ">>>", "!=?", "?:", "?", "++", "&=", "::", ":", "/=",
-            "->", "==?",
+            "->", "==?", ".*",
         ];
         let answers = vec![
             TripleShiftAssignL,
@@ -225,6 +225,7 @@ mod tests {
             DivAssign,
             ArrowR,
             DoubleEqQuestion,
+            DotStar,
         ];
         for i in 0..tests.len() {
             println!("{}", tests[i]);

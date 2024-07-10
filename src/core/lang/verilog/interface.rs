@@ -400,4 +400,14 @@ impl Port {
     pub fn set_data_type(&mut self, tkn: SystemVerilogToken) {
         self.data_type = Some(tkn);
     }
+
+    pub fn as_user_defined_data_type(&self) -> Option<&Identifier> {
+        match &self.data_type {
+            Some(t) => match t.as_identifier() {
+                Some(id) => Some(id),
+                None => None,
+            },
+            None => None,
+        }
+    }
 }

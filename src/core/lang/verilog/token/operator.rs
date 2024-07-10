@@ -51,6 +51,7 @@ pub enum Operator {
     AttrL,
     AttrR,
     SingleQuote,
+    DotStar,
 }
 
 impl Operator {
@@ -105,6 +106,7 @@ impl Operator {
             "(*" => Self::AttrL,
             "*)" => Self::AttrR,
             "'" => Self::SingleQuote,
+            ".*" => Self::DotStar,
             _ => return None,
         })
     }
@@ -159,6 +161,7 @@ impl Operator {
             Self::AttrL => "(*",
             Self::AttrR => "*)",
             Self::SingleQuote => "'",
+            Self::DotStar => ".*",
         }
     }
 }

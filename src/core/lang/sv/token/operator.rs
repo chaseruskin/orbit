@@ -73,6 +73,7 @@ pub enum Operator {
     DivAssign,          // /=
     ScopeResolution,    // ::
     SingleQuote,
+    DotStar,
 }
 
 impl Operator {
@@ -148,6 +149,7 @@ impl Operator {
             "/=" => Self::DivAssign,
             "::" => Self::ScopeResolution,
             "'" => Self::SingleQuote,
+            ".*" => Self::DotStar,
             _ => return None,
         })
     }
@@ -223,6 +225,7 @@ impl Operator {
             Self::DivAssign => "/=",
             Self::ScopeResolution => "::",
             Self::SingleQuote => "'",
+            Self::DotStar => ".*",
         }
     }
 }

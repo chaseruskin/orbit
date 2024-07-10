@@ -9,7 +9,6 @@ use crate::core::lang::parser::ParseError;
 use crate::core::lang::reference::CompoundIdentifier;
 use crate::core::lang::sv::symbols::{SystemVerilogParser, SystemVerilogSymbol};
 use crate::core::lang::verilog::symbols::{VerilogParser, VerilogSymbol};
-use crate::core::lang::verilog::token::identifier::Identifier as VerilogIdentifier;
 use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbols::{VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
@@ -775,94 +774,23 @@ impl Plan {
                         HdlNode::new(HdlSymbol::Verilog(f), node),
                     );
                 }
+                VerilogSymbol::Config(_) => {
+                    component_pairs.insert(
+                        LangIdentifier::Verilog(name.unwrap().clone()),
+                        LangIdentifier::Vhdl(vhdl_lib.clone()),
+                    );
+                    // add primary design units into the graph
+                    graph_map.add_node(
+                        CompoundIdentifier::new(
+                            lib.clone(),
+                            LangIdentifier::Verilog(name.unwrap().clone()),
+                        ),
+                        HdlNode::new(HdlSymbol::Verilog(f), node),
+                    );
+                }
             }
         });
         Ok(())
-    }
-
-    pub fn connect_edges_from_verilog<'b, 'a>(
-        graph_map: &'b mut GraphMap<CompoundIdentifier, HdlNode<'a>, ()>,
-        component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
-        only_components: bool,
-    ) -> () {
-        let mut module_nodes_iter = graph_map
-            .get_map()
-            .values()
-            .filter_map(|f| {
-                if f.as_ref().get_lang() == Lang::Verilog
-                    || f.as_ref().get_lang() == Lang::SystemVerilog
-                {
-                    match f.as_ref().get_symbol().as_module() {
-                        Some(m) => {
-                            if only_components == true {
-                                Some((
-                                    f.as_ref().get_library().clone(),
-                                    m.get_name().clone(),
-                                    m.get_edge_list_entities(),
-                                ))
-                            } else {
-                                Some((
-                                    f.as_ref().get_library().clone(),
-                                    m.get_name().clone(),
-                                    m.get_edge_list(),
-                                ))
-                            }
-                        }
-                        None => None,
-                    }
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<(LangIdentifier, VerilogIdentifier, Vec<CompoundIdentifier>)>>()
-            .into_iter();
-        while let Some((lib, name, deps)) = module_nodes_iter.next() {
-            let node_name = CompoundIdentifier::new(lib, LangIdentifier::Verilog(name));
-            // create edges by ordered edge list (for entities)
-            for dep in &deps {
-                // need to locate the key with a suffix matching `dep` if it was a component instantiation
-                if dep.get_prefix().is_none() {
-                    if let Some(lib) = component_pairs.get(dep.get_suffix()) {
-                        let b = graph_map.add_edge_by_key(
-                            &CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone()),
-                            &node_name,
-                            (),
-                        );
-                        match b {
-                            // create black box entity
-                            EdgeStatus::MissingSource => {
-                                let dep_name =
-                                    CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone());
-
-                                graph_map.add_node(
-                                    dep_name.clone(),
-                                    HdlNode::black_box(HdlSymbol::BlackBox(
-                                        dep.get_suffix().to_string(),
-                                    )),
-                                );
-                                graph_map.add_edge_by_key(&dep_name, &node_name, ());
-                            }
-                            _ => (),
-                        }
-                    // this entity does not exist or was not logged
-                    } else {
-                        // create new node for black box entity
-                        if graph_map.has_node_by_key(dep) == false {
-                            graph_map.add_node(
-                                dep.clone(),
-                                HdlNode::black_box(HdlSymbol::BlackBox(
-                                    dep.get_suffix().to_string(),
-                                )),
-                            );
-                        }
-                        graph_map.add_edge_by_key(&dep, &node_name, ());
-                    }
-                // the dependency has a prefix (a library) with it
-                } else {
-                    graph_map.add_edge_by_key(dep, &node_name, ());
-                };
-            }
-        }
     }
 
     pub fn create_systemverilog_node<'a, 'b>(
@@ -897,6 +825,20 @@ impl Plan {
                         CompoundIdentifier::new(
                             lib.clone(),
                             LangIdentifier::SystemVerilog(name.unwrap().clone()),
+                        ),
+                        HdlNode::new(HdlSymbol::SystemVerilog(f), node),
+                    );
+                }
+                SystemVerilogSymbol::Config(_) => {
+                    component_pairs.insert(
+                        LangIdentifier::Verilog(name.unwrap().clone()),
+                        LangIdentifier::Vhdl(vhdl_lib.clone()),
+                    );
+                    // add primary design units into the graph
+                    graph_map.add_node(
+                        CompoundIdentifier::new(
+                            lib.clone(),
+                            LangIdentifier::Verilog(name.unwrap().clone()),
                         ),
                         HdlNode::new(HdlSymbol::SystemVerilog(f), node),
                     );
@@ -972,6 +914,100 @@ impl Plan {
             );
         }
         Ok(())
+    }
+
+    pub fn connect_edges_from_verilog<'b, 'a>(
+        graph_map: &'b mut GraphMap<CompoundIdentifier, HdlNode<'a>, ()>,
+        component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
+        only_components: bool,
+    ) -> () {
+        // filter for the verilog/systemverilog nodes for connections
+        let mut module_nodes_iter = graph_map
+            .get_map()
+            .values()
+            .filter_map(|f| {
+                if f.as_ref().get_lang() == Lang::Verilog
+                    || f.as_ref().get_lang() == Lang::SystemVerilog
+                {
+                    let sym = f.as_ref().get_symbol();
+                    match only_components {
+                        true => {
+                            if sym.is_component() == true {
+                                Some((
+                                    f.as_ref().get_library(),
+                                    sym.get_name(),
+                                    sym.as_module().unwrap().get_edge_list_entities(),
+                                ))
+                            } else {
+                                None
+                            }
+                        }
+                        false => Some((
+                            f.as_ref().get_library(),
+                            sym.get_name(),
+                            sym.get_refs()
+                                .unwrap_or(&HashSet::new())
+                                .into_iter()
+                                .map(|c| c.clone())
+                                .collect(),
+                        )),
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<(LangIdentifier, LangIdentifier, Vec<CompoundIdentifier>)>>()
+            .into_iter();
+
+        // go through the filtered nodes and connect to other design elements/units that exist
+        while let Some((lib, name, deps)) = module_nodes_iter.next() {
+            let node_name = CompoundIdentifier::new(lib, name);
+            // create edges by ordered edge list (for entities)
+            let mut deps = deps.into_iter();
+            while let Some(dep) = &deps.next() {
+                // need to locate the key with a suffix matching `dep` if it was a component instantiation
+                if dep.get_prefix().is_none() {
+                    if let Some(lib) = component_pairs.get(dep.get_suffix()) {
+                        let b = graph_map.add_edge_by_key(
+                            &CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone()),
+                            &node_name,
+                            (),
+                        );
+                        match b {
+                            // create black box entity
+                            EdgeStatus::MissingSource => {
+                                let dep_name =
+                                    CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone());
+
+                                graph_map.add_node(
+                                    dep_name.clone(),
+                                    HdlNode::black_box(HdlSymbol::BlackBox(
+                                        dep.get_suffix().to_string(),
+                                    )),
+                                );
+                                graph_map.add_edge_by_key(&dep_name, &node_name, ());
+                            }
+                            _ => (),
+                        }
+                    // this entity does not exist or was not logged
+                    } else {
+                        // create new node for black box entity
+                        if graph_map.has_node_by_key(dep) == false {
+                            graph_map.add_node(
+                                dep.clone(),
+                                HdlNode::black_box(HdlSymbol::BlackBox(
+                                    dep.get_suffix().to_string(),
+                                )),
+                            );
+                        }
+                        graph_map.add_edge_by_key(&dep, &node_name, ());
+                    }
+                // the dependency has a prefix (a library) with it
+                } else {
+                    graph_map.add_edge_by_key(dep, &node_name, ());
+                };
+            }
+        }
     }
 
     /// Builds a graph of design units. Used for planning
@@ -1247,7 +1283,7 @@ impl Plan {
                             return Err(PlanError::BadTop(t.clone()))?;
                         }
                     } else {
-                        return Err(PlanError::BadEntity(t.clone()))?;
+                        // return Err(PlanError::BadEntity(t.clone()))?;
                     }
                     let n: usize = node.index();
                     // try to detect top level testbench

@@ -9,6 +9,7 @@ use crate::core::lang::parser::{Parse, Symbol};
 use crate::core::lang::reference::RefSet;
 use crate::core::lang::sv::token::keyword::Keyword;
 use crate::core::lang::sv::token::token::SystemVerilogToken;
+use crate::core::lang::verilog::symbols::config::Config;
 use std::str::FromStr;
 
 use super::super::verilog::symbols::module::Module;
@@ -27,38 +28,39 @@ fn statement_to_string(stmt: &Statement) -> String {
     })
 }
 
+/// Design elements of the SystemVerilog Language.
 #[derive(Debug, PartialEq)]
 pub enum SystemVerilogSymbol {
-    // primary design units (verilog only has 1 haha)
     Module(Module),
-    // other "design units" / things that can exist at the top level
+    Config(Config),
 }
 
 impl SystemVerilogSymbol {
     pub fn as_name(&self) -> Option<&Identifier> {
         match &self {
             Self::Module(m) => Some(m.get_name()),
-            // _ => None,
+            Self::Config(c) => Some(c.get_name()),
         }
     }
 
     pub fn get_position(&self) -> &Position {
         match self {
             Self::Module(m) => m.get_position(),
-            // _ => todo!()
+            Self::Config(c) => c.get_position(),
         }
     }
 
     pub fn as_module(&self) -> Option<&Module> {
         match &self {
             Self::Module(m) => Some(m),
-            // _ => None,
+            _ => None,
         }
     }
 
     pub fn get_refs(&self) -> &RefSet {
         match &self {
             Self::Module(m) => m.get_refs(),
+            Self::Config(c) => c.get_refs(),
         }
     }
 }
@@ -112,29 +114,30 @@ impl Parse<SystemVerilogToken> for SystemVerilogParser {
 
         while let Some(t) = tokens.next() {
             // take attribute and ignore if okay
-            if t.as_ref().check_delimiter(&Operator::AttrL) {
+            if t.as_type().check_delimiter(&Operator::AttrL) {
                 match SystemVerilogSymbol::parse_attr(&mut tokens, t.into_position()) {
                     Ok(_) => (),
                     Err(e) => symbols.push(Err(e)),
                 }
             }
             // create module symbol
-            else if t.as_ref().check_keyword(&Keyword::Module)
-                || t.as_ref().check_keyword(&Keyword::Macromodule)
+            else if t.as_type().check_keyword(&Keyword::Module)
+                || t.as_type().check_keyword(&Keyword::Macromodule)
             {
                 symbols.push(
                     match SystemVerilogSymbol::parse_module(&mut tokens, t.into_position()) {
-                        Ok(module) => {
-                            // println!("info: detected {}", module);
-                            // attrs = module.add_attributes(attrs);
-                            Ok(Symbol::new(module))
-                        }
+                        Ok(module) => Ok(Symbol::new(module)),
                         Err(e) => Err(e),
                     },
                 );
             // skip comments
-            } else if t.as_type().as_comment().is_some() == true {
-                continue;
+            } else if t.as_type().check_keyword(&Keyword::Config) {
+                symbols.push(
+                    match SystemVerilogSymbol::parse_config(&mut tokens, t.into_position()) {
+                        Ok(config) => Ok(Symbol::new(config)),
+                        Err(e) => Err(e),
+                    },
+                )
             } else if t.as_type().is_eof() == false {
                 // skip any potential illegal/unknown tokens at global scale
                 // println!("{:?}", t);
@@ -149,13 +152,18 @@ impl Parse<SystemVerilogToken> for SystemVerilogParser {
 }
 
 impl SystemVerilogSymbol {
-    /// Parses an `Entity` primary design unit from the entity's identifier to
-    /// the END closing statement.
     fn parse_module<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Self, SystemVerilogError>
     where
         I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         Ok(Self::Module(Module::from_tokens(tokens, pos)?))
+    }
+
+    fn parse_config<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Self, SystemVerilogError>
+    where
+        I: Iterator<Item = Token<SystemVerilogToken>>,
+    {
+        Ok(Self::Config(Config::from_tokens(tokens, pos)?))
     }
 
     fn parse_attr<I>(

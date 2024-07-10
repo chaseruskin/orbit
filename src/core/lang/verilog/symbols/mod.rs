@@ -14,8 +14,10 @@ use crate::core::lang::verilog::interface::{Port, PortList};
 use crate::core::lang::verilog::token::token::VerilogToken;
 use std::str::FromStr;
 
+pub mod config;
 pub mod module;
 
+use config::Config;
 use module::Module;
 
 pub type Statement = Vec<Token<SystemVerilogToken>>;
@@ -32,38 +34,46 @@ fn statement_to_string(stmt: &Statement) -> String {
     })
 }
 
+/// Design elements of the Verilog Language.
 #[derive(Debug, PartialEq)]
 pub enum VerilogSymbol {
-    // primary design units (verilog only has 1 haha)
     Module(Module),
-    // other "design units" / things that can exist at the top level
+    Config(Config),
 }
 
 impl VerilogSymbol {
     pub fn as_name(&self) -> Option<&Identifier> {
         match &self {
             Self::Module(m) => Some(m.get_name()),
-            // _ => None,
+            Self::Config(c) => Some(c.get_name()),
         }
     }
 
     pub fn get_position(&self) -> &Position {
         match self {
             Self::Module(m) => m.get_position(),
-            // _ => todo!()
+            Self::Config(c) => c.get_position(),
         }
     }
 
     pub fn as_module(&self) -> Option<&Module> {
         match &self {
             Self::Module(m) => Some(m),
-            // _ => None,
+            _ => None,
+        }
+    }
+
+    pub fn as_config(&self) -> Option<&Config> {
+        match &self {
+            Self::Config(c) => Some(c),
+            _ => None,
         }
     }
 
     pub fn get_refs(&self) -> &RefSet {
         match &self {
             Self::Module(m) => m.get_refs(),
+            Self::Config(c) => c.get_refs(),
         }
     }
 }
@@ -111,6 +121,7 @@ impl Parse<VerilogToken> for VerilogParser {
     fn parse(
         tokens: Vec<Token<VerilogToken>>,
     ) -> Vec<Result<Symbol<Self::SymbolType>, Self::SymbolError>> {
+        // up cast the tokens into SystemVerilog tokens (since SV is a superset)
         let tokens: Vec<Token<SystemVerilogToken>> = tokens
             .into_iter()
             .map(|m| {
@@ -124,33 +135,33 @@ impl Parse<VerilogToken> for VerilogParser {
 
         while let Some(t) = tokens.next() {
             // take attribute and ignore if okay
-            if t.as_ref().check_delimiter(&Operator::AttrL) {
+            if t.as_type().check_delimiter(&Operator::AttrL) {
                 match VerilogSymbol::parse_attr(&mut tokens, t.into_position()) {
                     Ok(_) => (),
                     Err(e) => symbols.push(Err(e)),
                 }
             }
             // create module symbol
-            else if t.as_ref().check_keyword(&Keyword::Module)
-                || t.as_ref().check_keyword(&Keyword::Macromodule)
+            else if t.as_type().check_keyword(&Keyword::Module)
+                || t.as_type().check_keyword(&Keyword::Macromodule)
             {
                 symbols.push(
                     match VerilogSymbol::parse_module(&mut tokens, t.into_position()) {
-                        Ok(module) => {
-                            // println!("info: detected {}", module);
-                            // attrs = module.add_attributes(attrs);
-                            Ok(Symbol::new(module))
-                        }
+                        Ok(module) => Ok(Symbol::new(module)),
                         Err(e) => Err(e),
                     },
                 );
             // skip comments
-            } else if t.as_type().as_comment().is_some() == true {
-                continue;
+            } else if t.as_type().check_keyword(&Keyword::Config) {
+                symbols.push(
+                    match VerilogSymbol::parse_config(&mut tokens, t.into_position()) {
+                        Ok(config) => Ok(Symbol::new(config)),
+                        Err(e) => Err(e),
+                    },
+                );
+            // skip any potential illegal/unknown tokens at global scale
             } else if t.as_type().is_eof() == false {
-                // skip any potential illegal/unknown tokens at global scale
                 // println!("{:?}", t);
-                // illegal tokens at global scope?
                 // symbols.push(Err(VerilogError::Vague))
                 continue;
             }
@@ -161,23 +172,17 @@ impl Parse<VerilogToken> for VerilogParser {
 }
 
 impl VerilogSymbol {
-    // fn parse_directive<I>(
-    //     tokens: &mut Peekable<I>,
-    //     pos: Position,
-    // ) -> Result<(), VerilogError>
-    // where
-    //     I: Iterator<Item = Token<SystemVerilogToken>>,
-    // {
-    //     // take until a newline (this is not formally correct but will be OK for now)
-    //     while let Some(t) = tokens.peek() {
-    //         if t.locate().line() > pos.line() {
-    //             break;
-    //         } else {
-    //             tokens.next();
-    //         }
-    //     }
-    //     Ok(())
-    // }
+    /// Parses an `Config` design element from the config's identifier to
+    /// the END closing statement.
+    fn parse_config<I>(
+        tokens: &mut Peekable<I>,
+        pos: Position,
+    ) -> Result<VerilogSymbol, VerilogError>
+    where
+        I: Iterator<Item = Token<SystemVerilogToken>>,
+    {
+        Ok(VerilogSymbol::Config(Config::from_tokens(tokens, pos)?))
+    }
 
     fn parse_assignment<I>(
         tokens: &mut Peekable<I>,
@@ -721,7 +726,7 @@ impl VerilogSymbol {
                     }
                 }
                 // take until closing bracket
-                4 => { 
+                4 => {
                     if t.as_ref().check_delimiter(&Operator::BrackL) {
                         counter += 1;
                     } else if t.as_ref().check_delimiter(&Operator::BrackR) {

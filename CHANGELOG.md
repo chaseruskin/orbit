@@ -17,6 +17,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## 0.16.0 - unreleased
 
+### Features
+- adds support for verilog/systemverilog `config` design elements
+
 ### Changes
 - viewing design units of a local ip now display the private units by default without having to specify `--all`; private units are typically hidden on views of ip outside the local path
 

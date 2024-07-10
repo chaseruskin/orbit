@@ -77,7 +77,7 @@ impl Subcommand<Context> for View {
                     Some(Ok(r)) => {
                         is_local_ip = true;
                         r
-                    },
+                    }
                     Some(Err(e)) => return Err(AnyError(format!("{}", e.to_string())))?,
                     _ => panic!("unreachable code"),
                 }
@@ -176,7 +176,8 @@ impl View {
 
         for unit in table {
             // skip this unit if it is not listed public and all is not provided
-            if is_local_ip == false && all == false && unit.get_visibility() != &Visibility::Public {
+            if is_local_ip == false && all == false && unit.get_visibility() != &Visibility::Public
+            {
                 continue;
             }
             result.push_str(&format!(

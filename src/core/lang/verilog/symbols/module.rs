@@ -27,10 +27,20 @@ pub struct Module {
 }
 
 impl Module {
+    pub fn get_name(&self) -> &Identifier {
+        &self.name
+    }
+
     pub fn get_position(&self) -> &Position {
         &self.pos
     }
 
+    pub fn get_refs(&self) -> &RefSet {
+        &self.refs
+    }
+}
+
+impl Module {
     pub fn into_declaration(&self) -> String {
         let mut result = String::new();
 
@@ -101,20 +111,12 @@ impl Module {
 }
 
 impl Module {
-    pub fn get_name(&self) -> &Identifier {
-        &self.name
-    }
-
     pub fn get_deps(&self) -> &RefSet {
         &self.deps
     }
 
     pub fn is_testbench(&self) -> bool {
         self.ports.is_empty()
-    }
-
-    pub fn get_refs(&self) -> &RefSet {
-        &self.refs
     }
 }
 
@@ -132,7 +134,7 @@ impl Module {
         list
     }
 
-    /// Parses an `Entity` primary design unit from the entity's identifier to
+    /// Parses an `Module` design element from the module's identifier to
     /// the END closing statement.
     pub fn from_tokens<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Self, VerilogError>
     where

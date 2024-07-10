@@ -6,6 +6,7 @@ use std::str::FromStr;
 #[derive(PartialEq, Hash, Eq, Debug)]
 pub enum PrimaryShape {
     Module,
+    Config,
 }
 
 #[derive(PartialEq, Hash, Eq, Debug)]
@@ -32,6 +33,7 @@ impl PrimaryUnit {
         };
         let shape = match tbl.get("type")?.as_str()? {
             "module" => PrimaryShape::Module,
+            "config" => PrimaryShape::Config,
             _ => return None,
         };
         Some(Self {
@@ -48,6 +50,7 @@ impl std::fmt::Display for PrimaryUnit {
             "{}",
             match self.shape {
                 PrimaryShape::Module => "module",
+                PrimaryShape::Config => "config",
             }
         )
     }
@@ -75,9 +78,10 @@ impl Unit {
     }
 
     pub fn is_usable_component(&self) -> Option<()> {
-        match self.get_symbol()?.as_module()?.is_testbench() {
-            true => None,
-            false => Some(()),
+        let sym = self.get_symbol()?;
+        match sym.as_module()?.is_testbench() == false {
+            true => Some(()),
+            false => None,
         }
     }
 }
@@ -120,6 +124,17 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
                             name.unwrap().clone(),
                             PrimaryUnit {
                                 shape: PrimaryShape::Module,
+                                unit: Unit {
+                                    name: name.unwrap().clone(),
+                                    symbol: Some(sym),
+                                    source: source_file.clone(),
+                                },
+                            },
+                        )),
+                        VerilogSymbol::Config(_) => Some((
+                            name.unwrap().clone(),
+                            PrimaryUnit {
+                                shape: PrimaryShape::Config,
                                 unit: Unit {
                                     name: name.unwrap().clone(),
                                     symbol: Some(sym),

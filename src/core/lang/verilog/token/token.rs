@@ -547,7 +547,7 @@ impl VerilogToken {
         } else {
             number.push(c0);
             if let Some(c) = train.peek() {
-                if c == &'(' {
+                if c == &'(' || c == &'{' {
                     return Ok(Self::Operator(Operator::SingleQuote));
                 }
             }
@@ -576,11 +576,10 @@ impl VerilogToken {
                     number.push(train.consume().unwrap());
                     return Ok(Self::Number(Number::Unbased(number.to_string())));
                 }
-                '(' => {
+                '(' | '{' => {
                     return Ok(Self::Number(Number::OnlyBase(number.to_string())));
                 }
                 _ => {
-                    println!("- {}", c);
                     return Err(VerilogError::InvalidBaseSpecifier(*c));
                 }
             }

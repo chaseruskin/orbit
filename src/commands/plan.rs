@@ -829,7 +829,7 @@ impl Plan {
                         HdlNode::new(HdlSymbol::SystemVerilog(f), node),
                     );
                 }
-                SystemVerilogSymbol::Config(_) => {
+                SystemVerilogSymbol::Config(_) | SystemVerilogSymbol::Package(_) => {
                     component_pairs.insert(
                         LangIdentifier::Verilog(name.unwrap().clone()),
                         LangIdentifier::Vhdl(vhdl_lib.clone()),

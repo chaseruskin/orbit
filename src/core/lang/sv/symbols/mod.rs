@@ -1,5 +1,7 @@
 use std::iter::Peekable;
 
+use package::Package;
+
 use super::error::SystemVerilogError;
 use super::token::identifier::Identifier;
 use super::token::operator::Operator;
@@ -15,6 +17,8 @@ use std::str::FromStr;
 use super::super::verilog::symbols::module::Module;
 
 pub type Statement = Vec<Token<SystemVerilogToken>>;
+
+pub mod package;
 
 fn into_tokens(stmt: Statement) -> Vec<SystemVerilogToken> {
     stmt.into_iter().map(|t| t.take()).collect()
@@ -33,6 +37,7 @@ fn statement_to_string(stmt: &Statement) -> String {
 pub enum SystemVerilogSymbol {
     Module(Module),
     Config(Config),
+    Package(Package),
 }
 
 impl SystemVerilogSymbol {
@@ -40,6 +45,7 @@ impl SystemVerilogSymbol {
         match &self {
             Self::Module(m) => Some(m.get_name()),
             Self::Config(c) => Some(c.get_name()),
+            Self::Package(p) => Some(p.get_name()),
         }
     }
 
@@ -47,6 +53,7 @@ impl SystemVerilogSymbol {
         match self {
             Self::Module(m) => m.get_position(),
             Self::Config(c) => c.get_position(),
+            Self::Package(p) => p.get_position(),
         }
     }
 
@@ -61,6 +68,7 @@ impl SystemVerilogSymbol {
         match &self {
             Self::Module(m) => m.get_refs(),
             Self::Config(c) => c.get_refs(),
+            Self::Package(p) => p.get_refs(),
         }
     }
 }
@@ -120,7 +128,7 @@ impl Parse<SystemVerilogToken> for SystemVerilogParser {
                     Err(e) => symbols.push(Err(e)),
                 }
             }
-            // create module symbol
+            // create module design element
             else if t.as_type().check_keyword(&Keyword::Module)
                 || t.as_type().check_keyword(&Keyword::Macromodule)
             {
@@ -130,7 +138,15 @@ impl Parse<SystemVerilogToken> for SystemVerilogParser {
                         Err(e) => Err(e),
                     },
                 );
-            // skip comments
+            // create package design element
+            } else if t.as_type().check_keyword(&Keyword::Package) {
+                symbols.push(
+                    match SystemVerilogSymbol::parse_package(&mut tokens, t.into_position()) {
+                        Ok(module) => Ok(Symbol::new(module)),
+                        Err(e) => Err(e),
+                    },
+                );
+            // create config design element
             } else if t.as_type().check_keyword(&Keyword::Config) {
                 symbols.push(
                     match SystemVerilogSymbol::parse_config(&mut tokens, t.into_position()) {
@@ -157,6 +173,13 @@ impl SystemVerilogSymbol {
         I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         Ok(Self::Module(Module::from_tokens(tokens, pos)?))
+    }
+
+    fn parse_package<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Self, SystemVerilogError>
+    where
+        I: Iterator<Item = Token<SystemVerilogToken>>,
+    {
+        Ok(Self::Package(Package::from_tokens(tokens, pos)?))
     }
 
     fn parse_config<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Self, SystemVerilogError>

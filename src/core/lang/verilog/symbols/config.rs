@@ -73,6 +73,12 @@ impl Config {
             if t.as_type().check_delimiter(&Operator::Terminator) {
                 break;
             } else if let Some(name) = t.take().take_identifier() {
+                // skip the library name if this is what we are looking at
+                if let Some(t_next) = tokens.peek() {
+                    if t_next.as_type().check_delimiter(&Operator::Dot) == true {
+                        continue;
+                    }
+                }
                 refs.insert(CompoundIdentifier::new_minimal_verilog(name));
             }
         }

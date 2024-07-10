@@ -111,9 +111,12 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
     for source_file in files {
         // only read the HDL files
         if crate::core::fileset::is_systemverilog(&source_file) == true {
-            // println!("parse verilog: {:?}", source_file);
             // parse text into Verilog symbols
-            let contents = std::fs::read_to_string(&source_file).unwrap();
+            let contents = match std::fs::read_to_string(&source_file) {
+                Ok(dump) => dump,
+                Err(e) => return Err(CodeFault(Some(source_file.clone()), Box::new(e))),
+            };
+
             let symbols = match SystemVerilogParser::read(&contents) {
                 Ok(s) => s.into_symbols(),
                 Err(e) => Err(CodeFault(Some(source_file.clone()), Box::new(e)))?,

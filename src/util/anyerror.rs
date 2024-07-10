@@ -57,6 +57,9 @@ impl CodeFault {
 
 impl Display for CodeFault {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.1)
+        match &self.0 {
+            Some(src) => write!(f, "failed to read file {:?}: {}", src, self.1),
+            None => write!(f, "{}", self.1),
+        }
     }
 }

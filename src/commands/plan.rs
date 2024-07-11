@@ -1650,11 +1650,9 @@ impl std::fmt::Display for PlanError {
             ),
             Self::Empty => write!(f, "zero components found in the local ip"),
             Self::BadEntity(id) => write!(f, "design element \"{}\" is not a component", id),
-            Self::BadTestbench(id, hint) => write!(
-                f,
-                "component \"{}\" is not a testbench{}",
-                id, hint,
-            ),
+            Self::BadTestbench(id, hint) => {
+                write!(f, "component \"{}\" is not a testbench{}", id, hint,)
+            }
             Self::BadTop(id, hint) => write!(
                 f,
                 "component \"{}\" is a testbench and cannot be top{}",

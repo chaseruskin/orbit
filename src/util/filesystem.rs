@@ -182,7 +182,7 @@ pub fn copy(
     source: &PathBuf,
     target: &PathBuf,
     minimal: bool,
-    keep: Option<HashSet<PathBuf>>,
+    _keep: Option<HashSet<PathBuf>>,
 ) -> Result<(), Fault> {
     // create missing directories to `target`
     std::fs::create_dir_all(&target)?;
@@ -190,19 +190,25 @@ pub fn copy(
     let mut from_paths = Vec::new();
 
     // respect .orbitignore by using `WalkBuilder`
-    for result in WalkBuilder::new(&source)
-        .hidden(false)
-        .add_custom_ignore_filename(ORBIT_IGNORE_FILE)
-        // only capture files that are required by minimal installations
-        .filter_entry(move |f| {
-            f.path().is_file() == false
-                || minimal == false
-                || is_minimal(&f.file_name().to_string_lossy()) == true
-                || (keep.is_some()
-                    && is_keep_override(&f.path().to_path_buf(), &keep.as_ref().unwrap()) == true)
-        })
-        .build()
-    {
+    let mut walker = WalkBuilder::new(&source);
+    walker.hidden(minimal);
+    if minimal == true {
+        walker.add_custom_ignore_filename(ORBIT_IGNORE_FILE);
+    }
+    // WalkBuilder::new(&source)
+    //     .hidden(minimal)
+    //     .add_custom_ignore_filename(ORBIT_IGNORE_FILE)
+    //     // only capture files that are required by minimal installations
+    //     .filter_entry(move |f| {
+    //         f.path().is_file() == false
+    //             || minimal == false
+    //             || is_minimal(&f.file_name().to_string_lossy()) == true
+    //             || (keep.is_some()
+    //                 && is_keep_override(&f.path().to_path_buf(), &keep.as_ref().unwrap()) == true)
+    //     })
+    //     .build()
+    let walk = walker.build();
+    for result in walk {
         match result {
             Ok(entry) => from_paths.push(entry.path().to_path_buf()),
             Err(_) => (),

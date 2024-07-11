@@ -19,6 +19,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ### Features
 - adds support for systemverilog `interface` design elements as well as detecting references to them in module port declarations
+- systemverilog code can now be read using `orbit read` command
 - adds support for verilog/systemverilog `config` design elements
 - adds support for systemverilog `package` design elements (along with detecting imports in other design elements)
 

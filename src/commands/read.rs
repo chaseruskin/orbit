@@ -12,6 +12,8 @@ use crate::core::ip::Ip;
 use crate::core::ip::PartialIpSpec;
 use crate::core::lang::lexer::Position;
 use crate::core::lang::lexer::Token;
+use crate::core::lang::sv::token::token::SystemVerilogToken;
+use crate::core::lang::sv::token::tokenizer::SystemVerilogTokenizer;
 use crate::core::lang::verilog::token::token::VerilogToken;
 use crate::core::lang::verilog::token::tokenizer::VerilogTokenizer;
 use crate::core::lang::vhdl::token::VhdlToken;
@@ -131,7 +133,7 @@ impl Read {
         let (start, end) = match lang {
             Lang::Vhdl => self.read_vhdl(&contents),
             Lang::Verilog => self.read_verilog(&contents),
-            Lang::SystemVerilog => todo!(),
+            Lang::SystemVerilog => self.read_systemverilog(&contents),
         }?;
 
         let segment: String = {
@@ -237,7 +239,11 @@ impl Read {
                 match unit.get_lang() {
                     Lang::Vhdl => unit.get_vhdl_symbol().unwrap().get_position().clone(),
                     Lang::Verilog => unit.get_verilog_symbol().unwrap().get_position().clone(),
-                    Lang::SystemVerilog => todo!(),
+                    Lang::SystemVerilog => unit
+                        .get_systemverilog_symbol()
+                        .unwrap()
+                        .get_position()
+                        .clone(),
                 },
             ),
             None => {
@@ -645,6 +651,201 @@ impl Read {
                     if let Some(source_t) = src_tokens_iter.next() {
                         // lost sight
                         if Self::check_tokens_eq_verilog(source_t.as_type(), find_t.as_type())
+                            == false
+                        {
+                            tracking = false;
+                            break;
+                        }
+                    } else {
+                        tracking = false;
+                        break;
+                    }
+                }
+                // initiate lock
+                if tracking == true {
+                    // @todo: return last index of list for skipping purposes
+                    return Some(t.locate().clone());
+                }
+            }
+            // @todo: handle follow better (keep iterating until hitting a wrong one)
+        }
+        None
+    }
+}
+
+// SystemVerilog support
+impl Read {
+    fn read_systemverilog(
+        &self,
+        contents: &str,
+    ) -> Result<(Option<Position>, Option<Position>), Fault> {
+        let start: Option<SystemVerilogTokenizer> = match &self.start {
+            Some(s) => Some(SystemVerilogTokenizer::from_str(s)?),
+            None => None,
+        };
+        let end: Option<SystemVerilogTokenizer> = match &self.end {
+            Some(s) => Some(SystemVerilogTokenizer::from_str(s)?),
+            None => None,
+        };
+        let comment: Option<SystemVerilogTokenizer> = match &self.comment {
+            Some(s) => Some(SystemVerilogTokenizer::from_str(s)?),
+            None => None,
+        };
+
+        let src_tokens = SystemVerilogTokenizer::from_source_code(&contents).into_tokens_all();
+
+        // perform a search on tokens
+        let (start, end) = {
+            // get the tokens
+            let start_tokens = match &start {
+                Some(tokenizer) => tokenizer
+                    .as_tokens_all()
+                    .into_iter()
+                    .filter(|t| t.as_type() != &SystemVerilogToken::EOF)
+                    .collect(),
+                None => Vec::new(),
+            };
+            let end_tokens = match &end {
+                Some(tokenizer) => tokenizer
+                    .as_tokens_all()
+                    .into_iter()
+                    .filter(|t| t.as_type() != &SystemVerilogToken::EOF)
+                    .collect(),
+                None => Vec::new(),
+            };
+            let comment_tokens = match &comment {
+                Some(tokenizer) => tokenizer
+                    .as_tokens_all()
+                    .into_iter()
+                    .filter(|t| t.as_type() != &SystemVerilogToken::EOF)
+                    .collect(),
+                None => Vec::new(),
+            };
+            // search over the source code tokens
+            let start = Self::find_location_systemverilog(&src_tokens, &start_tokens);
+            // limit based on starting index
+            let remaining_tokens = match &start {
+                Some(pos) => src_tokens
+                    .into_iter()
+                    .skip_while(|p| p.locate() <= pos)
+                    .collect(),
+                None => {
+                    if self.start.is_some() == true {
+                        return Err(AnyError(format!(
+                            "Failed to find code segment matching 'start' code chunk"
+                        )))?;
+                    }
+                    src_tokens
+                }
+            };
+
+            let end = Self::find_location_systemverilog(&remaining_tokens, &end_tokens);
+            let remaining_tokens = match &end {
+                Some(pos) => remaining_tokens
+                    .into_iter()
+                    .take_while(|p| p.locate() < pos)
+                    .collect(),
+                None => {
+                    if self.end.is_some() == true {
+                        return Err(AnyError(format!(
+                            "failed to find code segment matching 'end' code chunk"
+                        )))?;
+                    }
+                    remaining_tokens
+                }
+            };
+
+            // find the comment
+            let first_token = Self::find_location_systemverilog(&remaining_tokens, &comment_tokens);
+            // grab all continuous '--' tokens immediately above/before this location
+            let comment = match &first_token {
+                Some(pos) => {
+                    let mut line = pos.line();
+                    // println!("{:?}", pos);
+                    match remaining_tokens
+                        .into_iter()
+                        .rev()
+                        .skip_while(|p| p.locate() >= pos)
+                        .take_while(|p| {
+                            // only take immediate comments grouped together
+                            line -= 1;
+                            p.as_type().as_comment().is_some() && p.locate().line() == line
+                        })
+                        .last()
+                    {
+                        Some(token) => Some(token.locate().clone()),
+                        None => {
+                            return Err(AnyError(format!(
+                                "Zero comments associated with code chunk"
+                            )))?
+                        }
+                    }
+                }
+                None => {
+                    if self.comment.is_some() == true {
+                        return Err(AnyError(format!(
+                            "Failed to find code segment matching 'doc' code chunk"
+                        )))?;
+                    }
+                    None
+                }
+            };
+
+            let end = match &comment {
+                Some(_) => first_token,
+                None => end,
+            };
+
+            let start = match comment {
+                Some(c) => Some(c),
+                None => start,
+            };
+
+            (start, end)
+        };
+        Ok((start, end))
+    }
+
+    fn check_tokens_eq_systemverilog(
+        source: &SystemVerilogToken,
+        sub: &SystemVerilogToken,
+    ) -> bool {
+        match sub {
+            // skip EOF token
+            &SystemVerilogToken::EOF => true,
+            // only match on the fact that they are comments
+            SystemVerilogToken::Comment(_) => source.as_comment().is_some(),
+            _ => source == sub,
+        }
+    }
+
+    fn find_location_systemverilog(
+        src_tokens: &Vec<Token<SystemVerilogToken>>,
+        find_tokens: &Vec<&Token<SystemVerilogToken>>,
+    ) -> Option<Position> {
+        let mut tracking: bool;
+        let mut src_tokens_iter = src_tokens.iter();
+        while let Some(t) = src_tokens_iter.next() {
+            // begin to see if we start tracking
+            // println!("{:?} {:?}", find_tokens.first().unwrap().as_type(), t.as_type());
+
+            if find_tokens.len() > 0
+                && Self::check_tokens_eq_systemverilog(
+                    t.as_type(),
+                    find_tokens.first().unwrap().as_type(),
+                ) == true
+            {
+                // println!("{}", "HERE");
+                let mut find_tokens_iter = find_tokens.iter().skip(1);
+                tracking = true;
+                while let Some(find_t) = find_tokens_iter.next() {
+                    // skip the EOF token
+                    if find_t.as_type() == &SystemVerilogToken::EOF {
+                        continue;
+                    }
+                    if let Some(source_t) = src_tokens_iter.next() {
+                        // lost sight
+                        if Self::check_tokens_eq_systemverilog(source_t.as_type(), find_t.as_type())
                             == false
                         {
                             tracking = false;

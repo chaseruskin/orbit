@@ -113,7 +113,8 @@ impl Manifest {
         match self.get_ip().get_library().as_ref() {
             Some(l) => LangIdentifier::Vhdl(Identifier::from(l)),
             // IDEA: or for none -> Identifier::from(self.get_man().get_ip().get_name()),
-            None => LangIdentifier::Vhdl(Identifier::new_working()),
+            // OR: Identifier::new_working()
+            None => LangIdentifier::Vhdl(Identifier::from(self.get_ip().get_name())),
         }
     }
 

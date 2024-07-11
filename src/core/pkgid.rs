@@ -3,14 +3,44 @@
 //!     A `pkgid` is formed is a unique string following VLNV format that allows
 //!     reference to a particular package/ip.
 
-use serde_derive::{Deserialize, Serialize};
+use serde::{de, Deserialize};
+use serde_derive::Serialize;
 use std::error::Error;
-use std::fmt::Display;
+use std::fmt::{self, Display};
 use std::str::FromStr;
 
-#[derive(Debug, PartialOrd, Clone, Eq, Hash, Deserialize, Serialize, Ord)]
+#[derive(Debug, PartialOrd, Clone, Eq, Hash, Serialize, Ord)]
 #[serde(transparent)]
 pub struct PkgPart(String);
+
+impl<'de> Deserialize<'de> for PkgPart {
+    fn deserialize<D>(deserializer: D) -> Result<PkgPart, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        struct LayerVisitor;
+
+        impl<'de> de::Visitor<'de> for LayerVisitor {
+            type Value = PkgPart;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("an ip name")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                match PkgPart::from_str(v) {
+                    Ok(v) => Ok(v),
+                    Err(e) => Err(de::Error::custom(e)),
+                }
+            }
+        }
+
+        deserializer.deserialize_map(LayerVisitor)
+    }
+}
 
 impl PkgPart {
     pub fn new() -> Self {

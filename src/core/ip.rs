@@ -1,5 +1,6 @@
 use crate::core::manifest;
 use crate::core::manifest::Manifest;
+use crate::error::LastError;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::CodeFault;
 use crate::util::anyerror::Fault;
@@ -19,11 +20,11 @@ use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::ORBIT_METADATA_FILE;
 use crate::core::manifest::ORBIT_SUM_FILE;
 use crate::core::uuid::Uuid;
+use crate::error::Error;
 use crate::util::sha256::Sha256Hash;
 use colored::Colorize;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::error::Error;
 use std::str::FromStr;
 use toml_edit::Document;
 
@@ -114,7 +115,7 @@ impl Ip {
         &self.uuid
     }
 
-    pub fn check_illegal_files(root: &PathBuf) -> Result<(), Box<dyn Error>> {
+    pub fn check_illegal_files(root: &PathBuf) -> Result<(), Fault> {
         // verify no reserved files exist
         if let Ok(mut rd) = std::fs::read_dir(&root) {
             let pat = ".orbit-";
@@ -130,7 +131,7 @@ impl Ip {
         Ok(())
     }
 
-    pub fn load(root: PathBuf, is_working_ip: bool) -> Result<Self, Box<dyn Error>> {
+    pub fn load(root: PathBuf, is_working_ip: bool) -> Result<Self, Fault> {
         let man_path = root.join(IP_MANIFEST_FILE);
         if man_path.exists() == false || man_path.is_file() == false {
             return Err(AnyError(format!("A manifest file does not exist")))?;
@@ -141,7 +142,11 @@ impl Ip {
         PublicList::new(&root, man.get_ip().get_publics())?;
 
         if is_working_ip == true {
-            Self::check_illegal_files(&root)?;
+            // verify there are no files that created by user that are reserved for orbit's internal use
+            match Self::check_illegal_files(&root) {
+                Ok(()) => (),
+                Err(e) => return Err(Error::IpLoadFailed(LastError(e.to_string())))?,
+            }
         }
 
         let lock_path = root.join(IP_LOCK_FILE);
@@ -183,7 +188,7 @@ impl Ip {
     }
 
     /// Checks if the given path hosts a valid manifest file.
-    pub fn is_valid(path: &PathBuf) -> Result<(), Box<dyn Error>> {
+    pub fn is_valid(path: &PathBuf) -> Result<(), Fault> {
         let man_path = path.join(IP_MANIFEST_FILE);
         if man_path.exists() == false || man_path.is_file() == false {
             return Err(AnyError(format!("A manifest file does not exist")))?;
@@ -515,7 +520,7 @@ impl IpSpec {
 }
 
 impl FromStr for IpSpec {
-    type Err = Box<dyn Error>;
+    type Err = Fault;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // split by delimiter

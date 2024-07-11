@@ -67,6 +67,10 @@ pub enum Error {
     GetUnitNotFound(String, Hint),
     #[error("unit \"{0}\" is not a usable design component{1}")]
     GetUnitNotComponent(String, Hint),
+    #[error("failed to load ip: {0}")]
+    IpLoadFailed(LastError),
+    #[error("failed to parse ip name: {0}")]
+    IpNameParseFailed(LastError),
 }
 
 #[derive(Debug, PartialEq)]

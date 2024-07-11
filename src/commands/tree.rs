@@ -75,7 +75,7 @@ impl Tree {
 
     /// Construct and print the graph at an HDL-entity level.
     fn run_hdl_graph(&self, target: Ip, catalog: Catalog, mode: &Language) -> Result<(), Fault> {
-        let working_lib = VhdlIdentifier::new_working();
+        let working_lib = target.get_hdl_library();
 
         // build graph again but with entire set of all files available from all depdendencies
         let ip_graph = algo::compute_final_ip_graph(&target, &catalog, mode)?;
@@ -91,9 +91,10 @@ impl Tree {
 
                 let root_index = if let Some(ent) = &self.root {
                     // check if the identifier exists in the entity graph
-                    let i = match local_graph
-                        .get_node_by_key(&&CompoundIdentifier::new_vhdl(working_lib, ent.clone()))
-                    {
+                    let i = match local_graph.get_node_by_key(&&CompoundIdentifier::new(
+                        working_lib,
+                        LangIdentifier::Vhdl(ent.clone()),
+                    )) {
                         Some(id) => id.index(),
                         None => return Err(PlanError::UnknownEntity(ent.clone()))?,
                     };

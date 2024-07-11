@@ -23,6 +23,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - adds support for systemverilog `package` design elements (along with detecting imports in other design elements)
 
 ### Changes
+- Changes `--bench <unit>` option to `--tb <unit>` for `orbit test`
 - viewing design units of a local ip now display the private units by default without having to specify `--all`; private units are typically hidden on views of ip outside the local path
 
 ### Fixes

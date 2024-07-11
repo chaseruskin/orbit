@@ -1652,7 +1652,7 @@ impl std::fmt::Display for PlanError {
             Self::BadEntity(id) => write!(f, "design element \"{}\" is not a component", id),
             Self::BadTestbench(id, hint) => write!(
                 f,
-                "component \"{}\" is not a testbench and cannot be bench{}",
+                "component \"{}\" is not a testbench{}",
                 id, hint,
             ),
             Self::BadTop(id, hint) => write!(

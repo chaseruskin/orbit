@@ -7,7 +7,7 @@ Usage:
 Options:
     --target <name>         target to execute
     --dut <unit>            set the device under test
-    --bench <unit>          set the top level testbench unit
+    --tb <unit>             set the top level testbench unit
     --plan <format>         set the blueprint file format
     --target-dir <dir>      the relative directory where the target starts
     --command <path>        overwrite the target's command

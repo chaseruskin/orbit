@@ -138,13 +138,13 @@ impl Display for Hint {
             Self::ShowAvailableUnitsExternal(_) => mixed_prompt.as_ref().unwrap(),
             Self::DutSpecify => "use the \"--dut\" option to specify the design under test",
             Self::WantsTestbench => {
-                "use `orbit test` and its \"--bench\" option to select testbenches"
+                "use `orbit test` and its \"--tb\" option to select testbenches"
             }
             Self::WantsTop => {
                 "use `orbit build` and its \"--top\" option to select top-level designs"
             }
             Self::TopSpecify => "use the \"--top\" option to specify the top-level design",
-            Self::BenchSpecify => "use the \"--bench\" option to specify the testbench",
+            Self::BenchSpecify => "use the \"--tb\" option to specify the testbench",
             Self::RootSpecify => "use the \"--root\" option to specify the root design unit",
         };
         write!(

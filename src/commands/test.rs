@@ -46,7 +46,7 @@ impl Subcommand<Context> for Test {
             all: cli.check(Arg::flag("all"))?,
             // Options
             dut: cli.get(Arg::option("dut").value("unit"))?,
-            bench: cli.get(Arg::option("bench").value("unit"))?,
+            bench: cli.get(Arg::option("tb").value("unit"))?,
             plan: cli.get(Arg::option("plan").value("format"))?,
             target: cli.get(Arg::option("target"))?,
             target_dir: cli.get(Arg::option("target-dir"))?,

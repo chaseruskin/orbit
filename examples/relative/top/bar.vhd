@@ -11,15 +11,12 @@ entity bar is
   );
 end entity;
 
-architecture gp of top is
-  signal x: std_logic;
+architecture gp of bar is
 begin
 
   u0: entity sub.foo
   port map(
-    rdy => x
+    rdy => rdy
   );
-
-  rdy <= x;
 
 end architecture;

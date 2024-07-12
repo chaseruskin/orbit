@@ -77,6 +77,10 @@ pub enum Error {
     DependencyIpRelativeBadName(PkgPart, PkgPart),
     #[error("failed to load lockfile: {0}")]
     LockfileLoadFailed(LastError),
+    #[error("failed to install: {0}")]
+    InstallFailed(LastError),
+    #[error("ip has dependencies that are relative")]
+    IpHasRelativeDependencies,
 }
 
 #[derive(Debug, PartialEq)]

@@ -139,7 +139,11 @@ impl Ip {
         Ok(())
     }
 
-    pub fn relate(root: PathBuf) -> Result<Self, Fault> {
+    /// Loads an ip from the `root` path, which is read from a manifest file located
+    /// at `base_path`.
+    pub fn relate(root: PathBuf, base_path: &PathBuf) -> Result<Self, Fault> {
+        // resolve the path if it is relative
+        let root = filesystem::resolve_rel_path2(&base_path, &root);
         let mut relative_ip = Ip::load(root, true)?;
         relative_ip.mapping = Mapping::Relative;
         // verify this ip has a lockfile
@@ -315,7 +319,7 @@ impl Ip {
             true => {
                 let words =
                     std::fs::read_to_string(self.get_root().join(".orbit-dynamic")).unwrap();
-                let lib = self.get_hdl_library().to_string();
+                let lib = self.get_man().get_hdl_library().to_string();
                 words.split_terminator('\n').find_map(|entry| {
                     let (key, val) = entry.split_once('\t').unwrap();
                     match key == &lib {

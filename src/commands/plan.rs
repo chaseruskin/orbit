@@ -871,7 +871,6 @@ impl Plan {
 
         let lib = node.get_library();
         let vhdl_lib = lib.as_vhdl_name().unwrap().clone();
-        // println!("{} {}", source_file.get_file(), source_file.get_library());
 
         // add all entities to a graph and store architectures for later analysis
         let mut iter = symbols.into_iter().filter_map(|f| {
@@ -1028,6 +1027,7 @@ impl Plan {
         let mut component_pairs: HashMap<LangIdentifier, LangIdentifier> = HashMap::new();
         // read all files
         for source_file in files {
+            // println!("{}", source_file.get_file());
             match source_file.get_language() {
                 Lang::Vhdl => Self::create_vhdl_node(
                     &mut graph_map,

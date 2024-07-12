@@ -37,6 +37,7 @@ use crate::core::protocol::ProtocolError;
 use crate::core::source::Source;
 use crate::core::variable::VariableTable;
 use crate::core::version;
+use crate::error::Error;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
@@ -156,14 +157,14 @@ impl Subcommand<Context> for Install {
                             Some(ip)
                         } else {
                             Err(AnyError(format!(
-                                "Could not find ip \"{}\" at path \"{}\"",
+                                "could not find ip \"{}\" at path \"{}\"",
                                 entry,
                                 filesystem::into_std_str(search_dir)
                             )))?
                         }
                     }
                     false => Err(AnyError(format!(
-                        "Path \"{}\" does not contain an Orbit.toml file",
+                        "path \"{}\" does not contain an Orbit.toml file",
                         filesystem::into_std_str(search_dir)
                     )))?,
                 },
@@ -171,7 +172,7 @@ impl Subcommand<Context> for Install {
                 None => match search_path.exists() {
                     true => Some(Ip::load(search_dir.to_path_buf(), true)?),
                     false => Err(AnyError(format!(
-                        "Path \"{}\" does not contain an Orbit.toml file",
+                        "path \"{}\" does not contain an Orbit.toml file",
                         filesystem::into_std_str(search_dir)
                     )))?,
                 },
@@ -218,7 +219,7 @@ impl Subcommand<Context> for Install {
                         )))?;
                     }
                 } else {
-                    return Err(AnyError(format!("Failed to find an ip in the catalog")))?;
+                    return Err(AnyError(format!("failed to find an ip in the catalog")))?;
                 }
             // use the local IP if the ip spec was not provided
             } else {
@@ -231,7 +232,7 @@ impl Subcommand<Context> for Install {
         // println!("{:?},", target);
         let target = match target {
             Some(t) => t,
-            None => return Err(AnyError(format!("Failed to find an ip to install")))?,
+            None => return Err(AnyError(format!("failed to find an ip to install")))?,
         };
 
         // println!("{:?}", target.get_uuid());
@@ -314,6 +315,11 @@ impl Subcommand<Context> for Install {
             let le = LockEntry::from((&target, true));
 
             let lf = target.get_lock().keep_dev_dep_entries(&target, self.all);
+
+            // verify the ip has no relative ip's listed in manifest
+            if target.get_man().has_relative_deps() == true {
+                return Err(Error::IpHasRelativeDependencies)?;
+            }
 
             plan::download_missing_deps(
                 vtable,

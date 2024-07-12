@@ -30,7 +30,7 @@ pub struct Dependency {
 }
 
 impl Dependency {
-    pub fn is_local(&self) -> bool {
+    pub fn is_relative(&self) -> bool {
         self.path.is_some()
     }
 
@@ -217,9 +217,12 @@ impl FromFile for Manifest {
 
         // verify contents of manifest
         for (name, dep) in man.get_deps_list_mut(true) {
-            if dep.is_local() == true {
+            if dep.is_relative() == true {
                 if dep.as_ip().is_none() {
-                    let ip = Ip::relate(dep.as_path().unwrap().clone())?;
+                    let ip = Ip::relate(
+                        dep.as_path().unwrap().clone(),
+                        &path.parent().unwrap().to_path_buf(),
+                    )?;
                     // verify the ip loaded has the correct version assigned by the user
                     let ip_version = ip.get_man().get_ip().get_version();
                     if version::is_compatible(&dep.get_version().to_partial_version(), ip_version)
@@ -284,6 +287,18 @@ impl Manifest {
             // OR: Identifier::new_working()
             None => LangIdentifier::Vhdl(Identifier::from(self.get_ip().get_name())),
         }
+    }
+
+    pub fn has_relative_deps(&self) -> bool {
+        self.dependencies
+            .iter()
+            .find(|(_, v)| v.is_relative())
+            .is_some()
+            || self
+                .dev_dependencies
+                .iter()
+                .find(|(_, v)| v.is_relative())
+                .is_some()
     }
 
     /// Composes a [String] to write to a clean manifest file.

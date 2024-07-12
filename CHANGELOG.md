@@ -18,6 +18,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.16.0 - unreleased
 
 ### Features
+- adds support for specifying a relative path to an ip as dependency
 - adds support for systemverilog `interface` design elements as well as detecting references to them in module port declarations
 - systemverilog code can now be read using `orbit read` command
 - adds support for verilog/systemverilog `config` design elements

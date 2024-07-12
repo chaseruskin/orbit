@@ -5,7 +5,7 @@ version = 1
 name = "sub"
 version = "0.1.0"
 uuid = "100c290c-9035-4dbd-bdab-7b19f8a90cae"
-path = "../sub"
+path = "/Users/chase/Develop/rust/orbit/examples/relative/sub"
 dependencies = []
 
 [[ip]]

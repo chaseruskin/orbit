@@ -139,7 +139,7 @@ impl Environment {
         self.insert(
             EnvVar::new()
                 .key("ORBIT_IP_LIBRARY")
-                .value(&ip.get_man().get_hdl_library().to_string()),
+                .value(&ip.get_hdl_library().to_string()),
         );
         Ok(self)
     }

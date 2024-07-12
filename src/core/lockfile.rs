@@ -9,6 +9,7 @@ use crate::core::{
     version::{self, AnyVersion, Version},
 };
 use crate::util::anyerror::AnyError;
+use crate::util::anyerror::Fault;
 use crate::util::sha256::Sha256Hash;
 use colored::Colorize;
 use serde_derive::{Deserialize, Serialize};
@@ -71,7 +72,7 @@ impl LockFile {
 }
 
 impl FromFile for LockFile {
-    fn from_file(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
+    fn from_file(path: &PathBuf) -> Result<Self, Fault> {
         if path.exists() == true {
             // make sure it is a file
             if path.is_file() == false {
@@ -224,7 +225,7 @@ pub mod v1 {
                         // check if this entry is a dev dependency
                         |p| match target.get_man().get_dev_deps().get(p.get_name()) {
                             Some(v) => {
-                                if p.get_version() == v {
+                                if p.get_version() == v.get_version() {
                                     false
                                 } else {
                                     true
@@ -254,6 +255,8 @@ pub mod v1 {
         checksum: Option<Sha256Hash>,
         #[serde(flatten)]
         source: Option<Source>,
+        // @note: `path` is optional and only used if the dependency list uses a local ip
+        path: Option<PathBuf>,
         dependencies: Vec<IpSpec>,
     }
 
@@ -265,13 +268,18 @@ pub mod v1 {
                 name: ip.get_man().get_ip().get_name().clone(),
                 version: ip.get_man().get_ip().get_version().clone(),
                 uuid: ip.get_uuid().clone(),
-                checksum: if is_working == true {
+                checksum: if is_working == true || ip.get_mapping().is_relative() == true {
                     None
                 } else {
                     Some(
                         Ip::read_checksum_proof(ip.get_root())
                             .unwrap_or(Ip::compute_checksum(ip.get_root())),
                     )
+                },
+                path: if ip.get_mapping().is_relative() {
+                    Some(ip.get_root().clone())
+                } else {
+                    None
                 },
                 source: ip.get_man().get_ip().get_source().cloned(),
                 dependencies: match ip.get_man().get_deps_list(is_working).len() {
@@ -281,7 +289,7 @@ pub mod v1 {
                             .get_man()
                             .get_deps_list(is_working)
                             .into_iter()
-                            .map(|e| IpSpec::new(e.0.clone(), e.1.clone()))
+                            .map(|e| IpSpec::new(e.0.clone(), e.1.get_version().clone()))
                             .collect();
                         result.sort_by(|x, y| match x.get_name().cmp(&y.get_name()) {
                             std::cmp::Ordering::Less => std::cmp::Ordering::Less,
@@ -305,6 +313,15 @@ pub mod v1 {
                 && self.get_version() == other.get_version()
                 && self.get_source() == other.get_source()
                 && self.get_deps() == other.get_deps()
+                && self.get_path() == other.get_path()
+        }
+
+        pub fn is_relative(&self) -> bool {
+            self.path.is_some()
+        }
+
+        pub fn get_path(&self) -> &Option<PathBuf> {
+            &self.path
         }
 
         pub fn get_deps(&self) -> &Vec<IpSpec> {
@@ -358,6 +375,7 @@ pub mod v1 {
                         version: Version::from_str("0.5.0").unwrap(),
                         uuid: Uuid::nil(),
                         checksum: None,
+                        path: None,
                         source: Some(Source::from_str("https://go1.here").unwrap()),
                         dependencies: vec![
                             IpSpec::new(
@@ -374,6 +392,7 @@ pub mod v1 {
                         name: Id::from_str("lab2").unwrap(),
                         version: Version::from_str("1.0.0").unwrap(),
                         uuid: Uuid::nil(),
+                        path: None,
                         checksum: Some(Sha256Hash::new()),
                         source: Some(Source::from_str("https://go2.here").unwrap()),
                         dependencies: Vec::new(),
@@ -384,6 +403,7 @@ pub mod v1 {
                         uuid: Uuid::nil(),
                         checksum: Some(Sha256Hash::new()),
                         source: None,
+                        path: None,
                         dependencies: Vec::new(),
                     },
                     LockEntry {
@@ -392,6 +412,7 @@ pub mod v1 {
                         uuid: Uuid::nil(),
                         checksum: Some(Sha256Hash::new()),
                         source: None,
+                        path: None,
                         dependencies: vec![IpSpec::new(
                             PkgPart::from_str("lab3").unwrap(),
                             Version::from_str("2.3.1").unwrap(),
@@ -412,6 +433,7 @@ pub mod v1 {
                         name: Id::from_str("lab1").unwrap(),
                         version: Version::from_str("0.5.0").unwrap(),
                         checksum: None,
+                        path: None,
                         uuid: Uuid::nil(),
                         source: Some(Source::from_str("https://go1.here").unwrap()),
                         dependencies: vec![
@@ -429,6 +451,7 @@ pub mod v1 {
                         name: Id::from_str("lab2").unwrap(),
                         version: Version::from_str("1.0.0").unwrap(),
                         uuid: Uuid::nil(),
+                        path: None,
                         checksum: Some(Sha256Hash::new()),
                         source: Some(Source::from_str("https://go2.here").unwrap()),
                         dependencies: Vec::new(),
@@ -439,6 +462,7 @@ pub mod v1 {
                         uuid: Uuid::nil(),
                         checksum: Some(Sha256Hash::new()),
                         source: None,
+                        path: None,
                         dependencies: Vec::new(),
                     },
                     LockEntry {
@@ -447,6 +471,7 @@ pub mod v1 {
                         uuid: Uuid::nil(),
                         checksum: Some(Sha256Hash::new()),
                         source: None,
+                        path: None,
                         dependencies: vec![IpSpec::new(
                             PkgPart::from_str("lab3").unwrap(),
                             Version::from_str("2.3.1").unwrap(),

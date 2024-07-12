@@ -571,6 +571,7 @@ pub fn download_missing_deps(
         // skip the current project's IP entry or any IP already in the downloads/
         if entry.matches_target(le) == true
             || catalog.is_downloaded_slot(&entry.to_download_slot_key()) == true
+            || entry.is_relative() == true
         {
             continue;
         }
@@ -659,7 +660,7 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                             match status.get_download(&ver) {
                                 Some(dep) => {
                                     println!(
-                                        "info: reinstalling IP {} due to bad checksum ...",
+                                        "info: reinstalling ip {} due to bad checksum ...",
                                         dep.get_man().get_ip().into_ip_spec()
                                     );
                                     // perform extra work if the Ip is virtual (from downloads)
@@ -690,7 +691,10 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                 }
             }
             None => {
-                panic!("entry is not queued for installation (unknown ip)")
+                // check if its a relative ip
+                if entry.is_relative() == false {
+                    panic!("entry is not queued for installation (unknown ip)")
+                }
             }
         }
     }

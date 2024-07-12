@@ -97,7 +97,7 @@ impl IpArchive {
         let (man, bytes_read): (Manifest, usize) = match Self::parse_struct(&header_bytes, offset) {
             Some(t) => t,
             None => match repairing {
-                true => panic!("Repairing function failed"),
+                true => panic!("Repairing function failed for manifest"),
                 false => {
                     println!("info: {}", "failed to parse downloaded file's header bytes; running repair function ...");
                     let repaired_bytes = Self::repair(archive, &path)?;
@@ -117,7 +117,7 @@ impl IpArchive {
         {
             Some(t) => t,
             None => match repairing {
-                true => panic!("Repairing function failed"),
+                true => panic!("Repairing function failed for lockfile"),
                 false => {
                     println!("info: {}", "failed to parse downloaded file's header bytes; running repair function ...");
                     let repaired_bytes = Self::repair(archive, &path)?;

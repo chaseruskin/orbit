@@ -234,6 +234,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
 pub enum VhdlIdentifierError {
     DuplicateIdentifier(String, PathBuf, Position, PathBuf, Position),
     DuplicateAcrossDirect(String, IpSpec, PathBuf, Position),
+    DuplicateAcrossLocal(String, IpSpec, PathBuf, Position),
 }
 
 impl std::error::Error for VhdlIdentifierError {}
@@ -255,6 +256,15 @@ impl std::fmt::Display for VhdlIdentifierError {
                 let current_dir = std::env::current_dir().unwrap();
                 let location = filesystem::remove_base(&current_dir, &path);
                 write!(f, "duplicate primary design units identified as \"{}\"\n\nlocation: {}{}\nconflicts with direct dependency: {}{}", 
+                iden,
+                filesystem::into_std_str(location), pos,
+                dep,
+                Hint::ResolveDuplicateIds1)
+            }
+            Self::DuplicateAcrossLocal(iden, dep, path, pos) => {
+                let current_dir = std::env::current_dir().unwrap();
+                let location = filesystem::remove_base(&current_dir, &path);
+                write!(f, "duplicate primary design units identified as \"{}\"\n\nlocation: {}{}\nconflicts with local dependency: {}{}", 
                 iden,
                 filesystem::into_std_str(location), pos,
                 dep,

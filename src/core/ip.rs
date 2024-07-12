@@ -33,12 +33,20 @@ use toml_edit::Document;
 pub enum Mapping {
     Physical,
     Virtual(Vec<u8>),
+    Relative,
 }
 
 impl Mapping {
     pub fn is_physical(&self) -> bool {
         match &self {
-            Self::Physical => true,
+            Self::Physical | Self::Relative => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_relative(&self) -> bool {
+        match &self {
+            Self::Relative => true,
             _ => false,
         }
     }
@@ -131,10 +139,29 @@ impl Ip {
         Ok(())
     }
 
+    pub fn relate(root: PathBuf) -> Result<Self, Fault> {
+        let mut relative_ip = Ip::load(root, true)?;
+        relative_ip.mapping = Mapping::Relative;
+        // verify this ip has a lockfile
+        let lock_path = relative_ip.get_root().join(IP_LOCK_FILE);
+        if lock_path.exists() == false || lock_path.is_file() == false {
+            return Err(Error::LockfileLoadFailed(LastError(
+                "a lockfile does not exist".to_string(),
+            )))?;
+        }
+        match LockFile::from_file(&lock_path) {
+            Ok(_) => (),
+            Err(e) => return Err(Error::LockfileLoadFailed(LastError(e.to_string())))?,
+        }
+        Ok(relative_ip)
+    }
+
     pub fn load(root: PathBuf, is_working_ip: bool) -> Result<Self, Fault> {
         let man_path = root.join(IP_MANIFEST_FILE);
         if man_path.exists() == false || man_path.is_file() == false {
-            return Err(AnyError(format!("A manifest file does not exist")))?;
+            return Err(Error::IpLoadFailed(LastError(
+                "a manifest file does not exist".to_string(),
+            )))?;
         }
         let man = Manifest::from_file(&man_path)?;
 
@@ -288,7 +315,7 @@ impl Ip {
             true => {
                 let words =
                     std::fs::read_to_string(self.get_root().join(".orbit-dynamic")).unwrap();
-                let lib = self.get_man().get_hdl_library().to_string();
+                let lib = self.get_hdl_library().to_string();
                 words.split_terminator('\n').find_map(|entry| {
                     let (key, val) = entry.split_once('\t').unwrap();
                     match key == &lib {
@@ -311,10 +338,28 @@ impl Ip {
             self.get_man().get_ip().get_name(),
             self.get_man().get_ip().get_version(),
         );
-        match target {
+        let target_is_ok = match target {
             Some(entry) => entry.matches_target(&LockEntry::from((self, true))),
             None => false,
+        };
+        if target_is_ok == false {
+            return false;
         }
+        // check that all entries are valid of dependencies and dev dependencies
+        for dep in self.get_man().get_deps_list(true) {
+            if let Some(entry) = self.get_lock().get(dep.0, dep.1.get_version()) {
+                if let Some(relative_ip) = dep.1.as_ip() {
+                    if &LockEntry::from((relative_ip, true)) == entry {
+                        ()
+                    } else {
+                        return false;
+                    }
+                }
+            } else {
+                return false;
+            }
+        }
+        true
     }
 
     /// Checks if the lockfile exists

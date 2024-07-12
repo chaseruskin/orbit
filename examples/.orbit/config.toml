@@ -1,0 +1,11 @@
+[[target]]
+name = "foo"
+description = "Print the blueprint contents"
+command = "cat"
+args = ["blueprint.tsv"]
+
+[test]
+default-target = "foo"
+
+[build]
+default-target = "foo"

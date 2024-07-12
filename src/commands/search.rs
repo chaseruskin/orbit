@@ -167,7 +167,7 @@ impl Search {
                     dld
                 }
             };
-            // IP should NOT be empty but skip if it is
+            // ip should NOT be empty but skip if it is
             let ip = match ip {
                 Some(r) => r,
                 None => continue,
@@ -181,13 +181,13 @@ impl Search {
                 }
             }
 
-            // determine if to skip this IP based on settings
-            let cleared = default == true
-                || match ip.get_mapping() {
-                    Mapping::Physical => cached == true,
-                    Mapping::Virtual(_) => downloaded == true,
-                };
-            if cleared == false {
+            // determine if to skip this ip based on settings
+            let display_to_screen = match ip.get_mapping() {
+                Mapping::Physical => default == true || cached == true,
+                Mapping::Virtual(_) => default == true || downloaded == true,
+                Mapping::Relative => false,
+            };
+            if display_to_screen == false {
                 continue;
             }
 
@@ -204,6 +204,7 @@ impl Search {
                 match ip.get_mapping() {
                     Mapping::Physical => "install",
                     Mapping::Virtual(_) => "download",
+                    Mapping::Relative => "local",
                     // Mapping::Imaginary => "Available",
                     // _ => ""
                 },

@@ -2,22 +2,162 @@
 
 use crate::core::ip::IpSpec;
 use crate::core::pkgid::PkgPart;
-use crate::core::source;
 use crate::core::source::Source;
+use crate::core::{source, version};
+use crate::error::Error;
 use crate::util::anyerror::{AnyError, Fault};
+use serde::de::{self, MapAccess, Visitor};
 use serde_derive::{Deserialize, Serialize};
-use std::error::Error;
-use std::fmt::Display;
+use std::fmt::{self, Display};
 use std::path::PathBuf;
 use std::{collections::HashMap, str::FromStr};
 
+use super::ip::Ip;
 use super::lang::vhdl::token::identifier::Identifier;
 use super::lang::LangIdentifier;
 
 pub type Id = PkgPart;
 pub type Version = crate::core::version::Version;
 
-type Dependencies = HashMap<Id, Version>;
+#[derive(Serialize, Debug, PartialEq)]
+#[serde(deny_unknown_fields, transparent)]
+pub struct Dependency {
+    version: Version,
+    #[serde(skip_serializing)]
+    path: Option<PathBuf>,
+    #[serde(skip_serializing)]
+    relative_ip: Option<Ip>,
+}
+
+impl Dependency {
+    pub fn is_local(&self) -> bool {
+        self.path.is_some()
+    }
+
+    pub fn get_version(&self) -> &Version {
+        &self.version
+    }
+
+    pub fn as_path(&self) -> Option<&PathBuf> {
+        self.path.as_ref()
+    }
+
+    pub fn as_ip(&self) -> Option<&Ip> {
+        self.relative_ip.as_ref()
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Dependency {
+    fn deserialize<D>(deserializer: D) -> Result<Dependency, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        enum Field {
+            Path,
+            Version,
+        }
+
+        // This part could also be generated independently by:
+        //
+        //    #[derive(Deserialize)]
+        //    #[serde(field_identifier, rename_all = "lowercase")]
+        //    enum Field { Secs, Nanos }
+        impl<'de> serde::Deserialize<'de> for Field {
+            fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct FieldVisitor;
+
+                impl<'de> Visitor<'de> for FieldVisitor {
+                    type Value = Field;
+
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        formatter.write_str("`secs` or `nanos`")
+                    }
+
+                    fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                    where
+                        E: de::Error,
+                    {
+                        match value {
+                            "path" => Ok(Field::Path),
+                            "version" => Ok(Field::Version),
+                            _ => Err(de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+        }
+
+        // This is a Visitor that forwards string types to T's `FromStr` impl and
+        // forwards map types to T's `Deserialize` impl. The `PhantomData` is to
+        // keep the compiler from complaining about T being an unused generic type
+        // parameter. We need T in order to know the Value type for the Visitor
+        // impl.
+        struct LayerVisitor;
+
+        impl<'de> Visitor<'de> for LayerVisitor {
+            type Value = Dependency;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("string or map")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<Dependency, E>
+            where
+                E: de::Error,
+            {
+                Ok(Dependency {
+                    path: None,
+                    version: match Version::from_str(value) {
+                        Ok(v) => v,
+                        Err(e) => return Err(de::Error::custom(e))?,
+                    },
+                    relative_ip: None,
+                })
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Dependency, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut path: Option<Option<PathBuf>> = None;
+                let mut version: Option<Version> = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Path => {
+                            if path.is_some() {
+                                return Err(de::Error::duplicate_field("path"));
+                            }
+                            path = Some(map.next_value()?);
+                        }
+                        Field::Version => {
+                            if version.is_some() {
+                                return Err(de::Error::duplicate_field("version"));
+                            }
+                            version = Some(map.next_value()?);
+                        }
+                    }
+                }
+                let path = path.ok_or_else(|| de::Error::missing_field("path"))?;
+                let version = version.ok_or_else(|| de::Error::missing_field("version"))?;
+                Ok(Dependency {
+                    path: path,
+                    version: version,
+                    relative_ip: None,
+                })
+            }
+        }
+
+        const FIELDS: &[&str] = &["path", "version"];
+        deserializer.deserialize_struct("Dependency", FIELDS, LayerVisitor)
+    }
+}
+
+type Dependencies = HashMap<Id, Dependency>;
 
 pub const IP_MANIFEST_FILE: &str = "Orbit.toml";
 // pub const IP_MANIFEST_PATTERN_FILE : &str = "Orbit-*.toml";
@@ -43,9 +183,9 @@ pub struct Manifest {
 pub trait FromFile: FromStr
 where
     Self: Sized,
-    <Self as std::str::FromStr>::Err: 'static + Error,
+    <Self as std::str::FromStr>::Err: 'static + std::error::Error,
 {
-    fn from_file(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
+    fn from_file(path: &PathBuf) -> Result<Self, Fault> {
         // try to open the file in read-only mode
         let text = std::fs::read_to_string(&path)?;
         Ok(Self::from_str(&text)?)
@@ -53,11 +193,11 @@ where
 }
 
 impl FromFile for Manifest {
-    fn from_file(path: &PathBuf) -> Result<Self, Box<dyn Error>> {
+    fn from_file(path: &PathBuf) -> Result<Self, Fault> {
         // open file
         let contents = std::fs::read_to_string(&path)?;
         // parse toml syntax
-        let man = match Self::from_str(&contents) {
+        let mut man = match Self::from_str(&contents) {
             Ok(r) => r,
             // enter a blank lock file if failed (do not exit)
             Err(e) => {
@@ -73,6 +213,34 @@ impl FromFile for Manifest {
                 "Failed to parse {} file at path {:?}: {}",
                 IP_MANIFEST_FILE, path, e
             )))?;
+        }
+
+        // verify contents of manifest
+        for (name, dep) in man.get_deps_list_mut(true) {
+            if dep.is_local() == true {
+                if dep.as_ip().is_none() {
+                    let ip = Ip::relate(dep.as_path().unwrap().clone())?;
+                    // verify the ip loaded has the correct version assigned by the user
+                    let ip_version = ip.get_man().get_ip().get_version();
+                    if version::is_compatible(&dep.get_version().to_partial_version(), ip_version)
+                        == false
+                    {
+                        return Err(Error::DependencyIpRelativeBadVersion(
+                            dep.get_version().clone(),
+                            ip_version.clone(),
+                        ))?;
+                    }
+                    // verify the ip loaded has the correct name assigned by the user
+                    let ip_name = ip.get_man().get_ip().get_name();
+                    if ip_name != name {
+                        return Err(Error::DependencyIpRelativeBadName(
+                            name.clone(),
+                            ip_name.clone(),
+                        ))?;
+                    }
+                    dep.relative_ip = Some(ip);
+                }
+            }
         }
         Ok(man)
     }
@@ -184,7 +352,7 @@ version = "0.1.0"
 
     /// Returns the list of dependencies found under "dependencies" and
     /// "dev-dependencies".
-    pub fn get_deps_list(&self, include_dev: bool) -> Vec<(&PkgPart, &Version)> {
+    pub fn get_deps_list(&self, include_dev: bool) -> Vec<(&PkgPart, &Dependency)> {
         let mut result = Vec::with_capacity(
             self.dependencies.len()
                 + match include_dev {
@@ -196,6 +364,23 @@ version = "0.1.0"
             result.extend(self.dev_dependencies.iter());
         }
         result.extend(self.dependencies.iter());
+        result
+    }
+
+    /// Returns the list of dependencies found under "dependencies" and
+    /// "dev-dependencies".
+    pub fn get_deps_list_mut(&mut self, include_dev: bool) -> Vec<(&PkgPart, &mut Dependency)> {
+        let mut result = Vec::with_capacity(
+            self.dependencies.len()
+                + match include_dev {
+                    true => self.dev_dependencies.len(),
+                    false => 0,
+                },
+        );
+        if include_dev == true {
+            result.extend(self.dev_dependencies.iter_mut());
+        }
+        result.extend(self.dependencies.iter_mut());
         result
     }
 }

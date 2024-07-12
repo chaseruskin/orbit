@@ -1,10 +1,14 @@
 use colored::Colorize;
 use std::{fmt::Display, path::PathBuf};
 
-use crate::core::{blueprint::Scheme, ip::IpSpec, pkgid::PkgPart, version::Version};
+use crate::core::{
+    blueprint::Scheme, ip::IpSpec, lang::LangIdentifier, pkgid::PkgPart, version::Version,
+};
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum Error {
+    #[error("{0}")]
+    Custom(String),
     #[error("an ip already exists at {0:?}")]
     IpExistsAtPath(PathBuf),
     #[error("path {0:?} already exists {1}")]
@@ -81,6 +85,16 @@ pub enum Error {
     InstallFailed(LastError),
     #[error("ip has dependencies that are relative")]
     IpHasRelativeDependencies,
+    #[error("a testbench is required to test")]
+    TestbenchRequired,
+    #[error("top \"{0}\" is not tested in testbench \"{1}\"{2}")]
+    TopNotInTestbench(LangIdentifier, LangIdentifier, Hint),
+    #[error("lockfile entry \"{0}\" is not queued for installation (missing download)")]
+    EntryMissingDownload(IpSpec),
+    #[error("lockfile entry \"{0}\" is not queued for installation")]
+    EntryNotQueued(IpSpec),
+    #[error("lockfile entry \"{0}\" is not queued for installation (unknown ip)")]
+    EntryUnknownIp(IpSpec),
 }
 
 #[derive(Debug, PartialEq)]
@@ -128,6 +142,7 @@ pub enum Hint {
     TopSpecify,
     BenchSpecify,
     RootSpecify,
+    IncludeAllInPlan,
 }
 
 impl Display for Hint {
@@ -160,6 +175,7 @@ impl Display for Hint {
             Self::TopSpecify => "use the \"--top\" option to specify the top-level design",
             Self::BenchSpecify => "use the \"--tb\" option to specify the testbench",
             Self::RootSpecify => "use the \"--root\" option to specify the root design unit",
+            Self::IncludeAllInPlan => "use the \"-all\" flag to continue with this setup",
         };
         write!(
             f,

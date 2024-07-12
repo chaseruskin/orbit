@@ -329,10 +329,19 @@ impl Plan {
                     .find(|i| i == b)
                     .is_none()
             {
-                return Err(AnyError(format!("top unit '{}' is not tested in testbench '{}'\n\nIf you wish to continue, add the `--all` flag", global_graph.get_key_by_index(top.unwrap()).unwrap().get_suffix(), global_graph.get_key_by_index(*b).unwrap().get_suffix())))?;
+                let given_top = global_graph
+                    .get_key_by_index(top.unwrap())
+                    .unwrap()
+                    .get_suffix();
+                let given_bench = global_graph.get_key_by_index(*b).unwrap().get_suffix();
+                return Err(Error::TopNotInTestbench(
+                    given_top.clone(),
+                    given_bench.clone(),
+                    Hint::IncludeAllInPlan,
+                ))?;
             }
         } else if bench.is_none() == true && require_bench == true {
-            panic!("a testbench is required to test")
+            return Err(Error::TestbenchRequired)?;
         }
 
         // [!] write the lock file
@@ -668,9 +677,9 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                                 }
                                 None => {
                                     // failed to get the install from the queue
-                                    panic!(
-                                        "entry is not queued for installation (missing download)"
-                                    )
+                                    return Err(Box::new(Error::EntryMissingDownload(
+                                        entry.to_ip_spec(),
+                                    )));
                                 }
                             }
                         }
@@ -684,7 +693,7 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                                 install_ip_from_downloads(&dep, &catalog, false)?
                             }
                             None => {
-                                panic!("entry is not queued for installation")
+                                return Err(Box::new(Error::EntryNotQueued(entry.to_ip_spec())))
                             }
                         }
                     }
@@ -693,7 +702,7 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
             None => {
                 // check if its a relative ip
                 if entry.is_relative() == false {
-                    panic!("entry is not queued for installation (unknown ip)")
+                    return Err(Box::new(Error::EntryUnknownIp(entry.to_ip_spec())));
                 }
             }
         }

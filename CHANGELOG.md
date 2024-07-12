@@ -25,6 +25,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - adds support for systemverilog `package` design elements (along with detecting imports in other design elements)
 
 ### Changes
+- improves error messages surrounding planning stage and grabbing ips from a lockfile
 - the default library for an ip is now the ip's "name" field, to override this provide a value for the "library" field in the manifest file
 - Changes `--bench <unit>` option to `--tb <unit>` for `orbit test`
 - viewing design units of a local ip now display the private units by default without having to specify `--all`; private units are typically hidden on views of ip outside the local path

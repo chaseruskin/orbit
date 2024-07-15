@@ -41,10 +41,10 @@ cpu/
 ├─ Orbit.toml
 ├─ rtl/
 │  ├─ ctrl.vhd
-│  ├─ datapath.vhd
+│  ├─ datapath.v
 │  └─ top.vhd
 └─ sim/
-   └─ top_tb.vhd
+   └─ top_tb.sv
 ```
 
 The "Orbit.toml" file is a simple file written in TOML syntax that requires only a couple fields, such as the ip's `name` and `version`, to get setup. 
@@ -87,10 +87,10 @@ Since Orbit focuses on efficiently managing the HDL source code and minimizing i
 ```
 VHDL	gates	/users/chase/.orbit/cache/gates-2.0.0-7f4d8c7812/rtl/nand_gate.vhd
 VHDL	gates	/users/chase/.orbit/cache/gates-2.0.0-7f4d8c7812/rtl/and_gate.vhd
-VHDL	work	/users/chase/projects/cpu/rtl/datapath.vhd
-VHDL	work	/users/chase/projects/cpu/rtl/ctrl.vhd
-VHDL	work	/users/chase/projects/cpu/rtl/top.vhd
-VHDL	work	/users/chase/projects/cpu/sim/top_tb.vhd
+VLOG	cpu	/users/chase/projects/cpu/rtl/datapath.v
+VHDL	cpu	/users/chase/projects/cpu/rtl/ctrl.vhd
+VHDL	cpu	/users/chase/projects/cpu/rtl/top.vhd
+SYSV	cpu	/users/chase/projects/cpu/sim/top_tb.sv
 ```
 
 Add a target by writing a script to accept Orbit's output file for whatever EDA tools you prefer once, and use it across all future ips.  

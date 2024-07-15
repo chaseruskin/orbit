@@ -1,4 +1,4 @@
-name: check-release
+name: Check Release
 on:
   workflow_call:
     outputs:

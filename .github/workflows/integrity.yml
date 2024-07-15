@@ -1,4 +1,4 @@
-name: integrity
+name: Integrity
 on: 
   workflow_call:
 

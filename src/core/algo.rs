@@ -72,80 +72,9 @@ fn graph_ip<'a>(
         let reqs = ip.get_man().get_deps_list(is_root);
         // read dependencies
         for (pkgid, dependency) in reqs {
-            match catalog.inner().get(pkgid) {
-                Some(status) => {
-                    // find this IP to read its dependencies
-                    match status.get_install(&AnyVersion::from(dependency.get_version())) {
-                        Some(cached_ip) => {
-                            // check if node is already in graph ????
-                            let s = if let Some(existing_node) =
-                                g.get_node_by_key(&cached_ip.get_man().get_ip().into_ip_spec())
-                            {
-                                existing_node.index()
-                            } else {
-                                // check if identifiers are already taken in graph
-                                let units = Ip::collect_units(
-                                    false,
-                                    cached_ip.get_root(),
-                                    mode,
-                                    true,
-                                    cached_ip.into_public_list(),
-                                )?;
-                                let dst = if let Some(dupe) =
-                                    units.iter().find(|(key, _)| unit_map.contains_key(key))
-                                {
-                                    let dupe = unit_map.get(dupe.0).unwrap();
-                                    if is_root == true {
-                                        return Err(CodeFault(
-                                            None,
-                                            Box::new(VhdlIdentifierError::DuplicateAcrossDirect(
-                                                dupe.get_name().to_string(),
-                                                cached_ip.get_man().get_ip().into_ip_spec(),
-                                                PathBuf::from(dupe.get_source_file()),
-                                                dupe.get_vhdl_symbol()
-                                                    .unwrap()
-                                                    .get_position()
-                                                    .clone(),
-                                            )),
-                                        ))?;
-                                    }
-                                    true
-                                } else {
-                                    false
-                                };
-                                // update the hashset with the new unique non-taken identifiers
-                                if dst == false {
-                                    for (key, unit) in units {
-                                        unit_map.insert(key, unit);
-                                    }
-                                }
-                                let lib = cached_ip.get_hdl_library();
-                                g.add_node(
-                                    cached_ip.get_man().get_ip().into_ip_spec(),
-                                    match dst {
-                                        true => IpNode::new_alter(cached_ip, lib),
-                                        false => IpNode::new_keep(cached_ip, lib),
-                                    },
-                                )
-                            };
-                            g.add_edge_by_index(s, num, ());
-                            processing.push((s, cached_ip));
-                        }
-                        // todo: try to use the lock file to fill in missing pieces
-                        None => {
-                            return Err(CodeFault(
-                                None,
-                                Box::new(AnyError(format!(
-                                    "ip {} is not installed",
-                                    IpSpec::from((pkgid.clone(), dependency.get_version().clone()))
-                                ))),
-                            ))?
-                        }
-                    }
-                }
-                // todo: try to use the lock file to fill in missing pieces
-                // @TODO: check the queue for this IP and attempt to install
-                None => {
+            // check if we are looking in cache or going local
+            match dependency.is_relative() {
+                true => {
                     // check if it is a local ip
                     match dependency.as_ip() {
                         Some(relative_ip) => {
@@ -208,6 +137,99 @@ fn graph_ip<'a>(
                             g.add_edge_by_index(s, num, ());
                             processing.push((s, &relative_ip));
                         }
+                        None => {
+                            return Err(CodeFault(
+                                None,
+                                Box::new(AnyError(format!(
+                                    "unknown ip {}",
+                                    IpSpec::from((pkgid.clone(), dependency.get_version().clone()))
+                                ))),
+                            ))?
+                        }
+                    }
+                }
+                false => {
+                    match catalog.inner().get(pkgid) {
+                        Some(status) => {
+                            // find this IP to read its dependencies
+                            match status.get_install(&AnyVersion::from(dependency.get_version())) {
+                                Some(cached_ip) => {
+                                    // check if node is already in graph ????
+                                    let s = if let Some(existing_node) = g.get_node_by_key(
+                                        &cached_ip.get_man().get_ip().into_ip_spec(),
+                                    ) {
+                                        existing_node.index()
+                                    } else {
+                                        // check if identifiers are already taken in graph
+                                        let units = Ip::collect_units(
+                                            false,
+                                            cached_ip.get_root(),
+                                            mode,
+                                            true,
+                                            cached_ip.into_public_list(),
+                                        )?;
+                                        let dst = if let Some(dupe) =
+                                            units.iter().find(|(key, _)| unit_map.contains_key(key))
+                                        {
+                                            let dupe = unit_map.get(dupe.0).unwrap();
+                                            if is_root == true {
+                                                return Err(CodeFault(
+                                                    None,
+                                                    Box::new(
+                                                        VhdlIdentifierError::DuplicateAcrossDirect(
+                                                            dupe.get_name().to_string(),
+                                                            cached_ip
+                                                                .get_man()
+                                                                .get_ip()
+                                                                .into_ip_spec(),
+                                                            PathBuf::from(dupe.get_source_file()),
+                                                            dupe.get_vhdl_symbol()
+                                                                .unwrap()
+                                                                .get_position()
+                                                                .clone(),
+                                                        ),
+                                                    ),
+                                                ))?;
+                                            }
+                                            true
+                                        } else {
+                                            false
+                                        };
+                                        // update the hashset with the new unique non-taken identifiers
+                                        if dst == false {
+                                            for (key, unit) in units {
+                                                unit_map.insert(key, unit);
+                                            }
+                                        }
+                                        let lib = cached_ip.get_hdl_library();
+                                        g.add_node(
+                                            cached_ip.get_man().get_ip().into_ip_spec(),
+                                            match dst {
+                                                true => IpNode::new_alter(cached_ip, lib),
+                                                false => IpNode::new_keep(cached_ip, lib),
+                                            },
+                                        )
+                                    };
+                                    g.add_edge_by_index(s, num, ());
+                                    processing.push((s, cached_ip));
+                                }
+                                // todo: try to use the lock file to fill in missing pieces
+                                None => {
+                                    return Err(CodeFault(
+                                        None,
+                                        Box::new(AnyError(format!(
+                                            "ip {} is not installed",
+                                            IpSpec::from((
+                                                pkgid.clone(),
+                                                dependency.get_version().clone()
+                                            ))
+                                        ))),
+                                    ))?
+                                }
+                            }
+                        }
+                        // todo: try to use the lock file to fill in missing pieces
+                        // @TODO: check the queue for this IP and attempt to install
                         None => {
                             return Err(CodeFault(
                                 None,

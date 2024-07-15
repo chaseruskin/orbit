@@ -178,6 +178,14 @@ impl LangUnit {
         }
     }
 
+    pub fn is_component(&self) -> bool {
+        match &self {
+            Self::Verilog(m, _) => m.get_unit().get_symbol().unwrap().as_module().is_some(),
+            Self::SystemVerilog(m, _) => m.get_unit().get_symbol().unwrap().as_module().is_some(),
+            Self::Vhdl(m, _) => m.get_unit().get_symbol().unwrap().as_entity().is_some(),
+        }
+    }
+
     /// Checks if the module is public.
     pub fn is_listed_public(&self, plist: &PublicList) -> bool {
         plist.is_included(self.get_source_file())

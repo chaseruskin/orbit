@@ -150,10 +150,10 @@ impl Get {
             is_local,
         )?;
         let unit = match selected_unit {
-            Some(r) => {
+            Some(lu) => {
                 // check to make sure it is a component
-                if r.is_usable_component() {
-                    r
+                if lu.is_component() {
+                    lu
                 } else {
                     let hint = match is_local {
                         true => Hint::ShowAvailableUnitsLocal,
@@ -161,7 +161,7 @@ impl Get {
                             Hint::ShowAvailableUnitsExternal(ip.get_man().get_ip().into_ip_spec())
                         }
                     };
-                    return Err(Error::GetUnitNotComponent(r.get_name().to_string(), hint))?;
+                    return Err(Error::GetUnitNotComponent(lu.get_name().to_string(), hint))?;
                 }
             }
             None => {

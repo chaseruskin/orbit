@@ -15,7 +15,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.16.0 - unreleased
+## 0.16.0
 
 ### Features
 - grants ability to omit the ip name during `orbit install` when using `--url` if there is only 1 ip that exists at that url

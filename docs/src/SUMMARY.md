@@ -25,6 +25,7 @@
     - [Ip](./topic/ip.md) <!-- good -->
     - [Targets](./topic/targets.md)
     - [Protocols](./topic/protocols.md)
+    - [Channels](./topic/channels.md)
     - [Orbit.lock](./topic/orbitlock.md) <!-- good -->
     - [.orbitignore](./topic/orbitignore.md) <!-- good -->
     - [Variable Substitution](./topic/var_sub.md)

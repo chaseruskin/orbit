@@ -10,6 +10,7 @@ The following rules currently apply to a ip name:
 
 - begins with an ASCII letter (`a-z`, `A-Z`)
 - contains only ASCII letters (`a-z`, `A-Z`), ASCII digits (`0-9`), dashes `-`, and underscores `_`
+- cannot end with a dash `-` or underscore `_`
 
 ## Ip specification
 
@@ -45,7 +46,4 @@ fifo_cdc      |Fifo-CDC |true       |
 
 An ip can optionally belong to a library. An ip's _library_ is a higher-level scope that loosely groups together multiple ips. This library identification is used for grouping the HDL source code itself into their language-defined libraries as well.
 
-A library is defined through the "library" field in the ip's manifest file. It's format follows the same rules as the ip's name. If no library is defined in the ip's manifest, the the default "work" library is assigned to the files of the project.
-
-When referencing files through library definitions in the working ip, the library will always be "work", regardless of the value for the "library" field. The "library" field's value goes into effect when the design units of that ip are referenced as a depndency in separate ip.
-
+A library can be defined through the "library" field in the ip's manifest file. Its format follows the same rules as the ip's name. If no library is defined in the ip's manifest, then the default library is the ip's name.

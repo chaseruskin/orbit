@@ -106,7 +106,13 @@ impl std::str::FromStr for PkgPart {
         if let Some(r) = result {
             Err(InvalidChar(r))
         } else {
-            Ok(PkgPart(s.to_owned()))
+            // verify the last char
+            if let Some(c) = s.chars().last() {
+                if c == '_' || c == '-' {
+                    return Err(InvalidEnding);
+                }
+            }
+            Ok(Self(s.to_owned()))
         }
     }
 }
@@ -379,6 +385,7 @@ pub enum PkgIdError {
     InvalidChar(char),
     MissingVendor,
     MissingLibrary,
+    InvalidEnding,
 }
 
 impl Error for PkgIdError {}
@@ -405,6 +412,7 @@ impl Display for PkgIdError {
             ),
             MissingLibrary => write!(f, "missing library part"),
             MissingVendor => write!(f, "missing vendor part"),
+            InvalidEnding => write!(f, "expects last character to not be a dash or underscore"),
         }
     }
 }

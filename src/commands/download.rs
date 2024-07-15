@@ -15,6 +15,7 @@ use crate::core::source::Source;
 use crate::core::target::Process;
 use crate::core::variable::VariableTable;
 use crate::error::Error;
+use crate::error::Hint;
 use crate::error::LastError;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
@@ -73,11 +74,7 @@ impl Subcommand<Context> for Download {
 
         // load the catalog (ignore errors because we are only downloading)
         let catalog = match self.force {
-            true => {
-                let mut cat = Catalog::new();
-                cat.set_downloads_path(c.get_downloads_path());
-                cat
-            }
+            true => Catalog::new().set_downloads_path(c.get_downloads_path())?,
             false => Catalog::new().downloads(c.get_downloads_path())?,
         };
 
@@ -163,14 +160,14 @@ impl Download {
     /// the downloads folder.
     pub fn download(
         vtable: &mut VariableTable,
-        spec: &PartialIpSpec,
+        spec: Option<&PartialIpSpec>,
         src: &Source,
         queue: Option<&PathBuf>,
         download_dir: &PathBuf,
         protocols: &HashMap<&str, &Protocol>,
         verbose: bool,
         _force: bool,
-    ) -> Result<(), Fault> {
+    ) -> Result<IpSpec, Fault> {
         // use the user-provided queue directory or simply use a temporary directory
         let queue = match queue {
             Some(q) => {
@@ -184,15 +181,20 @@ impl Download {
         if let Some(proto) = src.get_protocol() {
             match protocols.get(proto.as_str()) {
                 Some(&entry) => {
-                    println!(
-                        "info: downloading ip {} over \"{}\" protocol ...",
-                        spec, &proto
-                    );
+                    if let Some(ip_spec) = spec {
+                        println!(
+                            "info: downloading ip {} over \"{}\" protocol ...",
+                            ip_spec, &proto
+                        );
+                        // update variable table for this lock entry
+                        vtable.add("orbit.ip.name", ip_spec.get_name().as_ref());
+                        vtable.add("orbit.ip.version", &ip_spec.get_version().to_string());
+                    } else {
+                        println!("info: downloading ip over \"{}\" protocol ...", &proto);
+                    }
+
                     let std_queue = PathBuf::standardize(&queue);
                     vtable.add("orbit.queue", std_queue.to_str().unwrap());
-                    // update variable table for this lock entry
-                    vtable.add("orbit.ip.name", spec.get_name().as_ref());
-                    vtable.add("orbit.ip.version", &spec.get_version().to_string());
                     vtable.add("orbit.ip.source.url", src.get_url());
                     vtable.add("orbit.ip.source.protocol", entry.get_name());
                     vtable.add(
@@ -216,59 +218,98 @@ impl Download {
         }
         // try to use default protocol
         if src.is_default() == true {
-            vtable.add("orbit.ip.name", spec.get_name().as_ref());
-            vtable.add("orbit.ip.version", &spec.get_version().to_string());
+            if let Some(ip_spec) = spec {
+                vtable.add("orbit.ip.name", ip_spec.get_name().as_ref());
+                vtable.add("orbit.ip.version", &ip_spec.get_version().to_string());
+
+                println!("info: downloading ip {} ...", ip_spec);
+            } else {
+                println!("info: downloading ip ...");
+            }
 
             let processed_src = src.clone().replace_vars_in_url(&vtable);
 
-            println!("info: downloading ip {} ...", spec);
             if let Err(err) = Protocol::single_download(processed_src.get_url(), &queue) {
                 fs::remove_dir_all(queue)?;
                 return Err(err);
             }
         }
         // move the IP to the downloads folder
-        if let Err(err) = Self::move_to_download_dir(&queue, download_dir, spec) {
-            fs::remove_dir_all(queue)?;
-            return Err(err);
+        match Self::move_to_download_dir(&queue, download_dir, spec) {
+            Ok(name) => {
+                // clean up temporary directory
+                fs::remove_dir_all(queue)?;
+                Ok(name)
+            }
+            Err(e) => {
+                fs::remove_dir_all(queue)?;
+                Err(e)
+            }
         }
-        // clean up temporary directory
-        fs::remove_dir_all(queue)?;
-        Ok(())
     }
 
     pub fn move_to_download_dir(
         queue: &PathBuf,
         downloads: &PathBuf,
-        spec: &PartialIpSpec,
-    ) -> Result<(), Fault> {
+        spec: Option<&PartialIpSpec>,
+    ) -> Result<IpSpec, Fault> {
         // code is in the queue now, move it to the downloads/ folder
 
+        let entries = manifest::find_file(&queue, IP_MANIFEST_FILE, false)?;
+
+        // verify we only found one manifest
+        if spec.is_none() == true {
+            match entries.len() {
+                1 => (),
+                0 => {
+                    // could not find the IP
+                    return Err(AnyError(format!("failed to find a manifest for any ip")))?;
+                }
+                _ => {
+                    return Err(Box::new(Error::DownloadFoundManyIps(
+                        entries.len(),
+                        Hint::SpecifyIpSpecForDownload,
+                    )))
+                }
+            }
+        }
+
         // find the IP
-        for entry in manifest::find_file(&queue, IP_MANIFEST_FILE, false)? {
+        for entry in entries {
+            // println!("{:?}", entry);
             // check if this is our IP
             match Ip::load(entry.parent().unwrap().to_path_buf(), true) {
                 Ok(temp) => {
+                    // println!("{}", temp.get_man().get_ip().into_ip_spec());
                     let manifest_version =
                         temp.get_man().get_ip().get_version().to_partial_version();
+
+                    let manifest_name = temp.get_man().get_ip().get_name();
                     // move to downloads
-                    if temp.get_man().get_ip().get_name() == spec.get_name()
-                        && manifest_version.in_domain(
-                            spec.get_version()
-                                .as_specific()
-                                .unwrap_or(&manifest_version),
-                        )
-                    {
-                        println!("info: found ip {}", temp.get_man().get_ip().into_ip_spec());
+                    let detected_it = if let Some(provided) = spec {
+                        manifest_name == provided.get_name()
+                            && manifest_version.in_domain(
+                                provided
+                                    .get_version()
+                                    .as_specific()
+                                    .unwrap_or(&manifest_version),
+                            )
+                    } else {
+                        true
+                    };
+
+                    if detected_it == true {
+                        let found_ip_spec = temp.get_man().get_ip().into_ip_spec();
+                        println!("info: found ip {}", found_ip_spec);
                         // zip the project to the downloads directory
                         let download_slot_name = DownloadSlot::new(
-                            spec.get_name(),
+                            manifest_name,
                             temp.get_man().get_ip().get_version(),
                             temp.get_uuid(),
                         );
                         let full_download_path = downloads.join(&download_slot_name.as_ref());
                         IpArchive::write(&temp, &full_download_path)?;
-                        return Ok(());
+                        return Ok(found_ip_spec);
                     }
                 }
                 Err(_) => {}
@@ -277,7 +318,7 @@ impl Download {
         // could not find the IP
         Err(AnyError(format!(
             "failed to find a manifest for ip {}",
-            spec
+            spec.unwrap()
         )))?
     }
 
@@ -306,7 +347,7 @@ impl Download {
         let mut results = downloads.iter().filter_map(|e| {
             match Self::download(
                 &mut vtable,
-                &e.0.to_partial_ip_spec(),
+                Some(&e.0.to_partial_ip_spec()),
                 &e.1,
                 queue,
                 &download_dir,

@@ -277,6 +277,16 @@ impl<'a> Catalog<'a> {
         self.detect(path, &IpLevel::add_install, IpState::Installation)
     }
 
+    pub fn set_cache_path(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
+        self.cache = Some(&path);
+        Ok(self)
+    }
+
+    pub fn set_downloads_path(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
+        self.downloads = Some(&path);
+        Ok(self)
+    }
+
     /// Searches the `path` for IP downloaded.
     pub fn downloads(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
         self.downloads = Some(&path);
@@ -358,14 +368,6 @@ impl<'a> Catalog<'a> {
 
     pub fn get_downloads_path(&self) -> &PathBuf {
         self.downloads.as_ref().unwrap()
-    }
-
-    pub fn set_cache_path(&mut self, path: &'a PathBuf) {
-        self.cache = Some(path);
-    }
-
-    pub fn set_downloads_path(&mut self, path: &'a PathBuf) {
-        self.downloads = Some(path);
     }
 }
 

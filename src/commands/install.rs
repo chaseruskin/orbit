@@ -27,6 +27,7 @@ use crate::core::catalog::CacheSlot;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
+use crate::core::ip::IpSpec;
 use crate::core::ip::PartialIpSpec;
 use crate::core::iparchive::IpArchive;
 use crate::core::lockfile::LockEntry;
@@ -115,14 +116,27 @@ impl Subcommand<Context> for Install {
             }
             return Ok(());
         }
+
         // gather the catalog (all manifests)
-        let mut catalog = Catalog::new()
-            .installations(c.get_cache_path())?
-            .downloads(c.get_downloads_path())?;
+        let mut catalog = if self.force == true {
+            // do not look at the installations
+            Catalog::new()
+                .set_cache_path(c.get_cache_path())?
+                .downloads(c.get_downloads_path())?
+        } else {
+            Catalog::new()
+                .installations(c.get_cache_path())?
+                .downloads(c.get_downloads_path())?
+        };
+
+        let mut provided_spec = None;
 
         // check if trying to download from the internet
         let target = if self.url.is_some() {
-            Self::download_target_from_url(&self, c, &self.url.as_ref().unwrap())?;
+            provided_spec = Some(
+                Self::download_target_from_url(&self, c, &self.url.as_ref().unwrap())?
+                    .to_partial_ip_spec(),
+            );
             None
         // check if trying to download from local filesystem
         } else if self.path.is_some() || self.ip.is_none() {
@@ -134,15 +148,10 @@ impl Subcommand<Context> for Install {
                 ),
             );
 
-            // check if specifying an Ip
+            // check if specifying an ip
             let search_dir = PathBuf::standardize(PathBuf::from(search_path));
             let search_path = search_dir.join(IP_MANIFEST_FILE);
 
-            // println!("{:?}", search_path);
-            // look for IP along this path
-            //let result = manifest::find_file(&search_path, IP_MANIFEST_FILE, true)?;
-            // find the IP to match
-            // println!("{:?}", result);
             let target = match &self.ip {
                 Some(entry) => match search_path.exists() {
                     true => {
@@ -154,7 +163,7 @@ impl Subcommand<Context> for Install {
                                     ip.get_man().get_ip().get_version(),
                                 ))
                         {
-                            Some(ip)
+                            ip
                         } else {
                             Err(AnyError(format!(
                                 "could not find ip \"{}\" at path \"{}\"",
@@ -168,27 +177,52 @@ impl Subcommand<Context> for Install {
                         filesystem::into_std_str(search_dir)
                     )))?,
                 },
-                // make sure there is only 1 IP to download
+                // make sure there is only 1 ip to load
                 None => match search_path.exists() {
-                    true => Some(Ip::load(search_dir.to_path_buf(), true)?),
+                    true => Ip::load(search_dir.to_path_buf(), true)?,
                     false => Err(AnyError(format!(
                         "path \"{}\" does not contain an Orbit.toml file",
                         filesystem::into_std_str(search_dir)
                     )))?,
                 },
             };
-            target
+            // move the ip to the downloads folder if not already there
+            Download::move_to_download_dir(
+                &target.get_root(),
+                c.get_downloads_path(),
+                Some(
+                    &target
+                        .get_man()
+                        .get_ip()
+                        .into_ip_spec()
+                        .to_partial_ip_spec(),
+                ),
+            )?;
+            provided_spec = Some(
+                target
+                    .get_man()
+                    .get_ip()
+                    .into_ip_spec()
+                    .to_partial_ip_spec(),
+            );
+            Some(target)
         // attempt to find the catalog
         } else {
             None
+        };
+
+        let determined_spec = match &provided_spec {
+            Some(p) => Some(p),
+            None => self.ip.as_ref(),
         };
 
         // update the downloads
         catalog = catalog.downloads(c.get_downloads_path())?;
 
         // use the catalog (if no path is provided)
-        let target = if self.path.is_none() {
-            if let Some(spec) = &self.ip {
+        let target = if self.path.is_none() == true {
+            if let Some(spec) = &determined_spec {
+                // println!("determined: {}", spec);
                 if let Some(lvl) = catalog.inner().get(spec.get_name()) {
                     if let Some(slot) = lvl.get(true, spec.get_version()) {
                         if let Some(bytes) = slot.get_mapping().as_bytes() {
@@ -285,23 +319,6 @@ impl Subcommand<Context> for Install {
             }
         }
 
-        let download_slot = catalog.get_downloaded_slot(
-            target.get_man().get_ip().get_name(),
-            target.get_man().get_ip().get_version(),
-        );
-        // println!("{:?}", download_slot);
-
-        // remove the download slot on purpose to replace it when using --force
-        if download_slot.is_some()
-            && catalog.is_downloaded_slot(&download_slot.as_ref().unwrap())
-            && self.force == true
-        {
-            std::fs::remove_file(
-                &c.get_downloads_path()
-                    .join(&download_slot.as_ref().unwrap().as_ref()),
-            )?;
-        }
-
         // @MARK: check for when there are multiple uuids that could potentially be for this ip
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
@@ -344,28 +361,13 @@ impl Subcommand<Context> for Install {
             Plan::write_lockfile(&target, &ip_graph, true)?;
         }
 
-        // move the IP to the downloads folder if not already there
-        if download_slot.is_none()
-            || catalog.is_downloaded_slot(&download_slot.as_ref().unwrap()) == false
-        {
-            Download::move_to_download_dir(
-                &target.get_root(),
-                c.get_downloads_path(),
-                &target
-                    .get_man()
-                    .get_ip()
-                    .into_ip_spec()
-                    .to_partial_ip_spec(),
-            )?;
-        }
-
         // install the top-level target
         self.run(&target, &catalog)
     }
 }
 
 impl Install {
-    fn download_target_from_url(&self, c: &Context, url: &str) -> Result<(), Fault> {
+    fn download_target_from_url(&self, c: &Context, url: &str) -> Result<IpSpec, Fault> {
         let env = Environment::new()
             // read config.toml for setting any env variables
             .from_config(c.get_config())?;
@@ -382,16 +384,14 @@ impl Install {
         // fetch from the internet
         Download::download(
             &mut vtable,
-            &self.ip.as_ref().unwrap(),
+            self.ip.as_ref(),
             &target_source,
             None,
             c.get_downloads_path(),
             &protocols,
             self.verbose,
             self.force,
-        )?;
-
-        Ok(())
+        )
     }
 
     pub fn is_checksum_good(root: &PathBuf) -> bool {

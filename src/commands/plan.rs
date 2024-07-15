@@ -626,7 +626,7 @@ pub fn download_missing_deps(
                     // fetch from the internet
                     Download::download(
                         &mut vtable,
-                        &entry.to_ip_spec().to_partial_ip_spec(),
+                        Some(&entry.to_ip_spec().to_partial_ip_spec()),
                         src,
                         None,
                         catalog.get_downloads_path(),

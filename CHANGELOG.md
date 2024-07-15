@@ -18,6 +18,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.16.0 - unreleased
 
 ### Features
+- grants ability to omit the ip name during `orbit install` when using `--url` if there is only 1 ip that exists at that url
 - adds support for specifying a relative path to an ip as dependency
 - adds support for systemverilog `interface` design elements as well as detecting references to them in module port declarations
 - systemverilog code can now be read using `orbit read` command
@@ -32,6 +33,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - viewing design units of a local ip now display the private units by default without having to specify `--all`; private units are typically hidden on views of ip outside the local path
 
 ### Fixes
+- fixes `--force` behavior on `orbit install` to now correctly store the archive of an ip's version
 - explicit relative dependences are now correctly chosen over cached versions of that ip if they exist as well
 - fixes bug where user could change ip name and ip would not verify the name is allowed when loading the manifest
 - adds hints and clearer error messages around build process (`orbit build`, `orbit test`) and tree viewing (`orbit tree`)

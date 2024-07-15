@@ -95,6 +95,8 @@ pub enum Error {
     EntryNotQueued(IpSpec),
     #[error("lockfile entry \"{0}\" is not queued for installation (unknown ip)")]
     EntryUnknownIp(IpSpec),
+    #[error("cannot disambiguate between {0} ips downloaded{1}")]
+    DownloadFoundManyIps(usize, Hint),
 }
 
 #[derive(Debug, PartialEq)]
@@ -143,6 +145,7 @@ pub enum Hint {
     BenchSpecify,
     RootSpecify,
     IncludeAllInPlan,
+    SpecifyIpSpecForDownload,
 }
 
 impl Display for Hint {
@@ -176,6 +179,9 @@ impl Display for Hint {
             Self::BenchSpecify => "use the \"--tb\" option to specify the testbench",
             Self::RootSpecify => "use the \"--root\" option to specify the root design unit",
             Self::IncludeAllInPlan => "use the \"-all\" flag to continue with this setup",
+            Self::SpecifyIpSpecForDownload => {
+                "consider providing the ip specification for the requested ip to download"
+            }
         };
         write!(
             f,

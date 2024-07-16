@@ -70,6 +70,9 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.
 `--force`  
       Force the target to execute 
 
+`--dirty`  
+      Do not clean the target folder before execution
+
 `--verbose`  
       Display the command being executed
 

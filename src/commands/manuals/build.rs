@@ -63,6 +63,9 @@ OPTIONS
     --force
         Force the target to execute 
 
+    --dirty
+        Do not clean the target folder before execution
+
     --verbose
         Display the command being executed
 

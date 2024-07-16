@@ -63,6 +63,9 @@ OPTIONS
     --fileset <key=glob>...
         A glob-style pattern identified by name to include in the blueprint
 
+    --dirty
+        Do not clean the target folder before execution
+
     --force
         Force the target to execute 
 

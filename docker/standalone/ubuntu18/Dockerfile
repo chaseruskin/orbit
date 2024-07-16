@@ -19,7 +19,9 @@ RUN apt-get update && apt-get install -y \
 # Download Rust toolchain, compile, move orbit to bin/, and clean up Rust toolchain
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 RUN $HOME/.cargo/bin/cargo install --bin orbit --git https://github.com/cdotrus/orbit.git --rev $REV
-RUN cp "$HOME/.cargo/bin/orbit" "/usr/local/bin/orbit" 
+RUN cp "$HOME/.cargo/bin/orbit" "/usr/local/bin/orbit"
+RUN $HOME/.cargo/bin/cargo install just
+RUN cp "$HOME/.cargo/bin/just" "/usr/local/bin/just"
 RUN $HOME/.cargo/bin/rustup self uninstall -y
 
 COPY ./docker/standalone/ubuntu18/entrypoint.sh /entrypoint.sh

@@ -2,6 +2,8 @@
 
 Orbit is an agile package manager and extensible build tool for HDLs.
 
+![](./../images/architecture.svg)
+
 ## Key concepts
 
 - Every ip requires a manifest file (`Orbit.toml`). This is maintained by the developer. The manifest file documents basic metadata and the project's list of direct dependencies.

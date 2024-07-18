@@ -23,9 +23,3 @@ The commands are listed below in their group and in a typical order of usage for
 - [orbit remove](./remove.md)
 - [orbit config](./config.md)
 - [orbit env](./env.md)
-
-## Command Flow
-
-A development workflow is illustrated with a typical `orbit` command flow:
-
-![](./../images/command-flow.svg)

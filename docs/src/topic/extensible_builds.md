@@ -1,8 +1,18 @@
 # Extensible Builds
 
-Orbit is an extensible build tool for HDLs. Orbit separates the build process into two stages: planning and execution. Both stages are operated together when `orbit build` is called.
+Orbit is an extensible build tool for HDLs. Orbit separates the build process into two stages: planning and execution. When the build process happens, both stages are operated together in sequential order. Orbit provides two entry points into the build process: `orbit test` and `orbit build`.
 
-Users can add their own execution processes, called _targets_. By default, Orbit does not have any built-in targets. A target can be added by editing the configuration file.
+What makes Orbit extensible? Well, Orbit does not define the execution stage by default. It leaves it upon the user to add their own execution processes, called _targets_. A target can be added through modifying an Orbit configuration file.
+
+Orbit leaves the execution stage undefined by default because there are a wide range of different backend EDA tools available that enforce different requirements and even change requirements and behaviors across versions. It would be a nightmare to try to design a "one-script-fits-all" approach because everyone's computing system and choice of tool is so diverse.
+
+## Test or build?
+
+Orbit provides two entry points into the build process: `orbit test` and `orbit build`. Each entry point is suited for a particular type of build process.
+
+If you are trying to run a simulation (accompanied by an HDL testbench), then you should use the `orbit test` entry. This command allows you to enter the build process by specifying the testbench using `--tb <unit>` and its design-under-test using `--dut <unit>`. This entry is typically used for verification workflows, where the end result of the build process is more concerned about making sure all steps in the process complete successfully with no errors.
+
+For any non-testing workflow (one that lacks an HDL testbench), then you should use the `orbit build` entry. This command allows you to enter the build process by specifying the top level using `--top <unit>`. This entry is typically used for any workflow where the end result of the build process is more concerned about producing output files (commonly called artifacts), such as a bitstream or synthesis report.
 
 ## Planning
 

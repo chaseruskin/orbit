@@ -1,13 +1,11 @@
 use std::path::PathBuf;
 
 use crate::commands::helps::env;
-use crate::commands::plan::BLUEPRINT_FILE;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::util::environment;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
-use crate::util::environment::ORBIT_BLUEPRINT;
 use crate::util::environment::ORBIT_WIN_LITERAL_CMD;
 use crate::util::filesystem::Standardize;
 
@@ -65,8 +63,7 @@ impl Subcommand<Context> for Env {
                 .key("NO_COLOR")
                 .value(&std::env::var("NO_COLOR").unwrap_or(String::new())),
         ])
-        .from_config(c.get_config())?
-        .add(EnvVar::new().key(ORBIT_BLUEPRINT).value(BLUEPRINT_FILE));
+        .from_config(c.get_config())?;
 
         // add platform-specific environment variables
         if cfg!(target_os = "windows") {

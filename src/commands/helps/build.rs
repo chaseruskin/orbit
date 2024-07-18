@@ -14,7 +14,7 @@ Options:
     --all                   include all hdl files of the working ip
     --fileset <key=glob>... set filesets for the target
     --force                 force the target to execute
-    --dirty                 do not clean the target folder before execution
+    --no-clean              do not clean the target folder before execution
     --verbose               display the command being executed
     args                    arguments to pass to the requested command
 

@@ -415,7 +415,7 @@ options."--list" = "View available targets and exit"
 options."--all" = "Include all hdl files of the working ip"
 options."--fileset <key=glob>..." = "A glob-style pattern identified by name to include in the blueprint"
 options."--force" = "Force the target to execute "
-options."--dirty" = "Do not clean the target folder before execution"
+options."--no-clean" = "Do not clean the target folder before execution"
 options."--verbose" = "Display the command being executed"
 options."args" = "Arguments to pass to the target"
 
@@ -442,7 +442,7 @@ Options:
     --all                   include all hdl files of the working ip
     --fileset <key=glob>... set filesets for the target
     --force                 force the target to execute
-    --dirty                 do not clean the target folder before execution
+    --no-clean              do not clean the target folder before execution
     --verbose               display the command being executed
     args                    arguments to pass to the requested command
 """
@@ -494,7 +494,7 @@ options."--command <path>" = "Overwrite the target's command"
 options."--list" = "View available targets and exit"
 options."--all" = "Include all hdl files of the working ip"
 options."--fileset <key=glob>..." = "A glob-style pattern identified by name to include in the blueprint"
-options."--dirty" = "Do not clean the target folder before execution"
+options."--no-clean" = "Do not clean the target folder before execution"
 options."--force" = "Force the target to execute "
 options."--verbose" = "Display the command being executed"
 options."args" = "Arguments to pass to the target"
@@ -520,7 +520,7 @@ Options:
     --all                   include all hdl files of the working ip
     --fileset <key=glob>... set filesets for the target
     --force                 force the target to execute
-    --dirty                 do not clean the target folder before execution
+    --no-clean              do not clean the target folder before execution
     --verbose               display the command being executed
     args                    arguments to pass to the requested command
 """

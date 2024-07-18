@@ -63,7 +63,7 @@ OPTIONS
     --force
         Force the target to execute 
 
-    --dirty
+    --no-clean
         Do not clean the target folder before execution
 
     --verbose

@@ -1,6 +1,5 @@
 use super::plan;
 use super::plan::Plan;
-use super::plan::BLUEPRINT_FILE;
 use crate::commands::helps::build;
 use crate::core::blueprint::Scheme;
 use crate::core::catalog::Catalog;
@@ -47,7 +46,7 @@ impl Subcommand<Context> for Build {
             verbose: cli.check(Arg::flag("verbose"))?,
             force: cli.check(Arg::flag("force"))?,
             all: cli.check(Arg::flag("all"))?,
-            dirty: cli.check(Arg::flag("dirty"))?,
+            dirty: cli.check(Arg::flag("no-clean"))?,
             // Options
             top: cli.get(Arg::option("top").value("unit"))?,
             plan: cli.get(Arg::option("plan").value("format"))?,
@@ -108,7 +107,7 @@ impl Subcommand<Context> for Build {
         let catalog = plan::resolve_missing_deps(c, &working_ip, catalog, self.force)?;
 
         // plan for the provided target
-        Plan::run(
+        let blueprint_name = Plan::run(
             &working_ip,
             target_dir,
             target,
@@ -124,14 +123,15 @@ impl Subcommand<Context> for Build {
             &plan,
             false,
             false,
-        )?;
+        )?
+        .unwrap_or_default();
 
         let envs = Environment::new()
             // read config.toml for setting any env variables
             .from_config(c.get_config())?
             // read ip manifest for env variables
             .from_ip(&working_ip)?
-            .add(EnvVar::new().key(ORBIT_BLUEPRINT).value(BLUEPRINT_FILE))
+            .add(EnvVar::new().key(ORBIT_BLUEPRINT).value(&blueprint_name))
             .add(
                 EnvVar::new()
                     .key(ORBIT_OUTPUT_PATH)

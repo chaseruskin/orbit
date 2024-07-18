@@ -45,9 +45,6 @@ use crate::util::graphmap::Node;
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
 
-pub const BLUEPRINT_FILE: &str = "blueprint.tsv";
-pub const BLUEPRINT_DELIMITER: &str = "\t";
-
 #[derive(Debug, PartialEq)]
 pub struct Plan {
     target: Option<String>,
@@ -152,7 +149,7 @@ impl Subcommand<Context> for Plan {
 
         let language_mode = c.get_languages();
 
-        Self::run(
+        let _ = Self::run(
             &working_ip,
             target_dir,
             target,
@@ -168,12 +165,15 @@ impl Subcommand<Context> for Plan {
             &Scheme::default(),
             false,
             true,
-        )
+        );
+        Ok(())
     }
 }
 
 impl Plan {
     /// Performs the backend logic for creating a blueprint file (planning a design).
+    ///
+    /// If a blueprint was created, it will return the file name for that blueprint.
     pub fn run(
         working_ip: &Ip,
         target_dir: &str,
@@ -190,7 +190,7 @@ impl Plan {
         scheme: &Scheme,
         require_bench: bool,
         allow_bench: bool,
-    ) -> Result<(), Fault> {
+    ) -> Result<Option<String>, Fault> {
         // create the output path to know where to begin storing files
         let working_ip_path = working_ip.get_root().clone();
         let target_path = working_ip_path.join(target_dir);
@@ -210,6 +210,7 @@ impl Plan {
                     );
                     blueprint.add(Instruction::Hdl(&ip_file_node));
 
+                    let blueprint_name = blueprint.get_filename();
                     let blueprint_path = Self::create_outputs(
                         &blueprint,
                         &target_path,
@@ -224,7 +225,7 @@ impl Plan {
                         "warning".yellow(),
                         filesystem::into_std_str(blueprint_path)
                     );
-                    return Ok(());
+                    return Ok(Some(blueprint_name));
                 } else {
                     return match e.is_source_err() {
                         true => Err(Error::SourceCodeInvalidSyntax(
@@ -240,7 +241,7 @@ impl Plan {
         // only write lockfile and exit if flag is raised
         if only_lock == true {
             Self::write_lockfile(&working_ip, &ip_graph, force)?;
-            return Ok(());
+            return Ok(None);
         }
 
         // check if to clean the directory
@@ -522,6 +523,8 @@ impl Plan {
             }
         }
 
+        let blueprint_name = blueprint.get_filename();
+
         let blueprint_path = Self::create_outputs(
             &blueprint,
             &target_path,
@@ -535,7 +538,7 @@ impl Plan {
             "info: blueprint created at: {:?}",
             filesystem::into_std_str(blueprint_path)
         );
-        Ok(())
+        Ok(Some(blueprint_name))
     }
 }
 

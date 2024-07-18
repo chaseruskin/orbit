@@ -17,7 +17,7 @@ use crate::util::environment::ORBIT_OUTPUT_PATH;
 use crate::util::environment::{EnvVar, Environment, ORBIT_BLUEPRINT, ORBIT_TARGET_DIR};
 use crate::util::filesystem;
 
-use super::plan::{self, Plan, BLUEPRINT_FILE};
+use super::plan::{self, Plan};
 
 #[derive(Debug, PartialEq)]
 pub struct Test {
@@ -45,7 +45,7 @@ impl Subcommand<Context> for Test {
             verbose: cli.check(Arg::flag("verbose"))?,
             force: cli.check(Arg::flag("force"))?,
             all: cli.check(Arg::flag("all"))?,
-            dirty: cli.check(Arg::flag("dirty"))?,
+            dirty: cli.check(Arg::flag("no-clean"))?,
             // Options
             dut: cli.get(Arg::option("dut").value("unit"))?,
             bench: cli.get(Arg::option("tb").value("unit"))?,
@@ -135,7 +135,7 @@ impl Test {
         scheme: &Scheme,
     ) -> Result<(), Fault> {
         // plan the target
-        Plan::run(
+        let blueprint_name = Plan::run(
             &working_ip,
             target_dir,
             target,
@@ -151,7 +151,8 @@ impl Test {
             &scheme,
             true,
             true,
-        )?;
+        )?
+        .unwrap_or_default();
 
         let output_path = working_ip
             .get_root()
@@ -164,7 +165,7 @@ impl Test {
             .from_config(c.get_config())?
             // read ip manifest for env variables
             .from_ip(&working_ip)?
-            .add(EnvVar::new().key(ORBIT_BLUEPRINT).value(BLUEPRINT_FILE))
+            .add(EnvVar::new().key(ORBIT_BLUEPRINT).value(&blueprint_name))
             .add(
                 EnvVar::new()
                     .key(ORBIT_OUTPUT_PATH)

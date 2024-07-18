@@ -1,0 +1,287 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>String Swapping - The Book of Orbit</title>
+
+
+        <!-- Custom HTML head -->
+        <style>
+            dd {
+                margin-bottom: 1em;
+            }
+        </style>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">Introduction</a></li><li class="chapter-item expanded "><a href="../starting/starting.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../starting/motivation.html"><strong aria-hidden="true">1.1.</strong> Motivation</a></li><li class="chapter-item expanded "><a href="../starting/installing.html"><strong aria-hidden="true">1.2.</strong> Installing</a></li><li class="chapter-item expanded "><a href="../starting/upgrading.html"><strong aria-hidden="true">1.3.</strong> Upgrading</a></li></ol></li><li class="chapter-item expanded "><a href="../tutorials/tutorials.html"><strong aria-hidden="true">2.</strong> Tutorials</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../tutorials/first_project.html"><strong aria-hidden="true">2.1.</strong> First Project: Gates</a></li><li class="chapter-item expanded "><a href="../tutorials/dependencies.html"><strong aria-hidden="true">2.2.</strong> Dependencies: Half adder</a></li><li class="chapter-item expanded "><a href="../tutorials/gates_revisited.html"><strong aria-hidden="true">2.3.</strong> Gates: Revisited</a></li><li class="chapter-item expanded "><a href="../tutorials/final_project.html"><strong aria-hidden="true">2.4.</strong> Final Project: Full adder</a></li></ol></li><li class="chapter-item expanded "><a href="../user/user.html"><strong aria-hidden="true">3.</strong> User Guide</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../user/managing_ip.html"><strong aria-hidden="true">3.1.</strong> Managing Ip</a></li><li class="chapter-item expanded "><a href="../user/targeting_builds.html"><strong aria-hidden="true">3.2.</strong> Targeting Builds</a></li></ol></li><li class="chapter-item expanded "><a href="../topic/topic.html"><strong aria-hidden="true">4.</strong> Topic Guide</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../topic/overview.html"><strong aria-hidden="true">4.1.</strong> Overview</a></li><li class="chapter-item expanded "><a href="../topic/package_management.html"><strong aria-hidden="true">4.2.</strong> Agile Package Management</a></li><li class="chapter-item expanded "><a href="../topic/extensible_builds.html"><strong aria-hidden="true">4.3.</strong> Extensible Builds</a></li><li class="chapter-item expanded "><a href="../topic/catalog.html"><strong aria-hidden="true">4.4.</strong> Catalog</a></li><li class="chapter-item expanded "><a href="../topic/ip.html"><strong aria-hidden="true">4.5.</strong> Ip</a></li><li class="chapter-item expanded "><a href="../topic/targets.html"><strong aria-hidden="true">4.6.</strong> Targets</a></li><li class="chapter-item expanded "><a href="../topic/protocols.html"><strong aria-hidden="true">4.7.</strong> Protocols</a></li><li class="chapter-item expanded "><a href="../topic/channels.html"><strong aria-hidden="true">4.8.</strong> Channels</a></li><li class="chapter-item expanded "><a href="../topic/orbitlock.html"><strong aria-hidden="true">4.9.</strong> Orbit.lock</a></li><li class="chapter-item expanded "><a href="../topic/orbitignore.html"><strong aria-hidden="true">4.10.</strong> .orbitignore</a></li><li class="chapter-item expanded "><a href="../topic/swapping.html" class="active"><strong aria-hidden="true">4.11.</strong> String Swapping</a></li><li class="chapter-item expanded "><a href="../topic/dst.html"><strong aria-hidden="true">4.12.</strong> Dynamic Symbol Transformation</a></li></ol></li><li class="chapter-item expanded "><a href="../reference/reference.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference/manifest.html"><strong aria-hidden="true">5.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="../reference/ip.html"><strong aria-hidden="true">5.2.</strong> Ip Names</a></li><li class="chapter-item expanded "><a href="../reference/versions.html"><strong aria-hidden="true">5.3.</strong> Versions</a></li><li class="chapter-item expanded "><a href="../reference/filesets.html"><strong aria-hidden="true">5.4.</strong> Filesets</a></li><li class="chapter-item expanded "><a href="../reference/blueprint.html"><strong aria-hidden="true">5.5.</strong> Blueprint</a></li><li class="chapter-item expanded "><a href="../reference/environment_variables.html"><strong aria-hidden="true">5.6.</strong> Environment Variables</a></li><li class="chapter-item expanded "><a href="../reference/configuration.html"><strong aria-hidden="true">5.7.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="../reference/json.html"><strong aria-hidden="true">5.8.</strong> JSON Output</a></li><li class="chapter-item expanded "><a href="../reference/command_line.html"><strong aria-hidden="true">5.9.</strong> Command Line</a></li></ol></li><li class="chapter-item expanded "><a href="../commands/commands.html"><strong aria-hidden="true">6.</strong> Commands</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../commands/new.html"><strong aria-hidden="true">6.1.</strong> orbit new</a></li><li class="chapter-item expanded "><a href="../commands/init.html"><strong aria-hidden="true">6.2.</strong> orbit init</a></li><li class="chapter-item expanded "><a href="../commands/view.html"><strong aria-hidden="true">6.3.</strong> orbit view</a></li><li class="chapter-item expanded "><a href="../commands/read.html"><strong aria-hidden="true">6.4.</strong> orbit read</a></li><li class="chapter-item expanded "><a href="../commands/get.html"><strong aria-hidden="true">6.5.</strong> orbit get</a></li><li class="chapter-item expanded "><a href="../commands/tree.html"><strong aria-hidden="true">6.6.</strong> orbit tree</a></li><li class="chapter-item expanded "><a href="../commands/lock.html"><strong aria-hidden="true">6.7.</strong> orbit lock</a></li><li class="chapter-item expanded "><a href="../commands/test.html"><strong aria-hidden="true">6.8.</strong> orbit test</a></li><li class="chapter-item expanded "><a href="../commands/build.html"><strong aria-hidden="true">6.9.</strong> orbit build</a></li><li class="chapter-item expanded "><a href="../commands/launch.html"><strong aria-hidden="true">6.10.</strong> orbit launch</a></li><li class="chapter-item expanded "><a href="../commands/search.html"><strong aria-hidden="true">6.11.</strong> orbit search</a></li><li class="chapter-item expanded "><a href="../commands/download.html"><strong aria-hidden="true">6.12.</strong> orbit download</a></li><li class="chapter-item expanded "><a href="../commands/install.html"><strong aria-hidden="true">6.13.</strong> orbit install</a></li><li class="chapter-item expanded "><a href="../commands/env.html"><strong aria-hidden="true">6.14.</strong> orbit env</a></li><li class="chapter-item expanded "><a href="../commands/config.html"><strong aria-hidden="true">6.15.</strong> orbit config</a></li><li class="chapter-item expanded "><a href="../commands/remove.html"><strong aria-hidden="true">6.16.</strong> orbit remove</a></li></ol></li><li class="chapter-item expanded "><a href="../glossary.html"><strong aria-hidden="true">7.</strong> Appendix: Glossary</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">The Book of Orbit</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="string-swapping"><a class="header" href="#string-swapping">String Swapping</a></h1>
+<p><em>String swapping</em> is the process of injecting runtime information into specific locations of strings.</p>
+<p>This process allows permissible strings to become generic enough to avoid having the user frequently update them with redundant information or accidently recall the incorrect value.</p>
+<h2 id="details"><a class="header" href="#details">Details</a></h2>
+<p>String swap works with key-value pairs. When Orbit sees the correct syntax indicating a known key, it will replace the key's contents with its value in its location within the string.</p>
+<p>To have a key substituted with its value, use double opening curly brackets <code>{{</code> to denote the beginning of a key and double closing curly brackets <code>}}</code> to end the key. Whitespace is ignored around the  key within the curly bracket sequences.</p>
+<p>When Orbit gets a permissible string, it will parse the characters to check if a key exists and should be swapped with its value. If it finds a valid known key, then it replaces everything from and within the curly bracket sequences with the variable's value. If it cannot find a valid key that matches the name, it leaves that sequence of the string unmodified.</p>
+<h2 id="permissible-strings"><a class="header" href="#permissible-strings">Permissible strings</a></h2>
+<p>Not every string is checked for string swapping. Strings that are not allowed to have string swapping ignore any existing keys in the text, leaving the entire string unmodified.</p>
+<p>The following lists the instances when a string is permitted to perform string swapping:</p>
+<h3 id="manifest-files"><a class="header" href="#manifest-files">Manifest files</a></h3>
+<p>The string pattern for an ip's <code>source</code> field is allowed to contain any of the following keys:</p>
+<ul>
+<li><code>orbit.ip.name</code>: The name of the ip being downloaded.</li>
+<li><code>orbit.ip.version</code>: The version of the ip being downloaded.</li>
+</ul>
+<h3 id="fileset-patterns"><a class="header" href="#fileset-patterns">Fileset patterns</a></h3>
+<p>The string pattern for a target's fileset configuration is allowed to contain any of the following keys:</p>
+<ul>
+<li><code>orbit.top</code>: The top-level design unit name.</li>
+<li><code>orbit.bench</code>: The testbench design unit name.</li>
+<li><code>orbit.env.*</code>: Any environment variables loaded from configuration files.</li>
+</ul>
+<h3 id="protocol-arguments"><a class="header" href="#protocol-arguments">Protocol arguments</a></h3>
+<p>The arguments set in a protocol's configuration are allowed to contain any of the following keys:</p>
+<ul>
+<li><code>orbit.queue</code>: The directory that Orbit expects the ip temporarily placed immediately after download.</li>
+<li><code>orbit.ip.name</code>: The name of the ip being downloaded.</li>
+<li><code>orbit.ip.version</code>: The version of the ip being downloaded.</li>
+<li><code>orbit.ip.source.url</code>: The URL for the ip being downloaded.</li>
+<li><code>orbit.ip.source.protocol</code>: The protocol specified by the ip being downloaded</li>
+<li><code>orbit.ip.source.tag</code>: The tag (if provided) specified by the ip being downloaded.</li>
+<li><code>orbit.env.*</code>: Any environment variables loaded from configuration files.</li>
+</ul>
+<h2 id="example"><a class="header" href="#example">Example</a></h2>
+<p>Consider an ip with the following manifest data:</p>
+<pre><code class="language-toml">[ip]
+name = "foo"
+version = "1.2.0"
+source = "https://github.com/hyperspace-labs/foo/archive/refs/tags/{{orbit.ip.version}}.zip
+</code></pre>
+<p>The <code>source</code> field of an ip's manifest is one string that is allowed to string swap. For its string, we specify a key, "orbit.ip.version", by enclosing it in double curly brackets. This tells Orbit that any time it uses this string, it should replace <code>{{orbit.ip.version}}</code> with <code>1.2.0</code>, the value associated with that key.</p>
+<p>By using string swapping, we can reduce the amount of times redundant information has to be maintained, or delay providing information when we may not know the value until runtime.</p>
+<h2 id="environment-variable-translation-examples"><a class="header" href="#environment-variable-translation-examples">Environment variable translation examples</a></h2>
+<p>A key recognized by Orbit during string swapping can be an environment variable key. For an environment variable key to be recognized as a key in the context of string swapping, the environment variable key is converted to lowercase with each "_" character replaced by a "." character.</p>
+<p>Consider the environment variables set in an Orbit configuration file:</p>
+<pre><code class="language-toml">[env]
+foo = "bar"
+github-user = "cdotrus"
+Yilinx_Path = "/Users/chase/fpga/bin/yilinx"
+</code></pre>
+<p>This configuration translates to the following variables:</p>
+<div class="table-wrapper"><table><thead><tr><th>TOML <code>[env]</code> entry</th><th>Environment variable</th><th>Substitution variable</th></tr></thead><tbody>
+<tr><td><code>foo</code></td><td><code>ORBIT_ENV_FOO</code></td><td><code>orbit.env.foo</code></td></tr>
+<tr><td><code>github-user</code></td><td><code>ORBIT_ENV_GITHUB_USER</code></td><td><code>orbit.env.github.user</code></td></tr>
+<tr><td><code>Yilinx_Path</code></td><td><code>ORBIT_ENV_YILINX_PATH</code></td><td><code>orbit.env.yilinx.path</code></td></tr>
+</tbody></table>
+</div>
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../topic/orbitignore.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../topic/dst.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../topic/orbitignore.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../topic/dst.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

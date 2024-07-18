@@ -14,6 +14,7 @@
     - [Final Project: Full adder](./tutorials/final_project.md)
 
 - [User Guide](./user/user.md)
+    - [Overview](./user/overview.md)
     - [Managing Ip](./user/managing_ip.md)
     - [Targeting Builds](./user/targeting_builds.md)
 

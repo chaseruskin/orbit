@@ -54,6 +54,9 @@ Profiles are useful for quickly sharing and maintaining common development stand
 ### Project
 A project is a collection of HDL source files and any other required files related to a specific application or library. Placing a manifest in a project makes it an ip.
 
+### SystemVerilog
+SystemVerilog is a hardware description and hardware verification language used to model, design, simulate, test, and implement electronic systems.
+
 ### Target
 A target is a user-defined command that is to be invoked by Orbit during the execution stage of the build process. A target typically follows 3 steps: 
 1. Parse the blueprint file generated from the planning stage
@@ -64,3 +67,6 @@ Targets can accept additional arguments from the command-line and define additio
 
 ### VHDL
 VHSIC Hardware Design Language (VHDL) is a hardware descrption language to model the behavior of digitally electronic circuits.
+
+### Verilog
+Verilog is a hardware description language to model electronic systems. The final standard (IEEE 1364-2005) for Verilog merged into the SystemVerilog standard. Today, Verilog has been officially part of the SystemVerilog language.

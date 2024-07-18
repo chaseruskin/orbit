@@ -28,7 +28,7 @@
     - [Channels](./topic/channels.md)
     - [Orbit.lock](./topic/orbitlock.md) <!-- good -->
     - [.orbitignore](./topic/orbitignore.md) <!-- good -->
-    - [Variable Substitution](./topic/var_sub.md)
+    - [String Swapping](./topic/swapping.md)
     - [Dynamic Symbol Transformation](./topic/dst.md)
 
 - [Reference](./reference/reference.md)

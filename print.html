@@ -2191,7 +2191,8 @@ root = "./index"
 </code></pre>
 <p>In this command, <code>orbit</code> does not interpret the "--sram" flag, but instead passes it to the plugin named "yilinx" to handle.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="commands"><a class="header" href="#commands">Commands</a></h1>
-<p>Commands are loosely grouped into two types: development and management. The commands are listed below in their group and in a typical order of usage for a possible workflow.</p>
+<p>Commands are loosely grouped into two types: development and management. Commands used for development often operate on your local ip. Commands used for management often use Orbit to gain insight into external ip found in the catalog.</p>
+<p>The commands are listed below in their group and in a typical order of usage for a possible workflow.</p>
 <h2 id="development"><a class="header" href="#development">Development</a></h2>
 <ul>
 <li><a href="commands/./new.html">orbit new</a></li>
@@ -2199,16 +2200,18 @@ root = "./index"
 <li><a href="commands/./read.html">orbit read</a></li>
 <li><a href="commands/./get.html">orbit get</a></li>
 <li><a href="commands/./tree.html">orbit tree</a></li>
-<li><a href="commands/./plan.html">orbit plan</a></li>
+<li><a href="commands/./lock.html">orbit lock</a></li>
+<li><a href="commands/./test.html">orbit test</a></li>
 <li><a href="commands/./build.html">orbit build</a></li>
 </ul>
 <h2 id="management"><a class="header" href="#management">Management</a></h2>
 <ul>
 <li><a href="commands/./search.html">orbit search</a></li>
-<li><a href="commands/./show.html">orbit show</a></li>
+<li><a href="commands/./view.html">orbit view</a></li>
 <li><a href="commands/./install.html">orbit install</a></li>
 <li><a href="commands/./launch.html">orbit launch</a></li>
-<li><a href="commands/./uninstall.html">orbit uninstall</a></li>
+<li><a href="commands/./download.html">orbit download</a></li>
+<li><a href="commands/./remove.html">orbit remove</a></li>
 <li><a href="commands/./config.html">orbit config</a></li>
 <li><a href="commands/./env.html">orbit env</a></li>
 </ul>
@@ -2514,7 +2517,7 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.</p>
       Include all hdl files of the working ip</p>
 <p><code>--fileset &lt;key=glob&gt;...</code><br />
       A glob-style pattern identified by name to include in the blueprint</p>
-<p><code>--dirty</code><br />
+<p><code>--no-clean</code><br />
       Do not clean the target folder before execution</p>
 <p><code>--force</code><br />
       Force the target to execute</p>
@@ -2575,7 +2578,7 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.</p>
       A glob-style pattern identified by name to include in the blueprint</p>
 <p><code>--force</code><br />
       Force the target to execute</p>
-<p><code>--dirty</code><br />
+<p><code>--no-clean</code><br />
       Do not clean the target folder before execution</p>
 <p><code>--verbose</code><br />
       Display the command being executed</p>

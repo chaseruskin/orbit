@@ -1810,8 +1810,8 @@ ELSE:
 </div>
 <p>The custom patterns begin their search for files at the root directory of the current working IP. The interpreted pattern is the actual glob-style pattern used when collecting files for custom filesets.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="blueprint"><a class="header" href="#blueprint">Blueprint</a></h1>
-<p>The <em>blueprint</em> is a file containing a list of files required for a particular back end. It is the main way <code>orbit</code> communicates to a back end system.</p>
-<p>When the blueprint is created, it is saved to the current working IP's build directory.</p>
+<p>The <em>blueprint</em> is a file containing a list of files required for a particular back end. This single file is the main method Orbit uses to communicate information to a target's process.</p>
+<p>When the blueprint is created, it is saved to the local ip's target output directory.</p>
 <h2 id="formats"><a class="header" href="#formats">Formats</a></h2>
 <p>The currently supported formats are:</p>
 <ul>
@@ -1819,7 +1819,19 @@ ELSE:
 </ul>
 <h2 id="specifications"><a class="header" href="#specifications">Specifications</a></h2>
 <p>Each blueprint format may contain different information and store it in a different way. Refer to each specification to see exactly how the data is communicated through their blueprint.</p>
-<h3 id="tab-separated-values"><a class="header" href="#tab-separated-values">Tab-separated values</a></h3>
+<p>Attributes that are consistent across all formats are the fileset, library, and filepath.</p>
+<p>The <em>fileset</em> is the group name for the file pattern that matched the given rule's file.</p>
+<p>The <em>library</em> is the hdl defined library for the ip which the given file at this particular step was found.</p>
+<p>The <em>filepath</em> is the absolute file system path to the given rule's file.</p>
+<h3 id="built-in-filesets-1"><a class="header" href="#built-in-filesets-1">Built-in Filesets</a></h3>
+<p>The following filesets are already recognized by Orbit and are used for identifying hdl source code:</p>
+<div class="table-wrapper"><table><thead><tr><th>Fileset</th><th>Supported file extensions</th></tr></thead><tbody>
+<tr><td><code>VHDL</code></td><td>.vhd, .vhdl</td></tr>
+<tr><td><code>VLOG</code></td><td>.v, .vl, .verilog, .vlg, .vh</td></tr>
+<tr><td><code>SYSV</code></td><td>.sv, .svh</td></tr>
+</tbody></table>
+</div>
+<h2 id="tab-separated-values"><a class="header" href="#tab-separated-values">Tab-separated values</a></h2>
 <ul>
 <li>Advantages
 <ul>
@@ -1832,24 +1844,20 @@ ELSE:
 </ul>
 </li>
 </ul>
-<p>The file is divided into a series of <em>rules</em>, each separated by a newline character (<code>\n</code>).</p>
-<pre><code>RULE
-RULE
+<p>The file is divided into a series of <em>steps</em>, each separated by a newline character (<code>\n</code>).</p>
+<pre><code>STEP
+STEP
 ...
 </code></pre>
-<p>A rule contains information about a particular file. Every rule always has 3 components: a fileset, an identifier, and a filepath. Each component in a rule is separated by a tab character (<code>\t</code>).</p>
-<pre><code>FILESET	IDENTIFIER	FILEPATH
+<p>A step contains information about a particular file. Every step always has 3 components: a fileset, a library, and a filepath. Each component in a step is separated by a tab character (<code>\t</code>).</p>
+<pre><code>FILESET	LIBRARY	FILEPATH
 </code></pre>
-<p>The <em>fileset</em> is the group name for the file pattern that matched the given rule's file.</p>
-<p>The <em>identifier</em> is the library for the IP which the given rule's file belongs to.</p>
-<p>The <em>filepath</em> is the absolute file system path to the given rule's file.</p>
 <h4 id="examples"><a class="header" href="#examples">Examples</a></h4>
-<pre><code class="language-text">PY-MODEL	work	/Users/chase/projects/lc3b/sim/models/alu_tb.py
-VHDL-RTL	work	/Users/chase/projects/lc3b/rtl/const_pkg.vhd
-VHDL-RTL	math	/Users/chase/.orbit/cache/base2-1.0.0-aac9159285/pkg/base2.vhd
-VHDL-RTL	work	/Users/chase/projects/lc3b/rtl/alu.vhd
-VHDL-SIM	work	/Users/chase/projects/lc3b/sim/alu_tb.vhd
-
+<pre><code class="language-text">PYMDL	lc3b	/Users/chase/projects/lc3b/sim/models/alu_tb.py
+VHDL	lc3b	/Users/chase/projects/lc3b/rtl/const_pkg.vhd
+VHDL	base2	/Users/chase/.orbit/cache/base2-1.0.0-aac9159285/pkg/base2.vhd
+VHDL	lc3b	/Users/chase/projects/lc3b/rtl/alu.vhd
+VHDL	lc3b	/Users/chase/projects/lc3b/sim/alu_tb.vhd
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="environment-variables"><a class="header" href="#environment-variables">Environment Variables</a></h1>
 <p>Orbit's configuration can be customized with the setting of specific environment variables.</p>
@@ -1862,9 +1870,6 @@ VHDL-SIM	work	/Users/chase/projects/lc3b/sim/alu_tb.vhd
 </li>
 <li>
 <p><code>ORBIT_ARCHIVE</code> - directory where orbit saves archived snapshots of ip at a particular version. By default it is <code>$ORBIT_HOME/archive</code>.</p>
-</li>
-<li>
-<p><code>ORBIT_CHANNELS</code> - directory where orbit checks for channels that point to available ip. By default it is <code>$ORBIT_HOME/channels</code>.</p>
 </li>
 <li>
 <p><code>NO_COLOR</code> - does not print colorized output when set to a value.</p>
@@ -1901,7 +1906,7 @@ VHDL-SIM	work	/Users/chase/projects/lc3b/sim/alu_tb.vhd
 <p><code>ORBIT_IP_NAME</code> - name field of the manifest for the ip package</p>
 </li>
 <li>
-<p><code>ORBIT_IP_LIBRARY</code> - optional HDL library defined in the manifest for the ip</p>
+<p><code>ORBIT_IP_LIBRARY</code> - the HDL library defined in the ip's manifest</p>
 </li>
 <li>
 <p><code>ORBIT_IP_VERSION</code> - specific version of current working directory's ip</p>

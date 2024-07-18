@@ -21,6 +21,10 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - updates `orbit help` command to have latest manuals and available subcommands to display manual pages
 - adds `--no-clean` flag to `orbit build` and `orbit test` to prevent automatic cleaning before build process
 
+### Docs
+- updates command workflow diagram to use newer commands
+- renames "variable substitution" to "string swapping"
+
 ## 0.16.0
 
 ### Features

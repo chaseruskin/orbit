@@ -6,7 +6,23 @@ Orbit is an agile package manager and extensible build tool for HDLs.
 
 ## Key concepts
 
-- Every ip requires a manifest file (`Orbit.toml`). This is maintained by the developer. The manifest file documents basic metadata and the project's list of direct dependencies.
+- Orbit manages your ips using a group of file system directories that together make up the __Catalog__. The catalog has 3 levels that store increasingly more information about a particular ip: __Channels__, the __Archive__, and the __Cache__.
+
+- An ip's manifest may be stored in a user-defined channel so that a user can find that ip. Running `orbit download` will download the ip from its defined source found in its channel and create a compressed snapshot of the ip in the archive. 
+
+- A compressed snapshot of an ip is not enough for Orbit to reference it in a local ip. Running `orbit install` will decompress the archived snapshot stored in the archive into an immutable reference of the ip in the cache. The usage of checksums prevents users from editing ips in the cache.
+
+- Every ip requires a __Manifest__ file, named `Orbit.toml`. This is a simple TOML file maintained by the user. The manifest file documents basic metadata about the ip, like its name and version, as well as the ip's list of direct dependencies.
+
+- An ip saves its world state by storing a __Lockfile__, called `Orbit.lock`, alongside the manifest. A lockfile lists all of the resolved ip dependencies required for the local ip and how to retrieve those ips if necessary again. Running `orbit lock` will build an ip-level graph to resolve the entire ip-level dependency tree and store this information in the lockfile.
+
+- To build (or test) a design within a local ip, Orbit runs a __Build Process__. The build process takes as input the local ip's __Lockfile__, __Source Files__ (hdl code), __Auxiliary Files__ (any other file types needed), and a specified __Target__. Running `orbit build` (or `orbit test`) will enter the build process.
+
+- The build process occurs in 2 stages: the __Planning Stage__ and the __Execution Stage__. During the planning stage, Orbit generates a __Blueprint__, which is a single file that lists all the files required to perform the build. During the execution stage, Orbit calls the specified __Target__'s commmand, which typically reads the previously generated blueprint and processes the files using some user-defined EDA tool. The final output from the build process is typically one or more __Artifacts__, which are one or more files generated from the user-defined EDA tool.
+
+- Launching a new version of an ip when it is ready by releasing it through a user-defined channel can help other users seamlessly access that new version of the ip. Running `orbit launch` will run a series of checks and the copy the ip's manifest to its specified channel.
+
+## Other notes
 
 - Backend EDA tools and workflows (makefiles, TCL scripts, etc.) are decoupled from ip and are able to be reused across projects by creating targets in the configuration file (`config.toml`).
 
@@ -14,12 +30,6 @@ Orbit is an agile package manager and extensible build tool for HDLs.
 
 - Orbit solves the namespace collision problem by a variant of name mangling when primary design unit identifiers conflict in the dependency tree (_dynamic symbol transformation_).
 
-- Downloading an ip stores a compressed snapshot of the ip to install later. Downloads are placed your ip catalog's _archive_, which is a special directory to Orbit that is abstracted away from the user.
-
-- Installing an ip places the source code in a place for it to be referenced in other projects. Installations are located in your ip catalog's _cache_, which is a special directory to Orbit and is abstracted away from the user. Files are not allowed to be modified in the cache.
-
 - Orbit generates a lockfile (`Orbit.lock`) during the planning stage of the build process. The lockfile saves the entire state such that Orbit can return to this state at a later time or on a different computing system. All necessary data that is required to reproduce the build is stored in the lockfile. The lockfile is maintained by Orbit and should be checked into versionc control.
-
-- The build process is occurs in two stages: planning and execution. These stages happen sequentially and together when calling `orbit test` or `orbit build`.
 
 - Orbit generates a blueprint during the planning stage of the build process. The blueprint is a single file that lists the HDL source code files required for the particular build in topologically sorted order. Targets can also specify other file types to be collected into the blueprint. The blueprint is an artifact to be consumed by the target's process during the exection stage of the build process. Since it can frequently change with each build, it should not be checked into version control.

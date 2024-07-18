@@ -22,6 +22,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - adds `--no-clean` flag to `orbit build` and `orbit test` to prevent automatic cleaning before build process
 
 ### Docs
+- adds architecture diagram for topics overview page
 - updates command workflow diagram to use newer commands
 - renames "variable substitution" to "string swapping"
 

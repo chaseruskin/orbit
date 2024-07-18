@@ -1,9 +1,9 @@
 # Orbit
 
-[![Pipeline](https://github.com/cdotrus/orbit/workflows/pipeline/badge.svg)](https://github.com/cdotrus/orbit/actions) 
-[![Documentation](https://github.com/cdotrus/orbit/actions/workflows/docs.yml/badge.svg)](https://cdotrus.github.io/orbit) 
+[![Pipeline](https://github.com/cdotrus/orbit/actions/workflows/pipeline.yml/badge.svg)](https://github.com/cdotrus/orbit/actions) 
+[![GitHub Pages](https://github.com/cdotrus/orbit/actions/workflows/docs.yml/badge.svg)](https://cdotrus.github.io/orbit) 
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) 
-[![Docker Hub](https://img.shields.io/badge/dockerhub-images-important.svg?logo=docker)](https://hub.docker.com/repository/docker/cdotrus/orbit/general) 
+[![DockerHub](https://img.shields.io/badge/DockerHub-images-important.svg?logo=docker)](https://hub.docker.com/repository/docker/cdotrus/orbit/general) 
 [![Downloads](https://img.shields.io/github/downloads/cdotrus/orbit/total.svg)](https://github.com/cdotrus/orbit/releases)
 
 Orbit is an agile package manager and extensible build tool for hardware description languages (HDL).
@@ -182,7 +182,6 @@ Options:
     --help, -h      print help information
 
 Use 'orbit help <command>' for more information about a command.
-
 ```
 
 ## Sponsoring

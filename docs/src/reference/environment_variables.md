@@ -8,8 +8,6 @@ Orbit's configuration can be customized with the setting of specific environment
 
 - `ORBIT_ARCHIVE` - directory where orbit saves archived snapshots of ip at a particular version. By default it is `$ORBIT_HOME/archive`.
 
-- `ORBIT_CHANNELS` - directory where orbit checks for channels that point to available ip. By default it is `$ORBIT_HOME/channels`.
-
 - `NO_COLOR` - does not print colorized output when set to a value.
 
 - `EDITOR` - chooses this value as the default text editor when no `core.editor` key is present in the config.toml.
@@ -34,7 +32,7 @@ Orbit also sets environment variables during runtime so a plugin has access to r
 
 - `ORBIT_IP_NAME` - name field of the manifest for the ip package
 
-- `ORBIT_IP_LIBRARY` - optional HDL library defined in the manifest for the ip
+- `ORBIT_IP_LIBRARY` - the HDL library defined in the ip's manifest
 
 - `ORBIT_IP_VERSION` - specific version of current working directory's ip
 

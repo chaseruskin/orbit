@@ -18,7 +18,8 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.17.0 - unreleased
 
 ### Features
-- adds `--dirty` flag to `orbit build` and `orbit test` to prevent automatic cleaning before build process
+- updates `orbit help` command to have latest manuals and available subcommands to display manual pages
+- adds `--no-clean` flag to `orbit build` and `orbit test` to prevent automatic cleaning before build process
 
 ## 0.16.0
 

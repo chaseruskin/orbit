@@ -19,7 +19,7 @@ DESCRIPTION
     are displayed.
     
     If no spec is provided for '<ip>', then it will retrieve information based on the
-    current working ip, if exists.
+    local ip, if one exists.
 
 OPTIONS
     <ip>

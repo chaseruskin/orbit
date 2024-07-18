@@ -25,7 +25,7 @@ If `--versions` is specified, then a list of the ip's already available versions
 are displayed.
 
 If no spec is provided for `<ip>`, then it will retrieve information based on the
-current working ip, if exists.
+local ip, if one exists.
 
 ## __OPTIONS__
 

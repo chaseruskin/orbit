@@ -6,6 +6,7 @@ use cliproc::{Arg, Cli, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Help {
+    list: bool,
     topic: Option<Topic>,
 }
 
@@ -13,6 +14,7 @@ impl Subcommand<()> for Help {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
         cli.help(cliproc::Help::with(HELP))?;
         Ok(Help {
+            list: cli.check(Arg::flag("list"))?,
             topic: cli.get(Arg::positional("topic"))?,
         })
     }
@@ -26,41 +28,56 @@ impl Subcommand<()> for Help {
 #[derive(Debug, PartialEq)]
 enum Topic {
     New,
-    Plan,
-    Build,
-    Launch,
-    Download,
-    Install,
-    Tree,
-    Search,
-    Get,
     Init,
     View,
+    Read,
+    Get,
+    Tree,
+    Lock,
+    Build,
+    Test,
+    Launch,
+    Search,
+    Download,
+    Install,
     Env,
     Config,
-    Uninstall,
-    Read,
+    Remove,
+}
+
+impl Topic {
+    fn list_all() -> String {
+        let list = [
+            "new", "init", "view", "read", "get", "tree", "lock", "test", "build", "launch",
+            "search", "download", "install", "env", "config", "remove",
+        ];
+        list.into_iter().fold(String::new(), |mut acc, x| {
+            acc.push_str(&format!("{}\n", x));
+            acc
+        })
+    }
 }
 
 impl std::str::FromStr for Topic {
     type Err = AnyError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
-            "env" => Self::Env,
             "new" => Self::New,
-            "plan" => Self::Plan,
+            "init" => Self::Init,
+            "view" => Self::View,
+            "read" => Self::Read,
+            "get" => Self::Get,
+            "tree" => Self::Tree,
+            "lock" => Self::Lock,
+            "test" => Self::Test,
             "build" => Self::Build,
-            "search" => Self::Search,
             "launch" => Self::Launch,
+            "search" => Self::Search,
             "download" => Self::Download,
             "install" => Self::Install,
-            "tree" => Self::Tree,
-            "get" => Self::Get,
-            "init" => Self::Init,
-            "show" => Self::View,
+            "env" => Self::Env,
             "config" => Self::Config,
-            "uninstall" => Self::Uninstall,
-            "read" => Self::Read,
+            "remove" => Self::Remove,
             _ => return Err(AnyError(format!("topic '{}' not found", s))),
         })
     }
@@ -71,53 +88,50 @@ impl Topic {
     fn as_manual(&self) -> &str {
         use Topic::*;
         match &self {
-            Env => manuals::env::MANUAL,
+            New => manuals::new::MANUAL,
+            Init => manuals::init::MANUAL,
             View => manuals::view::MANUAL,
+            Read => manuals::read::MANUAL,
             Get => manuals::get::MANUAL,
             Tree => manuals::tree::MANUAL,
-            Download => manuals::download::MANUAL,
-            New => manuals::new::MANUAL,
-            Plan => manuals::plan::MANUAL,
-            Search => manuals::search::MANUAL,
+            Lock => manuals::lock::MANUAL,
+            Test => manuals::test::MANUAL,
             Build => manuals::build::MANUAL,
             Launch => manuals::launch::MANUAL,
+            Search => manuals::search::MANUAL,
+            Download => manuals::download::MANUAL,
             Install => manuals::install::MANUAL,
-            Init => manuals::init::MANUAL,
+            Env => manuals::env::MANUAL,
             Config => manuals::config::MANUAL,
-            Uninstall => manuals::remove::MANUAL,
-            Read => manuals::read::MANUAL,
+            Remove => manuals::remove::MANUAL,
         }
     }
 }
 
 impl Help {
     fn run(&self) -> Result<(), AnyError> {
-        let contents = match &self.topic {
-            Some(t) => t.as_manual(),
-            None => manuals::orbit::MANUAL,
-        };
-        // @todo/idea: check for a pager program to pipe contents into?
-        println!("{}", contents);
+        if self.list == true {
+            println!("{}", Topic::list_all());
+        } else {
+            let contents = match &self.topic {
+                Some(t) => t.as_manual(),
+                None => manuals::orbit::MANUAL,
+            };
+            // TODO: check for a pager program to pipe contents into?
+            println!("{}", contents);
+        }
         Ok(())
     }
 }
 
 const HELP: &str = "\
-Read in-depth documentation around Orbit topics.
+Read in-depth documentation on Orbit topics.
 
 Usage:
     orbit help [<topic>]
 
 Args:
     <topic>         a listed topic or any orbit subcommand
-
-Topics:
-    toml            learn about .toml files
-    cache           learn about orbit's caching system
-    manifest        learn about the Orbit.toml file
-    template        learn about templates
-    blueprint       learn about generating a pre-build data file
-    vendor          learn about hosting multiple ip together
 
 Use 'orbit help --list' to see all available topics.
 ";

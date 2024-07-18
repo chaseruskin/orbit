@@ -103,7 +103,7 @@ If `--versions` is specified, then a list of the ip's already available versions
 are displayed.
 
 If no spec is provided for `<ip>`, then it will retrieve information based on the
-current working ip, if exists.
+local ip, if one exists.
 """
 
 options."<ip>" = "The spec of the ip to query"
@@ -369,6 +369,84 @@ Options:
 """
 
 # ------------------------------------------------------------------------------
+# test      
+# ------------------------------------------------------------------------------
+[test]
+name = "test"
+summary = "run a test"
+synopsis = "orbit test [options] [--] [args]..."
+description = """
+This command prepares a given target and then executes the target.
+
+While this command functions similar to `orbit build`, the targets that are 
+encouraged to be used with this command are ones that are designed to either
+"pass" or "fail", typically through a return code. This command requires a
+testbench, if you do not want to set a testbench, see `orbit build`.
+
+A target must be provided for the test command to run. A default target can
+be specified in a configuration file, which will be used when a target is
+omitted from the command-line.
+
+If `--list` is used, then it will display a list of the available targets to
+the user. Using `--list` in combination with a target from `--target` will
+display any detailed help information the target has documented in its 
+definition.
+
+A target typically goes through three steps for the testing process:  
+   1. Parse the blueprint file  
+   2. Process the referenced files listed in the blueprint  
+   3. Verify the hdl source code passes all tests
+
+Any command-line arguments entered after the terminating flag `--` will be
+passed in the received order as arguments to the subprocess's command. If a 
+target already has defined arguments, the additional arguments passed from the 
+command-line will follow the previously defined arguments.
+
+The target's process will spawn from the current working ip's output directory,
+which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.
+"""
+
+options."--target <name>" = "Target to execute"
+options."--dut <unit>" = "Set the device under test"
+options."--tb <unit>" = "Set the top level testbench unit"
+options."--plan <format>" = "Set the blueprint file format"
+options."--target-dir <dir>" = "The relative directory where the target starts"
+options."--command <path>" = "Overwrite the target's command"
+options."--list" = "View available targets and exit"
+options."--all" = "Include all hdl files of the working ip"
+options."--fileset <key=glob>..." = "A glob-style pattern identified by name to include in the blueprint"
+options."--no-clean" = "Do not clean the target folder before execution"
+options."--force" = "Force the target to execute "
+options."--verbose" = "Display the command being executed"
+options."args" = "Arguments to pass to the target"
+
+examples = """
+orbit test --dut adder --tb adder_tb --target modelsim -- --lint
+"""
+
+help = """
+Run a test.
+
+Usage:
+    orbit test [options] [--] [args]...
+
+Options:
+    --target <name>         target to execute
+    --dut <unit>            set the device under test
+    --tb <unit>             set the top level testbench unit
+    --plan <format>         set the blueprint file format
+    --target-dir <dir>      the relative directory where the target starts
+    --command <path>        overwrite the target's command
+    --list                  view available targets and exit
+    --all                   include all hdl files of the working ip
+    --fileset <key=glob>... set filesets for the target
+    --force                 force the target to execute
+    --no-clean              do not clean the target folder before execution
+    --verbose               display the command being executed
+    args                    arguments to pass to the requested command
+"""
+
+# ------------------------------------------------------------------------------
 # build, b       
 # ------------------------------------------------------------------------------
 [build]
@@ -448,87 +526,42 @@ Options:
 """
 
 # ------------------------------------------------------------------------------
-# test      
+# launch          
 # ------------------------------------------------------------------------------
-[test]
-name = "test"
-summary = "run a test"
-synopsis = "orbit test [options] [--] [args]..."
+[launch]
+name = "launch"
+summary = "release an ip through a channel"
+synopsis = "orbit launch [options]"
 description = """
-This command prepares a given target and then executes the target.
+Performs a series of checks on a stable version of a local ip to then release it
+through a channel.
 
-While this command functions similar to `orbit build`, the targets that are 
-encouraged to be used with this command are ones that are designed to either
-"pass" or "fail", typically through a return code. This command requires a
-testbench, if you do not want to set a testbench, see `orbit build`.
+For an ip to be launched, it must have its source field defined that directs to
+a valid internet location.
 
-A target must be provided for the test command to run. A default target can
-be specified in a configuration file, which will be used when a target is
-omitted from the command-line.
-
-If `--list` is used, then it will display a list of the available targets to
-the user. Using `--list` in combination with a target from `--target` will
-display any detailed help information the target has documented in its 
-definition.
-
-A target typically goes through three steps for the testing process:  
-   1. Parse the blueprint file  
-   2. Process the referenced files listed in the blueprint  
-   3. Verify the hdl source code passes all tests
-
-Any command-line arguments entered after the terminating flag `--` will be
-passed in the received order as arguments to the subprocess's command. If a 
-target already has defined arguments, the additional arguments passed from the 
-command-line will follow the previously defined arguments.
-
-The target's process will spawn from the current working ip's output directory,
-which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.
+By default, it operates a dry run, performing all steps in the process except
+for the actual release through the channel. To fully run the command, use the
+`--ready` flag. When the ip is launched, it will also be installed to the cache
+by default. To skip this behavior, use the `--no-install` flag. 
 """
 
-options."--target <name>" = "Target to execute"
-options."--dut <unit>" = "Set the device under test"
-options."--tb <unit>" = "Set the top level testbench unit"
-options."--plan <format>" = "Set the blueprint file format"
-options."--target-dir <dir>" = "The relative directory where the target starts"
-options."--command <path>" = "Overwrite the target's command"
-options."--list" = "View available targets and exit"
-options."--all" = "Include all hdl files of the working ip"
-options."--fileset <key=glob>..." = "A glob-style pattern identified by name to include in the blueprint"
-options."--no-clean" = "Do not clean the target folder before execution"
-options."--force" = "Force the target to execute "
-options."--verbose" = "Display the command being executed"
-options."args" = "Arguments to pass to the target"
+options."--ready" = "Perform a full run"
 
 examples = """
-orbit test --dut adder --tb adder_tb --target modelsim -- --lint
+orbit launch
+orbit launch --ready
 """
 
 help = """
-Run a test.
+Release an ip through a channel.
 
 Usage:
-    orbit test [options] [--] [args]...
+    orbit launch [options]
 
 Options:
-    --target <name>         target to execute
-    --dut <unit>            set the device under test
-    --tb <unit>             set the top level testbench unit
-    --plan <format>         set the blueprint file format
-    --target-dir <dir>      the relative directory where the target starts
-    --command <path>        overwrite the target's command
-    --list                  view available targets and exit
-    --all                   include all hdl files of the working ip
-    --fileset <key=glob>... set filesets for the target
-    --force                 force the target to execute
-    --no-clean              do not clean the target folder before execution
-    --verbose               display the command being executed
-    args                    arguments to pass to the requested command
+    --ready         perform a full run
+    --no-install    skip installing the ip
 """
-
-# ------------------------------------------------------------------------------
-# launch          
-# ------------------------------------------------------------------------------
-
 
 # ------------------------------------------------------------------------------
 # search          

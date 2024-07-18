@@ -60,7 +60,7 @@ gates = "2.0.0"
 
 ## Low effort integration
 
-To encourage code reuse and faster development cycles, Orbit includes HDL-specific commands to integrate designs across ips. For example, Orbit can display HDL code snippets of other known design units to be instantiated within the current working ip.
+To encourage code reuse and faster development cycles, Orbit includes HDL-specific commands to integrate designs across ips. For example, Orbit can display HDL code snippets of other known design units to be instantiated within your local ip.
 
 ```
 $ orbit get and_gate --ip gates:2.0.0 --library --signals --instance

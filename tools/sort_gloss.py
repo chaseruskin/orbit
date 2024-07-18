@@ -16,6 +16,8 @@ def main():
         content = gloss.read()
         entries = content.split(WORD_SYMBOL)
         for e in entries:
+            if len(e.strip()) == 0:
+                continue
             # the word is the first
             word, define = e.split('\n', 1)
             if word.startswith('#'):

@@ -31,7 +31,7 @@ fulltest:
 
 # Sort the glossary contents
 sortgloss:
-    python ./tools/sort_gloss.py
+    echo "$(python ./tools/sort_gloss.py)" > ./docs/src/glossary.md
 
 # Organize commands required for end-to-end system-level tests
 

@@ -25,6 +25,10 @@ impl Uuid {
     pub fn get(&self) -> &uuid::Uuid {
         &self.inner
     }
+
+    pub fn to_string_short(&self) -> String {
+        format!("{:x?}", self.inner.to_fields_le().0.to_be())
+    }
 }
 
 impl<'de> Deserialize<'de> for Uuid {

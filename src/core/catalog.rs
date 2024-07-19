@@ -9,7 +9,7 @@ use std::{
 
 use super::iparchive::ARCHIVE_EXT;
 use super::{
-    pkgid::{PkgId, PkgPart},
+    pkgid::PkgPart,
     version::{AnyVersion, Version},
 };
 
@@ -439,11 +439,7 @@ pub struct CacheSlot(PkgPart, Version, Remainder);
 impl CacheSlot {
     /// Combines the various components of a cache slot name into a `CacheSlot`.
     pub fn new(name: &PkgPart, version: &Version, checksum: &Sha256Hash) -> Self {
-        Self(
-            name.clone(),
-            version.clone(),
-            checksum.to_string().get(0..10).unwrap().to_string(),
-        )
+        Self(name.clone(), version.clone(), checksum.to_string_short())
     }
 
     // @todo: test `try_from_str` (especially if build names get supported in versions ex: 1.0.0-alpha)
@@ -493,10 +489,10 @@ impl DownloadSlot {
     /// Combines the various components of a cache slot name into a `CacheSlot`.
     pub fn new(name: &PkgPart, version: &Version, uuid: &Uuid) -> Self {
         Self(format!(
-            "{}-{}-{:x?}.{}",
+            "{}-{}-{}.{}",
             name,
             version,
-            uuid.get().to_fields_le().0.to_be(),
+            uuid.to_string_short(),
             ARCHIVE_EXT
         ))
     }
@@ -505,22 +501,5 @@ impl DownloadSlot {
 impl AsRef<str> for DownloadSlot {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
-    }
-}
-
-#[derive(Debug)]
-pub enum CatalogError {
-    SuggestInstall(PkgId, AnyVersion),
-    NoVersionForIp(PkgId, AnyVersion),
-}
-
-impl std::error::Error for CatalogError {}
-
-impl std::fmt::Display for CatalogError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::SuggestInstall(target, version) => write!(f, "ip '{}' is not installed but is available\n\nTry installing the ip: `orbit install --ip {} -v {}`", target, target, version),
-            Self::NoVersionForIp(pkgid, version) => write!(f, "ip '{}' has no version '{}'", pkgid, version),
-        }
     }
 }

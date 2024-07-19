@@ -43,6 +43,10 @@ impl Hash for EnvVar {
 }
 
 impl EnvVar {
+    pub fn with(key: &str, value: &str) -> Self {
+        Self::new().key(key).value(value)
+    }
+
     pub fn new() -> Self {
         Self {
             key: String::new(),
@@ -141,6 +145,13 @@ impl Environment {
                 .key("ORBIT_IP_LIBRARY")
                 .value(&ip.get_hdl_library().to_string()),
         );
+        if let Some(sum) = ip.get_checksum() {
+            self.insert(
+                EnvVar::new()
+                    .key("ORBIT_IP_CHECKSUM")
+                    .value(&sum.to_string_short()),
+            );
+        }
         Ok(self)
     }
 

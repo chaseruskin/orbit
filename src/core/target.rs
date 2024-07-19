@@ -14,12 +14,14 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use super::blueprint::Scheme;
+use super::swap;
+use super::swap::StrSwapTable;
 
 pub type Targets = Vec<Target>;
 
 type Filesets = HashMap<String, Style>;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Target {
     name: String,
@@ -34,6 +36,20 @@ pub struct Target {
 }
 
 impl Target {
+    /// Performs variable substitution on the provided arguments for the taret.
+    pub fn replace_vars_in_args(mut self, vtable: &StrSwapTable) -> Self {
+        self.args = if let Some(args) = self.args {
+            Some(
+                args.into_iter()
+                    .map(|arg| swap::substitute(arg, vtable))
+                    .collect(),
+            )
+        } else {
+            self.args
+        };
+        self
+    }
+
     pub fn get_filesets(&self) -> Option<&Filesets> {
         self.fileset.as_ref()
     }

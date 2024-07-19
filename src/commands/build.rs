@@ -7,6 +7,7 @@ use crate::core::context::Context;
 use crate::core::fileset::Fileset;
 use crate::core::ip::Ip;
 use crate::core::lang::vhdl::token::Identifier;
+use crate::core::swap::StrSwapTable;
 use crate::core::target::Process;
 use crate::core::target::Target;
 use crate::error::Error;
@@ -16,6 +17,7 @@ use crate::util::environment::Environment;
 use crate::util::environment::ORBIT_BLUEPRINT;
 use crate::util::environment::ORBIT_OUTPUT_PATH;
 use crate::util::environment::ORBIT_TARGET;
+use crate::util::environment::ORBIT_TARGET_DIR;
 use crate::util::filesystem;
 
 use cliproc::{cli, proc, stage::*};
@@ -131,14 +133,18 @@ impl Subcommand<Context> for Build {
             .from_config(c.get_config())?
             // read ip manifest for env variables
             .from_ip(&working_ip)?
-            .add(EnvVar::new().key(ORBIT_BLUEPRINT).value(&blueprint_name))
-            .add(
-                EnvVar::new()
-                    .key(ORBIT_OUTPUT_PATH)
-                    .value(&filesystem::into_std_str(output_path.clone())),
-            )
-            .add(EnvVar::new().key(ORBIT_TARGET).value(target.get_name()))
+            .add(EnvVar::with(ORBIT_BLUEPRINT, &blueprint_name))
+            .add(EnvVar::with(
+                ORBIT_OUTPUT_PATH,
+                &filesystem::into_std_str(output_path.clone()),
+            ))
+            .add(EnvVar::with(ORBIT_TARGET_DIR, target_dir))
+            .add(EnvVar::with(ORBIT_TARGET, target.get_name()))
             .from_env_file(&output_path)?;
+
+        // modify the target to update with the available
+        let swap_table = StrSwapTable::new().load_environment(&envs)?;
+        let target = target.clone().replace_vars_in_args(&swap_table);
 
         // run the command from the output path
         match target.execute(

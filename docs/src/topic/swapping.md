@@ -31,6 +31,7 @@ The string pattern for a target's fileset configuration is allowed to contain an
 
 - `orbit.top`: The top-level design unit name.
 - `orbit.bench`: The testbench design unit name.
+- `orbit.dut`: The design-under-test design unit name.
 - `orbit.env.*`: Any environment variables loaded from configuration files.
 
 ### Protocol arguments
@@ -44,6 +45,20 @@ The argument list defined in a protocol's configuration is allowed to contain an
 - `orbit.ip.source.protocol`: The protocol specified by the ip being downloaded
 - `orbit.ip.source.tag`: The tag (if provided) specified by the ip being downloaded.
 - `orbit.env.*`: Any environment variables loaded from configuration files.
+
+### Target arguments
+
+The argument list defined in a target's configuration is allowed to contain any of the following keys:
+
+- `orbit.ip.name`: The name of the local ip.
+- `orbit.ip.library`: The HDL library of the local ip.
+- `orbit.ip.version`: The version of the local ip.
+- `orbit.ip.checksum`: The truncated most recent checksum of the local ip.
+- `orbit.env.*`: Any environment variables loaded from configuration files.
+- `orbit.top`: The top-level design unit name.
+- `orbit.bench`: The testbench design unit name.
+- `orbit.dut`: The design-under-test design unit name.
+
 
 ## Example
 

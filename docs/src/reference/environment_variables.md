@@ -36,6 +36,8 @@ Orbit also sets environment variables during runtime so a plugin has access to r
 
 - `ORBIT_IP_VERSION` - specific version of current working directory's ip
 
+- `ORBIT_IP_CHECKSUM` - the truncated most recent checksum of the local ip
+
 - `ORBIT_BLUEPRINT` - the filename for the blueprint created during the planning stage
 
 - `ORBIT_OUTPUT_PATH` - path to the selected target's build process working directory

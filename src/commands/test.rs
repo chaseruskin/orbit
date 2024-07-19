@@ -8,12 +8,14 @@ use crate::core::fileset::Fileset;
 use crate::core::ip::Ip;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lang::Language;
+use crate::core::swap::StrSwapTable;
 use crate::core::target::Process;
 use crate::core::target::Target;
 use crate::error::Error;
 use crate::error::LastError;
 use crate::util::anyerror::Fault;
 use crate::util::environment::ORBIT_OUTPUT_PATH;
+use crate::util::environment::ORBIT_TARGET;
 use crate::util::environment::{EnvVar, Environment, ORBIT_BLUEPRINT, ORBIT_TARGET_DIR};
 use crate::util::filesystem;
 
@@ -172,7 +174,11 @@ impl Test {
                     .value(&filesystem::into_std_str(output_path.clone())),
             )
             .add(EnvVar::new().key(ORBIT_TARGET_DIR).value(target_dir))
+            .add(EnvVar::with(ORBIT_TARGET, target.get_name()))
             .from_env_file(&output_path)?;
+
+        let swap_table = StrSwapTable::new().load_environment(&envs)?;
+        let target = target.clone().replace_vars_in_args(&swap_table);
 
         // run the command from the output path
         match target.execute(

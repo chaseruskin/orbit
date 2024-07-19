@@ -127,6 +127,18 @@ impl Ip {
         &self.uuid
     }
 
+    /// Try to get the checksum with least effort possible. Will not work for
+    /// non physical mappings of an ip.
+    pub fn get_checksum(&self) -> Option<Sha256Hash> {
+        match self.get_mapping() {
+            Mapping::Physical => match Ip::read_checksum_proof(&self.get_root()) {
+                Some(sum) => Some(sum),
+                None => Some(Ip::compute_checksum(&self.get_root())),
+            },
+            _ => None,
+        }
+    }
+
     pub fn check_illegal_files(root: &PathBuf) -> Result<(), Fault> {
         // verify no reserved files exist
         if let Ok(mut rd) = std::fs::read_dir(&root) {

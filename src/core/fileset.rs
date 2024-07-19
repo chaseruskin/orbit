@@ -25,7 +25,7 @@ pub struct Fileset {
     pattern: Style,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Style(Pattern);
 
 impl Style {

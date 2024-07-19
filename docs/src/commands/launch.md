@@ -28,6 +28,12 @@ by default. To skip this behavior, use the `--no-install` flag.
 `--ready`  
       Perform a full run
 
+`--no-install`  
+      Skip installing the ip
+
+`--list`  
+      View available channels and exit
+
 ## __EXAMPLES__
 
 ```

@@ -1,6 +1,7 @@
 pub mod algo;
 pub mod blueprint;
 pub mod catalog;
+pub mod channel;
 pub mod config;
 pub mod context;
 pub mod fileset;

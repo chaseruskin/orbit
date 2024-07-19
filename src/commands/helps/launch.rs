@@ -7,6 +7,7 @@ Usage:
 Options:
     --ready         perform a full run
     --no-install    skip installing the ip
+    --list          view available channels and exit
 
 Use 'orbit help launch' to read more about the command.
 "#;

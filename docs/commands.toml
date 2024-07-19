@@ -545,7 +545,9 @@ for the actual release through the channel. To fully run the command, use the
 by default. To skip this behavior, use the `--no-install` flag. 
 """
 
-options."--ready" = "Perform a full run"
+options."--ready, -y" = "Perform a full run"
+options."--no-install" = "Skip installing the ip"
+options."--list" = "View available channels and exit"
 
 examples = """
 orbit launch
@@ -559,8 +561,9 @@ Usage:
     orbit launch [options]
 
 Options:
-    --ready         perform a full run
+    --ready, -y      perform a full run
     --no-install    skip installing the ip
+    --list          view available channels and exit
 """
 
 # ------------------------------------------------------------------------------

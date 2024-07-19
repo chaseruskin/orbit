@@ -49,6 +49,8 @@ use toml_edit::Item;
 use toml_edit::Table;
 use toml_edit::Value;
 
+use super::channel::Channel;
+use super::channel::Channels;
 use super::lang::Language;
 
 impl Display for ConfigDocument {
@@ -443,15 +445,16 @@ pub const CONFIG_FILE: &str = "config.toml";
 #[serde(deny_unknown_fields)]
 pub struct Config {
     include: Option<Vec<PathBuf>>,
-    env: Option<HashMap<String, String>>,
-    target: Option<Targets>,
-    protocol: Option<Protocols>,
-    #[serde(rename = "vhdl-format")]
-    vhdl_format: Option<VhdlFormat>,
     general: Option<General>,
     build: Option<Build>,
     test: Option<Test>,
     language: Option<Language>,
+    env: Option<HashMap<String, String>>,
+    target: Option<Targets>,
+    protocol: Option<Protocols>,
+    channel: Option<Channels>,
+    #[serde(rename = "vhdl-format")]
+    vhdl_format: Option<VhdlFormat>,
 }
 
 impl Config {
@@ -460,6 +463,7 @@ impl Config {
             include: None,
             env: None,
             target: None,
+            channel: None,
             protocol: None,
             vhdl_format: None,
             general: None,
@@ -531,6 +535,11 @@ impl Config {
             Some(v) => v.append(&mut rhs.target.unwrap_or(Vec::new())),
             None => self.target = rhs.target,
         }
+        // combine '[[channel]]' array
+        match &mut self.channel {
+            Some(v) => v.append(&mut rhs.channel.unwrap_or(Vec::new())),
+            None => self.channel = rhs.channel,
+        }
         // combine '[[protocol]]' array
         match &mut self.protocol {
             Some(v) => v.append(&mut rhs.protocol.unwrap_or(Vec::new())),
@@ -543,21 +552,6 @@ impl Config {
             Some(i) => i.iter().collect(),
             None => Vec::new(),
         }
-    }
-
-    pub fn get_targets(&self) -> HashMap<&str, &Target> {
-        let mut map = HashMap::new();
-
-        if let Some(plugs) = &self.target {
-            plugs.iter().for_each(|p| match map.get(p.get_name()) {
-                Some(_) => (),
-                None => {
-                    map.insert(p.get_name(), p);
-                    ()
-                }
-            });
-        }
-        map
     }
 
     pub fn get_default_target(&self, is_build: bool) -> Option<&String> {
@@ -588,11 +582,41 @@ impl Config {
     pub fn get_protocols(&self) -> HashMap<&str, &Protocol> {
         let mut map = HashMap::new();
 
-        if let Some(plugs) = &self.protocol {
-            plugs.iter().for_each(|p| match map.get(p.get_name()) {
+        if let Some(protos) = &self.protocol {
+            protos.iter().for_each(|p| match map.get(p.get_name()) {
                 Some(_) => (),
                 None => {
                     map.insert(p.get_name(), p);
+                    ()
+                }
+            });
+        }
+        map
+    }
+
+    pub fn get_targets(&self) -> HashMap<&str, &Target> {
+        let mut map = HashMap::new();
+
+        if let Some(tars) = &self.target {
+            tars.iter().for_each(|t| match map.get(t.get_name()) {
+                Some(_) => (),
+                None => {
+                    map.insert(t.get_name(), t);
+                    ()
+                }
+            });
+        }
+        map
+    }
+
+    pub fn get_channels(&self) -> HashMap<&str, &Channel> {
+        let mut map = HashMap::new();
+
+        if let Some(chans) = &self.channel {
+            chans.iter().for_each(|c| match map.get(c.get_name()) {
+                Some(_) => (),
+                None => {
+                    map.insert(c.get_name(), c);
                     ()
                 }
             });
@@ -621,7 +645,7 @@ impl FromFile for Config {
     fn from_file(path: &PathBuf) -> Result<Self, Fault> {
         // verify the path exists
         if path.is_file() == false {
-            return Err(AnyError(format!("File does not exist")))?;
+            return Err(AnyError(format!("file does not exist")))?;
         }
         // open file
         let contents = std::fs::read_to_string(&path)?;
@@ -635,9 +659,14 @@ impl FromFile for Config {
                         p.set_root(base.clone());
                     });
                 }
-                if let Some(plugs) = &mut r.target {
-                    plugs.iter_mut().for_each(|p| {
-                        p.set_root(base.clone());
+                if let Some(tars) = &mut r.target {
+                    tars.iter_mut().for_each(|t| {
+                        t.set_root(base.clone());
+                    });
+                }
+                if let Some(chans) = &mut r.channel {
+                    chans.iter_mut().for_each(|c| {
+                        c.set_root(base.clone());
                     });
                 }
                 Ok(r)

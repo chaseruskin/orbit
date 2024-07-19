@@ -21,6 +21,12 @@ OPTIONS
     --ready
         Perform a full run
 
+    --no-install
+        Skip installing the ip
+
+    --list
+        View available channels and exit
+
 EXAMPLES
     orbit launch
     orbit launch --ready

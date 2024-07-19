@@ -186,12 +186,13 @@
 <li><a href="#the-ip-section">[ip]</a> - Defines an ip.
 <ul>
 <li><a href="#the-name-field">name</a> - The name of the ip.</li>
+<li><a href="#the-description-field">description</a> - A short description of the ip.</li>
 <li><a href="#the-version-field">version</a> - The version of the ip.</li>
 <li><a href="#the-authors-field">authors</a> - The authors of the ip.</li>
 <li><a href="#the-library-field">library</a> - The HDL library for the design units within the ip.</li>
-<li><a href="#the-description-field">description</a> - A short description of the ip.</li>
 <li><a href="#the-keywords-field">keywords</a> - A list of simple words categorizing the ip.</li>
 <li><a href="#the-source-field">source</a> - The URL for remotely retrieving the ip.</li>
+<li><a href="#the-channels-field">channels</a> - The channels to update when publishing the ip.</li>
 <li><a href="#the-public-field">public</a> - The list of files to be visible to other ip.</li>
 <li><a href="#the-readme-field">readme</a> - The path to the README file.</li>
 <li><a href="#the-metadata-section">[metadata]</a> - An unchecked section for custom fields.</li>
@@ -243,6 +244,11 @@ keywords = ["cpu", "risc"]
 # ...
 source = "https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip"
 </code></pre>
+<h3 id="the-channels-field"><a class="header" href="#the-channels-field">The <code>channels</code> field</a></h3>
+<pre><code class="language-toml">[ip]
+# ...
+channels = ["hyperspace-labs"]
+</code></pre>
 <h3 id="the-public-field"><a class="header" href="#the-public-field">The <code>public</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
@@ -252,7 +258,7 @@ public = ["/rtl"]
 <p>If no <code>public</code> field is present, then all files are implicitly specified as visible (public) to other ip when being referenced as a dependency.</p>
 <pre><code class="language-toml">[ip]
 # ...
-source = { url = "https://github.com/cdotrus/orbit.git", protocol = "p-git", tag = "1.0.0" }
+source = { url = "https://github.com/cdotrus/orbit.git", protocol = "git", tag = "1.0.0" }
 </code></pre>
 <h3 id="the-readme-field"><a class="header" href="#the-readme-field">The <code>readme</code> field</a></h3>
 <pre><code class="language-toml">[ip]

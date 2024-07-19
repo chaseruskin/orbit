@@ -1352,6 +1352,11 @@ hint: resolve this error by either
 <li><code>orbit.ip.name</code>: The name of the ip being downloaded.</li>
 <li><code>orbit.ip.version</code>: The version of the ip being downloaded.</li>
 </ul>
+<p>The string pattern for an ip's <code>source.tag</code> field is allowed to contain any of the following keys:</p>
+<ul>
+<li><code>orbit.ip.name</code>: The name of the ip being downloaded.</li>
+<li><code>orbit.ip.version</code>: The version of the ip being downloaded.</li>
+</ul>
 <h3 id="fileset-patterns"><a class="header" href="#fileset-patterns">Fileset patterns</a></h3>
 <p>The string pattern for a target's fileset configuration is allowed to contain any of the following keys:</p>
 <ul>
@@ -1497,12 +1502,13 @@ end entity;
 <li><a href="reference/manifest.html#the-ip-section">[ip]</a> - Defines an ip.
 <ul>
 <li><a href="reference/manifest.html#the-name-field">name</a> - The name of the ip.</li>
+<li><a href="reference/manifest.html#the-description-field">description</a> - A short description of the ip.</li>
 <li><a href="reference/manifest.html#the-version-field">version</a> - The version of the ip.</li>
 <li><a href="reference/manifest.html#the-authors-field">authors</a> - The authors of the ip.</li>
 <li><a href="reference/manifest.html#the-library-field">library</a> - The HDL library for the design units within the ip.</li>
-<li><a href="reference/manifest.html#the-description-field">description</a> - A short description of the ip.</li>
 <li><a href="reference/manifest.html#the-keywords-field">keywords</a> - A list of simple words categorizing the ip.</li>
 <li><a href="reference/manifest.html#the-source-field">source</a> - The URL for remotely retrieving the ip.</li>
+<li><a href="reference/manifest.html#the-channels-field">channels</a> - The channels to update when publishing the ip.</li>
 <li><a href="reference/manifest.html#the-public-field">public</a> - The list of files to be visible to other ip.</li>
 <li><a href="reference/manifest.html#the-readme-field">readme</a> - The path to the README file.</li>
 <li><a href="reference/manifest.html#the-metadata-section">[metadata]</a> - An unchecked section for custom fields.</li>
@@ -1554,6 +1560,11 @@ keywords = ["cpu", "risc"]
 # ...
 source = "https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip"
 </code></pre>
+<h3 id="the-channels-field"><a class="header" href="#the-channels-field">The <code>channels</code> field</a></h3>
+<pre><code class="language-toml">[ip]
+# ...
+channels = ["hyperspace-labs"]
+</code></pre>
 <h3 id="the-public-field"><a class="header" href="#the-public-field">The <code>public</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
@@ -1563,7 +1574,7 @@ public = ["/rtl"]
 <p>If no <code>public</code> field is present, then all files are implicitly specified as visible (public) to other ip when being referenced as a dependency.</p>
 <pre><code class="language-toml">[ip]
 # ...
-source = { url = "https://github.com/cdotrus/orbit.git", protocol = "p-git", tag = "1.0.0" }
+source = { url = "https://github.com/cdotrus/orbit.git", protocol = "git", tag = "1.0.0" }
 </code></pre>
 <h3 id="the-readme-field"><a class="header" href="#the-readme-field">The <code>readme</code> field</a></h3>
 <pre><code class="language-toml">[ip]

@@ -20,6 +20,8 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ### Features
 - adds ability to specify a partial version for dependencies in an ip's manifest
 - `orbit tree --ip` now reports the ip graph in sorted order for consistency between calls
+- allows strings of a target's argument list to support string swapping
+- adds truncated checksum of local ip available as env var under `ORBIT_IP_CHECKSUM`
 - updates `orbit help` command to have latest manuals and available subcommands to display manual pages
 - adds `--no-clean` flag to `orbit build` and `orbit test` to prevent automatic cleaning before build process
 

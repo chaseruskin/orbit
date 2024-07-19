@@ -18,6 +18,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.17.0 - unreleased
 
 ### Features
+- allows `source.tag` field in ip manifest to use string swapping
 - adds `channels` entry to the ip manifest
 - adds serde for `[[channel]]` in config.toml files
 - adds ability to specify a partial version for dependencies in an ip's manifest

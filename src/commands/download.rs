@@ -194,7 +194,10 @@ impl Download {
                     }
 
                     // perform string swap on source url
-                    let processed_src = src.clone().replace_vars_in_url(&vtable);
+                    let processed_src = src
+                        .clone()
+                        .replace_vars_in_url(&vtable)
+                        .replace_vars_in_tag(&vtable);
 
                     let std_queue = PathBuf::standardize(&queue);
                     vtable.add("orbit.queue", std_queue.to_str().unwrap());
@@ -231,7 +234,10 @@ impl Download {
             }
 
             // perform string swap on source url
-            let processed_src = src.clone().replace_vars_in_url(&vtable);
+            let processed_src = src
+                .clone()
+                .replace_vars_in_url(&vtable)
+                .replace_vars_in_tag(&vtable);
 
             if let Err(err) = Protocol::single_download(processed_src.get_url(), &queue) {
                 fs::remove_dir_all(queue)?;

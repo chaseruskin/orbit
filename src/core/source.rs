@@ -77,6 +77,14 @@ impl Source {
         self.url = swap::substitute(self.url, vtable);
         self
     }
+
+    pub fn replace_vars_in_tag(mut self, vtable: &StrSwapTable) -> Self {
+        self.tag = match self.tag {
+            Some(t) => Some(swap::substitute(t, vtable)),
+            None => None,
+        };
+        self
+    }
 }
 
 impl From<Option<Source>> for Source {

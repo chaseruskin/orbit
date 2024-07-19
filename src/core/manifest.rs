@@ -265,7 +265,8 @@ impl Manifest {
                 version: IpVersion::new(),
                 source: None.into(),
                 keywords: Vec::new(),
-                summary: None,
+                description: None,
+                channels: None,
                 public: None,
                 library: None,
                 readme: None,
@@ -427,17 +428,19 @@ fn map_is_empty<K, V>(field: &HashMap<K, V>) -> bool {
 #[serde(deny_unknown_fields)]
 pub struct Package {
     name: IpName,
+    description: Option<String>,
     version: IpVersion,
     authors: Option<Vec<String>>,
-    #[serde(rename = "description")]
-    summary: Option<String>,
     library: Option<IpName>,
     #[serde(skip_serializing_if = "vec_is_empty", default)]
     keywords: Vec<String>,
-    public: Option<Vec<String>>,
     /// Describes the URL for fetching the captured state's code (expects .ZIP file)
     #[serde(deserialize_with = "source::string_or_struct", default)]
     source: Source,
+    /// Known channels where this ip should be published to
+    channels: Option<Vec<String>>,
+    /// Filepaths that should be explictly known to the user for ip referencing.
+    public: Option<Vec<String>>,
     readme: Option<PathBuf>,
     /// Ignore this field and never use it for any processing
     #[serde(skip_serializing_if = "map_is_empty", default)]

@@ -8,12 +8,13 @@ Every manifest file consists of the following sections:
 
 - [[ip]](#the-ip-section) - Defines an ip.
     - [name](#the-name-field) - The name of the ip.
+    - [description](#the-description-field) - A short description of the ip.
     - [version](#the-version-field) - The version of the ip.
     - [authors](#the-authors-field) - The authors of the ip.
     - [library](#the-library-field) - The HDL library for the design units within the ip.
-    - [description](#the-description-field) - A short description of the ip.
     - [keywords](#the-keywords-field) - A list of simple words categorizing the ip.
     - [source](#the-source-field) - The URL for remotely retrieving the ip.
+    - [channels](#the-channels-field) - The channels to update when publishing the ip.
     - [public](#the-public-field) - The list of files to be visible to other ip.
     - [readme](#the-readme-field) - The path to the README file.
     - [[metadata]](#the-metadata-section) - An unchecked section for custom fields.
@@ -89,6 +90,14 @@ keywords = ["cpu", "risc"]
 source = "https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip"
 ```
 
+### The `channels` field
+
+``` toml
+[ip]
+# ...
+channels = ["hyperspace-labs"]
+```
+
 ### The `public` field
 
 ``` toml
@@ -104,7 +113,7 @@ If no `public` field is present, then all files are implicitly specified as visi
 ``` toml
 [ip]
 # ...
-source = { url = "https://github.com/cdotrus/orbit.git", protocol = "p-git", tag = "1.0.0" }
+source = { url = "https://github.com/cdotrus/orbit.git", protocol = "git", tag = "1.0.0" }
 ```
 
 ### The `readme` field

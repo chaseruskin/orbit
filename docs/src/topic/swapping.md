@@ -25,6 +25,11 @@ The string pattern for an ip's `source.url` field is allowed to contain any of t
 - `orbit.ip.name`: The name of the ip being downloaded.
 - `orbit.ip.version`: The version of the ip being downloaded.
 
+The string pattern for an ip's `source.tag` field is allowed to contain any of the following keys:
+
+- `orbit.ip.name`: The name of the ip being downloaded.
+- `orbit.ip.version`: The version of the ip being downloaded.
+
 ### Fileset patterns
 
 The string pattern for a target's fileset configuration is allowed to contain any of the following keys:

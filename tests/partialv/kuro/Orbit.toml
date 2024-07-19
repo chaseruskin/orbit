@@ -1,0 +1,9 @@
+[ip]
+name = "kuro"
+version = "0.1.0"
+
+# See more keys and their definitions at https://cdotrus.github.io/orbit/reference/manifest.html
+
+[dependencies]
+aka = "1.0"
+ao = "2.0.0"

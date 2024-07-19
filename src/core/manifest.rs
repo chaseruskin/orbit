@@ -16,13 +16,14 @@ use super::ip::Ip;
 use super::lang::vhdl::token::identifier::Identifier;
 use super::lang::LangIdentifier;
 
-pub type Id = PkgPart;
-pub type Version = crate::core::version::Version;
+pub type IpName = PkgPart;
+pub type IpVersion = crate::core::version::Version;
+pub type DepVersion = crate::core::version::PartialVersion;
 
 #[derive(Serialize, Debug, PartialEq)]
 #[serde(deny_unknown_fields, transparent)]
 pub struct Dependency {
-    version: Version,
+    version: DepVersion,
     #[serde(skip_serializing)]
     path: Option<PathBuf>,
     #[serde(skip_serializing)]
@@ -34,7 +35,7 @@ impl Dependency {
         self.path.is_some()
     }
 
-    pub fn get_version(&self) -> &Version {
+    pub fn get_version(&self) -> &DepVersion {
         &self.version
     }
 
@@ -112,7 +113,7 @@ impl<'de> serde::Deserialize<'de> for Dependency {
             {
                 Ok(Dependency {
                     path: None,
-                    version: match Version::from_str(value) {
+                    version: match DepVersion::from_str(value) {
                         Ok(v) => v,
                         Err(e) => return Err(de::Error::custom(e))?,
                     },
@@ -125,7 +126,7 @@ impl<'de> serde::Deserialize<'de> for Dependency {
                 V: MapAccess<'de>,
             {
                 let mut path: Option<Option<PathBuf>> = None;
-                let mut version: Option<Version> = None;
+                let mut version: Option<DepVersion> = None;
                 while let Some(key) = map.next_key()? {
                     match key {
                         Field::Path => {
@@ -157,7 +158,7 @@ impl<'de> serde::Deserialize<'de> for Dependency {
     }
 }
 
-type Dependencies = HashMap<Id, Dependency>;
+type Dependencies = HashMap<IpName, Dependency>;
 
 pub const IP_MANIFEST_FILE: &str = "Orbit.toml";
 // pub const IP_MANIFEST_PATTERN_FILE : &str = "Orbit-*.toml";
@@ -216,7 +217,7 @@ impl FromFile for Manifest {
         }
 
         // verify contents of manifest
-        for (name, dep) in man.get_deps_list_mut(true) {
+        for (name, dep) in man.get_deps_list_mut(true, false) {
             if dep.is_relative() == true {
                 if dep.as_ip().is_none() {
                     let ip = Ip::relate(
@@ -225,9 +226,7 @@ impl FromFile for Manifest {
                     )?;
                     // verify the ip loaded has the correct version assigned by the user
                     let ip_version = ip.get_man().get_ip().get_version();
-                    if version::is_compatible(&dep.get_version().to_partial_version(), ip_version)
-                        == false
-                    {
+                    if version::is_compatible(dep.get_version(), ip_version) == false {
                         return Err(Error::DependencyIpRelativeBadVersion(
                             dep.get_version().clone(),
                             ip_version.clone(),
@@ -263,7 +262,7 @@ impl Manifest {
         Self {
             ip: Package {
                 name: PkgPart::new(),
-                version: Version::new(),
+                version: IpVersion::new(),
                 source: None.into(),
                 keywords: Vec::new(),
                 summary: None,
@@ -302,7 +301,7 @@ impl Manifest {
     }
 
     /// Composes a [String] to write to a clean manifest file.
-    pub fn write_empty_manifest(name: &Id, lib: &Option<String>) -> String {
+    pub fn write_empty_manifest(name: &IpName, lib: &Option<String>) -> String {
         match lib {
             None => {
                 format!(
@@ -367,7 +366,7 @@ version = "0.1.0"
 
     /// Returns the list of dependencies found under "dependencies" and
     /// "dev-dependencies".
-    pub fn get_deps_list(&self, include_dev: bool) -> Vec<(&PkgPart, &Dependency)> {
+    pub fn get_deps_list(&self, include_dev: bool, ordered: bool) -> Vec<(&PkgPart, &Dependency)> {
         let mut result = Vec::with_capacity(
             self.dependencies.len()
                 + match include_dev {
@@ -379,12 +378,19 @@ version = "0.1.0"
             result.extend(self.dev_dependencies.iter());
         }
         result.extend(self.dependencies.iter());
+        if ordered == true {
+            result.sort_by(|a, b| a.0.partial_cmp(b.0).unwrap());
+        }
         result
     }
 
     /// Returns the list of dependencies found under "dependencies" and
     /// "dev-dependencies".
-    pub fn get_deps_list_mut(&mut self, include_dev: bool) -> Vec<(&PkgPart, &mut Dependency)> {
+    pub fn get_deps_list_mut(
+        &mut self,
+        include_dev: bool,
+        ordered: bool,
+    ) -> Vec<(&PkgPart, &mut Dependency)> {
         let mut result = Vec::with_capacity(
             self.dependencies.len()
                 + match include_dev {
@@ -396,6 +402,9 @@ version = "0.1.0"
             result.extend(self.dev_dependencies.iter_mut());
         }
         result.extend(self.dependencies.iter_mut());
+        if ordered == true {
+            result.sort_by(|a, b| a.0.partial_cmp(b.0).unwrap());
+        }
         result
     }
 }
@@ -417,12 +426,12 @@ fn map_is_empty<K, V>(field: &HashMap<K, V>) -> bool {
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Package {
-    name: Id,
-    version: Version,
+    name: IpName,
+    version: IpVersion,
     authors: Option<Vec<String>>,
     #[serde(rename = "description")]
     summary: Option<String>,
-    library: Option<Id>,
+    library: Option<IpName>,
     #[serde(skip_serializing_if = "vec_is_empty", default)]
     keywords: Vec<String>,
     public: Option<Vec<String>>,
@@ -436,7 +445,7 @@ pub struct Package {
 }
 
 impl Package {
-    pub fn get_name(&self) -> &Id {
+    pub fn get_name(&self) -> &IpName {
         &self.name
     }
 
@@ -444,7 +453,7 @@ impl Package {
         &self.public
     }
 
-    pub fn get_version(&self) -> &Version {
+    pub fn get_version(&self) -> &IpVersion {
         &self.version
     }
 
@@ -452,7 +461,7 @@ impl Package {
         &self.keywords
     }
 
-    pub fn get_library(&self) -> &Option<Id> {
+    pub fn get_library(&self) -> &Option<IpName> {
         &self.library
     }
 
@@ -531,7 +540,7 @@ mod test {
             let man: Manifest = toml::from_str(EX2).unwrap();
 
             assert_eq!(man.ip.name, PkgPart::from_str("Lab1").unwrap());
-            assert_eq!(man.ip.version, Version::new().major(1));
+            assert_eq!(man.ip.version, IpVersion::new().major(1));
             assert_eq!(man.ip.get_source(), None);
             assert_eq!(man.dependencies, HashMap::new());
             assert_eq!(man.dev_dependencies, HashMap::new());

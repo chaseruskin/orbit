@@ -35,35 +35,41 @@ sortgloss:
 
 # Organize commands required for end-to-end system-level tests
 
-test-plan-1:
-    just install
-    chmod +x ./tests/env/assoc_files/run.sh
-    cd ./tests/env/assoc_files; ./run.sh
-
-test-plan-2:
-    just install
-    chmod +x ./tests/env/min_order/run.sh
-    cd ./tests/env/min_order; ./run.sh
-
-test-dst:
-    just install
-    chmod +x ./tests/env/projects/dst.sh
-    cd ./tests/env/projects; ./dst.sh
-
-test-pub: 
-    just install
-    chmod +x ./tests/env/projects/pub.sh
-    cd ./tests/env/projects; ./pub.sh
-
+# Run all system tests
 test-all:
     just test-plan-1
     just test-plan-2
     just test-dst
     just test-dst-local
     just test-pub
+    just test-partv
 
-# Run a DST test to verify library mappings work when using a simulator
+# Planning stage
+test-plan-1:
+    chmod +x ./tests/env/assoc_files/run.sh
+    cd ./tests/env/assoc_files; ./run.sh
+
+# Planning stage
+test-plan-2:
+    chmod +x ./tests/env/min_order/run.sh
+    cd ./tests/env/min_order; ./run.sh
+
+# Dst algorithm
+test-dst:
+    chmod +x ./tests/env/projects/dst.sh
+    cd ./tests/env/projects; ./dst.sh
+
+# Using 'public' in manifest
+test-pub: 
+    chmod +x ./tests/env/projects/pub.sh
+    cd ./tests/env/projects; ./pub.sh
+
+# Partial version for dependency
+test-partv:
+    chmod +x ./tests/partialv/test.sh
+    cd ./tests/partialv; ./test.sh
+
+# Dst test to verify library mappings work when using a simulator
 test-dst-local:
-    just install
     chmod +x ./tests/env/projects/dst-local.sh
     cd ./tests/env/projects; ./dst-local.sh

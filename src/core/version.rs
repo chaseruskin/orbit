@@ -65,7 +65,7 @@ To see all versions try `orbit probe <ip> --versions`",
     }
 }
 
-#[derive(Debug, Eq, Clone, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Eq, Hash, Clone, PartialEq, Ord, PartialOrd)]
 pub enum AnyVersion {
     Specific(PartialVersion),
     Latest,
@@ -114,7 +114,7 @@ impl From<&Version> for AnyVersion {
     }
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Clone, Eq, Ord)]
+#[derive(Debug, PartialEq, PartialOrd, Clone, Eq, Ord, Hash)]
 pub struct PartialVersion {
     major: VerNum,
     minor: Option<VerNum>,
@@ -273,7 +273,43 @@ impl FromStr for PartialVersion {
     }
 }
 
-// @TODO make `minor` and `patch` fields optional?
+impl<'de> Deserialize<'de> for PartialVersion {
+    fn deserialize<D>(deserializer: D) -> Result<PartialVersion, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        struct LayerVisitor;
+
+        impl<'de> de::Visitor<'de> for LayerVisitor {
+            type Value = PartialVersion;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a semantic version number")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                match PartialVersion::from_str(v) {
+                    Ok(v) => Ok(v),
+                    Err(e) => Err(de::Error::custom(e)),
+                }
+            }
+        }
+
+        deserializer.deserialize_map(LayerVisitor)
+    }
+}
+
+impl Serialize for PartialVersion {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
 
 #[derive(Debug, PartialEq, PartialOrd, Clone, Ord, Eq, Hash)]
 pub struct Version {

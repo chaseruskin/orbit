@@ -2,7 +2,11 @@ use colored::Colorize;
 use std::{fmt::Display, path::PathBuf};
 
 use crate::core::{
-    blueprint::Scheme, ip::IpSpec, lang::LangIdentifier, pkgid::PkgPart, version::Version,
+    blueprint::Scheme,
+    ip::IpSpec,
+    lang::LangIdentifier,
+    pkgid::PkgPart,
+    version::{PartialVersion, Version},
 };
 
 #[derive(Debug, PartialEq, thiserror::Error)]
@@ -76,7 +80,7 @@ pub enum Error {
     #[error("failed to parse ip name: {0}")]
     IpNameParseFailed(LastError),
     #[error("listed version {0} does not match ip's actual version {1}")]
-    DependencyIpRelativeBadVersion(Version, Version),
+    DependencyIpRelativeBadVersion(PartialVersion, Version),
     #[error("listed name {0} does not match ip's actual name {1}")]
     DependencyIpRelativeBadName(PkgPart, PkgPart),
     #[error("failed to load lockfile: {0}")]

@@ -15,6 +15,7 @@ use super::lockfile::IP_LOCK_FILE;
 use super::manifest::FromFile;
 use super::pubfile::PublicList;
 use super::pubfile::Visibility;
+use super::version::PartialVersion;
 use crate::core::lockfile::LockEntry;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::ORBIT_METADATA_FILE;
@@ -77,7 +78,10 @@ impl From<IpArchive> for Ip {
         let (man, lock, archive) = value.decouple();
         let uuid = match lock.get_self_entry(man.get_ip().get_name()) {
             Some(entry) => entry.get_uuid().clone(),
-            None => match lock.get(man.get_ip().get_name(), man.get_ip().get_version()) {
+            None => match lock.get(
+                man.get_ip().get_name(),
+                &man.get_ip().get_version().to_partial_version(),
+            ) {
                 Some(entry) => entry.get_uuid().clone(),
                 None => Uuid::new(),
             },
@@ -201,7 +205,7 @@ impl Ip {
                 Some(entry) => entry.get_uuid().clone(),
                 None => Uuid::new(),
             },
-            false => match lock.get(man.get_ip().get_name(), man.get_ip().get_version()) {
+            false => match lock.get(man.get_ip().get_name(), &man.get_ip().get_version().to_partial_version()) {
                 Some(entry) => entry.get_uuid().clone(),
                 None => {
                     return Err(AnyError(format!("failed to get uuid for ip {} due to corrupted lockfile; remove and install again", man.get_ip().into_ip_spec())))?
@@ -340,7 +344,7 @@ impl Ip {
     pub fn can_use_lock(&self) -> bool {
         let target = self.get_lock().get(
             self.get_man().get_ip().get_name(),
-            self.get_man().get_ip().get_version(),
+            &self.get_man().get_ip().get_version().to_partial_version(),
         );
         let target_is_ok = match target {
             Some(entry) => entry.matches_target(&LockEntry::from((self, true))),
@@ -350,7 +354,7 @@ impl Ip {
             return false;
         }
         // check that all entries are valid of dependencies and dev dependencies
-        for dep in self.get_man().get_deps_list(true) {
+        for dep in self.get_man().get_deps_list(true, true) {
             if let Some(entry) = self.get_lock().get(dep.0, dep.1.get_version()) {
                 if let Some(relative_ip) = dep.1.as_ip() {
                     if &LockEntry::from((relative_ip, true)) == entry {
@@ -544,7 +548,7 @@ use std::path::Path;
 
 const SPEC_DELIM: &str = ":";
 
-#[derive(Debug, PartialEq, Hash, Eq, Clone)]
+#[derive(Debug, PartialEq, Hash, Eq, Clone, PartialOrd)]
 pub struct IpSpec(PkgPart, Version);
 
 impl IpSpec {
@@ -640,12 +644,12 @@ impl Serialize for IpSpec {
 
 use crate::core::version::AnyVersion;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct PartialIpSpec(PkgPart, AnyVersion);
 
 impl PartialIpSpec {
-    pub fn new() -> Self {
-        Self(PkgPart::new(), AnyVersion::Latest)
+    pub fn new(name: PkgPart, version: PartialVersion) -> Self {
+        Self(name, AnyVersion::Specific(version))
     }
 
     pub fn get_name(&self) -> &PkgPart {
@@ -661,6 +665,44 @@ impl PartialIpSpec {
             self.0.clone(),
             self.1.as_specific()?.as_version()?,
         ))
+    }
+}
+
+impl<'de> Deserialize<'de> for PartialIpSpec {
+    fn deserialize<D>(deserializer: D) -> Result<PartialIpSpec, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        struct LayerVisitor;
+
+        impl<'de> de::Visitor<'de> for LayerVisitor {
+            type Value = PartialIpSpec;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("an identifier and a version")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                match PartialIpSpec::from_str(v) {
+                    Ok(v) => Ok(v),
+                    Err(e) => Err(de::Error::custom(e)),
+                }
+            }
+        }
+
+        deserializer.deserialize_map(LayerVisitor)
+    }
+}
+
+impl Serialize for PartialIpSpec {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
     }
 }
 

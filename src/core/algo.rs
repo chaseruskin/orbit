@@ -18,6 +18,7 @@ use crate::core::manifest;
 use crate::core::version::AnyVersion;
 
 use super::fileset;
+use super::ip::PartialIpSpec;
 use super::lang::sv::token::tokenizer::SystemVerilogTokenizer;
 use super::lang::verilog::token::tokenizer::VerilogTokenizer;
 use super::lang::{sv, verilog, vhdl, Lang, LangIdentifier};
@@ -36,7 +37,7 @@ pub fn graph_ip_from_lock(lock: &LockFile) -> Result<GraphMap<IpSpec, &LockEntry
         for dep in upper.get_deps() {
             // determine the most compatible entry for this dependency
             let lower = lock
-                .get_highest(&dep.get_name(), &AnyVersion::from(dep.get_version()))
+                .get_highest(&dep.get_name(), dep.get_version())
                 .unwrap();
             graph.add_edge_by_key(&lower.to_ip_spec(), &upper.to_ip_spec(), ());
         }
@@ -69,7 +70,7 @@ fn graph_ip<'a>(
 
     while let Some((num, ip)) = processing.pop() {
         // load dependencies from manifest
-        let reqs = ip.get_man().get_deps_list(is_root);
+        let reqs = ip.get_man().get_deps_list(is_root, true);
         // read dependencies
         for (pkgid, dependency) in reqs {
             // check if we are looking in cache or going local
@@ -142,7 +143,10 @@ fn graph_ip<'a>(
                                 None,
                                 Box::new(AnyError(format!(
                                     "unknown ip {}",
-                                    IpSpec::from((pkgid.clone(), dependency.get_version().clone()))
+                                    PartialIpSpec::new(
+                                        pkgid.clone(),
+                                        dependency.get_version().clone()
+                                    )
                                 ))),
                             ))?
                         }
@@ -152,7 +156,9 @@ fn graph_ip<'a>(
                     match catalog.inner().get(pkgid) {
                         Some(status) => {
                             // find this IP to read its dependencies
-                            match status.get_install(&AnyVersion::from(dependency.get_version())) {
+                            match status.get_install(&AnyVersion::Specific(
+                                dependency.get_version().clone(),
+                            )) {
                                 Some(cached_ip) => {
                                     // check if node is already in graph ????
                                     let s = if let Some(existing_node) = g.get_node_by_key(
@@ -219,10 +225,10 @@ fn graph_ip<'a>(
                                         None,
                                         Box::new(AnyError(format!(
                                             "ip {} is not installed",
-                                            IpSpec::from((
+                                            PartialIpSpec::new(
                                                 pkgid.clone(),
                                                 dependency.get_version().clone()
-                                            ))
+                                            )
                                         ))),
                                     ))?
                                 }
@@ -235,7 +241,10 @@ fn graph_ip<'a>(
                                 None,
                                 Box::new(AnyError(format!(
                                     "unknown ip {}",
-                                    IpSpec::from((pkgid.clone(), dependency.get_version().clone()))
+                                    PartialIpSpec::new(
+                                        pkgid.clone(),
+                                        dependency.get_version().clone()
+                                    )
                                 ))),
                             ))?
                         }
@@ -263,6 +272,7 @@ pub fn compute_final_ip_graph<'a>(
     // iterate through the graph to find all DST nodes to create their replacements
     {
         let mut graph_iter = rough_ip_graph.get_map().iter();
+
         while let Some((key, node)) = graph_iter.next() {
             if node.as_ref().is_direct_conflict() == true {
                 // remember units if true that a transform occurred

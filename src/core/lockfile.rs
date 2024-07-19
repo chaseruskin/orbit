@@ -1,6 +1,6 @@
 use crate::core::ip::Ip;
 use crate::core::manifest::FromFile;
-use crate::core::manifest::Id;
+use crate::core::manifest::IpName;
 use crate::core::source::Source;
 use crate::core::uuid::Uuid;
 use crate::core::{catalog::CacheSlot, ip::IpSpec};
@@ -90,7 +90,9 @@ impl FromFile for LockFile {
 
 // version 1 for the lockfile
 pub mod v1 {
-    use crate::core::catalog::DownloadSlot;
+    use version::PartialVersion;
+
+    use crate::core::{catalog::DownloadSlot, ip::PartialIpSpec};
 
     use super::*;
 
@@ -164,10 +166,10 @@ pub mod v1 {
         }
 
         /// Returns an exact match of `target` and `version` from within the lockfile.
-        pub fn get(&self, target: &PkgPart, version: &Version) -> Option<&LockEntry> {
+        pub fn get(&self, target: &PkgPart, version: &PartialVersion) -> Option<&LockEntry> {
             self.ip
                 .iter()
-                .find(|&f| &f.name == target && &f.version == version)
+                .find(|&f| &f.name == target && version::is_compatible(version, &f.version))
         }
 
         /// Returns the current working ip, denoted by not having a checksum with it.
@@ -225,7 +227,7 @@ pub mod v1 {
                         // check if this entry is a dev dependency
                         |p| match target.get_man().get_dev_deps().get(p.get_name()) {
                             Some(v) => {
-                                if p.get_version() == v.get_version() {
+                                if version::is_compatible(v.get_version(), p.get_version()) {
                                     false
                                 } else {
                                     true
@@ -248,7 +250,7 @@ pub mod v1 {
 
     #[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
     pub struct LockEntry {
-        name: Id,
+        name: IpName,
         version: Version,
         uuid: Uuid,
         // @note: `sum` is optional because the root package will have its sum omitted
@@ -257,7 +259,7 @@ pub mod v1 {
         source: Option<Source>,
         // @note: `path` is optional and only used if the dependency list uses a local ip
         path: Option<PathBuf>,
-        dependencies: Vec<IpSpec>,
+        dependencies: Vec<PartialIpSpec>,
     }
 
     impl From<(&Ip, bool)> for LockEntry {
@@ -282,14 +284,14 @@ pub mod v1 {
                     None
                 },
                 source: ip.get_man().get_ip().get_source().cloned(),
-                dependencies: match ip.get_man().get_deps_list(is_working).len() {
+                dependencies: match ip.get_man().get_deps_list(is_working, true).len() {
                     0 => Vec::new(),
                     _ => {
-                        let mut result: Vec<IpSpec> = ip
+                        let mut result: Vec<PartialIpSpec> = ip
                             .get_man()
-                            .get_deps_list(is_working)
+                            .get_deps_list(is_working, true)
                             .into_iter()
-                            .map(|e| IpSpec::new(e.0.clone(), e.1.get_version().clone()))
+                            .map(|e| PartialIpSpec::new(e.0.clone(), e.1.get_version().clone()))
                             .collect();
                         result.sort_by(|x, y| match x.get_name().cmp(&y.get_name()) {
                             std::cmp::Ordering::Less => std::cmp::Ordering::Less,
@@ -324,7 +326,7 @@ pub mod v1 {
             &self.path
         }
 
-        pub fn get_deps(&self) -> &Vec<IpSpec> {
+        pub fn get_deps(&self) -> &Vec<PartialIpSpec> {
             self.dependencies.as_ref()
         }
 
@@ -340,7 +342,7 @@ pub mod v1 {
             self.source.as_ref()
         }
 
-        pub fn get_name(&self) -> &Id {
+        pub fn get_name(&self) -> &IpName {
             &self.name
         }
 
@@ -371,25 +373,25 @@ pub mod v1 {
                 version: 1,
                 ip: vec![
                     LockEntry {
-                        name: Id::from_str("lab1").unwrap(),
+                        name: IpName::from_str("lab1").unwrap(),
                         version: Version::from_str("0.5.0").unwrap(),
                         uuid: Uuid::nil(),
                         checksum: None,
                         path: None,
                         source: Some(Source::from_str("https://go1.here").unwrap()),
                         dependencies: vec![
-                            IpSpec::new(
+                            PartialIpSpec::new(
                                 PkgPart::from_str("lab4").unwrap(),
-                                Version::from_str("0.5.19").unwrap(),
+                                PartialVersion::from_str("0.5.19").unwrap(),
                             ),
-                            IpSpec::new(
+                            PartialIpSpec::new(
                                 PkgPart::from_str("lab2").unwrap(),
-                                Version::from_str("1.0.0").unwrap(),
+                                PartialVersion::from_str("1.0.0").unwrap(),
                             ),
                         ],
                     },
                     LockEntry {
-                        name: Id::from_str("lab2").unwrap(),
+                        name: IpName::from_str("lab2").unwrap(),
                         version: Version::from_str("1.0.0").unwrap(),
                         uuid: Uuid::nil(),
                         path: None,
@@ -398,7 +400,7 @@ pub mod v1 {
                         dependencies: Vec::new(),
                     },
                     LockEntry {
-                        name: Id::from_str("lab3").unwrap(),
+                        name: IpName::from_str("lab3").unwrap(),
                         version: Version::from_str("2.3.1").unwrap(),
                         uuid: Uuid::nil(),
                         checksum: Some(Sha256Hash::new()),
@@ -407,15 +409,15 @@ pub mod v1 {
                         dependencies: Vec::new(),
                     },
                     LockEntry {
-                        name: Id::from_str("lab4").unwrap(),
+                        name: IpName::from_str("lab4").unwrap(),
                         version: Version::from_str("0.5.19").unwrap(),
                         uuid: Uuid::nil(),
                         checksum: Some(Sha256Hash::new()),
                         source: None,
                         path: None,
-                        dependencies: vec![IpSpec::new(
+                        dependencies: vec![PartialIpSpec::new(
                             PkgPart::from_str("lab3").unwrap(),
-                            Version::from_str("2.3.1").unwrap(),
+                            PartialVersion::from_str("2.3.1").unwrap(),
                         )],
                     },
                 ],
@@ -430,25 +432,25 @@ pub mod v1 {
                 version: 1,
                 ip: vec![
                     LockEntry {
-                        name: Id::from_str("lab1").unwrap(),
+                        name: IpName::from_str("lab1").unwrap(),
                         version: Version::from_str("0.5.0").unwrap(),
                         checksum: None,
                         path: None,
                         uuid: Uuid::nil(),
                         source: Some(Source::from_str("https://go1.here").unwrap()),
                         dependencies: vec![
-                            IpSpec::new(
+                            PartialIpSpec::new(
                                 PkgPart::from_str("lab4").unwrap(),
-                                Version::from_str("0.5.19").unwrap(),
+                                PartialVersion::from_str("0.5.19").unwrap(),
                             ),
-                            IpSpec::new(
+                            PartialIpSpec::new(
                                 PkgPart::from_str("lab2").unwrap(),
-                                Version::from_str("1.0.0").unwrap(),
+                                PartialVersion::from_str("1.0.0").unwrap(),
                             ),
                         ],
                     },
                     LockEntry {
-                        name: Id::from_str("lab2").unwrap(),
+                        name: IpName::from_str("lab2").unwrap(),
                         version: Version::from_str("1.0.0").unwrap(),
                         uuid: Uuid::nil(),
                         path: None,
@@ -457,7 +459,7 @@ pub mod v1 {
                         dependencies: Vec::new(),
                     },
                     LockEntry {
-                        name: Id::from_str("lab3").unwrap(),
+                        name: IpName::from_str("lab3").unwrap(),
                         version: Version::from_str("2.3.1").unwrap(),
                         uuid: Uuid::nil(),
                         checksum: Some(Sha256Hash::new()),
@@ -466,15 +468,15 @@ pub mod v1 {
                         dependencies: Vec::new(),
                     },
                     LockEntry {
-                        name: Id::from_str("lab4").unwrap(),
+                        name: IpName::from_str("lab4").unwrap(),
                         version: Version::from_str("0.5.19").unwrap(),
                         uuid: Uuid::nil(),
                         checksum: Some(Sha256Hash::new()),
                         source: None,
                         path: None,
-                        dependencies: vec![IpSpec::new(
+                        dependencies: vec![PartialIpSpec::new(
                             PkgPart::from_str("lab3").unwrap(),
-                            Version::from_str("2.3.1").unwrap(),
+                            PartialVersion::from_str("2.3.1").unwrap(),
                         )],
                     },
                 ],

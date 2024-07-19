@@ -194,10 +194,15 @@ impl Tree {
         let ip_graph = algo::compute_final_ip_graph(&target, &catalog, mode)?;
 
         let tree = ip_graph.get_graph().treeview(0);
+
         for twig in &tree {
+            let branch_str = match self.ascii {
+                true => Self::to_ascii(&twig.0.to_string()),
+                false => twig.0.to_string(),
+            };
             println!(
                 "{}{}",
-                twig.0,
+                branch_str,
                 ip_graph
                     .get_node_by_index(twig.1)
                     .unwrap()

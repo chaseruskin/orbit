@@ -1,4 +1,6 @@
+use super::swap::{self, StrSwapTable};
 use crate::util::anyerror::AnyError;
+use serde::ser::SerializeMap;
 use serde_derive::Deserialize;
 use std::str::FromStr;
 
@@ -71,8 +73,8 @@ impl Source {
         }
     }
 
-    pub fn replace_vars_in_url(mut self, vtable: &VariableTable) -> Self {
-        self.url = variable::substitute(self.url, vtable);
+    pub fn replace_vars_in_url(mut self, vtable: &StrSwapTable) -> Self {
+        self.url = swap::substitute(self.url, vtable);
         self
     }
 }
@@ -165,10 +167,6 @@ where
 
     deserializer.deserialize_any(LayerVisitor)
 }
-
-use serde::ser::SerializeMap;
-
-use super::variable::{self, VariableTable};
 
 impl Serialize for Source {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

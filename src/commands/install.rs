@@ -36,7 +36,7 @@ use crate::core::manifest::ORBIT_SUM_FILE;
 use crate::core::protocol::Protocol;
 use crate::core::protocol::ProtocolError;
 use crate::core::source::Source;
-use crate::core::variable::VariableTable;
+use crate::core::swap::StrSwapTable;
 use crate::core::version;
 use crate::error::Error;
 use crate::util::anyerror::AnyError;
@@ -327,7 +327,7 @@ impl Subcommand<Context> for Install {
             let env = Environment::new()
                 // read config.toml for setting any env variables
                 .from_config(c.get_config())?;
-            let vtable = VariableTable::new().load_environment(&env)?;
+            let vtable = StrSwapTable::new().load_environment(&env)?;
 
             let le = LockEntry::from((&target, true));
 
@@ -371,7 +371,7 @@ impl Install {
         let env = Environment::new()
             // read config.toml for setting any env variables
             .from_config(c.get_config())?;
-        let mut vtable = VariableTable::new().load_environment(&env)?;
+        let mut vtable = StrSwapTable::new().load_environment(&env)?;
         env.initialize();
 
         let protocols: ProtocolMap = c.get_config().get_protocols();

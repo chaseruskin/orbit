@@ -29,13 +29,13 @@
     - [Channels](./topic/channels.md)
     - [Orbit.lock](./topic/orbitlock.md) <!-- good -->
     - [.orbitignore](./topic/orbitignore.md) <!-- good -->
-    - [String Swapping](./topic/swapping.md)
+    - [String Swapping](./topic/swapping.md) <!-- 1.0.0 ... check swap tables --> 
     - [Dynamic Symbol Transformation](./topic/dst.md)
 
 - [Reference](./reference/reference.md)
-    - [Manifest](./reference/manifest.md) <!-- good -->
-    - [Ip Names](./reference/ip.md) <!-- good -->
-    - [Versions](./reference/versions.md)
+    - [Manifest](./reference/manifest.md) <!-- 1.0.0 -->
+    - [Names](./reference/names.md) <!-- 1.0.0 -->
+    - [Versions](./reference/versions.md) <!-- 1.0.0 -->
     - [Filesets](./reference/filesets.md)
     - [Blueprint](./reference/blueprint.md)
     - [Environment Variables](./reference/environment_variables.md)
@@ -43,7 +43,7 @@
     - [JSON Output](./reference/json.md)
     - [Command Line](./reference/command_line.md)
 
-- [Commands](./commands/commands.md)
+- [Commands](./commands/**commands**.md)
     - [orbit new](./commands/new.md) <!-- DONE -->
     - [orbit init](./commands/init.md) 
     - [orbit view](./commands/view.md)

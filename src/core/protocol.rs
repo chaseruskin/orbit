@@ -1,8 +1,8 @@
 //! A protocol is a series of steps defined for requesting files/packages
 //! from the internet.
 
+use crate::core::swap;
 use crate::core::target::Process;
-use crate::core::variable;
 use crate::util::filesystem::Standardize;
 use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -32,11 +32,11 @@ impl FromStr for Protocol {
 
 impl Protocol {
     /// Performs variable substitution on the provided arguments for the protocol.
-    pub fn replace_vars_in_args(mut self, vtable: &VariableTable) -> Self {
+    pub fn replace_vars_in_args(mut self, vtable: &StrSwapTable) -> Self {
         self.args = if let Some(args) = self.args {
             Some(
                 args.into_iter()
-                    .map(|arg| variable::substitute(arg, vtable))
+                    .map(|arg| swap::substitute(arg, vtable))
                     .collect(),
             )
         } else {
@@ -71,7 +71,7 @@ use std::io::Write;
 use tempfile;
 use zip::ZipArchive;
 
-use super::variable::VariableTable;
+use super::swap::StrSwapTable;
 
 impl Protocol {
     pub fn new() -> Self {

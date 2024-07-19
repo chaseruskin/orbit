@@ -13,7 +13,7 @@ pub mod pkgid;
 pub mod protocol;
 pub mod pubfile;
 pub mod source;
+pub mod swap;
 pub mod target;
 pub mod uuid;
-pub mod variable;
 pub mod version;

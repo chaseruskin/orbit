@@ -13,9 +13,9 @@ use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbols::{VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lang::{Lang, LangIdentifier, Language};
+use crate::core::swap;
+use crate::core::swap::StrSwapTable;
 use crate::core::target::Target;
-use crate::core::variable;
-use crate::core::variable::VariableTable;
 use crate::core::version::AnyVersion;
 use crate::error::{Error, Hint, LastError};
 use crate::util::anyerror::Fault;
@@ -129,7 +129,7 @@ impl Subcommand<Context> for Plan {
             let env = Environment::new()
                 // read config.toml for setting any env variables
                 .from_config(c.get_config())?;
-            let vtable = VariableTable::new().load_environment(&env)?;
+            let vtable = StrSwapTable::new().load_environment(&env)?;
 
             download_missing_deps(vtable, &lf, &le, &catalog, &c.get_config().get_protocols())?;
             // recollect the downloaded items to update the catalog for installations
@@ -444,7 +444,7 @@ impl Plan {
             let current_files: Vec<String> =
                 filesystem::gather_current_files(&working_ip.get_root(), false);
 
-            let mut vtable = VariableTable::new();
+            let mut vtable = StrSwapTable::new();
             // variables could potentially store empty strings if units are not set
             vtable.add("orbit.bench", &bench_name);
             vtable.add("orbit.top", &top_name);
@@ -478,7 +478,7 @@ impl Plan {
                     // perform variable substitution
                     let fset = Fileset::new()
                         .name(f_name)
-                        .pattern(&variable::substitute(f_patt.to_string(), &vtable))?;
+                        .pattern(&swap::substitute(f_patt.to_string(), &vtable))?;
                     // match files
                     fset.collect_files(&current_files)
                         .into_iter()
@@ -497,10 +497,7 @@ impl Plan {
                 // perform variable substitution
                 let fset = Fileset::new()
                     .name(fset.get_name())
-                    .pattern(&variable::substitute(
-                        fset.get_pattern().to_string(),
-                        &vtable,
-                    ))?;
+                    .pattern(&swap::substitute(fset.get_pattern().to_string(), &vtable))?;
                 // match files
                 fset.collect_files(&current_files)
                     .into_iter()
@@ -556,7 +553,7 @@ pub fn resolve_missing_deps<'a>(
         let env = Environment::new()
             // read config.toml for setting any env variables
             .from_config(c.get_config())?;
-        let vtable = VariableTable::new().load_environment(&env)?;
+        let vtable = StrSwapTable::new().load_environment(&env)?;
 
         download_missing_deps(vtable, &lf, &le, &catalog, &c.get_config().get_protocols())?;
         // recollect the downloaded items to update the catalog for installations
@@ -571,7 +568,7 @@ pub fn resolve_missing_deps<'a>(
 }
 
 pub fn download_missing_deps(
-    vtable: VariableTable,
+    vtable: StrSwapTable,
     lf: &LockFile,
     le: &LockEntry,
     catalog: &Catalog,

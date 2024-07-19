@@ -49,6 +49,7 @@ cpu/
 
 The "Orbit.toml" file is a simple file written in TOML syntax that requires only a couple fields, such as the ip's `name` and `version`, to get setup. 
 
+filename: Orbit.toml
 ``` toml
 [ip]
 name = "cpu"
@@ -82,8 +83,9 @@ u_and_gate : entity gates.and_gate
 
 ## Flexibility in use
 
-Since Orbit focuses on efficiently managing the HDL source code and minimizing its associated technical debt, users have the power to add their own execution targets to the build process. This is accomplished by Orbit performing the planning of a build process to generate a single file listing the topologically-sorted order of source files. After planning the build, Orbit invokes the user's target to perform the execution process on the list of source files.
+Since Orbit focuses on efficiently managing the HDL source code and minimizing its associated technical debt, users have the power to add their own execution targets to the build process. This is accomplished by Orbit performing the planning of a build process to generate a single file, called a blueprint, that lists the topologically-sorted order of source files. After planning the build, Orbit invokes the user's target to perform the execution process on the list of source files.
 
+filename: blueprint.tsv
 ```
 VHDL	gates	/users/chase/.orbit/cache/gates-2.0.0-7f4d8c7812/rtl/nand_gate.vhd
 VHDL	gates	/users/chase/.orbit/cache/gates-2.0.0-7f4d8c7812/rtl/and_gate.vhd
@@ -93,7 +95,7 @@ VHDL	cpu	/users/chase/projects/cpu/rtl/top.vhd
 SYSV	cpu	/users/chase/projects/cpu/sim/top_tb.sv
 ```
 
-Add a target by writing a script to accept Orbit's output file for whatever EDA tools you prefer once, and use it across all future ips.  
+Add a target by writing a script to accept Orbit's generated blueprint file for whatever EDA tools you prefer once, and use it across all future ips.  
 
 ## Highlights
 

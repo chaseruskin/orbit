@@ -6,7 +6,7 @@ use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::lang::Language;
 use crate::core::lockfile::LockEntry;
-use crate::core::variable::VariableTable;
+use crate::core::swap::StrSwapTable;
 use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
 use cliproc::{cli, proc, stage::*};
@@ -53,7 +53,7 @@ impl Subcommand<Context> for Lock {
             let env = Environment::new()
                 // read config.toml for setting any env variables
                 .from_config(c.get_config())?;
-            let vtable = VariableTable::new().load_environment(&env)?;
+            let vtable = StrSwapTable::new().load_environment(&env)?;
 
             plan::download_missing_deps(
                 vtable,

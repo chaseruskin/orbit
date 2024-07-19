@@ -1,9 +1,9 @@
 use crate::util::{anyerror::Fault, environment::Environment};
 use std::collections::HashMap;
 
-pub struct VariableTable(HashMap<String, String>);
+pub struct StrSwapTable(HashMap<String, String>);
 
-impl VariableTable {
+impl StrSwapTable {
     pub fn new() -> Self {
         Self(HashMap::new())
     }
@@ -30,7 +30,7 @@ const R_VAR_DELIMITER: char = '}';
 
 /// Performs variable replacement on the given `text`, looking up variables in
 /// the `code` to swap with their values.
-pub fn substitute(text: String, code: &VariableTable) -> String {
+pub fn substitute(text: String, code: &StrSwapTable) -> String {
     let mut result = String::new();
 
     let mut chars = text.chars();
@@ -97,8 +97,8 @@ mod test {
     use super::*;
 
     /// Internal helper test `fn` to generate a sample code book for looking up variables.
-    fn create_code() -> VariableTable {
-        let mut code = VariableTable::new();
+    fn create_code() -> StrSwapTable {
+        let mut code = StrSwapTable::new();
         code.add("orbit.name", "gates");
         code.add("orbit.library", "rary");
         code.add("orbit.place", "bar");

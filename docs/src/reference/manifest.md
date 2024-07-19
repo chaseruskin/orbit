@@ -1,24 +1,24 @@
 # Manifest
 
-The `Orbit.toml` file for each IP is called its manifest. It is written in the [TOML](https://toml.io/en/) format. It is maintained by the developer and contains metadata that is needed to build the IP.
+The `Orbit.toml` file for each ip is called its manifest. It is written in the [TOML](https://toml.io/en/) format. It is maintained by the developer and contains metadata that is needed to build the ip.
 
 > __Note:__ The manifest's file name is "Orbit.toml", with respect to case-sensitivity.
 
 Every manifest file consists of the following sections:
 
-- [[ip]](#the-ip-section) - Defines an IP.
-    - [name](#the-name-field) - The name of the IP.
-    - [version](#the-version-field) - The version of the IP.
-    - [authors](#the-authors-field) - The authors of the IP.
-    - [library](#the-library-field) - The HDL library for the design units within the IP.
-    - [description](#the-description-field) - A short description of the IP.
-    - [keywords](#the-keywords-field) - A list of simple words categorizing the IP.
-    - [source](#the-source-field) - The URL for remotely retrieving the IP.
-    - [public](#the-public-field) - The list of files to be visible to other IP.
+- [[ip]](#the-ip-section) - Defines an ip.
+    - [name](#the-name-field) - The name of the ip.
+    - [version](#the-version-field) - The version of the ip.
+    - [authors](#the-authors-field) - The authors of the ip.
+    - [library](#the-library-field) - The HDL library for the design units within the ip.
+    - [description](#the-description-field) - A short description of the ip.
+    - [keywords](#the-keywords-field) - A list of simple words categorizing the ip.
+    - [source](#the-source-field) - The URL for remotely retrieving the ip.
+    - [public](#the-public-field) - The list of files to be visible to other ip.
     - [readme](#the-readme-field) - The path to the README file.
     - [[metadata]](#the-metadata-section) - An unchecked section for custom fields.
-- [[dependencies]](#the-dependencies-section) - IP dependencies.
-- [[dev-dependencies]](#the-dev-dependencies-section) - IP dependencies only used for ongoing development.
+- [[dependencies]](#the-dependencies-section) - Ip dependencies.
+- [[dev-dependencies]](#the-dev-dependencies-section) - Ip dependencies only used for ongoing development.
 
 ### The `[ip]` section
 
@@ -97,9 +97,9 @@ source = "https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip"
 public = ["/rtl"]
 ```
 
-The `public` field can be used to explicitly specify which files are visible to other IP when being when being referenced as a dependency. The list contains glob-style patterns that conform to .gitignore file semantics, and are always compared relative that IP's root directory.
+The `public` field can be used to explicitly specify which files are visible to other ip when being when being referenced as a dependency. The list contains glob-style patterns that conform to .gitignore file semantics, and are always compared relative that ip's root directory.
 
-If no `public` field is present, then all files are implicitly specified as visible (public) to other IP when being referenced as a dependency.
+If no `public` field is present, then all files are implicitly specified as visible (public) to other ip when being referenced as a dependency.
 
 ``` toml
 [ip]
@@ -117,6 +117,8 @@ readme = "README.md"
 
 ### The `[metadata]` section
 
+Any type of TOML entry is allowed in this section, as Orbit ignores this section.
+
 ``` toml
 [ip.metadata]
 my-field-1 = true
@@ -126,7 +128,7 @@ my-field-2 = "hello world"
 
 ### The `[dependencies]` section
 
-The `[dependencies]` section is a table of direct dependencies required for the current IP.
+The `[dependencies]` section is a table of direct dependencies required for the current ip.
 
 ``` toml
 [dependencies]
@@ -134,11 +136,11 @@ gates = "1.0.0"
 uart = "2.3.1"
 ```
 
-If the IP has no dependencies, the section can be omitted from the manifest. The IPs listed in this section will always be included in the build graph.
+If the ip has no dependencies, the section can be omitted from the manifest. The ips listed in this section will always be included in the build graph.
 
 ### The `[dev-dependencies]` section
 
-The `[dev-dependencies]` section is a table of direct dependencies required for the current IP.
+The `[dev-dependencies]` section is a table of direct dependencies required for the current ip.
 
 ``` toml
 [dev-dependencies]
@@ -146,98 +148,4 @@ testkit = "1.3.7"
 logic-analyzer = "4.8.0"
 ```
 
-If the IP has no development dependencies, the section can be omitted from the manifest. The IPs listed in this section will not be included in the build graph for when this IP is used as a dependency itself.
-
-
-<!-- 
-## Entries
-
-The following is a list of acceptable entries (key/value pairs) recognized by Orbit in manifest files (`Orbit.toml`).
-
-### `ip.name` : _string_
-- project name identifier, third component in the PKGID
-- required for every manifest
-
-``` toml
-[ip]
-name = "gates"
-# ...
-```
-
-### `ip.library` : _string_
-- project library identifier, second component in the PKGID
-- required for every manifest
-
-``` toml
-[ip]
-library = "rary"
-# ...
-```
-
-### `ip.vendor` : _string_
-- project vendor/organization identifier, first component in the PKGID
-- required for every manifest
-
-``` toml
-[ip]
-vendor = "ks-tech"
-# ...
-```
-
-### `ip.version` : _string_
-- semver for the project's current status
-- required for every manifest
-
-``` toml
-[ip]
-version = "1.0.0"
-# ...
-```
-
-### `ip.repository` : _string_
-- remote repository git url
-- required to launch an ip to a vendor repository
-
-``` toml
-[ip]
-repository = "https://github.com/kepler-space-tech/gates.git"
-# ...
-```
-
-### `ip.summary` : _string_
-- short description about the ip
-
-``` toml
-[ip]
-summary = "a collection of low-level logic gates"
-# ...
-```
-
-### `ip.changelog` : _string_
-- relative path to the ip's CHANGELOG
-- auto-detects files named "CHANGELOG.md" in ip's directory
-``` toml
-[ip]
-changelog = "CHANGELOG.md"
-# ...
-```
-
-### `ip.readme` : _string_
-- relative path to the ip's README
-- auto-detects files named "README.md" in ip's directory
-``` toml
-[ip]
-readme = "README.md"
-# ...
-```
-
-### `[dependencies]` : _table_
-- user-defined additional keys that specify the minimum version of external ip directly used in the current project
-- the complete PKGID is entered as a key, while the minimum required version is entered as the value 
-
-``` toml
-[dependencies]
-ks-tech.rary.memory = "1.2"
-ks-tech.util.toolbox = "3.0.4"
-```
--->
+If the ip has no development dependencies, the section can be omitted from the manifest. The ips listed in this section will not be included in the build graph for when this ip is used as a dependency itself.

@@ -1,4 +1,4 @@
-# Ip Names
+# Names
 
 In order to identify an ip among others, Orbit requires developers to assign a human-readable name to each created ip.
 
@@ -26,9 +26,9 @@ The following provides various valid inputs when defining an ip's spec and how i
 
 Spec          | Name | Version |         
 --------------|------|---------|            
-gates:1.0.0   |gates |1.0.0    |    
-ram           |ram   |latest   |
-fifo:2.3      |fifo  |2.2.X    |  
+`gates:1.0.0`   |`gates` | `1.0.0`    |    
+`ram`           |`ram`   |`latest`   |
+`fifo:2.3`      |`fifo`  |`2.3.*`    |  
 
 ### Namespace Collisions
 
@@ -36,9 +36,9 @@ Two different ip's may share a common name within the catalog even though their 
 
 Spec 1        | Spec 2  | Collision |         
 --------------|---------|-----------|            
-gates         |GATES    |true       |    
-ram           |rom      |false      |
-fifo_cdc      |Fifo-CDC |true       |  
+`gates`         |`GATES`    |true       |    
+`ram`           |`rom`      |false      |
+`fifo_cdc`      |`Fifo-CDC` |true       |  
 
 > __Note:__ A resolution to this problem is to add an ip's UUID to the ip specification. While each ip already has a UUID auto-assigned in their lock file, this is a proposed feature that has yet to be implemented.
 

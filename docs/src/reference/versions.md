@@ -16,12 +16,12 @@ version ::= <major>.<minor>.<micro>
 
 To learn more about semantic versioning, visit the official [website](https://semver.org). 
 
-Since everyone's stance on what code changes affect which version level may differ, it's important to keep a changelog highlighting differences among versions.
+Determining the next version number based on a project's recent code changes can be an opinionated process, so it's recommended to also keep a changelog highlighting the differences among versions.
 
 > __Note:__ An alternative to _semantic versioning_ is _calender versioning_, which
 also operates on the basis of using 3 digits. To learn more about _calender versioning_ visit the official [website](https://calver.org).
 
-### Rules
+## Rules
 
 - Each level may only contain ASCII digits (`0-9`).
 
@@ -40,25 +40,25 @@ When given a partially qualified version, Orbit references the maximum version a
 
 Versions | 
 ---------|
-2.1.0    |
-1.5.0    |
-1.2.1    |
-1.2.0    |
-1.0.0    |
+`2.1.0`    |
+`1.5.0`    |
+`1.2.1`   |
+`1.2.0`    |
+`1.0.0`    |
 
 The following illustrates the mapping from the partially specified requested version to its fully specified known version that would be returned:
 
 Requested | Returned  |
 ----------|-----------|
-1         | 1.5.0     |
-1.1       | NOT FOUND |
-1.2       | 1.2.1     |
-2         | 2.1.0     |
-1.2.0     | 1.2.0     |
-latest    | 2.1.0     |
-(omitted) | 2.1.0     |
+`1`        | `1.5.0`     |
+`1.1`       | `NOT FOUND` |
+`1.2`       | `1.2.1`     |
+`2`         | `2.1.0`     |
+`1.2.0`     | `1.2.0`     |
+`latest`    | `2.1.0`     |
+`(omitted)` | `2.1.0`     |
 
-### Example Scenarios
+## Example
 
 A fully qualified version must be written in every project's manifest file.
 
@@ -76,7 +76,7 @@ $ orbit install gates:1.5.4
 $ orbit get nor_gate --ip gates:1.5
 ```
 
-### Comparing versions
+## Comparing versions
 
 The following pseudocode provides additional help in learning about how versions are compared (selecting a "higher" version).
 

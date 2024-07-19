@@ -12,8 +12,8 @@ use crate::core::manifest;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::protocol::Protocol;
 use crate::core::source::Source;
+use crate::core::swap::StrSwapTable;
 use crate::core::target::Process;
-use crate::core::variable::VariableTable;
 use crate::error::Error;
 use crate::error::Hint;
 use crate::error::LastError;
@@ -94,7 +94,7 @@ impl Subcommand<Context> for Download {
             // read ip manifest for env variables
             .from_ip(&Ip::load(c.get_ip_path().unwrap().clone(), true)?)?;
 
-        let vtable = VariableTable::new().load_environment(&env)?;
+        let vtable = StrSwapTable::new().load_environment(&env)?;
         env.initialize();
 
         // default behavior is report only missing installations
@@ -137,7 +137,7 @@ impl Download {
         catalog: &Catalog,
         missing_only: bool,
     ) -> Vec<(IpSpec, Source)> {
-        let mut vtable = VariableTable::new();
+        let mut vtable = StrSwapTable::new();
         lf.inner()
             .iter()
             .filter(|p| p.get_source().is_some() == true)
@@ -159,7 +159,7 @@ impl Download {
     /// Calls a protocol for the given package and then places the download into
     /// the downloads folder.
     pub fn download(
-        vtable: &mut VariableTable,
+        vtable: &mut StrSwapTable,
         spec: Option<&PartialIpSpec>,
         src: &Source,
         queue: Option<&PathBuf>,
@@ -193,9 +193,12 @@ impl Download {
                         println!("info: downloading ip over \"{}\" protocol ...", &proto);
                     }
 
+                    // perform string swap on source url
+                    let processed_src = src.clone().replace_vars_in_url(&vtable);
+
                     let std_queue = PathBuf::standardize(&queue);
                     vtable.add("orbit.queue", std_queue.to_str().unwrap());
-                    vtable.add("orbit.ip.source.url", src.get_url());
+                    vtable.add("orbit.ip.source.url", processed_src.get_url());
                     vtable.add("orbit.ip.source.protocol", entry.get_name());
                     vtable.add(
                         "orbit.ip.source.tag",
@@ -227,6 +230,7 @@ impl Download {
                 println!("info: downloading ip ...");
             }
 
+            // perform string swap on source url
             let processed_src = src.clone().replace_vars_in_url(&vtable);
 
             if let Err(err) = Protocol::single_download(processed_src.get_url(), &queue) {
@@ -325,7 +329,7 @@ impl Download {
     pub fn download_all(
         downloads: &Vec<(IpSpec, Source)>,
         proto_map: &HashMap<&str, &Protocol>,
-        vtable: VariableTable,
+        vtable: StrSwapTable,
         verbose: bool,
         queue: Option<&PathBuf>,
         download_dir: &PathBuf,

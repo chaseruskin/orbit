@@ -20,7 +20,7 @@ The following lists the instances when a string is permitted to perform string s
 
 ### Manifest files
 
-The string pattern for an ip's `source` field is allowed to contain any of the following keys:
+The string pattern for an ip's `source.url` field is allowed to contain any of the following keys:
 
 - `orbit.ip.name`: The name of the ip being downloaded.
 - `orbit.ip.version`: The version of the ip being downloaded.
@@ -35,7 +35,7 @@ The string pattern for a target's fileset configuration is allowed to contain an
 
 ### Protocol arguments
 
-The arguments set in a protocol's configuration are allowed to contain any of the following keys:
+The argument list defined in a protocol's configuration is allowed to contain any of the following keys:
 
 - `orbit.queue`: The directory that Orbit expects the ip temporarily placed immediately after download.
 - `orbit.ip.name`: The name of the ip being downloaded.

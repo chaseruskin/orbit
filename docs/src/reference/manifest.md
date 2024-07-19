@@ -90,6 +90,12 @@ keywords = ["cpu", "risc"]
 source = "https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip"
 ```
 
+``` toml
+[ip]
+# ...
+source = { url = "https://github.com/cdotrus/orbit.git", protocol = "git", tag = "1.0.0" }
+```
+
 ### The `channels` field
 
 ``` toml
@@ -110,12 +116,6 @@ The `public` field can be used to explicitly specify which files are visible to 
 
 If no `public` field is present, then all files are implicitly specified as visible (public) to other ip when being referenced as a dependency.
 
-``` toml
-[ip]
-# ...
-source = { url = "https://github.com/cdotrus/orbit.git", protocol = "git", tag = "1.0.0" }
-```
-
 ### The `readme` field
 
 ``` toml
@@ -130,8 +130,8 @@ Any type of TOML entry is allowed in this section, as Orbit ignores this section
 
 ``` toml
 [ip.metadata]
-my-field-1 = true
-my-field-2 = "hello world"
+custom-field-1 = true
+custom-field-2 = "hello world"
 # ...
 ```
 

@@ -1357,6 +1357,7 @@ hint: resolve this error by either
 <ul>
 <li><code>orbit.top</code>: The top-level design unit name.</li>
 <li><code>orbit.bench</code>: The testbench design unit name.</li>
+<li><code>orbit.dut</code>: The design-under-test design unit name.</li>
 <li><code>orbit.env.*</code>: Any environment variables loaded from configuration files.</li>
 </ul>
 <h3 id="protocol-arguments"><a class="header" href="#protocol-arguments">Protocol arguments</a></h3>
@@ -1369,6 +1370,18 @@ hint: resolve this error by either
 <li><code>orbit.ip.source.protocol</code>: The protocol specified by the ip being downloaded</li>
 <li><code>orbit.ip.source.tag</code>: The tag (if provided) specified by the ip being downloaded.</li>
 <li><code>orbit.env.*</code>: Any environment variables loaded from configuration files.</li>
+</ul>
+<h3 id="target-arguments"><a class="header" href="#target-arguments">Target arguments</a></h3>
+<p>The argument list defined in a target's configuration is allowed to contain any of the following keys:</p>
+<ul>
+<li><code>orbit.ip.name</code>: The name of the local ip.</li>
+<li><code>orbit.ip.library</code>: The HDL library of the local ip.</li>
+<li><code>orbit.ip.version</code>: The version of the local ip.</li>
+<li><code>orbit.ip.checksum</code>: The truncated most recent checksum of the local ip.</li>
+<li><code>orbit.env.*</code>: Any environment variables loaded from configuration files.</li>
+<li><code>orbit.top</code>: The top-level design unit name.</li>
+<li><code>orbit.bench</code>: The testbench design unit name.</li>
+<li><code>orbit.dut</code>: The design-under-test design unit name.</li>
 </ul>
 <h2 id="example-2"><a class="header" href="#example-2">Example</a></h2>
 <p>Consider an ip with the following manifest data:</p>
@@ -1822,6 +1835,9 @@ VHDL	lc3b	/Users/chase/projects/lc3b/sim/alu_tb.vhd
 </li>
 <li>
 <p><code>ORBIT_IP_VERSION</code> - specific version of current working directory's ip</p>
+</li>
+<li>
+<p><code>ORBIT_IP_CHECKSUM</code> - the truncated most recent checksum of the local ip</p>
 </li>
 <li>
 <p><code>ORBIT_BLUEPRINT</code> - the filename for the blueprint created during the planning stage</p>

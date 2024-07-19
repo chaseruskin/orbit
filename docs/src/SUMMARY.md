@@ -53,7 +53,7 @@
     - [orbit lock](./commands/lock.md) <!-- DONE -->
     - [orbit test](./commands/test.md)
     - [orbit build](./commands/build.md) <!-- DONE -->
-    - [orbit launch](./commands/launch.md)
+    - [orbit publish](./commands/publish.md)
     - [orbit search](./commands/search.md)
     - [orbit download](./commands/download.md) <!-- DONE -->
     - [orbit install](./commands/install.md) <!-- DONE -->

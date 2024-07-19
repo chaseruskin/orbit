@@ -22,7 +22,7 @@ Orbit is an agile package manager and extensible build tool for HDLs.
 
 - The build process occurs in 2 stages: the __Planning Stage__ and the __Execution Stage__. During the planning stage, Orbit generates a __Blueprint__, which is a single file that lists all the files required to perform the build. During the execution stage, Orbit calls the specified __Target__'s commmand, which typically reads the previously generated blueprint and processes the files using some user-defined EDA tool. The final output from the build process is typically one or more __Artifacts__, which are one or more files generated from the user-defined EDA tool.
 
-- Launching a new version of an ip when it is ready by releasing it through a user-defined channel can help other users seamlessly access that new version of the ip. Running `orbit launch` will run a series of checks and the copy the ip's manifest to its specified channel.
+- Publish a new version of an ip when it is ready by posting it to a user-defined channel. This method enables other users who also have that channel configured to seamlessly discover and access that new version of the ip. Running `orbit publish` will run a series of checks and then copy the ip's manifest to the proper location within the specified channel.
 
 ## Other notes
 

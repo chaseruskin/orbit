@@ -14,7 +14,7 @@ Commands:
     lock            save the world state of the current ip
     test, t         run a test
     build, b        plan and execute a target
-    launch          verify an upcoming release
+    publish         post an ip to a channel
     search          browse the ip catalog 
     download        request packages from the internet
     install         store an immutable reference to an ip

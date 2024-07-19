@@ -44,7 +44,10 @@ impl Channel {
 
     /// Resolves the root path according to its path.
     pub fn set_root(&mut self, relative_from: PathBuf) {
-        let root = filesystem::resolve_rel_path(&relative_from, self.path.as_ref().unwrap_or(&String::from(".")));
+        let root = filesystem::resolve_rel_path(
+            &relative_from,
+            self.path.as_ref().unwrap_or(&String::from(".")),
+        );
         self.root = Some(root.into());
     }
 }

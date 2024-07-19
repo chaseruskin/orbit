@@ -22,7 +22,7 @@ COMMANDS = [
     'lock',
     'build',
     'test',
-    'launch',
+    'publish',
     'search',
     'download',
     'install',

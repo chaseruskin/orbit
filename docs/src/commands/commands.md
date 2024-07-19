@@ -18,7 +18,7 @@ The commands are listed below in their group and in a typical order of usage for
 - [orbit search](./search.md)
 - [orbit view](./view.md)
 - [orbit install](./install.md)
-- [orbit launch](./launch.md)
+- [orbit publish](./publish.md)
 - [orbit download](./download.md)
 - [orbit remove](./remove.md)
 - [orbit config](./config.md)

@@ -1,13 +1,13 @@
-# __orbit launch__
+# __orbit publish__
 
 ## __NAME__
 
-launch - release an ip through a channel
+publish - post an ip to a channel
 
 ## __SYNOPSIS__
 
 ```
-orbit launch [options]
+orbit publish [options]
 ```
 
 ## __DESCRIPTION__
@@ -15,17 +15,17 @@ orbit launch [options]
 Performs a series of checks on a stable version of a local ip to then release it
 through a channel.
 
-For an ip to be launched, it must have its source field defined that directs to
+For an ip to be published, it must have its source field defined that directs to
 a valid internet location.
 
 By default, it operates a dry run, performing all steps in the process except
 for the actual release through the channel. To fully run the command, use the
-`--ready` flag. When the ip is launched, it will also be installed to the cache
+`--ready` flag. When the ip is published, it will also be installed to the cache
 by default. To skip this behavior, use the `--no-install` flag.
 
 ## __OPTIONS__
 
-`--ready`  
+`--ready, -y`  
       Perform a full run
 
 `--no-install`  
@@ -37,7 +37,7 @@ by default. To skip this behavior, use the `--no-install` flag.
 ## __EXAMPLES__
 
 ```
-orbit launch
-orbit launch --ready
+orbit publish
+orbit publish --ready
 ```
 

@@ -4,19 +4,19 @@ use crate::core::context::Context;
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
 
-use super::helps::launch::HELP;
+use super::helps::publish::HELP;
 
 #[derive(Debug, PartialEq)]
-pub struct Launch {
+pub struct Publish {
     ready: bool,
     list: bool,
     no_install: bool,
 }
 
-impl Subcommand<Context> for Launch {
+impl Subcommand<Context> for Publish {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
         cli.help(Help::with(HELP))?;
-        Ok(Launch {
+        Ok(Publish {
             list: cli.check(Arg::flag("list"))?,
             ready: cli.check(Arg::flag("ready").switch('y'))?,
             no_install: cli.check(Arg::flag("install"))?,
@@ -24,7 +24,6 @@ impl Subcommand<Context> for Launch {
     }
 
     fn execute(self, c: &Context) -> proc::Result {
-
         // display channel list and exit
         if self.list == true {
             println!(

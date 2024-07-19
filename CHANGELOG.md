@@ -26,6 +26,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - updates `orbit help` command to have latest manuals and available subcommands to display manual pages
 - adds `--no-clean` flag to `orbit build` and `orbit test` to prevent automatic cleaning before build process
 
+### Changes
+- renames `orbit launch` to `orbit publish` in favor of clearer intentions behind the command
+
 ### Fixes
 - resolves bug where string swapping would not occur on source url if using a custom protocol
 

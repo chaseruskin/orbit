@@ -50,7 +50,7 @@ jobs:
       run: orbit --version
 
     - name: Run system tests
-      run: just test-all
+      run: just run-sys-tests
 
   macos-arm-test:
     runs-on: macos-latest
@@ -94,7 +94,7 @@ jobs:
       run: orbit --version
 
     - name: Run system tests
-      run: just test-all
+      run: just run-sys-tests
 
   linux-test:
     runs-on: ubuntu-latest
@@ -135,7 +135,7 @@ jobs:
       run: orbit --version
 
     - name: Run system tests
-      run: just test-all
+      run: just run-sys-tests
     
   windows-test:
     runs-on: windows-latest
@@ -171,4 +171,4 @@ jobs:
       run: orbit --version
 
     - name: Run system tests
-      run: just test-all
+      run: just run-sys-tests

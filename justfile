@@ -35,6 +35,13 @@ sortgloss:
 
 # Organize commands required for end-to-end system-level tests
 
+run-sys-tests:
+    just test-plan-1
+    just test-plan-2
+    just test-dst
+    just test-pub
+    just test-partv
+
 # Run all system tests
 test-all:
     just test-plan-1
@@ -59,6 +66,11 @@ test-dst:
     chmod +x ./tests/env/projects/dst.sh
     cd ./tests/env/projects; ./dst.sh
 
+# Dst test to verify library mappings work when using a simulator
+test-dst-local:
+    chmod +x ./tests/env/projects/dst-local.sh
+    cd ./tests/env/projects; ./dst-local.sh
+
 # Using 'public' in manifest
 test-pub: 
     chmod +x ./tests/env/projects/pub.sh
@@ -68,8 +80,3 @@ test-pub:
 test-partv:
     chmod +x ./tests/partialv/test.sh
     cd ./tests/partialv; ./test.sh
-
-# Dst test to verify library mappings work when using a simulator
-test-dst-local:
-    chmod +x ./tests/env/projects/dst-local.sh
-    cd ./tests/env/projects; ./dst-local.sh

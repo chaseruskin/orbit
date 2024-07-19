@@ -1560,6 +1560,10 @@ keywords = ["cpu", "risc"]
 # ...
 source = "https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip"
 </code></pre>
+<pre><code class="language-toml">[ip]
+# ...
+source = { url = "https://github.com/cdotrus/orbit.git", protocol = "git", tag = "1.0.0" }
+</code></pre>
 <h3 id="the-channels-field"><a class="header" href="#the-channels-field">The <code>channels</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
@@ -1572,10 +1576,6 @@ public = ["/rtl"]
 </code></pre>
 <p>The <code>public</code> field can be used to explicitly specify which files are visible to other ip when being when being referenced as a dependency. The list contains glob-style patterns that conform to .gitignore file semantics, and are always compared relative that ip's root directory.</p>
 <p>If no <code>public</code> field is present, then all files are implicitly specified as visible (public) to other ip when being referenced as a dependency.</p>
-<pre><code class="language-toml">[ip]
-# ...
-source = { url = "https://github.com/cdotrus/orbit.git", protocol = "git", tag = "1.0.0" }
-</code></pre>
 <h3 id="the-readme-field"><a class="header" href="#the-readme-field">The <code>readme</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
@@ -1584,8 +1584,8 @@ readme = "README.md"
 <h3 id="the-metadata-section"><a class="header" href="#the-metadata-section">The <code>[metadata]</code> section</a></h3>
 <p>Any type of TOML entry is allowed in this section, as Orbit ignores this section.</p>
 <pre><code class="language-toml">[ip.metadata]
-my-field-1 = true
-my-field-2 = "hello world"
+custom-field-1 = true
+custom-field-2 = "hello world"
 # ...
 </code></pre>
 <h3 id="the-dependencies-section"><a class="header" href="#the-dependencies-section">The <code>[dependencies]</code> section</a></h3>

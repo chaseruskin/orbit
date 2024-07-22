@@ -283,7 +283,7 @@ impl Manifest {
                 source: None.into(),
                 keywords: Vec::new(),
                 description: None,
-                channels: Vec::new(),
+                channels: None,
                 public: None,
                 library: None,
                 readme: None,
@@ -455,8 +455,7 @@ pub struct Package {
     #[serde(deserialize_with = "source::string_or_struct", default)]
     source: Source,
     /// Known channels where this ip should be published to
-    #[serde(skip_serializing_if = "vec_is_empty", default)]
-    channels: Vec<String>,
+    channels: Option<Vec<String>>,
     /// Filepaths that should be explictly known to the user for ip referencing.
     public: Option<Vec<String>>,
     readme: Option<PathBuf>,
@@ -490,7 +489,7 @@ impl Package {
         self.source.as_option()
     }
 
-    pub fn get_channels(&self) -> &Vec<String> {
+    pub fn get_channels(&self) -> &Option<Vec<String>> {
         &self.channels
     }
 

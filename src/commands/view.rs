@@ -168,6 +168,8 @@ impl Subcommand<Context> for View {
                                         v.get_state().to_string()
                                     ));
                                 });
+                            // pop the last \n
+                            data.pop();
                             println!("{}", data);
                         }
                     }
@@ -209,7 +211,8 @@ impl View {
                 unit.get_visibility().to_string(),
             ));
         }
-
+        // pop the last \n
+        result.pop();
         result
     }
 }

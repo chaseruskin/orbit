@@ -55,8 +55,16 @@ const GENERAL_KEY: &str = "general";
 const LANGUAGES_KEY: &str = "language";
 const BUILD_KEY: &str = "build";
 const TEST_KEY: &str = "test";
+const PUBLISH_KEY: &str = "publish";
 
-const TOP_KEYS: [&str; 5] = [INCLUDE_KEY, GENERAL_KEY, LANGUAGES_KEY, BUILD_KEY, TEST_KEY];
+const TOP_KEYS: [&str; 6] = [
+    INCLUDE_KEY,
+    GENERAL_KEY,
+    LANGUAGES_KEY,
+    BUILD_KEY,
+    TEST_KEY,
+    PUBLISH_KEY,
+];
 
 use crate::util::anyerror::Fault;
 use toml_edit::Array;
@@ -726,9 +734,9 @@ impl FromFile for Config {
                     });
                 }
                 if let Some(chans) = &mut r.channel {
-                    chans.iter_mut().for_each(|c| {
-                        c.set_root(base.clone());
-                    });
+                    for c in chans {
+                        c.set_root(base.clone())?;
+                    }
                 }
                 Ok(r)
             }

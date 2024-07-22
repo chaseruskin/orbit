@@ -19,7 +19,7 @@ use std::path::PathBuf;
 
 use serde_derive::{Deserialize, Serialize};
 
-use crate::util::filesystem;
+use crate::{error::Error, util::anyerror::Fault};
 
 pub type Channels = Vec<Channel>;
 
@@ -64,12 +64,28 @@ impl Channel {
     }
 
     /// Resolves the root path according to its path.
-    pub fn set_root(&mut self, relative_from: PathBuf) {
-        let root = filesystem::resolve_rel_path(
-            &relative_from,
-            self.path.as_ref().unwrap_or(&String::from(".")),
-        );
-        self.root = Some(root.into());
+    pub fn set_root(&mut self, relative_from: PathBuf) -> Result<(), Fault> {
+        match &self.path {
+            Some(p) => {
+                let p = PathBuf::from(p);
+                let fp = if p.is_relative() == true {
+                    relative_from.join(p)
+                } else {
+                    p
+                };
+                if fp.exists() == false {
+                    return Err(Error::ChannelPathNotFound(fp))?;
+                }
+                if fp.is_dir() == false {
+                    return Err(Error::ChannelPathNotDir(fp))?;
+                }
+                self.root = Some(fp);
+            }
+            None => {
+                self.root = Some(relative_from);
+            }
+        }
+        Ok(())
     }
 }
 

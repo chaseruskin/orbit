@@ -263,6 +263,8 @@ impl Search {
                 },
             ));
         }
+        // remove final \n from body
+        body.pop();
         header + &body
     }
 }

@@ -122,7 +122,7 @@ pub enum Error {
     PublishMissingLockfile(Hint),
     #[error("the ip manifest's source field is required to publish, but is undefined")]
     PublishMissingSource,
-    #[error("ip {0} is already published to one of the specified channels")]
+    #[error("ip {0} is already published to at least one of the specified channels")]
     PublishAlreadyExists(IpSpec),
     #[error("default channel \"{0}\" does not exist")]
     DefChanNotFound(String),
@@ -134,6 +134,10 @@ pub enum Error {
     PublishHdlGraphFailed(LastError),
     #[error("ip {0} is ready to be published{1}")]
     PublishDryRunDone(IpSpec, Hint),
+    #[error("channel's resolved path {0:?} does not exist")]
+    ChannelPathNotFound(PathBuf),
+    #[error("channel's resolved path {0:?} is not a directory")]
+    ChannelPathNotDir(PathBuf),
 }
 
 #[derive(Debug, PartialEq)]

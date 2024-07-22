@@ -16,14 +16,16 @@
 //
 
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use crate::commands::plan::Plan;
 use crate::core::algo;
-use crate::core::catalog::Catalog;
+use crate::core::catalog::{Catalog, PointerSlot};
 use crate::core::channel::Channel;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::lang::Language;
+use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::error::{Error, Hint, LastError};
 use crate::util::anyerror::Fault;
 
@@ -75,28 +77,31 @@ impl Subcommand<Context> for Publish {
 
         println!("info: {}", "finding channels to publish to ...");
         let mut channels = HashMap::new();
-        // verify default channel is valid
-        match c.get_config().get_default_channel() {
-            Some(name) => match c.get_config().get_channels().get(name) {
-                Some(&chan) => {
-                    println!("info: using default channel {:?}", name);
-                    channels.insert(name, chan)
-                }
-                None => return Err(Box::new(Error::DefChanNotFound(name.clone())))?,
-            },
-            // no default channel selected
-            None => None,
-        };
 
         // check the channel(s) we wish to publish to
-        let ip_channels = local_ip.get_man().get_ip().get_channels();
-        for name in ip_channels {
-            match c.get_config().get_channels().get(name) {
-                Some(&chan) => {
-                    println!("info: using specified channel {:?}", name);
-                    channels.insert(name, chan)
-                }
-                None => return Err(Box::new(Error::ChanNotFound(name.clone())))?,
+        if let Some(ip_channels) = local_ip.get_man().get_ip().get_channels() {
+            for name in ip_channels {
+                match c.get_config().get_channels().get(name) {
+                    Some(&chan) => {
+                        println!("info: using specified channel {:?}", name);
+                        channels.insert(name, chan)
+                    }
+                    None => return Err(Box::new(Error::ChanNotFound(name.clone())))?,
+                };
+            }
+        // try the default if channels are not defined in manifest
+        } else {
+            // verify default channel is valid
+            match c.get_config().get_default_channel() {
+                Some(name) => match c.get_config().get_channels().get(name) {
+                    Some(&chan) => {
+                        println!("info: using default channel {:?}", name);
+                        channels.insert(name, chan)
+                    }
+                    None => return Err(Box::new(Error::DefChanNotFound(name.clone())))?,
+                },
+                // no default channel selected
+                None => None,
             };
         }
 
@@ -155,7 +160,7 @@ impl Subcommand<Context> for Publish {
         // todo!("verify the HDL graph can be generated without errors");
         // warn if there are no HDL units in the project
         match self.ready {
-            true => self.publish(&local_ip, channels),
+            true => self.publish_all(&local_ip, channels),
             false => Err(Box::new(Error::PublishDryRunDone(
                 ip_spec,
                 Hint::PublishWithReady,
@@ -174,7 +179,92 @@ impl Publish {
         Ok(())
     }
 
-    fn publish(self, local_ip: &Ip, channels: HashMap<&String, &Channel>) -> Result<(), Fault> {
-        todo!()
+    fn publish_all(
+        &self,
+        local_ip: &Ip,
+        channels: HashMap<&String, &Channel>,
+    ) -> Result<(), Fault> {
+        // publish to each channel
+        for (name, chan) in &channels {
+            println!("info: publishing to {:?} channel ...", name);
+            match self.publish(local_ip, chan) {
+                Ok(_) => (),
+                Err(e) => {
+                    self.rollback_changes(local_ip, chan)?;
+                    return Err(e);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn publish(&self, local_ip: &Ip, channel: &Channel) -> Result<(), Fault> {
+        // run the synchronize command sequence, if exist
+
+        // run the pre-publish command sequence, if exist
+
+        // copy the ip's manifest to the location in the channel
+        self.copy_to_channel(local_ip, channel)?;
+        // run the post-publish command sequence, if exist
+
+        Ok(())
+    }
+
+    /// Creates the path where an ip will place its pointer contents.
+    ///
+    /// The directory is something like this: name[0]/name-version-uuid
+    fn create_pointer_directory(ip: &Ip) -> PathBuf {
+        let name = ip.get_man().get_ip().get_name();
+        let version = ip.get_man().get_ip().get_version();
+        let uuid = ip.get_uuid();
+        PathBuf::new()
+            .join(String::from(name.as_ref().chars().next().unwrap()))
+            .join(PointerSlot::new(name, version, uuid).as_ref())
+    }
+
+    /// Writes the ip's manifest to the channel.
+    fn copy_to_channel(&self, local_ip: &Ip, channel: &Channel) -> Result<(), Fault> {
+        let output_dir = Self::create_pointer_directory(&local_ip);
+        let output_path = channel.get_root().join(output_dir);
+        // create any mising directories
+        std::fs::create_dir_all(&output_path)?;
+        // copy the (raw) manifest there
+        std::fs::copy(
+            local_ip.get_root().join(IP_MANIFEST_FILE),
+            output_path.join(IP_MANIFEST_FILE),
+        )?;
+        Ok(())
+    }
+
+    /// Rollback the progress made during publish if an error has occurred.
+    ///
+    /// This function should be called before returning the final error from the publish
+    /// operation to allow users to try again from a known state.
+    fn rollback_changes(&self, local_ip: &Ip, channel: &Channel) -> Result<(), Fault> {
+        let output_dir = Self::create_pointer_directory(&local_ip);
+        let output_path = channel.get_root().join(output_dir);
+
+        if output_path.exists() && output_path.is_dir() {
+            std::fs::remove_dir_all(output_path)?;
+        }
+        // check if we should remove the first-layer directory
+        let first_dir = PathBuf::from(String::from(
+            local_ip
+                .get_man()
+                .get_ip()
+                .get_name()
+                .as_ref()
+                .chars()
+                .next()
+                .unwrap(),
+        ));
+        let output_path = channel.get_root().join(first_dir);
+        if output_path.exists() && output_path.is_dir() {
+            match std::fs::read_dir(&output_path)?.count() {
+                0 => std::fs::remove_dir(&output_path)?,
+                _ => (),
+            }
+        }
+        Ok(())
     }
 }

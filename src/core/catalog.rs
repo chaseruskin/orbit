@@ -585,3 +585,19 @@ impl AsRef<str> for DownloadSlot {
         self.0.as_ref()
     }
 }
+
+#[derive(PartialEq, Debug, Clone)]
+pub struct PointerSlot(String);
+
+impl PointerSlot {
+    /// Combines the various components of a cache slot name into a `CacheSlot`.
+    pub fn new(name: &PkgPart, version: &Version, uuid: &Uuid) -> Self {
+        Self(format!("{}-{}-{}", name, version, uuid.to_string_short()))
+    }
+}
+
+impl AsRef<str> for PointerSlot {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}

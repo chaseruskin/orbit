@@ -11,6 +11,25 @@ import toml, os, sys
 # the entry-level command
 PROGRAM = 'orbit'
 
+NEW_HEADER = '''//
+//  Copyright (C) 2022-2024  Chase Ruskin
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+
+'''
+
 # define all commands expected to be in documentation
 COMMANDS = [
     'new',
@@ -153,6 +172,8 @@ def write_rs_manual(table, dest, command) -> int:
     path = dest+'/'+command+'.rs'
 
     with open(path, 'w') as rs:
+        # write the header
+        rs.write(NEW_HEADER)
         # comment
         rs.write('// This manual page was automatically generated from the mangen.py tool.'+END)
         # variable declaration
@@ -229,6 +250,8 @@ def write_rs_help(table, dest, command, footer=True) -> int:
     path = dest+'/'+command+'.rs'
 
     with open(path, 'w') as rs:
+        # write the header
+        rs.write(NEW_HEADER)
         # comment
         rs.write('// This help page was automatically generated from the mangen.py tool.'+END)
         # variable declaration

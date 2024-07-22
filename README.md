@@ -186,6 +186,12 @@ Options:
 Use 'orbit help <command>' for more information about a command.
 ```
 
+## License
+
+This program is free software distributed under the terms of the GNU General Public License version 3 or later. You may use, modify, and redistribute the program as you wish but if you distribute modifications you must preserve the license text and copyright notices, and also make the modified source code available to your users. 
+
+See [LICENSE](./LICENSE).
+
 ## Sponsoring
 
 Orbit has yet to have its first sponsor! I initially got inspiration for this project during my first internship with NASA Glenn Research Center in 2021, and started working on this project in my free time throughout my undergraduate studies at the University of Florida. Since then, I have continued to work on this project whenever possible throughout my graduate studies without any direct funding. If you use Orbit, please consider sponsoring; any amount is very much appreciated.
@@ -195,7 +201,3 @@ Being a sponsor not only keeps this project going, but enables you or your organ
 ## Contributing
 
 See [CONTRIBUTING](./CONTRIBUTING.md).
-
-## License
-
-This project, which refers to all of the files and source code created and stored in this repository, is currently licensed under the open-source copyleft GPL-3.0 license. See [LICENSE](./LICENSE).

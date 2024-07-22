@@ -19,6 +19,10 @@ mansync:
 chlog:
     python ./tools/clgen.py --verbose
 
+# Updates the source code with the license header
+lic:
+    python ./tools/license.py
+
 # Run the documentation book on the local host for testing before going live
 docs:
     mdbook serve ./docs

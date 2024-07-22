@@ -122,6 +122,18 @@ pub enum Error {
     PublishMissingLockfile(Hint),
     #[error("the ip manifest's source field is required to publish, but is undefined")]
     PublishMissingSource,
+    #[error("ip {0} is already published to one of the specified channels")]
+    PublishAlreadyExists(IpSpec),
+    #[error("default channel \"{0}\" does not exist")]
+    DefChanNotFound(String),
+    #[error("listed channel \"{0}\" does not exist")]
+    ChanNotFound(String),
+    #[error("a channel is required to publish an ip")]
+    NoChanDefined,
+    #[error("failed to build hdl graph: {0}")]
+    PublishHdlGraphFailed(LastError),
+    #[error("ip {0} is ready to be published{1}")]
+    PublishDryRunDone(IpSpec, Hint),
 }
 
 #[derive(Debug, PartialEq)]
@@ -172,6 +184,7 @@ pub enum Hint {
     IncludeAllInPlan,
     SpecifyIpSpecForDownload,
     MakeLock,
+    PublishWithReady,
 }
 
 impl Display for Hint {
@@ -209,6 +222,7 @@ impl Display for Hint {
                 "consider providing the ip specification for the requested ip to download"
             }
             Self::MakeLock => "use `orbit lock` to generate the latest lockfile for this ip",
+            Self::PublishWithReady => "use the \"--ready\" flag to publish the ip to its channels",
         };
         write!(
             f,

@@ -139,12 +139,12 @@ impl Subcommand<Context> for Install {
             Catalog::new()
                 .set_cache_path(c.get_cache_path())?
                 .downloads(c.get_downloads_path())?
-                .available(c.get_config().get_channels())?
+                .available(&c.get_config().get_channels())?
         } else {
             Catalog::new()
                 .installations(c.get_cache_path())?
                 .downloads(c.get_downloads_path())?
-                .available(c.get_config().get_channels())?
+                .available(&c.get_config().get_channels())?
         };
 
         let mut provided_spec = None;

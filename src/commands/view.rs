@@ -55,7 +55,7 @@ impl Subcommand<Context> for View {
         let catalog = Catalog::new()
             .installations(c.get_cache_path())?
             .downloads(c.get_downloads_path())?
-            .available(c.get_config().get_channels())?;
+            .available(&c.get_config().get_channels())?;
 
         let dev_ip: Option<Result<Ip, Fault>> = {
             match Context::find_ip_path(&current_dir().unwrap()) {

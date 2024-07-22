@@ -428,6 +428,36 @@ impl Build {
 
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
+pub struct Publish {
+    #[serde(rename = "default-channel")]
+    default_channel: Option<String>,
+}
+
+impl Publish {
+    pub fn new() -> Self {
+        Self {
+            default_channel: None,
+        }
+    }
+
+    pub fn get_default_channel(&self) -> Option<&String> {
+        self.default_channel.as_ref()
+    }
+
+    /// Merges any populated data from `rhs` into attributes that do not already
+    /// have data defined in `self`.
+    pub fn merge(&mut self, rhs: Option<Self>) {
+        if let Some(rhs) = rhs {
+            // no build dir defined so give it the value from `rhs`
+            if self.default_channel.is_some() == false {
+                self.default_channel = rhs.default_channel
+            }
+        }
+    }
+}
+
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct Test {
     #[serde(rename = "default-target")]
     default_target: Option<String>,
@@ -465,6 +495,7 @@ pub struct Config {
     general: Option<General>,
     build: Option<Build>,
     test: Option<Test>,
+    publish: Option<Publish>,
     language: Option<Language>,
     env: Option<HashMap<String, String>>,
     target: Option<Targets>,
@@ -487,6 +518,7 @@ impl Config {
             language: None,
             build: None,
             test: None,
+            publish: None,
         }
     }
 
@@ -542,6 +574,11 @@ impl Config {
             Some(v) => v.merge(rhs.test),
             None => self.test = rhs.test,
         }
+        // combine '[publish]' table
+        match &mut self.publish {
+            Some(v) => v.merge(rhs.publish),
+            None => self.publish = rhs.publish,
+        }
         // combine '[vhdl-format]' table
         match &mut self.vhdl_format {
             Some(v) => v.merge(rhs.vhdl_format),
@@ -581,6 +618,13 @@ impl Config {
                 Some(m) => m.get_default_target(),
                 None => None,
             },
+        }
+    }
+
+    pub fn get_default_channel(&self) -> Option<&String> {
+        match &self.publish {
+            Some(p) => p.get_default_channel(),
+            None => None,
         }
     }
 
@@ -626,7 +670,7 @@ impl Config {
         map
     }
 
-    pub fn get_channels(&self) -> HashMap<&str, &Channel> {
+    pub fn get_channels(&self) -> HashMap<&String, &Channel> {
         let mut map = HashMap::new();
 
         if let Some(chans) = &self.channel {

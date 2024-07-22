@@ -92,7 +92,7 @@ pub struct Catalog<'a> {
     inner: HashMap<PkgPart, IpLevel>,
     cache: Option<&'a PathBuf>,
     downloads: Option<&'a PathBuf>,
-    available: Option<HashMap<&'a str, &'a PathBuf>>,
+    available: Option<HashMap<&'a String, &'a PathBuf>>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -343,10 +343,10 @@ impl<'a> Catalog<'a> {
     }
 
     /// Searches the `path` for ip available.
-    pub fn available(mut self, channels: HashMap<&'a str, &'a Channel>) -> Result<Self, Fault> {
+    pub fn available(mut self, channels: &HashMap<&'a String, &'a Channel>) -> Result<Self, Fault> {
         let mut map = HashMap::new();
         // update the availables
-        for (name, chan) in channels {
+        for (&name, &chan) in channels {
             map.insert(name, chan.get_root());
             self = self.detect(
                 map.get(name).unwrap(),

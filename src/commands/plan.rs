@@ -1042,7 +1042,7 @@ impl Plan {
     }
 
     /// Builds a graph of design units. Used for planning
-    fn build_full_graph<'a>(
+    pub fn build_full_graph<'a>(
         files: &'a Vec<IpFileNode>,
     ) -> Result<GraphMap<CompoundIdentifier, HdlNode<'a>, ()>, Fault> {
         let mut graph_map: GraphMap<CompoundIdentifier, HdlNode, ()> = GraphMap::new();

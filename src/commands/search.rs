@@ -63,7 +63,7 @@ impl Subcommand<Context> for Search {
         // collect downloaded IP
         catalog = catalog.downloads(c.get_downloads_path())?;
         // collect available IP
-        catalog = catalog.available(c.get_config().get_channels())?;
+        catalog = catalog.available(&c.get_config().get_channels())?;
 
         self.run(&catalog)
     }

@@ -1,0 +1,27 @@
+# Orbit configuration file
+
+[publish]
+default-channel = "hyperspace-labs"
+
+[[channel]]
+name = "hyperspace-labs"
+description = "Available ip from hyperspace labs"
+root = "./index"
+
+# if the channel is tied to a remote, have ability to synchronize with latest
+sync.command = "git"
+sync.args = ["pull"]
+
+# command to use immediately after copy to destination
+post.command = "python"
+post.args = ["publish.py"]
+
+# # enables Orbit to list available ip found here
+# allow-read = true
+# # enables Orbit to place new available ip into this channel
+# allow-write = true
+
+# warn/error on a local ip if you are missing the channel during daily operation
+# allow frequency of how often run sync commands on known channels
+
+# should publish also include the lockfile as well?

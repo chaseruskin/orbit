@@ -18,6 +18,8 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.17.0 - unreleased
 
 ### Features
+- implements first attempt at the full process for publishing an ip to a channel
+- adds `ORBIT_IP_INDEX` environment variable during publish process for channels to use in custom processes
 - supports basic publish action where the manifest gets copied to the channel's index path
 - implements a series of checks during the dry run of the `orbit publish` command
 - users can now straight install an ip directly from its manifest stored in a channel

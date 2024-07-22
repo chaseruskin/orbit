@@ -28,6 +28,8 @@ use crate::core::lang::Language;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::error::{Error, Hint, LastError};
 use crate::util::anyerror::Fault;
+use crate::util::environment::{EnvVar, Environment, ORBIT_IP_INDEX};
+use crate::util::filesystem;
 
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
@@ -73,6 +75,13 @@ impl Subcommand<Context> for Publish {
 
         let local_ip = Ip::load(c.get_ip_path().unwrap().to_path_buf(), true)?;
 
+        // initialize environment
+        let env = Environment::new()
+            // read config.toml for setting any env variables
+            .from_config(c.get_config())?
+            // read ip manifest for env variables
+            .from_ip(&local_ip)?;
+
         let ip_spec = local_ip.get_man().get_ip().into_ip_spec();
 
         println!("info: {}", "finding channels to publish to ...");
@@ -108,6 +117,11 @@ impl Subcommand<Context> for Publish {
         // make sure a channel is configured
         if channels.is_empty() == true {
             return Err(Box::new(Error::NoChanDefined))?;
+        }
+
+        // run the synchronizations for each channel being used
+        for (_name, chan) in &channels {
+            chan.run_sync(&env)?;
         }
 
         // verify the version of the ip does not already exist at the available level
@@ -160,7 +174,7 @@ impl Subcommand<Context> for Publish {
         // todo!("verify the HDL graph can be generated without errors");
         // warn if there are no HDL units in the project
         match self.ready {
-            true => self.publish_all(&local_ip, channels),
+            true => self.publish_all(&local_ip, channels, env),
             false => Err(Box::new(Error::PublishDryRunDone(
                 ip_spec,
                 Hint::PublishWithReady,
@@ -183,11 +197,17 @@ impl Publish {
         &self,
         local_ip: &Ip,
         channels: HashMap<&String, &Channel>,
+        mut env: Environment,
     ) -> Result<(), Fault> {
         // publish to each channel
         for (name, chan) in &channels {
             println!("info: publishing to {:?} channel ...", name);
-            match self.publish(local_ip, chan) {
+            // update the index path
+            let index_dir = Self::create_pointer_directory(&local_ip);
+            let index_path = filesystem::into_std_str(chan.get_root().join(index_dir));
+            env = env.overwrite(EnvVar::with(ORBIT_IP_INDEX, index_path.as_str()));
+            // publish to this channel
+            match self.publish(local_ip, chan, &env) {
                 Ok(_) => (),
                 Err(e) => {
                     self.rollback_changes(local_ip, chan)?;
@@ -198,15 +218,13 @@ impl Publish {
         Ok(())
     }
 
-    fn publish(&self, local_ip: &Ip, channel: &Channel) -> Result<(), Fault> {
-        // run the synchronize command sequence, if exist
-
+    fn publish(&self, local_ip: &Ip, channel: &Channel, env: &Environment) -> Result<(), Fault> {
         // run the pre-publish command sequence, if exist
-
+        channel.run_pre(&env)?;
         // copy the ip's manifest to the location in the channel
         self.copy_to_channel(local_ip, channel)?;
         // run the post-publish command sequence, if exist
-
+        channel.run_post(&env)?;
         Ok(())
     }
 
@@ -241,11 +259,11 @@ impl Publish {
     /// This function should be called before returning the final error from the publish
     /// operation to allow users to try again from a known state.
     fn rollback_changes(&self, local_ip: &Ip, channel: &Channel) -> Result<(), Fault> {
-        let output_dir = Self::create_pointer_directory(&local_ip);
-        let output_path = channel.get_root().join(output_dir);
+        let index_dir = Self::create_pointer_directory(&local_ip);
+        let index_path = channel.get_root().join(index_dir);
 
-        if output_path.exists() && output_path.is_dir() {
-            std::fs::remove_dir_all(output_path)?;
+        if index_path.exists() && index_path.is_dir() {
+            std::fs::remove_dir_all(index_path)?;
         }
         // check if we should remove the first-layer directory
         let first_dir = PathBuf::from(String::from(

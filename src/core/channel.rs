@@ -19,7 +19,12 @@ use std::path::PathBuf;
 
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{error::Error, util::anyerror::Fault};
+use crate::{
+    error::Error,
+    util::{anyerror::Fault, environment::Environment},
+};
+
+use super::target::Process;
 
 pub type Channels = Vec<Channel>;
 
@@ -28,6 +33,25 @@ pub type Channels = Vec<Channel>;
 pub struct Sequence {
     command: String,
     args: Option<Vec<String>>,
+    #[serde(skip_deserializing, skip_serializing)]
+    root: PathBuf,
+}
+
+impl Process for Sequence {
+    fn get_root(&self) -> &PathBuf {
+        &self.root
+    }
+
+    fn get_args(&self) -> Vec<&String> {
+        match &self.args {
+            Some(list) => list.iter().map(|e| e).collect(),
+            None => Vec::new(),
+        }
+    }
+
+    fn get_command(&self) -> &String {
+        &self.command
+    }
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -36,6 +60,7 @@ pub struct Channel {
     name: String,
     description: Option<String>,
     /// The directory located where the channel exists.
+    #[serde(rename = "root")]
     path: Option<String>,
     sync: Option<Sequence>,
     pre: Option<Sequence>,
@@ -65,6 +90,7 @@ impl Channel {
 
     /// Resolves the root path according to its path.
     pub fn set_root(&mut self, relative_from: PathBuf) -> Result<(), Fault> {
+        // apply root to channel's path
         match &self.path {
             Some(p) => {
                 let p = PathBuf::from(p);
@@ -82,10 +108,41 @@ impl Channel {
                 self.root = Some(fp);
             }
             None => {
-                self.root = Some(relative_from);
+                self.root = Some(relative_from.clone());
             }
         }
+        // apply root to any of the command sequences
+        if let Some(seq) = &mut self.sync {
+            seq.root = relative_from.clone();
+        }
+        if let Some(seq) = &mut self.pre {
+            seq.root = relative_from.clone();
+        }
+        if let Some(seq) = &mut self.post {
+            seq.root = relative_from.clone();
+        }
         Ok(())
+    }
+
+    pub fn run_sync(&self, env: &Environment) -> Result<(), Fault> {
+        match &self.sync {
+            Some(cmd) => cmd.execute(&None, &Vec::new(), false, self.get_root(), env.into_map()),
+            None => Ok(()),
+        }
+    }
+
+    pub fn run_pre(&self, env: &Environment) -> Result<(), Fault> {
+        match &self.pre {
+            Some(cmd) => cmd.execute(&None, &Vec::new(), false, self.get_root(), env.into_map()),
+            None => Ok(()),
+        }
+    }
+
+    pub fn run_post(&self, env: &Environment) -> Result<(), Fault> {
+        match &self.post {
+            Some(cmd) => cmd.execute(&None, &Vec::new(), false, self.get_root(), env.into_map()),
+            None => Ok(()),
+        }
     }
 }
 

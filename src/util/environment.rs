@@ -141,8 +141,8 @@ impl Environment {
         Ok(self)
     }
 
-    pub fn into_map(self) -> HashMap<String, String> {
-        self.0.into_iter().map(|v| (v.key, v.value)).collect()
+    pub fn into_map(&self) -> HashMap<&String, &String> {
+        self.0.iter().map(|v| (&v.key, &v.value)).collect()
     }
 
     /// Loads environment variables from a target [Ip].
@@ -235,6 +235,15 @@ impl Environment {
         self
     }
 
+    pub fn overwrite(mut self, var: EnvVar) -> Self {
+        match self.0.contains(&var) {
+            true => self.0.remove(&var),
+            false => true,
+        };
+        self.0.insert(var);
+        self
+    }
+
     pub fn iter(&self) -> Iter<'_, EnvVar> {
         self.0.iter()
     }
@@ -270,6 +279,8 @@ pub const ORBIT_DUT: &str = "ORBIT_DUT";
 pub const ORBIT_BENCH: &str = "ORBIT_BENCH";
 pub const ORBIT_TARGET: &str = "ORBIT_TARGET";
 pub const ORBIT_BLUEPRINT: &str = "ORBIT_BLUEPRINT";
+
+pub const ORBIT_IP_INDEX: &str = "ORBIT_IP_INDEX";
 
 pub const ORBIT_QUEUE: &str = "ORBIT_QUEUE";
 

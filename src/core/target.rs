@@ -219,7 +219,7 @@ pub trait Process {
         extra_args: &[String],
         verbose: bool,
         cwd: &PathBuf,
-        envs: HashMap<String, String>,
+        envs: HashMap<&String, &String>,
     ) -> Result<(), Fault> {
         // resolve the relative paths in the command and arguments defined in original configuration
         let command = match overloaded_command {

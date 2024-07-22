@@ -392,7 +392,7 @@ pub fn invoke(
     cmd: &String,
     args: &Vec<String>,
     try_again: bool,
-    envs: HashMap<String, String>,
+    envs: HashMap<&String, &String>,
 ) -> std::io::Result<std::process::Child> {
     match std::process::Command::new(cmd)
         .current_dir(cwd)

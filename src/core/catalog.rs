@@ -24,7 +24,9 @@ use std::{
     path::PathBuf,
 };
 
+use super::channel::Channel;
 use super::iparchive::ARCHIVE_EXT;
+use super::ippointer::IpPointer;
 use super::{
     pkgid::PkgPart,
     version::{AnyVersion, Version},
@@ -90,6 +92,7 @@ pub struct Catalog<'a> {
     inner: HashMap<PkgPart, IpLevel>,
     cache: Option<&'a PathBuf>,
     downloads: Option<&'a PathBuf>,
+    available: Option<HashMap<&'a str, &'a PathBuf>>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -187,14 +190,52 @@ impl IpLevel {
     /// first sought for in the cache installations, and if not found then searched
     /// for in the availability space.
     /// Note: `usable` to `false` will not check queued state
-    pub fn get(&self, check_downloads: bool, version: &AnyVersion) -> Option<&Ip> {
-        match self.get_install(version) {
-            Some(ip) => Some(ip),
-            None => match check_downloads {
-                true => self.get_download(version),
-                false => None,
+    pub fn get(
+        &self,
+        check_downloads: bool,
+        check_available: bool,
+        version: &AnyVersion,
+    ) -> Option<&Ip> {
+        let ins = self.get_install(version);
+
+        let dld = match check_downloads {
+            true => self.get_download(version),
+            false => None,
+        };
+        let ava = match check_available {
+            true => self.get_available(version),
+            false => None,
+        };
+        // keep the highest found version
+        let highest = match ins {
+            Some(i) => {
+                let mut h = i;
+                if let Some(d) = dld {
+                    if d.get_man().get_ip().get_version() > i.get_man().get_ip().get_version() {
+                        h = d;
+                    }
+                }
+                if let Some(a) = ava {
+                    if a.get_man().get_ip().get_version() > h.get_man().get_ip().get_version() {
+                        h = a;
+                    }
+                }
+                Some(h)
+            }
+            None => match dld {
+                Some(d) => {
+                    let mut h = d;
+                    if let Some(a) = ava {
+                        if a.get_man().get_ip().get_version() > h.get_man().get_ip().get_version() {
+                            h = a;
+                        }
+                    }
+                    Some(h)
+                }
+                None => ava,
             },
-        }
+        };
+        highest
     }
 
     /// Tracks what level the `manifest` came from.
@@ -249,6 +290,7 @@ impl<'a> Catalog<'a> {
             inner: HashMap::new(),
             cache: None,
             downloads: None,
+            available: None,
         }
     }
 
@@ -288,10 +330,32 @@ impl<'a> Catalog<'a> {
         }
     }
 
-    /// Searches the `path` for IP installed.
+    /// Searches the `path` for ip installed.
     pub fn installations(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
         self.cache = Some(&path);
         self.detect(path, &IpLevel::add_install, IpState::Installation)
+    }
+
+    /// Searches the `path` for ip downloaded.
+    pub fn downloads(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
+        self.downloads = Some(&path);
+        self.detect(path, &IpLevel::add_download, IpState::Downloaded)
+    }
+
+    /// Searches the `path` for ip available.
+    pub fn available(mut self, channels: HashMap<&'a str, &'a Channel>) -> Result<Self, Fault> {
+        let mut map = HashMap::new();
+        // update the availables
+        for (name, chan) in channels {
+            map.insert(name, chan.get_root());
+            self = self.detect(
+                map.get(name).unwrap(),
+                &IpLevel::add_available,
+                IpState::Available,
+            )?;
+        }
+        self.available = Some(map);
+        Ok(self)
     }
 
     pub fn set_cache_path(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
@@ -302,12 +366,6 @@ impl<'a> Catalog<'a> {
     pub fn set_downloads_path(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
         self.downloads = Some(&path);
         Ok(self)
-    }
-
-    /// Searches the `path` for IP downloaded.
-    pub fn downloads(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
-        self.downloads = Some(&path);
-        self.detect(path, &IpLevel::add_download, IpState::Downloaded)
     }
 
     pub fn inner(&self) -> &HashMap<PkgPart, IpLevel> {
@@ -338,6 +396,13 @@ impl<'a> Catalog<'a> {
                 IpState::Downloaded,
             ));
         }
+        // read from available
+        for ip in kaban.get_availability() {
+            set.insert(VersionItem::new(
+                ip.get_man().get_ip().get_version(),
+                IpState::Available,
+            ));
+        }
         let mut arr: Vec<VersionItem> = set.into_iter().collect();
         arr.sort();
         arr.reverse();
@@ -359,9 +424,9 @@ impl<'a> Catalog<'a> {
     ) -> Result<Self, Fault> {
         match lvl {
             IpState::Installation => Ip::detect_all(path, false),
-            IpState::Available => todo!("only detect for available"),
+            IpState::Available => IpPointer::detect_all(path),
             IpState::Downloaded => IpArchive::detect_all(path),
-            _ => panic!("Unknown catalog state to find"),
+            IpState::Unknown => Ok(Vec::new()),
         }?
         .into_iter()
         .for_each(

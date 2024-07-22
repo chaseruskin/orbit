@@ -184,7 +184,7 @@ impl Download {
         protocols: &HashMap<&str, &Protocol>,
         verbose: bool,
         _force: bool,
-    ) -> Result<IpSpec, Fault> {
+    ) -> Result<(IpSpec, Vec<u8>), Fault> {
         // use the user-provided queue directory or simply use a temporary directory
         let queue = match queue {
             Some(q) => {
@@ -263,10 +263,10 @@ impl Download {
         }
         // move the IP to the downloads folder
         match Self::move_to_download_dir(&queue, download_dir, spec) {
-            Ok(name) => {
+            Ok((name, bytes)) => {
                 // clean up temporary directory
                 fs::remove_dir_all(queue)?;
-                Ok(name)
+                Ok((name, bytes))
             }
             Err(e) => {
                 fs::remove_dir_all(queue)?;
@@ -279,7 +279,7 @@ impl Download {
         queue: &PathBuf,
         downloads: &PathBuf,
         spec: Option<&PartialIpSpec>,
-    ) -> Result<IpSpec, Fault> {
+    ) -> Result<(IpSpec, Vec<u8>), Fault> {
         // code is in the queue now, move it to the downloads/ folder
 
         let entries = manifest::find_file(&queue, IP_MANIFEST_FILE, false)?;
@@ -335,8 +335,8 @@ impl Download {
                             temp.get_uuid(),
                         );
                         let full_download_path = downloads.join(&download_slot_name.as_ref());
-                        IpArchive::write(&temp, &full_download_path)?;
-                        return Ok(found_ip_spec);
+                        let bytes = IpArchive::write(&temp, &full_download_path)?;
+                        return Ok((found_ip_spec, bytes));
                     }
                 }
                 Err(_) => {}

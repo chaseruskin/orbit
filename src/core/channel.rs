@@ -50,6 +50,10 @@ impl Channel {
         &self.name
     }
 
+    pub fn get_root(&self) -> &PathBuf {
+        self.root.as_ref().unwrap()
+    }
+
     /// Displays a plugin's information in a single line for quick glance.
     pub fn quick_info(&self) -> String {
         format!(

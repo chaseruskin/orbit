@@ -56,7 +56,6 @@ use crate::core::source::Source;
 use crate::core::swap::StrSwapTable;
 use crate::core::version;
 use crate::error::Error;
-use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
 use crate::util::filesystem;
@@ -140,10 +139,12 @@ impl Subcommand<Context> for Install {
             Catalog::new()
                 .set_cache_path(c.get_cache_path())?
                 .downloads(c.get_downloads_path())?
+                .available(c.get_config().get_channels())?
         } else {
             Catalog::new()
                 .installations(c.get_cache_path())?
                 .downloads(c.get_downloads_path())?
+                .available(c.get_config().get_channels())?
         };
 
         let mut provided_spec = None;
@@ -182,14 +183,14 @@ impl Subcommand<Context> for Install {
                         {
                             ip
                         } else {
-                            Err(AnyError(format!(
+                            Err(Error::Custom(format!(
                                 "could not find ip \"{}\" at path \"{}\"",
                                 entry,
                                 filesystem::into_std_str(search_dir)
                             )))?
                         }
                     }
-                    false => Err(AnyError(format!(
+                    false => Err(Error::Custom(format!(
                         "path \"{}\" does not contain an Orbit.toml file",
                         filesystem::into_std_str(search_dir)
                     )))?,
@@ -197,7 +198,7 @@ impl Subcommand<Context> for Install {
                 // make sure there is only 1 ip to load
                 None => match search_path.exists() {
                     true => Ip::load(search_dir.to_path_buf(), true)?,
-                    false => Err(AnyError(format!(
+                    false => Err(Error::Custom(format!(
                         "path \"{}\" does not contain an Orbit.toml file",
                         filesystem::into_std_str(search_dir)
                     )))?,
@@ -241,7 +242,8 @@ impl Subcommand<Context> for Install {
             if let Some(spec) = &determined_spec {
                 // println!("determined: {}", spec);
                 if let Some(lvl) = catalog.inner().get(spec.get_name()) {
-                    if let Some(slot) = lvl.get(true, spec.get_version()) {
+                    if let Some(slot) = lvl.get(true, true, spec.get_version()) {
+                        // extract as download
                         if let Some(bytes) = slot.get_mapping().as_bytes() {
                             // println!("{} {}", "using archive", slot.get_man().get_ip().into_ip_spec());
                             // place the dependency into a temporary directory
@@ -260,17 +262,34 @@ impl Subcommand<Context> for Install {
                                 }
                             };
                             Some(unzipped_ip)
+                        // follow pointer to download an archive
+                        } else if slot.get_mapping().is_pointer() {
+                            match slot.get_man().get_ip().get_source() {
+                                Some(sour) => Some(self.download_target_from_source(
+                                    c,
+                                    sour,
+                                    slot.get_man().get_ip().into_ip_spec(),
+                                )?),
+                                None => {
+                                    return Err(Error::Custom(format!(
+                                        "ip requires source to download"
+                                    )))?
+                                }
+                            }
+                        // use the physical/local location of the ip? (does this ever occur?)
                         } else {
                             Some(Ip::load(slot.get_root().clone(), false)?)
                         }
                     } else {
-                        return Err(AnyError(format!(
+                        return Err(Error::Custom(format!(
                             "ip {} does not exist in the catalog",
                             spec
                         )))?;
                     }
                 } else {
-                    return Err(AnyError(format!("failed to find an ip in the catalog")))?;
+                    return Err(Error::Custom(format!(
+                        "failed to find an ip in the catalog"
+                    )))?;
                 }
             // use the local IP if the ip spec was not provided
             } else {
@@ -283,7 +302,7 @@ impl Subcommand<Context> for Install {
         // println!("{:?},", target);
         let target = match target {
             Some(t) => t,
-            None => return Err(AnyError(format!("failed to find an ip to install")))?,
+            None => return Err(Error::Custom(format!("failed to find an ip to install")))?,
         };
 
         // println!("{:?}", target.get_uuid());
@@ -328,7 +347,7 @@ impl Subcommand<Context> for Install {
                     );
                     return Ok(());
                 } else if matches.len() > 0 {
-                    return Err(AnyError(format!(
+                    return Err(Error::Custom(format!(
                         "ip {} already exists in cache under different checksum",
                         target.get_man().get_ip().into_ip_spec()
                     )))?;
@@ -399,7 +418,7 @@ impl Install {
             .tag(self.tag.clone());
 
         // fetch from the internet
-        Download::download(
+        let (name, _bytes) = Download::download(
             &mut vtable,
             self.ip.as_ref(),
             &target_source,
@@ -408,7 +427,50 @@ impl Install {
             &protocols,
             self.verbose,
             self.force,
-        )
+        )?;
+        Ok(name)
+    }
+
+    fn download_target_from_source(
+        &self,
+        c: &Context,
+        source: &Source,
+        spec: IpSpec,
+    ) -> Result<Ip, Fault> {
+        let env = Environment::new()
+            // read config.toml for setting any env variables
+            .from_config(c.get_config())?;
+        let mut vtable = StrSwapTable::new().load_environment(&env)?;
+        env.initialize();
+
+        let protocols: ProtocolMap = c.get_config().get_protocols();
+
+        // fetch from the internet
+        let (_name, bytes) = Download::download(
+            &mut vtable,
+            Some(&spec.to_partial_ip_spec()),
+            &source,
+            None,
+            c.get_downloads_path(),
+            &protocols,
+            self.verbose,
+            self.force,
+        )?;
+
+        let dir = tempfile::tempdir()?.into_path();
+        if let Err(e) = IpArchive::extract(&bytes, &dir) {
+            fs::remove_dir_all(dir)?;
+            return Err(e);
+        }
+        // load the IP
+        let unzipped_ip = match Ip::load(dir.clone(), false) {
+            Ok(x) => x,
+            Err(e) => {
+                fs::remove_dir_all(dir)?;
+                return Err(e);
+            }
+        };
+        Ok(unzipped_ip)
     }
 
     pub fn is_checksum_good(root: &PathBuf) -> bool {

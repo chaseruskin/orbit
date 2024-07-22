@@ -15,8 +15,11 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+use crate::core::catalog::Catalog;
 use crate::core::channel::Channel;
 use crate::core::context::Context;
+use crate::core::ip::Ip;
+use crate::error::{Error, Hint};
 
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
@@ -56,6 +59,25 @@ impl Subcommand<Context> for Publish {
             );
             return Ok(());
         }
+
+        // verify running from an ip directory and enter ip's root directory
+        c.jump_to_working_ip()?;
+
+        let local_ip = Ip::load(c.get_ip_path().unwrap().to_path_buf(), true)?;
+
+        // verify the version of the ip does not already exist at the available level
+        let _catalog = Catalog::new().available(c.get_config().get_channels())?;
+
+        // verify the lock file is generated and up to date
+        if local_ip.can_use_lock() == false {
+            return Err(Box::new(Error::PublishMissingLockfile(Hint::MakeLock)));
+        }
+
+        // verify the ip has a source
+        if local_ip.get_man().get_ip().get_source().is_none() {
+            return Err(Box::new(Error::PublishMissingSource));
+        }
+
         // by default, do not make any changes to the codebase/project (only print out diagnostics)
         todo!("verify the ip manifest is valid");
         // todo!("verify the lock file is generated and up to date");

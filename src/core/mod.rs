@@ -24,6 +24,7 @@ pub mod context;
 pub mod fileset;
 pub mod ip;
 pub mod iparchive;
+pub mod ippointer;
 pub mod lang;
 pub mod lockfile;
 pub mod manifest;

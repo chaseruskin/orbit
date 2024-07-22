@@ -183,8 +183,7 @@ impl IpArchive {
             }
         };
         // re-perform a write
-        Self::write(&extracted_ip, &path)?;
-        let repaired_bytes = fs::read(&path)?;
+        let repaired_bytes = Self::write(&extracted_ip, &path)?;
         Ok(repaired_bytes)
     }
 
@@ -209,7 +208,7 @@ impl IpArchive {
     }
 
     /// Stores the project's state and additional metadata into a .zip archive.
-    pub fn write(ip: &Ip, dest: &PathBuf) -> Result<(), Fault> {
+    pub fn write(ip: &Ip, dest: &PathBuf) -> Result<Vec<u8>, Fault> {
         // compress the ip package
         compress::write_zip_dir(ip.get_root(), &dest)?;
         // read back the bytes
@@ -250,7 +249,9 @@ impl IpArchive {
         // write the entire compressed file back
         file.write(&archive_bytes)?;
 
-        Ok(())
+        let mut all_bytes = header_bytes;
+        all_bytes.extend(archive_bytes);
+        Ok(all_bytes)
     }
 
     /// Detects all Ip found as archives.

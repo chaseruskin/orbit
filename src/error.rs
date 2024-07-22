@@ -118,6 +118,10 @@ pub enum Error {
     EntryUnknownIp(IpSpec),
     #[error("cannot disambiguate between {0} ips downloaded{1}")]
     DownloadFoundManyIps(usize, Hint),
+    #[error("lockfile is missing or out of date{0}")]
+    PublishMissingLockfile(Hint),
+    #[error("the ip manifest's source field is required to publish, but is undefined")]
+    PublishMissingSource,
 }
 
 #[derive(Debug, PartialEq)]
@@ -167,6 +171,7 @@ pub enum Hint {
     RootSpecify,
     IncludeAllInPlan,
     SpecifyIpSpecForDownload,
+    MakeLock,
 }
 
 impl Display for Hint {
@@ -203,6 +208,7 @@ impl Display for Hint {
             Self::SpecifyIpSpecForDownload => {
                 "consider providing the ip specification for the requested ip to download"
             }
+            Self::MakeLock => "use `orbit lock` to generate the latest lockfile for this ip",
         };
         write!(
             f,

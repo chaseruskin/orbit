@@ -54,7 +54,8 @@ impl Subcommand<Context> for View {
         // collect all manifests available (load catalog)
         let catalog = Catalog::new()
             .installations(c.get_cache_path())?
-            .downloads(c.get_downloads_path())?;
+            .downloads(c.get_downloads_path())?
+            .available(c.get_config().get_channels())?;
 
         let dev_ip: Option<Result<Ip, Fault>> = {
             match Context::find_ip_path(&current_dir().unwrap()) {
@@ -77,7 +78,11 @@ impl Subcommand<Context> for View {
                     if let Some(slot) = lvl.get_download(spec.get_version()) {
                         slot
                     } else {
-                        return Err(Error::IpNotFoundInCache(spec.to_string()))?;
+                        if let Some(slot) = lvl.get_available(spec.get_version()) {
+                            slot
+                        } else {
+                            return Err(Error::IpNotFoundInCache(spec.to_string()))?;
+                        }
                     }
                 }
             } else {

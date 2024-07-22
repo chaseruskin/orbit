@@ -24,6 +24,7 @@ use crate::util::anyerror::Fault;
 use std::path::PathBuf;
 
 use super::iparchive::IpArchive;
+use super::ippointer::IpPointer;
 use super::lang;
 use super::lang::LangIdentifier;
 use super::lang::{LangUnit, Language};
@@ -52,6 +53,7 @@ pub enum Mapping {
     Physical,
     Virtual(Vec<u8>),
     Relative,
+    Imaginary,
 }
 
 impl Mapping {
@@ -65,6 +67,13 @@ impl Mapping {
     pub fn is_relative(&self) -> bool {
         match &self {
             Self::Relative => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_pointer(&self) -> bool {
+        match &self {
+            Self::Imaginary => true,
             _ => false,
         }
     }
@@ -88,6 +97,19 @@ pub struct Ip {
     lock: LockFile,
     /// The UUID for the [Ip].
     uuid: Uuid,
+}
+
+impl From<IpPointer> for Ip {
+    fn from(value: IpPointer) -> Self {
+        let man = value.decouple();
+        Self {
+            mapping: Mapping::Imaginary,
+            root: PathBuf::new(),
+            data: man,
+            lock: LockFile::new(),
+            uuid: Uuid::new(),
+        }
+    }
 }
 
 impl From<IpArchive> for Ip {

@@ -7,8 +7,7 @@ keywords = ["hdl", "package-manager", "build-tool", "verilog", "vhdl"]
 repository = "https://github.com/cdotrus/orbit"
 documentation = "https://cdotrus.github.io/orbit"
 edition = "2021"
-license-file = "LICENSE"
-license = "GPL-3.0+"
+license = "GPL-3.0-or-later"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

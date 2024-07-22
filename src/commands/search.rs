@@ -34,6 +34,7 @@ pub struct Search {
     ip: Option<PkgPart>,
     cached: bool,
     downloaded: bool,
+    available: bool,
     keywords: Vec<String>,
     limit: Option<usize>,
     hard_match: bool,
@@ -45,6 +46,7 @@ impl Subcommand<Context> for Search {
         Ok(Search {
             downloaded: cli.check(Arg::flag("download").switch('d'))?,
             cached: cli.check(Arg::flag("install").switch('i'))?,
+            available: cli.check(Arg::flag("available").switch('a'))?,
             hard_match: cli.check(Arg::flag("match"))?,
             limit: cli.get(Arg::option("limit").value("num"))?,
             keywords: cli
@@ -61,7 +63,8 @@ impl Subcommand<Context> for Search {
         // collect downloaded IP
         catalog = catalog.downloads(c.get_downloads_path())?;
         // collect available IP
-        // @todo
+        catalog = catalog.available(c.get_config().get_channels())?;
+
         self.run(&catalog)
     }
 }
@@ -75,7 +78,7 @@ impl Search {
             .into_iter()
             // filter by name if user entered a pkgid to search
             .filter(|(key, iplvl)| {
-                if let Some(prj) = iplvl.get(true, &AnyVersion::Latest) {
+                if let Some(prj) = iplvl.get(true, true, &AnyVersion::Latest) {
                     match self.hard_match {
                         true => {
                             let name_match = match &self.ip {
@@ -135,7 +138,13 @@ impl Search {
 
         println!(
             "{}",
-            Self::fmt_table(tree, self.limit, self.cached, self.downloaded)
+            Self::fmt_table(
+                tree,
+                self.limit,
+                self.cached,
+                self.downloaded,
+                self.available
+            )
         );
         Ok(())
     }
@@ -145,6 +154,7 @@ impl Search {
         limit: Option<usize>,
         cached: bool,
         downloaded: bool,
+        available: bool,
     ) -> String {
         //         let header = format!(
         //             "\
@@ -156,7 +166,7 @@ impl Search {
         let mut body = String::new();
         let mut index = 0;
 
-        let default = !(cached || downloaded);
+        let default = !(cached || downloaded || available);
 
         // note: There is definitely a nicer way to handle all of this logic... but this works for now.
 
@@ -165,23 +175,49 @@ impl Search {
             let mut is_update_available = false;
             // return the highest version (return installation when they are equal in downloads and cache)
             let ip = {
-                let dld = status.get_download(&AnyVersion::Latest);
                 let ins = status.get_install(&AnyVersion::Latest);
-                if dld.is_some() && ins.is_some() {
-                    // an update is possible if the downloads have a higher version than install
-                    is_update_available = dld.unwrap().get_man().get_ip().get_version()
-                        > ins.unwrap().get_man().get_ip().get_version()
-                        && (default == true || cached == true);
-                    // always return the installation version if one is possible
-                    if default == true || cached == true {
-                        ins
-                    } else {
-                        dld
+                let dld = status.get_download(&AnyVersion::Latest);
+                let ava = status.get_available(&AnyVersion::Latest);
+                // prioritize who display
+                if let Some(installed_ip) = ins {
+                    // check if download or available have a later version
+                    if let Some(download_ip) = dld {
+                        if default || cached {
+                            is_update_available = download_ip.get_man().get_ip().get_version()
+                                > installed_ip.get_man().get_ip().get_version();
+                        }
                     }
-                } else if dld.is_none() {
-                    ins
+                    // if update is not coming from download, see if it comes from available
+                    if is_update_available == false {
+                        if let Some(avail_ip) = ava {
+                            if default || cached || downloaded && dld.is_some() {
+                                is_update_available = avail_ip.get_man().get_ip().get_version()
+                                    > installed_ip.get_man().get_ip().get_version();
+                            }
+                        }
+                    }
+
+                    // determine who to display
+                    match default || cached {
+                        true => Some(installed_ip),
+                        false => match downloaded {
+                            true => dld,
+                            false => ava,
+                        },
+                    }
+                } else if let Some(download_ip) = dld {
+                    if let Some(avail_ip) = ava {
+                        if default || downloaded {
+                            is_update_available = avail_ip.get_man().get_ip().get_version()
+                                > download_ip.get_man().get_ip().get_version();
+                        }
+                    }
+                    match default || downloaded {
+                        true => Some(download_ip),
+                        false => ava,
+                    }
                 } else {
-                    dld
+                    ava
                 }
             };
             // ip should NOT be empty but skip if it is
@@ -202,6 +238,7 @@ impl Search {
             let display_to_screen = match ip.get_mapping() {
                 Mapping::Physical => default == true || cached == true,
                 Mapping::Virtual(_) => default == true || downloaded == true,
+                Mapping::Imaginary => default == true || available == true,
                 Mapping::Relative => false,
             };
             if display_to_screen == false {
@@ -221,9 +258,8 @@ impl Search {
                 match ip.get_mapping() {
                     Mapping::Physical => "install",
                     Mapping::Virtual(_) => "download",
+                    Mapping::Imaginary => "available",
                     Mapping::Relative => "local",
-                    // Mapping::Imaginary => "Available",
-                    // _ => ""
                 },
             ));
         }

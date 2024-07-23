@@ -205,14 +205,7 @@
 </blockquote>
 <p>Every configuration file consists of the following sections:</p>
 <ul>
-<li><a href="#the-include-field">include</a> - Lists other <code>config.toml</code> files to process.</li>
-<li><a href="#the-language-section">[language]</a> - The language settings.
-<ul>
-<li><a href="#the-vhdl-field">vhdl</a> - Enable/disable VHDL support.</li>
-<li><a href="#the-verilog-field">verilog</a> - Enable/disable Verilog support.</li>
-<li><a href="#the-systemverilog-field">systemverilog</a> - Enable/disable SystemVerilog support.</li>
-</ul>
-</li>
+<li><a href="#the-include-field">include</a> - Lists other <code>config.toml</code> files to process..</li>
 <li><a href="#the-general-section">[general]</a> - The general settings.
 <ul>
 <li><a href="#the-target-dir-field">target-dir</a> - Default target directory.</li>
@@ -270,24 +263,6 @@
     "profiles/p2/config.toml",
     "channels/c1/config.toml"
 ]
-</code></pre>
-<h3 id="the-language-section"><a class="header" href="#the-language-section">The <code>[language]</code> section</a></h3>
-<h3 id="the-vhdl-field"><a class="header" href="#the-vhdl-field">The <code>vhdl</code> field</a></h3>
-<p>Enable or disable VHDL language support. Disabling this field will prevent Orbit from recognizing files with .vhd and .vhdl extensions. If this field is omitted, the default value is <code>true</code>.</p>
-<pre><code class="language-toml">[language]
-vhdl = true
-</code></pre>
-<h3 id="the-verilog-field"><a class="header" href="#the-verilog-field">The <code>verilog</code> field</a></h3>
-<p>Enable or disable Verilog language support. Disabling this field will prevent Orbit from recognizing files with .v and .vh extensions. If this field is omitted, the default value is <code>true</code>.</p>
-<pre><code class="language-toml">[language]
-# ...
-verilog = true
-</code></pre>
-<h3 id="the-systemverilog-field"><a class="header" href="#the-systemverilog-field">The <code>systemverilog</code> field</a></h3>
-<p>Enable or disable SystemVerilog language support. Disabling this field will prevent Orbit from recognizing files with .sv and .svh extensions. If this field is omitted, the default value is <code>true</code>.</p>
-<pre><code class="language-toml">[language]
-# ...
-systemverilog = true
 </code></pre>
 <h3 id="the-general-section"><a class="header" href="#the-general-section">The <code>[general]</code> section</a></h3>
 <h3 id="the-target-dir-field"><a class="header" href="#the-target-dir-field">The <code>target-dir</code> field</a></h3>

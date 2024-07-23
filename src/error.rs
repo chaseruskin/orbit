@@ -142,6 +142,8 @@ pub enum Error {
     PublishRelativeDepExists(PkgPart),
     #[error("failed to pass publish checkpoint: {0}")]
     PublishFailedCheckpoint(LastError),
+    #[error("cyclic dependency with local ip \"{0}\"")]
+    CyclicDependencyIp(PkgPart),
 }
 
 #[derive(Debug, PartialEq)]

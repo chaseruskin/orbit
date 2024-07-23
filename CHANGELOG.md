@@ -40,6 +40,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - renames `orbit launch` to `orbit publish` in favor of clearer intentions behind the command
 
 ### Fixes
+- prevents user from naming local ip as dependency to prevent stack overflow
 - resolves bug with protected files not being detected during hdl source code analysis as a cached ip or relative ip dependency
 - resolves bug where string swapping would not occur on source url if using a custom protocol
 

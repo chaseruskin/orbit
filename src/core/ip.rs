@@ -246,6 +246,7 @@ impl Ip {
             Ok(_) => (),
             Err(e) => return Err(Error::LockfileLoadFailed(LastError(e.to_string())))?,
         }
+        // check to make sure we are not the same package
         Ok(relative_ip)
     }
 

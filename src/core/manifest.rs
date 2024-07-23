@@ -232,6 +232,9 @@ impl FromFile for Manifest {
             )))?;
         }
 
+        let local_name = man.get_ip().get_name().clone();
+        let local_version = man.get_ip().get_version().clone();
+
         // verify contents of manifest
         for (name, dep) in man.get_deps_list_mut(true, false) {
             if dep.is_relative() == true {
@@ -258,6 +261,10 @@ impl FromFile for Manifest {
                     }
                     dep.relative_ip = Some(ip);
                 }
+            }
+            // verify there are no cycles in the ip dependency graph
+            if name == &local_name && version::is_compatible(dep.get_version(), &local_version) {
+                return Err(Error::CyclicDependencyIp(local_name))?;
             }
         }
         Ok(man)

@@ -291,7 +291,7 @@ pub mod v1 {
                     None
                 } else {
                     Some(
-                        Ip::read_checksum_proof(ip.get_root())
+                        Ip::read_cache_checksum(ip.get_root())
                             .unwrap_or(Ip::compute_checksum(ip.get_root())),
                     )
                 },

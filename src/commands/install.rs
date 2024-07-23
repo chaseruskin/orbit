@@ -49,7 +49,6 @@ use crate::core::ip::PartialIpSpec;
 use crate::core::iparchive::IpArchive;
 use crate::core::lockfile::LockEntry;
 use crate::core::manifest::IP_MANIFEST_FILE;
-use crate::core::manifest::ORBIT_SUM_FILE;
 use crate::core::protocol::Protocol;
 use crate::core::protocol::ProtocolError;
 use crate::core::source::Source;
@@ -475,7 +474,7 @@ impl Install {
 
     pub fn is_checksum_good(root: &PathBuf) -> bool {
         // verify the checksum
-        if let Some(sha) = Ip::read_checksum_proof(&root) {
+        if let Some(sha) = Ip::read_cache_checksum(&root) {
             // make sure the sums match expected
             sha == Ip::compute_checksum(&root)
         // failing to compute a checksum
@@ -544,11 +543,12 @@ impl Install {
         // clean up the temporary directory ourself
         fs::remove_dir_all(dest)?;
 
+        let installed_ip = Ip::load(cache_slot, false)?;
+
         // write the checksum to the directory (this file is excluded from auditing)
-        std::fs::write(
-            &cache_slot.join(ORBIT_SUM_FILE),
-            checksum.to_string().as_bytes(),
-        )?;
+        installed_ip.write_cache_checksum(&checksum)?;
+        // write the metadata
+        installed_ip.write_cache_metadata()?;
 
         Ok(true)
     }

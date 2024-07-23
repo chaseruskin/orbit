@@ -31,7 +31,6 @@ use crate::core::catalog::Catalog;
 use crate::core::ip::Ip;
 use crate::core::ip::IpSpec;
 use crate::core::lockfile::{LockEntry, LockFile};
-use crate::core::manifest;
 use crate::core::version::AnyVersion;
 
 use super::fileset;
@@ -80,8 +79,7 @@ fn graph_ip<'a>(
     let mut processing = vec![(t, root)];
 
     // add root's identifiers and parse files according to the correct language settings
-    let mut unit_map =
-        Ip::collect_units(true, root.get_root(), mode, false, root.into_public_list())?;
+    let mut unit_map = root.collect_units(true, mode, false)?;
 
     let mut is_root: bool = true;
 
@@ -103,13 +101,7 @@ fn graph_ip<'a>(
                                 existing_node.index()
                             } else {
                                 // check if identifiers are already taken in graph
-                                let units = Ip::collect_units(
-                                    false,
-                                    relative_ip.get_root(),
-                                    mode,
-                                    true,
-                                    relative_ip.into_public_list(),
-                                )?;
+                                let units = relative_ip.collect_units(false, mode, true)?;
                                 if let Some(dupe) =
                                     units.iter().find(|(key, _)| unit_map.contains_key(key))
                                 {
@@ -184,13 +176,7 @@ fn graph_ip<'a>(
                                         existing_node.index()
                                     } else {
                                         // check if identifiers are already taken in graph
-                                        let units = Ip::collect_units(
-                                            false,
-                                            cached_ip.get_root(),
-                                            mode,
-                                            true,
-                                            cached_ip.into_public_list(),
-                                        )?;
+                                        let units = cached_ip.collect_units(false, mode, true)?;
                                         let dst = if let Some(dupe) =
                                             units.iter().find(|(key, _)| unit_map.contains_key(key))
                                         {
@@ -358,10 +344,14 @@ pub fn build_ip_file_list<'a>(
     let mut files = Vec::new();
     ip_graph.get_map().iter().for_each(|(_, ip)| {
         let inner_ip = ip.as_ref().as_ip();
-        let pub_list = inner_ip.into_public_list();
+        let non_private_list = inner_ip.into_non_private_list();
         crate::util::filesystem::gather_current_files(&inner_ip.get_root(), false)
             .into_iter()
-            .filter(|f| working_ip == inner_ip || pub_list.is_included(f.as_ref()))
+            .filter(|f| {
+                working_ip == inner_ip
+                    || inner_ip.get_mapping().is_relative()
+                    || non_private_list.is_included(f.as_ref())
+            })
             .filter(|f| {
                 (fileset::is_vhdl(f) && mode.supports_vhdl())
                     || (fileset::is_verilog(f) && mode.supports_verilog())
@@ -546,11 +536,9 @@ fn install_dst(source_ip: &Ip, root: &PathBuf, mapping: &HashMap<LangIdentifier,
     // cached_ip.write_metadata().unwrap();
 
     // write the new checksum file
-    std::fs::write(
-        &cached_ip.get_root().join(manifest::ORBIT_SUM_FILE),
-        sum.to_string().as_bytes(),
-    )
-    .unwrap();
+    cached_ip.write_cache_checksum(&sum).unwrap();
+    // write the metadata
+    cached_ip.write_cache_metadata().unwrap();
 
     cached_ip
 }

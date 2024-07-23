@@ -354,13 +354,7 @@ impl Get {
         lang: &Language,
         is_local: bool,
     ) -> Result<Option<LangUnit>, Fault> {
-        let mut files = Ip::collect_units(
-            true,
-            ip.get_root(),
-            lang,
-            is_local == false,
-            ip.into_public_list(),
-        )?;
+        let mut files = ip.collect_units(true, lang, is_local == false)?;
         let result = files.remove(name);
         Ok(result)
     }

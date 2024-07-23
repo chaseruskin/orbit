@@ -86,6 +86,13 @@ impl Mapping {
     }
 }
 
+use serde_derive::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+pub struct Metadata {
+    protected: Vec<String>,
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Ip {
     mapping: Mapping,
@@ -146,6 +153,28 @@ impl Ip {
         PublicList::new(&self.get_root(), self.get_man().get_ip().get_publics()).unwrap()
     }
 
+    /// Generates a list of files that are known to either be public or protected.
+    pub fn into_non_private_list(&self) -> PublicList {
+        let meta = Ip::read_cache_metadata(self.get_root());
+        let mut list = match meta {
+            Some(m) => match m.protected.len() {
+                0 => None,
+                _ => Some(m.protected),
+            },
+            None => None,
+        };
+        if let Some(public) = self.get_man().get_ip().get_publics() {
+            list = match list {
+                Some(mut l) => {
+                    l.extend(public.clone());
+                    Some(l)
+                }
+                None => Some(public.clone()),
+            };
+        }
+        PublicList::new(&self.get_root(), &list).unwrap()
+    }
+
     pub fn get_root(&self) -> &PathBuf {
         &self.root
     }
@@ -170,12 +199,17 @@ impl Ip {
     /// non physical mappings of an ip.
     pub fn get_checksum(&self) -> Option<Sha256Hash> {
         match self.get_mapping() {
-            Mapping::Physical => match Ip::read_checksum_proof(&self.get_root()) {
+            Mapping::Physical => match Ip::read_cache_checksum(&self.get_root()) {
                 Some(sum) => Some(sum),
                 None => Some(Ip::compute_checksum(&self.get_root())),
             },
             _ => None,
         }
+    }
+
+    /// Gets the protected files listed in the .orbit-metadata file.
+    pub fn get_protected_files(&self) -> Option<Vec<String>> {
+        todo!()
     }
 
     pub fn check_illegal_files(root: &PathBuf) -> Result<(), Fault> {
@@ -341,15 +375,10 @@ impl Ip {
             return lut;
         }
         // @todo: read units from metadata to speed up results
-        let units = Self::collect_units(
-            true,
-            self.get_root(),
-            mode,
-            self.has_public_list(),
-            self.into_public_list(),
-        )
-        .unwrap();
-        let checksum = Ip::read_checksum_proof(self.get_root()).unwrap();
+        let units = self
+            .collect_units(true, mode, self.has_public_list())
+            .unwrap();
+        let checksum = Ip::read_cache_checksum(self.get_root()).unwrap();
 
         units.into_iter().for_each(|(key, _)| {
             lut.insert(
@@ -435,11 +464,11 @@ impl Ip {
         checksum
     }
 
-    /// Gets the already calculated checksum from an installed IP from [ORBIT_SUM_FILE].
+    /// Gets the already calculated checksum from an installed ip from [ORBIT_SUM_FILE].
     ///
     /// Returns `None` if the file does not exist, is unable to read into a string, or
     /// if the sha cannot be parsed.
-    pub fn read_checksum_proof(dir: &PathBuf) -> Option<Sha256Hash> {
+    pub fn read_cache_checksum(dir: &PathBuf) -> Option<Sha256Hash> {
         let sum_file = dir.join(ORBIT_SUM_FILE);
         if sum_file.exists() == false {
             None
@@ -452,6 +481,52 @@ impl Ip {
                 Err(_) => None,
             }
         }
+    }
+
+    /// Gets the already cached internal metadata for the install ip from [ORBIT_METADATA_FILE].
+    pub fn read_cache_metadata(dir: &PathBuf) -> Option<Metadata> {
+        let meta_file = dir.join(ORBIT_METADATA_FILE);
+        if meta_file.exists() == false {
+            None
+        } else {
+            match std::fs::read_to_string(&meta_file) {
+                Ok(text) => match serde_json::from_str(&text) {
+                    Ok(data) => Some(data),
+                    Err(_) => None,
+                },
+                Err(_) => None,
+            }
+        }
+    }
+
+    pub fn write_cache_checksum(&self, sum: &Sha256Hash) -> Result<(), Fault> {
+        let path = self.get_root().join(manifest::ORBIT_SUM_FILE);
+        std::fs::write(&path, sum.to_string().as_bytes())?;
+        Ok(())
+    }
+
+    pub fn write_cache_metadata(&self) -> Result<(), Fault> {
+        // generate the unit map
+        let umap = self.collect_units(false, &Language::default(), true)?;
+        let protected: Vec<String> = umap
+            .iter()
+            .filter(|(_, v)| v.get_visibility().is_protected())
+            .map(|(_, v)| {
+                filesystem::into_std_str(filesystem::remove_base(
+                    self.get_root(),
+                    &PathBuf::from(v.get_source_file()),
+                ))
+            })
+            .collect();
+
+        let meta = Metadata {
+            protected: protected,
+        };
+
+        let serialized = serde_json::to_string(&meta)?;
+        let path = self.get_root().join(manifest::ORBIT_METADATA_FILE);
+        std::fs::write(&path, serialized)?;
+        Ok(())
     }
 
     /// Caches the result of collecting all the primary design units for the given package.
@@ -479,14 +554,15 @@ impl Ip {
     /// If the manifest has an toml entry for `units` and `force` is set to `false`,
     /// then it will return that list rather than go through files.
     pub fn collect_units(
+        &self,
         force: bool,
-        dir: &PathBuf,
         lang_mode: &Language,
         hide_private: bool,
-        public_list: PublicList,
     ) -> Result<HashMap<LangIdentifier, LangUnit>, CodeFault> {
+        let dir = self.get_root();
+        let public_list = self.into_public_list();
         // try to read from metadata file
-        match (force == false) && Self::read_units_from_metadata(&dir).is_some() {
+        match force == false && Self::read_units_from_metadata(&dir).is_some() {
             // use precomputed result
             true => Ok(Self::read_units_from_metadata(&dir).unwrap()),
             false => {

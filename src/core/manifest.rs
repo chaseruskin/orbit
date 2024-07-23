@@ -178,7 +178,6 @@ impl<'de> serde::Deserialize<'de> for Dependency {
 type Dependencies = HashMap<IpName, Dependency>;
 
 pub const IP_MANIFEST_FILE: &str = "Orbit.toml";
-// pub const IP_MANIFEST_PATTERN_FILE : &str = "Orbit-*.toml";
 pub const ORBIT_SUM_FILE: &str = ".orbit-checksum";
 pub const ORBIT_METADATA_FILE: &str = ".orbit-metadata";
 

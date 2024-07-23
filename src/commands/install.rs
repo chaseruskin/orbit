@@ -35,6 +35,7 @@
 //!
 
 use super::plan::Plan;
+use super::publish::Publish;
 use crate::commands::download::Download;
 use crate::commands::download::ProtocolMap;
 use crate::commands::helps::install;
@@ -47,6 +48,7 @@ use crate::core::ip::Ip;
 use crate::core::ip::IpSpec;
 use crate::core::ip::PartialIpSpec;
 use crate::core::iparchive::IpArchive;
+use crate::core::lang::Language;
 use crate::core::lockfile::LockEntry;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::protocol::Protocol;
@@ -55,6 +57,8 @@ use crate::core::source::Source;
 use crate::core::swap::StrSwapTable;
 use crate::core::version;
 use crate::error::Error;
+use crate::error::Hint;
+use crate::error::LastError;
 use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
 use crate::util::filesystem;
@@ -354,47 +358,56 @@ impl Subcommand<Context> for Install {
             }
         }
 
-        // @MARK: check for when there are multiple uuids that could potentially be for this ip
-
-        // this code is only ran if the lock file matches the manifest and we aren't force to recompute
-        if target.can_use_lock() == true && self.force == false {
-            println!("info: {}", "reading dependencies from lockfile ...");
-            let env = Environment::new()
-                // read config.toml for setting any env variables
-                .from_config(c.get_config())?;
-            let vtable = StrSwapTable::new().load_environment(&env)?;
-
-            let le = LockEntry::from((&target, true));
-
-            let lf = target.get_lock().keep_dev_dep_entries(&target, self.all);
-
-            // verify the ip has no relative ip's listed in manifest
-            if target.get_man().has_relative_deps() == true {
-                return Err(Error::IpHasRelativeDependencies)?;
-            }
-
-            plan::download_missing_deps(
-                vtable,
-                &lf,
-                &le,
-                &catalog,
-                &c.get_config().get_protocols(),
-            )?;
-            // recollect the queued items to update the catalog
-            catalog = catalog.downloads(c.get_downloads_path())?;
-
-            plan::install_missing_deps(&lf, &le, &catalog)?;
-            // recollect the installations and queued items to update the catalog
+        // now load the installations if previously not loaded
+        if self.force == true {
             catalog = catalog.installations(c.get_cache_path())?;
         }
 
-        // @MARK: may be an issue and should error if trying to install with an out-of-date lockfile
-        // generate lock file if it is missing or out of date
-        if target.lock_exists() == false || target.can_use_lock() == false {
-            // build entire ip graph and resolve with dynamic symbol transformation
-            let ip_graph = algo::compute_final_ip_graph(&target, &catalog, &c.get_languages())?;
-            Plan::write_lockfile(&target, &ip_graph, true)?;
-        }
+        // perform a series of checks on this ip
+        catalog = Self::run_ip_checkpoints(&target, catalog, self.force, &c, self.all)?;
+
+        // @MARK: check for when there are multiple uuids that could potentially be for this ip
+
+        // this code is only ran if the lock file matches the manifest and we aren't force to recompute
+        // if target.can_use_lock() == true && self.force == false {
+        //     println!("info: {}", "reading dependencies from lockfile ...");
+        //     let env = Environment::new()
+        //         .from_config(c.get_config())?
+        //         .from_ip(&target)?;
+
+        //     let vtable = StrSwapTable::new().load_environment(&env)?;
+
+        //     let le = LockEntry::from((&target, true));
+
+        //     let lf = target.get_lock().keep_dev_dep_entries(&target, self.all);
+
+        //     // verify the ip has no relative ip's listed in manifest
+        //     if target.get_man().has_relative_deps() == true {
+        //         return Err(Error::IpHasRelativeDependencies)?;
+        //     }
+
+        //     plan::download_missing_deps(
+        //         vtable,
+        //         &lf,
+        //         &le,
+        //         &catalog,
+        //         &c.get_config().get_protocols(),
+        //     )?;
+        //     // recollect the queued items to update the catalog
+        //     catalog = catalog.downloads(c.get_downloads_path())?;
+
+        //     plan::install_missing_deps(&lf, &le, &catalog)?;
+        //     // recollect the installations and queued items to update the catalog
+        //     catalog = catalog.installations(c.get_cache_path())?;
+        // }
+
+        // // @MARK: may be an issue and should error if trying to install with an out-of-date lockfile
+        // // generate lock file if it is missing or out of date
+        // if target.lock_exists() == false || target.can_use_lock() == false {
+        //     // build entire ip graph and resolve with dynamic symbol transformation
+        //     let ip_graph = algo::compute_final_ip_graph(&target, &catalog, &c.get_languages())?;
+        //     Plan::write_lockfile(&target, &ip_graph, true)?;
+        // }
 
         // install the top-level target
         self.run(&target, &catalog)
@@ -402,6 +415,65 @@ impl Subcommand<Context> for Install {
 }
 
 impl Install {
+    fn run_ip_checkpoints<'c>(
+        local_ip: &Ip,
+        catalog: Catalog<'c>,
+        force: bool,
+        c: &'c Context,
+        all: bool,
+    ) -> Result<Catalog<'c>, Fault> {
+        let mut catalog = catalog;
+        // verify the lock file is generated and up to date
+        if force == false {
+            println!("info: {}", "verifying lockfile is up to date ...");
+            if local_ip.can_use_lock() == false {
+                return Err(Box::new(Error::PublishMissingLockfile(Hint::MakeLock)));
+            }
+        // create the lockfile
+        } else if local_ip.can_use_lock() == false {
+            let ip_graph = algo::compute_final_ip_graph(&local_ip, &catalog, &Language::default())?;
+            Plan::write_lockfile(&local_ip, &ip_graph, true)?;
+        }
+
+        println!("info: {}", "reading dependencies from lockfile ...");
+        let env = Environment::new()
+            .from_config(c.get_config())?
+            .from_ip(&local_ip)?;
+
+        let vtable = StrSwapTable::new().load_environment(&env)?;
+
+        let le = LockEntry::from((local_ip, true));
+
+        let lf = local_ip.get_lock().keep_dev_dep_entries(&local_ip, all);
+
+        plan::download_missing_deps(vtable, &lf, &le, &catalog, &c.get_config().get_protocols())?;
+
+        // recollect the queued items to update the catalog
+        catalog = catalog.downloads(c.get_downloads_path())?;
+
+        plan::install_missing_deps(&lf, &le, &catalog)?;
+        // recollect the installations and queued items to update the catalog
+        catalog = catalog.installations(c.get_cache_path())?;
+
+        // verify the ip has zero relative dependencies
+        println!("info: {}", "verifying all dependencies are stable ...");
+        if let Some(dep) = local_ip.get_lock().inner().iter().find(|f| f.is_relative()) {
+            return Err(Box::new(Error::PublishRelativeDepExists(
+                dep.get_name().clone(),
+            )));
+        }
+
+        // verify the graph build with no errors
+        println!("info: {}", "verifying hardware graph construction ...");
+        if let Err(e) = Publish::check_graph_builds_okay(&local_ip, &catalog) {
+            return Err(Box::new(Error::PublishHdlGraphFailed(LastError(
+                e.to_string(),
+            ))))?;
+        }
+
+        Ok(catalog)
+    }
+
     fn download_target_from_url(&self, c: &Context, url: &str) -> Result<IpSpec, Fault> {
         let env = Environment::new()
             // read config.toml for setting any env variables

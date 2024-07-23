@@ -167,7 +167,7 @@ impl Subcommand<Context> for Publish {
 }
 
 impl Publish {
-    fn run_ip_checkpoints(local_ip: &Ip, catalog: &Catalog) -> Result<(), Fault> {
+    pub fn run_ip_checkpoints(local_ip: &Ip, catalog: &Catalog) -> Result<(), Fault> {
         // verify the lock file is generated and up to date
         println!("info: {}", "verifying lockfile is up to date ...");
         if local_ip.can_use_lock() == false {
@@ -202,7 +202,7 @@ impl Publish {
         Ok(())
     }
 
-    fn check_graph_builds_okay(local_ip: &Ip, catalog: &Catalog) -> Result<(), Fault> {
+    pub fn check_graph_builds_okay(local_ip: &Ip, catalog: &Catalog) -> Result<(), Fault> {
         // use all language settings
         let lang = Language::default();
         let ip_graph = algo::compute_final_ip_graph(&local_ip, &catalog, &lang)?;

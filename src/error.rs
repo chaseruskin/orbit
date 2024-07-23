@@ -138,6 +138,10 @@ pub enum Error {
     ChannelPathNotFound(PathBuf),
     #[error("channel's resolved path {0:?} is not a directory")]
     ChannelPathNotDir(PathBuf),
+    #[error("ip has \"{0}\" listed as a relative dependency")]
+    PublishRelativeDepExists(PkgPart),
+    #[error("failed to pass publish checkpoint: {0}")]
+    PublishFailedCheckpoint(LastError),
 }
 
 #[derive(Debug, PartialEq)]

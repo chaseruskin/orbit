@@ -145,10 +145,41 @@ impl Subcommand<Context> for Publish {
             }
         }
 
+        if let Err(e) = Self::run_ip_checkpoints(&local_ip, &catalog) {
+            return Err(Box::new(Error::PublishFailedCheckpoint(LastError(
+                e.to_string(),
+            ))));
+        }
+
+        // by default, do not make any changes to the codebase/project (only print out diagnostics)
+        // todo!("verify the lock file is generated and up to date");
+        // todo!("verify there is no other ip with this name (and different uuid)");
+        // todo!("verify the HDL graph can be generated without errors");
+        // warn if there are no HDL units in the project
+        match self.ready {
+            true => self.publish_all(&local_ip, channels, env),
+            false => Err(Box::new(Error::PublishDryRunDone(
+                ip_spec,
+                Hint::PublishWithReady,
+            )))?,
+        }
+    }
+}
+
+impl Publish {
+    fn run_ip_checkpoints(local_ip: &Ip, catalog: &Catalog) -> Result<(), Fault> {
         // verify the lock file is generated and up to date
         println!("info: {}", "verifying lockfile is up to date ...");
         if local_ip.can_use_lock() == false {
             return Err(Box::new(Error::PublishMissingLockfile(Hint::MakeLock)));
+        }
+
+        // verify the ip has zero relative dependencies
+        println!("info: {}", "verifying all dependencies are stable ...");
+        if let Some(dep) = local_ip.get_lock().inner().iter().find(|f| f.is_relative()) {
+            return Err(Box::new(Error::PublishRelativeDepExists(
+                dep.get_name().clone(),
+            )));
         }
 
         // verify the ip has a source
@@ -168,22 +199,9 @@ impl Subcommand<Context> for Publish {
             ))))?;
         }
 
-        // by default, do not make any changes to the codebase/project (only print out diagnostics)
-        // todo!("verify the lock file is generated and up to date");
-        // todo!("verify there is no other ip with this name (and different uuid)");
-        // todo!("verify the HDL graph can be generated without errors");
-        // warn if there are no HDL units in the project
-        match self.ready {
-            true => self.publish_all(&local_ip, channels, env),
-            false => Err(Box::new(Error::PublishDryRunDone(
-                ip_spec,
-                Hint::PublishWithReady,
-            )))?,
-        }
+        Ok(())
     }
-}
 
-impl Publish {
     fn check_graph_builds_okay(local_ip: &Ip, catalog: &Catalog) -> Result<(), Fault> {
         // use all language settings
         let lang = Language::default();

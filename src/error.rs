@@ -44,9 +44,9 @@ pub enum Error {
     FailedToInitIp(LastError),
     #[error("a target must be defined")]
     MissingRequiredTarget,
-    #[error("command must be ran from the current working ip: no ip found in current directory or any parent directory")]
+    #[error("command must be ran from a local ip: no ip found in current directory or any parent directory")]
     NoWorkingIpFound,
-    #[error("command must be ran from the current working ip when an ip is not explicitly defined: no ip found in current directory or any parent directory")]
+    #[error("command must be ran from a local ip when an ip is not explicitly defined: no ip found in current directory or any parent directory")]
     NoAssumedWorkingIpFound,
     #[error("ip {0:?} does not exist in the cache")]
     IpNotFoundInCache(String),

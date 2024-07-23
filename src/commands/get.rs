@@ -40,8 +40,6 @@ use crate::core::lang::Lang;
 use crate::core::lang::LangUnit;
 use crate::core::lang::Language;
 use crate::core::manifest::Manifest;
-use crate::core::pkgid::PkgPart;
-use crate::core::version::Version;
 use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::{AnyError, Fault};
@@ -444,8 +442,7 @@ impl Get {
             }
             None => Err(GetError::UnitNotFound(
                 iden.clone().into_lang_id(),
-                man.get_ip().get_name().clone(),
-                man.get_ip().get_version().clone(),
+                man.get_ip().into_ip_spec(),
             ))?,
         }
     }
@@ -455,8 +452,8 @@ use crate::core::lang::LangIdentifier;
 
 #[derive(Debug)]
 pub enum GetError {
-    UnitNotFound(LangIdentifier, PkgPart, Version),
-    SuggestShow(String, PkgPart, Version),
+    UnitNotFound(LangIdentifier, IpSpec),
+    SuggestShow(String, Hint),
 }
 
 use crate::core::ip::IpSpec;
@@ -466,17 +463,11 @@ impl std::error::Error for GetError {}
 impl std::fmt::Display for GetError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::UnitNotFound(ent, pkg, ver) => {
-                let spec = IpSpec::new(pkg.clone(), ver.clone());
-                write!(f, "Failed to find unit '{}' in ip '{}'", ent, spec)
+            Self::UnitNotFound(ent, spec) => {
+                write!(f, "failed to find unit \"{}\" in ip \"{}\"", ent, spec)
             }
-            Self::SuggestShow(err, pkg, ver) => {
-                let spec = IpSpec::new(pkg.clone(), ver.clone());
-                write!(
-                    f,
-                    "{}\n\ntry `orbit view {} --units` to see a list of primary design units",
-                    err, spec
-                )
+            Self::SuggestShow(err, hint) => {
+                write!(f, "{}{}", err, hint)
             }
         }
     }

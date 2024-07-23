@@ -56,13 +56,7 @@ const BUILD_KEY: &str = "build";
 const TEST_KEY: &str = "test";
 const PUBLISH_KEY: &str = "publish";
 
-const TOP_KEYS: [&str; 5] = [
-    INCLUDE_KEY,
-    GENERAL_KEY,
-    BUILD_KEY,
-    TEST_KEY,
-    PUBLISH_KEY,
-];
+const TOP_KEYS: [&str; 5] = [INCLUDE_KEY, GENERAL_KEY, BUILD_KEY, TEST_KEY, PUBLISH_KEY];
 
 use crate::util::anyerror::Fault;
 use toml_edit::Array;

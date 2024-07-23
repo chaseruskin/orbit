@@ -38,6 +38,8 @@ use crate::core::lang::vhdl::token::VhdlTokenizer;
 use crate::core::lang::Lang;
 use crate::core::lang::LangIdentifier;
 use crate::core::lang::Language;
+use crate::error::Error;
+use crate::error::Hint;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::sha256;
@@ -46,6 +48,7 @@ use std::fs;
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
 
+const SYS_DIR: &str = ".system";
 const TMP_DIR: &str = "tmp";
 
 #[derive(Debug, PartialEq)]
@@ -84,12 +87,12 @@ impl Subcommand<Context> for Read {
         // verify location is only set iff the file mode is enabled
         if self.location == true && self.file == false {
             Err(AnyError(format!(
-                "The flag '--location' can only be set when using '--file'"
+                "the flag '--location' can only be set when using '--file'"
             )))?
         }
 
         // determine the destination
-        let dest: PathBuf = c.get_home_path().join(TMP_DIR);
+        let dest: PathBuf = c.get_home_path().join(SYS_DIR).join(TMP_DIR);
 
         // attempt to clean the tmp directory when --keep is disabled
         if dest.exists() == true && self.keep == false {
@@ -107,14 +110,14 @@ impl Subcommand<Context> for Read {
         };
 
         // checking external IP
-        if let Some(tg) = &self.ip {
+        if let Some(spec) = &self.ip {
             // gather the catalog (all manifests)
             let catalog = Catalog::new().installations(c.get_cache_path())?;
 
             // access the requested ip
-            match catalog.inner().get(&tg.get_name()) {
+            match catalog.inner().get(&spec.get_name()) {
                 Some(lvl) => {
-                    let inst = match lvl.get_install(tg.get_version()) {
+                    let inst = match lvl.get_install(spec.get_version()) {
                         Some(i) => i,
                         None => panic!("version does not exist for this ip"),
                     };
@@ -122,14 +125,17 @@ impl Subcommand<Context> for Read {
                 }
                 None => {
                     // the ip does not exist
-                    return Err(AnyError(format!("Failed to find ip {}", tg)))?;
+                    return Err(Box::new(Error::IpNotFoundAnywhere(
+                        spec.to_string(),
+                        Hint::CatalogList,
+                    )))?;
                 }
             }
         // must be in an IP if omitting the pkgid
         } else {
             let ip = match c.get_ip_path() {
                 Some(p) => Ip::load(p.to_path_buf(), true)?,
-                None => return Err(AnyError(format!("Not within an existing ip")))?,
+                None => return Err(AnyError(format!("not within an existing ip")))?,
             };
 
             self.run(&ip, dest.as_ref(), &c.get_languages())
@@ -264,16 +270,11 @@ impl Read {
                 },
             ),
             None => {
+                let spec = ip.get_man().get_ip().into_ip_spec();
                 return Err(GetError::SuggestShow(
-                    GetError::UnitNotFound(
-                        unit.clone(),
-                        ip.get_man().get_ip().get_name().clone(),
-                        ip.get_man().get_ip().get_version().clone(),
-                    )
-                    .to_string(),
-                    ip.get_man().get_ip().get_name().clone(),
-                    ip.get_man().get_ip().get_version().clone(),
-                ))?
+                    GetError::UnitNotFound(unit.clone(), spec.clone()).to_string(),
+                    Hint::ShowAvailableUnitsExternal(spec),
+                ))?;
             }
         };
 

@@ -177,7 +177,7 @@ impl Search {
             let ip = {
                 let ins = match default || cached {
                     true => status.get_install(&AnyVersion::Latest),
-                    false => None 
+                    false => None,
                 };
                 let dld = status.get_download(&AnyVersion::Latest);
                 let ava = status.get_available(&AnyVersion::Latest);

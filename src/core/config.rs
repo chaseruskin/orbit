@@ -52,15 +52,13 @@ impl FromStr for ConfigDocument {
 
 const INCLUDE_KEY: &str = "include";
 const GENERAL_KEY: &str = "general";
-const LANGUAGES_KEY: &str = "language";
 const BUILD_KEY: &str = "build";
 const TEST_KEY: &str = "test";
 const PUBLISH_KEY: &str = "publish";
 
-const TOP_KEYS: [&str; 6] = [
+const TOP_KEYS: [&str; 5] = [
     INCLUDE_KEY,
     GENERAL_KEY,
-    LANGUAGES_KEY,
     BUILD_KEY,
     TEST_KEY,
     PUBLISH_KEY,
@@ -129,18 +127,6 @@ impl ConfigDocument {
     /// Automatically creates the new key if it does not exist.
     pub fn append_include(&mut self, item: &str) -> () {
         Self::append_list(&mut self.document, INCLUDE_KEY, item, true);
-    }
-
-    pub fn append_languages(&mut self, item: &str) -> () {
-        let general = self.document[GENERAL_KEY].as_table_mut();
-        let g = match general {
-            Some(g) => g,
-            None => {
-                self.document[GENERAL_KEY] = Item::Table(Table::new());
-                self.document[GENERAL_KEY].as_table_mut().unwrap()
-            }
-        };
-        Self::append_list(g, LANGUAGES_KEY, item, false)
     }
 
     /// Pops the last value from the `include` entry.
@@ -504,7 +490,6 @@ pub struct Config {
     build: Option<Build>,
     test: Option<Test>,
     publish: Option<Publish>,
-    language: Option<Language>,
     env: Option<HashMap<String, String>>,
     target: Option<Targets>,
     protocol: Option<Protocols>,
@@ -523,7 +508,6 @@ impl Config {
             protocol: None,
             vhdl_format: None,
             general: None,
-            language: None,
             build: None,
             test: None,
             publish: None,
@@ -549,11 +533,6 @@ impl Config {
         match &mut self.include {
             Some(v) => v.append(&mut rhs.include.unwrap_or(Vec::new())),
             None => self.include = rhs.include,
-        }
-        // combine the '[language]' table
-        match &mut self.language {
-            Some(v) => v.merge(rhs.language),
-            None => self.language = rhs.language,
         }
         // combine '[general]' table
         match &mut self.general {
@@ -636,12 +615,9 @@ impl Config {
         }
     }
 
-    /// Access what language mode is enabled for the given configuration table.
+    /// Access what language mode is enabled (currently all are fixed to enabled).
     pub fn get_languages(&self) -> Language {
-        self.language
-            .as_ref()
-            .unwrap_or(&Language::default())
-            .clone()
+        Language::default()
     }
 
     pub fn get_env(&self) -> &Option<HashMap<String, String>> {

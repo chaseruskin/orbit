@@ -26,11 +26,7 @@ The configuration files are processed in the order defined above. When a configu
 
 Every configuration file consists of the following sections:
 
-- [include](#the-include-field) - Lists other `config.toml` files to process.
-- [[language]](#the-language-section) - The language settings.
-    - [vhdl](#the-vhdl-field) - Enable/disable VHDL support.
-    - [verilog](#the-verilog-field) - Enable/disable Verilog support.
-    - [systemverilog](#the-systemverilog-field) - Enable/disable SystemVerilog support.
+- [include](#the-include-field) - Lists other `config.toml` files to process..
 - [[general]](#the-general-section) - The general settings.
     - [target-dir](#the-target-dir-field) - Default target directory.
 - [[test]](#the-test-section) - The test settings.
@@ -73,37 +69,6 @@ include = [
     "profiles/p2/config.toml",
     "channels/c1/config.toml"
 ]
-```
-
-### The `[language]` section
-
-### The `vhdl` field
-
-Enable or disable VHDL language support. Disabling this field will prevent Orbit from recognizing files with .vhd and .vhdl extensions. If this field is omitted, the default value is `true`.
-
-``` toml
-[language]
-vhdl = true
-```
-
-### The `verilog` field
-
-Enable or disable Verilog language support. Disabling this field will prevent Orbit from recognizing files with .v and .vh extensions. If this field is omitted, the default value is `true`.
-
-``` toml
-[language]
-# ...
-verilog = true
-```
-
-### The `systemverilog` field
-
-Enable or disable SystemVerilog language support. Disabling this field will prevent Orbit from recognizing files with .sv and .svh extensions. If this field is omitted, the default value is `true`.
-
-``` toml
-[language]
-# ...
-systemverilog = true
 ```
 
 ### The `[general]` section

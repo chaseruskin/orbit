@@ -35,6 +35,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - adds `--no-clean` flag to `orbit build` and `orbit test` to prevent automatic cleaning before build process
 
 ### Changes
+- removes ability to disable hdl languages, leaving all of them permanently enabled
 - source file visibility levels are ignored for relative ip dependencies
 - renames `orbit launch` to `orbit publish` in favor of clearer intentions behind the command
 

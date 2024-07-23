@@ -175,7 +175,10 @@ impl Search {
             let mut is_update_available = false;
             // return the highest version (return installation when they are equal in downloads and cache)
             let ip = {
-                let ins = status.get_install(&AnyVersion::Latest);
+                let ins = match default || cached {
+                    true => status.get_install(&AnyVersion::Latest),
+                    false => None 
+                };
                 let dld = status.get_download(&AnyVersion::Latest);
                 let ava = status.get_available(&AnyVersion::Latest);
                 // prioritize who display

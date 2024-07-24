@@ -40,7 +40,6 @@ use super::helps::publish::HELP;
 pub struct Publish {
     ready: bool,
     list: bool,
-    no_install: bool,
 }
 
 impl Subcommand<Context> for Publish {
@@ -49,7 +48,6 @@ impl Subcommand<Context> for Publish {
         Ok(Publish {
             list: cli.check(Arg::flag("list"))?,
             ready: cli.check(Arg::flag("ready").switch('y'))?,
-            no_install: cli.check(Arg::flag("install"))?,
         })
     }
 
@@ -151,11 +149,7 @@ impl Subcommand<Context> for Publish {
             ))));
         }
 
-        // by default, do not make any changes to the codebase/project (only print out diagnostics)
-        // todo!("verify the lock file is generated and up to date");
-        // todo!("verify there is no other ip with this name (and different uuid)");
-        // todo!("verify the HDL graph can be generated without errors");
-        // warn if there are no HDL units in the project
+        // TODO: warn if there are no HDL units in the project
         match self.ready {
             true => self.publish_all(&local_ip, channels, env),
             false => Err(Box::new(Error::PublishDryRunDone(

@@ -23,7 +23,6 @@ Usage:
 
 Options:
     --ready, -y     perform a full run
-    --no-install    skip installing the ip
     --list          view available channels and exit
 
 Use 'orbit help publish' to read more about the command.

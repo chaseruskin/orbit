@@ -195,7 +195,7 @@
 </ol>
 <h2 id="about-the-project"><a class="header" href="#about-the-project">About the Project</a></h2>
 <p>Orbit is available free to use and open source to encourage adoption, contribution, and integration among the hardware community. We rely on the open source community for feedback and new ideas, while remaining focused on our design goals and principles.</p>
-<p>The project is currently open-source under the GPL-3.0 license and is available on <a href="https://github.com/cdotrus/orbit">GitHub</a>.</p>
+<p>The project is currently open-source under the GPL-3.0 license and is available on <a href="https://github.com/chaseruskin/orbit">GitHub</a>.</p>
 <h2 id="about-the-documentation"><a class="header" href="#about-the-documentation">About the Documentation</a></h2>
 <p>The documentation system and methodology adopted by Orbit is inspired by <a href="https://documentation.divio.com">Divio</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
@@ -242,7 +242,7 @@
 </blockquote>
 <h2 id="1-using-a-precompiled-binary"><a class="header" href="#1-using-a-precompiled-binary">1. Using a precompiled binary</a></h2>
 <ol>
-<li>Visit Orbit's <a href="https://github.com/cdotrus/orbit/releases">releases</a> page on Github to find all of its official releases.</li>
+<li>Visit Orbit's <a href="https://github.com/chaseruskin/orbit/releases">releases</a> page on Github to find all of its official releases.</li>
 <li>Download the binary for your computer's architecture and operating system.</li>
 <li>Install Orbit. Either run the provided <code>install</code> executable or follow the manual instructions for placing Orbit's executable (<code>orbit</code> for Unix and <code>orbit.exe</code> for Windows) in a location recognized by the PATH environment variable.</li>
 </ol>
@@ -285,7 +285,7 @@
 </ol>
 <h2 id="2-installing-with-cargo"><a class="header" href="#2-installing-with-cargo">2. Installing with Cargo</a></h2>
 <p>To install the latest version through Cargo:</p>
-<pre><code>$ cargo install --git https://github.com/cdotrus/orbit.git --tag 0.16.0
+<pre><code>$ cargo install --git https://github.com/chaseruskin/orbit.git --tag 0.16.0
 </code></pre>
 <p>This will build the <code>orbit</code> binary and place it a path already set in the PATH environment variable.</p>
 <h2 id="checking-if-orbit-is-installed-correctly"><a class="header" href="#checking-if-orbit-is-installed-correctly">Checking if Orbit is installed correctly</a></h2>
@@ -305,7 +305,7 @@
 <p>Removes any executable in the executable's directory starting with <code>orbit-</code> (these are considered stale binaries, such as <code>orbit-0.1.0</code>).</p>
 </li>
 <li>
-<p>Connects to <a href="https://github.com/cdotrus/orbit/releases">https://github.com/cdotrus/orbit/releases</a> to find the most recent released version.</p>
+<p>Connects to <a href="https://github.com/chaseruskin/orbit/releases">https://github.com/chaseruskin/orbit/releases</a> to find the most recent released version.</p>
 </li>
 <li>
 <p>Checks if the most recent version online is ahead of the currently installed version.</p>
@@ -591,7 +591,7 @@ YILINX: Bitstream saved at: target/yilinx/fpga.bit
 name = "half-add"
 version = "0.1.0"
 
-# See more keys and their definitions at https://cdotrus.github.io/orbit/reference/manifest.html
+# See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
 
 [dependencies]
 gates = "0.1.0"
@@ -911,7 +911,7 @@ YILINX: Programming bitstream to flash...
 name = "gates"
 version = "1.0.0"
 
-# See more keys and their definitions at https://cdotrus.github.io/orbit/reference/manifest.html
+# See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
 
 [dependencies]
 
@@ -947,7 +947,7 @@ or_gate                             entity        public
 name = "full-add"
 version = "0.1.0"
 
-# See more keys and their definitions at https://cdotrus.github.io/orbit/reference/manifest.html
+# See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
 
 [dependencies]
 gates = "1.0.0"
@@ -1243,7 +1243,7 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <pre><code class="language-toml">[ip]
 name = "orbit"
 version = "1.0.0"
-source = "https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip"
+source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
 # ...
 </code></pre>
 <h2 id="custom-protocols"><a class="header" href="#custom-protocols">Custom protocols</a></h2>
@@ -1267,7 +1267,7 @@ args = ["clone", "-b", "{{ orbit.ip.version }}", "{{ orbit.ip.source.url }}"]
 <pre><code class="language-toml">[ip]
 name = "orbit"
 version = "1.0.0"
-source = { url = "https://github.com/cdotrus/orbit.git", protocol = "gitit" }
+source = { url = "https://github.com/chaseruskin/orbit.git", protocol = "gitit" }
 # ...
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="channels-1"><a class="header" href="#channels-1">Channels</a></h1>
@@ -1402,7 +1402,7 @@ source = "https://github.com/hyperspace-labs/foo/archive/refs/tags/{{orbit.ip.ve
 <p>Consider the environment variables set in an Orbit configuration file:</p>
 <pre><code class="language-toml">[env]
 foo = "bar"
-github-user = "cdotrus"
+github-user = "chaseruskin"
 Yilinx_Path = "/Users/chase/fpga/bin/yilinx"
 </code></pre>
 <p>This configuration translates to the following variables:</p>
@@ -1558,11 +1558,11 @@ keywords = ["cpu", "risc"]
 <h3 id="the-source-field"><a class="header" href="#the-source-field">The <code>source</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-source = "https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip"
+source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
 </code></pre>
 <pre><code class="language-toml">[ip]
 # ...
-source = { url = "https://github.com/cdotrus/orbit.git", protocol = "git", tag = "1.0.0" }
+source = { url = "https://github.com/chaseruskin/orbit.git", protocol = "git", tag = "1.0.0" }
 </code></pre>
 <h3 id="the-channels-field"><a class="header" href="#the-channels-field">The <code>channels</code> field</a></h3>
 <pre><code class="language-toml">[ip]

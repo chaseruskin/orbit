@@ -9,7 +9,7 @@ This behavior performs the following strategy:
 
 1. Removes any executable in the executable's directory starting with `orbit-` (these are considered stale binaries, such as `orbit-0.1.0`).
 
-2. Connects to [https://github.com/cdotrus/orbit/releases](https://github.com/cdotrus/orbit/releases) to find the most recent released version.
+2. Connects to [https://github.com/chaseruskin/orbit/releases](https://github.com/chaseruskin/orbit/releases) to find the most recent released version.
 
 3. Checks if the most recent version online is ahead of the currently installed version.
 

@@ -242,7 +242,7 @@ Filename: Orbit.toml
 name = "gates"
 version = "1.0.0"
 
-# See more keys and their definitions at https://cdotrus.github.io/orbit/reference/manifest.html
+# See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
 
 [dependencies]
 

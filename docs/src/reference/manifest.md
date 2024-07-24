@@ -87,13 +87,13 @@ keywords = ["cpu", "risc"]
 ``` toml
 [ip]
 # ...
-source = "https://github.com/cdotrus/orbit/archive/refs/tags/1.0.0.zip"
+source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
 ```
 
 ``` toml
 [ip]
 # ...
-source = { url = "https://github.com/cdotrus/orbit.git", protocol = "git", tag = "1.0.0" }
+source = { url = "https://github.com/chaseruskin/orbit.git", protocol = "git", tag = "1.0.0" }
 ```
 
 ### The `channels` field

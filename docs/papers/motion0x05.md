@@ -36,7 +36,7 @@ You can also write to the _trustlist_ to ensure only packages from these reposit
 ;; in settings.cfg file
 [security]
 trustlist = (
-    gitlab.com/cdotrus,
+    gitlab.com/chaseruskin,
     github.com/uf-ece/eel4712.git,
 )
 ```

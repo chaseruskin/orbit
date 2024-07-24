@@ -6,7 +6,7 @@ There are two main methods for getting Orbit running on your computer: downloadi
 
 ## 1. Using a precompiled binary
 
-1.  Visit Orbit's [releases](https://github.com/cdotrus/orbit/releases) page on Github to find all of its official releases. 
+1.  Visit Orbit's [releases](https://github.com/chaseruskin/orbit/releases) page on Github to find all of its official releases. 
 2. Download the binary for your computer's architecture and operating system.
 3. Install Orbit. Either run the provided `install` executable or follow the manual instructions for placing Orbit's executable (`orbit` for Unix and `orbit.exe` for Windows) in a location recognized by the PATH environment variable.
 
@@ -47,7 +47,7 @@ $ copy-item "./orbit-CARGO_CRATE_VERSION-x86_64-windows/*" -destination "$env:LO
 
 To install the latest version through Cargo:
 ```
-$ cargo install --git https://github.com/cdotrus/orbit.git --tag CARGO_CRATE_VERSION
+$ cargo install --git https://github.com/chaseruskin/orbit.git --tag CARGO_CRATE_VERSION
 ```
 
 This will build the `orbit` binary and place it a path already set in the PATH environment variable.

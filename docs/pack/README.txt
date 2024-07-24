@@ -25,15 +25,15 @@ NOTE: For unix, only the orbit binary is installed. For
 -----------------------------
 
 Follow the instructions at: 
-https://cdotrus.github.io/orbit/1_starting/1_installing.html.
+https://chaseruskin.github.io/orbit/1_starting/1_installing.html.
 
 -----------------------------
 :: RESOURCES               ::
 -----------------------------
 
-Repository: https://github.com/cdotrus/orbit
+Repository: https://github.com/chaseruskin/orbit
 
-Manual: https://cdotrus.github.io/orbit/
+Manual: https://chaseruskin.github.io/orbit/
 
 -----------------------------
 :: LICENSE                 ::

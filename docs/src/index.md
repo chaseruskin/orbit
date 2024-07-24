@@ -20,7 +20,7 @@ This "book" is loosely divided into 4 sections:
 
 Orbit is available free to use and open source to encourage adoption, contribution, and integration among the hardware community. We rely on the open source community for feedback and new ideas, while remaining focused on our design goals and principles.
 
-The project is currently open-source under the GPL-3.0 license and is available on [GitHub](https://github.com/cdotrus/orbit).
+The project is currently open-source under the GPL-3.0 license and is available on [GitHub](https://github.com/chaseruskin/orbit).
 
 ## About the Documentation
 

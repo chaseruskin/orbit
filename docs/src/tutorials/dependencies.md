@@ -34,7 +34,7 @@ Filename: Orbit.toml
 name = "half-add"
 version = "0.1.0"
 
-# See more keys and their definitions at https://cdotrus.github.io/orbit/reference/manifest.html
+# See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
 
 [dependencies]
 gates = "0.1.0"

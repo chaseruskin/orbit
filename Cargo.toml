@@ -4,8 +4,8 @@ version = "0.16.0"
 description = "An agile package manager and extensible build tool for HDLs"
 authors = ["Chase Ruskin <c.ruskin@ufl.edu>"]
 keywords = ["hdl", "package-manager", "build-tool", "verilog", "vhdl"]
-repository = "https://github.com/cdotrus/orbit"
-documentation = "https://cdotrus.github.io/orbit"
+repository = "https://github.com/chaseruskin/orbit"
+documentation = "https://chaseruskin.github.io/orbit"
 edition = "2021"
 license = "GPL-3.0-or-later"
 

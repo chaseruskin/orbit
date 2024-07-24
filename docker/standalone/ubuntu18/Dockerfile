@@ -6,7 +6,7 @@ ARG REV
 
 # LABEL about the custom image
 LABEL maintainer="Chase Ruskin"
-LABEL description="Minimum runtime dependencies for Orbit on Ubuntu 18.04."
+LABEL description="Minimum runtime dependencies for Orbit on Ubuntu 18.04"
 
 RUN apt-get update && apt-get install -y \
     git \
@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
 
 # Download Rust toolchain, compile, move orbit to bin/, and clean up Rust toolchain
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-RUN $HOME/.cargo/bin/cargo install --bin orbit --git https://github.com/cdotrus/orbit.git --rev $REV
+RUN $HOME/.cargo/bin/cargo install --bin orbit --git https://github.com/chaseruskin/orbit.git --rev $REV
 RUN cp "$HOME/.cargo/bin/orbit" "/usr/local/bin/orbit"
 RUN $HOME/.cargo/bin/cargo install just
 RUN cp "$HOME/.cargo/bin/just" "/usr/local/bin/just"

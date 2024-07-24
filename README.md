@@ -1,10 +1,10 @@
 # Orbit
 
-[![Pipeline](https://github.com/cdotrus/orbit/actions/workflows/pipeline.yml/badge.svg)](https://github.com/cdotrus/orbit/actions) 
-[![GitHub Pages](https://github.com/cdotrus/orbit/actions/workflows/docs.yml/badge.svg)](https://cdotrus.github.io/orbit) 
+[![Pipeline](https://github.com/chaseruskin/orbit/actions/workflows/pipeline.yml/badge.svg)](https://github.com/chaseruskin/orbit/actions) 
+[![GitHub Pages](https://github.com/chaseruskin/orbit/actions/workflows/docs.yml/badge.svg)](https://chaseruskin.github.io/orbit) 
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0) 
-[![DockerHub](https://img.shields.io/badge/DockerHub-images-important.svg?logo=docker)](https://hub.docker.com/repository/docker/cdotrus/orbit/general) 
-[![Downloads](https://img.shields.io/github/downloads/cdotrus/orbit/total.svg)](https://github.com/cdotrus/orbit/releases)
+[![DockerHub](https://img.shields.io/badge/DockerHub-images-important.svg?logo=docker)](https://hub.docker.com/repository/docker/chaseruskin/orbit/general) 
+[![Downloads](https://img.shields.io/github/downloads/chaseruskin/orbit/total.svg)](https://github.com/chaseruskin/orbit/releases)
 
 Orbit is an agile package manager and extensible build tool for hardware description languages (HDL).
 
@@ -28,9 +28,9 @@ Orbit is available free to use and open source to encourage adoption, contributi
 
 Orbit's use case is targeted toward anyone interested in developing digital hardware; this includes industrial, academic, and personal settings. Create your next commerical product, university lab assignment, or personal project, using a tool that is tailored to today's advanced development processes.
 
-Prebuilt binaries are available for Linux, MacOS, and Windows with no dependencies. Visit the [releases page](https://github.com/cdotrus/orbit/releases) for the latest version. Working on a different platform? No problem, building from source is easy with [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html), Rust's default package manager. Use docker? We have [docker images](https://hub.docker.com/repository/docker/cdotrus/orbit/general) available too. See [Installing](https://cdotrus.github.io/orbit/starting/installing.html) for complete details.
+Prebuilt binaries are available for Linux, MacOS, and Windows with no dependencies. Visit the [releases page](https://github.com/chaseruskin/orbit/releases) for the latest version. Working on a different platform? No problem, building from source is easy with [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html), Rust's default package manager. Use docker? We have [docker images](https://hub.docker.com/repository/docker/chaseruskin/orbit/general) available too. See [Installing](https://chaseruskin.github.io/orbit/starting/installing.html) for complete details.
 
-For more information on getting started and how to use Orbit in your workflow, check out the [Book of Orbit](https://cdotrus.github.io/orbit/).
+For more information on getting started and how to use Orbit in your workflow, check out the [Book of Orbit](https://chaseruskin.github.io/orbit/).
 
 ## Simple and intuitive to use
 
@@ -107,9 +107,9 @@ What makes Orbit an agile package manager for HDLs? Here are some of its key fea
 
 - Reproduce results across any environment with Orbit through its automatic handling of lockfiles and checksums
 
-- Overcome namespace collisions, a problem inherent to VHDL and Verilog, through a custom aglorithm that dynamically transforms conflicting design names called [_dynamic symbol transformation_](https://cdotrus.github.io/orbit/topic/dst.html)
+- Overcome namespace collisions, a problem inherent to VHDL and Verilog, through a custom aglorithm that dynamically transforms conflicting design names called [_dynamic symbol transformation_](https://chaseruskin.github.io/orbit/topic/dst.html)
 
-- Because of dynamic symbol transformation, multiple versions of the same design unit (or more broadly, design units given the same identifier) are allowed in the same build under [two simple constraints](https://cdotrus.github.io/orbit/topic/dst.html#limitations)
+- Because of dynamic symbol transformation, multiple versions of the same design unit (or more broadly, design units given the same identifier) are allowed in the same build under [two simple constraints](https://chaseruskin.github.io/orbit/topic/dst.html#limitations)
 
 - Quickly navigate through HDL source code to read its inline documentation and review a design unit's implementation with Orbit's ability to jump to and display HDL code segments
 
@@ -137,19 +137,19 @@ And these are only a few of Orbit's features! Download Orbit and read its docume
 
 ## Installing
 
-Orbit has prebuilt binaries for MacOS, Windows, and Linux. See the [releases page](https://github.com/cdotrus/orbit/releases) to download the latest version, or build from source using [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html), Rust's default package manager. See [Installing](https://cdotrus.github.io/orbit/starting/installing.html) for more details on getting Orbit up and running.
+Orbit has prebuilt binaries for MacOS, Windows, and Linux. See the [releases page](https://github.com/chaseruskin/orbit/releases) to download the latest version, or build from source using [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html), Rust's default package manager. See [Installing](https://chaseruskin.github.io/orbit/starting/installing.html) for more details on getting Orbit up and running.
 
 ## Examples
 
 A fictitious organization, "Hyperspace Labs", exists for the purpose of demonstrating and learning how to leverage Orbit in a real development setting. No identification with actual persons, places, buildings, and products is intended or should be inferred. 
 
-The projects and code for Hyperspace Labs are walked through in the [tutorials](https://cdotrus.github.io/orbit/tutorials/tutorials.html) section.
+The projects and code for Hyperspace Labs are walked through in the [tutorials](https://chaseruskin.github.io/orbit/tutorials/tutorials.html) section.
 
 The final code repositories for Hyperspace Labs are found [here](https://github.com/orgs/hyperspace-labs/repositories). 
 
 ## Documentation
 
-Read the [Book of Orbit](https://cdotrus.github.io/orbit/) for comprehensive documentation composed of tutorials, user guides, topic guides, references, and command manuals.
+Read the [Book of Orbit](https://chaseruskin.github.io/orbit/) for comprehensive documentation composed of tutorials, user guides, topic guides, references, and command manuals.
 
 Orbit brings an agile approach to hardware development that minimizes technical debt through its available commands related to ip integration and build automation:
 ```

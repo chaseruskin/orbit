@@ -661,13 +661,13 @@ impl Install {
 }
 
 // # install from online using custom protocol
-// orbit install toolbox:1.0.1 --url https://github.com/cdotrus/toolbox.git --protocol git-op
+// orbit install toolbox:1.0.1 --url https://github.com/chaseruskin/toolbox.git --protocol git-op
 
 // # install from local path
 // orbit install hamming:1.0.0 --path .
 
 // # install from online using default protocol
-// orbit install --url https://github.com/cdotrus/toolbox/archive/refs/tags/1.0.1.zip
+// orbit install --url https://github.com/chaseruskin/toolbox/archive/refs/tags/1.0.1.zip
 
 // # install from queue
 // orbit install toolbox:1.0.1

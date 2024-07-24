@@ -89,7 +89,7 @@ Consider the environment variables set in an Orbit configuration file:
 ``` toml
 [env]
 foo = "bar"
-github-user = "cdotrus"
+github-user = "chaseruskin"
 Yilinx_Path = "/Users/chase/fpga/bin/yilinx"
 ```
 

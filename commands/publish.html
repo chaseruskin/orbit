@@ -183,19 +183,22 @@
 <pre><code>orbit publish [options]
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>Performs a series of checks on a stable version of a local ip to then release it
-through a channel.</p>
-<p>For an ip to be published, it must have its source field defined that directs to
-a valid internet location.</p>
+<p>Performs a series of checks on a local ip and then releases it to its specified
+channel(s).</p>
+<p>There are multiple checks that are performed before an ip can be published. The
+ip must have an up to date lockfile with no relative dependencies. The ip's
+manifest must also have a value for the source field. Lastly, Orbit must be
+able to construct the hdl source code graph without errors.</p>
+<p>Posting an ip to a channel involves copying the ip's manifest file to a path
+within the channel known as the index. For every publish of an ip, the index
+corresponds to a unique path within the channel that gets created by Orbit.</p>
 <p>By default, it operates a dry run, performing all steps in the process except
-for the actual release through the channel. To fully run the command, use the
+for posting the ip to its channel(s). To fully run the command, use the
 <code>--ready</code> flag. When the ip is published, it will also be installed to the cache
 by default. To skip this behavior, use the <code>--no-install</code> flag.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--ready, -y</code><br />
       Perform a full run</p>
-<p><code>--no-install</code><br />
-      Skip installing the ip</p>
 <p><code>--list</code><br />
       View available channels and exit</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>

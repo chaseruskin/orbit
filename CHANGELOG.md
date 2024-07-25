@@ -8,14 +8,14 @@ Every version partition must begin with 2 pound symbols '##'.
 Any section under a version must begin wtih 3 pound symbols '###'. 
 
 This is important for the auto-changelog extraction occuring during the CI/CD 
-pipeline to list only the current verion's changes with every release. 
+pipeline to list only the current verion's changes with every release.
 
 Add `- unreleased` along the next future version to prevent CI/CD from triggering release mechanism.
 -->
 
 # Changelog
 
-## 0.17.0 - unreleased
+## 0.17.0
 
 ### Features
 - implements first attempt at the full process for publishing an ip to a channel

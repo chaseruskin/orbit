@@ -2,7 +2,7 @@
 #   to run HDL simulations.
 
 # Stage 0: Orbit layer (1st step)
-FROM cdotrus/orbit:latest-ubuntu-18.04
+FROM chaseruskin/orbit:latest-ubuntu-18.04
 
 LABEL maintainer="Chase Ruskin"
 
@@ -15,7 +15,7 @@ RUN python -m pip install --upgrade pip
 COPY --from=0 / /
 
 # Stage 2: FPGA Toolchain layer (ModelSim-Intel)
-FROM cdotrus/modelsim-intel:19.1-ubuntu-18.04
+FROM chaseruskin/modelsim-intel:19.1-ubuntu-18.04
 
 COPY --from=1 / /
 

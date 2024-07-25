@@ -2,7 +2,7 @@
 #   to run VHDL simulations.
 
 # Stage 0: Orbit layer (1st step)
-FROM cdotrus/orbit:latest-ubuntu-22.04
+FROM chaseruskin/orbit:latest-ubuntu-22.04
 
 LABEL maintainer="Chase Ruskin"
 
@@ -15,7 +15,7 @@ RUN python -m pip install --upgrade pip
 COPY --from=0 / /
 
 # Stage 2: FPGA Toolchain layer (GHDL simulator)
-FROM cdotrus/ghdl-mcode:latest-ubuntu-22.04
+FROM chaseruskin/ghdl-mcode:latest-ubuntu-22.04
 
 COPY --from=1 / /
 

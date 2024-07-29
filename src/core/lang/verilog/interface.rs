@@ -213,8 +213,50 @@ fn default_mode() -> Keyword {
     Keyword::Input
 }
 
-fn default_net() -> Keyword {
-    Keyword::Wire
+#[derive(Debug, PartialEq)]
+pub struct DataType {
+    net: Option<Keyword>,
+    is_signed: bool,
+    data: Option<SystemVerilogToken>,
+    range: Expr,
+}
+
+impl DataType {
+    pub fn new() -> Self {
+        Self {
+            net: None,
+            is_signed: false,
+            data: None,
+            range: Expr(None),
+        }
+    }
+}
+
+impl Default for DataType {
+    fn default() -> Self {
+        Self {
+            is_signed: false,
+            net: Some(Keyword::Wire),
+            data: None,
+            range: Expr(None),
+        }
+    }
+}
+
+impl serde::Serialize for DataType {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut result = String::new();
+        if let Some(dt) = &self.data {
+            result.push_str(&dt.to_string());
+        }
+        if let Some(rg) = &self.range.0 {
+            result.push_str(&tokens_to_string(rg));
+        }
+        serializer.serialize_str(&result)
+    }
 }
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -222,19 +264,13 @@ pub struct Port {
     #[serde(rename = "identifier")]
     name: Identifier,
     #[serde(rename = "mode", default = "default_mode")]
-    direction: Option<Keyword>,
-    #[serde(rename = "type", default = "default_net")]
-    net_type: Option<Keyword>,
+    mode: Option<Keyword>,
+    #[serde(rename = "type", default)]
+    data_type: DataType,
     #[serde(rename = "default")]
     value: Expr,
     #[serde(skip_serializing)]
-    data_type: Option<SystemVerilogToken>,
-    #[serde(skip_serializing)]
     is_reg: bool,
-    #[serde(skip_serializing)]
-    is_signed: bool,
-    #[serde(skip_serializing)]
-    range: Expr,
 }
 
 impl Port {
@@ -274,20 +310,14 @@ impl Port {
                 true => {
                     result.push_str(
                         &self
-                            .direction
+                            .mode
                             .as_ref()
                             .unwrap_or(&Keyword::Parameter)
                             .to_string(),
                     );
                 }
                 false => {
-                    result.push_str(
-                        &self
-                            .direction
-                            .as_ref()
-                            .unwrap_or(&Keyword::Input)
-                            .to_string(),
-                    );
+                    result.push_str(&self.mode.as_ref().unwrap_or(&Keyword::Input).to_string());
                 }
             }
             result.push(' ');
@@ -299,7 +329,7 @@ impl Port {
                 true => {
                     result.push_str(
                         &self
-                            .direction
+                            .mode
                             .as_ref()
                             .unwrap_or(&Keyword::Parameter)
                             .to_string(),
@@ -307,14 +337,14 @@ impl Port {
                     result.push(' ');
                 }
                 false => {
-                    if self.data_type.is_none() {
+                    if self.data_type.data.is_none() {
                         result.push_str(&Keyword::Wire.to_string());
                         result.push(' ');
                     }
                 }
             }
         } else {
-            if let Some(n) = &self.net_type {
+            if let Some(n) = &self.data_type.net {
                 result.push_str(&n.to_string());
                 result.push(' ');
             }
@@ -327,19 +357,19 @@ impl Port {
         }
 
         // display the datatype
-        if let Some(d) = &self.data_type {
+        if let Some(d) = &self.data_type.data {
             result.push_str(&d.to_string());
             result.push(' ');
         }
 
         // display if signed
-        if self.is_signed == true {
+        if self.data_type.is_signed == true {
             result.push_str(&Keyword::Signed.to_string());
             result.push(' ');
         }
 
         // display the range
-        if let Some(r) = &self.range.0 {
+        if let Some(r) = &self.data_type.range.0 {
             // remove the space the comes before the range
             if result.is_empty() == false {
                 result.pop();
@@ -367,54 +397,48 @@ impl Port {
 
     pub fn with(name: Identifier) -> Self {
         Self {
-            direction: None,
-            net_type: None,
-            is_reg: false,
-            is_signed: false,
-            range: Expr(None),
-            data_type: None,
             name: name,
+            mode: None,
+            data_type: DataType::new(),
+            is_reg: false,
             value: Expr(None),
         }
     }
 
     pub fn new() -> Self {
         Self {
-            direction: None,
-            net_type: None,
-            is_reg: false,
-            is_signed: false,
-            data_type: None,
-            range: Expr(None),
             name: Identifier::new(),
+            mode: None,
+            data_type: DataType::new(),
+            is_reg: false,
             value: Expr(None),
         }
     }
 
     pub fn inherit(&mut self, rhs: &Port) {
-        if self.direction.is_none() {
-            self.direction = rhs.direction.clone();
+        if self.mode.is_none() {
+            self.mode = rhs.mode.clone();
         }
 
-        if self.net_type.is_none() {
-            self.net_type = rhs.net_type.clone();
+        if self.data_type.net.is_none() {
+            self.data_type.net = rhs.data_type.net.clone();
         }
 
-        if self.data_type.is_none() {
-            self.data_type = rhs.data_type.clone();
+        if self.data_type.data.is_none() {
+            self.data_type.data = rhs.data_type.data.clone();
         }
 
         if self.is_reg == false {
             self.is_reg = rhs.is_reg;
         }
 
-        if self.is_signed == false {
-            self.is_signed = rhs.is_signed;
+        if self.data_type.is_signed == false {
+            self.data_type.is_signed = rhs.data_type.is_signed;
         }
 
-        if self.range.0.is_none() {
-            if let Some(r) = &rhs.range.0 {
-                self.range = Expr(Some(r.clone()));
+        if self.data_type.range.0.is_none() {
+            if let Some(r) = &rhs.data_type.range.0 {
+                self.data_type.range = Expr(Some(r.clone()));
             }
         }
 
@@ -434,11 +458,11 @@ impl Port {
     }
 
     pub fn set_direction(&mut self, kw: Keyword) {
-        self.direction = Some(kw);
+        self.mode = Some(kw);
     }
 
     pub fn set_net_type(&mut self, kw: Keyword) {
-        self.net_type = Some(kw);
+        self.data_type.net = Some(kw);
     }
 
     pub fn set_reg(&mut self) {
@@ -446,19 +470,19 @@ impl Port {
     }
 
     pub fn set_signed(&mut self) {
-        self.is_signed = true;
+        self.data_type.is_signed = true;
     }
 
     pub fn set_range(&mut self, tkns: Vec<SystemVerilogToken>) {
-        self.range = Expr(Some(tkns));
+        self.data_type.range = Expr(Some(tkns));
     }
 
     pub fn set_data_type(&mut self, tkn: SystemVerilogToken) {
-        self.data_type = Some(tkn);
+        self.data_type.data = Some(tkn);
     }
 
     pub fn as_user_defined_data_type(&self) -> Option<&Identifier> {
-        match &self.data_type {
+        match &self.data_type.data {
             Some(t) => match t.as_identifier() {
                 Some(id) => Some(id),
                 None => None,

@@ -18,12 +18,13 @@
 //! A `version` contains numeric values at 3 levels for informing about
 //! varying degrees of changes within a project's lifetime.
 
-use std::error::Error;
+use crate::error::Error;
 use std::fmt::Display;
 use std::num::ParseIntError;
 use std::str::FromStr;
 
-use crate::util::anyerror::AnyError;
+use crate::error::Hint;
+use crate::util::anyerror::Fault;
 
 type VerNum = u16;
 
@@ -54,7 +55,7 @@ pub fn is_compatible(pv: &PartialVersion, ver: &Version) -> bool {
 pub fn get_target_version<'a>(
     ver: &AnyVersion,
     space: &'a Vec<&Version>,
-) -> Result<Version, AnyError> {
+) -> Result<Version, Fault> {
     // find the specified version for the given ip
     let mut latest_version: Option<&Version> = None;
     space
@@ -70,12 +71,9 @@ pub fn get_target_version<'a>(
         });
     match latest_version {
         Some(v) => Ok(v.clone()),
-        None => Err(AnyError(format!(
-            "\
-ip has no version available as {}
-
-To see all versions try `orbit probe <ip> --versions`",
-            ver
+        None => Err(Box::new(Error::VersionNotFound(
+            ver.clone(),
+            Hint::ShowVersions,
         ))),
     }
 }
@@ -496,7 +494,7 @@ pub enum VersionError {
     InvalidDigit(ParseIntError),
 }
 
-impl Error for VersionError {}
+impl std::error::Error for VersionError {}
 
 impl Display for VersionError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {

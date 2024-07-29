@@ -23,7 +23,7 @@ use crate::core::{
     ip::IpSpec,
     lang::LangIdentifier,
     pkgid::PkgPart,
-    version::{PartialVersion, Version},
+    version::{AnyVersion, PartialVersion, Version},
 };
 
 #[derive(Debug, PartialEq, thiserror::Error)]
@@ -146,6 +146,8 @@ pub enum Error {
     CyclicDependencyIp(PkgPart),
     #[error("failed to get uuid for ip \"{0}\" due to missing or corrupted lockfile{1}")]
     RequiredUuuidMissing(IpSpec, Hint),
+    #[error("failed to find a version matching \"{0}\"{1}")]
+    VersionNotFound(AnyVersion, Hint),
 }
 
 #[derive(Debug, PartialEq)]
@@ -198,6 +200,7 @@ pub enum Hint {
     MakeLock,
     PublishWithReady,
     RegenerateLockfile,
+    ShowVersions,
 }
 
 impl Display for Hint {
@@ -237,6 +240,7 @@ impl Display for Hint {
             Self::MakeLock => "use `orbit lock` to generate the latest lockfile for this ip",
             Self::PublishWithReady => "use the \"--ready\" flag to publish the ip to its channels",
             Self::RegenerateLockfile => "verify the ip's lockfile exists and is up to date",
+            Self::ShowVersions => "use `orbit view <ip> --versions` to see all known versions",
         };
         write!(
             f,

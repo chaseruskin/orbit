@@ -216,6 +216,12 @@ pub mod v1 {
             }
         }
 
+        /// Given an already generated lockfile, find the highest exact version that would be used
+        /// for the provided compatibility version.
+        pub fn get_minimum_requires(&self, _target: &PkgPart, _version: &AnyVersion) -> Version {
+            todo!()
+        }
+
         pub fn inner(&self) -> &Vec<LockEntry> {
             &self.ip
         }

@@ -423,6 +423,7 @@ impl Install {
         all: bool,
     ) -> Result<Catalog<'c>, Fault> {
         let mut catalog = catalog;
+
         // verify the lock file is generated and up to date
         if force == false {
             println!("info: {}", "verifying lockfile is up to date ...");

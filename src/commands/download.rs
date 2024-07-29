@@ -328,6 +328,8 @@ impl Download {
                     if detected_it == true {
                         let found_ip_spec = temp.get_man().get_ip().into_ip_spec();
                         println!("info: found ip {}", found_ip_spec);
+                        // verify the ip is okay
+                        Ip::load(temp.get_root().to_path_buf(), false)?;
                         // zip the project to the downloads directory
                         let download_slot_name = DownloadSlot::new(
                             manifest_name,

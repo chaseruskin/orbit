@@ -144,6 +144,8 @@ pub enum Error {
     PublishFailedCheckpoint(LastError),
     #[error("cyclic dependency with local ip \"{0}\"")]
     CyclicDependencyIp(PkgPart),
+    #[error("failed to get uuid for ip \"{0}\" due to missing or corrupted lockfile{1}")]
+    RequiredUuuidMissing(IpSpec, Hint),
 }
 
 #[derive(Debug, PartialEq)]
@@ -195,6 +197,7 @@ pub enum Hint {
     SpecifyIpSpecForDownload,
     MakeLock,
     PublishWithReady,
+    RegenerateLockfile,
 }
 
 impl Display for Hint {
@@ -233,6 +236,7 @@ impl Display for Hint {
             }
             Self::MakeLock => "use `orbit lock` to generate the latest lockfile for this ip",
             Self::PublishWithReady => "use the \"--ready\" flag to publish the ip to its channels",
+            Self::RegenerateLockfile => "verify the ip's lockfile exists and is up to date",
         };
         write!(
             f,

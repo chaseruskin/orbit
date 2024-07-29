@@ -20,6 +20,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ### Features
 - adds initial ability to use `--json` for verilog and systemverilog modules with `orbit get` command
 
+### Fixes
+- resolves bug when installing a local ip without a lockfile would place it into archive but refuse to load it for future use due to erroneous state
+  
 ## 0.17.0
 
 ### Features

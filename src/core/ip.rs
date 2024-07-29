@@ -17,6 +17,7 @@
 
 use crate::core::manifest;
 use crate::core::manifest::Manifest;
+use crate::error::Hint;
 use crate::error::LastError;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::CodeFault;
@@ -291,11 +292,17 @@ impl Ip {
                 Some(entry) => entry.get_uuid().clone(),
                 None => Uuid::new(),
             },
-            false => match lock.get(man.get_ip().get_name(), &man.get_ip().get_version().to_partial_version()) {
+            false => match lock.get(
+                man.get_ip().get_name(),
+                &man.get_ip().get_version().to_partial_version(),
+            ) {
                 Some(entry) => entry.get_uuid().clone(),
                 None => {
-                    return Err(AnyError(format!("failed to get uuid for ip {} due to corrupted lockfile; remove and install again", man.get_ip().into_ip_spec())))?
-                },
+                    return Err(Error::RequiredUuuidMissing(
+                        man.get_ip().into_ip_spec(),
+                        Hint::RegenerateLockfile,
+                    ))?
+                }
             },
         };
 

@@ -5,7 +5,7 @@ version = 1
 name = "aka"
 version = "1.0.1"
 uuid = "338e03fc-574a-4fde-8b34-58d400130baa"
-checksum = "31992844d3713f4cc9a63a95775337726eb0bcd3c942adf95b5b56570b792977"
+checksum = "7182f6bcacb9e92942fe65796b154b56c1901c573da909fae6a32975e6440825"
 dependencies = []
 
 [[ip]]

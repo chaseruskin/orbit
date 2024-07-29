@@ -192,6 +192,7 @@ pub enum Direction {
     Inout,
     Input,
     Output,
+    Ref,
 }
 
 #[derive(Debug, PartialEq)]
@@ -207,6 +208,22 @@ pub struct Port {
 }
 
 impl Port {
+
+    pub fn is_port_direction(kw: Option<&Keyword>) -> bool {
+        let kw = if let Some(k) = kw {
+            k
+        } else {
+            return false
+        };
+        match kw {
+            Keyword::Input
+            | Keyword::Inout
+            | Keyword::Output
+            | Keyword::Ref => true,
+            _ => false,
+        }
+    }
+
     pub fn into_connection(&self, prefix: &str, suffix: &str) -> String {
         let mut result = String::new();
 

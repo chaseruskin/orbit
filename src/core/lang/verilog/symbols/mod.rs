@@ -320,10 +320,25 @@ impl VerilogSymbol {
         Ok(VerilogSymbol::Module(Module::from_tokens(tokens, pos)?))
     }
 
+    fn is_timeunits_declaration(kw: Option<&Keyword>) -> bool {
+        match kw {
+            Some(kw) => {
+                match kw {
+                    Keyword::Timeunit
+                    | Keyword::Timeprecision => true,
+                    _ => false,
+                }
+            },
+            None => false
+        }
+    }
+
     /// Parses a systemverilog-style "module" declaration, which can include a parameter list, and port list.
     ///
     /// It assumes the first token to consume is the start of one of these lists ('#' or '('), or is just the terminator ';'.
     /// The last token to be consumed by this function is the ';' delimiter.
+    /// 
+    /// Also can handle and discard a timeunits declaration
     pub fn parse_module_declaration<I>(
         tokens: &mut Peekable<I>,
     ) -> Result<(ParamList, PortList, RefSet), VerilogError>
@@ -354,6 +369,15 @@ impl VerilogSymbol {
                 let (ports, port_refs) = Self::parse_module_port_list(tokens)?;
                 port_list.extend(ports);
                 refs.extend(port_refs);
+            // handle the timeunits declaration (optional)
+            } else if Self::is_timeunits_declaration(t.as_ref().as_keyword()) == true {
+                // take all until a terminator
+                if let Some(stmt) = Self::into_next_statement(t, tokens)? {
+                    Self::handle_statement(stmt, &mut param_list, &mut port_list, &mut refs, None)?;
+                }
+            // take the lifetime and continue
+            } else if t.as_ref().check_keyword(&Keyword::Automatic) || t.as_ref().check_keyword(&Keyword::Static) {
+                continue;
             // stop parsing the declaration
             } else if t.as_ref().check_delimiter(&Operator::Terminator) == true {
                 break;
@@ -520,11 +544,7 @@ impl VerilogSymbol {
                         current_port_config.clear_default();
                         continue;
                     // we are dealing with parameter declarations
-                    } else if t.as_ref().check_keyword(&Keyword::Input)
-                        || t.as_ref().check_keyword(&Keyword::Output)
-                        || t.as_ref().check_keyword(&Keyword::Inout)
-                        || t.as_ref().check_keyword(&Keyword::Ref)
-                    {
+                    } else if Port::is_port_direction(t.as_ref().as_keyword()) {
                         current_port_config = Port::new();
                         current_port_config.set_direction(t.as_ref().as_keyword().unwrap().clone());
                     // collect a range
@@ -991,11 +1011,7 @@ impl VerilogSymbol {
             } else if t.as_ref().check_delimiter(&Operator::AttrL) {
                 Self::parse_attr(tokens, t.into_position())?;
             // we are dealing with port declarations
-            } else if t.as_ref().check_keyword(&Keyword::Input)
-                || t.as_ref().check_keyword(&Keyword::Output)
-                || t.as_ref().check_keyword(&Keyword::Inout)
-                || t.as_ref().check_keyword(&Keyword::Ref)
-            {
+            } else if Port::is_port_direction(t.as_ref().as_keyword()) {
                 current_port_config = Port::new();
                 current_port_config.set_direction(t.as_ref().as_keyword().unwrap().clone());
             // collect a range

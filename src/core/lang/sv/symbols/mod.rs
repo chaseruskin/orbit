@@ -244,7 +244,11 @@ impl SystemVerilogSymbol {
     where
         I: Iterator<Item = Token<SystemVerilogToken>>,
     {
-        Ok(Self::Module(Module::from_tokens(tokens, pos)?))
+        Ok(Self::Module(Module::from_tokens(
+            tokens,
+            pos,
+            "systemverilog",
+        )?))
     }
 
     fn parse_package<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Self, SystemVerilogError>

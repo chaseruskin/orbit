@@ -27,6 +27,7 @@ use std::hash::Hasher;
 use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialOrd, Ord, Serialize)]
+#[serde(untagged)]
 pub enum Identifier {
     Basic(String),
     Escaped(String),

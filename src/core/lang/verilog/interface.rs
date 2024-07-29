@@ -18,8 +18,22 @@
 use super::super::sv::token::{
     identifier::Identifier, keyword::Keyword, operator::Operator, token::SystemVerilogToken,
 };
+use serde_derive::Serialize;
 
-type Tokens = Vec<SystemVerilogToken>;
+#[derive(Debug, PartialEq)]
+pub struct Expr(Option<Vec<SystemVerilogToken>>);
+
+impl serde::Serialize for Expr {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match &self.0 {
+            Some(expr) => serializer.serialize_str(&tokens_to_string(&expr)),
+            None => serializer.serialize_none(),
+        }
+    }
+}
 
 pub type PortList = Vec<Port>;
 pub type ParamList = Vec<Port>;
@@ -195,31 +209,39 @@ pub enum Direction {
     Ref,
 }
 
-#[derive(Debug, PartialEq)]
+fn default_mode() -> Keyword {
+    Keyword::Input
+}
+
+fn default_net() -> Keyword {
+    Keyword::Wire
+}
+
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Port {
-    direction: Option<Keyword>,
-    net_type: Option<Keyword>,
-    data_type: Option<SystemVerilogToken>,
-    is_reg: bool,
-    is_signed: bool,
-    range: Option<Tokens>,
+    #[serde(rename = "identifier")]
     name: Identifier,
-    value: Option<Tokens>,
+    #[serde(rename = "mode", default = "default_mode")]
+    direction: Option<Keyword>,
+    #[serde(rename = "type", default = "default_net")]
+    net_type: Option<Keyword>,
+    #[serde(rename = "default")]
+    value: Expr,
+    #[serde(skip_serializing)]
+    data_type: Option<SystemVerilogToken>,
+    #[serde(skip_serializing)]
+    is_reg: bool,
+    #[serde(skip_serializing)]
+    is_signed: bool,
+    #[serde(skip_serializing)]
+    range: Expr,
 }
 
 impl Port {
-
     pub fn is_port_direction(kw: Option<&Keyword>) -> bool {
-        let kw = if let Some(k) = kw {
-            k
-        } else {
-            return false
-        };
+        let kw = if let Some(k) = kw { k } else { return false };
         match kw {
-            Keyword::Input
-            | Keyword::Inout
-            | Keyword::Output
-            | Keyword::Ref => true,
+            Keyword::Input | Keyword::Inout | Keyword::Output | Keyword::Ref => true,
             _ => false,
         }
     }
@@ -317,7 +339,7 @@ impl Port {
         }
 
         // display the range
-        if let Some(r) = &self.range {
+        if let Some(r) = &self.range.0 {
             // remove the space the comes before the range
             if result.is_empty() == false {
                 result.pop();
@@ -336,7 +358,7 @@ impl Port {
         result.push_str(&suffix);
 
         // display the default value
-        if let Some(v) = &self.value {
+        if let Some(v) = &self.value.0 {
             result.push_str(&format!(" = {}", tokens_to_string(v)));
         }
 
@@ -349,10 +371,10 @@ impl Port {
             net_type: None,
             is_reg: false,
             is_signed: false,
-            range: None,
+            range: Expr(None),
             data_type: None,
             name: name,
-            value: None,
+            value: Expr(None),
         }
     }
 
@@ -363,9 +385,9 @@ impl Port {
             is_reg: false,
             is_signed: false,
             data_type: None,
-            range: None,
+            range: Expr(None),
             name: Identifier::new(),
-            value: None,
+            value: Expr(None),
         }
     }
 
@@ -390,25 +412,25 @@ impl Port {
             self.is_signed = rhs.is_signed;
         }
 
-        if self.range.is_none() {
-            if let Some(r) = &rhs.range {
-                self.range = Some(r.clone());
+        if self.range.0.is_none() {
+            if let Some(r) = &rhs.range.0 {
+                self.range = Expr(Some(r.clone()));
             }
         }
 
-        if self.value.is_none() {
-            if let Some(r) = &rhs.value {
-                self.value = Some(r.clone());
+        if self.value.0.is_none() {
+            if let Some(r) = &rhs.value.0 {
+                self.value = Expr(Some(r.clone()));
             }
         }
     }
 
-    pub fn set_default(&mut self, tkns: Tokens) {
-        self.value = Some(tkns);
+    pub fn set_default(&mut self, tkns: Vec<SystemVerilogToken>) {
+        self.value = Expr(Some(tkns));
     }
 
     pub fn clear_default(&mut self) {
-        self.value = None;
+        self.value = Expr(None);
     }
 
     pub fn set_direction(&mut self, kw: Keyword) {
@@ -427,8 +449,8 @@ impl Port {
         self.is_signed = true;
     }
 
-    pub fn set_range(&mut self, tkns: Tokens) {
-        self.range = Some(tkns);
+    pub fn set_range(&mut self, tkns: Vec<SystemVerilogToken>) {
+        self.range = Expr(Some(tkns));
     }
 
     pub fn set_data_type(&mut self, tkn: SystemVerilogToken) {

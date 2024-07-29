@@ -15,8 +15,8 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-use std::iter::Peekable;
-
+use super::super::super::vhdl::token::Identifier as VhdlIdentifier;
+use super::VerilogSymbol;
 use crate::core::lang::{
     lexer::{Position, Token},
     reference::{CompoundIdentifier, RefSet},
@@ -30,18 +30,24 @@ use crate::core::lang::{
         token::{identifier::Identifier, operator::Operator},
     },
 };
+use serde_derive::Serialize;
+use std::iter::Peekable;
 
-use super::super::super::vhdl::token::Identifier as VhdlIdentifier;
-
-use super::VerilogSymbol;
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
 pub struct Module {
+    #[serde(rename = "identifier")]
     name: Identifier,
+    #[serde(rename = "generics")]
     parameters: ParamList,
     ports: PortList,
+    architectures: Vec<()>,
+    /// The set of names that were referenced in the entity.
+    #[serde(skip_serializing)]
     refs: RefSet,
+    /// The set of references that were identified as components.
+    #[serde(skip_serializing)]
     deps: RefSet,
+    #[serde(skip_serializing)]
     pos: Position,
     language: String,
 }
@@ -160,7 +166,11 @@ impl Module {
 
     /// Parses an `Module` design element from the module's identifier to
     /// the END closing statement.
-    pub fn from_tokens<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Self, VerilogError>
+    pub fn from_tokens<I>(
+        tokens: &mut Peekable<I>,
+        pos: Position,
+        language: &str,
+    ) -> Result<Self, VerilogError>
     where
         I: Iterator<Item = Token<SystemVerilogToken>>,
     {
@@ -227,8 +237,9 @@ impl Module {
             ports: ports,
             refs: refs,
             deps: deps,
+            architectures: Vec::new(),
             pos: pos,
-            language: String::from("verilog"),
+            language: String::from(language),
         })
     }
 }

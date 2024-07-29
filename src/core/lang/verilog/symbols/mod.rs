@@ -317,19 +317,18 @@ impl VerilogSymbol {
     where
         I: Iterator<Item = Token<SystemVerilogToken>>,
     {
-        Ok(VerilogSymbol::Module(Module::from_tokens(tokens, pos)?))
+        Ok(VerilogSymbol::Module(Module::from_tokens(
+            tokens, pos, "verilog",
+        )?))
     }
 
     fn is_timeunits_declaration(kw: Option<&Keyword>) -> bool {
         match kw {
-            Some(kw) => {
-                match kw {
-                    Keyword::Timeunit
-                    | Keyword::Timeprecision => true,
-                    _ => false,
-                }
+            Some(kw) => match kw {
+                Keyword::Timeunit | Keyword::Timeprecision => true,
+                _ => false,
             },
-            None => false
+            None => false,
         }
     }
 
@@ -337,7 +336,7 @@ impl VerilogSymbol {
     ///
     /// It assumes the first token to consume is the start of one of these lists ('#' or '('), or is just the terminator ';'.
     /// The last token to be consumed by this function is the ';' delimiter.
-    /// 
+    ///
     /// Also can handle and discard a timeunits declaration
     pub fn parse_module_declaration<I>(
         tokens: &mut Peekable<I>,
@@ -376,7 +375,9 @@ impl VerilogSymbol {
                     Self::handle_statement(stmt, &mut param_list, &mut port_list, &mut refs, None)?;
                 }
             // take the lifetime and continue
-            } else if t.as_ref().check_keyword(&Keyword::Automatic) || t.as_ref().check_keyword(&Keyword::Static) {
+            } else if t.as_ref().check_keyword(&Keyword::Automatic)
+                || t.as_ref().check_keyword(&Keyword::Static)
+            {
                 continue;
             // stop parsing the declaration
             } else if t.as_ref().check_delimiter(&Operator::Terminator) == true {

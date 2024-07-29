@@ -15,13 +15,11 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-use std::collections::HashMap;
-use std::path::PathBuf;
-
 use crate::commands::helps::get;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
+use crate::core::ip::IpSpec;
 use crate::core::ip::PartialIpSpec;
 use crate::core::lang::parser::Parse;
 use crate::core::lang::parser::Symbol;
@@ -37,6 +35,7 @@ use crate::core::lang::vhdl::symbols::VhdlSymbol;
 use crate::core::lang::vhdl::token::Identifier as VhdlIdentifier;
 use crate::core::lang::vhdl::token::VhdlTokenizer;
 use crate::core::lang::Lang;
+use crate::core::lang::LangIdentifier;
 use crate::core::lang::LangUnit;
 use crate::core::lang::Language;
 use crate::core::manifest::Manifest;
@@ -44,7 +43,9 @@ use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::{AnyError, Fault};
 use colored::Colorize;
+use std::collections::HashMap;
 use std::env;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 use cliproc::{cli, proc, stage::*};
@@ -158,7 +159,7 @@ impl Get {
         is_local: bool,
     ) -> Result<(), Fault> {
         // collect all hdl files and parse them
-        let selected_unit = Self::fetch_entity_2(
+        let selected_unit = Self::fetch_entity(
             &ip,
             &LangIdentifier::Vhdl(self.unit.clone()),
             lang,
@@ -208,17 +209,6 @@ impl Get {
                     .unwrap(),
             ),
         }?;
-
-        // let ent = match Self::fetch_entity(&self.unit, &dir, &man) {
-        //     Ok(r) => r,
-        //     Err(e) => {
-        //         return Err(GetError::SuggestShow(
-        //             e.to_string(),
-        //             man.get_ip().get_name().clone(),
-        //             man.get_ip().get_version().clone(),
-        //         ))?
-        //     }
-        // };
 
         Ok(())
     }
@@ -343,10 +333,15 @@ impl Get {
             );
         }
 
+        // print as json data
+        if self.json == true {
+            println!("{}", serde_json::to_string(&module)?);
+        }
+
         Ok(())
     }
 
-    fn fetch_entity_2(
+    fn fetch_entity(
         ip: &Ip,
         name: &LangIdentifier,
         lang: &Language,
@@ -356,9 +351,103 @@ impl Get {
         let result = files.remove(name);
         Ok(result)
     }
+}
 
+#[derive(Debug)]
+pub enum GetError {
+    UnitNotFound(LangIdentifier, IpSpec),
+    SuggestShow(String, Hint),
+}
+
+impl std::error::Error for GetError {}
+
+impl std::fmt::Display for GetError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::UnitNotFound(ent, spec) => {
+                write!(f, "failed to find unit \"{}\" in ip \"{}\"", ent, spec)
+            }
+            Self::SuggestShow(err, hint) => {
+                write!(f, "{}{}", err, hint)
+            }
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum HdlComponent {
+    Entity(Entity),
+    Module(Module),
+}
+
+impl HdlComponent {
+    pub fn get_name(&self) -> &LangIdentifier {
+        todo!()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::path::PathBuf;
+    use std::str::FromStr;
+
+    #[test]
+    fn serialize_entity() {
+        const EXPECTED_STR: &str = r#"{
+  "identifier": "or_gate",
+  "generics": [
+    {
+      "identifier": "N",
+      "mode": "in",
+      "type": "positive",
+      "default": "8"
+    }
+  ],
+  "ports": [
+    {
+      "identifier": "a",
+      "mode": "in",
+      "type": "std_logic_vector(N-1 downto 0)",
+      "default": null
+    },
+    {
+      "identifier": "b",
+      "mode": "in",
+      "type": "std_logic_vector(N-1 downto 0)",
+      "default": null
+    },
+    {
+      "identifier": "q",
+      "mode": "out",
+      "type": "std_logic_vector(N-1 downto 0)",
+      "default": null
+    }
+  ],
+  "architectures": [
+    "rtl",
+    "other"
+  ],
+  "language": "vhdl"
+}"#;
+        let ent = Get::fetch_entity_old(
+            &VhdlIdentifier::from_str("or_gate").unwrap(),
+            &PathBuf::from("./tests/data/gates"),
+            &Manifest::new(),
+        )
+        .unwrap();
+        let json_str = serde_json::to_string_pretty(&ent).unwrap();
+        assert_eq!(json_str, EXPECTED_STR);
+    }
+}
+
+impl Get {
     /// Parses through the vhdl files and returns a desired entity struct.
-    fn fetch_entity(iden: &VhdlIdentifier, dir: &PathBuf, man: &Manifest) -> Result<Entity, Fault> {
+    fn fetch_entity_old(
+        iden: &VhdlIdentifier,
+        dir: &PathBuf,
+        man: &Manifest,
+    ) -> Result<Entity, Fault> {
         let files = crate::util::filesystem::gather_current_files(&dir, false);
         // @todo: generate all units first (store architectures, and entities, and then process)
         let mut result: Option<(String, Entity)> = None;
@@ -445,97 +534,5 @@ impl Get {
                 man.get_ip().into_ip_spec(),
             ))?,
         }
-    }
-}
-
-use crate::core::lang::LangIdentifier;
-
-#[derive(Debug)]
-pub enum GetError {
-    UnitNotFound(LangIdentifier, IpSpec),
-    SuggestShow(String, Hint),
-}
-
-use crate::core::ip::IpSpec;
-
-impl std::error::Error for GetError {}
-
-impl std::fmt::Display for GetError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::UnitNotFound(ent, spec) => {
-                write!(f, "failed to find unit \"{}\" in ip \"{}\"", ent, spec)
-            }
-            Self::SuggestShow(err, hint) => {
-                write!(f, "{}{}", err, hint)
-            }
-        }
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum HdlComponent {
-    Entity(Entity),
-    Module(Module),
-}
-
-impl HdlComponent {
-    pub fn get_name(&self) -> &LangIdentifier {
-        todo!()
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use std::path::PathBuf;
-    use std::str::FromStr;
-
-    #[test]
-    fn serialize_entity() {
-        const EXPECTED_STR: &str = r#"{
-  "identifier": "or_gate",
-  "generics": [
-    {
-      "identifier": "N",
-      "mode": "in",
-      "type": "positive",
-      "default": "8"
-    }
-  ],
-  "ports": [
-    {
-      "identifier": "a",
-      "mode": "in",
-      "type": "std_logic_vector(N-1 downto 0)",
-      "default": null
-    },
-    {
-      "identifier": "b",
-      "mode": "in",
-      "type": "std_logic_vector(N-1 downto 0)",
-      "default": null
-    },
-    {
-      "identifier": "q",
-      "mode": "out",
-      "type": "std_logic_vector(N-1 downto 0)",
-      "default": null
-    }
-  ],
-  "architectures": [
-    "rtl",
-    "other"
-  ],
-  "language": "vhdl"
-}"#;
-        let ent = Get::fetch_entity(
-            &VhdlIdentifier::from_str("or_gate").unwrap(),
-            &PathBuf::from("./tests/data/gates"),
-            &Manifest::new(),
-        )
-        .unwrap();
-        let json_str = serde_json::to_string_pretty(&ent).unwrap();
-        assert_eq!(json_str, EXPECTED_STR);
     }
 }

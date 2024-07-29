@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.18.0 - unreleased
+
+### Features
+- adds initial ability to use `--json` for verilog and systemverilog modules with `orbit get` command
+
 ## 0.17.0
 
 ### Features

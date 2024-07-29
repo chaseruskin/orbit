@@ -291,18 +291,18 @@ impl Serialize for Expr {
 
 #[derive(Debug, PartialEq, Serialize)]
 pub struct InterfaceDeclaration {
-    #[serde(skip_serializing)]
-    initial_keyword: Option<Keyword>,
     #[serde(rename = "identifier")]
     identifier: Identifier,
-    #[serde(flatten)]
+    #[serde(rename = "mode", flatten)]
     mode: Mode,
     #[serde(rename = "type")]
     datatype: SubtypeIndication,
-    #[serde(skip_serializing)]
-    bus_present: bool,
     #[serde(rename = "default")]
     expr: Expr,
+    #[serde(skip_serializing)]
+    initial_keyword: Option<Keyword>,
+    #[serde(skip_serializing)]
+    bus_present: bool,
 }
 
 fn tokens_to_string(tokens: &Vec<VhdlToken>) -> ColorVec {

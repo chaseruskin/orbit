@@ -68,6 +68,7 @@ use toml_edit::Value;
 
 use super::channel::Channel;
 use super::channel::Channels;
+use super::lang::sv::format::SystemVerilogFormat;
 use super::lang::Language;
 
 impl Display for ConfigDocument {
@@ -490,6 +491,8 @@ pub struct Config {
     channel: Option<Channels>,
     #[serde(rename = "vhdl-format")]
     vhdl_format: Option<VhdlFormat>,
+    #[serde(rename = "systemverilog-format")]
+    systemverilog_format: Option<SystemVerilogFormat>,
 }
 
 impl Config {
@@ -501,6 +504,7 @@ impl Config {
             channel: None,
             protocol: None,
             vhdl_format: None,
+            systemverilog_format: None,
             general: None,
             build: None,
             test: None,
@@ -564,6 +568,11 @@ impl Config {
         match &mut self.vhdl_format {
             Some(v) => v.merge(rhs.vhdl_format),
             None => self.vhdl_format = rhs.vhdl_format,
+        }
+        // combine the '[systemverilog-format]' table
+        match &mut self.systemverilog_format {
+            Some(v) => v.merge(rhs.systemverilog_format),
+            None => self.systemverilog_format = rhs.systemverilog_format,
         }
         // combine '[[target]]' array
         match &mut self.target {
@@ -665,6 +674,10 @@ impl Config {
 
     pub fn get_vhdl_formatting(&self) -> Option<&VhdlFormat> {
         self.vhdl_format.as_ref()
+    }
+
+    pub fn get_sv_formatting(&self) -> Option<&SystemVerilogFormat> {
+        self.systemverilog_format.as_ref()
     }
 
     pub fn get_general(&self) -> Option<&General> {

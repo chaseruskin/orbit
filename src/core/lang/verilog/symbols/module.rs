@@ -21,6 +21,7 @@ use crate::core::lang::{
     lexer::{Position, Token},
     reference::{CompoundIdentifier, RefSet},
     sv::{
+        format::SystemVerilogFormat,
         symbols::SystemVerilogSymbol,
         token::{keyword::Keyword, token::SystemVerilogToken},
     },
@@ -71,13 +72,13 @@ impl Module {
 }
 
 impl Module {
-    pub fn into_declaration(&self) -> String {
+    pub fn into_declaration(&self, fmt: &SystemVerilogFormat) -> String {
         let mut result = String::new();
 
         result.push_str(&format!("module "));
         result.push_str(&self.name.to_string());
-        result.push_str(&interface::display_interface(&self.parameters, true));
-        result.push_str(&interface::display_interface(&self.ports, false));
+        result.push_str(&interface::display_interface(&self.parameters, true, fmt));
+        result.push_str(&interface::display_interface(&self.ports, false, fmt));
         result.push(';');
         result
     }
@@ -87,6 +88,7 @@ impl Module {
         name: &Option<VhdlIdentifier>,
         signal_prefix: &str,
         signal_suffix: &str,
+        fmt: &SystemVerilogFormat,
     ) -> String {
         let mut result = String::new();
         // module name
@@ -97,6 +99,7 @@ impl Module {
             true,
             "",
             "",
+            fmt,
         ));
         // leave whitespace between module name and instance if no parameters are available
         if self.parameters.is_empty() == true {
@@ -107,7 +110,7 @@ impl Module {
         if let Some(n) = name {
             result.push_str(&n.to_string());
         } else {
-            result.push_str("uX");
+            result.push_str(&fmt.get_instance_name());
         }
 
         // ports
@@ -116,15 +119,32 @@ impl Module {
             false,
             signal_prefix,
             signal_suffix,
+            fmt,
         ));
         result.push(';');
         result
     }
 
-    pub fn into_wires(&self, wire_prefix: &str, wire_suffix: &str) -> String {
+    pub fn into_wires(
+        &self,
+        wire_prefix: &str,
+        wire_suffix: &str,
+        fmt: &SystemVerilogFormat,
+    ) -> String {
+        // compute the longest word
+        let param_spacer = match fmt.is_auto_name_aligned() {
+            true => Some(interface::longest_port_decl(false, &self.parameters, fmt)),
+            false => None,
+        };
+
+        let port_spacer = match fmt.is_auto_name_aligned() {
+            true => Some(interface::longest_port_decl(false, &self.ports, fmt)),
+            false => None,
+        };
+
         let mut result = String::new();
         self.parameters.iter().for_each(|p| {
-            result.push_str(&&&p.into_declaration(false, true, "", ""));
+            result.push_str(&&&p.into_declaration(false, &param_spacer, "", "", fmt));
             result.push_str(&Operator::Terminator.to_string());
             result.push('\n');
         });
@@ -132,7 +152,13 @@ impl Module {
             result.push('\n');
         }
         self.ports.iter().for_each(|p| {
-            result.push_str(&&&p.into_declaration(false, false, wire_prefix, wire_suffix));
+            result.push_str(&&&p.into_declaration(
+                false,
+                &port_spacer,
+                wire_prefix,
+                wire_suffix,
+                fmt,
+            ));
             result.push_str(&Operator::Terminator.to_string());
             result.push('\n');
         });

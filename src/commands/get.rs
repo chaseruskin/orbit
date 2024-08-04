@@ -23,6 +23,7 @@ use crate::core::ip::IpSpec;
 use crate::core::ip::PartialIpSpec;
 use crate::core::lang::parser::Parse;
 use crate::core::lang::parser::Symbol;
+use crate::core::lang::sv::format::SystemVerilogFormat;
 use crate::core::lang::verilog::symbols::module::Module;
 use crate::core::lang::vhdl::format::VhdlFormat;
 use crate::core::lang::vhdl::interface;
@@ -141,23 +142,12 @@ impl Subcommand<Context> for Get {
         // load the manifest from the path
         let ip = Ip::load(ip_path, is_local_ip)?;
 
-        let default_fmt = VhdlFormat::new();
-        let fmt = match c.get_config().get_vhdl_formatting() {
-            Some(v) => v,
-            None => &default_fmt,
-        };
-        self.run(&ip, &fmt, &c.get_languages(), is_local_ip)
+        self.run(&ip, &c.get_languages(), is_local_ip, &c)
     }
 }
 
 impl Get {
-    fn run(
-        &self,
-        ip: &Ip,
-        vhdl_fmt: &VhdlFormat,
-        lang: &Language,
-        is_local: bool,
-    ) -> Result<(), Fault> {
+    fn run(&self, ip: &Ip, lang: &Language, is_local: bool, c: &Context) -> Result<(), Fault> {
         // collect all hdl files and parse them
         let selected_unit = Self::fetch_entity(
             &ip,
@@ -188,18 +178,18 @@ impl Get {
                 return Err(Error::GetUnitNotFound(self.unit.to_string(), hint))?;
             }
         };
-
         // determine how to handle unit display
         match unit.get_lang() {
             Lang::Vhdl => self.display_vhdl_entity(
                 &ip,
                 unit.get_vhdl_symbol().unwrap().as_entity().unwrap(),
                 is_local,
-                vhdl_fmt,
+                &c.get_vhdl_format(),
             ),
             Lang::Verilog => self.display_verilog_module(
                 &ip,
                 unit.get_verilog_symbol().unwrap().as_module().unwrap(),
+                &c.get_sv_format(),
             ),
             Lang::SystemVerilog => self.display_verilog_module(
                 &ip,
@@ -207,6 +197,7 @@ impl Get {
                     .unwrap()
                     .as_module()
                     .unwrap(),
+                &c.get_sv_format(),
             ),
         }?;
 
@@ -301,7 +292,12 @@ impl Get {
         Ok(())
     }
 
-    fn display_verilog_module(&self, _ip: &Ip, module: &Module) -> Result<(), Fault> {
+    fn display_verilog_module(
+        &self,
+        _ip: &Ip,
+        module: &Module,
+        fmt: &SystemVerilogFormat,
+    ) -> Result<(), Fault> {
         // determine if default print should appear
         let default_output = self.architectures == false
             && self.instance == false
@@ -316,20 +312,20 @@ impl Get {
         }
 
         if self.component == true || default_output == true {
-            println!("{}\n", module.into_declaration());
+            println!("{}\n", module.into_declaration(&fmt));
         }
 
         if self.signals == true {
             println!(
                 "{}",
-                module.into_wires(&self.signal_prefix, &self.signal_suffix)
+                module.into_wires(&self.signal_prefix, &self.signal_suffix, &fmt)
             );
         }
 
         if self.instance == true {
             println!(
                 "{}",
-                module.into_instance(&self.name, &self.signal_prefix, &self.signal_suffix)
+                module.into_instance(&self.name, &self.signal_prefix, &self.signal_suffix, &fmt)
             );
         }
 

@@ -20,39 +20,36 @@ use serde_derive::Serialize;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-pub struct VhdlFormat {
+pub struct SystemVerilogFormat {
     #[serde(rename = "highlight-syntax")]
-    highlight_syntax: Option<bool>,
+    highlight_syntax: Option<bool>, // TODO
     #[serde(rename = "tab-size")]
     tab_size: Option<u8>,
-    #[serde(rename = "type-auto-alignment")]
-    type_auto_alignment: Option<bool>,
-    #[serde(rename = "type-offset")]
-    type_offset: Option<u8>,
+    #[serde(rename = "name-auto-alignment")]
+    name_auto_alignment: Option<bool>,
+    #[serde(rename = "name-offset")]
+    name_offset: Option<u8>,
+    #[serde(rename = "range-offset")]
+    range_offset: Option<u8>,
     #[serde(rename = "mapping-auto-alignment")]
     mapping_auto_alignment: Option<bool>,
     #[serde(rename = "mapping-offset")]
     mapping_offset: Option<u8>,
-    #[serde(rename = "indent-interface")]
-    indent_interfaces: Option<bool>,
-    #[serde(rename = "space-interface-parenthesis")]
-    space_interface_parenthesis: Option<bool>,
     #[serde(rename = "instance-name")]
     instance_name: Option<String>,
 }
 
-impl VhdlFormat {
+impl SystemVerilogFormat {
     pub fn new() -> Self {
         Self {
-            highlight_syntax: Some(false),
-            tab_size: Some(2),
-            type_auto_alignment: Some(true),
-            type_offset: Some(1),
-            mapping_auto_alignment: Some(true),
-            mapping_offset: Some(1),
-            indent_interfaces: Some(true),
-            space_interface_parenthesis: Some(false),
-            instance_name: Some(String::from("uX")),
+            highlight_syntax: None,
+            tab_size: None,
+            name_auto_alignment: None,
+            name_offset: None,
+            range_offset: None,
+            mapping_auto_alignment: None,
+            mapping_offset: None,
+            instance_name: None,
         }
     }
 
@@ -64,28 +61,24 @@ impl VhdlFormat {
         self.tab_size.unwrap_or(2)
     }
 
-    pub fn is_auto_type_aligned(&self) -> bool {
-        self.type_auto_alignment.unwrap_or(false)
+    pub fn is_auto_name_aligned(&self) -> bool {
+        self.name_auto_alignment.unwrap_or(false)
     }
 
-    pub fn get_type_offset(&self) -> u8 {
-        self.type_offset.unwrap_or(1)
+    pub fn get_name_offset(&self) -> u8 {
+        self.name_offset.unwrap_or(0)
+    }
+
+    pub fn get_range_offset(&self) -> u8 {
+        self.range_offset.unwrap_or(0)
     }
 
     pub fn is_auto_mapping_aligned(&self) -> bool {
-        self.mapping_auto_alignment.unwrap_or(true)
+        self.mapping_auto_alignment.unwrap_or(false)
     }
 
     pub fn get_mapping_offset(&self) -> u8 {
-        self.mapping_offset.unwrap_or(1)
-    }
-
-    pub fn is_indented_interfaces(&self) -> bool {
-        self.indent_interfaces.unwrap_or(true)
-    }
-
-    pub fn is_interface_parenthesis_spaced(&self) -> bool {
-        self.space_interface_parenthesis.unwrap_or(false)
+        self.mapping_offset.unwrap_or(0)
     }
 
     pub fn get_instance_name(&self) -> String {
@@ -105,23 +98,20 @@ impl VhdlFormat {
             if self.tab_size.is_some() == false {
                 self.tab_size = rhs.tab_size
             }
-            if self.type_auto_alignment.is_some() == false {
-                self.type_auto_alignment = rhs.type_auto_alignment
+            if self.name_auto_alignment.is_some() == false {
+                self.name_auto_alignment = rhs.name_auto_alignment
             }
-            if self.type_offset.is_some() == false {
-                self.type_offset = rhs.type_offset
+            if self.range_offset.is_some() == false {
+                self.range_offset = rhs.range_offset;
+            }
+            if self.name_offset.is_some() == false {
+                self.name_offset = rhs.name_offset
             }
             if self.mapping_auto_alignment.is_some() == false {
                 self.mapping_auto_alignment = rhs.mapping_auto_alignment
             }
             if self.mapping_offset.is_some() == false {
                 self.mapping_offset = rhs.mapping_offset
-            }
-            if self.indent_interfaces.is_some() == false {
-                self.indent_interfaces = rhs.indent_interfaces
-            }
-            if self.space_interface_parenthesis.is_some() == false {
-                self.space_interface_parenthesis = rhs.space_interface_parenthesis
             }
             if self.instance_name.is_some() == false {
                 self.instance_name = rhs.instance_name

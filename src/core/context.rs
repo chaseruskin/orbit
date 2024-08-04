@@ -29,6 +29,8 @@ use std::fs;
 use std::path;
 use std::path::PathBuf;
 
+use super::lang::sv::format::SystemVerilogFormat;
+use super::lang::vhdl::format::VhdlFormat;
 use super::lang::Language;
 
 const CACHE_TAG_FILE: &str = "CACHEDIR.TAG";
@@ -429,6 +431,24 @@ impl Context {
                 false => Ok(None),
             },
         }
+    }
+
+    pub fn get_vhdl_format(&self) -> VhdlFormat {
+        let default_fmt = VhdlFormat::new();
+        let vhdl_fmt = match self.get_config().get_vhdl_formatting() {
+            Some(v) => v,
+            None => &default_fmt,
+        };
+        vhdl_fmt.clone()
+    }
+
+    pub fn get_sv_format(&self) -> SystemVerilogFormat {
+        let default_fmt = SystemVerilogFormat::new();
+        let sv_fmt = match self.get_config().get_sv_formatting() {
+            Some(sv) => sv,
+            None => &default_fmt,
+        };
+        sv_fmt.clone()
     }
 }
 

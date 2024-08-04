@@ -522,7 +522,7 @@ impl VerilogSymbol {
 
     fn as_port_definition(stmt: &Statement) -> Option<PortList> {
         let mut ports = PortList::new();
-        let mut current_port_config = Port::new();
+        let mut current_port_config = Port::new_port();
 
         let mut counter = 0;
         let mut state = 0;
@@ -537,7 +537,7 @@ impl VerilogSymbol {
                             state = -1;
                         }
                         // collect all names until something else is hit
-                        ports.push(Port::with(name.clone()));
+                        ports.push(Port::with(name.clone(), false));
                         ports.last_mut().unwrap().inherit(&current_port_config);
                     } else if t.as_ref().check_delimiter(&Operator::Comma) {
                         // proceed
@@ -546,7 +546,7 @@ impl VerilogSymbol {
                         continue;
                     // we are dealing with parameter declarations
                     } else if Port::is_port_direction(t.as_ref().as_keyword()) {
-                        current_port_config = Port::new();
+                        current_port_config = Port::new_port();
                         current_port_config.set_direction(t.as_ref().as_keyword().unwrap().clone());
                     // collect a range
                     } else if t.as_ref().check_delimiter(&Operator::BrackL) {
@@ -556,7 +556,7 @@ impl VerilogSymbol {
                     } else if t.as_ref().check_delimiter(&Operator::BlockAssign) {
                         state = 2;
                     } else if t.as_ref().check_keyword(&Keyword::Reg) {
-                        current_port_config.set_reg();
+                        current_port_config.set_net_type(t.as_ref().as_keyword().unwrap().clone());
                     } else if t.as_ref().check_keyword(&Keyword::Signed) {
                         current_port_config.set_signed();
                     } else if Self::is_valid_net_type(t.as_ref().as_keyword()) {
@@ -661,7 +661,7 @@ impl VerilogSymbol {
 
     fn as_param_definition(stmt: &Statement) -> Option<ParamList> {
         let mut params = PortList::new();
-        let mut current_param_config = Port::new();
+        let mut current_param_config = Port::new_param();
 
         let mut counter = 0;
         let mut state = 0;
@@ -673,7 +673,7 @@ impl VerilogSymbol {
                     // we are dealing with a param list
                     if let Some(name) = t.as_ref().as_identifier() {
                         // collect all names until something else is hit
-                        params.push(Port::with(name.clone()));
+                        params.push(Port::with(name.clone(), true));
                         params.last_mut().unwrap().inherit(&current_param_config);
                     } else if t.as_ref().check_delimiter(&Operator::Comma) {
                         // proceed
@@ -682,7 +682,7 @@ impl VerilogSymbol {
                         continue;
                     // we are dealing with parameter declarations
                     } else if t.as_ref().check_keyword(&Keyword::Parameter) {
-                        current_param_config = Port::new();
+                        current_param_config = Port::new_param();
                         current_param_config
                             .set_direction(t.as_ref().as_keyword().unwrap().clone());
                     // collect a range
@@ -693,7 +693,7 @@ impl VerilogSymbol {
                     } else if t.as_ref().check_delimiter(&Operator::BlockAssign) {
                         state = 2;
                     } else if t.as_ref().check_keyword(&Keyword::Reg) {
-                        current_param_config.set_reg();
+                        current_param_config.set_net_type(t.as_ref().as_keyword().unwrap().clone());
                     } else if t.as_ref().check_keyword(&Keyword::Signed) {
                         current_param_config.set_signed();
                     // this is the datatype...? for the parameter
@@ -888,7 +888,7 @@ impl VerilogSymbol {
         // println!("{}", "PARSE PARAMS");
 
         let mut params = ParamList::new();
-        let mut current_param_config = Port::new();
+        let mut current_param_config = Port::new_param();
 
         let mut refs = RefSet::new();
 
@@ -912,7 +912,7 @@ impl VerilogSymbol {
                         || t_next.as_type().check_delimiter(&Operator::BlockAssign)
                         || t_next.as_type().check_delimiter(&Operator::ParenR)
                     {
-                        params.push(Port::with(name.clone()));
+                        params.push(Port::with(name.clone(), true));
                         params.last_mut().unwrap().inherit(&current_param_config);
                     // this may be a datatype!
                     } else {
@@ -929,7 +929,7 @@ impl VerilogSymbol {
                 Self::parse_attr(tokens, t.into_position())?;
             // we are dealing with parameter declarations
             } else if t.as_ref().check_keyword(&Keyword::Parameter) {
-                current_param_config = Port::new();
+                current_param_config = Port::new_param();
                 current_param_config.set_direction(t.as_ref().as_keyword().unwrap().clone());
             // collect a range
             } else if t.as_ref().check_delimiter(&Operator::BrackL) {
@@ -949,7 +949,7 @@ impl VerilogSymbol {
                 // set the default for the last known port!
                 params.last_mut().unwrap().set_default(into_tokens(stmt));
             } else if t.as_ref().check_keyword(&Keyword::Reg) {
-                current_param_config.set_reg();
+                current_param_config.set_net_type(t.as_ref().as_keyword().unwrap().clone());
             } else if t.as_ref().check_keyword(&Keyword::Signed) {
                 current_param_config.set_signed();
             } else if Self::is_valid_net_type(t.as_ref().as_keyword()) {
@@ -971,7 +971,7 @@ impl VerilogSymbol {
         // println!("{}", "PARSE PORTS");
 
         let mut ports = PortList::new();
-        let mut current_port_config = Port::new();
+        let mut current_port_config = Port::new_port();
         let mut refs = RefSet::new();
         let mut counter = 0;
         while let Some(t) = tokens.next() {
@@ -993,7 +993,7 @@ impl VerilogSymbol {
                         || t_next.as_type().check_delimiter(&Operator::BlockAssign)
                         || t_next.as_type().check_delimiter(&Operator::ParenR)
                     {
-                        ports.push(Port::with(name.clone()));
+                        ports.push(Port::with(name.clone(), false));
                         ports.last_mut().unwrap().inherit(&current_port_config);
                     // this may be a datatype!
                     } else {
@@ -1013,7 +1013,7 @@ impl VerilogSymbol {
                 Self::parse_attr(tokens, t.into_position())?;
             // we are dealing with port declarations
             } else if Port::is_port_direction(t.as_ref().as_keyword()) {
-                current_port_config = Port::new();
+                current_port_config = Port::new_port();
                 current_port_config.set_direction(t.as_ref().as_keyword().unwrap().clone());
             // collect a range
             } else if t.as_ref().check_delimiter(&Operator::BrackL) {
@@ -1033,7 +1033,7 @@ impl VerilogSymbol {
                 // set the default for the last known port!
                 ports.last_mut().unwrap().set_default(into_tokens(stmt));
             } else if t.as_ref().check_keyword(&Keyword::Reg) {
-                current_port_config.set_reg();
+                current_port_config.set_net_type(t.as_ref().as_keyword().unwrap().clone());
             } else if t.as_ref().check_keyword(&Keyword::Signed) {
                 current_port_config.set_signed();
             } else if Self::is_valid_net_type(t.as_ref().as_keyword()) {

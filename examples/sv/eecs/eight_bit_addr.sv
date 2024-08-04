@@ -2,7 +2,7 @@ module eight_bit_addr(
     input en, cin,
     input [7:0] a, b,
     output [7:0] sum,
-    output cout);
+    output reg cout);
 
     wire [6:0] carries;
     

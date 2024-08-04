@@ -15,6 +15,8 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+use crate::core::lang::sv::format::SystemVerilogFormat;
+
 use super::super::sv::token::{
     identifier::Identifier, keyword::Keyword, operator::Operator, token::SystemVerilogToken,
 };
@@ -113,6 +115,28 @@ fn tokens_to_string(tokens: &Vec<SystemVerilogToken>) -> String {
     result
 }
 
+/// Determines the length of the longest port declaration (mode, type, range).
+pub fn longest_port_decl(use_mode: bool, ports: &Vec<Port>, fmt: &SystemVerilogFormat) -> usize {
+    let longest = ports.iter().max_by(|x, y| {
+        x.into_decl_no_name(use_mode, &fmt)
+            .len()
+            .cmp(&y.into_decl_no_name(use_mode, &fmt).len())
+    });
+    match longest {
+        Some(l) => l.into_decl_no_name(use_mode, &fmt).len(),
+        None => 0,
+    }
+}
+
+/// Determines the length of the longest identifier.
+pub fn longest_port_name(ports: &Vec<Port>) -> usize {
+    let longest = ports.iter().max_by(|x, y| x.name.len().cmp(&y.name.len()));
+    match longest {
+        Some(l) => l.name.len(),
+        None => 0,
+    }
+}
+
 pub fn get_port_by_name_mut<'a>(
     port_list: &'a mut PortList,
     name: &Identifier,
@@ -146,6 +170,7 @@ pub fn display_connections(
     is_params: bool,
     prefix: &str,
     suffix: &str,
+    fmt: &SystemVerilogFormat,
 ) -> String {
     let mut result = String::new();
 
@@ -157,9 +182,20 @@ pub fn display_connections(
         result.push('(');
     }
 
+    // compute longest name
+    let spacer = match fmt.is_auto_mapping_aligned() {
+        true => Some(longest_port_name(&port_list)),
+        false => None,
+    };
+    // determine the number of whitespace characters to include between port connection lines
+    let offset = fmt.get_mapping_offset() as usize;
+
     port_list.iter().enumerate().for_each(|(i, p)| {
-        result.push_str("\n  ");
-        result.push_str(&&&p.into_connection(prefix, suffix));
+        result.push('\n');
+        for _ in 0..fmt.get_tab_size() as usize {
+            result.push(' ');
+        }
+        result.push_str(&&&p.into_connection(&spacer, &offset, prefix, suffix));
         if i != port_list.len() - 1 {
             result.push_str(",")
         };
@@ -176,7 +212,11 @@ pub fn display_connections(
     result
 }
 
-pub fn display_interface(port_list: &Vec<Port>, is_params: bool) -> String {
+pub fn display_interface(
+    port_list: &Vec<Port>,
+    is_params: bool,
+    fmt: &SystemVerilogFormat,
+) -> String {
     let mut result = String::new();
     if port_list.is_empty() == false {
         result.push(' ');
@@ -186,9 +226,18 @@ pub fn display_interface(port_list: &Vec<Port>, is_params: bool) -> String {
         result.push('(');
     }
 
+    // compute the longest word
+    let spacer = match fmt.is_auto_name_aligned() {
+        true => Some(longest_port_decl(true, &port_list, fmt)),
+        false => None,
+    };
+
     port_list.iter().enumerate().for_each(|(i, p)| {
-        result.push_str("\n  ");
-        result.push_str(&&&p.into_declaration(true, is_params, "", ""));
+        result.push('\n');
+        for _ in 0..fmt.get_tab_size() as usize {
+            result.push(' ');
+        }
+        result.push_str(&&&p.into_declaration(true, &spacer, "", "", fmt));
         if i != port_list.len() - 1 {
             result.push_str(",")
         };
@@ -261,6 +310,8 @@ impl serde::Serialize for DataType {
 
 #[derive(Debug, PartialEq, Serialize)]
 pub struct Port {
+    #[serde(skip_serializing)]
+    is_param: bool,
     #[serde(rename = "identifier")]
     name: Identifier,
     #[serde(rename = "mode", default = "default_mode")]
@@ -269,8 +320,6 @@ pub struct Port {
     data_type: DataType,
     #[serde(rename = "default")]
     value: Expr,
-    #[serde(skip_serializing)]
-    is_reg: bool,
 }
 
 impl Port {
@@ -282,11 +331,43 @@ impl Port {
         }
     }
 
-    pub fn into_connection(&self, prefix: &str, suffix: &str) -> String {
+    /// Computes the number of characters before the name declaration.
+    pub fn len_pre_name_decl(&self) -> usize {
+        let mode_len = match self.is_param {
+            true => self
+                .mode
+                .as_ref()
+                .unwrap_or(&Keyword::Parameter)
+                .to_string()
+                .len(),
+            false => self
+                .mode
+                .as_ref()
+                .unwrap_or(&Keyword::Input)
+                .to_string()
+                .len(),
+        };
+        let type_len = 0;
+        mode_len + type_len
+    }
+
+    pub fn into_connection(
+        &self,
+        spacing: &Option<usize>,
+        offset: &usize,
+        prefix: &str,
+        suffix: &str,
+    ) -> String {
         let mut result = String::new();
 
         result.push_str(&Operator::Dot.to_string());
         result.push_str(&self.name.to_string());
+        if let Some(sp) = spacing {
+            // +1 for including the length of the DOT character
+            while result.len() < sp + 1 + offset {
+                result.push(' ');
+            }
+        }
         result.push_str(&Operator::ParenL.to_string());
         result.push_str(prefix);
         result.push_str(&self.name.to_string());
@@ -295,65 +376,32 @@ impl Port {
         result
     }
 
-    pub fn into_declaration(
-        &self,
-        use_mode: bool,
-        is_param: bool,
-        prefix: &str,
-        suffix: &str,
-    ) -> String {
+    fn into_decl_no_name(&self, use_mode: bool, fmt: &SystemVerilogFormat) -> String {
         let mut result = String::new();
 
-        if use_mode == true {
-            // display the port direction
-            match is_param {
-                true => {
-                    result.push_str(
-                        &self
-                            .mode
-                            .as_ref()
-                            .unwrap_or(&Keyword::Parameter)
-                            .to_string(),
-                    );
-                }
-                false => {
-                    result.push_str(&self.mode.as_ref().unwrap_or(&Keyword::Input).to_string());
-                }
-            }
+        if use_mode == true && self.is_param == false {
+            result.push_str(&self.mode.as_ref().unwrap_or(&Keyword::Input).to_string());
             result.push(' ');
         }
 
-        // we previously omitted the mode
-        if use_mode == false {
-            match is_param {
-                true => {
-                    result.push_str(
-                        &self
-                            .mode
-                            .as_ref()
-                            .unwrap_or(&Keyword::Parameter)
-                            .to_string(),
-                    );
-                    result.push(' ');
-                }
-                false => {
-                    if self.data_type.data.is_none() {
-                        result.push_str(&Keyword::Wire.to_string());
-                        result.push(' ');
-                    }
-                }
-            }
-        } else {
-            if let Some(n) = &self.data_type.net {
-                result.push_str(&n.to_string());
-                result.push(' ');
-            }
+        if self.is_param == true {
+            result.push_str(
+                &self
+                    .mode
+                    .as_ref()
+                    .unwrap_or(&Keyword::Parameter)
+                    .to_string(),
+            );
+            result.push(' ');
+        }
 
-            // display the reg keyword
-            if self.is_reg == true {
-                result.push_str(&Keyword::Reg.to_string());
-                result.push(' ');
-            }
+        // force the port to have a wire net
+        if use_mode == false && self.is_param == false {
+            result.push_str(&Keyword::Wire.to_string());
+            result.push(' ');
+        } else if let Some(n) = &self.data_type.net {
+            result.push_str(&n.to_string());
+            result.push(' ');
         }
 
         // display the datatype
@@ -374,8 +422,30 @@ impl Port {
             if result.is_empty() == false {
                 result.pop();
             }
+            // add this many number of spaces before the range modifier
+            for _ in 0..fmt.get_range_offset() as usize {
+                result.push(' ');
+            }
             result.push_str(&tokens_to_string(r));
             result.push(' ');
+        }
+        result
+    }
+
+    pub fn into_declaration(
+        &self,
+        use_mode: bool,
+        spacing: &Option<usize>,
+        prefix: &str,
+        suffix: &str,
+        fmt: &SystemVerilogFormat,
+    ) -> String {
+        let mut result = self.into_decl_no_name(use_mode, fmt);
+
+        if let Some(sp) = spacing {
+            while result.len() < *sp + fmt.get_name_offset() as usize {
+                result.push(' ');
+            }
         }
 
         // prepend any prefix
@@ -395,22 +465,32 @@ impl Port {
         result
     }
 
-    pub fn with(name: Identifier) -> Self {
+    pub fn with(name: Identifier, is_param: bool) -> Self {
         Self {
+            is_param: is_param,
             name: name,
             mode: None,
             data_type: DataType::new(),
-            is_reg: false,
             value: Expr(None),
         }
     }
 
-    pub fn new() -> Self {
+    pub fn new_port() -> Self {
         Self {
+            is_param: false,
             name: Identifier::new(),
             mode: None,
             data_type: DataType::new(),
-            is_reg: false,
+            value: Expr(None),
+        }
+    }
+
+    pub fn new_param() -> Self {
+        Self {
+            is_param: true,
+            name: Identifier::new(),
+            mode: None,
+            data_type: DataType::new(),
             value: Expr(None),
         }
     }
@@ -426,10 +506,6 @@ impl Port {
 
         if self.data_type.data.is_none() {
             self.data_type.data = rhs.data_type.data.clone();
-        }
-
-        if self.is_reg == false {
-            self.is_reg = rhs.is_reg;
         }
 
         if self.data_type.is_signed == false {
@@ -463,10 +539,6 @@ impl Port {
 
     pub fn set_net_type(&mut self, kw: Keyword) {
         self.data_type.net = Some(kw);
-    }
-
-    pub fn set_reg(&mut self) {
-        self.is_reg = true;
     }
 
     pub fn set_signed(&mut self) {

@@ -34,6 +34,7 @@ Every configuration file consists of the following sections:
 - [[build]](#the-build-section) - The build settings.
     - [default-target](#the-default-target-field) - Set the default target for builds.
 - [[vhdl-format]](#the-vhdl-format-section) - VHDL code formatting.
+- [[systemverilog-format]](#the-systemverilog-format-section) - SystemVerilog code formatting.
 - [[env]](#the-env-section) - The runtime environment variables.
 - [[[target]]](#the-target-array) - Define a target.
     - [name](#the-name-field) - The name of the target.
@@ -107,11 +108,11 @@ default-target = "bar"
 
 ### The `[vhdl-format]` section
 
-The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their hard-coded default value.
+The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their default values.
 
 ``` toml
 [vhdl-format]
-# enable colored output for generated vhdl code
+# enable colored output for VHDL code snippets
 highlight-syntax = true
 # number of whitespace characters per tab/indentation
 tab-size = 2
@@ -119,12 +120,38 @@ tab-size = 2
 indent-interface = true
 # automatically align a signal or constant's subtype with its other identifiers
 type-auto-alignment = false
-# number of whitespace characters after alignment (before ':' token)
+# number of whitespace characters after alignment (before the `:` character)
 type-offset = 0
-# automatically align a instantiation's mapping with its other identifiers
+# automatically align an instantiation's mapping along its port connections
 mapping-auto-alignment = false
-# number of whitespace characters after mapping (before '=>' token)
+# number of whitespace characters before port connection (before the `=>` character)
 mapping-offset = 1
+# the default instance name
+instance-name = "uX"
+```
+
+### The `[systemverilog-format]` section
+
+The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their default values.
+
+``` toml
+[systemverilog-format]
+# enable colored output for SystemVerilog code snippets (TODO)
+highlight-syntax = false
+# number of whitespace characters per tab/indentation
+tab-size = 2
+# automatically align a port or parameter's name with its module's other names
+name-auto-alignment = false
+# number of additional whitespace characters after alignment
+name-alignmnet = 0
+# number of whitespaces before a range specifier
+range-offset = 0
+# automatically align an instantiation's mapping along its port connections
+mapping-auto-alignment = false
+# number of whitespace characters before port connection (before the `(` character)
+mapping-offset = 0
+# the default instance name
+instance-name = "uX"
 ```
 
 ### The `[env]` section

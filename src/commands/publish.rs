@@ -258,11 +258,15 @@ impl Publish {
         let output_path = channel.get_root().join(output_dir);
         // create any mising directories
         std::fs::create_dir_all(&output_path)?;
-        // copy the (raw) manifest there
-        std::fs::copy(
-            local_ip.get_root().join(IP_MANIFEST_FILE),
+        // copy the (raw) manifest there (in formatted string)
+        std::fs::write(
             output_path.join(IP_MANIFEST_FILE),
+            local_ip.get_man().to_string(),
         )?;
+        // std::fs::copy(
+        //     local_ip.get_root().join(IP_MANIFEST_FILE),
+        //     output_path.join(IP_MANIFEST_FILE),
+        // )?;
         Ok(())
     }
 

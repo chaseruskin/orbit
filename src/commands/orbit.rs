@@ -16,6 +16,7 @@
 //
 
 use crate::commands::helps::orbit;
+use crate::core::channel::Channel;
 use crate::core::config;
 use crate::core::context::Context;
 use crate::util::anyerror::AnyError;
@@ -72,6 +73,7 @@ pub struct Orbit {
     upgrade: bool,
     version: bool,
     force: bool,
+    sync: bool,
     cmode: ColorMode,
     command: Option<OrbitSubcommand>,
 }
@@ -82,6 +84,7 @@ impl Command for Orbit {
         Ok(Orbit {
             upgrade: cli.check(Arg::flag("upgrade"))?,
             version: cli.check(Arg::flag("version"))?,
+            sync: cli.check(Arg::flag("sync"))?,
             force: cli.check(Arg::flag("force"))?,
             cmode: cli
                 .get(Arg::option("color").value("when"))?
@@ -114,9 +117,25 @@ impl Command for Orbit {
                 .current_ip_dir(environment::ORBIT_IP_PATH)? // must come before .settings() call
                 .settings(config::CONFIG_FILE)?
                 .build_dir(environment::ORBIT_TARGET_DIR)?;
+            // update channels
+            if self.sync == true {
+                Channel::sync(&context)?;
+            }
             // pass the context to the given command
             sub.execute(&context)
         // if no command is given then print default help
+        } else if self.sync == true {
+            // update channels
+            let context = Context::new()
+                .home(environment::ORBIT_HOME)?
+                .cache(environment::ORBIT_CACHE)?
+                .archive(environment::ORBIT_ARCHIVE)?
+                .channels(environment::ORBIT_CHANNELS)?
+                .current_ip_dir(environment::ORBIT_IP_PATH)? // must come before .settings() call
+                .settings(config::CONFIG_FILE)?
+                .build_dir(environment::ORBIT_TARGET_DIR)?;
+            Channel::sync(&context)?;
+            Ok(())
         } else {
             Ok(println!("{}", orbit::HELP))
         }

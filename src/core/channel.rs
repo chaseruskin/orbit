@@ -15,16 +15,15 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-use std::path::PathBuf;
-
-use serde_derive::{Deserialize, Serialize};
-
+use super::target::Process;
+use crate::core::context::Context;
+use crate::core::ip::Ip;
 use crate::{
     error::Error,
     util::{anyerror::Fault, environment::Environment},
 };
-
-use super::target::Process;
+use serde_derive::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 pub type Channels = Vec<Channel>;
 
@@ -157,5 +156,22 @@ impl Channel {
             list += &format!("{}\n", c.quick_info());
         }
         list
+    }
+
+    pub fn sync(context: &Context) -> Result<(), Fault> {
+        println!("info: {}", "synchronizing channels ...");
+        let channels: Vec<&Channel> = context.get_config().get_channels().into_values().collect();
+        // initialize environment
+        let mut env = Environment::new()
+            // read config.toml for setting any env variables
+            .from_config(context.get_config())?;
+        if let Some(path) = context.get_ip_path() {
+            // read ip manifest for env variables
+            env = env.from_ip(&Ip::load(path.clone(), true)?)?;
+        }
+        for c in channels {
+            c.run_sync(&env)?;
+        }
+        Ok(())
     }
 }

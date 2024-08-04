@@ -19,6 +19,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ### Features
 - adds initial ability to use `--json` for verilog and systemverilog modules with `orbit get` command
+- adds global flag `--sync` to synchronize channels if they are stored on the internet as well as locally on the user's system
 
 ### Fixes
 - resolves bug when installing a local ip without a lockfile would place it into archive but refuse to load it for future use due to erroneous state

@@ -222,6 +222,7 @@
 </ul>
 </li>
 <li><a href="#the-vhdl-format-section">[vhdl-format]</a> - VHDL code formatting.</li>
+<li><a href="#the-systemverilog-format-section">[systemverilog-format]</a> - SystemVerilog code formatting.</li>
 <li><a href="#the-env-section">[env]</a> - The runtime environment variables.</li>
 <li><a href="#the-target-array">[[target]]</a> - Define a target.
 <ul>
@@ -284,9 +285,9 @@ default-target = "foo"
 default-target = "bar"
 </code></pre>
 <h3 id="the-vhdl-format-section"><a class="header" href="#the-vhdl-format-section">The <code>[vhdl-format]</code> section</a></h3>
-<p>The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their hard-coded default value.</p>
+<p>The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their default values.</p>
 <pre><code class="language-toml">[vhdl-format]
-# enable colored output for generated vhdl code
+# enable colored output for VHDL code snippets
 highlight-syntax = true
 # number of whitespace characters per tab/indentation
 tab-size = 2
@@ -294,12 +295,34 @@ tab-size = 2
 indent-interface = true
 # automatically align a signal or constant's subtype with its other identifiers
 type-auto-alignment = false
-# number of whitespace characters after alignment (before ':' token)
+# number of whitespace characters after alignment (before the `:` character)
 type-offset = 0
-# automatically align a instantiation's mapping with its other identifiers
+# automatically align an instantiation's mapping along its port connections
 mapping-auto-alignment = false
-# number of whitespace characters after mapping (before '=&gt;' token)
+# number of whitespace characters before port connection (before the `=&gt;` character)
 mapping-offset = 1
+# the default instance name
+instance-name = "uX"
+</code></pre>
+<h3 id="the-systemverilog-format-section"><a class="header" href="#the-systemverilog-format-section">The <code>[systemverilog-format]</code> section</a></h3>
+<p>The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their default values.</p>
+<pre><code class="language-toml">[systemverilog-format]
+# enable colored output for SystemVerilog code snippets (TODO)
+highlight-syntax = false
+# number of whitespace characters per tab/indentation
+tab-size = 2
+# automatically align a port or parameter's name with its module's other names
+name-auto-alignment = false
+# number of additional whitespace characters after alignment
+name-alignmnet = 0
+# number of whitespaces before a range specifier
+range-offset = 0
+# automatically align an instantiation's mapping along its port connections
+mapping-auto-alignment = false
+# number of whitespace characters before port connection (before the `(` character)
+mapping-offset = 0
+# the default instance name
+instance-name = "uX"
 </code></pre>
 <h3 id="the-env-section"><a class="header" href="#the-env-section">The <code>[env]</code> section</a></h3>
 <p>The user can define an arbitrary number of their own entries with their determined value represented in string format.</p>

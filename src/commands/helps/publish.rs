@@ -15,15 +15,14 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// This help page was automatically generated from the mangen.py tool.
+// Automatically generated from the mansync.py script.
 pub const HELP: &str = r#"Post an ip to a channel.
 
 Usage:
     orbit publish [options]
 
 Options:
-    --ready, -y     perform a full run
-    --list          view available channels and exit
+    --ready, -y           perform a full run
+    --list                view available channels and exit
 
-Use 'orbit help publish' to read more about the command.
-"#;
+Use 'orbit help publish' to read more about the command."#;

@@ -30,26 +30,6 @@ NEW_HEADER = '''//
 
 '''
 
-# define all commands expected to be in documentation
-COMMANDS = [
-    'new',
-    'init',
-    'view',
-    'read',
-    'get',
-    'tree',
-    'lock',
-    'build',
-    'test',
-    'publish',
-    'search',
-    'download',
-    'install',
-    'env',
-    'config',
-    'remove',
-]
-
 CWD, _ = os.path.split(sys.argv[0])
 # define the path to the TOML file
 INPUT_TOML_PATH = "./docs/commands.toml"
@@ -71,12 +51,91 @@ ARGS = 'args'
 EXPS = 'examples'
 SUMM = 'summary'
 HELP = 'help'
+ALIAS = 'alias'
 
 END = '\n'
 SECT_END = END+END
 INDENT = ' ' * 4
 
 # --- Functions ----------------------------------------------------------------
+
+def ucap(s: str) -> str:
+    return s.capitalize()
+
+
+def lcap(s: str) -> str:
+    if s[1].islower() == True or s[1] == ' ':
+        return s[0].lower() + s[1:]
+    else:
+        return s
+    
+
+def find_all_commands(table, prog):
+    commands = []
+    for k, _v in table.items():
+        if k == prog:
+            continue
+        commands += [str(k)]
+    return commands
+ 
+
+def write_prog_quick_help(table, commands) -> str:
+    command = PROGRAM
+    MAX = 26
+
+    qh = ucap(table[command][SUMM]) + '.'
+    qh += '\n\n' + 'Usage:' + '\n'
+    qh += INDENT + table[command][SYNO] + '\n'
+    qh += '\n' + 'Commands:' + '\n'
+    for cmd in commands:
+        field = INDENT + cmd + ('' if ALIAS not in table[cmd] else ', ' + table[cmd][ALIAS])
+        qh += field
+        qh += ' ' * (MAX - len(field)) + lcap(table[cmd][SUMM]) + '\n'
+        pass
+    qh += '\n' + 'Options:' + '\n'
+    table = table[command]
+    for opt in table[OPTS]:
+        field = INDENT + opt
+        qh += field
+        if len(field)+2 >= MAX:
+            qh += '\n' + ' ' * MAX
+        else:
+            qh += ' ' * (MAX - len(field))
+        qh += lcap(table[OPTS][opt]) + '\n'
+    return qh
+
+    pass
+
+
+def write_quick_help(table, command) -> str:
+    MAX = 26   
+    # handle for subcommand
+    table = table[command]
+    qh = ucap(table[SUMM]) + '.'
+    qh += '\n\n' + 'Usage:' + '\n'
+    qh += INDENT + table[SYNO] + '\n'
+    if ARGS in table.keys():
+        qh += '\n' + 'Arguments:' + '\n'
+        for arg in table[ARGS]:
+            field = INDENT + arg
+            qh += field
+            if len(field)+2 >= MAX:
+                qh += '\n' + ' ' * 26
+            else:
+                qh += ' ' * (MAX - len(field))
+            qh += lcap(table[ARGS][arg]) + '\n'
+    if OPTS in table.keys():
+        qh += '\n' + 'Options:' + '\n'
+        for opt in table[OPTS]:
+            field = INDENT + opt
+            qh += field
+            if len(field)+2 >= MAX:
+                qh += '\n' + ' ' * MAX
+            else:
+                qh += ' ' * (MAX - len(field))
+            qh += lcap(table[OPTS][opt]) + '\n'
+    return qh
+
 
 def is_populated(table, key: str) -> bool:
     '''
@@ -129,13 +188,13 @@ def write_md_manual(table, dest: str, command: str) -> int:
         if is_populated(table, ARGS) == True:
             for opt in table[ARGS]:
                 md.write('`'+opt+'`'+'  \n')
-                md.write('      '+table[ARGS][opt])
+                md.write('      '+ucap(table[ARGS][opt]))
                 md.write(SECT_END)
             pass
         if is_populated(table, OPTS) == True:
             for opt in table[OPTS]:
                 md.write('`'+opt+'`'+'  \n')
-                md.write('      '+table[OPTS][opt])
+                md.write('      '+ucap(table[OPTS][opt]))
                 md.write(SECT_END)
             pass
 
@@ -204,12 +263,12 @@ def write_rs_manual(table, dest, command) -> int:
         if is_populated(table, ARGS) == True:
             for opt in table[ARGS]:
                 rs.write(INDENT+opt+END)
-                rs.write(INDENT+INDENT+table[ARGS][opt]+END+END)
+                rs.write(INDENT+INDENT+ucap(table[ARGS][opt])+END+END)
             pass
         if is_populated(table, OPTS) == True:
             for opt in table[OPTS]:
                 rs.write(INDENT+opt+END)
-                rs.write(INDENT+INDENT+table[OPTS][opt]+END+END)
+                rs.write(INDENT+INDENT+ucap(table[OPTS][opt])+END+END)
             pass
 
         # examples section
@@ -224,17 +283,11 @@ def write_rs_manual(table, dest, command) -> int:
     return 1
 
 
-def write_rs_help(table, dest, command, footer=True) -> int:
+def write_rs_help(ptable, dest, command, footer=True) -> int:
     '''
     Writes the TOML `table` for a particular `command` to the `dest` folder in
     Rust format as quick help.
     '''
-    table = table[command]
-
-    if is_populated(table, HELP) == False:
-        print('WARNING: No help text for command:', command)
-        return 0
-    
     # fill in intermediate directory structure
     os.makedirs(dest, exist_ok=True)
 
@@ -253,16 +306,20 @@ def write_rs_help(table, dest, command, footer=True) -> int:
         # write the header
         rs.write(NEW_HEADER)
         # comment
-        rs.write('// This help page was automatically generated from the mangen.py tool.'+END)
+        rs.write('// Automatically generated from the mansync.py script.'+END)
         # variable declaration
         rs.write('pub const HELP: &str = r#"')
-        # quick help body
-        rs.write(table[HELP].strip())
-        # add closing remark
-        if footer == True:
-            rs.write(SECT_END+"Use 'orbit help "+command+"' to read more about the command."+END)
+        # quick help body from table
+        if command == PROGRAM:
+            quick_help = write_prog_quick_help(ptable, find_all_commands(ptable, PROGRAM))
+            rs.write(quick_help.strip())
+            rs.write(SECT_END+"Use 'orbit help <command>' for more information about a command.")
+            pass
         else:
-            rs.write(END)
+            quick_help = write_quick_help(ptable, command)
+            rs.write(quick_help.strip())
+            rs.write(SECT_END+"Use 'orbit help "+command+"' to read more about the command.")
+            pass
         rs.write('"#;\n')
         pass
 
@@ -275,6 +332,8 @@ def write_rs_help(table, dest, command, footer=True) -> int:
 def main():
     # open the manual data
     data = toml.load(INPUT_TOML_PATH)
+
+    COMMANDS = find_all_commands(data, PROGRAM)
     
     score = 0
     total = 3 * len(COMMANDS) + 1
@@ -297,6 +356,7 @@ def main():
     score += write_rs_help(data, RS_HELP_OUTPUT_DIR, PROGRAM, footer=False)
 
     print('DOCUMENTATION SCORE:', score, '/', total)
+    pass
 
 
 if __name__ == '__main__':

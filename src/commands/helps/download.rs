@@ -15,19 +15,18 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// This help page was automatically generated from the mangen.py tool.
+// Automatically generated from the mansync.py script.
 pub const HELP: &str = r#"Fetch packages from the internet.
 
 Usage:
     orbit download [options]
 
 Options:
-    --list              print URLs to the console and exit
-    --missing           filter only uninstalled packages (default: true)
-    --all               include dependencies of all types
-    --queue <dir>       set the destination directory to place fetched codebase
-    --verbose           display the command being executed
-    --force             fallback to default protocol if missing given protocol
+    --list                print URLs and exit
+    --missing             filter only uninstalled packages (default: true)
+    --all                 gather packages from all dependency types
+    --queue <dir>         set the destination directory for placing fetched repositories
+    --verbose             display the custom protocol being executed
+    --force               download selected packages regardless of status
 
-Use 'orbit help download' to read more about the command.
-"#;
+Use 'orbit help download' to read more about the command."#;

@@ -15,22 +15,20 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// This help page was automatically generated from the mangen.py tool.
+// Automatically generated from the mansync.py script.
 pub const HELP: &str = r#"Store an immutable reference to an ip.
 
 Usage:
     orbit install [options]
 
 Options:
-    <ip>                ip specification to install from catalog
-    --url <url>         URL to install the ip from the internet
-    --path <path>       ip's local path to install from filesystem
-    --protocol <name>   defined protocol to download the package
-    --tag <tag>         unique tag to pass to the protocol
-    --all               install all dependencies including development
-    --list              view available protocols and exit
-    --verbose           display the command(s) being executed
-    --force             install regardless of cache slot occupancy
+    <ip>                  ip specification
+    --url <url>           URL to install the ip from the internet
+    --path <path>         path to install the ip from local file system
+    --protocol <name>     use a configured protocol to download ip
+    --tag <tag>           unique tag to provide to the protocol
+    --force               install the ip regardless of the cache slot occupancy
+    --list                view available protocols and exit
+    --all                 install all dependencies (including development)
 
-Use 'orbit help install' to read more about the command.
-"#;
+Use 'orbit help install' to read more about the command."#;

@@ -7,7 +7,7 @@ view - display metadata of an ip
 ## __SYNOPSIS__
 
 ```
-orbit show [options] [<ip>]
+orbit view [options] [<ip>]
 ```
 
 ## __DESCRIPTION__
@@ -36,7 +36,7 @@ local ip, if one exists.
       Display the list of possible versions
 
 `--units, -u`  
-      Display the list of HDL primary design units associated with this ip
+      Display the list of hdl primary design units associated with this ip
 
 `--all, -a`  
       Include any private or hidden results

@@ -15,24 +15,23 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// This help page was automatically generated from the mangen.py tool.
-pub const HELP: &str = r#"Inspect hdl design unit source code.
+// Automatically generated from the mansync.py script.
+pub const HELP: &str = r#"Navigate hdl design unit source code.
 
 Usage:
     orbit read [options] <unit>
 
-Args:
-    <unit>                  primary design unit identifier
+Arguments:
+    <unit>                primary design unit identifier
 
-Options:            
-    --ip <spec>             ip to reference the unit from
-    --location              append the :line:col to the filepath
-    --file                  display the path to the read-only source code
-    --keep                  prevent previous files read from being deleted
-    --limit <num>           set a maximum number of lines to print
-    --start <code>          tokens to begin reading contents from file
-    --end <code>            tokens to end reading contents from file
-    --doc <code>            series of tokens to find immediate comments for
+Options:
+    --ip <spec>           the ip specification to search in the catalog
+    --file                copy the source code to a temporary read-only file
+    --location            append the targeted code segment's line and column number to the resulting filepath 
+    --keep                do not clean the temporary directory of existing files
+    --limit <num>         set a maximum number of lines to write
+    --start <code>        start the code navigation upon matching this VHDL segment
+    --end <code>          stop the code navigation upon matching this VHDL segment
+    --doc <code>          navigate to the preceding comments of this VHDL segment
 
-Use 'orbit help read' to read more about the command.
-"#;
+Use 'orbit help read' to read more about the command."#;

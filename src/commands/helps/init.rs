@@ -15,17 +15,15 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// This help page was automatically generated from the mangen.py tool.
-pub const HELP: &str = r#"Initialize a new ip from an existing project.
+// Automatically generated from the mansync.py script.
+pub const HELP: &str = r#"Initialize an ip from an existing project.
 
 Usage:
     orbit init [options] [<path>]
 
 Options:
-    <path>                  destination path to initialize (default: '.')
-    --name <name>           the name of the ip
-    --library <library>     the ip library
-    --force                 overwrite any existing manifest with a new one
+    <path>                directory to initialize
+    --name <name>         set the resulting ip's name
+    --lib <lib>           set the resulting ip's library
 
-Use 'orbit help init' to read more about the command.
-"#;
+Use 'orbit help init' to read more about the command."#;

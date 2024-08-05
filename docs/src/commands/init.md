@@ -12,34 +12,31 @@ orbit init [options] [<path>]
 
 ## __DESCRIPTION__
 
-This command will initialize a new ip at the target directory `<path>`. If no path
-is supplied, then it defaults to the current working directory.
+Initializes an ip at the file system directory `<path>`. If not path is
+provided, then it defaults to the current working directory. 
 
-If no name is supplied, then the ip's name defaults to the final path component
-of the path argument. Use the name option to provide a custom name.
+If no name is provided, then the resulting ip's name defaults to the 
+directory's name. Using the `--name` option allows the ip's name to be 
+explicitly set.
 
-This command fails if the path does not exist. See the `new` command for
-creating an ip from a non-existing directory.
+To create a new ip from a non-existing directory, see the `new` command.
 
 ## __OPTIONS__
 
 `<path>`  
-      The location to initialize an ip
+      Directory to initialize
 
 `--name <name>`  
-      The name of the ip
+      Set the resulting ip's name
 
-`--library <library>`  
-      The ip library
-
-`--force`  
-      Overwrite a manifest if one already exists
+`--lib <lib>`  
+      Set the resulting ip's library
 
 ## __EXAMPLES__
 
 ```
 orbit init
-orbit init ./projects/gates
-orbit init --name hello_world
+orbit init projects/gates
+orbit init --name adder
 ```
 

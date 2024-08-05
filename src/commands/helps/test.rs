@@ -15,26 +15,26 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// This help page was automatically generated from the mangen.py tool.
+// Automatically generated from the mansync.py script.
 pub const HELP: &str = r#"Run a test.
 
 Usage:
     orbit test [options] [--] [args]...
 
 Options:
-    --target <name>         target to execute
-    --dut <unit>            set the device under test
-    --tb <unit>             set the top level testbench unit
-    --plan <format>         set the blueprint file format
-    --target-dir <dir>      the relative directory where the target starts
-    --command <path>        overwrite the target's command
-    --list                  view available targets and exit
-    --all                   include all hdl files of the working ip
-    --fileset <key=glob>... set filesets for the target
-    --force                 force the target to execute
-    --no-clean              do not clean the target folder before execution
-    --verbose               display the command being executed
-    args                    arguments to pass to the requested command
+    --target <name>       target to execute
+    --dut <unit>          set the device under test
+    --tb <unit>           set the top level testbench unit
+    --plan <format>       set the blueprint file format
+    --target-dir <dir>    the relative directory where the target starts
+    --command <path>      overwrite the target's command
+    --list                view available targets and exit
+    --all                 include all hdl files of the working ip
+    --fileset <key=glob>...
+                          a glob-style pattern identified by name to include in the blueprint
+    --no-clean            do not clean the target folder before execution
+    --force               force the target to execute 
+    --verbose             display the command being executed
+    args                  arguments to pass to the target
 
-Use 'orbit help test' to read more about the command.
-"#;
+Use 'orbit help test' to read more about the command."#;

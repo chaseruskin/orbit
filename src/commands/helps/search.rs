@@ -15,21 +15,18 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// This help page was automatically generated from the mangen.py tool.
+// Automatically generated from the mansync.py script.
 pub const HELP: &str = r#"Browse the ip catalog.
 
 Usage:
     orbit search [options] [<ip>]
 
-Args:
-    <ip>                filter the name of ip
-
 Options:
-    --install, -i       filter ip installed to cache
-    --download, -d      filter ip downloaded to downloads
-    --keyword <term>... special word to filter out packages
-    --limit <num>       maximum number of results to return
-    --match             only return results with each filter passed
+    <ip>                  the beginning of a package name
+    --install, -i         filter ip installed to the cache
+    --download, -d        filter ip downloaded to the downloads
+    --keyword <term>...   include ip that contain this keyword
+    --limit <num>         the maximum number of results to return
+    --match               return results that only pass each filter
 
-Use 'orbit help search' to read more about the command.
-"#;
+Use 'orbit help search' to read more about the command."#;

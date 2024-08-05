@@ -63,13 +63,13 @@ OPTIONS
         Set a maximum number of lines to write
 
     --start <code>
-        Start the code navigation upon matching this VHDL segment
+        Start the code navigation upon matching this vhdl segment
 
     --end <code>
-        Stop the code navigation upon matching this VHDL segment
+        Stop the code navigation upon matching this vhdl segment
 
     --doc <code>
-        Navigate to the preceding comments of this VHDL segment
+        Navigate to the preceding comments of this vhdl segment
 
 EXAMPLES
     orbit read and_gate --ip gates:1.0.0

@@ -53,7 +53,7 @@ DESCRIPTION
 
 OPTIONS
     --list
-        Print URLs and exit
+        Print urls and exit
 
     --missing
         Filter only uninstalled packages (default: true)

@@ -6,38 +6,39 @@ name = "new"
 summary = "create a new ip"
 synopsis = "orbit new [options] <path>"
 description = """
-This command will create a new ip at the target directory `<path>`. The command
-assumes the path does not already exists. It will attempt to create a new 
-directory at the destination with a manifest. 
+Creates a new ip at the target directory `<path>`. The path is assumed to not
+already exist. A new directory will be created at the file system destination
+that contains a minimal manifest and .orbitignore file.
 
-If no name is supplied, then the ip's name defaults to the final path component
-of the path argument. Use the name option to provide a custom name.
+If no name is supplied, then the ip's name defaults to the final directory name
+taken from `<path>`. Using the `--name` option allows this field to be
+explicitly set.
 
-This command fails if the path already exists. See the `init` command for
-initializing an already existing project into an ip.
+For initializing an already existing project into an ip, see the `init` 
+command.
 """
 
-args."<path>" = "The new directory to make"
-options."--name <name>" = "The ip name to create"
-options."--library <library>" = "The ip library"
+args."<path>" = "Directory to create for the ip"
+options."--name <name>" = "Set the resulting ip's name"
+options."--lib <lib>" = "Set the resulting ip's library"
 
 examples = """
 orbit new gates
-orbit new ./projects/dir7 --name adder
+orbit new eecs/lab1 --name adder
 """
 
 help = """
-Create a new orbit ip project.
+Create a new ip.
 
 Usage:
     orbit new [options] <path>
 
-Args:
-    <path>              the destination path to create ip project
+Arguments:
+    <path>          directory to create ip project
 
 Options:
-    --name <name>           the ip name to create
-    --library <library>     the ip library
+    --name <name>   set the resulting ip's name
+    --lib <lib>     set the resulting ip's library
 """
 
 # ------------------------------------------------------------------------------
@@ -48,38 +49,24 @@ name = "init"
 summary = "initialize an ip from an existing project"
 synopsis = "orbit init [options] [<path>]"
 description = """
-This command will initialize a new ip at the target directory `<path>`. If no path 
-is supplied, then it defaults to the current working directory.
+Initializes an ip at the file system directory `<path>`. If not path is
+provided, then it defaults to the current working directory. 
 
-If no name is supplied, then the ip's name defaults to the final path component
-of the path argument. Use the name option to provide a custom name.
+If no name is provided, then the resulting ip's name defaults to the 
+directory's name. Using the `--name` option allows the ip's name to be 
+explicitly set.
 
-This command fails if the path does not exist. See the `new` command for
-creating an ip from a non-existing directory.
+To create a new ip from a non-existing directory, see the `new` command.
 """
 
-options."<path>" = "The location to initialize an ip"
-options."--name <name>" = "The name of the ip"
-options."--library <library>" = "The ip library"
-options."--force" = "Overwrite a manifest if one already exists"
+options."<path>" = "Directory to initialize"
+options."--name <name>" = "Set the resulting ip's name"
+options."--lib <lib>" = "Set the resulting ip's library"
 
 examples = """
 orbit init
-orbit init ./projects/gates
-orbit init --name hello_world
-"""
-
-help = """
-Initialize a new ip from an existing project.
-
-Usage:
-    orbit init [options] [<path>]
-
-Options:
-    <path>                  destination path to initialize (default: '.')
-    --name <name>           the name of the ip
-    --library <library>     the ip library
-    --force                 overwrite any existing manifest with a new one
+orbit init projects/gates
+orbit init --name adder
 """
 
 # ------------------------------------------------------------------------------   
@@ -88,7 +75,7 @@ Options:
 [view]
 name = "view"
 summary = "display metadata of an ip"
-synopsis = "orbit show [options] [<ip>]"
+synopsis = "orbit view [options] [<ip>]"
 description = """
 This command retrieves various pieces of information about a particular ip to
 gain a better understanding of how to utilize the ip. By default, it displays
@@ -115,19 +102,6 @@ examples = """
 orbit view --units
 orbit view gates:1.0.0 -u
 orbit view gates --versions
-"""
-
-help = """
-Display metadata of an ip.
-
-Usage:
-    orbit show [options] [<ip>]
-
-Options:  
-    <ip>                        the spec of the ip to query       
-    --versions, -v              display the list of possible versions
-    --units, -u                 display primary design units within an ip
-    --all, -a                   include any private or hidden results
 """
 
 # ------------------------------------------------------------------------------
@@ -174,26 +148,6 @@ examples = """
 orbit read and_gate --ip gates:1.0.0
 orbit read math_pkg --ip math --doc "function clog2"
 orbit read math_pkg --ip math --start "package math_pkg" --doc "function flog2p1" --location --file
-"""
-
-help = """
-Inspect hdl design unit source code.
-
-Usage:
-    orbit read [options] <unit>
-
-Args:
-    <unit>                  primary design unit identifier
-
-Options:            
-    --ip <spec>             ip to reference the unit from
-    --location              append the :line:col to the filepath
-    --file                  display the path to the read-only source code
-    --keep                  prevent previous files read from being deleted
-    --limit <num>           set a maximum number of lines to print
-    --start <code>          tokens to begin reading contents from file
-    --end <code>            tokens to end reading contents from file
-    --doc <code>            series of tokens to find immediate comments for
 """
 
 # ------------------------------------------------------------------------------ 
@@ -250,28 +204,6 @@ orbit get uart -si --name u0
 orbit get or_gate --ip gates --json
 """
 
-help = """
-Fetch an hdl entity for code integration.
-
-Usage:
-    orbit get [options] <unit>
-
-Args:
-    <unit>                  entity identifier
-
-Options:
-    --ip <spec>             ip to reference the unit from
-    --json                  export the entity information as valid json
-    --library,   -l         display library declaration
-    --component, -c         display component declaration
-    --signals,   -s         display constant and signal declarations
-    --instance,  -i         display instantation
-    --architecture, -a      display detected architectures
-    --name <identifier>     set the instance's identifier
-    --signal-prefix <value> prepend information to the instance's signals
-    --signal-suffix <value> append information to the instance's signals
-"""
-
 # ------------------------------------------------------------------------------     
 # tree    
 # ------------------------------------------------------------------------------
@@ -310,21 +242,6 @@ orbit tree --root top --format long
 orbit tree --ascii --all
 """
 
-help = """
-View the dependency graph.
-
-Usage:
-    orbit tree [options]
-
-Options:
-    --root <unit>       uppermost hdl unit to starting the dependency tree
-    --compress          replace duplicate branches with a referenced label
-    --all               include all possible roots in tree
-    --format <fmt>      select how to display unit nodes: 'long' or 'short'
-    --ascii             restrict tree chars to the original 128 ascii set
-    --ip                view the dependency graph at the ip level
-"""
-
 # ------------------------------------------------------------------------------  
 # lock     
 # ------------------------------------------------------------------------------
@@ -358,21 +275,12 @@ orbit lock
 orbit lock --force
 """
 
-help = """
-Save the state of the world for the ip.
-
-Usage:
-    orbit lock [options]              
-
-Options:
-    --force                 skip reading from the lock file
-"""
-
 # ------------------------------------------------------------------------------
 # test      
 # ------------------------------------------------------------------------------
 [test]
 name = "test"
+alias = "t"
 summary = "run a test"
 synopsis = "orbit test [options] [--] [args]..."
 description = """
@@ -424,33 +332,12 @@ examples = """
 orbit test --dut adder --tb adder_tb --target modelsim -- --lint
 """
 
-help = """
-Run a test.
-
-Usage:
-    orbit test [options] [--] [args]...
-
-Options:
-    --target <name>         target to execute
-    --dut <unit>            set the device under test
-    --tb <unit>             set the top level testbench unit
-    --plan <format>         set the blueprint file format
-    --target-dir <dir>      the relative directory where the target starts
-    --command <path>        overwrite the target's command
-    --list                  view available targets and exit
-    --all                   include all hdl files of the working ip
-    --fileset <key=glob>... set filesets for the target
-    --force                 force the target to execute
-    --no-clean              do not clean the target folder before execution
-    --verbose               display the command being executed
-    args                    arguments to pass to the requested command
-"""
-
 # ------------------------------------------------------------------------------
 # build, b       
 # ------------------------------------------------------------------------------
 [build]
 name = "build"
+alias = "b"
 summary = "plan and execute a target"
 synopsis = "orbit build [options] [--] [args]..."
 description = """
@@ -504,27 +391,6 @@ orbit build --all --target-dir build --target ghdl
 orbit build --target xsim --force -- --help
 """
 
-help = """
-Plan and execute a target.
-
-Usage:
-    orbit build [options] [--] [args]...
-
-Options:
-    --target <name>         target to execute
-    --top <unit>            set the top level design unit
-    --plan <format>         set the blueprint file format
-    --target-dir <dir>      the relative directory where the target starts
-    --command <path>        overwrite the target's command
-    --list                  view available targets and exit
-    --all                   include all hdl files of the working ip
-    --fileset <key=glob>... set filesets for the target
-    --force                 force the target to execute
-    --no-clean              do not clean the target folder before execution
-    --verbose               display the command being executed
-    args                    arguments to pass to the requested command
-"""
-
 # ------------------------------------------------------------------------------
 # publish          
 # ------------------------------------------------------------------------------
@@ -557,17 +423,6 @@ options."--list" = "View available channels and exit"
 examples = """
 orbit publish
 orbit publish --ready
-"""
-
-help = """
-Post an ip to a channel.
-
-Usage:
-    orbit publish [options]
-
-Options:
-    --ready, -y     perform a full run
-    --list          view available channels and exit
 """
 
 # ------------------------------------------------------------------------------
@@ -603,23 +458,6 @@ examples = """
 orbit search axi
 orbit search --keyword memory --keyword ecc
 orbit search --keyword RF --limit 20
-"""
-
-help = """
-Browse the ip catalog.
-
-Usage:
-    orbit search [options] [<ip>]
-
-Args:
-    <ip>                filter the name of ip
-
-Options:
-    --install, -i       filter ip installed to cache
-    --download, -d      filter ip downloaded to downloads
-    --keyword <term>... special word to filter out packages
-    --limit <num>       maximum number of results to return
-    --match             only return results with each filter passed
 """
 
 # ------------------------------------------------------------------------------
@@ -671,21 +509,6 @@ orbit download --missing --list
 orbit download --all --force
 """
 
-help = """
-Fetch packages from the internet.
-
-Usage:
-    orbit download [options]
-
-Options:
-    --list              print URLs to the console and exit
-    --missing           filter only uninstalled packages (default: true)
-    --all               include dependencies of all types
-    --queue <dir>       set the destination directory to place fetched codebase
-    --verbose           display the command being executed
-    --force             fallback to default protocol if missing given protocol
-"""
-
 # ------------------------------------------------------------------------------
 # install         
 # ------------------------------------------------------------------------------
@@ -725,24 +548,6 @@ orbit install adder:1.0.0 --url https://my.adder/project.zip
 orbit install alu:2.3.7 --path ./projects/alu --force 
 """
 
-help = """
-Store an immutable reference to an ip.
-
-Usage:
-    orbit install [options]
-
-Options:
-    <ip>                ip specification to install from catalog
-    --url <url>         URL to install the ip from the internet
-    --path <path>       ip's local path to install from filesystem
-    --protocol <name>   defined protocol to download the package
-    --tag <tag>         unique tag to pass to the protocol
-    --all               install all dependencies including development
-    --list              view available protocols and exit
-    --verbose           display the command(s) being executed
-    --force             install regardless of cache slot occupancy
-"""
-
 # ------------------------------------------------------------------------------
 # env             
 # ------------------------------------------------------------------------------
@@ -764,16 +569,6 @@ examples = """
 orbit env
 orbit env ORBIT_HOME
 orbit env ORBIT_CACHE ORBIT_ARCHIVE
-"""
-
-help = """
-Print orbit environment information.
-
-Usage:
-    orbit env [options]
-
-Options:
-    <key>...     Lookup environment variable to include its value
 """
 
 # ------------------------------------------------------------------------------
@@ -807,21 +602,6 @@ orbit config --append include="~/.orbit/profiles/ks-tech"
 orbit config --unset env.VIVADO_PATH --global
 """
 
-help = """
-Modify configuration values.
-
-Usage:
-    orbit config [options]
-
-Options:
-    --global                    access the home configuration file
-    --local                     access the current project configuration file
-    --append <key>=<value>...   add a value to a key storing a list
-    --pop <key>...              remove the last value to a key storing a list
-    --set <key>=<value>...      write the value at the key entry
-    --unset <key>...            delete the key's entry
-"""
-
 # ------------------------------------------------------------------------------
 # remove      
 # ------------------------------------------------------------------------------
@@ -845,67 +625,16 @@ orbit remove gates
 orbit remove gates:1.0.0 --all
 """
 
-help = """
-Uninstall an ip from the catalog.
-
-Usage:
-    orbit remove [options] <ip>
-
-Options:
-    <ip>        ip specification to uninstall
-    --all       remove the ip from the cache and downloads
-    --recurse   fully remove the ip and its dependencies
-"""
-
 # ------------------------------------------------------------------------------
 # orbit      
 # ------------------------------------------------------------------------------
 [orbit]
-help = """
-Orbit is an hdl package manager and build tool.
+summary = "orbit is an hdl package manager and build tool"
+synopsis = "orbit [options] [command]"
 
-Usage:
-    orbit [options] [command]
-
-Commands:
-    new             create a new ip
-    init            initialize an ip from an existing project
-    view            display metadata of an ip
-    read            navigate hdl design unit source code
-    get             fetch an entity
-    tree            view the dependency graph
-    lock            save the world state of the current ip
-    test, t         run a test
-    build, b        plan and execute a target
-    publish         post an ip to a channel
-    search          browse the ip catalog 
-    download        request packages from the internet
-    install         store an immutable reference to an ip
-    env             print orbit environment information
-    config          modify configuration values
-    remove          uninstall an ip from the catalog
-
-Options:
-    --version       print version information and exit
-    --upgrade       check for the latest orbit binary
-    --sync          synchronize configured channels
-    --force         bypass interactive prompts
-    --color <when>  coloring: auto, always, never
-    --help, -h      print help information
-
-Use 'orbit help <command>' for more information about a command.
-"""
-
-
-
-# /*
-# --*-- commands to remove --*--
-#     edit            open an ip in a text editor
-#     launch/publish          release a new ip version
-
-# --*-- commands to add --*--
-#     audit           verify a package is able to installed properly and release-able
-
-
-# alt names for `probe`: -check-, -scan-, show
-# */
+options."--version" = "Print version information and exit"
+options."--upgrade" = "check for the latest orbit binary"
+options."--sync" = "synchronize configured channels"
+options."--force" = "bypass interactive prompts"
+options."--color <when>" = "coloring: auto, always, never"
+options."--help, -h" = "print help information"

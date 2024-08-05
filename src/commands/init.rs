@@ -35,7 +35,6 @@ use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Init {
-    force: bool,
     name: Option<PkgPart>,
     library: Option<Identifier>,
     path: PathBuf,
@@ -45,9 +44,8 @@ impl Subcommand<Context> for Init {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
         cli.help(Help::with(init::HELP))?;
         Ok(Self {
-            force: cli.check(Arg::flag("force"))?,
             name: cli.get(Arg::option("name"))?,
-            library: cli.get(Arg::option("library"))?,
+            library: cli.get(Arg::option("lib"))?,
             path: cli
                 .get(Arg::positional("path"))?
                 .unwrap_or(PathBuf::from(".")),
@@ -55,9 +53,9 @@ impl Subcommand<Context> for Init {
     }
 
     fn execute(self, c: &Context) -> proc::Result {
-        // @todo: verify the pkgid is not taken
+        // TODO: verify the pkgid is not taken
 
-        // @todo: refactor due to heavy overlap with 'new' command
+        // TODO: refactor due to heavy overlap with 'new' command
 
         // resolve any relative path
         let dest = filesystem::full_normal(&self.path);

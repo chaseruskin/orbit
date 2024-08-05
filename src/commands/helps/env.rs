@@ -15,14 +15,13 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// This help page was automatically generated from the mangen.py tool.
+// Automatically generated from the mansync.py script.
 pub const HELP: &str = r#"Print orbit environment information.
 
 Usage:
     orbit env [options]
 
 Options:
-    <key>...     Lookup environment variable to include its value
+    <key>...              include this variable's value specifically in the environment information
 
-Use 'orbit help env' to read more about the command.
-"#;
+Use 'orbit help env' to read more about the command."#;

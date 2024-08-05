@@ -15,18 +15,17 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// This help page was automatically generated from the mangen.py tool.
-pub const HELP: &str = r#"Create a new orbit ip project.
+// Automatically generated from the mansync.py script.
+pub const HELP: &str = r#"Create a new ip.
 
 Usage:
     orbit new [options] <path>
 
-Args:
-    <path>              the destination path to create ip project
+Arguments:
+    <path>                directory to create for the ip
 
 Options:
-    --name <name>           the ip name to create
-    --library <library>     the ip library
+    --name <name>         set the resulting ip's name
+    --lib <lib>           set the resulting ip's library
 
-Use 'orbit help new' to read more about the command.
-"#;
+Use 'orbit help new' to read more about the command."#;

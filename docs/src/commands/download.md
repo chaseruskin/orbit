@@ -43,7 +43,7 @@ from the downloads. See `orbit help install` for more details.
 ## __OPTIONS__
 
 `--list`  
-      Print URLs and exit
+      Print urls and exit
 
 `--missing`  
       Filter only uninstalled packages (default: true)

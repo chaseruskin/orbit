@@ -15,26 +15,27 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// This help page was automatically generated from the mangen.py tool.
+// Automatically generated from the mansync.py script.
 pub const HELP: &str = r#"Fetch an hdl entity for code integration.
 
 Usage:
     orbit get [options] <unit>
 
-Args:
-    <unit>                  entity identifier
+Arguments:
+    <unit>                primary design unit identifier
 
 Options:
-    --ip <spec>             ip to reference the unit from
-    --json                  export the entity information as valid json
-    --library,   -l         display library declaration
-    --component, -c         display component declaration
-    --signals,   -s         display constant and signal declarations
-    --instance,  -i         display instantation
-    --architecture, -a      display detected architectures
-    --name <identifier>     set the instance's identifier
-    --signal-prefix <value> prepend information to the instance's signals
-    --signal-suffix <value> append information to the instance's signals
+    --ip <spec>           the ip that contains the requested unit
+    --json                export the entity information as valid json
+    --library, -l         display the unit's library declaration
+    --component, -c       display the component declaration
+    --signals, -s         display the constant and signal declarations
+    --instance, -i        display the unit's instantiation
+    --architecture, -a    display the detected architectures
+    --name <identifier>   set the instance's identifier
+    --signal-prefix <value>
+                          prepend information to the instance's signals
+    --signal-suffix <value>
+                          append information to the instance's signals
 
-Use 'orbit help get' to read more about the command.
-"#;
+Use 'orbit help get' to read more about the command."#;

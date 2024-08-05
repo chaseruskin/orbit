@@ -32,7 +32,7 @@ may require.
       Ip specification
 
 `--url <url>`  
-      URL to install the ip from the internet
+      Url to install the ip from the internet
 
 `--path <path>`  
       Path to install the ip from local file system

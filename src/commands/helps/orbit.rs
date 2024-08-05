@@ -15,37 +15,36 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// This help page was automatically generated from the mangen.py tool.
+// Automatically generated from the mansync.py script.
 pub const HELP: &str = r#"Orbit is an hdl package manager and build tool.
 
 Usage:
     orbit [options] [command]
 
 Commands:
-    new             create a new ip
-    init            initialize an ip from an existing project
-    view            display metadata of an ip
-    read            navigate hdl design unit source code
-    get             fetch an entity
-    tree            view the dependency graph
-    lock            save the world state of the current ip
-    test, t         run a test
-    build, b        plan and execute a target
-    publish         post an ip to a channel
-    search          browse the ip catalog 
-    download        request packages from the internet
-    install         store an immutable reference to an ip
-    env             print orbit environment information
-    config          modify configuration values
-    remove          uninstall an ip from the catalog
+    new                   create a new ip
+    init                  initialize an ip from an existing project
+    view                  display metadata of an ip
+    read                  navigate hdl design unit source code
+    get                   fetch an hdl entity for code integration
+    tree                  view the dependency graph
+    lock                  save the world state of an ip
+    test, t               run a test
+    build, b              plan and execute a target
+    publish               post an ip to a channel
+    search                browse the ip catalog
+    download              fetch packages from the internet
+    install               store an immutable reference to an ip
+    env                   print orbit environment information
+    config                modify configuration values
+    remove                uninstall an ip from the catalog
 
 Options:
-    --version       print version information and exit
-    --upgrade       check for the latest orbit binary
-    --sync          synchronize configured channels
-    --force         bypass interactive prompts
-    --color <when>  coloring: auto, always, never
-    --help, -h      print help information
+    --version             print version information and exit
+    --upgrade             check for the latest orbit binary
+    --sync                synchronize configured channels
+    --force               bypass interactive prompts
+    --color <when>        coloring: auto, always, never
+    --help, -h            print help information
 
-Use 'orbit help <command>' for more information about a command.
-"#;
+Use 'orbit help <command>' for more information about a command."#;

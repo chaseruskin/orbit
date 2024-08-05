@@ -34,10 +34,10 @@ OPTIONS
         Ip specification
 
     --all
-        remove the ip from the cache and downloads
+        Remove the ip from the cache and downloads
 
     --recurse, -r
-        fully remove the ip and its dependencies
+        Fully remove the ip and its dependencies
 
 EXAMPLES
     orbit remove gates

@@ -23,27 +23,28 @@ SYNOPSIS
     orbit new [options] <path>
 
 DESCRIPTION
-    This command will create a new ip at the target directory '<path>'. The command
-    assumes the path does not already exists. It will attempt to create a new 
-    directory at the destination with a manifest. 
+    Creates a new ip at the target directory '<path>'. The path is assumed to not
+    already exist. A new directory will be created at the file system destination
+    that contains a minimal manifest and .orbitignore file.
     
-    If no name is supplied, then the ip's name defaults to the final path component
-    of the path argument. Use the name option to provide a custom name.
+    If no name is supplied, then the ip's name defaults to the final directory name
+    taken from '<path>'. Using the '--name' option allows this field to be
+    explicitly set.
     
-    This command fails if the path already exists. See the 'init' command for
-    initializing an already existing project into an ip.
+    For initializing an already existing project into an ip, see the 'init' 
+    command.
 
 OPTIONS
     <path>
-        The new directory to make
+        Directory to create for the ip
 
     --name <name>
-        The ip name to create
+        Set the resulting ip's name
 
-    --library <library>
-        The ip library
+    --lib <lib>
+        Set the resulting ip's library
 
 EXAMPLES
     orbit new gates
-    orbit new ./projects/dir7 --name adder
+    orbit new eecs/lab1 --name adder
 "#;

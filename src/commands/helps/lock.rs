@@ -15,14 +15,13 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-// This help page was automatically generated from the mangen.py tool.
-pub const HELP: &str = r#"Save the state of the world for the ip.
+// Automatically generated from the mansync.py script.
+pub const HELP: &str = r#"Save the world state of an ip.
 
 Usage:
-    orbit lock [options]              
+    orbit lock [options]
 
 Options:
-    --force                 skip reading from the lock file
+    --force               ignore reading the precomputed lock file
 
-Use 'orbit help lock' to read more about the command.
-"#;
+Use 'orbit help lock' to read more about the command."#;

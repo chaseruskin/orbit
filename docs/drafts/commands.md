@@ -355,3 +355,20 @@ orbit get my_ip::clk_div -csi
 
 This flag is default behavior (which is the opposite of force). Maybe they should have separate meaning (--no-interactive different than --force).
 
+
+
+``` toml
+
+# /*
+# --*-- commands to remove --*--
+#     edit            open an ip in a text editor
+#     launch/publish          release a new ip version
+
+# --*-- commands to add --*--
+#     audit           verify a package is able to installed properly and release-able
+
+
+# alt names for `probe`: -check-, -scan-, show
+# */
+
+```

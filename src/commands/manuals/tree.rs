@@ -53,7 +53,7 @@ OPTIONS
         Determine how to display nodes ('long', 'short')
 
     --ascii
-        Limit the textual tree characters to the 128 ASCII set
+        Limit the textual tree characters to the 128 ascii set
 
     --ip
         View the dependency graph at the ip level

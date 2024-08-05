@@ -71,7 +71,7 @@ impl Subcommand<Context> for Read {
             // flags
             file: cli.check(Arg::flag("file"))?,
             location: cli.check(Arg::flag("location"))?,
-            keep: cli.check(Arg::flag("keep"))?,
+            keep: cli.check(Arg::flag("no-clean"))?,
             // options
             limit: cli.get(Arg::option("limit").value("num"))?,
             ip: cli.get(Arg::option("ip").value("spec"))?,

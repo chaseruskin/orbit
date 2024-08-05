@@ -30,7 +30,7 @@ immediate single-line comments preceding the supplied code value.
 
 The `read` command attempts to clean the temporary directory at every call to
 it. To keep existing files alive while allowing new files to appear, use the
-`--keep` flag.
+`--no-clean` flag.
 
 ## __OPTIONS__
 
@@ -46,7 +46,7 @@ it. To keep existing files alive while allowing new files to appear, use the
 `--location`  
       Append the targeted code segment's line and column number to the resulting filepath 
 
-`--keep`  
+`--no-clean`  
       Do not clean the temporary directory of existing files
 
 `--limit <num>`  

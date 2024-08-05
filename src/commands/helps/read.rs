@@ -28,7 +28,7 @@ Options:
     --ip <spec>           the ip specification to search in the catalog
     --file                copy the source code to a temporary read-only file
     --location            append the targeted code segment's line and column number to the resulting filepath 
-    --keep                do not clean the temporary directory of existing files
+    --no-clean            do not clean the temporary directory of existing files
     --limit <num>         set a maximum number of lines to write
     --start <code>        start the code navigation upon matching this VHDL segment
     --end <code>          stop the code navigation upon matching this VHDL segment

@@ -56,4 +56,6 @@ pub enum VerilogError {
     ExpectingOperator(Operator),
     #[error("incomplete module declaration")]
     ModDecIncomplete,
+    #[error("unhandled dot operator in module declaration")]
+    UnhandledDotInDecl,
 }

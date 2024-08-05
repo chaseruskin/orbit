@@ -154,7 +154,12 @@ pub fn update_port_list<'a>(
 ) -> () {
     let port = port_list.iter_mut().find(|i| &i.name == &new_port.name);
     match port {
-        Some(p) => p.inherit(&new_port),
+        Some(p) => {
+            p.inherit(&new_port);
+            if p.unpacked_range.0.is_none() {
+                p.unpacked_range.0 = new_port.unpacked_range.0.clone();
+            }
+        }
         None => {
             if add_if_missing == true {
                 port_list.push(new_port)
@@ -312,6 +317,8 @@ impl serde::Serialize for DataType {
 pub struct Port {
     #[serde(skip_serializing)]
     is_param: bool,
+    #[serde(skip_serializing)]
+    unpacked_range: Expr,
     #[serde(rename = "identifier")]
     name: Identifier,
     #[serde(rename = "mode", default = "default_mode")]
@@ -389,7 +396,11 @@ impl Port {
                 &self
                     .mode
                     .as_ref()
-                    .unwrap_or(&Keyword::Parameter)
+                    .unwrap_or(if use_mode == true {
+                        &Keyword::Parameter
+                    } else {
+                        &Keyword::Localparam
+                    })
                     .to_string(),
             );
             result.push(' ');
@@ -457,6 +468,15 @@ impl Port {
         // append any suffix
         result.push_str(&suffix);
 
+        // display any unpacked array range
+        if let Some(up) = &self.unpacked_range.0 {
+            // add this many number of spaces before the range modifier
+            for _ in 0..fmt.get_range_offset() as usize {
+                result.push(' ');
+            }
+            result.push_str(&tokens_to_string(up));
+        }
+
         // display the default value
         if let Some(v) = &self.value.0 {
             result.push_str(&format!(" = {}", tokens_to_string(v)));
@@ -470,6 +490,7 @@ impl Port {
             is_param: is_param,
             name: name,
             mode: None,
+            unpacked_range: Expr(None),
             data_type: DataType::new(),
             value: Expr(None),
         }
@@ -480,6 +501,7 @@ impl Port {
             is_param: false,
             name: Identifier::new(),
             mode: None,
+            unpacked_range: Expr(None),
             data_type: DataType::new(),
             value: Expr(None),
         }
@@ -490,6 +512,7 @@ impl Port {
             is_param: true,
             name: Identifier::new(),
             mode: None,
+            unpacked_range: Expr(None),
             data_type: DataType::new(),
             value: Expr(None),
         }
@@ -518,6 +541,8 @@ impl Port {
             }
         }
 
+        // @NOTE: Do not inherit an unpacked range
+
         if self.value.0.is_none() {
             if let Some(r) = &rhs.value.0 {
                 self.value = Expr(Some(r.clone()));
@@ -533,6 +558,15 @@ impl Port {
         self.value = Expr(None);
     }
 
+    pub fn set_unpacked_range(&mut self, tkns: Vec<SystemVerilogToken>) {
+        // update with more ranges!
+        if let Some(rg) = &mut self.unpacked_range.0 {
+            rg.extend(tkns);
+        } else {
+            self.unpacked_range = Expr(Some(tkns));
+        }
+    }
+
     pub fn set_direction(&mut self, kw: Keyword) {
         self.mode = Some(kw);
     }
@@ -546,11 +580,27 @@ impl Port {
     }
 
     pub fn set_range(&mut self, tkns: Vec<SystemVerilogToken>) {
-        self.data_type.range = Expr(Some(tkns));
+        // update with more ranges!
+        if let Some(rg) = &mut self.data_type.range.0 {
+            rg.extend(tkns);
+        } else {
+            self.data_type.range = Expr(Some(tkns));
+        }
     }
 
     pub fn set_data_type(&mut self, tkn: SystemVerilogToken) {
         self.data_type.data = Some(tkn);
+    }
+
+    pub fn fix_type(&mut self, name: Identifier) {
+        self.data_type.data = Some(SystemVerilogToken::Identifier(self.name.clone()));
+        self.data_type.range.0 = self.unpacked_range.0.take();
+        self.unpacked_range.0 = None;
+        self.name = name;
+    }
+
+    pub fn get_name(&self) -> &Identifier {
+        &self.name
     }
 
     pub fn as_user_defined_data_type(&self) -> Option<&Identifier> {

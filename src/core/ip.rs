@@ -234,7 +234,7 @@ impl Ip {
     pub fn relate(root: PathBuf, base_path: &PathBuf) -> Result<Self, Fault> {
         // resolve the path if it is relative
         let root = filesystem::resolve_rel_path2(&base_path, &root);
-        let mut relative_ip = Ip::load(root, true)?;
+        let mut relative_ip = Ip::load(root, false)?;
         relative_ip.mapping = Mapping::Relative;
         // verify this ip has a lockfile
         let lock_path = relative_ip.get_root().join(IP_LOCK_FILE);

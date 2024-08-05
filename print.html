@@ -2274,7 +2274,7 @@ search for in the identified source code file. The <code>--doc</code> option wil
 immediate single-line comments preceding the supplied code value.</p>
 <p>The <code>read</code> command attempts to clean the temporary directory at every call to
 it. To keep existing files alive while allowing new files to appear, use the
-<code>--keep</code> flag.</p>
+<code>--no-clean</code> flag.</p>
 <h2 id="options-3"><a class="header" href="#options-3"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;unit&gt;</code><br />
       Primary design unit identifier</p>
@@ -2284,7 +2284,7 @@ it. To keep existing files alive while allowing new files to appear, use the
       Copy the source code to a temporary read-only file</p>
 <p><code>--location</code><br />
       Append the targeted code segment's line and column number to the resulting filepath</p>
-<p><code>--keep</code><br />
+<p><code>--no-clean</code><br />
       Do not clean the temporary directory of existing files</p>
 <p><code>--limit &lt;num&gt;</code><br />
       Set a maximum number of lines to write</p>

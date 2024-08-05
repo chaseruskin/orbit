@@ -183,23 +183,24 @@
 <pre><code>orbit new [options] &lt;path&gt;
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will create a new ip at the target directory <code>&lt;path&gt;</code>. The command
-assumes the path does not already exists. It will attempt to create a new
-directory at the destination with a manifest.</p>
-<p>If no name is supplied, then the ip's name defaults to the final path component
-of the path argument. Use the name option to provide a custom name.</p>
-<p>This command fails if the path already exists. See the <code>init</code> command for
-initializing an already existing project into an ip.</p>
+<p>Creates a new ip at the target directory <code>&lt;path&gt;</code>. The path is assumed to not
+already exist. A new directory will be created at the file system destination
+that contains a minimal manifest and .orbitignore file.</p>
+<p>If no name is supplied, then the ip's name defaults to the final directory name
+taken from <code>&lt;path&gt;</code>. Using the <code>--name</code> option allows this field to be
+explicitly set.</p>
+<p>For initializing an already existing project into an ip, see the <code>init</code>
+command.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;path&gt;</code><br />
-      The new directory to make</p>
+      Directory to create for the ip</p>
 <p><code>--name &lt;name&gt;</code><br />
-      The ip name to create</p>
-<p><code>--library &lt;library&gt;</code><br />
-      The ip library</p>
+      Set the resulting ip's name</p>
+<p><code>--lib &lt;lib&gt;</code><br />
+      Set the resulting ip's library</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit new gates
-orbit new ./projects/dir7 --name adder
+orbit new eecs/lab1 --name adder
 </code></pre>
 
                     </main>

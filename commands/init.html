@@ -183,25 +183,23 @@
 <pre><code>orbit init [options] [&lt;path&gt;]
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will initialize a new ip at the target directory <code>&lt;path&gt;</code>. If no path
-is supplied, then it defaults to the current working directory.</p>
-<p>If no name is supplied, then the ip's name defaults to the final path component
-of the path argument. Use the name option to provide a custom name.</p>
-<p>This command fails if the path does not exist. See the <code>new</code> command for
-creating an ip from a non-existing directory.</p>
+<p>Initializes an ip at the file system directory <code>&lt;path&gt;</code>. If not path is
+provided, then it defaults to the current working directory.</p>
+<p>If no name is provided, then the resulting ip's name defaults to the
+directory's name. Using the <code>--name</code> option allows the ip's name to be
+explicitly set.</p>
+<p>To create a new ip from a non-existing directory, see the <code>new</code> command.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;path&gt;</code><br />
-      The location to initialize an ip</p>
+      Directory to initialize</p>
 <p><code>--name &lt;name&gt;</code><br />
-      The name of the ip</p>
-<p><code>--library &lt;library&gt;</code><br />
-      The ip library</p>
-<p><code>--force</code><br />
-      Overwrite a manifest if one already exists</p>
+      Set the resulting ip's name</p>
+<p><code>--lib &lt;lib&gt;</code><br />
+      Set the resulting ip's library</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit init
-orbit init ./projects/gates
-orbit init --name hello_world
+orbit init projects/gates
+orbit init --name adder
 </code></pre>
 
                     </main>

@@ -2178,23 +2178,24 @@ root = "./index"
 <pre><code>orbit new [options] &lt;path&gt;
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will create a new ip at the target directory <code>&lt;path&gt;</code>. The command
-assumes the path does not already exists. It will attempt to create a new
-directory at the destination with a manifest.</p>
-<p>If no name is supplied, then the ip's name defaults to the final path component
-of the path argument. Use the name option to provide a custom name.</p>
-<p>This command fails if the path already exists. See the <code>init</code> command for
-initializing an already existing project into an ip.</p>
+<p>Creates a new ip at the target directory <code>&lt;path&gt;</code>. The path is assumed to not
+already exist. A new directory will be created at the file system destination
+that contains a minimal manifest and .orbitignore file.</p>
+<p>If no name is supplied, then the ip's name defaults to the final directory name
+taken from <code>&lt;path&gt;</code>. Using the <code>--name</code> option allows this field to be
+explicitly set.</p>
+<p>For initializing an already existing project into an ip, see the <code>init</code>
+command.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;path&gt;</code><br />
-      The new directory to make</p>
+      Directory to create for the ip</p>
 <p><code>--name &lt;name&gt;</code><br />
-      The ip name to create</p>
-<p><code>--library &lt;library&gt;</code><br />
-      The ip library</p>
+      Set the resulting ip's name</p>
+<p><code>--lib &lt;lib&gt;</code><br />
+      Set the resulting ip's library</p>
 <h2 id="examples-2"><a class="header" href="#examples-2"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit new gates
-orbit new ./projects/dir7 --name adder
+orbit new eecs/lab1 --name adder
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-init"><a class="header" href="#orbit-init"><strong>orbit init</strong></a></h1>
 <h2 id="name-1"><a class="header" href="#name-1"><strong>NAME</strong></a></h2>
@@ -2203,31 +2204,29 @@ orbit new ./projects/dir7 --name adder
 <pre><code>orbit init [options] [&lt;path&gt;]
 </code></pre>
 <h2 id="description-1"><a class="header" href="#description-1"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will initialize a new ip at the target directory <code>&lt;path&gt;</code>. If no path
-is supplied, then it defaults to the current working directory.</p>
-<p>If no name is supplied, then the ip's name defaults to the final path component
-of the path argument. Use the name option to provide a custom name.</p>
-<p>This command fails if the path does not exist. See the <code>new</code> command for
-creating an ip from a non-existing directory.</p>
+<p>Initializes an ip at the file system directory <code>&lt;path&gt;</code>. If not path is
+provided, then it defaults to the current working directory.</p>
+<p>If no name is provided, then the resulting ip's name defaults to the
+directory's name. Using the <code>--name</code> option allows the ip's name to be
+explicitly set.</p>
+<p>To create a new ip from a non-existing directory, see the <code>new</code> command.</p>
 <h2 id="options-1"><a class="header" href="#options-1"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;path&gt;</code><br />
-      The location to initialize an ip</p>
+      Directory to initialize</p>
 <p><code>--name &lt;name&gt;</code><br />
-      The name of the ip</p>
-<p><code>--library &lt;library&gt;</code><br />
-      The ip library</p>
-<p><code>--force</code><br />
-      Overwrite a manifest if one already exists</p>
+      Set the resulting ip's name</p>
+<p><code>--lib &lt;lib&gt;</code><br />
+      Set the resulting ip's library</p>
 <h2 id="examples-3"><a class="header" href="#examples-3"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit init
-orbit init ./projects/gates
-orbit init --name hello_world
+orbit init projects/gates
+orbit init --name adder
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-view"><a class="header" href="#orbit-view"><strong>orbit view</strong></a></h1>
 <h2 id="name-2"><a class="header" href="#name-2"><strong>NAME</strong></a></h2>
 <p>view - display metadata of an ip</p>
 <h2 id="synopsis-2"><a class="header" href="#synopsis-2"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit show [options] [&lt;ip&gt;]
+<pre><code>orbit view [options] [&lt;ip&gt;]
 </code></pre>
 <h2 id="description-2"><a class="header" href="#description-2"><strong>DESCRIPTION</strong></a></h2>
 <p>This command retrieves various pieces of information about a particular ip to
@@ -2246,7 +2245,7 @@ local ip, if one exists.</p>
 <p><code>--versions, -v</code><br />
       Display the list of possible versions</p>
 <p><code>--units, -u</code><br />
-      Display the list of HDL primary design units associated with this ip</p>
+      Display the list of hdl primary design units associated with this ip</p>
 <p><code>--all, -a</code><br />
       Include any private or hidden results</p>
 <h2 id="examples-4"><a class="header" href="#examples-4"><strong>EXAMPLES</strong></a></h2>
@@ -2290,11 +2289,11 @@ it. To keep existing files alive while allowing new files to appear, use the
 <p><code>--limit &lt;num&gt;</code><br />
       Set a maximum number of lines to write</p>
 <p><code>--start &lt;code&gt;</code><br />
-      Start the code navigation upon matching this VHDL segment</p>
+      Start the code navigation upon matching this vhdl segment</p>
 <p><code>--end &lt;code&gt;</code><br />
-      Stop the code navigation upon matching this VHDL segment</p>
+      Stop the code navigation upon matching this vhdl segment</p>
 <p><code>--doc &lt;code&gt;</code><br />
-      Navigate to the preceding comments of this VHDL segment</p>
+      Navigate to the preceding comments of this vhdl segment</p>
 <h2 id="examples-5"><a class="header" href="#examples-5"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit read and_gate --ip gates:1.0.0
 orbit read math_pkg --ip math --doc "function clog2"
@@ -2385,7 +2384,7 @@ hdl source code file.</p>
 <p><code>--format &lt;fmt&gt;</code><br />
       Determine how to display nodes ('long', 'short')</p>
 <p><code>--ascii</code><br />
-      Limit the textual tree characters to the 128 ASCII set</p>
+      Limit the textual tree characters to the 128 ascii set</p>
 <p><code>--ip</code><br />
       View the dependency graph at the ip level</p>
 <h2 id="examples-7"><a class="header" href="#examples-7"><strong>EXAMPLES</strong></a></h2>
@@ -2638,7 +2637,7 @@ available variables.</p>
 from the downloads. See <code>orbit help install</code> for more details.</p>
 <h2 id="options-11"><a class="header" href="#options-11"><strong>OPTIONS</strong></a></h2>
 <p><code>--list</code><br />
-      Print URLs and exit</p>
+      Print urls and exit</p>
 <p><code>--missing</code><br />
       Filter only uninstalled packages (default: true)</p>
 <p><code>--all</code><br />
@@ -2674,7 +2673,7 @@ may require.</p>
 <p><code>&lt;ip&gt;</code><br />
       Ip specification</p>
 <p><code>--url &lt;url&gt;</code><br />
-      URL to install the ip from the internet</p>
+      Url to install the ip from the internet</p>
 <p><code>--path &lt;path&gt;</code><br />
       Path to install the ip from local file system</p>
 <p><code>--protocol &lt;name&gt;</code><br />
@@ -2757,9 +2756,9 @@ requested ip to remove.</p>
 <p><code>&lt;ip&gt;</code><br />
       Ip specification</p>
 <p><code>--all</code><br />
-      remove the ip from the cache and downloads</p>
+      Remove the ip from the cache and downloads</p>
 <p><code>--recurse, -r</code><br />
-      fully remove the ip and its dependencies</p>
+      Fully remove the ip and its dependencies</p>
 <h2 id="examples-17"><a class="header" href="#examples-17"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit remove gates
 orbit remove gates:1.0.0 --all

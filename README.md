@@ -179,6 +179,7 @@ Commands:
 Options:
     --version       print version information and exit
     --upgrade       check for the latest orbit binary
+    --sync          synchronize configured channels
     --force         bypass interactive prompts
     --color <when>  coloring: auto, always, never
     --help, -h      print help information

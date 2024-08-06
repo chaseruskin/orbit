@@ -167,7 +167,9 @@ impl Class {
             }
         }
 
-        // TODO: take the class body
+        // take the class body
+        let (c_refs, _c_deps) = Self::parse_class_body(tokens)?;
+        refs.extend(c_refs);
 
         Ok(Class {
             name: class_name,
@@ -175,5 +177,35 @@ impl Class {
             refs: refs,
             pos: pos,
         })
+    }
+
+    fn parse_class_body<I>(tokens: &mut Peekable<I>) -> Result<(RefSet, RefSet), VerilogError>
+    where
+        I: Iterator<Item = Token<SystemVerilogToken>>,
+    {
+        let mut refs = RefSet::new();
+        let mut deps = RefSet::new();
+
+        while let Some(t) = tokens.next() {
+            // expecting `endclass`
+            if t.as_ref().is_eof() == true {
+                return Err(VerilogError::ExpectingKeyword(Keyword::Endclass));
+            // exit from the class body
+            } else if t.as_ref().check_keyword(&Keyword::Endclass) == true {
+                break;
+            } else if let Some(stmt) = VerilogSymbol::into_next_statement(t, tokens)? {
+                // println!("{}", statement_to_string(&stmt));
+                VerilogSymbol::handle_statement(
+                    &Vec::new(),
+                    &Vec::new(),
+                    stmt,
+                    &mut Vec::new(),
+                    &mut Vec::new(),
+                    &mut refs,
+                    Some(&mut deps),
+                )?;
+            }
+        }
+        Ok((refs, deps))
     }
 }

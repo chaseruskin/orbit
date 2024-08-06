@@ -33,7 +33,7 @@ use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct View {
-    tags: bool,
+    versions: bool,
     units: bool,
     ip: Option<PartialIpSpec>,
     all: bool,
@@ -44,7 +44,7 @@ impl Subcommand<Context> for View {
         cli.help(Help::with(view::HELP))?;
         Ok(View {
             all: cli.check(Arg::flag("all").switch('a'))?,
-            tags: cli.check(Arg::flag("versions").switch('v'))?,
+            versions: cli.check(Arg::flag("versions").switch('v'))?,
             units: cli.check(Arg::flag("units").switch('u'))?,
             ip: cli.get(Arg::positional("ip"))?,
         })
@@ -131,7 +131,7 @@ impl Subcommand<Context> for View {
         }
 
         // display all installed versions in the cache
-        if self.tags == true {
+        if self.versions == true {
             let specified_ver = if let Some(spec) = self.ip.as_ref() {
                 spec.get_version().as_specific()
             } else {

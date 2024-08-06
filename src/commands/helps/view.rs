@@ -22,9 +22,9 @@ Usage:
     orbit view [options] [<ip>]
 
 Options:
-    <ip>                  the spec of the ip to query
-    --versions, -v        display the list of possible versions
-    --units, -u           display the list of HDL primary design units associated with this ip
+    <ip>                  ip spec
+    --versions, -v        display the list of known versions
+    --units, -u           display the HDL design elements defined for this ip
     --all, -a             include any private or hidden results
 
 Use 'orbit help view' to read more about the command."#;

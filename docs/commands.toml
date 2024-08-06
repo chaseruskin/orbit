@@ -77,31 +77,29 @@ name = "view"
 summary = "display metadata of an ip"
 synopsis = "orbit view [options] [<ip>]"
 description = """
-This command retrieves various pieces of information about a particular ip to
-gain a better understanding of how to utilize the ip. By default, it displays
-the ip's manifest, if and only if the ip is able to be located.
+Displays various bits of information about a particular ip. If no ip is
+provided, then it displays information related to the local ip.
 
-It will first attempt to return the information from a possible installation. If
-one does not exist, then it searches the downloads location for the ip.
+To display manifest information, no additional options are required.
 
-If `--units` is specified, then a list of the ip's HDL units are displayed.
+To display the defined HDL design elements within the ip, use the `--units`
+option. For non-local ip, its protected and private design elements are hidden
+from the results. To display design elements of all visibility levels the
+`--all` option must also be present.
 
-If `--versions` is specified, then a list of the ip's already available versions
-are displayed.
-
-If no spec is provided for `<ip>`, then it will retrieve information based on the
-local ip, if one exists.
+To display the known versions for an ip, use the `--versions` option.
 """
 
-options."<ip>" = "The spec of the ip to query"
-options."--versions, -v" = "Display the list of possible versions"
-options."--units, -u" = "Display the list of HDL primary design units associated with this ip"
+options."<ip>" = "Ip spec"
+options."--versions, -v" = "Display the list of known versions"
+options."--units, -u" = "Display the HDL design elements defined for this ip"
 options."--all, -a" = "Include any private or hidden results"
 
 examples = """
 orbit view --units
-orbit view gates:1.0.0 -u
+orbit view gates:1.0.0 -u --all
 orbit view gates --versions
+orbit view gates:1 -v
 """
 
 # ------------------------------------------------------------------------------

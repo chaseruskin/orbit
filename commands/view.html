@@ -183,29 +183,28 @@
 <pre><code>orbit view [options] [&lt;ip&gt;]
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command retrieves various pieces of information about a particular ip to
-gain a better understanding of how to utilize the ip. By default, it displays
-the ip's manifest, if and only if the ip is able to be located.</p>
-<p>It will first attempt to return the information from a possible installation. If
-one does not exist, then it searches the downloads location for the ip.</p>
-<p>If <code>--units</code> is specified, then a list of the ip's HDL units are displayed.</p>
-<p>If <code>--versions</code> is specified, then a list of the ip's already available versions
-are displayed.</p>
-<p>If no spec is provided for <code>&lt;ip&gt;</code>, then it will retrieve information based on the
-local ip, if one exists.</p>
+<p>Displays various bits of information about a particular ip. If no ip is
+provided, then it displays information related to the local ip.</p>
+<p>To display manifest information, no additional options are required.</p>
+<p>To display the defined HDL design elements within the ip, use the <code>--units</code>
+option. For non-local ip, its protected and private design elements are hidden
+from the results. To display design elements of all visibility levels the
+<code>--all</code> option must also be present.</p>
+<p>To display the known versions for an ip, use the <code>--versions</code> option.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;ip&gt;</code><br />
-      The spec of the ip to query</p>
+      Ip spec</p>
 <p><code>--versions, -v</code><br />
-      Display the list of possible versions</p>
+      Display the list of known versions</p>
 <p><code>--units, -u</code><br />
-      Display the list of hdl primary design units associated with this ip</p>
+      Display the hdl design elements defined for this ip</p>
 <p><code>--all, -a</code><br />
       Include any private or hidden results</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit view --units
-orbit view gates:1.0.0 -u
+orbit view gates:1.0.0 -u --all
 orbit view gates --versions
+orbit view gates:1 -v
 </code></pre>
 
                     </main>

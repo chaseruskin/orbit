@@ -14,7 +14,7 @@ The following schema is implemented for the json output:
     {
         "identifier": string
         "mode": string
-        "type": string
+        "type": string // null if blank
         "default": string // null if blank
     }
   ]
@@ -22,7 +22,7 @@ The following schema is implemented for the json output:
     {
         "identifier": string
         "mode": string
-        "type": string
+        "type": string // null if blank
         "default": string // null if blank
     }
   ]
@@ -32,6 +32,8 @@ The following schema is implemented for the json output:
   "language": string
 }
 ```
+
+The "language" field is allowed to be one of three values: "vhdl", "verilog", or "systemverilog".
 
 ## References
 

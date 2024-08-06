@@ -6,7 +6,7 @@ Ips are the core component that Orbit operates on as a package manager. First, l
 
 A developer's tasks often involve interfacing with a collection of closely related files (source code, scripts, text files). This collection of closely related files is typically stored under a single directory and is called a _project_.
 
-The core operations of a package manager revolve around _packages_. A _package_ is a project _with additional information provided by the developer_. This "additional information" is called _metadata_, and it is written to a special file called a _manifest_. The manifest must be placed at the project's root directory. Without a manifests, a package manager would not know which projects it should manage and what each project's current state is in relation to being a package.
+The core operations of a package manager revolve around _packages_. A _package_ is a project _with additional information provided by the developer_. This "additional information" is called _metadata_, and it is written to a special file called a _manifest_. The manifest must be placed at the project's root directory. Without manifests, a package manager would not know which projects it should manage and what each project's current state is in regards to being a package.
 
 In the context of being a package manager for digital hardware, Orbit calls a package an _ip_. An ip's manifest file is "Orbit.toml", with case-sensitivity.
 

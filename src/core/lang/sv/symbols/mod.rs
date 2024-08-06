@@ -161,6 +161,7 @@ impl Parse<SystemVerilogToken> for SystemVerilogParser {
         let mut global_refs = RefSet::new();
 
         while let Some(t) = tokens.next() {
+            // println!("{:?}", t);
             // create module design element
             if t.as_type().check_keyword(&Keyword::Module)
                 || t.as_type().check_keyword(&Keyword::Macromodule)

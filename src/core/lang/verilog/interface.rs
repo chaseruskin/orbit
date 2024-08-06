@@ -40,6 +40,14 @@ impl serde::Serialize for Expr {
 pub type PortList = Vec<Port>;
 pub type ParamList = Vec<Port>;
 
+pub fn does_exist(ports: &Vec<Port>, name: &Identifier) -> bool {
+    ports
+        .iter()
+        .map(|f| f.get_name())
+        .find(|p| p == &name)
+        .is_some()
+}
+
 fn tokens_to_string(tokens: &Vec<SystemVerilogToken>) -> String {
     let mut result = String::new();
     // determine which delimiters to not add trailing spaces to
@@ -309,7 +317,10 @@ impl serde::Serialize for DataType {
         if let Some(rg) = &self.range.0 {
             result.push_str(&tokens_to_string(rg));
         }
-        serializer.serialize_str(&result)
+        match result.len() {
+            0 => serializer.serialize_none(),
+            _ => serializer.serialize_str(&result),
+        }
     }
 }
 
@@ -319,6 +330,9 @@ pub struct Port {
     is_param: bool,
     #[serde(skip_serializing)]
     unpacked_range: Expr,
+    // ANSI-style forces all things of a port to be specified in port list in one-shot
+    #[serde(skip_serializing)]
+    is_ansi: bool,
     #[serde(rename = "identifier")]
     name: Identifier,
     #[serde(rename = "mode", default = "default_mode")]
@@ -392,17 +406,16 @@ impl Port {
         }
 
         if self.is_param == true {
-            result.push_str(
-                &self
-                    .mode
-                    .as_ref()
-                    .unwrap_or(if use_mode == true {
-                        &Keyword::Parameter
-                    } else {
-                        &Keyword::Localparam
-                    })
-                    .to_string(),
-            );
+            match use_mode {
+                false => result.push_str(&Keyword::Localparam.to_string()),
+                true => result.push_str(
+                    &self
+                        .mode
+                        .as_ref()
+                        .unwrap_or(&Keyword::Parameter)
+                        .to_string(),
+                ),
+            }
             result.push(' ');
         }
 
@@ -488,6 +501,7 @@ impl Port {
     pub fn with(name: Identifier, is_param: bool) -> Self {
         Self {
             is_param: is_param,
+            is_ansi: false,
             name: name,
             mode: None,
             unpacked_range: Expr(None),
@@ -499,6 +513,7 @@ impl Port {
     pub fn new_port() -> Self {
         Self {
             is_param: false,
+            is_ansi: false,
             name: Identifier::new(),
             mode: None,
             unpacked_range: Expr(None),
@@ -510,6 +525,7 @@ impl Port {
     pub fn new_param() -> Self {
         Self {
             is_param: true,
+            is_ansi: false,
             name: Identifier::new(),
             mode: None,
             unpacked_range: Expr(None),
@@ -519,6 +535,11 @@ impl Port {
     }
 
     pub fn inherit(&mut self, rhs: &Port) {
+        // block inheritance if the port itself is ansi-style
+        if self.is_ansi == true {
+            return;
+        }
+
         if self.mode.is_none() {
             self.mode = rhs.mode.clone();
         }
@@ -541,6 +562,8 @@ impl Port {
             }
         }
 
+        self.is_ansi = rhs.is_ansi;
+
         // @NOTE: Do not inherit an unpacked range
 
         if self.value.0.is_none() {
@@ -548,6 +571,11 @@ impl Port {
                 self.value = Expr(Some(r.clone()));
             }
         }
+    }
+
+    /// Checks if the given port is in ANSI style.
+    pub fn is_ansi_style(&self) -> bool {
+        self.mode.is_some() || self.data_type.data.is_some()
     }
 
     pub fn set_default(&mut self, tkns: Vec<SystemVerilogToken>) {
@@ -565,6 +593,10 @@ impl Port {
         } else {
             self.unpacked_range = Expr(Some(tkns));
         }
+    }
+
+    pub fn set_ansi(&mut self) {
+        self.is_ansi = true;
     }
 
     pub fn set_direction(&mut self, kw: Keyword) {

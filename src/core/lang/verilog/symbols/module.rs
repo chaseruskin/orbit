@@ -226,7 +226,7 @@ impl Module {
 
         // parse the body of the module
         let (body_params, body_ports, b_refs, deps) =
-            VerilogSymbol::parse_module_architecture(tokens)?;
+            VerilogSymbol::parse_module_architecture(tokens, &params, &ports)?;
         refs.extend(b_refs);
 
         // update declared ports from any architecture port definitions

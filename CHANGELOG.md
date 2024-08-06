@@ -18,6 +18,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.18.0 - unreleased
 
 ### Features
+- improves overall verilog/sv parsing support
 - adds support for capturing multidimensional packed and unpacked arrays for module port/parameter delcarations for verilog/sv
 - improves non-ANSI style port list parsing for verilog/sv
 - adds initial ability to use `--json` for verilog and systemverilog modules with `orbit get` command

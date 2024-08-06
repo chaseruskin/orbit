@@ -58,4 +58,6 @@ pub enum VerilogError {
     ModDecIncomplete,
     #[error("unhandled dot operator in module declaration")]
     UnhandledDotInDecl,
+    #[error("unhandled assignment operator in module declaration")]
+    UnhandledAssignInDecl,
 }

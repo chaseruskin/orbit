@@ -372,7 +372,15 @@ impl VerilogSymbol {
             } else if Self::is_timeunits_declaration(t.as_ref().as_keyword()) == true {
                 // take all until a terminator
                 if let Some(stmt) = Self::into_next_statement(t, tokens)? {
-                    Self::handle_statement(stmt, &mut param_list, &mut port_list, &mut refs, None)?;
+                    Self::handle_statement(
+                        &Vec::new(),
+                        &Vec::new(),
+                        stmt,
+                        &mut param_list,
+                        &mut port_list,
+                        &mut refs,
+                        None,
+                    )?;
                 }
             // take the lifetime and continue
             } else if t.as_ref().check_keyword(&Keyword::Automatic)
@@ -390,6 +398,8 @@ impl VerilogSymbol {
 
     pub fn parse_module_architecture<I>(
         tokens: &mut Peekable<I>,
+        decl_params: &ParamList,
+        decl_ports: &PortList,
     ) -> Result<(ParamList, PortList, RefSet, RefSet), VerilogError>
     where
         I: Iterator<Item = Token<SystemVerilogToken>>,
@@ -408,7 +418,15 @@ impl VerilogSymbol {
                 break;
             } else if let Some(stmt) = Self::into_next_statement(t, tokens)? {
                 // println!("{}", statement_to_string(&stmt));
-                Self::handle_statement(stmt, &mut params, &mut ports, &mut refs, Some(&mut deps))?;
+                Self::handle_statement(
+                    decl_params,
+                    decl_ports,
+                    stmt,
+                    &mut params,
+                    &mut ports,
+                    &mut refs,
+                    Some(&mut deps),
+                )?;
             }
         }
         Ok((params, ports, refs, deps))
@@ -457,6 +475,17 @@ impl VerilogSymbol {
                         Operator::ParenR,
                     )?);
                 }
+            // take all symbols until new line when handling a new directive
+            } else if stmt.len() == 1 && t.as_ref().is_directive() == true {
+                let cur_line = t.locate().line().clone();
+                while let Some(t_next) = tokens.peek() {
+                    if t_next.locate().line() > cur_line {
+                        break;
+                    } else {
+                        stmt.push(tokens.next().unwrap());
+                    }
+                }
+                break;
             }
 
             // push a new token onto the statment
@@ -470,6 +499,8 @@ impl VerilogSymbol {
     }
 
     pub fn handle_statement(
+        decl_params: &ParamList,
+        decl_ports: &PortList,
         stmt: Statement,
         mut params: &mut ParamList,
         mut ports: &mut PortList,
@@ -493,13 +524,13 @@ impl VerilogSymbol {
             refs.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
         }
         // try as a port
-        if let Some(def_ports) = Self::as_port_definition(&stmt) {
+        if let Some(def_ports) = Self::as_port_definition(&stmt, &decl_ports) {
             def_ports
                 .into_iter()
                 .for_each(|p| interface::update_port_list(&mut ports, p, true));
         }
         // try as a paramater
-        if let Some(def_params) = Self::as_param_definition(&stmt) {
+        if let Some(def_params) = Self::as_param_definition(&stmt, &decl_params) {
             def_params
                 .into_iter()
                 .for_each(|p| interface::update_port_list(&mut params, p, true));
@@ -520,20 +551,44 @@ impl VerilogSymbol {
         Ok(())
     }
 
-    fn as_port_definition(stmt: &Statement) -> Option<PortList> {
+    fn as_port_definition(stmt: &Statement, ports: &PortList) -> Option<PortList> {
         // println!("{}", statement_to_string(&stmt));
         let mut tokens = stmt.clone().into_iter().peekable();
+        // verify the start token is valid
+        match tokens.peek()?.as_type() {
+            SystemVerilogToken::Identifier(name) => match interface::does_exist(&ports, name) {
+                true => return None,
+                false => (),
+            },
+            SystemVerilogToken::Keyword(kw) => match Port::is_port_direction(Some(kw)) {
+                true => (),
+                false => return None,
+            },
+            _ => return None,
+        }
         match Self::parse_module_port_list(&mut tokens) {
-            Ok((ports, _)) => Some(ports),
+            Ok((decl_ports, _)) => Some(decl_ports),
             Err(_) => None,
         }
     }
 
-    fn as_param_definition(stmt: &Statement) -> Option<ParamList> {
+    fn as_param_definition(stmt: &Statement, params: &ParamList) -> Option<ParamList> {
         // println!("{}", statement_to_string(&stmt));
         let mut tokens = stmt.clone().into_iter().peekable();
+        // verify the start token is valid
+        match tokens.peek()?.as_type() {
+            SystemVerilogToken::Identifier(name) => match interface::does_exist(&params, name) {
+                true => return None,
+                false => (),
+            },
+            SystemVerilogToken::Keyword(kw) => match kw == &Keyword::Parameter {
+                true => (),
+                false => return None,
+            },
+            _ => return None,
+        }
         match Self::parse_module_param_list(&mut tokens) {
-            Ok((params, _)) => Some(params),
+            Ok((decl_params, _)) => Some(decl_params),
             Err(_) => None,
         }
     }
@@ -757,8 +812,12 @@ impl VerilogSymbol {
                         // assume it is the name of a param (may correct later)
                         } else {
                             identified_param = true;
-                            params.push(Port::with(name.clone(), false));
+                            params.push(Port::with(name.clone(), true));
                             params.last_mut().unwrap().inherit(&current_param_config);
+                            // determine if this port was declared with ANSI-style
+                            if current_param_config.is_ansi_style() == true {
+                                params.last_mut().unwrap().set_ansi();
+                            }
                         }
                     // this may be a datatype!
                     } else {
@@ -796,7 +855,11 @@ impl VerilogSymbol {
                     }
                     false => current_param_config.set_range(into_tokens(stmt)),
                 }
+            } else if t.as_ref().check_delimiter(&Operator::Dot) {
+                return Err(VerilogError::UnhandledDotInDecl);
             // collect a default value
+            } else if t.as_ref().check_delimiter(&Operator::Lte) {
+                return Err(VerilogError::UnhandledAssignInDecl);
             } else if t.as_ref().check_delimiter(&Operator::BlockAssign) {
                 let stmt = Self::parse_assignment(tokens, false)?;
                 // update references that may appear in the assignment
@@ -864,6 +927,10 @@ impl VerilogSymbol {
                             identified_port = true;
                             ports.push(Port::with(name.clone(), false));
                             ports.last_mut().unwrap().inherit(&current_port_config);
+                            // determine if this port was declared with ANSI-style
+                            if current_port_config.is_ansi_style() == true {
+                                ports.last_mut().unwrap().set_ansi();
+                            }
                         }
                     // this may be a datatype!
                     } else {
@@ -879,6 +946,8 @@ impl VerilogSymbol {
             // we are dealing with port connections
             } else if t.as_ref().check_delimiter(&Operator::Dot) {
                 return Err(VerilogError::UnhandledDotInDecl);
+            } else if t.as_ref().check_delimiter(&Operator::Lte) {
+                return Err(VerilogError::UnhandledAssignInDecl);
             // handle an attribute
             } else if t.as_ref().check_delimiter(&Operator::AttrL) {
                 Self::parse_attr(tokens, t.into_position())?;

@@ -72,7 +72,7 @@ impl Display for SystemVerilogToken {
                 Self::Number(n) => n.to_string(),
                 Self::Identifier(i) => i.to_string(),
                 Self::Keyword(k) => k.to_string(),
-                Self::StringLiteral(s) => s.to_string(),
+                Self::StringLiteral(s) => format!("\"{}\"", s.to_string()),
                 Self::Directive(d) => d.to_string(),
                 Self::EOF => String::new(),
             }
@@ -106,7 +106,10 @@ impl SystemVerilogToken {
     /// Accesses the underlying `Identifier`, if one exists.
     pub fn as_identifier(&self) -> Option<&Identifier> {
         match self {
-            SystemVerilogToken::Identifier(id) => Some(id),
+            SystemVerilogToken::Identifier(id) => match id {
+                Identifier::Basic(_) | Identifier::Escaped(_) => Some(id),
+                _ => None,
+            },
             _ => None,
         }
     }

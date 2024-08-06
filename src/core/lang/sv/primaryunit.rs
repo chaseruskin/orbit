@@ -26,6 +26,7 @@ pub enum PrimaryShape {
     Config,
     Package,
     Interface,
+    Class,
 }
 
 #[derive(PartialEq, Hash, Eq, Debug)]
@@ -74,6 +75,7 @@ impl std::fmt::Display for PrimaryUnit {
                 PrimaryShape::Module => "module",
                 PrimaryShape::Package => "package",
                 PrimaryShape::Interface => "interface",
+                PrimaryShape::Class => "class",
             }
         )
     }
@@ -182,6 +184,17 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
                             name.unwrap().clone(),
                             PrimaryUnit {
                                 shape: PrimaryShape::Interface,
+                                unit: Unit {
+                                    name: name.unwrap().clone(),
+                                    symbol: Some(sym),
+                                    source: source_file.clone(),
+                                },
+                            },
+                        )),
+                        SystemVerilogSymbol::Class(_) => Some((
+                            name.unwrap().clone(),
+                            PrimaryUnit {
+                                shape: PrimaryShape::Class,
                                 unit: Unit {
                                     name: name.unwrap().clone(),
                                     symbol: Some(sym),

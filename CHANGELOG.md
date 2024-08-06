@@ -18,6 +18,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.18.0 - unreleased
 
 ### Features
+- adds support for sv classes
 - improves overall verilog/sv parsing support
 - adds support for capturing multidimensional packed and unpacked arrays for module port/parameter delcarations for verilog/sv
 - improves non-ANSI style port list parsing for verilog/sv
@@ -29,6 +30,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - formats the ip's manifest for writing it to the output index path of its channel during `orbit publish`
 
 ### Fixes
+- resolves issues when compiler directives are used in port/parameter lists in verilog/sv
 - resolves bug when installing a local ip without a lockfile would place it into archive but refuse to load it for future use due to erroneous state
   
 ## 0.17.0

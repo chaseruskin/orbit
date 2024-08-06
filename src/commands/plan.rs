@@ -860,6 +860,7 @@ impl Plan {
                     );
                 }
                 SystemVerilogSymbol::Config(_)
+                | SystemVerilogSymbol::Class(_)
                 | SystemVerilogSymbol::Package(_)
                 | SystemVerilogSymbol::Interface(_) => {
                     component_pairs.insert(

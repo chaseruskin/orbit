@@ -17,6 +17,7 @@
 
 use std::iter::Peekable;
 
+use class::Class;
 use interface::Interface;
 use package::Package;
 
@@ -37,6 +38,7 @@ use super::super::verilog::symbols::module::Module;
 pub type Statement = Vec<Token<SystemVerilogToken>>;
 
 pub mod checker;
+pub mod class;
 pub mod interface;
 pub mod package;
 pub mod primitive;
@@ -61,6 +63,7 @@ pub enum SystemVerilogSymbol {
     Config(Config),
     Package(Package),
     Interface(Interface),
+    Class(Class),
     // Program(Program),
     // Checker(Checker),
     // Primitive(Primitive),
@@ -73,6 +76,7 @@ impl SystemVerilogSymbol {
             Self::Config(c) => Some(c.get_name()),
             Self::Package(p) => Some(p.get_name()),
             Self::Interface(p) => Some(p.get_name()),
+            Self::Class(c) => Some(c.get_name()),
         }
     }
 
@@ -82,6 +86,7 @@ impl SystemVerilogSymbol {
             Self::Config(c) => c.get_position(),
             Self::Package(p) => p.get_position(),
             Self::Interface(p) => p.get_position(),
+            Self::Class(c) => c.get_position(),
         }
     }
 
@@ -98,6 +103,7 @@ impl SystemVerilogSymbol {
             Self::Config(c) => c.get_refs(),
             Self::Package(p) => p.get_refs(),
             Self::Interface(p) => p.get_refs(),
+            Self::Class(c) => c.get_refs(),
         }
     }
 
@@ -107,6 +113,7 @@ impl SystemVerilogSymbol {
             Self::Config(c) => c.extend_refs(refs),
             Self::Package(p) => p.extend_refs(refs),
             Self::Interface(p) => p.extend_refs(refs),
+            Self::Class(c) => c.extend_refs(refs),
         }
     }
 }
@@ -180,6 +187,22 @@ impl Parse<SystemVerilogToken> for SystemVerilogParser {
                         Err(e) => Err(e),
                     },
                 );
+            // create a class design element
+            } else if (t.as_type().check_keyword(&Keyword::Virtual)
+                && tokens.peek().is_some()
+                && tokens
+                    .peek()
+                    .unwrap()
+                    .as_type()
+                    .check_keyword(&Keyword::Class))
+                || t.as_type().check_keyword(&Keyword::Class)
+            {
+                symbols.push(
+                    match SystemVerilogSymbol::parse_class(&mut tokens, t.into_position()) {
+                        Ok(module) => Ok(Symbol::new(module)),
+                        Err(e) => Err(e),
+                    },
+                )
             // create config design element
             } else if t.as_type().check_keyword(&Keyword::Config) {
                 symbols.push(
@@ -250,6 +273,13 @@ impl SystemVerilogSymbol {
             pos,
             "systemverilog",
         )?))
+    }
+
+    fn parse_class<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Self, SystemVerilogError>
+    where
+        I: Iterator<Item = Token<SystemVerilogToken>>,
+    {
+        Ok(Self::Class(Class::from_tokens(tokens, pos)?))
     }
 
     fn parse_package<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Self, SystemVerilogError>

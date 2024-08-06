@@ -242,7 +242,7 @@ impl VerilogSymbol {
     ///
     /// This function's last token to consume is the `end_op`, if it exists in balance with
     /// `beg_t`.
-    fn parse_until_operator<I>(
+    pub fn parse_until_operator<I>(
         tokens: &mut Peekable<I>,
         beg_t: Token<SystemVerilogToken>,
         end_op: Operator,
@@ -442,9 +442,12 @@ impl VerilogSymbol {
         let mut stmt = Statement::new();
         stmt.push(init);
 
+        let mut now_line = stmt.last().unwrap().locate().line();
+
         loop {
             // review the last token we have added to the current statement
             let t = stmt.last().unwrap();
+            let next_line = t.locate().line();
 
             // whoops... we should not have ran out of tokens here!
             if t.as_ref().is_eof() == true {
@@ -475,11 +478,10 @@ impl VerilogSymbol {
                         Operator::ParenR,
                     )?);
                 }
-            // take all symbols until new line when handling a new directive
-            } else if stmt.len() == 1 && t.as_ref().is_directive() == true {
-                let cur_line = t.locate().line().clone();
+            // take all symbols until new line when handling a new directive on a new line
+            } else if next_line > now_line && t.as_ref().is_directive() == true {
                 while let Some(t_next) = tokens.peek() {
-                    if t_next.locate().line() > cur_line {
+                    if t_next.locate().line() > next_line {
                         break;
                     } else {
                         stmt.push(tokens.next().unwrap());
@@ -494,6 +496,7 @@ impl VerilogSymbol {
             } else {
                 break;
             }
+            now_line = next_line;
         }
         Ok(Some(stmt))
     }
@@ -515,7 +518,7 @@ impl VerilogSymbol {
         if let Some(s_refs) = SystemVerilogSymbol::extract_refs_from_statement(&stmt) {
             refs.extend(s_refs);
         }
-
+        // try as a module instantiation
         if let Some(dep) = Self::as_module_instance(&stmt) {
             // println!("detected dependency! {}", dep);
             if let Some(deps) = deps {
@@ -676,6 +679,10 @@ impl VerilogSymbol {
                     } else if t.as_ref().check_delimiter(&Operator::BrackL) {
                         counter = 0;
                         state = 4;
+                    } else if t.as_ref().check_delimiter(&Operator::Terminator) {
+                        break;
+                    } else if t.as_ref().check_delimiter(&Operator::Comma) {
+                        state = 0;
                     } else {
                         state = -1;
                     }
@@ -774,7 +781,7 @@ impl VerilogSymbol {
         }
     }
 
-    fn parse_module_param_list<I>(
+    pub fn parse_module_param_list<I>(
         tokens: &mut Peekable<I>,
     ) -> Result<(ParamList, RefSet), VerilogError>
     where
@@ -789,7 +796,32 @@ impl VerilogSymbol {
         let mut counter = 0;
         let mut identified_param = false;
 
+        let mut last_token_line = None;
+
         while let Some(t) = tokens.next() {
+            let next_token_line = t.locate().line().clone();
+            if last_token_line.is_none() || next_token_line > last_token_line.unwrap() {
+                // take all symbols until new line when handling a new directive
+                if t.as_type().is_directive() == true {
+                    let mut stmt = Statement::new();
+                    stmt.push(t);
+                    while let Some(t_next) = tokens.peek() {
+                        if t_next.locate().line() > next_token_line {
+                            break;
+                        } else {
+                            stmt.push(tokens.next().unwrap());
+                        }
+                    }
+                    // println!("{}", statement_to_string(&stmt));
+                    // get any refs from the statement with the compiler directive
+                    if let Some(s_refs) = SystemVerilogSymbol::extract_refs_from_statement(&stmt) {
+                        refs.extend(s_refs);
+                    }
+                    continue;
+                }
+            }
+            last_token_line = Some(next_token_line);
+
             if t.as_ref().is_eof() == true {
                 return Err(VerilogError::ExpectingOperator(Operator::ParenR));
             // exit the param checking
@@ -809,6 +841,7 @@ impl VerilogSymbol {
                         || t_next.as_type().check_delimiter(&Operator::ParenR)
                         || t_next.as_type().check_delimiter(&Operator::BrackL)
                         || t_next.as_type().check_delimiter(&Operator::Terminator)
+                        || t_next.as_type().is_directive()
                     {
                         // fix any misaligned data parsing
                         if identified_param == true {
@@ -901,8 +934,32 @@ impl VerilogSymbol {
 
         let mut counter = 0;
         let mut identified_port = false;
+        let mut last_token_line = None;
 
         while let Some(t) = tokens.next() {
+            let next_token_line = t.locate().line().clone();
+            if last_token_line.is_none() || next_token_line > last_token_line.unwrap() {
+                // take all symbols until new line when handling a new directive
+                if t.as_type().is_directive() == true {
+                    let mut stmt = Statement::new();
+                    stmt.push(t);
+                    while let Some(t_next) = tokens.peek() {
+                        if t_next.locate().line() > next_token_line {
+                            break;
+                        } else {
+                            stmt.push(tokens.next().unwrap());
+                        }
+                    }
+                    // println!("{}", statement_to_string(&stmt));
+                    // get any refs from the statement with the compiler directive
+                    if let Some(s_refs) = SystemVerilogSymbol::extract_refs_from_statement(&stmt) {
+                        refs.extend(s_refs);
+                    }
+                    continue;
+                }
+            }
+            last_token_line = Some(next_token_line);
+
             if t.as_ref().is_eof() == true {
                 return Err(VerilogError::ExpectingOperator(Operator::ParenR));
             // exit the port checking
@@ -922,6 +979,7 @@ impl VerilogSymbol {
                         || t_next.as_type().check_delimiter(&Operator::ParenR)
                         || t_next.as_type().check_delimiter(&Operator::BrackL)
                         || t_next.as_type().check_delimiter(&Operator::Terminator)
+                        || t_next.as_type().is_directive()
                     {
                         // fix any misaligned data parsing
                         if identified_port == true {

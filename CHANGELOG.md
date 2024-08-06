@@ -15,14 +15,14 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.18.0 - unreleased
+## 0.18.0
 
 ### Features
 - adds support for sv classes
 - improves overall verilog/sv parsing support
 - adds support for capturing multidimensional packed and unpacked arrays for module port/parameter delcarations for verilog/sv
 - improves non-ANSI style port list parsing for verilog/sv
-- adds initial ability to use `--json` for verilog and systemverilog modules with `orbit get` command
+- adds ability to use `--json` for verilog and systemverilog modules with `orbit get` command
 - adds global flag `--sync` to synchronize channels if they are stored on the internet as well as locally on the user's system
 - adds formatting options for verilog and sv languages by adding new table entry in configuration files: "systemverilog-format"
 

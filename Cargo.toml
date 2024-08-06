@@ -1,6 +1,6 @@
 [package]
 name = "orbit"
-version = "0.17.0"
+version = "0.18.0"
 description = "An agile package manager and extensible build tool for HDLs"
 authors = ["Chase Ruskin <c.ruskin@ufl.edu>"]
 keywords = ["hdl", "package-manager", "build-tool", "verilog", "vhdl"]

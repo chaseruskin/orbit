@@ -187,7 +187,7 @@
     {
         "identifier": string
         "mode": string
-        "type": string
+        "type": string // null if blank
         "default": string // null if blank
     }
   ]
@@ -195,7 +195,7 @@
     {
         "identifier": string
         "mode": string
-        "type": string
+        "type": string // null if blank
         "default": string // null if blank
     }
   ]
@@ -205,6 +205,7 @@
   "language": string
 }
 </code></pre>
+<p>The "language" field is allowed to be one of three values: "vhdl", "verilog", or "systemverilog".</p>
 <h2 id="references"><a class="header" href="#references">References</a></h2>
 <p>Some ideas about exporting json from <code>orbit get</code> can be found at this <a href="https://blog.kellybrazil.com/2021/12/03/tips-on-adding-json-output-to-your-cli-app/">blog post</a>.</p>
 

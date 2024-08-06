@@ -1199,7 +1199,7 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <p>Ips are the core component that Orbit operates on as a package manager. First, let's understand some key terms related to ip in the context of Orbit.</p>
 <h2 id="anatomy-of-an-ip"><a class="header" href="#anatomy-of-an-ip">Anatomy of an ip</a></h2>
 <p>A developer's tasks often involve interfacing with a collection of closely related files (source code, scripts, text files). This collection of closely related files is typically stored under a single directory and is called a <em>project</em>.</p>
-<p>The core operations of a package manager revolve around <em>packages</em>. A <em>package</em> is a project <em>with additional information provided by the developer</em>. This "additional information" is called <em>metadata</em>, and it is written to a special file called a <em>manifest</em>. The manifest must be placed at the project's root directory. Without a manifests, a package manager would not know which projects it should manage and what each project's current state is in relation to being a package.</p>
+<p>The core operations of a package manager revolve around <em>packages</em>. A <em>package</em> is a project <em>with additional information provided by the developer</em>. This "additional information" is called <em>metadata</em>, and it is written to a special file called a <em>manifest</em>. The manifest must be placed at the project's root directory. Without manifests, a package manager would not know which projects it should manage and what each project's current state is in regards to being a package.</p>
 <p>In the context of being a package manager for digital hardware, Orbit calls a package an <em>ip</em>. An ip's manifest file is "Orbit.toml", with case-sensitivity.</p>
 <h2 id="working-ip"><a class="header" href="#working-ip">Working ip</a></h2>
 <p>Typically, developers work on one project at a given time (while we can work on projects concurrently, we unfortunately are not parallel processors...yet). The <em>working ip</em> is the ip that is currently being developed at a given moment. The working ip is found by Orbit by checking along the working directory and its parent directories. Some Orbit commands only work when they are called within the working ip (<code>orbit lock</code>, <code>orbit build</code>).</p>
@@ -2100,7 +2100,7 @@ root = "./index"
     {
         "identifier": string
         "mode": string
-        "type": string
+        "type": string // null if blank
         "default": string // null if blank
     }
   ]
@@ -2108,7 +2108,7 @@ root = "./index"
     {
         "identifier": string
         "mode": string
-        "type": string
+        "type": string // null if blank
         "default": string // null if blank
     }
   ]
@@ -2118,6 +2118,7 @@ root = "./index"
   "language": string
 }
 </code></pre>
+<p>The "language" field is allowed to be one of three values: "vhdl", "verilog", or "systemverilog".</p>
 <h2 id="references"><a class="header" href="#references">References</a></h2>
 <p>Some ideas about exporting json from <code>orbit get</code> can be found at this <a href="https://blog.kellybrazil.com/2021/12/03/tips-on-adding-json-output-to-your-cli-app/">blog post</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="command-line"><a class="header" href="#command-line">Command line</a></h1>

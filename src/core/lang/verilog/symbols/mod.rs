@@ -742,6 +742,11 @@ impl VerilogSymbol {
                 | Keyword::Begin
                 | Keyword::End
                 | Keyword::Else
+                | Keyword::Join
+                | Keyword::JoinAny
+                | Keyword::JoinNone
+                | Keyword::Fork
+                | Keyword::Forkjoin
                 | Keyword::Endconfig
                 | Keyword::Endfunction
                 | Keyword::Endgenerate

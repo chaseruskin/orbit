@@ -4,17 +4,13 @@ As your codebase evolves over time, you may have accrued a lot of ips. However, 
 
 Orbit solves this problem by using channels. A _channel_ is a decentralized registry that agglomerates ip metadata into a single location. With this approach, users only need to specify channels to discover the wide variety of released ips.
 
-Channels can be as manual or automated as you prefer. You can configure commands to run for a channel's synchronization sequence, pre-launch sequence, and post-launch sequence. Channels are encouraged to be as automated as possible by defining these fields the channel's configuration.
+Channels can be as manual or automated as you prefer. You can configure commands to run for a channel's synchronization hook, pre-publish hook, and post-publish hook. Channels are encouraged to be as automated as possible by defining these fields the channel's configuration.
 
 ## Adding a new ip to a channel
 
-Orbit automates the process of adding an ip to a channel with `orbit launch`.
+Orbit automates the process of adding an ip to a channel with `orbit publish`.
 
-The ip's manifest data gets placed in the channel by using the following pattern:
-
-```
-{{orbit.ip.char}}/{{orbit.ip.name}}-{{orbit.ip.version}}-{{orbit.ip.uuid}}.toml
-```
+The ip's manifest data gets placed in the channel by using its generated index path. The index path can be read from the `ORBIT_IP_INDEX` environment variable during a channel's pre-publish or post-publish hook processes.
 
 ## Example
 

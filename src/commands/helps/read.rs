@@ -16,22 +16,22 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"Navigate hdl design unit source code.
+pub const HELP: &str = r#"Lookup hdl source code.
 
 Usage:
     orbit read [options] <unit>
 
 Arguments:
-    <unit>                primary design unit identifier
+    <unit>                read the file for this hdl design unit
 
 Options:
-    --ip <spec>           the ip specification to search in the catalog
-    --file                copy the source code to a temporary read-only file
-    --location            append the targeted code segment's line and column number to the resulting filepath 
+    --ip <spec>           ip specification
+    --doc <code>          find the preceding comments to the code snippet
+    --save                write the results to a temporary read-only file
+    --start <code>        start the lookup after jumping to this code snippet
+    --end <code>          stop the lookup after finding this code snippet
+    --limit <num>         set a maximum number of source code lines to write
     --no-clean            do not clean the temporary directory of existing files
-    --limit <num>         set a maximum number of lines to write
-    --start <code>        start the code navigation upon matching this VHDL segment
-    --end <code>          stop the code navigation upon matching this VHDL segment
-    --doc <code>          navigate to the preceding comments of this VHDL segment
+    --locate              append the line and column number to the resulting file
 
 Use 'orbit help read' to read more about the command."#;

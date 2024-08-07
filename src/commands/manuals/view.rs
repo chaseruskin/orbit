@@ -37,7 +37,7 @@ DESCRIPTION
 
 OPTIONS
     <ip>
-        Ip spec
+        Ip specification
 
     --versions, -v
         Display the list of known versions

@@ -22,7 +22,7 @@ Usage:
     orbit view [options] [<ip>]
 
 Options:
-    <ip>                  ip spec
+    <ip>                  ip specification
     --versions, -v        display the list of known versions
     --units, -u           display the HDL design elements defined for this ip
     --all, -a             include any private or hidden results

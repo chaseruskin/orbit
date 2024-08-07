@@ -27,7 +27,7 @@ To display the known versions for an ip, use the `--versions` option.
 ## __OPTIONS__
 
 `<ip>`  
-      Ip spec
+      Ip specification
 
 `--versions, -v`  
       Display the list of known versions

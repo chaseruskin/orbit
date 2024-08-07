@@ -17,62 +17,64 @@
 
 // This manual page was automatically generated from the mangen.py tool.
 pub const MANUAL: &str = r#"NAME
-    read - navigate hdl design unit source code
+    read - lookup hdl source code
 
 SYNOPSIS
     orbit read [options] <unit>
 
 DESCRIPTION
-    This command allows the user to navigate source code to gain a quicker
-    understanding of the available code. By default, it will display the code to the
-    console.
+    Navigates hdl source code to lookup requested hdl code snippets. Looking up
+    hdl source code to see its implementation can help gain a better understanding
+    of the code being reused in your current design.
     
-    If no ip specification is provided through the '--ip' option, then it will
-    assume to search the current working ip, if it exists.
+    By default, the resulting code is displayed to the console. To write the
+    results to a file for improved readability, use the '--save' option. Combining 
+    the '--locate' option with the '--save' option will append the line and column
+    number of the identified code snippet to the end of the resulting file path.
     
-    If '--file' is provided, then the source code will be written to a temporary
-    read-only file. Also providing '--location' in this context will append the
-    requested code segment's line and column number to the end of the generated
-    filepath.
+    If no ip is provided by the '--ip' option, then it will assume to search the
+    local ip for the provided design unit.
     
-    The options '--start', '--end', and '--doc' all accept valid VHDL code to
-    search for in the identified source code file. The '--doc' option will find the
-    immediate single-line comments preceding the supplied code value.
+    The values for options '--start', '--end', and '--doc' must be valid hdl code. 
+    The code is interpreted in the native language of the provided design unit.
     
-    The 'read' command attempts to clean the temporary directory at every call to
-    it. To keep existing files alive while allowing new files to appear, use the
-    '--no-clean' flag.
+    The '--doc' option will attempt to find the comments immediately preceding the
+    identified code snippet. 
+    
+    Every time this command is called, it attempts to clean the temporary
+    directory where it saves resulting files. To keep existing files on the next
+    call of this command, use the '--no-clean' option.
 
 OPTIONS
     <unit>
-        Primary design unit identifier
+        Read the file for this hdl design unit
 
     --ip <spec>
-        The ip specification to search in the catalog
+        Ip specification
 
-    --file
-        Copy the source code to a temporary read-only file
+    --doc <code>
+        Find the preceding comments to the code snippet
 
-    --location
-        Append the targeted code segment's line and column number to the resulting filepath 
+    --save
+        Write the results to a temporary read-only file
+
+    --start <code>
+        Start the lookup after jumping to this code snippet
+
+    --end <code>
+        Stop the lookup after finding this code snippet
+
+    --limit <num>
+        Set a maximum number of source code lines to write
 
     --no-clean
         Do not clean the temporary directory of existing files
 
-    --limit <num>
-        Set a maximum number of lines to write
-
-    --start <code>
-        Start the code navigation upon matching this vhdl segment
-
-    --end <code>
-        Stop the code navigation upon matching this vhdl segment
-
-    --doc <code>
-        Navigate to the preceding comments of this vhdl segment
+    --locate
+        Append the line and column number to the resulting file
 
 EXAMPLES
-    orbit read and_gate --ip gates:1.0.0
-    orbit read math_pkg --ip math --doc "function clog2"
-    orbit read math_pkg --ip math --start "package math_pkg" --doc "function flog2p1" --location --file
+    orbit read and_gate --limit 25
+    orbit read math_pkg --ip math --doc "function clog2" --start "package math_pkg"
+    orbit read math_pkg --ip math --doc "function flog2p1" --save --locate
 "#;

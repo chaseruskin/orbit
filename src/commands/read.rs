@@ -55,9 +55,9 @@ const TMP_DIR: &str = "tmp";
 pub struct Read {
     unit: LangIdentifier,
     ip: Option<PartialIpSpec>,
-    location: bool,
-    file: bool,
-    keep: bool,
+    locate: bool,
+    save: bool,
+    no_clean: bool,
     start: Option<String>,
     end: Option<String>,
     comment: Option<String>,
@@ -69,9 +69,9 @@ impl Subcommand<Context> for Read {
         cli.help(Help::with(read::HELP))?;
         Ok(Read {
             // flags
-            file: cli.check(Arg::flag("file"))?,
-            location: cli.check(Arg::flag("location"))?,
-            keep: cli.check(Arg::flag("no-clean"))?,
+            save: cli.check(Arg::flag("save"))?,
+            locate: cli.check(Arg::flag("locate"))?,
+            no_clean: cli.check(Arg::flag("no-clean"))?,
             // options
             limit: cli.get(Arg::option("limit").value("num"))?,
             ip: cli.get(Arg::option("ip").value("spec"))?,
@@ -85,9 +85,9 @@ impl Subcommand<Context> for Read {
 
     fn execute(self, c: &Context) -> proc::Result {
         // verify location is only set iff the file mode is enabled
-        if self.location == true && self.file == false {
+        if self.locate == true && self.save == false {
             Err(AnyError(format!(
-                "the flag '--location' can only be set when using '--file'"
+                "the flag '--locate' can only be set when using '--save'"
             )))?
         }
 
@@ -95,7 +95,7 @@ impl Subcommand<Context> for Read {
         let dest: PathBuf = c.get_home_path().join(SYS_DIR).join(TMP_DIR);
 
         // attempt to clean the tmp directory when --keep is disabled
-        if dest.exists() == true && self.keep == false {
+        if dest.exists() == true && self.no_clean == false {
             // do not error if this procedure fails
             match std::fs::remove_dir_all(&dest) {
                 Ok(_) => (),
@@ -104,7 +104,7 @@ impl Subcommand<Context> for Read {
             }
         }
         // cast the destination folder into an option based on if the user wants a file
-        let dest = match self.file {
+        let dest = match self.save {
             true => Some(dest),
             false => None,
         };
@@ -189,7 +189,7 @@ impl Read {
                 }
                 // overwrite contents and display the file path
                 false => {
-                    let cut_code = (start.is_some() || end.is_some()) && self.location == false;
+                    let cut_code = (start.is_some() || end.is_some()) && self.locate == false;
 
                     let file = match cut_code {
                         true => {
@@ -213,7 +213,7 @@ impl Read {
 
                     // tack on the location to the file name
                     let path = {
-                        if self.location == true {
+                        if self.locate == true {
                             // update the location to point to
                             let loc = match start {
                                 Some(s) => s,

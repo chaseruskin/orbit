@@ -19,26 +19,13 @@ command.
 """
 
 args."<path>" = "Directory to create for the ip"
+
 options."--name <name>" = "Set the resulting ip's name"
 options."--lib <lib>" = "Set the resulting ip's library"
 
 examples = """
 orbit new gates
 orbit new eecs/lab1 --name adder
-"""
-
-help = """
-Create a new ip.
-
-Usage:
-    orbit new [options] <path>
-
-Arguments:
-    <path>          directory to create ip project
-
-Options:
-    --name <name>   set the resulting ip's name
-    --lib <lib>     set the resulting ip's library
 """
 
 # ------------------------------------------------------------------------------
@@ -90,7 +77,7 @@ from the results. To display design elements of all visibility levels the
 To display the known versions for an ip, use the `--versions` option.
 """
 
-options."<ip>" = "Ip spec"
+options."<ip>" = "Ip specification"
 options."--versions, -v" = "Display the list of known versions"
 options."--units, -u" = "Display the HDL design elements defined for this ip"
 options."--all, -a" = "Include any private or hidden results"
@@ -107,45 +94,47 @@ orbit view gates:1 -v
 # ------------------------------------------------------------------------------
 [read]
 name = "read"
-summary = "navigate hdl design unit source code"
+summary = "lookup hdl source code"
 synopsis = "orbit read [options] <unit>"
 description = """
-This command allows the user to navigate source code to gain a quicker
-understanding of the available code. By default, it will display the code to the
-console.
+Navigates hdl source code to lookup requested hdl code snippets. Looking up
+hdl source code to see its implementation can help gain a better understanding
+of the code being reused in your current design.
 
-If no ip specification is provided through the `--ip` option, then it will
-assume to search the current working ip, if it exists.
+By default, the resulting code is displayed to the console. To write the
+results to a file for improved readability, use the `--save` option. Combining 
+the `--locate` option with the `--save` option will append the line and column
+number of the identified code snippet to the end of the resulting file path.
 
-If `--file` is provided, then the source code will be written to a temporary
-read-only file. Also providing '--location' in this context will append the
-requested code segment's line and column number to the end of the generated
-filepath.
+If no ip is provided by the `--ip` option, then it will assume to search the
+local ip for the provided design unit.
 
-The options `--start`, `--end`, and `--doc` all accept valid VHDL code to
-search for in the identified source code file. The `--doc` option will find the
-immediate single-line comments preceding the supplied code value.
+The values for options `--start`, `--end`, and `--doc` must be valid hdl code. 
+The code is interpreted in the native language of the provided design unit.
 
-The `read` command attempts to clean the temporary directory at every call to
-it. To keep existing files alive while allowing new files to appear, use the
-`--no-clean` flag.
+The `--doc` option will attempt to find the comments immediately preceding the
+identified code snippet. 
+
+Every time this command is called, it attempts to clean the temporary
+directory where it saves resulting files. To keep existing files on the next
+call of this command, use the `--no-clean` option.
 """
 
-args."<unit>" = "Primary design unit identifier"
+args."<unit>" = "Read the file for this hdl design unit"
 
-options."--ip <spec>" = "The ip specification to search in the catalog"
-options."--file" = "Copy the source code to a temporary read-only file"
-options."--location" = "Append the targeted code segment's line and column number to the resulting filepath "
+options."--ip <spec>" = "Ip specification"
+options."--doc <code>" = "Find the preceding comments to the code snippet"
+options."--save" = "Write the results to a temporary read-only file"
+options."--start <code>" = "Start the lookup after jumping to this code snippet"
+options."--end <code>" = "Stop the lookup after finding this code snippet"
+options."--limit <num>" = "Set a maximum number of source code lines to write"
 options."--no-clean" = "Do not clean the temporary directory of existing files"
-options."--limit <num>" = "Set a maximum number of lines to write"
-options."--start <code>" = "Start the code navigation upon matching this VHDL segment"
-options."--end <code>" = "Stop the code navigation upon matching this VHDL segment"
-options."--doc <code>" = "Navigate to the preceding comments of this VHDL segment"
+options."--locate" = "Append the line and column number to the resulting file"
 
 examples = """
-orbit read and_gate --ip gates:1.0.0
-orbit read math_pkg --ip math --doc "function clog2"
-orbit read math_pkg --ip math --start "package math_pkg" --doc "function flog2p1" --location --file
+orbit read and_gate --limit 25
+orbit read math_pkg --ip math --doc "function clog2" --start "package math_pkg"
+orbit read math_pkg --ip math --doc "function flog2p1" --save --locate
 """
 
 # ------------------------------------------------------------------------------ 

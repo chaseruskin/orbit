@@ -112,38 +112,71 @@ impl Tree {
                         working_lib,
                         LangIdentifier::Vhdl(ent.clone()),
                     )) {
-                        Some(id) => id.index(),
+                        Some(id) => {
+                            // verify the unit is a component
+                            if id.as_ref().get_symbol().is_component() == false {
+                                return Err(PlanError::BadEntity(ent.clone()))?;
+                            }
+                            id.index()
+                        }
                         None => return Err(PlanError::UnknownEntity(ent.clone()))?,
                     };
                     Plan::local_to_global(i, &global_graph, &local_graph).index()
                 // auto-detect the root if possible
                 } else {
-                    // check if --all is applied
-                    // traverse subset of graph by filtering only for working library entities
-                    match local_graph.find_root() {
-                        Ok(i) => {
-                            Plan::local_to_global(i.index(), &global_graph, &local_graph).index()
-                        }
-                        Err(e) => match e.len() {
-                            0 => return Err(PlanError::Empty)?,
-                            _ => {
-                                return Err(PlanError::Ambiguous(
-                                    "roots".to_string(),
-                                    e.into_iter()
-                                        .map(|f| {
-                                            local_graph
-                                                .get_node_by_index(f)
-                                                .unwrap()
-                                                .as_ref()
-                                                .get_symbol()
-                                                .get_name()
-                                                .clone()
-                                        })
-                                        .collect(),
-                                    Hint::RootSpecify,
-                                ))?
+                    // auto-detect top-level if no testbench was given
+                    let tops: Vec<(usize, &HdlSymbol)> = local_graph
+                        .get_map()
+                        .iter()
+                        .filter_map(|(_k, v)| {
+                            if v.as_ref().get_symbol().is_component() == true {
+                                Some((v.index(), v.as_ref().get_symbol()))
+                            } else {
+                                None
                             }
-                        },
+                        })
+                        .collect();
+                    // filter to get all potential candidates
+                    let tops: Vec<(usize, &HdlSymbol)> = tops
+                        .into_iter()
+                        .filter(|(i, _v)| {
+                            local_graph
+                                .get_graph()
+                                .successors(*i)
+                                .filter(|k| {
+                                    let s = local_graph
+                                        .get_node_by_index(*k)
+                                        .unwrap()
+                                        .as_ref()
+                                        .get_symbol();
+
+                                    s.is_component()
+                                })
+                                .count()
+                                == 0
+                        })
+                        .collect();
+
+                    match tops.len() {
+                        // catch this error when it occurs during plan to allow for tbs without entities
+                        0 => return Err(PlanError::Empty)?,
+                        1 => Plan::local_to_global(tops[0].0, &global_graph, &local_graph).index(),
+                        _ => {
+                            return Err(PlanError::Ambiguous(
+                                format!("roots"),
+                                tops.into_iter()
+                                    .map(|f| {
+                                        local_graph
+                                            .get_node_by_index(f.0)
+                                            .unwrap()
+                                            .as_ref()
+                                            .get_symbol()
+                                            .get_name()
+                                    })
+                                    .collect(),
+                                Hint::RootSpecify,
+                            ))?
+                        }
                     }
                 };
                 root_index

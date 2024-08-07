@@ -18,6 +18,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.19.0 - unreleased
 
 ### Changes
+- improves component detection and filtering for `orbit tree` and dependency analysis during planning stage
 - enhances `orbit remove` to delete ip from cache and archive and ask confirmation prompt by default before doing destructive task
 - removes unncessary `orbit download` command; the recommended/common usage is to use `orbit install` to add ip and its reverse action `orbit remove` to uninstall ip
 

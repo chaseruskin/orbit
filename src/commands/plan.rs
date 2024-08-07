@@ -1309,14 +1309,16 @@ impl Plan {
                             .get_map()
                             .iter()
                             .filter_map(|(_k, v)| {
-                                if v.as_ref().get_symbol().is_testbench() == false {
+                                if v.as_ref().get_symbol().is_component()
+                                    && v.as_ref().get_symbol().is_testbench() == false
+                                {
                                     Some((v.index(), v.as_ref().get_symbol()))
                                 } else {
                                     None
                                 }
                             })
                             .collect();
-                        // filter out all non-top entities to get only top ones
+                        // filter to get all potential candidates
                         let tops: Vec<(usize, &HdlSymbol)> = tops
                             .into_iter()
                             .filter(|(i, _v)| {
@@ -1324,13 +1326,13 @@ impl Plan {
                                     .get_graph()
                                     .successors(*i)
                                     .filter(|k| {
-                                        local
+                                        let s = local
                                             .get_node_by_index(*k)
                                             .unwrap()
                                             .as_ref()
-                                            .get_symbol()
-                                            .is_testbench()
-                                            == false
+                                            .get_symbol();
+
+                                        s.is_testbench() == false && s.is_component()
                                     })
                                     .count()
                                     == 0
@@ -1343,7 +1345,11 @@ impl Plan {
                             1 => Some(tops[0].0),
                             _ => {
                                 return Err(PlanError::Ambiguous(
-                                    "top-level design units".to_string(),
+                                    if allow_bench == false {
+                                        format!("top-level design units")
+                                    } else {
+                                        format!("design-under-test units")
+                                    },
                                     tops.into_iter()
                                         .map(|f| {
                                             local
@@ -1354,7 +1360,11 @@ impl Plan {
                                                 .get_name()
                                         })
                                         .collect(),
-                                    Hint::TopSpecify,
+                                    if allow_bench == true {
+                                        Hint::DutSpecify
+                                    } else {
+                                        Hint::TopSpecify
+                                    },
                                 ))?
                             }
                         }

@@ -56,6 +56,7 @@ impl PrimaryUnit {
             "config" => PrimaryShape::Config,
             "package" => PrimaryShape::Package,
             "interface" => PrimaryShape::Interface,
+            "class" => PrimaryShape::Class,
             _ => return None,
         };
         Some(Self {

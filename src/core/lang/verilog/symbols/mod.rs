@@ -519,10 +519,12 @@ impl VerilogSymbol {
             refs.extend(s_refs);
         }
         // try as a module instantiation
-        if let Some(dep) = Self::as_module_instance(&stmt) {
+        if let Some((dep, is_valid_mod)) = Self::as_module_instance(&stmt) {
             // println!("detected dependency! {}", dep);
-            if let Some(deps) = deps {
-                deps.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
+            if is_valid_mod == true {
+                if let Some(deps) = deps {
+                    deps.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
+                }
             }
             refs.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
         }
@@ -644,13 +646,16 @@ impl VerilogSymbol {
 
     /// Returns the name of the module that is being instantiated in this statement, if
     /// one exists.
-    fn as_module_instance(stmt: &Statement) -> Option<&Identifier> {
+    fn as_module_instance(stmt: &Statement) -> Option<(&Identifier, bool)> {
         let mod_name = stmt.first()?.as_ref().as_identifier()?;
         // are there parameters defined
         let mut stmt_iter = stmt.iter().skip(1);
 
         let mut state = 0;
         let mut counter = 0;
+        let mut came_from_param_token = false;
+        let mut has_port_decl = false;
+        let mut has_port_body = false;
         while let Some(t) = stmt_iter.next() {
             // println!("{}", t.as_ref().to_string());
             // take the parameters
@@ -658,8 +663,10 @@ impl VerilogSymbol {
                 // take either name or parameters
                 0 => {
                     if t.as_ref().check_delimiter(&Operator::Pound) {
+                        came_from_param_token = true;
                         state = 1;
                     } else if t.as_ref().as_identifier().is_some() {
+                        came_from_param_token = false;
                         state = 1;
                     } else if t.as_ref().check_delimiter(&Operator::Comma) {
                         state = 0;
@@ -675,6 +682,9 @@ impl VerilogSymbol {
                     if t.as_ref().check_delimiter(&Operator::ParenL) {
                         counter = 0;
                         state = 3;
+                        if came_from_param_token == false {
+                            has_port_decl = true;
+                        }
                     // take range specification
                     } else if t.as_ref().check_delimiter(&Operator::BrackL) {
                         counter = 0;
@@ -697,6 +707,8 @@ impl VerilogSymbol {
                         } else {
                             counter -= 1;
                         }
+                    } else if has_port_decl == true {
+                        has_port_body = true;
                     }
                 }
                 // take until closing bracket
@@ -706,6 +718,7 @@ impl VerilogSymbol {
                     } else if t.as_ref().check_delimiter(&Operator::BrackR) {
                         if counter == 0 {
                             // go to state 1 next
+                            came_from_param_token = false;
                             state = 1;
                         } else {
                             counter -= 1;
@@ -716,7 +729,7 @@ impl VerilogSymbol {
             }
         }
         match state >= 0 && counter == 0 {
-            true => Some(mod_name),
+            true => Some((mod_name, has_port_body)),
             false => None,
         }
     }

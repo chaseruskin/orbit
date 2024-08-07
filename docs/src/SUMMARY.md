@@ -55,10 +55,9 @@
     - [orbit build](./commands/build.md) <!-- DONE -->
     - [orbit publish](./commands/publish.md)
     - [orbit search](./commands/search.md)
-    - [orbit download](./commands/download.md) <!-- DONE -->
     - [orbit install](./commands/install.md) <!-- DONE -->
+    - [orbit remove](./commands/remove.md)
     - [orbit env](./commands/env.md)
     - [orbit config](./commands/config.md) <!-- DONE -->
-    - [orbit remove](./commands/remove.md)
     
 - [Appendix: Glossary](./glossary.md)

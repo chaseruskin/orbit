@@ -144,7 +144,6 @@ impl Command for Orbit {
 
 use crate::commands::build::Build;
 use crate::commands::config::Config;
-use crate::commands::download::Download;
 use crate::commands::env::Env;
 use crate::commands::get::Get;
 use crate::commands::help::Help;
@@ -178,14 +177,13 @@ enum OrbitSubcommand {
     Config(Config),
     Uninstall(Remove),
     Read(Read),
-    Download(Download),
 }
 
 impl Subcommand<Context> for OrbitSubcommand {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
         match cli
             .select(&[
-                "help", "new", "search", "lock", "build", "test", "t", "publish", "download",
+                "help", "new", "search", "lock", "build", "test", "t", "publish",
                 "install", "get", "init", "tree", "view", "b", "env", "config", "remove", "read",
             ])?
             .as_ref()
@@ -198,7 +196,6 @@ impl Subcommand<Context> for OrbitSubcommand {
             "b" | "build" => Ok(OrbitSubcommand::Build(Build::interpret(cli)?)),
             "t" | "test" => Ok(OrbitSubcommand::Test(Test::interpret(cli)?)),
             "init" => Ok(OrbitSubcommand::Init(Init::interpret(cli)?)),
-            "download" => Ok(OrbitSubcommand::Download(Download::interpret(cli)?)),
             "publish" => Ok(OrbitSubcommand::Publish(Publish::interpret(cli)?)),
             "install" => Ok(OrbitSubcommand::Install(Install::interpret(cli)?)),
             "tree" => Ok(OrbitSubcommand::Tree(Tree::interpret(cli)?)),
@@ -229,7 +226,6 @@ impl Subcommand<Context> for OrbitSubcommand {
             OrbitSubcommand::Config(sub) => sub.execute(context),
             OrbitSubcommand::Uninstall(sub) => sub.execute(context),
             OrbitSubcommand::Read(sub) => sub.execute(context),
-            OrbitSubcommand::Download(sub) => sub.execute(context),
         }
     }
 }

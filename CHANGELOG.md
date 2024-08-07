@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.19.0 - unreleased
+
+### Changes
+- removes unncessary `orbit download` command; the recommended/common usage is to use `orbit install` to add ip and its reverse action `orbit remove` to uninstall ip
+
 ## 0.18.0
 
 ### Features

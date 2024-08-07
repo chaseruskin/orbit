@@ -8,9 +8,7 @@ Orbit is an agile package manager and extensible build tool for HDLs.
 
 - Orbit manages your ips using a group of file system directories that together make up the __Catalog__. The catalog has 3 levels that store increasingly more information about a particular ip: __Channels__, the __Archive__, and the __Cache__.
 
-- An ip's manifest may be stored in a user-defined channel so that a user can find that ip. Running `orbit download` will download the ip from its defined source found in its channel and create a compressed snapshot of the ip in the archive. 
-
-- A compressed snapshot of an ip is not enough for Orbit to reference it in a local ip. Running `orbit install` will decompress the archived snapshot stored in the archive into an immutable reference of the ip in the cache. The usage of checksums prevents users from editing ips in the cache.
+- An ip's manifest may be stored in a user-defined channel so that a user can find that ip. Running `orbit install` will download the ip from its defined source found in its channel and create a compressed snapshot of the ip in the archive. Once the compressed snapshot is saved, Orbit will decompress the archived snapshot into an immutable reference of the ip at the cache level. The usage of checksums prevents users from editing ips in the cache.
 
 - Every ip requires a __Manifest__ file, named `Orbit.toml`. This is a simple TOML file maintained by the user. The manifest file documents basic metadata about the ip, like its name and version, as well as the ip's list of direct dependencies.
 

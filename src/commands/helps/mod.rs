@@ -17,7 +17,6 @@
 
 pub mod build;
 pub mod config;
-pub mod download;
 pub mod env;
 pub mod get;
 pub mod init;
@@ -25,7 +24,6 @@ pub mod install;
 pub mod lock;
 pub mod new;
 pub mod orbit;
-pub mod plan;
 pub mod publish;
 pub mod read;
 pub mod remove;

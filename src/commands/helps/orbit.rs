@@ -33,11 +33,10 @@ Commands:
     build, b              plan and execute a target
     publish               post an ip to a channel
     search                browse the ip catalog
-    download              fetch packages from the internet
     install               store an immutable reference to an ip
+    remove                uninstall an ip from the catalog
     env                   print orbit environment information
     config                modify configuration values
-    remove                uninstall an ip from the catalog
 
 Options:
     --version             print version information and exit

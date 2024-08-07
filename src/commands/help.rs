@@ -55,7 +55,6 @@ enum Topic {
     Test,
     Publish,
     Search,
-    Download,
     Install,
     Env,
     Config,
@@ -66,7 +65,7 @@ impl Topic {
     fn list_all() -> String {
         let list = [
             "new", "init", "view", "read", "get", "tree", "lock", "test", "build", "publish",
-            "search", "download", "install", "env", "config", "remove",
+            "search", "install", "env", "config", "remove",
         ];
         list.into_iter().fold(String::new(), |mut acc, x| {
             acc.push_str(&format!("{}\n", x));
@@ -90,7 +89,6 @@ impl std::str::FromStr for Topic {
             "build" => Self::Build,
             "publish" => Self::Publish,
             "search" => Self::Search,
-            "download" => Self::Download,
             "install" => Self::Install,
             "env" => Self::Env,
             "config" => Self::Config,
@@ -116,7 +114,6 @@ impl Topic {
             Build => manuals::build::MANUAL,
             Publish => manuals::publish::MANUAL,
             Search => manuals::search::MANUAL,
-            Download => manuals::download::MANUAL,
             Install => manuals::install::MANUAL,
             Env => manuals::env::MANUAL,
             Config => manuals::config::MANUAL,

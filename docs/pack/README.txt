@@ -1,31 +1,32 @@
-------------------------------------------------------------
-:: GETTING STARTED WITH ORBIT                             ::
-------------------------------------------------------------
+--------------------------------------------------------------
+:: GETTING STARTED WITH ORBIT                               ::
+--------------------------------------------------------------
 
-Orbit is a command-line tool for HDL package management and
-development. 
+Orbit is a package manager and build tool for hardware
+description languages. It is a single binary executable
+interfaced through the command-line.
 
 -----------------------------
 :: AUTOMATIC INSTALLATION  ::
 -----------------------------
 
-1. Run the `install` executable. It will guide you through
-    the necessary configurations and ask a final prompt if
-    the user wishes to proceed with the installation.
+Run the provided `install` executable. It will guide you 
+through the necessary configurations and ask a final prompt 
+if the user wishes to proceed with the installation.
 
 NOTE: If the requested installation path requires elevated 
-    privileges, then the install executable must be ran with
-    those privileges.
+    privileges, then the install executable must be ran 
+    with those privileges.
 
-NOTE: For unix, only the orbit binary is installed. For
-    windows, the entire orbit directory is installed.
+NOTE: For unix, only the Orbit binary is installed. For
+    windows, the entire Orbit directory is installed.
 
 -----------------------------
 :: MANUAL INSTALLATION     ::
 -----------------------------
 
 Follow the instructions at: 
-https://chaseruskin.github.io/orbit/1_starting/1_installing.html.
+https://chaseruskin.github.io/orbit/starting/installing.html.
 
 -----------------------------
 :: RESOURCES               ::

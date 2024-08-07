@@ -4,7 +4,7 @@ Orbit is an agile package manager for HDLs. Orbit supports a wide range of comma
 
 ## Installing
 
-`orbit download` `orbit install`
+`orbit install`
 
 Before you can reference an ip in your current project, you must first make sure the ip exists on your local filesystem. Orbit manages ip through its _ip catalog_. The catalog consists of multiple file paths that Orbit maintains for ips at varying states of accessibility.
 

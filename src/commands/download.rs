@@ -15,7 +15,6 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-use crate::commands::helps::download;
 use crate::core::catalog::Catalog;
 use crate::core::catalog::DownloadSlot;
 use crate::core::context::Context;
@@ -43,9 +42,6 @@ use std::fs;
 use std::path::PathBuf;
 use tempfile::TempDir;
 
-use cliproc::{cli, proc, stage::*};
-use cliproc::{Arg, Cli, Help, Subcommand};
-
 pub type ProtocolMap<'a> = HashMap<&'a str, &'a Protocol>;
 
 #[derive(Debug, PartialEq)]
@@ -56,92 +52,7 @@ pub struct Download {
     queue_dir: Option<PathBuf>,
     verbose: bool,
     force: bool,
-}
-
-impl Subcommand<Context> for Download {
-    fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
-        cli.help(Help::with(download::HELP))?;
-        Ok(Download {
-            // Flags
-            all: cli.check(Arg::flag("all"))?,
-            missing: cli.check(Arg::flag("missing"))?,
-            list: cli.check(Arg::flag("list"))?,
-            force: cli.check(Arg::flag("force"))?,
-            verbose: cli.check(Arg::flag("verbose"))?,
-            // Options
-            queue_dir: cli.get(Arg::option("queue").value("dir"))?,
-        })
-    }
-
-    fn execute(self, c: &Context) -> proc::Result {
-        // @idea: display lock entries as JSON? or use different env var for ORBIT_DOWNLOAD_LIST and ORBIT_VERSION_LIST
-
-        // cannot happen
-        if self.all == true && self.missing == true {
-            panic!("cannot display all and missing lock entries");
-        }
-
-        if let Some(dir) = &self.queue_dir {
-            if dir.exists() == true {
-                panic!("queue directory must be a non-existent directory");
-            }
-        }
-
-        let proto_map: ProtocolMap = c.get_config().get_protocols();
-
-        // load the catalog (ignore errors because we are only downloading)
-        let catalog = match self.force {
-            true => Catalog::new().set_downloads_path(c.get_downloads_path())?,
-            false => Catalog::new().downloads(c.get_downloads_path())?,
-        };
-
-        // verify running from an IP directory and enter IP's root directory
-        c.jump_to_working_ip()?;
-
-        let ip = Ip::load(c.get_ip_path().unwrap().clone(), true)?;
-
-        // verify a lockfile exists
-        if ip.get_lock().is_empty() == true {
-            panic!("cannot download due to missing lockfile")
-        }
-
-        let env = Environment::new()
-            // read config.toml for setting any env variables
-            .from_config(c.get_config())?
-            // read ip manifest for env variables
-            .from_ip(&Ip::load(c.get_ip_path().unwrap().clone(), true)?)?;
-
-        let vtable = StrSwapTable::new().load_environment(&env)?;
-        env.initialize();
-
-        // default behavior is report only missing installations
-        let missing_only = self.force == false || self.missing == true;
-
-        // default behavior is to print out to console
-        let to_stdout = self.list == true;
-
-        // determine whether to filter out or keep the dev dependencies from the lock file
-        let lf = ip.get_lock().keep_dev_dep_entries(&ip, self.all);
-
-        let downloads =
-            Self::compile_download_list(&LockEntry::from((&ip, true)), &lf, &catalog, missing_only);
-        // print to console
-        if to_stdout == true {
-            downloads.iter().for_each(|(_, src)| println!("{}", src));
-        // execute the command
-        } else {
-            Self::download_all(
-                &downloads,
-                &proto_map,
-                vtable,
-                self.verbose,
-                self.queue_dir.as_ref(),
-                c.get_downloads_path(),
-                self.force,
-            )?;
-        }
-        Ok(())
-    }
+    // IDEA: add <url> argument to download? with --protocol <alias> option?
 }
 
 impl Download {
@@ -396,4 +307,78 @@ impl Download {
     }
 }
 
-// add <url> argument to download? with --protocol <alias> option?
+impl Download {
+
+    // DEPRECATED: This function may be outdated- was used when `plan` used to be a
+    // dedicated subcommand.
+
+    fn execute(self, c: &Context) -> Result<(), Fault> {
+        // @idea: display lock entries as JSON? or use different env var for ORBIT_DOWNLOAD_LIST and ORBIT_VERSION_LIST
+
+        // cannot happen
+        if self.all == true && self.missing == true {
+            panic!("cannot display all and missing lock entries");
+        }
+
+        if let Some(dir) = &self.queue_dir {
+            if dir.exists() == true {
+                panic!("queue directory must be a non-existent directory");
+            }
+        }
+
+        let proto_map: ProtocolMap = c.get_config().get_protocols();
+
+        // load the catalog (ignore errors because we are only downloading)
+        let catalog = match self.force {
+            true => Catalog::new().set_downloads_path(c.get_downloads_path())?,
+            false => Catalog::new().downloads(c.get_downloads_path())?,
+        };
+
+        // verify running from an IP directory and enter IP's root directory
+        c.jump_to_working_ip()?;
+
+        let ip = Ip::load(c.get_ip_path().unwrap().clone(), true)?;
+
+        // verify a lockfile exists
+        if ip.get_lock().is_empty() == true {
+            panic!("cannot download due to missing lockfile")
+        }
+
+        let env = Environment::new()
+            // read config.toml for setting any env variables
+            .from_config(c.get_config())?
+            // read ip manifest for env variables
+            .from_ip(&Ip::load(c.get_ip_path().unwrap().clone(), true)?)?;
+
+        let vtable = StrSwapTable::new().load_environment(&env)?;
+        env.initialize();
+
+        // default behavior is report only missing installations
+        let missing_only = self.force == false || self.missing == true;
+
+        // default behavior is to print out to console
+        let to_stdout = self.list == true;
+
+        // determine whether to filter out or keep the dev dependencies from the lock file
+        let lf = ip.get_lock().keep_dev_dep_entries(&ip, self.all);
+
+        let downloads =
+            Self::compile_download_list(&LockEntry::from((&ip, true)), &lf, &catalog, missing_only);
+        // print to console
+        if to_stdout == true {
+            downloads.iter().for_each(|(_, src)| println!("{}", src));
+        // execute the command
+        } else {
+            Self::download_all(
+                &downloads,
+                &proto_map,
+                vtable,
+                self.verbose,
+                self.queue_dir.as_ref(),
+                c.get_downloads_path(),
+                self.force,
+            )?;
+        }
+        Ok(())
+    }
+}

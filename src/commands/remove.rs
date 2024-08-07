@@ -20,8 +20,9 @@ use crate::core::catalog::{CacheSlot, Catalog};
 use crate::core::context::Context;
 use crate::core::ip::{Ip, PartialIpSpec};
 use crate::core::version::AnyVersion;
-use crate::util::anyerror::AnyError;
-use std::error::Error;
+use crate::error::Error;
+use crate::util::anyerror::{AnyError, Fault};
+use crate::util::prompt;
 use std::fs;
 use std::path::PathBuf;
 
@@ -31,17 +32,19 @@ use cliproc::{Arg, Cli, Help, Subcommand};
 #[derive(Debug, PartialEq)]
 pub struct Remove {
     ip: PartialIpSpec,
-    all: bool,
+    force: bool,
     recurse: bool,
-    // @todo: add option to remove all versions (including store)
-    // @todo:
+    verbose: bool,
+    // TODO: add option to remove all versions (including archived)
+    // TODO: add option to remove only from cache (skip archive)
 }
 
 impl Subcommand<Context> for Remove {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
         cli.help(Help::with(remove::HELP))?;
         Ok(Remove {
-            all: cli.check(Arg::flag("all"))?,
+            verbose: cli.check(Arg::flag("verbose"))?,
+            force: cli.check(Arg::flag("force"))?,
             recurse: cli.check(Arg::flag("recurse").switch('r'))?,
             ip: cli.require(Arg::positional("ip"))?,
         })
@@ -60,7 +63,12 @@ impl Subcommand<Context> for Remove {
         // check for ip in development or installation
         let status = match catalog.inner().get(&self.ip.get_name()) {
             Some(st) => st,
-            None => return Err(AnyError(format!("ip '{}' does not exist", self.ip)))?,
+            None => {
+                return Err(AnyError(format!(
+                    "ip \"{}\" does not exist in the catalog",
+                    self.ip
+                )))?
+            }
         };
 
         // determine the ip version (invariant of state) that matches
@@ -89,73 +97,104 @@ impl Subcommand<Context> for Remove {
             }
         };
 
-        // grab the ip's manifest
-        match status.get_install(&detected_version) {
-            Some(t) => {
-                self.remove_install(t)?;
-                self.remove_dynamics(c.get_cache_path(), t)?;
-            }
-            None => match self.all {
-                true => {
-                    println!("info: ip {} is already removed from the cache", self.ip);
-                }
-                false => {
-                    return Err(AnyError(format!(
-                        "ip {} does not exist in the cache",
-                        self.ip
-                    )))?
-                }
-            },
-        };
+        // check if in cache
+        let cached_ip = status.get_install(&detected_version);
+        let archived_ip = status.get_download(&detected_version);
 
-        // delete the project from downloads (if requested)
-        if self.all == true {
-            // grab the ip's manifest
-            let target = match status.get_download(&detected_version) {
-                Some(t) => t,
-                None => {
-                    return Err(AnyError(format!(
-                        "ip {} does not exist as download",
-                        self.ip
-                    )))?
-                }
-            };
-            let ip_spec = target.get_man().get_ip().into_ip_spec();
-            // delete the project from the cache (default behavior)
-            fs::remove_file(
-                c.get_downloads_path().join(
-                    &target
-                        .get_lock()
-                        .get_self_entry(&ip_spec.get_name())
-                        .unwrap()
-                        .to_download_slot_key()
-                        .as_ref(),
-                ),
-            )?;
-            println!("info: removed ip {} from downloads", ip_spec);
+        if cached_ip.is_none() && archived_ip.is_none() {
+            return Err(Error::Custom(format!(
+                "unable to find a version \"{1}\" for ip \"{0}\" that can be removed",
+                self.ip.get_name(),
+                detected_version
+            )))?;
         }
 
+        // get a complete name
+        let ip_spec = match cached_ip {
+            Some(c) => c.get_man().get_ip().into_ip_spec(),
+            None => archived_ip.unwrap().get_man().get_ip().into_ip_spec(),
+        };
+
+        // TODO: issue a warning if the ip to be deleted is not found in a channel (this action may be
+        // unrecoverable because there is no channel configured for this ip)
+
+        // confirm with user that it is the correct ip
+        if self.force == false {
+            if prompt::prompt(&format!("info: removing ip {}, proceed", ip_spec))? == false {
+                println!("info: {}", "removal cancelled");
+                return Ok(());
+            }
+        }
+
+        let selected_version = AnyVersion::Specific(ip_spec.get_version().to_partial_version());
+
+        // grab the ip's manifest
+        match status.get_install(&selected_version) {
+            Some(t) => {
+                self.remove_install(t)?;
+                if self.verbose == true {
+                    println!("info: removed ip {} from the cache", ip_spec);
+                }
+                self.remove_dynamics(c.get_cache_path(), t)?;
+            }
+            None => {
+                if self.verbose == true {
+                    println!("info: ip {} is already removed from the cache", self.ip);
+                }
+            }
+        };
+
+        // grab the ip's manifest
+        match status.get_download(&selected_version) {
+            Some(t) => {
+                self.remove_download(c.get_downloads_path(), t)?;
+                if self.verbose == true {
+                    println!("info: removed ip {} from the archive", ip_spec);
+                }
+            }
+            None => {
+                if self.verbose == true {
+                    println!("info: ip {} is already removed from the archive", self.ip);
+                }
+            }
+        };
+
+        println!("info: removed ip {}", ip_spec);
         self.run()
     }
 }
 
 impl Remove {
-    fn run(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn run(&self) -> Result<(), Fault> {
+        Ok(())
+    }
+
+    /// Removes the compressed snapshot file of the ip from the archive.
+    fn remove_download(&self, archive_path: &PathBuf, target: &Ip) -> Result<(), Fault> {
+        let ip_spec = target.get_man().get_ip().into_ip_spec();
+        // delete the project from the cache (default behavior)
+        fs::remove_file(
+            archive_path.join(
+                &target
+                    .get_lock()
+                    .get_self_entry(&ip_spec.get_name())
+                    .unwrap()
+                    .to_download_slot_key()
+                    .as_ref(),
+            ),
+        )?;
         Ok(())
     }
 
     /// Removes the installed IP from its root directory. This function assumes
     /// the `target` IP exists under the installation path (cache path).
-    fn remove_install(&self, target: &Ip) -> Result<(), Box<dyn Error>> {
-        let ip_spec = target.get_man().get_ip().into_ip_spec();
-
+    fn remove_install(&self, target: &Ip) -> Result<(), Fault> {
         // delete the project from the cache (default behavior)
         fs::remove_dir_all(target.get_root())?;
-        println!("info: removed ip {} from the cache", ip_spec);
         Ok(())
     }
 
-    fn remove_dynamics(&self, cache_path: &PathBuf, target: &Ip) -> Result<(), Box<dyn Error>> {
+    fn remove_dynamics(&self, cache_path: &PathBuf, target: &Ip) -> Result<(), Fault> {
         let ip_spec = target.get_man().get_ip().into_ip_spec();
 
         // check for any "dynamics" under this target
@@ -179,10 +218,12 @@ impl Remove {
                     // remove the slot if it is dynamic
                     if cached_ip.is_dynamic() == true {
                         fs::remove_dir_all(entry.path())?;
-                        println!(
-                            "info: Removed a dynamic variant of ip {} from the cache",
-                            ip_spec
-                        );
+                        if self.verbose == true {
+                            println!(
+                                "info: removed dynamic variant of ip {} from the cache",
+                                ip_spec
+                            );
+                        }
                     }
                 }
             }

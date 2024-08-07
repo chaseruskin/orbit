@@ -24,7 +24,9 @@ omitted from installation. To also install these dependencies, use `--all`.
 
 If a protocol is recognized using `--protocol`, then an optional tag can also 
 be supplied to help the protocol with providing any additional information it
-may require.
+may require. 
+
+To remove ip from the catalog, see the `remove` command.
 
 ## __OPTIONS__
 

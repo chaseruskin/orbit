@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-remove - uninstall an ip from the catalog
+remove - delete an ip from the catalog
 
 ## __SYNOPSIS__
 
@@ -12,27 +12,34 @@ orbit remove [options] <ip>
 
 ## __DESCRIPTION__
 
-This command will remove known ip stored in the catalog. By default, it will
-remove the ip from the cache. This include any dynamic entries spawned from the
-requested ip to remove.
+Deletes save data for a known ip from the catalog. The ip's data for its
+particular version is removed from the catalog's cache and the catalog's
+archive.
 
-To remove the ip from the cache and downloads locations, use `--all`.
+By default, an interactive prompt will appear to confirm with the user if the 
+correct ip is okay to be removed. To skip this interactive prompt and assume
+it is correct without confirmation, use the `--force` option.
+
+To add ip to the catalog, see the `install` command.
 
 ## __OPTIONS__
 
 `<ip>`  
       Ip specification
 
-`--all`  
-      Remove the ip from the cache and downloads
-
 `--recurse, -r`  
-      Fully remove the ip and its dependencies
+      Also remove the ip's dependencies
+
+`--force`  
+      Skip interactive prompts
+
+`--verbose`  
+      Display where the removal occurs
 
 ## __EXAMPLES__
 
 ```
 orbit remove gates
-orbit remove gates:1.0.0 --all
+orbit remove gates:1.0.1 --force
 ```
 

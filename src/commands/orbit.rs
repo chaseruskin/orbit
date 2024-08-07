@@ -183,8 +183,8 @@ impl Subcommand<Context> for OrbitSubcommand {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
         match cli
             .select(&[
-                "help", "new", "search", "lock", "build", "test", "t", "publish",
-                "install", "get", "init", "tree", "view", "b", "env", "config", "remove", "read",
+                "help", "new", "search", "lock", "build", "test", "t", "publish", "install", "get",
+                "init", "tree", "view", "b", "env", "config", "remove", "read",
             ])?
             .as_ref()
         {

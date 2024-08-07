@@ -16,14 +16,17 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"Uninstall an ip from the catalog.
+pub const HELP: &str = r#"Delete an ip from the catalog.
 
 Usage:
     orbit remove [options] <ip>
 
-Options:
+Arguments:
     <ip>                  ip specification
-    --all                 remove the ip from the cache and downloads
-    --recurse, -r         fully remove the ip and its dependencies
+
+Options:
+    --recurse, -r         also remove the ip's dependencies
+    --force               skip interactive prompts
+    --verbose             display where the removal occurs
 
 Use 'orbit help remove' to read more about the command."#;

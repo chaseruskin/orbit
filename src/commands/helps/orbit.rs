@@ -34,7 +34,7 @@ Commands:
     publish               post an ip to a channel
     search                browse the ip catalog
     install               store an immutable reference to an ip
-    remove                uninstall an ip from the catalog
+    remove                delete an ip from the catalog
     env                   print orbit environment information
     config                modify configuration values
 

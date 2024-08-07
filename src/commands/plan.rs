@@ -1539,10 +1539,9 @@ impl Plan {
 }
 
 impl Plan {
-
     // DEPRECATED: This function may be outdated- was used when `plan` used to be a
     // dedicated subcommand.
-    
+
     fn execute(self, c: &Context) -> Result<(), Fault> {
         // locate the target provided from the command-line
         let target = c.select_target(&self.target, self.list == false, true)?;

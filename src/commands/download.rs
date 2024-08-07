@@ -308,7 +308,6 @@ impl Download {
 }
 
 impl Download {
-
     // DEPRECATED: This function may be outdated- was used when `plan` used to be a
     // dedicated subcommand.
 

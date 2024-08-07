@@ -528,6 +528,8 @@ omitted from installation. To also install these dependencies, use `--all`.
 If a protocol is recognized using `--protocol`, then an optional tag can also 
 be supplied to help the protocol with providing any additional information it
 may require. 
+
+To remove ip from the catalog, see the `remove` command.
 """
 
 options."<ip>" = "Ip specification"
@@ -551,22 +553,29 @@ orbit install alu:2.3.7 --path ./projects/alu --force
 # ------------------------------------------------------------------------------
 [remove]
 name = "remove"
-summary = "uninstall an ip from the catalog"
+summary = "delete an ip from the catalog"
 synopsis = "orbit remove [options] <ip>"
 description = """
-This command will remove known ip stored in the catalog. By default, it will
-remove the ip from the cache. This include any dynamic entries spawned from the
-requested ip to remove.
+Deletes save data for a known ip from the catalog. The ip's data for its
+particular version is removed from the catalog's cache and the catalog's
+archive.
 
-To remove the ip from the cache and downloads locations, use `--all`.
+By default, an interactive prompt will appear to confirm with the user if the 
+correct ip is okay to be removed. To skip this interactive prompt and assume
+it is correct without confirmation, use the `--force` option.
+
+To add ip to the catalog, see the `install` command.
 """
-options."<ip>" = "Ip specification"
-options."--all" = "remove the ip from the cache and downloads"
-options."--recurse, -r" = "fully remove the ip and its dependencies"
+
+args."<ip>" = "ip specification"
+
+options."--recurse, -r" = "Also remove the ip's dependencies"
+options."--force" = "Skip interactive prompts"
+options."--verbose" = "Display where the removal occurs"
 
 examples = """
 orbit remove gates
-orbit remove gates:1.0.0 --all
+orbit remove gates:1.0.1 --force
 """
 
 # ------------------------------------------------------------------------------

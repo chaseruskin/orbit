@@ -881,7 +881,7 @@ mod test {
 
     #[test]
     fn compute_checksum() {
-        let sum = Ip::compute_checksum(&PathBuf::from("./tests/env/project1/"));
+        let sum = Ip::compute_checksum(&PathBuf::from("./tests/t6/"));
         assert_eq!(
             sum,
             Sha256Hash::from_u32s([

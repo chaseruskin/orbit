@@ -1,5 +1,5 @@
 include = [
-    "./config2.toml"
+    "./otherconfig.toml"
 ]
 
 [env]

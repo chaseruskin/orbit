@@ -1,7 +1,0 @@
-[ip]
-name = "project-a"
-library = "rary"
-vendor = "ks-tech"
-version = "0.2.0"
-
-[dependencies]

@@ -440,7 +440,7 @@ An interview."
 
     #[test]
     fn package_zip() {
-        let body_bytes = std::fs::read("./tests/data/archive.zip").unwrap();
+        let body_bytes = std::fs::read("./tests/t4/archive.zip").unwrap();
         let sum = compute_sha256(&body_bytes);
         assert_eq!(
             sum,
@@ -453,7 +453,7 @@ An interview."
 
     #[test]
     fn package_zip2() {
-        let body_bytes = std::fs::read("./tests/data/archive2.zip").unwrap();
+        let body_bytes = std::fs::read("./tests/t4/archive2.zip").unwrap();
         let sum = compute_sha256(&body_bytes);
         println!("{}", sum.to_string());
         assert_eq!(

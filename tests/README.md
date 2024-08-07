@@ -1,6 +1,7 @@
 # /tests
 
-Test data and more complex test cases/scenarios.
+Test data and more complex system test cases/scenarios.
 
-- `/data`: files kept for reproducibility during cargo tests
-- `/env`: example projects to use for integration/system test scripts
+The contents of this directory are divided into two different types:
+- `/t*`: files used be unit tests within Rust
+- `/s*`: files used by system tests along with their system test scripts

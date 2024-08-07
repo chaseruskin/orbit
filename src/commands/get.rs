@@ -428,7 +428,7 @@ mod test {
 }"#;
         let ent = Get::fetch_entity_old(
             &VhdlIdentifier::from_str("or_gate").unwrap(),
-            &PathBuf::from("./tests/data/gates"),
+            &PathBuf::from("./tests/t2"),
             &Manifest::new(),
         )
         .unwrap();

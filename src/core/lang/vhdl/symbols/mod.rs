@@ -2543,7 +2543,7 @@ end architecture rtl;
 
     #[test]
     fn test_if_gen() {
-        let data = std::fs::read_to_string("./tests/data/vhdl/if_gen.vhd").unwrap();
+        let data = std::fs::read_to_string("./tests/t5/if_gen.vhd").unwrap();
 
         let syms = VHDLParser::read(&data).unwrap().into_symbols();
         println!("symbols list: {:?}", syms);
@@ -2557,7 +2557,7 @@ end architecture rtl;
 
     #[test]
     fn test_entity_after_package() {
-        let data = std::fs::read_to_string("./tests/data/vhdl/ent_after_pkg.vhd").unwrap();
+        let data = std::fs::read_to_string("./tests/t5/ent_after_pkg.vhd").unwrap();
         let syms = VHDLParser::read(&data).unwrap().into_symbols();
         // capture all units (primary and secondary)
         assert_eq!(syms.len(), 6);
@@ -2565,7 +2565,7 @@ end architecture rtl;
 
     #[test]
     fn test_procedure_in_process() {
-        let data = std::fs::read_to_string("./tests/data/vhdl/proced_in_proc.vhd").unwrap();
+        let data = std::fs::read_to_string("./tests/t5/proced_in_proc.vhd").unwrap();
         let syms = VHDLParser::read(&data).unwrap().into_symbols();
         // capture all units (primary and secondary)
         println!("{:?}", syms);

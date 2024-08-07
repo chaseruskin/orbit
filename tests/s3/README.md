@@ -1,4 +1,4 @@
-# /projects
+# /s3
 
 This directory hosts code for demonstrating the dynamic symbol transformation algorithm.
 

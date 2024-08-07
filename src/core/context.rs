@@ -467,29 +467,27 @@ impl std::fmt::Display for ContextError {
 mod test {
     use super::*;
 
-    const HOME: &str = "./tests/env";
+    const HOME: &str = "./tests";
 
     #[test]
     fn find_target_path() {
         // existing path with target at root
         let home = HOME.to_owned();
-        let p = Context::find_target_path(&PathBuf::from(home.clone() + "/project1"), "Orbit.toml");
-        assert_eq!(p, Some(PathBuf::from(home.clone() + "/project1")));
+        let p = Context::find_target_path(&PathBuf::from(home.clone() + "/t5"), "Orbit.toml");
+        assert_eq!(p, Some(PathBuf::from(home.clone() + "/t5")));
 
         // inner path with target a directory back
         let p = Context::find_target_path(&PathBuf::from("./src"), "Cargo.toml");
         assert_eq!(p, Some(PathBuf::from(".")));
 
         // imaginary path with target a couple directories back
-        let p = Context::find_target_path(
-            &PathBuf::from(home.clone() + "/project1/rtl/syn/"),
-            "Orbit.toml",
-        );
-        assert_eq!(p, Some(PathBuf::from(home.clone() + "/project1")));
+        let p =
+            Context::find_target_path(&PathBuf::from(home.clone() + "/t5/rtl/syn/"), "Orbit.toml");
+        assert_eq!(p, Some(PathBuf::from(home.clone() + "/t5")));
 
         // no existing target
         let p = Context::find_target_path(
-            &PathBuf::from(home.clone() + "/project1/rtl/syn/"),
+            &PathBuf::from(home.clone() + "/t5/rtl/syn/"),
             "HIDDEN-TARGET.TXT",
         );
         assert_eq!(p, None);

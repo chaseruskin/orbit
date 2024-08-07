@@ -55,32 +55,32 @@ test-all:
     just test-pub
     just test-partv
 
-# Planning stage
+# Planning stage (associated files)
 test-plan-1:
-    chmod +x ./tests/env/assoc_files/run.sh
-    cd ./tests/env/assoc_files; ./run.sh
+    chmod +x ./tests/s1/test.sh
+    cd ./tests/s1; ./test.sh
 
-# Planning stage
+# Planning stage (minimum order)
 test-plan-2:
-    chmod +x ./tests/env/min_order/run.sh
-    cd ./tests/env/min_order; ./run.sh
+    chmod +x ./tests/s2/test.sh
+    cd ./tests/s2; ./test.sh
 
 # Dst algorithm
 test-dst:
-    chmod +x ./tests/env/projects/dst.sh
-    cd ./tests/env/projects; ./dst.sh
+    chmod +x ./tests/s3/dst.sh
+    cd ./tests/s3; ./dst.sh
 
 # Dst test to verify library mappings work when using a simulator
 test-dst-local:
-    chmod +x ./tests/env/projects/dst-local.sh
-    cd ./tests/env/projects; ./dst-local.sh
+    chmod +x ./tests/s3/dst-local.sh
+    cd ./tests/s3; ./dst-local.sh
 
 # Using 'public' in manifest
 test-pub: 
-    chmod +x ./tests/env/projects/pub.sh
-    cd ./tests/env/projects; ./pub.sh
+    chmod +x ./tests/s3/pub.sh
+    cd ./tests/s3; ./pub.sh
 
 # Partial version for dependency
 test-partv:
-    chmod +x ./tests/partialv/test.sh
-    cd ./tests/partialv; ./test.sh
+    chmod +x ./tests/s4/test.sh
+    cd ./tests/s4; ./test.sh

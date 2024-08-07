@@ -792,7 +792,7 @@ tab-size = 3
     #[test]
     fn linked_configs() {
         Configs::new()
-            .load(PathBuf::from("./tests/data/config1.toml"), Locality::Global)
+            .load(PathBuf::from("./tests/t1/config.toml"), Locality::Global)
             .unwrap();
     }
 }

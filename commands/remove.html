@@ -178,25 +178,30 @@
                     <main>
                         <h1 id="orbit-remove"><a class="header" href="#orbit-remove"><strong>orbit remove</strong></a></h1>
 <h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>
-<p>remove - uninstall an ip from the catalog</p>
+<p>remove - delete an ip from the catalog</p>
 <h2 id="synopsis"><a class="header" href="#synopsis"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit remove [options] &lt;ip&gt;
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will remove known ip stored in the catalog. By default, it will
-remove the ip from the cache. This include any dynamic entries spawned from the
-requested ip to remove.</p>
-<p>To remove the ip from the cache and downloads locations, use <code>--all</code>.</p>
+<p>Deletes save data for a known ip from the catalog. The ip's data for its
+particular version is removed from the catalog's cache and the catalog's
+archive.</p>
+<p>By default, an interactive prompt will appear to confirm with the user if the
+correct ip is okay to be removed. To skip this interactive prompt and assume
+it is correct without confirmation, use the <code>--force</code> option.</p>
+<p>To add ip to the catalog, see the <code>install</code> command.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;ip&gt;</code><br />
       Ip specification</p>
-<p><code>--all</code><br />
-      Remove the ip from the cache and downloads</p>
 <p><code>--recurse, -r</code><br />
-      Fully remove the ip and its dependencies</p>
+      Also remove the ip's dependencies</p>
+<p><code>--force</code><br />
+      Skip interactive prompts</p>
+<p><code>--verbose</code><br />
+      Display where the removal occurs</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit remove gates
-orbit remove gates:1.0.0 --all
+orbit remove gates:1.0.1 --force
 </code></pre>
 
                     </main>

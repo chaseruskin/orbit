@@ -2620,6 +2620,7 @@ omitted from installation. To also install these dependencies, use <code>--all</
 <p>If a protocol is recognized using <code>--protocol</code>, then an optional tag can also
 be supplied to help the protocol with providing any additional information it
 may require.</p>
+<p>To remove ip from the catalog, see the <code>remove</code> command.</p>
 <h2 id="options-11"><a class="header" href="#options-11"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;ip&gt;</code><br />
       Ip specification</p>
@@ -2645,25 +2646,30 @@ orbit install alu:2.3.7 --path ./projects/alu --force
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-remove"><a class="header" href="#orbit-remove"><strong>orbit remove</strong></a></h1>
 <h2 id="name-12"><a class="header" href="#name-12"><strong>NAME</strong></a></h2>
-<p>remove - uninstall an ip from the catalog</p>
+<p>remove - delete an ip from the catalog</p>
 <h2 id="synopsis-12"><a class="header" href="#synopsis-12"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit remove [options] &lt;ip&gt;
 </code></pre>
 <h2 id="description-12"><a class="header" href="#description-12"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will remove known ip stored in the catalog. By default, it will
-remove the ip from the cache. This include any dynamic entries spawned from the
-requested ip to remove.</p>
-<p>To remove the ip from the cache and downloads locations, use <code>--all</code>.</p>
+<p>Deletes save data for a known ip from the catalog. The ip's data for its
+particular version is removed from the catalog's cache and the catalog's
+archive.</p>
+<p>By default, an interactive prompt will appear to confirm with the user if the
+correct ip is okay to be removed. To skip this interactive prompt and assume
+it is correct without confirmation, use the <code>--force</code> option.</p>
+<p>To add ip to the catalog, see the <code>install</code> command.</p>
 <h2 id="options-12"><a class="header" href="#options-12"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;ip&gt;</code><br />
       Ip specification</p>
-<p><code>--all</code><br />
-      Remove the ip from the cache and downloads</p>
 <p><code>--recurse, -r</code><br />
-      Fully remove the ip and its dependencies</p>
+      Also remove the ip's dependencies</p>
+<p><code>--force</code><br />
+      Skip interactive prompts</p>
+<p><code>--verbose</code><br />
+      Display where the removal occurs</p>
 <h2 id="examples-14"><a class="header" href="#examples-14"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit remove gates
-orbit remove gates:1.0.0 --all
+orbit remove gates:1.0.1 --force
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-env"><a class="header" href="#orbit-env"><strong>orbit env</strong></a></h1>
 <h2 id="name-13"><a class="header" href="#name-13"><strong>NAME</strong></a></h2>

@@ -569,7 +569,7 @@ To add ip to the catalog, see the `install` command.
 
 args."<ip>" = "ip specification"
 
-options."--recurse, -r" = "Also remove the ip's dependencies"
+# options."--recurse, -r" = "Also remove the ip's dependencies"
 options."--force" = "Skip interactive prompts"
 options."--verbose" = "Display where the removal occurs"
 

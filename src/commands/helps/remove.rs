@@ -25,7 +25,6 @@ Arguments:
     <ip>                  ip specification
 
 Options:
-    --recurse, -r         also remove the ip's dependencies
     --force               skip interactive prompts
     --verbose             display where the removal occurs
 

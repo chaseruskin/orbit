@@ -33,7 +33,8 @@ use cliproc::{Arg, Cli, Help, Subcommand};
 pub struct Remove {
     ip: PartialIpSpec,
     force: bool,
-    recurse: bool,
+    // TODO: implement recursive removal (take away all dependent ips)
+    // recurse: bool,
     verbose: bool,
     // TODO: add option to remove all versions (including archived)
     // TODO: add option to remove only from cache (skip archive)
@@ -45,15 +46,12 @@ impl Subcommand<Context> for Remove {
         Ok(Remove {
             verbose: cli.check(Arg::flag("verbose"))?,
             force: cli.check(Arg::flag("force"))?,
-            recurse: cli.check(Arg::flag("recurse").switch('r'))?,
+            // recurse: cli.check(Arg::flag("recurse").switch('r'))?,
             ip: cli.require(Arg::positional("ip"))?,
         })
     }
 
     fn execute(self, c: &Context) -> proc::Result {
-        if self.recurse == true {
-            todo!("implement recursive removal")
-        }
 
         // collect the catalog from dev and installations
         let catalog = Catalog::new()

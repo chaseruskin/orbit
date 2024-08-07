@@ -37,9 +37,6 @@ OPTIONS
     <ip>
         Ip specification
 
-    --recurse, -r
-        Also remove the ip's dependencies
-
     --force
         Skip interactive prompts
 

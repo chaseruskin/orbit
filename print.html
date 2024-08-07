@@ -2235,7 +2235,7 @@ from the results. To display design elements of all visibility levels the
 <p>To display the known versions for an ip, use the <code>--versions</code> option.</p>
 <h2 id="options-2"><a class="header" href="#options-2"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;ip&gt;</code><br />
-      Ip spec</p>
+      Ip specification</p>
 <p><code>--versions, -v</code><br />
       Display the list of known versions</p>
 <p><code>--units, -u</code><br />
@@ -2250,49 +2250,50 @@ orbit view gates:1 -v
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-read"><a class="header" href="#orbit-read"><strong>orbit read</strong></a></h1>
 <h2 id="name-3"><a class="header" href="#name-3"><strong>NAME</strong></a></h2>
-<p>read - navigate hdl design unit source code</p>
+<p>read - lookup hdl source code</p>
 <h2 id="synopsis-3"><a class="header" href="#synopsis-3"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit read [options] &lt;unit&gt;
 </code></pre>
 <h2 id="description-3"><a class="header" href="#description-3"><strong>DESCRIPTION</strong></a></h2>
-<p>This command allows the user to navigate source code to gain a quicker
-understanding of the available code. By default, it will display the code to the
-console.</p>
-<p>If no ip specification is provided through the <code>--ip</code> option, then it will
-assume to search the current working ip, if it exists.</p>
-<p>If <code>--file</code> is provided, then the source code will be written to a temporary
-read-only file. Also providing '--location' in this context will append the
-requested code segment's line and column number to the end of the generated
-filepath.</p>
-<p>The options <code>--start</code>, <code>--end</code>, and <code>--doc</code> all accept valid VHDL code to
-search for in the identified source code file. The <code>--doc</code> option will find the
-immediate single-line comments preceding the supplied code value.</p>
-<p>The <code>read</code> command attempts to clean the temporary directory at every call to
-it. To keep existing files alive while allowing new files to appear, use the
-<code>--no-clean</code> flag.</p>
+<p>Navigates hdl source code to lookup requested hdl code snippets. Looking up
+hdl source code to see its implementation can help gain a better understanding
+of the code being reused in your current design.</p>
+<p>By default, the resulting code is displayed to the console. To write the
+results to a file for improved readability, use the <code>--save</code> option. Combining
+the <code>--locate</code> option with the <code>--save</code> option will append the line and column
+number of the identified code snippet to the end of the resulting file path.</p>
+<p>If no ip is provided by the <code>--ip</code> option, then it will assume to search the
+local ip for the provided design unit.</p>
+<p>The values for options <code>--start</code>, <code>--end</code>, and <code>--doc</code> must be valid hdl code.
+The code is interpreted in the native language of the provided design unit.</p>
+<p>The <code>--doc</code> option will attempt to find the comments immediately preceding the
+identified code snippet.</p>
+<p>Every time this command is called, it attempts to clean the temporary
+directory where it saves resulting files. To keep existing files on the next
+call of this command, use the <code>--no-clean</code> option.</p>
 <h2 id="options-3"><a class="header" href="#options-3"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;unit&gt;</code><br />
-      Primary design unit identifier</p>
+      Read the file for this hdl design unit</p>
 <p><code>--ip &lt;spec&gt;</code><br />
-      The ip specification to search in the catalog</p>
-<p><code>--file</code><br />
-      Copy the source code to a temporary read-only file</p>
-<p><code>--location</code><br />
-      Append the targeted code segment's line and column number to the resulting filepath</p>
+      Ip specification</p>
+<p><code>--doc &lt;code&gt;</code><br />
+      Find the preceding comments to the code snippet</p>
+<p><code>--save</code><br />
+      Write the results to a temporary read-only file</p>
+<p><code>--start &lt;code&gt;</code><br />
+      Start the lookup after jumping to this code snippet</p>
+<p><code>--end &lt;code&gt;</code><br />
+      Stop the lookup after finding this code snippet</p>
+<p><code>--limit &lt;num&gt;</code><br />
+      Set a maximum number of source code lines to write</p>
 <p><code>--no-clean</code><br />
       Do not clean the temporary directory of existing files</p>
-<p><code>--limit &lt;num&gt;</code><br />
-      Set a maximum number of lines to write</p>
-<p><code>--start &lt;code&gt;</code><br />
-      Start the code navigation upon matching this vhdl segment</p>
-<p><code>--end &lt;code&gt;</code><br />
-      Stop the code navigation upon matching this vhdl segment</p>
-<p><code>--doc &lt;code&gt;</code><br />
-      Navigate to the preceding comments of this vhdl segment</p>
+<p><code>--locate</code><br />
+      Append the line and column number to the resulting file</p>
 <h2 id="examples-5"><a class="header" href="#examples-5"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit read and_gate --ip gates:1.0.0
-orbit read math_pkg --ip math --doc "function clog2"
-orbit read math_pkg --ip math --start "package math_pkg" --doc "function flog2p1" --location --file
+<pre><code>orbit read and_gate --limit 25
+orbit read math_pkg --ip math --doc "function clog2" --start "package math_pkg"
+orbit read math_pkg --ip math --doc "function flog2p1" --save --locate
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-get"><a class="header" href="#orbit-get"><strong>orbit get</strong></a></h1>
 <h2 id="name-4"><a class="header" href="#name-4"><strong>NAME</strong></a></h2>

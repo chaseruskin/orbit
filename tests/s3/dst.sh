@@ -32,9 +32,9 @@ orbit remove ip-a --force
 
 # compare the output with the expected value
 if [ "$STDOUT" = "$EXACT" ]; then
-    echo "DST Test - PASS"
+    echo "TEST: DST - PASS"
 else
-    echo "DST Test - FAIL"
+    echo "TEST: DST - FAIL"
     echo "--- Expected ---"
     echo "$EXACT"
     echo "--- Received ---"

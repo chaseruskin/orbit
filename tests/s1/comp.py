@@ -12,8 +12,8 @@ with open('./target/foo/blueprint.tsv') as f:
 
 # Check the order is correct
 if order != EXPECTED:
-    print('Test- FAIL ' + str(order) + ' /= ' + str(EXPECTED))
+    print('TEST: ASSOCIATED_FILES - FAIL ' + str(order) + ' /= ' + str(EXPECTED))
     exit(101)
     
-print('Test- PASS')
+print('TEST: ASSOCIATED_FILES - PASS')
 exit(0)

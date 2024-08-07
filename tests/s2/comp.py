@@ -12,8 +12,8 @@ with open('./app/target/foo/blueprint.tsv') as f:
 
 # Check the order is correct
 if order != EXPECTED:
-    print('Test- FAIL ' + str(order) + ' /= ' + str(EXPECTED))
+    print('TEST: MIN_ORDER - FAIL ' + str(order) + ' /= ' + str(EXPECTED))
     exit(101)
     
-print('Test- PASS')
+print('TEST: MIN_ORDER - PASS')
 exit(0)

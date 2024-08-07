@@ -24,7 +24,7 @@ EXACT="top (ip11:0.1.0)
 if [ "$STDOUT" != "$EXACT" ]; then
     orbit remove ip10 --force
 
-    echo "PUB Test - FAIL"
+    echo "TEST: PUBLIC_FILES - FAIL"
     echo "--- Expected ---"
     echo "$EXACT"
     echo "--- Received ---"
@@ -37,5 +37,5 @@ STDOUT=$(orbit build --top top --target foo)
 
 orbit remove ip10 --force
 
-echo "PUB Test - PASS"
+echo "TEST: PUBLIC_FILES - PASS"
 exit 0

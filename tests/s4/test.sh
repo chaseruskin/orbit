@@ -38,7 +38,7 @@ if [ "$STDOUT" != "$EXACT" ]; then
     orbit remove aka --force
     orbit remove ao --force
 
-    echo "PARTIALVERSION Test - FAIL"
+    echo "TEST: PARTIAL_VERSION - FAIL"
     echo "--- Expected ---"
     echo "$EXACT"
     echo "--- Received ---"
@@ -50,5 +50,5 @@ orbit remove aka --force
 orbit remove aka --force
 orbit remove ao --force
 
-echo "PARTIALVERSION Test - PASS"
+echo "TEST: PARTIAL_VERSION - PASS"
 exit 0

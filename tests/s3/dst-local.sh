@@ -26,5 +26,5 @@ orbit remove ip-b --force
 orbit remove ip-a --force
 
 # must run to completion with no errors
-echo "DST Library Match Test - PASS"
+echo "TEST: DST_LIB_MATCH - PASS"
 exit 0

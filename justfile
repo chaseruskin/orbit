@@ -45,6 +45,7 @@ run-sys-tests:
     just test-dst
     just test-pub
     just test-partv
+    just test-rel-dep
 
 # Run all system tests
 test-all:
@@ -54,6 +55,7 @@ test-all:
     just test-dst-local
     just test-pub
     just test-partv
+    just test-rel-dep
 
 # Planning stage (associated files)
 test-plan-1:
@@ -84,3 +86,8 @@ test-pub:
 test-partv:
     chmod +x ./tests/s4/test.sh
     cd ./tests/s4; ./test.sh
+
+# Using relative dependencies
+test-rel-dep:
+    chmod +x ./tests/s5/test.sh
+    cd ./tests/s5; ./test.sh

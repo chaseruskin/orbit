@@ -162,7 +162,7 @@ Commands:
     new                   create a new ip
     init                  initialize an ip from an existing project
     view                  display metadata of an ip
-    read                  navigate hdl design unit source code
+    read                  lookup hdl source code
     get                   fetch an hdl entity for code integration
     tree                  view the dependency graph
     lock                  save the world state of an ip
@@ -171,7 +171,7 @@ Commands:
     publish               post an ip to a channel
     search                browse the ip catalog
     install               store an immutable reference to an ip
-    remove                uninstall an ip from the catalog
+    remove                delete an ip from the catalog
     env                   print orbit environment information
     config                modify configuration values
 

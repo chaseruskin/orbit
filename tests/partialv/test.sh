@@ -34,9 +34,9 @@ EXACT="kuro:0.1.0
 
 # compare the output with the expected value
 if [ "$STDOUT" != "$EXACT" ]; then
-    orbit remove aka --all
-    orbit remove aka --all
-    orbit remove ao --all
+    orbit remove aka --force
+    orbit remove aka --force
+    orbit remove ao --force
 
     echo "PARTIALVERSION Test - FAIL"
     echo "--- Expected ---"
@@ -46,9 +46,9 @@ if [ "$STDOUT" != "$EXACT" ]; then
     exit 101
 fi
 
-orbit remove aka --all
-orbit remove aka --all
-orbit remove ao --all
+orbit remove aka --force
+orbit remove aka --force
+orbit remove ao --force
 
 echo "PARTIALVERSION Test - PASS"
 exit 0

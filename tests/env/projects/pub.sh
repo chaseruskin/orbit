@@ -22,7 +22,7 @@ EXACT="top (ip11:0.1.0)
 
 # compare the output with the expected value
 if [ "$STDOUT" != "$EXACT" ]; then
-    orbit remove ip10 --all
+    orbit remove ip10 --force
 
     echo "PUB Test - FAIL"
     echo "--- Expected ---"
@@ -35,7 +35,7 @@ fi
 # verify it runs without error
 STDOUT=$(orbit build --top top --target foo)
 
-orbit remove ip10 --all
+orbit remove ip10 --force
 
 echo "PUB Test - PASS"
 exit 0

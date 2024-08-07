@@ -27,8 +27,8 @@ EXACT="entity_c
 │  └─ dupe2_b8da6e529b
 └─ dupe"
 
-# orbit remove ip-b --all
-# orbit remove ip-a --all
+orbit remove ip-b --force
+orbit remove ip-a --force
 
 # compare the output with the expected value
 if [ "$STDOUT" = "$EXACT" ]; then

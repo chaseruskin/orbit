@@ -15,7 +15,7 @@ orbit test --target foo --force --dut t1
 cd ..
 
 # Remove dependencies
-orbit remove lib --all
+orbit remove lib --force
 
 # Verify the correct behavior occurred without error
 python comp.py

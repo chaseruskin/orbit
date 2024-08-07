@@ -3,9 +3,9 @@ version = 1
 
 [[ip]]
 name = "aka"
-version = "1.0.1"
-uuid = "338e03fc-574a-4fde-8b34-58d400130baa"
-checksum = "7182f6bcacb9e92942fe65796b154b56c1901c573da909fae6a32975e6440825"
+version = "1.0.2"
+uuid = "2c2cc213-95c3-4cec-be75-ff1d741c5e39"
+checksum = "775285c4f1139ccc0ef09d25edcaf5257cf23d9b8f73e91015a793c22b0f33e5"
 dependencies = []
 
 [[ip]]

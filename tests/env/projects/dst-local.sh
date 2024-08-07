@@ -22,8 +22,8 @@ orbit lock --force
 
 orbit b --top entity_c --target gsim -- --lint
 
-orbit remove ip-b --all
-orbit remove ip-a --all
+orbit remove ip-b --force
+orbit remove ip-a --force
 
 # must run to completion with no errors
 echo "DST Library Match Test - PASS"

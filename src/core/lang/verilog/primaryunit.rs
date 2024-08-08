@@ -16,8 +16,10 @@
 //
 
 use super::{symbols::VerilogSymbol, token::identifier::Identifier};
+use crate::core::lang::vhdl::primaryunit::HdlNamingError;
 use crate::{core::lang::verilog::symbols::VerilogParser, util::anyerror::CodeFault};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 #[derive(PartialEq, Hash, Eq, Debug)]
@@ -166,8 +168,28 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
                 })
                 .collect();
 
-            // push to the global list
-            result.extend(units);
+            // push to the global list (ensure there are zero duplicate names)
+            for (_key, primary) in units {
+                if let Some(dupe) = result.insert(primary.get_name().clone(), primary) {
+                    return Err(CodeFault(
+                        None,
+                        Box::new(HdlNamingError::DuplicateIdentifier(
+                            dupe.get_name().to_string(),
+                            PathBuf::from(source_file),
+                            result
+                                .get(dupe.get_name())
+                                .unwrap()
+                                .get_unit()
+                                .get_symbol()
+                                .unwrap()
+                                .get_position()
+                                .clone(),
+                            PathBuf::from(dupe.get_unit().get_source_file()),
+                            dupe.get_unit().get_symbol().unwrap().get_position().clone(),
+                        )),
+                    ))?;
+                }
+            }
         }
     }
     Ok(result)

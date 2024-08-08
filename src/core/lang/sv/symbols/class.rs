@@ -102,7 +102,8 @@ impl Class {
                 let t_next = tokens.next().unwrap();
                 if t_next.as_ref().check_delimiter(&Operator::ParenL) == true {
                     // parse parameter list
-                    let (decl_params, param_refs) = VerilogSymbol::parse_module_param_list(tokens)?;
+                    let (decl_params, param_refs) =
+                        VerilogSymbol::parse_module_param_list(tokens, t_next.locate().line())?;
                     params.extend(decl_params);
                     refs.extend(param_refs);
                 } else {

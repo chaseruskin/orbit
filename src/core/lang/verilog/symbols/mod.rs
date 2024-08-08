@@ -357,7 +357,8 @@ impl VerilogSymbol {
                 let t_next = tokens.next().unwrap();
                 if t_next.as_ref().check_delimiter(&Operator::ParenL) == true {
                     // parse parameter list
-                    let (params, param_refs) = Self::parse_module_param_list(tokens)?;
+                    let (params, param_refs) =
+                        Self::parse_module_param_list(tokens, t_next.locate().line())?;
                     param_list.extend(params);
                     refs.extend(param_refs);
                 } else {
@@ -365,7 +366,7 @@ impl VerilogSymbol {
                 }
             // parse port list (optional?)
             } else if t.as_ref().check_delimiter(&Operator::ParenL) == true {
-                let (ports, port_refs) = Self::parse_module_port_list(tokens)?;
+                let (ports, port_refs) = Self::parse_module_port_list(tokens, t.locate().line())?;
                 port_list.extend(ports);
                 refs.extend(port_refs);
             // handle the timeunits declaration (optional)
@@ -417,7 +418,7 @@ impl VerilogSymbol {
             } else if t.as_ref().check_keyword(&Keyword::Endmodule) == true {
                 break;
             } else if let Some(stmt) = Self::into_next_statement(t, tokens)? {
-                // println!("{}", statement_to_string(&stmt));
+                // println!("[arch]: {}", statement_to_string(&stmt));
                 Self::handle_statement(
                     decl_params,
                     decl_ports,
@@ -442,8 +443,7 @@ impl VerilogSymbol {
         let mut stmt = Statement::new();
         stmt.push(init);
 
-        let mut now_line = stmt.last().unwrap().locate().line();
-
+        let mut now_line = None;
         loop {
             // review the last token we have added to the current statement
             let t = stmt.last().unwrap();
@@ -479,15 +479,14 @@ impl VerilogSymbol {
                     )?);
                 }
             // take all symbols until new line when handling a new directive on a new line
-            } else if next_line > now_line && t.as_ref().is_directive() == true {
-                while let Some(t_next) = tokens.peek() {
-                    if t_next.locate().line() > next_line {
-                        break;
-                    } else {
-                        stmt.push(tokens.next().unwrap());
-                    }
-                }
-                break;
+            } else if (now_line.is_none() || next_line > now_line.unwrap())
+                && t.as_ref().is_directive() == true
+            {
+                let dir = stmt.pop().unwrap();
+                let directive_stuff = Self::parse_compiler_directive_statement(tokens, dir)?;
+                stmt.extend(directive_stuff);
+                // println!("directive: {}", statement_to_string(&stmt));
+                return Ok(Some(stmt));
             }
 
             // push a new token onto the statment
@@ -496,9 +495,37 @@ impl VerilogSymbol {
             } else {
                 break;
             }
-            now_line = next_line;
+            now_line = Some(next_line);
         }
         Ok(Some(stmt))
+    }
+
+    /// Assumes the last token consumed was a compiler directive at the beginning of a new line.
+    pub fn parse_compiler_directive_statement<I>(
+        tokens: &mut Peekable<I>,
+        init: Token<SystemVerilogToken>,
+    ) -> Result<Statement, VerilogError>
+    where
+        I: Iterator<Item = Token<SystemVerilogToken>>,
+    {
+        let mut stmt = Statement::new();
+
+        let mut next_line = init.locate().line();
+        stmt.push(init);
+
+        while let Some(t_next) = tokens.peek() {
+            if t_next.locate().line() > next_line
+                && stmt.last().unwrap().as_type()
+                    != &SystemVerilogToken::Identifier(Identifier::Escaped(String::new()))
+            {
+                break;
+            } else {
+                // println!("[directive]: {:?}", t_next);
+                next_line = t_next.locate().line();
+                stmt.push(tokens.next().unwrap());
+            }
+        }
+        Ok(stmt)
     }
 
     pub fn handle_statement(
@@ -557,7 +584,7 @@ impl VerilogSymbol {
     }
 
     fn as_port_definition(stmt: &Statement, ports: &PortList) -> Option<PortList> {
-        // println!("{}", statement_to_string(&stmt));
+        // println!("as port? {}", statement_to_string(&stmt));
         let mut tokens = stmt.clone().into_iter().peekable();
         // verify the start token is valid
         match tokens.peek()?.as_type() {
@@ -571,14 +598,14 @@ impl VerilogSymbol {
             },
             _ => return None,
         }
-        match Self::parse_module_port_list(&mut tokens) {
+        match Self::parse_module_port_list(&mut tokens, 0) {
             Ok((decl_ports, _)) => Some(decl_ports),
             Err(_) => None,
         }
     }
 
     fn as_param_definition(stmt: &Statement, params: &ParamList) -> Option<ParamList> {
-        // println!("{}", statement_to_string(&stmt));
+        // println!("as param? {}", statement_to_string(&stmt));
         let mut tokens = stmt.clone().into_iter().peekable();
         // verify the start token is valid
         match tokens.peek()?.as_type() {
@@ -592,7 +619,7 @@ impl VerilogSymbol {
             },
             _ => return None,
         }
-        match Self::parse_module_param_list(&mut tokens) {
+        match Self::parse_module_param_list(&mut tokens, 0) {
             Ok((decl_params, _)) => Some(decl_params),
             Err(_) => None,
         }
@@ -796,6 +823,7 @@ impl VerilogSymbol {
 
     pub fn parse_module_param_list<I>(
         tokens: &mut Peekable<I>,
+        last_line: usize,
     ) -> Result<(ParamList, RefSet), VerilogError>
     where
         I: Iterator<Item = Token<SystemVerilogToken>>,
@@ -809,11 +837,11 @@ impl VerilogSymbol {
         let mut counter = 0;
         let mut identified_param = false;
 
-        let mut last_token_line = None;
+        let mut last_token_line = last_line;
 
         while let Some(t) = tokens.next() {
             let next_token_line = t.locate().line().clone();
-            if last_token_line.is_none() || next_token_line > last_token_line.unwrap() {
+            if next_token_line > last_token_line {
                 // take all symbols until new line when handling a new directive
                 if t.as_type().is_directive() == true {
                     let mut stmt = Statement::new();
@@ -833,7 +861,7 @@ impl VerilogSymbol {
                     continue;
                 }
             }
-            last_token_line = Some(next_token_line);
+            last_token_line = next_token_line;
 
             if t.as_ref().is_eof() == true {
                 return Err(VerilogError::ExpectingOperator(Operator::ParenR));
@@ -917,8 +945,10 @@ impl VerilogSymbol {
                 if let Some(s_refs) = SystemVerilogSymbol::extract_refs_from_statement(&stmt) {
                     refs.extend(s_refs);
                 }
-                // set the default for the last known port!
-                params.last_mut().unwrap().set_default(into_tokens(stmt));
+                // set the default for the last known param!
+                if let Some(p) = params.last_mut() {
+                    p.set_default(into_tokens(stmt));
+                }
             } else if t.as_ref().check_keyword(&Keyword::Reg) {
                 current_param_config.set_net_type(t.as_ref().as_keyword().unwrap().clone());
             } else if t.as_ref().check_keyword(&Keyword::Signed) {
@@ -935,6 +965,7 @@ impl VerilogSymbol {
 
     fn parse_module_port_list<I>(
         tokens: &mut Peekable<I>,
+        last_line: usize,
     ) -> Result<(PortList, RefSet), VerilogError>
     where
         I: Iterator<Item = Token<SystemVerilogToken>>,
@@ -947,11 +978,11 @@ impl VerilogSymbol {
 
         let mut counter = 0;
         let mut identified_port = false;
-        let mut last_token_line = None;
+        let mut last_token_line = last_line;
 
         while let Some(t) = tokens.next() {
             let next_token_line = t.locate().line().clone();
-            if last_token_line.is_none() || next_token_line > last_token_line.unwrap() {
+            if next_token_line > last_token_line {
                 // take all symbols until new line when handling a new directive
                 if t.as_type().is_directive() == true {
                     let mut stmt = Statement::new();
@@ -971,7 +1002,7 @@ impl VerilogSymbol {
                     continue;
                 }
             }
-            last_token_line = Some(next_token_line);
+            last_token_line = next_token_line;
 
             if t.as_ref().is_eof() == true {
                 return Err(VerilogError::ExpectingOperator(Operator::ParenR));
@@ -1057,7 +1088,9 @@ impl VerilogSymbol {
                     refs.extend(s_refs);
                 }
                 // set the default for the last known port!
-                ports.last_mut().unwrap().set_default(into_tokens(stmt));
+                if let Some(p) = ports.last_mut() {
+                    p.set_default(into_tokens(stmt));
+                }
             } else if t.as_ref().check_keyword(&Keyword::Reg) {
                 current_port_config.set_net_type(t.as_ref().as_keyword().unwrap().clone());
             } else if t.as_ref().check_keyword(&Keyword::Signed) {

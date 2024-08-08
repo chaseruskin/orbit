@@ -52,8 +52,8 @@ impl Display for VerilogToken {
                 Self::Number(n) => n.to_string(),
                 Self::Identifier(i) => i.to_string(),
                 Self::Keyword(k) => k.to_string(),
-                Self::StringLiteral(s) => s.to_string(),
-                Self::Directive(d) => d.to_string(),
+                Self::StringLiteral(s) => format!("\"{}\"", s.to_string()),
+                Self::Directive(d) => format!("`{}", d.to_string()),
                 Self::EOF => String::new(),
             }
         )
@@ -291,6 +291,14 @@ impl VerilogToken {
     pub fn consume_compiler_directive(
         train: &mut TrainCar<impl Iterator<Item = char>>,
     ) -> Result<Self, VerilogError> {
+        // continue to consume grave ticks as need be
+        while let Some(t) = train.peek() {
+            if t == &char_set::GRAVE_ACCENT {
+                train.consume();
+            } else {
+                break;
+            }
+        }
         let word = Self::consume_value_pattern(train, None, char_set::is_identifier_character)?;
         match word.as_ref() {
             // // consume the remaining characters on the line (if exists)

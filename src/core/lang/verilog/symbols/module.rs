@@ -203,7 +203,7 @@ impl Module {
         // take module name
         let mod_name = match tokens.next().take().unwrap().take() {
             SystemVerilogToken::Identifier(id) => id,
-            _ => return Err(VerilogError::Vague),
+            _ => return Err(VerilogError::ModuleNameIsNotIdentifier),
         };
 
         // initialize container for references to other design elements

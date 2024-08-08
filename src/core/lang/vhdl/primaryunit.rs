@@ -45,7 +45,7 @@ pub struct PrimaryUnit {
 
 impl PrimaryUnit {
     /// References the unit's identifier.
-    pub fn get_iden(&self) -> &Identifier {
+    pub fn get_name(&self) -> &Identifier {
         &self.unit.name
     }
 
@@ -63,7 +63,7 @@ impl PrimaryUnit {
         let tbl = item.as_inline_table_mut().unwrap();
         tbl.insert(
             "identifier",
-            toml_edit::value(&self.get_iden().to_string())
+            toml_edit::value(&self.get_name().to_string())
                 .into_value()
                 .unwrap(),
         );
@@ -222,14 +222,14 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
                 });
 
             for (_key, primary) in pri_units {
-                if let Some(dupe) = result.insert(primary.get_iden().clone(), primary) {
+                if let Some(dupe) = result.insert(primary.get_name().clone(), primary) {
                     return Err(CodeFault(
                         None,
-                        Box::new(VhdlIdentifierError::DuplicateIdentifier(
-                            dupe.get_iden().to_string(),
+                        Box::new(HdlNamingError::DuplicateIdentifier(
+                            dupe.get_name().to_string(),
                             PathBuf::from(source_file),
                             result
-                                .get(dupe.get_iden())
+                                .get(dupe.get_name())
                                 .unwrap()
                                 .get_unit()
                                 .get_symbol()
@@ -248,22 +248,22 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
 }
 
 #[derive(Debug)]
-pub enum VhdlIdentifierError {
+pub enum HdlNamingError {
     DuplicateIdentifier(String, PathBuf, Position, PathBuf, Position),
     DuplicateAcrossDirect(String, IpSpec, PathBuf, Position),
     DuplicateAcrossLocal(String, IpSpec, PathBuf, Position),
 }
 
-impl std::error::Error for VhdlIdentifierError {}
+impl std::error::Error for HdlNamingError {}
 
-impl std::fmt::Display for VhdlIdentifierError {
+impl std::fmt::Display for HdlNamingError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::DuplicateIdentifier(iden, path1, loc1, path2, loc2) => {
                 let current_dir = std::env::current_dir().unwrap();
                 let location_1 = filesystem::remove_base(&current_dir, &path1);
                 let location_2 = filesystem::remove_base(&current_dir, &path2);
-                write!(f, "duplicate primary design units identified as \"{}\"\n\nlocation 1: {}{}\nlocation 2: {}{}{}", 
+                write!(f, "duplicate design units identified as \"{}\"\n\nlocation 1: {}{}\nlocation 2: {}{}{}", 
                     iden,
                     filesystem::into_std_str(location_1), loc1,
                     filesystem::into_std_str(location_2), loc2,
@@ -272,7 +272,7 @@ impl std::fmt::Display for VhdlIdentifierError {
             Self::DuplicateAcrossDirect(iden, dep, path, pos) => {
                 let current_dir = std::env::current_dir().unwrap();
                 let location = filesystem::remove_base(&current_dir, &path);
-                write!(f, "duplicate primary design units identified as \"{}\"\n\nlocation: {}{}\nconflicts with direct dependency: {}{}", 
+                write!(f, "duplicate design units identified as \"{}\"\n\nlocation: {}{}\nconflicts with direct dependency: {}{}", 
                 iden,
                 filesystem::into_std_str(location), pos,
                 dep,
@@ -281,7 +281,7 @@ impl std::fmt::Display for VhdlIdentifierError {
             Self::DuplicateAcrossLocal(iden, dep, path, pos) => {
                 let current_dir = std::env::current_dir().unwrap();
                 let location = filesystem::remove_base(&current_dir, &path);
-                write!(f, "duplicate primary design units identified as \"{}\"\n\nlocation: {}{}\nconflicts with local dependency: {}{}", 
+                write!(f, "duplicate design units identified as \"{}\"\n\nlocation: {}{}\nconflicts with local dependency: {}{}", 
                 iden,
                 filesystem::into_std_str(location), pos,
                 dep,

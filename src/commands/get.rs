@@ -28,7 +28,7 @@ use crate::core::lang::verilog::symbols::module::Module;
 use crate::core::lang::vhdl::format::VhdlFormat;
 use crate::core::lang::vhdl::interface;
 use crate::core::lang::vhdl::interface::Architectures;
-use crate::core::lang::vhdl::primaryunit::VhdlIdentifierError;
+use crate::core::lang::vhdl::primaryunit::HdlNamingError;
 use crate::core::lang::vhdl::symbols::architecture::Architecture;
 use crate::core::lang::vhdl::symbols::entity::Entity;
 use crate::core::lang::vhdl::symbols::VHDLParser;
@@ -493,7 +493,7 @@ impl Get {
                 if let Some(ent) = requested_entity {
                     match result {
                         Some((src_file, dupe)) => {
-                            return Err(VhdlIdentifierError::DuplicateIdentifier(
+                            return Err(HdlNamingError::DuplicateIdentifier(
                                 dupe.get_name().to_string(),
                                 PathBuf::from(src_file),
                                 dupe.get_position().clone(),

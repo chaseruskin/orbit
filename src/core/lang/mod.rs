@@ -227,7 +227,7 @@ impl LangUnit {
     /// References the unit's identifier.
     pub fn get_name(&self) -> LangIdentifier {
         match &self {
-            Self::Vhdl(u, _) => LangIdentifier::Vhdl(u.get_iden().clone()),
+            Self::Vhdl(u, _) => LangIdentifier::Vhdl(u.get_name().clone()),
             Self::Verilog(u, _) => LangIdentifier::Verilog(u.get_name().clone()),
             Self::SystemVerilog(u, _) => LangIdentifier::SystemVerilog(u.get_name().clone()),
         }
@@ -473,6 +473,7 @@ pub fn collect_units(
             LangUnit::Vhdl(v, SharedData::new()),
         );
     }
+    // add verilog units and check for duplicates across languages
     for (k, v) in verilog_units {
         let source_file = v.get_unit().get_source_file().to_string();
         let existing = results.insert(
@@ -489,6 +490,7 @@ pub fn collect_units(
             ))?;
         }
     }
+    // add sv units and check for duplicates across languages
     for (k, v) in systemverilog_units {
         let source_file = v.get_unit().get_source_file().to_string();
         let existing = results.insert(

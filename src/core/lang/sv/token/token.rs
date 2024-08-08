@@ -73,7 +73,7 @@ impl Display for SystemVerilogToken {
                 Self::Identifier(i) => i.to_string(),
                 Self::Keyword(k) => k.to_string(),
                 Self::StringLiteral(s) => format!("\"{}\"", s.to_string()),
-                Self::Directive(d) => d.to_string(),
+                Self::Directive(d) => format!("`{}", d.to_string()),
                 Self::EOF => String::new(),
             }
         )

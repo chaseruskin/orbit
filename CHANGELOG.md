@@ -17,6 +17,10 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## 0.19.0 - unreleased
 
+### Features
+- adds checks for duplicate names within local ip between sv files and between verilog files
+- improves verilog/sv parsing
+
 ### Changes
 - improves component detection and filtering for `orbit tree` and dependency analysis during planning stage
 - enhances `orbit remove` to delete ip from cache and archive and ask confirmation prompt by default before doing destructive task

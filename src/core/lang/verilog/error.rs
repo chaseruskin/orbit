@@ -60,4 +60,6 @@ pub enum VerilogError {
     UnhandledDotInDecl,
     #[error("unhandled assignment operator in module declaration")]
     UnhandledAssignInDecl,
+    #[error("expecting identifier for the module's name")]
+    ModuleNameIsNotIdentifier,
 }

@@ -52,7 +52,6 @@ impl Subcommand<Context> for Remove {
     }
 
     fn execute(self, c: &Context) -> proc::Result {
-
         // collect the catalog from dev and installations
         let catalog = Catalog::new()
             .installations(c.get_cache_path())?

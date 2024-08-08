@@ -31,6 +31,7 @@ use crate::core::lang::reference::{CompoundIdentifier, RefSet};
 use crate::core::lang::sv::token::keyword::Keyword;
 use crate::core::lang::sv::token::token::SystemVerilogToken;
 use crate::core::lang::verilog::symbols::config::Config;
+use crate::core::lang::verilog::symbols::VerilogSymbol;
 use std::str::FromStr;
 
 use super::super::verilog::symbols::module::Module;
@@ -167,8 +168,13 @@ impl Parse<SystemVerilogToken> for SystemVerilogParser {
 
         let mut global_refs = RefSet::new();
 
+        let mut now_line = None;
+
         while let Some(t) = tokens.next() {
-            // println!("{:?}", t);
+            let next_line = t.locate().line();
+            let is_first_token_on_line = now_line.is_none() || next_line > now_line.unwrap();
+            now_line = Some(next_line);
+            // println!("[global]: {:?}", t);
             // create module design element
             if t.as_type().check_keyword(&Keyword::Module)
                 || t.as_type().check_keyword(&Keyword::Macromodule)
@@ -237,6 +243,18 @@ impl Parse<SystemVerilogToken> for SystemVerilogParser {
             } else if t.as_type().check_delimiter(&Operator::AttrL) {
                 match SystemVerilogSymbol::parse_attr(&mut tokens, t.into_position()) {
                     Ok(_) => (),
+                    Err(e) => symbols.push(Err(e)),
+                }
+            // take compiler directive that is first token on a line
+            } else if t.as_ref().is_directive() == true && is_first_token_on_line == true {
+                match VerilogSymbol::parse_compiler_directive_statement(&mut tokens, t) {
+                    Ok(stmt) => {
+                        if let Some(d_refs) =
+                            SystemVerilogSymbol::extract_refs_from_statement(&stmt)
+                        {
+                            global_refs.extend(d_refs);
+                        }
+                    }
                     Err(e) => symbols.push(Err(e)),
                 }
             // skip any potential illegal/unknown tokens at global scale

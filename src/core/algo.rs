@@ -23,7 +23,7 @@ use crate::util::graphmap::GraphMap;
 use std::hash::Hash;
 use tempfile::tempdir;
 
-use crate::core::lang::vhdl::primaryunit::VhdlIdentifierError;
+use crate::core::lang::vhdl::primaryunit::HdlNamingError;
 use crate::core::lang::vhdl::token::VhdlTokenizer;
 
 use crate::core::catalog::CacheSlot;
@@ -109,7 +109,7 @@ fn graph_ip<'a>(
                                     if is_root == true {
                                         return Err(CodeFault(
                                             None,
-                                            Box::new(VhdlIdentifierError::DuplicateAcrossDirect(
+                                            Box::new(HdlNamingError::DuplicateAcrossDirect(
                                                 dupe.get_name().to_string(),
                                                 relative_ip.get_man().get_ip().into_ip_spec(),
                                                 PathBuf::from(dupe.get_source_file()),
@@ -122,7 +122,7 @@ fn graph_ip<'a>(
                                     } else {
                                         return Err(CodeFault(
                                             None,
-                                            Box::new(VhdlIdentifierError::DuplicateAcrossDirect(
+                                            Box::new(HdlNamingError::DuplicateAcrossDirect(
                                                 dupe.get_name().to_string(),
                                                 relative_ip.get_man().get_ip().into_ip_spec(),
                                                 PathBuf::from(dupe.get_source_file()),
@@ -185,7 +185,7 @@ fn graph_ip<'a>(
                                                 return Err(CodeFault(
                                                     None,
                                                     Box::new(
-                                                        VhdlIdentifierError::DuplicateAcrossDirect(
+                                                        HdlNamingError::DuplicateAcrossDirect(
                                                             dupe.get_name().to_string(),
                                                             cached_ip
                                                                 .get_man()

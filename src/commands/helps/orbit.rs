@@ -27,7 +27,7 @@ Commands:
     view                  display metadata of an ip
     read                  lookup hdl source code
     get                   fetch an hdl unit for code integration
-    tree                  view the dependency graph
+    tree                  show the dependency graph
     lock                  save the world state of an ip
     test, t               run a test
     build, b              plan and execute a target

@@ -16,17 +16,15 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"View the dependency graph.
+pub const HELP: &str = r#"Show the dependency graph.
 
 Usage:
     orbit tree [options]
 
 Options:
-    --root <unit>         the uppermost hdl unit to start the dependency tree
-    --compress            replace duplicate branches with a label marking
-    --all                 include all possible roots in the tree
+    --root <unit>         the uppermost hdl unit of the dependency tree
     --format <fmt>        determine how to display nodes ('long', 'short')
     --ascii               limit the textual tree characters to the 128 ASCII set
-    --ip                  view the dependency graph at the ip level
+    --ip                  switch to the ip dependency graph
 
 Use 'orbit help tree' to read more about the command."#;

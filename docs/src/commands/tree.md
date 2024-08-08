@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-tree - view the dependency graph
+tree - show the dependency graph
 
 ## __SYNOPSIS__
 
@@ -12,32 +12,35 @@ orbit tree [options]
 
 ## __DESCRIPTION__
 
-This command will show the hierarchical tree-structure starting from a node.
-By default, it will attempt to automatically detect the root if it is
-unambiguous and `--root` is not provided. This command only works when called
-from the current working ip.
+Shows the hierarchical tree structure of the hardware design starting from a
+root node.
 
-The hdl-level tree displays the connections between entities. The hdl tree does 
-not show how many times an entity is instantiated within a parent entity, and 
-all architectures for each entity are analyzed. If an unidentified entity is 
-instantiated it will appear as a leaf and is denoted as a black box by a '?' 
-character.
+By default, it will try to automatically detect the root node for the 
+local ip. If there is ambiguity in determining what node can be the root, then 
+all root nodes and their respective trees will be displayed. To only display
+the tree of a particular node, use the `--root` option.
 
-An entity is considered a black box if it cannot find that referenced entity's 
-hdl source code file.
+There are two trees available to view: hdl and ip. By default, the hdl
+dependency graph is displayed. The hdl graph shows the composition of usable 
+entities/modules. To generate this graph, it analyzes each VHDL architecture 
+and ignores Verilog compiler directives. If an unidentified entity is 
+instantiated, it will appear as a leaf in the graph and will be considered as 
+a "black box" denoted by the "?" character next to its position in the tree.
 
-To view the dependency tree at the ip-level, use `--ip`.
+Using the `--format` option can alter how much information is displayed for
+each hdl design unit in the tree composition. By default, only the design
+unit's name is displayed for each unit.
+
+To display the ip dependency graph, use the `--ip` option.
+
+If the tree's character output is not displaying properly, then the tree can
+be displayed using a set of standard ASCII characters with the `--ascii`
+option.
 
 ## __OPTIONS__
 
 `--root <unit>`  
-      The uppermost hdl unit to start the dependency tree
-
-`--compress`  
-      Replace duplicate branches with a label marking
-
-`--all`  
-      Include all possible roots in the tree
+      The uppermost hdl unit of the dependency tree
 
 `--format <fmt>`  
       Determine how to display nodes ('long', 'short')
@@ -46,13 +49,13 @@ To view the dependency tree at the ip-level, use `--ip`.
       Limit the textual tree characters to the 128 ascii set
 
 `--ip`  
-      View the dependency graph at the ip level
+      Switch to the ip dependency graph
 
 ## __EXAMPLES__
 
 ```
-orbit tree --ip
+orbit tree
 orbit tree --root top --format long
-orbit tree --ascii --all
+orbit tree --ip --ascii
 ```
 

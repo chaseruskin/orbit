@@ -44,21 +44,20 @@ use cliproc::{Arg, Cli, Help, Subcommand};
 #[derive(Debug, PartialEq)]
 pub struct Tree {
     root: Option<VhdlIdentifier>,
-    compress: bool,
+    // compress: bool,
     format: Option<IdentifierFormat>,
     ascii: bool,
     ip: bool,
-    all: bool,
 }
 
 impl Subcommand<Context> for Tree {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
         cli.help(Help::with(tree::HELP))?;
         Ok(Tree {
-            compress: cli.check(Arg::flag("compress"))?, // @todo: implement
+            // TODO: implement compression logic
+            // compress: cli.check(Arg::flag("compress"))?,
             ascii: cli.check(Arg::flag("ascii"))?,
             ip: cli.check(Arg::flag("ip"))?,
-            all: cli.check(Arg::flag("all"))?,
             root: cli.get(Arg::option("root").value("unit"))?,
             format: cli.get(Arg::option("format").value("fmt"))?,
         })
@@ -67,10 +66,6 @@ impl Subcommand<Context> for Tree {
     fn execute(self, c: &Context) -> proc::Result {
         // go to the ip directory
         c.jump_to_working_ip()?;
-
-        if self.compress == true {
-            todo!("implement compression logic")
-        }
 
         // get the ip manifest
         let ip = Ip::load(c.get_ip_path().unwrap().clone(), true)?;
@@ -94,6 +89,9 @@ impl Tree {
     fn run_hdl_graph(&self, target: Ip, catalog: Catalog, mode: &Language) -> Result<(), Fault> {
         let working_lib = target.get_hdl_library();
 
+        // display all roots if none is selected
+        let all = self.root.is_none();
+
         // build graph again but with entire set of all files available from all depdendencies
         let ip_graph = algo::compute_final_ip_graph(&target, &catalog, mode)?;
         let files = algo::build_ip_file_list(&ip_graph, &target, &mode);
@@ -101,7 +99,7 @@ impl Tree {
         // build the complete graph (using entities as the nodes)
         let global_graph = Self::build_graph(&files)?;
 
-        if self.all == false {
+        if all == false {
             let n = {
                 // restrict graph to units only found within the current IP
                 let local_graph = Plan::compute_local_graph(&global_graph, &target);
@@ -216,24 +214,34 @@ impl Tree {
             }
 
             // display each root's tree to the console
-            roots.iter().for_each(|n| {
-                let tree = global_graph.get_graph().treeview(*n);
-                for twig in &tree {
-                    let branch_str = match self.ascii {
-                        true => Self::to_ascii(&twig.0.to_string()),
-                        false => twig.0.to_string(),
-                    };
-                    println!(
-                        "{}{}",
-                        branch_str,
-                        global_graph
-                            .get_node_by_index(twig.1)
-                            .unwrap()
-                            .as_ref()
-                            .display(self.format.as_ref().unwrap_or(&IdentifierFormat::Short))
-                    );
-                }
-            });
+            roots
+                .iter()
+                .filter(|k| {
+                    global_graph
+                        .get_node_by_index(**k)
+                        .unwrap()
+                        .as_ref()
+                        .get_symbol()
+                        .is_component()
+                })
+                .for_each(|n| {
+                    let tree = global_graph.get_graph().treeview(*n);
+                    for twig in &tree {
+                        let branch_str = match self.ascii {
+                            true => Self::to_ascii(&twig.0.to_string()),
+                            false => twig.0.to_string(),
+                        };
+                        println!(
+                            "{}{}",
+                            branch_str,
+                            global_graph
+                                .get_node_by_index(twig.1)
+                                .unwrap()
+                                .as_ref()
+                                .display(self.format.as_ref().unwrap_or(&IdentifierFormat::Short))
+                        );
+                    }
+                });
         }
 
         Ok(())

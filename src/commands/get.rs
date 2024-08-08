@@ -64,10 +64,9 @@ pub struct Get {
     json: bool,
     signal_prefix: String,
     signal_suffix: String,
-    // @note: not done yet... requires more work with detecting generics in the datatype of the signals
+    // NOTE: not done yet... requires more work with detecting generics in the datatype of the signals
     // const_prefix: String,
     // const_suffix: String,
-    // info: bool,
     name: Option<VhdlIdentifier>,
 }
 
@@ -81,12 +80,11 @@ impl Subcommand<Context> for Get {
             library: cli.check(Arg::flag("library").switch('l'))?,
             architectures: cli.check(Arg::flag("architecture").switch('a'))?,
             json: cli.check(Arg::flag("json"))?,
-            // info: cli.check(Arg::flag("info"))?, // @todo: implement
             signal_prefix: cli
-                .get(Arg::option("signal-prefix").value("value"))?
+                .get(Arg::option("signal-prefix").value("str"))?
                 .unwrap_or_default(),
             signal_suffix: cli
-                .get(Arg::option("signal-suffix").value("value"))?
+                .get(Arg::option("signal-suffix").value("str"))?
                 .unwrap_or_default(),
             // const_prefix: cli
             //     .get(Arg::option("const-prefix").value("value"))?

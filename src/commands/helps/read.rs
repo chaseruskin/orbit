@@ -22,7 +22,7 @@ Usage:
     orbit read [options] <unit>
 
 Arguments:
-    <unit>                read the file for this hdl design unit
+    <unit>                read the file for this primary design unit
 
 Options:
     --ip <spec>           ip specification

@@ -37,7 +37,7 @@ call of this command, use the `--no-clean` option.
 ## __OPTIONS__
 
 `<unit>`  
-      Read the file for this hdl design unit
+      Read the file for this primary design unit
 
 `--ip <spec>`  
       Ip specification

@@ -44,20 +44,20 @@
     - [Command Line](./reference/command_line.md)
 
 - [Commands](./commands/**commands**.md)
-    - [orbit new](./commands/new.md) <!-- DONE -->
+    - [orbit new](./commands/new.md) 
     - [orbit init](./commands/init.md) 
-    - [orbit view](./commands/view.md)
+    - [orbit view](./commands/view.md) 
     - [orbit read](./commands/read.md)
     - [orbit get](./commands/get.md)
     - [orbit tree](./commands/tree.md)
-    - [orbit lock](./commands/lock.md) <!-- DONE -->
+    - [orbit lock](./commands/lock.md) 
     - [orbit test](./commands/test.md)
-    - [orbit build](./commands/build.md) <!-- DONE -->
+    - [orbit build](./commands/build.md) 
     - [orbit publish](./commands/publish.md)
     - [orbit search](./commands/search.md)
-    - [orbit install](./commands/install.md) <!-- DONE -->
+    - [orbit install](./commands/install.md) 
     - [orbit remove](./commands/remove.md)
     - [orbit env](./commands/env.md)
-    - [orbit config](./commands/config.md) <!-- DONE -->
+    - [orbit config](./commands/config.md)
     
 - [Appendix: Glossary](./glossary.md)

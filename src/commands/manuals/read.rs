@@ -47,7 +47,7 @@ DESCRIPTION
 
 OPTIONS
     <unit>
-        Read the file for this hdl design unit
+        Read the file for this primary design unit
 
     --ip <spec>
         Ip specification

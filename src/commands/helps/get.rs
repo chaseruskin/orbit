@@ -16,7 +16,7 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"Fetch an hdl entity for code integration.
+pub const HELP: &str = r#"Fetch an hdl unit for code integration.
 
 Usage:
     orbit get [options] <unit>
@@ -25,17 +25,17 @@ Arguments:
     <unit>                primary design unit identifier
 
 Options:
-    --ip <spec>           the ip that contains the requested unit
-    --json                export the entity information as valid json
+    --ip <spec>           ip specification
+    --json                export the unit's information as valid json
     --library, -l         display the unit's library declaration
-    --component, -c       display the component declaration
+    --component, -c       display the unit's declaration
     --signals, -s         display the constant and signal declarations
     --instance, -i        display the unit's instantiation
-    --architecture, -a    display the detected architectures
+    --architecture, -a    display the unit's architectures
     --name <identifier>   set the instance's identifier
-    --signal-prefix <value>
+    --signal-prefix <str>
                           prepend information to the instance's signals
-    --signal-suffix <value>
+    --signal-suffix <str>
                           append information to the instance's signals
 
 Use 'orbit help get' to read more about the command."#;

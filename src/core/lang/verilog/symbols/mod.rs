@@ -877,7 +877,24 @@ impl VerilogSymbol {
             } else if let Some(name) = t.as_ref().as_identifier() {
                 if let Some(t_next) = tokens.peek() {
                     // then this is indeed the name of a param
-                    if t_next.as_type().check_delimiter(&Operator::Comma)
+                    // this is indeed the name of a datatype, specifically, a modport
+                    if t_next.as_type().check_delimiter(&Operator::Dot) {
+                        // set the interface name
+                        current_param_config.set_data_type(t.as_ref().clone());
+                        // collect the '.'
+                        let _ = tokens.next().unwrap();
+                        // TODO: verify the next item is an identifier to be a modport name?
+                        current_param_config.set_modport(tokens.next().unwrap().take());
+                    // this is indeed the name of a type, specifically being called from a package
+                    } else if t_next.as_type().check_delimiter(&Operator::ScopeResolution) {
+                        // set the package name
+                        current_param_config.set_data_type(t.as_ref().clone());
+                        // collect the '::'
+                        let _ = tokens.next().unwrap();
+                        // TODO: verify the next item is an identifier to be a datatype name?
+                        current_param_config.set_nested_type(tokens.next().unwrap().take());
+                    // then this is indeed the name of a port
+                    } else if t_next.as_type().check_delimiter(&Operator::Comma)
                         || t_next.as_type().check_delimiter(&Operator::BlockAssign)
                         || t_next.as_type().check_delimiter(&Operator::ParenR)
                         || t_next.as_type().check_delimiter(&Operator::BrackL)
@@ -1017,8 +1034,24 @@ impl VerilogSymbol {
             // we are dealing with a port list
             } else if let Some(name) = t.as_ref().as_identifier() {
                 if let Some(t_next) = tokens.peek() {
+                    // this is indeed the name of a datatype, specifically, a modport
+                    if t_next.as_type().check_delimiter(&Operator::Dot) {
+                        // set the interface name
+                        current_port_config.set_data_type(t.as_ref().clone());
+                        // collect the '.'
+                        let _ = tokens.next().unwrap();
+                        // TODO: verify the next item is an identifier to be a modport name?
+                        current_port_config.set_modport(tokens.next().unwrap().take());
+                    // this is indeed the name of a type, specifically being called from a package
+                    } else if t_next.as_type().check_delimiter(&Operator::ScopeResolution) {
+                        // set the package name
+                        current_port_config.set_data_type(t.as_ref().clone());
+                        // collect the '::'
+                        let _ = tokens.next().unwrap();
+                        // TODO: verify the next item is an identifier to be a datatype name?
+                        current_port_config.set_nested_type(tokens.next().unwrap().take());
                     // then this is indeed the name of a port
-                    if t_next.as_type().check_delimiter(&Operator::Comma)
+                    } else if t_next.as_type().check_delimiter(&Operator::Comma)
                         || t_next.as_type().check_delimiter(&Operator::BlockAssign)
                         || t_next.as_type().check_delimiter(&Operator::ParenR)
                         || t_next.as_type().check_delimiter(&Operator::BrackL)

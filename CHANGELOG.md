@@ -18,6 +18,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.19.0 - unreleased
 
 ### Features
+- adds support for parsing sv modports and using package scopes as types for module port declarations
 - adds checks for duplicate names within local ip between sv files and between verilog files
 - improves verilog/sv parsing
 

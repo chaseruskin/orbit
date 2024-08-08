@@ -279,6 +279,8 @@ fn default_mode() -> Keyword {
 pub struct DataType {
     net: Option<Keyword>,
     is_signed: bool,
+    modport: Option<SystemVerilogToken>,
+    nested_type: Option<SystemVerilogToken>,
     data: Option<SystemVerilogToken>,
     range: Expr,
 }
@@ -289,7 +291,9 @@ impl DataType {
             net: None,
             is_signed: false,
             data: None,
+            nested_type: None,
             range: Expr(None),
+            modport: None,
         }
     }
 }
@@ -299,8 +303,10 @@ impl Default for DataType {
         Self {
             is_signed: false,
             net: Some(Keyword::Wire),
+            nested_type: None,
             data: None,
             range: Expr(None),
+            modport: None,
         }
     }
 }
@@ -400,7 +406,7 @@ impl Port {
     fn into_decl_no_name(&self, use_mode: bool, fmt: &SystemVerilogFormat) -> String {
         let mut result = String::new();
 
-        if use_mode == true && self.is_param == false {
+        if use_mode == true && self.is_param == false && self.data_type.modport.is_none() {
             result.push_str(&self.mode.as_ref().unwrap_or(&Keyword::Input).to_string());
             result.push(' ');
         }
@@ -421,8 +427,10 @@ impl Port {
 
         // force the port to have a wire net
         if use_mode == false && self.is_param == false {
-            result.push_str(&Keyword::Wire.to_string());
-            result.push(' ');
+            if self.data_type.data.is_none() {
+                result.push_str(&Keyword::Wire.to_string());
+                result.push(' ');
+            }
         } else if let Some(n) = &self.data_type.net {
             result.push_str(&n.to_string());
             result.push(' ');
@@ -431,6 +439,16 @@ impl Port {
         // display the datatype
         if let Some(d) = &self.data_type.data {
             result.push_str(&d.to_string());
+            // display the modport
+            if let Some(m) = &self.data_type.modport {
+                result.push_str(&Operator::Dot.to_string());
+                result.push_str(&m.to_string());
+            }
+            // display the real type
+            if let Some(t) = &self.data_type.nested_type {
+                result.push_str(&Operator::ScopeResolution.to_string());
+                result.push_str(&t.to_string());
+            }
             result.push(' ');
         }
 
@@ -544,6 +562,14 @@ impl Port {
             self.mode = rhs.mode.clone();
         }
 
+        if self.data_type.modport.is_none() {
+            self.data_type.modport = rhs.data_type.modport.clone();
+        }
+
+        if self.data_type.nested_type.is_none() {
+            self.data_type.nested_type = rhs.data_type.nested_type.clone();
+        }
+
         if self.data_type.net.is_none() {
             self.data_type.net = rhs.data_type.net.clone();
         }
@@ -576,6 +602,11 @@ impl Port {
     /// Checks if the given port is in ANSI style.
     pub fn is_ansi_style(&self) -> bool {
         self.mode.is_some() || self.data_type.data.is_some()
+    }
+
+    /// Checks if the given port is a modport.
+    pub fn is_modport(&self) -> bool {
+        self.data_type.modport.is_some()
     }
 
     pub fn set_default(&mut self, tkns: Vec<SystemVerilogToken>) {
@@ -622,6 +653,17 @@ impl Port {
 
     pub fn set_data_type(&mut self, tkn: SystemVerilogToken) {
         self.data_type.data = Some(tkn);
+    }
+
+    pub fn set_modport(&mut self, tkn: SystemVerilogToken) {
+        self.data_type.modport = Some(tkn);
+        // clear other things if setting a modport
+        self.data_type.nested_type = None;
+        self.data_type.range = Expr(None);
+    }
+
+    pub fn set_nested_type(&mut self, tkn: SystemVerilogToken) {
+        self.data_type.nested_type = Some(tkn);
     }
 
     pub fn fix_type(&mut self, name: Identifier) {

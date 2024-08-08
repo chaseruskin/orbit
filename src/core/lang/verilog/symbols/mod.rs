@@ -881,6 +881,8 @@ impl VerilogSymbol {
                     if t_next.as_type().check_delimiter(&Operator::Dot) {
                         // set the interface name
                         current_param_config.set_data_type(t.as_ref().clone());
+                        // update refs because it is an interface
+                        refs.insert(CompoundIdentifier::new_minimal_verilog(name.clone()));
                         // collect the '.'
                         let _ = tokens.next().unwrap();
                         // TODO: verify the next item is an identifier to be a modport name?
@@ -889,6 +891,8 @@ impl VerilogSymbol {
                     } else if t_next.as_type().check_delimiter(&Operator::ScopeResolution) {
                         // set the package name
                         current_param_config.set_data_type(t.as_ref().clone());
+                        // update refs because it is a package
+                        refs.insert(CompoundIdentifier::new_minimal_verilog(name.clone()));
                         // collect the '::'
                         let _ = tokens.next().unwrap();
                         // TODO: verify the next item is an identifier to be a datatype name?
@@ -1038,6 +1042,8 @@ impl VerilogSymbol {
                     if t_next.as_type().check_delimiter(&Operator::Dot) {
                         // set the interface name
                         current_port_config.set_data_type(t.as_ref().clone());
+                        // update refs because it is an interface
+                        refs.insert(CompoundIdentifier::new_minimal_verilog(name.clone()));
                         // collect the '.'
                         let _ = tokens.next().unwrap();
                         // TODO: verify the next item is an identifier to be a modport name?
@@ -1046,6 +1052,8 @@ impl VerilogSymbol {
                     } else if t_next.as_type().check_delimiter(&Operator::ScopeResolution) {
                         // set the package name
                         current_port_config.set_data_type(t.as_ref().clone());
+                        // update refs because it is a package
+                        refs.insert(CompoundIdentifier::new_minimal_verilog(name.clone()));
                         // collect the '::'
                         let _ = tokens.next().unwrap();
                         // TODO: verify the next item is an identifier to be a datatype name?

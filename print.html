@@ -2273,7 +2273,7 @@ directory where it saves resulting files. To keep existing files on the next
 call of this command, use the <code>--no-clean</code> option.</p>
 <h2 id="options-3"><a class="header" href="#options-3"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;unit&gt;</code><br />
-      Read the file for this hdl design unit</p>
+      Read the file for this primary design unit</p>
 <p><code>--ip &lt;spec&gt;</code><br />
       Ip specification</p>
 <p><code>--doc &lt;code&gt;</code><br />
@@ -2297,58 +2297,62 @@ orbit read math_pkg --ip math --doc "function flog2p1" --save --locate
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-get"><a class="header" href="#orbit-get"><strong>orbit get</strong></a></h1>
 <h2 id="name-4"><a class="header" href="#name-4"><strong>NAME</strong></a></h2>
-<p>get - fetch an hdl entity for code integration</p>
+<p>get - fetch an hdl unit for code integration</p>
 <h2 id="synopsis-4"><a class="header" href="#synopsis-4"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit get [options] &lt;unit&gt;
 </code></pre>
 <h2 id="description-4"><a class="header" href="#description-4"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will provide the relevant information about the requested HDL
-entity required to integrate the code into the current design. The command
-produces valid HDL code displayed to stdout that allows a user to copy and
-paste the results into a new hdl source code file for proper hierarchy code
-reuse.</p>
-<p>If the spec if not provided with <code>--ip</code>, then it will search the current
-working ip for the requested HDL entity.</p>
-<p>If the <code>--instance</code> flag is used without the <code>--component</code> flag, then it will
-display the direct instantiation style code for VHDL (VHDL-93 feature).</p>
-<p>It is important to note that any units referenced from ip outside of the
-current working ip are not automatically tracked as a dependency. In order to
-add an ip as a dependency to properly reference its source code files, edit
-the current working ip's manifest with a new entry under the <code>[dependencies]</code>
-table with the dependency ip and its version.</p>
+<p>Returns hdl code snippets for the provided design unit to be integrated into
+the current design. The code snippets are returned in the native hdl
+language of the identified design unit. Code snippets are designed to be
+copy and pasted from the console to the current design for quick code
+integration.</p>
+<p>If an ip is not provided with the <code>--ip</code> option, then it will search the local
+ip for the requested design unit.</p>
+<p>If the design unit is in VHDL with the <code>--instance</code> option being used without
+the <code>--component</code> option, then it will return the direct instantiation code
+style (VHDL-93 feature).</p>
+<p>Copying unit instantiations into higher-level entities will not
+automatically track source code references across ips. In order to properly
+establish source code reference tracking across ips, the local ip's manifest
+must have an up to date <code>[dependencies]</code> table that lists all the ips from
+which it references source code.</p>
 <p>An identifier prefix or suffix can be attached to the signal declarations and
 the instantiation's port connection signals by using <code>--signal-prefix</code> and
 <code>--signal-suffix</code> respectively. These optional texts are treated as normal
-strings and are not checked for correct syntax.</p>
-<p>When no output options are specified, this command by default will display the
-entity's component declaration.</p>
+strings and are not checked for correct hdl coding syntax.</p>
+<p>When no output options are specified, this command by default will display
+the unit's declaration.</p>
+<p>Exporting the unit's declaration information can be accomplished by using the
+<code>--json</code> option. The valid json is produced with minimal formatting for
+encouragement to be processed by other programs.</p>
 <h2 id="options-4"><a class="header" href="#options-4"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;unit&gt;</code><br />
       Primary design unit identifier</p>
 <p><code>--ip &lt;spec&gt;</code><br />
-      The ip that contains the requested unit</p>
+      Ip specification</p>
 <p><code>--json</code><br />
-      Export the entity information as valid json</p>
+      Export the unit's information as valid json</p>
 <p><code>--library, -l</code><br />
       Display the unit's library declaration</p>
 <p><code>--component, -c</code><br />
-      Display the component declaration</p>
+      Display the unit's declaration</p>
 <p><code>--signals, -s</code><br />
       Display the constant and signal declarations</p>
 <p><code>--instance, -i</code><br />
       Display the unit's instantiation</p>
 <p><code>--architecture, -a</code><br />
-      Display the detected architectures</p>
+      Display the unit's architectures</p>
 <p><code>--name &lt;identifier&gt;</code><br />
       Set the instance's identifier</p>
-<p><code>--signal-prefix &lt;value&gt;</code><br />
+<p><code>--signal-prefix &lt;str&gt;</code><br />
       Prepend information to the instance's signals</p>
-<p><code>--signal-suffix &lt;value&gt;</code><br />
+<p><code>--signal-suffix &lt;str&gt;</code><br />
       Append information to the instance's signals</p>
 <h2 id="examples-6"><a class="header" href="#examples-6"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit get and_gate --ip gates:1.0.0 --component
-orbit get ram --ip mem:2.0.3 -csi
-orbit get uart -si --name u0
+orbit get ram --ip mem:2 -csi
+orbit get uart -si --name uart_inst0
 orbit get or_gate --ip gates --json
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-tree"><a class="header" href="#orbit-tree"><strong>orbit tree</strong></a></h1>

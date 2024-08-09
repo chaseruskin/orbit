@@ -299,6 +299,9 @@ impl VerilogSymbol {
             if t.as_ref().check_delimiter(&Operator::AttrR) == true {
                 stmt.push(t);
                 break;
+            } else if stmt.len() == 1 && t.as_ref().check_delimiter(&Operator::ParenR) == true {
+                stmt.push(t);
+                break;
             } else if t.as_ref().is_eof() == true {
                 // expecting closing attribute operator
                 return Err(VerilogError::ExpectingOperator(Operator::AttrR));
@@ -478,6 +481,14 @@ impl VerilogSymbol {
                         Operator::ParenR,
                     )?);
                 }
+            // take everything in the parentheses
+            } else if t.as_ref().check_delimiter(&Operator::ParenL) == true {
+                let opening_p = stmt.pop().unwrap();
+                stmt.extend(Self::parse_until_operator(
+                    tokens,
+                    opening_p,
+                    Operator::ParenR,
+                )?);
             // take all symbols until new line when handling a new directive on a new line
             } else if (now_line.is_none() || next_line > now_line.unwrap())
                 && t.as_ref().is_directive() == true

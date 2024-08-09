@@ -342,6 +342,9 @@ impl SystemVerilogSymbol {
             if t.as_ref().check_delimiter(&Operator::AttrR) == true {
                 stmt.push(t);
                 break;
+            } else if stmt.len() == 1 && t.as_ref().check_delimiter(&Operator::ParenR) == true {
+                stmt.push(t);
+                break;
             } else if t.as_ref().is_eof() == true {
                 // expecting closing attribute operator
                 return Err(SystemVerilogError::ExpectingOperator(Operator::AttrR));

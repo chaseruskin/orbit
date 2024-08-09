@@ -29,6 +29,8 @@ pub mod reference;
 use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::AnyError;
+use crate::util::anyerror::CodeFault;
+use crate::util::anyerror::Fault;
 use crate::util::filesystem;
 use lexer::Position;
 use serde_derive::Deserialize;
@@ -52,6 +54,25 @@ type VerilogPrimaryUnit = verilog::primaryunit::PrimaryUnit;
 type SystemVerilogPrimaryUnit = sv::primaryunit::PrimaryUnit;
 
 use super::pubfile::{PublicList, Visibility};
+
+pub fn read_to_string(source_file: &str) -> Result<String, Fault> {
+    let contents = match std::fs::read_to_string(&source_file) {
+        Ok(dump) => dump,
+        Err(e) => {
+            // try to return a string from utf-16
+            if e.kind() == std::io::ErrorKind::InvalidData {
+                String::from_utf8_lossy(&match std::fs::read(&source_file) {
+                    Ok(r) => r,
+                    Err(e) => return Err(CodeFault(Some(source_file.to_string()), Box::new(e)))?,
+                })
+                .into_owned()
+            } else {
+                return Err(CodeFault(Some(source_file.to_string()), Box::new(e)))?;
+            }
+        }
+    };
+    Ok(contents)
+}
 
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]

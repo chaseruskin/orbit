@@ -29,7 +29,7 @@ use crate::core::lang::verilog::symbols::{VerilogParser, VerilogSymbol};
 use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbols::{VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
-use crate::core::lang::{Lang, LangIdentifier, Language};
+use crate::core::lang::{self, Lang, LangIdentifier, Language};
 use crate::core::swap;
 use crate::core::swap::StrSwapTable;
 use crate::core::target::Target;
@@ -658,7 +658,7 @@ impl Plan {
         node: &'a IpFileNode,
         component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
     ) -> Result<(), Fault> {
-        let contents = fs::read_to_string(&node.get_file()).unwrap();
+        let contents = lang::read_to_string(&node.get_file())?;
         let symbols = match VerilogParser::read(&contents) {
             Ok(s) => s.into_symbols(),
             Err(e) => Err(ParseError::SourceCodeError(
@@ -713,7 +713,7 @@ impl Plan {
         node: &'a IpFileNode,
         component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
     ) -> Result<(), Fault> {
-        let contents = fs::read_to_string(&node.get_file()).unwrap();
+        let contents = lang::read_to_string(&node.get_file())?;
         let symbols = match SystemVerilogParser::read(&contents) {
             Ok(s) => s.into_symbols(),
             Err(e) => Err(ParseError::SourceCodeError(
@@ -772,7 +772,7 @@ impl Plan {
         component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
         sub_nodes: &'b mut Vec<(LangIdentifier, SubUnitNode<'a>)>,
     ) -> Result<(), Fault> {
-        let contents = fs::read_to_string(&node.get_file()).unwrap();
+        let contents = lang::read_to_string(&node.get_file())?;
         let symbols = match VHDLParser::read(&contents) {
             Ok(s) => s.into_symbols(),
             Err(e) => Err(ParseError::SourceCodeError(

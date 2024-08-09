@@ -17,6 +17,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## 0.19.2 - unreleased
 
+### Features
+- handles reading invalid UTF-8 code from HDL source code files
+
 ### Fixes
 - improves robustness for verilog/sv module declaration parsing
 

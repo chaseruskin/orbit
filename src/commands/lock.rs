@@ -29,9 +29,6 @@ use crate::util::environment::Environment;
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
 
-pub const BLUEPRINT_FILE: &str = "blueprint.tsv";
-pub const BLUEPRINT_DELIMITER: &str = "\t";
-
 #[derive(Debug, PartialEq)]
 pub struct Lock {
     force: bool,
@@ -59,7 +56,7 @@ impl Subcommand<Context> for Lock {
             .installations(c.get_cache_path())?
             .downloads(c.get_downloads_path())?;
 
-        // @todo: recreate the ip graph from the lockfile, then read each installation
+        // TODO: recreate the ip graph from the lockfile, then read each installation
         // see Install::install_from_lock_file
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute

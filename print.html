@@ -2268,6 +2268,12 @@ local ip for the provided design unit.</p>
 The code is interpreted in the native language of the provided design unit.</p>
 <p>The <code>--doc</code> option will attempt to find the comments immediately preceding the
 identified code snippet.</p>
+<p>A design unit must visible in order for it to return the respective source
+code. When reading a design unit that exists within the local ip, it can be
+any visibility. When reading a design unit that exists outside of the
+local ip, its visibility must be "public" or "protected". Design units that
+are set to "private" visibility are not allowed to be read outside of their
+ip.</p>
 <p>Every time this command is called, it attempts to clean the temporary
 directory where it saves resulting files. To keep existing files on the next
 call of this command, use the <code>--no-clean</code> option.</p>
@@ -2323,6 +2329,12 @@ the instantiation's port connection signals by using <code>--signal-prefix</code
 strings and are not checked for correct hdl coding syntax.</p>
 <p>When no output options are specified, this command by default will display
 the unit's declaration.</p>
+<p>A design unit must visible in order for it to return the respective code
+snippets. When fetching a design unit that exists within the local ip, it
+can be any visibility. When fetching a design unit that exists outside of the
+local ip, its visibility must be "public". Design units that are set to
+"protected" or "private" visibility are not allowed to be referenced across
+ips.</p>
 <p>Exporting the unit's declaration information can be accomplished by using the
 <code>--json</code> option. The valid json is produced with minimal formatting for
 encouragement to be processed by other programs.</p>
@@ -2551,22 +2563,23 @@ orbit build --target xsim --force -- --help
 <pre><code>orbit publish [options]
 </code></pre>
 <h2 id="description-9"><a class="header" href="#description-9"><strong>DESCRIPTION</strong></a></h2>
-<p>Performs a series of checks on a local ip and then releases it to its specified
-channel(s).</p>
-<p>There are multiple checks that are performed before an ip can be published. The
-ip must have an up to date lockfile with no relative dependencies. The ip's
-manifest must also have a value for the source field. Lastly, Orbit must be
-able to construct the hdl source code graph without errors.</p>
+<p>Performs a series of checks for a local ip and then releases it to its
+specified channel(s).</p>
+<p>There are multiple checks that are performed before an ip can be published.
+First, the ip must have an up to date lockfile with no relative dependencies.
+The ip's manifest must also have a value for the source field. Lastly, Orbit
+must be able to construct the hdl source code graph without errors.</p>
 <p>Posting an ip to a channel involves copying the ip's manifest file to a path
 within the channel known as the index. For every publish of an ip, the index
-corresponds to a unique path within the channel that gets created by Orbit.</p>
-<p>By default, it operates a dry run, performing all steps in the process except
-for posting the ip to its channel(s). To fully run the command, use the
-<code>--ready</code> flag. When the ip is published, it will also be installed to the cache
-by default. To skip this behavior, use the <code>--no-install</code> flag.</p>
+corresponds to a unique path within the channel that gets created by Orbit.
+A channel's pre-publish and post-publish hooks can get the value for the ip's
+index by reading the ORBIT_IP_INDEX environment variable.</p>
+<p>By default, this command performs a dry run, which executes all of the steps
+in the process except for actually posting the ip to its channel(s).
+To run the command to completion, use the <code>--ready</code> option.</p>
 <h2 id="options-9"><a class="header" href="#options-9"><strong>OPTIONS</strong></a></h2>
 <p><code>--ready, -y</code><br />
-      Perform a full run</p>
+      Run the operation to completion</p>
 <p><code>--list</code><br />
       View available channels and exit</p>
 <h2 id="examples-11"><a class="header" href="#examples-11"><strong>EXAMPLES</strong></a></h2>

@@ -22,7 +22,7 @@ Usage:
     orbit publish [options]
 
 Options:
-    --ready, -y           perform a full run
+    --ready, -y           run the operation to completion
     --list                view available channels and exit
 
 Use 'orbit help publish' to read more about the command."#;

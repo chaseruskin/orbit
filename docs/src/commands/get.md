@@ -39,6 +39,13 @@ strings and are not checked for correct hdl coding syntax.
 When no output options are specified, this command by default will display
 the unit's declaration.
 
+A design unit must visible in order for it to return the respective code
+snippets. When fetching a design unit that exists within the local ip, it
+can be any visibility. When fetching a design unit that exists outside of the
+local ip, its visibility must be "public". Design units that are set to 
+"protected" or "private" visibility are not allowed to be referenced across
+ips.
+
 Exporting the unit's declaration information can be accomplished by using the
 `--json` option. The valid json is produced with minimal formatting for
 encouragement to be processed by other programs.

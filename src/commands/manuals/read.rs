@@ -41,6 +41,13 @@ DESCRIPTION
     The '--doc' option will attempt to find the comments immediately preceding the
     identified code snippet. 
     
+    A design unit must visible in order for it to return the respective source
+    code. When reading a design unit that exists within the local ip, it can be 
+    any visibility. When reading a design unit that exists outside of the
+    local ip, its visibility must be "public" or "protected". Design units that 
+    are set to "private" visibility are not allowed to be read outside of their
+    ip.
+    
     Every time this command is called, it attempts to clean the temporary
     directory where it saves resulting files. To keep existing files on the next
     call of this command, use the '--no-clean' option.

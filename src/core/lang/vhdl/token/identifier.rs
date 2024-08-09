@@ -89,7 +89,7 @@ impl Identifier {
     }
 }
 
-// @todo: test
+// TODO: make sure this works as intended (collisions should occur for basic names)
 impl Hash for Identifier {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {

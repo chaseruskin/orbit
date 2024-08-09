@@ -15,6 +15,12 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.19.1 - unreleased
+
+### Fixes
+- fixes hashing of identifiers to use their corresponding hashing rules of their respective language
+- safely handles unwrap() for VHDL package generics
+
 ## 0.19.0
 
 ### Features

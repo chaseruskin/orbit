@@ -322,6 +322,7 @@ impl Parse<VhdlToken> for VHDLParser {
                     match VhdlSymbol::parse_entity(&mut tokens, t.into_position()) {
                         Ok(mut ent) => {
                             // println!("info: detected {}", ent);
+                            // println!("global refs: {:?}", global_refs);
                             global_refs = ent.steal_refs(global_refs);
                             Ok(Symbol::new(ent))
                         }
@@ -508,6 +509,7 @@ impl VhdlSymbol {
         let mut refs = RefSet::new();
         // take package name
         let pack_name = tokens.next().take().unwrap().take();
+        // println!("{:?}", pack_name);
         // take the IS keyword
         if tokens
             .next()
@@ -570,6 +572,8 @@ impl VhdlSymbol {
                 f.0 .0
             })
             .collect::<Vec<Vec<Token<VhdlToken>>>>();
+
+        // println!("{:?}", generics);
 
         // compose the declarative items
         while let Some(t) = tokens.peek() {

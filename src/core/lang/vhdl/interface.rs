@@ -132,42 +132,26 @@ use std::iter::Peekable;
 pub struct IdentifierList(Vec<Identifier>);
 
 impl IdentifierList {
-    fn from_tokens<I>(tokens: &mut Peekable<I>) -> Self
+    fn from_tokens<I>(tokens: &mut Peekable<I>) -> Option<Self>
     where
         I: Iterator<Item = lexer::Token<VhdlToken>>,
     {
         let mut inner = Vec::new();
         // accept first identifier
-        inner.push(
-            tokens
-                .next()
-                .unwrap()
-                .as_ref()
-                .as_identifier()
-                .unwrap()
-                .clone(),
-        );
+        inner.push(tokens.next()?.as_ref().as_identifier()?.clone());
         while let Some(tkn) = tokens.peek() {
             // continue on commas
             if tkn.as_ref().check_delimiter(&Delimiter::Comma) == true {
                 tokens.next();
             // collect more identifiers
             } else if tkn.as_ref().as_identifier().is_some() {
-                inner.push(
-                    tokens
-                        .next()
-                        .unwrap()
-                        .as_ref()
-                        .as_identifier()
-                        .unwrap()
-                        .clone(),
-                );
+                inner.push(tokens.next()?.as_ref().as_identifier()?.clone());
             // break on non-identifier or comma
             } else {
                 break;
             }
         }
-        Self(inner)
+        Some(Self(inner))
     }
 }
 
@@ -505,7 +489,7 @@ impl InterfaceDeclarations {
             None
         };
         // collect all identifiers for this type of signal
-        let identifiers = IdentifierList::from_tokens(tokens);
+        let identifiers = IdentifierList::from_tokens(tokens)?;
         // skip past ':' delimiter
         if tokens.next()?.as_ref().check_delimiter(&Delimiter::Colon) == false {
             return None;

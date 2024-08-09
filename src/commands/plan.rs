@@ -1014,6 +1014,7 @@ impl Plan {
                 continue;
             };
 
+            // NOTE: this is a very important and fragile loop
             for dep in &references {
                 let working = LangIdentifier::new_working();
                 // re-route the library prefix to the current unit's library

@@ -400,7 +400,12 @@ impl PartialEq for LangIdentifier {
 
 impl Hash for LangIdentifier {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.as_str().hash(state)
+        // hash according to the rules of each language comparisons
+        match &self {
+            Self::Vhdl(vhdl_name) => vhdl_name.hash(state),
+            Self::Verilog(verilog_name) => verilog_name.hash(state),
+            Self::SystemVerilog(sv_name) => sv_name.hash(state),
+        }
     }
 }
 

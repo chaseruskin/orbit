@@ -160,6 +160,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
         // only read the HDL files
         if crate::core::fileset::is_vhdl(&source_file) == true {
             // parse text into VHDL symbols
+            // println!("parsing vhdl: {}", &source_file);
             let contents = match std::fs::read_to_string(&source_file) {
                 Ok(dump) => dump,
                 Err(e) => return Err(CodeFault(Some(source_file.clone()), Box::new(e))),

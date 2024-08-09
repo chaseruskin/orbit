@@ -23,6 +23,7 @@ use crate::core::{
     ip::IpSpec,
     lang::{lexer::Position, LangIdentifier},
     pkgid::PkgPart,
+    pubfile::Visibility,
     version::{AnyVersion, PartialVersion, Version},
 };
 
@@ -148,6 +149,8 @@ pub enum Error {
     RequiredUuuidMissing(IpSpec, Hint),
     #[error("failed to find a version matching \"{0}\"{1}")]
     VersionNotFound(AnyVersion, Hint),
+    #[error("cannot {0} unit \"{1}\" due to {2} visibility{3}")]
+    UnitIsWrongVisibility(String, LangIdentifier, Visibility, Hint),
 }
 
 #[derive(Debug, PartialEq)]

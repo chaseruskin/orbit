@@ -147,14 +147,19 @@ impl Subcommand<Context> for Get {
 impl Get {
     fn run(&self, ip: &Ip, lang: &Language, is_local: bool, c: &Context) -> Result<(), Fault> {
         // collect all hdl files and parse them
-        let selected_unit = Self::fetch_entity(
-            &ip,
-            &LangIdentifier::Vhdl(self.unit.clone()),
-            lang,
-            is_local,
-        )?;
+        let selected_unit =
+            Self::fetch_entity(&ip, &LangIdentifier::Vhdl(self.unit.clone()), lang)?;
         let unit = match selected_unit {
             Some(lu) => {
+                // verify the unit is only set to public visibility when outside of ip
+                if is_local == false && lu.get_visibility().is_public() == false {
+                    return Err(Error::UnitIsWrongVisibility(
+                        String::from("get"),
+                        lu.get_name(),
+                        lu.get_visibility().clone(),
+                        Hint::ShowAvailableUnitsExternal(ip.get_man().get_ip().into_ip_spec()),
+                    ))?;
+                }
                 // check to make sure it is a component
                 if lu.is_component() {
                     lu
@@ -339,9 +344,8 @@ impl Get {
         ip: &Ip,
         name: &LangIdentifier,
         lang: &Language,
-        is_local: bool,
     ) -> Result<Option<LangUnit>, Fault> {
-        let mut files = ip.collect_units(true, lang, is_local == false)?;
+        let mut files = ip.collect_units(true, lang, false)?;
         let result = files.remove(name);
         Ok(result)
     }

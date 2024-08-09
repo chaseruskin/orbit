@@ -17,6 +17,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## 0.19.1 - unreleased
 
+### Changes
+- uses more descriptive error messages when trying to get or read a design unit that is not set to an allowed visibility for an external ip
+
 ### Fixes
 - fixes hashing of identifiers to use their corresponding hashing rules of their respective language
 - safely handles unwrap() for VHDL package generics

@@ -121,7 +121,7 @@ impl Subcommand<Context> for Read {
                         Some(i) => i,
                         None => panic!("version does not exist for this ip"),
                     };
-                    self.run(inst, dest.as_ref(), &c.get_languages())
+                    self.run(inst, dest.as_ref(), &c.get_languages(), false)
                 }
                 None => {
                     // the ip does not exist
@@ -138,14 +138,20 @@ impl Subcommand<Context> for Read {
                 None => return Err(AnyError(format!("not within an existing ip")))?,
             };
 
-            self.run(&ip, dest.as_ref(), &c.get_languages())
+            self.run(&ip, dest.as_ref(), &c.get_languages(), true)
         }
     }
 }
 
 impl Read {
-    fn run(&self, target: &Ip, dest: Option<&PathBuf>, mode: &Language) -> Result<(), Fault> {
-        let (path, loc, lang) = Self::read(&self.unit, &target, dest, mode)?;
+    fn run(
+        &self,
+        target: &Ip,
+        dest: Option<&PathBuf>,
+        mode: &Language,
+        is_local: bool,
+    ) -> Result<(), Fault> {
+        let (path, loc, lang) = Self::read(&self.unit, &target, dest, mode, is_local)?;
 
         // dump the file contents of the source code to the console if there was no destination
         let print_to_console = dest.is_none();
@@ -251,24 +257,40 @@ impl Read {
         ip: &Ip,
         dest: Option<&PathBuf>,
         mode: &Language,
+        is_local: bool,
     ) -> Result<(PathBuf, Position, Lang), Fault> {
         // find the unit
-        let units = ip.collect_units(true, mode, true)?;
+        let units = ip.collect_units(true, mode, false)?;
 
         // get the file data for the primary design unit
         let (source, position) = match units.get_key_value(unit) {
-            Some((_, unit)) => (
-                unit.get_source_file(),
-                match unit.get_lang() {
-                    Lang::Vhdl => unit.get_vhdl_symbol().unwrap().get_position().clone(),
-                    Lang::Verilog => unit.get_verilog_symbol().unwrap().get_position().clone(),
-                    Lang::SystemVerilog => unit
-                        .get_systemverilog_symbol()
-                        .unwrap()
-                        .get_position()
-                        .clone(),
-                },
-            ),
+            Some((name, unit)) => {
+                // verify the unit is not private when trying to read from nonlocal ip
+                if unit.get_visibility().is_private() == true && is_local == false {
+                    let spec = ip.get_man().get_ip().into_ip_spec();
+                    return Err(Error::UnitIsWrongVisibility(
+                        String::from("read"),
+                        name.clone(),
+                        unit.get_visibility().clone(),
+                        Hint::ShowAvailableUnitsExternal(spec),
+                    ))?;
+                } else {
+                    (
+                        unit.get_source_file(),
+                        match unit.get_lang() {
+                            Lang::Vhdl => unit.get_vhdl_symbol().unwrap().get_position().clone(),
+                            Lang::Verilog => {
+                                unit.get_verilog_symbol().unwrap().get_position().clone()
+                            }
+                            Lang::SystemVerilog => unit
+                                .get_systemverilog_symbol()
+                                .unwrap()
+                                .get_position()
+                                .clone(),
+                        },
+                    )
+                }
+            }
             None => {
                 let spec = ip.get_man().get_ip().into_ip_spec();
                 return Err(GetError::SuggestShow(

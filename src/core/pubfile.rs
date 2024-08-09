@@ -61,7 +61,7 @@ impl PublicList {
     }
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone)]
 pub enum Visibility {
     Public,
     Protected,

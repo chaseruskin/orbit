@@ -76,7 +76,10 @@ impl VerilogSymbol {
 
     pub fn as_module(&self) -> Option<&Module> {
         match &self {
-            Self::Module(m) => Some(m),
+            Self::Module(m) => match m.get_name().is_nonuser_name() {
+                true => None,
+                false => Some(m),
+            },
             _ => None,
         }
     }

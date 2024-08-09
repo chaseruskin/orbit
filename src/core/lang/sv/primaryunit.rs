@@ -42,6 +42,10 @@ impl PrimaryUnit {
         &self.unit.name
     }
 
+    pub fn has_valid_name(&self) -> bool {
+        self.unit.name.is_nonuser_name() == false
+    }
+
     pub fn get_unit(&self) -> &Unit {
         &self.unit
     }
@@ -148,6 +152,7 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
             // transform into primary design units
             let units: HashMap<Identifier, PrimaryUnit> = symbols
                 .into_iter()
+                .filter(|sym| sym.as_name().unwrap().is_nonuser_name() == false)
                 .filter_map(|sym: SystemVerilogSymbol| {
                     let name = sym.as_name();
                     match sym {

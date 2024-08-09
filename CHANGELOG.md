@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.19.2 - unreleased
+
+### Fixes
+- improves robustness for verilog/sv module declaration parsing
+
 ## 0.19.1
 
 ### Changes

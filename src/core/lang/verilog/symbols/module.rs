@@ -203,6 +203,7 @@ impl Module {
         // take module name
         let mod_name = match tokens.next().take().unwrap().take() {
             SystemVerilogToken::Identifier(id) => id,
+            SystemVerilogToken::Directive(cd) => Identifier::Directive(cd),
             _ => return Err(VerilogError::ModuleNameIsNotIdentifier),
         };
 

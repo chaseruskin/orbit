@@ -32,6 +32,8 @@ pub enum Identifier {
     Basic(String),
     Escaped(String),
     System(String),
+    /// A module can have this name after the tokenizing when parsing a module.
+    Directive(String),
 }
 
 impl Eq for Identifier {}
@@ -47,6 +49,7 @@ impl Identifier {
             Self::Basic(id) => id.as_ref(),
             Self::Escaped(id) => id.as_ref(),
             Self::System(id) => id.as_ref(),
+            Self::Directive(id) => id.as_ref(),
         }
     }
 
@@ -56,6 +59,7 @@ impl Identifier {
             Self::Basic(s) => Self::Basic(s.clone() + ext),
             Self::Escaped(s) => Self::Escaped(s.clone() + ext),
             Self::System(s) => Self::System(s.clone()),
+            Self::Directive(s) => Self::Directive(s.clone()),
         }
     }
 
@@ -64,13 +68,14 @@ impl Identifier {
             Self::Basic(s) => s.len(),
             Self::Escaped(s) => s.len(),
             Self::System(s) => s.len(),
+            Self::Directive(s) => s.len(),
         }
     }
 
     /// Checks if the identifier is a system task/function.
-    fn is_system(&self) -> bool {
+    pub fn is_nonuser_name(&self) -> bool {
         match self {
-            Self::System(_) => true,
+            Self::System(_) | Self::Directive(_) => true,
             _ => false,
         }
     }
@@ -82,7 +87,8 @@ impl Hash for Identifier {
         match self {
             Self::Basic(id) => id.to_lowercase().hash(state),
             Self::Escaped(id) => id.hash(state),
-            Self::System(id) => id.hash(state),
+            Self::System(id) => format!("${}", id).hash(state),
+            Self::Directive(id) => format!("`{}", id).hash(state),
         }
     }
 }
@@ -125,9 +131,9 @@ impl FromStr for Identifier {
 impl std::cmp::PartialEq for Identifier {
     fn eq(&self, other: &Self) -> bool {
         // compare the two strings
-        if self.is_system() == true && other.is_system() == true {
+        if self.is_nonuser_name() == true && other.is_nonuser_name() == true {
             self.as_str() == other.as_str()
-        } else if self.is_system() == true || other.is_system() == true {
+        } else if self.is_nonuser_name() == true || other.is_nonuser_name() == true {
             false
         } else {
             self.as_str() == other.as_str()
@@ -140,7 +146,8 @@ impl Display for Identifier {
         match self {
             Self::Basic(id) => write!(f, "{}", id),
             Self::Escaped(id) => write!(f, "\\{}", id),
-            Self::System(id) => write!(f, "{}", id),
+            Self::System(id) => write!(f, "${}", id),
+            Self::Directive(id) => write!(f, "`{}", id),
         }
     }
 }

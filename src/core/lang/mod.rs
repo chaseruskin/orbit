@@ -235,6 +235,14 @@ impl LangUnit {
         }
     }
 
+    pub fn has_concrete_name(&self) -> bool {
+        match &self {
+            Self::Vhdl(_, _) => true,
+            Self::Verilog(u, _) => u.has_valid_name(),
+            Self::SystemVerilog(u, _) => u.has_valid_name(),
+        }
+    }
+
     /// Returns the position where the design element was found in its source file.
     pub fn get_position(&self) -> &Position {
         match &self {

@@ -15,7 +15,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.19.0 - unreleased
+## 0.19.0
 
 ### Features
 - adds support for parsing sv modports and using package scopes as types for module port declarations
@@ -26,6 +26,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - improves component detection and filtering for `orbit tree` and dependency analysis during planning stage
 - enhances `orbit remove` to delete ip from cache and archive and ask confirmation prompt by default before doing destructive task
 - removes unncessary `orbit download` command; the recommended/common usage is to use `orbit install` to add ip and its reverse action `orbit remove` to uninstall ip
+- minor updates and polishing to command documentation/man pages
 
 ### Fixes
 - error message for duplicate identifiers across languages now displays nicer file paths with line and column where units were declared

@@ -27,6 +27,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - enhances `orbit remove` to delete ip from cache and archive and ask confirmation prompt by default before doing destructive task
 - removes unncessary `orbit download` command; the recommended/common usage is to use `orbit install` to add ip and its reverse action `orbit remove` to uninstall ip
 
+### Fixes
+- error message for duplicate identifiers across languages now displays nicer file paths with line and column where units were declared
+
 ## 0.18.0
 
 ### Features

@@ -21,7 +21,7 @@ use std::{fmt::Display, path::PathBuf};
 use crate::core::{
     blueprint::Scheme,
     ip::IpSpec,
-    lang::LangIdentifier,
+    lang::{lexer::Position, LangIdentifier},
     pkgid::PkgPart,
     version::{AnyVersion, PartialVersion, Version},
 };
@@ -80,8 +80,8 @@ pub enum Error {
     IpGraphFailed(LastError),
     #[error("failed to parse identifier: {0}")]
     CrossIdentifierParsingFailed(LastError),
-    #[error("duplicate identifier \"{0}\" found in the following source files:\n\n  location 1: {1:?}\n  location 2: {2:?}{3}")]
-    DuplicateIdentifiersCrossLang(String, String, String, Hint),
+    #[error("duplicate identifier \"{0}\" found in the following source files:\n\n  location 1: {1}{2}\n  location 2: {3}{4}{5}")]
+    DuplicateIdentifiersCrossLang(String, String, Position, String, Position, Hint),
     #[error(
         "blueprint plan \"{0}\" not supported by the current target; supported plans are: {1:?}"
     )]

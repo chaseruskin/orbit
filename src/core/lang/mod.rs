@@ -23,18 +23,20 @@ pub mod lexer;
 pub mod parser;
 
 pub mod node;
-pub mod unit;
 
 pub mod reference;
 
 use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::AnyError;
+use crate::util::filesystem;
+use lexer::Position;
 use serde_derive::Deserialize;
 use serde_derive::Serialize;
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::hash::Hash;
+use std::path::PathBuf;
 use std::str::FromStr;
 use sv::symbols::SystemVerilogSymbol;
 use toml_edit::InlineTable;
@@ -230,6 +232,15 @@ impl LangUnit {
             Self::Vhdl(u, _) => LangIdentifier::Vhdl(u.get_name().clone()),
             Self::Verilog(u, _) => LangIdentifier::Verilog(u.get_name().clone()),
             Self::SystemVerilog(u, _) => LangIdentifier::SystemVerilog(u.get_name().clone()),
+        }
+    }
+
+    /// Returns the position where the design element was found in its source file.
+    pub fn get_position(&self) -> &Position {
+        match &self {
+            Self::Vhdl(u, _) => u.get_unit().get_symbol().unwrap().get_position(),
+            Self::Verilog(u, _) => u.get_unit().get_symbol().unwrap().get_position(),
+            Self::SystemVerilog(u, _) => u.get_unit().get_symbol().unwrap().get_position(),
         }
     }
 
@@ -473,36 +484,56 @@ pub fn collect_units(
             LangUnit::Vhdl(v, SharedData::new()),
         );
     }
+
     // add verilog units and check for duplicates across languages
     for (k, v) in verilog_units {
-        let source_file = v.get_unit().get_source_file().to_string();
         let existing = results.insert(
             LangIdentifier::Verilog(k),
             LangUnit::Verilog(v, SharedData::new()),
         );
         if let Some(existing_unit) = existing {
+            let old_unit = results.get(&existing_unit.get_name()).unwrap();
             // return duplicate id error
+            let current_dir = std::env::current_dir().unwrap();
+            let location_1 = filesystem::remove_base(
+                &current_dir,
+                &PathBuf::from(existing_unit.get_source_file()),
+            );
+            let location_2 =
+                filesystem::remove_base(&current_dir, &PathBuf::from(old_unit.get_source_file()));
             return Err(Error::DuplicateIdentifiersCrossLang(
                 existing_unit.get_name().to_string(),
-                existing_unit.get_source_file().to_string(),
-                source_file,
+                filesystem::into_std_str(location_1),
+                existing_unit.get_position().clone(),
+                filesystem::into_std_str(location_2),
+                old_unit.get_position().clone(),
                 Hint::ResolveDuplicateIds1,
             ))?;
         }
     }
+
     // add sv units and check for duplicates across languages
     for (k, v) in systemverilog_units {
-        let source_file = v.get_unit().get_source_file().to_string();
         let existing = results.insert(
             LangIdentifier::SystemVerilog(k),
             LangUnit::SystemVerilog(v, SharedData::new()),
         );
         if let Some(existing_unit) = existing {
+            let old_unit = results.get(&existing_unit.get_name()).unwrap();
             // return duplicate id error
+            let current_dir = std::env::current_dir().unwrap();
+            let location_1 = filesystem::remove_base(
+                &current_dir,
+                &PathBuf::from(existing_unit.get_source_file()),
+            );
+            let location_2 =
+                filesystem::remove_base(&current_dir, &PathBuf::from(old_unit.get_source_file()));
             return Err(Error::DuplicateIdentifiersCrossLang(
                 existing_unit.get_name().to_string(),
-                existing_unit.get_source_file().to_string(),
-                source_file,
+                filesystem::into_std_str(location_1),
+                existing_unit.get_position().clone(),
+                filesystem::into_std_str(location_2),
+                old_unit.get_position().clone(),
                 Hint::ResolveDuplicateIds1,
             ))?;
         }

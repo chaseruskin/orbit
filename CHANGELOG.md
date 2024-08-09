@@ -15,7 +15,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.19.1 - unreleased
+## 0.19.1
 
 ### Changes
 - uses more descriptive error messages when trying to get or read a design unit that is not set to an allowed visibility for an external ip

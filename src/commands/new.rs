@@ -18,12 +18,11 @@
 use crate::commands::helps::new;
 use crate::commands::orbit::AnyResult;
 use crate::core::context::Context;
-use crate::core::ip::Ip;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
 use crate::core::pkgid::PkgPart;
 use crate::error::{Error, Hint, LastError};
-use crate::util::filesystem::{Standardize, ORBIT_IGNORE_FILE};
+use crate::util::filesystem::Standardize;
 use std::borrow::Cow;
 use std::io::Write;
 use std::path::PathBuf;
@@ -52,7 +51,7 @@ impl Subcommand<Context> for New {
         })
     }
 
-    fn execute(self, c: &Context) -> proc::Result {
+    fn execute(self, _: &Context) -> proc::Result {
         // verify we are not already in an ip directory
         {
             // resolve any relative path
@@ -75,7 +74,7 @@ impl Subcommand<Context> for New {
 
         let ip_name = Self::extract_name(self.name.as_ref(), &self.path)?;
 
-        match self.create_ip(&ip_name, &c.get_target_dir()) {
+        match self.create_ip(&ip_name) {
             Ok(r) => Ok(r),
             Err(e) => Err(Error::FailedToCreateNewIp(LastError(e.to_string())))?,
         }
@@ -115,7 +114,7 @@ impl New {
 
 impl New {
     /// Creates a new directory at the given `dest` with a new manifest file.
-    fn create_ip(&self, ip: &PkgPart, target_dir: &str) -> AnyResult<()> {
+    fn create_ip(&self, ip: &PkgPart) -> AnyResult<()> {
         // create the directory
         std::fs::create_dir_all(&self.path)?;
 
@@ -126,21 +125,13 @@ impl New {
             p
         };
 
-        let ignore_path = {
-            let mut p = self.path.clone();
-            p.push(ORBIT_IGNORE_FILE);
-            p
-        };
-
         let lib_str = match &self.library {
             Some(s) => Some(s.to_string()),
             None => None,
         };
 
         let mut manifest = std::fs::File::create(&manifest_path)?;
-        let mut ignore = std::fs::File::create(&ignore_path)?;
         manifest.write_all(Manifest::write_empty_manifest(&ip, &lib_str).as_bytes())?;
-        ignore.write_all(Ip::write_default_ignore_file(target_dir).as_bytes())?;
         Ok(())
     }
 }

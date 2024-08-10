@@ -21,33 +21,22 @@ use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::ip::IpSpec;
 use crate::core::ip::PartialIpSpec;
-use crate::core::lang::parser::Parse;
-use crate::core::lang::parser::Symbol;
 use crate::core::lang::sv::format::SystemVerilogFormat;
 use crate::core::lang::verilog::symbols::module::Module;
 use crate::core::lang::vhdl::format::VhdlFormat;
 use crate::core::lang::vhdl::interface;
 use crate::core::lang::vhdl::interface::Architectures;
-use crate::core::lang::vhdl::primaryunit::HdlNamingError;
-use crate::core::lang::vhdl::symbols::architecture::Architecture;
 use crate::core::lang::vhdl::symbols::entity::Entity;
-use crate::core::lang::vhdl::symbols::VHDLParser;
-use crate::core::lang::vhdl::symbols::VhdlSymbol;
 use crate::core::lang::vhdl::token::Identifier as VhdlIdentifier;
-use crate::core::lang::vhdl::token::VhdlTokenizer;
 use crate::core::lang::Lang;
 use crate::core::lang::LangIdentifier;
 use crate::core::lang::LangUnit;
 use crate::core::lang::Language;
-use crate::core::manifest::Manifest;
 use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::{AnyError, Fault};
 use colored::Colorize;
-use std::collections::HashMap;
 use std::env;
-use std::path::PathBuf;
-use std::str::FromStr;
 
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
@@ -368,169 +357,6 @@ impl std::fmt::Display for GetError {
             Self::SuggestShow(err, hint) => {
                 write!(f, "{}{}", err, hint)
             }
-        }
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum HdlComponent {
-    Entity(Entity),
-    Module(Module),
-}
-
-impl HdlComponent {
-    pub fn get_name(&self) -> &LangIdentifier {
-        todo!()
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use std::path::PathBuf;
-    use std::str::FromStr;
-
-    #[test]
-    fn serialize_entity() {
-        const EXPECTED_STR: &str = r#"{
-  "identifier": "or_gate",
-  "generics": [
-    {
-      "identifier": "N",
-      "mode": "in",
-      "type": "positive",
-      "default": "8"
-    }
-  ],
-  "ports": [
-    {
-      "identifier": "a",
-      "mode": "in",
-      "type": "std_logic_vector(N-1 downto 0)",
-      "default": null
-    },
-    {
-      "identifier": "b",
-      "mode": "in",
-      "type": "std_logic_vector(N-1 downto 0)",
-      "default": null
-    },
-    {
-      "identifier": "q",
-      "mode": "out",
-      "type": "std_logic_vector(N-1 downto 0)",
-      "default": null
-    }
-  ],
-  "architectures": [
-    "rtl",
-    "other"
-  ],
-  "language": "vhdl"
-}"#;
-        let ent = Get::fetch_entity_old(
-            &VhdlIdentifier::from_str("or_gate").unwrap(),
-            &PathBuf::from("./tests/t2"),
-            &Manifest::new(),
-        )
-        .unwrap();
-        let json_str = serde_json::to_string_pretty(&ent).unwrap();
-        assert_eq!(json_str, EXPECTED_STR);
-    }
-}
-
-impl Get {
-    /// Parses through the vhdl files and returns a desired entity struct.
-    fn fetch_entity_old(
-        iden: &VhdlIdentifier,
-        dir: &PathBuf,
-        man: &Manifest,
-    ) -> Result<Entity, Fault> {
-        let files = crate::util::filesystem::gather_current_files(&dir, false);
-        // @todo: generate all units first (store architectures, and entities, and then process)
-        let mut result: Option<(String, Entity)> = None;
-        // store map of all architectures while parsing all code
-        let mut architectures: HashMap<VhdlIdentifier, Vec<Architecture>> = HashMap::new();
-        for f in files {
-            // lex and parse VHDL files
-            if crate::core::fileset::is_vhdl(&f) == true {
-                let text = std::fs::read_to_string(&f)?;
-
-                // pull all architectures
-                let units: Vec<Symbol<VhdlSymbol>> =
-                    VHDLParser::parse(VhdlTokenizer::from_str(&text)?.into_tokens())
-                        .into_iter()
-                        .filter_map(|f| {
-                            if f.is_ok() {
-                                let unit = f.unwrap();
-                                match unit.as_ref().as_architecture() {
-                                    Some(_) => {
-                                        let arch = unit.take().into_architecture().unwrap();
-                                        match architectures.get_mut(arch.entity()) {
-                                            Some(list) => {
-                                                list.push(arch);
-                                                ()
-                                            }
-                                            None => {
-                                                architectures
-                                                    .insert(arch.entity().clone(), vec![arch]);
-                                                ()
-                                            }
-                                        }
-                                        None
-                                    }
-                                    None => Some(unit),
-                                }
-                            } else {
-                                None
-                            }
-                        })
-                        .collect();
-
-                // detect entity
-                let requested_entity = units
-                    .into_iter()
-                    .filter_map(|r| r.take().into_entity())
-                    .find(|p| p.get_name() == iden);
-
-                // verify entity was not already detected (duplicate)
-                if let Some(ent) = requested_entity {
-                    match result {
-                        Some((src_file, dupe)) => {
-                            return Err(HdlNamingError::DuplicateIdentifier(
-                                dupe.get_name().to_string(),
-                                PathBuf::from(src_file),
-                                dupe.get_position().clone(),
-                                PathBuf::from(f),
-                                ent.get_position().clone(),
-                            ))?
-                        }
-                        None => result = Some((f, ent)),
-                    }
-                }
-            // lex and parse verilog files
-            } else if crate::core::fileset::is_verilog(&f) == true {
-                let _text = std::fs::read_to_string(&f)?;
-            }
-        }
-        // @MARK: do not show results if the entity is private
-
-        match result {
-            Some((_, mut entity)) => {
-                match architectures.remove(entity.get_name()) {
-                    Some(archs) => {
-                        for arch in archs {
-                            entity.link_architecture(arch)
-                        }
-                    }
-                    None => (),
-                }
-                Ok(entity)
-            }
-            None => Err(GetError::UnitNotFound(
-                iden.clone().into_lang_id(),
-                man.get_ip().into_ip_spec(),
-            ))?,
         }
     }
 }

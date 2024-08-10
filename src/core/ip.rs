@@ -32,9 +32,9 @@ use super::lang::{LangUnit, Language};
 use super::lockfile::LockFile;
 use super::lockfile::IP_LOCK_FILE;
 use super::manifest::FromFile;
-use super::pubfile::PublicList;
-use super::pubfile::Visibility;
 use super::version::PartialVersion;
+use super::visibility::VipList;
+use super::visibility::Visibility;
 use crate::core::lockfile::LockEntry;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::ORBIT_METADATA_FILE;
@@ -145,17 +145,17 @@ impl From<IpArchive> for Ip {
 
 impl Ip {
     pub fn has_public_list(&self) -> bool {
-        PublicList::new(&self.get_root(), self.get_man().get_ip().get_publics())
+        VipList::new(&self.get_root(), self.get_man().get_ip().get_publics())
             .unwrap()
             .exists()
     }
 
-    pub fn into_public_list(&self) -> PublicList {
-        PublicList::new(&self.get_root(), self.get_man().get_ip().get_publics()).unwrap()
+    pub fn into_public_list(&self) -> VipList {
+        VipList::new(&self.get_root(), self.get_man().get_ip().get_publics()).unwrap()
     }
 
     /// Generates a list of files that are known to either be public or protected.
-    pub fn into_non_private_list(&self) -> PublicList {
+    pub fn into_non_private_list(&self) -> VipList {
         let meta = Ip::read_cache_metadata(self.get_root());
         let mut list = match meta {
             Some(m) => match m.protected.len() {
@@ -173,7 +173,7 @@ impl Ip {
                 None => Some(public.clone()),
             };
         }
-        PublicList::new(&self.get_root(), &list).unwrap()
+        VipList::new(&self.get_root(), &list).unwrap()
     }
 
     pub fn get_root(&self) -> &PathBuf {
@@ -261,7 +261,7 @@ impl Ip {
         let man = Manifest::from_file(&man_path)?;
 
         // verify the public list is okay
-        PublicList::new(&root, man.get_ip().get_publics())?;
+        VipList::new(&root, man.get_ip().get_publics())?;
 
         if is_working_ip == true {
             // verify there are no files that created by user that are reserved for orbit's internal use
@@ -567,15 +567,14 @@ impl Ip {
         lang_mode: &Language,
         hide_private: bool,
     ) -> Result<HashMap<LangIdentifier, LangUnit>, CodeFault> {
-        let dir = self.get_root();
         let public_list = self.into_public_list();
         // try to read from metadata file
-        match force == false && Self::read_units_from_metadata(&dir).is_some() {
+        match force == false && Self::read_units_from_metadata(&self.get_root()).is_some() {
             // use precomputed result
-            true => Ok(Self::read_units_from_metadata(&dir).unwrap()),
+            true => Ok(Self::read_units_from_metadata(&self.get_root()).unwrap()),
             false => {
                 // collect all files
-                let files = filesystem::gather_current_files(&dir, false);
+                let files = self.gather_current_files();
 
                 let mut map = lang::collect_units(&files, lang_mode)?;
 
@@ -657,6 +656,41 @@ impl Ip {
         }
     }
 
+    pub fn get_include_list(&self) -> Result<VipList, Fault> {
+        VipList::new(&self.root, &self.get_man().get_ip().get_include())
+    }
+
+    pub fn get_exclude_list(&self) -> Result<VipList, Fault> {
+        VipList::new(&self.root, &self.get_man().get_ip().get_exclude())
+    }
+
+    pub fn gather_current_files(&self) -> Vec<String> {
+        let inc = match self.get_include_list() {
+            Ok(vip) => match vip.exists() {
+                true => Some(vip),
+                false => None,
+            },
+            Err(_) => None,
+        };
+        let exc = match self.get_exclude_list() {
+            Ok(vip) => match vip.exists() {
+                true => Some(vip),
+                false => None,
+            },
+            Err(_) => None,
+        };
+        filesystem::gather_current_files(&self.root, false)
+            .into_iter()
+            .filter(|f| match &inc {
+                Some(vip) => vip.is_included(f.as_ref()) == true,
+                None => match &exc {
+                    Some(vip) => vip.is_included(f.as_ref()) == false,
+                    None => true,
+                },
+            })
+            .collect()
+    }
+
     /// Compile a list of referenced paths to make sure are copied into a directory
     /// when moving an IP around the filesystem.
     pub fn get_files_to_keep(&self) -> HashSet<PathBuf> {
@@ -667,11 +701,6 @@ impl Ip {
             list.insert(filesystem::resolve_rel_path2(self.get_root(), readme));
         }
         list
-    }
-
-    /// Writes the basic .orbitignore file.
-    pub fn write_default_ignore_file(target_dir: &str) -> String {
-        format!("/{}\n", target_dir)
     }
 }
 

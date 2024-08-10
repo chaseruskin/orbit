@@ -15,7 +15,9 @@ Every manifest file consists of the following sections:
     - [keywords](#the-keywords-field) - A list of simple words categorizing the ip.
     - [source](#the-source-field) - The URL for remotely retrieving the ip.
     - [channels](#the-channels-field) - The channels to update when publishing the ip.
-    - [public](#the-public-field) - The list of files to be visible to other ip.
+    - [public](#the-public-field) - Files to be visible to other ip.
+    - [include](#the-include-field) - Files to include during file discovery.
+    - [exclude](#the-exclude-field) - Files to exclude during file discovery.
     - [readme](#the-readme-field) - The path to the README file.
     - [[metadata]](#the-metadata-section) - An unchecked section for custom fields.
 - [[dependencies]](#the-dependencies-section) - Ip dependencies.
@@ -115,6 +117,32 @@ public = ["/rtl"]
 The `public` field can be used to explicitly specify which files are visible to other ip when being when being referenced as a dependency. The list contains glob-style patterns that conform to .gitignore file semantics, and are always compared relative that ip's root directory.
 
 If no `public` field is present, then all files are implicitly specified as visible (public) to other ip when being referenced as a dependency.
+
+### The `include` field
+
+The `include` field can be used to explicitly specify which files to include during source code analysis.
+
+``` toml
+[ip]
+# ...
+include = ["/rtl"]
+```
+
+Using `include` and `exclude` is mutually exclusive; setting `include` will override any value of `exclude`. If `include` and `exclude` are omitted, then all files from the root of the ip will be included.
+
+### The `exclude` field
+
+The `exclude` field can be used to explicitly specify which files to exclude during source code analysis.
+
+``` toml
+[ip]
+# ...
+exclude = ["/deprec"]
+```
+
+Using `include` and `exclude` is mutually exclusive; setting `include` will override any value of `exclude`. If `include` and `exclude` are omitted, then all files from the root of the ip will be included.
+
+Files that are always excluded are those found in directories that contain a "CACHEDIR.TAG" file. For example, every target output directory Orbit creates is excluded because they contain this file.
 
 ### The `readme` field
 

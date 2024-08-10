@@ -15,24 +15,27 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+use std::fmt::Display;
 use std::path::PathBuf;
-use std::{error::Error, fmt::Display};
 
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 
+use crate::util::anyerror::Fault;
+
+/// A Very-Important-Path List (VipList) that follows .gitignore syntax.
 #[derive(Debug)]
-pub struct PublicList {
+pub struct VipList {
     inner: Option<Gitignore>,
 }
 
-impl Default for PublicList {
+impl Default for VipList {
     fn default() -> Self {
         Self { inner: None }
     }
 }
 
-impl PublicList {
-    pub fn new(root: &PathBuf, list: &Option<Vec<String>>) -> Result<Self, Box<dyn Error>> {
+impl VipList {
+    pub fn new(root: &PathBuf, list: &Option<Vec<String>>) -> Result<Self, Fault> {
         let plist = match list {
             Some(globs) => {
                 let mut builder = GitignoreBuilder::new(&root);

@@ -293,6 +293,8 @@ impl Manifest {
                 public: None,
                 library: None,
                 readme: None,
+                include: None,
+                exclude: None,
                 authors: None,
                 metadata: HashMap::new(),
             },
@@ -462,8 +464,13 @@ pub struct Package {
     source: Source,
     /// Known channels where this ip should be published to
     channels: Option<Vec<String>>,
-    /// Filepaths that should be explictly known to the user for ip referencing.
+    /// Filepaths that should be explictly known to the user for ip referencing
     public: Option<Vec<String>>,
+    /// Filepaths that should be explicitly included during source code analysis
+    include: Option<Vec<String>>,
+    /// Filepaths that should be explicitly excluded during source code analysis
+    exclude: Option<Vec<String>>,
+    /// Filepath to the project's README.
     readme: Option<PathBuf>,
     /// Ignore this field and never use it for any processing
     #[serde(skip_serializing_if = "map_is_empty", default)]
@@ -506,6 +513,14 @@ impl Package {
 
     pub fn get_readme(&self) -> &Option<PathBuf> {
         &self.readme
+    }
+
+    pub fn get_include(&self) -> &Option<Vec<String>> {
+        &self.include
+    }
+
+    pub fn get_exclude(&self) -> &Option<Vec<String>> {
+        &self.exclude
     }
 }
 

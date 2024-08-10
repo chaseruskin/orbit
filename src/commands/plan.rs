@@ -343,8 +343,7 @@ impl Plan {
 
         // [!] collect user-defined filesets
         {
-            let current_files: Vec<String> =
-                filesystem::gather_current_files(&working_ip.get_root(), false);
+            let current_files: Vec<String> = working_ip.gather_current_files();
 
             let mut vtable = StrSwapTable::new();
             // variables could potentially store empty strings if units are not set

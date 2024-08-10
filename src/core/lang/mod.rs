@@ -53,7 +53,7 @@ type VhdlPrimaryUnit = vhdl::primaryunit::PrimaryUnit;
 type VerilogPrimaryUnit = verilog::primaryunit::PrimaryUnit;
 type SystemVerilogPrimaryUnit = sv::primaryunit::PrimaryUnit;
 
-use super::pubfile::{PublicList, Visibility};
+use super::visibility::{VipList, Visibility};
 
 pub fn read_to_string(source_file: &str) -> Result<String, Fault> {
     let contents = match std::fs::read_to_string(&source_file) {
@@ -227,7 +227,7 @@ impl LangUnit {
     }
 
     /// Checks if the module is public.
-    pub fn is_listed_public(&self, plist: &PublicList) -> bool {
+    pub fn is_listed_public(&self, plist: &VipList) -> bool {
         plist.is_included(self.get_source_file())
     }
 

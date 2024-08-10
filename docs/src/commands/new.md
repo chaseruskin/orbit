@@ -14,7 +14,7 @@ orbit new [options] <path>
 
 Creates a new ip at the target directory `<path>`. The path is assumed to not
 already exist. A new directory will be created at the file system destination
-that contains a minimal manifest and .orbitignore file.
+that contains a minimal manifest file.
 
 If no name is supplied, then the ip's name defaults to the final directory name
 taken from `<path>`. Using the `--name` option allows this field to be

@@ -345,7 +345,8 @@ pub fn build_ip_file_list<'a>(
     ip_graph.get_map().iter().for_each(|(_, ip)| {
         let inner_ip = ip.as_ref().as_ip();
         let non_private_list = inner_ip.into_non_private_list();
-        crate::util::filesystem::gather_current_files(&inner_ip.get_root(), false)
+        inner_ip
+            .gather_current_files()
             .into_iter()
             .filter(|f| {
                 working_ip == inner_ip
@@ -457,7 +458,7 @@ impl<'a> IpNode<'a> {
         let temp_ip = Ip::load(temp_path, false).unwrap();
 
         // edit all vhdl files
-        let files = crate::util::filesystem::gather_current_files(temp_ip.get_root(), false);
+        let files = temp_ip.gather_current_files();
         for file in &files {
             // perform dst on the data (VHDL)
             if fileset::is_vhdl(&file) == true {

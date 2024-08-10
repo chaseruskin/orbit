@@ -25,7 +25,6 @@ So, what files are inside an ip?
 - _Auxiliary files_: Any additional files that do not store source code
 - _Manifest file_ (`Orbit.toml`): Stores the ip's metadata provided by the user
 - _Lock file_ (`Orbit.lock`): Saves the ip's world state for reproducibility purposes
-- _Ignore file_ (`.orbitignore`): Stores a list of file patterns that Orbit uses to ignore matching file paths during file discovery
 
 All files __except the lock file__ are expected to be edited by the user. Orbit automatically maintains the lock file to ensure it can reproduce the ip's world state in the future.
 

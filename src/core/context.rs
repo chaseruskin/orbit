@@ -33,7 +33,7 @@ use super::lang::sv::format::SystemVerilogFormat;
 use super::lang::vhdl::format::VhdlFormat;
 use super::lang::Language;
 
-const CACHE_TAG_FILE: &str = "CACHEDIR.TAG";
+pub const CACHE_TAG_FILE: &str = "CACHEDIR.TAG";
 
 const ORBIT_HIDDEN_DIR: &str = ".orbit";
 

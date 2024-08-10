@@ -15,6 +15,7 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+use crate::core::context::CACHE_TAG_FILE;
 use crate::core::fileset;
 use crate::core::lockfile;
 use crate::core::manifest;
@@ -31,7 +32,7 @@ use std::path::{Component, Path};
 
 use super::anyerror::Fault;
 
-/// Recursively walks the given `path` and ignores files defined in a .gitignore file or .orbitignore files.
+/// Recursively walks the given `path` and ignores files defined in a .gitignore file.
 ///
 /// Returns the resulting list of filepath strings. This function silently skips result errors
 /// while walking. The collected set of paths are also standardized to use forward slashes '/'.
@@ -41,17 +42,22 @@ use super::anyerror::Fault;
 ///
 /// Ignores ORBIT_SUM_FILE, .git directory, ORBIT_METADATA_FILE, and IP_LOCK_FILE.
 pub fn gather_current_files(path: &PathBuf, strip_base: bool) -> Vec<String> {
-    let m = WalkBuilder::new(path)
+    let walker = WalkBuilder::new(path)
         .hidden(false)
-        .add_custom_ignore_filename(ORBIT_IGNORE_FILE)
-        .filter_entry(|p| match p.file_name().to_str().unwrap() {
-            manifest::ORBIT_SUM_FILE | lockfile::IP_LOCK_FILE | manifest::ORBIT_METADATA_FILE => {
+        .filter_entry(|p| {
+            if p.path().is_dir() && p.path().join(CACHE_TAG_FILE).exists() == true {
                 false
+            } else {
+                match p.file_name().to_str().unwrap() {
+                    manifest::ORBIT_SUM_FILE
+                    | lockfile::IP_LOCK_FILE
+                    | manifest::ORBIT_METADATA_FILE => false,
+                    _ => true,
+                }
             }
-            _ => true,
         })
         .build();
-    let mut files: Vec<String> = m
+    let mut files: Vec<String> = walker
         .filter_map(|result| {
             match result {
                 Ok(entry) => {
@@ -177,7 +183,7 @@ pub fn remove_base(base: &PathBuf, full: &PathBuf) -> PathBuf {
 }
 
 pub fn is_orbit_metadata(s: &str) -> bool {
-    s == manifest::IP_MANIFEST_FILE || s == ORBIT_IGNORE_FILE || s == lockfile::IP_LOCK_FILE
+    s == manifest::IP_MANIFEST_FILE || s == lockfile::IP_LOCK_FILE
 }
 
 pub fn is_minimal(name: &str) -> bool {
@@ -206,11 +212,16 @@ pub fn copy(
     // gather list of paths to copy
     let mut from_paths = Vec::new();
 
-    // respect .orbitignore by using `WalkBuilder`
     let mut walker = WalkBuilder::new(&source);
     walker.hidden(minimal);
     if minimal == true {
-        walker.add_custom_ignore_filename(ORBIT_IGNORE_FILE);
+        walker.filter_entry(|f| {
+            if f.path().is_dir() && f.path().join(CACHE_TAG_FILE).exists() {
+                false
+            } else {
+                true
+            }
+        });
     }
     // WalkBuilder::new(&source)
     //     .hidden(minimal)
@@ -418,8 +429,6 @@ pub fn invoke(
         }
     }
 }
-
-pub const ORBIT_IGNORE_FILE: &str = ".orbitignore";
 
 #[cfg(test)]
 mod test {

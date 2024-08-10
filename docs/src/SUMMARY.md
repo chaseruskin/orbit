@@ -28,7 +28,7 @@
     - [Protocols](./topic/protocols.md)
     - [Channels](./topic/channels.md)
     - [Orbit.lock](./topic/orbitlock.md) <!-- good -->
-    - [.orbitignore](./topic/orbitignore.md) <!-- good -->
+    - [File Visibility](./topic/visibility.md) <!-- good -->
     - [String Swapping](./topic/swapping.md) <!-- 1.0.0 ... check swap tables --> 
     - [Dynamic Symbol Transformation](./topic/dst.md)
 

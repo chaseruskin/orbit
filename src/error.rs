@@ -23,8 +23,8 @@ use crate::core::{
     ip::IpSpec,
     lang::{lexer::Position, LangIdentifier},
     pkgid::PkgPart,
-    pubfile::Visibility,
     version::{AnyVersion, PartialVersion, Version},
+    visibility::Visibility,
 };
 
 #[derive(Debug, PartialEq, thiserror::Error)]
@@ -256,9 +256,9 @@ impl Display for Hint {
 
 const HINT_1: &str = "resolve this error by either
     1) renaming one of the units to a unique identifier
-    2) adding one of the file paths to a .orbitignore file";
+    2) adding one of the file paths to the manifest's \"ip.exclude\" field";
 
 const HINT_2: &str = "resolve this error by either
-    1) renaming the unit in the working ip to a unique identifier
+    1) renaming the unit in the local ip to a unique identifier
     2) removing the direct dependency from Orbit.toml
-    3) adding the file path for the working ip's unit to a .orbitignore file";
+    3) adding the file path for the local ip's unit to the manifest's \"ip.exclude\" field";

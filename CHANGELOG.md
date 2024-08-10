@@ -19,6 +19,10 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ### Features
 - handles reading invalid UTF-8 code from HDL source code files
+- adds `ip.include` and `ip.exclude` fields to the manifest format
+
+### Changes
+- no longer uses `.orbitignore` files, see the ip manifest's `ip.include` and `ip.exclude` fields to now explicitly set what files should be ignored or included during an ip's file discovery
 
 ### Fixes
 - improves robustness for verilog/sv module declaration parsing

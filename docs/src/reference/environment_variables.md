@@ -10,8 +10,6 @@ Orbit's configuration can be customized with the setting of specific environment
 
 - `NO_COLOR` - does not print colorized output when set to a value.
 
-- `EDITOR` - chooses this value as the default text editor when no `core.editor` key is present in the config.toml.
-
 - `ORBIT_WIN_LITERAL_CMD` - disables default behavior of checking for programs ending with .exe then .bat when a program name without extension is not found on a windows operating system
 
 ## Runtime environment variables
@@ -41,6 +39,8 @@ Orbit also sets environment variables during runtime so a plugin has access to r
 - `ORBIT_BLUEPRINT` - the filename for the blueprint created during the planning stage
 
 - `ORBIT_OUTPUT_PATH` - path to the selected target's build process working directory
+
+- `ORBIT_IP_INDEX` - path where the ip's manifest will be placed during the publishing process
 
 ## Checking the environment
 

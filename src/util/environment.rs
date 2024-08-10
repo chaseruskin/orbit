@@ -289,3 +289,5 @@ pub const ORBIT_WIN_LITERAL_CMD: &str = "ORBIT_WIN_LITERAL_CMD";
 pub const ORBIT_ENV_PREFIX: &str = "ORBIT_ENV_";
 
 pub const DOT_ENV_FILE: &str = ".env";
+
+pub const NO_COLOR: &str = "NO_COLOR";

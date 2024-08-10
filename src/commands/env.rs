@@ -61,10 +61,6 @@ impl Subcommand<Context> for Env {
                     .to_str()
                     .unwrap(),
             ),
-            // Do NOT display QUEUE because it is a temporary directory and changes often
-            // EnvVar::new()
-            //     .key(environment::ORBIT_QUEUE)
-            //     .value(PathBuf::standardize(c.get_queue_path()).to_str().unwrap()),
             EnvVar::new()
                 .key(environment::ORBIT_TARGET_DIR)
                 .value(&c.get_target_dir()),
@@ -74,11 +70,8 @@ impl Subcommand<Context> for Env {
                     .unwrap(),
             ),
             EnvVar::new()
-                .key("EDITOR")
-                .value(&std::env::var("EDITOR").unwrap_or(String::new())),
-            EnvVar::new()
-                .key("NO_COLOR")
-                .value(&std::env::var("NO_COLOR").unwrap_or(String::new())),
+                .key(environment::NO_COLOR)
+                .value(&std::env::var(environment::NO_COLOR).unwrap_or(String::new())),
         ])
         .from_config(c.get_config())?;
 

@@ -22,6 +22,6 @@ Usage:
     orbit env [options]
 
 Options:
-    <key>...              include this variable's value specifically in the environment information
+    <key>...              display this variable's value
 
 Use 'orbit help env' to read more about the command."#;

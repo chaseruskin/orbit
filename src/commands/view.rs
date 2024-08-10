@@ -33,10 +33,13 @@ use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct View {
+    // TODO: narrow the displayed version list with a range?
     versions: bool,
     units: bool,
     ip: Option<PartialIpSpec>,
     all: bool,
+    // TODO: view changelog?
+    // TODO: view readme?
 }
 
 impl Subcommand<Context> for View {
@@ -157,7 +160,7 @@ impl Subcommand<Context> for View {
                                 })
                                 .for_each(|v| {
                                     data.push_str(&format!(
-                                        "{:<10}{:<11}\n",
+                                        "{:<14}{:<9}\n",
                                         v.get_version().to_string(),
                                         v.get_state().to_string()
                                     ));
@@ -199,7 +202,7 @@ impl View {
                 continue;
             }
             result.push_str(&format!(
-                "{:<36}{:<14}{:<12}\n",
+                "{:<40}{:<15}{:<9}\n",
                 unit.get_name().to_string(),
                 unit.to_string(),
                 unit.get_visibility().to_string(),
@@ -210,9 +213,3 @@ impl View {
         result
     }
 }
-
-// FUTURE FLAGS
-// ============
-// --changes                   view the changelog
-// --readme                    view the readme
-// --range <version:version>   narrow the displayed version list

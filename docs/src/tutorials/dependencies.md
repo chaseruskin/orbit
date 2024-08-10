@@ -12,7 +12,7 @@ After completing the gates project from the previous tutorial ahead of schedule,
 
 Let's create a new project. Navigate to a directory in your file system where you would like to store the project.
 ```
-$ orbit new half-add
+$ orbit new half-add --lib adding
 ```
 For the rest of this tutorial, we will be working relative to the project directory "/half-add" that was created by the previous command.
 
@@ -21,8 +21,7 @@ Remembering our impressive work with the gates project, we realize we can reuse 
 $ orbit search gates
 ```
 ```
-gates                       0.1.0     install
-
+gates                       0.1.0       install
 ```
 Awesome! Our next step is tell Orbit that our current project, half-add, wants to use gates as a dependency.
 
@@ -32,6 +31,7 @@ Filename: Orbit.toml
 ``` toml
 [ip]
 name = "half-add"
+library = "adding"
 version = "0.1.0"
 
 # See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
@@ -68,7 +68,7 @@ begin
 
 end architecture;
 ```
-Cool, we used the VHDL keyword `nand` to describe that particular circuit. Sometimes it may be insightful to read code snippets and comments from external design units when trying to integrate them into a new project.
+Cool, we had used the VHDL keyword `nand` to describe that particular circuit. Sometimes it may be insightful to read code snippets and comments from external design units when trying to integrate them into a new project.
 
 ## Integrating design units across ips
 
@@ -77,13 +77,13 @@ Let's use the NAND gate we previously defined to construct a half adder circuit.
 $ orbit get --ip gates nand_gate --library --signals --instance
 ```
 ```
-library work;
+library gates;
 
 signal a : std_logic;
 signal b : std_logic;
 signal x : std_logic;
 
-uX : entity work.nand_gate
+uX : entity gates.nand_gate
   port map(
     a => a,
     b => b,
@@ -98,7 +98,7 @@ Filename: half_add.vhd
 library ieee;
 use ieee.std_logic_1164.all;
 
-library work;
+library gates;
 
 entity half_add is
   port(
@@ -114,7 +114,7 @@ architecture rtl of half_add is
 begin
 
   -- 1st layer: This gate creates the first NAND intermediate output.
-  u4 : entity work.nand_gate
+  u4 : entity gates.nand_gate
     port map(
       a => a,
       b => b,
@@ -122,7 +122,7 @@ begin
     );
   
   -- 2nd layer: Perform NAND with input 'a' and the 1st layer's output.
-  u1 : entity work.nand_gate
+  u1 : entity gates.nand_gate
     port map(
       a => a,
       b => x4,
@@ -130,7 +130,7 @@ begin
     );
 
   -- 2nd layer: Perform NAND with input 'b' and the 1st layer's output.
-  u2 : entity work.nand_gate
+  u2 : entity gates.nand_gate
     port map(
       a => x4,
       b => b,
@@ -138,7 +138,7 @@ begin
     );
 
   -- 3rd layer: This gate produces the final sum signal ('a' XOR 'b').
-  u3 : entity work.nand_gate
+  u3 : entity gates.nand_gate
     port map(
       a => x1,
       b => x2,
@@ -146,7 +146,7 @@ begin
     );
 
   -- 3rd layer: This gate produces the final carry out signal ('a' AND 'b').
-  u5 : entity work.nand_gate
+  u5 : entity gates.nand_gate
     port map(
       a => x4,
       b => x4,
@@ -165,7 +165,14 @@ half_add (half-add:0.1.0)
 └─ nand_gate (gates:0.1.0)
 ```
 
-Finally, let's install this ip to the cache for future reuse as well.
+Finally, let's install this ip to the cache for future reuse as well. But before we can install any ip to our cache, an ip must have an up to date lockfile.
+
+Lockfiles are updated whenever a user calls `orbit build` or `orbit test`, but they can also be updated with the dedicated `orbit lock` command. Let's go ahead and generate the lockfile now.
+```
+$ orbit lock
+```
+
+Now we can safely install the ip to our catalog.
 ```
 $ orbit install
 ```

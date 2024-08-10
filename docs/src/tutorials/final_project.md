@@ -10,7 +10,7 @@ In this tutorial, you will learn how to:
 
 After the quick detour back to the gates ip, we are ready to tackle our final challenge in this mini tutorial series: the full adder. Like our previous projects, navigate to a directory in your file system where you would like to store the project.
 ```
-orbit new full-add
+orbit new full-add --lib adding
 ```
 
 For the rest of this tutorial, we will be working relative to the project directory "/full-add" that currently stores our new full-add project. 
@@ -31,6 +31,7 @@ filename: Orbit.toml
 ``` toml
 [ip]
 name = "full-add"
+library = "adding"
 version = "0.1.0"
 
 # See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
@@ -50,9 +51,9 @@ Our full adder circuit will be constructed of 2 half adders and an OR gate. Let'
 $ orbit get half_add --ip half-add --library --instance
 ```
 ```
-library work;
+library adding;
 
-uX : entity work.half_add
+uX : entity adding.half_add
   port map(
     a => a,
     b => b,
@@ -66,9 +67,9 @@ And let's get the code snippet for the OR gate as well.
 $ orbit get or_gate --ip gates:1.0.0 --library --instance
 ```
 ```
-library work;
+library gates;
 
-uX : entity work.or_gate
+uX : entity gates.or_gate
   port map(
     a => a,
     b => b,
@@ -83,7 +84,8 @@ Filename: full_add.vhd
 library ieee;
 use ieee.std_logic_1164.all;
 
-library work;
+library adding;
+library gates;
 
 entity full_add is
   port(
@@ -99,7 +101,7 @@ architecture rtl of full_add is
 begin
 
   -- 1st layer: Peform half of the addition operation.
-  u_ha0 : entity work.half_add
+  u_ha0 : entity adding.half_add
     port map(
       a => a,
       b => b,
@@ -108,7 +110,7 @@ begin
     );
 
   -- 2nd layer: Compute the final sum term.
-  u_ha1 : entity work.half_add
+  u_ha1 : entity adding.half_add
     port map(
       a => s_ha0,
       b => cin,
@@ -117,7 +119,7 @@ begin
     );
 
   -- 3rd layer: Check both c terms from the half adders for the final cout term.
-  u_or0 : entity work.or_gate
+  u_or0 : entity gates.or_gate
     port map(
       a => c_ha0,
       b => c_ha1,
@@ -189,22 +191,22 @@ Opening the blueprint file created by Orbit during the planning stage shows we a
 
 Filename: target/yilinx/blueprint.tsv
 ``` text
-VHDL	work	/Users/chase/.orbit/cache/gates-0.1.0-fe9ec9d99e/nand_gate.vhd
-VHDL	work	/Users/chase/.orbit/cache/half-add-0.1.0-1c537df196/half_add.vhd
-VHDL	work	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/nand_gate.vhd
-VHDL	work	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/or_gate.vhd
-VHDL	work	/Users/chase/tutorials/full-add/full_add.vhd
+VHDL	gates	/Users/chase/.orbit/cache/gates-0.1.0-fe9ec9d99e/nand_gate.vhd
+VHDL	adding	/Users/chase/.orbit/cache/half-add-0.1.0-1c537df196/half_add.vhd
+VHDL	gates	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/nand_gate.vhd
+VHDL	gates	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/or_gate.vhd
+VHDL	adding	/Users/chase/tutorials/full-add/full_add.vhd
 
 ```
 
 Inspecting the output displayed to the console shows our target executed it's process successfully with the creation of a .bit file.
 
 ```
-YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-0.1.0-fe9ec9d99e/nand_gate.vhd into work...
-YILINX: Synthesizing file /Users/chase/.orbit/cache/half-add-0.1.0-1c537df196/half_add.vhd into work...
-YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/nand_gate.vhd into work...
-YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/or_gate.vhd into work...
-YILINX: Synthesizing file /Users/chase/tutorials/full-add/full_add.vhd into work...
+YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-0.1.0-fe9ec9d99e/nand_gate.vhd into gates...
+YILINX: Synthesizing file /Users/chase/.orbit/cache/half-add-0.1.0-1c537df196/half_add.vhd into adding...
+YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/nand_gate.vhd into gates...
+YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/or_gate.vhd into gates...
+YILINX: Synthesizing file /Users/chase/tutorials/full-add/full_add.vhd into adding...
 YILINX: Performing place-and-route...
 YILINX: Generating bitstream...
 YILINX: Bitstream saved at: target/yilinx/full_add.bit

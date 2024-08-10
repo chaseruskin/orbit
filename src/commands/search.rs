@@ -249,7 +249,7 @@ impl Search {
             }
 
             body.push_str(&format!(
-                "{:<28}{:<10}{:<9}\n",
+                "{:<26}{:<14}{:<9}\n",
                 name.to_string(),
                 ip.get_man().get_ip().get_version().to_string() + {
                     if is_update_available == true {
@@ -271,18 +271,3 @@ impl Search {
         header + &body
     }
 }
-
-// #[cfg(test)]
-// mod test {
-//     use super::*;
-
-//     #[test]
-//     fn fmt_table() {
-//         let t = Search::fmt_table(BTreeMap::new(), None, false, false);
-//         let table = "\
-// Package                     Latest    Status
-// --------------------------- --------- ----------
-// ";
-//         assert_eq!(t, table);
-//     }
-// }

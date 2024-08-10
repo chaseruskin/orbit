@@ -37,6 +37,7 @@ end entity;
 
 architecture rtl of nand_gate is
 begin
+
   x <= a nand b;
 
 end architecture;
@@ -62,6 +63,7 @@ end entity;
 
 architecture rtl of and_gate is
 begin
+
     -- What to put here?
 
 end architecture;
@@ -210,8 +212,8 @@ args = ["yilinx.py"]
 $ orbit build --target yilinx
 ```
 ```
-YILINX: Synthesizing file /Users/chase/tutorials/gates/nand_gate.vhd into work...
-YILINX: Synthesizing file /Users/chase/tutorials/gates/and_gate.vhd into work...
+YILINX: Synthesizing file /Users/chase/tutorials/gates/nand_gate.vhd into gates...
+YILINX: Synthesizing file /Users/chase/tutorials/gates/and_gate.vhd into gates...
 YILINX: Performing place-and-route...
 YILINX: Generating bitstream...
 YILINX: Bitstream saved at: target/yilinx/fpga.bit
@@ -238,7 +240,7 @@ This command ran a series of steps that packaged our project and placed it into 
 $ orbit search
 ```
 ```
-gates                       0.1.0     install
+gates                       0.1.0       install
 ```
 
 And there it is! Let's continue to the next tutorial, where we introduce dependencies across ips.

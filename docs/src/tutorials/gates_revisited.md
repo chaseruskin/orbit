@@ -106,7 +106,7 @@ command = "python"
 description = "Generate bitstreams for Yilinx FPGAs"
 args = ["yilinx.py"]
 # Define the type of extra file(s) to collect during planning
-fileset.pinout = "*.ydc"
+fileset.YDCF = "*.ydc"
 ```
 
 Now let's create our pin assignment file for our OR gate design.
@@ -143,7 +143,7 @@ with open(BLUEPRINT) as blueprint:
         fileset, lib, path = r.strip().split('\t')
         if fileset == 'VHDL':
             synth_order += [(lib, path)]
-        if fileset == 'PINOUT':
+        if fileset == 'YDCF':
             constraints_file = path
     pass
 
@@ -190,10 +190,9 @@ Let's take a look at the blueprint file Orbit created during the build process.
 
 Filename: target/yilinx/blueprint.tsv
 ``` text
-PINOUT	work	/Users/chase/tutorials/gates/pins.ydc
-VHDL	work	/Users/chase/tutorials/gates/nand_gate.vhd
-VHDL	work	/Users/chase/tutorials/gates/or_gate.vhd
-
+YDCF	gates	/Users/chase/tutorials/gates/pins.ydc
+VHDL	gates	/Users/chase/tutorials/gates/nand_gate.vhd
+VHDL	gates	/Users/chase/tutorials/gates/or_gate.vhd
 ```
 
 Notice also how we passed a command-line argument `--flash`, to our target process for execution. Any arguments that are found after `--` are ignored by Orbit and sent directly to the targeted process. 
@@ -201,8 +200,8 @@ Notice also how we passed a command-line argument `--flash`, to our target proce
 Reviewing the output from our target's execution, we see that our FPGA was programmed successfully.
 
 ```
-YILINX: Synthesizing file /Users/chase/tutorials/gates/nand_gate.vhd into work...
-YILINX: Synthesizing file /Users/chase/tutorials/gates/or_gate.vhd into work...
+YILINX: Synthesizing file /Users/chase/tutorials/gates/nand_gate.vhd into gates...
+YILINX: Synthesizing file /Users/chase/tutorials/gates/or_gate.vhd into gates...
 YILINX: Performing place-and-route...
 YILINX: Mapping pin A1 to port a...
 YILINX: Mapping pin A2 to port b...

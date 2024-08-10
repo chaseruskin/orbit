@@ -205,6 +205,7 @@ end entity;
 
 architecture rtl of nand_gate is
 begin
+
   x &lt;= a nand b;
 
 end architecture;
@@ -225,6 +226,7 @@ end entity;
 
 architecture rtl of and_gate is
 begin
+
     -- What to put here?
 
 end architecture;
@@ -348,8 +350,8 @@ args = ["yilinx.py"]
 <h3 id="calling-a-target"><a class="header" href="#calling-a-target">Calling a target</a></h3>
 <pre><code>$ orbit build --target yilinx
 </code></pre>
-<pre><code>YILINX: Synthesizing file /Users/chase/tutorials/gates/nand_gate.vhd into work...
-YILINX: Synthesizing file /Users/chase/tutorials/gates/and_gate.vhd into work...
+<pre><code>YILINX: Synthesizing file /Users/chase/tutorials/gates/nand_gate.vhd into gates...
+YILINX: Synthesizing file /Users/chase/tutorials/gates/and_gate.vhd into gates...
 YILINX: Performing place-and-route...
 YILINX: Generating bitstream...
 YILINX: Bitstream saved at: target/yilinx/fpga.bit
@@ -365,7 +367,7 @@ YILINX: Bitstream saved at: target/yilinx/fpga.bit
 <p>This command ran a series of steps that packaged our project and placed it into our <em>cache</em>. Internally, Orbit knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire ip catalog.</p>
 <pre><code>$ orbit search
 </code></pre>
-<pre><code>gates                       0.1.0     install
+<pre><code>gates                       0.1.0       install
 </code></pre>
 <p>And there it is! Let's continue to the next tutorial, where we introduce dependencies across ips.</p>
 <h3 id="additional-notes-on-project-structure"><a class="header" href="#additional-notes-on-project-structure">Additional notes on project structure</a></h3>

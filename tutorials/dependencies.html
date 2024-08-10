@@ -184,20 +184,20 @@
 <h2 id="referencing-external-ips"><a class="header" href="#referencing-external-ips">Referencing external ips</a></h2>
 <p>After completing the gates project from the previous tutorial ahead of schedule, you take a well deserved vacation. Now you have returned to work and are tasked with building a half adder.</p>
 <p>Let's create a new project. Navigate to a directory in your file system where you would like to store the project.</p>
-<pre><code>$ orbit new half-add
+<pre><code>$ orbit new half-add --lib adding
 </code></pre>
 <p>For the rest of this tutorial, we will be working relative to the project directory "/half-add" that was created by the previous command.</p>
 <p>Remembering our impressive work with the gates project, we realize we can reuse some of the already designed and tested components from there. Let's make sure it's installed so that we can use it.</p>
 <pre><code>$ orbit search gates
 </code></pre>
-<pre><code>gates                       0.1.0     install
-
+<pre><code>gates                       0.1.0       install
 </code></pre>
 <p>Awesome! Our next step is tell Orbit that our current project, half-add, wants to use gates as a dependency.</p>
 <p>Add a new entry for gates to the dependencies table in our project's manifest, Orbit.toml.</p>
 <p>Filename: Orbit.toml</p>
 <pre><code class="language-toml">[ip]
 name = "half-add"
+library = "adding"
 version = "0.1.0"
 
 # See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
@@ -224,18 +224,18 @@ begin
 
 end architecture;
 </code></pre>
-<p>Cool, we used the VHDL keyword <code>nand</code> to describe that particular circuit. Sometimes it may be insightful to read code snippets and comments from external design units when trying to integrate them into a new project.</p>
+<p>Cool, we had used the VHDL keyword <code>nand</code> to describe that particular circuit. Sometimes it may be insightful to read code snippets and comments from external design units when trying to integrate them into a new project.</p>
 <h2 id="integrating-design-units-across-ips"><a class="header" href="#integrating-design-units-across-ips">Integrating design units across ips</a></h2>
 <p>Let's use the NAND gate we previously defined to construct a half adder circuit.</p>
 <pre><code>$ orbit get --ip gates nand_gate --library --signals --instance
 </code></pre>
-<pre><code>library work;
+<pre><code>library gates;
 
 signal a : std_logic;
 signal b : std_logic;
 signal x : std_logic;
 
-uX : entity work.nand_gate
+uX : entity gates.nand_gate
   port map(
     a =&gt; a,
     b =&gt; b,
@@ -247,7 +247,7 @@ uX : entity work.nand_gate
 <pre><code class="language-vhdl">library ieee;
 use ieee.std_logic_1164.all;
 
-library work;
+library gates;
 
 entity half_add is
   port(
@@ -263,7 +263,7 @@ architecture rtl of half_add is
 begin
 
   -- 1st layer: This gate creates the first NAND intermediate output.
-  u4 : entity work.nand_gate
+  u4 : entity gates.nand_gate
     port map(
       a =&gt; a,
       b =&gt; b,
@@ -271,7 +271,7 @@ begin
     );
   
   -- 2nd layer: Perform NAND with input 'a' and the 1st layer's output.
-  u1 : entity work.nand_gate
+  u1 : entity gates.nand_gate
     port map(
       a =&gt; a,
       b =&gt; x4,
@@ -279,7 +279,7 @@ begin
     );
 
   -- 2nd layer: Perform NAND with input 'b' and the 1st layer's output.
-  u2 : entity work.nand_gate
+  u2 : entity gates.nand_gate
     port map(
       a =&gt; x4,
       b =&gt; b,
@@ -287,7 +287,7 @@ begin
     );
 
   -- 3rd layer: This gate produces the final sum signal ('a' XOR 'b').
-  u3 : entity work.nand_gate
+  u3 : entity gates.nand_gate
     port map(
       a =&gt; x1,
       b =&gt; x2,
@@ -295,7 +295,7 @@ begin
     );
 
   -- 3rd layer: This gate produces the final carry out signal ('a' AND 'b').
-  u5 : entity work.nand_gate
+  u5 : entity gates.nand_gate
     port map(
       a =&gt; x4,
       b =&gt; x4,
@@ -310,7 +310,11 @@ end architecture;
 <pre><code>half_add (half-add:0.1.0)
 └─ nand_gate (gates:0.1.0)
 </code></pre>
-<p>Finally, let's install this ip to the cache for future reuse as well.</p>
+<p>Finally, let's install this ip to the cache for future reuse as well. But before we can install any ip to our cache, an ip must have an up to date lockfile.</p>
+<p>Lockfiles are updated whenever a user calls <code>orbit build</code> or <code>orbit test</code>, but they can also be updated with the dedicated <code>orbit lock</code> command. Let's go ahead and generate the lockfile now.</p>
+<pre><code>$ orbit lock
+</code></pre>
+<p>Now we can safely install the ip to our catalog.</p>
 <pre><code>$ orbit install
 </code></pre>
 <p>Nice, now we have successfully reused designs across ips! However, maybe we should have designed all the logic gates in the gates ip...</p>

@@ -1806,9 +1806,6 @@ VHDL	lc3b	/Users/chase/projects/lc3b/sim/alu_tb.vhd
 <p><code>NO_COLOR</code> - does not print colorized output when set to a value.</p>
 </li>
 <li>
-<p><code>EDITOR</code> - chooses this value as the default text editor when no <code>core.editor</code> key is present in the config.toml.</p>
-</li>
-<li>
 <p><code>ORBIT_WIN_LITERAL_CMD</code> - disables default behavior of checking for programs ending with .exe then .bat when a program name without extension is not found on a windows operating system</p>
 </li>
 </ul>
@@ -1850,6 +1847,9 @@ VHDL	lc3b	/Users/chase/projects/lc3b/sim/alu_tb.vhd
 </li>
 <li>
 <p><code>ORBIT_OUTPUT_PATH</code> - path to the selected target's build process working directory</p>
+</li>
+<li>
+<p><code>ORBIT_IP_INDEX</code> - path where the ip's manifest will be placed during the publishing process</p>
 </li>
 </ul>
 <h2 id="checking-the-environment"><a class="header" href="#checking-the-environment">Checking the environment</a></h2>
@@ -2694,13 +2694,17 @@ orbit remove gates:1.0.1 --force
 <pre><code>orbit env [options]
 </code></pre>
 <h2 id="description-13"><a class="header" href="#description-13"><strong>DESCRIPTION</strong></a></h2>
-<p>This command prints environment variables relevant to <code>orbit</code>.</p>
-<p>By default, this command prins information as a shell script. If one or more
-variable names are given as arguments as <code>&lt;key&gt;</code>, then it will print the value
-of each provided variables on its own line.</p>
+<p>Displays environment variables as key-value pairs related to Orbit.</p>
+<p>By default, this command prints information as a shell script. If one or more
+variable names are given as arguments using <code>&lt;key&gt;</code>, then it will print the
+value of each provided variable on its own line.</p>
+<p>Environment information can change based on where the command is executed.</p>
+<p>Environment variables that are known only at runtime are not displayed. Be
+sure to review the documentation for a list of all environment variables set
+by Orbit.</p>
 <h2 id="options-13"><a class="header" href="#options-13"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;key&gt;...</code><br />
-      Include this variable's value specifically in the environment information</p>
+      Display this variable's value</p>
 <h2 id="examples-15"><a class="header" href="#examples-15"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit env
 orbit env ORBIT_HOME

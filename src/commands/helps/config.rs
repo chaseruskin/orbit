@@ -16,18 +16,19 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"Modify configuration values.
+pub const HELP: &str = r#"Modify configuration data.
 
 Usage:
-    orbit config [options]
+    orbit config [options] [<path>]
 
 Options:
-    --global              access the home configuration file
-    --local               access the current project's configuration file
-    --append <key=value>...
-                          add a value to the key storing a list
+    <path>                the destination to read/write configuration data
+    --push <key=value>...
+                          add a new value to a key's list
+    --pop <key>...        remove the last value from a key's list
     --set <key=value>...
-                          write the value at the key's entry
+                          store the value as the key's entry
     --unset <key>...      delete the key's entry
+    --list                print the list of configuration files and exit
 
 Use 'orbit help config' to read more about the command."#;

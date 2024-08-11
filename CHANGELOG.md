@@ -18,11 +18,13 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.19.2 - unreleased
 
 ### Features
+- increases capabilities of `orbit config` to modify varying levels of configuration data
 - handles reading invalid UTF-8 code from HDL source code files
 - adds `ip.include` and `ip.exclude` fields to the manifest format
 
 ### Changes
 - no longer uses `.orbitignore` files, see the ip manifest's `ip.include` and `ip.exclude` fields to now explicitly set what files should be ignored or included during an ip's file discovery
+- removes `explanation` field from targets and protocols in configuration data
 
 ### Fixes
 - improves robustness for verilog/sv module declaration parsing

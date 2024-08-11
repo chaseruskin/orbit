@@ -151,6 +151,8 @@ pub enum Error {
     VersionNotFound(AnyVersion, Hint),
     #[error("cannot {0} unit \"{1}\" due to {2} visibility{3}")]
     UnitIsWrongVisibility(String, LangIdentifier, Visibility, Hint),
+    #[error("path {0:?} is not a configuration file{1}")]
+    ConfigBadPath(PathBuf, Hint),
 }
 
 #[derive(Debug, PartialEq)]
@@ -204,6 +206,7 @@ pub enum Hint {
     PublishWithReady,
     RegenerateLockfile,
     ShowVersions,
+    ShowConfigFiles,
 }
 
 impl Display for Hint {
@@ -244,6 +247,9 @@ impl Display for Hint {
             Self::PublishWithReady => "use the \"--ready\" flag to publish the ip to its channels",
             Self::RegenerateLockfile => "verify the ip's lockfile exists and is up to date",
             Self::ShowVersions => "use `orbit view <ip> --versions` to see all known versions",
+            Self::ShowConfigFiles => {
+                "use `orbit config --list` to see the list of current configuration files"
+            }
         };
         write!(
             f,

@@ -16,12 +16,10 @@
 //
 
 use crate::core::context::Context;
-use crate::core::fileset::Fileset;
 use crate::core::fileset::Style;
 use crate::error::Error;
 use crate::util::anyerror::Fault;
 use crate::util::filesystem;
-use crate::util::filesystem::Standardize;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -41,18 +39,17 @@ type Filesets = HashMap<String, Style>;
 #[serde(deny_unknown_fields)]
 pub struct Target {
     name: String,
+    description: Option<String>,
+    #[serde(skip_serializing, skip_deserializing)]
+    root: Option<PathBuf>,
     command: String,
     args: Option<Vec<String>>,
     fileset: Option<Filesets>,
-    description: Option<String>,
     plans: Option<Vec<Scheme>>,
-    explanation: Option<String>,
-    #[serde(skip_serializing, skip_deserializing)]
-    root: Option<PathBuf>,
 }
 
 impl Target {
-    /// Performs variable substitution on the provided arguments for the taret.
+    /// Performs variable substitution on the provided arguments for the target.
     pub fn replace_vars_in_args(mut self, vtable: &StrSwapTable) -> Self {
         self.args = if let Some(args) = self.args {
             Some(
@@ -113,13 +110,6 @@ impl Target {
         )
     }
 
-    pub fn explain(&self) -> String {
-        self.explanation
-            .as_ref()
-            .unwrap_or(&String::default())
-            .to_string()
-    }
-
     /// Creates a string to display a list of plugins.
     ///
     /// The string lists the plugins in alphabetical order by `alias`.
@@ -150,50 +140,30 @@ impl Target {
 
 impl std::fmt::Display for Target {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "\
-Name:    {}
-Command: {} {}
-Root:    {}
-Filesets:
-{}{}{}",
-            self.name,
-            self.command,
-            self.args
-                .as_ref()
-                .unwrap_or(&Vec::new())
-                .iter()
-                .fold(String::new(), |x, y| { x + "\"" + &y + "\" " }),
-            PathBuf::standardize(self.root.as_ref().unwrap()).display(),
-            {
-                if self.fileset.is_none() {
-                    String::from("  None\n")
-                } else {
-                    self.fileset
-                        .as_ref()
-                        .unwrap()
-                        .iter()
-                        .fold(String::new(), |x, (n, p)| {
-                            x + &format!("  {:<16}{}\n", Fileset::standardize_name(n), p.inner())
-                        })
-                }
-            },
-            {
-                if let Some(text) = &self.description {
-                    format!("\n{}\n", text)
-                } else {
-                    String::new()
-                }
-            },
-            {
-                if let Some(text) = &self.explanation {
-                    format!("\n{}", text)
-                } else {
-                    String::new()
-                }
-            },
-        )
+        let command = filesystem::resolve_rel_path(self.get_root(), &self.command);
+
+        let args = if self.args.is_some() {
+            Some(
+                self.get_args()
+                    .iter()
+                    .map(|f| filesystem::resolve_rel_path(self.get_root(), f))
+                    .collect(),
+            )
+        } else {
+            None
+        };
+
+        let refreshed_target = Self {
+            command: command,
+            args: args,
+            name: self.name.clone(),
+            description: self.description.clone(),
+            root: self.root.clone(),
+            fileset: self.fileset.clone(),
+            plans: self.plans.clone(),
+        };
+
+        write!(f, "{}", toml::to_string_pretty(&refreshed_target).unwrap())
     }
 }
 
@@ -342,7 +312,6 @@ args = ["~/scripts/download.bash"]
                     ),
                     (String::from("text"), Style::from_str("*.txt").unwrap()),
                 ])),
-                explanation: None,
                 root: None,
             }
         );
@@ -357,7 +326,6 @@ args = ["~/scripts/download.bash"]
                 description: None,
                 plans: None,
                 fileset: None,
-                explanation: None,
                 root: None,
             }
         );

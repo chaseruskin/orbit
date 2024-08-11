@@ -237,9 +237,9 @@ impl Context {
                 let locality = match self.get_ip_path() {
                     Some(ip_path) => match &parent_path == ip_path {
                         true => Locality::Local,
-                        false => Locality::Parent,
+                        false => Locality::Regional,
                     },
-                    None => Locality::Parent,
+                    None => Locality::Regional,
                 };
                 // skip global path
                 if &parent_path == global_path {

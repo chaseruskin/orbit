@@ -36,7 +36,7 @@ Commands:
     install               store an immutable reference to an ip
     remove                delete an ip from the catalog
     env                   print orbit environment information
-    config                modify configuration values
+    config                modify configuration data
 
 Options:
     --version             print version information and exit

@@ -2,10 +2,12 @@
 name = "foo"
 description = "Print the blueprint contents"
 command = "cat"
-args = ["blueprint.tsv"]
+args = ["{{orbit.blueprint}}"]
 
 [test]
 default-target = "foo"
 
 [build]
 default-target = "foo"
+
+[vhdl-format]

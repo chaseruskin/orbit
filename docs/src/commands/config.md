@@ -2,48 +2,66 @@
 
 ## __NAME__
 
-config - modify configuration values
+config - modify configuration data
 
 ## __SYNOPSIS__
 
 ```
-orbit config [options]
+orbit config [options] [<path>]
 ```
 
 ## __DESCRIPTION__
 
-This command will alter configuration entries in Orbit's settings file named
-`config.toml`. By default, it will modify the user's config file found at
-the path read from the environment variable `$ORBIT_HOME`.
-  
-To access an entry (key/value pair), use dots (`.`) to delimit between 
-intermediate table identifiers and the final key identifier.
+Provides an entry point to the current configuration data through the
+command-line.
 
-The command modifies the document in three independent stages. The first stage
-modifies the settings by iterating through all defined `--append` values. Then, 
-it will insert all `--set` values. Lastly, it will remove all `--unset` entries.
+To list the configuration files that are currently being used, use the
+`--list` option. The configuration files are sorted in order from highest
+precedence to lowest precedence. This means values that are set in files
+higher in the list overwrite values that may have existed from files lowering
+in the list.
+
+Providing the path of a configuration file using the `<path>` option will
+limit the accessible data to only the data found in the file. If no path is 
+specified, then it will display the aggregated result of the current
+configuration data from across all files in use.
+
+If there are no options set to modify data, then the resulting configuration
+data will be displayed.
+
+To modify a field, the full key must be provided. Fields located inside
+tables require decimal characters "." to delimit between the key names.
+
+When modifying data, additions are processed before deletions. This means all
+`--push` options occur before `--pop` options, and all `--set` options occur 
+before `--unset` options. Not every configuration field can be edited through 
+the command-line. More complex fields may require manual edits by opening its
+respective file.
 
 ## __OPTIONS__
 
-`--global`  
-      Access the home configuration file
+`<path>`  
+      The destination to read/write configuration data
 
-`--local`  
-      Access the current project's configuration file
+`--push <key=value>...`  
+      Add a new value to a key's list
 
-`--append <key=value>...`  
-      Add a value to the key storing a list
+`--pop <key>...`  
+      Remove the last value from a key's list
 
 `--set <key=value>...`  
-      Write the value at the key's entry
+      Store the value as the key's entry
 
 `--unset <key>...`  
       Delete the key's entry
 
+`--list`  
+      Print the list of configuration files and exit
+
 ## __EXAMPLES__
 
 ```
-orbit config --append include="~/.orbit/profiles/ks-tech"
-orbit config --unset env.VIVADO_PATH --global
+orbit config --push include="profiles/hyperspacelab"
+orbit config ~/.orbit/config.toml --unset env.vivado_path
 ```
 

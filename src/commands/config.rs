@@ -21,13 +21,13 @@ use std::str::FromStr;
 use crate::commands::helps::config;
 use crate::core;
 use crate::core::config::ConfigDocument;
-use crate::core::config::CONFIG_FILE;
 use crate::core::context::Context;
 use crate::core::manifest::FromFile;
 use crate::error::Error;
+use crate::error::Hint;
 use crate::error::LastError;
 use crate::util::anyerror::AnyError;
-use colored::*;
+use crate::util::filesystem;
 
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
@@ -48,9 +48,9 @@ impl FromStr for Entry {
 
 #[derive(Debug, PartialEq)]
 pub struct Config {
-    global: bool,
-    local: bool,
-    append: Vec<Entry>,
+    path: Option<PathBuf>,
+    list: bool,
+    push: Vec<Entry>,
     pop: Vec<String>,
     set: Vec<Entry>,
     unset: Vec<String>,
@@ -61,11 +61,10 @@ impl Subcommand<Context> for Config {
         cli.help(Help::with(config::HELP))?;
         Ok(Config {
             // Flags
-            global: cli.check(Arg::flag("global"))?,
-            local: cli.check(Arg::flag("local"))?,
+            list: cli.check(Arg::flag("list"))?,
             // Options
-            append: cli
-                .get_all(Arg::option("append").value("key=value"))?
+            push: cli
+                .get_all(Arg::option("push").value("key=value"))?
                 .unwrap_or(Vec::new()),
             pop: cli
                 .get_all(Arg::option("pop").value("key"))?
@@ -76,49 +75,66 @@ impl Subcommand<Context> for Config {
             unset: cli
                 .get_all(Arg::option("unset").value("key"))?
                 .unwrap_or(Vec::new()),
+            // Optional positionals
+            path: cli.get(Arg::positional("path"))?,
         })
     }
 
     fn execute(self, c: &Context) -> proc::Result {
-        // check if we are using global or local
-        if self.local == true && self.global == true {
-            return Err(AnyError(format!(
-                "'{}' and '{}' cannot be set at the same time",
-                "--local".yellow(),
-                "--global".yellow()
-            )))?;
+        // display list
+        if self.list == true {
+            c.get_all_configs()
+                .get_inner()
+                .iter()
+                .for_each(|(p, _, l)| {
+                    println!("{:<61} {}", filesystem::into_std_str(p.to_path_buf()), l)
+                });
+            return Ok(());
         }
-        let (mut cfg, file) = if self.local == true {
-            match c.get_ip_path() {
-                Some(path) => {
-                    let file = path.join(".orbit").join(CONFIG_FILE);
-                    (ConfigDocument::from_file(&file)?, file)
+
+        // display flattened single config
+        if self.path.is_none() && self.no_options_selected() {
+            println!("{}", c.get_config());
+            Ok(())
+        // work on an individual config file
+        } else {
+            let (mut cfg, output_path) = match &self.path {
+                Some(p) => {
+                    // resolve if relative and the find in list
+                    let p = filesystem::resolve_rel_path2(&std::env::current_dir().unwrap(), p);
+                    // try to match
+                    let selected_config_triple =
+                        match c.get_all_configs().get_inner().iter().find(|f| &p == &f.0) {
+                            Some(r) => r,
+                            None => return Err(Error::ConfigBadPath(p, Hint::ShowConfigFiles))?,
+                        };
+                    if self.no_options_selected() == true {
+                        println!("{}", selected_config_triple.1);
+                        return Ok(());
+                    }
+                    (
+                        ConfigDocument::from_file(&selected_config_triple.0).unwrap(),
+                        selected_config_triple.0.clone(),
+                    )
                 }
                 None => {
-                    return Err(AnyError(format!(
-                        "no ip detected in the current directory to modify local configurations"
-                    )))?
+                    // return the first path in the list
+                    let selected_config_triple = c.get_all_configs().get_inner().first().unwrap();
+                    (
+                        ConfigDocument::from_file(&selected_config_triple.0).unwrap(),
+                        selected_config_triple.0.clone(),
+                    )
                 }
-            }
-        } else {
-            // duplicate the configuration so we can potentially mutate it
-            let file = c.get_all_configs().get_global().0.clone();
-            (
-                ConfigDocument::from_file(&file).expect("already should be parsed correctly"),
-                file,
-            )
-        };
-        // modify the settings for cfg file
-        self.run(&mut cfg, &file)
+            };
+            // modify the settings for the cfg file
+            self.run(&mut cfg, &output_path)
+        }
     }
 }
 
 impl Config {
     fn no_options_selected(&self) -> bool {
-        self.append.is_empty()
-            && self.pop.is_empty()
-            && self.set.is_empty()
-            && self.unset.is_empty()
+        self.push.is_empty() && self.pop.is_empty() && self.set.is_empty() && self.unset.is_empty()
     }
 
     fn run(
@@ -133,7 +149,7 @@ impl Config {
         }
 
         // check for list appending
-        for entry in &self.append {
+        for entry in &self.push {
             match entry.0.as_ref() {
                 "include" => config.append_include(&entry.1),
                 _ => return Err(Error::ConfigFieldNotList(entry.0.to_string()))?,
@@ -153,7 +169,7 @@ impl Config {
                 config.set(table, key, &entry.1)
             } else {
                 return Err(AnyError(format!(
-                    "unsupported key '{}' cannot be set",
+                    "unsupported key {:?} cannot be set",
                     entry.0
                 )))?;
             }
@@ -164,7 +180,7 @@ impl Config {
             if let Some((table, key)) = key.split_once('.') {
                 config.unset(table, key)?
             } else {
-                return Err(AnyError(format!("unsupported key '{}' cannot be set", key)))?;
+                return Err(AnyError(format!("unsupported key {:?} cannot be set", key)))?;
             }
         }
 

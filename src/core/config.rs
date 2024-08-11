@@ -232,8 +232,23 @@ impl FromFile for ConfigDocument {
 pub enum Locality {
     Global,
     Local,
-    Parent,
+    Regional,
     Include,
+}
+
+impl Display for Locality {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Global => "global",
+                Self::Local => "local",
+                Self::Regional => "regional",
+                Self::Include => "include",
+            }
+        )
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -244,6 +259,14 @@ pub struct Configs {
 impl Configs {
     pub fn new() -> Self {
         Self { inner: Vec::new() }
+    }
+
+    pub fn get_paths(&self) -> Vec<&PathBuf> {
+        self.inner.iter().map(|f| &f.0).collect::<Vec<&PathBuf>>()
+    }
+
+    pub fn get_inner(&self) -> &Vec<(PathBuf, Config, Locality)> {
+        &self.inner
     }
 
     pub fn load(mut self, base_config_path: PathBuf, lvl: Locality) -> Result<Self, Fault> {
@@ -493,6 +516,12 @@ pub struct Config {
     vhdl_format: Option<VhdlFormat>,
     #[serde(rename = "systemverilog-format")]
     systemverilog_format: Option<SystemVerilogFormat>,
+}
+
+impl Display for Config {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", toml::to_string_pretty(self).unwrap())
+    }
 }
 
 impl Config {

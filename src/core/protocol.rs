@@ -20,7 +20,6 @@
 
 use crate::core::swap;
 use crate::core::target::Process;
-use crate::util::filesystem::Standardize;
 use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -31,10 +30,9 @@ pub type Protocols = Vec<Protocol>;
 #[serde(deny_unknown_fields)]
 pub struct Protocol {
     name: String,
+    description: Option<String>,
     command: String,
     args: Option<Vec<String>>,
-    description: Option<String>,
-    explanation: Option<String>,
     #[serde(skip_serializing, skip_deserializing)]
     root: Option<PathBuf>,
 }
@@ -98,7 +96,6 @@ impl Protocol {
             root: None,
             args: None,
             description: None,
-            explanation: None,
         }
     }
 
@@ -174,36 +171,7 @@ impl Protocol {
 
 impl std::fmt::Display for Protocol {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "\
-name:    {}
-command: {} {}
-root:    {}
-{}{}",
-            self.name,
-            self.command,
-            self.args
-                .as_ref()
-                .unwrap_or(&Vec::new())
-                .iter()
-                .fold(String::new(), |x, y| { x + "\"" + &y + "\" " }),
-            PathBuf::standardize(self.root.as_ref().unwrap()).display(),
-            {
-                if let Some(text) = &self.description {
-                    format!("\n{}\n", text)
-                } else {
-                    String::new()
-                }
-            },
-            {
-                if let Some(text) = &self.explanation {
-                    format!("\n{}", text)
-                } else {
-                    String::new()
-                }
-            },
-        )
+        write!(f, "{}", toml::to_string_pretty(self).unwrap())
     }
 }
 
@@ -267,7 +235,6 @@ args = ["~/scripts/download.bash"]
                 args: None,
                 root: None,
                 description: None,
-                explanation: None,
             }
         );
 
@@ -280,7 +247,6 @@ args = ["~/scripts/download.bash"]
                 args: Some(vec![String::from("~/scripts/download.bash")]),
                 root: None,
                 description: None,
-                explanation: None,
             }
         );
     }

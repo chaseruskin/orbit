@@ -10,23 +10,23 @@ When a field is expected to be a file system path, Orbit has the ability to reso
 
 ## Precedence
 
-Orbit supports multiple levels of configuration. Each level has its own order of precedence:
+Orbit supports multiple levels of configuration. Each level has its own order of precedence. The order of precedence is the following:
 
-1. Local configuration file (working ip's directory)
+1. Local configuration file (current ip's `.orbit/conifg.toml`)
 
-2. Local parent configuration files (parent directories of the working ip's directory)
+2. Regional configuration files (parent directories of the current working directory)
 
-3. Included configurations (order-preserving) listed in the global `config.toml`'s [`include`](#the-include-field)
+3. Global configuration file (Orbit's `$ORBIT_HOME/config.toml`)
 
-4. Global configuration file (location: `$ORBIT_HOME`)
+4. Included configuration files (order-preserving list found for the global configuration's [`include`](#the-include-field) field)
 
-The configuration files are processed in the order defined above. When a configuration file defines a field, no other configuration files later in the process will be able to override its value. If a field is never provided an explicit value, the hard-coded defaults will be used.
+The configuration files are processed in the order defined above. When a configuration file defines a field, no other configuration files later in the process will be able to override its value. If a field is never provided an explicit value, the Orbit's default will be used.
 
 > __Tip:__ You can modify some values in the configuration file through the command-line by using the `orbit config` command.
 
 Every configuration file consists of the following sections:
 
-- [include](#the-include-field) - Lists other `config.toml` files to process..
+- [include](#the-include-field) - Lists other `config.toml` files to process.
 - [[general]](#the-general-section) - The general settings.
     - [target-dir](#the-target-dir-field) - Default target directory.
 - [[test]](#the-test-section) - The test settings.
@@ -34,7 +34,7 @@ Every configuration file consists of the following sections:
 - [[build]](#the-build-section) - The build settings.
     - [default-target](#the-default-target-field) - Set the default target for builds.
 - [[vhdl-format]](#the-vhdl-format-section) - VHDL code formatting.
-- [[systemverilog-format]](#the-systemverilog-format-section) - SystemVerilog code formatting.
+- [[systemverilog-format]](#the-systemverilog-format-section) - SystemVerilog/Verilog code formatting.
 - [[env]](#the-env-section) - The runtime environment variables.
 - [[[target]]](#the-target-array) - Define a target.
     - [name](#the-name-field) - The name of the target.
@@ -42,14 +42,12 @@ Every configuration file consists of the following sections:
     - [command](#the-command-field) - The command to execute the target.
     - [args](#the-args-field) - Arguments to pass to the command.
     - [plans](#the-plans-field) - The list of supported blueprint file formats.
-    - [[fileset]](#the-fileset-section) - Filesets to collect for the target.
-    - [explanation](#the-explanation-field) - A detailed description of the target. 
+    - [[fileset]](#the-fileset-section) - Filesets to collect for the target. 
 - [[[protocol]]](#the-protocol-array) - Define a protocol.
     - [name](#the-name-field) - The name of the protocol.
     - [description](#the-description-field) - A short description of the protocol.
     - [command](#the-command-field) - The command to execute the protocol.
     - [args](#the-args-field) - Arguments to pass to the command.
-    - [explanation](#the-explanation-field) - A detailed description of the protocol.
 - [[[channel]]](#the-channel-array) - Define a channel.
     - [name](#the-name-field) - The name of the channel.
     - [description](#the-description-field) - A short description of the channel.
@@ -208,15 +206,6 @@ plans = ["tsv"]
 The type of blueprint files supported by the particular target. If a list is provided, the default plan used is the first item in the list. If a plan is provided on the command-line, then it must be a valid plan and found within the target's defined list.
 
 If this field is left blank or not defined, then the default plan is "tsv".
-
-### The `explanation` field
-
-``` toml
-explanation = """
-A very long explanation about what this target does 
-and how to possibly get more information about using it.
-"""
-```
 
 ### The `[fileset]` section
 

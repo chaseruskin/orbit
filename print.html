@@ -1892,28 +1892,28 @@ precedence:
 <h2 id="paths"><a class="header" href="#paths">Paths</a></h2>
 <p>When a field is expected to be a file system path, Orbit has the ability to resolve relative paths. The path is determined in relation to the currently processed <code>config.toml</code>'s parent directory. This design choice was implemented in order to allow for path definitions to be valid across developer machines when sharing configurations. It is recommended to use relative paths when setting a path to a field in a <code>config.toml</code>.</p>
 <h2 id="precedence"><a class="header" href="#precedence">Precedence</a></h2>
-<p>Orbit supports multiple levels of configuration. Each level has its own order of precedence:</p>
+<p>Orbit supports multiple levels of configuration. Each level has its own order of precedence. The order of precedence is the following:</p>
 <ol>
 <li>
-<p>Local configuration file (working ip's directory)</p>
+<p>Local configuration file (current ip's <code>.orbit/conifg.toml</code>)</p>
 </li>
 <li>
-<p>Local parent configuration files (parent directories of the working ip's directory)</p>
+<p>Regional configuration files (parent directories of the current working directory)</p>
 </li>
 <li>
-<p>Included configurations (order-preserving) listed in the global <code>config.toml</code>'s <a href="reference/configuration.html#the-include-field"><code>include</code></a></p>
+<p>Global configuration file (Orbit's <code>$ORBIT_HOME/config.toml</code>)</p>
 </li>
 <li>
-<p>Global configuration file (location: <code>$ORBIT_HOME</code>)</p>
+<p>Included configuration files (order-preserving list found for the global configuration's <a href="reference/configuration.html#the-include-field"><code>include</code></a> field)</p>
 </li>
 </ol>
-<p>The configuration files are processed in the order defined above. When a configuration file defines a field, no other configuration files later in the process will be able to override its value. If a field is never provided an explicit value, the hard-coded defaults will be used.</p>
+<p>The configuration files are processed in the order defined above. When a configuration file defines a field, no other configuration files later in the process will be able to override its value. If a field is never provided an explicit value, the Orbit's default will be used.</p>
 <blockquote>
 <p><strong>Tip:</strong> You can modify some values in the configuration file through the command-line by using the <code>orbit config</code> command.</p>
 </blockquote>
 <p>Every configuration file consists of the following sections:</p>
 <ul>
-<li><a href="reference/configuration.html#the-include-field">include</a> - Lists other <code>config.toml</code> files to process..</li>
+<li><a href="reference/configuration.html#the-include-field">include</a> - Lists other <code>config.toml</code> files to process.</li>
 <li><a href="reference/configuration.html#the-general-section">[general]</a> - The general settings.
 <ul>
 <li><a href="reference/configuration.html#the-target-dir-field">target-dir</a> - Default target directory.</li>
@@ -1930,7 +1930,7 @@ precedence:
 </ul>
 </li>
 <li><a href="reference/configuration.html#the-vhdl-format-section">[vhdl-format]</a> - VHDL code formatting.</li>
-<li><a href="reference/configuration.html#the-systemverilog-format-section">[systemverilog-format]</a> - SystemVerilog code formatting.</li>
+<li><a href="reference/configuration.html#the-systemverilog-format-section">[systemverilog-format]</a> - SystemVerilog/Verilog code formatting.</li>
 <li><a href="reference/configuration.html#the-env-section">[env]</a> - The runtime environment variables.</li>
 <li><a href="reference/configuration.html#the-target-array">[[target]]</a> - Define a target.
 <ul>
@@ -1940,7 +1940,6 @@ precedence:
 <li><a href="reference/configuration.html#the-args-field">args</a> - Arguments to pass to the command.</li>
 <li><a href="reference/configuration.html#the-plans-field">plans</a> - The list of supported blueprint file formats.</li>
 <li><a href="reference/configuration.html#the-fileset-section">[fileset]</a> - Filesets to collect for the target.</li>
-<li><a href="reference/configuration.html#the-explanation-field">explanation</a> - A detailed description of the target.</li>
 </ul>
 </li>
 <li><a href="reference/configuration.html#the-protocol-array">[[protocol]]</a> - Define a protocol.
@@ -1949,7 +1948,6 @@ precedence:
 <li><a href="reference/configuration.html#the-description-field">description</a> - A short description of the protocol.</li>
 <li><a href="reference/configuration.html#the-command-field">command</a> - The command to execute the protocol.</li>
 <li><a href="reference/configuration.html#the-args-field">args</a> - Arguments to pass to the command.</li>
-<li><a href="reference/configuration.html#the-explanation-field">explanation</a> - A detailed description of the protocol.</li>
 </ul>
 </li>
 <li><a href="reference/configuration.html#the-channel-array">[[channel]]</a> - Define a channel.
@@ -2065,12 +2063,6 @@ plans = ["tsv"]
 </code></pre>
 <p>The type of blueprint files supported by the particular target. If a list is provided, the default plan used is the first item in the list. If a plan is provided on the command-line, then it must be a valid plan and found within the target's defined list.</p>
 <p>If this field is left blank or not defined, then the default plan is "tsv".</p>
-<h3 id="the-explanation-field"><a class="header" href="#the-explanation-field">The <code>explanation</code> field</a></h3>
-<pre><code class="language-toml">explanation = """
-A very long explanation about what this target does 
-and how to possibly get more information about using it.
-"""
-</code></pre>
 <h3 id="the-fileset-section"><a class="header" href="#the-fileset-section">The <code>[fileset]</code> section</a></h3>
 <pre><code class="language-toml">[[target]]
 # ...
@@ -2736,33 +2728,47 @@ orbit env ORBIT_CACHE ORBIT_ARCHIVE
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-config"><a class="header" href="#orbit-config"><strong>orbit config</strong></a></h1>
 <h2 id="name-14"><a class="header" href="#name-14"><strong>NAME</strong></a></h2>
-<p>config - modify configuration values</p>
+<p>config - modify configuration data</p>
 <h2 id="synopsis-14"><a class="header" href="#synopsis-14"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit config [options]
+<pre><code>orbit config [options] [&lt;path&gt;]
 </code></pre>
 <h2 id="description-14"><a class="header" href="#description-14"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will alter configuration entries in Orbit's settings file named
-<code>config.toml</code>. By default, it will modify the user's config file found at
-the path read from the environment variable <code>$ORBIT_HOME</code>.</p>
-<p>To access an entry (key/value pair), use dots (<code>.</code>) to delimit between
-intermediate table identifiers and the final key identifier.</p>
-<p>The command modifies the document in three independent stages. The first stage
-modifies the settings by iterating through all defined <code>--append</code> values. Then,
-it will insert all <code>--set</code> values. Lastly, it will remove all <code>--unset</code> entries.</p>
+<p>Provides an entry point to the current configuration data through the
+command-line.</p>
+<p>To list the configuration files that are currently being used, use the
+<code>--list</code> option. The configuration files are sorted in order from highest
+precedence to lowest precedence. This means values that are set in files
+higher in the list overwrite values that may have existed from files lowering
+in the list.</p>
+<p>Providing the path of a configuration file using the <code>&lt;path&gt;</code> option will
+limit the accessible data to only the data found in the file. If no path is
+specified, then it will display the aggregated result of the current
+configuration data from across all files in use.</p>
+<p>If there are no options set to modify data, then the resulting configuration
+data will be displayed.</p>
+<p>To modify a field, the full key must be provided. Fields located inside
+tables require decimal characters "." to delimit between the key names.</p>
+<p>When modifying data, additions are processed before deletions. This means all
+<code>--push</code> options occur before <code>--pop</code> options, and all <code>--set</code> options occur
+before <code>--unset</code> options. Not every configuration field can be edited through
+the command-line. More complex fields may require manual edits by opening its
+respective file.</p>
 <h2 id="options-14"><a class="header" href="#options-14"><strong>OPTIONS</strong></a></h2>
-<p><code>--global</code><br />
-      Access the home configuration file</p>
-<p><code>--local</code><br />
-      Access the current project's configuration file</p>
-<p><code>--append &lt;key=value&gt;...</code><br />
-      Add a value to the key storing a list</p>
+<p><code>&lt;path&gt;</code><br />
+      The destination to read/write configuration data</p>
+<p><code>--push &lt;key=value&gt;...</code><br />
+      Add a new value to a key's list</p>
+<p><code>--pop &lt;key&gt;...</code><br />
+      Remove the last value from a key's list</p>
 <p><code>--set &lt;key=value&gt;...</code><br />
-      Write the value at the key's entry</p>
+      Store the value as the key's entry</p>
 <p><code>--unset &lt;key&gt;...</code><br />
       Delete the key's entry</p>
+<p><code>--list</code><br />
+      Print the list of configuration files and exit</p>
 <h2 id="examples-16"><a class="header" href="#examples-16"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit config --append include="~/.orbit/profiles/ks-tech"
-orbit config --unset env.VIVADO_PATH --global
+<pre><code>orbit config --push include="profiles/hyperspacelab"
+orbit config ~/.orbit/config.toml --unset env.vivado_path
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h3 id="archive-1"><a class="header" href="#archive-1">Archive</a></h3>
 <p>The archive is the location where compressed snapshots of a specific ip's version exist. The compressed ip files are unable to be referenced as dependencies, but they are able to be <em>installed</em> to the cache for usage. The ip's in the archvie are considered <em>downloaded</em>.</p>

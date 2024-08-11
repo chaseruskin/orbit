@@ -184,28 +184,28 @@
 <h2 id="paths"><a class="header" href="#paths">Paths</a></h2>
 <p>When a field is expected to be a file system path, Orbit has the ability to resolve relative paths. The path is determined in relation to the currently processed <code>config.toml</code>'s parent directory. This design choice was implemented in order to allow for path definitions to be valid across developer machines when sharing configurations. It is recommended to use relative paths when setting a path to a field in a <code>config.toml</code>.</p>
 <h2 id="precedence"><a class="header" href="#precedence">Precedence</a></h2>
-<p>Orbit supports multiple levels of configuration. Each level has its own order of precedence:</p>
+<p>Orbit supports multiple levels of configuration. Each level has its own order of precedence. The order of precedence is the following:</p>
 <ol>
 <li>
-<p>Local configuration file (working ip's directory)</p>
+<p>Local configuration file (current ip's <code>.orbit/conifg.toml</code>)</p>
 </li>
 <li>
-<p>Local parent configuration files (parent directories of the working ip's directory)</p>
+<p>Regional configuration files (parent directories of the current working directory)</p>
 </li>
 <li>
-<p>Included configurations (order-preserving) listed in the global <code>config.toml</code>'s <a href="#the-include-field"><code>include</code></a></p>
+<p>Global configuration file (Orbit's <code>$ORBIT_HOME/config.toml</code>)</p>
 </li>
 <li>
-<p>Global configuration file (location: <code>$ORBIT_HOME</code>)</p>
+<p>Included configuration files (order-preserving list found for the global configuration's <a href="#the-include-field"><code>include</code></a> field)</p>
 </li>
 </ol>
-<p>The configuration files are processed in the order defined above. When a configuration file defines a field, no other configuration files later in the process will be able to override its value. If a field is never provided an explicit value, the hard-coded defaults will be used.</p>
+<p>The configuration files are processed in the order defined above. When a configuration file defines a field, no other configuration files later in the process will be able to override its value. If a field is never provided an explicit value, the Orbit's default will be used.</p>
 <blockquote>
 <p><strong>Tip:</strong> You can modify some values in the configuration file through the command-line by using the <code>orbit config</code> command.</p>
 </blockquote>
 <p>Every configuration file consists of the following sections:</p>
 <ul>
-<li><a href="#the-include-field">include</a> - Lists other <code>config.toml</code> files to process..</li>
+<li><a href="#the-include-field">include</a> - Lists other <code>config.toml</code> files to process.</li>
 <li><a href="#the-general-section">[general]</a> - The general settings.
 <ul>
 <li><a href="#the-target-dir-field">target-dir</a> - Default target directory.</li>
@@ -222,7 +222,7 @@
 </ul>
 </li>
 <li><a href="#the-vhdl-format-section">[vhdl-format]</a> - VHDL code formatting.</li>
-<li><a href="#the-systemverilog-format-section">[systemverilog-format]</a> - SystemVerilog code formatting.</li>
+<li><a href="#the-systemverilog-format-section">[systemverilog-format]</a> - SystemVerilog/Verilog code formatting.</li>
 <li><a href="#the-env-section">[env]</a> - The runtime environment variables.</li>
 <li><a href="#the-target-array">[[target]]</a> - Define a target.
 <ul>
@@ -232,7 +232,6 @@
 <li><a href="#the-args-field">args</a> - Arguments to pass to the command.</li>
 <li><a href="#the-plans-field">plans</a> - The list of supported blueprint file formats.</li>
 <li><a href="#the-fileset-section">[fileset]</a> - Filesets to collect for the target.</li>
-<li><a href="#the-explanation-field">explanation</a> - A detailed description of the target.</li>
 </ul>
 </li>
 <li><a href="#the-protocol-array">[[protocol]]</a> - Define a protocol.
@@ -241,7 +240,6 @@
 <li><a href="#the-description-field">description</a> - A short description of the protocol.</li>
 <li><a href="#the-command-field">command</a> - The command to execute the protocol.</li>
 <li><a href="#the-args-field">args</a> - Arguments to pass to the command.</li>
-<li><a href="#the-explanation-field">explanation</a> - A detailed description of the protocol.</li>
 </ul>
 </li>
 <li><a href="#the-channel-array">[[channel]]</a> - Define a channel.
@@ -357,12 +355,6 @@ plans = ["tsv"]
 </code></pre>
 <p>The type of blueprint files supported by the particular target. If a list is provided, the default plan used is the first item in the list. If a plan is provided on the command-line, then it must be a valid plan and found within the target's defined list.</p>
 <p>If this field is left blank or not defined, then the default plan is "tsv".</p>
-<h3 id="the-explanation-field"><a class="header" href="#the-explanation-field">The <code>explanation</code> field</a></h3>
-<pre><code class="language-toml">explanation = """
-A very long explanation about what this target does 
-and how to possibly get more information about using it.
-"""
-</code></pre>
 <h3 id="the-fileset-section"><a class="header" href="#the-fileset-section">The <code>[fileset]</code> section</a></h3>
 <pre><code class="language-toml">[[target]]
 # ...

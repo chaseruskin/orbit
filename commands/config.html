@@ -178,33 +178,47 @@
                     <main>
                         <h1 id="orbit-config"><a class="header" href="#orbit-config"><strong>orbit config</strong></a></h1>
 <h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>
-<p>config - modify configuration values</p>
+<p>config - modify configuration data</p>
 <h2 id="synopsis"><a class="header" href="#synopsis"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit config [options]
+<pre><code>orbit config [options] [&lt;path&gt;]
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will alter configuration entries in Orbit's settings file named
-<code>config.toml</code>. By default, it will modify the user's config file found at
-the path read from the environment variable <code>$ORBIT_HOME</code>.</p>
-<p>To access an entry (key/value pair), use dots (<code>.</code>) to delimit between
-intermediate table identifiers and the final key identifier.</p>
-<p>The command modifies the document in three independent stages. The first stage
-modifies the settings by iterating through all defined <code>--append</code> values. Then,
-it will insert all <code>--set</code> values. Lastly, it will remove all <code>--unset</code> entries.</p>
+<p>Provides an entry point to the current configuration data through the
+command-line.</p>
+<p>To list the configuration files that are currently being used, use the
+<code>--list</code> option. The configuration files are sorted in order from highest
+precedence to lowest precedence. This means values that are set in files
+higher in the list overwrite values that may have existed from files lowering
+in the list.</p>
+<p>Providing the path of a configuration file using the <code>&lt;path&gt;</code> option will
+limit the accessible data to only the data found in the file. If no path is
+specified, then it will display the aggregated result of the current
+configuration data from across all files in use.</p>
+<p>If there are no options set to modify data, then the resulting configuration
+data will be displayed.</p>
+<p>To modify a field, the full key must be provided. Fields located inside
+tables require decimal characters "." to delimit between the key names.</p>
+<p>When modifying data, additions are processed before deletions. This means all
+<code>--push</code> options occur before <code>--pop</code> options, and all <code>--set</code> options occur
+before <code>--unset</code> options. Not every configuration field can be edited through
+the command-line. More complex fields may require manual edits by opening its
+respective file.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
-<p><code>--global</code><br />
-      Access the home configuration file</p>
-<p><code>--local</code><br />
-      Access the current project's configuration file</p>
-<p><code>--append &lt;key=value&gt;...</code><br />
-      Add a value to the key storing a list</p>
+<p><code>&lt;path&gt;</code><br />
+      The destination to read/write configuration data</p>
+<p><code>--push &lt;key=value&gt;...</code><br />
+      Add a new value to a key's list</p>
+<p><code>--pop &lt;key&gt;...</code><br />
+      Remove the last value from a key's list</p>
 <p><code>--set &lt;key=value&gt;...</code><br />
-      Write the value at the key's entry</p>
+      Store the value as the key's entry</p>
 <p><code>--unset &lt;key&gt;...</code><br />
       Delete the key's entry</p>
+<p><code>--list</code><br />
+      Print the list of configuration files and exit</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit config --append include="~/.orbit/profiles/ks-tech"
-orbit config --unset env.VIVADO_PATH --global
+<pre><code>orbit config --push include="profiles/hyperspacelab"
+orbit config ~/.orbit/config.toml --unset env.vivado_path
 </code></pre>
 
                     </main>

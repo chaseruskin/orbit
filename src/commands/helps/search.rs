@@ -22,11 +22,12 @@ Usage:
     orbit search [options] [<ip>]
 
 Options:
-    <ip>                  the beginning of a package name
+    <ip>                  ip's name
     --install, -i         filter ip installed to the cache
-    --download, -d        filter ip downloaded to the downloads
-    --keyword <term>...   include ip that contain this keyword
-    --limit <num>         the maximum number of results to return
-    --match               return results that only pass each filter
+    --download, -d        filter ip downloaded to the archive
+    --available, -a       filter ip available via channels
+    --keyword <term>...   include ip that have this keyword
+    --limit <n>           maximum number of results to return
+    --match               return results that pass each filter
 
 Use 'orbit help search' to read more about the command."#;

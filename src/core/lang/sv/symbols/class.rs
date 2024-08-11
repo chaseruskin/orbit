@@ -135,10 +135,15 @@ impl Class {
                             refs.insert(CompoundIdentifier::new_minimal_verilog(ext_class_name));
                         } else if peek.as_type().check_delimiter(&Operator::ParenL) == true {
                             let beg_t = tokens.next().unwrap();
-                            let stmt =
-                                VerilogSymbol::parse_until_operator(tokens, beg_t, Operator::ParenR)?;
+                            let stmt = VerilogSymbol::parse_until_operator(
+                                tokens,
+                                beg_t,
+                                Operator::ParenR,
+                            )?;
                             // update references that may appear in the statement
-                            if let Some(s_refs) = SystemVerilogSymbol::extract_refs_from_statement(&stmt) {
+                            if let Some(s_refs) =
+                                SystemVerilogSymbol::extract_refs_from_statement(&stmt)
+                            {
                                 refs.extend(s_refs);
                             }
                         } else {
@@ -185,7 +190,7 @@ impl Class {
         // take the terminator
         let t = tokens.next().take().unwrap();
         if t.as_type().check_delimiter(&Operator::Terminator) == false {
-            return Err(SystemVerilogError::ExpectingOperator(Operator::Terminator))
+            return Err(SystemVerilogError::ExpectingOperator(Operator::Terminator));
         }
 
         // take the class body

@@ -48,7 +48,7 @@ impl Subcommand<Context> for Search {
             cached: cli.check(Arg::flag("install").switch('i'))?,
             available: cli.check(Arg::flag("available").switch('a'))?,
             hard_match: cli.check(Arg::flag("match"))?,
-            limit: cli.get(Arg::option("limit").value("num"))?,
+            limit: cli.get(Arg::option("limit").value("n"))?,
             keywords: cli
                 .get_all(Arg::option("keyword").value("term"))?
                 .unwrap_or(Vec::new()),

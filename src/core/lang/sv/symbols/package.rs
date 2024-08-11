@@ -22,7 +22,9 @@ use crate::core::lang::{
     reference::RefSet,
     sv::{
         error::SystemVerilogError,
-        token::{identifier::Identifier, keyword::Keyword, operator::Operator, token::SystemVerilogToken},
+        token::{
+            identifier::Identifier, keyword::Keyword, operator::Operator, token::SystemVerilogToken,
+        },
     },
     verilog::symbols::VerilogSymbol,
 };
@@ -80,7 +82,7 @@ impl Package {
         // take terminator ';'
         let t = tokens.next().take().unwrap();
         if t.as_type().check_delimiter(&Operator::Terminator) == false {
-            return Err(SystemVerilogError::ExpectingOperator(Operator::Terminator))
+            return Err(SystemVerilogError::ExpectingOperator(Operator::Terminator));
         }
 
         let mut refs = RefSet::new();

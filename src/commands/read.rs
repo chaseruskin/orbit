@@ -73,7 +73,7 @@ impl Subcommand<Context> for Read {
             locate: cli.check(Arg::flag("locate"))?,
             no_clean: cli.check(Arg::flag("no-clean"))?,
             // options
-            limit: cli.get(Arg::option("limit").value("num"))?,
+            limit: cli.get(Arg::option("limit").value("n"))?,
             ip: cli.get(Arg::option("ip").value("spec"))?,
             start: cli.get(Arg::option("start").value("code"))?,
             end: cli.get(Arg::option("end").value("code"))?,

@@ -30,7 +30,7 @@ Options:
     --save                write the results to a temporary read-only file
     --start <code>        start the lookup after jumping to this code snippet
     --end <code>          stop the lookup after finding this code snippet
-    --limit <num>         set a maximum number of source code lines to write
+    --limit <n>           maximum number of source code lines to return
     --no-clean            do not clean the temporary directory of existing files
     --locate              append the line and column number to the resulting file
 

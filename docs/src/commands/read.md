@@ -61,8 +61,8 @@ call of this command, use the `--no-clean` option.
 `--end <code>`  
       Stop the lookup after finding this code snippet
 
-`--limit <num>`  
-      Set a maximum number of source code lines to write
+`--limit <n>`  
+      Maximum number of source code lines to return
 
 `--no-clean`  
       Do not clean the temporary directory of existing files

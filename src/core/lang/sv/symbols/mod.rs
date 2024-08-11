@@ -217,6 +217,13 @@ impl Parse<SystemVerilogToken> for SystemVerilogParser {
                     .unwrap()
                     .as_type()
                     .check_keyword(&Keyword::Class))
+                || (t.as_type().check_keyword(&Keyword::Interface)
+                && tokens.peek().is_some()
+                && tokens
+                    .peek()
+                    .unwrap()
+                    .as_type()
+                    .check_keyword(&Keyword::Class))
                 || t.as_type().check_keyword(&Keyword::Class)
             {
                 symbols.push(

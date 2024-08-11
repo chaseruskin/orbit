@@ -18,9 +18,10 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.20.0 - unreleased
 
 ### Features
-- adds support for identifying sv "program" design elements
-- adds support for identifying sv "checker" design elements
-- adds support for identifying verilog/sv "primitive" design elements
+- "interface class" sv design elements are now detected
+- "program" sv design elements are now detected
+- "checker" sv design elements are now detected
+- "primitive" verilog/sv design elements are now detected 
 - increases capabilities of `orbit config` to modify varying levels of configuration data
 - handles reading invalid UTF-8 code from HDL source code files
 - adds `ip.include` and `ip.exclude` fields to the manifest format

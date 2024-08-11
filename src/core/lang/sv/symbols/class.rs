@@ -85,7 +85,7 @@ impl Class {
         }
 
         // take the class name
-        let class_name = match tokens.next().take().unwrap().take() {
+        let name = match tokens.next().take().unwrap().take() {
             SystemVerilogToken::Identifier(id) => id,
             _ => return Err(SystemVerilogError::Vague),
         };
@@ -112,7 +112,7 @@ impl Class {
             }
         }
 
-        // take extends for single class inheritance
+        // take extends for multiple class inheritances (multiple is only supported for "interface class")
         if let Some(next) = tokens.peek() {
             if next.as_type().check_keyword(&Keyword::Extends) == true {
                 let _ = tokens.next().unwrap();
@@ -120,18 +120,32 @@ impl Class {
                     SystemVerilogToken::Identifier(id) => id,
                     _ => return Err(SystemVerilogError::Vague),
                 };
-                // println!("extends {}", ext_class_name);
+                // println!("extends {}", impl_class_name);
                 refs.insert(CompoundIdentifier::new_minimal_verilog(ext_class_name));
-            }
-            // take any parenthesis if exist
-            if let Some(next) = tokens.peek() {
-                if next.as_type().check_delimiter(&Operator::ParenL) == true {
-                    let beg_t = tokens.next().unwrap();
-                    let stmt =
-                        VerilogSymbol::parse_until_operator(tokens, beg_t, Operator::ParenR)?;
-                    // update references that may appear in the statement
-                    if let Some(s_refs) = SystemVerilogSymbol::extract_refs_from_statement(&stmt) {
-                        refs.extend(s_refs);
+                loop {
+                    if let Some(peek) = tokens.peek() {
+                        // take another set of extend
+                        if peek.as_type().check_delimiter(&Operator::Comma) == true {
+                            let _ = tokens.next().unwrap();
+                            let ext_class_name = match tokens.next().take().unwrap().take() {
+                                SystemVerilogToken::Identifier(id) => id,
+                                _ => return Err(SystemVerilogError::Vague),
+                            };
+                            // println!("extends {}", impl_class_name);
+                            refs.insert(CompoundIdentifier::new_minimal_verilog(ext_class_name));
+                        } else if peek.as_type().check_delimiter(&Operator::ParenL) == true {
+                            let beg_t = tokens.next().unwrap();
+                            let stmt =
+                                VerilogSymbol::parse_until_operator(tokens, beg_t, Operator::ParenR)?;
+                            // update references that may appear in the statement
+                            if let Some(s_refs) = SystemVerilogSymbol::extract_refs_from_statement(&stmt) {
+                                refs.extend(s_refs);
+                            }
+                        } else {
+                            break;
+                        }
+                    } else {
+                        break;
                     }
                 }
             }
@@ -168,12 +182,18 @@ impl Class {
             }
         }
 
+        // take the terminator
+        let t = tokens.next().take().unwrap();
+        if t.as_type().check_delimiter(&Operator::Terminator) == false {
+            return Err(SystemVerilogError::ExpectingOperator(Operator::Terminator))
+        }
+
         // take the class body
         let (c_refs, _c_deps) = Self::parse_class_body(tokens)?;
         refs.extend(c_refs);
 
         Ok(Class {
-            name: class_name,
+            name: name,
             params: params,
             refs: refs,
             pos: pos,

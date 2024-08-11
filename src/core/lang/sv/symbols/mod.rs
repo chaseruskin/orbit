@@ -24,6 +24,7 @@ use interface::Interface;
 use module::Module;
 use package::Package;
 use primitive::Primitive;
+use program::Program;
 
 use super::error::SystemVerilogError;
 use super::token::identifier::Identifier;
@@ -70,7 +71,7 @@ pub enum SystemVerilogSymbol {
     Class(Class),
     Primitive(Primitive),
     Checker(Checker),
-    // Program(Program),
+    Program(Program),
 }
 
 impl SystemVerilogSymbol {
@@ -83,6 +84,7 @@ impl SystemVerilogSymbol {
             Self::Class(c) => Some(c.get_name()),
             Self::Primitive(p) => Some(p.get_name()),
             Self::Checker(c) => Some(c.get_name()),
+            Self::Program(p) => Some(p.get_name()),
         }
     }
 
@@ -95,6 +97,7 @@ impl SystemVerilogSymbol {
             Self::Class(c) => c.get_position(),
             Self::Primitive(p) => p.get_position(),
             Self::Checker(c) => c.get_position(),
+            Self::Program(p) => p.get_position(),
         }
     }
 
@@ -114,6 +117,7 @@ impl SystemVerilogSymbol {
             Self::Class(c) => c.get_refs(),
             Self::Primitive(p) => p.get_refs(),
             Self::Checker(c) => c.get_refs(),
+            Self::Program(p) => p.get_refs(),
         }
     }
 
@@ -126,6 +130,7 @@ impl SystemVerilogSymbol {
             Self::Class(c) => c.extend_refs(refs),
             Self::Primitive(p) => p.extend_refs(refs),
             Self::Checker(c) => c.extend_refs(refs),
+            Self::Program(p) => p.extend_refs(refs),
         }
     }
 }
@@ -228,6 +233,14 @@ impl Parse<SystemVerilogToken> for SystemVerilogParser {
                         Err(e) => Err(e),
                     },
                 )
+            // create program design element
+            } else if t.as_type().check_keyword(&Keyword::Program) {
+                symbols.push(
+                    match SystemVerilogSymbol::parse_program(&mut tokens, t.into_position()) {
+                        Ok(prog) => Ok(Symbol::new(prog)),
+                        Err(e) => Err(e),
+                    },
+                )
             // create config design element
             } else if t.as_type().check_keyword(&Keyword::Config) {
                 symbols.push(
@@ -325,6 +338,13 @@ impl SystemVerilogSymbol {
         I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         Ok(Self::Class(Class::from_tokens(tokens, pos)?))
+    }
+
+    fn parse_program<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Self, SystemVerilogError>
+    where
+        I: Iterator<Item = Token<SystemVerilogToken>>,
+    {
+        Ok(Self::Program(Program::from_tokens(tokens, pos)?))
     }
 
     fn parse_checker<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Self, SystemVerilogError>

@@ -18,6 +18,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.20.0 - unreleased
 
 ### Features
+- adds support for identifying sv "program" design elements
 - adds support for identifying sv "checker" design elements
 - adds support for identifying verilog/sv "primitive" design elements
 - increases capabilities of `orbit config` to modify varying levels of configuration data

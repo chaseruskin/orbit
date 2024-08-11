@@ -32,6 +32,7 @@ pub enum PrimaryShape {
     Class,
     Primitive,
     Checker,
+    Program,
 }
 
 #[derive(PartialEq, Hash, Eq, Debug)]
@@ -68,6 +69,7 @@ impl PrimaryUnit {
             "class" => PrimaryShape::Class,
             "primitive" => PrimaryShape::Primitive,
             "checker" => PrimaryShape::Checker,
+            "program" => PrimaryShape::Program,
             _ => return None,
         };
         Some(Self {
@@ -90,6 +92,7 @@ impl std::fmt::Display for PrimaryUnit {
                 PrimaryShape::Class => "class",
                 PrimaryShape::Primitive => "primitive",
                 PrimaryShape::Checker => "checker",
+                PrimaryShape::Program => "program",
             }
         )
     }
@@ -229,6 +232,17 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
                             name.unwrap().clone(),
                             PrimaryUnit {
                                 shape: PrimaryShape::Checker,
+                                unit: Unit {
+                                    name: name.unwrap().clone(),
+                                    symbol: Some(sym),
+                                    source: source_file.clone(),
+                                },
+                            },
+                        )),
+                        SystemVerilogSymbol::Program(_) => Some((
+                            name.unwrap().clone(),
+                            PrimaryUnit {
+                                shape: PrimaryShape::Program,
                                 unit: Unit {
                                     name: name.unwrap().clone(),
                                     symbol: Some(sym),

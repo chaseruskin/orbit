@@ -226,19 +226,21 @@ impl Module {
         refs.extend(d_refs);
 
         // parse the body of the module
-        let (body_params, body_ports, b_refs, deps) =
-            VerilogSymbol::parse_module_architecture(tokens, &params, &ports)?;
+        let (b_refs, deps) =
+            VerilogSymbol::parse_module_architecture(tokens, &mut params, &mut ports)?;
         refs.extend(b_refs);
 
-        // update declared ports from any architecture port definitions
-        body_ports
-            .into_iter()
-            .for_each(|p| interface::update_port_list(&mut ports, p, false));
+        // DEPREC: This is now handled when parsing module architecture
+        // // update declared ports from any architecture port definitions
+        // body_ports
+        //     .into_iter()
+        //     .for_each(|p| interface::update_port_list(&mut ports, p, false));
 
-        // update declared params from any architecture param definitions
-        body_params
-            .into_iter()
-            .for_each(|p| interface::update_port_list(&mut params, p, false));
+        // DEPREC: This is now handled when parsing module architecture
+        // // update declared params from any architecture param definitions
+        // body_params
+        //     .into_iter()
+        //     .for_each(|p| interface::update_port_list(&mut params, p, false));
 
         // for all ports and their datatypes, try to see if any are references to interfaces
         ports

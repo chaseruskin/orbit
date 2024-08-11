@@ -34,9 +34,11 @@ use std::str::FromStr;
 
 pub mod config;
 pub mod module;
+pub mod primitive;
 
 use config::Config;
 use module::Module;
+use primitive::Primitive;
 
 pub type Statement = Vec<Token<SystemVerilogToken>>;
 
@@ -57,6 +59,7 @@ fn statement_to_string(stmt: &Statement) -> String {
 pub enum VerilogSymbol {
     Module(Module),
     Config(Config),
+    Primitive(Primitive),
 }
 
 impl VerilogSymbol {
@@ -64,6 +67,7 @@ impl VerilogSymbol {
         match &self {
             Self::Module(m) => Some(m.get_name()),
             Self::Config(c) => Some(c.get_name()),
+            Self::Primitive(p) => Some(p.get_name()),
         }
     }
 
@@ -71,6 +75,7 @@ impl VerilogSymbol {
         match self {
             Self::Module(m) => m.get_position(),
             Self::Config(c) => c.get_position(),
+            Self::Primitive(p) => p.get_position(),
         }
     }
 
@@ -84,17 +89,11 @@ impl VerilogSymbol {
         }
     }
 
-    pub fn as_config(&self) -> Option<&Config> {
-        match &self {
-            Self::Config(c) => Some(c),
-            _ => None,
-        }
-    }
-
     pub fn get_refs(&self) -> &RefSet {
         match &self {
             Self::Module(m) => m.get_refs(),
             Self::Config(c) => c.get_refs(),
+            Self::Primitive(p) => p.get_refs(),
         }
     }
 }
@@ -172,7 +171,15 @@ impl Parse<VerilogToken> for VerilogParser {
                         Err(e) => Err(e),
                     },
                 );
-            // skip comments
+            // create primitive symbol
+            } else if t.as_type().check_keyword(&Keyword::Primitive) {
+                symbols.push(
+                    match VerilogSymbol::parse_primitive(&mut tokens, t.into_position()) {
+                        Ok(prim) => Ok(Symbol::new(prim)),
+                        Err(e) => Err(e),
+                    },
+                );
+            // create config symbol
             } else if t.as_type().check_keyword(&Keyword::Config) {
                 symbols.push(
                     match VerilogSymbol::parse_config(&mut tokens, t.into_position()) {
@@ -203,6 +210,20 @@ impl VerilogSymbol {
         I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         Ok(VerilogSymbol::Config(Config::from_tokens(tokens, pos)?))
+    }
+
+    /// Parses an `Primitive` design element from the primitive's identifier to
+    /// the END closing statement.
+    fn parse_primitive<I>(
+        tokens: &mut Peekable<I>,
+        pos: Position,
+    ) -> Result<VerilogSymbol, VerilogError>
+    where
+        I: Iterator<Item = Token<SystemVerilogToken>>,
+    {
+        Ok(VerilogSymbol::Primitive(Primitive::from_tokens(
+            tokens, pos,
+        )?))
     }
 
     fn parse_assignment<I>(
@@ -380,11 +401,9 @@ impl VerilogSymbol {
                 // take all until a terminator
                 if let Some(stmt) = Self::into_next_statement(t, tokens)? {
                     Self::handle_statement(
-                        &Vec::new(),
-                        &Vec::new(),
                         stmt,
-                        &mut param_list,
-                        &mut port_list,
+                        Some(&mut param_list),
+                        Some(&mut port_list),
                         &mut refs,
                         None,
                     )?;
@@ -405,14 +424,12 @@ impl VerilogSymbol {
 
     pub fn parse_module_architecture<I>(
         tokens: &mut Peekable<I>,
-        decl_params: &ParamList,
-        decl_ports: &PortList,
-    ) -> Result<(ParamList, PortList, RefSet, RefSet), VerilogError>
+        mut params: &mut ParamList,
+        mut ports: &mut PortList,
+    ) -> Result<(RefSet, RefSet), VerilogError>
     where
         I: Iterator<Item = Token<SystemVerilogToken>>,
     {
-        let mut params = ParamList::new();
-        let mut ports = PortList::new();
         let mut refs = RefSet::new();
         let mut deps = RefSet::new();
 
@@ -426,17 +443,15 @@ impl VerilogSymbol {
             } else if let Some(stmt) = Self::into_next_statement(t, tokens)? {
                 // println!("[arch]: {}", statement_to_string(&stmt));
                 Self::handle_statement(
-                    decl_params,
-                    decl_ports,
                     stmt,
-                    &mut params,
-                    &mut ports,
+                    Some(&mut params),
+                    Some(&mut ports),
                     &mut refs,
                     Some(&mut deps),
                 )?;
             }
         }
-        Ok((params, ports, refs, deps))
+        Ok((refs, deps))
     }
 
     pub fn into_next_statement<I>(
@@ -543,11 +558,9 @@ impl VerilogSymbol {
     }
 
     pub fn handle_statement(
-        decl_params: &ParamList,
-        decl_ports: &PortList,
         stmt: Statement,
-        mut params: &mut ParamList,
-        mut ports: &mut PortList,
+        params: Option<&mut ParamList>,
+        ports: Option<&mut PortList>,
         refs: &mut RefSet,
         deps: Option<&mut RefSet>,
     ) -> Result<(), VerilogError> {
@@ -559,6 +572,7 @@ impl VerilogSymbol {
         if let Some(s_refs) = SystemVerilogSymbol::extract_refs_from_statement(&stmt) {
             refs.extend(s_refs);
         }
+
         // try as a module instantiation
         if let Some((dep, is_valid_mod)) = Self::as_module_instance(&stmt) {
             // println!("detected dependency! {}", dep);
@@ -568,19 +582,29 @@ impl VerilogSymbol {
                 }
             }
             refs.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
+            return Ok(());
         }
+
         // try as a port
-        if let Some(def_ports) = Self::as_port_definition(&stmt, &decl_ports) {
-            def_ports
-                .into_iter()
-                .for_each(|p| interface::update_port_list(&mut ports, p, true));
+        if let Some(mut ports) = ports {
+            if let Some(def_ports) = Self::as_port_definition(&stmt, &ports) {
+                def_ports
+                    .into_iter()
+                    .for_each(|p| interface::update_port_list(&mut ports, p, false));
+            }
+            return Ok(());
         }
+
         // try as a paramater
-        if let Some(def_params) = Self::as_param_definition(&stmt, &decl_params) {
-            def_params
-                .into_iter()
-                .for_each(|p| interface::update_port_list(&mut params, p, true));
+        if let Some(mut params) = params {
+            if let Some(def_params) = Self::as_param_definition(&stmt, &params) {
+                def_params
+                    .into_iter()
+                    .for_each(|p| interface::update_port_list(&mut params, p, false));
+            }
+            return Ok(());
         }
+
         // try as import statement
         if stmt
             .first()
@@ -998,7 +1022,7 @@ impl VerilogSymbol {
         Ok((params, refs))
     }
 
-    fn parse_module_port_list<I>(
+    pub fn parse_module_port_list<I>(
         tokens: &mut Peekable<I>,
         last_line: usize,
     ) -> Result<(PortList, RefSet), VerilogError>

@@ -27,6 +27,7 @@ use std::str::FromStr;
 pub enum PrimaryShape {
     Module,
     Config,
+    Primitive,
 }
 
 #[derive(PartialEq, Hash, Eq, Debug)]
@@ -58,6 +59,7 @@ impl PrimaryUnit {
         let shape = match tbl.get("type")?.as_str()? {
             "module" => PrimaryShape::Module,
             "config" => PrimaryShape::Config,
+            "primitive" => PrimaryShape::Primitive,
             _ => return None,
         };
         Some(Self {
@@ -75,6 +77,7 @@ impl std::fmt::Display for PrimaryUnit {
             match self.shape {
                 PrimaryShape::Module => "module",
                 PrimaryShape::Config => "config",
+                PrimaryShape::Primitive => "primitive",
             }
         )
     }
@@ -160,6 +163,17 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
                             name.unwrap().clone(),
                             PrimaryUnit {
                                 shape: PrimaryShape::Config,
+                                unit: Unit {
+                                    name: name.unwrap().clone(),
+                                    symbol: Some(sym),
+                                    source: source_file.clone(),
+                                },
+                            },
+                        )),
+                        VerilogSymbol::Primitive(_) => Some((
+                            name.unwrap().clone(),
+                            PrimaryUnit {
+                                shape: PrimaryShape::Primitive,
                                 unit: Unit {
                                     name: name.unwrap().clone(),
                                     symbol: Some(sym),

@@ -1,7 +1,7 @@
 module packer #(
     int[3:0][3:0] grid[10][1:9]
 ) (
-    input logic[7:0][3:0] ports[8][10], my_grid,
+    // input logic[7:0][3:0] ports[8][10], my_grid,
     // a, b, c
 );
 

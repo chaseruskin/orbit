@@ -196,15 +196,7 @@ impl Class {
                 break;
             } else if let Some(stmt) = VerilogSymbol::into_next_statement(t, tokens)? {
                 // println!("{}", statement_to_string(&stmt));
-                VerilogSymbol::handle_statement(
-                    &Vec::new(),
-                    &Vec::new(),
-                    stmt,
-                    &mut Vec::new(),
-                    &mut Vec::new(),
-                    &mut refs,
-                    Some(&mut deps),
-                )?;
+                VerilogSymbol::handle_statement(stmt, None, None, &mut refs, Some(&mut deps))?;
             }
         }
         Ok((refs, deps))

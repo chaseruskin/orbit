@@ -31,6 +31,7 @@ use crate::core::lang::reference::{CompoundIdentifier, RefSet};
 use crate::core::lang::sv::token::keyword::Keyword;
 use crate::core::lang::sv::token::token::SystemVerilogToken;
 use crate::core::lang::verilog::symbols::config::Config;
+use crate::core::lang::verilog::symbols::primitive::Primitive;
 use crate::core::lang::verilog::symbols::VerilogSymbol;
 use std::str::FromStr;
 
@@ -65,9 +66,9 @@ pub enum SystemVerilogSymbol {
     Package(Package),
     Interface(Interface),
     Class(Class),
+    Primitive(Primitive),
     // Program(Program),
     // Checker(Checker),
-    // Primitive(Primitive),
 }
 
 impl SystemVerilogSymbol {
@@ -78,6 +79,7 @@ impl SystemVerilogSymbol {
             Self::Package(p) => Some(p.get_name()),
             Self::Interface(p) => Some(p.get_name()),
             Self::Class(c) => Some(c.get_name()),
+            Self::Primitive(p) => Some(p.get_name()),
         }
     }
 
@@ -88,6 +90,7 @@ impl SystemVerilogSymbol {
             Self::Package(p) => p.get_position(),
             Self::Interface(p) => p.get_position(),
             Self::Class(c) => c.get_position(),
+            Self::Primitive(p) => p.get_position(),
         }
     }
 
@@ -105,6 +108,7 @@ impl SystemVerilogSymbol {
             Self::Package(p) => p.get_refs(),
             Self::Interface(p) => p.get_refs(),
             Self::Class(c) => c.get_refs(),
+            Self::Primitive(p) => p.get_refs(),
         }
     }
 
@@ -115,6 +119,7 @@ impl SystemVerilogSymbol {
             Self::Package(p) => p.extend_refs(refs),
             Self::Interface(p) => p.extend_refs(refs),
             Self::Class(c) => c.extend_refs(refs),
+            Self::Primitive(p) => p.extend_refs(refs),
         }
     }
 }
@@ -206,6 +211,14 @@ impl Parse<SystemVerilogToken> for SystemVerilogParser {
                 symbols.push(
                     match SystemVerilogSymbol::parse_class(&mut tokens, t.into_position()) {
                         Ok(module) => Ok(Symbol::new(module)),
+                        Err(e) => Err(e),
+                    },
+                )
+            // create primitive design element
+            } else if t.as_type().check_keyword(&Keyword::Primitive) {
+                symbols.push(
+                    match SystemVerilogSymbol::parse_primitive(&mut tokens, t.into_position()) {
+                        Ok(prim) => Ok(Symbol::new(prim)),
                         Err(e) => Err(e),
                     },
                 )
@@ -312,6 +325,16 @@ impl SystemVerilogSymbol {
         I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         Ok(Self::Config(Config::from_tokens(tokens, pos)?))
+    }
+
+    fn parse_primitive<I>(
+        tokens: &mut Peekable<I>,
+        pos: Position,
+    ) -> Result<Self, SystemVerilogError>
+    where
+        I: Iterator<Item = Token<SystemVerilogToken>>,
+    {
+        Ok(Self::Primitive(Primitive::from_tokens(tokens, pos)?))
     }
 
     fn parse_interface<I>(

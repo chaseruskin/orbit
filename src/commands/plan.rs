@@ -702,6 +702,20 @@ impl Plan {
                         HdlNode::new(HdlSymbol::Verilog(f), node),
                     );
                 }
+                VerilogSymbol::Primitive(_) => {
+                    component_pairs.insert(
+                        LangIdentifier::Verilog(name.unwrap().clone()),
+                        LangIdentifier::Vhdl(vhdl_lib.clone()),
+                    );
+                    // add primary design units into the graph
+                    graph_map.add_node(
+                        CompoundIdentifier::new(
+                            lib.clone(),
+                            LangIdentifier::Verilog(name.unwrap().clone()),
+                        ),
+                        HdlNode::new(HdlSymbol::Verilog(f), node),
+                    );
+                }
             }
         });
         Ok(())
@@ -746,6 +760,7 @@ impl Plan {
                 SystemVerilogSymbol::Config(_)
                 | SystemVerilogSymbol::Class(_)
                 | SystemVerilogSymbol::Package(_)
+                | SystemVerilogSymbol::Primitive(_)
                 | SystemVerilogSymbol::Interface(_) => {
                     component_pairs.insert(
                         LangIdentifier::Verilog(name.unwrap().clone()),

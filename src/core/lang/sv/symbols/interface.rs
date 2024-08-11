@@ -107,11 +107,9 @@ impl Interface {
             } else if let Some(stmt) = VerilogSymbol::into_next_statement(t, tokens)? {
                 // println!("{}", statement_to_string(&stmt));
                 VerilogSymbol::handle_statement(
-                    &Vec::new(),
-                    &Vec::new(),
                     stmt,
-                    &mut params,
-                    &mut ports,
+                    Some(&mut params),
+                    Some(&mut ports),
                     &mut refs,
                     None,
                 )?;

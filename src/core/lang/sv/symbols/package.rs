@@ -24,6 +24,7 @@ use crate::core::lang::{
         error::SystemVerilogError,
         token::{identifier::Identifier, keyword::Keyword, token::SystemVerilogToken},
     },
+    verilog::symbols::VerilogSymbol,
 };
 
 use super::SystemVerilogSymbol;
@@ -61,8 +62,17 @@ impl Package {
     where
         I: Iterator<Item = Token<SystemVerilogToken>>,
     {
-        // take config name
-        let config_name = match tokens.next().take().unwrap().take() {
+        // take optional lifetime specifier
+        if let Some(maybe_lifetime) = tokens.peek() {
+            if maybe_lifetime.as_type().check_keyword(&Keyword::Automatic)
+                || maybe_lifetime.as_type().check_keyword(&Keyword::Static)
+            {
+                tokens.next().unwrap();
+            }
+        }
+
+        // take package name
+        let name = match tokens.next().take().unwrap().take() {
             SystemVerilogToken::Identifier(id) => id,
             _ => return Err(SystemVerilogError::Vague),
         };
@@ -83,11 +93,14 @@ impl Package {
             } else if t.as_type().check_keyword(&Keyword::Import) {
                 let i_refs = SystemVerilogSymbol::parse_import_statement(tokens)?;
                 refs.extend(i_refs);
+            } else if let Some(stmt) = VerilogSymbol::into_next_statement(t, tokens)? {
+                // println!("{}", statement_to_string(&stmt));
+                VerilogSymbol::handle_statement(stmt, None, None, &mut refs, None)?;
             }
         }
 
         Ok(Package {
-            name: config_name,
+            name: name,
             refs: refs,
             pos: pos,
         })

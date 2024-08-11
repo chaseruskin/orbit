@@ -15,4 +15,4 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-pub type Primitive = crate::core::lang::verilog::symbols::primitive::Primitive;
+pub type Module = crate::core::lang::verilog::symbols::module::Module;

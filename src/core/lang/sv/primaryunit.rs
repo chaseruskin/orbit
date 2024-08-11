@@ -31,6 +31,7 @@ pub enum PrimaryShape {
     Interface,
     Class,
     Primitive,
+    Checker,
 }
 
 #[derive(PartialEq, Hash, Eq, Debug)]
@@ -66,6 +67,7 @@ impl PrimaryUnit {
             "interface" => PrimaryShape::Interface,
             "class" => PrimaryShape::Class,
             "primitive" => PrimaryShape::Primitive,
+            "checker" => PrimaryShape::Checker,
             _ => return None,
         };
         Some(Self {
@@ -87,6 +89,7 @@ impl std::fmt::Display for PrimaryUnit {
                 PrimaryShape::Interface => "interface",
                 PrimaryShape::Class => "class",
                 PrimaryShape::Primitive => "primitive",
+                PrimaryShape::Checker => "checker",
             }
         )
     }
@@ -215,6 +218,17 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
                             name.unwrap().clone(),
                             PrimaryUnit {
                                 shape: PrimaryShape::Primitive,
+                                unit: Unit {
+                                    name: name.unwrap().clone(),
+                                    symbol: Some(sym),
+                                    source: source_file.clone(),
+                                },
+                            },
+                        )),
+                        SystemVerilogSymbol::Checker(_) => Some((
+                            name.unwrap().clone(),
+                            PrimaryUnit {
+                                shape: PrimaryShape::Checker,
                                 unit: Unit {
                                     name: name.unwrap().clone(),
                                     symbol: Some(sym),

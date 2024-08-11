@@ -761,6 +761,7 @@ impl Plan {
                 | SystemVerilogSymbol::Class(_)
                 | SystemVerilogSymbol::Package(_)
                 | SystemVerilogSymbol::Primitive(_)
+                | SystemVerilogSymbol::Checker(_)
                 | SystemVerilogSymbol::Interface(_) => {
                     component_pairs.insert(
                         LangIdentifier::Verilog(name.unwrap().clone()),

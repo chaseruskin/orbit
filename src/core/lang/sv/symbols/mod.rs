@@ -17,9 +17,13 @@
 
 use std::iter::Peekable;
 
+use checker::Checker;
 use class::Class;
+use config::Config;
 use interface::Interface;
+use module::Module;
 use package::Package;
+use primitive::Primitive;
 
 use super::error::SystemVerilogError;
 use super::token::identifier::Identifier;
@@ -30,18 +34,16 @@ use crate::core::lang::parser::{Parse, Symbol};
 use crate::core::lang::reference::{CompoundIdentifier, RefSet};
 use crate::core::lang::sv::token::keyword::Keyword;
 use crate::core::lang::sv::token::token::SystemVerilogToken;
-use crate::core::lang::verilog::symbols::config::Config;
-use crate::core::lang::verilog::symbols::primitive::Primitive;
 use crate::core::lang::verilog::symbols::VerilogSymbol;
 use std::str::FromStr;
-
-use super::super::verilog::symbols::module::Module;
 
 pub type Statement = Vec<Token<SystemVerilogToken>>;
 
 pub mod checker;
 pub mod class;
+pub mod config;
 pub mod interface;
+pub mod module;
 pub mod package;
 pub mod primitive;
 pub mod program;
@@ -67,8 +69,8 @@ pub enum SystemVerilogSymbol {
     Interface(Interface),
     Class(Class),
     Primitive(Primitive),
+    Checker(Checker),
     // Program(Program),
-    // Checker(Checker),
 }
 
 impl SystemVerilogSymbol {
@@ -80,6 +82,7 @@ impl SystemVerilogSymbol {
             Self::Interface(p) => Some(p.get_name()),
             Self::Class(c) => Some(c.get_name()),
             Self::Primitive(p) => Some(p.get_name()),
+            Self::Checker(c) => Some(c.get_name()),
         }
     }
 
@@ -91,6 +94,7 @@ impl SystemVerilogSymbol {
             Self::Interface(p) => p.get_position(),
             Self::Class(c) => c.get_position(),
             Self::Primitive(p) => p.get_position(),
+            Self::Checker(c) => c.get_position(),
         }
     }
 
@@ -109,6 +113,7 @@ impl SystemVerilogSymbol {
             Self::Interface(p) => p.get_refs(),
             Self::Class(c) => c.get_refs(),
             Self::Primitive(p) => p.get_refs(),
+            Self::Checker(c) => c.get_refs(),
         }
     }
 
@@ -120,6 +125,7 @@ impl SystemVerilogSymbol {
             Self::Interface(p) => p.extend_refs(refs),
             Self::Class(c) => c.extend_refs(refs),
             Self::Primitive(p) => p.extend_refs(refs),
+            Self::Checker(c) => c.extend_refs(refs),
         }
     }
 }
@@ -230,6 +236,14 @@ impl Parse<SystemVerilogToken> for SystemVerilogParser {
                         Err(e) => Err(e),
                     },
                 )
+            // create checker design element
+            } else if t.as_type().check_keyword(&Keyword::Checker) {
+                symbols.push(
+                    match SystemVerilogSymbol::parse_checker(&mut tokens, t.into_position()) {
+                        Ok(check) => Ok(Symbol::new(check)),
+                        Err(e) => Err(e),
+                    },
+                )
             // create interface design element
             } else if t.as_type().check_keyword(&Keyword::Interface) {
                 symbols.push(
@@ -311,6 +325,13 @@ impl SystemVerilogSymbol {
         I: Iterator<Item = Token<SystemVerilogToken>>,
     {
         Ok(Self::Class(Class::from_tokens(tokens, pos)?))
+    }
+
+    fn parse_checker<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Self, SystemVerilogError>
+    where
+        I: Iterator<Item = Token<SystemVerilogToken>>,
+    {
+        Ok(Self::Checker(Checker::from_tokens(tokens, pos)?))
     }
 
     fn parse_package<I>(tokens: &mut Peekable<I>, pos: Position) -> Result<Self, SystemVerilogError>

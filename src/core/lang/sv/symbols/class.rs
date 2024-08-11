@@ -75,12 +75,6 @@ impl Class {
             tokens.next().unwrap();
         }
 
-        // take the class name
-        let class_name = match tokens.next().take().unwrap().take() {
-            SystemVerilogToken::Identifier(id) => id,
-            _ => return Err(SystemVerilogError::Vague),
-        };
-
         // parse a lifetime if it exists
         if let Some(maybe_lifetime) = tokens.peek() {
             if maybe_lifetime.as_type().check_keyword(&Keyword::Automatic)
@@ -89,6 +83,12 @@ impl Class {
                 tokens.next().unwrap();
             }
         }
+
+        // take the class name
+        let class_name = match tokens.next().take().unwrap().take() {
+            SystemVerilogToken::Identifier(id) => id,
+            _ => return Err(SystemVerilogError::Vague),
+        };
 
         // initialize container for references to other design elements
         let mut refs = RefSet::new();

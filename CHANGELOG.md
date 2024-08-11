@@ -15,10 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.19.2 - unreleased
+## 0.20.0 - unreleased
 
 ### Features
-- adds support for identifying verilog/sv primitives
+- adds support for identifying sv "checker" design elements
+- adds support for identifying verilog/sv "primitive" design elements
 - increases capabilities of `orbit config` to modify varying levels of configuration data
 - handles reading invalid UTF-8 code from HDL source code files
 - adds `ip.include` and `ip.exclude` fields to the manifest format

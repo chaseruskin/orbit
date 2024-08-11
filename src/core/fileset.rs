@@ -229,16 +229,6 @@ impl Fileset {
     pub fn get_pattern(&self) -> &Pattern {
         &self.pattern.inner()
     }
-
-    /// Creates format for blueprint.tsv file for a custom fileset.
-    ///
-    /// Since custom filesets are only searched within the current project, the
-    /// library will always be "work".
-    ///
-    /// The format goes FILESET_NAME`\t`LIBRARY_NAME`\t`FILE_PATH
-    pub fn to_blueprint_string(&self, file: &str) -> String {
-        format!("{}\t{}\t{}\n", self.name, "work", file)
-    }
 }
 
 /// Checks if the `file` is a VHDL file (ending with .vhd or .vhdl).
@@ -300,22 +290,6 @@ pub fn is_rtl(file: &str) -> bool {
 #[cfg(test)]
 mod test {
     use super::*;
-
-    #[test]
-    fn to_blueprint_string() {
-        let fset = Fileset::new().name("custom-name").pattern("*.sv").unwrap();
-        let filepath = "c:/users/chase/develop/project/adder.sv";
-        assert_eq!(
-            fset.to_blueprint_string(&filepath),
-            format!("CUSTOM-NAME\twork\t{}\n", filepath)
-        );
-
-        let filepath = "FILE2.sv";
-        assert_eq!(
-            fset.to_blueprint_string(&filepath),
-            format!("CUSTOM-NAME\twork\t{}\n", filepath)
-        );
-    }
 
     #[test]
     fn detect_vhdl_files() {

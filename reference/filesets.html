@@ -184,20 +184,15 @@
 <li>The pattern is a glob-style pattern. It is used to perform glob-style matching when searching the file system for files to add to a fileset.</li>
 </ul>
 <h2 id="built-in-filesets"><a class="header" href="#built-in-filesets">Built-in filesets</a></h2>
-<p>There are built-in filesets that <code>orbit</code> uses that have special rules and work across all IP, including dependencies. The filesets built into <code>orbit</code> that are currently supported are:</p>
+<p>There are built-in filesets that Orbit uses that have special rules and work across all ip, including dependencies. The following filesets are currently built-in with Orbit:</p>
 <ul>
-<li><code>VHDL-RTL</code>: VHDL files (.vhd, .vhdl) that contain zero entities without a port interface.</li>
-<li><code>VHDL-SIM</code>: VHDL files (.vhd, .vhdl) that contain at least one entity without a port interface.</li>
-</ul>
-<h2 id="reserved-filesets"><a class="header" href="#reserved-filesets">Reserved filesets</a></h2>
-<p>Filesets that are planned to be built into <code>orbit</code> at a later date are:</p>
-<ul>
-<li><code>VLOG-RTL</code>: SytemVerilog/Verilog files (.v, .sv) that contain zero modules without a port interface.</li>
-<li><code>VLOG-SIM</code>: SystemVerilog/Verilog files (.v, .sv) that contain at least one module without a port interface.</li>
+<li><code>VHDL</code>: VHDL files (.vhd, .vhdl)</li>
+<li><code>VLOG</code>: Verilog files (.v, .vl, .verilog, .vlg, .vh)</li>
+<li><code>SYSV</code>: SystemVerilog files (.sv, .svh)</li>
 </ul>
 <h2 id="custom-filesets"><a class="header" href="#custom-filesets">Custom filesets</a></h2>
-<p>Custom filesets are filesets that are be defined by the user either for a specific plugin or on the command-line. These filesets are only searched for in the current working IP and do not extend to its dependencies.</p>
-<p>If the pattern does not start with an explicit relative path symbol (<code>.</code>), then <code>orbit</code> assumes to look for the fileset across every possible path in the current working IP by implicitly prepending the pattern with <code>**/</code>.</p>
+<p>Custom filesets are filesets that are be defined by the user for a specific target. These filesets are only searched for in the local ip and do not extend any of the ip's dependencies.</p>
+<p>If the pattern does not start with an explicit relative path symbol (<code>.</code>), then Orbit assumes to look for the fileset across every possible path in the local ip by implicitly prepending the pattern with <code>**/</code>.</p>
 <h2 id="name-normalization-examples"><a class="header" href="#name-normalization-examples">Name normalization examples</a></h2>
 <div class="table-wrapper"><table><thead><tr><th>User-defined Fileset</th><th>Normalized Fileset</th></tr></thead><tbody>
 <tr><td>GOOD-SET</td><td>GOOD-SET</td></tr>
@@ -206,15 +201,15 @@
 <tr><td>set_three</td><td>SET-THREE</td></tr>
 </tbody></table>
 </div>
-<p>The normalized fileset name is the name that will be written to the blueprint file when collecting filesets. This design choice is for consistency across plugins when reading and parsing the blueprint.</p>
+<p>The normalized fileset name is the name that will be written to the blueprint file when collecting filesets. This design choice is for consistency across targets when reading and parsing the blueprint.</p>
 <h2 id="custom-pattern-assumption-examples"><a class="header" href="#custom-pattern-assumption-examples">Custom pattern assumption examples</a></h2>
 <div class="table-wrapper"><table><thead><tr><th>User-defined pattern</th><th>Interpreted pattern</th></tr></thead><tbody>
-<tr><td>*.txt</td><td>**/*.txt</td></tr>
-<tr><td>Boards/*.toml</td><td>**/Boards/*.toml</td></tr>
-<tr><td>./specific/path.log</td><td>./specific/path.log</td></tr>
+<tr><td><code>*.txt</code></td><td><code>**/*.txt</code></td></tr>
+<tr><td><code>Boards/*.toml</code></td><td><code>**/Boards/*.toml</code></td></tr>
+<tr><td><code>./specific/path.log</code></td><td><code>./specific/path.log</code></td></tr>
 </tbody></table>
 </div>
-<p>The custom patterns begin their search for files at the root directory of the current working IP. The interpreted pattern is the actual glob-style pattern used when collecting files for custom filesets.</p>
+<p>The custom patterns begin their search for files at the local ip's root directory. The interpreted pattern is the actual glob-style pattern used when collecting files for custom filesets.</p>
 
                     </main>
 

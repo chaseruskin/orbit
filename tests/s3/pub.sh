@@ -13,7 +13,7 @@ cd ip11
 orbit lock --force
 
 # verify it runs without error
-STDOUT=$(orbit tree --root top --format long)
+STDOUT=$(orbit tree top --format long)
 
 # store the ideal value for later comparison
 EXACT="top (ip11:0.1.0)

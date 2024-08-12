@@ -18,7 +18,7 @@ cd ip-c
 orbit lock --force
 
 # verify DST runs without error
-STDOUT=$(orbit tree --root entity_c)
+STDOUT=$(orbit tree entity_c)
 
 # store the ideal value for later comparison
 EXACT="entity_c

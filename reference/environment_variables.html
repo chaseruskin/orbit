@@ -177,75 +177,76 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="environment-variables"><a class="header" href="#environment-variables">Environment Variables</a></h1>
-<p>Orbit's configuration can be customized with the setting of specific environment variables.</p>
+<p>Orbit's configuration can be customized with the setting of specific environment variables. These variables can be accessed anytime Orbit is executed.</p>
 <ul>
 <li>
-<p><code>ORBIT_HOME</code> - directory where orbit stores its data. By default it is <code>$HOME/.orbit</code> on Unix systems and <code>%USERPROFILE%/.orbit</code> on Windows systems.</p>
+<p><code>ORBIT_HOME</code> - Location where Orbit stores its data. By default Orbit reads and writes to "$HOME/.orbit" on Unix systems and "%USERPROFILE%/.orbit" on Windows systems.</p>
 </li>
 <li>
-<p><code>ORBIT_CACHE</code> - directory where orbit caches installed ip. By default it is <code>$ORBIT_HOME/cache</code>.</p>
+<p><code>ORBIT_CACHE</code> - Location where Orbit caches installed ip. By default it is "$ORBIT_HOME/cache".</p>
 </li>
 <li>
-<p><code>ORBIT_ARCHIVE</code> - directory where orbit saves archived snapshots of ip at a particular version. By default it is <code>$ORBIT_HOME/archive</code>.</p>
+<p><code>ORBIT_ARCHIVE</code> - Location where Orbit archives downloaded ip. By default it is "$ORBIT_HOME/archive".</p>
 </li>
 <li>
-<p><code>NO_COLOR</code> - does not print colorized output when set to a value.</p>
+<p><code>NO_COLOR</code> - If set, do not print colorized output to the terminal.</p>
 </li>
 <li>
-<p><code>ORBIT_WIN_LITERAL_CMD</code> - disables default behavior of checking for programs ending with .exe then .bat when a program name without extension is not found on a windows operating system</p>
+<p><code>ORBIT_WIN_LITERAL_CMD</code> - If set, disables the default behavior of checking for programs ending with ".exe" then ".bat" when a program name without extension is not found on Windows systems.</p>
 </li>
 </ul>
 <h2 id="runtime-environment-variables"><a class="header" href="#runtime-environment-variables">Runtime environment variables</a></h2>
-<p>Orbit also sets environment variables during runtime so a plugin has access to runtime information.</p>
+<p>Orbit also sets environment variables during runtime such that any subprocesses within Orbit, such as targets, can access necessary information.</p>
 <ul>
 <li>
-<p><code>ORBIT_TARGET_DIR</code> - directory to perform the build process relative to the current ip path. Default is <code>target</code>.</p>
+<p><code>ORBIT_MANIFEST_DIR</code> - The full path for the directory that contains the current ip's manifest.</p>
 </li>
 <li>
-<p><code>ORBIT_IP_PATH</code> - path to the ip that is detected under the current working directory. If its not immediately detected at the current directory, it will continue to search the parent directory until it finds a <code>Orbit.toml</code> manifest file.</p>
+<p><code>ORBIT_IP_NAME</code> - The name of the current ip.</p>
 </li>
 <li>
-<p><code>ORBIT_TARGET</code> - selected target to plan and execute</p>
+<p><code>ORBIT_IP_LIBRARY</code> - The interpretated HDL library of the current ip.</p>
 </li>
 <li>
-<p><code>ORBIT_TOP</code> - top level design unit identifier</p>
+<p><code>ORBIT_IP_VERSION</code> - The version of the current ip.</p>
 </li>
 <li>
-<p><code>ORBIT_BENCH</code> - the testbench identifier</p>
+<p><code>ORBIT_IP_CHECKSUM</code> - The first 10 characters from the latest checksum of the current ip.</p>
 </li>
 <li>
-<p><code>ORBIT_DUT</code> - the device under test's identifier</p>
+<p><code>ORBIT_TARGET</code> - The name of the target selected for the latest build process.</p>
 </li>
 <li>
-<p><code>ORBIT_IP_NAME</code> - name field of the manifest for the ip package</p>
+<p><code>ORBIT_TOP_NAME</code> - The top level design's identifier for the latest build process, only if the build process was a build.</p>
 </li>
 <li>
-<p><code>ORBIT_IP_LIBRARY</code> - the HDL library defined in the ip's manifest</p>
+<p><code>ORBIT_TB_NAME</code> - The testbench's identifier for the latest build process, only if the build process was a test.</p>
 </li>
 <li>
-<p><code>ORBIT_IP_VERSION</code> - specific version of current working directory's ip</p>
+<p><code>ORBIT_DUT_NAME</code> - The design under test's identifier for the latest build process, only if the build process was a test.</p>
 </li>
 <li>
-<p><code>ORBIT_IP_CHECKSUM</code> - the truncated most recent checksum of the local ip</p>
+<p><code>ORBIT_BLUEPRINT</code> - The file name for the blueprint created from the planning stage of the latest build process. The file name includes the file's extension.</p>
 </li>
 <li>
-<p><code>ORBIT_BLUEPRINT</code> - the filename for the blueprint created during the planning stage</p>
+<p><code>ORBIT_TARGET_DIR</code> - Directory where all generated artifacts from any targets will be stored, relative to the current ip's directory. Default is "target".</p>
 </li>
 <li>
-<p><code>ORBIT_OUTPUT_PATH</code> - path to the selected target's build process working directory</p>
+<p><code>ORBIT_OUT_DIR</code> - The folder where all generated artifacts for the current target will be stored. This folder is inside the target directory for the current ip, and is unique for each selected target. Default is the target's name.</p>
 </li>
 <li>
-<p><code>ORBIT_IP_INDEX</code> - path where the ip's manifest will be placed during the publishing process</p>
+<p><code>ORBIT_CHAN_INDEX</code> - The full path for the directory where the current ip's manifest will be placed for the current channel in the publishing process.</p>
 </li>
 </ul>
 <h2 id="checking-the-environment"><a class="header" href="#checking-the-environment">Checking the environment</a></h2>
-<p>You can review the known environment variables within Orbit with <code>orbit env</code>.</p>
-<!--Note about environment variables vs. settings file vs. arguments
+<p>See <a href="./../commands/env.html"><code>orbit env</code></a> for checking environment variables on the command-line. Not all environment variables, especially runtime environment variables, may be available.</p>
+<!--
+Note about environment variables vs. settings file vs. arguments
 
 precedence:
-3. config file
+1. config file
 2. env vars
-1. command-line
+3. command-line
 -->
                     </main>
 

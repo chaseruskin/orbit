@@ -43,7 +43,7 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.
 
 ## __OPTIONS__
 
-`--target <name>`  
+`--target, -t <name>`  
       Target to execute
 
 `--dut <unit>`  

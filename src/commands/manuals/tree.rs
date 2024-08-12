@@ -20,7 +20,7 @@ pub const MANUAL: &str = r#"NAME
     tree - show the dependency graph
 
 SYNOPSIS
-    orbit tree [options]
+    orbit tree [options] [<unit>...]
 
 DESCRIPTION
     Shows the hierarchical tree structure of the hardware design starting from a
@@ -29,7 +29,7 @@ DESCRIPTION
     By default, it will try to automatically detect the root node for the 
     local ip. If there is ambiguity in determining what node can be the root, then 
     all root nodes and their respective trees will be displayed. To only display
-    the tree of a particular node, use the '--root' option.
+    the tree of a particular node, use the '<unit>' option.
     
     There are two trees available to view: hdl and ip. By default, the hdl
     dependency graph is displayed. The hdl graph shows the composition of usable 
@@ -49,8 +49,8 @@ DESCRIPTION
     option.
 
 OPTIONS
-    --root <unit>
-        The uppermost hdl unit of the dependency tree
+    <unit>...
+        Uppermost hdl unit of the dependency tree
 
     --format <fmt>
         Determine how to display nodes ('long', 'short')
@@ -63,6 +63,6 @@ OPTIONS
 
 EXAMPLES
     orbit tree
-    orbit tree --root top --format long
+    orbit tree top --format long
     orbit tree --ip --ascii
 "#;

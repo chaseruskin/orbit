@@ -177,7 +177,7 @@ impl ConfigDocument {
     pub fn unset(&mut self, table: &str, key: &str) -> Result<(), Fault> {
         if self.document.contains_key(table) == false {
             return Err(AnyError(format!(
-                "key '{}.{}' does not exist in configuration",
+                "key \"{}.{}\" does not exist in configuration",
                 table, key
             )))?;
         }
@@ -194,7 +194,7 @@ impl ConfigDocument {
                 Ok(())
             }
             false => Err(AnyError(format!(
-                "key '{}.{}' does not exist in configuration",
+                "key \"{}.{}\" does not exist in configuration",
                 table, key
             )))?,
         }
@@ -221,7 +221,8 @@ impl FromFile for ConfigDocument {
             Err(e) => {
                 return Err(AnyError(format!(
                     "failed to parse configuration file at path {:?}: {}",
-                    path, e
+                    filesystem::into_std_str(path.clone()),
+                    e
                 )))?
             }
         }
@@ -288,14 +289,14 @@ impl Configs {
                     Err(e) => match local {
                         Locality::Include => {
                             return Err(Error::ConfigIncludeFailed(
-                                base_config_path.clone(),
-                                config_path.clone(),
+                                filesystem::into_std_str(base_config_path.clone()),
+                                filesystem::into_std_str(config_path.clone()),
                                 LastError(e.to_string()),
                             ))?
                         }
                         _ => {
                             return Err(Error::ConfigLoadFailed(
-                                config_path.clone(),
+                                filesystem::into_std_str(config_path.clone()),
                                 LastError(e.to_string()),
                             ))?
                         }

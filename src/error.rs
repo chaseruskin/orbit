@@ -72,9 +72,9 @@ pub enum Error {
     #[error("configuration field {0:?} does not store a list")]
     ConfigFieldNotList(String),
     #[error("failed to process value {1:?} for configuration field \"include\" at {0:?}: {2}")]
-    ConfigIncludeFailed(PathBuf, PathBuf, LastError),
+    ConfigIncludeFailed(String, String, LastError),
     #[error("failed to load configuration file at {0:?}: {1}")]
-    ConfigLoadFailed(PathBuf, LastError),
+    ConfigLoadFailed(String, LastError),
     #[error("failed to parse source code file {0:?}: {1}")]
     SourceCodeInvalidSyntax(PathBuf, LastError),
     #[error("failed to process ip graph: {0}")]

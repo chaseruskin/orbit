@@ -69,7 +69,7 @@ impl Subcommand<Context> for Test {
             dut: cli.get(Arg::option("dut").value("unit"))?,
             bench: cli.get(Arg::option("tb").value("unit"))?,
             plan: cli.get(Arg::option("plan").value("format"))?,
-            target: cli.get(Arg::option("target"))?,
+            target: cli.get(Arg::option("target").value("name").switch('t'))?,
             target_dir: cli.get(Arg::option("target-dir"))?,
             command: cli.get(Arg::option("command").value("path"))?,
             filesets: cli.get_all(Arg::option("fileset").value("key=glob"))?,

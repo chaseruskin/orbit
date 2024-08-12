@@ -18,6 +18,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.20.0 - unreleased
 
 ### Features
+- adds `-t` switch for shorthand to use `--target` option for `orbit test` and `orbit build`
 - "interface class" sv design elements are now detected
 - "program" sv design elements are now detected
 - "checker" sv design elements are now detected
@@ -27,6 +28,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - adds `ip.include` and `ip.exclude` fields to the manifest format
 
 ### Changes
+- adopts easier approach to specifying design units using positional arguments for `orbit tree` command
 - no longer uses `.orbitignore` files, see the ip manifest's `ip.include` and `ip.exclude` fields to now explicitly set what files should be ignored or included during an ip's file discovery
 - removes `explanation` field from targets and protocols in configuration data
 

@@ -53,7 +53,7 @@ DESCRIPTION
     which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.
 
 OPTIONS
-    --target <name>
+    --target, -t <name>
         Target to execute
 
     --dut <unit>

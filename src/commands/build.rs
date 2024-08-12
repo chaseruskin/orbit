@@ -69,7 +69,7 @@ impl Subcommand<Context> for Build {
             // Options
             top: cli.get(Arg::option("top").value("unit"))?,
             plan: cli.get(Arg::option("plan").value("format"))?,
-            target: cli.get(Arg::option("target").value("name"))?,
+            target: cli.get(Arg::option("target").value("name").switch('t'))?,
             target_dir: cli.get(Arg::option("target-dir").value("dir"))?,
             command: cli.get(Arg::option("command").value("path"))?,
             filesets: cli.get_all(Arg::option("fileset").value("key=glob"))?,

@@ -22,7 +22,7 @@ Usage:
     orbit test [options] [--] [args]...
 
 Options:
-    --target <name>       target to execute
+    --target, -t <name>   target to execute
     --dut <unit>          set the device under test
     --tb <unit>           set the top level testbench unit
     --plan <format>       set the blueprint file format

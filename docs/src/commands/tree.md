@@ -7,7 +7,7 @@ tree - show the dependency graph
 ## __SYNOPSIS__
 
 ```
-orbit tree [options]
+orbit tree [options] [<unit>...]
 ```
 
 ## __DESCRIPTION__
@@ -18,7 +18,7 @@ root node.
 By default, it will try to automatically detect the root node for the 
 local ip. If there is ambiguity in determining what node can be the root, then 
 all root nodes and their respective trees will be displayed. To only display
-the tree of a particular node, use the `--root` option.
+the tree of a particular node, use the `<unit>` option.
 
 There are two trees available to view: hdl and ip. By default, the hdl
 dependency graph is displayed. The hdl graph shows the composition of usable 
@@ -39,8 +39,8 @@ option.
 
 ## __OPTIONS__
 
-`--root <unit>`  
-      The uppermost hdl unit of the dependency tree
+`<unit>...`  
+      Uppermost hdl unit of the dependency tree
 
 `--format <fmt>`  
       Determine how to display nodes ('long', 'short')
@@ -55,7 +55,7 @@ option.
 
 ```
 orbit tree
-orbit tree --root top --format long
+orbit tree top --format long
 orbit tree --ip --ascii
 ```
 

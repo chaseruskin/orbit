@@ -217,7 +217,7 @@ orbit get or_gate --ip gates --json
 [tree]
 name = "tree"
 summary = "show the dependency graph"
-synopsis = "orbit tree [options]"
+synopsis = "orbit tree [options] [<unit>...]"
 description = """
 Shows the hierarchical tree structure of the hardware design starting from a
 root node.
@@ -225,7 +225,7 @@ root node.
 By default, it will try to automatically detect the root node for the 
 local ip. If there is ambiguity in determining what node can be the root, then 
 all root nodes and their respective trees will be displayed. To only display
-the tree of a particular node, use the `--root` option.
+the tree of a particular node, use the `<unit>` option.
 
 There are two trees available to view: hdl and ip. By default, the hdl
 dependency graph is displayed. The hdl graph shows the composition of usable 
@@ -245,7 +245,7 @@ be displayed using a set of standard ASCII characters with the `--ascii`
 option.
 """
 
-options."--root <unit>" = "The uppermost hdl unit of the dependency tree"
+options."<unit>..." = "Uppermost hdl unit of the dependency tree"
 # options."--compress" = "Replace duplicate branches with a unique label"
 options."--format <fmt>" = "Determine how to display nodes ('long', 'short')"
 options."--ascii" = "Limit the textual tree characters to the 128 ASCII set"
@@ -253,7 +253,7 @@ options."--ip" = "Switch to the ip dependency graph"
 
 examples = """
 orbit tree
-orbit tree --root top --format long
+orbit tree top --format long
 orbit tree --ip --ascii
 """
 
@@ -328,7 +328,7 @@ The target's process will spawn from the current working ip's output directory,
 which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.
 """
 
-options."--target <name>" = "Target to execute"
+options."--target, -t <name>" = "Target to execute"
 options."--dut <unit>" = "Set the device under test"
 options."--tb <unit>" = "Set the top level testbench unit"
 options."--plan <format>" = "Set the blueprint file format"
@@ -385,7 +385,7 @@ The target's process will spawn from the current working ip's output directory,
 which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.
 """
 
-options."--target <name>" = "Target to execute"
+options."--target, -t <name>" = "Target to execute"
 options."--top <unit>" = "Set the top level design unit"
 options."--plan <format>" = "Set the blueprint file format"
 options."--target-dir <dir>" = "The relative directory where the target starts"

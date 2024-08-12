@@ -22,7 +22,7 @@ Usage:
     orbit build [options] [--] [args]...
 
 Options:
-    --target <name>       target to execute
+    --target, -t <name>   target to execute
     --top <unit>          set the top level design unit
     --plan <format>       set the blueprint file format
     --target-dir <dir>    the relative directory where the target starts

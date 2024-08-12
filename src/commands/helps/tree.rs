@@ -19,10 +19,10 @@
 pub const HELP: &str = r#"Show the dependency graph.
 
 Usage:
-    orbit tree [options]
+    orbit tree [options] [<unit>...]
 
 Options:
-    --root <unit>         the uppermost hdl unit of the dependency tree
+    <unit>...             uppermost hdl unit of the dependency tree
     --format <fmt>        determine how to display nodes ('long', 'short')
     --ascii               limit the textual tree characters to the 128 ASCII set
     --ip                  switch to the ip dependency graph

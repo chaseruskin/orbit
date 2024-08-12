@@ -32,6 +32,7 @@ use crate::core::lang::vhdl::token::Identifier as VhdlIdentifier;
 use crate::core::lang::Lang;
 use crate::core::lang::LangIdentifier;
 use crate::core::lang::Language;
+use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::Fault;
 use crate::util::graph::EdgeStatus;
@@ -43,7 +44,7 @@ use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Tree {
-    root: Option<VhdlIdentifier>,
+    roots: Option<Vec<VhdlIdentifier>>,
     // compress: bool,
     format: Option<IdentifierFormat>,
     ascii: bool,
@@ -58,8 +59,8 @@ impl Subcommand<Context> for Tree {
             // compress: cli.check(Arg::flag("compress"))?,
             ascii: cli.check(Arg::flag("ascii"))?,
             ip: cli.check(Arg::flag("ip"))?,
-            root: cli.get(Arg::option("root").value("unit"))?,
             format: cli.get(Arg::option("format").value("fmt"))?,
+            roots: cli.get_all(Arg::positional("unit"))?,
         })
     }
 
@@ -89,9 +90,6 @@ impl Tree {
     fn run_hdl_graph(&self, target: Ip, catalog: Catalog, mode: &Language) -> Result<(), Fault> {
         let working_lib = target.get_hdl_library();
 
-        // display all roots if none is selected
-        let all = self.root.is_none();
-
         // build graph again but with entire set of all files available from all depdendencies
         let ip_graph = algo::compute_final_ip_graph(&target, &catalog, mode)?;
         let files = algo::build_ip_file_list(&ip_graph, &target, &mode);
@@ -99,150 +97,85 @@ impl Tree {
         // build the complete graph (using entities as the nodes)
         let global_graph = Self::build_graph(&files)?;
 
-        if all == false {
-            let n = {
+        let roots = match &self.roots {
+            Some(user_roots) => {
                 // restrict graph to units only found within the current IP
                 let local_graph = Plan::compute_local_graph(&global_graph, &target);
-
-                let root_index = if let Some(ent) = &self.root {
+                let mut roots = Vec::new();
+                for root_name in user_roots {
                     // check if the identifier exists in the entity graph
                     let i = match local_graph.get_node_by_key(&&CompoundIdentifier::new(
-                        working_lib,
-                        LangIdentifier::Vhdl(ent.clone()),
+                        working_lib.clone(),
+                        LangIdentifier::Vhdl(root_name.clone()),
                     )) {
                         Some(id) => {
                             // verify the unit is a component
                             if id.as_ref().get_symbol().is_component() == false {
-                                return Err(PlanError::BadEntity(ent.clone()))?;
+                                return Err(PlanError::BadEntity(root_name.clone()))?;
                             }
                             id.index()
                         }
-                        None => return Err(PlanError::UnknownEntity(ent.clone()))?,
-                    };
-                    Plan::local_to_global(i, &global_graph, &local_graph).index()
-                // auto-detect the root if possible
-                } else {
-                    // auto-detect top-level if no testbench was given
-                    let tops: Vec<(usize, &HdlSymbol)> = local_graph
-                        .get_map()
-                        .iter()
-                        .filter_map(|(_k, v)| {
-                            if v.as_ref().get_symbol().is_component() == true {
-                                Some((v.index(), v.as_ref().get_symbol()))
-                            } else {
-                                None
-                            }
-                        })
-                        .collect();
-                    // filter to get all potential candidates
-                    let tops: Vec<(usize, &HdlSymbol)> = tops
-                        .into_iter()
-                        .filter(|(i, _v)| {
-                            local_graph
-                                .get_graph()
-                                .successors(*i)
-                                .filter(|k| {
-                                    let s = local_graph
-                                        .get_node_by_index(*k)
-                                        .unwrap()
-                                        .as_ref()
-                                        .get_symbol();
-
-                                    s.is_component()
-                                })
-                                .count()
-                                == 0
-                        })
-                        .collect();
-
-                    match tops.len() {
-                        // catch this error when it occurs during plan to allow for tbs without entities
-                        0 => return Err(PlanError::Empty)?,
-                        1 => Plan::local_to_global(tops[0].0, &global_graph, &local_graph).index(),
-                        _ => {
-                            return Err(PlanError::Ambiguous(
-                                format!("roots"),
-                                tops.into_iter()
-                                    .map(|f| {
-                                        local_graph
-                                            .get_node_by_index(f.0)
-                                            .unwrap()
-                                            .as_ref()
-                                            .get_symbol()
-                                            .get_name()
-                                    })
-                                    .collect(),
-                                Hint::RootSpecify,
+                        None => {
+                            return Err(Error::GetUnitNotFound(
+                                root_name.to_string(),
+                                Hint::ShowAvailableUnitsLocal,
                             ))?
                         }
-                    }
-                };
-                root_index
-            };
-
-            // display the root's tree to the console
-            let tree = global_graph.get_graph().treeview(n);
-            for twig in &tree {
-                let branch_str = match self.ascii {
-                    true => Self::to_ascii(&twig.0.to_string()),
-                    false => twig.0.to_string(),
-                };
-                println!(
-                    "{}{}",
-                    branch_str,
-                    global_graph
-                        .get_node_by_index(twig.1)
-                        .unwrap()
-                        .as_ref()
-                        .display(self.format.as_ref().unwrap_or(&IdentifierFormat::Short))
-                );
+                    };
+                    roots.push(Plan::local_to_global(i, &global_graph, &local_graph).index())
+                }
+                roots
             }
-        } else {
-            // restrict graph to units only found within the current IP
-            let local_graph = Plan::compute_local_graph(&global_graph, &target);
-            // compile list of all roots
-            let mut roots = Vec::new();
-            match local_graph.find_root() {
-                Ok(i) => roots
-                    .push(Plan::local_to_global(i.index(), &global_graph, &local_graph).index()),
-                Err(e) => match e.len() {
-                    0 => return Err(PlanError::Empty)?,
-                    _ => e.into_iter().for_each(|f| {
-                        roots.push(Plan::local_to_global(f, &global_graph, &local_graph).index())
-                    }),
-                },
+            None => {
+                // restrict graph to units only found within the current IP
+                let local_graph = Plan::compute_local_graph(&global_graph, &target);
+                // compile list of all roots
+                let mut roots = Vec::new();
+                match local_graph.find_root() {
+                    Ok(i) => roots.push(
+                        Plan::local_to_global(i.index(), &global_graph, &local_graph).index(),
+                    ),
+                    Err(e) => match e.len() {
+                        0 => return Err(PlanError::Empty)?,
+                        _ => e.into_iter().for_each(|f| {
+                            roots
+                                .push(Plan::local_to_global(f, &global_graph, &local_graph).index())
+                        }),
+                    },
+                }
+                roots
             }
+        };
 
-            // display each root's tree to the console
-            roots
-                .iter()
-                .filter(|k| {
-                    global_graph
-                        .get_node_by_index(**k)
-                        .unwrap()
-                        .as_ref()
-                        .get_symbol()
-                        .is_component()
-                })
-                .for_each(|n| {
-                    let tree = global_graph.get_graph().treeview(*n);
-                    for twig in &tree {
-                        let branch_str = match self.ascii {
-                            true => Self::to_ascii(&twig.0.to_string()),
-                            false => twig.0.to_string(),
-                        };
-                        println!(
-                            "{}{}",
-                            branch_str,
-                            global_graph
-                                .get_node_by_index(twig.1)
-                                .unwrap()
-                                .as_ref()
-                                .display(self.format.as_ref().unwrap_or(&IdentifierFormat::Short))
-                        );
-                    }
-                });
-        }
+        // display each root's tree to the console
+        roots
+            .iter()
+            .filter(|k| {
+                global_graph
+                    .get_node_by_index(**k)
+                    .unwrap()
+                    .as_ref()
+                    .get_symbol()
+                    .is_component()
+            })
+            .for_each(|n| {
+                let tree = global_graph.get_graph().treeview(*n);
+                for twig in &tree {
+                    let branch_str = match self.ascii {
+                        true => Self::to_ascii(&twig.0.to_string()),
+                        false => twig.0.to_string(),
+                    };
+                    println!(
+                        "{}{}",
+                        branch_str,
+                        global_graph
+                            .get_node_by_index(twig.1)
+                            .unwrap()
+                            .as_ref()
+                            .display(self.format.as_ref().unwrap_or(&IdentifierFormat::Short))
+                    );
+                }
+            });
 
         Ok(())
     }

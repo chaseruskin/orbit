@@ -2382,7 +2382,7 @@ orbit get or_gate --ip gates --json
 <h2 id="name-5"><a class="header" href="#name-5"><strong>NAME</strong></a></h2>
 <p>tree - show the dependency graph</p>
 <h2 id="synopsis-5"><a class="header" href="#synopsis-5"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit tree [options]
+<pre><code>orbit tree [options] [&lt;unit&gt;...]
 </code></pre>
 <h2 id="description-5"><a class="header" href="#description-5"><strong>DESCRIPTION</strong></a></h2>
 <p>Shows the hierarchical tree structure of the hardware design starting from a
@@ -2390,7 +2390,7 @@ root node.</p>
 <p>By default, it will try to automatically detect the root node for the
 local ip. If there is ambiguity in determining what node can be the root, then
 all root nodes and their respective trees will be displayed. To only display
-the tree of a particular node, use the <code>--root</code> option.</p>
+the tree of a particular node, use the <code>&lt;unit&gt;</code> option.</p>
 <p>There are two trees available to view: hdl and ip. By default, the hdl
 dependency graph is displayed. The hdl graph shows the composition of usable
 entities/modules. To generate this graph, it analyzes each VHDL architecture
@@ -2405,8 +2405,8 @@ unit's name is displayed for each unit.</p>
 be displayed using a set of standard ASCII characters with the <code>--ascii</code>
 option.</p>
 <h2 id="options-5"><a class="header" href="#options-5"><strong>OPTIONS</strong></a></h2>
-<p><code>--root &lt;unit&gt;</code><br />
-      The uppermost hdl unit of the dependency tree</p>
+<p><code>&lt;unit&gt;...</code><br />
+      Uppermost hdl unit of the dependency tree</p>
 <p><code>--format &lt;fmt&gt;</code><br />
       Determine how to display nodes ('long', 'short')</p>
 <p><code>--ascii</code><br />
@@ -2415,7 +2415,7 @@ option.</p>
       Switch to the ip dependency graph</p>
 <h2 id="examples-7"><a class="header" href="#examples-7"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit tree
-orbit tree --root top --format long
+orbit tree top --format long
 orbit tree --ip --ascii
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-lock"><a class="header" href="#orbit-lock"><strong>orbit lock</strong></a></h1>
@@ -2476,7 +2476,7 @@ command-line will follow the previously defined arguments.</p>
 <p>The target's process will spawn from the current working ip's output directory,
 which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.</p>
 <h2 id="options-7"><a class="header" href="#options-7"><strong>OPTIONS</strong></a></h2>
-<p><code>--target &lt;name&gt;</code><br />
+<p><code>--target, -t &lt;name&gt;</code><br />
       Target to execute</p>
 <p><code>--dut &lt;unit&gt;</code><br />
       Set the device under test</p>
@@ -2537,7 +2537,7 @@ command-line will follow the previously defined arguments.</p>
 <p>The target's process will spawn from the current working ip's output directory,
 which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.</p>
 <h2 id="options-8"><a class="header" href="#options-8"><strong>OPTIONS</strong></a></h2>
-<p><code>--target &lt;name&gt;</code><br />
+<p><code>--target, -t &lt;name&gt;</code><br />
       Target to execute</p>
 <p><code>--top &lt;unit&gt;</code><br />
       Set the top level design unit</p>

@@ -1,55 +1,56 @@
 # Environment Variables
 
-Orbit's configuration can be customized with the setting of specific environment variables. 
+Orbit's configuration can be customized with the setting of specific environment variables. These variables can be accessed anytime Orbit is executed.
 
-- `ORBIT_HOME` - directory where orbit stores its data. By default it is `$HOME/.orbit` on Unix systems and `%USERPROFILE%/.orbit` on Windows systems.
+- `ORBIT_HOME` - Location where Orbit stores its data. By default Orbit reads and writes to "$HOME/.orbit" on Unix systems and "%USERPROFILE%/.orbit" on Windows systems.
 
-- `ORBIT_CACHE` - directory where orbit caches installed ip. By default it is `$ORBIT_HOME/cache`.
+- `ORBIT_CACHE` - Location where Orbit caches installed ip. By default it is "$ORBIT_HOME/cache".
 
-- `ORBIT_ARCHIVE` - directory where orbit saves archived snapshots of ip at a particular version. By default it is `$ORBIT_HOME/archive`.
+- `ORBIT_ARCHIVE` - Location where Orbit archives downloaded ip. By default it is "$ORBIT_HOME/archive".
 
-- `NO_COLOR` - does not print colorized output when set to a value.
+- `NO_COLOR` - If set, do not print colorized output to the terminal.
 
-- `ORBIT_WIN_LITERAL_CMD` - disables default behavior of checking for programs ending with .exe then .bat when a program name without extension is not found on a windows operating system
+- `ORBIT_WIN_LITERAL_CMD` - If set, disables the default behavior of checking for programs ending with ".exe" then ".bat" when a program name without extension is not found on Windows systems.
 
 ## Runtime environment variables
 
-Orbit also sets environment variables during runtime so a plugin has access to runtime information. 
+Orbit also sets environment variables during runtime such that any subprocesses within Orbit, such as targets, can access necessary information.
 
-- `ORBIT_TARGET_DIR` - directory to perform the build process relative to the current ip path. Default is `target`.
+- `ORBIT_MANIFEST_DIR` - The full path for the directory that contains the current ip's manifest.
 
-- `ORBIT_IP_PATH` - path to the ip that is detected under the current working directory. If its not immediately detected at the current directory, it will continue to search the parent directory until it finds a `Orbit.toml` manifest file.
+- `ORBIT_IP_NAME` - The name of the current ip.
 
-- `ORBIT_TARGET` - selected target to plan and execute
+- `ORBIT_IP_LIBRARY` - The interpretated HDL library of the current ip.
 
-- `ORBIT_TOP` - top level design unit identifier
+- `ORBIT_IP_VERSION` - The version of the current ip.
 
-- `ORBIT_BENCH` - the testbench identifier
+- `ORBIT_IP_CHECKSUM` - The first 10 characters from the latest checksum of the current ip.
 
-- `ORBIT_DUT` - the device under test's identifier
+- `ORBIT_TARGET` - The name of the target selected for the latest build process.
 
-- `ORBIT_IP_NAME` - name field of the manifest for the ip package
+- `ORBIT_TOP_NAME` - The top level design's identifier for the latest build process, only if the build process was a build.
 
-- `ORBIT_IP_LIBRARY` - the HDL library defined in the ip's manifest
+- `ORBIT_TB_NAME` - The testbench's identifier for the latest build process, only if the build process was a test.
 
-- `ORBIT_IP_VERSION` - specific version of current working directory's ip
+- `ORBIT_DUT_NAME` - The design under test's identifier for the latest build process, only if the build process was a test.
 
-- `ORBIT_IP_CHECKSUM` - the truncated most recent checksum of the local ip
+- `ORBIT_BLUEPRINT` - The file name for the blueprint created from the planning stage of the latest build process. The file name includes the file's extension.
 
-- `ORBIT_BLUEPRINT` - the filename for the blueprint created during the planning stage
+- `ORBIT_TARGET_DIR` - Directory where all generated artifacts from any targets will be stored, relative to the current ip's directory. Default is "target".
+  
+- `ORBIT_OUT_DIR` - The folder where all generated artifacts for the current target will be stored. This folder is inside the target directory for the current ip, and is unique for each selected target. Default is the target's name.
 
-- `ORBIT_OUTPUT_PATH` - path to the selected target's build process working directory
-
-- `ORBIT_IP_INDEX` - path where the ip's manifest will be placed during the publishing process
+- `ORBIT_CHAN_INDEX` - The full path for the directory where the current ip's manifest will be placed for the current channel in the publishing process.
 
 ## Checking the environment
 
-You can review the known environment variables within Orbit with `orbit env`.
+See [`orbit env`](./../commands/env.md) for checking environment variables on the command-line. Not all environment variables, especially runtime environment variables, may be available.
 
-<!--Note about environment variables vs. settings file vs. arguments
+<!--
+Note about environment variables vs. settings file vs. arguments
 
 precedence:
-3. config file
+1. config file
 2. env vars
-1. command-line
+3. command-line
 -->

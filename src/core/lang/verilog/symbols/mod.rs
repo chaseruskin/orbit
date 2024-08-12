@@ -576,7 +576,7 @@ impl VerilogSymbol {
         // try as a module instantiation
         if let Some((dep, is_valid_mod)) = Self::as_module_instance(&stmt) {
             // println!("detected dependency! {}", dep);
-            if is_valid_mod == true {
+            if is_valid_mod == true && dep.is_system_name() == false {
                 if let Some(deps) = deps {
                     deps.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
                 }

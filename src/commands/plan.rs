@@ -1541,17 +1541,17 @@ impl Plan {
         // create environment variables to .env file
         let mut envs: Environment = Environment::from_vec(vec![
             EnvVar::new()
-                .key(environment::ORBIT_TOP)
+                .key(environment::ORBIT_TOP_NAME)
                 .value(if require_bench == false {
                     &top_name
                 } else {
                     ""
                 }),
             EnvVar::new()
-                .key(environment::ORBIT_DUT)
+                .key(environment::ORBIT_DUT_NAME)
                 .value(if require_bench == true { &top_name } else { "" }),
             EnvVar::new()
-                .key(environment::ORBIT_BENCH)
+                .key(environment::ORBIT_TB_NAME)
                 .value(&bench_name),
         ]);
         // conditionally set the plugin used to plan

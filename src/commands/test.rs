@@ -31,10 +31,9 @@ use crate::core::target::Target;
 use crate::error::Error;
 use crate::error::LastError;
 use crate::util::anyerror::Fault;
-use crate::util::environment::ORBIT_OUTPUT_PATH;
+use crate::util::environment::ORBIT_OUT_DIR;
 use crate::util::environment::ORBIT_TARGET;
 use crate::util::environment::{EnvVar, Environment, ORBIT_BLUEPRINT, ORBIT_TARGET_DIR};
-use crate::util::filesystem;
 
 use super::plan::{self, Plan};
 
@@ -133,6 +132,7 @@ impl Subcommand<Context> for Test {
         self.run(
             &ip,
             target_dir,
+            target.get_name(),
             target,
             catalog,
             &c.get_languages(),
@@ -147,6 +147,7 @@ impl Test {
         &self,
         working_ip: &Ip,
         target_dir: &str,
+        out_dir: &str,
         target: &Target,
         catalog: Catalog,
         mode: &Language,
@@ -173,10 +174,7 @@ impl Test {
         )?
         .unwrap_or_default();
 
-        let output_path = working_ip
-            .get_root()
-            .join(target_dir)
-            .join(&target.get_name());
+        let output_path = working_ip.get_root().join(target_dir).join(out_dir);
 
         // prepare for build
         let envs = Environment::new()
@@ -184,14 +182,10 @@ impl Test {
             .from_config(c.get_config())?
             // read ip manifest for env variables
             .from_ip(&working_ip)?
-            .add(EnvVar::new().key(ORBIT_BLUEPRINT).value(&blueprint_name))
-            .add(
-                EnvVar::new()
-                    .key(ORBIT_OUTPUT_PATH)
-                    .value(&filesystem::into_std_str(output_path.clone())),
-            )
-            .add(EnvVar::new().key(ORBIT_TARGET_DIR).value(target_dir))
             .add(EnvVar::with(ORBIT_TARGET, target.get_name()))
+            .add(EnvVar::new().key(ORBIT_BLUEPRINT).value(&blueprint_name))
+            .add(EnvVar::new().key(ORBIT_TARGET_DIR).value(target_dir))
+            .add(EnvVar::new().key(ORBIT_OUT_DIR).value(out_dir))
             .from_env_file(&output_path)?;
 
         let swap_table = StrSwapTable::new().load_environment(&envs)?;

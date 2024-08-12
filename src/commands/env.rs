@@ -64,7 +64,7 @@ impl Subcommand<Context> for Env {
             EnvVar::new()
                 .key(environment::ORBIT_TARGET_DIR)
                 .value(&c.get_target_dir()),
-            EnvVar::new().key(environment::ORBIT_IP_PATH).value(
+            EnvVar::new().key(environment::ORBIT_MANIFEST_DIR).value(
                 PathBuf::standardize(c.get_ip_path().unwrap_or(&PathBuf::new()))
                     .to_str()
                     .unwrap(),

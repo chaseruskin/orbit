@@ -32,10 +32,9 @@ use crate::error::LastError;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
 use crate::util::environment::ORBIT_BLUEPRINT;
-use crate::util::environment::ORBIT_OUTPUT_PATH;
+use crate::util::environment::ORBIT_OUT_DIR;
 use crate::util::environment::ORBIT_TARGET;
 use crate::util::environment::ORBIT_TARGET_DIR;
-use crate::util::filesystem;
 
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
@@ -113,11 +112,9 @@ impl Subcommand<Context> for Build {
         // determine the build directory based on cli priority
         let default_target_dir = c.get_target_dir();
         let target_dir = self.target_dir.as_ref().unwrap_or(&default_target_dir);
+        let out_dir = target.get_name();
 
-        let output_path = working_ip
-            .get_root()
-            .join(target_dir)
-            .join(&target.get_name());
+        let output_path = working_ip.get_root().join(target_dir).join(out_dir);
 
         // gather the catalog and resolve any missing dependencies
         let catalog = Catalog::new()
@@ -150,13 +147,10 @@ impl Subcommand<Context> for Build {
             .from_config(c.get_config())?
             // read ip manifest for env variables
             .from_ip(&working_ip)?
-            .add(EnvVar::with(ORBIT_BLUEPRINT, &blueprint_name))
-            .add(EnvVar::with(
-                ORBIT_OUTPUT_PATH,
-                &filesystem::into_std_str(output_path.clone()),
-            ))
-            .add(EnvVar::with(ORBIT_TARGET_DIR, target_dir))
             .add(EnvVar::with(ORBIT_TARGET, target.get_name()))
+            .add(EnvVar::with(ORBIT_BLUEPRINT, &blueprint_name))
+            .add(EnvVar::with(ORBIT_TARGET_DIR, target_dir))
+            .add(EnvVar::with(ORBIT_OUT_DIR, out_dir))
             .from_env_file(&output_path)?;
 
         // modify the target to update with the available

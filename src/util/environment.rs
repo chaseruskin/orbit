@@ -149,23 +149,23 @@ impl Environment {
     pub fn from_ip(mut self, ip: &Ip) -> Result<Self, Fault> {
         self.insert(
             EnvVar::new()
-                .key("ORBIT_IP_NAME")
+                .key(ORBIT_IP_NAME)
                 .value(&ip.get_man().get_ip().get_name().to_string()),
         );
         self.insert(
             EnvVar::new()
-                .key("ORBIT_IP_VERSION")
+                .key(ORBIT_IP_VERSION)
                 .value(&ip.get_man().get_ip().get_version().to_string()),
         );
         self.insert(
             EnvVar::new()
-                .key("ORBIT_IP_LIBRARY")
+                .key(ORBIT_IP_LIBRARY)
                 .value(&ip.get_hdl_library().to_string()),
         );
         if let Some(sum) = ip.get_checksum() {
             self.insert(
                 EnvVar::new()
-                    .key("ORBIT_IP_CHECKSUM")
+                    .key(ORBIT_IP_CHECKSUM)
                     .value(&sum.to_string_short()),
             );
         }
@@ -266,28 +266,28 @@ impl Environment {
     }
 }
 
+pub const DOT_ENV_FILE: &str = ".env";
+
 pub const ORBIT_HOME: &str = "ORBIT_HOME";
 pub const ORBIT_CACHE: &str = "ORBIT_CACHE";
 pub const ORBIT_ARCHIVE: &str = "ORBIT_ARCHIVE";
-pub const ORBIT_CHANNELS: &str = "ORBIT_CHANNELS";
-
-pub const ORBIT_IP_PATH: &str = "ORBIT_IP_PATH";
-pub const ORBIT_TARGET_DIR: &str = "ORBIT_TARGET_DIR";
-pub const ORBIT_OUTPUT_PATH: &str = "ORBIT_OUTPUT_PATH";
-pub const ORBIT_TOP: &str = "ORBIT_TOP";
-pub const ORBIT_DUT: &str = "ORBIT_DUT";
-pub const ORBIT_BENCH: &str = "ORBIT_BENCH";
-pub const ORBIT_TARGET: &str = "ORBIT_TARGET";
-pub const ORBIT_BLUEPRINT: &str = "ORBIT_BLUEPRINT";
-
-pub const ORBIT_IP_INDEX: &str = "ORBIT_IP_INDEX";
-
-pub const ORBIT_QUEUE: &str = "ORBIT_QUEUE";
-
+pub const NO_COLOR: &str = "NO_COLOR";
 pub const ORBIT_WIN_LITERAL_CMD: &str = "ORBIT_WIN_LITERAL_CMD";
 
+pub const ORBIT_MANIFEST_DIR: &str = "ORBIT_MANIFEST_DIR";
+pub const ORBIT_IP_NAME: &str = "ORBIT_IP_NAME";
+pub const ORBIT_IP_LIBRARY: &str = "ORBIT_IP_LIBRARY";
+pub const ORBIT_IP_VERSION: &str = "ORBIT_IP_VERSION";
+pub const ORBIT_IP_CHECKSUM: &str = "ORBIT_IP_CHECKSUM";
+
+pub const ORBIT_TARGET: &str = "ORBIT_TARGET";
+pub const ORBIT_TOP_NAME: &str = "ORBIT_TOP_NAME";
+pub const ORBIT_TB_NAME: &str = "ORBIT_TB_NAME";
+pub const ORBIT_DUT_NAME: &str = "ORBIT_DUT_NAME";
+pub const ORBIT_BLUEPRINT: &str = "ORBIT_BLUEPRINT";
+pub const ORBIT_TARGET_DIR: &str = "ORBIT_TARGET_DIR";
+pub const ORBIT_OUT_DIR: &str = "ORBIT_OUT_DIR";
+
+pub const ORBIT_CHAN_INDEX: &str = "ORBIT_CHAN_INDEX";
+
 pub const ORBIT_ENV_PREFIX: &str = "ORBIT_ENV_";
-
-pub const DOT_ENV_FILE: &str = ".env";
-
-pub const NO_COLOR: &str = "NO_COLOR";

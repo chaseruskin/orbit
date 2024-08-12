@@ -72,10 +72,18 @@ impl Identifier {
         }
     }
 
-    /// Checks if the identifier is a system task/function.
+    /// Checks if the identifier is a system task/function or compiler directive.
     pub fn is_nonuser_name(&self) -> bool {
         match self {
             Self::System(_) | Self::Directive(_) => true,
+            _ => false,
+        }
+    }
+
+    /// Checks if the identifier is a system task/function name.
+    pub fn is_system_name(&self) -> bool {
+        match self {
+            Self::System(_) => true,
             _ => false,
         }
     }

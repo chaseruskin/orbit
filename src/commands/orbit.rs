@@ -113,8 +113,7 @@ impl Command for Orbit {
                 .home(environment::ORBIT_HOME)?
                 .cache(environment::ORBIT_CACHE)?
                 .archive(environment::ORBIT_ARCHIVE)?
-                .channels(environment::ORBIT_CHANNELS)?
-                .current_ip_dir(environment::ORBIT_IP_PATH)? // must come before .settings() call
+                .current_ip_dir(environment::ORBIT_MANIFEST_DIR)? // must come before .settings() call
                 .settings(config::CONFIG_FILE)?
                 .build_dir(environment::ORBIT_TARGET_DIR)?;
             // update channels
@@ -130,8 +129,7 @@ impl Command for Orbit {
                 .home(environment::ORBIT_HOME)?
                 .cache(environment::ORBIT_CACHE)?
                 .archive(environment::ORBIT_ARCHIVE)?
-                .channels(environment::ORBIT_CHANNELS)?
-                .current_ip_dir(environment::ORBIT_IP_PATH)? // must come before .settings() call
+                .current_ip_dir(environment::ORBIT_MANIFEST_DIR)? // must come before .settings() call
                 .settings(config::CONFIG_FILE)?
                 .build_dir(environment::ORBIT_TARGET_DIR)?;
             Channel::sync(&context)?;

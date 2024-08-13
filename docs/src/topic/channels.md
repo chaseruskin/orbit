@@ -2,15 +2,15 @@
 
 As your codebase evolves over time, you may have accrued a lot of ips. However, an issue arises regarding _discovery_- how do others quickly find all ips that have been released?
 
-Orbit solves this problem by using channels. A _channel_ is a decentralized registry that agglomerates ip metadata into a single location. With this approach, users only need to specify channels to discover the wide variety of released ips.
+Orbit solves this problem by using channels. A _channel_ is a lightweight decentralized registry index. In other words, a channel is a directory that contains multiple ip manifests. With this approach, users can simply configure channels to discover the many available released ips.
 
-Channels can be as manual or automated as you prefer. You can configure commands to run for a channel's synchronization hook, pre-publish hook, and post-publish hook. Channels are encouraged to be as automated as possible by defining these fields the channel's configuration.
+Channels can be as manual or automated as you prefer. You can configure commands to run for a channel's synchronization hook, pre-publish hook, and post-publish hook. Channels are encouraged to be as automated as possible by defining these fields in the channel's configuration.
 
 ## Adding a new ip to a channel
 
 Orbit automates the process of adding an ip to a channel with `orbit publish`.
 
-The ip's manifest data gets placed in the channel by using its generated index path. The index path can be read from the `ORBIT_IP_INDEX` environment variable during a channel's pre-publish or post-publish hook processes.
+The ip's manifest gets placed in the channel by using its generated index path. The index path can be read from the `ORBIT_CHAN_INDEX` environment variable during a channel's pre-publish or post-publish hook processes.
 
 ## Example
 
@@ -31,10 +31,4 @@ pre.args = ["pull"]
 # Issue this command immediately after adding the ip to the channel
 post.command = "python"
 post.args = ["publish.py"]
-
-# Enable Orbit to discover ips from this channel
-allow-read = true
-# Enable Orbit to add new ips to this channel
-allow-write = true
-
 ```

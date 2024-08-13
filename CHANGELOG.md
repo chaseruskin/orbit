@@ -18,6 +18,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.20.0 - unreleased
 
 ### Features
+- adds additional check for data integrity during `orbit publish` by testing the download and install of the local ip from its source
 - adds `-t` switch for shorthand to use `--target` option for `orbit test` and `orbit build`
 - "interface class" sv design elements are now detected
 - "program" sv design elements are now detected

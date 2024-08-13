@@ -18,6 +18,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.20.0 - unreleased
 
 ### Features
+- `orbit config` writes modified values to place where value exists, with it being the global config if it does not exist at any level
 - adds additional check for data integrity during `orbit publish` by testing the download and install of the local ip from its source
 - adds `-t` switch for shorthand to use `--target` option for `orbit test` and `orbit build`
 - "interface class" sv design elements are now detected
@@ -35,6 +36,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - removes `explanation` field from targets and protocols in configuration data
 
 ### Fixes
+- errors if `include` key is set in non-global configuration file
 - improves robustness for verilog/sv module declaration parsing
 
 ## 0.19.1

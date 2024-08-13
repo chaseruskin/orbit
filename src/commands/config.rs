@@ -21,12 +21,14 @@ use std::str::FromStr;
 use crate::commands::helps::config;
 use crate::core;
 use crate::core::config::ConfigDocument;
+use crate::core::config::Locality;
 use crate::core::context::Context;
 use crate::core::manifest::FromFile;
 use crate::error::Error;
 use crate::error::Hint;
 use crate::error::LastError;
 use crate::util::anyerror::AnyError;
+use crate::util::anyerror::Fault;
 use crate::util::filesystem;
 
 use cliproc::{cli, proc, stage::*};
@@ -96,9 +98,10 @@ impl Subcommand<Context> for Config {
         if self.path.is_none() && self.no_options_selected() {
             println!("{}", c.get_config());
             Ok(())
-        // work on an individual config file
+        // possibly work on 1 file
         } else {
-            let (mut cfg, output_path) = match &self.path {
+            let cfg_doc_triple = match &self.path {
+                // work on one file
                 Some(p) => {
                     // resolve if relative and the find in list
                     let p = filesystem::resolve_rel_path2(&std::env::current_dir().unwrap(), p);
@@ -112,22 +115,32 @@ impl Subcommand<Context> for Config {
                         println!("{}", selected_config_triple.1);
                         return Ok(());
                     }
-                    (
+                    // work only on this one file
+                    Some((
                         ConfigDocument::from_file(&selected_config_triple.0).unwrap(),
                         selected_config_triple.0.clone(),
-                    )
+                        selected_config_triple.2.clone(),
+                    ))
                 }
-                None => {
-                    // return the first path in the list
-                    let selected_config_triple = c.get_all_configs().get_inner().first().unwrap();
-                    (
-                        ConfigDocument::from_file(&selected_config_triple.0).unwrap(),
-                        selected_config_triple.0.clone(),
-                    )
-                }
+                None => None,
             };
+            // create all configs
             // modify the settings for the cfg file
-            self.run(&mut cfg, &output_path)
+            match cfg_doc_triple {
+                Some(mut cfg) => self.run(&mut cfg),
+                None => {
+                    let cfg_doc_triples: Vec<(ConfigDocument, PathBuf, Locality)> = c
+                        .get_all_configs()
+                        .get_inner()
+                        .iter()
+                        .filter(|(_, _, l)| l != &Locality::Include)
+                        .map(|(p, _, l)| {
+                            (ConfigDocument::from_file(p).unwrap(), p.clone(), l.clone())
+                        })
+                        .collect();
+                    self.run_all(cfg_doc_triples)
+                }
+            }
         }
     }
 }
@@ -137,36 +150,51 @@ impl Config {
         self.push.is_empty() && self.pop.is_empty() && self.set.is_empty() && self.unset.is_empty()
     }
 
-    fn run(
-        &self,
-        config: &mut ConfigDocument,
-        file: &PathBuf,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        // display configuration and exit
-        if self.no_options_selected() == true {
-            println!("{}", config.to_string());
-            return Ok(());
-        }
-
+    fn run_all(&self, mut configs: Vec<(ConfigDocument, PathBuf, Locality)>) -> Result<(), Fault> {
         // check for list appending
         for entry in &self.push {
             match entry.0.as_ref() {
-                "include" => config.append_include(&entry.1),
+                "include" => {
+                    let cfg = match configs
+                        .iter_mut()
+                        .find(|(c, _, _)| c.is_set(None, &entry.0.as_ref()))
+                    {
+                        Some(cfg) => cfg,
+                        None => configs.last_mut().unwrap(),
+                    };
+                    cfg.0.append_include(&entry.1);
+                }
                 _ => return Err(Error::ConfigFieldNotList(entry.0.to_string()))?,
             };
         }
         // check list for popping
-        for key in &self.pop {
-            match key.as_ref() {
-                "include" => config.pop_include(),
-                _ => return Err(Error::ConfigFieldNotList(key.to_string()))?,
+        for entry in &self.pop {
+            match entry.as_ref() {
+                "include" => {
+                    let cfg = match configs
+                        .iter_mut()
+                        .find(|(c, _, _)| c.is_set(None, &entry.as_ref()))
+                    {
+                        Some(cfg) => cfg,
+                        None => configs.last_mut().unwrap(),
+                    };
+                    cfg.0.pop_include();
+                }
+                _ => return Err(Error::ConfigFieldNotList(entry.to_string()))?,
             };
         }
 
         for entry in &self.set {
             // split by dots to get table.key (silently ignores improper parsing)
             if let Some((table, key)) = entry.0.split_once('.') {
-                config.set(table, key, &entry.1)
+                let cfg = match configs
+                    .iter_mut()
+                    .find(|(c, _, _)| c.is_set(Some(table), &key))
+                {
+                    Some(cfg) => cfg,
+                    None => configs.last_mut().unwrap(),
+                };
+                cfg.0.set(table, key, &entry.1);
             } else {
                 return Err(AnyError(format!(
                     "unsupported key {:?} cannot be set",
@@ -178,17 +206,100 @@ impl Config {
         for key in &self.unset {
             // split by dots to get table.key (silently ignores improper parsing)
             if let Some((table, key)) = key.split_once('.') {
-                config.unset(table, key)?
+                let cfg = match configs
+                    .iter_mut()
+                    .find(|(c, _, _)| c.is_set(Some(table), &key))
+                {
+                    Some(cfg) => cfg,
+                    None => configs.last_mut().unwrap(),
+                };
+                cfg.0.unset(table, key)?;
             } else {
                 return Err(AnyError(format!("unsupported key {:?} cannot be set", key)))?;
             }
         }
 
-        // is the config file is okay?
-        if let Err(e) = core::config::Config::from_str(&config.to_string()) {
-            return Err(Error::ConfigNotSaved(LastError(e.to_string())))?;
+        // verify all configs
+        for cfg in &configs {
+            // is the config file okay?
+            match core::config::Config::from_str(&cfg.0.to_string()) {
+                Ok(r) => {
+                    if &cfg.2 != &Locality::Global && r.has_include() {
+                        return Err(Error::ConfigNotSaved(LastError(
+                            Error::ConfigIncludeInNonglobal.to_string(),
+                        )))?;
+                    }
+                }
+                Err(e) => {
+                    return Err(Error::ConfigNotSaved(LastError(e.to_string())))?;
+                }
+            }
         }
 
-        config.write(&file)
+        // save all configs
+        for cfg in &mut configs {
+            cfg.0.write(&cfg.1)?;
+        }
+        Ok(())
+    }
+
+    fn run(&self, config: &mut (ConfigDocument, PathBuf, Locality)) -> Result<(), Fault> {
+        // display configuration and exit
+        if self.no_options_selected() == true {
+            println!("{}", config.0.to_string());
+            return Ok(());
+        }
+
+        // check for list appending
+        for entry in &self.push {
+            match entry.0.as_ref() {
+                "include" => config.0.append_include(&entry.1),
+                _ => return Err(Error::ConfigFieldNotList(entry.0.to_string()))?,
+            };
+        }
+        // check list for popping
+        for key in &self.pop {
+            match key.as_ref() {
+                "include" => config.0.pop_include(),
+                _ => return Err(Error::ConfigFieldNotList(key.to_string()))?,
+            };
+        }
+
+        for entry in &self.set {
+            // split by dots to get table.key (silently ignores improper parsing)
+            if let Some((table, key)) = entry.0.split_once('.') {
+                config.0.set(table, key, &entry.1)
+            } else {
+                return Err(AnyError(format!(
+                    "unsupported key {:?} cannot be set",
+                    entry.0
+                )))?;
+            }
+        }
+
+        for key in &self.unset {
+            // split by dots to get table.key (silently ignores improper parsing)
+            if let Some((table, key)) = key.split_once('.') {
+                config.0.unset(table, key)?
+            } else {
+                return Err(AnyError(format!("unsupported key {:?} cannot be set", key)))?;
+            }
+        }
+
+        // is the config file okay?
+        match core::config::Config::from_str(&config.0.to_string()) {
+            Ok(r) => {
+                if &config.2 != &Locality::Global && r.has_include() {
+                    return Err(Error::ConfigNotSaved(LastError(
+                        Error::ConfigIncludeInNonglobal.to_string(),
+                    )))?;
+                }
+            }
+            Err(e) => {
+                return Err(Error::ConfigNotSaved(LastError(e.to_string())))?;
+            }
+        }
+
+        config.0.write(&config.1)
     }
 }

@@ -75,6 +75,8 @@ pub enum Error {
     ConfigIncludeFailed(String, String, LastError),
     #[error("failed to load configuration file at {0:?}: {1}")]
     ConfigLoadFailed(String, LastError),
+    #[error("failed to save configuration file at {0:?}: {1}")]
+    ConfigSaveFailed(String, LastError),
     #[error("failed to parse source code file {0:?}: {1}")]
     SourceCodeInvalidSyntax(PathBuf, LastError),
     #[error("failed to process ip graph: {0}")]
@@ -155,6 +157,8 @@ pub enum Error {
     UnitIsWrongVisibility(String, LangIdentifier, Visibility, Hint),
     #[error("path {0:?} is not a configuration file{1}")]
     ConfigBadPath(PathBuf, Hint),
+    #[error("invalid key: \"include\" is not allowed in non-global configuration file")]
+    ConfigIncludeInNonglobal,
 }
 
 #[derive(Debug, PartialEq)]

@@ -140,6 +140,19 @@ impl ConfigDocument {
         }
     }
 
+    /// Checks if the current entry is set
+    pub fn is_set(&self, table: Option<&str>, key: &str) -> bool {
+        if let Some(table) = table {
+            if let Some(map) = self.document.get(table) {
+                map.as_table().unwrap().contains_key(key)
+            } else {
+                false
+            }
+        } else {
+            self.document.contains_key(key)
+        }
+    }
+
     /// Sets a value for the given entry in the toml document.
     ///
     /// Creates parent table and/or key if does not exist.
@@ -254,8 +267,10 @@ impl Display for Locality {
 
 #[derive(Debug, PartialEq)]
 pub struct Configs {
-    inner: Vec<(PathBuf, Config, Locality)>,
+    inner: Vec<ConfigTriple>,
 }
+
+pub type ConfigTriple = (PathBuf, Config, Locality);
 
 impl Configs {
     pub fn new() -> Self {
@@ -285,7 +300,16 @@ impl Configs {
                 let (config_path, local) = to_process.get(i).unwrap();
                 // load the entry file
                 let cfg = match Config::from_file(&config_path) {
-                    Ok(r) => r,
+                    Ok(r) => {
+                        // verify any config other than global does not have include set
+                        if local != &Locality::Global && r.include.is_some() {
+                            return Err(Error::ConfigLoadFailed(
+                                filesystem::into_std_str(config_path.clone()),
+                                LastError(Error::ConfigIncludeInNonglobal.to_string()),
+                            ))?;
+                        }
+                        r
+                    }
                     Err(e) => match local {
                         Locality::Include => {
                             return Err(Error::ConfigIncludeFailed(
@@ -345,14 +369,13 @@ impl Configs {
         map
     }
 
-    pub fn get_global(&self) -> (&PathBuf, &Config) {
-        let cfg = &self
+    pub fn get_global(&self) -> &ConfigTriple {
+        &self
             .inner
             .iter()
             .filter(|(_, _, l)| l == &Locality::Global)
             .next()
-            .unwrap();
-        (&cfg.0, &cfg.1)
+            .unwrap()
     }
 }
 
@@ -540,6 +563,10 @@ impl Config {
             test: None,
             publish: None,
         }
+    }
+
+    pub fn has_include(&self) -> bool {
+        self.include.is_some()
     }
 
     /// Adds `path` to the end of the list for the include attribute.

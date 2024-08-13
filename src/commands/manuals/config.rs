@@ -41,7 +41,12 @@ DESCRIPTION
     data will be displayed.
     
     To modify a field, the full key must be provided. Fields located inside
-    tables require decimal characters "." to delimit between the key names.
+    tables require decimal characters "." to delimit between the key names. Each 
+    modified field is edited in the configuration file has the lowest precedence
+    and would allow the changes to take effect. Files that won't be edited are
+    configuration files that are included in the global config file. If the
+    field does not exist in any configuration level, then the field will be
+    modified at in the global config file.
     
     When modifying data, additions are processed before deletions. This means all
     '--push' options occur before '--pop' options, and all '--set' options occur 

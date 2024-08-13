@@ -26,7 +26,7 @@ The configuration files are processed in the order defined above. When a configu
 
 Every configuration file consists of the following sections:
 
-- [include](#the-include-field) - Lists other `config.toml` files to process.
+- [include](#the-include-field) - Lists other `config.toml` files to process. This field is only allowed for the global configuration file.
 - [[general]](#the-general-section) - The general settings.
     - [target-dir](#the-target-dir-field) - Default target directory.
 - [[test]](#the-test-section) - The test settings.

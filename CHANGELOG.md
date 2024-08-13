@@ -29,6 +29,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - adds `ip.include` and `ip.exclude` fields to the manifest format
 
 ### Changes
+- removes environment variables `ORBIT_CACHE` and `ORBIT_ARCHIVE` since they were dependent upon `ORBIT_HOME` and should not be messed with by the user
 - adopts easier approach to specifying design units using positional arguments for `orbit tree` command
 - no longer uses `.orbitignore` files, see the ip manifest's `ip.include` and `ip.exclude` fields to now explicitly set what files should be ignored or included during an ip's file discovery
 - removes `explanation` field from targets and protocols in configuration data

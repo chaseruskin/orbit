@@ -269,8 +269,6 @@ impl Environment {
 pub const DOT_ENV_FILE: &str = ".env";
 
 pub const ORBIT_HOME: &str = "ORBIT_HOME";
-pub const ORBIT_CACHE: &str = "ORBIT_CACHE";
-pub const ORBIT_ARCHIVE: &str = "ORBIT_ARCHIVE";
 pub const NO_COLOR: &str = "NO_COLOR";
 pub const ORBIT_WIN_LITERAL_CMD: &str = "ORBIT_WIN_LITERAL_CMD";
 

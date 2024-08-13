@@ -51,8 +51,6 @@ pub struct Context {
     cache_path: PathBuf,
     /// File system path directing to ip downloads
     archive_path: PathBuf,
-    /// File system path directing to ip channels
-    channels_path: PathBuf,
     /// The parent path to the current ip `Orbit.toml` manifest file.
     ip_path: Option<PathBuf>,
     /// Directory name for the intermediate build processes and outputs.    
@@ -72,12 +70,10 @@ impl Context {
         let home = std::env::temp_dir();
         let cache = home.join("cache");
         let downloads = home.join("archive");
-        let channels = home.join("channels");
         Context {
             home_path: home,
             cache_path: cache,
             archive_path: downloads,
-            channels_path: channels,
             ip_path: None,
             plugins: HashMap::new(),
             all_configs: Configs::new(),
@@ -117,8 +113,8 @@ impl Context {
 
     /// Sets the cache directory. If it was set from `var`, it assumes the path
     /// exists. If setting by default (within HOME), it assumes HOME is already existing.
-    pub fn cache(mut self, key: &str) -> Result<Context, Fault> {
-        self.cache_path = self.folder(key, "cache")?;
+    pub fn cache(mut self) -> Result<Context, Fault> {
+        self.cache_path = self.folder(None, "cache")?;
         // create a cache tag file if does not exist
         match Self::is_cache_tag_valid(&self.cache_path) {
             Ok(_) => (),
@@ -129,19 +125,13 @@ impl Context {
 
     /// Sets the downloads directory. If it was set from `var`, it assumes the path
     /// exists. If setting by default (within HOME), it assumes HOME is already existing.
-    pub fn archive(mut self, key: &str) -> Result<Context, Fault> {
-        self.archive_path = self.folder(key, "archive")?;
+    pub fn archive(mut self) -> Result<Context, Fault> {
+        self.archive_path = self.folder(None, "archive")?;
         // create a cache tag file if does not exist
         match Self::is_cache_tag_valid(&self.archive_path) {
             Ok(_) => (),
             Err(e) => fs::write(&e, CACHE_TAG)?,
         }
-        Ok(self)
-    }
-
-    /// Sets the channels directory.
-    pub fn channels(mut self, key: &str) -> Result<Context, Fault> {
-        self.channels_path = self.folder(key, "channels")?;
         Ok(self)
     }
 
@@ -177,21 +167,24 @@ impl Context {
     ///
     /// Uses `key`'s value if already explicitly set and will set the environment
     /// variable accordingly.
-    fn folder(&self, key: &str, folder: &str) -> Result<PathBuf, Fault> {
+    fn folder(&self, key: Option<&str>, folder: &str) -> Result<PathBuf, Fault> {
         // prioritize explicit variable setting
-        let dir = if let Ok(s) = env::var(key) {
-            let ep = PathBuf::from(s);
+        let dir = if key.is_some() && env::var(key.unwrap()).is_ok() {
+            let ep = PathBuf::from(env::var(key.unwrap()).unwrap());
             // verify the path exists
             if ep.exists() == false {
                 return Err(AnyError(format!(
                     "directory {} does not exist for {}",
                     ep.display(),
-                    key
+                    key.unwrap()
                 )))?;
             }
             // verify the path is a directory
             if ep.is_dir() == false {
-                return Err(AnyError(format!("{} must be a filesystem directory", key)))?;
+                return Err(AnyError(format!(
+                    "{} must be a filesystem directory",
+                    key.unwrap()
+                )))?;
             }
             ep
         // proceed with default
@@ -207,7 +200,9 @@ impl Context {
             ep
         };
         // set the environment variable
-        env::set_var(key, &PathBuf::standardize(&dir));
+        if let Some(k) = key {
+            env::set_var(k, &PathBuf::standardize(&dir));
+        }
         Ok(dir)
     }
 

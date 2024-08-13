@@ -42,5 +42,5 @@ OPTIONS
 EXAMPLES
     orbit env
     orbit env ORBIT_HOME
-    orbit env ORBIT_CACHE ORBIT_ARCHIVE
+    orbit env ORBIT_MANIFEST_DIR ORBIT_IP_NAME
 "#;

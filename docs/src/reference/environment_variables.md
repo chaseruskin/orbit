@@ -4,10 +4,6 @@ Orbit's configuration can be customized with the setting of specific environment
 
 - `ORBIT_HOME` - Location where Orbit stores its data. By default Orbit reads and writes to "$HOME/.orbit" on Unix systems and "%USERPROFILE%/.orbit" on Windows systems.
 
-- `ORBIT_CACHE` - Location where Orbit caches installed ip. By default it is "$ORBIT_HOME/cache".
-
-- `ORBIT_ARCHIVE` - Location where Orbit archives downloaded ip. By default it is "$ORBIT_HOME/archive".
-
 - `NO_COLOR` - If set, do not print colorized output to the terminal.
 
 - `ORBIT_WIN_LITERAL_CMD` - If set, disables the default behavior of checking for programs ending with ".exe" then ".bat" when a program name without extension is not found on Windows systems.

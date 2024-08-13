@@ -54,14 +54,6 @@ impl Subcommand<Context> for Env {
                 .key(environment::ORBIT_HOME)
                 .value(PathBuf::standardize(c.get_home_path()).to_str().unwrap()),
             EnvVar::new()
-                .key(environment::ORBIT_CACHE)
-                .value(PathBuf::standardize(c.get_cache_path()).to_str().unwrap()),
-            EnvVar::new().key(environment::ORBIT_ARCHIVE).value(
-                PathBuf::standardize(c.get_downloads_path())
-                    .to_str()
-                    .unwrap(),
-            ),
-            EnvVar::new()
                 .key(environment::ORBIT_TARGET_DIR)
                 .value(&c.get_target_dir()),
             EnvVar::new().key(environment::ORBIT_MANIFEST_DIR).value(

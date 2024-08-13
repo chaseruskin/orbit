@@ -111,8 +111,8 @@ impl Command for Orbit {
             // set up the context (ignores the context passed in)
             let context = Context::new()
                 .home(environment::ORBIT_HOME)?
-                .cache(environment::ORBIT_CACHE)?
-                .archive(environment::ORBIT_ARCHIVE)?
+                .cache()?
+                .archive()?
                 .current_ip_dir(environment::ORBIT_MANIFEST_DIR)? // must come before .settings() call
                 .settings(config::CONFIG_FILE)?
                 .build_dir(environment::ORBIT_TARGET_DIR)?;
@@ -127,8 +127,8 @@ impl Command for Orbit {
             // update channels
             let context = Context::new()
                 .home(environment::ORBIT_HOME)?
-                .cache(environment::ORBIT_CACHE)?
-                .archive(environment::ORBIT_ARCHIVE)?
+                .cache()?
+                .archive()?
                 .current_ip_dir(environment::ORBIT_MANIFEST_DIR)? // must come before .settings() call
                 .settings(config::CONFIG_FILE)?
                 .build_dir(environment::ORBIT_TARGET_DIR)?;

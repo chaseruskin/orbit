@@ -28,8 +28,10 @@ DESCRIPTION
     
     There are multiple checks that are performed before an ip can be published. 
     First, the ip must have an up to date lockfile with no relative dependencies. 
-    The ip's manifest must also have a value for the source field. Lastly, Orbit 
-    must be able to construct the hdl source code graph without errors.
+    The ip's manifest must also have a value for the source field. In addition,
+    Orbit must be able to construct the hdl source code graph without errors.
+    Finally, the ip is downloaded from its source url and temporarily installed
+    to verify its contents match those of the local ip.
     
     Posting an ip to a channel involves copying the ip's manifest file to a path 
     within the channel known as the index. For every publish of an ip, the index 
@@ -44,6 +46,9 @@ DESCRIPTION
 OPTIONS
     --ready, -y
         Run the operation to completion
+
+    --no-install
+        Do not install the ip for future use
 
     --list
         View available channels and exit

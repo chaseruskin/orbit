@@ -645,6 +645,7 @@ mod test {
                     .as_ref()
                     .unwrap()
                     .get_protocol()
+                    .as_ref()
                     .unwrap(),
                 "ktsp"
             );

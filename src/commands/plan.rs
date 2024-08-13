@@ -629,7 +629,7 @@ fn install_ip_from_downloads(dep: &Ip, catalog: &Catalog, force: bool) -> Result
             }
         };
         // install from the unzipp ip
-        match Install::install(&unzipped_dep, catalog.get_cache_path(), force) {
+        match Install::install(&unzipped_dep, catalog.get_cache_path(), force, true) {
             Ok(_) => {}
             Err(e) => {
                 fs::remove_dir_all(dir)?;

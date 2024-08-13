@@ -135,6 +135,8 @@ pub enum Error {
     PublishHdlGraphFailed(LastError),
     #[error("ip {0} is ready to be published{1}")]
     PublishDryRunDone(IpSpec, Hint),
+    #[error("checksums do not match between downloaded ip and local ip{0}")]
+    PublishChecksumsOff(Hint),
     #[error("channel's resolved path {0:?} does not exist")]
     ChannelPathNotFound(PathBuf),
     #[error("channel's resolved path {0:?} is not a directory")]
@@ -187,6 +189,7 @@ impl Error {
 #[derive(Debug, PartialEq)]
 pub enum Hint {
     TargetsList,
+    PublishSyncRemote,
     CatalogList,
     InitNotNew,
     IpNameSeparate,
@@ -249,6 +252,9 @@ impl Display for Hint {
             Self::ShowVersions => "use `orbit view <ip> --versions` to see all known versions",
             Self::ShowConfigFiles => {
                 "use `orbit config --list` to see the list of current configuration files"
+            }
+            Self::PublishSyncRemote => {
+                "check that the local ip's contents matches the source's contents"
             }
         };
         write!(

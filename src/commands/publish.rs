@@ -16,6 +16,7 @@
 //
 
 use std::collections::HashMap;
+use std::fs;
 use std::path::PathBuf;
 
 use crate::commands::plan::Plan;
@@ -24,6 +25,7 @@ use crate::core::catalog::{Catalog, PointerSlot};
 use crate::core::channel::Channel;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
+use crate::core::iparchive::IpArchive;
 use crate::core::lang::Language;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::error::{Error, Hint, LastError};
@@ -35,10 +37,13 @@ use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
 
 use super::helps::publish::HELP;
+use super::install::Install;
+use super::remove::Remove;
 
 #[derive(Debug, PartialEq)]
 pub struct Publish {
     ready: bool,
+    no_install: bool,
     list: bool,
 }
 
@@ -47,6 +52,7 @@ impl Subcommand<Context> for Publish {
         cli.help(Help::with(HELP))?;
         Ok(Publish {
             list: cli.check(Arg::flag("list"))?,
+            no_install: cli.check(Arg::flag("no-install"))?,
             ready: cli.check(Arg::flag("ready").switch('y'))?,
         })
     }
@@ -149,9 +155,21 @@ impl Subcommand<Context> for Publish {
             ))));
         }
 
+        // verify the package is available to be downloaded
+        println!("info: {}", "verifying ip can be downloaded  ...");
+        let remove = self.ready == false || self.no_install == true;
+        let changes = match Self::test_download_and_install(&local_ip, &c, remove) {
+            Ok(c) => c,
+            Err(e) => {
+                return Err(Box::new(Error::PublishFailedCheckpoint(LastError(
+                    e.to_string(),
+                ))));
+            }
+        };
+
         // TODO: warn if there are no HDL units in the project
         match self.ready {
-            true => self.publish_all(&local_ip, channels, env),
+            true => self.publish_all(&local_ip, channels, env, &changes),
             false => Err(Box::new(Error::PublishDryRunDone(
                 ip_spec,
                 Hint::PublishWithReady,
@@ -196,6 +214,88 @@ impl Publish {
         Ok(())
     }
 
+    fn test_download_and_install(
+        local_ip: &Ip,
+        c: &Context,
+        remove: bool,
+    ) -> Result<Option<Changes>, Fault> {
+        let verbose_install = remove == false;
+
+        // install from local path to what its checksum would be
+        let local_sum = {
+            let local_install = Install::install(local_ip, c.get_cache_path(), true, false)?
+                .expect("ip should be installed from local");
+            let sum = Ip::compute_checksum(&local_install.get_root());
+            Remove::remove_install(&local_install)?;
+            sum
+        };
+
+        let ip = local_ip.get_man().get_ip();
+        let src = ip.get_source().unwrap();
+        // get the ip from the internet and as an archive
+        let bytes = Install::download_target_from_url(
+            c,
+            &src.get_url(),
+            &src.get_protocol(),
+            &src.get_tag(),
+            &Some(ip.into_ip_spec().to_partial_ip_spec()),
+            false,
+            true,
+        )?
+        .1;
+        // try to extract the ip from the archives
+        let tmp_archive_staging_dir = tempfile::tempdir()?.into_path();
+        if let Err(e) = IpArchive::extract(&bytes, &tmp_archive_staging_dir) {
+            fs::remove_dir_all(tmp_archive_staging_dir)?;
+            return Err(e);
+        }
+        let unzipped_ip = match Ip::load(tmp_archive_staging_dir.clone(), false) {
+            Ok(x) => x,
+            Err(e) => {
+                fs::remove_dir_all(tmp_archive_staging_dir)?;
+                return Err(e);
+            }
+        };
+        // try to install the ip
+        let installed_ip =
+            match Install::install(&unzipped_ip, c.get_cache_path(), true, verbose_install) {
+                Ok(x) => {
+                    fs::remove_dir_all(tmp_archive_staging_dir)?;
+                    x.expect("ip should be installed from archive")
+                }
+                Err(e) => {
+                    fs::remove_dir_all(tmp_archive_staging_dir)?;
+                    return Err(e);
+                }
+            };
+        // after collecting the checksums, clean up the installations if needed
+        let installed_sum = Ip::compute_checksum(installed_ip.get_root());
+
+        if remove == true {
+            Remove::remove_download(c.get_downloads_path(), &unzipped_ip)?;
+            Remove::remove_install(&installed_ip)?;
+        }
+
+        match local_sum == installed_sum {
+            true => Ok(match remove {
+                true => None,
+                false => Some(Changes {
+                    downloads_path: c.get_downloads_path().clone(),
+                    archived_ip: unzipped_ip,
+                    cached_ip: installed_ip,
+                }),
+            }),
+            false => {
+                // make sure files are deleted
+                if remove == false {
+                    Remove::remove_download(c.get_downloads_path(), &unzipped_ip)?;
+                    Remove::remove_install(&installed_ip)?;
+                }
+                Err(Error::PublishChecksumsOff(Hint::PublishSyncRemote))?
+            }
+        }
+    }
+
     pub fn check_graph_builds_okay(local_ip: &Ip, catalog: &Catalog) -> Result<(), Fault> {
         // use all language settings
         let lang = Language::default();
@@ -210,6 +310,7 @@ impl Publish {
         local_ip: &Ip,
         channels: HashMap<&String, &Channel>,
         mut env: Environment,
+        changes: &Option<Changes>,
     ) -> Result<(), Fault> {
         // publish to each channel
         for (name, chan) in &channels {
@@ -222,7 +323,7 @@ impl Publish {
             match self.publish(local_ip, chan, &env) {
                 Ok(_) => (),
                 Err(e) => {
-                    self.rollback_changes(local_ip, chan)?;
+                    self.rollback_changes(local_ip, chan, changes)?;
                     return Err(e);
                 }
             }
@@ -274,7 +375,20 @@ impl Publish {
     ///
     /// This function should be called before returning the final error from the publish
     /// operation to allow users to try again from a known state.
-    fn rollback_changes(&self, local_ip: &Ip, channel: &Channel) -> Result<(), Fault> {
+    fn rollback_changes(
+        &self,
+        local_ip: &Ip,
+        channel: &Channel,
+        changes: &Option<Changes>,
+    ) -> Result<(), Fault> {
+        // remove the installation and download
+        if self.no_install == false {
+            if let Some(changes) = changes {
+                Remove::remove_download(&changes.downloads_path, &changes.archived_ip)?;
+                Remove::remove_install(&changes.cached_ip)?;
+            }
+        }
+
         let index_dir = Self::create_pointer_directory(&local_ip);
         let index_path = channel.get_root().join(index_dir);
 
@@ -301,4 +415,10 @@ impl Publish {
         }
         Ok(())
     }
+}
+
+struct Changes {
+    pub downloads_path: PathBuf,
+    pub archived_ip: Ip,
+    pub cached_ip: Ip,
 }

@@ -63,8 +63,8 @@ impl Source {
         }
     }
 
-    pub fn get_protocol(&self) -> Option<&String> {
-        self.protocol.as_ref()
+    pub fn get_protocol(&self) -> &Option<String> {
+        &self.protocol
     }
 
     pub fn get_url(&self) -> &str {
@@ -75,8 +75,8 @@ impl Source {
         self.valid
     }
 
-    pub fn get_tag(&self) -> Option<&String> {
-        self.tag.as_ref()
+    pub fn get_tag(&self) -> &Option<String> {
+        &self.tag
     }
 
     pub fn is_default(&self) -> bool {

@@ -110,15 +110,19 @@ impl Download {
             match protocols.get(proto.as_str()) {
                 Some(&entry) => {
                     if let Some(ip_spec) = spec {
-                        println!(
-                            "info: downloading ip {} over \"{}\" protocol ...",
-                            ip_spec, &proto
-                        );
+                        if verbose == true {
+                            println!(
+                                "info: downloading ip {} over \"{}\" protocol ...",
+                                ip_spec, &proto
+                            );
+                        }
                         // update variable table for this lock entry
                         vtable.add("orbit.ip.name", ip_spec.get_name().as_ref());
                         vtable.add("orbit.ip.version", &ip_spec.get_version().to_string());
                     } else {
-                        println!("info: downloading ip over \"{}\" protocol ...", &proto);
+                        if verbose == true {
+                            println!("info: downloading ip over \"{}\" protocol ...", &proto);
+                        }
                     }
 
                     // perform string swap on source url
@@ -133,7 +137,7 @@ impl Download {
                     vtable.add("orbit.ip.source.protocol", entry.get_name());
                     vtable.add(
                         "orbit.ip.source.tag",
-                        src.get_tag().unwrap_or(&String::new()),
+                        src.get_tag().as_ref().unwrap_or(&String::new()),
                     );
                     // allow the user to handle placing the code in the queue
                     let entry: Protocol = entry.clone().replace_vars_in_args(&vtable);
@@ -155,10 +159,13 @@ impl Download {
             if let Some(ip_spec) = spec {
                 vtable.add("orbit.ip.name", ip_spec.get_name().as_ref());
                 vtable.add("orbit.ip.version", &ip_spec.get_version().to_string());
-
-                println!("info: downloading ip {} ...", ip_spec);
+                if verbose == true {
+                    println!("info: downloading ip {} ...", ip_spec);
+                }
             } else {
-                println!("info: downloading ip ...");
+                if verbose == true {
+                    println!("info: downloading ip ...");
+                }
             }
 
             // perform string swap on source url
@@ -173,7 +180,7 @@ impl Download {
             }
         }
         // move the IP to the downloads folder
-        match Self::move_to_download_dir(&queue, download_dir, spec) {
+        match Self::move_to_download_dir(&queue, download_dir, spec, verbose) {
             Ok((name, bytes)) => {
                 // clean up temporary directory
                 fs::remove_dir_all(queue)?;
@@ -190,6 +197,7 @@ impl Download {
         queue: &PathBuf,
         downloads: &PathBuf,
         spec: Option<&PartialIpSpec>,
+        verbose: bool,
     ) -> Result<(IpSpec, Vec<u8>), Fault> {
         // code is in the queue now, move it to the downloads/ folder
 
@@ -238,7 +246,9 @@ impl Download {
 
                     if detected_it == true {
                         let found_ip_spec = temp.get_man().get_ip().into_ip_spec();
-                        println!("info: found ip {}", found_ip_spec);
+                        if verbose == true {
+                            println!("info: found ip {}", found_ip_spec);
+                        }
                         // verify the ip is okay
                         Ip::load(temp.get_root().to_path_buf(), false)?;
                         // zip the project to the downloads directory

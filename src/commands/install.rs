@@ -153,10 +153,19 @@ impl Subcommand<Context> for Install {
         let mut provided_spec = None;
 
         // check if trying to download from the internet
-        let target = if self.url.is_some() {
+        let target = if let Some(link) = &self.url {
             provided_spec = Some(
-                Self::download_target_from_url(&self, c, &self.url.as_ref().unwrap())?
-                    .to_partial_ip_spec(),
+                Self::download_target_from_url(
+                    c,
+                    &link,
+                    &self.protocol,
+                    &self.tag,
+                    &self.ip,
+                    true,
+                    self.force,
+                )?
+                .0
+                .to_partial_ip_spec(),
             );
             None
         // check if trying to download from local filesystem
@@ -218,6 +227,7 @@ impl Subcommand<Context> for Install {
                         .into_ip_spec()
                         .to_partial_ip_spec(),
                 ),
+                true,
             )?;
             provided_spec = Some(
                 target
@@ -475,10 +485,16 @@ impl Install {
         Ok(catalog)
     }
 
-    fn download_target_from_url(&self, c: &Context, url: &str) -> Result<IpSpec, Fault> {
-        let env = Environment::new()
-            // read config.toml for setting any env variables
-            .from_config(c.get_config())?;
+    pub fn download_target_from_url(
+        c: &Context,
+        url: &str,
+        protocol: &Option<String>,
+        tag: &Option<String>,
+        ip: &Option<PartialIpSpec>,
+        verbose: bool,
+        force: bool,
+    ) -> Result<(IpSpec, Vec<u8>), Fault> {
+        let env = Environment::new().from_config(c.get_config())?;
         let mut vtable = StrSwapTable::new().load_environment(&env)?;
         env.initialize();
 
@@ -486,21 +502,21 @@ impl Install {
 
         let target_source = Source::new()
             .url(url.to_string())
-            .protocol(self.protocol.clone())
-            .tag(self.tag.clone());
+            .protocol(protocol.clone())
+            .tag(tag.clone());
 
         // fetch from the internet
-        let (name, _bytes) = Download::download(
+        let (name, bytes) = Download::download(
             &mut vtable,
-            self.ip.as_ref(),
+            ip.as_ref(),
             &target_source,
             None,
             c.get_downloads_path(),
             &protocols,
-            self.verbose,
-            self.force,
+            verbose,
+            force,
         )?;
-        Ok(name)
+        Ok((name, bytes))
     }
 
     fn download_target_from_source(
@@ -560,7 +576,12 @@ impl Install {
     /// It will reinstall if it finds the original installation has a mismatching checksum.
     ///
     /// Returns `true` if the IP was successfully installed and `false` if it already existed.
-    pub fn install(src: &Ip, cache_root: &std::path::PathBuf, force: bool) -> Result<bool, Fault> {
+    pub fn install(
+        src: &Ip,
+        cache_root: &PathBuf,
+        force: bool,
+        verbose: bool,
+    ) -> Result<Option<Ip>, Fault> {
         // temporary destination to move files for processing and manipulation
         let dest = tempfile::tempdir()?.into_path();
         filesystem::copy(src.get_root(), &dest, true, Some(src.get_files_to_keep()))?;
@@ -582,7 +603,9 @@ impl Install {
         let version = src.get_man().get_ip().get_version();
         let target = src.get_man().get_ip().get_name();
         let ip_spec = src.get_man().get_ip().into_ip_spec();
-        println!("info: installing ip {} ...", &ip_spec);
+        if verbose == true {
+            println!("info: installing ip {} ...", &ip_spec);
+        }
 
         // perform sha256 on the temporary cloned directory
         let checksum = Ip::compute_checksum(&dest);
@@ -601,10 +624,11 @@ impl Install {
                 if Self::is_checksum_good(&cache_slot) == true {
                     // clean up the temporary directory ourself
                     fs::remove_dir_all(dest)?;
-                    return Ok(false);
+                    return Ok(None);
                 } else {
-                    println!("info: reinstalling ip {} due to bad checksum ...", ip_spec);
-
+                    if verbose == true {
+                        println!("info: reinstalling ip {} due to bad checksum ...", ip_spec);
+                    }
                     // blow directory up for re-install
                     std::fs::remove_dir_all(&cache_slot)?;
                 }
@@ -623,17 +647,17 @@ impl Install {
         // write the metadata
         installed_ip.write_cache_metadata()?;
 
-        Ok(true)
+        Ok(Some(installed_ip))
     }
 
     fn run(&self, target: &Ip, catalog: &Catalog) -> Result<(), Fault> {
-        let result = Self::install(&target, &catalog.get_cache_path(), self.force)?;
-
-        if result == false {
-            println!(
+        let result = Self::install(&target, &catalog.get_cache_path(), self.force, true)?;
+        match result {
+            Some(_) => (),
+            None => println!(
                 "info: ip {} is already installed",
                 target.get_man().get_ip().into_ip_spec()
-            );
+            ),
         }
 
         Ok(())

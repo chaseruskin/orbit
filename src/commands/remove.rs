@@ -128,7 +128,7 @@ impl Subcommand<Context> for Remove {
         // grab the ip's manifest
         match status.get_install(&selected_version) {
             Some(t) => {
-                self.remove_install(t)?;
+                Self::remove_install(t)?;
                 if self.verbose == true {
                     println!("info: removed ip {} from the cache", ip_spec);
                 }
@@ -144,7 +144,7 @@ impl Subcommand<Context> for Remove {
         // grab the ip's manifest
         match status.get_download(&selected_version) {
             Some(t) => {
-                self.remove_download(c.get_downloads_path(), t)?;
+                Self::remove_download(c.get_downloads_path(), t)?;
                 if self.verbose == true {
                     println!("info: removed ip {} from the archive", ip_spec);
                 }
@@ -167,7 +167,7 @@ impl Remove {
     }
 
     /// Removes the compressed snapshot file of the ip from the archive.
-    fn remove_download(&self, archive_path: &PathBuf, target: &Ip) -> Result<(), Fault> {
+    pub fn remove_download(archive_path: &PathBuf, target: &Ip) -> Result<(), Fault> {
         let ip_spec = target.get_man().get_ip().into_ip_spec();
         // delete the project from the cache (default behavior)
         fs::remove_file(
@@ -185,7 +185,7 @@ impl Remove {
 
     /// Removes the installed IP from its root directory. This function assumes
     /// the `target` IP exists under the installation path (cache path).
-    fn remove_install(&self, target: &Ip) -> Result<(), Fault> {
+    pub fn remove_install(target: &Ip) -> Result<(), Fault> {
         // delete the project from the cache (default behavior)
         fs::remove_dir_all(target.get_root())?;
         Ok(())

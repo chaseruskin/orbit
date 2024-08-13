@@ -1898,7 +1898,7 @@ precedence:
 </blockquote>
 <p>Every configuration file consists of the following sections:</p>
 <ul>
-<li><a href="reference/configuration.html#the-include-field">include</a> - Lists other <code>config.toml</code> files to process.</li>
+<li><a href="reference/configuration.html#the-include-field">include</a> - Lists other <code>config.toml</code> files to process. This field is only allowed for the global configuration file.</li>
 <li><a href="reference/configuration.html#the-general-section">[general]</a> - The general settings.
 <ul>
 <li><a href="reference/configuration.html#the-target-dir-field">target-dir</a> - Default target directory.</li>
@@ -2747,7 +2747,12 @@ configuration data from across all files in use.</p>
 <p>If there are no options set to modify data, then the resulting configuration
 data will be displayed.</p>
 <p>To modify a field, the full key must be provided. Fields located inside
-tables require decimal characters "." to delimit between the key names.</p>
+tables require decimal characters "." to delimit between the key names. Each
+modified field is edited in the configuration file has the lowest precedence
+and would allow the changes to take effect. Files that won't be edited are
+configuration files that are included in the global config file. If the
+field does not exist in any configuration level, then the field will be
+modified at in the global config file.</p>
 <p>When modifying data, additions are processed before deletions. This means all
 <code>--push</code> options occur before <code>--pop</code> options, and all <code>--set</code> options occur
 before <code>--unset</code> options. Not every configuration field can be edited through

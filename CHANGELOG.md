@@ -15,9 +15,10 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.20.0 - unreleased
+## 0.20.0
 
 ### Features
+- improves install command to check the coherency with an ip's source
 - `orbit config` writes modified values to place where value exists, with it being the global config if it does not exist at any level
 - adds additional check for data integrity during `orbit publish` by testing the download and install of the local ip from its source
 - adds `-t` switch for shorthand to use `--target` option for `orbit test` and `orbit build`

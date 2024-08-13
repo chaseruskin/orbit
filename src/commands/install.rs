@@ -40,6 +40,7 @@ use crate::commands::download::Download;
 use crate::commands::download::ProtocolMap;
 use crate::commands::helps::install;
 use crate::commands::plan;
+use crate::commands::remove::Remove;
 use crate::core::algo;
 use crate::core::catalog::CacheSlot;
 use crate::core::catalog::Catalog;
@@ -56,6 +57,7 @@ use crate::core::protocol::ProtocolError;
 use crate::core::source::Source;
 use crate::core::swap::StrSwapTable;
 use crate::core::version;
+use crate::core::version::AnyVersion;
 use crate::error::Error;
 use crate::error::Hint;
 use crate::error::LastError;
@@ -63,10 +65,8 @@ use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
 use crate::util::filesystem;
 use crate::util::filesystem::Standardize;
-use std::collections::HashSet;
 use std::env;
 use std::fs;
-use std::fs::read_dir;
 use std::path::PathBuf;
 
 use cliproc::{cli, proc, stage::*};
@@ -217,7 +217,7 @@ impl Subcommand<Context> for Install {
                 },
             };
             // move the ip to the downloads folder if not already there
-            Download::move_to_download_dir(
+            let (spec, _) = Download::move_to_download_dir(
                 &target.get_root(),
                 c.get_downloads_path(),
                 Some(
@@ -229,13 +229,7 @@ impl Subcommand<Context> for Install {
                 ),
                 true,
             )?;
-            provided_spec = Some(
-                target
-                    .get_man()
-                    .get_ip()
-                    .into_ip_spec()
-                    .to_partial_ip_spec(),
-            );
+            provided_spec = Some(spec.to_partial_ip_spec());
             Some(target)
         // attempt to find the catalog
         } else {
@@ -251,7 +245,7 @@ impl Subcommand<Context> for Install {
         catalog = catalog.downloads(c.get_downloads_path())?;
 
         // use the catalog (if no path is provided)
-        let target = if self.path.is_none() == true {
+        let target = if self.path.is_none() == true && (self.url.is_some() || self.ip.is_some()) {
             if let Some(spec) = &determined_spec {
                 // println!("determined: {}", spec);
                 if let Some(lvl) = catalog.inner().get(spec.get_name()) {
@@ -277,6 +271,7 @@ impl Subcommand<Context> for Install {
                             Some(unzipped_ip)
                         // follow pointer to download an archive
                         } else if slot.get_mapping().is_pointer() {
+                            println!("{}", "using pointer");
                             match slot.get_man().get_ip().get_source() {
                                 Some(sour) => Some(self.download_target_from_source(
                                     c,
@@ -321,49 +316,24 @@ impl Subcommand<Context> for Install {
         // println!("{:?}", target.get_uuid());
 
         // verify the ip is not already taken in the cache
-        {
-            let check = Ip::compute_checksum(&target.get_root());
-
-            let mut matches = HashSet::new();
-            let slot_name = CacheSlot::new(
-                target.get_man().get_ip().get_name(),
-                target.get_man().get_ip().get_version(),
-                &check,
-            );
-
-            if let Ok(mut rd) = read_dir(c.get_cache_path()) {
-                let pat = format!(
-                    "{}-{}",
-                    target.get_man().get_ip().get_name(),
-                    target.get_man().get_ip().get_version()
-                );
-
-                // upon force, will remove all installations (even dynamics)
-                while let Some(d) = rd.next() {
-                    if let Ok(p) = d {
-                        if p.file_name().into_string().unwrap().starts_with(&pat) == true {
-                            if self.force == true {
-                                std::fs::remove_dir_all(&p.path())?;
-                            } else {
-                                matches.insert(p.file_name().into_string().unwrap());
-                            }
-                        }
+        if let Some(ip_levels) = catalog.inner().get(target.get_man().get_ip().get_name()) {
+            if let Some(cached_ip) = ip_levels.get_install(&AnyVersion::Specific(
+                target.get_man().get_ip().get_version().to_partial_version(),
+            )) {
+                // compare uuids
+                if cached_ip.get_uuid() == target.get_uuid() {
+                    // upon force, remove the installations
+                    if self.force == true {
+                        Remove::remove_install(&cached_ip)?;
+                        Remove::remove_dynamics(c.get_cache_path(), &cached_ip, false)?;
+                    // tell the user we already have it installed!
+                    } else {
+                        println!(
+                            "info: ip {} is already installed",
+                            target.get_man().get_ip().into_ip_spec()
+                        );
+                        return Ok(());
                     }
-                }
-            }
-
-            if self.force == false {
-                if matches.contains(&slot_name.to_string()) == true {
-                    println!(
-                        "info: ip {} is already installed",
-                        target.get_man().get_ip().into_ip_spec()
-                    );
-                    return Ok(());
-                } else if matches.len() > 0 {
-                    return Err(Error::Custom(format!(
-                        "ip {} already exists in cache under different checksum",
-                        target.get_man().get_ip().into_ip_spec()
-                    )))?;
                 }
             }
         }
@@ -375,6 +345,18 @@ impl Subcommand<Context> for Install {
 
         // perform a series of checks on this ip
         catalog = Self::run_ip_checkpoints(&target, catalog, self.force, &c, self.all)?;
+
+        // add additional check if we can download from online and it matches
+        if (self.path.is_some() || self.ip.is_none())
+            && target.get_man().get_ip().get_source().is_some()
+        {
+            println!("info: {}", "verifying coherency with ip's source  ...");
+            let changes = Publish::test_download_and_install(&target, c, false, false)?;
+            // remove from install so that we can install again
+            if let Some(chg) = changes {
+                Remove::remove_install(&chg.cached_ip)?;
+            }
+        }
 
         // @MARK: check for when there are multiple uuids that could potentially be for this ip
 

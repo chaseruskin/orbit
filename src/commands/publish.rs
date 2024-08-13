@@ -156,9 +156,9 @@ impl Subcommand<Context> for Publish {
         }
 
         // verify the package is available to be downloaded
-        println!("info: {}", "verifying ip can be downloaded  ...");
+        println!("info: {}", "verifying coherency with ip's source  ...");
         let remove = self.ready == false || self.no_install == true;
-        let changes = match Self::test_download_and_install(&local_ip, &c, remove) {
+        let changes = match Self::test_download_and_install(&local_ip, &c, remove, true) {
             Ok(c) => c,
             Err(e) => {
                 return Err(Box::new(Error::PublishFailedCheckpoint(LastError(
@@ -214,12 +214,13 @@ impl Publish {
         Ok(())
     }
 
-    fn test_download_and_install(
+    pub fn test_download_and_install(
         local_ip: &Ip,
         c: &Context,
         remove: bool,
+        verbose: bool,
     ) -> Result<Option<Changes>, Fault> {
-        let verbose_install = remove == false;
+        let verbose_install = remove == false && verbose == true;
 
         // install from local path to what its checksum would be
         let local_sum = {
@@ -417,7 +418,7 @@ impl Publish {
     }
 }
 
-struct Changes {
+pub struct Changes {
     pub downloads_path: PathBuf,
     pub archived_ip: Ip,
     pub cached_ip: Ip,

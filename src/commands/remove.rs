@@ -132,7 +132,7 @@ impl Subcommand<Context> for Remove {
                 if self.verbose == true {
                     println!("info: removed ip {} from the cache", ip_spec);
                 }
-                self.remove_dynamics(c.get_cache_path(), t)?;
+                Self::remove_dynamics(c.get_cache_path(), t, self.verbose)?;
             }
             None => {
                 if self.verbose == true {
@@ -191,7 +191,7 @@ impl Remove {
         Ok(())
     }
 
-    fn remove_dynamics(&self, cache_path: &PathBuf, target: &Ip) -> Result<(), Fault> {
+    pub fn remove_dynamics(cache_path: &PathBuf, target: &Ip, verbose: bool) -> Result<(), Fault> {
         let ip_spec = target.get_man().get_ip().into_ip_spec();
 
         // check for any "dynamics" under this target
@@ -215,7 +215,7 @@ impl Remove {
                     // remove the slot if it is dynamic
                     if cached_ip.is_dynamic() == true {
                         fs::remove_dir_all(entry.path())?;
-                        if self.verbose == true {
+                        if verbose == true {
                             println!(
                                 "info: removed dynamic variant of ip {} from the cache",
                                 ip_spec

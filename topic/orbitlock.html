@@ -177,11 +177,12 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="orbitlock"><a class="header" href="#orbitlock">Orbit.lock</a></h1>
-<p>A <em>Orbit.lock</em> is a special file automatically created and updated by Orbit. It is not intended to be manually edited. Orbit writes this file every time it needs to prepare for a target's execution (<code>orbit build</code>). The purpose of the lock file is store the information necessary to reproduce the world state around the working ip. Ideally, if a project has a lock file, then the project can be planned again in the same way (and therefore rebuilt in the same way) on any machine. This is highly beneficial when collaboratively working on a project and across different systems because it enables build artifacts and results to be reproduced independent of the system it is available on.</p>
-<p>Orbit uses the lock file when it determines the working ip's <code>Orbit.toml</code> manifest data matches with the lock file entry written for the current ip. When this comparison is true, it signals that there has been no change to the state of the system. Any change to <code>Orbit.toml</code> may result in an updated <code>Orbit.lock</code> file.</p>
-<p>It is recommended to check in the lock file to version control to ensure the project can be rebuilt on other machines when the repository is cloned.</p>
+<p>The <em>Orbit.lock</em> lock file is a file that captures every dependency required for the current ip. This includes information about exact versions of dependencies and how to get them if any are missing from the cache.</p>
+<p>The lock file is managed by Orbit, and formalizes the data the user provided in the <code>Orbit.toml</code> manifest file. The lock file is required for every ip and should not be manually edited.</p>
+<p>With a lock file, the current state of the ip can be reproduced at a later time and in any environment. If the current ip uses version control, then it is recommended to track <code>Orbit.lock</code> to ensure reproducibility across environments.</p>
+<p>To update the current ip's lock file, use <code>orbit lock</code>. The lock file will also automatically be updated before the build process when using <code>orbit build</code> or <code>orbit test</code>.</p>
 <blockquote>
-<p><strong>Note:</strong> An ip will only read its own lock file and not the lock file of any of its dependencies when needing data to reproduce a build.</p>
+<p><strong>Note:</strong> An ip's lock file contains all the data required by it to reproduce its current state, so it does not require reading the lock files of its dependencies.</p>
 </blockquote>
 
                     </main>

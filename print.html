@@ -1274,11 +1274,11 @@ source = { url = "https://github.com/chaseruskin/orbit.git", protocol = "gitit" 
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="channels-1"><a class="header" href="#channels-1">Channels</a></h1>
 <p>As your codebase evolves over time, you may have accrued a lot of ips. However, an issue arises regarding <em>discovery</em>- how do others quickly find all ips that have been released?</p>
-<p>Orbit solves this problem by using channels. A <em>channel</em> is a decentralized registry that agglomerates ip metadata into a single location. With this approach, users only need to specify channels to discover the wide variety of released ips.</p>
-<p>Channels can be as manual or automated as you prefer. You can configure commands to run for a channel's synchronization hook, pre-publish hook, and post-publish hook. Channels are encouraged to be as automated as possible by defining these fields the channel's configuration.</p>
+<p>Orbit solves this problem by using channels. A <em>channel</em> is a lightweight decentralized registry index. In other words, a channel is a directory that contains multiple ip manifests. With this approach, users can simply configure channels to discover the many available released ips.</p>
+<p>Channels can be as manual or automated as you prefer. You can configure commands to run for a channel's synchronization hook, pre-publish hook, and post-publish hook. Channels are encouraged to be as automated as possible by defining these fields in the channel's configuration.</p>
 <h2 id="adding-a-new-ip-to-a-channel"><a class="header" href="#adding-a-new-ip-to-a-channel">Adding a new ip to a channel</a></h2>
 <p>Orbit automates the process of adding an ip to a channel with <code>orbit publish</code>.</p>
-<p>The ip's manifest data gets placed in the channel by using its generated index path. The index path can be read from the <code>ORBIT_IP_INDEX</code> environment variable during a channel's pre-publish or post-publish hook processes.</p>
+<p>The ip's manifest gets placed in the channel by using its generated index path. The index path can be read from the <code>ORBIT_CHAN_INDEX</code> environment variable during a channel's pre-publish or post-publish hook processes.</p>
 <h2 id="example-1"><a class="header" href="#example-1">Example</a></h2>
 <pre><code class="language-toml">[[channel]]
 name = "hyperspace-labs"
@@ -1296,19 +1296,14 @@ pre.args = ["pull"]
 # Issue this command immediately after adding the ip to the channel
 post.command = "python"
 post.args = ["publish.py"]
-
-# Enable Orbit to discover ips from this channel
-allow-read = true
-# Enable Orbit to add new ips to this channel
-allow-write = true
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbitlock"><a class="header" href="#orbitlock">Orbit.lock</a></h1>
-<p>A <em>Orbit.lock</em> is a special file automatically created and updated by Orbit. It is not intended to be manually edited. Orbit writes this file every time it needs to prepare for a target's execution (<code>orbit build</code>). The purpose of the lock file is store the information necessary to reproduce the world state around the working ip. Ideally, if a project has a lock file, then the project can be planned again in the same way (and therefore rebuilt in the same way) on any machine. This is highly beneficial when collaboratively working on a project and across different systems because it enables build artifacts and results to be reproduced independent of the system it is available on.</p>
-<p>Orbit uses the lock file when it determines the working ip's <code>Orbit.toml</code> manifest data matches with the lock file entry written for the current ip. When this comparison is true, it signals that there has been no change to the state of the system. Any change to <code>Orbit.toml</code> may result in an updated <code>Orbit.lock</code> file.</p>
-<p>It is recommended to check in the lock file to version control to ensure the project can be rebuilt on other machines when the repository is cloned.</p>
+<p>The <em>Orbit.lock</em> lock file is a file that captures every dependency required for the current ip. This includes information about exact versions of dependencies and how to get them if any are missing from the cache.</p>
+<p>The lock file is managed by Orbit, and formalizes the data the user provided in the <code>Orbit.toml</code> manifest file. The lock file is required for every ip and should not be manually edited.</p>
+<p>With a lock file, the current state of the ip can be reproduced at a later time and in any environment. If the current ip uses version control, then it is recommended to track <code>Orbit.lock</code> to ensure reproducibility across environments.</p>
+<p>To update the current ip's lock file, use <code>orbit lock</code>. The lock file will also automatically be updated before the build process when using <code>orbit build</code> or <code>orbit test</code>.</p>
 <blockquote>
-<p><strong>Note:</strong> An ip will only read its own lock file and not the lock file of any of its dependencies when needing data to reproduce a build.</p>
+<p><strong>Note:</strong> An ip's lock file contains all the data required by it to reproduce its current state, so it does not require reading the lock files of its dependencies.</p>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="file-visibility"><a class="header" href="#file-visibility">File Visibility</a></h1>
 <p>An ip's manifest allows for users to set an <code>exclude</code> field, which can store a list of user-defined file patterns for Orbit to ignore during file discovery.</p>
@@ -2429,14 +2424,14 @@ orbit tree --ip --ascii
 <p>Saves the state of the world for the local ip. To accomplish this, Orbit reads
 the local ip's manifest file, "Orbit.toml", to resolve any missing ip
 dependencies. It writes the information required to reproduce this state to
-the ip's lockfile, "Orbit.lock".</p>
+the ip's lock file, "Orbit.lock".</p>
 <p>A local ip must exist for this command to execute.</p>
-<p>It is encouraged to check the lockfile into version control such that other
+<p>It is encouraged to check the lock file into version control such that other
 users trying to reconstruct the ip can reproduce the ip's current state. The
-lockfile should not be manually edited by the user.</p>
+lock file should not be manually edited by the user.</p>
 <p>To capture the world state for the local ip, Orbit downloads and installs any
 unresolved ip dependencies. If an installed dependency's computed checksum
-does not match the checksum stored in the lockfile, it assumes the
+does not match the checksum stored in the lock file, it assumes the
 installation is corrupt and will reinstall the dependency to the cache.</p>
 <h2 id="options-6"><a class="header" href="#options-6"><strong>OPTIONS</strong></a></h2>
 <p><code>--force</code><br />

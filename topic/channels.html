@@ -178,11 +178,11 @@
                     <main>
                         <h1 id="channels"><a class="header" href="#channels">Channels</a></h1>
 <p>As your codebase evolves over time, you may have accrued a lot of ips. However, an issue arises regarding <em>discovery</em>- how do others quickly find all ips that have been released?</p>
-<p>Orbit solves this problem by using channels. A <em>channel</em> is a decentralized registry that agglomerates ip metadata into a single location. With this approach, users only need to specify channels to discover the wide variety of released ips.</p>
-<p>Channels can be as manual or automated as you prefer. You can configure commands to run for a channel's synchronization hook, pre-publish hook, and post-publish hook. Channels are encouraged to be as automated as possible by defining these fields the channel's configuration.</p>
+<p>Orbit solves this problem by using channels. A <em>channel</em> is a lightweight decentralized registry index. In other words, a channel is a directory that contains multiple ip manifests. With this approach, users can simply configure channels to discover the many available released ips.</p>
+<p>Channels can be as manual or automated as you prefer. You can configure commands to run for a channel's synchronization hook, pre-publish hook, and post-publish hook. Channels are encouraged to be as automated as possible by defining these fields in the channel's configuration.</p>
 <h2 id="adding-a-new-ip-to-a-channel"><a class="header" href="#adding-a-new-ip-to-a-channel">Adding a new ip to a channel</a></h2>
 <p>Orbit automates the process of adding an ip to a channel with <code>orbit publish</code>.</p>
-<p>The ip's manifest data gets placed in the channel by using its generated index path. The index path can be read from the <code>ORBIT_IP_INDEX</code> environment variable during a channel's pre-publish or post-publish hook processes.</p>
+<p>The ip's manifest gets placed in the channel by using its generated index path. The index path can be read from the <code>ORBIT_CHAN_INDEX</code> environment variable during a channel's pre-publish or post-publish hook processes.</p>
 <h2 id="example"><a class="header" href="#example">Example</a></h2>
 <pre><code class="language-toml">[[channel]]
 name = "hyperspace-labs"
@@ -200,12 +200,6 @@ pre.args = ["pull"]
 # Issue this command immediately after adding the ip to the channel
 post.command = "python"
 post.args = ["publish.py"]
-
-# Enable Orbit to discover ips from this channel
-allow-read = true
-# Enable Orbit to add new ips to this channel
-allow-write = true
-
 </code></pre>
 
                     </main>

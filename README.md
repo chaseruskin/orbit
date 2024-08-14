@@ -34,10 +34,11 @@ For more information on getting started and how to use Orbit in your workflow, c
 
 ## Simple and intuitive to use
 
-Orbit manages your project by turning it into a package (referred to as an ip) with the addition of a single file: "Orbit.toml."
+Orbit manages your project by turning it into a package (referred to as an ip) with the addition of two files: "Orbit.toml" and "Orbit.lock".
 
 ```
 cpu/
+├─ Orbit.lock
 ├─ Orbit.toml
 ├─ rtl/
 │  ├─ ctrl.vhd
@@ -49,7 +50,7 @@ cpu/
 
 The "Orbit.toml" file is a simple file written in TOML syntax that requires only a couple fields, such as the ip's `name` and `version`, to get setup. 
 
-filename: Orbit.toml
+Filename: Orbit.toml
 ``` toml
 [ip]
 name = "cpu"
@@ -58,6 +59,9 @@ version = "1.0.0"
 [dependencies]
 gates = "2.0.0"
 ```
+
+The "Orbit.lock" file is a detailed TOML file automatically maintained by Orbit that stores the complete list of resolved dependencies, including how to get them. This allows anyone to rebuild your project with the exact source code you had as well.
+
 
 ## Low effort integration
 
@@ -85,7 +89,7 @@ u_and_gate : entity gates.and_gate
 
 Since Orbit focuses on efficiently managing the HDL source code and minimizing its associated technical debt, users have the power to add their own execution targets to the build process. This is accomplished by Orbit performing the planning of a build process to generate a single file, called a blueprint, that lists the topologically-sorted order of source files. After planning the build, Orbit invokes the user's target to perform the execution process on the list of source files.
 
-filename: blueprint.tsv
+Filename: blueprint.tsv
 ```
 VHDL	gates	/users/chase/.orbit/cache/gates-2.0.0-7f4d8c7812/rtl/nand_gate.vhd
 VHDL	gates	/users/chase/.orbit/cache/gates-2.0.0-7f4d8c7812/rtl/and_gate.vhd

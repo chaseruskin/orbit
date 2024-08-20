@@ -21,7 +21,6 @@ use crate::core::algo;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
-use crate::core::lang::Language;
 use crate::core::lockfile::LockEntry;
 use crate::core::swap::StrSwapTable;
 use crate::util::anyerror::Fault;
@@ -84,26 +83,32 @@ impl Subcommand<Context> for Lock {
             catalog = catalog.installations(c.get_cache_path())?;
         }
 
-        Self::run(&working_ip, &catalog, &c.get_languages(), self.force)
+        Self::run(&working_ip, &catalog, self.force)
     }
 }
 
 impl Lock {
     /// Performs the backend logic for creating a blueprint file (planning a design).
-    pub fn run(
-        working_ip: &Ip,
-        catalog: &Catalog,
-        lang: &Language,
-        force: bool,
-    ) -> Result<(), Fault> {
+    pub fn run(working_ip: &Ip, catalog: &Catalog, force: bool) -> Result<(), Fault> {
         // build entire ip graph and resolve with dynamic symbol transformation
-        let ip_graph = match algo::compute_final_ip_graph(&working_ip, &catalog, lang) {
+        let ip_graph = match algo::compute_final_ip_graph(&working_ip, &catalog) {
             Ok(g) => g,
             Err(e) => return Err(e)?,
         };
 
         // only write lockfile and exit if flag is raised
-        Plan::write_lockfile(&working_ip, &ip_graph, force)?;
+        Plan::write_lockfile(&working_ip, &ip_graph, force, true)?;
+        Ok(())
+    }
+
+    pub fn write_new_lockfile(local_ip: &Ip) -> Result<(), Fault> {
+        // build entire ip graph and resolve with dynamic symbol transformation
+        let catalog = Catalog::new();
+        let ip_graph = match algo::compute_final_ip_graph(&local_ip, &catalog) {
+            Ok(g) => g,
+            Err(e) => return Err(e)?,
+        };
+        Plan::write_lockfile(&local_ip, &ip_graph, true, false)?;
         Ok(())
     }
 }

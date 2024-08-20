@@ -15,10 +15,12 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+use super::lock::Lock;
 use super::new::New;
 use crate::commands::helps::init;
 use crate::commands::orbit::AnyResult;
 use crate::core::context::Context;
+use crate::core::ip::Ip;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
 use crate::core::pkgid::PkgPart;
@@ -97,8 +99,13 @@ impl Init {
             None => None,
         };
 
+        // write the manifest
         let mut manifest = std::fs::File::create(&manifest_path)?;
         manifest.write_all(Manifest::write_empty_manifest(&ip, &lib_str).as_bytes())?;
+
+        // write the lockfile
+        let local_ip = Ip::load(self.path.clone(), true)?;
+        Lock::write_new_lockfile(&local_ip)?;
         Ok(())
     }
 }

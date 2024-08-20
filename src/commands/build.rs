@@ -128,7 +128,6 @@ impl Subcommand<Context> for Build {
             target_dir,
             target,
             catalog,
-            &c.get_languages(),
             self.dirty == false,
             self.force,
             false,

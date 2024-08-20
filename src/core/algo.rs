@@ -38,7 +38,6 @@ use super::ip::PartialIpSpec;
 use super::lang::sv::token::tokenizer::SystemVerilogTokenizer;
 use super::lang::verilog::token::tokenizer::VerilogTokenizer;
 use super::lang::{sv, verilog, vhdl, Lang, LangIdentifier};
-use crate::core::lang::Language;
 
 /// Constructs an ip-graph from a lockfile.
 pub fn graph_ip_from_lock(lock: &LockFile) -> Result<GraphMap<IpSpec, &LockEntry, ()>, Fault> {
@@ -67,7 +66,6 @@ pub fn graph_ip_from_lock(lock: &LockFile) -> Result<GraphMap<IpSpec, &LockEntry
 fn graph_ip<'a>(
     root: &'a Ip,
     catalog: &'a Catalog<'a>,
-    mode: &Language,
 ) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, CodeFault> {
     // create empty graph
     let mut g = GraphMap::new();
@@ -79,7 +77,7 @@ fn graph_ip<'a>(
     let mut processing = vec![(t, root)];
 
     // add root's identifiers and parse files according to the correct language settings
-    let mut unit_map = root.collect_units(true, mode, false)?;
+    let mut unit_map = root.collect_units(true, false)?;
 
     let mut is_root: bool = true;
 
@@ -101,7 +99,7 @@ fn graph_ip<'a>(
                                 existing_node.index()
                             } else {
                                 // check if identifiers are already taken in graph
-                                let units = relative_ip.collect_units(false, mode, true)?;
+                                let units = relative_ip.collect_units(false, true)?;
                                 if let Some(dupe) =
                                     units.iter().find(|(key, _)| unit_map.contains_key(key))
                                 {
@@ -176,7 +174,7 @@ fn graph_ip<'a>(
                                         existing_node.index()
                                     } else {
                                         // check if identifiers are already taken in graph
-                                        let units = cached_ip.collect_units(false, mode, true)?;
+                                        let units = cached_ip.collect_units(false, true)?;
                                         let dst = if let Some(dupe) =
                                             units.iter().find(|(key, _)| unit_map.contains_key(key))
                                         {
@@ -264,10 +262,9 @@ fn graph_ip<'a>(
 pub fn compute_final_ip_graph<'a>(
     target: &'a Ip,
     catalog: &'a Catalog<'a>,
-    mode: &Language,
 ) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, CodeFault> {
     // collect rough outline of ip graph (after this function, the correct files according to language are kept)
-    let mut rough_ip_graph = graph_ip(&target, &catalog, mode)?;
+    let mut rough_ip_graph = graph_ip(&target, &catalog)?;
 
     // keep track of list of neighbors that must perform dst and their lookup-tables to use after processing all direct impacts
     let mut transforms = HashMap::<IpSpec, HashMap<LangIdentifier, String>>::new();
@@ -279,7 +276,7 @@ pub fn compute_final_ip_graph<'a>(
         while let Some((key, node)) = graph_iter.next() {
             if node.as_ref().is_direct_conflict() == true {
                 // remember units if true that a transform occurred
-                let lut = node.as_ref().as_ip().generate_dst_lut(mode);
+                let lut = node.as_ref().as_ip().generate_dst_lut();
                 match transforms.get_mut(key) {
                     // update the hashmap for the key
                     Some(entry) => lut.into_iter().for_each(|pair| {
@@ -299,7 +296,7 @@ pub fn compute_final_ip_graph<'a>(
 
                 while let Some(i) = dependents.next() {
                     // remember units if true that a transform occurred on the direct conflict node
-                    let lut = node.as_ref().as_ip().generate_dst_lut(mode);
+                    let lut = node.as_ref().as_ip().generate_dst_lut();
                     // determine the neighboring node's ip spec
                     let neighbor_key = rough_ip_graph.get_key_by_index(i).unwrap();
 
@@ -339,7 +336,6 @@ pub fn compute_final_ip_graph<'a>(
 pub fn build_ip_file_list<'a>(
     ip_graph: &'a GraphMap<IpSpec, IpNode<'a>, ()>,
     working_ip: &Ip,
-    mode: &Language,
 ) -> Vec<IpFileNode<'a>> {
     let mut files = Vec::new();
     ip_graph.get_map().iter().for_each(|(_, ip)| {
@@ -354,9 +350,7 @@ pub fn build_ip_file_list<'a>(
                     || non_private_list.is_included(f.as_ref())
             })
             .filter(|f| {
-                (fileset::is_vhdl(f) && mode.supports_vhdl())
-                    || (fileset::is_verilog(f) && mode.supports_verilog())
-                    || (fileset::is_systemverilog(f) && mode.supports_systemverilog())
+                (fileset::is_vhdl(f)) || (fileset::is_verilog(f)) || (fileset::is_systemverilog(f))
             })
             .for_each(|f| {
                 files.push(IpFileNode::new(

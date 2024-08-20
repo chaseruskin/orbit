@@ -1,7 +1,7 @@
 [ip]
 name = "vhdl-examples"
-uuid = "4AHQFZYp3TPAYia8bpJ2zP"
 version = "0.1.0"
+uuid = "ecj831jmc018hhhgl1d4rzgw8"
 public = ["adder.vhd"]
 channels = ["hyperspace-labs"]
 exclude = ["fa_tb.vhd"]

@@ -31,7 +31,6 @@ use crate::core::lang::vhdl::token::Identifier as VhdlIdentifier;
 use crate::core::lang::Lang;
 use crate::core::lang::LangIdentifier;
 use crate::core::lang::LangUnit;
-use crate::core::lang::Language;
 use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::{AnyError, Fault};
@@ -129,15 +128,14 @@ impl Subcommand<Context> for Get {
         // load the manifest from the path
         let ip = Ip::load(ip_path, is_local_ip)?;
 
-        self.run(&ip, &c.get_languages(), is_local_ip, &c)
+        self.run(&ip, is_local_ip, &c)
     }
 }
 
 impl Get {
-    fn run(&self, ip: &Ip, lang: &Language, is_local: bool, c: &Context) -> Result<(), Fault> {
+    fn run(&self, ip: &Ip, is_local: bool, c: &Context) -> Result<(), Fault> {
         // collect all hdl files and parse them
-        let selected_unit =
-            Self::fetch_entity(&ip, &LangIdentifier::Vhdl(self.unit.clone()), lang)?;
+        let selected_unit = Self::fetch_entity(&ip, &LangIdentifier::Vhdl(self.unit.clone()))?;
         let unit = match selected_unit {
             Some(lu) => {
                 // verify the unit is only set to public visibility when outside of ip
@@ -329,12 +327,8 @@ impl Get {
         Ok(())
     }
 
-    fn fetch_entity(
-        ip: &Ip,
-        name: &LangIdentifier,
-        lang: &Language,
-    ) -> Result<Option<LangUnit>, Fault> {
-        let mut files = ip.collect_units(true, lang, false)?;
+    fn fetch_entity(ip: &Ip, name: &LangIdentifier) -> Result<Option<LangUnit>, Fault> {
+        let mut files = ip.collect_units(true, false)?;
         let result = files.remove(name);
         Ok(result)
     }

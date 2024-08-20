@@ -294,11 +294,6 @@ impl Context {
         }
     }
 
-    /// Access the language mode data.
-    pub fn get_languages(&self) -> Language {
-        self.config.get_languages()
-    }
-
     /// Access the ip directory detected from the current working directory.
     pub fn get_ip_path(&self) -> Option<&path::PathBuf> {
         self.ip_path.as_ref()

@@ -336,8 +336,9 @@ impl Manifest {
                 format!(
                     r#"[ip]
 name = "{}"
-uuid = "{}"
 version = "0.1.0"
+
+uuid = "{}"
 
 # See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
 
@@ -350,9 +351,10 @@ version = "0.1.0"
                 format!(
                     r#"[ip]
 name = "{}"
-uuid = "{}"
-library = "{}"
 version = "0.1.0"
+library = "{}"
+
+uuid = "{}"
 
 # See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
 
@@ -462,11 +464,11 @@ fn map_is_empty<K, V>(field: &HashMap<K, V>) -> bool {
 #[serde(deny_unknown_fields)]
 pub struct Package {
     name: IpName,
+    version: IpVersion,
+    library: Option<IpName>,
     description: Option<String>,
     uuid: Option<Uuid>,
-    version: IpVersion,
     authors: Option<Vec<String>>,
-    library: Option<IpName>,
     #[serde(skip_serializing_if = "vec_is_empty", default)]
     keywords: Vec<String>,
     /// Describes the URL for fetching the captured state's code (expects .ZIP file)
@@ -494,6 +496,10 @@ impl Package {
 
     pub fn get_publics(&self) -> &Option<Vec<String>> {
         &self.public
+    }
+
+    pub fn get_uuid(&self) -> &Option<Uuid> {
+        &self.uuid
     }
 
     pub fn get_version(&self) -> &IpVersion {

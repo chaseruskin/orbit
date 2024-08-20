@@ -49,7 +49,6 @@ use crate::core::ip::Ip;
 use crate::core::ip::IpSpec;
 use crate::core::ip::PartialIpSpec;
 use crate::core::iparchive::IpArchive;
-use crate::core::lang::Language;
 use crate::core::lockfile::LockEntry;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::protocol::Protocol;
@@ -271,7 +270,7 @@ impl Subcommand<Context> for Install {
                             Some(unzipped_ip)
                         // follow pointer to download an archive
                         } else if slot.get_mapping().is_pointer() {
-                            println!("{}", "using pointer");
+                            // println!("{}", "using pointer");
                             match slot.get_man().get_ip().get_source() {
                                 Some(sour) => Some(self.download_target_from_source(
                                     c,
@@ -424,8 +423,8 @@ impl Install {
             }
         // create the lockfile
         } else if local_ip.can_use_lock() == false {
-            let ip_graph = algo::compute_final_ip_graph(&local_ip, &catalog, &Language::default())?;
-            Plan::write_lockfile(&local_ip, &ip_graph, true)?;
+            let ip_graph = algo::compute_final_ip_graph(&local_ip, &catalog)?;
+            Plan::write_lockfile(&local_ip, &ip_graph, true, true)?;
         }
 
         println!("info: {}", "reading dependencies from lockfile ...");

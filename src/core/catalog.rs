@@ -570,13 +570,7 @@ pub struct DownloadSlot(String);
 impl DownloadSlot {
     /// Combines the various components of a cache slot name into a `CacheSlot`.
     pub fn new(name: &PkgPart, version: &Version, uuid: &Uuid) -> Self {
-        Self(format!(
-            "{}-{}-{}.{}",
-            name,
-            version,
-            uuid.to_string_short(),
-            ARCHIVE_EXT
-        ))
+        Self(format!("{}-{}-{}.{}", name, version, uuid, ARCHIVE_EXT))
     }
 }
 
@@ -592,7 +586,7 @@ pub struct PointerSlot(String);
 impl PointerSlot {
     /// Combines the various components of a cache slot name into a `CacheSlot`.
     pub fn new(name: &PkgPart, version: &Version, uuid: &Uuid) -> Self {
-        Self(format!("{}-{}-{}", name, version, uuid.to_string_short()))
+        Self(format!("{}-{}-{}", name, version, uuid))
     }
 }
 

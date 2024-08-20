@@ -37,7 +37,6 @@ use crate::core::lang::vhdl::token::VhdlToken;
 use crate::core::lang::vhdl::token::VhdlTokenizer;
 use crate::core::lang::Lang;
 use crate::core::lang::LangIdentifier;
-use crate::core::lang::Language;
 use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::AnyError;
@@ -121,7 +120,7 @@ impl Subcommand<Context> for Read {
                         Some(i) => i,
                         None => panic!("version does not exist for this ip"),
                     };
-                    self.run(inst, dest.as_ref(), &c.get_languages(), false)
+                    self.run(inst, dest.as_ref(), false)
                 }
                 None => {
                     // the ip does not exist
@@ -138,20 +137,14 @@ impl Subcommand<Context> for Read {
                 None => return Err(AnyError(format!("not within an existing ip")))?,
             };
 
-            self.run(&ip, dest.as_ref(), &c.get_languages(), true)
+            self.run(&ip, dest.as_ref(), true)
         }
     }
 }
 
 impl Read {
-    fn run(
-        &self,
-        target: &Ip,
-        dest: Option<&PathBuf>,
-        mode: &Language,
-        is_local: bool,
-    ) -> Result<(), Fault> {
-        let (path, loc, lang) = Self::read(&self.unit, &target, dest, mode, is_local)?;
+    fn run(&self, target: &Ip, dest: Option<&PathBuf>, is_local: bool) -> Result<(), Fault> {
+        let (path, loc, lang) = Self::read(&self.unit, &target, dest, is_local)?;
 
         // dump the file contents of the source code to the console if there was no destination
         let print_to_console = dest.is_none();
@@ -256,11 +249,10 @@ impl Read {
         unit: &LangIdentifier,
         ip: &Ip,
         dest: Option<&PathBuf>,
-        mode: &Language,
         is_local: bool,
     ) -> Result<(PathBuf, Position, Lang), Fault> {
         // find the unit
-        let units = ip.collect_units(true, mode, false)?;
+        let units = ip.collect_units(true, false)?;
 
         // get the file data for the primary design unit
         let (source, position) = match units.get_key_value(unit) {

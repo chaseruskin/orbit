@@ -26,7 +26,6 @@ use crate::core::channel::Channel;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::iparchive::IpArchive;
-use crate::core::lang::Language;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::error::{Error, Hint, LastError};
 use crate::util::anyerror::Fault;
@@ -299,9 +298,8 @@ impl Publish {
 
     pub fn check_graph_builds_okay(local_ip: &Ip, catalog: &Catalog) -> Result<(), Fault> {
         // use all language settings
-        let lang = Language::default();
-        let ip_graph = algo::compute_final_ip_graph(&local_ip, &catalog, &lang)?;
-        let files = algo::build_ip_file_list(&ip_graph, &local_ip, &lang);
+        let ip_graph = algo::compute_final_ip_graph(&local_ip, &catalog)?;
+        let files = algo::build_ip_file_list(&ip_graph, &local_ip);
         let _global_graph = Plan::build_full_graph(&files)?;
         Ok(())
     }
@@ -365,10 +363,8 @@ impl Publish {
             output_path.join(IP_MANIFEST_FILE),
             local_ip.get_man().to_string(),
         )?;
-        // std::fs::copy(
-        //     local_ip.get_root().join(IP_MANIFEST_FILE),
-        //     output_path.join(IP_MANIFEST_FILE),
-        // )?;
+        // copy the (raw) lockfile there
+        local_ip.get_lock().save_to_disk(&output_path)?;
         Ok(())
     }
 

@@ -28,7 +28,7 @@ use super::iparchive::IpArchive;
 use super::ippointer::IpPointer;
 use super::lang;
 use super::lang::LangIdentifier;
-use super::lang::{LangUnit, Language};
+use super::lang::LangUnit;
 use super::lockfile::LockFile;
 use super::lockfile::IP_LOCK_FILE;
 use super::manifest::FromFile;
@@ -285,26 +285,31 @@ impl Ip {
                 LockFile::new()
             }
         };
+
+        let uuid = if let Some(uuid) = man.get_ip().get_uuid() {
+            uuid.clone()
+        } else {
+            match is_working_ip {
+                true => match lock.get_self_entry(man.get_ip().get_name()) {
+                    Some(entry) => entry.get_uuid().clone(),
+                    None => Uuid::new(),
+                },
+                false => match lock.get(
+                    man.get_ip().get_name(),
+                    &man.get_ip().get_version().to_partial_version(),
+                ) {
+                    Some(entry) => entry.get_uuid().clone(),
+                    None => {
+                        return Err(Error::RequiredUuuidMissing(
+                            man.get_ip().into_ip_spec(),
+                            Hint::RegenerateLockfile,
+                        ))?
+                    }
+                },
+            }
+        };
         // println!("{:?}", lock);
         // println!("{:?}", man.get_ip().into_ip_spec());
-        let uuid = match is_working_ip {
-            true => match lock.get_self_entry(man.get_ip().get_name()) {
-                Some(entry) => entry.get_uuid().clone(),
-                None => Uuid::new(),
-            },
-            false => match lock.get(
-                man.get_ip().get_name(),
-                &man.get_ip().get_version().to_partial_version(),
-            ) {
-                Some(entry) => entry.get_uuid().clone(),
-                None => {
-                    return Err(Error::RequiredUuuidMissing(
-                        man.get_ip().into_ip_spec(),
-                        Hint::RegenerateLockfile,
-                    ))?
-                }
-            },
-        };
 
         man.set_uuid(uuid.clone());
 
@@ -377,7 +382,7 @@ impl Ip {
     }
 
     /// Creates the lookup table for the DST algorithm.
-    pub fn generate_dst_lut(&self, mode: &Language) -> HashMap<LangIdentifier, String> {
+    pub fn generate_dst_lut(&self) -> HashMap<LangIdentifier, String> {
         // compose the lut for symbol transformation
         let mut lut = HashMap::new();
 
@@ -385,9 +390,7 @@ impl Ip {
             return lut;
         }
         // @todo: read units from metadata to speed up results
-        let units = self
-            .collect_units(true, mode, self.has_public_list())
-            .unwrap();
+        let units = self.collect_units(true, self.has_public_list()).unwrap();
         let checksum = Ip::read_cache_checksum(self.get_root()).unwrap();
 
         units.into_iter().for_each(|(key, _)| {
@@ -517,7 +520,7 @@ impl Ip {
 
     pub fn write_cache_metadata(&self) -> Result<(), Fault> {
         // generate the unit map
-        let umap = self.collect_units(false, &Language::default(), true)?;
+        let umap = self.collect_units(false, true)?;
         let protected: Vec<String> = umap
             .iter()
             .filter(|(_, v)| v.get_visibility().is_protected())
@@ -566,7 +569,6 @@ impl Ip {
     pub fn collect_units(
         &self,
         force: bool,
-        lang_mode: &Language,
         hide_private: bool,
     ) -> Result<HashMap<LangIdentifier, LangUnit>, CodeFault> {
         let public_list = self.into_public_list();
@@ -578,7 +580,7 @@ impl Ip {
                 // collect all files
                 let files = self.gather_current_files();
 
-                let mut map = lang::collect_units(&files, lang_mode)?;
+                let mut map = lang::collect_units(&files)?;
 
                 // work to remove files that are totally private
                 if public_list.exists() == true {

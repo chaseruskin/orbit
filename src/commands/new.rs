@@ -18,6 +18,7 @@
 use crate::commands::helps::new;
 use crate::commands::orbit::AnyResult;
 use crate::core::context::Context;
+use crate::core::ip::Ip;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
 use crate::core::pkgid::PkgPart;
@@ -30,6 +31,8 @@ use std::str::FromStr;
 
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
+
+use super::lock::Lock;
 
 #[derive(Debug, PartialEq)]
 pub struct New {
@@ -130,8 +133,14 @@ impl New {
             None => None,
         };
 
+        // create the manifest
         let mut manifest = std::fs::File::create(&manifest_path)?;
         manifest.write_all(Manifest::write_empty_manifest(&ip, &lib_str).as_bytes())?;
+
+        // write the lockfile
+        let local_ip = Ip::load(self.path.clone(), true)?;
+        Lock::write_new_lockfile(&local_ip)?;
+
         Ok(())
     }
 }

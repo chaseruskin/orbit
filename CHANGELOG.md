@@ -19,9 +19,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ### Features
 - adds uuid field to manifest
+- copies the ip's lockfile to the channel now too (not just the manifest)
 
 ### Changes
-- reformats how uuid appears (uses base58 encoding instead of hyphenated format)
+- reformats how uuid appears (uses base36 encoding instead of hyphenated format)
+- creates lockfile during `orbit new` and `orbit init` commands
 
 ## 0.20.0
 

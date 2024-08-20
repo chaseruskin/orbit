@@ -25,26 +25,27 @@ use std::str::FromStr;
 
 use crate::util::anyerror::Fault;
 
+const ID_LEN: usize = 25;
+const ID_ALPHABET: [char; 36] = [
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
+    'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+];
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Uuid {
     inner: uuid::Uuid,
-    raw: Option<String>,
 }
 
 impl Uuid {
     pub fn new() -> Self {
-        let mut id = Self {
+        Self {
             inner: uuid::Uuid::new_v4(),
-            raw: None,
-        };
-        id.raw = Some(id.encode());
-        id
+        }
     }
 
     pub fn nil() -> Self {
         Self {
             inner: uuid::Uuid::nil(),
-            raw: Some("1".repeat(22)),
         }
     }
 
@@ -52,50 +53,26 @@ impl Uuid {
         &self.inner
     }
 
-    pub fn to_string_short(&self) -> String {
-        format!("{:x?}", self.inner.to_fields_le().0.to_be())
-    }
-
-    /// Encodes the UUID into a base58 string.
+    /// Encodes the UUID into a base36 string.
     pub fn encode(&self) -> String {
-        if let Some(r) = &self.raw {
-            r.clone()
-        } else {
-            let bytes = self.inner.as_bytes();
-            if bytes == &[0; 16] {
-                "1".repeat(22)
-            } else {
-                let result = bs58::encode(bytes).into_string();
-                match result.len() < 22 {
-                    true => format!("{}{}", "1".repeat(22 - result.len()), result),
-                    false => result,
-                }
-            }
-        }
+        let uuid25 = uuid25::Uuid25::from_bytes(self.inner.into_bytes());
+        uuid25.to_string()
     }
 
-    /// Decodes the UUID from a base58 string.
+    /// Decodes the UUID from a base36 string.
     pub fn decode(s: &str) -> Result<Self, Fault> {
-        // convert the string into bytes
-        if s.len() != 22 {
-            return Err(Error::IdNot22Chars(s.len()))?;
+        if s.len() != ID_LEN {
+            return Err(Error::UuidWrongSize(ID_LEN, s.len()))?;
         }
-        let all_bytes = bs58::decode(s).into_vec()?;
-        // println!("all bytes: {}", all_bytes.len());
-        let mut bytes: [u8; 16] = [0; 16];
-        if all_bytes.len() > 16 {
-            for i in 0..16 {
-                bytes[i] = all_bytes[i + all_bytes.len() - 16];
-            }
-        } else {
-            for i in 0..16 {
-                bytes[i] = all_bytes[i];
-            }
+        if let Some(c) = s.chars().find(|p| ID_ALPHABET.contains(p) == false) {
+            return Err(Error::UuidInvalidChar(c))?;
         }
-
+        let uuid25 = uuid25::Uuid25::parse_uuid25(s)?;
+        // println!("{:?}", uuid25.as_bytes());
+        // println!("{}", uuid25);
+        // println!("{}", uuid25.as_bytes().len());
         Ok(Self {
-            inner: uuid::Uuid::from_bytes(bytes),
-            raw: Some(s.to_string()),
+            inner: uuid::Uuid::from_bytes(uuid25.to_bytes()),
         })
     }
 }
@@ -110,7 +87,7 @@ impl FromStr for Uuid {
 
 impl Display for Uuid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.raw.as_ref().unwrap())
+        write!(f, "{}", self.encode())
     }
 }
 
@@ -189,7 +166,7 @@ mod tests {
 
     #[test]
     fn ut_user_given_id() {
-        let user_value = "THiSisMYuniQueidseeit8";
+        let user_value = "1234839204328092342132431";
         let id = Uuid::from_str(user_value).unwrap();
         assert_eq!(user_value, id.encode());
     }

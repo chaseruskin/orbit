@@ -29,7 +29,7 @@ use crate::core::lang::verilog::symbols::{VerilogParser, VerilogSymbol};
 use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbols::{VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
-use crate::core::lang::{self, Lang, LangIdentifier, Language};
+use crate::core::lang::{self, Lang, LangIdentifier};
 use crate::core::swap;
 use crate::core::swap::StrSwapTable;
 use crate::core::target::Target;
@@ -81,7 +81,6 @@ impl Plan {
         target_dir: &str,
         target: &Target,
         catalog: Catalog,
-        lang: &Language,
         clean: bool,
         force: bool,
         only_lock: bool,
@@ -99,7 +98,7 @@ impl Plan {
         let output_path = target_path.join(target.get_name());
 
         // build entire ip graph and resolve with dynamic symbol transformation
-        let ip_graph = match algo::compute_final_ip_graph(&working_ip, &catalog, lang) {
+        let ip_graph = match algo::compute_final_ip_graph(&working_ip, &catalog) {
             Ok(g) => g,
             Err(e) => {
                 // generate a single blueprint
@@ -142,7 +141,7 @@ impl Plan {
 
         // only write lockfile and exit if flag is raised
         if only_lock == true {
-            Self::write_lockfile(&working_ip, &ip_graph, force)?;
+            Self::write_lockfile(&working_ip, &ip_graph, force, true)?;
             return Ok(None);
         }
 
@@ -151,7 +150,7 @@ impl Plan {
             fs::remove_dir_all(&output_path)?;
         }
 
-        let files = algo::build_ip_file_list(&ip_graph, &working_ip, &lang);
+        let files = algo::build_ip_file_list(&ip_graph, &working_ip);
 
         let global_graph = Self::build_full_graph(&files)?;
 
@@ -248,7 +247,7 @@ impl Plan {
         }
 
         // [!] write the lock file
-        Self::write_lockfile(&working_ip, &ip_graph, true)?;
+        Self::write_lockfile(&working_ip, &ip_graph, true, true)?;
 
         // compute minimal topological ordering
         let min_order = match all {
@@ -1062,6 +1061,7 @@ impl Plan {
         target: &Ip,
         ip_graph: &GraphMap<IpSpec, IpNode, ()>,
         force: bool,
+        verbose: bool,
     ) -> Result<(), Fault> {
         // only modify the lockfile if it is out-of-date
         if target.can_use_lock() == false || force == true {
@@ -1075,12 +1075,18 @@ impl Plan {
             lock.save_to_disk(target.get_root())?;
 
             if target.get_lock() != &lock {
-                println!("info: lockfile updated");
+                if verbose == true {
+                    println!("info: lockfile updated");
+                }
             } else {
-                println!("info: lockfile experienced no changes")
+                if verbose == true {
+                    println!("info: lockfile experienced no changes");
+                }
             }
         } else {
-            println!("info: lockfile experienced no changes");
+            if verbose == true {
+                println!("info: lockfile experienced no changes");
+            }
         }
         Ok(())
     }
@@ -1637,14 +1643,11 @@ impl Plan {
             None => &default_target_dir,
         };
 
-        let language_mode = c.get_languages();
-
         let _ = Self::run(
             &working_ip,
             target_dir,
             target,
             catalog,
-            &language_mode,
             self.clean,
             self.force,
             self.only_lock,

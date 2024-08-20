@@ -46,12 +46,12 @@ name = "my-ip"
 
 ### The `uuid` field
 
-A random string consisting of 22 characters in base58 encoding.
+A random string consisting of 25 characters in base36 encoding (a-z0-9).
 
 ``` toml
 [ip]
 # ...
-uuid = "4AHQFZYp3TPAYia8bpJ2zP"
+uuid = "ecj831jmc018hhhgl1d4rzgw8"
 ```
 
 ### The `version` field

@@ -490,24 +490,15 @@ impl Display for LangIdentifier {
 
 pub fn collect_units(
     files: &Vec<String>,
-    lang_mode: &Language,
 ) -> Result<HashMap<LangIdentifier, LangUnit>, Box<dyn std::error::Error>> {
     // collect the VHDL units
-    let vhdl_units = match lang_mode.supports_vhdl() {
-        true => vhdl::primaryunit::collect_units(&files)?,
-        false => HashMap::new(),
-    };
+    let vhdl_units = vhdl::primaryunit::collect_units(&files)?;
 
     // collect the Verilog units
-    let verilog_units = match lang_mode.supports_verilog() {
-        true => verilog::primaryunit::collect_units(&files)?,
-        false => HashMap::new(),
-    };
+    let verilog_units = verilog::primaryunit::collect_units(&files)?;
 
-    let systemverilog_units = match lang_mode.supports_systemverilog() {
-        true => sv::primaryunit::collect_units(&files)?,
-        false => HashMap::new(),
-    };
+    // collect the SystemVerilog units
+    let systemverilog_units = sv::primaryunit::collect_units(&files)?;
 
     // merge the two results into a common struct
     let mut results =

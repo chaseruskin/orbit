@@ -69,7 +69,6 @@ use toml_edit::Value;
 use super::channel::Channel;
 use super::channel::Channels;
 use super::lang::sv::format::SystemVerilogFormat;
-use super::lang::Language;
 
 impl Display for ConfigDocument {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -673,11 +672,6 @@ impl Config {
             Some(p) => p.get_default_channel(),
             None => None,
         }
-    }
-
-    /// Access what language mode is enabled (currently all are fixed to enabled).
-    pub fn get_languages(&self) -> Language {
-        Language::default()
     }
 
     pub fn get_env(&self) -> &Option<HashMap<String, String>> {

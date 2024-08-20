@@ -24,7 +24,6 @@ use crate::core::context::Context;
 use crate::core::fileset::Fileset;
 use crate::core::ip::Ip;
 use crate::core::lang::vhdl::token::Identifier;
-use crate::core::lang::Language;
 use crate::core::swap::StrSwapTable;
 use crate::core::target::Process;
 use crate::core::target::Target;
@@ -135,7 +134,6 @@ impl Subcommand<Context> for Test {
             target.get_name(),
             target,
             catalog,
-            &c.get_languages(),
             &c,
             &plan,
         )
@@ -150,7 +148,6 @@ impl Test {
         out_dir: &str,
         target: &Target,
         catalog: Catalog,
-        mode: &Language,
         c: &Context,
         scheme: &Scheme,
     ) -> Result<(), Fault> {
@@ -160,7 +157,6 @@ impl Test {
             target_dir,
             target,
             catalog,
-            mode,
             self.dirty == false,
             self.force,
             false,

@@ -32,6 +32,7 @@ use std::{collections::HashMap, str::FromStr};
 use super::ip::Ip;
 use super::lang::vhdl::token::identifier::Identifier;
 use super::lang::LangIdentifier;
+use super::uuid::Uuid;
 
 pub type IpName = PkgPart;
 pub type IpVersion = crate::core::version::Version;
@@ -286,6 +287,7 @@ impl Manifest {
             ip: Package {
                 name: PkgPart::new(),
                 version: IpVersion::new(),
+                uuid: None,
                 source: None.into(),
                 keywords: Vec::new(),
                 description: None,
@@ -328,24 +330,27 @@ impl Manifest {
 
     /// Composes a [String] to write to a clean manifest file.
     pub fn write_empty_manifest(name: &IpName, lib: &Option<String>) -> String {
+        let uuid = Uuid::new();
         match lib {
             None => {
                 format!(
                     r#"[ip]
 name = "{}"
+uuid = "{}"
 version = "0.1.0"
 
 # See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
 
 [dependencies]
 "#,
-                    name
+                    name, uuid
                 )
             }
             Some(lib) => {
                 format!(
                     r#"[ip]
 name = "{}"
+uuid = "{}"
 library = "{}"
 version = "0.1.0"
 
@@ -353,7 +358,7 @@ version = "0.1.0"
 
 [dependencies]
 "#,
-                    name, lib
+                    name, uuid, lib
                 )
             }
         }
@@ -410,6 +415,10 @@ version = "0.1.0"
         result
     }
 
+    pub fn set_uuid(&mut self, uuid: Uuid) {
+        self.ip.uuid = Some(uuid);
+    }
+
     /// Returns the list of dependencies found under "dependencies" and
     /// "dev-dependencies".
     pub fn get_deps_list_mut(
@@ -454,6 +463,7 @@ fn map_is_empty<K, V>(field: &HashMap<K, V>) -> bool {
 pub struct Package {
     name: IpName,
     description: Option<String>,
+    uuid: Option<Uuid>,
     version: IpVersion,
     authors: Option<Vec<String>>,
     library: Option<IpName>,

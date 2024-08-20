@@ -4,5 +4,5 @@ version = 1
 [[ip]]
 name = "vhdl-examples"
 version = "0.1.0"
-uuid = "7754fbdd-6fe3-4683-8949-70fc72b0cefe"
+uuid = "4AHQFZYp3TPAYia8bpJ2zP"
 dependencies = []

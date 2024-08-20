@@ -4,12 +4,12 @@ version = 1
 [[ip]]
 name = "ip-a"
 version = "0.1.0"
-uuid = "c34799dd-9c20-4aa1-8123-687d9d692b0e"
+uuid = "KpHvB4kYG4dSWGG8eRSPRx"
 dependencies = ["ip-b:0.1.0"]
 
 [[ip]]
 name = "ip-b"
 version = "0.1.0"
-uuid = "0fe73b27-07f1-4068-9e4f-9032ecf72829"
+uuid = "6RvP22Hbz1MnXMoVnM84n7"
 checksum = "b8da6e529bdc545fbd41ba91d014a45ad5e9ed01a7b1982952134f4ceaad6000"
 dependencies = []

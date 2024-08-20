@@ -4,12 +4,12 @@ version = 1
 [[ip]]
 name = "app"
 version = "0.1.0"
-uuid = "38e9b2d0-0047-485d-9b27-cc335ced8f8d"
+uuid = "99Qn1qBY6rreGPy2wezmXv"
 dependencies = ["lib:0.1.0"]
 
 [[ip]]
 name = "lib"
 version = "0.1.0"
-uuid = "44916983-5f77-4b3f-81ec-c7111bd2e479"
-checksum = "685615fd5d7c79ace9881ea3941169ed86767825ebe4417a0f1b0e24bc87cc25"
+uuid = "4kmnA9UZVd1tiaoWkGu4af"
+checksum = "f2998c95579f7bc092c8463e2abb03b53e1bcc476cc77053bf372643210ea2b4"
 dependencies = []

@@ -3,6 +3,10 @@
 # Set the -e option
 set -e
 
+cd sub
+orbit lock --force
+cd ..
+
 cd top
 orbit lock --force
 # verify the ip dependency graph only has 1 aka version

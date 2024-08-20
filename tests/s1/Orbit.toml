@@ -1,5 +1,7 @@
 [ip]
 name = "test"
+uuid = "JqFW4bmpRcTr3zS5T8g9bu"
 version = "0.1.0"
+
 
 [dependencies]

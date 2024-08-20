@@ -8,6 +8,7 @@ Every manifest file consists of the following sections:
 
 - [[ip]](#the-ip-section) - Defines an ip.
     - [name](#the-name-field) - The name of the ip.
+    - [uuid](#the-uuid-field) - The universally unique identifier of the ip.
     - [description](#the-description-field) - A short description of the ip.
     - [version](#the-version-field) - The version of the ip.
     - [authors](#the-authors-field) - The authors of the ip.
@@ -41,6 +42,16 @@ The only fields required by `orbit` are name and version.
 [ip]
 name = "my-ip"
 # ...
+```
+
+### The `uuid` field
+
+A random string consisting of 22 characters in base58 encoding.
+
+``` toml
+[ip]
+# ...
+uuid = "4AHQFZYp3TPAYia8bpJ2zP"
 ```
 
 ### The `version` field

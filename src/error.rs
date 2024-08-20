@@ -159,6 +159,8 @@ pub enum Error {
     ConfigBadPath(PathBuf, Hint),
     #[error("invalid key: \"include\" is not allowed in non-global configuration file")]
     ConfigIncludeInNonglobal,
+    #[error("expects 22 characters but found {0}")]
+    IdNot22Chars(usize),
 }
 
 #[derive(Debug, PartialEq)]

@@ -4,12 +4,12 @@ version = 1
 [[ip]]
 name = "aka"
 version = "1.0.1"
-uuid = "338e03fc-574a-4fde-8b34-58d400130baa"
+uuid = "7VK6hWFFTuUqpZiinzZaDx"
 checksum = "7182f6bcacb9e92942fe65796b154b56c1901c573da909fae6a32975e6440825"
 dependencies = []
 
 [[ip]]
 name = "ao"
 version = "2.0.0"
-uuid = "cadddec7-2a38-4bdb-a2d4-b86aaedaaa73"
+uuid = "UbSZ2XYPZue4AxBG7uLrmQ"
 dependencies = ["aka:1.0"]

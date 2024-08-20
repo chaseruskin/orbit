@@ -4,5 +4,5 @@ version = 1
 [[ip]]
 name = "ip-b"
 version = "0.1.0"
-uuid = "0fe73b27-07f1-4068-9e4f-9032ecf72829"
+uuid = "6RvP22Hbz1MnXMoVnM84n7"
 dependencies = []

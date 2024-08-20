@@ -258,7 +258,7 @@ impl Ip {
                 "a manifest file does not exist".to_string(),
             )))?;
         }
-        let man = Manifest::from_file(&man_path)?;
+        let mut man = Manifest::from_file(&man_path)?;
 
         // verify the public list is okay
         VipList::new(&root, man.get_ip().get_publics())?;
@@ -305,6 +305,8 @@ impl Ip {
                 }
             },
         };
+
+        man.set_uuid(uuid.clone());
 
         Ok(Self {
             mapping: Mapping::Physical,

@@ -15,6 +15,14 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.21.0 - unreleased
+
+### Features
+- adds uuid field to manifest
+
+### Changes
+- reformats how uuid appears (uses base58 encoding instead of hyphenated format)
+
 ## 0.20.0
 
 ### Features

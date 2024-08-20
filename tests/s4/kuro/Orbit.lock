@@ -5,15 +5,15 @@ version = 1
 [[ip]]
 name = "aka"
 version = "1.0.2"
-uuid = "301kalj34cjxdhnwuuyhc9ti4"
-checksum = "775285c4f1139ccc0ef09d25edcaf5257cf23d9b8f73e91015a793c22b0f33e5"
+uuid = "7rpqp96p6pvpjkrg7pt8xcxfw"
+checksum = "2cf31cf9526b5a6ace01c4e43ae4bccf73abb0b1b78357c8e2fb3e0471044231"
 dependencies = []
 
 [[ip]]
 name = "ao"
 version = "2.0.0"
 uuid = "cizi0nmsxmwztcek1b55eo7da"
-checksum = "80e7555b9ec98683c57fab752a553799f2aba4c4bc211a27a2954b6da1eaaa7a"
+checksum = "f7f6e40a43bc28eca370cb0dd0d75d7c7919057b4f0a89114472f1951a829dbc"
 dependencies = ["aka:1.0"]
 
 [[ip]]

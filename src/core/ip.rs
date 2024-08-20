@@ -17,7 +17,6 @@
 
 use crate::core::manifest;
 use crate::core::manifest::Manifest;
-use crate::error::Hint;
 use crate::error::LastError;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::CodeFault;
@@ -258,7 +257,7 @@ impl Ip {
                 "a manifest file does not exist".to_string(),
             )))?;
         }
-        let mut man = Manifest::from_file(&man_path)?;
+        let man = Manifest::from_file(&man_path)?;
 
         // verify the public list is okay
         VipList::new(&root, man.get_ip().get_publics())?;
@@ -286,32 +285,10 @@ impl Ip {
             }
         };
 
-        let uuid = if let Some(uuid) = man.get_ip().get_uuid() {
-            uuid.clone()
-        } else {
-            match is_working_ip {
-                true => match lock.get_self_entry(man.get_ip().get_name()) {
-                    Some(entry) => entry.get_uuid().clone(),
-                    None => Uuid::new(),
-                },
-                false => match lock.get(
-                    man.get_ip().get_name(),
-                    &man.get_ip().get_version().to_partial_version(),
-                ) {
-                    Some(entry) => entry.get_uuid().clone(),
-                    None => {
-                        return Err(Error::RequiredUuuidMissing(
-                            man.get_ip().into_ip_spec(),
-                            Hint::RegenerateLockfile,
-                        ))?
-                    }
-                },
-            }
-        };
+        let uuid = man.get_ip().get_uuid().clone();
+
         // println!("{:?}", lock);
         // println!("{:?}", man.get_ip().into_ip_spec());
-
-        man.set_uuid(uuid.clone());
 
         Ok(Self {
             mapping: Mapping::Physical,
@@ -918,8 +895,8 @@ mod test {
         assert_eq!(
             sum,
             Sha256Hash::from_u32s([
-                1008868993, 3158425656, 4259318682, 3297332727, 26489667, 2640653531, 687313434,
-                2215552304
+                2618638528, 43206360, 3250567762, 2433311059, 2801205324, 1302924505, 140461672,
+                3678450175
             ])
         )
     }

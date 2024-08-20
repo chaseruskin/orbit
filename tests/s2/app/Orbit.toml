@@ -1,5 +1,6 @@
 [ip]
 name = "app"
+uuid = "1h875zp8cjtab1lrkdgue5gxk"
 version = "0.1.0"
 
 [dependencies]

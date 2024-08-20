@@ -23,8 +23,8 @@ STDOUT=$(orbit tree entity_c)
 # store the ideal value for later comparison
 EXACT="entity_c
 ├─ entity_a
-│  ├─ dupe_b8da6e529b
-│  └─ dupe2_b8da6e529b
+│  ├─ dupe_044588b88a
+│  └─ dupe2_044588b88a
 └─ dupe"
 
 orbit remove ip-b --force

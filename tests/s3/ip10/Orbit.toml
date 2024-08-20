@@ -1,5 +1,6 @@
 [ip]
 name = "ip10"
+uuid = "cedgx6gb3cee2ol0uyynxnoup"
 version = "0.1.0"
 public = ["/d10.vhd", "/mid.vhd"]
 

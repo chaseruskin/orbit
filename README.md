@@ -48,12 +48,13 @@ cpu/
    └─ top_tb.sv
 ```
 
-The "Orbit.toml" file is a simple file written in TOML syntax that requires only a couple fields, such as the ip's `name` and `version`, to get setup. 
+The "Orbit.toml" file is a simple TOML file maintained by the user that requires only a couple fields, such as the ip's `name` and `version`, to get setup.
 
 Filename: Orbit.toml
 ``` toml
 [ip]
 name = "cpu"
+uuid = "71vs0nyo7lqjji6p6uzfviaoi"
 version = "1.0.0"
 
 [dependencies]

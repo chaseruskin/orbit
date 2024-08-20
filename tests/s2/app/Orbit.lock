@@ -12,5 +12,5 @@ dependencies = ["lib:0.1.0"]
 name = "lib"
 version = "0.1.0"
 uuid = "esefn4auh48jjfz1g6xvwj48r"
-checksum = "685615fd5d7c79ace9881ea3941169ed86767825ebe4417a0f1b0e24bc87cc25"
+checksum = "3154ff1a3d0148a724ec57b9bd382e1e1592d31bd496cb8448697b959a5ba26e"
 dependencies = []

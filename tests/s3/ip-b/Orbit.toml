@@ -1,6 +1,7 @@
 [ip]
 name = "ip-b"
-library = "dupe"
+uuid = "133pf1iqec3287bkt7i185772"
 version = "0.1.0"
+library = "dupe"
 
 [dependencies]

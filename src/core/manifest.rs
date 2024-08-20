@@ -287,7 +287,7 @@ impl Manifest {
             ip: Package {
                 name: PkgPart::new(),
                 version: IpVersion::new(),
-                uuid: None,
+                uuid: Uuid::new(),
                 source: None.into(),
                 keywords: Vec::new(),
                 description: None,
@@ -336,9 +336,8 @@ impl Manifest {
                 format!(
                     r#"[ip]
 name = "{}"
-version = "0.1.0"
-
 uuid = "{}"
+version = "0.1.0"
 
 # See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
 
@@ -351,10 +350,9 @@ uuid = "{}"
                 format!(
                     r#"[ip]
 name = "{}"
+uuid = "{}"
 version = "0.1.0"
 library = "{}"
-
-uuid = "{}"
 
 # See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
 
@@ -417,10 +415,6 @@ uuid = "{}"
         result
     }
 
-    pub fn set_uuid(&mut self, uuid: Uuid) {
-        self.ip.uuid = Some(uuid);
-    }
-
     /// Returns the list of dependencies found under "dependencies" and
     /// "dev-dependencies".
     pub fn get_deps_list_mut(
@@ -464,10 +458,10 @@ fn map_is_empty<K, V>(field: &HashMap<K, V>) -> bool {
 #[serde(deny_unknown_fields)]
 pub struct Package {
     name: IpName,
+    uuid: Uuid,
     version: IpVersion,
     library: Option<IpName>,
     description: Option<String>,
-    uuid: Option<Uuid>,
     authors: Option<Vec<String>>,
     #[serde(skip_serializing_if = "vec_is_empty", default)]
     keywords: Vec<String>,
@@ -498,7 +492,7 @@ impl Package {
         &self.public
     }
 
-    pub fn get_uuid(&self) -> &Option<Uuid> {
+    pub fn get_uuid(&self) -> &Uuid {
         &self.uuid
     }
 
@@ -721,6 +715,7 @@ mod test {
 
 const EX1: &str = r#"[ip]
 name = "gates"
+uuid = "0000000000000000000000000"
 version = "0.1.0"
 library = "common"
 source = "https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip"
@@ -744,11 +739,13 @@ my-testing-framework = "0.1.0"
 
 const EX2: &str = r#"[ip]
 name = "Lab1"
+uuid = "0000000000000000000000000"
 version = "1.0.0"
 "#;
 
 const EX3: &str = r#"[ip]
 name = "lab2"
+uuid = "0000000000000000000000000"
 version = "1.20.0"
 keywords = ["circuits"]
 
@@ -761,24 +758,28 @@ top-builder = "1.0.0"
 
 const EX4: &str = r#"[ip]
 name = "lab2"
+uuid = "0000000000000000000000000"
 version = "1.20.0"
 source = { url = "https://some.url", protocol = "ktsp" }
 "#;
 
 const EX5: &str = r#"[ip]
 name = "lab2"
+uuid = "0000000000000000000000000"
 version = "1.20.0"
 source = { url = "https://some.url" }
 "#;
 
 const EX6: &str = r#"[ip]
 name = "lab2"
+uuid = "0000000000000000000000000"
 version = "1.20.0"
 source = "https://some.url"
 "#;
 
 const EX7: &str = r#"[ip]
 name = "lab2"
+uuid = "0000000000000000000000000"
 version = "1.20.0"
 source = { protocol = "ktsp" }
 "#;

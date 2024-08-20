@@ -1499,6 +1499,7 @@ end entity;
 <li><a href="reference/manifest.html#the-ip-section">[ip]</a> - Defines an ip.
 <ul>
 <li><a href="reference/manifest.html#the-name-field">name</a> - The name of the ip.</li>
+<li><a href="reference/manifest.html#the-uuid-field">uuid</a> - The universally unique identifier of the ip.</li>
 <li><a href="reference/manifest.html#the-description-field">description</a> - A short description of the ip.</li>
 <li><a href="reference/manifest.html#the-version-field">version</a> - The version of the ip.</li>
 <li><a href="reference/manifest.html#the-authors-field">authors</a> - The authors of the ip.</li>
@@ -1527,6 +1528,12 @@ version = "0.1.0" # the current version
 <pre><code class="language-toml">[ip]
 name = "my-ip"
 # ...
+</code></pre>
+<h3 id="the-uuid-field"><a class="header" href="#the-uuid-field">The <code>uuid</code> field</a></h3>
+<p>A random string consisting of 22 characters in base58 encoding.</p>
+<pre><code class="language-toml">[ip]
+# ...
+uuid = "4AHQFZYp3TPAYia8bpJ2zP"
 </code></pre>
 <h3 id="the-version-field"><a class="header" href="#the-version-field">The <code>version</code> field</a></h3>
 <pre><code class="language-toml">[ip]

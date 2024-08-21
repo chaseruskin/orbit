@@ -152,6 +152,7 @@ fn graph_ip<'a>(
                                     "unknown ip {}",
                                     PartialIpSpec::new(
                                         pkgid.clone(),
+                                        None,
                                         dependency.get_version().clone()
                                     )
                                 ))),
@@ -228,6 +229,7 @@ fn graph_ip<'a>(
                                             "ip {} is not installed",
                                             PartialIpSpec::new(
                                                 pkgid.clone(),
+                                                None,
                                                 dependency.get_version().clone()
                                             )
                                         ))),
@@ -244,6 +246,7 @@ fn graph_ip<'a>(
                                     "unknown ip {}",
                                     PartialIpSpec::new(
                                         pkgid.clone(),
+                                        None,
                                         dependency.get_version().clone()
                                     )
                                 ))),

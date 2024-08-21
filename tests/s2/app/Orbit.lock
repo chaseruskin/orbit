@@ -6,7 +6,7 @@ version = 1
 name = "app"
 version = "0.1.0"
 uuid = "1h875zp8cjtab1lrkdgue5gxk"
-dependencies = ["lib:0.1.0"]
+dependencies = ["lib+esefn4auh48jjfz1g6xvwj48r:0.1.0"]
 
 [[ip]]
 name = "lib"

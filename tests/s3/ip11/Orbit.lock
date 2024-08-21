@@ -13,4 +13,4 @@ dependencies = []
 name = "ip11"
 version = "0.1.0"
 uuid = "6hfbbr44f59lugpdgb54cq2y2"
-dependencies = ["ip10:0.1.0"]
+dependencies = ["ip10+cedgx6gb3cee2ol0uyynxnoup:0.1.0"]

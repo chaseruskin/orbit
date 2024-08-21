@@ -22,6 +22,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - copies the ip's lockfile to the channel now too (not just the manifest)
 
 ### Changes
+- writes the full ip spec to the lock file (includes uuid)
 - requires the uuid field for ip manifests
 - reformats how uuid appears (uses base36 encoding instead of hyphenated format)
 - creates lockfile during `orbit new` and `orbit init` commands

@@ -6,4 +6,4 @@ version = "0.1.0"
 # See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
 
 [dependencies]
-sub = { path = "../sub", version = "0.1.0" }
+sub = { path = "../sub", version = "0.1.0", uuid = "1hjn6n1swi8e6ib55j4uecsv4" }

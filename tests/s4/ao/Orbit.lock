@@ -13,4 +13,4 @@ dependencies = []
 name = "ao"
 version = "2.0.0"
 uuid = "cizi0nmsxmwztcek1b55eo7da"
-dependencies = ["aka:1.0"]
+dependencies = ["aka+7rpqp96p6pvpjkrg7pt8xcxfw:1.0"]

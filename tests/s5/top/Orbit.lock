@@ -13,4 +13,4 @@ dependencies = []
 name = "top"
 version = "0.1.0"
 uuid = "71vs0nyo7lqjji6p6uzfviaoi"
-dependencies = ["sub:0.1.0"]
+dependencies = ["sub+1hjn6n1swi8e6ib55j4uecsv4:0.1.0"]

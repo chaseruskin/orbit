@@ -7,7 +7,7 @@ name = "ip-a"
 version = "0.1.0"
 uuid = "02ca23lot1yum2qmwwrcod0ra"
 checksum = "7f5e7808236f1dc45e1b8e70a194d7992f62de204dcd8248bd6588b76e5c38f3"
-dependencies = ["ip-b:0.1.0"]
+dependencies = ["ip-b+133pf1iqec3287bkt7i185772:0.1.0"]
 
 [[ip]]
 name = "ip-b"
@@ -20,4 +20,4 @@ dependencies = []
 name = "ip-c"
 version = "0.1.0"
 uuid = "3kpqlqt1dp9xv079kxub90c7a"
-dependencies = ["ip-a:0.1.0"]
+dependencies = ["ip-a+02ca23lot1yum2qmwwrcod0ra:0.1.0"]

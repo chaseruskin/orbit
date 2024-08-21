@@ -46,6 +46,8 @@ pub struct Dependency {
     path: Option<PathBuf>,
     #[serde(skip_serializing)]
     relative_ip: Option<Ip>,
+    #[serde(skip_serializing)]
+    uuid: Option<Uuid>,
 }
 
 impl Dependency {
@@ -64,6 +66,10 @@ impl Dependency {
     pub fn as_ip(&self) -> Option<&Ip> {
         self.relative_ip.as_ref()
     }
+
+    pub fn as_uuid(&self) -> Option<&Uuid> {
+        self.uuid.as_ref()
+    }
 }
 
 impl<'de> serde::Deserialize<'de> for Dependency {
@@ -74,6 +80,7 @@ impl<'de> serde::Deserialize<'de> for Dependency {
         enum Field {
             Path,
             Version,
+            Uuid,
         }
 
         // This part could also be generated independently by:
@@ -92,7 +99,7 @@ impl<'de> serde::Deserialize<'de> for Dependency {
                     type Value = Field;
 
                     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                        formatter.write_str("`secs` or `nanos`")
+                        formatter.write_str("`path` or `version` or `uuid`")
                     }
 
                     fn visit_str<E>(self, value: &str) -> Result<Field, E>
@@ -102,6 +109,7 @@ impl<'de> serde::Deserialize<'de> for Dependency {
                         match value {
                             "path" => Ok(Field::Path),
                             "version" => Ok(Field::Version),
+                            "uuid" => Ok(Field::Uuid),
                             _ => Err(de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -136,6 +144,7 @@ impl<'de> serde::Deserialize<'de> for Dependency {
                         Err(e) => return Err(de::Error::custom(e))?,
                     },
                     relative_ip: None,
+                    uuid: None,
                 })
             }
 
@@ -145,6 +154,7 @@ impl<'de> serde::Deserialize<'de> for Dependency {
             {
                 let mut path: Option<Option<PathBuf>> = None;
                 let mut version: Option<DepVersion> = None;
+                let mut id: Option<Option<Uuid>> = None;
                 while let Some(key) = map.next_key()? {
                     match key {
                         Field::Path => {
@@ -159,19 +169,27 @@ impl<'de> serde::Deserialize<'de> for Dependency {
                             }
                             version = Some(map.next_value()?);
                         }
+                        Field::Uuid => {
+                            if id.is_some() {
+                                return Err(de::Error::duplicate_field("uuid"));
+                            }
+                            id = Some(map.next_value()?);
+                        }
                     }
                 }
                 let path = path.ok_or_else(|| de::Error::missing_field("path"))?;
                 let version = version.ok_or_else(|| de::Error::missing_field("version"))?;
+                let id = id.ok_or_else(|| de::Error::missing_field("uuid"))?;
                 Ok(Dependency {
                     path: path,
                     version: version,
                     relative_ip: None,
+                    uuid: id,
                 })
             }
         }
 
-        const FIELDS: &[&str] = &["path", "version"];
+        const FIELDS: &[&str] = &["path", "version", "uuid"];
         deserializer.deserialize_struct("Dependency", FIELDS, LayerVisitor)
     }
 }
@@ -220,7 +238,7 @@ impl FromFile for Manifest {
             // enter a blank lock file if failed (do not exit)
             Err(e) => {
                 return Err(AnyError(format!(
-                    "Failed to parse {} file at path {:?}: {}",
+                    "failed to parse {} file at path {:?}: {}",
                     IP_MANIFEST_FILE, path, e
                 )))?
             }
@@ -228,7 +246,7 @@ impl FromFile for Manifest {
         // verify there are no duplicate entries between tables
         if let Some(e) = man.is_deps_valid().err() {
             return Err(AnyError(format!(
-                "Failed to parse {} file at path {:?}: {}",
+                "failed to parse {} file at path {:?}: {}",
                 IP_MANIFEST_FILE, path, e
             )))?;
         }
@@ -260,6 +278,7 @@ impl FromFile for Manifest {
                             ip_name.clone(),
                         ))?;
                     }
+                    dep.uuid = Some(ip.get_uuid().clone());
                     dep.relative_ip = Some(ip);
                 }
             }
@@ -516,9 +535,13 @@ impl Package {
         &self.channels
     }
 
-    /// Clones into a new [IpSpec2] struct.
+    /// Clones into a new [IpSpec] struct.
     pub fn into_ip_spec(&self) -> IpSpec {
-        IpSpec::new(self.get_name().clone(), self.get_version().clone())
+        IpSpec::new(
+            self.get_name().clone(),
+            self.uuid.clone(),
+            self.get_version().clone(),
+        )
     }
 
     pub fn get_readme(&self) -> &Option<PathBuf> {

@@ -1066,12 +1066,12 @@ impl Plan {
         // only modify the lockfile if it is out-of-date
         if target.can_use_lock() == false || force == true {
             // create build list
-            let mut build_list: Vec<&Ip> = ip_graph
+            let build_list: Vec<&Ip> = ip_graph
                 .get_map()
                 .iter()
                 .map(|p| p.1.as_ref().as_original_ip())
                 .collect();
-            let lock = LockFile::from_build_list(&mut build_list, target);
+            let lock = LockFile::from_build_list(build_list, target)?;
             lock.save_to_disk(target.get_root())?;
 
             if target.get_lock() != &lock {

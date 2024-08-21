@@ -14,13 +14,13 @@ name = "ao"
 version = "2.0.0"
 uuid = "cizi0nmsxmwztcek1b55eo7da"
 checksum = "f7f6e40a43bc28eca370cb0dd0d75d7c7919057b4f0a89114472f1951a829dbc"
-dependencies = ["aka:1.0"]
+dependencies = ["aka+7rpqp96p6pvpjkrg7pt8xcxfw:1.0"]
 
 [[ip]]
 name = "kuro"
 version = "0.1.0"
 uuid = "8s2xg9zuwu0olsfg8j1znjnej"
 dependencies = [
-    "aka:1.0",
-    "ao:2.0.0",
+    "aka+7rpqp96p6pvpjkrg7pt8xcxfw:1.0",
+    "ao+cizi0nmsxmwztcek1b55eo7da:2.0.0",
 ]

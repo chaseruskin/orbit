@@ -6,7 +6,7 @@ version = 1
 name = "ip-a"
 version = "0.1.0"
 uuid = "02ca23lot1yum2qmwwrcod0ra"
-dependencies = ["ip-b:0.1.0"]
+dependencies = ["ip-b+133pf1iqec3287bkt7i185772:0.1.0"]
 
 [[ip]]
 name = "ip-b"

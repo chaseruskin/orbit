@@ -692,27 +692,33 @@ use std::fs;
 use std::path::Path;
 
 const SPEC_DELIM: &str = ":";
+const UUID_DELIM: &str = "+";
 
-#[derive(Debug, PartialEq, Hash, Eq, Clone, PartialOrd)]
-pub struct IpSpec(PkgPart, Version);
+#[derive(PartialEq, Hash, Eq, Clone, PartialOrd)]
+pub struct IpSpec(PkgPart, Uuid, Version);
 
 impl IpSpec {
-    pub fn new(id: PkgPart, version: Version) -> Self {
-        Self(id, version)
+    pub fn new(id: PkgPart, uuid: Uuid, version: Version) -> Self {
+        Self(id, uuid, version)
     }
 
     pub fn get_name(&self) -> &PkgPart {
         &self.0
     }
 
-    pub fn get_version(&self) -> &Version {
+    pub fn get_uuid(&self) -> &Uuid {
         &self.1
+    }
+
+    pub fn get_version(&self) -> &Version {
+        &self.2
     }
 
     pub fn to_partial_ip_spec(&self) -> PartialIpSpec {
         PartialIpSpec(
             self.0.clone(),
-            AnyVersion::Specific(self.1.to_partial_version()),
+            Some(self.1.clone()),
+            AnyVersion::Specific(self.2.to_partial_version()),
         )
     }
 }
@@ -723,12 +729,36 @@ impl FromStr for IpSpec {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // split by delimiter
         match s.rsplit_once(SPEC_DELIM) {
-            Some((n, v)) => Ok(Self::new(PkgPart::from_str(n)?, Version::from_str(v)?)),
+            Some((rem, v)) => match rem.rsplit_once(UUID_DELIM) {
+                Some((name, id)) => Ok(Self::new(
+                    PkgPart::from_str(name)?,
+                    Uuid::from_str(id)?,
+                    Version::from_str(v)?,
+                )),
+                None => Err(Box::new(AnyError(format!(
+                    "missing uuid delimiter {}",
+                    UUID_DELIM
+                )))),
+            },
             None => Err(Box::new(AnyError(format!(
-                "missing specification delimiter {}",
+                "missing version delimiter {}",
                 SPEC_DELIM
             )))),
         }
+    }
+}
+
+impl std::fmt::Debug for IpSpec {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}{}{}{}{}",
+            self.get_name(),
+            UUID_DELIM,
+            self.get_uuid().encode(),
+            SPEC_DELIM,
+            self.get_version()
+        )
     }
 }
 
@@ -738,9 +768,9 @@ impl std::fmt::Display for IpSpec {
     }
 }
 
-impl From<(PkgPart, Version)> for IpSpec {
-    fn from(value: (PkgPart, Version)) -> Self {
-        Self(value.0, value.1)
+impl From<(PkgPart, Uuid, Version)> for IpSpec {
+    fn from(value: (PkgPart, Uuid, Version)) -> Self {
+        Self(value.0, value.1, value.2)
     }
 }
 
@@ -783,18 +813,18 @@ impl Serialize for IpSpec {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&self.to_string())
+        serializer.serialize_str(&format!("{:?}", self))
     }
 }
 
 use crate::core::version::AnyVersion;
 
-#[derive(Debug, PartialEq, Clone, Hash, Eq)]
-pub struct PartialIpSpec(PkgPart, AnyVersion);
+#[derive(PartialEq, Clone, Hash, Eq)]
+pub struct PartialIpSpec(PkgPart, Option<Uuid>, AnyVersion);
 
 impl PartialIpSpec {
-    pub fn new(name: PkgPart, version: PartialVersion) -> Self {
-        Self(name, AnyVersion::Specific(version))
+    pub fn new(name: PkgPart, uuid: Option<Uuid>, version: PartialVersion) -> Self {
+        Self(name, uuid, AnyVersion::Specific(version))
     }
 
     pub fn get_name(&self) -> &PkgPart {
@@ -802,14 +832,24 @@ impl PartialIpSpec {
     }
 
     pub fn get_version(&self) -> &AnyVersion {
-        &self.1
+        &self.2
     }
 
     pub fn as_ip_spec(&self) -> Option<IpSpec> {
         Some(IpSpec::new(
             self.0.clone(),
-            self.1.as_specific()?.as_version()?,
+            self.1.as_ref()?.clone(),
+            self.2.as_specific()?.as_version()?,
         ))
+    }
+}
+
+impl std::fmt::Debug for PartialIpSpec {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.1 {
+            Some(id) => write!(f, "{}{}{}{}{}", self.0, UUID_DELIM, id, SPEC_DELIM, self.2),
+            None => write!(f, "{}{}{}", self.0, SPEC_DELIM, self.2),
+        }
     }
 }
 
@@ -847,8 +887,13 @@ impl Serialize for PartialIpSpec {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&self.to_string())
+        serializer.serialize_str(&format!("{:?}", self))
     }
+}
+
+struct FullName {
+    name: PkgPart,
+    id: Uuid,
 }
 
 impl FromStr for PartialIpSpec {
@@ -857,24 +902,54 @@ impl FromStr for PartialIpSpec {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.rsplit_once(SPEC_DELIM) {
             // split by delimiter (beginning from rhs)
-            Some((n, v)) => Ok(Self(
-                match PkgPart::from_str(n) {
-                    Ok(p) => p,
-                    Err(e) => return Err(AnyError(e.to_string())),
-                },
-                match AnyVersion::from_str(v) {
-                    Ok(w) => w,
-                    Err(e) => return Err(AnyError(e.to_string())),
-                },
-            )),
-            // take entire string as name and refer to latest version
-            None => Ok(Self(
-                match PkgPart::from_str(s) {
-                    Ok(p) => p,
-                    Err(e) => return Err(AnyError(e.to_string())),
-                },
-                AnyVersion::Latest,
-            )),
+            Some((rem, ver)) => match rem.rsplit_once(UUID_DELIM) {
+                Some((name, id)) => Ok(Self(
+                    match PkgPart::from_str(name) {
+                        Ok(p) => p,
+                        Err(e) => return Err(AnyError(e.to_string())),
+                    },
+                    match Uuid::from_str(id) {
+                        Ok(u) => Some(u),
+                        Err(e) => return Err(AnyError(e.to_string())),
+                    },
+                    match AnyVersion::from_str(ver) {
+                        Ok(w) => w,
+                        Err(e) => return Err(AnyError(e.to_string())),
+                    },
+                )),
+                None => Ok(Self(
+                    match PkgPart::from_str(rem) {
+                        Ok(p) => p,
+                        Err(e) => return Err(AnyError(e.to_string())),
+                    },
+                    None,
+                    match AnyVersion::from_str(ver) {
+                        Ok(w) => w,
+                        Err(e) => return Err(AnyError(e.to_string())),
+                    },
+                )),
+            },
+            None => match s.rsplit_once(UUID_DELIM) {
+                Some((name, id)) => Ok(Self(
+                    match PkgPart::from_str(name) {
+                        Ok(p) => p,
+                        Err(e) => return Err(AnyError(e.to_string())),
+                    },
+                    match Uuid::from_str(id) {
+                        Ok(u) => Some(u),
+                        Err(e) => return Err(AnyError(e.to_string())),
+                    },
+                    AnyVersion::Latest,
+                )),
+                None => Ok(Self(
+                    match PkgPart::from_str(s) {
+                        Ok(p) => p,
+                        Err(e) => return Err(AnyError(e.to_string())),
+                    },
+                    None,
+                    AnyVersion::Latest,
+                )),
+            },
         }
     }
 }
@@ -903,27 +978,19 @@ mod test {
 
     #[test]
     fn from_str_ip_spec() {
-        let ip = format!("name{}1.0.0", SPEC_DELIM);
+        let ip = format!(
+            "name{}71vs0nyo7lqjji6p6uzfviaoi{}1.0.0",
+            UUID_DELIM, SPEC_DELIM
+        );
 
         assert_eq!(
             IpSpec::new(
                 PkgPart::from_str("name").unwrap(),
+                Uuid::from_str("71vs0nyo7lqjji6p6uzfviaoi").unwrap(),
                 Version::from_str("1.0.0").unwrap()
             ),
             IpSpec::from_str(&ip).unwrap()
         );
-
-        // // @note: errors due to invalid char for parsing PkgPart, but tests for
-        // // extracting delimiter from RHS only once
-        // let ip = format!("global{}local{}0.3.0", SPEC_DELIM, SPEC_DELIM);
-
-        // assert_eq!(
-        //     IpSpec::new(
-        //         PkgPart::from_str(&format!("global{}local", SPEC_DELIM)).unwrap(),
-        //         Version::from_str("0.3.0").unwrap()
-        //     ),
-        //     IpSpec::from_str(&ip).unwrap()
-        // );
     }
 
     #[test]

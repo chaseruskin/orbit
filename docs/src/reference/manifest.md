@@ -1,6 +1,6 @@
 # Manifest
 
-The `Orbit.toml` file for each ip is called its manifest. It is written in the [TOML](https://toml.io/en/) format. It is maintained by the developer and contains metadata that is needed to build the ip.
+The `Orbit.toml` file for each ip is called its manifest. It is written in the [TOML](https://toml.io/en/) format. It is maintained by the user and contains metadata that is needed to build the ip. The manifest is read by Orbit to help automatically generate the ip's lock file, `Orbit.lock`.
 
 > __Note:__ The manifest's file name is "Orbit.toml", with respect to case-sensitivity.
 
@@ -31,10 +31,11 @@ The first section in a `Orbit.toml` file is `[ip]`.
 ``` toml
 [ip]
 name = "my-ip" # the name of the package
+uuid = "ecj831jmc018hhhgl1d4rzgw8" # the universally unique identifier
 version = "0.1.0" # the current version
 ```
 
-The only fields required by `orbit` are name and version.
+The only fields required by Orbit are name, uuid, and version.
 
 ### The `name` field
 

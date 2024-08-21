@@ -1,0 +1,9 @@
+[ip]
+name = "mid"
+uuid = "01d7raymfdvxosspirf9o46c7"
+version = "0.1.0"
+
+# See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
+
+[dependencies]
+bot = "0.1.0"

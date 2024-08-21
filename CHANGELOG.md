@@ -18,6 +18,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.21.0 - unreleased
 
 ### Features
+- supports finding ip using their name and their uuid in the catalog
 - adds uuid field to manifest
 - copies the ip's lockfile to the channel now too (not just the manifest)
 

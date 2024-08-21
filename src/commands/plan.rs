@@ -489,7 +489,7 @@ pub fn download_missing_deps(
 
         let mut require_download = false;
 
-        match catalog.inner().get(entry.get_name()) {
+        match catalog.inner().get(entry.get_uuid()) {
             Some(status) => {
                 match status.get_install(&ver) {
                     Some(dep) => {
@@ -558,7 +558,7 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
         let ver = AnyVersion::Specific(entry.get_version().to_partial_version());
 
         // try to use the lock file to fill in missing pieces
-        match catalog.inner().get(entry.get_name()) {
+        match catalog.inner().get(entry.get_uuid()) {
             Some(status) => {
                 // find this IP to read its dependencies
                 match status.get_install(&ver) {

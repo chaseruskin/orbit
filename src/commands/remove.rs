@@ -58,7 +58,7 @@ impl Subcommand<Context> for Remove {
             .downloads(c.get_downloads_path())?;
 
         // check for ip in development or installation
-        let status = match catalog.inner().get(&self.ip.get_name()) {
+        let status = match catalog.translate_name(&self.ip.to_pkg_name())? {
             Some(st) => st,
             None => {
                 return Err(AnyError(format!(

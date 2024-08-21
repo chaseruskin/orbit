@@ -33,6 +33,7 @@ use crate::core::ip::IpSpec;
 use crate::core::lockfile::{LockEntry, LockFile};
 use crate::core::version::AnyVersion;
 
+use super::catalog::PkgName;
 use super::fileset;
 use super::ip::PartialIpSpec;
 use super::lang::sv::token::tokenizer::SystemVerilogTokenizer;
@@ -161,7 +162,8 @@ fn graph_ip<'a>(
                     }
                 }
                 false => {
-                    match catalog.inner().get(pkgid) {
+                    // TODO: need to resolve the uuid for this package... maybe create lockfile by merging lockfiles of direct deps?
+                    match catalog.translate_name(&PkgName::new(pkgid, dependency.as_uuid()))? {
                         Some(status) => {
                             // find this IP to read its dependencies
                             match status.get_install(&AnyVersion::Specific(

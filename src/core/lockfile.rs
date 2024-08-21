@@ -319,14 +319,36 @@ pub mod v1 {
                             .get_deps_list(is_local, true)
                             .into_iter()
                             .map(|e| {
-                                // find the ip that matches the name
                                 let id = match e.1.as_uuid() {
-                                    Some(id) => id,
-                                    None => others
-                                        .iter()
-                                        .find(|p| p.get_man().get_ip().get_name() == e.0)
-                                        .expect("missing an ip from the build list")
-                                        .get_uuid(),
+                                    Some(id) => {
+                                        // verify this uuid exists in the build list
+                                        if let Some(found_ip) = others.iter().find(|p| p.get_uuid() == id) {
+                                            if found_ip.get_man().get_ip().get_name() != e.0 {
+                                                panic!("ip with this uuid is not associated with package name {}", e.0)
+                                            }
+                                        } else {
+                                            panic!("no ip found with this uuid")
+                                        }
+                                        id
+                                    },
+                                    None => {
+                                        // find the ip that matches the name (must only be 1)
+                                        let mut found_ip: Option<&Ip> = None;
+                                        for other_ip in others {
+                                            if other_ip.get_man().get_ip().get_name() == e.0 {
+                                                if let Some(already_ip) = found_ip {
+                                                    // we came across two ips with the same name but different uuids
+                                                    if already_ip.get_uuid() != other_ip.get_uuid() {
+                                                        panic!("ip namespace collision {}: please specify the direct dependency's uuid", e.0)
+                                                    }
+                                                }
+                                                found_ip = Some(*other_ip);
+                                            }
+                                        }
+                                        found_ip
+                                            .expect("missing an ip from the build list")
+                                            .get_uuid()
+                                    }
                                 };
                                 PartialIpSpec::new(
                                     e.0.clone(),

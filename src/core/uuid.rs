@@ -31,7 +31,7 @@ const ID_ALPHABET: [char; 36] = [
     'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 ];
 
-#[derive(Debug, PartialEq, Clone, Hash, Eq, PartialOrd)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq, PartialOrd, Ord)]
 pub struct Uuid {
     inner: uuid::Uuid,
 }

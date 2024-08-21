@@ -152,9 +152,9 @@ impl<'de> serde::Deserialize<'de> for Dependency {
             where
                 V: MapAccess<'de>,
             {
-                let mut path: Option<Option<PathBuf>> = None;
+                let mut path: Option<PathBuf> = None;
                 let mut version: Option<DepVersion> = None;
-                let mut id: Option<Option<Uuid>> = None;
+                let mut id: Option<Uuid> = None;
                 while let Some(key) = map.next_key()? {
                     match key {
                         Field::Path => {
@@ -177,9 +177,9 @@ impl<'de> serde::Deserialize<'de> for Dependency {
                         }
                     }
                 }
-                let path = path.ok_or_else(|| de::Error::missing_field("path"))?;
+                let path = path;
                 let version = version.ok_or_else(|| de::Error::missing_field("version"))?;
-                let id = id.ok_or_else(|| de::Error::missing_field("uuid"))?;
+                let id = id;
                 Ok(Dependency {
                     path: path,
                     version: version,

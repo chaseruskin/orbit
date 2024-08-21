@@ -246,8 +246,7 @@ impl Subcommand<Context> for Install {
         // use the catalog (if no path is provided)
         let target = if self.path.is_none() == true && (self.url.is_some() || self.ip.is_some()) {
             if let Some(spec) = &determined_spec {
-                // println!("determined: {}", spec);
-                if let Some(lvl) = catalog.inner().get(spec.get_name()) {
+                if let Some(lvl) = catalog.translate_name(&spec.to_pkg_name())? {
                     if let Some(slot) = lvl.get(true, true, spec.get_version()) {
                         // extract as download
                         if let Some(bytes) = slot.get_mapping().as_bytes() {
@@ -315,7 +314,9 @@ impl Subcommand<Context> for Install {
         // println!("{:?}", target.get_uuid());
 
         // verify the ip is not already taken in the cache
-        if let Some(ip_levels) = catalog.inner().get(target.get_man().get_ip().get_name()) {
+        if let Some(ip_levels) =
+            catalog.translate_name(&target.get_man().get_ip().into_ip_spec().to_pkg_name())?
+        {
             if let Some(cached_ip) = ip_levels.get_install(&AnyVersion::Specific(
                 target.get_man().get_ip().get_version().to_partial_version(),
             )) {

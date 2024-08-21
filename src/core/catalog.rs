@@ -16,6 +16,7 @@
 //
 
 use crate::core::uuid::Uuid;
+use crate::error::{Error, Hint};
 use crate::util::{anyerror::Fault, sha256::Sha256Hash};
 use std::fs::read_dir;
 use std::str::FromStr;
@@ -89,7 +90,8 @@ impl<'a> Hash for VersionItem<'a> {
 
 #[derive(Debug)]
 pub struct Catalog<'a> {
-    inner: HashMap<PkgPart, IpLevel>,
+    inner: HashMap<Uuid, IpLevel>,
+    mappings: HashMap<PkgPart, Vec<Uuid>>,
     cache: Option<&'a PathBuf>,
     downloads: Option<&'a PathBuf>,
     available: Option<HashMap<&'a String, &'a PathBuf>>,
@@ -288,6 +290,7 @@ impl<'a> Catalog<'a> {
     pub fn new() -> Self {
         Self {
             inner: HashMap::new(),
+            mappings: HashMap::new(),
             cache: None,
             downloads: None,
             available: None,
@@ -368,18 +371,42 @@ impl<'a> Catalog<'a> {
         Ok(self)
     }
 
-    pub fn inner(&self) -> &HashMap<PkgPart, IpLevel> {
+    pub fn inner(&self) -> &HashMap<Uuid, IpLevel> {
         &self.inner
     }
 
-    pub fn inner_mut(&mut self) -> &mut HashMap<PkgPart, IpLevel> {
+    pub fn inner_mut(&mut self) -> &mut HashMap<Uuid, IpLevel> {
         &mut self.inner
+    }
+
+    pub fn mappings(&self) -> &HashMap<PkgPart, Vec<Uuid>> {
+        &self.mappings
+    }
+
+    pub fn translate_name(&self, name: &PkgName) -> Result<Option<&IpLevel>, Fault> {
+        if let Some(id) = name.get_uuid() {
+            Ok(self.inner.get(id))
+        } else {
+            if let Some(cands) = self.mappings.get(&name.name) {
+                match cands.len() {
+                    0 => panic!("a mapping of name to uuid should already exist"),
+                    1 => Ok(self.inner.get(cands.first().unwrap())),
+                    _ => Err(Error::IpNamespaceCollision(name.name.to_string()))?,
+                }
+            } else {
+                // println!("{}", "here!");
+                Err(Error::IpNotFoundAnywhere(
+                    name.name.to_string(),
+                    Hint::CatalogList,
+                ))?
+            }
+        }
     }
 
     /// Returns all possible versions found for the `target` ip.
     ///
     /// Returns `None` if the id is not found in the catalog.
-    pub fn get_possible_versions(&self, id: &PkgPart) -> Option<Vec<VersionItem>> {
+    pub fn get_possible_versions(&self, id: &Uuid) -> Option<Vec<VersionItem>> {
         let kaban = self.inner.get(&id)?;
         let mut set = HashSet::new();
         // read from cache
@@ -429,18 +456,25 @@ impl<'a> Catalog<'a> {
             IpState::Unknown => Ok(Vec::new()),
         }?
         .into_iter()
-        .for_each(
-            |ip| match self.inner.get_mut(&ip.get_man().get_ip().get_name()) {
-                Some(lvl) => add(lvl, ip),
-                None => {
-                    let pkgid = ip.get_man().get_ip().get_name().clone();
-                    let mut lvl = IpLevel::new();
-                    add(&mut lvl, ip);
-                    self.inner.insert(pkgid, lvl);
-                    ()
+        .for_each(|ip| match self.inner.get_mut(&ip.get_uuid()) {
+            Some(lvl) => add(lvl, ip),
+            None => {
+                let pkgpart = ip.get_man().get_ip().get_name();
+                // add this to the list of uuids for this name
+                match self.mappings.get_mut(pkgpart) {
+                    Some(ids) => ids.push(ip.get_uuid().clone()),
+                    None => {
+                        self.mappings
+                            .insert(pkgpart.clone(), vec![ip.get_uuid().clone()]);
+                    }
                 }
-            },
-        );
+                let pkgid = ip.get_uuid().clone();
+                let mut lvl = IpLevel::new();
+                add(&mut lvl, ip);
+                self.inner.insert(pkgid, lvl);
+                ()
+            }
+        });
         Ok(self)
     }
 
@@ -593,5 +627,25 @@ impl PointerSlot {
 impl AsRef<str> for PointerSlot {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
+    }
+}
+
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
+pub struct PkgName<'a> {
+    name: &'a PkgPart,
+    id: Option<&'a Uuid>,
+}
+
+impl<'a> PkgName<'a> {
+    pub fn new(name: &'a PkgPart, id: Option<&'a Uuid>) -> Self {
+        Self { name: name, id: id }
+    }
+
+    pub fn get_name(&self) -> &'a PkgPart {
+        &self.name
+    }
+
+    pub fn get_uuid(&self) -> Option<&'a Uuid> {
+        self.id
     }
 }

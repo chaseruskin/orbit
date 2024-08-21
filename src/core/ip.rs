@@ -23,6 +23,7 @@ use crate::util::anyerror::CodeFault;
 use crate::util::anyerror::Fault;
 use std::path::PathBuf;
 
+use super::catalog::PkgName;
 use super::iparchive::IpArchive;
 use super::ippointer::IpPointer;
 use super::lang;
@@ -721,6 +722,10 @@ impl IpSpec {
             AnyVersion::Specific(self.2.to_partial_version()),
         )
     }
+
+    pub fn to_pkg_name(&self) -> PkgName {
+        PkgName::new(&self.0, Some(&self.1))
+    }
 }
 
 impl FromStr for IpSpec {
@@ -841,6 +846,10 @@ impl PartialIpSpec {
             self.1.as_ref()?.clone(),
             self.2.as_specific()?.as_version()?,
         ))
+    }
+
+    pub fn to_pkg_name(&self) -> PkgName {
+        PkgName::new(&self.0, self.1.as_ref())
     }
 }
 

@@ -91,3 +91,8 @@ test-partv:
 test-rel-dep:
     chmod +x ./tests/s5/test.sh
     cd ./tests/s5; ./test.sh
+
+# TODO: Ip namespace collision 
+test-ip-collide:
+    chmod +x ./tests/s6/test.sh
+    cd ./tests/s6; ./test.sh

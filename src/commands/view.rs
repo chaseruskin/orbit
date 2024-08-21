@@ -72,7 +72,7 @@ impl Subcommand<Context> for View {
         // try to auto-determine the ip (check if in a working ip)
         let ip: &Ip = if let Some(spec) = &self.ip {
             // find the path to the provided ip by searching through the catalog
-            if let Some(lvl) = catalog.inner().get(spec.get_name()) {
+            if let Some(lvl) = catalog.translate_name(&spec.to_pkg_name())? {
                 // return the highest available version
                 if let Some(slot) = lvl.get_install(spec.get_version()) {
                     slot
@@ -141,7 +141,7 @@ impl Subcommand<Context> for View {
                 None
             };
 
-            return match catalog.get_possible_versions(ip.get_man().get_ip().get_name()) {
+            return match catalog.get_possible_versions(ip.get_uuid()) {
                 Some(vers) => {
                     match vers.len() {
                         0 => {

@@ -114,7 +114,7 @@ impl Subcommand<Context> for Read {
             let catalog = Catalog::new().installations(c.get_cache_path())?;
 
             // access the requested ip
-            match catalog.inner().get(&spec.get_name()) {
+            match catalog.translate_name(&spec.to_pkg_name())? {
                 Some(lvl) => {
                     let inst = match lvl.get_install(spec.get_version()) {
                         Some(i) => i,

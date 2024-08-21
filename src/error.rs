@@ -163,6 +163,10 @@ pub enum Error {
     UuidWrongSize(usize, usize),
     #[error("invalid character \"{0}\" does not belong to alphabet (a-z0-9)")]
     UuidInvalidChar(char),
+    #[error(
+        "ip namespace collision for \"{0}\": please disambiguate by providing the appropriate uuid"
+    )]
+    IpNamespaceCollision(String),
 }
 
 #[derive(Debug, PartialEq)]

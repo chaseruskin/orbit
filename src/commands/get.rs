@@ -106,7 +106,7 @@ impl Subcommand<Context> for Get {
         // try to auto-determine the ip (check if in a working ip)
         let ip_path = if let Some(spec) = &self.ip {
             // @todo: find the path to the provided ip by searching through the catalog
-            if let Some(lvl) = catalog.inner().get(spec.get_name()) {
+            if let Some(lvl) = catalog.translate_name(&spec.to_pkg_name())? {
                 if let Some(slot) = lvl.get_install(spec.get_version()) {
                     slot.get_root().clone()
                 } else {

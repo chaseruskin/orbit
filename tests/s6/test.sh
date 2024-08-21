@@ -3,12 +3,24 @@
 # Set the -e option
 set -e
 
-cd sub
+cd bot1
 orbit lock --force
+orbit install --force
+cd ..
+
+cd mid
+orbit lock --force
+orbit install --force
+cd ..
+
+cd bot2
+orbit lock --force
+orbit install --force
 cd ..
 
 cd top
 orbit lock --force
+
 # verify the ip dependency graph only has 1 aka version
 STDOUT=$(orbit tree --ip)
 
@@ -20,7 +32,7 @@ EXACT="top:0.1.0
 
 # compare the output with the expected value
 if [ "$STDOUT" != "$EXACT" ]; then
-    echo "TEST: RELATIVE_DEPENDENCY - FAIL"
+    echo "TEST: IP_NAMESPACE_COLLISION - FAIL"
     echo "--- Expected ---"
     echo "$EXACT"
     echo "--- Received ---"
@@ -28,5 +40,5 @@ if [ "$STDOUT" != "$EXACT" ]; then
     exit 101
 fi
 
-echo "TEST: RELATIVE_DEPENDENCY - PASS"
+echo "TEST: IP_NAMESPACE_COLLISION - PASS"
 exit 0

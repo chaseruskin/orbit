@@ -25,8 +25,7 @@ use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
 
 use crate::commands::helps::search;
-use crate::core::catalog::Catalog;
-use crate::core::catalog::IpLevel;
+use crate::core::catalog::{Catalog, IpLevel, PkgName};
 use crate::core::version::AnyVersion;
 
 #[derive(Debug, PartialEq)]
@@ -73,67 +72,85 @@ impl Search {
     fn run(&self, catalog: &Catalog) -> Result<(), Fault> {
         // transform into a BTreeMap for alphabetical ordering
         let mut tree = BTreeMap::new();
-        catalog
-            .inner()
-            .into_iter()
-            // filter by name if user entered a pkgid to search
-            .filter(|(key, iplvl)| {
-                if let Some(prj) = iplvl.get(true, true, &AnyVersion::Latest) {
-                    match self.hard_match {
-                        true => {
-                            let name_match = match &self.ip {
-                                // names must be identical
-                                Some(pkgid) => {
-                                    if key == &pkgid {
-                                        true
-                                    } else {
-                                        false
-                                    }
-                                }
-                                // move on to the keywords
-                                None => true,
-                            };
-                            let keyword_match = {
-                                for kw in &self.keywords {
-                                    if prj.get_man().get_ip().get_keywords().contains(kw) == false {
-                                        return false;
-                                    }
-                                }
-                                true
-                            };
-                            name_match && keyword_match
-                        }
-                        false => {
-                            // pass everything if there is no filters applied
-                            if self.ip.is_none() && self.keywords.is_empty() {
-                                return true;
-                            }
-                            // try to match the name of the IP with ones in the database
-                            let name_match = match &self.ip {
-                                // names must be identical
-                                Some(pkgid) => key.starts_with(&pkgid),
-                                // move on to the keywords
-                                None => false,
-                            };
-                            // try to evaluate keywords
-                            if name_match == false {
-                                for kw in &self.keywords {
-                                    if prj.get_man().get_ip().get_keywords().contains(kw) == true {
-                                        return true;
-                                    }
-                                }
-                                false
+
+        let mut name_match_uuids = Vec::new();
+
+        for (key, ids) in catalog.mappings() {
+            match self.hard_match {
+                true => {
+                    match &self.ip {
+                        // names must be identical
+                        Some(pkgid) => {
+                            if key == pkgid {
+                                name_match_uuids.extend(ids);
                             } else {
-                                true
+                                ()
+                            }
+                        }
+                        // move on to the keywords
+                        None => name_match_uuids.extend(ids),
+                    };
+                }
+                false => {
+                    // pass everything if there is no filters applied
+                    if self.ip.is_none() && self.keywords.is_empty() {
+                        name_match_uuids.extend(ids)
+                    } else {
+                        if let Some(pkgid) = &self.ip {
+                            if key.starts_with(pkgid) == true {
+                                name_match_uuids.extend(ids);
                             }
                         }
                     }
-                } else {
-                    false
                 }
+            }
+        }
+
+        let mut keyword_match_uuids = Vec::new();
+
+        for (key, iplvl) in catalog.inner() {
+            if let Some(prj) = iplvl.get(true, true, &AnyVersion::Latest) {
+                match self.hard_match {
+                    true => {
+                        let mut all_match = true;
+                        for kw in &self.keywords {
+                            if prj.get_man().get_ip().get_keywords().contains(kw) == false {
+                                all_match = false;
+                                break;
+                            }
+                        }
+                        if all_match == true {
+                            keyword_match_uuids.push(key);
+                        }
+                    }
+                    false => {
+                        for kw in &self.keywords {
+                            // only one keyword must be matching
+                            if prj.get_man().get_ip().get_keywords().contains(kw) == true {
+                                keyword_match_uuids.push(key);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        catalog
+            .inner()
+            .into_iter()
+            .filter(|(id, _)| match self.hard_match {
+                true => name_match_uuids.contains(id) && keyword_match_uuids.contains(id),
+                false => name_match_uuids.contains(id) || keyword_match_uuids.contains(id),
             })
             .for_each(|(key, status)| {
-                tree.insert(key, status);
+                let name = status
+                    .get(true, true, &AnyVersion::Latest)
+                    .unwrap()
+                    .get_man()
+                    .get_ip()
+                    .get_name();
+                tree.insert(PkgName::new(name, Some(key)), status);
             });
 
         println!(
@@ -150,7 +167,7 @@ impl Search {
     }
 
     fn fmt_table(
-        catalog: BTreeMap<&PkgPart, &IpLevel>,
+        table: BTreeMap<PkgName, &IpLevel>,
         limit: Option<usize>,
         cached: bool,
         downloaded: bool,
@@ -170,7 +187,7 @@ impl Search {
 
         // note: There is definitely a nicer way to handle all of this logic... but this works for now.
 
-        for (name, status) in catalog {
+        for (name, status) in table {
             // use this variable to determine if a level higher in the catalog has a higher version not displayed right now
             let mut is_update_available = false;
             // return the highest version (return installation when they are equal in downloads and cache)
@@ -249,8 +266,8 @@ impl Search {
             }
 
             body.push_str(&format!(
-                "{:<26}{:<14}{:<9}\n",
-                name.to_string(),
+                "{:<26}{:<10}{:<9}{:<25}\n",
+                name.get_name().to_string(),
                 ip.get_man().get_ip().get_version().to_string() + {
                     if is_update_available == true {
                         "*"
@@ -264,6 +281,7 @@ impl Search {
                     Mapping::Imaginary => "available",
                     Mapping::Relative => "local",
                 },
+                name.get_uuid().unwrap().encode()
             ));
         }
         // remove final \n from body

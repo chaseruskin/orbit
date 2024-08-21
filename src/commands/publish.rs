@@ -133,7 +133,7 @@ impl Subcommand<Context> for Publish {
             .downloads(c.get_downloads_path())?
             .available(&channels)?;
 
-        if let Some(found) = catalog.inner().get(local_ip.get_man().get_ip().get_name()) {
+        if let Some(found) = catalog.translate_name(&ip_spec.to_pkg_name())? {
             match found.get_available(&crate::core::version::AnyVersion::Specific(
                 local_ip
                     .get_man()

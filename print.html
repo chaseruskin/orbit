@@ -1490,7 +1490,7 @@ end entity;
 <div style="break-before: page; page-break-before: always;"></div><h1 id="reference"><a class="header" href="#reference">Reference</a></h1>
 <p>This section provides technical information for the various components used throughout <code>orbit</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="manifest"><a class="header" href="#manifest">Manifest</a></h1>
-<p>The <code>Orbit.toml</code> file for each ip is called its manifest. It is written in the <a href="https://toml.io/en/">TOML</a> format. It is maintained by the developer and contains metadata that is needed to build the ip.</p>
+<p>The <code>Orbit.toml</code> file for each ip is called its manifest. It is written in the <a href="https://toml.io/en/">TOML</a> format. It is maintained by the user and contains metadata that is needed to build the ip. The manifest is read by Orbit to help automatically generate the ip's lock file, <code>Orbit.lock</code>.</p>
 <blockquote>
 <p><strong>Note:</strong> The manifest's file name is "Orbit.toml", with respect to case-sensitivity.</p>
 </blockquote>
@@ -1521,9 +1521,10 @@ end entity;
 <p>The first section in a <code>Orbit.toml</code> file is <code>[ip]</code>.</p>
 <pre><code class="language-toml">[ip]
 name = "my-ip" # the name of the package
+uuid = "ecj831jmc018hhhgl1d4rzgw8" # the universally unique identifier
 version = "0.1.0" # the current version
 </code></pre>
-<p>The only fields required by <code>orbit</code> are name and version.</p>
+<p>The only fields required by Orbit are name, uuid, and version.</p>
 <h3 id="the-name-field"><a class="header" href="#the-name-field">The <code>name</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 name = "my-ip"

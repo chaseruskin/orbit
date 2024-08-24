@@ -571,6 +571,7 @@ options."--path <path>" = "Path to install the ip from local file system"
 options."--protocol <name>" = "Use a configured protocol to download ip"
 options."--tag <tag>" = "Unique tag to provide to the protocol"
 options."--force" = "Install the ip regardless of the cache slot occupancy"
+options."--offline" = "Skip checking coherency with source"
 options."--list" = "View available protocols and exit"
 options."--all" = "Install all dependencies (including development)"
 

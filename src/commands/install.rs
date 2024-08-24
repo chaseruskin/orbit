@@ -77,6 +77,7 @@ pub struct Install {
     url: Option<String>,
     path: Option<PathBuf>,
     protocol: Option<String>,
+    offline: bool,
     tag: Option<String>,
     list: bool,
     force: bool,
@@ -93,6 +94,7 @@ impl Subcommand<Context> for Install {
             verbose: cli.check(Arg::flag("verbose"))?,
             all: cli.check(Arg::flag("all"))?,
             list: cli.check(Arg::flag("list"))?,
+            offline: cli.check(Arg::flag("offline"))?,
             // Options
             path: cli.get(Arg::option("path"))?,
             url: cli.get(Arg::option("url"))?,
@@ -349,6 +351,7 @@ impl Subcommand<Context> for Install {
         // add additional check if we can download from online and it matches
         if (self.path.is_some() || self.ip.is_none())
             && target.get_man().get_ip().get_source().is_some()
+            && self.offline == false
         {
             println!("info: {}", "verifying coherency with ip's source  ...");
             let changes = Publish::test_download_and_install(&target, c, false, false)?;

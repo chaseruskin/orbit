@@ -28,6 +28,7 @@ Options:
     --protocol <name>     use a configured protocol to download ip
     --tag <tag>           unique tag to provide to the protocol
     --force               install the ip regardless of the cache slot occupancy
+    --offline             skip checking coherency with source
     --list                view available protocols and exit
     --all                 install all dependencies (including development)
 

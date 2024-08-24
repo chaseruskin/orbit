@@ -58,6 +58,9 @@ OPTIONS
     --force
         Install the ip regardless of the cache slot occupancy
 
+    --offline
+        Skip checking coherency with source
+
     --list
         View available protocols and exit
 

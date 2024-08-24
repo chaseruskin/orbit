@@ -21,6 +21,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - supports finding ip using their name and their uuid in the catalog
 - adds uuid field to manifest
 - copies the ip's lockfile to the channel now too (not just the manifest)
+- adds `--offline` flag to skip checking coherency with remote source when installing a local ip
 
 ### Changes
 - writes the full ip spec to the lock file (includes uuid)

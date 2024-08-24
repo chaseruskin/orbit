@@ -429,13 +429,41 @@ pub mod v1 {
         ///
         /// Ignores the checksum comparison because the target ip should not have its
         /// checksum computed in the .lock file.
-        pub fn matches_target<'c>(&self, other: &LockEntry, catalog: &Catalog<'c>) -> bool {
+        pub fn matches_target<'c>(&self, other: &LockEntry, _catalog: &Catalog<'c>) -> bool {
             self.get_name() == other.get_name()
                 && self.get_version() == other.get_version()
                 && self.get_uuid() == other.get_uuid()
                 && self.get_source() == other.get_source()
-                && other.matches_deps(self.get_deps(), &catalog)
+                // TODO: have bool to determine if the deps should be hard-matched (such as when ip is local)
+                && other.matches_deps_loosely(self.get_deps())
                 && self.get_path() == other.get_path()
+        }
+
+        /// Only checks uuids if they were provided by both ends.
+        pub fn matches_deps_loosely(&self, man: &Vec<PartialIpSpec>) -> bool {
+            let deps = &self.dependencies;
+            if deps.len() != man.len() {
+                return false;
+            }
+            for d in deps {
+                let man_entry = match man.iter().find(|p| p.get_name() == d.get_name()) {
+                    Some(found) => found,
+                    None => return false,
+                };
+                // only check uuids if one was provided on the information
+                if let Some(mid) = man_entry.as_uuid() {
+                    if let Some(lid) = d.as_uuid() {
+                        if mid != lid {
+                            return false;
+                        }
+                    }
+                }
+                // versions are different
+                if man_entry.get_version() != d.get_version() {
+                    return false;
+                }
+            }
+            true
         }
 
         /// Verify each dependecy is matched.

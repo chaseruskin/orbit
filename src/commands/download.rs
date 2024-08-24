@@ -68,7 +68,7 @@ impl Download {
             .iter()
             .filter(|p| p.get_source().is_some() == true)
             .filter(|p| {
-                p.matches_target(&le) == false
+                p.matches_target(&le, &catalog) == false
                     && (missing_only == false
                         || catalog.is_downloaded_slot(&p.to_download_slot_key()) == false)
             })

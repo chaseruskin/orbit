@@ -181,7 +181,7 @@ impl Publish {
     pub fn run_ip_checkpoints(local_ip: &Ip, catalog: &Catalog) -> Result<(), Fault> {
         // verify the lock file is generated and up to date
         println!("info: {}", "verifying lockfile is up to date ...");
-        if local_ip.can_use_lock() == false {
+        if local_ip.can_use_lock(&catalog) == false {
             return Err(Box::new(Error::PublishMissingLockfile(Hint::MakeLock)));
         }
 

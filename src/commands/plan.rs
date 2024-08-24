@@ -141,7 +141,7 @@ impl Plan {
 
         // only write lockfile and exit if flag is raised
         if only_lock == true {
-            Self::write_lockfile(&working_ip, &ip_graph, force, true)?;
+            Self::write_lockfile(&working_ip, &ip_graph, force, true, &catalog)?;
             return Ok(None);
         }
 
@@ -247,7 +247,7 @@ impl Plan {
         }
 
         // [!] write the lock file
-        Self::write_lockfile(&working_ip, &ip_graph, true, true)?;
+        Self::write_lockfile(&working_ip, &ip_graph, true, true, &catalog)?;
 
         // compute minimal topological ordering
         let min_order = match all {
@@ -446,7 +446,7 @@ pub fn resolve_missing_deps<'a>(
     force: bool,
 ) -> Result<Catalog<'a>, Fault> {
     // this code is only ran if the lock file matches the manifest and we aren't force to recompute
-    if working_ip.can_use_lock() == true && force == false {
+    if working_ip.can_use_lock(&catalog) == true && force == false {
         let le: LockEntry = LockEntry::from((working_ip, true));
         let lf = working_ip.get_lock();
 
@@ -478,7 +478,7 @@ pub fn download_missing_deps(
     // fetch all non-downloaded packages
     for entry in lf.inner() {
         // skip the current project's IP entry or any IP already in the downloads/
-        if entry.matches_target(le) == true
+        if entry.matches_target(le, &catalog) == true
             || catalog.is_downloaded_slot(&entry.to_download_slot_key()) == true
             || entry.is_relative() == true
         {
@@ -551,7 +551,7 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
     // fill in the catalog with missing modules according the lock file if available
     for entry in lf.inner() {
         // skip the current project's IP entry
-        if entry.matches_target(&le) {
+        if entry.matches_target(&le, &catalog) {
             continue;
         }
 
@@ -1057,14 +1057,15 @@ impl Plan {
 
     /// Writes the lockfile according to the constructed `ip_graph`. Only writes if the lockfile is
     /// out of date or `force` is `true`.
-    pub fn write_lockfile(
+    pub fn write_lockfile<'c>(
         target: &Ip,
         ip_graph: &GraphMap<IpSpec, IpNode, ()>,
         force: bool,
         verbose: bool,
+        catalog: &Catalog<'c>,
     ) -> Result<(), Fault> {
         // only modify the lockfile if it is out-of-date
-        if target.can_use_lock() == false || force == true {
+        if target.can_use_lock(&catalog) == false || force == true {
             // create build list
             let build_list: Vec<&Ip> = ip_graph
                 .get_map()
@@ -1618,7 +1619,7 @@ impl Plan {
         // see Install::install_from_lock_file
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
-        if working_ip.can_use_lock() == true && self.force == false {
+        if working_ip.can_use_lock(&catalog) == true && self.force == false {
             let le: LockEntry = LockEntry::from((&working_ip, true));
             let lf = working_ip.get_lock();
 

@@ -419,13 +419,14 @@ impl Install {
         // verify the lock file is generated and up to date
         if force == false {
             println!("info: {}", "verifying lockfile is up to date ...");
-            if local_ip.can_use_lock() == false {
+            // TODO: use catalog to find the uuids of all dependencies to fill in
+            if local_ip.can_use_lock(&catalog) == false {
                 return Err(Box::new(Error::PublishMissingLockfile(Hint::MakeLock)));
             }
         // create the lockfile
-        } else if local_ip.can_use_lock() == false {
+        } else if local_ip.can_use_lock(&catalog) == false {
             let ip_graph = algo::compute_final_ip_graph(&local_ip, &catalog)?;
-            Plan::write_lockfile(&local_ip, &ip_graph, true, true)?;
+            Plan::write_lockfile(&local_ip, &ip_graph, true, true, &catalog)?;
         }
 
         println!("info: {}", "reading dependencies from lockfile ...");

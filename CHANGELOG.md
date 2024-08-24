@@ -28,6 +28,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - reformats how uuid appears (uses base36 encoding instead of hyphenated format)
 - creates lockfile during `orbit new` and `orbit init` commands
 
+### Fixes
+- resolves bug with trying to check if lockfile is up to date when comparing depedency UUIDs
+
 ## 0.20.0
 
 ### Features

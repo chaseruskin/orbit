@@ -23,6 +23,7 @@ use crate::util::anyerror::CodeFault;
 use crate::util::anyerror::Fault;
 use std::path::PathBuf;
 
+use super::catalog::Catalog;
 use super::catalog::PkgName;
 use super::iparchive::IpArchive;
 use super::ippointer::IpPointer;
@@ -412,13 +413,13 @@ impl Ip {
     /// This determines if the lock file's data matches the Orbit.toml manifest data,
     /// indicating it is safe to pull data from the lock file and no changes would be
     /// made to the lock file.
-    pub fn can_use_lock(&self) -> bool {
+    pub fn can_use_lock(&self, catalog: &Catalog) -> bool {
         let target = self.get_lock().get(
             self.get_man().get_ip().get_name(),
             &self.get_man().get_ip().get_version().to_partial_version(),
         );
         let target_is_ok = match target {
-            Some(entry) => entry.matches_target(&LockEntry::from((self, true))),
+            Some(entry) => entry.matches_target(&LockEntry::from((self, true)), &catalog),
             None => false,
         };
         if target_is_ok == false {
@@ -834,6 +835,10 @@ impl PartialIpSpec {
 
     pub fn get_name(&self) -> &PkgPart {
         &self.0
+    }
+
+    pub fn as_uuid(&self) -> &Option<Uuid> {
+        &self.1
     }
 
     pub fn get_version(&self) -> &AnyVersion {

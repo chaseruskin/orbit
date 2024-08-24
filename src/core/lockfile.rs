@@ -111,7 +111,10 @@ impl FromFile for LockFile {
 pub mod v1 {
     use version::PartialVersion;
 
-    use crate::core::{catalog::DownloadSlot, ip::PartialIpSpec};
+    use crate::core::{
+        catalog::{Catalog, DownloadSlot},
+        ip::PartialIpSpec,
+    };
 
     use super::*;
 
@@ -399,7 +402,14 @@ pub mod v1 {
                             .get_deps_list(is_working, true)
                             .into_iter()
                             .map(|e| {
-                                PartialIpSpec::new(e.0.clone(), None, e.1.get_version().clone())
+                                PartialIpSpec::new(
+                                    e.0.clone(),
+                                    match e.1.as_uuid() {
+                                        Some(u) => Some(u.clone()),
+                                        None => None,
+                                    },
+                                    e.1.get_version().clone(),
+                                )
                             })
                             .collect();
                         result.sort_by(|x, y| match x.get_name().cmp(&y.get_name()) {
@@ -419,13 +429,62 @@ pub mod v1 {
         ///
         /// Ignores the checksum comparison because the target ip should not have its
         /// checksum computed in the .lock file.
-        pub fn matches_target(&self, other: &LockEntry) -> bool {
+        pub fn matches_target<'c>(&self, other: &LockEntry, catalog: &Catalog<'c>) -> bool {
             self.get_name() == other.get_name()
                 && self.get_version() == other.get_version()
                 && self.get_uuid() == other.get_uuid()
                 && self.get_source() == other.get_source()
-                && self.get_deps() == other.get_deps()
+                && other.matches_deps(self.get_deps(), &catalog)
                 && self.get_path() == other.get_path()
+        }
+
+        /// Verify each dependecy is matched.
+        pub fn matches_deps(&self, other: &Vec<PartialIpSpec>, catalog: &Catalog) -> bool {
+            let deps = &self.dependencies;
+            if deps.len() != other.len() {
+                return false;
+            }
+            for d in deps {
+                // find the matching name in the deps
+                let read_entry = match other.iter().find(|p| p.get_name() == d.get_name()) {
+                    Some(found) => found,
+                    // this dependency was not listed in the lockfile's copy
+                    None => return false,
+                };
+                match d.as_uuid() {
+                    Some(id) => {
+                        // verify the id matches the one in the deps
+                        if read_entry.as_uuid().as_ref().unwrap() != id {
+                            return false;
+                        }
+                    }
+                    None => {
+                        // find the uuid from the catalog
+                        match catalog.mappings().get(d.get_name()) {
+                            Some(ids) => {
+                                match ids.len() {
+                                    1 => {
+                                        if read_entry.as_uuid().as_ref().unwrap()
+                                            != ids.first().unwrap()
+                                        {
+                                            return false;
+                                        }
+                                    }
+                                    // TODO: formalize into an error (a uuid must be explicitly defined)
+                                    _ => {
+                                        panic!("a uuid must be explicitly defined in manifest for dependency {}", d.get_name())
+                                    }
+                                }
+                            }
+                            // no id exists for this given dependency name
+                            None => {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+            true
         }
 
         pub fn is_relative(&self) -> bool {

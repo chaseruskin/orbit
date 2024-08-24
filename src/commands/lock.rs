@@ -59,7 +59,7 @@ impl Subcommand<Context> for Lock {
         // see Install::install_from_lock_file
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
-        if working_ip.can_use_lock() == true && self.force == false {
+        if working_ip.can_use_lock(&catalog) == true && self.force == false {
             let le: LockEntry = LockEntry::from((&working_ip, true));
             let lf = working_ip.get_lock();
 
@@ -97,7 +97,7 @@ impl Lock {
         };
 
         // only write lockfile and exit if flag is raised
-        Plan::write_lockfile(&working_ip, &ip_graph, force, true)?;
+        Plan::write_lockfile(&working_ip, &ip_graph, force, true, &catalog)?;
         Ok(())
     }
 
@@ -108,7 +108,7 @@ impl Lock {
             Ok(g) => g,
             Err(e) => return Err(e)?,
         };
-        Plan::write_lockfile(&local_ip, &ip_graph, true, false)?;
+        Plan::write_lockfile(&local_ip, &ip_graph, true, false, &catalog)?;
         Ok(())
     }
 }

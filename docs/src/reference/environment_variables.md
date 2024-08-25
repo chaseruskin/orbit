@@ -16,6 +16,8 @@ Orbit also sets environment variables during runtime such that any subprocesses 
 
 - `ORBIT_IP_NAME` - The name of the current ip.
 
+- `ORBIT_IP_UUID` - The uuid of the current ip.
+
 - `ORBIT_IP_LIBRARY` - The interpretated HDL library of the current ip.
 
 - `ORBIT_IP_VERSION` - The version of the current ip.

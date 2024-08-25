@@ -96,9 +96,9 @@ impl Sha256Hash {
         bytes
     }
 
-    /// Displays the checksum to its shorthand form (10 characters).
+    /// Displays the checksum to its shorthand form (16 characters).
     pub fn to_string_short(&self) -> String {
-        self.to_string().get(0..10).unwrap().to_string()
+        self.to_string().get(0..16).unwrap().to_string()
     }
 }
 

@@ -587,8 +587,8 @@ impl Install {
 
         // access the name and version
         let version = src.get_man().get_ip().get_version();
-        let target = src.get_man().get_ip().get_name();
         let ip_spec = src.get_man().get_ip().into_ip_spec();
+
         if verbose == true {
             println!("info: installing ip {} ...", &ip_spec);
         }
@@ -598,7 +598,7 @@ impl Install {
         // println!("checksum: {}", checksum);
 
         // use checksum to create new directory slot
-        let cache_slot_name = CacheSlot::new(target, &version, &checksum);
+        let cache_slot_name = CacheSlot::new(src.get_uuid(), &version, &checksum);
         let cache_slot = cache_root.join(&cache_slot_name.to_string());
         // check if the slot is occupied in the cache
         if cache_slot.exists() == true {

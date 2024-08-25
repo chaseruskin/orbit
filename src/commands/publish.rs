@@ -342,14 +342,14 @@ impl Publish {
 
     /// Creates the path where an ip will place its pointer contents.
     ///
-    /// The directory is something like this: name[0]/name-version-uuid
+    /// The directory is something like this: `uuid[0]/uuid-version`.
     fn create_pointer_directory(ip: &Ip) -> PathBuf {
         let name = ip.get_man().get_ip().get_name();
         let version = ip.get_man().get_ip().get_version();
         let uuid = ip.get_uuid();
         PathBuf::new()
-            .join(String::from(name.as_ref().chars().next().unwrap()))
-            .join(PointerSlot::new(name, version, uuid).as_ref())
+            .join(String::from(uuid.encode().chars().next().unwrap()))
+            .join(PointerSlot::new(name, uuid, version).as_ref())
     }
 
     /// Writes the ip's manifest to the channel.

@@ -18,6 +18,7 @@
 use crate::core::uuid::Uuid;
 use crate::error::{Error, Hint};
 use crate::util::{anyerror::Fault, sha256::Sha256Hash};
+use std::fmt::Display;
 use std::fs::read_dir;
 use std::str::FromStr;
 use std::{
@@ -547,41 +548,48 @@ mod test {
     }
 }
 
-type Remainder = String;
+type Checksum = String;
 
 #[derive(PartialEq, Debug, Clone)]
-pub struct CacheSlot(PkgPart, Version, Remainder);
+pub struct CacheSlot(Uuid, Version, Checksum);
+
+impl Display for CacheSlot {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}-{}-{}", self.0, self.1, self.2)
+    }
+}
 
 impl CacheSlot {
     /// Combines the various components of a cache slot name into a `CacheSlot`.
-    pub fn new(name: &PkgPart, version: &Version, checksum: &Sha256Hash) -> Self {
-        Self(name.clone(), version.clone(), checksum.to_string_short())
+    pub fn new(uuid: &Uuid, version: &Version, checksum: &Sha256Hash) -> Self {
+        Self(uuid.clone(), version.clone(), checksum.to_string_short())
     }
-
-    // @todo: test `try_from_str` (especially if build names get supported in versions ex: 1.0.0-alpha)
 
     /// Attempts to deconstruct a [String] into the components of a [CacheSlot].
     pub fn try_from_str(s: &str) -> Option<Self> {
         // split into three components
-        let parts: Vec<&str> = s.rsplitn(3, '-').collect();
-        // println!("{:?}", parts);
-        if parts.len() != 3 {
-            return None;
-        }
+        let (uuid, rem) = s.split_once('-')?;
+        let (version, sum) = rem.rsplit_once('-')?;
         Some(Self(
-            match PkgPart::from_str(parts.get(2)?) {
+            match Uuid::from_str(uuid) {
                 Ok(r) => r,
                 Err(_) => return None,
             },
-            match Version::from_str(parts.get(1)?) {
+            match Version::from_str(version) {
                 Ok(r) => r,
                 Err(_) => return None,
             },
-            parts.get(0)?.to_string(),
+            sum.to_string(),
         ))
     }
 
-    pub fn get_name(&self) -> &PkgPart {
+    /// Checks if the given slot `other` belongs to the this cache slot (uuid
+    /// and version equivalence check).
+    pub fn is_child_slot(&self, other: &CacheSlot) -> bool {
+        self.get_uuid() == other.get_uuid() && self.get_version() == other.get_version()
+    }
+
+    pub fn get_uuid(&self) -> &Uuid {
         &self.0
     }
 
@@ -590,21 +598,13 @@ impl CacheSlot {
     }
 }
 
-use std::fmt::Display;
-
-impl Display for CacheSlot {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}-{}-{}", self.0, self.1, self.2)
-    }
-}
-
 #[derive(PartialEq, Debug, Clone)]
 pub struct DownloadSlot(String);
 
 impl DownloadSlot {
-    /// Combines the various components of a cache slot name into a `CacheSlot`.
-    pub fn new(name: &PkgPart, version: &Version, uuid: &Uuid) -> Self {
-        Self(format!("{}-{}-{}.{}", name, version, uuid, ARCHIVE_EXT))
+    /// Combines the various components of a ip name into a [DownloadSlot].
+    pub fn new(_name: &PkgPart, uuid: &Uuid, version: &Version) -> Self {
+        Self(format!("{}-{}.{}", uuid, version, ARCHIVE_EXT))
     }
 }
 
@@ -618,9 +618,9 @@ impl AsRef<str> for DownloadSlot {
 pub struct PointerSlot(String);
 
 impl PointerSlot {
-    /// Combines the various components of a cache slot name into a `CacheSlot`.
-    pub fn new(name: &PkgPart, version: &Version, uuid: &Uuid) -> Self {
-        Self(format!("{}-{}-{}", name, version, uuid))
+    /// Combines the various components of a cache slot name into a [PointerSlot].
+    pub fn new(_name: &PkgPart, uuid: &Uuid, version: &Version) -> Self {
+        Self(format!("{}-{}", uuid, version))
     }
 }
 

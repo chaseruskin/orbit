@@ -194,24 +194,25 @@ impl Remove {
     pub fn remove_dynamics(cache_path: &PathBuf, target: &Ip, verbose: bool) -> Result<(), Fault> {
         let ip_spec = target.get_man().get_ip().into_ip_spec();
 
+        let og_cache_slot = CacheSlot::new(
+            target.get_uuid(),
+            ip_spec.get_version(),
+            target.get_checksum().as_ref().unwrap(),
+        );
+
         // check for any "dynamics" under this target
         for dir in fs::read_dir(cache_path)? {
             // only check valid directory entries
             if let Ok(entry) = dir {
                 // println!("{:?}", entry.file_name());
                 let file_name = entry.file_name();
+
                 if let Some(cache_slot) = CacheSlot::try_from_str(&file_name.to_string_lossy()) {
-                    // check if the slot is matching
-                    if target.get_man().get_ip().get_name() != cache_slot.get_name()
-                        || target.get_man().get_ip().get_version() != cache_slot.get_version()
-                    {
+                    if og_cache_slot.is_child_slot(&cache_slot) == false {
                         continue;
                     }
                     // check for same UUID
                     let cached_ip = Ip::load(entry.path().to_path_buf(), false)?;
-                    if cached_ip.get_uuid() != target.get_uuid() {
-                        continue;
-                    }
                     // remove the slot if it is dynamic
                     if cached_ip.is_dynamic() == true {
                         fs::remove_dir_all(entry.path())?;

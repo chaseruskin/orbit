@@ -154,6 +154,11 @@ impl Environment {
         );
         self.insert(
             EnvVar::new()
+                .key(ORBIT_IP_UUID)
+                .value(&ip.get_uuid().to_string()),
+        );
+        self.insert(
+            EnvVar::new()
                 .key(ORBIT_IP_VERSION)
                 .value(&ip.get_man().get_ip().get_version().to_string()),
         );
@@ -274,8 +279,9 @@ pub const ORBIT_WIN_LITERAL_CMD: &str = "ORBIT_WIN_LITERAL_CMD";
 
 pub const ORBIT_MANIFEST_DIR: &str = "ORBIT_MANIFEST_DIR";
 pub const ORBIT_IP_NAME: &str = "ORBIT_IP_NAME";
-pub const ORBIT_IP_LIBRARY: &str = "ORBIT_IP_LIBRARY";
+pub const ORBIT_IP_UUID: &str = "ORBIT_IP_UUID";
 pub const ORBIT_IP_VERSION: &str = "ORBIT_IP_VERSION";
+pub const ORBIT_IP_LIBRARY: &str = "ORBIT_IP_LIBRARY";
 pub const ORBIT_IP_CHECKSUM: &str = "ORBIT_IP_CHECKSUM";
 
 pub const ORBIT_TARGET: &str = "ORBIT_TARGET";

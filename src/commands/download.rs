@@ -252,8 +252,8 @@ impl Download {
                         // zip the project to the downloads directory
                         let download_slot_name = DownloadSlot::new(
                             manifest_name,
-                            temp.get_man().get_ip().get_version(),
                             temp.get_uuid(),
+                            temp.get_man().get_ip().get_version(),
                         );
                         let full_download_path = downloads.join(&download_slot_name.as_ref());
                         let bytes = IpArchive::write(&temp, &full_download_path)?;

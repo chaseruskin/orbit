@@ -548,11 +548,15 @@ pub mod v1 {
         }
 
         pub fn to_cache_slot_key(&self) -> CacheSlot {
-            CacheSlot::new(self.get_name(), self.get_version(), self.get_sum().unwrap())
+            CacheSlot::new(
+                self.get_uuid(),
+                self.get_version(),
+                self.get_sum().as_ref().unwrap(),
+            )
         }
 
         pub fn to_download_slot_key(&self) -> DownloadSlot {
-            DownloadSlot::new(self.get_name(), self.get_version(), self.get_uuid())
+            DownloadSlot::new(self.get_name(), self.get_uuid(), self.get_version())
         }
 
         pub fn to_ip_spec(&self) -> IpSpec {

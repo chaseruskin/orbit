@@ -1625,25 +1625,57 @@ logic-analyzer = "4.8.0"
 </code></pre>
 <p>If the ip has no development dependencies, the section can be omitted from the manifest. The ips listed in this section will not be included in the build graph for when this ip is used as a dependency itself.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="names"><a class="header" href="#names">Names</a></h1>
-<p>In order to identify an ip among others, Orbit requires developers to assign a human-readable name to each created ip.</p>
-<p>The ip name is a unique string of characters that abides by a certain set of rules. It is a single name and is defined under the "name" field in an ip's manifest. Every ip is required to have a name.</p>
-<h2 id="rules"><a class="header" href="#rules">Rules</a></h2>
-<p>The following rules currently apply to a ip name:</p>
+<p>In order to identify an ip among others, Orbit requires users to assign a human-readable <em>name</em> to each created ip. In addition to the human-readable name, Orbit assigns a <em>universally unique identifier</em> (UUID) to each ip. UUIDs are required in order to avoid namespace collisions at the ip level in Orbit's decentralized system.</p>
+<h2 id="name"><a class="header" href="#name">Name</a></h2>
+<p>The ip <em>name</em> is a unique string of characters that abides by a certain set of rules. It is a single name and is defined under the "name" field in an ip's manifest. Every ip is required to have a name. The name should not change over the course of an ip's lifetime.</p>
+<pre><code class="language-toml">[ip]
+name = "cpu"
+# ...
+</code></pre>
+<h3 id="rules"><a class="header" href="#rules">Rules</a></h3>
+<p>The following rules currently apply to a name values:</p>
 <ul>
 <li>begins with an ASCII letter (<code>a-z</code>, <code>A-Z</code>)</li>
 <li>contains only ASCII letters (<code>a-z</code>, <code>A-Z</code>), ASCII digits (<code>0-9</code>), dashes <code>-</code>, and underscores <code>_</code></li>
 <li>cannot end with a dash <code>-</code> or underscore <code>_</code></li>
 </ul>
+<h2 id="uuid"><a class="header" href="#uuid">UUID</a></h2>
+<p>The ip <em>uuid</em> is a unique string of characters encoded in base36 (a-z0-9). An encoded UUID is 25 characters long and is generated using Version 4 UUID. It is defined under the "uuid" field in an ip's manifest. Every ip is required to have a uuid. The uuid should not change over the course of an ip's lifetime.</p>
+<pre><code class="language-toml">[ip]
+# ...
+uuid = "71vs0nyo7lqjji6p6uzfviaoi"
+</code></pre>
+<h3 id="rules-1"><a class="header" href="#rules-1">Rules</a></h3>
+<p>The following rules currently apply to uuid values:</p>
+<ul>
+<li>contains only ASCII lowercase letters (<code>a-z</code>) and ASCII digits (<code>0-9</code>)</li>
+<li>is 25 characters long</li>
+</ul>
+<h2 id="version"><a class="header" href="#version">Version</a></h2>
+<p>The ip <em>version</em> is a series of 3 numbers separated by decimal characters (<code>.</code>) with an optional label suffix attached with a dash character (<code>-</code>). The version should be updated over the course of an ip's lifetime when significant enough changes to the project require a new version value.</p>
+<pre><code class="language-toml">[ip]
+# ...
+version = "1.0.0"
+</code></pre>
+<h3 id="rules-2"><a class="header" href="#rules-2">Rules</a></h3>
+<p>The following rules currently apply to version values:</p>
+<ul>
+<li>contains only ASCII digits (<code>0-9</code>) for each of the 3 version fields</li>
+<li>each version field is separated by a decimal character (<code>.</code>)</li>
+<li>a label can be attached to the end by using a dash character (<code>-</code>)</li>
+<li>labels can only contain ASCII letters (<code>a-z</code>, <code>A-Z</code>), ASCII digits (<code>0-9</code>), and decimal characters (<code>.</code>)</li>
+</ul>
 <h2 id="ip-specification"><a class="header" href="#ip-specification">Ip specification</a></h2>
-<p>An ip specification, commonly abbreviated to <em>spec</em>, is the total unambiguous reference to a particular ip at a particular version.</p>
-<pre><code>spec ::= &lt;name&gt;[:version]
+<p>An ip specification, commonly abbreviated to <em>spec</em>, is the total unambiguous reference to a specific ip at a particular version.</p>
+<pre><code>spec ::= &lt;name&gt;[+uuid][:version]
 </code></pre>
 <h3 id="example-specifications"><a class="header" href="#example-specifications">Example specifications</a></h3>
 <p>The following provides various valid inputs when defining an ip's spec and how it decomposes into its parts.</p>
-<div class="table-wrapper"><table><thead><tr><th>Spec</th><th>Name</th><th>Version</th></tr></thead><tbody>
-<tr><td><code>gates:1.0.0</code></td><td><code>gates</code></td><td><code>1.0.0</code></td></tr>
-<tr><td><code>ram</code></td><td><code>ram</code></td><td><code>latest</code></td></tr>
-<tr><td><code>fifo:2.3</code></td><td><code>fifo</code></td><td><code>2.3.*</code></td></tr>
+<div class="table-wrapper"><table><thead><tr><th>Spec</th><th>Name</th><th>UUID</th><th>Version</th></tr></thead><tbody>
+<tr><td><code>gates:1.0.0</code></td><td><code>gates</code></td><td>Automatically resolved if only 1 ip exists with the name <code>gates</code></td><td><code>1.0.0</code></td></tr>
+<tr><td><code>ram</code></td><td><code>ram</code></td><td>Automatically resolved if only 1 ip exists with the name <code>ram</code></td><td><code>latest</code></td></tr>
+<tr><td><code>fifo:2.3</code></td><td><code>fifo</code></td><td>Automatically resolved if only 1 ip exists with the name <code>fifo</code></td><td><code>2.3.*</code></td></tr>
+<tr><td><code>cpu+71vs0nyo7lqjji6p6uzfviaoi:1.0.0</code></td><td><code>cpu</code></td><td><code>71vs0nyo7lqjji6p6uzfviaoi</code></td><td><code>1.0.0</code></td></tr>
 </tbody></table>
 </div>
 <h3 id="namespace-collisions"><a class="header" href="#namespace-collisions">Namespace Collisions</a></h3>
@@ -1654,10 +1686,8 @@ logic-analyzer = "4.8.0"
 <tr><td><code>fifo_cdc</code></td><td><code>Fifo-CDC</code></td><td>true</td></tr>
 </tbody></table>
 </div>
-<blockquote>
-<p><strong>Note:</strong> A resolution to this problem is to add an ip's UUID to the ip specification. While each ip already has a UUID auto-assigned in their lock file, this is a proposed feature that has yet to be implemented.</p>
-</blockquote>
-<h2 id="ip-libraries"><a class="header" href="#ip-libraries">Ip libraries</a></h2>
+<p>To resolve namespace collisions at the ip level, Orbit uses UUIDs. When there are multiple ips in the catalog that share the same name, a user must then explicitly include the UUID of the requested ip to disambiguate between ips under the same name.</p>
+<h2 id="libraries"><a class="header" href="#libraries">Libraries</a></h2>
 <p>An ip can optionally belong to a library. An ip's <em>library</em> is a higher-level scope that loosely groups together multiple ips. This library identification is used for grouping the HDL source code itself into their language-defined libraries as well.</p>
 <p>A library can be defined through the "library" field in the ip's manifest file. Its format follows the same rules as the ip's name. If no library is defined in the ip's manifest, then the default library is the ip's name.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="versions"><a class="header" href="#versions">Versions</a></h1>
@@ -1677,7 +1707,7 @@ logic-analyzer = "4.8.0"
 <p><strong>Note:</strong> An alternative to <em>semantic versioning</em> is <em>calender versioning</em>, which
 also operates on the basis of using 3 digits. To learn more about <em>calender versioning</em> visit the official <a href="https://calver.org">website</a>.</p>
 </blockquote>
-<h2 id="rules-1"><a class="header" href="#rules-1">Rules</a></h2>
+<h2 id="rules-3"><a class="header" href="#rules-3">Rules</a></h2>
 <ul>
 <li>Each level may only contain ASCII digits (<code>0-9</code>).</li>
 </ul>
@@ -2177,7 +2207,7 @@ root = "./index"
 <p>In this command, <code>orbit</code> does not interpret the "--sram" flag, but instead passes it to the plugin named "yilinx" to handle.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="commands"><a class="header" href="#commands">Commands</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-new"><a class="header" href="#orbit-new"><strong>orbit new</strong></a></h1>
-<h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>
+<h2 id="name-1"><a class="header" href="#name-1"><strong>NAME</strong></a></h2>
 <p>new - create a new ip</p>
 <h2 id="synopsis"><a class="header" href="#synopsis"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit new [options] &lt;path&gt;
@@ -2203,7 +2233,7 @@ command.</p>
 orbit new eecs/lab1 --name adder
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-init"><a class="header" href="#orbit-init"><strong>orbit init</strong></a></h1>
-<h2 id="name-1"><a class="header" href="#name-1"><strong>NAME</strong></a></h2>
+<h2 id="name-2"><a class="header" href="#name-2"><strong>NAME</strong></a></h2>
 <p>init - initialize an ip from an existing project</p>
 <h2 id="synopsis-1"><a class="header" href="#synopsis-1"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit init [options] [&lt;path&gt;]
@@ -2228,7 +2258,7 @@ orbit init projects/gates
 orbit init --name adder
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-view"><a class="header" href="#orbit-view"><strong>orbit view</strong></a></h1>
-<h2 id="name-2"><a class="header" href="#name-2"><strong>NAME</strong></a></h2>
+<h2 id="name-3"><a class="header" href="#name-3"><strong>NAME</strong></a></h2>
 <p>view - display metadata of an ip</p>
 <h2 id="synopsis-2"><a class="header" href="#synopsis-2"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit view [options] [&lt;ip&gt;]
@@ -2258,7 +2288,7 @@ orbit view gates --versions
 orbit view gates:1 -v
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-read"><a class="header" href="#orbit-read"><strong>orbit read</strong></a></h1>
-<h2 id="name-3"><a class="header" href="#name-3"><strong>NAME</strong></a></h2>
+<h2 id="name-4"><a class="header" href="#name-4"><strong>NAME</strong></a></h2>
 <p>read - lookup hdl source code</p>
 <h2 id="synopsis-3"><a class="header" href="#synopsis-3"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit read [options] &lt;unit&gt;
@@ -2311,7 +2341,7 @@ orbit read math_pkg --ip math --doc "function clog2" --start "package math_pkg"
 orbit read math_pkg --ip math --doc "function flog2p1" --save --locate
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-get"><a class="header" href="#orbit-get"><strong>orbit get</strong></a></h1>
-<h2 id="name-4"><a class="header" href="#name-4"><strong>NAME</strong></a></h2>
+<h2 id="name-5"><a class="header" href="#name-5"><strong>NAME</strong></a></h2>
 <p>get - fetch an hdl unit for code integration</p>
 <h2 id="synopsis-4"><a class="header" href="#synopsis-4"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit get [options] &lt;unit&gt;
@@ -2377,7 +2407,7 @@ orbit get uart -si --name uart_inst0
 orbit get or_gate --ip gates --json
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-tree"><a class="header" href="#orbit-tree"><strong>orbit tree</strong></a></h1>
-<h2 id="name-5"><a class="header" href="#name-5"><strong>NAME</strong></a></h2>
+<h2 id="name-6"><a class="header" href="#name-6"><strong>NAME</strong></a></h2>
 <p>tree - show the dependency graph</p>
 <h2 id="synopsis-5"><a class="header" href="#synopsis-5"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit tree [options] [&lt;unit&gt;...]
@@ -2417,7 +2447,7 @@ orbit tree top --format long
 orbit tree --ip --ascii
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-lock"><a class="header" href="#orbit-lock"><strong>orbit lock</strong></a></h1>
-<h2 id="name-6"><a class="header" href="#name-6"><strong>NAME</strong></a></h2>
+<h2 id="name-7"><a class="header" href="#name-7"><strong>NAME</strong></a></h2>
 <p>lock - save the world state of an ip</p>
 <h2 id="synopsis-6"><a class="header" href="#synopsis-6"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit lock [options]
@@ -2443,7 +2473,7 @@ installation is corrupt and will reinstall the dependency to the cache.</p>
 orbit lock --force
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-test"><a class="header" href="#orbit-test"><strong>orbit test</strong></a></h1>
-<h2 id="name-7"><a class="header" href="#name-7"><strong>NAME</strong></a></h2>
+<h2 id="name-8"><a class="header" href="#name-8"><strong>NAME</strong></a></h2>
 <p>test - run a test</p>
 <h2 id="synopsis-7"><a class="header" href="#synopsis-7"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit test [options] [--] [args]...
@@ -2504,7 +2534,7 @@ which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.</p>
 <pre><code>orbit test --dut adder --tb adder_tb --target modelsim -- --lint
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-build"><a class="header" href="#orbit-build"><strong>orbit build</strong></a></h1>
-<h2 id="name-8"><a class="header" href="#name-8"><strong>NAME</strong></a></h2>
+<h2 id="name-9"><a class="header" href="#name-9"><strong>NAME</strong></a></h2>
 <p>build - plan and execute a target</p>
 <h2 id="synopsis-8"><a class="header" href="#synopsis-8"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit build [options] [--] [args]...
@@ -2566,7 +2596,7 @@ orbit build --all --target-dir build --target ghdl
 orbit build --target xsim --force -- --help
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-publish"><a class="header" href="#orbit-publish"><strong>orbit publish</strong></a></h1>
-<h2 id="name-9"><a class="header" href="#name-9"><strong>NAME</strong></a></h2>
+<h2 id="name-10"><a class="header" href="#name-10"><strong>NAME</strong></a></h2>
 <p>publish - post an ip to a channel</p>
 <h2 id="synopsis-9"><a class="header" href="#synopsis-9"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit publish [options]
@@ -2600,7 +2630,7 @@ To run the command to completion, use the <code>--ready</code> option.</p>
 orbit publish --ready
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-search"><a class="header" href="#orbit-search"><strong>orbit search</strong></a></h1>
-<h2 id="name-10"><a class="header" href="#name-10"><strong>NAME</strong></a></h2>
+<h2 id="name-11"><a class="header" href="#name-11"><strong>NAME</strong></a></h2>
 <p>search - browse the ip catalog</p>
 <h2 id="synopsis-10"><a class="header" href="#synopsis-10"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit search [options] [&lt;ip&gt;]
@@ -2646,7 +2676,7 @@ orbit search --keyword memory --keyword ecc
 orbit search --keyword cdc --limit 20 -i
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-install"><a class="header" href="#orbit-install"><strong>orbit install</strong></a></h1>
-<h2 id="name-11"><a class="header" href="#name-11"><strong>NAME</strong></a></h2>
+<h2 id="name-12"><a class="header" href="#name-12"><strong>NAME</strong></a></h2>
 <p>install - store an immutable reference to an ip</p>
 <h2 id="synopsis-11"><a class="header" href="#synopsis-11"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit install [options]
@@ -2689,7 +2719,7 @@ orbit install adder:1.0.0 --url https://my.adder/project.zip
 orbit install alu:2.3.7 --path ./projects/alu --force
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-remove"><a class="header" href="#orbit-remove"><strong>orbit remove</strong></a></h1>
-<h2 id="name-12"><a class="header" href="#name-12"><strong>NAME</strong></a></h2>
+<h2 id="name-13"><a class="header" href="#name-13"><strong>NAME</strong></a></h2>
 <p>remove - delete an ip from the catalog</p>
 <h2 id="synopsis-12"><a class="header" href="#synopsis-12"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit remove [options] &lt;ip&gt;
@@ -2714,7 +2744,7 @@ it is correct without confirmation, use the <code>--force</code> option.</p>
 orbit remove gates:1.0.1 --force
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-env"><a class="header" href="#orbit-env"><strong>orbit env</strong></a></h1>
-<h2 id="name-13"><a class="header" href="#name-13"><strong>NAME</strong></a></h2>
+<h2 id="name-14"><a class="header" href="#name-14"><strong>NAME</strong></a></h2>
 <p>env - print orbit environment information</p>
 <h2 id="synopsis-13"><a class="header" href="#synopsis-13"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit env [options]
@@ -2737,7 +2767,7 @@ orbit env ORBIT_HOME
 orbit env ORBIT_MANIFEST_DIR ORBIT_IP_NAME
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-config"><a class="header" href="#orbit-config"><strong>orbit config</strong></a></h1>
-<h2 id="name-14"><a class="header" href="#name-14"><strong>NAME</strong></a></h2>
+<h2 id="name-15"><a class="header" href="#name-15"><strong>NAME</strong></a></h2>
 <p>config - modify configuration data</p>
 <h2 id="synopsis-14"><a class="header" href="#synopsis-14"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit config [options] [&lt;path&gt;]

@@ -100,7 +100,7 @@ VHDL	cpu	/users/chase/projects/cpu/rtl/top.vhd
 SYSV	cpu	/users/chase/projects/cpu/sim/top_tb.sv
 ```
 
-Add a target by writing a script to accept Orbit's generated blueprint file for whatever EDA tools you prefer once, and use it across all future ips.  
+Add a target by writing a script that reads Orbit's generated blueprint file for whatever EDA tools you prefer, and use it across all future ips.  
 
 ## Highlights
 

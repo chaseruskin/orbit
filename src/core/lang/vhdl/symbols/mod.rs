@@ -673,8 +673,6 @@ impl VhdlSymbol {
     ///
     /// Assumes the first token to consume is an identifier, and continues to collect
     /// if the next token is a DOT delimiter.
-    ///
-    /// @dead_code
     fn compose_name<I>(tokens: &mut Peekable<I>) -> SelectedName
     where
         I: Iterator<Item = Token<VhdlToken>>,
@@ -832,6 +830,7 @@ impl VhdlSymbol {
     {
         // steal the '(' if it is next to prevent performing sensitivity list
         while let Some(t) = tokens.peek() {
+            // println!("{:?}", t.as_type());
             if t.as_type().check_delimiter(&Delimiter::ParenL) == true {
                 tokens.next();
             } else {
@@ -859,6 +858,12 @@ impl VhdlSymbol {
                 let mut deps = RefSet::new();
                 // take entity identifier
                 deps.extend(Self::compose_name(&mut tokens).into_compound_identifiers(true));
+                // make sure we valid continuing tokens
+                if let Some(p) = tokens.peek() {
+                    if p.as_type().check_delimiter(&Delimiter::ParenR) == true {
+                        return None;
+                    }
+                }
                 // take remaining possible references
                 Self::update_deps_from_statement(&mut deps, &mut tokens);
                 Some(deps)
@@ -1670,12 +1675,13 @@ impl VhdlSymbol {
                     false => Self::is_sub_ending,
                 };
                 let (_clause, c_refs) = Self::parse_statement(tokens);
-                // println!("ENTERING SUBPROGRAM {:?}", stmt);
+                // println!("ENTERING SUBPROGRAM {:?}", _clause);
                 // catch any references in the given statement
                 refs.extend(c_refs);
 
                 // println!("REFS BEFORE: {:?}", refs);
                 let (inner_refs, inner_deps) = Self::parse_body(tokens, &next_eval_exit);
+                // println!("DEPS: {:?}", inner_deps);
                 // update any references caught
                 refs.extend(inner_refs);
                 deps.extend(inner_deps);
@@ -1693,11 +1699,11 @@ impl VhdlSymbol {
                 // build statements
             } else {
                 let (clause, c_refs) = Self::parse_statement(tokens);
-                // println!("IN BODY: {:?}", stmt);
+                // println!("IN BODY: {:?}", clause);
                 refs.extend(c_refs);
                 // check if statement is an instantiation
                 if let Some(i_refs) = Self::parse_instantiation(clause.0) {
-                    // println!("info: detected dependency \"{:?}\"", inst);
+                    // println!("info: detected dependency \"{:?}\"", i_refs);
                     deps.extend(i_refs);
                 }
             }

@@ -19,6 +19,7 @@
 //! varying degrees of changes within a project's lifetime.
 
 use crate::error::Error;
+use std::cmp::Ordering;
 use std::fmt::Display;
 use std::num::ParseIntError;
 use std::str::FromStr;
@@ -28,10 +29,49 @@ use crate::util::anyerror::Fault;
 
 type VerNum = u16;
 
+#[derive(Debug, PartialEq, PartialOrd, Clone, Eq, Ord, Hash)]
+pub struct VerStr(String);
+
+impl FromStr for VerStr {
+    type Err = VersionError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.len() == 0 {
+            return Err(VersionError::EmptyLabel);
+        }
+        let invalid = s.chars().find(|c| {
+            c.is_ascii_digit() == false
+                && c.is_ascii_lowercase() == false
+                && c.is_ascii_uppercase() == false
+                && c != &'.'
+        });
+        match invalid {
+            Some(c) => Err(VersionError::InvalidChar(c)),
+            None => Ok(Self(s.to_string())),
+        }
+    }
+}
+
+impl Display for VerStr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 /// Checks if a partial version `self` umbrellas the full version `ver`.
 pub fn is_compatible(pv: &PartialVersion, ver: &Version) -> bool {
     if pv.major != ver.major {
         return false;
+    }
+
+    if pv.label.is_none() && ver.label.is_none() {
+        ()
+    } else if let Some(p_l) = &pv.label {
+        if let Some(v_l) = ver.get_label() {
+            if p_l != v_l {
+                return false;
+            }
+        }
     }
 
     match pv.minor {
@@ -123,6 +163,7 @@ impl From<&Version> for AnyVersion {
             major: value.get_major(),
             minor: Some(value.get_minor()),
             micro: Some(value.get_micro()),
+            label: value.get_label().clone(),
         })
     }
 }
@@ -132,6 +173,7 @@ pub struct PartialVersion {
     major: VerNum,
     minor: Option<VerNum>,
     micro: Option<VerNum>,
+    label: Option<VerStr>,
 }
 
 impl PartialVersion {
@@ -140,6 +182,7 @@ impl PartialVersion {
             major: 0,
             minor: None,
             micro: None,
+            label: None,
         }
     }
 
@@ -155,6 +198,11 @@ impl PartialVersion {
 
     pub fn micro(mut self, m: VerNum) -> Self {
         self.micro = Some(m);
+        self
+    }
+
+    pub fn label(mut self, l: Option<VerStr>) -> Self {
+        self.label = l;
         self
     }
 
@@ -180,6 +228,7 @@ impl PartialVersion {
     ///
     /// Returns `None` if the list is empty or there are zero that meet the
     /// criteria.
+    #[cfg(test)]
     pub fn find_highest<'a>(&self, vers: &'a [Version]) -> Option<&'a Version> {
         let mut highest = None;
         vers.iter().for_each(|v| {
@@ -191,8 +240,13 @@ impl PartialVersion {
     }
 
     /// Checks if there are 3 specified version numbers.
+    #[cfg(test)]
     pub fn is_fully_qualified(&self) -> bool {
         self.minor.is_some() && self.micro.is_some()
+    }
+
+    pub fn has_label(&self) -> bool {
+        self.label.is_some()
     }
 
     pub fn as_version(&self) -> Option<Version> {
@@ -200,29 +254,8 @@ impl PartialVersion {
             Version::new()
                 .major(self.major)
                 .minor(self.minor?)
-                .micro(self.micro?),
-        )
-    }
-
-    /// Returns the partial version as a glob-style pattern.
-    pub fn to_pattern_string(&self) -> String {
-        format!(
-            "{}.{}.{}",
-            self.major,
-            {
-                if self.minor.is_some() {
-                    self.minor.unwrap().to_string()
-                } else {
-                    "*".to_string()
-                }
-            },
-            {
-                if self.micro.is_some() {
-                    self.micro.unwrap().to_string()
-                } else {
-                    "*".to_string()
-                }
-            }
+                .micro(self.micro?)
+                .label(self.label.clone()),
         )
     }
 }
@@ -236,6 +269,9 @@ impl Display for PartialVersion {
                 write!(f, ".{}", p)?;
             }
         }
+        if let Some(l) = &self.label {
+            write!(f, "-{}", l)?;
+        }
         Ok(())
     }
 }
@@ -246,6 +282,7 @@ impl From<PartialVersion> for Version {
             major: pv.major,
             minor: pv.minor.unwrap_or(0),
             micro: pv.micro.unwrap_or(0),
+            label: pv.label,
         }
     }
 }
@@ -261,24 +298,44 @@ impl FromStr for PartialVersion {
             return Err(EmptyVersion);
         }
 
-        let mut levels = s.split_terminator('.').map(|p| p.parse::<VerNum>());
-        // @TODO handle invalid parses internally to return what level gave invalid digit?
+        // check if there is a label
+        let (nums, label) = match s.split_once('-') {
+            Some((n, l)) => (n, Some(l)),
+            None => (s, None),
+        };
+
+        let mut levels = nums.split_terminator('.').map(|p| p.parse::<VerNum>());
+
+        let major = if let Some(v) = levels.next() {
+            v?
+        } else {
+            return Err(VersionError::MissingMajor);
+        };
+        let minor = if let Some(v) = levels.next() {
+            Some(v?)
+        } else {
+            None
+        };
+        let micro = if let Some(v) = levels.next() {
+            if levels.next().is_some() {
+                return Err(VersionError::ExtraLevels(3 + levels.count()));
+            }
+            Some(v?)
+        } else {
+            None
+        };
+
+        // TODO: handle invalid parses internally to return what level gave invalid digit?
         Ok(PartialVersion {
-            major: if let Some(v) = levels.next() {
-                v?
-            } else {
-                return Err(VersionError::MissingMajor);
-            },
-            minor: if let Some(v) = levels.next() {
-                Some(v?)
-            } else {
-                None
-            },
-            micro: if let Some(v) = levels.next() {
-                if levels.next().is_some() {
-                    return Err(VersionError::ExtraLevels(3 + levels.count()));
+            major: major,
+            minor: minor,
+            micro: micro,
+            label: if let Some(l) = label {
+                if minor.is_none() || micro.is_none() {
+                    return Err(VersionError::LabelNeedsFullVersion);
+                } else {
+                    Some(VerStr::from_str(l)?)
                 }
-                Some(v?)
             } else {
                 None
             },
@@ -324,11 +381,39 @@ impl Serialize for PartialVersion {
     }
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Clone, Ord, Eq, Hash)]
+#[derive(Debug, PartialEq, Clone, Ord, Eq, Hash)]
 pub struct Version {
     major: VerNum,
     minor: VerNum,
     micro: VerNum,
+    label: Option<VerStr>,
+}
+
+impl PartialOrd for Version {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match self.major == other.major {
+            false => self.major.partial_cmp(&other.major),
+            true => match self.minor == other.minor {
+                false => self.minor.partial_cmp(&other.minor),
+                true => match self.micro == other.micro {
+                    false => self.micro.partial_cmp(&other.micro),
+                    true => {
+                        if self.label.is_none() && other.label.is_none() {
+                            Some(Ordering::Equal)
+                        } else if let Some(sl) = &self.label {
+                            if let Some(ol) = &other.label {
+                                sl.partial_cmp(&ol)
+                            } else {
+                                Some(Ordering::Less)
+                            }
+                        } else {
+                            Some(Ordering::Greater)
+                        }
+                    }
+                },
+            },
+        }
+    }
 }
 
 use serde::de::{self};
@@ -380,6 +465,7 @@ impl Version {
             major: 0,
             minor: 0,
             micro: 0,
+            label: None,
         }
     }
 
@@ -388,17 +474,20 @@ impl Version {
         self.major += 1;
         self.minor = 0;
         self.micro = 0;
+        self.label = None;
     }
 
     /// Increments the `minor` level and resets the `patch` level.
     pub fn inc_minor(&mut self) {
         self.minor += 1;
         self.micro = 0;
+        self.label = None;
     }
 
     /// Increments the `patch` level and resets no levels.
     pub fn inc_micro(&mut self) {
         self.micro += 1;
+        self.label = None;
     }
 
     pub fn major(mut self, m: VerNum) -> Self {
@@ -416,6 +505,11 @@ impl Version {
         self
     }
 
+    pub fn label(mut self, l: Option<VerStr>) -> Self {
+        self.label = l;
+        self
+    }
+
     pub fn get_major(&self) -> VerNum {
         self.major
     }
@@ -428,11 +522,20 @@ impl Version {
         self.micro
     }
 
+    pub fn get_label(&self) -> &Option<VerStr> {
+        &self.label
+    }
+
+    pub fn has_label(&self) -> bool {
+        self.label.is_some()
+    }
+
     pub fn to_partial_version(&self) -> PartialVersion {
         PartialVersion::new()
             .major(self.major)
             .minor(self.minor)
             .micro(self.micro)
+            .label(self.label.clone())
     }
 }
 
@@ -446,8 +549,13 @@ impl FromStr for Version {
         if s.is_empty() {
             return Err(EmptyVersion);
         }
+        // check if there is a label
+        let (nums, label) = match s.split_once('-') {
+            Some((n, l)) => (n, Some(l)),
+            None => (s, None),
+        };
 
-        let mut levels = s.split_terminator('.').map(|p| p.parse::<VerNum>());
+        let mut levels = nums.split_terminator('.').map(|p| p.parse::<VerNum>());
         // @TODO handle invalid parses internally to return what level gave invalid digit?
         Ok(Version {
             major: if let Some(v) = levels.next() {
@@ -468,6 +576,11 @@ impl FromStr for Version {
             } else {
                 return Err(VersionError::MissingMicro);
             },
+            label: if let Some(l) = label {
+                Some(VerStr::from_str(l)?)
+            } else {
+                None
+            },
         })
     }
 }
@@ -476,10 +589,14 @@ impl Display for Version {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(
             f,
-            "{}.{}.{}",
+            "{}.{}.{}{}",
             self.get_major(),
             self.get_minor(),
-            self.get_micro()
+            self.get_micro(),
+            match self.get_label() {
+                Some(l) => format!("-{}", l),
+                None => String::new(),
+            },
         )
     }
 }
@@ -490,8 +607,11 @@ pub enum VersionError {
     MissingMajor,
     MissingMinor,
     MissingMicro,
+    LabelNeedsFullVersion,
     ExtraLevels(usize),
     InvalidDigit(ParseIntError),
+    EmptyLabel,
+    InvalidChar(char),
 }
 
 impl std::error::Error for VersionError {}
@@ -500,10 +620,16 @@ impl Display for VersionError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         use VersionError::*;
         match self {
+            LabelNeedsFullVersion => write!(
+                f,
+                "version label requires minor and micro version values to be defined"
+            ),
             EmptyVersion => write!(f, "empty version"),
             MissingMajor => write!(f, "missing major number"),
             MissingMinor => write!(f, "missing minor number"),
             MissingMicro => write!(f, "missing micro number"),
+            EmptyLabel => write!(f, "empty version label"),
+            InvalidChar(c) => write!(f, "invalid character '{}' in version label", c),
             ExtraLevels(l) => write!(f, "too many version positions; found {} expected 3", l),
             InvalidDigit(_) => write!(f, "invalid digit in version"),
         }
@@ -531,11 +657,13 @@ mod test {
                 major: 1,
                 minor: None,
                 micro: None,
+                label: None,
             };
             let v = Version {
                 major: 1,
                 minor: 2,
                 micro: 3,
+                label: None,
             };
             assert_eq!(is_compatible(&pv, &v), true);
 
@@ -543,6 +671,7 @@ mod test {
                 major: 2,
                 minor: 1,
                 micro: 3,
+                label: None,
             };
             assert_eq!(is_compatible(&pv, &v), false);
 
@@ -550,11 +679,13 @@ mod test {
                 major: 2,
                 minor: Some(1),
                 micro: None,
+                label: None,
             };
             let v = Version {
                 major: 2,
                 minor: 2,
                 micro: 3,
+                label: None,
             };
             assert_eq!(is_compatible(&pv, &v), false);
 
@@ -562,6 +693,7 @@ mod test {
                 major: 2,
                 minor: 1,
                 micro: 3,
+                label: None,
             };
             assert_eq!(is_compatible(&pv, &v), true);
 
@@ -569,6 +701,7 @@ mod test {
                 major: 9,
                 minor: 1,
                 micro: 3,
+                label: None,
             };
             assert_eq!(is_compatible(&pv, &v), false);
 
@@ -576,11 +709,13 @@ mod test {
                 major: 2,
                 minor: Some(1),
                 micro: Some(3),
+                label: None,
             };
             let v = Version {
                 major: 2,
                 minor: 1,
                 micro: 3,
+                label: None,
             };
             assert_eq!(is_compatible(&pv, &v), true);
         }
@@ -591,6 +726,7 @@ mod test {
                 major: 1,
                 minor: None,
                 micro: None,
+                label: None,
             };
             assert_eq!(pv.to_string(), "1");
 
@@ -598,6 +734,7 @@ mod test {
                 major: 1,
                 minor: Some(2),
                 micro: None,
+                label: None,
             };
             assert_eq!(pv.to_string(), "1.2");
 
@@ -605,6 +742,7 @@ mod test {
                 major: 1,
                 minor: Some(2),
                 micro: Some(3),
+                label: None,
             };
             assert_eq!(pv.to_string(), "1.2.3");
         }
@@ -615,6 +753,7 @@ mod test {
                 major: 1,
                 minor: None,
                 micro: None,
+                label: None,
             };
             let versions = vec![
                 Version::new().major(2).minor(1).micro(1),
@@ -633,6 +772,7 @@ mod test {
                 major: 4,
                 minor: Some(3),
                 micro: None,
+                label: None,
             };
             assert_eq!(pv.find_highest(&versions), None);
         }
@@ -647,6 +787,7 @@ mod test {
                     major: 1,
                     minor: Some(2),
                     micro: Some(3),
+                    label: None,
                 }
             );
             assert_eq!(v.is_fully_qualified(), true);
@@ -657,6 +798,7 @@ mod test {
                     major: 19,
                     minor: Some(4),
                     micro: None,
+                    label: None,
                 }
             );
             assert_eq!(v.is_fully_qualified(), false);
@@ -671,7 +813,8 @@ mod test {
             Version {
                 major: 0,
                 minor: 0,
-                micro: 0
+                micro: 0,
+                label: None,
             }
         );
         let v = v.major(1).minor(2).micro(3);
@@ -680,7 +823,8 @@ mod test {
             Version {
                 major: 1,
                 minor: 2,
-                micro: 3
+                micro: 3,
+                label: None,
             }
         );
     }
@@ -691,6 +835,7 @@ mod test {
             major: 7,
             minor: 1,
             micro: 19,
+            label: None,
         };
         v.inc_major();
         assert_eq!(
@@ -698,7 +843,8 @@ mod test {
             Version {
                 major: 8,
                 minor: 0,
-                micro: 0
+                micro: 0,
+                label: None,
             }
         );
 
@@ -706,6 +852,7 @@ mod test {
             major: 7,
             minor: 1,
             micro: 19,
+            label: None,
         };
         v.inc_minor();
         assert_eq!(
@@ -713,7 +860,8 @@ mod test {
             Version {
                 major: 7,
                 minor: 2,
-                micro: 0
+                micro: 0,
+                label: None,
             }
         );
 
@@ -721,6 +869,7 @@ mod test {
             major: 7,
             minor: 1,
             micro: 19,
+            label: None,
         };
         v.inc_micro();
         assert_eq!(
@@ -728,7 +877,8 @@ mod test {
             Version {
                 major: 7,
                 minor: 1,
-                micro: 20
+                micro: 20,
+                label: None,
             }
         );
     }
@@ -743,6 +893,7 @@ mod test {
                 major: 1,
                 minor: 2,
                 micro: 3,
+                label: None,
             }
         );
         let v = Version::from_str("19.4.73").unwrap();
@@ -752,6 +903,7 @@ mod test {
                 major: 19,
                 minor: 4,
                 micro: 73,
+                label: None,
             }
         );
         let v = Version::from_str("1.256.0").unwrap();
@@ -761,6 +913,7 @@ mod test {
                 major: 1,
                 minor: 256,
                 micro: 0,
+                label: None,
             }
         );
         let v = Version::from_str("019.004.073").unwrap();
@@ -770,6 +923,7 @@ mod test {
                 major: 19,
                 minor: 4,
                 micro: 73,
+                label: None,
             }
         );
         // invalid cases
@@ -837,6 +991,7 @@ mod test {
             major: 20,
             minor: 4,
             micro: 7,
+            label: None,
         };
         assert_eq!(v.to_string(), "20.4.7");
     }

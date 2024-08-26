@@ -266,7 +266,7 @@ impl Search {
             }
 
             body.push_str(&format!(
-                "{:<26}{:<10}{:<9}{:<25}\n",
+                "{:<24}{:<16}{:<10}{:<25}\n",
                 name.get_name().to_string(),
                 ip.get_man().get_ip().get_version().to_string() + {
                     if is_update_available == true {

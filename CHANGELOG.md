@@ -15,9 +15,10 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.21.0 - unreleased
+## 0.21.0
 
 ### Features
+- allows versions to have an optional label (ex: `1.0.0-alpha`)
 - supports finding ip using their name and their uuid in the catalog
 - adds uuid field to manifest
 - adds `ORBIT_IP_UUID` environment variable

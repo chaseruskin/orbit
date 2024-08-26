@@ -322,8 +322,11 @@ impl Subcommand<Context> for Install {
             if let Some(cached_ip) = ip_levels.get_install(&AnyVersion::Specific(
                 target.get_man().get_ip().get_version().to_partial_version(),
             )) {
-                // compare uuids
-                if cached_ip.get_uuid() == target.get_uuid() {
+                let cached_version = cached_ip.get_man().get_ip().get_version();
+                let target_version = target.get_man().get_ip().get_version();
+
+                // compare uuids and versions
+                if cached_ip.get_uuid() == target.get_uuid() && cached_version == target_version {
                     // upon force, remove the installations
                     if self.force == true {
                         Remove::remove_install(&cached_ip)?;
@@ -600,6 +603,7 @@ impl Install {
         // use checksum to create new directory slot
         let cache_slot_name = CacheSlot::new(src.get_uuid(), &version, &checksum);
         let cache_slot = cache_root.join(&cache_slot_name.to_string());
+
         // check if the slot is occupied in the cache
         if cache_slot.exists() == true {
             // check if we should proceed with force regardless if the installation is valid

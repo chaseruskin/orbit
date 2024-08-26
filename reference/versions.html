@@ -179,12 +179,13 @@
                         <h1 id="versions"><a class="header" href="#versions">Versions</a></h1>
 <p>Code evolves over time, and versions provide a method for capturing a project's state at a given time stamp.</p>
 <p>Orbit uses the <em>semantic versioning</em> scheme for capturing project's state at given time periods. Semantic versioning uses 3 numeric values to signify different levels of change.</p>
-<pre><code>version ::= &lt;major&gt;.&lt;minor&gt;.&lt;micro&gt;
+<pre><code>version ::= major "." minor "." micro [ "-" label ]
 </code></pre>
 <div class="table-wrapper"><table><thead><tr><th>Level</th><th>Explanation</th></tr></thead><tbody>
 <tr><td>Major</td><td>Incompatible API changes</td></tr>
 <tr><td>Minor</td><td>Adding functionality in backward-compatible way</td></tr>
 <tr><td>Micro</td><td>Fixing bugs in backward-compatible way</td></tr>
+<tr><td>Label</td><td>Descriptive modifier to show status of upcoming version</td></tr>
 </tbody></table>
 </div>
 <p>To learn more about semantic versioning, visit the official <a href="https://semver.org">website</a>.</p>
@@ -196,11 +197,13 @@ also operates on the basis of using 3 digits. To learn more about <em>calender v
 <h2 id="rules"><a class="header" href="#rules">Rules</a></h2>
 <ul>
 <li>Each level may only contain ASCII digits (<code>0-9</code>).</li>
+<li>A label must follow a dash character (<code>-</code>) and cannot be empty.</li>
+<li>Labels can consist of ASCII letters (<code>a-z</code>, <code>A-Z</code>), ASCII digits (<code>0-9</code>), and/or decimal characters (<code>.</code>)</li>
 </ul>
 <p>All 3 levels must be given a numeric value consisting of only digits separated by a dot (<code>.</code>) character. This is considered a <em>fully qualified</em> version.</p>
 <pre><code>1.0.0
 </code></pre>
-<p>In some scenarios a <em>partially qualified</em> version can be accepted. This means one or more of the version's levels are omitted.</p>
+<p>In some scenarios a <em>partially qualified</em> version can be accepted. This means one or more of the version's levels are omitted. A label is not required for a version to be considered fully qualified.</p>
 <pre><code>1
 1.0
 </code></pre>

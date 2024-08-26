@@ -252,12 +252,12 @@
 <li>Open a new terminal (Bash) to where Orbit was downloaded.</li>
 <li>Unzip the prebuilt package.</li>
 </ol>
-<pre><code>$ unzip orbit-0.20.0-x86_64-macos.zip
+<pre><code>$ unzip orbit-0.21.0-x86_64-macos.zip
 </code></pre>
 <ol start="3">
 <li>Move the executable to a location already set in the PATH environment variable.</li>
 </ol>
-<pre><code>$ mv ./orbit-0.20.0-x86_64-macos/bin/orbit /usr/local/bin/orbit
+<pre><code>$ mv ./orbit-0.21.0-x86_64-macos/bin/orbit /usr/local/bin/orbit
 </code></pre>
 <h3 id="windows"><a class="header" href="#windows">Windows</a></h3>
 <ol>
@@ -268,7 +268,7 @@
 <p>Unzip the prebuilt package.</p>
 </li>
 </ol>
-<pre><code>$ expand-archive "./orbit-0.20.0-x86_64-windows.zip"
+<pre><code>$ expand-archive "./orbit-0.21.0-x86_64-windows.zip"
 </code></pre>
 <ol start="3">
 <li>Make a new directory to store this package.</li>
@@ -278,21 +278,21 @@
 <ol start="4">
 <li>Move the package to the new directory.</li>
 </ol>
-<pre><code>$ copy-item "./orbit-0.20.0-x86_64-windows/*" -destination "$env:LOCALAPPDATA/Programs/orbit" -recurse
+<pre><code>$ copy-item "./orbit-0.21.0-x86_64-windows/*" -destination "$env:LOCALAPPDATA/Programs/orbit" -recurse
 </code></pre>
 <ol start="5">
 <li>Edit the user-level PATH environment variable in <em><strong>Control Panel</strong></em> by adding <strong>%LOCALAPPDATA%\Programs\orbit\bin</strong>.</li>
 </ol>
 <h2 id="2-installing-with-cargo"><a class="header" href="#2-installing-with-cargo">2. Installing with Cargo</a></h2>
 <p>To install the latest version through Cargo:</p>
-<pre><code>$ cargo install --git https://github.com/chaseruskin/orbit.git --tag 0.20.0
+<pre><code>$ cargo install --git https://github.com/chaseruskin/orbit.git --tag 0.21.0
 </code></pre>
 <p>This will build the <code>orbit</code> binary and place it a path already set in the PATH environment variable.</p>
 <h2 id="checking-if-orbit-is-installed-correctly"><a class="header" href="#checking-if-orbit-is-installed-correctly">Checking if Orbit is installed correctly</a></h2>
 <p>To verify Orbit is working correctly on your system, let's open a new terminal session and print it's current version.</p>
 <pre><code>$ orbit --version
 </code></pre>
-<pre><code>orbit 0.20.0
+<pre><code>orbit 0.21.0
 </code></pre>
 <p>This should print out your version of Orbit you installed. Congratulations! You are now ready to begin using Orbit.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="upgrading"><a class="header" href="#upgrading">Upgrading</a></h1>
@@ -1693,12 +1693,13 @@ version = "1.0.0"
 <div style="break-before: page; page-break-before: always;"></div><h1 id="versions"><a class="header" href="#versions">Versions</a></h1>
 <p>Code evolves over time, and versions provide a method for capturing a project's state at a given time stamp.</p>
 <p>Orbit uses the <em>semantic versioning</em> scheme for capturing project's state at given time periods. Semantic versioning uses 3 numeric values to signify different levels of change.</p>
-<pre><code>version ::= &lt;major&gt;.&lt;minor&gt;.&lt;micro&gt;
+<pre><code>version ::= major "." minor "." micro [ "-" label ]
 </code></pre>
 <div class="table-wrapper"><table><thead><tr><th>Level</th><th>Explanation</th></tr></thead><tbody>
 <tr><td>Major</td><td>Incompatible API changes</td></tr>
 <tr><td>Minor</td><td>Adding functionality in backward-compatible way</td></tr>
 <tr><td>Micro</td><td>Fixing bugs in backward-compatible way</td></tr>
+<tr><td>Label</td><td>Descriptive modifier to show status of upcoming version</td></tr>
 </tbody></table>
 </div>
 <p>To learn more about semantic versioning, visit the official <a href="https://semver.org">website</a>.</p>
@@ -1710,11 +1711,13 @@ also operates on the basis of using 3 digits. To learn more about <em>calender v
 <h2 id="rules-3"><a class="header" href="#rules-3">Rules</a></h2>
 <ul>
 <li>Each level may only contain ASCII digits (<code>0-9</code>).</li>
+<li>A label must follow a dash character (<code>-</code>) and cannot be empty.</li>
+<li>Labels can consist of ASCII letters (<code>a-z</code>, <code>A-Z</code>), ASCII digits (<code>0-9</code>), and/or decimal characters (<code>.</code>)</li>
 </ul>
 <p>All 3 levels must be given a numeric value consisting of only digits separated by a dot (<code>.</code>) character. This is considered a <em>fully qualified</em> version.</p>
 <pre><code>1.0.0
 </code></pre>
-<p>In some scenarios a <em>partially qualified</em> version can be accepted. This means one or more of the version's levels are omitted.</p>
+<p>In some scenarios a <em>partially qualified</em> version can be accepted. This means one or more of the version's levels are omitted. A label is not required for a version to be considered fully qualified.</p>
 <pre><code>1
 1.0
 </code></pre>

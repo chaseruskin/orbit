@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.22.0 - unreleased
+
+### Fixes
+- improves module dependency detection for vhdl design units with better checks around subprogram declarations and subprogram bodies
+
 ## 0.21.0
 
 ### Features

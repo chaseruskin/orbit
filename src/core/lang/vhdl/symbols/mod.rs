@@ -734,7 +734,7 @@ impl VhdlSymbol {
             // panic!("expecting keyword IS")
             return Err(VhdlError::Vague);
         }
-        let (b_refs, _b_deps) = VhdlSymbol::parse_body(tokens, &Self::is_primary_ending);
+        let (b_refs, _b_deps) = VhdlSymbol::parse_body(tokens, &Self::is_primary_ending, false);
         Ok(PackageBody::new(
             match pack_name {
                 VhdlToken::Identifier(id) => id,
@@ -861,6 +861,12 @@ impl VhdlSymbol {
                 // make sure we valid continuing tokens
                 if let Some(p) = tokens.peek() {
                     if p.as_type().check_delimiter(&Delimiter::ParenR) == true {
+                        return None;
+                    }
+                    if p.as_type().check_delimiter(&Delimiter::Terminator) == true {
+                        return None;
+                    }
+                    if p.as_type().check_delimiter(&Delimiter::VarAssign) == true {
                         return None;
                     }
                 }
@@ -1353,7 +1359,7 @@ impl VhdlSymbol {
             // stop the declaration section and enter a statement section
             if t.as_type().check_keyword(&Keyword::Begin) {
                 tokens.next();
-                let (b_refs, b_deps) = Self::parse_body(tokens, &Self::is_primary_ending);
+                let (b_refs, b_deps) = Self::parse_body(tokens, &Self::is_primary_ending, false);
                 entity_refs.extend(b_refs);
                 entity_deps.extend(b_deps);
                 break;
@@ -1476,7 +1482,7 @@ impl VhdlSymbol {
             if t.as_type().check_keyword(&Keyword::Begin) {
                 tokens.next();
                 // combine refs from declaration and from body
-                let (body_refs, body_deps) = Self::parse_body(tokens, &eval_exit);
+                let (body_refs, body_deps) = Self::parse_body(tokens, &eval_exit, false);
                 refs.extend(body_refs);
                 deps.extend(body_deps);
 
@@ -1649,6 +1655,7 @@ impl VhdlSymbol {
     fn parse_body<I>(
         tokens: &mut Peekable<I>,
         eval_exit: &dyn Fn(&Statement) -> bool,
+        is_subprogram: bool,
     ) -> (RefSet, RefSet)
     where
         I: Iterator<Item = Token<VhdlToken>>,
@@ -1670,7 +1677,8 @@ impl VhdlSymbol {
                 || t.as_type().check_keyword(&Keyword::Begin)
                 || t.as_type().check_keyword(&Keyword::Procedure)
             {
-                let next_eval_exit = match Self::is_subprogram(t.as_type().as_keyword().unwrap()) {
+                let is_subprogram = Self::is_subprogram(t.as_type().as_keyword().unwrap());
+                let next_eval_exit = match is_subprogram {
                     true => Self::is_subprogram_ending,
                     false => Self::is_sub_ending,
                 };
@@ -1680,7 +1688,8 @@ impl VhdlSymbol {
                 refs.extend(c_refs);
 
                 // println!("REFS BEFORE: {:?}", refs);
-                let (inner_refs, inner_deps) = Self::parse_body(tokens, &next_eval_exit);
+                let (inner_refs, inner_deps) =
+                    Self::parse_body(tokens, &next_eval_exit, is_subprogram);
                 // println!("DEPS: {:?}", inner_deps);
                 // update any references caught
                 refs.extend(inner_refs);
@@ -1702,9 +1711,11 @@ impl VhdlSymbol {
                 // println!("IN BODY: {:?}", clause);
                 refs.extend(c_refs);
                 // check if statement is an instantiation
-                if let Some(i_refs) = Self::parse_instantiation(clause.0) {
-                    // println!("info: detected dependency \"{:?}\"", i_refs);
-                    deps.extend(i_refs);
+                if is_subprogram == false {
+                    if let Some(i_refs) = Self::parse_instantiation(clause.0) {
+                        // println!("info: detected dependency \"{:?}\"", i_refs);
+                        deps.extend(i_refs);
+                    }
                 }
             }
         }

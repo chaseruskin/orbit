@@ -346,9 +346,9 @@ impl Plan {
 
             let mut vtable = StrSwapTable::new();
             // variables could potentially store empty strings if units are not set
-            vtable.add("orbit.bench", &bench_name);
-            vtable.add("orbit.top", &top_name);
-            vtable.add("orbit.dut", &top_name);
+            vtable.add("orbit.tb.name", &bench_name);
+            vtable.add("orbit.top.name", &top_name);
+            vtable.add("orbit.dut.name", &top_name);
 
             // store data in a map for quicker look-ups when comparing to plugin-defind filesets
             let mut cli_fset_map: HashMap<&String, &Fileset> = HashMap::new();

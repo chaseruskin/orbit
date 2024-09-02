@@ -20,6 +20,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ### Fixes
 - improves module dependency detection for vhdl design units with better checks around subprogram declarations and subprogram bodies
 
+### Changes
+- string swapping during build process for dut, top, and tb name are now accessible as `orbit.dut.name`, `orbit.top.name`, and `orbit.tb.name` respectively
+
 ## 0.21.0
 
 ### Features

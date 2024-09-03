@@ -17,6 +17,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## 0.22.0 - unreleased
 
+### Features
+- ability to generate a new uuid to be copied into an existing ip using `orbit init --uuid`
+
 ### Changes
 - relative path written to lockfile now stays as original unresolved relative path obtained from manifest to prevent lockfile being updated for nonrelevant reasons across systems
 - string swapping during build process for dut, top, and tb name are now accessible as `orbit.dut.name`, `orbit.top.name`, and `orbit.tb.name` respectively

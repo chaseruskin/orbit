@@ -30,6 +30,12 @@ DESCRIPTION
     directory's name. Using the '--name' option allows the ip's name to be 
     explicitly set.
     
+    Under certain circumstances, you may need a new uuid. This situation will be
+    uncommon for many users, but nonetheless it exists. To display a new uuid that
+    can be copied into an existing manifest, use the '--uuid' option. All other
+    options are ignored when this option is present. Keep in mind that an ip's uuid
+    is not intended to change over the course of its lifetime.
+    
     To create a new ip from a non-existing directory, see the 'new' command.
 
 OPTIONS
@@ -42,8 +48,12 @@ OPTIONS
     --lib <lib>
         Set the resulting ip's library
 
+    --uuid
+        Print a new uuid and exit
+
 EXAMPLES
     orbit init
     orbit init projects/gates
     orbit init --name adder
+    orbit init --uuid
 "#;

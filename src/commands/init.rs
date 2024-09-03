@@ -24,6 +24,7 @@ use crate::core::ip::Ip;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
 use crate::core::pkgid::PkgPart;
+use crate::core::uuid::Uuid;
 use crate::error::{Error, LastError};
 use crate::util::anyerror::AnyError;
 use crate::util::filesystem;
@@ -39,12 +40,14 @@ pub struct Init {
     name: Option<PkgPart>,
     library: Option<Identifier>,
     path: PathBuf,
+    uuid: bool,
 }
 
 impl Subcommand<Context> for Init {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
         cli.help(Help::with(init::HELP))?;
         Ok(Self {
+            uuid: cli.check(Arg::flag("uuid"))?,
             name: cli.get(Arg::option("name"))?,
             library: cli.get(Arg::option("lib"))?,
             path: cli
@@ -55,6 +58,11 @@ impl Subcommand<Context> for Init {
 
     fn execute(self, _: &Context) -> proc::Result {
         // TODO: verify the pkgid is not taken
+
+        if self.uuid == true {
+            println!("{}", Uuid::new().encode());
+            return Ok(());
+        }
 
         // TODO: refactor due to heavy overlap with 'new' command
 

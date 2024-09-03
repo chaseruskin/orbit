@@ -308,8 +308,8 @@ pub mod v1 {
                             .unwrap_or(Ip::compute_checksum(target.get_root())),
                     )
                 },
-                path: if target.get_mapping().is_relative() {
-                    Some(target.get_root().clone())
+                path: if let Some(rel_path) = target.get_mapping().as_relative_path() {
+                    Some(rel_path.clone())
                 } else {
                     None
                 },
@@ -388,8 +388,8 @@ pub mod v1 {
                             .unwrap_or(Ip::compute_checksum(ip.get_root())),
                     )
                 },
-                path: if ip.get_mapping().is_relative() {
-                    Some(ip.get_root().clone())
+                path: if let Some(rel_path) = ip.get_mapping().as_relative_path() {
+                    Some(rel_path.clone())
                 } else {
                     None
                 },

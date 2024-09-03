@@ -54,21 +54,21 @@ use toml_edit::Document;
 pub enum Mapping {
     Physical,
     Virtual(Vec<u8>),
-    Relative,
+    Relative(PathBuf),
     Imaginary,
 }
 
 impl Mapping {
     pub fn is_physical(&self) -> bool {
         match &self {
-            Self::Physical | Self::Relative => true,
+            Self::Physical | Self::Relative(_) => true,
             _ => false,
         }
     }
 
     pub fn is_relative(&self) -> bool {
         match &self {
-            Self::Relative => true,
+            Self::Relative(_) => true,
             _ => false,
         }
     }
@@ -77,6 +77,13 @@ impl Mapping {
         match &self {
             Self::Imaginary => true,
             _ => false,
+        }
+    }
+
+    pub fn as_relative_path(&self) -> Option<&PathBuf> {
+        match &self {
+            Self::Relative(p) => Some(p),
+            _ => None,
         }
     }
 
@@ -234,9 +241,9 @@ impl Ip {
     /// at `base_path`.
     pub fn relate(root: PathBuf, base_path: &PathBuf) -> Result<Self, Fault> {
         // resolve the path if it is relative
-        let root = filesystem::resolve_rel_path2(&base_path, &root);
-        let mut relative_ip = Ip::load(root, false)?;
-        relative_ip.mapping = Mapping::Relative;
+        let resolved_root = filesystem::resolve_rel_path2(&base_path, &root);
+        let mut relative_ip = Ip::load(resolved_root, false)?;
+        relative_ip.mapping = Mapping::Relative(root);
         // verify this ip has a lockfile
         let lock_path = relative_ip.get_root().join(IP_LOCK_FILE);
         if lock_path.exists() == false || lock_path.is_file() == false {

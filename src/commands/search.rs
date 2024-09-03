@@ -259,7 +259,7 @@ impl Search {
                 Mapping::Physical => default == true || cached == true,
                 Mapping::Virtual(_) => default == true || downloaded == true,
                 Mapping::Imaginary => default == true || available == true,
-                Mapping::Relative => false,
+                Mapping::Relative(_) => false,
             };
             if display_to_screen == false {
                 continue;
@@ -279,7 +279,7 @@ impl Search {
                     Mapping::Physical => "install",
                     Mapping::Virtual(_) => "download",
                     Mapping::Imaginary => "available",
-                    Mapping::Relative => "local",
+                    Mapping::Relative(_) => "local",
                 },
                 name.get_uuid().unwrap().encode()
             ));

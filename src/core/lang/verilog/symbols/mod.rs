@@ -568,6 +568,21 @@ impl VerilogSymbol {
             return Ok(());
         }
 
+        // println!("{}", statement_to_string(&stmt));
+
+        // try as import statement
+        if stmt
+            .first()
+            .unwrap()
+            .as_type()
+            .check_keyword(&Keyword::Import)
+        {
+            let mut tokens = stmt.into_iter().skip(1).peekable();
+            let i_refs = SystemVerilogSymbol::parse_import_statement(&mut tokens)?;
+            refs.extend(i_refs);
+            return Ok(());
+        }
+
         // update references that may appear in the statement
         if let Some(s_refs) = SystemVerilogSymbol::extract_refs_from_statement(&stmt) {
             refs.extend(s_refs);
@@ -603,18 +618,6 @@ impl VerilogSymbol {
                     .for_each(|p| interface::update_port_list(&mut params, p, false));
             }
             return Ok(());
-        }
-
-        // try as import statement
-        if stmt
-            .first()
-            .unwrap()
-            .as_type()
-            .check_keyword(&Keyword::Import)
-        {
-            let mut tokens = stmt.into_iter().skip(1).peekable();
-            let i_refs = SystemVerilogSymbol::parse_import_statement(&mut tokens)?;
-            refs.extend(i_refs);
         }
 
         // reset the statement

@@ -25,6 +25,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - string swapping during build process for dut, top, and tb name are now accessible as `orbit.dut.name`, `orbit.top.name`, and `orbit.tb.name` respectively
 
 ### Fixes
+- resolves bug where ip in channel would not display/use the ip's given uuid in the catalog
 - improves module dependency detection for vhdl design units with better checks around subprogram declarations and subprogram bodies
 - correctly identifies import statements within architecture of sv modules
 

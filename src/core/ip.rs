@@ -119,11 +119,11 @@ impl From<IpPointer> for Ip {
     fn from(value: IpPointer) -> Self {
         let man = value.decouple();
         Self {
+            uuid: man.get_ip().get_uuid().clone(),
             mapping: Mapping::Imaginary,
             root: PathBuf::new(),
             data: man,
             lock: LockFile::new(),
-            uuid: Uuid::new(),
         }
     }
 }

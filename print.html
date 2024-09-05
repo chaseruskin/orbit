@@ -247,17 +247,37 @@
 <li>Install Orbit. Either run the provided <code>install</code> executable or follow the manual instructions for placing Orbit's executable (<code>orbit</code> for Unix and <code>orbit.exe</code> for Windows) in a location recognized by the PATH environment variable.</li>
 </ol>
 <p>There are multiple solutions to accomplish step 3. The following outlines one way to manually install Orbit depending on the user's operating system.</p>
-<h3 id="unix"><a class="header" href="#unix">Unix</a></h3>
+<h3 id="linux"><a class="header" href="#linux">Linux</a></h3>
 <ol>
-<li>Open a new terminal (Bash) to where Orbit was downloaded.</li>
+<li>Download the latest prebuilt package.</li>
+</ol>
+<pre><code>curl -LO https://github.com/chaseruskin/orbit/releases/download/0.21.0/orbit-0.21.0-x86_64-linux.zip
+</code></pre>
+<ol start="2">
 <li>Unzip the prebuilt package.</li>
 </ol>
-<pre><code>$ unzip orbit-0.21.0-x86_64-macos.zip
+<pre><code>unzip orbit-0.21.0-x86_64-linux.zip
 </code></pre>
 <ol start="3">
 <li>Move the executable to a location already set in the PATH environment variable.</li>
 </ol>
-<pre><code>$ mv ./orbit-0.21.0-x86_64-macos/bin/orbit /usr/local/bin/orbit
+<pre><code>mv ./orbit-0.21.0-x86_64-linux/bin/orbit /usr/local/bin/orbit
+</code></pre>
+<h3 id="macos"><a class="header" href="#macos">macOS</a></h3>
+<ol>
+<li>Download the latest prebuilt package.</li>
+</ol>
+<pre><code>curl -LO https://github.com/chaseruskin/orbit/releases/download/0.21.0/orbit-0.21.0-x86_64-macos.zip
+</code></pre>
+<ol start="2">
+<li>Unzip the prebuilt package.</li>
+</ol>
+<pre><code>unzip orbit-0.21.0-x86_64-macos.zip
+</code></pre>
+<ol start="3">
+<li>Move the executable to a location already set in the PATH environment variable.</li>
+</ol>
+<pre><code>mv ./orbit-0.21.0-x86_64-macos/bin/orbit /usr/local/bin/orbit
 </code></pre>
 <h3 id="windows"><a class="header" href="#windows">Windows</a></h3>
 <ol>

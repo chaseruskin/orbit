@@ -12,15 +12,36 @@ There are two main methods for getting Orbit running on your computer: downloadi
 
 There are multiple solutions to accomplish step 3. The following outlines one way to manually install Orbit depending on the user's operating system. 
 
-### Unix
-1. Open a new terminal (Bash) to where Orbit was downloaded.
+### Linux
+1. Download the latest prebuilt package.
+```
+curl -LO https://github.com/chaseruskin/orbit/releases/download/CARGO_CRATE_VERSION/orbit-CARGO_CRATE_VERSION-x86_64-linux.zip
+```
+
 2. Unzip the prebuilt package.
 ```
-$ unzip orbit-CARGO_CRATE_VERSION-x86_64-macos.zip
+unzip orbit-CARGO_CRATE_VERSION-x86_64-linux.zip
 ```
+
 3. Move the executable to a location already set in the PATH environment variable. 
 ```
-$ mv ./orbit-CARGO_CRATE_VERSION-x86_64-macos/bin/orbit /usr/local/bin/orbit
+mv ./orbit-CARGO_CRATE_VERSION-x86_64-linux/bin/orbit /usr/local/bin/orbit
+```
+
+### macOS
+1. Download the latest prebuilt package.
+```
+curl -LO https://github.com/chaseruskin/orbit/releases/download/CARGO_CRATE_VERSION/orbit-CARGO_CRATE_VERSION-x86_64-macos.zip
+```
+
+2. Unzip the prebuilt package.
+```
+unzip orbit-CARGO_CRATE_VERSION-x86_64-macos.zip
+```
+
+3. Move the executable to a location already set in the PATH environment variable. 
+```
+mv ./orbit-CARGO_CRATE_VERSION-x86_64-macos/bin/orbit /usr/local/bin/orbit
 ```
 
 ### Windows

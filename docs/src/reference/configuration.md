@@ -34,7 +34,7 @@ Every configuration file consists of the following sections:
 - [[build]](#the-build-section) - The build settings.
     - [default-target](#the-default-target-field) - Set the default target for builds.
 - [[vhdl-format]](#the-vhdl-format-section) - VHDL code formatting.
-- [[systemverilog-format]](#the-systemverilog-format-section) - SystemVerilog/Verilog code formatting.
+- [[verilog-format]](#the-verilog-format-section) - SystemVerilog/Verilog code formatting.
 - [[env]](#the-env-section) - The runtime environment variables.
 - [[[target]]](#the-target-array) - Define a target.
     - [name](#the-name-field) - The name of the target.
@@ -128,17 +128,17 @@ mapping-offset = 1
 instance-name = "uX"
 ```
 
-### The `[systemverilog-format]` section
+### The `[verilog-format]` section
 
-The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their default values.
+The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their default values. This section currently applies its settings to SystemVerilog and Verilog source code.
 
 ``` toml
-[systemverilog-format]
-# enable colored output for SystemVerilog code snippets (TODO)
+[verilog-format]
+# enable colored output for code snippets (TODO)
 highlight-syntax = false
 # number of whitespace characters per tab/indentation
 tab-size = 2
-# automatically align a port or parameter's name with its module's other names
+# automatically align a port or parameter's name with the module's other names
 name-auto-alignment = false
 # number of additional whitespace characters after alignment
 name-alignmnet = 0

@@ -21,6 +21,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - ability to generate a new uuid to be copied into an existing ip using `orbit init --uuid`
 
 ### Changes
+- changes table name `[systemverilog-format]` to `[verilog-format]` in config.toml settings
 - relative path written to lockfile now stays as original unresolved relative path obtained from manifest to prevent lockfile being updated for nonrelevant reasons across systems
 - string swapping during build process for dut, top, and tb name are now accessible as `orbit.dut.name`, `orbit.top.name`, and `orbit.tb.name` respectively
 

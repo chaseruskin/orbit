@@ -537,7 +537,7 @@ pub struct Config {
     channel: Option<Channels>,
     #[serde(rename = "vhdl-format")]
     vhdl_format: Option<VhdlFormat>,
-    #[serde(rename = "systemverilog-format")]
+    #[serde(rename = "verilog-format")]
     systemverilog_format: Option<SystemVerilogFormat>,
 }
 

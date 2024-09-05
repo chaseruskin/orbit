@@ -1979,7 +1979,7 @@ precedence:
 </ul>
 </li>
 <li><a href="reference/configuration.html#the-vhdl-format-section">[vhdl-format]</a> - VHDL code formatting.</li>
-<li><a href="reference/configuration.html#the-systemverilog-format-section">[systemverilog-format]</a> - SystemVerilog/Verilog code formatting.</li>
+<li><a href="reference/configuration.html#the-verilog-format-section">[verilog-format]</a> - SystemVerilog/Verilog code formatting.</li>
 <li><a href="reference/configuration.html#the-env-section">[env]</a> - The runtime environment variables.</li>
 <li><a href="reference/configuration.html#the-target-array">[[target]]</a> - Define a target.
 <ul>
@@ -2059,14 +2059,14 @@ mapping-offset = 1
 # the default instance name
 instance-name = "uX"
 </code></pre>
-<h3 id="the-systemverilog-format-section"><a class="header" href="#the-systemverilog-format-section">The <code>[systemverilog-format]</code> section</a></h3>
-<p>The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their default values.</p>
-<pre><code class="language-toml">[systemverilog-format]
-# enable colored output for SystemVerilog code snippets (TODO)
+<h3 id="the-verilog-format-section"><a class="header" href="#the-verilog-format-section">The <code>[verilog-format]</code> section</a></h3>
+<p>The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their default values. This section currently applies its settings to SystemVerilog and Verilog source code.</p>
+<pre><code class="language-toml">[verilog-format]
+# enable colored output for code snippets (TODO)
 highlight-syntax = false
 # number of whitespace characters per tab/indentation
 tab-size = 2
-# automatically align a port or parameter's name with its module's other names
+# automatically align a port or parameter's name with the module's other names
 name-auto-alignment = false
 # number of additional whitespace characters after alignment
 name-alignmnet = 0

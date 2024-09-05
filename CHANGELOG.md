@@ -15,7 +15,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.22.0 - unreleased
+## 0.22.0
 
 ### Features
 - ability to generate a new uuid to be copied into an existing ip using `orbit init --uuid`

@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.23.0 - unreleased
+
+### Fixes
+- fixes issue with `--force` on install not removing cache entries of the same ip (same uuid) and same version regardless of checksums
+
 ## 0.22.0
 
 ### Features

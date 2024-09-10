@@ -603,7 +603,30 @@ impl Install {
         // use checksum to create new directory slot
         let cache_slot_name = CacheSlot::new(src.get_uuid(), &version, &checksum);
         let cache_slot = cache_root.join(&cache_slot_name.to_string());
+        // find a directory that has this name beginning if using force
+        if force == true {
+            for dir in fs::read_dir(cache_root)? {
+                // only check valid directory entries
+                if let Ok(entry) = dir {
+                    // println!("{:?}", entry.file_name());
+                    let file_name = entry.file_name();
 
+                    if let Some(kid_cache_slot) =
+                        CacheSlot::try_from_str(&file_name.to_string_lossy())
+                    {
+                        if cache_slot_name.is_child_slot(&kid_cache_slot) == false {
+                            continue;
+                        }
+                        // check for same UUID
+                        let cached_ip = Ip::load(entry.path().to_path_buf(), false)?;
+                        if cached_ip.get_uuid() == src.get_uuid() {
+                            // remove the slot no matter if it is dynamic or not
+                            fs::remove_dir_all(entry.path())?;
+                        }
+                    }
+                }
+            }
+        }
         // check if the slot is occupied in the cache
         if cache_slot.exists() == true {
             // check if we should proceed with force regardless if the installation is valid

@@ -233,6 +233,11 @@ jobs:
     needs: [build-orbit-ubuntu-1804]
     runs-on: ubuntu-latest
     steps:
+      - name: Free space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
       - name: Checkout 
         uses: actions/checkout@v4
         

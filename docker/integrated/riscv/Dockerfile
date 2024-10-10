@@ -24,5 +24,10 @@ FROM chaseruskin/modelsim-intel:19.1-ubuntu-18.04
 
 COPY --from=2 / /
 
+# Stage 4: SystemVerilog tools
+FROM chaseruskin/sysv:1.0.0-ubuntu-18.04
+
+COPY --from=3 / /
+
 # Enter the shell
 CMD ["bash"]

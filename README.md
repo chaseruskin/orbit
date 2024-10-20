@@ -8,6 +8,8 @@
 
 Orbit is an agile package manager and extensible build tool for hardware description languages (HDL).
 
+![](./docs/src/images/architecture2.svg)
+
 ### Live at the cutting edge of hardware design
 
 The boom of AI and emerging workloads have shown just how fast new advancements can be made in models and algorithms. Today's hardware is no longer good enough to meet the immediate demands of tomorrow's innovations; today's hardware must shift to a more agile development approach. It's time to build tomorrow's hardware, today. It's time to __live at the cutting edge of hardware design.__

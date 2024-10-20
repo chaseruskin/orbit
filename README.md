@@ -68,8 +68,9 @@ The "Orbit.lock" file is a detailed TOML file automatically maintained by Orbit 
 
 ## Low effort integration
 
-To encourage code reuse and faster development cycles, Orbit includes HDL-specific commands to integrate designs across ips. For example, Orbit can display HDL code snippets of other known design units to be instantiated within your local ip.
+To encourage code reuse and faster development cycles, Orbit includes HDL-specific commands to integrate designs across ips. For example, Orbit can display HDL code snippets of existing design units to be instantiated within your local ip.
 
+This includes support for VHDL source code:
 ```
 $ orbit get and_gate --ip gates:2.0.0 --library --signals --instance
 ```
@@ -86,6 +87,22 @@ u_and_gate : entity gates.and_gate
     b => b,
     x => x
   );
+```
+
+As well as support for Verilog/SystemVerilog source code:
+```
+$ orbit get or_gate --ip gates:2.0.0 --signals --instance
+```
+``` systemverilog
+logic a;
+logic b;
+logic x;
+
+or_gate u_or_gate (
+  .a(a),
+  .b(b),
+  .x(x)
+);
 ```
 
 ## Flexibility in use
@@ -114,7 +131,7 @@ What makes Orbit an agile package manager for HDLs? Here are some of its key fea
 
 - Reproduce results across any environment with Orbit through its automatic handling of lockfiles and checksums
 
-- Overcome namespace collisions, a problem inherent to VHDL and Verilog, through a custom aglorithm that dynamically transforms conflicting design names called [_dynamic symbol transformation_](https://chaseruskin.github.io/orbit/topic/dst.html)
+- Overcome namespace collisions, a problem inherent to VHDL and Verilog/SystemVerilog, through a custom algorithm that dynamically transforms conflicting design names called [_dynamic symbol transformation_](https://chaseruskin.github.io/orbit/topic/dst.html)
 
 - Because of dynamic symbol transformation, multiple versions of the same design unit (or more broadly, design units given the same identifier) are allowed in the same build under [two simple constraints](https://chaseruskin.github.io/orbit/topic/dst.html#limitations)
 

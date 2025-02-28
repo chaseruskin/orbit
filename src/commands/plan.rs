@@ -384,7 +384,7 @@ impl Plan {
         match top_name.is_empty() {
             false => match require_bench {
                 true => crate::info!("dut set to {}", top_name.blue()),
-                false => crate::info!("p-level set to {}", top_name.blue()),
+                false => crate::info!("top-level set to {}", top_name.blue()),
             },
             true => match require_bench {
                 true => crate::warn!("no dut set"),

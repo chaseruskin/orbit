@@ -693,17 +693,22 @@ impl Config {
         map
     }
 
-    pub fn get_targets(&self) -> HashMap<&str, &Target> {
+    pub fn get_targets(&self, is_build: bool) -> HashMap<&str, &Target> {
         let mut map = HashMap::new();
 
         if let Some(tars) = &self.target {
-            tars.iter().for_each(|t| match map.get(t.get_name()) {
-                Some(_) => (),
-                None => {
-                    map.insert(t.get_name(), t);
-                    ()
-                }
-            });
+            tars.iter()
+                .filter(|p| match is_build {
+                    true => p.can_build(),
+                    false => p.can_test(),
+                })
+                .for_each(|t| match map.get(t.get_name()) {
+                    Some(_) => (),
+                    None => {
+                        map.insert(t.get_name(), t);
+                        ()
+                    }
+                });
         }
         map
     }

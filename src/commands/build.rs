@@ -89,7 +89,7 @@ impl Subcommand<Context> for Build {
                     Target::list_targets(
                         &mut c
                             .get_config()
-                            .get_targets()
+                            .get_targets(true)
                             .values()
                             .into_iter()
                             .collect::<Vec<&&Target>>(),

@@ -47,6 +47,8 @@ pub struct Target {
     args: Option<Vec<String>>,
     fileset: Option<Filesets>,
     plans: Option<Vec<Scheme>>,
+    build: Option<bool>,
+    test: Option<bool>,
 }
 
 impl Target {
@@ -62,6 +64,16 @@ impl Target {
             self.args
         };
         self
+    }
+
+    /// Checks if the given target can be used for the build process.
+    pub fn can_build(&self) -> bool {
+        *self.build.as_ref().unwrap_or(&true)
+    }
+
+    /// Checks if the given target can be used for the test process.
+    pub fn can_test(&self) -> bool {
+        *self.test.as_ref().unwrap_or(&true)
     }
 
     pub fn get_filesets(&self) -> Option<&Filesets> {
@@ -168,6 +180,8 @@ impl std::fmt::Display for Target {
             args: args,
             name: self.name.clone(),
             description: self.description.clone(),
+            build: self.build,
+            test: self.test,
             root: self.root.clone(),
             fileset: self.fileset.clone(),
             plans: self.plans.clone(),
@@ -291,6 +305,7 @@ mod test {
 name = "ghdl"
 description = "Backend script for simulating VHDL with GHDL."  
 command = "python"
+build = false
 args = ["./scripts/ghdl.py"]
 fileset.py-model = "{{orbit.bench}}.py"
 fileset.text = "*.txt"
@@ -310,6 +325,8 @@ args = ["~/scripts/download.bash"]
             Target {
                 name: String::from("ghdl"),
                 command: String::from("python"),
+                build: Some(false),
+                test: None,
                 plans: None,
                 args: Some(vec![String::from("./scripts/ghdl.py")]),
                 description: Some(String::from(
@@ -335,6 +352,8 @@ args = ["~/scripts/download.bash"]
                 args: Some(vec![String::from("~/scripts/download.bash")]),
                 description: None,
                 plans: None,
+                build: None,
+                test: None,
                 fileset: None,
                 root: None,
             }

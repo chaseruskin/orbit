@@ -42,6 +42,8 @@ Every configuration file consists of the following sections:
     - [command](#the-command-field) - The command to execute the target.
     - [args](#the-args-field) - Arguments to pass to the command.
     - [plans](#the-plans-field) - The list of supported blueprint file formats.
+    - [build](#the-build-field) - Enable or disable target invocation for the build subcommand
+    - [test](#the-test-field) - Enable or disable target invocation for the test subcommand
     - [[fileset]](#the-fileset-section) - Filesets to collect for the target. 
 - [[[protocol]]](#the-protocol-array) - Define a protocol.
     - [name](#the-name-field) - The name of the protocol.
@@ -210,6 +212,30 @@ plans = ["tsv"]
 The type of blueprint files supported by the particular target. If a list is provided, the default plan used is the first item in the list. If a plan is provided on the command-line, then it must be a valid plan and found within the target's defined list.
 
 If this field is left blank or not defined, then the default plan is "tsv".
+
+### The `build` field
+
+``` toml
+[[target]]
+# ...
+build = true
+```
+
+Explicitly allow or disallow the build subcommand to use this target. By setting this field to true, then the given target will be made available through the build subcommand. By setting this field to false, then the given target is hidden and unusable for the build subcommand.
+
+If this field is not defined, then the default is true.
+
+### The `test` field
+
+``` toml
+[[target]]
+# ...
+test = true
+```
+
+Explicitly allow or disallow the test subcommand to use this target. By setting this field to true, then the given target will be made available through the test subcommand. By setting this field to false, then the given target is hidden and unusable for the test subcommand.
+
+If this field is not defined, then the default is true.
 
 ### The `[fileset]` section
 

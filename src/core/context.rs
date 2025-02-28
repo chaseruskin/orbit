@@ -412,9 +412,18 @@ impl Context {
         };
         match target {
             // verify the target name matches
-            Some(name) => match self.get_config().get_targets().get(name.as_str()) {
+            Some(name) => match self.get_config().get_targets(is_build).get(name.as_str()) {
                 Some(&t) => Ok(Some(t)),
-                None => Err(Error::TargetNotFound(name.to_string(), Hint::TargetsList)),
+                None => match is_build {
+                    true => Err(Error::TargetNotFoundBuild(
+                        name.to_string(),
+                        Hint::TargetsListBuild,
+                    )),
+                    false => Err(Error::TargetNotFoundTest(
+                        name.to_string(),
+                        Hint::TargetsListTest,
+                    )),
+                },
             },
             None => match required {
                 true => Err(Error::MissingRequiredTarget),

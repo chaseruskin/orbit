@@ -57,8 +57,10 @@ pub enum Error {
     ChildProcErrorCode(i32),
     #[error("terminated by signal")]
     ChildProcTerminated,
-    #[error("no target named {0:?}{1}")]
-    TargetNotFound(String, Hint),
+    #[error("no build target named {0:?}{1}")]
+    TargetNotFoundBuild(String, Hint),
+    #[error("no test target named {0:?}{1}")]
+    TargetNotFoundTest(String, Hint),
     #[error("a target must be specified{0}")]
     TargetNotSpecified(Hint),
     #[error("failed to execute target process: {0}")]
@@ -214,7 +216,8 @@ impl Error {
 
 #[derive(Debug, PartialEq)]
 pub enum Hint {
-    TargetsList,
+    TargetsListBuild,
+    TargetsListTest,
     PublishSyncRemote,
     CatalogList,
     InitNotNew,
@@ -251,7 +254,12 @@ impl Display for Hint {
         };
         let message = match self {
             Self::CatalogList => "use `orbit search` to see the list of known ips",
-            Self::TargetsList => "use `orbit build --list` to see the list of defined targets",
+            Self::TargetsListBuild => {
+                "use `orbit build --list` to see the list of defined build targets"
+            }
+            Self::TargetsListTest => {
+                "use `orbit test --list` to see the list of defined test targets"
+            }
             Self::InitNotNew => "use `orbit init` to initialize an existing directory",
             Self::IpNameSeparate => {
                 "use the \"--name\" option for making an ip name separate from the directory name"

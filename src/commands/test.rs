@@ -92,7 +92,7 @@ impl Subcommand<Context> for Test {
                     Target::list_targets(
                         &mut c
                             .get_config()
-                            .get_targets()
+                            .get_targets(false)
                             .values()
                             .into_iter()
                             .collect::<Vec<&&Target>>(),

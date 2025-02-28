@@ -51,7 +51,7 @@ pub fn gather_current_files(path: &PathBuf, strip_base: bool) -> Vec<String> {
                 match p.file_name().to_str().unwrap() {
                     manifest::ORBIT_SUM_FILE
                     | lockfile::IP_LOCK_FILE
-                    | manifest::ORBIT_METADATA_FILE => false,
+                    | manifest::ORBIT_CACHE_FILE => false,
                     _ => true,
                 }
             }

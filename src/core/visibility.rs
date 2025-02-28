@@ -35,7 +35,7 @@ impl Default for VipList {
 }
 
 impl VipList {
-    pub fn new(root: &PathBuf, list: &Option<Vec<String>>) -> Result<Self, Fault> {
+    pub fn new(root: &PathBuf, list: Option<&Vec<String>>) -> Result<Self, Fault> {
         let plist = match list {
             Some(globs) => {
                 let mut builder = GitignoreBuilder::new(&root);

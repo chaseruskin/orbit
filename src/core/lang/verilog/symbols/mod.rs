@@ -645,18 +645,19 @@ impl VerilogSymbol {
                 def_ports
                     .into_iter()
                     .for_each(|p| interface::update_port_list(&mut ports, p, false));
+                return Ok(());
             }
-            return Ok(());
         }
 
         // try as a paramater
         if let Some(mut params) = params {
             if let Some(def_params) = Self::as_param_definition(&stmt, &params) {
+                // allow add_if_missing to support verilog-1995 style where no #(...) are used in declaration for parameters
                 def_params
                     .into_iter()
-                    .for_each(|p| interface::update_port_list(&mut params, p, false));
+                    .for_each(|p| interface::update_port_list(&mut params, p, true));
+                return Ok(());
             }
-            return Ok(());
         }
 
         // reset the statement

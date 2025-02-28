@@ -36,9 +36,11 @@ use super::manifest::FromFile;
 use super::version::PartialVersion;
 use super::visibility::VipList;
 use super::visibility::Visibility;
+use crate::core::cache::PkgCache;
 use crate::core::lockfile::LockEntry;
 use crate::core::manifest::IP_MANIFEST_FILE;
-use crate::core::manifest::ORBIT_METADATA_FILE;
+use crate::core::manifest::ORBIT_CACHE_FILE;
+use crate::core::manifest::ORBIT_DYNAMIC_FILE;
 use crate::core::manifest::ORBIT_SUM_FILE;
 use crate::core::uuid::Uuid;
 use crate::error::Error;
@@ -95,13 +97,6 @@ impl Mapping {
     }
 }
 
-use serde_derive::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize)]
-pub struct Metadata {
-    protected: Vec<String>,
-}
-
 #[derive(Debug, PartialEq)]
 pub struct Ip {
     mapping: Mapping,
@@ -153,22 +148,29 @@ impl From<IpArchive> for Ip {
 
 impl Ip {
     pub fn has_public_list(&self) -> bool {
-        VipList::new(&self.get_root(), self.get_man().get_ip().get_publics())
-            .unwrap()
-            .exists()
+        VipList::new(
+            &self.get_root(),
+            self.get_man().get_ip().get_publics().as_ref(),
+        )
+        .unwrap()
+        .exists()
     }
 
     pub fn into_public_list(&self) -> VipList {
-        VipList::new(&self.get_root(), self.get_man().get_ip().get_publics()).unwrap()
+        VipList::new(
+            &self.get_root(),
+            self.get_man().get_ip().get_publics().as_ref(),
+        )
+        .unwrap()
     }
 
     /// Generates a list of files that are known to either be public or protected.
     pub fn into_non_private_list(&self) -> VipList {
         let meta = Ip::read_cache_metadata(self.get_root());
         let mut list = match meta {
-            Some(m) => match m.protected.len() {
+            Some(m) => match m.get_protected().len() {
                 0 => None,
-                _ => Some(m.protected),
+                _ => Some(m.get_protected().clone()),
             },
             None => None,
         };
@@ -181,7 +183,7 @@ impl Ip {
                 None => Some(public.clone()),
             };
         }
-        VipList::new(&self.get_root(), &list).unwrap()
+        VipList::new(&self.get_root(), list.as_ref()).unwrap()
     }
 
     pub fn get_root(&self) -> &PathBuf {
@@ -216,7 +218,7 @@ impl Ip {
         }
     }
 
-    /// Gets the protected files listed in the .orbit-metadata file.
+    /// Gets the protected files listed in the .orbit-cache file.
     pub fn get_protected_files(&self) -> Option<Vec<String>> {
         todo!()
     }
@@ -277,7 +279,7 @@ impl Ip {
         let man = Manifest::from_file(&man_path)?;
 
         // verify the public list is okay
-        VipList::new(&root, man.get_ip().get_publics())?;
+        VipList::new(&root, man.get_ip().get_publics().as_ref())?;
 
         if is_working_ip == true {
             // verify there are no files that created by user that are reserved for orbit's internal use
@@ -369,7 +371,7 @@ impl Ip {
     /// Checks the metadata file for a entry for `dynamic`.
     pub fn is_dynamic(&self) -> bool {
         self.get_mapping().is_physical() == true
-            && self.get_root().join(".orbit-dynamic").exists() == true
+            && self.get_root().join(ORBIT_DYNAMIC_FILE).exists() == true
     }
 
     /// Gets the proper library name for the ip. If there is a "collision" with the library name and an identifier that
@@ -411,7 +413,7 @@ impl Ip {
             acc.push_str(&format!("{}\t{}\n", k, v));
             acc
         });
-        let _ = std::fs::write(self.get_root().join(".orbit-dynamic"), &contents).unwrap();
+        let _ = std::fs::write(self.get_root().join(ORBIT_DYNAMIC_FILE), &contents).unwrap();
     }
 
     fn library_collides_with_dst(&self) -> Option<String> {
@@ -419,7 +421,7 @@ impl Ip {
             // check the list of symbols
             true => {
                 let words =
-                    std::fs::read_to_string(self.get_root().join(".orbit-dynamic")).unwrap();
+                    std::fs::read_to_string(self.get_root().join(ORBIT_DYNAMIC_FILE)).unwrap();
                 let lib = self.get_man().get_hdl_library().to_string();
                 words.split_terminator('\n').find_map(|entry| {
                     let (key, val) = entry.split_once('\t').unwrap();
@@ -500,9 +502,9 @@ impl Ip {
         }
     }
 
-    /// Gets the already cached internal metadata for the install ip from [ORBIT_METADATA_FILE].
-    pub fn read_cache_metadata(dir: &PathBuf) -> Option<Metadata> {
-        let meta_file = dir.join(ORBIT_METADATA_FILE);
+    /// Gets the already cached internal metadata for the install ip from [ORBIT_CACHE_FILE].
+    pub fn read_cache_metadata(dir: &PathBuf) -> Option<PkgCache> {
+        let meta_file = dir.join(ORBIT_CACHE_FILE);
         if meta_file.exists() == false {
             None
         } else {
@@ -516,32 +518,18 @@ impl Ip {
         }
     }
 
+    /// Saves the cached ip's checksum into the [ORBIT_CACHE_FILE].
     pub fn write_cache_checksum(&self, sum: &Sha256Hash) -> Result<(), Fault> {
         let path = self.get_root().join(manifest::ORBIT_SUM_FILE);
         std::fs::write(&path, sum.to_string().as_bytes())?;
         Ok(())
     }
 
+    /// Serializes the cached ip's data into the [ORBIT_CACHE_FILE].
     pub fn write_cache_metadata(&self) -> Result<(), Fault> {
-        // generate the unit map
-        let umap = self.collect_units(false, true)?;
-        let protected: Vec<String> = umap
-            .iter()
-            .filter(|(_, v)| v.get_visibility().is_protected())
-            .map(|(_, v)| {
-                filesystem::into_std_str(filesystem::remove_base(
-                    self.get_root(),
-                    &PathBuf::from(v.get_source_file()),
-                ))
-            })
-            .collect();
-
-        let meta = Metadata {
-            protected: protected,
-        };
-
+        let path = self.get_root().join(manifest::ORBIT_CACHE_FILE);
+        let meta = PkgCache::from_ip(&self)?;
         let serialized = serde_json::to_string(&meta)?;
-        let path = self.get_root().join(manifest::ORBIT_METADATA_FILE);
         std::fs::write(&path, serialized)?;
         Ok(())
     }
@@ -642,7 +630,7 @@ impl Ip {
     }
 
     pub fn read_units_from_metadata(dir: &PathBuf) -> Option<HashMap<LangIdentifier, LangUnit>> {
-        let meta_file: PathBuf = dir.join(ORBIT_METADATA_FILE);
+        let meta_file: PathBuf = dir.join(ORBIT_CACHE_FILE);
         if Path::exists(&meta_file) == true {
             if let Ok(contents) = fs::read_to_string(&meta_file) {
                 if let Ok(toml) = contents.parse::<Document>() {
@@ -665,11 +653,11 @@ impl Ip {
     }
 
     pub fn get_include_list(&self) -> Result<VipList, Fault> {
-        VipList::new(&self.root, &self.get_man().get_ip().get_include())
+        VipList::new(&self.root, self.get_man().get_ip().get_include().as_ref())
     }
 
     pub fn get_exclude_list(&self) -> Result<VipList, Fault> {
-        VipList::new(&self.root, &self.get_man().get_ip().get_exclude())
+        VipList::new(&self.root, self.get_man().get_ip().get_exclude().as_ref())
     }
 
     pub fn gather_current_files(&self) -> Vec<String> {

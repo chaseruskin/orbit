@@ -198,8 +198,10 @@ impl<'de> serde::Deserialize<'de> for Dependency {
 type Dependencies = HashMap<IpName, Dependency>;
 
 pub const IP_MANIFEST_FILE: &str = "Orbit.toml";
+// Files reserved for internal cache use
 pub const ORBIT_SUM_FILE: &str = ".orbit-checksum";
-pub const ORBIT_METADATA_FILE: &str = ".orbit-metadata";
+pub const ORBIT_CACHE_FILE: &str = ".orbit-cache";
+pub const ORBIT_DYNAMIC_FILE: &str = ".orbit-dynamic";
 
 const DEPENDENCIES_KEY: &str = "dependencies";
 

@@ -20,6 +20,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ### Features
 - Adds `build` and `test` fields for `[[target]]` in configuration files to explicitly enable or disable a target from either the build subcommand and test subcommand
 
+### Fixes
+- Now correctly identifies parameters declared using Verilog-1995 style (entirely declared inside module architecture without a `#(...)` on module declaration)
+
 ## 0.23.3
 
 ### Features

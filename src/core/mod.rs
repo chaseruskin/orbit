@@ -17,6 +17,7 @@
 
 pub mod algo;
 pub mod blueprint;
+pub mod cache;
 pub mod catalog;
 pub mod channel;
 pub mod config;

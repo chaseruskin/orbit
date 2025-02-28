@@ -119,7 +119,7 @@ impl Tree {
         let working_lib = target.get_hdl_library();
 
         // build graph again but with entire set of all files available from all depdendencies
-        let ip_graph = algo::compute_final_ip_graph(&target, &catalog)?;
+        let ip_graph = algo::compute_final_ip_graph(&target, Some(&catalog))?;
         let files = algo::build_ip_file_list(&ip_graph, &target);
 
         // build the complete graph (using entities as the nodes)
@@ -211,7 +211,7 @@ impl Tree {
 
     /// Construct and print the graph at an IP dependency level.
     fn run_ip_graph(&self, target: Ip, catalog: Catalog) -> Result<(), Fault> {
-        let ip_graph = algo::compute_final_ip_graph(&target, &catalog)?;
+        let ip_graph = algo::compute_final_ip_graph(&target, Some(&catalog))?;
 
         let tree = ip_graph.get_graph().treeview(0);
 

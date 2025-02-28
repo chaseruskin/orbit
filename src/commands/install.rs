@@ -483,7 +483,7 @@ impl Install {
             }
         // create the lockfile
         } else if local_ip.can_use_lock(&catalog) == false {
-            let ip_graph = algo::compute_final_ip_graph(&local_ip, &catalog)?;
+            let ip_graph = algo::compute_final_ip_graph(&local_ip, Some(&catalog))?;
             Plan::write_lockfile(&local_ip, &ip_graph, true, true, &catalog)?;
         }
 
@@ -645,7 +645,7 @@ impl Install {
         let ip_spec = src.get_man().get_ip().into_ip_spec();
 
         if verbose == true {
-            crate::info!("stalling ip {} ...", &ip_spec);
+            crate::info!("installing ip {} ...", &ip_spec);
         }
 
         // perform sha256 on the temporary cloned directory

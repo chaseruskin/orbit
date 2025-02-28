@@ -15,7 +15,7 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-use serde_derive::Serialize;
+use serde_derive::{Deserialize, Serialize};
 
 use super::super::error::VerilogError;
 use super::token::VerilogToken;
@@ -30,7 +30,7 @@ use crate::core::lang::highlight;
 use crate::core::lang::highlight::ToColor;
 use colored::ColoredString;
 
-#[derive(Debug, Clone, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Identifier {
     Basic(String),

@@ -23,7 +23,7 @@ use crate::core::lang::LangIdentifier;
 use crate::core::pkgid::PkgPart;
 use crate::util::strcmp;
 use colored::ColoredString;
-use serde_derive::Serialize;
+use serde_derive::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::hash::Hash;
@@ -34,7 +34,7 @@ use std::str::FromStr;
 use crate::core::lang::vhdl::token::char_set;
 use crate::core::lang::vhdl::token::VhdlToken;
 
-#[derive(Debug, Clone, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Identifier {
     Basic(String),

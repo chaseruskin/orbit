@@ -97,7 +97,7 @@ impl Plan {
         let output_path = target_path.join(target.get_name());
 
         // build entire ip graph and resolve with dynamic symbol transformation
-        let ip_graph = match algo::compute_final_ip_graph(&working_ip, &catalog) {
+        let ip_graph = match algo::compute_final_ip_graph(&working_ip, Some(&catalog)) {
             Ok(g) => g,
             Err(e) => {
                 // generate a single blueprint

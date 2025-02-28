@@ -170,7 +170,7 @@ impl Ip {
         let mut list = match meta {
             Some(m) => match m.get_protected().len() {
                 0 => None,
-                _ => Some(m.get_protected().clone()),
+                _ => Some(m.get_protected()),
             },
             None => None,
         };
@@ -183,6 +183,7 @@ impl Ip {
                 None => Some(public.clone()),
             };
         }
+
         VipList::new(&self.get_root(), list.as_ref()).unwrap()
     }
 

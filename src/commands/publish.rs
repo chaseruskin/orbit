@@ -293,9 +293,9 @@ impl Publish {
         }
     }
 
+    /// Verifies that we can build the graph for this ip `local_ip` without errors.
     pub fn check_graph_builds_okay(local_ip: &Ip, catalog: &Catalog) -> Result<(), Fault> {
-        // use all language settings
-        let ip_graph = algo::compute_final_ip_graph(&local_ip, &catalog)?;
+        let ip_graph = algo::compute_final_ip_graph(&local_ip, Some(&catalog))?;
         let files = algo::build_ip_file_list(&ip_graph, &local_ip);
         let _global_graph = Plan::build_full_graph(&files)?;
         Ok(())

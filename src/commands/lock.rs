@@ -93,7 +93,7 @@ impl Lock {
     /// Performs the backend logic for creating a blueprint file (planning a design).
     pub fn run(working_ip: &Ip, catalog: &Catalog, force: bool) -> Result<(), Fault> {
         // build entire ip graph and resolve with dynamic symbol transformation
-        let ip_graph = match algo::compute_final_ip_graph(&working_ip, &catalog) {
+        let ip_graph = match algo::compute_final_ip_graph(&working_ip, Some(&catalog)) {
             Ok(g) => g,
             Err(e) => return Err(e)?,
         };
@@ -107,7 +107,7 @@ impl Lock {
     pub fn write_new_lockfile(local_ip: &Ip, warn: bool) -> Result<(), Fault> {
         // build entire ip graph and resolve with dynamic symbol transformation
         let catalog = Catalog::new();
-        let ip_graph = match algo::compute_final_ip_graph(&local_ip, &catalog) {
+        let ip_graph = match algo::compute_final_ip_graph(&local_ip, Some(&catalog)) {
             Ok(g) => g,
             Err(e) => match warn {
                 true => {

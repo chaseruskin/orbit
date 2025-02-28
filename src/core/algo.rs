@@ -66,7 +66,7 @@ pub fn graph_ip_from_lock(lock: &LockFile) -> Result<GraphMap<IpSpec, &LockEntry
 /// Note: this function performs no reduction.
 fn graph_ip<'a>(
     root: &'a Ip,
-    catalog: &'a Catalog<'a>,
+    catalog: Option<&'a Catalog<'a>>,
 ) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, CodeFault> {
     // create empty graph
     let mut g = GraphMap::new();
@@ -75,6 +75,12 @@ fn graph_ip<'a>(
         root.get_man().get_ip().into_ip_spec(),
         IpNode::new_keep(root, LangIdentifier::new_working()),
     );
+    // Only operate on the local ip if catalog is omitted
+    if catalog.is_none() {
+        return Ok(g);
+    }
+    let catalog = catalog.unwrap();
+
     let mut processing = vec![(t, root)];
 
     // check if we can use the lockfile (is synced with user's manifest)
@@ -268,10 +274,10 @@ fn graph_ip<'a>(
 
 pub fn compute_final_ip_graph<'a>(
     target: &'a Ip,
-    catalog: &'a Catalog<'a>,
+    catalog: Option<&'a Catalog<'a>>,
 ) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, CodeFault> {
     // collect rough outline of ip graph (after this function, the correct files according to language are kept)
-    let mut rough_ip_graph = graph_ip(&target, &catalog)?;
+    let mut rough_ip_graph = graph_ip(&target, catalog)?;
 
     // keep track of list of neighbors that must perform dst and their lookup-tables to use after processing all direct impacts
     let mut transforms = HashMap::<IpSpec, HashMap<LangIdentifier, String>>::new();
@@ -326,14 +332,16 @@ pub fn compute_final_ip_graph<'a>(
     // println!("{:?}", transforms);
 
     // perform each dynamic symbol transform
-    let mut transforms_iter = transforms.into_iter();
-    while let Some((key, lut)) = transforms_iter.next() {
-        rough_ip_graph
-            .get_map_mut()
-            .get_mut(&key)
-            .unwrap()
-            .as_ref_mut()
-            .dynamic_symbol_transform(&lut, catalog.get_cache_path());
+    if let Some(catalog) = catalog {
+        let mut transforms_iter = transforms.into_iter();
+        while let Some((key, lut)) = transforms_iter.next() {
+            rough_ip_graph
+                .get_map_mut()
+                .get_mut(&key)
+                .unwrap()
+                .as_ref_mut()
+                .dynamic_symbol_transform(&lut, catalog.get_cache_path());
+        }
     }
 
     Ok(rough_ip_graph)
@@ -542,13 +550,8 @@ fn install_dst(source_ip: &Ip, root: &PathBuf, mapping: &HashMap<LangIdentifier,
     .unwrap();
     let cached_ip = Ip::load(cache_path, false, false).unwrap();
 
-    // @todo: cache results of primary design unit list
-    // cached_ip.stash_units();
-    // // indicate this installation is dynamic in the metadata
+    // indicate this installation is dynamic in the metadata
     cached_ip.set_as_dynamic(mapping);
-    // // save and write the new metadata
-    // cached_ip.write_metadata().unwrap();
-
     // write the new checksum file
     cached_ip.write_cache_checksum(&sum).unwrap();
     // write the metadata

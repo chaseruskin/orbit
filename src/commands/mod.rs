@@ -29,7 +29,7 @@ mod info;
 mod init;
 mod install;
 mod new;
-mod plan;
+pub mod plan;
 mod publish;
 mod read;
 mod remove;

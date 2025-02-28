@@ -401,7 +401,7 @@ impl Display for LangUnit {
     }
 }
 
-#[derive(Debug, Eq, Clone, PartialOrd, Ord)]
+#[derive(Debug, Eq, Clone, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum LangIdentifier {
     Vhdl(VhdlIdentifier),
     Verilog(VerilogIdentifier),

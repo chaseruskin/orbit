@@ -21,6 +21,7 @@ use std::path::PathBuf;
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 
 use crate::util::anyerror::Fault;
+use serde_derive::{Deserialize, Serialize};
 
 /// A Very-Important-Path List (VipList) that follows .gitignore syntax.
 #[derive(Debug)]
@@ -64,7 +65,7 @@ impl VipList {
     }
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone, Serialize, Deserialize)]
 pub enum Visibility {
     Public,
     Protected,

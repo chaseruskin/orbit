@@ -197,6 +197,8 @@ command = "cat"
 args = ["blueprint.tsv"]
 ```
 
+This field supports [_string swapping_](./../topic/swapping.md).
+
 ### The `plans` field
 
 ``` toml
@@ -214,36 +216,40 @@ If this field is left blank or not defined, then the default plan is "tsv".
 ``` toml
 [[target]]
 # ...
-fileset.pymdl = "{{ orbit.bench }}.py"
+fileset.pymdl = "{{ orbit.tb.name }}.py"
 ```
+
+This field supports [_string swapping_](./../topic/swapping.md) (as shown in the example entry).
 
 ### The `[[protocol]]` array
 
 ### The `name` field
 
-See [[target]](#the-target-array)'s definition.
+See [[target]](#the-target-array)'s definition of [`name`](#the-name-field).
 
 ### The `description` field
 
-See [[target]](#the-target-array)'s definition.
+See [[target]](#the-target-array)'s definition of [`description`](#the-description-field).
 
 ### The `command` field
 
-See [[target]](#the-target-array)'s definition.
+See [[target]](#the-target-array)'s definition of [`command`](#the-command-field).
 
 ### The `args` field
 
-See [[target]](#the-target-array)'s definition.
+See [[target]](#the-target-array)'s definition of [`args`](#the-args-field).
+
+This field supports [_string swapping_](./../topic/swapping.md).
 
 ### The `[[channel]]` array
 
 ### The `name` field
 
-See [[target]](#the-target-array)'s definition.
+See [[target]](#the-target-array)'s definition of [`name`](#the-name-field).
 
 ### The `description` field
 
-See [[target]](#the-target-array)'s definition.
+See [[target]](#the-target-array)'s definition of [`description`](#the-description-field).
 
 ### The `root` field
 
@@ -257,24 +263,30 @@ root = "./index"
 
 ### The `sync.command` field
 
-See [[target]](#the-target-array)'s definition.
+See [[target]](#the-target-array)'s definition of [`command`](#the-command-field).
 
 ### The `sync.args` field
 
-See [[target]](#the-target-array)'s definition.
+See [[target]](#the-target-array)'s definition of [`args`](#the-args-field).
+
+This field supports [_string swapping_](./../topic/swapping.md)
 
 ### The `pre.command` field
 
-See [[target]](#the-target-array)'s definition.
+See [[target]](#the-target-array)'s definition of [`command`](#the-command-field).
 
 ### The `pre.args` field
 
-See [[target]](#the-target-array)'s definition.
+See [[target]](#the-target-array)'s definition of [`args`](#the-args-field).
+
+This field supports [_string swapping_](./../topic/swapping.md)
 
 ### The `post.command` field
 
-See [[target]](#the-target-array)'s definition.
+See [[target]](#the-target-array)'s definition of [`command`](#the-command-field).
 
 ### The `post.args` field
 
-See [[target]](#the-target-array)'s definition.
+See [[target]](#the-target-array)'s definition of [`args`](#the-args-field).
+
+This field supports [_string swapping_](./../topic/swapping.md)

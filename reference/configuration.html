@@ -210,6 +210,8 @@
 <li><a href="#the-command-field">command</a> - The command to execute the target.</li>
 <li><a href="#the-args-field">args</a> - Arguments to pass to the command.</li>
 <li><a href="#the-plans-field">plans</a> - The list of supported blueprint file formats.</li>
+<li><a href="#the-build-field">build</a> - Enable or disable target invocation for the build subcommand</li>
+<li><a href="#the-test-field">test</a> - Enable or disable target invocation for the test subcommand</li>
 <li><a href="#the-fileset-section">[fileset]</a> - Filesets to collect for the target.</li>
 </ul>
 </li>
@@ -337,6 +339,20 @@ plans = ["tsv"]
 </code></pre>
 <p>The type of blueprint files supported by the particular target. If a list is provided, the default plan used is the first item in the list. If a plan is provided on the command-line, then it must be a valid plan and found within the target's defined list.</p>
 <p>If this field is left blank or not defined, then the default plan is "tsv".</p>
+<h3 id="the-build-field"><a class="header" href="#the-build-field">The <code>build</code> field</a></h3>
+<pre><code class="language-toml">[[target]]
+# ...
+build = true
+</code></pre>
+<p>Explicitly allow or disallow the build subcommand to use this target. By setting this field to true, then the given target will be made available through the build subcommand. By setting this field to false, then the given target is hidden and unusable for the build subcommand.</p>
+<p>If this field is not defined, then the default is true.</p>
+<h3 id="the-test-field"><a class="header" href="#the-test-field">The <code>test</code> field</a></h3>
+<pre><code class="language-toml">[[target]]
+# ...
+test = true
+</code></pre>
+<p>Explicitly allow or disallow the test subcommand to use this target. By setting this field to true, then the given target will be made available through the test subcommand. By setting this field to false, then the given target is hidden and unusable for the test subcommand.</p>
+<p>If this field is not defined, then the default is true.</p>
 <h3 id="the-fileset-section"><a class="header" href="#the-fileset-section">The <code>[fileset]</code> section</a></h3>
 <pre><code class="language-toml">[[target]]
 # ...

@@ -16,6 +16,7 @@
 //
 
 use crate::commands::helps::info;
+use crate::core::cache::UnitCache;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::ip::{Ip, PartialIpSpec};
@@ -112,16 +113,26 @@ impl Subcommand<Context> for Info {
         // load the ip's manifest
         if self.units == true {
             if ip.get_mapping().is_physical() == true {
-                // force computing the primary design units if a physical ip (non-archived)
-                let units = ip.collect_units(true, false)?;
-                println!(
-                    "{}",
-                    Self::format_units_table(
-                        units.into_iter().map(|(_, unit)| unit).collect(),
-                        self.all,
-                        is_local_ip,
-                    )
-                );
+                // try to read from cache file
+                let cache_data = match is_local_ip {
+                    true => None,
+                    false => Ip::read_cache_metadata(ip.get_root()),
+                };
+                if let Some(mut cache) = cache_data {
+                    let mut units = cache.get_units_mut();
+                    println!("{}", Self::format_cached_units_table(&mut units, self.all));
+                } else {
+                    // force computing the primary design units if a physical ip (non-archived)
+                    let units = ip.collect_units(true, false)?;
+                    println!(
+                        "{}",
+                        Self::format_units_table(
+                            units.into_iter().map(|(_, unit)| unit).collect(),
+                            self.all,
+                            is_local_ip,
+                        )
+                    );
+                }
             } else {
                 // a 'virtual' ip, so try to extract units from
                 crate::info!(
@@ -183,6 +194,32 @@ impl Subcommand<Context> for Info {
 }
 
 impl Info {
+    /// Creates a string to display the primary design units for the particular ip from the cached data file.
+    fn format_cached_units_table(table: &mut Vec<UnitCache>, all: bool) -> String {
+        let mut result = String::new();
+        table.sort_by(|a, b| match a.get_visibility().cmp(&b.get_visibility()) {
+            Ordering::Equal => a.get_name().cmp(&b.get_name()),
+            Ordering::Less => Ordering::Less,
+            Ordering::Greater => Ordering::Greater,
+        });
+
+        for unit in table {
+            // skip this unit if it is not listed public and all is not provided
+            if all == false && unit.get_visibility() != Visibility::Public {
+                continue;
+            }
+            result.push_str(&format!(
+                "{:<40}{:<15}{:<9}\n",
+                unit.get_name().to_string(),
+                unit.get_symbol(),
+                unit.get_visibility().to_string(),
+            ));
+        }
+        // pop the last \n
+        result.pop();
+        result
+    }
+
     /// Creates a string for to display the primary design units for the particular ip.
     fn format_units_table(table: Vec<LangUnit>, all: bool, is_local_ip: bool) -> String {
         let mut result = String::new();

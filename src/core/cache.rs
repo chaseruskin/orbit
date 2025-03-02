@@ -38,11 +38,14 @@ pub struct UnitCache {
 
 impl UnitCache {
     pub fn from_graph_entry(
+        ip: &Ip,
         name: LangIdentifier,
         node: &HdlNode,
         unit: &LangUnit,
         deps: Vec<&LangIdentifier>,
     ) -> Self {
+        let base_path_offset = ip.get_root().as_os_str().len();
+
         Self {
             name: name,
             symbol: unit.to_string(),
@@ -51,10 +54,30 @@ impl UnitCache {
             sources: node
                 .get_associated_files()
                 .iter()
-                .map(|f| f.get_file().clone())
+                .map(|f| {
+                    let abs_path = f.get_file();
+                    // +1 to include removing the final '/' to make the path relative
+                    abs_path.get(base_path_offset + 1..).unwrap().to_string()
+                })
                 .collect(),
             dependencies: deps.into_iter().map(|f| f.clone()).collect(),
         }
+    }
+
+    pub fn get_lang(&self) -> Lang {
+        self.language.clone()
+    }
+
+    pub fn get_symbol(&self) -> &str {
+        &self.symbol
+    }
+
+    pub fn get_visibility(&self) -> Visibility {
+        self.visibility.clone()
+    }
+
+    pub fn get_name(&self) -> &LangIdentifier {
+        &self.name
     }
 }
 
@@ -87,7 +110,13 @@ impl PkgCache {
                 .collect();
             let name = f.0.get_suffix().clone();
             let lunit = umap.get(&name).unwrap();
-            units.push(UnitCache::from_graph_entry(name, f.1.as_ref(), lunit, deps));
+            units.push(UnitCache::from_graph_entry(
+                &ip,
+                name,
+                f.1.as_ref(),
+                lunit,
+                deps,
+            ));
         }
 
         Ok(Self { units: units })
@@ -101,5 +130,9 @@ impl PkgCache {
             .filter(|p| p.visibility.is_protected())
             .for_each(|f| protected.append(&mut f.sources.clone()));
         protected
+    }
+
+    pub fn get_units_mut(&mut self) -> &mut Vec<UnitCache> {
+        &mut self.units
     }
 }

@@ -383,6 +383,7 @@ impl Get {
 
     fn fetch_entity(ip: &Ip, name: &LangIdentifier) -> Result<Option<LangUnit>, Fault> {
         let mut files = ip.collect_units(true, false)?;
+        // need to link to architectures here for VHDL
         let result = files.remove(name);
         Ok(result)
     }

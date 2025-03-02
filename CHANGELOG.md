@@ -19,6 +19,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ### Features
 - Adds `build` and `test` fields for `[[target]]` in configuration files to explicitly enable or disable a target from either the build subcommand and test subcommand
+- Adds caching mechanism for retrieving list of units from file for `orbit info -u` on installed ips to speed up process
 
 ### Changes
 - Writes entire 64 characters of the SHA256 checksum (rather than first 10 characters) of current ip to `ORBIT_IP_CHECKSUM` env var during the build process

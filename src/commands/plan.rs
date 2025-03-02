@@ -1038,6 +1038,45 @@ impl Plan {
         }
     }
 
+    pub fn connect_edges_from_vhdl<'b, 'a>(
+        graph_map: &'b mut GraphMap<CompoundIdentifier, HdlNode<'a>, ()>,
+        component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
+        sub_nodes: Vec<(LangIdentifier, SubUnitNode<'a>)>,
+    ) -> () {
+        // go through all architectures and make the connections
+        let mut sub_nodes_iter = sub_nodes.into_iter();
+        while let Some((lib, node)) = sub_nodes_iter.next() {
+            let node_name = CompoundIdentifier::new(
+                lib,
+                LangIdentifier::Vhdl(node.get_sub().get_entity().clone()),
+            );
+
+            // link to the owner and add architecture's source file
+            let entity_node = match graph_map.get_node_by_key_mut(&node_name) {
+                Some(en) => en,
+                // @todo: issue error because the entity (owner) is not declared
+                None => continue,
+            };
+            entity_node.as_ref_mut().add_file(node.get_file());
+            // create edges (this is very important)
+            for dep in node.get_sub().get_edge_list() {
+                // println!("{:?}", dep);
+                // need to locate the key with a suffix matching `dep` if it was a component instantiation
+                if dep.get_prefix().is_none() == true {
+                    if let Some(lib) = component_pairs.get(dep.get_suffix()) {
+                        graph_map.add_edge_by_key(
+                            &CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone()),
+                            &node_name,
+                            (),
+                        );
+                    }
+                } else {
+                    graph_map.add_edge_by_key(dep, &node_name, ());
+                };
+            }
+        }
+    }
+
     /// Builds a graph of design units. Used for planning
     pub fn build_full_graph<'a>(
         files: &'a Vec<IpFileNode>,
@@ -1072,38 +1111,8 @@ impl Plan {
         // add connections for verilog and systemverilog
         Self::connect_edges_from_verilog(&mut graph_map, &mut component_pairs, false);
 
-        // go through all architectures and make the connections
-        let mut sub_nodes_iter = sub_nodes.into_iter();
-        while let Some((lib, node)) = sub_nodes_iter.next() {
-            let node_name = CompoundIdentifier::new(
-                lib,
-                LangIdentifier::Vhdl(node.get_sub().get_entity().clone()),
-            );
-
-            // link to the owner and add architecture's source file
-            let entity_node = match graph_map.get_node_by_key_mut(&node_name) {
-                Some(en) => en,
-                // @todo: issue error because the entity (owner) is not declared
-                None => continue,
-            };
-            entity_node.as_ref_mut().add_file(node.get_file());
-            // create edges (this is very important)
-            for dep in node.get_sub().get_edge_list() {
-                // println!("{:?}", dep);
-                // need to locate the key with a suffix matching `dep` if it was a component instantiation
-                if dep.get_prefix().is_none() == true {
-                    if let Some(lib) = component_pairs.get(dep.get_suffix()) {
-                        graph_map.add_edge_by_key(
-                            &CompoundIdentifier::new(lib.clone(), dep.get_suffix().clone()),
-                            &node_name,
-                            (),
-                        );
-                    }
-                } else {
-                    graph_map.add_edge_by_key(dep, &node_name, ());
-                };
-            }
-        }
+        // add connections for vhdl
+        Self::connect_edges_from_vhdl(&mut graph_map, &mut component_pairs, sub_nodes);
 
         // go through all nodes and make the connections
         let idens: Vec<CompoundIdentifier> = graph_map

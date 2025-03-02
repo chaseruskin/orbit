@@ -22,7 +22,7 @@ Orbit also sets environment variables during runtime such that any subprocesses 
 
 - `ORBIT_IP_VERSION` - The version of the current ip.
 
-- `ORBIT_IP_CHECKSUM` - The first 10 characters from the latest checksum of the current ip.
+- `ORBIT_IP_CHECKSUM` - The full 64 character hexadecimal string of the SHA256 checksum of the current ip.
 
 - `ORBIT_TARGET` - The name of the target selected for the latest build process.
 

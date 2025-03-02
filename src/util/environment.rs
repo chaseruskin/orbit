@@ -175,11 +175,7 @@ impl Environment {
                 .value(PathBuf::standardize(&ip.get_root()).to_str().unwrap()),
         );
         if let Some(sum) = ip.get_checksum() {
-            self.insert(
-                EnvVar::new()
-                    .key(ORBIT_IP_CHECKSUM)
-                    .value(&sum.to_string_short()),
-            );
+            self.insert(EnvVar::new().key(ORBIT_IP_CHECKSUM).value(&sum.to_string()));
         }
         Ok(self)
     }

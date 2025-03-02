@@ -20,6 +20,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ### Features
 - Adds `build` and `test` fields for `[[target]]` in configuration files to explicitly enable or disable a target from either the build subcommand and test subcommand
 
+### Changes
+- writes entire 64 characters of the SHA256 checksum (rather than first 10 characters) of current ip to ORBIT_IP_CHECKSUM env var during the build process
+
 ### Fixes
 - Now correctly identifies parameters declared using Verilog-1995 style (entirely declared inside module architecture without a `#(...)` on module declaration)
 

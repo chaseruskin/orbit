@@ -33,6 +33,8 @@ use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
 use crate::util::environment::ORBIT_OUT_DIR;
 use crate::util::environment::ORBIT_TARGET_DIR;
+use crate::util::filesystem::Standardize;
+use std::path::PathBuf;
 
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
@@ -129,7 +131,10 @@ impl Subcommand<Context> for Build {
             // read ip manifest for env variables
             .from_ip(&working_ip)?
             .add(EnvVar::with(ORBIT_TARGET_DIR, target_dir))
-            .add(EnvVar::with(ORBIT_OUT_DIR, out_dir));
+            .add(EnvVar::with(
+                ORBIT_OUT_DIR,
+                PathBuf::standardize(&output_path).to_str().unwrap(),
+            ));
 
         // plan for the provided target
         Plan::run(

@@ -32,6 +32,8 @@ use crate::error::LastError;
 use crate::util::anyerror::Fault;
 use crate::util::environment::ORBIT_OUT_DIR;
 use crate::util::environment::{EnvVar, Environment, ORBIT_TARGET_DIR};
+use crate::util::filesystem::Standardize;
+use std::path::PathBuf;
 
 use super::plan::{self, Plan};
 
@@ -153,13 +155,18 @@ impl Test {
         c: &Context,
         scheme: &Scheme,
     ) -> Result<(), Fault> {
+        let output_path = working_ip.get_root().join(target_dir).join(out_dir);
+
         let envs = Environment::new()
             // read config.toml for setting any env variables
             .from_config(c.get_config())?
             // read ip manifest for env variables
             .from_ip(&working_ip)?
             .add(EnvVar::new().key(ORBIT_TARGET_DIR).value(target_dir))
-            .add(EnvVar::new().key(ORBIT_OUT_DIR).value(out_dir));
+            .add(EnvVar::with(
+                ORBIT_OUT_DIR,
+                PathBuf::standardize(&output_path).to_str().unwrap(),
+            ));
 
         // plan the target
         Plan::run(
@@ -179,8 +186,6 @@ impl Test {
             true,
             envs,
         )?;
-
-        let output_path = working_ip.get_root().join(target_dir).join(out_dir);
 
         // prepare for build
         let envs = Environment::new().from_env_file(&output_path)?;

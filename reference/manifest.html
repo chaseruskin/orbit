@@ -284,6 +284,16 @@ gates = "1.0.0"
 uart = "2.3.1"
 </code></pre>
 <p>If the ip has no dependencies, the section can be omitted from the manifest. The ips listed in this section will always be included in the build graph.</p>
+<pre><code class="language-toml">[dependencies]
+spi = { path = "../spi", version = "0.1.2" }
+</code></pre>
+<p>Dependencies can also be specified as local when given a file system path that points to the directory where that ip's manifest exists. Local dependencies are useful when trying to test modifications of that ip within the context of another ip.</p>
+<p>Local dependencies are also supported in the <code>[dev-dependencies]</code> section.</p>
+<pre><code class="language-toml">[dependencies]
+pcie = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.3.0" }
+</code></pre>
+<p>If adding a dependency that is an ambiguous name within the ip catalog, its uuid is required in order to select the correct ip. When the ip's name is unique within the ip catalog, specifying the uuid is optional when listing dependencies.</p>
+<p>Explicitly providing the uuid for a dependent ip is also supported in the <code>[dev-dependencies]</code> section.</p>
 <h3 id="the-dev-dependencies-section"><a class="header" href="#the-dev-dependencies-section">The <code>[dev-dependencies]</code> section</a></h3>
 <p>The <code>[dev-dependencies]</code> section is a table of direct dependencies required for the current ip.</p>
 <pre><code class="language-toml">[dev-dependencies]

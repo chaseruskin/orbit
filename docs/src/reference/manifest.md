@@ -189,6 +189,24 @@ uart = "2.3.1"
 
 If the ip has no dependencies, the section can be omitted from the manifest. The ips listed in this section will always be included in the build graph.
 
+``` toml
+[dependencies]
+spi = { path = "../spi", version = "0.1.2" }
+```
+
+Dependencies can also be specified as local when given a file system path that points to the directory where that ip's manifest exists. Local dependencies are useful when trying to test modifications of that ip within the context of another ip. 
+
+Local dependencies are also supported in the `[dev-dependencies]` section.
+
+``` toml
+[dependencies]
+pcie = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.3.0" }
+```
+
+If adding a dependency that is an ambiguous name within the ip catalog, its uuid is required in order to select the correct ip. When the ip's name is unique within the ip catalog, specifying the uuid is optional when listing dependencies.
+
+Explicitly providing the uuid for a dependent ip is also supported in the `[dev-dependencies]` section.
+
 ### The `[dev-dependencies]` section
 
 The `[dev-dependencies]` section is a table of direct dependencies required for the current ip.

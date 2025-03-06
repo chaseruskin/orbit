@@ -64,6 +64,10 @@ impl UnitCache {
         }
     }
 
+    pub fn get_sources(&self) -> &Vec<String> {
+        &self.sources
+    }
+
     pub fn get_lang(&self) -> Lang {
         self.language.clone()
     }
@@ -134,5 +138,9 @@ impl PkgCache {
 
     pub fn get_units_mut(&mut self) -> &mut Vec<UnitCache> {
         &mut self.units
+    }
+
+    pub fn get_units(&self) -> &Vec<UnitCache> {
+        &self.units
     }
 }

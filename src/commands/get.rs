@@ -21,6 +21,7 @@ use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::ip::IpSpec;
 use crate::core::ip::PartialIpSpec;
+use crate::core::lang;
 use crate::core::lang::sv::format::SystemVerilogFormat;
 use crate::core::lang::verilog::symbols::module::Module;
 use crate::core::lang::vhdl::format::VhdlFormat;
@@ -34,8 +35,10 @@ use crate::core::lang::LangUnit;
 use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::{AnyError, Fault};
+use crate::util::filesystem::Standardize;
 use colored::Colorize;
 use std::env;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 use cliproc::{cli, proc, stage::*};
@@ -382,10 +385,36 @@ impl Get {
     }
 
     fn fetch_entity(ip: &Ip, name: &LangIdentifier) -> Result<Option<LangUnit>, Fault> {
-        let mut files = ip.collect_units(true, false)?;
-        // need to link to architectures here for VHDL
-        let result = files.remove(name);
-        Ok(result)
+        // check if we can use the cached metadata
+        if let Some(cached) = Ip::read_cache_metadata(ip.get_root()) {
+            let units = cached.get_units();
+            if let Some(unit) = units.iter().find(|p| p.get_name() == name) {
+                let files = unit
+                    .get_sources()
+                    .iter()
+                    .map(|f| {
+                        if PathBuf::from(f).is_relative() {
+                            PathBuf::standardize(ip.get_root().join(f))
+                                .as_os_str()
+                                .to_string_lossy()
+                                .to_string()
+                        } else {
+                            f.to_string()
+                        }
+                    })
+                    .collect();
+                let mut mapping = lang::collect_units(&files)?;
+                let result = mapping.remove(name);
+                Ok(result)
+            } else {
+                Ok(None)
+            }
+        } else {
+            let mut mapping = ip.collect_units(true, false)?;
+            // TODO: need to link to architectures here for VHDL such that they appear in arch listing
+            let result = mapping.remove(name);
+            Ok(result)
+        }
     }
 }
 

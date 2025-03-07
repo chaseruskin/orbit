@@ -6,7 +6,7 @@ version = 1
 name = "ip10"
 version = "0.1.0"
 uuid = "cedgx6gb3cee2ol0uyynxnoup"
-checksum = "dee873f93fd9ed0f34fe621c61592b8262adef94d678ebb8bcd6ab4156401454"
+checksum = "b02e261bd20d95ab62df037f05f4ed9224820831b189c868544df9399e910980"
 dependencies = []
 
 [[ip]]

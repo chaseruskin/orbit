@@ -41,7 +41,7 @@ impl IpPointer {
         let man_path = path.join(IP_MANIFEST_FILE);
         if man_path.exists() == false || man_path.is_file() == false {
             return Err(Error::IpLoadFailed(LastError(
-                "a manifest file does not exist".to_string(),
+                Error::ManifestPathNotFound(man_path.to_string_lossy().to_string()).to_string(),
             )))?;
         }
         let man = Manifest::from_file(&man_path)?;

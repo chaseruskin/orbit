@@ -135,6 +135,10 @@ pub enum Error {
     ChanNotFound(String),
     #[error("a channel is required to publish an ip")]
     NoChanDefined,
+    #[error("a manifest file does not exist at path: \"{0}\"")]
+    ManifestPathNotFound(String),
+    #[error("failed to parse manifest file \"{0}\": {1}")]
+    ManifestParseFailed(String, LastError),
     #[error("failed to build hdl graph: {0}")]
     PublishHdlGraphFailed(LastError),
     #[error("ip {0} is ready to be published{1}")]

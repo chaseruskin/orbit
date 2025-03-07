@@ -37,7 +37,7 @@ impl Default for VipList {
 
 impl VipList {
     pub fn new(root: &PathBuf, list: Option<&Vec<String>>) -> Result<Self, Fault> {
-        let plist = match list {
+        let plist: Option<Gitignore> = match list {
             Some(globs) => {
                 let mut builder = GitignoreBuilder::new(&root);
                 for g in globs {
@@ -47,15 +47,19 @@ impl VipList {
             }
             None => None,
         };
-
         Ok(Self { inner: plist })
     }
 
     /// Checks if the given filepath is included. If there is no public list,
     /// then it will always return true.
+    ///
+    /// Assumes `path` is not a directory
     pub fn is_included(&self, path: &str) -> bool {
         match &self.inner {
-            Some(ig) => ig.matched_path_or_any_parents(path, false).is_ignore(),
+            Some(ig) => {
+                let result = ig.matched_path_or_any_parents(path, false);
+                (result.is_ignore() || result.is_whitelist()) && !result.is_none()
+            }
             None => true,
         }
     }

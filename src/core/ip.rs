@@ -274,7 +274,7 @@ impl Ip {
         let man_path = root.join(IP_MANIFEST_FILE);
         if man_path.exists() == false || man_path.is_file() == false {
             return Err(Error::IpLoadFailed(LastError(
-                "a manifest file does not exist".to_string(),
+                Error::ManifestPathNotFound(man_path.to_string_lossy().to_string()).to_string(),
             )))?;
         }
         let man = Manifest::from_file(&man_path)?;
@@ -333,7 +333,9 @@ impl Ip {
     pub fn is_valid(path: &PathBuf) -> Result<(), Fault> {
         let man_path = path.join(IP_MANIFEST_FILE);
         if man_path.exists() == false || man_path.is_file() == false {
-            return Err(AnyError(format!("A manifest file does not exist")))?;
+            return Err(Error::ManifestPathNotFound(
+                man_path.to_string_lossy().to_string(),
+            ))?;
         }
         // attempt to load the manifest file
         let _ = Manifest::from_file(&man_path)?;

@@ -21,10 +21,12 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Adds `build` and `test` fields for `[[target]]` in configuration files to explicitly enable or disable a target from either the build subcommand and test subcommand
 - Adds caching mechanism for retrieving list of units from file for `orbit info -u` on installed ips to improve performance
 - Adds caching mechanism for retrieving source files for particular design unit when requesting code snippets for `orbit get` on installed ips to improve performance
+- Allows un-ignore patterns (`!`) in `public` field for `[ip]` table in manifest
 
 ### Changes
 - Writes entire 64 characters of the SHA256 checksum (rather than first 10 characters) of current ip to `ORBIT_IP_CHECKSUM` env var during the build process
 - Writes the full path for the output directory rather than final directory name during the build process for `ORBIT_OUT_DIR`
+- Adds more information to errors surrounding non-existent manifest files when trying to load an ip
 
 ### Fixes
 - Correctly identifies parameters declared using Verilog-1995 style (entirely declared inside module architecture without a `#(...)` on module declaration)

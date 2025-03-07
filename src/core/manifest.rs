@@ -23,6 +23,7 @@ use crate::core::pkgid::PkgPart;
 use crate::core::source::Source;
 use crate::core::{source, version};
 use crate::error::Error;
+use crate::error::LastError;
 use crate::util::anyerror::{AnyError, Fault};
 use serde::de::{self, MapAccess, Visitor};
 use serde_derive::{Deserialize, Serialize};
@@ -240,18 +241,18 @@ impl FromFile for Manifest {
             Ok(r) => r,
             // enter a blank lock file if failed (do not exit)
             Err(e) => {
-                return Err(AnyError(format!(
-                    "failed to parse {} file at path {:?}: {}",
-                    IP_MANIFEST_FILE, path, e
-                )))?
+                return Err(Error::ManifestParseFailed(
+                    path.to_string_lossy().to_string(),
+                    LastError(e.to_string()),
+                ))?;
             }
         };
         // verify there are no duplicate entries between tables
         if let Some(e) = man.is_deps_valid().err() {
-            return Err(AnyError(format!(
-                "failed to parse {} file at path {:?}: {}",
-                IP_MANIFEST_FILE, path, e
-            )))?;
+            return Err(Error::ManifestParseFailed(
+                path.to_string_lossy().to_string(),
+                LastError(e.to_string()),
+            ))?;
         }
 
         let local_name = man.get_ip().get_name().clone();

@@ -125,7 +125,10 @@ channels = ["hyperspace-labs"]
 ``` toml
 [ip]
 # ...
-public = ["/rtl"]
+public = [
+    "rtl/",
+    "!*_tb.sv"
+]
 ```
 
 The `public` field can be used to explicitly specify which files are visible to other ip when being when being referenced as a dependency. The list contains glob-style patterns that conform to .gitignore file semantics, and are always compared relative that ip's root directory.
@@ -139,7 +142,7 @@ The `include` field can be used to explicitly specify which files to include dur
 ``` toml
 [ip]
 # ...
-include = ["/rtl"]
+include = ["rtl/"]
 ```
 
 Using `include` and `exclude` is mutually exclusive; setting `include` will override any value of `exclude`. If `include` and `exclude` are omitted, then all files from the root of the ip will be included.
@@ -151,7 +154,7 @@ The `exclude` field can be used to explicitly specify which files to exclude dur
 ``` toml
 [ip]
 # ...
-exclude = ["/deprec"]
+exclude = ["deprec/"]
 ```
 
 Using `include` and `exclude` is mutually exclusive; setting `include` will override any value of `exclude`. If `include` and `exclude` are omitted, then all files from the root of the ip will be included.

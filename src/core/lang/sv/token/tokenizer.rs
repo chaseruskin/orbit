@@ -75,10 +75,10 @@ impl Tokenize for SystemVerilogTokenizer {
                         Ok(tk) => Ok(Token::new(SystemVerilogToken::from(tk), tk_loc)),
                         Err(e) => Err(TokenError::new(e, train.locate().clone())),
                     }
-                } else if char_set::is_digit(&c) == true
-                    || char_set::SINGLE_QUOTE == c
-                    || ((char_set::PLUS == c || char_set::MINUS == c)
-                        && next.is_some_and(|d| char_set::is_digit(&d) == true))
+                } else if char_set::is_digit(&c) == true || char_set::SINGLE_QUOTE == c
+                // Do not include + or - sign in number for coloring/styling purposes (treat as operator)
+                // || ((char_set::PLUS == c || char_set::MINUS == c)
+                // && next.is_some_and(|d| char_set::is_digit(&d) == true))
                 {
                     // collect a number
                     match VerilogToken::consume_number(&mut train, c) {

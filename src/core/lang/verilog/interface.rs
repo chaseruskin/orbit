@@ -81,6 +81,7 @@ pub fn tokens_to_string(tokens: &Vec<SystemVerilogToken>) -> ColorVec {
         | Operator::Mult
         | Operator::Colon
         | Operator::ScopeResolution
+        | Operator::SingleQuote
         | Operator::Div => false,
         _ => true,
     };

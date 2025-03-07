@@ -88,7 +88,7 @@ impl ColorVec {
             .into_iter()
             .map(|f| match f {
                 ColorTone::Bland(s) => s,
-                ColorTone::Color(s) => String::from_utf8_lossy(s.as_bytes()).to_string(),
+                ColorTone::Color(s) => s.input,
             })
             .collect()
     }
@@ -105,7 +105,7 @@ impl ColorVec {
         let mut size = 0;
         self.0.iter().for_each(|f| match f {
             ColorTone::Bland(s) => size += s.len(),
-            ColorTone::Color(s) => size += String::from_utf8_lossy(s.as_bytes()).to_string().len(),
+            ColorTone::Color(s) => size += s.input.len(),
         });
         size
     }
@@ -178,23 +178,7 @@ pub mod style {
     }
 
     pub fn number(s: &str) -> ColoredString {
-        let crayon = NUMBERS;
-        match s.get(0..=0) {
-            Some(i) => match i {
-                "-" => {
-                    return ColoredString::from(format!(
-                        "-{}",
-                        s.get(1..)
-                            .unwrap()
-                            .to_string()
-                            .truecolor(crayon.0, crayon.1, crayon.2)
-                    ))
-                }
-                _ => (),
-            },
-            _ => (),
-        }
-        s.to_string().truecolor(crayon.0, crayon.1, crayon.2)
+        color(&s, NUMBERS)
     }
 
     pub fn keyword(s: &str) -> ColoredString {

@@ -30,6 +30,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ### Fixes
 - Correctly identifies parameters declared using Verilog-1995 style (entirely declared inside module architecture without a `#(...)` on module declaration)
+- Fixes bug around formatting verilog/sv numbers when writing json for a design unit
 
 ## 0.23.3
 

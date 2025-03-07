@@ -1651,7 +1651,10 @@ channels = ["hyperspace-labs"]
 <h3 id="the-public-field"><a class="header" href="#the-public-field">The <code>public</code> field</a></h3>
 <pre><code class="language-toml">[ip]
 # ...
-public = ["/rtl"]
+public = [
+    "rtl/",
+    "!*_tb.sv"
+]
 </code></pre>
 <p>The <code>public</code> field can be used to explicitly specify which files are visible to other ip when being when being referenced as a dependency. The list contains glob-style patterns that conform to .gitignore file semantics, and are always compared relative that ip's root directory.</p>
 <p>If no <code>public</code> field is present, then all files are implicitly specified as visible (public) to other ip when being referenced as a dependency.</p>
@@ -1659,14 +1662,14 @@ public = ["/rtl"]
 <p>The <code>include</code> field can be used to explicitly specify which files to include during source code analysis.</p>
 <pre><code class="language-toml">[ip]
 # ...
-include = ["/rtl"]
+include = ["rtl/"]
 </code></pre>
 <p>Using <code>include</code> and <code>exclude</code> is mutually exclusive; setting <code>include</code> will override any value of <code>exclude</code>. If <code>include</code> and <code>exclude</code> are omitted, then all files from the root of the ip will be included.</p>
 <h3 id="the-exclude-field"><a class="header" href="#the-exclude-field">The <code>exclude</code> field</a></h3>
 <p>The <code>exclude</code> field can be used to explicitly specify which files to exclude during source code analysis.</p>
 <pre><code class="language-toml">[ip]
 # ...
-exclude = ["/deprec"]
+exclude = ["deprec/"]
 </code></pre>
 <p>Using <code>include</code> and <code>exclude</code> is mutually exclusive; setting <code>include</code> will override any value of <code>exclude</code>. If <code>include</code> and <code>exclude</code> are omitted, then all files from the root of the ip will be included.</p>
 <p>Files that are always excluded are those found in directories that contain a "CACHEDIR.TAG" file. For example, every target output directory Orbit creates is excluded because they contain this file.</p>

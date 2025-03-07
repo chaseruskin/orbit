@@ -224,16 +224,20 @@ pub fn display_connections(
     // determine the number of whitespace characters to include between port connection lines
     let offset = fmt.get_mapping_offset() as usize;
 
-    port_list.iter().enumerate().for_each(|(i, p)| {
-        result.push_str("\n");
-        for _ in 0..fmt.get_tab_size() as usize {
-            result.push_whitespace(1);
-        }
-        result.append(p.into_connection(&spacer, &offset, prefix, suffix));
-        if i != port_list.len() - 1 {
-            result.push_color(Operator::Comma.to_color());
-        };
-    });
+    port_list
+        .iter()
+        .filter(|p| !p.is_localparam())
+        .enumerate()
+        .for_each(|(i, p)| {
+            result.push_str("\n");
+            for _ in 0..fmt.get_tab_size() as usize {
+                result.push_whitespace(1);
+            }
+            result.append(p.into_connection(&spacer, &offset, prefix, suffix));
+            if i != port_list.len() - 1 {
+                result.push_color(Operator::Comma.to_color());
+            };
+        });
 
     if port_list.is_empty() == false {
         result.push_str("\n");
@@ -431,6 +435,8 @@ impl serde::Serialize for DataType {
 #[derive(Debug, PartialEq, Serialize)]
 pub struct Port {
     #[serde(skip_serializing)]
+    is_local: bool,
+    #[serde(skip_serializing)]
     is_param: bool,
     #[serde(skip_serializing)]
     unpacked_range: Expr,
@@ -620,8 +626,9 @@ impl Port {
         result
     }
 
-    pub fn with(name: Identifier, is_param: bool) -> Self {
+    pub fn with(name: Identifier, is_param: bool, is_local: bool) -> Self {
         Self {
+            is_local: is_local,
             is_param: is_param,
             is_ansi: false,
             name: name,
@@ -634,6 +641,7 @@ impl Port {
 
     pub fn new_port() -> Self {
         Self {
+            is_local: false,
             is_param: false,
             is_ansi: false,
             name: Identifier::new(),
@@ -646,6 +654,20 @@ impl Port {
 
     pub fn new_param() -> Self {
         Self {
+            is_local: false,
+            is_param: true,
+            is_ansi: false,
+            name: Identifier::new(),
+            mode: None,
+            unpacked_range: Expr(None),
+            data_type: DataType::new(),
+            value: Expr(None),
+        }
+    }
+
+    pub fn new_localparam() -> Self {
+        Self {
+            is_local: true,
             is_param: true,
             is_ansi: false,
             name: Identifier::new(),
@@ -728,6 +750,10 @@ impl Port {
         } else {
             self.unpacked_range = Expr(Some(tkns));
         }
+    }
+
+    pub fn is_localparam(&self) -> bool {
+        self.is_local && self.is_param
     }
 
     pub fn set_ansi(&mut self) {

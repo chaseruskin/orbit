@@ -31,6 +31,8 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ### Fixes
 - Correctly identifies parameters declared using Verilog-1995 style (entirely declared inside module architecture without a `#(...)` on module declaration)
 - Fixes bug around formatting verilog/sv numbers when writing json for a design unit
+- Fixes issues with verilog/sv parameter detection for modules
+- Fixes localparam detection for verilog/sv modules
 
 ## 0.23.3
 

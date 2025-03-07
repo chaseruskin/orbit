@@ -670,8 +670,8 @@ impl VerilogSymbol {
         // verify the start token is valid
         match tokens.peek()?.as_type() {
             SystemVerilogToken::Identifier(name) => match interface::does_exist(&ports, name) {
-                true => return None,
-                false => (),
+                true => (),
+                false => return None,
             },
             SystemVerilogToken::Keyword(kw) => match Port::is_port_direction(Some(kw)) {
                 true => (),
@@ -691,8 +691,8 @@ impl VerilogSymbol {
         // verify the start token is valid
         match tokens.peek()?.as_type() {
             SystemVerilogToken::Identifier(name) => match interface::does_exist(&params, name) {
-                true => return None,
-                false => (),
+                true => (),
+                false => return None,
             },
             SystemVerilogToken::Keyword(kw) => match kw == &Keyword::Parameter {
                 true => (),
@@ -918,6 +918,7 @@ impl VerilogSymbol {
 
         let mut counter = 0;
         let mut identified_param = false;
+        let mut is_localparam = false;
 
         let mut last_token_line = last_line;
 
@@ -994,7 +995,7 @@ impl VerilogSymbol {
                         // assume it is the name of a param (may correct later)
                         } else {
                             identified_param = true;
-                            params.push(Port::with(name.clone(), true));
+                            params.push(Port::with(name.clone(), true, is_localparam));
                             params.last_mut().unwrap().inherit(&current_param_config);
                             // determine if this port was declared with ANSI-style
                             if current_param_config.is_ansi_style() == true {
@@ -1019,6 +1020,11 @@ impl VerilogSymbol {
             } else if t.as_ref().check_keyword(&Keyword::Parameter) {
                 current_param_config = Port::new_param();
                 current_param_config.set_direction(t.as_ref().as_keyword().unwrap().clone());
+                is_localparam = false;
+            } else if t.as_ref().check_keyword(&Keyword::Localparam) {
+                current_param_config = Port::new_localparam();
+                current_param_config.set_direction(t.as_ref().as_keyword().unwrap().clone());
+                is_localparam = true;
             // collect a range
             } else if t.as_ref().check_delimiter(&Operator::BrackL) {
                 let stmt = Self::parse_until_operator(tokens, t, Operator::BrackR)?;
@@ -1155,7 +1161,7 @@ impl VerilogSymbol {
                         // assume it is the name of a port (may correct later)
                         } else {
                             identified_port = true;
-                            ports.push(Port::with(name.clone(), false));
+                            ports.push(Port::with(name.clone(), false, false));
                             ports.last_mut().unwrap().inherit(&current_port_config);
                             // determine if this port was declared with ANSI-style
                             if current_port_config.is_ansi_style() == true {

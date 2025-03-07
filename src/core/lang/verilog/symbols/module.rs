@@ -316,35 +316,38 @@ impl Module {
             tokens.push(Self::vh(Vvt::Delimiter(VhDelimiter::ParenL)));
 
             // add each parameter
-            self.parameters.iter().for_each(|p| {
-                // add the port identifier
-                let name = match &p.get_name() {
-                    Identifier::Basic(s) => VhIdentifier::Basic(s.clone()),
-                    Identifier::Escaped(s) => VhIdentifier::Extended(s.clone()),
-                    Identifier::Directive(s) => VhIdentifier::Extended(s.clone()),
-                    Identifier::System(s) => VhIdentifier::Extended(s.clone()),
-                };
-                tokens.push(Self::vh(Vvt::Identifier(name)));
-                // add the ':'
-                tokens.push(Self::vh(Vvt::Delimiter(VhDelimiter::Colon)));
+            self.parameters
+                .iter()
+                .filter(|p| !p.is_localparam())
+                .for_each(|p| {
+                    // add the port identifier
+                    let name = match &p.get_name() {
+                        Identifier::Basic(s) => VhIdentifier::Basic(s.clone()),
+                        Identifier::Escaped(s) => VhIdentifier::Extended(s.clone()),
+                        Identifier::Directive(s) => VhIdentifier::Extended(s.clone()),
+                        Identifier::System(s) => VhIdentifier::Extended(s.clone()),
+                    };
+                    tokens.push(Self::vh(Vvt::Identifier(name)));
+                    // add the ':'
+                    tokens.push(Self::vh(Vvt::Delimiter(VhDelimiter::Colon)));
 
-                // add the datatype
-                tokens.push(Self::vh(Self::convert_datatype_to_vh(p.get_datatype())));
+                    // add the datatype
+                    tokens.push(Self::vh(Self::convert_datatype_to_vh(p.get_datatype())));
 
-                // any ranges for that dataype?
-                if let Some(ranges) = p.get_datatype().get_ranges() {
-                    ranges.into_iter().for_each(|r| {
-                        tokens.append(&mut Self::convert_range_to_vh(r.0, r.1));
-                    });
-                }
+                    // any ranges for that dataype?
+                    if let Some(ranges) = p.get_datatype().get_ranges() {
+                        ranges.into_iter().for_each(|r| {
+                            tokens.append(&mut Self::convert_range_to_vh(r.0, r.1));
+                        });
+                    }
 
-                // add the default value (if exists)
-                if let Some(expr) = p.get_default().as_static_expr() {
-                    tokens.append(&mut Self::convert_default_to_vh(expr));
-                }
+                    // add the default value (if exists)
+                    if let Some(expr) = p.get_default().as_static_expr() {
+                        tokens.append(&mut Self::convert_default_to_vh(expr));
+                    }
 
-                tokens.push(Self::vh(Vvt::Delimiter(VhDelimiter::Terminator)));
-            });
+                    tokens.push(Self::vh(Vvt::Delimiter(VhDelimiter::Terminator)));
+                });
 
             // remove the last trailing ';'
             tokens.pop();

@@ -135,6 +135,8 @@ The `public` field can be used to explicitly specify which files are visible to 
 
 If no `public` field is present, then all files are implicitly specified as visible (public) to other ip when being referenced as a dependency.
 
+When mixing un-ignore (`!`) and ignore patterns, the order matters. The latest glob in the list among any overlapping globs will be the one effectively used for that particular pattern.
+
 ### The `include` field
 
 The `include` field can be used to explicitly specify which files to include during source code analysis.

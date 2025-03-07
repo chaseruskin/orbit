@@ -58,7 +58,11 @@ impl VipList {
         match &self.inner {
             Some(ig) => {
                 let result = ig.matched_path_or_any_parents(path, false);
-                (result.is_ignore() || result.is_whitelist()) && !result.is_none()
+                // is there a white-list involved?
+                match ig.num_whitelists() {
+                    0 => result.is_ignore(),
+                    _ => !result.is_whitelist() || result.is_ignore(),
+                }
             }
             None => true,
         }

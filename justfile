@@ -7,7 +7,7 @@ _default:
 
 # Install the debug build in placement of old binary for local system testing
 install:
-    cargo build --release
+    GIT_DESC_VERSION="$(git describe --tags)" cargo build --release
     cp ./target/release/orbit "$HOME/.cargo/bin/orbit"
 
 # Run partial section of tests by specifying the modules in MODS

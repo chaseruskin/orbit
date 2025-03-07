@@ -116,7 +116,7 @@ impl Command for Orbit {
                         }
                     }
                 },
-                None => VERSION.to_owned(),
+                None => format!("{} (unknown.build)", VERSION),
             };
             println!("orbit {}", disp_version);
             Ok(())

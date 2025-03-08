@@ -28,9 +28,9 @@ cd ..
 
 # store the ideal value for later comparison
 EXACT="kuro:0.1.0
-├─ ao:2.0.0
-│  └─ aka:1.0.2
-└─ aka:1.0.2"
+├── ao:2.0.0
+│   └── aka:1.0.2
+└── aka:1.0.2"
 
 # compare the output with the expected value
 if [ "$STDOUT" != "$EXACT" ]; then

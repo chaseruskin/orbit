@@ -16,7 +16,7 @@ cd ..
 
 # store the ideal value for later comparison
 EXACT="top:0.1.0
-└─ sub:0.1.0"
+└── sub:0.1.0"
 
 # compare the output with the expected value
 if [ "$STDOUT" != "$EXACT" ]; then

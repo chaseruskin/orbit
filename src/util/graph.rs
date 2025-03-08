@@ -451,12 +451,12 @@ impl std::fmt::Display for Twig {
                 match n {
                     Self::EndLeaf(q) => {
                         if q.is_some() {
-                            space.push_str("   ")
+                            space.push_str("    ")
                         }
                     }
                     Self::MidBranch(q) => {
                         if q.is_some() {
-                            space.push_str("  │")
+                            space.push_str("   │")
                         }
                     }
                 }
@@ -471,10 +471,10 @@ impl std::fmt::Display for Twig {
                 if m.is_none() {
                     write!(f, "")
                 } else {
-                    write!(f, "{}└─ ", space)
+                    write!(f, "{}└── ", space)
                 }
             }
-            Self::MidBranch(_) => write!(f, "{}├─ ", space),
+            Self::MidBranch(_) => write!(f, "{}├── ", space),
         }
     }
 }
@@ -560,15 +560,15 @@ mod test {
             tree_to_string(&tree),
             "\
 0
-├─ 4
-│  ├─ 6
-│  └─ 5
-└─ 1
-   ├─ 3
-   └─ 2
-      └─ 4
-         ├─ 6
-         └─ 5
+├── 4
+│   ├── 6
+│   └── 5
+└── 1
+    ├── 3
+    └── 2
+        └── 4
+            ├── 6
+            └── 5
 "
         );
     }
@@ -607,17 +607,17 @@ mod test {
             tree_to_string(&tree),
             "\
 0
-└─ 1
-   ├─ 4
-   │  ├─ 7
-   │  └─ 6
-   ├─ 5
-   │  └─ 8
-   │     └─ 9
-   ├─ 3
-   │  └─ 8
-   │     └─ 9
-   └─ 2
+└── 1
+    ├── 4
+    │   ├── 7
+    │   └── 6
+    ├── 5
+    │   └── 8
+    │       └── 9
+    ├── 3
+    │   └── 8
+    │       └── 9
+    └── 2
 "
         );
     }

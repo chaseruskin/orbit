@@ -34,19 +34,19 @@ Fileset| Supported file extensions |
 ## Tab-separated values
 
 - Advantages
-    - Simple and easy to parse for back ends
+    - Simple and easy to parse for backends
 - Disadvantages
     - Limited information is sent
 
-The file is divided into a series of _steps_, each separated by a newline character (`\n`).
+The file is divided into a series of ordered _entries_, each separated by a newline character (`\n`).
 
 ```
-STEP
-STEP
+ENTRY
+ENTRY
 ...
 ```
 
-A step contains information about a particular file. Every step always has 3 components: a fileset, a library, and a filepath. Each component in a step is separated by a tab character (`\t`).
+Each entry contains information about a source file. Every entry always has 3 components: a fileset, a library, and a filepath. Each component in an entry is separated by a tab character (`\t`).
 
 ```
 FILESET	LIBRARY	FILEPATH
@@ -54,10 +54,12 @@ FILESET	LIBRARY	FILEPATH
 
 #### Examples
 
+The following text represents what a blueprint that is formatted as tab-separated values might look like:
+
 ``` text
 PYMDL	lc3b	/Users/chase/projects/lc3b/sim/models/alu_tb.py
 VHDL	lc3b	/Users/chase/projects/lc3b/rtl/const_pkg.vhd
-VHDL	base2	/Users/chase/.orbit/cache/base2-1.0.0-aac9159285/pkg/base2.vhd
+VHDL	mmry	/Users/chase/.orbit/cache/mmry-1.0.0-aac9159285/src/ram.vhd
 VHDL	lc3b	/Users/chase/projects/lc3b/rtl/alu.vhd
 VHDL	lc3b	/Users/chase/projects/lc3b/sim/alu_tb.vhd
 ```

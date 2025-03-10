@@ -62,12 +62,12 @@ impl FromStr for Scheme {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Instruction<'a, 'b> {
+pub enum Entry<'a, 'b> {
     Hdl(&'b IpFileNode<'a>),
     Auxiliary(String, String, String),
 }
 
-impl<'a, 'b> Instruction<'a, 'b> {
+impl<'a, 'b> Entry<'a, 'b> {
     pub fn write(&self, format: &Scheme) -> String {
         match &format {
             Scheme::Tsv => match &self {
@@ -101,7 +101,7 @@ impl<'a, 'b> Instruction<'a, 'b> {
 #[derive(Debug, PartialEq)]
 pub struct Blueprint<'a, 'b> {
     scheme: Scheme,
-    steps: Vec<Instruction<'a, 'b>>,
+    steps: Vec<Entry<'a, 'b>>,
 }
 
 impl<'a, 'b> Default for Blueprint<'a, 'b> {
@@ -129,7 +129,7 @@ impl<'a, 'b> Blueprint<'a, 'b> {
     }
 
     /// Add the next instruction `instr` to the blueprint.
-    pub fn add(&mut self, instr: Instruction<'a, 'b>) {
+    pub fn add(&mut self, instr: Entry<'a, 'b>) {
         self.steps.push(instr);
     }
 

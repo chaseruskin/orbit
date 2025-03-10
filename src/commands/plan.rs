@@ -16,7 +16,7 @@
 //
 
 use crate::commands::download::Download;
-use crate::core::blueprint::{Blueprint, Instruction, Scheme};
+use crate::core::blueprint::{Blueprint, Entry, Scheme};
 use crate::core::context::{self, Context};
 use crate::core::fileset::Fileset;
 use crate::core::iparchive::IpArchive;
@@ -108,7 +108,7 @@ impl Plan {
                         &working_ip,
                         LangIdentifier::new_working(),
                     );
-                    blueprint.add(Instruction::Hdl(&ip_file_node));
+                    blueprint.add(Entry::Hdl(&ip_file_node));
 
                     let blueprint_name = blueprint.get_filename();
                     let blueprint_path = Self::create_outputs(
@@ -444,7 +444,7 @@ impl Plan {
                     fset.collect_files(&current_files)
                         .into_iter()
                         .for_each(|f| {
-                            blueprint.add(Instruction::Auxiliary(
+                            blueprint.add(Entry::Auxiliary(
                                 fset.get_name().clone(),
                                 working_lib.to_string(),
                                 f.clone(),
@@ -463,7 +463,7 @@ impl Plan {
                 fset.collect_files(&current_files)
                     .into_iter()
                     .for_each(|f| {
-                        blueprint.add(Instruction::Auxiliary(
+                        blueprint.add(Entry::Auxiliary(
                             fset.get_name().clone(),
                             working_lib.to_string(),
                             f.clone(),
@@ -475,9 +475,9 @@ impl Plan {
         // collect in-order HDL file list
         for ip_file_node in file_order {
             if fileset::is_rtl(&ip_file_node.get_file()) == true {
-                blueprint.add(Instruction::Hdl(ip_file_node));
+                blueprint.add(Entry::Hdl(ip_file_node));
             } else {
-                blueprint.add(Instruction::Hdl(ip_file_node));
+                blueprint.add(Entry::Hdl(ip_file_node));
             }
         }
 

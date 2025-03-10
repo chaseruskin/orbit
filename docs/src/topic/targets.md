@@ -11,3 +11,7 @@ Targets typically take in as input the _blueprint_, which is the final output fi
 ## Defining Targets
 
 Users can setup a target in the configuration file `config.toml`. For all the available parameters to define a target, see [[[target]]](./../reference/configuration.md#the-target-array).
+
+## Examples
+
+To see one way how targets can be written for various tools, check out the [`orbit-targets`](https://github.com/chaseruskin/orbit-targets) repository on GitHub.

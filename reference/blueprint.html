@@ -27,9 +27,9 @@
         <link rel="stylesheet" href="../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="../highlight.css">
-        <link rel="stylesheet" href="../tomorrow-night.css">
-        <link rel="stylesheet" href="../ayu-highlight.css">
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
@@ -181,7 +181,7 @@
 <ul>
 <li>Advantages
 <ul>
-<li>Simple and easy to parse for back ends</li>
+<li>Simple and easy to parse for backends</li>
 </ul>
 </li>
 <li>Disadvantages
@@ -190,18 +190,19 @@
 </ul>
 </li>
 </ul>
-<p>The file is divided into a series of <em>steps</em>, each separated by a newline character (<code>\n</code>).</p>
-<pre><code>STEP
-STEP
+<p>The file is divided into a series of ordered <em>entries</em>, each separated by a newline character (<code>\n</code>).</p>
+<pre><code>ENTRY
+ENTRY
 ...
 </code></pre>
-<p>A step contains information about a particular file. Every step always has 3 components: a fileset, a library, and a filepath. Each component in a step is separated by a tab character (<code>\t</code>).</p>
+<p>Each entry contains information about a source file. Every entry always has 3 components: a fileset, a library, and a filepath. Each component in an entry is separated by a tab character (<code>\t</code>).</p>
 <pre><code>FILESET	LIBRARY	FILEPATH
 </code></pre>
 <h4 id="examples"><a class="header" href="#examples">Examples</a></h4>
+<p>The following text represents what a blueprint that is formatted as tab-separated values might look like:</p>
 <pre><code class="language-text">PYMDL	lc3b	/Users/chase/projects/lc3b/sim/models/alu_tb.py
 VHDL	lc3b	/Users/chase/projects/lc3b/rtl/const_pkg.vhd
-VHDL	base2	/Users/chase/.orbit/cache/base2-1.0.0-aac9159285/pkg/base2.vhd
+VHDL	mmry	/Users/chase/.orbit/cache/mmry-1.0.0-aac9159285/src/ram.vhd
 VHDL	lc3b	/Users/chase/projects/lc3b/rtl/alu.vhd
 VHDL	lc3b	/Users/chase/projects/lc3b/sim/alu_tb.vhd
 </code></pre>

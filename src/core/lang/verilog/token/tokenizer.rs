@@ -173,10 +173,10 @@ impl Tokenize for VerilogTokenizer {
                         Ok(tk) => Ok(Token::new(tk, tk_loc)),
                         Err(e) => Err(TokenError::new(e, train.locate().clone())),
                     }
-                } else if char_set::is_digit(&c) == true
-                    || char_set::SINGLE_QUOTE == c
-                    || ((char_set::PLUS == c || char_set::MINUS == c)
-                        && next.is_some_and(|d| char_set::is_digit(&d) == true))
+                } else if char_set::is_digit(&c) == true || char_set::SINGLE_QUOTE == c
+                // Do not include + or - sign in number for coloring/styling purposes (treat as operator)
+                // || ((char_set::PLUS == c || char_set::MINUS == c)
+                // && next.is_some_and(|d| char_set::is_digit(&d) == true))
                 {
                     // collect a number
                     match Self::TokenType::consume_number(&mut train, c) {
@@ -358,9 +358,9 @@ endmodule"#;
             "'o7460;",
             "16'hz;",
             "16'sd?;",
-            "-4 'sd15;",
+            "-4 'sd15",
             "4 'shf;",
-            "-8 'd 6;",
+            "-8 'd 6",
             "16'b0011_0101_0001_1111;",
         ];
 
@@ -435,6 +435,20 @@ endmodule"#;
                 .filter_map(|f| f.err())
                 .collect();
             assert_eq!(errors.len(), 1);
+        }
+    }
+
+    #[test]
+    fn ut_more_than_three_operators() {
+        let valid_cases = vec!["assert (data === -1)"];
+        for s in valid_cases {
+            println!("{:?}", s);
+            let tokens: Vec<Token<VerilogToken>> = VerilogTokenizer::tokenize(s)
+                .into_iter()
+                .map(|f| f.unwrap())
+                .collect();
+            print!("{:?}", tokens);
+            assert_eq!(tokens.len(), 8);
         }
     }
 

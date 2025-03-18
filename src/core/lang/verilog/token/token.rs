@@ -479,7 +479,8 @@ impl VerilogToken {
                         return Ok(Self::match_delimiter(&op_buf)?);
                     }
                 }
-                _ => panic!("Operator matching exceeds 3 characters"),
+                3 => return Self::match_delimiter(&op_buf),
+                _ => panic!("operator matching exceeds 3 characters: {}", op_buf),
             }
         }
         // try when hiting end of stream

@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.23.5 - unreleasaed
+
+### Fixes
+- Adds attempt at safer handling around edge cases for SV operators during tokenization
+
 ## 0.23.4
 
 ### Features

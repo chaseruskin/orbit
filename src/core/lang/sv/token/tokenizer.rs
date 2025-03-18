@@ -223,10 +223,11 @@ mod tests {
         use Operator::*;
 
         let tests = vec![
-            "<<<=", "<->", ">>>=", "<<", ">>>", "!=?", "?:", "?", "++", "&=", "::", ":", "/=",
+            "(", "<<<=", "<->", ">>>=", "<<", ">>>", "!=?", "?:", "?", "++", "&=", "::", ":", "/=",
             "->", "==?", ".*",
         ];
         let answers = vec![
+            ParenL,
             TripleShiftAssignL,
             DoubleArrow,
             TripleShiftAssignR,
@@ -630,5 +631,19 @@ endmodule
                 .is_none(),
             true
         );
+    }
+
+    #[test]
+    fn ut_more_than_three_operators() {
+        let valid_cases = vec!["assert (data === -1)"];
+        for s in valid_cases {
+            println!("{:?}", s);
+            let tokens: Vec<Token<SystemVerilogToken>> = SystemVerilogTokenizer::tokenize(s)
+                .into_iter()
+                .map(|f| f.unwrap())
+                .collect();
+            print!("{:?}", tokens);
+            assert_eq!(tokens.len(), 8);
+        }
     }
 }

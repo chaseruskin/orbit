@@ -49,6 +49,7 @@ run-sys-tests:
     just test-pub
     just test-partv
     just test-rel-dep
+    just test-sep-arch-refs
 
 # Run all system tests
 test-all:
@@ -59,6 +60,7 @@ test-all:
     just test-pub
     just test-partv
     just test-rel-dep
+    just test-sep-arch-refs
 
 # Planning stage (associated files)
 test-plan-1:
@@ -99,3 +101,8 @@ test-rel-dep:
 test-ip-collide:
     chmod +x ./tests/s6/test.sh
     cd ./tests/s6; ./test.sh
+
+# Arch references separate file
+test-sep-arch-refs:
+    chmod +x ./tests/s7/test.sh
+    cd ./tests/s7; ./test.sh

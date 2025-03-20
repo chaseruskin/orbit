@@ -75,6 +75,17 @@ impl HdlSymbol {
         }
     }
 
+    /// Adds a batch of references, most commonly from a sub unit.
+    pub fn inherit_refs(&mut self, refs: RefSet) {
+        match self {
+            Self::Vhdl(v) => {
+                v.steal_refs(refs);
+                ()
+            }
+            _ => (),
+        }
+    }
+
     /// Return the symbol as its [Module], if it is one.
     ///
     /// Works only on Verilog and SystemVerilog symbols.

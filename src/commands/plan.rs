@@ -1059,8 +1059,11 @@ impl Plan {
             };
             entity_node.as_ref_mut().add_file(node.get_file());
             // create edges (this is very important)
+            entity_node
+                .as_ref_mut()
+                .get_symbol_mut()
+                .inherit_refs(node.get_sub().get_refs().clone());
             for dep in node.get_sub().get_edge_list() {
-                // println!("{:?}", dep);
                 // need to locate the key with a suffix matching `dep` if it was a component instantiation
                 if dep.get_prefix().is_none() == true {
                     if let Some(lib) = component_pairs.get(dep.get_suffix()) {

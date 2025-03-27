@@ -366,8 +366,8 @@ This program is free software, covered by the GNU General Public License. There 
 </code></pre>
 <p>A directory called "gates" should now exist and look like the following tree structure:</p>
 <pre><code>gates/
-├─ Orbit.lock
-└─ Orbit.toml
+├── Orbit.lock
+└── Orbit.toml
 </code></pre>
 <p>Let's create our first design unit for describing a NAND gate. Feel free to copy the following code into a file called "nand_gate.vhd" that exists in our project directory "/gates".</p>
 <p>Filename: nand_gate.vhd</p>
@@ -483,7 +483,7 @@ end architecture;
 <pre><code>$ orbit tree
 </code></pre>
 <pre><code>and_gate
-└─ nand_gate
+└── nand_gate
 </code></pre>
 <p>Cool! We got a hierarchical view of our top-most design unit.</p>
 <h2 id="building-an-ip-for-a-scripted-workflow"><a class="header" href="#building-an-ip-for-a-scripted-workflow">Building an ip for a scripted workflow</a></h2>
@@ -528,7 +528,11 @@ args = ["yilinx.py"]
 <h3 id="calling-a-target"><a class="header" href="#calling-a-target">Calling a target</a></h3>
 <pre><code>$ orbit build --target yilinx
 </code></pre>
-<pre><code>YILINX: Synthesizing file /Users/chase/tutorials/gates/nand_gate.vhd into gates...
+<pre><code>info: lockfile experienced no changes
+info: top-level set to and_gate
+info: blueprint created at: "/Users/chase/Develop/rust/orbit/gates/target/yilinx/blueprint.tsv"
+info: executing target yilinx
+YILINX: Synthesizing file /Users/chase/tutorials/gates/nand_gate.vhd into gates...
 YILINX: Synthesizing file /Users/chase/tutorials/gates/and_gate.vhd into gates...
 YILINX: Performing place-and-route...
 YILINX: Generating bitstream...
@@ -545,25 +549,26 @@ YILINX: Bitstream saved at: target/yilinx/fpga.bit
 <p>This command ran a series of steps that packaged our project and placed it into our <em>cache</em>. Internally, Orbit knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire ip catalog.</p>
 <pre><code>$ orbit search
 </code></pre>
-<pre><code>gates                       0.1.0       install
+<pre><code>gates                   0.1.0           install   8ah2qa261k8wgv55sd1qq17w9
 </code></pre>
-<p>And there it is! Let's continue to the next tutorial, where we introduce dependencies across ips.</p>
+<p>And there it is! You may notice your UUID (the random 25 characters and numbers)
+is different, and that is expected behavior. Let's continue to the next tutorial, where we introduce dependencies across ips.</p>
 <h3 id="additional-notes-on-project-structure"><a class="header" href="#additional-notes-on-project-structure">Additional notes on project structure</a></h3>
 <p>Our final project structure looks like the following:</p>
 <pre><code>gates/
-├─ .orbit/
-│  ├─ config.toml
-│  └─ yilinx.py
-├─ target/
-│  ├─ CACHEDIR.TAG
-|  └─ yilinx/
-│     ├─ .env
-│     ├─ blueprint.tsv
-│     └─ fpga.bit
-├─ Orbit.toml
-├─ Orbit.lock
-├─ and_gate.vhd
-└─ nand_gate.vhd
+├── .orbit/
+│   ├── config.toml
+│   └── yilinx.py
+├── target/
+│   ├── CACHEDIR.TAG
+|   └── yilinx/
+│      ├── .env
+│      ├── blueprint.tsv
+│      └── fpga.bit
+├── Orbit.toml
+├── Orbit.lock
+├── and_gate.vhd
+└── nand_gate.vhd
 </code></pre>
 <ul>
 <li>
@@ -590,20 +595,19 @@ YILINX: Bitstream saved at: target/yilinx/fpga.bit
 <p>Remembering our impressive work with the gates project, we realize we can reuse some of the already designed and tested components from there. Let's make sure it's installed so that we can use it.</p>
 <pre><code>$ orbit search gates
 </code></pre>
-<pre><code>gates                       0.1.0       install
+<pre><code>gates                   0.1.0           install   8ah2qa261k8wgv55sd1qq17w9
 </code></pre>
 <p>Awesome! Our next step is tell Orbit that our current project, half-add, wants to use gates as a dependency.</p>
 <p>Add a new entry for gates to the dependencies table in our project's manifest, Orbit.toml.</p>
 <p>Filename: Orbit.toml</p>
 <pre><code class="language-toml">[ip]
 name = "half-add"
-library = "adding"
 version = "0.1.0"
-
-# See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
+uuid = "7ddyiof2rzj3g8onn4tfzb69a"
+library = "adding"
 
 [dependencies]
-gates = "0.1.0"
+gates = "0.1.0" # Add the dependency here!
 </code></pre>
 <p>We've referenced it, now we have to use it!</p>
 <h2 id="learning-about-ips"><a class="header" href="#learning-about-ips">Learning about ips</a></h2>
@@ -626,12 +630,10 @@ end architecture;
 </code></pre>
 <p>Cool, we had used the VHDL keyword <code>nand</code> to describe that particular circuit. Sometimes it may be insightful to read code snippets and comments from external design units when trying to integrate them into a new project.</p>
 <h2 id="integrating-design-units-across-ips"><a class="header" href="#integrating-design-units-across-ips">Integrating design units across ips</a></h2>
-<p>Let's use the NAND gate we previously defined to construct a half adder circuit.</p>
-<pre><code>$ orbit get --ip gates nand_gate --library --signals --instance
+<p>Let's use the NAND gate we previously defined to construct a half adder circuit. We can use the shorthand switches <code>-s</code> and  <code>-i</code> for the  <code>--signals</code> and <code>--instance</code> flags, respectively.</p>
+<pre><code>$ orbit get --ip gates nand_gate -si
 </code></pre>
-<pre><code>library gates;
-
-signal a : std_logic;
+<pre><code>signal a : std_logic;
 signal b : std_logic;
 signal x : std_logic;
 
@@ -708,7 +710,7 @@ end architecture;
 <pre><code>$ orbit tree --format long
 </code></pre>
 <pre><code>half_add (half-add:0.1.0)
-└─ nand_gate (gates:0.1.0)
+└── nand_gate (gates:0.1.0)
 </code></pre>
 <p>Finally, let's install this ip to the cache for future reuse as well. But before we can install any ip to our cache, an ip must have an up to date lockfile.</p>
 <p>Lockfiles are updated whenever a user calls <code>orbit build</code> or <code>orbit test</code>, but they can also be updated with the dedicated <code>orbit lock</code> command. Let's go ahead and generate the lockfile now.</p>
@@ -736,7 +738,7 @@ end architecture;
 <p>It seems we left out some logic gates when we last worked on the gates project, so let's implement them now. Navigate to the directory in your file system where you currently store the gates project.</p>
 <p>For the rest of this tutorial, we will be working relative to the project directory "/gates" that currently stores the gates project.</p>
 <p>Let's implement the OR gate while restricting our design to only NAND gates like before.</p>
-<pre><code>$ orbit get nand_gate --signals --instance
+<pre><code>$ orbit get nand_gate -lsi
 </code></pre>
 <pre><code>library work;
 
@@ -836,7 +838,7 @@ PROG_FLASH = bool(sys.argv.count('--flash') &gt; 0)
 # Get environment variables set by orbit for this particular build
 BLUEPRINT = os.environ.get("ORBIT_BLUEPRINT")
 OUTPUT_PATH = os.environ.get("ORBIT_OUTPUT_PATH")
-TOP_LEVEL = os.environ.get("ORBIT_TOP")
+TOP_LEVEL = os.environ.get("ORBIT_TOP_NAME")
 
 synth_order = []
 constraints_file = None
@@ -909,32 +911,39 @@ YILINX: Programming bitstream to flash...
 <pre><code class="language-text">1101111111001010111111100111110000111101001100101
 </code></pre>
 <p>Awesome! We added some pretty advanced settings to our yilinx target to make it more robust for future use. Let's configure this target to be used with any of our ongoing projects by editing the global configuration file through the command-line.</p>
-<pre><code>$ orbit config --global --append include="$(orbit env ORBIT_IP_PATH)/.orbit/config.toml"
+<pre><code>$ orbit config --push include="$(orbit env ORBIT_MANIFEST_DIR)/.orbit/config.toml"
 </code></pre>
 <p>Now when we call Orbit from any directory, we can see our yilinx target is available to use.</p>
 <pre><code>$ orbit build --list
 </code></pre>
-<pre><code>yilinx          Generate bitstreams for Yilinx FPGAs
+<pre><code>yilinx               Generate bitstreams for Yilinx FPGAs
 </code></pre>
 <h2 id="rereleasing-the-gates-ip"><a class="header" href="#rereleasing-the-gates-ip">Rereleasing the gates ip</a></h2>
 <p>We made changes to the gates ip, and now we want to have the ability to use these new updates or continue using the old changes. To do this, we want to update the version number in the manifest file. Let's edit the Orbit.toml file's version field to contain version "1.0.0".</p>
 <p>Filename: Orbit.toml</p>
 <pre><code class="language-toml">[ip]
 name = "gates"
-version = "1.0.0"
-
-# See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
+version = "1.0.0" # Update the version to 1.0.0!
+uuid = "8ah2qa261k8wgv55sd1qq17w9"
 
 [dependencies]
 
 </code></pre>
-<p>Finally, let's release version 1.0.0 for the gates ip by installing it to our cache.</p>
+<p>Finally, let's update the lockfile and release version 1.0.0 for the gates ip by installing it to our cache.</p>
+<pre><code>$ orbit lock
+</code></pre>
 <pre><code>$ orbit install
 </code></pre>
 <p>One last look at the catalog shows the latest version of gates we have installed is indeed 1.0.0. Nice work!</p>
 <pre><code>$ orbit search gates
 </code></pre>
 <pre><code>gates                       1.0.0     install
+</code></pre>
+<p>We can see that our previous version of gates is still available too; by default, the search command will report the highest known version for an ip.</p>
+<pre><code>$ orbit info gates --versions
+</code></pre>
+<pre><code>1.0.0         install  
+0.1.0         install 
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="final-project-full-adder"><a class="header" href="#final-project-full-adder">Final Project: Full adder</a></h1>
 <p>In this tutorial, you will learn how to:</p>
@@ -957,20 +966,18 @@ or_gate                             entity        public
 <p>filename: Orbit.toml</p>
 <pre><code class="language-toml">[ip]
 name = "full-add"
-library = "adding"
 version = "0.1.0"
-
-# See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
+uuid = "9pu41jrkfhwq646bfw4g7o9ah"
+library = "adding"
 
 [dependencies]
-gates = "1.0.0"
-half-add = "0.1.0"
-
+gates = "1.0.0" # Add the gates ip as a dependency!
+half-add = "0.1.0" # Add the half-add ip as a dependency too!
 </code></pre>
 <p>Okay, time to start coding!</p>
 <h2 id="overcoming-hdl-problems-namespace-pollution"><a class="header" href="#overcoming-hdl-problems-namespace-pollution">Overcoming HDL problems: Namespace pollution</a></h2>
 <p>Our full adder circuit will be constructed of 2 half adders and an OR gate. Let's collect some HDL code snippets to use for our full adder circuit.</p>
-<pre><code>$ orbit get half_add --ip half-add --library --instance
+<pre><code>$ orbit get half_add --ip half-add -li
 </code></pre>
 <pre><code>library adding;
 
@@ -982,8 +989,8 @@ uX : entity adding.half_add
     s =&gt; s
   );
 </code></pre>
-<p>And let's get the code snippet for the OR gate as well.</p>
-<pre><code>$ orbit get or_gate --ip gates:1.0.0 --library --instance
+<p>Remember, we can use the shorthand switches <code>-l</code> and <code>-i</code> for the <code>--library</code> and <code>--instance</code> flags respectively. Let's also get the code snippet for the OR gate.</p>
+<pre><code>$ orbit get or_gate --ip gates:1.0.0 -li
 </code></pre>
 <pre><code>library gates;
 
@@ -1051,10 +1058,10 @@ end architecture;
 <pre><code>$ orbit tree --format long
 </code></pre>
 <pre><code>full_add (full-add:0.1.0)
-├─ or_gate (gates:1.0.0)
-│  └─ nand_gate (gates:1.0.0)
-└─ half_add (half-add:0.1.0)
-   └─ nand_gate_56ade36a78 (gates:0.1.0)
+├── or_gate (gates:1.0.0)
+│   └── nand_gate (gates:1.0.0)
+└── half_add (half-add:0.1.0)
+    └── nand_gate_9f476275c5 (gates:0.1.0)
 </code></pre>
 <p>The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, Orbit appends the beginning checksum digits from the ip of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict.</p>
 <p>To us though, these slight identifier renamings remain hidden because they occur among indirect dependencies in relation to our current project. When deciding which design unit to rename, Orbit will always choose to rename the unit that is used as an indirect dependency. This key choice allows us to keep using the original unit name when integrating design units into the current project.</p>
@@ -1065,36 +1072,40 @@ end architecture;
 <p>First, let's verify our yilinx target is available to us after appending it to our global configuration file in the previous tutorial.</p>
 <pre><code>$ orbit build --list
 </code></pre>
-<pre><code>yilinx          Generate bitstreams for Yilinx FPGAs
+<pre><code>yilinx               Generate bitstreams for Yilinx FPGAs
 </code></pre>
 <p>We can review more details about a particular target by specifying it with the "--target" command-line option while providing "--list" as well.</p>
 <pre><code>$ orbit build --list --target yilinx
 </code></pre>
-<pre><code>Name:    yilinx
-Command: python "yilinx.py" 
-Root:    /Users/chase/tutorials/gates/.orbit
-Filesets:
-    PIN-FILE        **/*.ydc
+<pre><code>name = "yilinx"
+description = "Generate bitstreams for Yilinx FPGAs"
+command = "python"
+args = ["/Users/chase/Develop/rust/orbit/gates/.orbit/yilinx.py"]
 
-Generate bitstreams for Yilinx FPGAs
+[fileset]
+YDCF = "**/*.ydc"
 </code></pre>
 <p>Let's build our current project using the yilinx target for our full adder.</p>
 <pre><code>$ orbit build --target yilinx --top full_add
 </code></pre>
 <p>Opening the blueprint file created by Orbit during the planning stage shows we are indeed using different files for the different NAND gate design units, and the files are in a topologically-sorted order.</p>
 <p>Filename: target/yilinx/blueprint.tsv</p>
-<pre><code class="language-text">VHDL	gates	/Users/chase/.orbit/cache/gates-0.1.0-fe9ec9d99e/nand_gate.vhd
-VHDL	adding	/Users/chase/.orbit/cache/half-add-0.1.0-1c537df196/half_add.vhd
-VHDL	gates	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/nand_gate.vhd
-VHDL	gates	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/or_gate.vhd
-VHDL	adding	/Users/chase/tutorials/full-add/full_add.vhd
+<pre><code class="language-text">VHDL    gates   /Users/chase/.orbit/cache/8ah2qa261k8wgv55sd1qq17w9-0.1.0-5ac118b44a7b0979/nand_gate.vhd
+VHDL    adding  /Users/chase/.orbit/cache/7ddyiof2rzj3g8onn4tfzb69a-0.1.0-75f13b27d846a006/half_add.vhd
+VHDL    gates   /Users/chase/.orbit/cache/8ah2qa261k8wgv55sd1qq17w9-1.0.0-76c0c7e4bbf66769/nand_gate.vhd
+VHDL    gates   /Users/chase/.orbit/cache/8ah2qa261k8wgv55sd1qq17w9-1.0.0-76c0c7e4bbf66769/or_gate.vhd
+VHDL    adding  /Users/chase/tutorials/full-add/full_add.vhd
 
 </code></pre>
 <p>Inspecting the output displayed to the console shows our target executed it's process successfully with the creation of a .bit file.</p>
-<pre><code>YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-0.1.0-fe9ec9d99e/nand_gate.vhd into gates...
-YILINX: Synthesizing file /Users/chase/.orbit/cache/half-add-0.1.0-1c537df196/half_add.vhd into adding...
-YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/nand_gate.vhd into gates...
-YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/or_gate.vhd into gates...
+<pre><code>info: lockfile updated
+info: top-level set to full_add
+info: blueprint created at: "/Users/chase/Develop/rust/orbit/full-add/target/yilinx/blueprint.tsv"
+info: executing target yilinx
+YILINX: Synthesizing file /Users/chase/.orbit/cache/8ah2qa261k8wgv55sd1qq17w9-0.1.0-5ac118b44a7b0979/nand_gate.vhd into gates...
+YILINX: Synthesizing file /Users/chase/.orbit/cache/7ddyiof2rzj3g8onn4tfzb69a-0.1.0-75f13b27d846a006/half_add.vhd into adding...
+YILINX: Synthesizing file /Users/chase/.orbit/cache/8ah2qa261k8wgv55sd1qq17w9-1.0.0-76c0c7e4bbf66769/nand_gate.vhd into gates...
+YILINX: Synthesizing file /Users/chase/.orbit/cache/8ah2qa261k8wgv55sd1qq17w9-1.0.0-76c0c7e4bbf66769/or_gate.vhd into gates...
 YILINX: Synthesizing file /Users/chase/tutorials/full-add/full_add.vhd into adding...
 YILINX: Performing place-and-route...
 YILINX: Generating bitstream...

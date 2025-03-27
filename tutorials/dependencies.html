@@ -169,20 +169,19 @@
 <p>Remembering our impressive work with the gates project, we realize we can reuse some of the already designed and tested components from there. Let's make sure it's installed so that we can use it.</p>
 <pre><code>$ orbit search gates
 </code></pre>
-<pre><code>gates                       0.1.0       install
+<pre><code>gates                   0.1.0           install   8ah2qa261k8wgv55sd1qq17w9
 </code></pre>
 <p>Awesome! Our next step is tell Orbit that our current project, half-add, wants to use gates as a dependency.</p>
 <p>Add a new entry for gates to the dependencies table in our project's manifest, Orbit.toml.</p>
 <p>Filename: Orbit.toml</p>
 <pre><code class="language-toml">[ip]
 name = "half-add"
-library = "adding"
 version = "0.1.0"
-
-# See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
+uuid = "7ddyiof2rzj3g8onn4tfzb69a"
+library = "adding"
 
 [dependencies]
-gates = "0.1.0"
+gates = "0.1.0" # Add the dependency here!
 </code></pre>
 <p>We've referenced it, now we have to use it!</p>
 <h2 id="learning-about-ips"><a class="header" href="#learning-about-ips">Learning about ips</a></h2>
@@ -205,12 +204,10 @@ end architecture;
 </code></pre>
 <p>Cool, we had used the VHDL keyword <code>nand</code> to describe that particular circuit. Sometimes it may be insightful to read code snippets and comments from external design units when trying to integrate them into a new project.</p>
 <h2 id="integrating-design-units-across-ips"><a class="header" href="#integrating-design-units-across-ips">Integrating design units across ips</a></h2>
-<p>Let's use the NAND gate we previously defined to construct a half adder circuit.</p>
-<pre><code>$ orbit get --ip gates nand_gate --library --signals --instance
+<p>Let's use the NAND gate we previously defined to construct a half adder circuit. We can use the shorthand switches <code>-s</code> and  <code>-i</code> for the  <code>--signals</code> and <code>--instance</code> flags, respectively.</p>
+<pre><code>$ orbit get --ip gates nand_gate -si
 </code></pre>
-<pre><code>library gates;
-
-signal a : std_logic;
+<pre><code>signal a : std_logic;
 signal b : std_logic;
 signal x : std_logic;
 
@@ -287,7 +284,7 @@ end architecture;
 <pre><code>$ orbit tree --format long
 </code></pre>
 <pre><code>half_add (half-add:0.1.0)
-└─ nand_gate (gates:0.1.0)
+└── nand_gate (gates:0.1.0)
 </code></pre>
 <p>Finally, let's install this ip to the cache for future reuse as well. But before we can install any ip to our cache, an ip must have an up to date lockfile.</p>
 <p>Lockfiles are updated whenever a user calls <code>orbit build</code> or <code>orbit test</code>, but they can also be updated with the dedicated <code>orbit lock</code> command. Let's go ahead and generate the lockfile now.</p>

@@ -176,20 +176,18 @@ or_gate                             entity        public
 <p>filename: Orbit.toml</p>
 <pre><code class="language-toml">[ip]
 name = "full-add"
-library = "adding"
 version = "0.1.0"
-
-# See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
+uuid = "9pu41jrkfhwq646bfw4g7o9ah"
+library = "adding"
 
 [dependencies]
-gates = "1.0.0"
-half-add = "0.1.0"
-
+gates = "1.0.0" # Add the gates ip as a dependency!
+half-add = "0.1.0" # Add the half-add ip as a dependency too!
 </code></pre>
 <p>Okay, time to start coding!</p>
 <h2 id="overcoming-hdl-problems-namespace-pollution"><a class="header" href="#overcoming-hdl-problems-namespace-pollution">Overcoming HDL problems: Namespace pollution</a></h2>
 <p>Our full adder circuit will be constructed of 2 half adders and an OR gate. Let's collect some HDL code snippets to use for our full adder circuit.</p>
-<pre><code>$ orbit get half_add --ip half-add --library --instance
+<pre><code>$ orbit get half_add --ip half-add -li
 </code></pre>
 <pre><code>library adding;
 
@@ -201,8 +199,8 @@ uX : entity adding.half_add
     s =&gt; s
   );
 </code></pre>
-<p>And let's get the code snippet for the OR gate as well.</p>
-<pre><code>$ orbit get or_gate --ip gates:1.0.0 --library --instance
+<p>Remember, we can use the shorthand switches <code>-l</code> and <code>-i</code> for the <code>--library</code> and <code>--instance</code> flags respectively. Let's also get the code snippet for the OR gate.</p>
+<pre><code>$ orbit get or_gate --ip gates:1.0.0 -li
 </code></pre>
 <pre><code>library gates;
 
@@ -270,10 +268,10 @@ end architecture;
 <pre><code>$ orbit tree --format long
 </code></pre>
 <pre><code>full_add (full-add:0.1.0)
-├─ or_gate (gates:1.0.0)
-│  └─ nand_gate (gates:1.0.0)
-└─ half_add (half-add:0.1.0)
-   └─ nand_gate_56ade36a78 (gates:0.1.0)
+├── or_gate (gates:1.0.0)
+│   └── nand_gate (gates:1.0.0)
+└── half_add (half-add:0.1.0)
+    └── nand_gate_9f476275c5 (gates:0.1.0)
 </code></pre>
 <p>The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, Orbit appends the beginning checksum digits from the ip of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict.</p>
 <p>To us though, these slight identifier renamings remain hidden because they occur among indirect dependencies in relation to our current project. When deciding which design unit to rename, Orbit will always choose to rename the unit that is used as an indirect dependency. This key choice allows us to keep using the original unit name when integrating design units into the current project.</p>
@@ -284,36 +282,40 @@ end architecture;
 <p>First, let's verify our yilinx target is available to us after appending it to our global configuration file in the previous tutorial.</p>
 <pre><code>$ orbit build --list
 </code></pre>
-<pre><code>yilinx          Generate bitstreams for Yilinx FPGAs
+<pre><code>yilinx               Generate bitstreams for Yilinx FPGAs
 </code></pre>
 <p>We can review more details about a particular target by specifying it with the "--target" command-line option while providing "--list" as well.</p>
 <pre><code>$ orbit build --list --target yilinx
 </code></pre>
-<pre><code>Name:    yilinx
-Command: python "yilinx.py" 
-Root:    /Users/chase/tutorials/gates/.orbit
-Filesets:
-    PIN-FILE        **/*.ydc
+<pre><code>name = "yilinx"
+description = "Generate bitstreams for Yilinx FPGAs"
+command = "python"
+args = ["/Users/chase/Develop/rust/orbit/gates/.orbit/yilinx.py"]
 
-Generate bitstreams for Yilinx FPGAs
+[fileset]
+YDCF = "**/*.ydc"
 </code></pre>
 <p>Let's build our current project using the yilinx target for our full adder.</p>
 <pre><code>$ orbit build --target yilinx --top full_add
 </code></pre>
 <p>Opening the blueprint file created by Orbit during the planning stage shows we are indeed using different files for the different NAND gate design units, and the files are in a topologically-sorted order.</p>
 <p>Filename: target/yilinx/blueprint.tsv</p>
-<pre><code class="language-text">VHDL	gates	/Users/chase/.orbit/cache/gates-0.1.0-fe9ec9d99e/nand_gate.vhd
-VHDL	adding	/Users/chase/.orbit/cache/half-add-0.1.0-1c537df196/half_add.vhd
-VHDL	gates	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/nand_gate.vhd
-VHDL	gates	/Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/or_gate.vhd
-VHDL	adding	/Users/chase/tutorials/full-add/full_add.vhd
+<pre><code class="language-text">VHDL    gates   /Users/chase/.orbit/cache/8ah2qa261k8wgv55sd1qq17w9-0.1.0-5ac118b44a7b0979/nand_gate.vhd
+VHDL    adding  /Users/chase/.orbit/cache/7ddyiof2rzj3g8onn4tfzb69a-0.1.0-75f13b27d846a006/half_add.vhd
+VHDL    gates   /Users/chase/.orbit/cache/8ah2qa261k8wgv55sd1qq17w9-1.0.0-76c0c7e4bbf66769/nand_gate.vhd
+VHDL    gates   /Users/chase/.orbit/cache/8ah2qa261k8wgv55sd1qq17w9-1.0.0-76c0c7e4bbf66769/or_gate.vhd
+VHDL    adding  /Users/chase/tutorials/full-add/full_add.vhd
 
 </code></pre>
 <p>Inspecting the output displayed to the console shows our target executed it's process successfully with the creation of a .bit file.</p>
-<pre><code>YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-0.1.0-fe9ec9d99e/nand_gate.vhd into gates...
-YILINX: Synthesizing file /Users/chase/.orbit/cache/half-add-0.1.0-1c537df196/half_add.vhd into adding...
-YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/nand_gate.vhd into gates...
-YILINX: Synthesizing file /Users/chase/.orbit/cache/gates-1.0.0-4cb065a539/or_gate.vhd into gates...
+<pre><code>info: lockfile updated
+info: top-level set to full_add
+info: blueprint created at: "/Users/chase/Develop/rust/orbit/full-add/target/yilinx/blueprint.tsv"
+info: executing target yilinx
+YILINX: Synthesizing file /Users/chase/.orbit/cache/8ah2qa261k8wgv55sd1qq17w9-0.1.0-5ac118b44a7b0979/nand_gate.vhd into gates...
+YILINX: Synthesizing file /Users/chase/.orbit/cache/7ddyiof2rzj3g8onn4tfzb69a-0.1.0-75f13b27d846a006/half_add.vhd into adding...
+YILINX: Synthesizing file /Users/chase/.orbit/cache/8ah2qa261k8wgv55sd1qq17w9-1.0.0-76c0c7e4bbf66769/nand_gate.vhd into gates...
+YILINX: Synthesizing file /Users/chase/.orbit/cache/8ah2qa261k8wgv55sd1qq17w9-1.0.0-76c0c7e4bbf66769/or_gate.vhd into gates...
 YILINX: Synthesizing file /Users/chase/tutorials/full-add/full_add.vhd into adding...
 YILINX: Performing place-and-route...
 YILINX: Generating bitstream...

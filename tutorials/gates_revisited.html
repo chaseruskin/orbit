@@ -164,7 +164,7 @@
 <p>It seems we left out some logic gates when we last worked on the gates project, so let's implement them now. Navigate to the directory in your file system where you currently store the gates project.</p>
 <p>For the rest of this tutorial, we will be working relative to the project directory "/gates" that currently stores the gates project.</p>
 <p>Let's implement the OR gate while restricting our design to only NAND gates like before.</p>
-<pre><code>$ orbit get nand_gate --signals --instance
+<pre><code>$ orbit get nand_gate -lsi
 </code></pre>
 <pre><code>library work;
 
@@ -264,7 +264,7 @@ PROG_FLASH = bool(sys.argv.count('--flash') &gt; 0)
 # Get environment variables set by orbit for this particular build
 BLUEPRINT = os.environ.get("ORBIT_BLUEPRINT")
 OUTPUT_PATH = os.environ.get("ORBIT_OUTPUT_PATH")
-TOP_LEVEL = os.environ.get("ORBIT_TOP")
+TOP_LEVEL = os.environ.get("ORBIT_TOP_NAME")
 
 synth_order = []
 constraints_file = None
@@ -337,32 +337,39 @@ YILINX: Programming bitstream to flash...
 <pre><code class="language-text">1101111111001010111111100111110000111101001100101
 </code></pre>
 <p>Awesome! We added some pretty advanced settings to our yilinx target to make it more robust for future use. Let's configure this target to be used with any of our ongoing projects by editing the global configuration file through the command-line.</p>
-<pre><code>$ orbit config --global --append include="$(orbit env ORBIT_IP_PATH)/.orbit/config.toml"
+<pre><code>$ orbit config --push include="$(orbit env ORBIT_MANIFEST_DIR)/.orbit/config.toml"
 </code></pre>
 <p>Now when we call Orbit from any directory, we can see our yilinx target is available to use.</p>
 <pre><code>$ orbit build --list
 </code></pre>
-<pre><code>yilinx          Generate bitstreams for Yilinx FPGAs
+<pre><code>yilinx               Generate bitstreams for Yilinx FPGAs
 </code></pre>
 <h2 id="rereleasing-the-gates-ip"><a class="header" href="#rereleasing-the-gates-ip">Rereleasing the gates ip</a></h2>
 <p>We made changes to the gates ip, and now we want to have the ability to use these new updates or continue using the old changes. To do this, we want to update the version number in the manifest file. Let's edit the Orbit.toml file's version field to contain version "1.0.0".</p>
 <p>Filename: Orbit.toml</p>
 <pre><code class="language-toml">[ip]
 name = "gates"
-version = "1.0.0"
-
-# See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
+version = "1.0.0" # Update the version to 1.0.0!
+uuid = "8ah2qa261k8wgv55sd1qq17w9"
 
 [dependencies]
 
 </code></pre>
-<p>Finally, let's release version 1.0.0 for the gates ip by installing it to our cache.</p>
+<p>Finally, let's update the lockfile and release version 1.0.0 for the gates ip by installing it to our cache.</p>
+<pre><code>$ orbit lock
+</code></pre>
 <pre><code>$ orbit install
 </code></pre>
 <p>One last look at the catalog shows the latest version of gates we have installed is indeed 1.0.0. Nice work!</p>
 <pre><code>$ orbit search gates
 </code></pre>
 <pre><code>gates                       1.0.0     install
+</code></pre>
+<p>We can see that our previous version of gates is still available too; by default, the search command will report the highest known version for an ip.</p>
+<pre><code>$ orbit info gates --versions
+</code></pre>
+<pre><code>1.0.0         install  
+0.1.0         install 
 </code></pre>
 
                     </main>

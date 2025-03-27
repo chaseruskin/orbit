@@ -14,7 +14,7 @@ For the rest of this tutorial, we will be working relative to the project direct
 
 Let's implement the OR gate while restricting our design to only NAND gates like before. 
 ```
-$ orbit get nand_gate --signals --instance
+$ orbit get nand_gate -lsi
 ```
 ```
 library work;
@@ -131,7 +131,7 @@ PROG_FLASH = bool(sys.argv.count('--flash') > 0)
 # Get environment variables set by orbit for this particular build
 BLUEPRINT = os.environ.get("ORBIT_BLUEPRINT")
 OUTPUT_PATH = os.environ.get("ORBIT_OUTPUT_PATH")
-TOP_LEVEL = os.environ.get("ORBIT_TOP")
+TOP_LEVEL = os.environ.get("ORBIT_TOP_NAME")
 
 synth_order = []
 constraints_file = None
@@ -220,7 +220,7 @@ Filename: target/yilinx/or_gate.bit
 
 Awesome! We added some pretty advanced settings to our yilinx target to make it more robust for future use. Let's configure this target to be used with any of our ongoing projects by editing the global configuration file through the command-line.
 ```
-$ orbit config --global --append include="$(orbit env ORBIT_IP_PATH)/.orbit/config.toml"
+$ orbit config --push include="$(orbit env ORBIT_MANIFEST_DIR)/.orbit/config.toml"
 ```
 
 Now when we call Orbit from any directory, we can see our yilinx target is available to use.
@@ -228,7 +228,7 @@ Now when we call Orbit from any directory, we can see our yilinx target is avail
 $ orbit build --list
 ```
 ```
-yilinx          Generate bitstreams for Yilinx FPGAs
+yilinx               Generate bitstreams for Yilinx FPGAs
 ```
 
 ## Rereleasing the gates ip
@@ -239,15 +239,17 @@ Filename: Orbit.toml
 ``` toml
 [ip]
 name = "gates"
-version = "1.0.0"
-
-# See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
+version = "1.0.0" # Update the version to 1.0.0!
+uuid = "8ah2qa261k8wgv55sd1qq17w9"
 
 [dependencies]
 
 ```
 
-Finally, let's release version 1.0.0 for the gates ip by installing it to our cache.
+Finally, let's update the lockfile and release version 1.0.0 for the gates ip by installing it to our cache.
+```
+$ orbit lock
+```
 ```
 $ orbit install
 ```
@@ -258,4 +260,13 @@ $ orbit search gates
 ```
 ```
 gates                       1.0.0     install
+```
+
+We can see that our previous version of gates is still available too; by default, the search command will report the highest known version for an ip.
+```
+$ orbit info gates --versions
+```
+```
+1.0.0         install  
+0.1.0         install 
 ```

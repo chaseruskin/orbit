@@ -17,8 +17,8 @@ $ orbit new gates
 A directory called "gates" should now exist and look like the following tree structure:
 ```
 gates/
-├─ Orbit.lock
-└─ Orbit.toml
+├── Orbit.lock
+└── Orbit.toml
 ```
 
 Let's create our first design unit for describing a NAND gate. Feel free to copy the following code into a file called "nand_gate.vhd" that exists in our project directory "/gates".
@@ -152,7 +152,7 @@ $ orbit tree
 ```
 ```
 and_gate
-└─ nand_gate
+└── nand_gate
 ```
 
 Cool! We got a hierarchical view of our top-most design unit.
@@ -212,6 +212,10 @@ args = ["yilinx.py"]
 $ orbit build --target yilinx
 ```
 ```
+info: lockfile experienced no changes
+info: top-level set to and_gate
+info: blueprint created at: "/Users/chase/Develop/rust/orbit/gates/target/yilinx/blueprint.tsv"
+info: executing target yilinx
 YILINX: Synthesizing file /Users/chase/tutorials/gates/nand_gate.vhd into gates...
 YILINX: Synthesizing file /Users/chase/tutorials/gates/and_gate.vhd into gates...
 YILINX: Performing place-and-route...
@@ -240,29 +244,30 @@ This command ran a series of steps that packaged our project and placed it into 
 $ orbit search
 ```
 ```
-gates                       0.1.0       install
+gates                   0.1.0           install   8ah2qa261k8wgv55sd1qq17w9
 ```
 
-And there it is! Let's continue to the next tutorial, where we introduce dependencies across ips.
+And there it is! You may notice your UUID (the random 25 characters and numbers)
+is different, and that is expected behavior. Let's continue to the next tutorial, where we introduce dependencies across ips.
 
 ### Additional notes on project structure
 
 Our final project structure looks like the following:
 ```
 gates/
-├─ .orbit/
-│  ├─ config.toml
-│  └─ yilinx.py
-├─ target/
-│  ├─ CACHEDIR.TAG
-|  └─ yilinx/
-│     ├─ .env
-│     ├─ blueprint.tsv
-│     └─ fpga.bit
-├─ Orbit.toml
-├─ Orbit.lock
-├─ and_gate.vhd
-└─ nand_gate.vhd
+├── .orbit/
+│   ├── config.toml
+│   └── yilinx.py
+├── target/
+│   ├── CACHEDIR.TAG
+|   └── yilinx/
+│      ├── .env
+│      ├── blueprint.tsv
+│      └── fpga.bit
+├── Orbit.toml
+├── Orbit.lock
+├── and_gate.vhd
+└── nand_gate.vhd
 ```
 
 - The configurations stored in "/.orbit" exist only for this project; to store configurations that persist across projects make changes to the $ORBIT_HOME directory.

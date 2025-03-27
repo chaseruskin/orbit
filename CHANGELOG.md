@@ -20,6 +20,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ### Fixes
 - Adds attempt at safer handling around edge cases for SV operators during tokenization
 - Fixes issue where references in VHDL architectures that are in a file separate of an entity would go unresolved (such as using other packages)
+- Updates tutorials to reflect latest changes to commands and output
 
 ## 0.23.4
 

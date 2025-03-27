@@ -21,7 +21,7 @@ Remembering our impressive work with the gates project, we realize we can reuse 
 $ orbit search gates
 ```
 ```
-gates                       0.1.0       install
+gates                   0.1.0           install   8ah2qa261k8wgv55sd1qq17w9
 ```
 Awesome! Our next step is tell Orbit that our current project, half-add, wants to use gates as a dependency.
 
@@ -31,13 +31,12 @@ Filename: Orbit.toml
 ``` toml
 [ip]
 name = "half-add"
-library = "adding"
 version = "0.1.0"
-
-# See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
+uuid = "7ddyiof2rzj3g8onn4tfzb69a"
+library = "adding"
 
 [dependencies]
-gates = "0.1.0"
+gates = "0.1.0" # Add the dependency here!
 ```
 
 We've referenced it, now we have to use it!
@@ -72,13 +71,12 @@ Cool, we had used the VHDL keyword `nand` to describe that particular circuit. S
 
 ## Integrating design units across ips
 
-Let's use the NAND gate we previously defined to construct a half adder circuit.
-```
-$ orbit get --ip gates nand_gate --library --signals --instance
-```
-```
-library gates;
+Let's use the NAND gate we previously defined to construct a half adder circuit. We can use the shorthand switches `-s` and  `-i` for the  `--signals` and `--instance` flags, respectively.
 
+```
+$ orbit get --ip gates nand_gate -si
+```
+```
 signal a : std_logic;
 signal b : std_logic;
 signal x : std_logic;
@@ -162,7 +160,7 @@ $ orbit tree --format long
 ```
 ```
 half_add (half-add:0.1.0)
-└─ nand_gate (gates:0.1.0)
+└── nand_gate (gates:0.1.0)
 ```
 
 Finally, let's install this ip to the cache for future reuse as well. But before we can install any ip to our cache, an ip must have an up to date lockfile.

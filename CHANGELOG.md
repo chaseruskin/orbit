@@ -17,6 +17,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## 0.24.0 - unreleased
 
+### Features
+- Adds `ORBIT_MANIFEST_PATH`
+
 ### Changes
 - Removes `.verilog`, `.vh` from built-in `VLOG` fileset
 - Removes `.svh` from built-in `SYSV` fileset

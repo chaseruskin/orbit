@@ -12,7 +12,9 @@ Orbit's configuration can be customized with the setting of specific environment
 
 Orbit also sets environment variables during runtime such that any subprocesses within Orbit, such as targets, can access necessary information.
 
-- `ORBIT_MANIFEST_DIR` - The full path for the directory that contains the current ip's manifest.
+- `ORBIT_MANIFEST_DIR` - The full path to the directory that contains the current ip's manifest.
+
+- `ORBIT_MANIFEST_PATH` - The full path to the file that is the current ip's manifest.
 
 - `ORBIT_IP_NAME` - The name of the current ip.
 
@@ -46,9 +48,9 @@ Orbit also sets environment variables during runtime such that any subprocesses 
 
 - `ORBIT_BLUEPRINT` - The file name for the blueprint created from the planning stage of the latest build process. The file name includes the file's extension.
 
-- `ORBIT_TARGET_DIR` - Directory where all generated artifacts from any targets will be stored, relative to the current ip's directory. Default is "target".
+- `ORBIT_TARGET_DIR` - The directory where all generated artifacts from any targets will be stored, relative to the current ip's directory. Default is "target".
   
-- `ORBIT_OUT_DIR` - The full path for the directory where all generated artifacts for the current target will be stored. This folder is inside the target directory for the current ip, and is unique for each selected target.
+- `ORBIT_OUT_DIR` - The full path to the directory where all generated artifacts for the current target will be stored. This directory is inside the target directory for the current ip, and is unique for each selected target.
 
 - `ORBIT_CHAN_INDEX` - The full path for the directory where the current ip's manifest will be placed for the current channel in the publishing process.
 

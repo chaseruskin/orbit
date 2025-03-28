@@ -16,6 +16,7 @@
 //
 
 use crate::core::config::Config;
+use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::util::anyerror::Fault;
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -174,6 +175,13 @@ impl Environment {
                 .key(ORBIT_MANIFEST_DIR)
                 .value(PathBuf::standardize(&ip.get_root()).to_str().unwrap()),
         );
+        self.insert(
+            EnvVar::new().key(ORBIT_MANIFEST_PATH).value(
+                PathBuf::standardize(&ip.get_root().join(IP_MANIFEST_FILE))
+                    .to_str()
+                    .unwrap(),
+            ),
+        );
         if let Some(sum) = ip.get_checksum() {
             self.insert(EnvVar::new().key(ORBIT_IP_CHECKSUM).value(&sum.to_string()));
         }
@@ -281,6 +289,7 @@ pub const NO_COLOR: &str = "NO_COLOR";
 pub const ORBIT_WIN_LITERAL_CMD: &str = "ORBIT_WIN_LITERAL_CMD";
 
 pub const ORBIT_MANIFEST_DIR: &str = "ORBIT_MANIFEST_DIR";
+pub const ORBIT_MANIFEST_PATH: &str = "ORBIT_MANIFEST_PATH";
 pub const ORBIT_IP_NAME: &str = "ORBIT_IP_NAME";
 pub const ORBIT_IP_UUID: &str = "ORBIT_IP_UUID";
 pub const ORBIT_IP_VERSION: &str = "ORBIT_IP_VERSION";

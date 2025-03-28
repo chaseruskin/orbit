@@ -1872,8 +1872,8 @@ ELSE:
 <p>There are built-in filesets that Orbit uses that have special rules and work across all ip, including dependencies. The following filesets are currently built-in with Orbit:</p>
 <ul>
 <li><code>VHDL</code>: VHDL files (.vhd, .vhdl)</li>
-<li><code>VLOG</code>: Verilog files (.v, .vl, .verilog, .vlg, .vh)</li>
-<li><code>SYSV</code>: SystemVerilog files (.sv, .svh)</li>
+<li><code>VLOG</code>: Verilog files (.v, .vl, .vlg)</li>
+<li><code>SYSV</code>: SystemVerilog files (.sv)</li>
 </ul>
 <h2 id="custom-filesets"><a class="header" href="#custom-filesets">Custom filesets</a></h2>
 <p>Custom filesets are filesets that are be defined by the user for a specific target. These filesets are only searched for in the local ip and do not extend any of the ip's dependencies.</p>
@@ -1913,8 +1913,8 @@ ELSE:
 <p>The following filesets are already recognized by Orbit and are used for identifying hdl source code:</p>
 <div class="table-wrapper"><table><thead><tr><th>Fileset</th><th>Supported file extensions</th></tr></thead><tbody>
 <tr><td><code>VHDL</code></td><td>.vhd, .vhdl</td></tr>
-<tr><td><code>VLOG</code></td><td>.v, .vl, .verilog, .vlg, .vh</td></tr>
-<tr><td><code>SYSV</code></td><td>.sv, .svh</td></tr>
+<tr><td><code>VLOG</code></td><td>.v, .vl, .vlg</td></tr>
+<tr><td><code>SYSV</code></td><td>.sv</td></tr>
 </tbody></table>
 </div>
 <h2 id="tab-separated-values"><a class="header" href="#tab-separated-values">Tab-separated values</a></h2>
@@ -2990,6 +2990,8 @@ specified, then it will display the aggregated result of the current
 configuration data from across all files in use.</p>
 <p>If there are no options set to modify data, then the resulting configuration
 data will be displayed.</p>
+<p>Modifying fields of the configuration data by default will edit the user's
+global configuration, found at "$ORBIT_HOME/config.toml".</p>
 <p>To modify a field, the full key must be provided. Fields located inside
 tables require decimal characters "." to delimit between the key names. Each
 modified field is edited in the configuration file has the lowest precedence

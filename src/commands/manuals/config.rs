@@ -40,6 +40,9 @@ DESCRIPTION
     If there are no options set to modify data, then the resulting configuration
     data will be displayed.
     
+    Modifying fields of the configuration data by default will edit the user's
+    global configuration, found at "$ORBIT_HOME/config.toml".
+    
     To modify a field, the full key must be provided. Fields located inside
     tables require decimal characters "." to delimit between the key names. Each 
     modified field is edited in the configuration file has the lowest precedence

@@ -15,7 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.23.5 - unreleased
+## 0.24.0 - unreleased
+
+### Changes
+- Removes `.verilog`, `.vh` from built-in `VLOG` fileset
+- Removes `.svh` from built-in `SYSV` fileset
 
 ### Fixes
 - Adds attempt at safer handling around edge cases for SV operators during tokenization

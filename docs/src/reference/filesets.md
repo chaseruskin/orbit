@@ -10,8 +10,8 @@ A fileset itself consists of a name and a pattern.
 
 There are built-in filesets that Orbit uses that have special rules and work across all ip, including dependencies. The following filesets are currently built-in with Orbit:
 - `VHDL`: VHDL files (.vhd, .vhdl)
-- `VLOG`: Verilog files (.v, .vl, .verilog, .vlg, .vh)
-- `SYSV`: SystemVerilog files (.sv, .svh)
+- `VLOG`: Verilog files (.v, .vl, .vlg)
+- `SYSV`: SystemVerilog files (.sv)
 
 ## Custom filesets
 

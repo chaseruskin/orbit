@@ -28,8 +28,8 @@ The following filesets are already recognized by Orbit and are used for identify
 Fileset| Supported file extensions |        
 -------|---------|    
 `VHDL` | .vhd, .vhdl |   
-`VLOG` | .v, .vl, .verilog, .vlg, .vh |
-`SYSV` | .sv, .svh |
+`VLOG` | .v, .vl, .vlg |
+`SYSV` | .sv |
 
 ## Tab-separated values
 

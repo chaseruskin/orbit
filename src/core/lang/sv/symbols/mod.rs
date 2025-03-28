@@ -306,6 +306,21 @@ impl Parse<SystemVerilogToken> for SystemVerilogParser {
                 }
             // skip any potential illegal/unknown tokens at global scale
             } else if t.as_type().is_eof() == false {
+                // take the entire statement
+                let stmt = VerilogSymbol::into_next_statement(t, &mut tokens);
+                match stmt {
+                    Ok(stmt) => {
+                        if let Some(stmt) = stmt {
+                            if let Some(d_refs) =
+                                SystemVerilogSymbol::extract_refs_from_statement(&stmt)
+                            {
+                                // update references that may appear in the statement
+                                global_refs.extend(d_refs);
+                            }
+                        }
+                    }
+                    Err(_) => (), // symbols.push(Err(e)),
+                }
                 // symbols.push(Err(VerilogError::Vague))
                 continue;
             }
@@ -576,6 +591,53 @@ endmodule
                     Identifier::from_str("sms_16b208t0").unwrap()
                 ),
             ]
+        );
+    }
+
+    #[test]
+    fn ut_class_with_extends() {
+        let code = r#"// code file
+class foo extends bar;
+
+endclass : foo
+"#;
+        let symbols = SystemVerilogParser::read(&code).unwrap().into_symbols();
+        assert_eq!(
+            symbols.first().unwrap().as_name().unwrap().to_string(),
+            "foo"
+        );
+        let code = r#"// code file
+class foo extends bar #(abc);
+
+endclass : foo
+"#;
+        let symbols = SystemVerilogParser::read(&code).unwrap().into_symbols();
+        assert_eq!(
+            symbols.first().unwrap().as_name().unwrap().to_string(),
+            "foo"
+        );
+
+        let code = r#"// code file
+class foo extends bar #(abc);
+
+endclass : foo
+"#;
+        let symbols = SystemVerilogParser::read(&code).unwrap().into_symbols();
+        assert_eq!(
+            symbols.first().unwrap().as_name().unwrap().to_string(),
+            "foo"
+        );
+
+        let code = r#"// code file
+typedef class my_class;
+class foo extends bar #(abc);
+
+endclass : foo
+"#;
+        let symbols = SystemVerilogParser::read(&code).unwrap().into_symbols();
+        assert_eq!(
+            symbols.first().unwrap().as_name().unwrap().to_string(),
+            "foo"
         );
     }
 }

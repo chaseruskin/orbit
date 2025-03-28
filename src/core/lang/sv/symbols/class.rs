@@ -120,7 +120,7 @@ impl Class {
                     SystemVerilogToken::Identifier(id) => id,
                     _ => return Err(SystemVerilogError::Vague),
                 };
-                // println!("extends {}", impl_class_name);
+                // println!("extends {}", ext_class_name);
                 refs.insert(CompoundIdentifier::new_minimal_verilog(ext_class_name));
                 loop {
                     if let Some(peek) = tokens.peek() {
@@ -131,7 +131,7 @@ impl Class {
                                 SystemVerilogToken::Identifier(id) => id,
                                 _ => return Err(SystemVerilogError::Vague),
                             };
-                            // println!("extends {}", impl_class_name);
+                            // println!("extends {}", ext_class_name);
                             refs.insert(CompoundIdentifier::new_minimal_verilog(ext_class_name));
                         } else if peek.as_type().check_delimiter(&Operator::ParenL) == true {
                             let beg_t = tokens.next().unwrap();
@@ -146,6 +146,10 @@ impl Class {
                             {
                                 refs.extend(s_refs);
                             }
+                        } else if peek.as_type().check_delimiter(&Operator::Pound) == true {
+                            // consume the '#' operator and continue
+                            let _ = tokens.next().unwrap();
+                            continue;
                         } else {
                             break;
                         }
@@ -168,7 +172,7 @@ impl Class {
                 refs.insert(CompoundIdentifier::new_minimal_verilog(impl_class_name));
                 loop {
                     if let Some(peek) = tokens.peek() {
-                        // take another set of implement
+                        // take another set of implements
                         if peek.as_type().check_delimiter(&Operator::Comma) == true {
                             let _ = tokens.next().unwrap();
                             let impl_class_name = match tokens.next().take().unwrap().take() {
@@ -177,6 +181,23 @@ impl Class {
                             };
                             // println!("implements {}", impl_class_name);
                             refs.insert(CompoundIdentifier::new_minimal_verilog(impl_class_name));
+                        } else if peek.as_type().check_delimiter(&Operator::ParenL) == true {
+                            let beg_t = tokens.next().unwrap();
+                            let stmt = VerilogSymbol::parse_until_operator(
+                                tokens,
+                                beg_t,
+                                Operator::ParenR,
+                            )?;
+                            // update references that may appear in the statement
+                            if let Some(s_refs) =
+                                SystemVerilogSymbol::extract_refs_from_statement(&stmt)
+                            {
+                                refs.extend(s_refs);
+                            }
+                        } else if peek.as_type().check_delimiter(&Operator::Pound) == true {
+                            // consume the '#' operator and continue
+                            let _ = tokens.next().unwrap();
+                            continue;
                         } else {
                             break;
                         }

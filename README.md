@@ -10,11 +10,11 @@ Orbit is an agile package manager and extensible build tool for hardware descrip
 
 ![](./docs/src/images/architecture2.svg)
 
-Orbit's system introduces a layer of abstraction called __IPs__, which groups related source code files (`.v`, `.sv`, `.vhd`) together within a common directory.
+Orbit introduces a layer of abstraction called __IPs__, which groups related source code files (`.v`, `.sv`, `.vhd`) together within a common directory.
 
-Wondering what is Orbit and how does it work? Check out the [Topic Overview](https://chaseruskin.github.io/orbit/topic/overview.html) for more details describing Orbit's system architecture and its key concepts.
+Still wondering what Orbit is and how does it work? Check out the [Topic Overview](https://chaseruskin.github.io/orbit/topic/overview.html) for more details describing Orbit's system architecture and its key concepts.
 
-Curious to learn more about how to use Orbit in your hardware development workflow? Check out the [User Overview](https://chaseruskin.github.io/orbit/user/overview.html) to see how Orbit can be used in every stage of the development cycle.
+Curious to learn more about how to use Orbit in your own hardware development workflow? Check out the [User Overview](https://chaseruskin.github.io/orbit/user/overview.html) to see how Orbit can be used to accelerate every stage of the development cycle.
 
 ### Live at the cutting edge of hardware design
 
@@ -54,14 +54,14 @@ Orbit manages your project by turning it into a package (referred to as an ip) w
 
 ```
 cpu/
-├─ Orbit.lock
-├─ Orbit.toml
-├─ rtl/
-│  ├─ ctrl.vhd
-│  ├─ datapath.v
-│  └─ top.vhd
-└─ sim/
-   └─ top_tb.sv
+├── Orbit.lock
+├── Orbit.toml
+├── rtl/
+│   ├── ctrl.vhd
+│   ├── datapath.v
+│   └── top.vhd
+└── sim/
+    └── top_tb.sv
 ```
 
 The "Orbit.toml" file is a simple TOML file maintained by the user that requires only a couple fields, such as the ip's `name` and `version`, to get setup.

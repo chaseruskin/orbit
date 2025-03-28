@@ -15,10 +15,10 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.24.0 - unreleased
+## 0.24.0
 
 ### Features
-- Adds `ORBIT_MANIFEST_PATH`
+- Adds `ORBIT_MANIFEST_PATH` environment variable to be available during a target's execution process
 
 ### Changes
 - Removes `.verilog`, `.vh` from built-in `VLOG` fileset

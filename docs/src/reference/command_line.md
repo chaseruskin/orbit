@@ -38,11 +38,11 @@ Flags are options that do not take an argument and can be omitted.
 ### __Option__
 An option is a type of flag that, when provided, is required to have an argument assigned to it. The argument may immediately proceed the option's flag separated by whitespace.
 ```
---plugin <name>
+--target <name>
 ```
 The argument may also be attached to the option's flag with an equal sign `=`.
 ```
---plugin=<name>
+--target=<name>
 ```
 Options are able to be omitted.
 
@@ -70,8 +70,8 @@ Some scenarios will allow you to pass arguments through `orbit` to an internally
 
 #### Examples
 
-An example of using the argument terminator is brought up when calling a plugin through `orbit` during the building step.
+An example of using the argument terminator can be seen when initiating the build process with `orbit` and trying to pass arguments to the specified target to be used during the execution stage.
 ```
-$ orbit build --plugin yilinx -- --sram
+orbit build --target yilinx -- --sram -r=bit
 ```
-In this command, `orbit` does not interpret the "--sram" flag, but instead passes it to the plugin named "yilinx" to handle.
+In this command, `orbit` does not interpret the "--sram" flag nor the "-r=bit" option, but instead passes these arguments to the subprocess call to the "yilinx" target to handle during the execution stage.

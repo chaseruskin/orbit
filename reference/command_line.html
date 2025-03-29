@@ -180,10 +180,10 @@
 <p>Flags are options that do not take an argument and can be omitted.</p>
 <h3 id="option"><a class="header" href="#option"><strong>Option</strong></a></h3>
 <p>An option is a type of flag that, when provided, is required to have an argument assigned to it. The argument may immediately proceed the option's flag separated by whitespace.</p>
-<pre><code>--plugin &lt;name&gt;
+<pre><code>--target &lt;name&gt;
 </code></pre>
 <p>The argument may also be attached to the option's flag with an equal sign <code>=</code>.</p>
-<pre><code>--plugin=&lt;name&gt;
+<pre><code>--target=&lt;name&gt;
 </code></pre>
 <p>Options are able to be omitted.</p>
 <h3 id="switch"><a class="header" href="#switch"><strong>Switch</strong></a></h3>
@@ -201,10 +201,10 @@
 <p>The argument terminator is a special no-op flag <code>--</code> that tells the command-line interpreter to parse up until this symbol.</p>
 <p>Some scenarios will allow you to pass arguments through <code>orbit</code> to an internally executed command. You can pass these arguments by using the <em>argument terminator</em>.</p>
 <h4 id="examples"><a class="header" href="#examples">Examples</a></h4>
-<p>An example of using the argument terminator is brought up when calling a plugin through <code>orbit</code> during the building step.</p>
-<pre><code>$ orbit build --plugin yilinx -- --sram
+<p>An example of using the argument terminator can be seen when initiating the build process with <code>orbit</code> and trying to pass arguments to the specified target to be used during the execution stage.</p>
+<pre><code>orbit build --target yilinx -- --sram -r=bit
 </code></pre>
-<p>In this command, <code>orbit</code> does not interpret the "--sram" flag, but instead passes it to the plugin named "yilinx" to handle.</p>
+<p>In this command, <code>orbit</code> does not interpret the "--sram" flag nor the "-r=bit" option, but instead passes these arguments to the subprocess call to the "yilinx" target to handle during the execution stage.</p>
 
                     </main>
 

@@ -178,7 +178,7 @@
 <p>Included configuration files (order-preserving list found for the global configuration's <a href="#the-include-field"><code>include</code></a> field)</p>
 </li>
 </ol>
-<p>The configuration files are processed in the order defined above. When a configuration file defines a field, no other configuration files later in the process will be able to override its value. If a field is never provided an explicit value, the Orbit's default will be used.</p>
+<p>The configuration files are processed in the order defined above. When a configuration file defines a field, no other configuration files later in the process will be able to override its value. If a field is never provided an explicit value, then Orbit's default will be used.</p>
 <blockquote>
 <p><strong>Tip:</strong> You can modify some values in the configuration file through the command-line by using the <code>orbit config</code> command.</p>
 </blockquote>
@@ -210,8 +210,8 @@
 <li><a href="#the-command-field">command</a> - The command to execute the target.</li>
 <li><a href="#the-args-field">args</a> - Arguments to pass to the command.</li>
 <li><a href="#the-plans-field">plans</a> - The list of supported blueprint file formats.</li>
-<li><a href="#the-build-field">build</a> - Enable or disable target invocation for the build subcommand</li>
-<li><a href="#the-test-field">test</a> - Enable or disable target invocation for the test subcommand</li>
+<li><a href="#the-build-field">build</a> - Enable or disable target invocation for the build subcommand.</li>
+<li><a href="#the-test-field">test</a> - Enable or disable target invocation for the test subcommand.</li>
 <li><a href="#the-fileset-section">[fileset]</a> - Filesets to collect for the target.</li>
 </ul>
 </li>

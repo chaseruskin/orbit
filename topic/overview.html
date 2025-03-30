@@ -173,7 +173,7 @@
 <p>An ip saves its world state by storing a <strong>Lockfile</strong>, called <code>Orbit.lock</code>, alongside the manifest. A lockfile lists all of the resolved ip dependencies required for the local ip and how to retrieve those ips if necessary again. Running <code>orbit lock</code> will build an ip-level graph to resolve the entire ip-level dependency tree and store this information in the lockfile.</p>
 </li>
 <li>
-<p>Users customize their experience with Orbit using <strong>Configurations</strong>, which collections of <strong>Targets</strong>, <strong>Settings</strong>, and <strong>Protocols</strong>. All of these items are defined in an Orbit configuration file, called <code>config.toml</code>. Configurations allow users to reuse and share their workflows across teams and ips.</p>
+<p>Users customize their experience with Orbit using <strong>Configurations</strong>, which are collections of <strong>Targets</strong>, <strong>Settings</strong>, and <strong>Protocols</strong>. All of these items are defined in an Orbit configuration file, called <code>config.toml</code>. Configurations allow users to reuse and share their workflows across teams and ips.</p>
 </li>
 <li>
 <p>To build (or test) a design within a local ip, Orbit runs a <strong>Build Process</strong>. The build process takes as input the local ip's <strong>Lockfile</strong>, <strong>Source Files</strong> (hdl code), <strong>Auxiliary Files</strong> (any other file types needed), and a specified <strong>Target</strong>. Running <code>orbit build</code> (or <code>orbit test</code>) will enter the build process.</p>

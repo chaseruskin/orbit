@@ -1191,7 +1191,7 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <p>An ip saves its world state by storing a <strong>Lockfile</strong>, called <code>Orbit.lock</code>, alongside the manifest. A lockfile lists all of the resolved ip dependencies required for the local ip and how to retrieve those ips if necessary again. Running <code>orbit lock</code> will build an ip-level graph to resolve the entire ip-level dependency tree and store this information in the lockfile.</p>
 </li>
 <li>
-<p>Users customize their experience with Orbit using <strong>Configurations</strong>, which collections of <strong>Targets</strong>, <strong>Settings</strong>, and <strong>Protocols</strong>. All of these items are defined in an Orbit configuration file, called <code>config.toml</code>. Configurations allow users to reuse and share their workflows across teams and ips.</p>
+<p>Users customize their experience with Orbit using <strong>Configurations</strong>, which are collections of <strong>Targets</strong>, <strong>Settings</strong>, and <strong>Protocols</strong>. All of these items are defined in an Orbit configuration file, called <code>config.toml</code>. Configurations allow users to reuse and share their workflows across teams and ips.</p>
 </li>
 <li>
 <p>To build (or test) a design within a local ip, Orbit runs a <strong>Build Process</strong>. The build process takes as input the local ip's <strong>Lockfile</strong>, <strong>Source Files</strong> (hdl code), <strong>Auxiliary Files</strong> (any other file types needed), and a specified <strong>Target</strong>. Running <code>orbit build</code> (or <code>orbit test</code>) will enter the build process.</p>
@@ -1408,8 +1408,8 @@ exclude = [
 </code></pre>
 <p>In this example, the value for the above <code>exclude</code> field in the local ip's manifest will resolve the previous error because it prevents Orbit from seeing the file "rtl/foo2.vhd" during any file discovery operations.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="string-swapping"><a class="header" href="#string-swapping">String Swapping</a></h1>
-<p><em>String swapping</em> is the process of injecting runtime information into specific locations of strings.</p>
-<p>This process allows permissible strings to become generic enough to avoid having the user frequently update them with redundant information or accidently recall the incorrect value.</p>
+<p><em>String swapping</em> is the process of injecting runtime information into specific locations of strings defined in configuration values.</p>
+<p>This process allows permissible strings to become generic enough to avoid having the user frequently update configuration data with redundant information or accidently recall the incorrect value.</p>
 <h2 id="details"><a class="header" href="#details">Details</a></h2>
 <p>String swap works with key-value pairs. When Orbit sees the correct syntax indicating a known key, it will replace the key's contents with its value in its location within the string.</p>
 <p>To have a key substituted with its value, use double opening curly brackets <code>{{</code> to denote the beginning of a key and double closing curly brackets <code>}}</code> to end the key. Whitespace is ignored around the  key within the curly bracket sequences.</p>
@@ -1557,12 +1557,12 @@ Yilinx_Path = "/Users/chase/fpga/bin/yilinx"
 <p>The orange nodes (<code>and_g.v</code>, <code>xor_g.v</code>) are the HDL design elements that reference/instantiate the design element that was marked for symbol transformation. Once the ip targeted for DST (lab1) resolves the namespace clash, we must update the references for this design element in all the upstream neighboring ips (lab2). Since their references are now broken due to <code>nand_g</code> being renamed to <code>nand_g_fbe4720d0</code>, the source code is analyzed and updated to fix the broken references of <code>nand_g</code> to <code>nand_g_fbe4720d0</code>.</p>
 <p>The final unambiguous HDL-level dependency graph is the following:</p>
 <pre><code>half_add (final-project)
-├─ nand_g (lab3)
-│  ├─ not_g (lab2)
-│  └─ and_g (lab2)*
-|     └─ nand_g_fbe4720d0 (lab1)*
-└─ xor_g (lab2)*
-   └─ nand_g_fbe4720d0 (lab1)*
+├── nand_g (lab3)
+│   ├── not_g (lab2)
+│   └── and_g (lab2)*
+|       └── nand_g_fbe4720d0 (lab1)*
+└── xor_g (lab2)*
+    └── nand_g_fbe4720d0 (lab1)*
 </code></pre>
 <p>The <code>*</code> indicates the modules that had their source code modified to either rename the namespace collision or update its references to the new renamed identifier.</p>
 <h3 id="summary"><a class="header" href="#summary">Summary</a></h3>
@@ -2060,7 +2060,7 @@ precedence:
 <p>Included configuration files (order-preserving list found for the global configuration's <a href="reference/configuration.html#the-include-field"><code>include</code></a> field)</p>
 </li>
 </ol>
-<p>The configuration files are processed in the order defined above. When a configuration file defines a field, no other configuration files later in the process will be able to override its value. If a field is never provided an explicit value, the Orbit's default will be used.</p>
+<p>The configuration files are processed in the order defined above. When a configuration file defines a field, no other configuration files later in the process will be able to override its value. If a field is never provided an explicit value, then Orbit's default will be used.</p>
 <blockquote>
 <p><strong>Tip:</strong> You can modify some values in the configuration file through the command-line by using the <code>orbit config</code> command.</p>
 </blockquote>
@@ -2092,8 +2092,8 @@ precedence:
 <li><a href="reference/configuration.html#the-command-field">command</a> - The command to execute the target.</li>
 <li><a href="reference/configuration.html#the-args-field">args</a> - Arguments to pass to the command.</li>
 <li><a href="reference/configuration.html#the-plans-field">plans</a> - The list of supported blueprint file formats.</li>
-<li><a href="reference/configuration.html#the-build-field">build</a> - Enable or disable target invocation for the build subcommand</li>
-<li><a href="reference/configuration.html#the-test-field">test</a> - Enable or disable target invocation for the test subcommand</li>
+<li><a href="reference/configuration.html#the-build-field">build</a> - Enable or disable target invocation for the build subcommand.</li>
+<li><a href="reference/configuration.html#the-test-field">test</a> - Enable or disable target invocation for the test subcommand.</li>
 <li><a href="reference/configuration.html#the-fileset-section">[fileset]</a> - Filesets to collect for the target.</li>
 </ul>
 </li>

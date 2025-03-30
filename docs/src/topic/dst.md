@@ -102,16 +102,15 @@ The red node (`nand_g.v`) is the HDL design element that must be dynamically ren
 
 The orange nodes (`and_g.v`, `xor_g.v`) are the HDL design elements that reference/instantiate the design element that was marked for symbol transformation. Once the ip targeted for DST (lab1) resolves the namespace clash, we must update the references for this design element in all the upstream neighboring ips (lab2). Since their references are now broken due to `nand_g` being renamed to `nand_g_fbe4720d0`, the source code is analyzed and updated to fix the broken references of `nand_g` to `nand_g_fbe4720d0`.
 
-
 The final unambiguous HDL-level dependency graph is the following:
 ```
 half_add (final-project)
-├─ nand_g (lab3)
-│  ├─ not_g (lab2)
-│  └─ and_g (lab2)*
-|     └─ nand_g_fbe4720d0 (lab1)*
-└─ xor_g (lab2)*
-   └─ nand_g_fbe4720d0 (lab1)*
+├── nand_g (lab3)
+│   ├── not_g (lab2)
+│   └── and_g (lab2)*
+|       └── nand_g_fbe4720d0 (lab1)*
+└── xor_g (lab2)*
+    └── nand_g_fbe4720d0 (lab1)*
 ```
 
 The `*` indicates the modules that had their source code modified to either rename the namespace collision or update its references to the new renamed identifier.

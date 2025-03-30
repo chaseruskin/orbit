@@ -1,8 +1,8 @@
 # String Swapping
 
-_String swapping_ is the process of injecting runtime information into specific locations of strings.
+_String swapping_ is the process of injecting runtime information into specific locations of strings defined in configuration values.
 
-This process allows permissible strings to become generic enough to avoid having the user frequently update them with redundant information or accidently recall the incorrect value.
+This process allows permissible strings to become generic enough to avoid having the user frequently update configuration data with redundant information or accidently recall the incorrect value.
 
 ## Details 
 

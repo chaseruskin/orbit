@@ -20,7 +20,7 @@ Orbit supports multiple levels of configuration. Each level has its own order of
 
 4. Included configuration files (order-preserving list found for the global configuration's [`include`](#the-include-field) field)
 
-The configuration files are processed in the order defined above. When a configuration file defines a field, no other configuration files later in the process will be able to override its value. If a field is never provided an explicit value, the Orbit's default will be used.
+The configuration files are processed in the order defined above. When a configuration file defines a field, no other configuration files later in the process will be able to override its value. If a field is never provided an explicit value, then Orbit's default will be used.
 
 > __Tip:__ You can modify some values in the configuration file through the command-line by using the `orbit config` command.
 
@@ -42,8 +42,8 @@ Every configuration file consists of the following sections:
     - [command](#the-command-field) - The command to execute the target.
     - [args](#the-args-field) - Arguments to pass to the command.
     - [plans](#the-plans-field) - The list of supported blueprint file formats.
-    - [build](#the-build-field) - Enable or disable target invocation for the build subcommand
-    - [test](#the-test-field) - Enable or disable target invocation for the test subcommand
+    - [build](#the-build-field) - Enable or disable target invocation for the build subcommand.
+    - [test](#the-test-field) - Enable or disable target invocation for the test subcommand.
     - [[fileset]](#the-fileset-section) - Filesets to collect for the target. 
 - [[[protocol]]](#the-protocol-array) - Define a protocol.
     - [name](#the-name-field) - The name of the protocol.

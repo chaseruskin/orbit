@@ -1,3 +1,3 @@
 # Topic Guide
 
-This section provides explanations and clarity to the various systems operated by `orbit`.
+This section is __understanding-oriented__, providing explanations and discussions to clarify and illuminate particular topics around Orbit.

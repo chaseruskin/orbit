@@ -4,16 +4,16 @@
 
 Orbit is an agile package manager and extensible build tool for hardware description languages (HDL). Its design is driven by two core principles:
 
-- minimize technical debt associated with evolving HDL codebases
-- tailor to the wide range of users and their possible workflows with a high degree of modularity and extensibility 
+- Minimize technical debt associated with evolving HDL codebases
+- Tailor to the wide range of users and their possible workflows with a high degree of modularity and extensibility 
 
 Orbit's use case is targeted toward anyone interested in developing digital hardware; this includes industrial, academic, and personal settings. Create your next commerical product, university lab assignment, or personal project, using a tool that is tailored to today's advanced development processes.
 
 ## Sections
 This "book" is loosely divided into 4 sections:
-1. [Tutorials](./tutorials/tutorials.md) - Step-by-step lessons working with Orbit
-2. [User Guide](./user/user.md) - General procedures for "how-to" solve common problems
-3. [Topic Guide](./topic/topic.md) - Explanations that clarify and provide more detail to particular topics
+1. [Tutorials](./tutorials/tutorials.md) - Step-by-step lessons
+2. [User Guide](./user/user.md) - How-to guides to solve common problems
+3. [Topic Guide](./topic/topic.md) - Explanations that clarify and provide more details
 4. [Reference](./reference/reference.md) - Technical information
 
 ## About the Project

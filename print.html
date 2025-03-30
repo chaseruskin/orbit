@@ -160,16 +160,16 @@
 <p><img src="./images/orbit_logo_128px.png" alt="" /></p>
 <p>Orbit is an agile package manager and extensible build tool for hardware description languages (HDL). Its design is driven by two core principles:</p>
 <ul>
-<li>minimize technical debt associated with evolving HDL codebases</li>
-<li>tailor to the wide range of users and their possible workflows with a high degree of modularity and extensibility</li>
+<li>Minimize technical debt associated with evolving HDL codebases</li>
+<li>Tailor to the wide range of users and their possible workflows with a high degree of modularity and extensibility</li>
 </ul>
 <p>Orbit's use case is targeted toward anyone interested in developing digital hardware; this includes industrial, academic, and personal settings. Create your next commerical product, university lab assignment, or personal project, using a tool that is tailored to today's advanced development processes.</p>
 <h2 id="sections"><a class="header" href="#sections">Sections</a></h2>
 <p>This "book" is loosely divided into 4 sections:</p>
 <ol>
-<li><a href="./tutorials/tutorials.html">Tutorials</a> - Step-by-step lessons working with Orbit</li>
-<li><a href="./user/user.html">User Guide</a> - General procedures for "how-to" solve common problems</li>
-<li><a href="./topic/topic.html">Topic Guide</a> - Explanations that clarify and provide more detail to particular topics</li>
+<li><a href="./tutorials/tutorials.html">Tutorials</a> - Step-by-step lessons</li>
+<li><a href="./user/user.html">User Guide</a> - How-to guides to solve common problems</li>
+<li><a href="./topic/topic.html">Topic Guide</a> - Explanations that clarify and provide more details</li>
 <li><a href="./reference/reference.html">Reference</a> - Technical information</li>
 </ol>
 <h2 id="about-the-project"><a class="header" href="#about-the-project">About the Project</a></h2>
@@ -339,21 +339,20 @@ This program is free software, covered by the GNU General Public License. There 
 <p><strong>Note</strong>: If you wish to remove the newly created stale binary after an upgrade, rerunning <code>orbit --upgrade</code> immediately again will perform step 1 and stop at step 3.</p>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="tutorials"><a class="header" href="#tutorials">Tutorials</a></h1>
-<p>This section provides step-by-step instructions through examples of basic ways for interacting with <code>orbit</code>.</p>
+<p>This section is <strong>learning-oriented</strong>, providing step-by-step lessons intended to teach new users how to start using Orbit.</p>
+<p>The code provided in this section is very didactic in nature and is not intended to reflect production-level code or any particular coding style.</p>
 <blockquote>
 <h3 id="command-line-notation-1"><a class="header" href="#command-line-notation-1">Command Line Notation</a></h3>
-<p>Throughout the tutorials and the rest of the book, commands will be shown that are used in the terminal. Lines that are entered in a terminal are denoted by starting with a $. The $ is just a special marker; it is not to be entered with the command. Lines that don't start with a $ are typically the output of the previous command.</p>
+<p>Throughout this section (and the rest of the book), commands will be shown that are used in the terminal. Lines that are entered in a terminal are denoted by starting with a <code>$</code>. The <code>$</code> is just a special marker; it is not to be entered with the command. Lines that don't start with a <code>$</code> are typically the output of the previous command.</p>
 </blockquote>
-<p>Before starting the tutorials, it is assumed you possess basic knowledge of the following topics:</p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<p>While there is no assumption that you know how Orbit works, there are some other assumptions we encourage you to understand to get the most out of this section:</p>
 <ul>
-<li>sending commands through the command-line</li>
-<li>digital logic concepts</li>
-<li>navigating your computer's local file system</li>
+<li>Basic knowledge of the command-line: how to navigate around your filesystem, enter commands, and analyze command outputs</li>
+<li>Basic knowledge of digital logic concepts and hardware description languages: understanding logic gates and at least one ardware description language, such as VHDL, Verilog, or SystemVerilog</li>
+<li>Basic knowledge of scripting languages: familiarity with a scripting language such as Python or Tcl</li>
 </ul>
-<br>
-<blockquote>
-<p><strong>Note:</strong> The HDL code used for this section may be very didactic in nature and is not intended to reflect production-level code or any particular coding style.</p>
-</blockquote>
+<p>If you feel confident in the previously mentioned prerequisites, then you are ready to start your adventure learning Orbit!</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="first-project-gates"><a class="header" href="#first-project-gates">First Project: Gates</a></h1>
 <p>In this tutorial, you will learn how to:</p>
 <p><a href="tutorials/first_project.html#creating-an-ip">1.</a> Create an ip from scratch<br />
@@ -1113,7 +1112,8 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 </code></pre>
 <p>Great work! This marks the end to this tutorial series, but the beginning of your experience with Orbit, an agile package manager and extensible build tool for HDLs.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="user-guide"><a class="header" href="#user-guide">User Guide</a></h1>
-<p>This section provides general solutions to common questions when working with <code>orbit</code>.</p>
+<p>This section is <strong>goal-oriented</strong>, providing answers to questions through a series of steps for users that have some experience with Orbit.</p>
+<p>If you have not used Orbit yet, it is recommended to start with the <a href="user/./../tutorials/tutorials.html">Tutorials</a> section.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="overview"><a class="header" href="#overview">Overview</a></h1>
 <p>Orbit provides commands through the command-line interface to help at every stage in the hardware development cycle.</p>
 <p><img src="user/./../images/process.svg" alt="" /></p>
@@ -1172,7 +1172,7 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 </ul>
 <p>And with that, the cycle continues. As new features, bug fixes, and improvements are brought forth over time, users can repeat the following process to produce another release for any given project.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="topic-guide"><a class="header" href="#topic-guide">Topic Guide</a></h1>
-<p>This section provides explanations and clarity to the various systems operated by <code>orbit</code>.</p>
+<p>This section is <strong>understanding-oriented</strong>, providing explanations and discussions to clarify and illuminate particular topics around Orbit.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="overview-1"><a class="header" href="#overview-1">Overview</a></h1>
 <p>Orbit is an agile package manager and extensible build tool for HDLs.</p>
 <p><img src="topic/./../images/architecture2.svg" alt="" /></p>
@@ -1574,7 +1574,7 @@ Yilinx_Path = "/Users/chase/fpga/bin/yilinx"
 <li>https://stephencoakley.com/2019/04/24/how-rust-solved-dependency-hell</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="reference"><a class="header" href="#reference">Reference</a></h1>
-<p>This section provides technical information for the various components used throughout <code>orbit</code>.</p>
+<p>This section is <strong>information-oriented</strong>, providing technical descriptions intended to serve as reference for existing users with accurate details about Orbit and its components.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="manifest"><a class="header" href="#manifest">Manifest</a></h1>
 <p>The <code>Orbit.toml</code> file for each ip is called its manifest. It is written in the <a href="https://toml.io/en/">TOML</a> format. It is maintained by the user and contains metadata that is needed to build the ip. The manifest is read by Orbit to help automatically generate the ip's lock file, <code>Orbit.lock</code>.</p>
 <blockquote>

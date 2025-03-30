@@ -170,7 +170,7 @@ impl Subcommand<Context> for Info {
                                 })
                                 .for_each(|v| {
                                     data.push_str(&format!(
-                                        "{:<14}{:<9}\n",
+                                        "{:<16}{:<9}\n",
                                         v.get_version().to_string(),
                                         v.get_state().to_string()
                                     ));

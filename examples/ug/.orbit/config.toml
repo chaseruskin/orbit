@@ -1,0 +1,14 @@
+[[target]]
+name = "ug"
+description = "user guide target tests"
+command = "python"
+args = ["ug.py"]
+fileset.MYSET = "*.txt"
+
+
+[build]
+default-target = "ug"
+
+
+[test]
+default-target = "ug"

@@ -18,7 +18,7 @@
     <!-- - [Discovering Ip](./user/discovering.md) -->
     <!-- - [Developing Ip](./user/developing.md) -->
     <!-- - [Releasing Ip](./user/releasing.md) -->
-    <!-- - [Writing Targets](./user/writing_targets.md) -->
+    - [Creating Targets](./user/creating_targets.md)
     <!-- - [Creating Channels](./user/creating_channels.md) -->
 
 - [Topic Guide](./topic/topic.md)

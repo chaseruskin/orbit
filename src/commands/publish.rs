@@ -59,7 +59,7 @@ impl Subcommand<Context> for Publish {
     fn execute(self, c: &Context) -> proc::Result {
         // display channel list and exit
         if self.list == true {
-            println!(
+            print!(
                 "{}",
                 Channel::list_channels(
                     &mut c

@@ -22,6 +22,7 @@ use crate::{
     error::Error,
     util::{anyerror::Fault, environment::Environment},
 };
+use colored::Colorize;
 use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -78,12 +79,12 @@ impl Channel {
         self.root.as_ref().unwrap()
     }
 
-    /// Displays a plugin's information in a single line for quick glance.
+    /// Displays a channel's description in a single line for quick glance.
     pub fn quick_info(&self) -> String {
         format!(
-            "{:<24}{}",
+            "{:<21}{}",
             self.name,
-            self.description.as_ref().unwrap_or(&String::new())
+            self.description.as_ref().unwrap_or(&String::new()).green(),
         )
     }
 
@@ -157,6 +158,14 @@ impl Channel {
         }
         list
     }
+
+    // let mut list = String::new();
+    // targets.sort_by(|a, b| a.name.cmp(&b.name));
+    // for t in targets {
+    //     let is_default = def_target.is_some() && def_target.unwrap().get_name() == t.get_name();
+    //     list += &format!("{}\n", t.quick_info(is_default));
+    // }
+    // list
 
     pub fn sync(context: &Context) -> Result<(), Fault> {
         crate::info!("{}", "synchronizing channels ...");

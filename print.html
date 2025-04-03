@@ -1750,58 +1750,74 @@ version = "0.1.0" # the current version
 </code></pre>
 <p>The only fields required by Orbit are name, uuid, and version.</p>
 <h3 id="the-name-field"><a class="header" href="#the-name-field">The <code>name</code> field</a></h3>
+<p>The ip name is an identifier used to refer to the ip. It is used when listed as a dependency in another package, and as the name of the HDL library for all of its source files when the <code>library</code> field is omitted. See <a href="reference/./names.html">names</a> for more information.</p>
 <pre><code class="language-toml">[ip]
 name = "my-ip"
 # ...
 </code></pre>
 <h3 id="the-uuid-field"><a class="header" href="#the-uuid-field">The <code>uuid</code> field</a></h3>
 <p>A random string consisting of 25 characters in base36 encoding (a-z0-9).</p>
+<p>This field is used to safeguard against namespace collisions at the ip-level, and should <em>not</em> be manually edited at any point over the lifetime of an ip.</p>
+<p>If needing a UUID, obtain a UUID from Orbit by running <code>orbit init --uuid</code>.</p>
 <pre><code class="language-toml">[ip]
 # ...
 uuid = "ecj831jmc018hhhgl1d4rzgw8"
 </code></pre>
 <h3 id="the-version-field"><a class="header" href="#the-version-field">The <code>version</code> field</a></h3>
+<p>The current version of the ip.</p>
+<p>Versions must have three numeric parts, the major version, the minor version, and the micro version. Each part is separated by a <code>.</code> delimiter. An optional label can be added at the end, denoted by a <code>-</code>. See <a href="reference/./versions.html">versions</a> for more information.</p>
+<p>This field is optional and will default to <code>0.0.0</code>, however, it is required to be defined if publishing the ip.</p>
 <pre><code class="language-toml">[ip]
 # ...
 version = "0.1.0"
 </code></pre>
 <h3 id="the-authors-field"><a class="header" href="#the-authors-field">The <code>authors</code> field</a></h3>
+<p>The optional <code>authors</code> field lists in an array the people or organizations that are considered the “authors” of the package. The exact meaning is open to interpretation — it may list the original or primary authors, current maintainers, or owners of the package. An optional email address may be included within angled brackets at the end of each author entry.</p>
 <pre><code class="language-toml">[ip]
 # ...
-authors = ["Duncan Idaho", "Gurney Halleck"]
+authors = ["Duncan Idaho", "Gurney Halleck &lt;ghalleck@dune.mov"]
 
 </code></pre>
 <h3 id="the-library-field"><a class="header" href="#the-library-field">The <code>library</code> field</a></h3>
+<p>The optional <code>library</code> entry is an identifier used to denote the HDL library for all of the source files found within the ip.</p>
 <pre><code class="language-toml">[ip]
 # ...
-library = "work"
+library = "axi"
 </code></pre>
 <h3 id="the-description-field"><a class="header" href="#the-description-field">The <code>description</code> field</a></h3>
+<p>The description is a short blurb about the ip. This should be plain text (not Markdown).</p>
 <pre><code class="language-toml">[ip]
 # ...
 description = "A short description of the ip"
 </code></pre>
 <h3 id="the-keywords-field"><a class="header" href="#the-keywords-field">The <code>keywords</code> field</a></h3>
+<p>The <code>keywords</code> field is an array of strings that describe this package. This can help when searching for the package in the catalog.</p>
 <pre><code class="language-toml">[ip]
 # ...
 keywords = ["cpu", "risc"]
 </code></pre>
 <h3 id="the-source-field"><a class="header" href="#the-source-field">The <code>source</code> field</a></h3>
+<p>The <code>source</code> entry is the URL that points to this ip on the internet. The entry's value can either be a string or an inline table.</p>
+<p>When the value is a string, it represents the URL. The default protocol will be used on this URL, which is currently curl.</p>
 <pre><code class="language-toml">[ip]
 # ...
 source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
 </code></pre>
+<p>When the value is an inline table, there are 3 fields that can be specified: the <code>url</code>, the <code>protocol</code>, and a <code>tag</code>. The <code>url</code> key is the string for the URL, the <code>protocol</code> key is the name of a configured protocol, and the <code>tag</code> key is optional metadata that can be used by the specified protocol.</p>
+<p>The source field's <code>url</code> and <code>tag</code> keys support <a href="reference/./../topic/swapping.html"><em>string swapping</em></a>.</p>
 <pre><code class="language-toml">[ip]
 # ...
 source = { url = "https://github.com/chaseruskin/orbit.git", protocol = "git", tag = "1.0.0" }
 </code></pre>
-<p>The source field's "url" and "tag" support <a href="reference/./../topic/swapping.html"><em>string swapping</em></a>.</p>
 <h3 id="the-channels-field"><a class="header" href="#the-channels-field">The <code>channels</code> field</a></h3>
+<p>The <code>channels</code> field is an array of strings listing the names of configured channels that this ip will publish to during the publishing process.</p>
+<p>Without a channel listed in the <code>channels</code> entry, an ip is unable to be published since there is no default channel.</p>
 <pre><code class="language-toml">[ip]
 # ...
 channels = ["hyperspace-labs"]
 </code></pre>
 <h3 id="the-public-field"><a class="header" href="#the-public-field">The <code>public</code> field</a></h3>
+<p>The <code>public</code> field is an array of strings that specify which files are publicly accessible to external ips.</p>
 <pre><code class="language-toml">[ip]
 # ...
 public = [
@@ -1828,6 +1844,7 @@ exclude = ["deprec/"]
 <p>Using <code>include</code> and <code>exclude</code> is mutually exclusive; setting <code>include</code> will override any value of <code>exclude</code>. If <code>include</code> and <code>exclude</code> are omitted, then all files from the root of the ip will be included.</p>
 <p>Files that are always excluded are those found in directories that contain a "CACHEDIR.TAG" file. For example, every target output directory Orbit creates is excluded because they contain this file.</p>
 <h3 id="the-readme-field"><a class="header" href="#the-readme-field">The <code>readme</code> field</a></h3>
+<p>The <code>readme</code> field should be the path to a file in the ip root (relative to this Orbit.toml) that contains general information about the ip.</p>
 <pre><code class="language-toml">[ip]
 # ...
 readme = "README.md"
@@ -1839,22 +1856,31 @@ custom-field-1 = true
 custom-field-2 = "hello world"
 # ...
 </code></pre>
+<p>You can even add additional tables within this section to organize your own project metadata.</p>
+<pre><code class="language-toml">[ip.metadata.toolchains]
+vivado = "2024.1"
+# ...
+
+[ip.metadata.vivado]
+part = "xc7a35tcpg236–1"
+# ...
+</code></pre>
 <h3 id="the-dependencies-section"><a class="header" href="#the-dependencies-section">The <code>[dependencies]</code> section</a></h3>
 <p>The <code>[dependencies]</code> section is a table of direct dependencies required for the current ip.</p>
 <pre><code class="language-toml">[dependencies]
 gates = "1.0.0"
 uart = "2.3.1"
 </code></pre>
-<p>If the ip has no dependencies, the section can be omitted from the manifest. The ips listed in this section will always be included in the build graph.</p>
+<p>If the ip has no dependencies, the section can be omitted from the manifest. The ips listed in this section will always be included in the build graph. For ips that should only be included in the build graph when developing the ip, see the <code>[dev-dependencies]</code> section.</p>
+<p>Dependencies can also be specified as local when given a file system path that points to the directory where that ip's manifest exists.</p>
 <pre><code class="language-toml">[dependencies]
 spi = { path = "../spi", version = "0.1.2" }
 </code></pre>
-<p>Dependencies can also be specified as local when given a file system path that points to the directory where that ip's manifest exists. Local dependencies are useful when trying to test modifications of that ip within the context of another ip.</p>
-<p>Local dependencies are also supported in the <code>[dev-dependencies]</code> section.</p>
+<p>Local dependencies are useful when trying to test modifications of that ip within the context of another ip. Local dependencies are also supported in the <code>[dev-dependencies]</code> section.</p>
+<p>If adding a dependency that is an ambiguous name within the ip catalog, its uuid is required in order to select the correct ip. When the ip's name is unique within the ip catalog, specifying the uuid is optional when listing dependencies.</p>
 <pre><code class="language-toml">[dependencies]
 pcie = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.3.0" }
 </code></pre>
-<p>If adding a dependency that is an ambiguous name within the ip catalog, its uuid is required in order to select the correct ip. When the ip's name is unique within the ip catalog, specifying the uuid is optional when listing dependencies.</p>
 <p>Explicitly providing the uuid for a dependent ip is also supported in the <code>[dev-dependencies]</code> section.</p>
 <h3 id="the-dev-dependencies-section"><a class="header" href="#the-dev-dependencies-section">The <code>[dev-dependencies]</code> section</a></h3>
 <p>The <code>[dev-dependencies]</code> section is a table of direct dependencies required for the current ip.</p>
@@ -1863,6 +1889,7 @@ testkit = "1.3.7"
 logic-analyzer = "4.8.0"
 </code></pre>
 <p>If the ip has no development dependencies, the section can be omitted from the manifest. The ips listed in this section will not be included in the build graph for when this ip is used as a dependency itself.</p>
+<p>Refer to the <code>[dependencies]</code> section for related capabilities in specifying ips.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="names"><a class="header" href="#names">Names</a></h1>
 <p>In order to identify an ip among others, Orbit requires users to assign a human-readable <em>name</em> to each created ip. In addition to the human-readable name, Orbit assigns a <em>universally unique identifier</em> (UUID) to each ip. UUIDs are required in order to avoid namespace collisions at the ip level in Orbit's decentralized system.</p>
 <h2 id="name"><a class="header" href="#name">Name</a></h2>

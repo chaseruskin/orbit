@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Creating Targets - The Book of Orbit</title>
+        <title>Overview - The Book of Orbit</title>
 
 
         <!-- Custom HTML head -->
@@ -158,151 +158,73 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="creating-targets"><a class="header" href="#creating-targets">Creating Targets</a></h1>
-<p>This section provides steps for how to potentially configure a target as well as write the script for a target.</p>
-<h3 id="assumptions"><a class="header" href="#assumptions">Assumptions</a></h3>
-<p>The steps below assume (and encourage) your targets to be written in Python, although targets can be written in any language and called by any command.</p>
-<p>If a step mentions the "target script", this corresponds to the script which will be called when performing the execution stage of the build process.</p>
-<p>If a step mentions the "target configuration", this corresponds to the entry for the target that has been defined in an Orbit configuration file (config.toml).</p>
-<h3 id="guides"><a class="header" href="#guides">Guides</a></h3>
+                        <h1 id="overview"><a class="header" href="#overview">Overview</a></h1>
+<p>Orbit provides commands through the command-line interface to help at every stage in the hardware development cycle.</p>
+<p><img src="./../images/process.svg" alt="" /></p>
+<h2 id="hardware-development-cycle"><a class="header" href="#hardware-development-cycle">Hardware development cycle</a></h2>
+<p>The hardware development cycle can be loosely divided into three main stages:</p>
+<ol>
+<li>
+<p><strong>Research/Planning</strong>: Define a project's goals, scope, requirements, and identify any existing solutions that can be reused</p>
+</li>
+<li>
+<p><strong>Design/Development</strong>: Create the architecture, implement the system's functionalities, and verify the design meets the requirements through testing</p>
+</li>
+<li>
+<p><strong>Deployment/Maintenance</strong>: Release the project to the production environment to make it accessible to its users while providing ongoing updates, bug fixes, and new features over time</p>
+</li>
+</ol>
+<h2 id="development-process"><a class="header" href="#development-process">Development process</a></h2>
+<h3 id="1-research"><a class="header" href="#1-research">1. Research</a></h3>
+<p>At the start of any project, it's important to survey existing work to identify any related projects that either already meet your requirements or can be used to help meet your requirements.</p>
 <ul>
-<li><a href="#configuring-a-target">Configuring a target</a></li>
-<li><a href="#reading-a-blueprint">Reading a blueprint</a></li>
-<li><a href="#handling-built-in-filesets">Handling built-in filesets</a></li>
-<li><a href="#adding-a-custom-fileset">Adding a custom fileset</a></li>
-<li><a href="#handling-a-custom-fileset">Handling a custom fileset</a></li>
-<li><a href="#handling-additional-arguments">Handling additional arguments</a></li>
+<li>
+<p>Orbit helps you quickly survey what projects exist in the ip catalog with <code>orbit search</code>. This will return a list of all projects available in the ip catalog, their latest version, their status (installed, downloaded, available), and its unique identifier.</p>
+</li>
+<li>
+<p>Further refining your search to get more information about a particular project can be done with <code>orbit info</code>. This command can display data pulled from the ip's manifest, what design units it contains, the different versions of the project, and other data related to that project.</p>
+</li>
+<li>
+<p>After finding a design unit of interest within a particular project, a reference to that design unit's source code can be made available with <code>orbit read</code>. If the source code is well-documented and written in a clear manner, then this referring to the source code can help easily understand if using this particular design unit will be able to help you in your next project.</p>
+</li>
 </ul>
-<h2 id="configuring-a-target"><a class="header" href="#configuring-a-target">Configuring a target</a></h2>
-<ol>
+<blockquote>
+<p><strong>Tip</strong>: The read operation works especially well with a command-line pager such as <code>less</code>, allowing the source code contents to be easily navigated by piping it as input to the pager.</p>
+</blockquote>
+<h3 id="2-development"><a class="header" href="#2-development">2. Development</a></h3>
+<p>The bulk of time and resources for any project takes place during the development stage. In this stage, the project's architecture is created, the system's functionalities are implemented, and checked to make sure they meet the project's requirements through testing.</p>
+<ul>
 <li>
-<p>Open an Orbit configuration file</p>
+<p>Using any design units from existing ip in your latest project can be quickly achieved using <code>orbit get</code>. This command will return the necessary HDL code snippets to correctly instantiate a design unit. Simply adding the external ip's name and version to the current project's <code>[dependencies]</code> table within the <code>Orbit.toml</code> file will allow Orbit to record the information necessary to correctly reference the design unit's within that ip.</p>
 </li>
 <li>
-<p>Make a new entry in the <code>[[target]]</code> array:</p>
-</li>
-</ol>
-<pre><code class="language-toml">[[target]]
-name = "tar"
-description = "My target description"
-command = "python3"
-args = ["tar.py"]
-</code></pre>
-<p>Calling the <code>tar</code> target at the start of a build process will now execute the command <code>python3 tar.py</code> for the execution stage.</p>
-<p>Although the execution stage spawns the subprocess in the target's output directoy, any relative file paths defined in the <code>args</code> field are relative to the configuration file that defines them.</p>
-<h2 id="reading-a-blueprint"><a class="header" href="#reading-a-blueprint">Reading a blueprint</a></h2>
-<ol>
-<li>
-<p>Open the target script</p>
+<p>Running a build process on a new design unit that does not require a testbench can be achieved with <code>orbit build</code>. By configuring and specifying a target, this command gives you the power to run any particular workflow for your set of tools and unique demands, such as performing synthesis.</p>
 </li>
 <li>
-<p>Add this code snippet to read the default plan (tab-separated value files) and process the data into the <code>entries</code> variable:</p>
+<p>Running a build process to verify a new design unit with its accompanied testbench can be achieved with <code>orbit test</code>. This command requires the user to configure and specify a target similiar to <code>orbit build</code>, but under the intention that a testbench is required, perhaps for running a simulation.</p>
 </li>
-</ol>
-<pre><code class="language-python">import os
-
-entries = []
-with open(os.environ['ORBIT_BLUEPRINT']) as bp:
-    for line in bp.readlines():
-        entries += [tuple(line.strip().split('\t'))]
-</code></pre>
-<h2 id="handling-built-in-filesets"><a class="header" href="#handling-built-in-filesets">Handling built-in filesets</a></h2>
-<p>The blueprint always collects Verilog, SystemVerilog, and VHDL files. These files are encouraged to always be handled by the target script, whether it be for compilation, synthesis, linting, etc.</p>
-<ol>
+</ul>
+<h3 id="3-deployment"><a class="header" href="#3-deployment">3. Deployment</a></h3>
+<p>After a project has been successfully developed and meets its specified goals and requirements, it can be deployed to its production environment and made available to its users.</p>
+<ul>
 <li>
-<p>Open the target script</p>
+<p>A detailed record of how to reproduce the project using Orbit can created with <code>orbit lock</code>. This command will generate a lockfile, <code>Orbit.lock</code>, which saves all the information about the current project and its dependencies such that the exact state of the project can be reproduced at a later time in any environment.</p>
 </li>
 <li>
-<p>Read the blueprint into a variable (<code>entries</code>) storing the blueprint's data as a list of 3-element (fileset, library, filepath) tuples</p>
+<p>Securing the current state of the project as a release (such as version 1.0.0) for others to find is done using <code>orbit publish</code>. This command verifies the current project's state is valid in the context of Orbit and then installs it to your local ip catalog as well as posts its manifest to any of its configured channels. By posting the ip to a channel, any other users who also have the same channel configured will be able to see the newly available project.</p>
 </li>
-<li>
-<p>Add this code snippet to do some pseudo-processing of the built-in filesets collected from the planning stage:</p>
-</li>
-</ol>
-<pre><code class="language-python">for entry in entries:
-    # Break out the 3-element tuple into its respective components
-    fileset, library, filepath = entry
-    # Condition based on the entry's fileset
-    if fileset == 'VHDL':
-        print('TODO: handle vhdl file '+filepath+' into library '+library)
-    elif fileset == 'VLOG':
-        print('TODO: handle verilog file '+filepath+' into library '+library)
-    elif fileset == 'SYSV':
-        print('TODO: handle systemverilog file '+filepath+' into library '+library)
-</code></pre>
-<p>This will create placeholders ("TODO") print statements in the code sections where Verilog, SystemVerilog, and VHDL files can be processed by the target script.</p>
-<h2 id="adding-a-custom-fileset"><a class="header" href="#adding-a-custom-fileset">Adding a custom fileset</a></h2>
-<ol>
-<li>
-<p>Open the target configuration</p>
-</li>
-<li>
-<p>Add the fileset and its glob-style pattern to your target's entry:</p>
-</li>
-</ol>
-<pre><code class="language-toml">[[target]]
-name = "tar"
-description = "My target description"
-command = "python3"
-args = ["tar.py"]
-# Add a custom fileset
-fileset.MYSET = "*.txt"
-</code></pre>
-<h2 id="handling-a-custom-fileset"><a class="header" href="#handling-a-custom-fileset">Handling a custom fileset</a></h2>
-<p>Adding a custom fileset in the target's configuration is not enough to support custom files; the target script must also have support for handling the custom filesets that are collected into the blueprint from the planning stage.</p>
-<ol>
-<li>
-<p>Open the target script</p>
-</li>
-<li>
-<p>Read the blueprint into a variable (<code>entries</code>) storing the blueprint's data as a list of 3-element (fileset, library, filepath) tuples</p>
-</li>
-<li>
-<p>Add this code snippet to pseudo-process the custom files collected from the planning stage for the <code>MYSET</code> filset:</p>
-</li>
-</ol>
-<pre><code class="language-python">for entry in entries:
-    # Break out the 3-element tuple into its respective components
-    fileset, library, filepath = entry
-    # Condition based on the entry's fileset
-    if fileset == 'MYSET':
-        print('TODO: handle text file '+filepath+' under the custom fileset '+fileset)
-</code></pre>
-<p>This will create placeholders ("TODO") print statements in the code sections where any file that was found to match the <code>MYSET</code> file pattern can be processed by the target script.</p>
-<h2 id="handling-additional-arguments"><a class="header" href="#handling-additional-arguments">Handling additional arguments</a></h2>
-<p>Sometimes arguments need to be passed to your target on the command line. Arguments found after <code>--</code> flag for <code>orbit build</code> or <code>orbit test</code> will be appended to the list of arguments already defined in the target's configuration.</p>
-<ol>
-<li>Add this code snippet to check if <code>--verbose</code> or <code>--help</code> was an argument to the target script:</li>
-</ol>
-<pre><code class="language-python">import sys
-
-is_verbose = False
-show_help = False
-# Iterate through all arguments after the script name
-for arg in sys.argv[1:]:
-    if arg == '--verbose':
-        is_verbose = True
-    elif arg == '--help':
-        show_help = True
-    else:
-        print('TODO: handle target argument '+arg)
-</code></pre>
-<ol>
-<li>Pass arguments after the <code>--</code> when starting the build process for the target:</li>
-</ol>
-<pre><code>orbit build --target tar -- option1 --verbose --help 
-</code></pre>
-<p>For a more robust solution to handling additional arguments, it is recommended to use an existing argument parsing library such as <a href="https://docs.python.org/3/library/argparse.html"><code>argparse</code></a>.</p>
+</ul>
+<p>And with that, the cycle continues. As new features, bug fixes, and improvements are brought forth over time, users can repeat the following process to produce another release for any given project.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../user/overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../user/user.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../topic/topic.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../user/creating_targets.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -312,11 +234,11 @@ for arg in sys.argv[1:]:
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../user/overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../user/user.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../topic/topic.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../user/creating_targets.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

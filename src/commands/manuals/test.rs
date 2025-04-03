@@ -50,7 +50,7 @@ DESCRIPTION
     command-line will follow the previously defined arguments.
     
     The target's process will spawn from the current working ip's output directory,
-    which is $ORBIT_TARGET_DIR/$ORBIT_TARGET.
+    which is $ORBIT_OUT_DIR.
 
 OPTIONS
     --target, -t <name>

@@ -164,7 +164,7 @@
 <p>Channels can be as manual or automated as you prefer. You can configure commands to run for a channel's synchronization hook, pre-publish hook, and post-publish hook. Channels are encouraged to be as automated as possible by defining these fields in the channel's configuration.</p>
 <h2 id="adding-a-new-ip-to-a-channel"><a class="header" href="#adding-a-new-ip-to-a-channel">Adding a new ip to a channel</a></h2>
 <p>Orbit automates the process of adding an ip to a channel with <code>orbit publish</code>.</p>
-<p>The ip's manifest gets placed in the channel by using its generated index path. The index path can be read from the <code>ORBIT_CHAN_INDEX</code> environment variable during a channel's pre-publish or post-publish hook processes.</p>
+<p>The ip's manifest gets placed in the channel at its generated index directory. The root of the index directory can be configured using the <code>root</code> field, and the remaining subdirectories are pre-determined according to the ip's name. The full path to the index directory can be read from the <code>ORBIT_CHANNEL_DIR</code> environment variable during a channel's pre-publish or post-publish hook processes.</p>
 <h2 id="example"><a class="header" href="#example">Example</a></h2>
 <pre><code class="language-toml">[[channel]]
 name = "hyperspace-labs"

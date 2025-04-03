@@ -67,7 +67,7 @@ The current version of the ip.
 
 Versions must have three numeric parts, the major version, the minor version, and the micro version. Each part is separated by a `.` delimiter. An optional label can be added at the end, denoted by a `-`. See [versions](./versions.md) for more information.
 
-This field is optional and will default to `0.0.0`, however, it is required to be defined if publishing the ip.
+This field is optional and will default to `0.0.0`.
 
 ``` toml
 [ip]

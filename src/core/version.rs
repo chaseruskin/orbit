@@ -389,6 +389,17 @@ pub struct Version {
     label: Option<VerStr>,
 }
 
+impl Default for Version {
+    fn default() -> Self {
+        Self {
+            major: 0,
+            minor: 0,
+            micro: 0,
+            label: None,
+        }
+    }
+}
+
 impl PartialOrd for Version {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match self.major == other.major {

@@ -309,7 +309,7 @@ impl Manifest {
         Self {
             ip: Package {
                 name: PkgPart::new(),
-                version: IpVersion::new(),
+                version: IpVersion::default(),
                 uuid: Uuid::new(),
                 source: None.into(),
                 keywords: Vec::new(),
@@ -485,6 +485,7 @@ fn map_is_empty<K, V>(field: &HashMap<K, V>) -> bool {
 pub struct Package {
     name: IpName,
     uuid: Uuid,
+    #[serde(default)]
     version: IpVersion,
     #[serde(deserialize_with = "validate_lib_name", default)]
     library: Option<IpName>,

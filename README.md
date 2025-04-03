@@ -70,8 +70,8 @@ Filename: Orbit.toml
 ``` toml
 [ip]
 name = "cpu"
-uuid = "71vs0nyo7lqjji6p6uzfviaoi"
 version = "1.0.0"
+uuid = "71vs0nyo7lqjji6p6uzfviaoi"
 
 [dependencies]
 gates = "2.0.0"
@@ -119,9 +119,26 @@ or_gate u_or_gate (
 );
 ```
 
+Design units written in one language can also have their instantiation code displayed in a different language, such as the SystemVerilog instance of a VHDL entity.
+
 ## Flexibility in use
 
 Since Orbit focuses on efficiently managing the HDL source code and minimizing its associated technical debt, users have the power to add their own execution targets to the build process. This is accomplished by Orbit performing the planning of a build process to generate a single file, called a blueprint, that lists the topologically-sorted order of source files. After planning the build, Orbit invokes the user's target to perform the execution process on the list of source files.
+
+For a project with the following design hierarchy:
+```
+$ orbit tree top_tb
+```
+```
+top_tb
+└── top
+    ├── datapath
+    │   └── and_gate
+    │       └── nand_gate
+    └── ctrl
+```
+
+Orbit generates the blueprint listing the order of required HDL source files, even across other projects:
 
 Filename: blueprint.tsv
 ```
@@ -153,7 +170,7 @@ What makes Orbit an agile package manager for HDLs? Here are some of its key fea
 
 - Quickly navigate through HDL source code to read its inline documentation and review a design unit's implementation with Orbit's ability to jump to and display HDL code segments
 
-- Integrate existing design units across projects faster than ever with Orbit's ability to display valid HDL code snippets for design unit instantiation
+- Integrate existing design units across projects faster than ever with Orbit's ability to display valid HDL code snippets for design unit instantiation, even across languages
 
 - Explore your evolving codebase to identify the projects you need next with Orbit's ability to quickly search through known ip by filtering based on keywords, status, and name
 

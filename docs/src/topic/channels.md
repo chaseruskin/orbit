@@ -10,7 +10,7 @@ Channels can be as manual or automated as you prefer. You can configure commands
 
 Orbit automates the process of adding an ip to a channel with `orbit publish`.
 
-The ip's manifest gets placed in the channel by using its generated index path. The index path can be read from the `ORBIT_CHAN_INDEX` environment variable during a channel's pre-publish or post-publish hook processes.
+The ip's manifest gets placed in the channel at its generated index directory. The root of the index directory can be configured using the `root` field, and the remaining subdirectories are pre-determined according to the ip's name. The full path to the index directory can be read from the `ORBIT_CHANNEL_DIR` environment variable during a channel's pre-publish or post-publish hook processes.
 
 ## Example
 

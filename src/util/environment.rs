@@ -314,6 +314,6 @@ pub const ORBIT_BLUEPRINT: &str = "ORBIT_BLUEPRINT";
 pub const ORBIT_TARGET_DIR: &str = "ORBIT_TARGET_DIR";
 pub const ORBIT_OUT_DIR: &str = "ORBIT_OUT_DIR";
 
-pub const ORBIT_CHAN_INDEX: &str = "ORBIT_CHAN_INDEX";
+pub const ORBIT_CHANNEL_DIR: &str = "ORBIT_CHANNEL_DIR";
 
 pub const ORBIT_ENV_PREFIX: &str = "ORBIT_ENV_";

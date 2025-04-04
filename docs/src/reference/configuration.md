@@ -6,9 +6,11 @@ The `config.toml` file stores settings and extends Orbit's functionality. It is 
 
 ## Paths
 
-When a field is expected to be a file system path, Orbit has the ability to resolve relative paths. The path is determined in relation to the currently processed `config.toml`'s parent directory. This design choice was implemented in order to allow for path definitions to be valid across developer machines when sharing configurations. It is recommended to use relative paths when setting a path to a field in a `config.toml`.
+When a field is expected to be a file system path, Orbit has the ability to resolve relative paths. The path is determined in relation to the currently processed `config.toml`'s parent directory. 
 
-## Precedence
+This design choice was implemented to allow path definitions to be valid across file systems when sharing configurations. It is recommended to use relative paths when setting a field's value as a path in a `config.toml`.
+
+## Hierarchical structure
 
 Orbit supports multiple levels of configuration. Each level has its own order of precedence. The order of precedence is the following:
 
@@ -23,6 +25,8 @@ Orbit supports multiple levels of configuration. Each level has its own order of
 The configuration files are processed in the order defined above. When a configuration file defines a field, no other configuration files later in the process will be able to override its value. If a field is never provided an explicit value, then Orbit's default will be used.
 
 > __Tip:__ You can modify some values in the configuration file through the command-line by using the `orbit config` command.
+
+## Configuration format
 
 Every configuration file consists of the following sections:
 
@@ -179,7 +183,7 @@ LICENSE_FILE = "3000@server"
 
 ### The `[[target]]` array
 
-The `[[target]]` array lists user-defined targets. Each target must exist under its own `[[target]]` block.
+The `[[target]]` array lists user-defined targets for implementing the execution stage of the build process. Each target must exist under its own `[[target]]` header.
 
 ### The `name` field
 
@@ -285,6 +289,8 @@ The values for user-defined filesets support [_string swapping_](./../topic/swap
 
 ### The `[[protocol]]` array
 
+The `[[protocol]]` array lists user-defined protocols to access ips from the internet. Each protocol must exist under its own `[[protocol]]` header.
+
 ### The `name` field
 
 See [[target]](#the-target-array)'s definition of [`name`](#the-name-field).
@@ -304,6 +310,8 @@ See [[target]](#the-target-array)'s definition of [`args`](#the-args-field).
 This field supports [_string swapping_](./../topic/swapping.md).
 
 ### The `[[channel]]` array
+
+The `[[channel]]` array lists user-defined channels for tracking published ips. Each channel must exist under its own `[[channel]]` header.
 
 ### The `name` field
 

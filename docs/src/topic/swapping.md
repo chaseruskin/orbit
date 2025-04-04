@@ -4,13 +4,22 @@ _String swapping_ is the process of injecting runtime information into specific 
 
 This process allows permissible strings to become generic enough to avoid having the user frequently update configuration data with redundant information or accidently recall the incorrect value.
 
-## Details 
+## Operation 
 
 String swap works with key-value pairs. When Orbit sees the correct syntax indicating a known key, it will replace the key's contents with its value in its location within the string.
 
 To have a key substituted with its value, use double opening curly brackets `{{` to denote the beginning of a key and double closing curly brackets `}}` to end the key. Whitespace is ignored around the  key within the curly bracket sequences.
 
 When Orbit gets a permissible string, it will parse the characters to check if a key exists and should be swapped with its value. If it finds a valid known key, then it replaces everything from and within the curly bracket sequences with the variable's value. If it cannot find a valid key that matches the name, it leaves that sequence of the string unmodified.
+
+Imagine Orbit maintains the following key `orbit.ip.name` with the value "foo". Then for a permissible string such as:
+```
+"Hello, {{ orbit.ip.name }}!"
+```
+The resulting string before being read during runtime would become:
+```
+"Hello, foo!"
+```
 
 ## Permissible strings
 

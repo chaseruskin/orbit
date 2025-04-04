@@ -1676,10 +1676,16 @@ exclude = [
 <div style="break-before: page; page-break-before: always;"></div><h1 id="string-swapping"><a class="header" href="#string-swapping">String Swapping</a></h1>
 <p><em>String swapping</em> is the process of injecting runtime information into specific locations of strings defined in configuration values.</p>
 <p>This process allows permissible strings to become generic enough to avoid having the user frequently update configuration data with redundant information or accidently recall the incorrect value.</p>
-<h2 id="details"><a class="header" href="#details">Details</a></h2>
+<h2 id="operation"><a class="header" href="#operation">Operation</a></h2>
 <p>String swap works with key-value pairs. When Orbit sees the correct syntax indicating a known key, it will replace the key's contents with its value in its location within the string.</p>
 <p>To have a key substituted with its value, use double opening curly brackets <code>{{</code> to denote the beginning of a key and double closing curly brackets <code>}}</code> to end the key. Whitespace is ignored around the  key within the curly bracket sequences.</p>
 <p>When Orbit gets a permissible string, it will parse the characters to check if a key exists and should be swapped with its value. If it finds a valid known key, then it replaces everything from and within the curly bracket sequences with the variable's value. If it cannot find a valid key that matches the name, it leaves that sequence of the string unmodified.</p>
+<p>Imagine Orbit maintains the following key <code>orbit.ip.name</code> with the value "foo". Then for a permissible string such as:</p>
+<pre><code>"Hello, {{ orbit.ip.name }}!"
+</code></pre>
+<p>The resulting string before being read during runtime would become:</p>
+<pre><code>"Hello, foo!"
+</code></pre>
 <h2 id="permissible-strings"><a class="header" href="#permissible-strings">Permissible strings</a></h2>
 <p>Not every string is checked for string swapping. Strings that are not allowed to have string swapping ignore any existing keys in the text, leaving the entire string unmodified.</p>
 <p>The following lists the instances when a string is permitted to perform string swapping:</p>

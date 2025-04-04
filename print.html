@@ -2341,8 +2341,9 @@ precedence:
 <p><strong>Note:</strong> The configuration's file name is "config.toml", with respect to case-sensitivity.</p>
 </blockquote>
 <h2 id="paths"><a class="header" href="#paths">Paths</a></h2>
-<p>When a field is expected to be a file system path, Orbit has the ability to resolve relative paths. The path is determined in relation to the currently processed <code>config.toml</code>'s parent directory. This design choice was implemented in order to allow for path definitions to be valid across developer machines when sharing configurations. It is recommended to use relative paths when setting a path to a field in a <code>config.toml</code>.</p>
-<h2 id="precedence"><a class="header" href="#precedence">Precedence</a></h2>
+<p>When a field is expected to be a file system path, Orbit has the ability to resolve relative paths. The path is determined in relation to the currently processed <code>config.toml</code>'s parent directory.</p>
+<p>This design choice was implemented to allow path definitions to be valid across file systems when sharing configurations. It is recommended to use relative paths when setting a field's value as a path in a <code>config.toml</code>.</p>
+<h2 id="hierarchical-structure"><a class="header" href="#hierarchical-structure">Hierarchical structure</a></h2>
 <p>Orbit supports multiple levels of configuration. Each level has its own order of precedence. The order of precedence is the following:</p>
 <ol>
 <li>
@@ -2362,6 +2363,7 @@ precedence:
 <blockquote>
 <p><strong>Tip:</strong> You can modify some values in the configuration file through the command-line by using the <code>orbit config</code> command.</p>
 </blockquote>
+<h2 id="configuration-format"><a class="header" href="#configuration-format">Configuration format</a></h2>
 <p>Every configuration file consists of the following sections:</p>
 <ul>
 <li><a href="reference/configuration.html#the-include-field">include</a> - Lists other <code>config.toml</code> files to process. This field is only allowed for the global configuration file.</li>
@@ -2499,7 +2501,7 @@ FOO = "bar"
 LICENSE_FILE = "3000@server" 
 </code></pre>
 <h3 id="the-target-array"><a class="header" href="#the-target-array">The <code>[[target]]</code> array</a></h3>
-<p>The <code>[[target]]</code> array lists user-defined targets. Each target must exist under its own <code>[[target]]</code> block.</p>
+<p>The <code>[[target]]</code> array lists user-defined targets for implementing the execution stage of the build process. Each target must exist under its own <code>[[target]]</code> header.</p>
 <h3 id="the-name-field-1"><a class="header" href="#the-name-field-1">The <code>name</code> field</a></h3>
 <p>The target name is an identifier used to refer to the target. It is used at the start of the build process to specify how the execution stage should behave.</p>
 <pre><code class="language-toml">[[target]]
@@ -2560,6 +2562,7 @@ fileset.pymdl = "{{ orbit.tb.name }}.py"
 </code></pre>
 <p>The values for user-defined filesets support <a href="reference/./../topic/swapping.html"><em>string swapping</em></a> (as shown in second example entry).</p>
 <h3 id="the-protocol-array"><a class="header" href="#the-protocol-array">The <code>[[protocol]]</code> array</a></h3>
+<p>The <code>[[protocol]]</code> array lists user-defined protocols to access ips from the internet. Each protocol must exist under its own <code>[[protocol]]</code> header.</p>
 <h3 id="the-name-field-2"><a class="header" href="#the-name-field-2">The <code>name</code> field</a></h3>
 <p>See <a href="reference/configuration.html#the-target-array">[target]</a>'s definition of <a href="reference/configuration.html#the-name-field"><code>name</code></a>.</p>
 <h3 id="the-description-field-2"><a class="header" href="#the-description-field-2">The <code>description</code> field</a></h3>
@@ -2570,6 +2573,7 @@ fileset.pymdl = "{{ orbit.tb.name }}.py"
 <p>See <a href="reference/configuration.html#the-target-array">[target]</a>'s definition of <a href="reference/configuration.html#the-args-field"><code>args</code></a>.</p>
 <p>This field supports <a href="reference/./../topic/swapping.html"><em>string swapping</em></a>.</p>
 <h3 id="the-channel-array"><a class="header" href="#the-channel-array">The <code>[[channel]]</code> array</a></h3>
+<p>The <code>[[channel]]</code> array lists user-defined channels for tracking published ips. Each channel must exist under its own <code>[[channel]]</code> header.</p>
 <h3 id="the-name-field-3"><a class="header" href="#the-name-field-3">The <code>name</code> field</a></h3>
 <p>See <a href="reference/configuration.html#the-target-array">[target]</a>'s definition of <a href="reference/configuration.html#the-name-field"><code>name</code></a>.</p>
 <h3 id="the-description-field-3"><a class="header" href="#the-description-field-3">The <code>description</code> field</a></h3>

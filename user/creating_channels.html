@@ -197,26 +197,26 @@ root = "./channels/local-chipyard"
 <p>Create a new repository along with a remote configured for it to allow pushing and pulling.</p>
 </li>
 <li>
-<p>Add an orbit configuration file at the root of the repository called <code>config.toml</code>:</p>
+<p>Add an Orbit configuration file at the root of the repository called <code>config.toml</code>:</p>
 </li>
 </ol>
 <pre><code>$ touch config.toml
 </code></pre>
-<ol>
+<ol start="3">
 <li>Add a new entry in the <code>[[channel]]</code> array for the configuration file:</li>
 </ol>
 <pre><code class="language-toml">[[channel]]
 name = "remote-chipyard"
 description = "Remote registry of available ip"
 </code></pre>
-<ol>
+<ol start="4">
 <li>Specify the directory where data for published ip should exist within the repository:</li>
 </ol>
 <pre><code class="language-toml">[[channel]]
 # ...
 root = "./index"
 </code></pre>
-<ol>
+<ol start="5">
 <li>Set up synchronization hooks for this channel such that users that have this channel configured can seamlessly get updates using <code>orbit --sync</code>:</li>
 </ol>
 <pre><code class="language-toml">[[channel]]
@@ -224,7 +224,7 @@ root = "./index"
 sync.command = "git"
 sync.args = ["pull"]
 </code></pre>
-<ol>
+<ol start="6">
 <li>Create a Python script called <code>publish.py</code> to handle automatically adding, committing, and pushing published ips:</li>
 </ol>
 <pre><code class="language-Python">import subprocess

@@ -84,7 +84,6 @@ This guide walks through how to modify a target's configuration to accept additi
 1. Open the target configuration.
 
 2. Add the fileset and its glob-style pattern to your target's entry:
-
 ``` toml
 [[target]]
 name = "tar"
@@ -135,7 +134,7 @@ for arg in sys.argv[1:]:
         print('TODO: handle target argument '+arg)
 ```
 
-1. Pass arguments after the `--` when starting the build process for the target:
+2. Pass arguments after the `--` when starting the build process for the target:
 ```
 orbit build --target tar -- option1 --verbose --help 
 ```

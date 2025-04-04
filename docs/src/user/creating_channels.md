@@ -36,26 +36,26 @@ This guide outlines one way to create a channel that can be automatically tracke
 
 1. Create a new repository along with a remote configured for it to allow pushing and pulling.
    
-2. Add an orbit configuration file at the root of the repository called `config.toml`:
+2. Add an Orbit configuration file at the root of the repository called `config.toml`:
 ```
 $ touch config.toml
 ```
 
-1. Add a new entry in the `[[channel]]` array for the configuration file:
+3. Add a new entry in the `[[channel]]` array for the configuration file:
 ``` toml
 [[channel]]
 name = "remote-chipyard"
 description = "Remote registry of available ip"
 ```
 
-1. Specify the directory where data for published ip should exist within the repository:
+4. Specify the directory where data for published ip should exist within the repository:
 ``` toml
 [[channel]]
 # ...
 root = "./index"
 ```
 
-1. Set up synchronization hooks for this channel such that users that have this channel configured can seamlessly get updates using `orbit --sync`:
+5. Set up synchronization hooks for this channel such that users that have this channel configured can seamlessly get updates using `orbit --sync`:
 ``` toml
 [[channel]]
 # ...
@@ -63,7 +63,7 @@ sync.command = "git"
 sync.args = ["pull"]
 ```
 
-1. Create a Python script called `publish.py` to handle automatically adding, committing, and pushing published ips:
+6. Create a Python script called `publish.py` to handle automatically adding, committing, and pushing published ips:
 ``` Python
 import subprocess
 import os

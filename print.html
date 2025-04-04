@@ -1175,7 +1175,7 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 </ul>
 <p>And with that, the cycle continues. As new features, bug fixes, and improvements are brought forth over time, users can repeat the following process to produce another release for any given project.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="creating-targets"><a class="header" href="#creating-targets">Creating Targets</a></h1>
-<p>This section provides steps for how to potentially configure a target as well as write the script for a target.</p>
+<p>A target is a user-defined backend process. This section provides steps for ways to configure a target as well as write the script for a target.</p>
 <h3 id="assumptions"><a class="header" href="#assumptions">Assumptions</a></h3>
 <p>The steps below assume (and encourage) your targets to be written in Python, although targets can be written in any language and called by any command.</p>
 <p>If a step mentions the "target script", this corresponds to the script which will be called when performing the execution stage of the build process.</p>
@@ -1190,6 +1190,7 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <li><a href="user/creating_targets.html#handling-additional-arguments">Handling additional arguments</a></li>
 </ul>
 <h2 id="configuring-a-target"><a class="header" href="#configuring-a-target">Configuring a target</a></h2>
+<p>This guide walks through how to add a target to be recognized by Orbit. In this guide, our target is called <code>tar</code>.</p>
 <ol>
 <li>
 <p>Open an Orbit configuration file</p>
@@ -1207,9 +1208,10 @@ args = ["tar.py"]
 <p>Calling the <code>tar</code> target at the start of a build process will now execute the command <code>python3 tar.py</code> for the execution stage.</p>
 <p>Although the execution stage spawns the subprocess in the target's output directoy, any relative file paths defined in the <code>args</code> field are relative to the configuration file that defines them.</p>
 <h2 id="reading-a-blueprint"><a class="header" href="#reading-a-blueprint">Reading a blueprint</a></h2>
+<p>This guide walks through how to capture the data written to the blueprint from the planning stage in a target script.</p>
 <ol>
 <li>
-<p>Open the target script</p>
+<p>Open the target script.</p>
 </li>
 <li>
 <p>Add this code snippet to read the default plan (tab-separated value files) and process the data into the <code>entries</code> variable:</p>
@@ -1226,10 +1228,10 @@ with open(os.environ['ORBIT_BLUEPRINT']) as bp:
 <p>The blueprint always collects Verilog, SystemVerilog, and VHDL files. These files are encouraged to always be handled by the target script, whether it be for compilation, synthesis, linting, etc.</p>
 <ol>
 <li>
-<p>Open the target script</p>
+<p>Open the target script.</p>
 </li>
 <li>
-<p>Read the blueprint into a variable (<code>entries</code>) storing the blueprint's data as a list of 3-element (fileset, library, filepath) tuples</p>
+<p>Read the blueprint into a variable (<code>entries</code>) storing the blueprint's data as a list of 3-element (fileset, library, filepath) tuples.</p>
 </li>
 <li>
 <p>Add this code snippet to do some pseudo-processing of the built-in filesets collected from the planning stage:</p>
@@ -1248,9 +1250,10 @@ with open(os.environ['ORBIT_BLUEPRINT']) as bp:
 </code></pre>
 <p>This will create placeholders ("TODO") print statements in the code sections where Verilog, SystemVerilog, and VHDL files can be processed by the target script.</p>
 <h2 id="adding-a-custom-fileset"><a class="header" href="#adding-a-custom-fileset">Adding a custom fileset</a></h2>
+<p>This guide walks through how to modify a target's configuration to accept additional files to be collected into the blueprint during the planning stage.</p>
 <ol>
 <li>
-<p>Open the target configuration</p>
+<p>Open the target configuration.</p>
 </li>
 <li>
 <p>Add the fileset and its glob-style pattern to your target's entry:</p>
@@ -1268,10 +1271,10 @@ fileset.MYSET = "*.txt"
 <p>Adding a custom fileset in the target's configuration is not enough to support custom files; the target script must also have support for handling the custom filesets that are collected into the blueprint from the planning stage.</p>
 <ol>
 <li>
-<p>Open the target script</p>
+<p>Open the target script.</p>
 </li>
 <li>
-<p>Read the blueprint into a variable (<code>entries</code>) storing the blueprint's data as a list of 3-element (fileset, library, filepath) tuples</p>
+<p>Read the blueprint into a variable (<code>entries</code>) storing the blueprint's data as a list of 3-element (fileset, library, filepath) tuples.</p>
 </li>
 <li>
 <p>Add this code snippet to pseudo-process the custom files collected from the planning stage for the <code>MYSET</code> filset:</p>
@@ -1309,6 +1312,131 @@ for arg in sys.argv[1:]:
 <pre><code>orbit build --target tar -- option1 --verbose --help 
 </code></pre>
 <p>For a more robust solution to handling additional arguments, it is recommended to use an existing argument parsing library such as <a href="https://docs.python.org/3/library/argparse.html"><code>argparse</code></a>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="creating-channels"><a class="header" href="#creating-channels">Creating Channels</a></h1>
+<p>A channel is a decentralized registry storing the manifests of published ips. This section provides steps for ways to configure a channel.</p>
+<h3 id="guides-1"><a class="header" href="#guides-1">Guides</a></h3>
+<ul>
+<li><a href="user/creating_channels.html#configuring-a-local-directory-as-a-channel">Configuring a local directory as a channel</a></li>
+<li><a href="user/creating_channels.html#configuring-a-git-repository-as-a-channel">Configuring a git repository as a channel</a></li>
+</ul>
+<h2 id="configuring-a-local-directory-as-a-channel"><a class="header" href="#configuring-a-local-directory-as-a-channel">Configuring a local directory as a channel</a></h2>
+<p>This guide outlines how to set up a directory on the local file system as a recognized channel. In this guide, our channel is called <code>local-chipyard</code>.</p>
+<ol>
+<li>Create a new directory in the Orbit home directory:</li>
+</ol>
+<pre><code>mkdir -p "$(orbit env ORBIT_HOME)/channels/local-chipyard"
+</code></pre>
+<ol start="2">
+<li>
+<p>Open the global Orbit configuration file located at <code>$ORBIT_HOME/config.toml</code>.</p>
+</li>
+<li>
+<p>Make a new entry in the <code>[[channel]]</code> array:</p>
+</li>
+</ol>
+<pre><code class="language-toml">[[channel]]
+name = "local-chipyard"
+description = "Local registry of available ip"
+root = "./channels/local-chipyard"
+</code></pre>
+<ol start="4">
+<li>View your available channel:</li>
+</ol>
+<pre><code>orbit publish --list
+</code></pre>
+<h2 id="configuring-a-git-repository-as-a-channel"><a class="header" href="#configuring-a-git-repository-as-a-channel">Configuring a git repository as a channel</a></h2>
+<p>This guide outlines one way to create a channel that can be automatically tracked using git. In this guide, our channel is called <code>remote-chipyard</code>.</p>
+<ol>
+<li>
+<p>Create a new repository along with a remote configured for it to allow pushing and pulling.</p>
+</li>
+<li>
+<p>Add an orbit configuration file at the root of the repository called <code>config.toml</code>:</p>
+</li>
+</ol>
+<pre><code>$ touch config.toml
+</code></pre>
+<ol>
+<li>Add a new entry in the <code>[[channel]]</code> array for the configuration file:</li>
+</ol>
+<pre><code class="language-toml">[[channel]]
+name = "remote-chipyard"
+description = "Remote registry of available ip"
+</code></pre>
+<ol>
+<li>Specify the directory where data for published ip should exist within the repository:</li>
+</ol>
+<pre><code class="language-toml">[[channel]]
+# ...
+root = "./index"
+</code></pre>
+<ol>
+<li>Set up synchronization hooks for this channel such that users that have this channel configured can seamlessly get updates using <code>orbit --sync</code>:</li>
+</ol>
+<pre><code class="language-toml">[[channel]]
+# ...
+sync.command = "git"
+sync.args = ["pull"]
+</code></pre>
+<ol>
+<li>Create a Python script called <code>publish.py</code> to handle automatically adding, committing, and pushing published ips:</li>
+</ol>
+<pre><code class="language-Python">import subprocess
+import os
+
+def restore(path: str, staged: bool):
+    """
+    Restore the modified directory `path` in the channel from the publish command back to their original state.
+    """
+    args = ['--staged'] if staged else []
+    subprocess.Popen(['git', 'restore'] + args + [path]).wait()
+
+channel_dir = os.environ.get("ORBIT_CHANNEL_DIR")
+ip_name = os.environ.get("ORBIT_IP_NAME")
+ip_version = os.environ.get("ORBIT_IP_VERSION") 
+
+# Add untracked files
+child = subprocess.Popen(['git', 'add', channel_dir])
+rc = child.wait()
+if rc != 0:
+    restore(channel_dir, staged=False)
+    exit(rc)
+# Commit the changes
+child = subprocess.Popen(['git', 'commit', '-m', "Publishes "+ip_name+':'+ip_version])
+rc = child.wait()
+if rc != 0:
+    restore(channel_dir, staged=True)
+    restore(channel_dir, staged=False)
+    exit(rc)
+# Push the changes to the remote
+child = subprocess.Popen(['git', 'push'])
+rc = child.wait()
+if rc != 0:
+    exit(rc)
+</code></pre>
+<ol start="7">
+<li>Configure the <code>publish.py</code> Python script to run within the publishing process after Orbit copies the published ip metadata into the channel:</li>
+</ol>
+<pre><code class="language-toml">[[channel]]
+# ...
+post.command = "python3"
+post.args = ["publish.py"]
+</code></pre>
+<ol start="8">
+<li>
+<p>Add, commit, and push these changes to the git repository.</p>
+</li>
+<li>
+<p>Modify the global Orbit configuration file to include this repository's configuration file:</p>
+</li>
+</ol>
+<pre><code>$ orbit config --push include="$PWD/config.toml"
+</code></pre>
+<ol start="10">
+<li>View the configured channel:</li>
+</ol>
+<pre><code>$ orbit publish --list
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="topic-guide"><a class="header" href="#topic-guide">Topic Guide</a></h1>
 <p>This section is <strong>understanding-oriented</strong>, providing explanations and discussions to clarify and illuminate particular topics around Orbit.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="overview-1"><a class="header" href="#overview-1">Overview</a></h1>
@@ -1433,10 +1561,10 @@ for arg in sys.argv[1:]:
 <p>An ip's name is a human-readable name given to an ip so users can easily recall and locate relevant packages.</p>
 <pre><code>gates
 </code></pre>
-<p>An ip's <em>specification</em>, more commonly called a <em>spec</em>, is the full resolved name of an ip. As of now, the spec involves the ip's name and ip's version separated by a <code>:</code> character.</p>
-<pre><code>gates:1.0.0
+<p>An ip's <em>specification</em>, more commonly called a <em>spec</em>, is the full resolved name of an ip. The spec involves the ip's name, uuid, and version.</p>
+<pre><code>gates+8ah2qa261k8wgv55sd1qq17w9:1.0.0
 </code></pre>
-<p>When asking Orbit to operate on a particular ip outside of the working ip, Orbit will usually ask you to provide the ip's spec. Orbit uses the spec to lookup the ip in the catalog and then continues operation.</p>
+<p>When asking Orbit to operate on a particular ip outside of the working ip, Orbit will usually ask you to provide the ip's spec. Orbit uses the spec to lookup the ip in the catalog and then carry out the requested function on that ip.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="targets"><a class="header" href="#targets">Targets</a></h1>
 <p>Orbit operates at the <em>front end</em> of hardware development. At the <em>back end</em> of hardware development is where the true "processing" occurs. A particular "process" that occurs in the back end and produces some result is called a <em>target</em>.</p>
 <p>Orbit has no built-in targets. Since hardware development varies widely with the tools available, the environments in which development occurs, and the processes that occur within those environments, Orbit has not built-in targets. This design choice gives users flexibility in configuring the types of workflows that are most important to them.</p>
@@ -1746,9 +1874,8 @@ Yilinx_Path = "/Users/chase/fpga/bin/yilinx"
 <pre><code class="language-toml">[ip]
 name = "my-ip" # the name of the package
 uuid = "ecj831jmc018hhhgl1d4rzgw8" # the universally unique identifier
-version = "0.1.0" # the current version
 </code></pre>
-<p>The only fields required by Orbit are name, uuid, and version.</p>
+<p>The only fields required by Orbit are the name and uuid.</p>
 <h3 id="the-name-field"><a class="header" href="#the-name-field">The <code>name</code> field</a></h3>
 <p>The ip name is an identifier used to refer to the ip. It is used when listed as a dependency in another package, and as the name of the HDL library for all of its source files when the <code>library</code> field is omitted. See <a href="reference/./names.html">names</a> for more information.</p>
 <pre><code class="language-toml">[ip]
@@ -1775,7 +1902,7 @@ version = "0.1.0"
 <p>The optional <code>authors</code> field lists in an array the people or organizations that are considered the “authors” of the package. The exact meaning is open to interpretation — it may list the original or primary authors, current maintainers, or owners of the package. An optional email address may be included within angled brackets at the end of each author entry.</p>
 <pre><code class="language-toml">[ip]
 # ...
-authors = ["Duncan Idaho", "Gurney Halleck &lt;ghalleck@dune.mov"]
+authors = ["Duncan Idaho", "Gurney Halleck &lt;ghalleck@dune.mov&gt;"]
 
 </code></pre>
 <h3 id="the-library-field"><a class="header" href="#the-library-field">The <code>library</code> field</a></h3>

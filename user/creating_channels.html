@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Creating Targets - The Book of Orbit</title>
+        <title>Creating Channels - The Book of Orbit</title>
 
 
         <!-- Custom HTML head -->
@@ -158,154 +158,141 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="creating-targets"><a class="header" href="#creating-targets">Creating Targets</a></h1>
-<p>A target is a user-defined backend process. This section provides steps for ways to configure a target as well as write the script for a target.</p>
-<h3 id="assumptions"><a class="header" href="#assumptions">Assumptions</a></h3>
-<p>The steps below assume (and encourage) your targets to be written in Python, although targets can be written in any language and called by any command.</p>
-<p>If a step mentions the "target script", this corresponds to the script which will be called when performing the execution stage of the build process.</p>
-<p>If a step mentions the "target configuration", this corresponds to the entry for the target that has been defined in an Orbit configuration file (config.toml).</p>
+                        <h1 id="creating-channels"><a class="header" href="#creating-channels">Creating Channels</a></h1>
+<p>A channel is a decentralized registry storing the manifests of published ips. This section provides steps for ways to configure a channel.</p>
 <h3 id="guides"><a class="header" href="#guides">Guides</a></h3>
 <ul>
-<li><a href="#configuring-a-target">Configuring a target</a></li>
-<li><a href="#reading-a-blueprint">Reading a blueprint</a></li>
-<li><a href="#handling-built-in-filesets">Handling built-in filesets</a></li>
-<li><a href="#adding-a-custom-fileset">Adding a custom fileset</a></li>
-<li><a href="#handling-a-custom-fileset">Handling a custom fileset</a></li>
-<li><a href="#handling-additional-arguments">Handling additional arguments</a></li>
+<li><a href="#configuring-a-local-directory-as-a-channel">Configuring a local directory as a channel</a></li>
+<li><a href="#configuring-a-git-repository-as-a-channel">Configuring a git repository as a channel</a></li>
 </ul>
-<h2 id="configuring-a-target"><a class="header" href="#configuring-a-target">Configuring a target</a></h2>
-<p>This guide walks through how to add a target to be recognized by Orbit. In this guide, our target is called <code>tar</code>.</p>
+<h2 id="configuring-a-local-directory-as-a-channel"><a class="header" href="#configuring-a-local-directory-as-a-channel">Configuring a local directory as a channel</a></h2>
+<p>This guide outlines how to set up a directory on the local file system as a recognized channel. In this guide, our channel is called <code>local-chipyard</code>.</p>
 <ol>
-<li>
-<p>Open an Orbit configuration file</p>
-</li>
-<li>
-<p>Make a new entry in the <code>[[target]]</code> array:</p>
-</li>
+<li>Create a new directory in the Orbit home directory:</li>
 </ol>
-<pre><code class="language-toml">[[target]]
-name = "tar"
-description = "My target description"
-command = "python3"
-args = ["tar.py"]
+<pre><code>mkdir -p "$(orbit env ORBIT_HOME)/channels/local-chipyard"
 </code></pre>
-<p>Calling the <code>tar</code> target at the start of a build process will now execute the command <code>python3 tar.py</code> for the execution stage.</p>
-<p>Although the execution stage spawns the subprocess in the target's output directoy, any relative file paths defined in the <code>args</code> field are relative to the configuration file that defines them.</p>
-<h2 id="reading-a-blueprint"><a class="header" href="#reading-a-blueprint">Reading a blueprint</a></h2>
-<p>This guide walks through how to capture the data written to the blueprint from the planning stage in a target script.</p>
-<ol>
+<ol start="2">
 <li>
-<p>Open the target script.</p>
+<p>Open the global Orbit configuration file located at <code>$ORBIT_HOME/config.toml</code>.</p>
 </li>
 <li>
-<p>Add this code snippet to read the default plan (tab-separated value files) and process the data into the <code>entries</code> variable:</p>
+<p>Make a new entry in the <code>[[channel]]</code> array:</p>
 </li>
 </ol>
-<pre><code class="language-python">import os
+<pre><code class="language-toml">[[channel]]
+name = "local-chipyard"
+description = "Local registry of available ip"
+root = "./channels/local-chipyard"
+</code></pre>
+<ol start="4">
+<li>View your available channel:</li>
+</ol>
+<pre><code>orbit publish --list
+</code></pre>
+<h2 id="configuring-a-git-repository-as-a-channel"><a class="header" href="#configuring-a-git-repository-as-a-channel">Configuring a git repository as a channel</a></h2>
+<p>This guide outlines one way to create a channel that can be automatically tracked using git. In this guide, our channel is called <code>remote-chipyard</code>.</p>
+<ol>
+<li>
+<p>Create a new repository along with a remote configured for it to allow pushing and pulling.</p>
+</li>
+<li>
+<p>Add an orbit configuration file at the root of the repository called <code>config.toml</code>:</p>
+</li>
+</ol>
+<pre><code>$ touch config.toml
+</code></pre>
+<ol>
+<li>Add a new entry in the <code>[[channel]]</code> array for the configuration file:</li>
+</ol>
+<pre><code class="language-toml">[[channel]]
+name = "remote-chipyard"
+description = "Remote registry of available ip"
+</code></pre>
+<ol>
+<li>Specify the directory where data for published ip should exist within the repository:</li>
+</ol>
+<pre><code class="language-toml">[[channel]]
+# ...
+root = "./index"
+</code></pre>
+<ol>
+<li>Set up synchronization hooks for this channel such that users that have this channel configured can seamlessly get updates using <code>orbit --sync</code>:</li>
+</ol>
+<pre><code class="language-toml">[[channel]]
+# ...
+sync.command = "git"
+sync.args = ["pull"]
+</code></pre>
+<ol>
+<li>Create a Python script called <code>publish.py</code> to handle automatically adding, committing, and pushing published ips:</li>
+</ol>
+<pre><code class="language-Python">import subprocess
+import os
 
-entries = []
-with open(os.environ['ORBIT_BLUEPRINT']) as bp:
-    for line in bp.readlines():
-        entries += [tuple(line.strip().split('\t'))]
-</code></pre>
-<h2 id="handling-built-in-filesets"><a class="header" href="#handling-built-in-filesets">Handling built-in filesets</a></h2>
-<p>The blueprint always collects Verilog, SystemVerilog, and VHDL files. These files are encouraged to always be handled by the target script, whether it be for compilation, synthesis, linting, etc.</p>
-<ol>
-<li>
-<p>Open the target script.</p>
-</li>
-<li>
-<p>Read the blueprint into a variable (<code>entries</code>) storing the blueprint's data as a list of 3-element (fileset, library, filepath) tuples.</p>
-</li>
-<li>
-<p>Add this code snippet to do some pseudo-processing of the built-in filesets collected from the planning stage:</p>
-</li>
-</ol>
-<pre><code class="language-python">for entry in entries:
-    # Break out the 3-element tuple into its respective components
-    fileset, library, filepath = entry
-    # Condition based on the entry's fileset
-    if fileset == 'VHDL':
-        print('TODO: handle vhdl file '+filepath+' into library '+library)
-    elif fileset == 'VLOG':
-        print('TODO: handle verilog file '+filepath+' into library '+library)
-    elif fileset == 'SYSV':
-        print('TODO: handle systemverilog file '+filepath+' into library '+library)
-</code></pre>
-<p>This will create placeholders ("TODO") print statements in the code sections where Verilog, SystemVerilog, and VHDL files can be processed by the target script.</p>
-<h2 id="adding-a-custom-fileset"><a class="header" href="#adding-a-custom-fileset">Adding a custom fileset</a></h2>
-<p>This guide walks through how to modify a target's configuration to accept additional files to be collected into the blueprint during the planning stage.</p>
-<ol>
-<li>
-<p>Open the target configuration.</p>
-</li>
-<li>
-<p>Add the fileset and its glob-style pattern to your target's entry:</p>
-</li>
-</ol>
-<pre><code class="language-toml">[[target]]
-name = "tar"
-description = "My target description"
-command = "python3"
-args = ["tar.py"]
-# Add a custom fileset
-fileset.MYSET = "*.txt"
-</code></pre>
-<h2 id="handling-a-custom-fileset"><a class="header" href="#handling-a-custom-fileset">Handling a custom fileset</a></h2>
-<p>Adding a custom fileset in the target's configuration is not enough to support custom files; the target script must also have support for handling the custom filesets that are collected into the blueprint from the planning stage.</p>
-<ol>
-<li>
-<p>Open the target script.</p>
-</li>
-<li>
-<p>Read the blueprint into a variable (<code>entries</code>) storing the blueprint's data as a list of 3-element (fileset, library, filepath) tuples.</p>
-</li>
-<li>
-<p>Add this code snippet to pseudo-process the custom files collected from the planning stage for the <code>MYSET</code> filset:</p>
-</li>
-</ol>
-<pre><code class="language-python">for entry in entries:
-    # Break out the 3-element tuple into its respective components
-    fileset, library, filepath = entry
-    # Condition based on the entry's fileset
-    if fileset == 'MYSET':
-        print('TODO: handle text file '+filepath+' under the custom fileset '+fileset)
-</code></pre>
-<p>This will create placeholders ("TODO") print statements in the code sections where any file that was found to match the <code>MYSET</code> file pattern can be processed by the target script.</p>
-<h2 id="handling-additional-arguments"><a class="header" href="#handling-additional-arguments">Handling additional arguments</a></h2>
-<p>Sometimes arguments need to be passed to your target on the command line. Arguments found after <code>--</code> flag for <code>orbit build</code> or <code>orbit test</code> will be appended to the list of arguments already defined in the target's configuration.</p>
-<ol>
-<li>Add this code snippet to check if <code>--verbose</code> or <code>--help</code> was an argument to the target script:</li>
-</ol>
-<pre><code class="language-python">import sys
+def restore(path: str, staged: bool):
+    """
+    Restore the modified directory `path` in the channel from the publish command back to their original state.
+    """
+    args = ['--staged'] if staged else []
+    subprocess.Popen(['git', 'restore'] + args + [path]).wait()
 
-is_verbose = False
-show_help = False
-# Iterate through all arguments after the script name
-for arg in sys.argv[1:]:
-    if arg == '--verbose':
-        is_verbose = True
-    elif arg == '--help':
-        show_help = True
-    else:
-        print('TODO: handle target argument '+arg)
+channel_dir = os.environ.get("ORBIT_CHANNEL_DIR")
+ip_name = os.environ.get("ORBIT_IP_NAME")
+ip_version = os.environ.get("ORBIT_IP_VERSION") 
+
+# Add untracked files
+child = subprocess.Popen(['git', 'add', channel_dir])
+rc = child.wait()
+if rc != 0:
+    restore(channel_dir, staged=False)
+    exit(rc)
+# Commit the changes
+child = subprocess.Popen(['git', 'commit', '-m', "Publishes "+ip_name+':'+ip_version])
+rc = child.wait()
+if rc != 0:
+    restore(channel_dir, staged=True)
+    restore(channel_dir, staged=False)
+    exit(rc)
+# Push the changes to the remote
+child = subprocess.Popen(['git', 'push'])
+rc = child.wait()
+if rc != 0:
+    exit(rc)
 </code></pre>
-<ol>
-<li>Pass arguments after the <code>--</code> when starting the build process for the target:</li>
+<ol start="7">
+<li>Configure the <code>publish.py</code> Python script to run within the publishing process after Orbit copies the published ip metadata into the channel:</li>
 </ol>
-<pre><code>orbit build --target tar -- option1 --verbose --help 
+<pre><code class="language-toml">[[channel]]
+# ...
+post.command = "python3"
+post.args = ["publish.py"]
 </code></pre>
-<p>For a more robust solution to handling additional arguments, it is recommended to use an existing argument parsing library such as <a href="https://docs.python.org/3/library/argparse.html"><code>argparse</code></a>.</p>
+<ol start="8">
+<li>
+<p>Add, commit, and push these changes to the git repository.</p>
+</li>
+<li>
+<p>Modify the global Orbit configuration file to include this repository's configuration file:</p>
+</li>
+</ol>
+<pre><code>$ orbit config --push include="$PWD/config.toml"
+</code></pre>
+<ol start="10">
+<li>View the configured channel:</li>
+</ol>
+<pre><code>$ orbit publish --list
+</code></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../user/overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../user/creating_targets.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../user/creating_channels.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../topic/topic.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -315,11 +302,11 @@ for arg in sys.argv[1:]:
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../user/overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../user/creating_targets.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../user/creating_channels.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../topic/topic.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

@@ -16,6 +16,7 @@
 - [User Guide](./user/user.md)
     - [Overview](./user/overview.md)
     - [Creating Targets](./user/creating_targets.md)
+    - [Creating Channels](./user/creating_channels.md)
     <!-- - [Discovering Ip](./user/discovering.md) -->
     <!-- - [Developing Ip](./user/developing.md) -->
     <!-- - [Releasing Ip](./user/releasing.md) -->

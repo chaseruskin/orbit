@@ -32,10 +32,9 @@ The first section in a `Orbit.toml` file is `[ip]`.
 [ip]
 name = "my-ip" # the name of the package
 uuid = "ecj831jmc018hhhgl1d4rzgw8" # the universally unique identifier
-version = "0.1.0" # the current version
 ```
 
-The only fields required by Orbit are name, uuid, and version.
+The only fields required by Orbit are the name and uuid.
 
 ### The `name` field
 
@@ -82,7 +81,7 @@ The optional `authors` field lists in an array the people or organizations that 
 ``` toml
 [ip]
 # ...
-authors = ["Duncan Idaho", "Gurney Halleck <ghalleck@dune.mov"]
+authors = ["Duncan Idaho", "Gurney Halleck <ghalleck@dune.mov>"]
 
 ```
 

@@ -40,10 +40,10 @@ An ip's name is a human-readable name given to an ip so users can easily recall 
 gates
 ```
 
-An ip's _specification_, more commonly called a _spec_, is the full resolved name of an ip. As of now, the spec involves the ip's name and ip's version separated by a `:` character.
+An ip's _specification_, more commonly called a _spec_, is the full resolved name of an ip. The spec involves the ip's name, uuid, and version.
 
 ```
-gates:1.0.0
+gates+8ah2qa261k8wgv55sd1qq17w9:1.0.0
 ```
 
-When asking Orbit to operate on a particular ip outside of the working ip, Orbit will usually ask you to provide the ip's spec. Orbit uses the spec to lookup the ip in the catalog and then continues operation.
+When asking Orbit to operate on a particular ip outside of the working ip, Orbit will usually ask you to provide the ip's spec. Orbit uses the spec to lookup the ip in the catalog and then carry out the requested function on that ip.

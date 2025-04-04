@@ -1,6 +1,6 @@
 # Creating Targets
 
-This section provides steps for how to potentially configure a target as well as write the script for a target.
+A target is a user-defined backend process. This section provides steps for ways to configure a target as well as write the script for a target.
 
 ### Assumptions
 
@@ -20,6 +20,8 @@ If a step mentions the "target configuration", this corresponds to the entry for
 
 ## Configuring a target
 
+This guide walks through how to add a target to be recognized by Orbit. In this guide, our target is called `tar`.
+
 1. Open an Orbit configuration file
    
 2. Make a new entry in the `[[target]]` array:
@@ -37,7 +39,9 @@ Although the execution stage spawns the subprocess in the target's output direct
 
 ## Reading a blueprint
 
-1. Open the target script
+This guide walks through how to capture the data written to the blueprint from the planning stage in a target script.
+
+1. Open the target script.
 
 2. Add this code snippet to read the default plan (tab-separated value files) and process the data into the `entries` variable:
 ``` python
@@ -53,9 +57,9 @@ with open(os.environ['ORBIT_BLUEPRINT']) as bp:
 
 The blueprint always collects Verilog, SystemVerilog, and VHDL files. These files are encouraged to always be handled by the target script, whether it be for compilation, synthesis, linting, etc.
 
-1. Open the target script
+1. Open the target script.
 
-2. Read the blueprint into a variable (`entries`) storing the blueprint's data as a list of 3-element (fileset, library, filepath) tuples
+2. Read the blueprint into a variable (`entries`) storing the blueprint's data as a list of 3-element (fileset, library, filepath) tuples.
 
 3. Add this code snippet to do some pseudo-processing of the built-in filesets collected from the planning stage:
 ``` python
@@ -75,7 +79,9 @@ This will create placeholders ("TODO") print statements in the code sections whe
 
 ## Adding a custom fileset
 
-1. Open the target configuration
+This guide walks through how to modify a target's configuration to accept additional files to be collected into the blueprint during the planning stage.
+
+1. Open the target configuration.
 
 2. Add the fileset and its glob-style pattern to your target's entry:
 
@@ -93,9 +99,9 @@ fileset.MYSET = "*.txt"
 
 Adding a custom fileset in the target's configuration is not enough to support custom files; the target script must also have support for handling the custom filesets that are collected into the blueprint from the planning stage.
 
-1. Open the target script
+1. Open the target script.
 
-2. Read the blueprint into a variable (`entries`) storing the blueprint's data as a list of 3-element (fileset, library, filepath) tuples
+2. Read the blueprint into a variable (`entries`) storing the blueprint's data as a list of 3-element (fileset, library, filepath) tuples.
 
 3. Add this code snippet to pseudo-process the custom files collected from the planning stage for the `MYSET` filset:
 ``` python

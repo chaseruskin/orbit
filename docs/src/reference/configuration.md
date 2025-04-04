@@ -64,6 +64,8 @@ Every configuration file consists of the following sections:
 
 ### The `include` field
 
+The `include` entry is an array of strings that are file paths to other Orbit configuration files. Relative paths are resolved relative to the directory where the configuration file that defines them exists. Only the global configuration file is allowed to have this key.
+
 ``` toml
 include = [
     "profiles/p1/config.toml",
@@ -76,7 +78,7 @@ include = [
 
 ### The `target-dir` field
 
-Define the default output directory to create for the planning and building phases. This value can be overridden on the command-line when the `--target-dir` option is available. When this field is not defined, the default value for the build directory is "target".
+The `target-dir` key defines the default output directory to create for the planning and building phases. This value can be overridden on the command-line when the `--target-dir` option is specified. 
 
 ``` toml
 [general]
@@ -84,27 +86,33 @@ target-dir = "target"
 # ...
 ```
 
+When this key is not defined, the default value for the build directory is "target".
+
 ### The `[test]` section
 
 ### The `default-target` field
 
-Sets the default target when calling `orbit test`. If the default target is set to be used and it cannot be found among the known targets, it will error.
+The `default-target` key sets the default target when starting the build process through the test entry point (`orbit test`).
 
 ``` toml
 [test]
-default-target = "foo"
+default-target = "modelsim"
 ```
+
+If the default target is set to be used and it cannot be found among the known targets, it will error.
 
 ### The `[build]` section
 
 ### The `default-target` field
 
-Sets the default target when calling `orbit build`. If the default target is set to be used and it cannot be found among the known targets, it will error.
+The `default-target` key sets the default target when starting the build process through the build entry point (`orbit build`).
 
 ``` toml
 [build]
-default-target = "bar"
+default-target = "vivado"
 ```
+
+If the default target is set to be used and it cannot be found among the known targets, it will error.
 
 ### The `[vhdl-format]` section
 
@@ -112,23 +120,23 @@ The currently supported entries are demonstrated in the following code snippet. 
 
 ``` toml
 [vhdl-format]
-# enable colored output for VHDL code snippets
+# Enable colored output for VHDL code snippets
 highlight-syntax = true
-# number of whitespace characters per tab/indentation
+# Number of whitespace characters per tab/indentation
 tab-size = 2
-# insert a tab before 'generic' and 'port' interface declarations
+# Insert a tab before 'generic' and 'port' interface declarations
 indent-interface = true
-# automatically align a signal or constant's subtype with its other identifiers
+# Automatically align a signal or constant's subtype with its other identifiers
 type-auto-alignment = true
-# number of whitespace characters after alignment (before the `:` character)
+# Number of whitespace characters after alignment (before the `:` character)
 type-offset = 1
-# automatically align an instantiation's mapping along its port connections
+# Automatically align an instantiation's mapping along its port connections
 mapping-auto-alignment = true
-# number of whitespace characters before port connection (before the `=>` character)
+# Number of whitespace characters before port connection (before the `=>` character)
 mapping-offset = 1
-# place a space between generic/port keyword and its opening parenthesis
+# Place a space between generic/port keyword and its opening parenthesis
 space-interface-parenthesis = true
-# the default instance name
+# The default instance name
 instance-name = "ux"
 ```
 
@@ -138,44 +146,55 @@ The currently supported entries are demonstrated in the following code snippet. 
 
 ``` toml
 [verilog-format]
-# enable colored output for code snippets
+# Enable colored output for code snippets
 highlight-syntax = true
-# number of whitespace characters per tab/indentation
+# Number of whitespace characters per tab/indentation
 tab-size = 2
-# automatically align a port or parameter's name with the module's other names
+# Automatically align a port or parameter's name with the module's other names
 name-auto-alignment = true
-# number of additional whitespace characters after alignment
+# Number of additional whitespace characters after alignment
 name-offset = 0
-# number of whitespaces before a range specifier
+# Number of whitespaces before a range specifier
 range-offset = 1
-# automatically align an instantiation's mapping along its port connections
+# Automatically align an instantiation's mapping along its port connections
 mapping-auto-alignment = true
-# number of whitespace characters before port connection (before the `(` character)
+# Number of whitespace characters before port connection (before the `(` character)
 mapping-offset = 0
-# the default instance name
+# The default instance name
 instance-name = "ux"
 ```
 
 ### The `[env]` section
 
-The user can define an arbitrary number of their own entries with their determined value represented in string format.
+The `[env]` section allows for an arbitrary number of user-defined key/value pairs.
+Each key's value is expected to be a string. Orbit exposes these key/value pairs as variables for string swapping in permissible strings as well as environment variables during the execution stage of the build process.
 
 ``` toml
 [env]
-foo = "0" # Accessible as ORBIT_ENV_FOO
-super-bar = "1" # Accessible as ORBIT_ENV_SUPER_BAR
+# Accessible as environment variable: ORBIT_ENV_FOO, string variable: orbit.env.foo
+FOO = "bar" 
+# Accessible as environment variable: ORBIT_ENV_LICENSE_FILE, string variable: orbit.env.license.file
+LICENSE_FILE = "3000@server" 
 ```
 
 ### The `[[target]]` array
 
+The `[[target]]` array lists user-defined targets. Each target must exist under its own `[[target]]` block.
+
 ### The `name` field
+
+The target name is an identifier used to refer to the target. It is used at the start of the build process to specify how the execution stage should behave.
 
 ``` toml
 [[target]]
 name = "dump-blueprint"
 ```
 
+This field is required when configuring a target.
+
 ### The `description` field
+
+The description is an optional short blurb about the target. This should be plain text (not Markdown).
 
 ``` toml
 [[target]]
@@ -185,13 +204,19 @@ description = "Print the blueprint contents to the screen"
 
 ### The `command` field
 
+The `command` entry for a target is used to specify what program to run for the execution stage of the build process.
+
 ``` toml
 [[target]]
 # ...
 command = "cat"
 ```
 
+This field is required when configuring a target.
+
 ### The `args` field
+
+The optional `args` entry is an array of strings that are passed to the program when it runs during the execution stage of the build process. Relative file paths included in this value are considered relative to the configuration file that defines this entry.
 
 ``` toml
 [[target]]
@@ -203,29 +228,39 @@ This field supports [_string swapping_](./../topic/swapping.md).
 
 ### The `plans` field
 
+The optional `plans` entry is an array of strings that specify which blueprint file types are supported by the target.
+
 ``` toml
 [[target]]
 # ...
 plans = ["tsv"]
 ```
 
-The type of blueprint files supported by the particular target. If a list is provided, the default plan used is the first item in the list. If a plan is provided on the command-line, then it must be a valid plan and found within the target's defined list.
+If more than one value is listed, then the default plan for the target is the first item in the list. 
+
+A plan can be provided on the command-line at the start of a build process to override the default plan. If a plan is provided on the command-line, then it must first be a supported plan as well as one found within the target's defined `plans` entry.
 
 If this field is left blank or not defined, then the default plan is "tsv".
 
 ### The `build` field
 
+The optional `build` key explicitly allows or disallows the build entry point to the build process (`orbit build`) to use this target.
+
+By setting this field to true, then the given target will be made available to the build entry point. By setting this field to false, then the given target is hidden and unusable for the build entry point.
+
 ``` toml
 [[target]]
 # ...
 build = true
-```
-
-Explicitly allow or disallow the build subcommand to use this target. By setting this field to true, then the given target will be made available through the build subcommand. By setting this field to false, then the given target is hidden and unusable for the build subcommand.
+``` 
 
 If this field is not defined, then the default is true.
 
 ### The `test` field
+
+The optional `test` key explicitly allows or disallows the test entry point to the build process (`orbit test`) to use this target.
+
+By setting this field to true, then the given target will be made available to the test entry point. By setting this field to false, then the given target is hidden and unusable for the test entry point.
 
 ``` toml
 [[target]]
@@ -233,19 +268,20 @@ If this field is not defined, then the default is true.
 test = true
 ```
 
-Explicitly allow or disallow the test subcommand to use this target. By setting this field to true, then the given target will be made available through the test subcommand. By setting this field to false, then the given target is hidden and unusable for the test subcommand.
-
 If this field is not defined, then the default is true.
 
 ### The `[fileset]` section
 
+The `[fileset]` section allows user-defined key/value pairs, where the key corresponds to a fileset name and the value is a string that corresponds to the glob-style pattern.
+
 ``` toml
 [[target]]
 # ...
+fileset.text = "*.txt"
 fileset.pymdl = "{{ orbit.tb.name }}.py"
 ```
 
-This field supports [_string swapping_](./../topic/swapping.md) (as shown in the example entry).
+The values for user-defined filesets support [_string swapping_](./../topic/swapping.md) (as shown in second example entry).
 
 ### The `[[protocol]]` array
 
@@ -279,13 +315,15 @@ See [[target]](#the-target-array)'s definition of [`description`](#the-descripti
 
 ### The `root` field
 
-The file system path where the channel exists, relative to the configuration file where it is defined.
+The optional `root` entry is a file system path to the root directory for the channel. Relative file paths are considered relative to the configuration file that defines this entry.
 
 ``` toml
 [[channel]]
 # ...
 root = "./index"
 ```
+
+If this entry is not defined, the default root directory for a channel is `.`, the directory where the configuration file exists.
 
 ### The `sync.command` field
 

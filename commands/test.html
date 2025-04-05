@@ -189,6 +189,8 @@ target already has defined arguments, the additional arguments passed from the
 command-line will follow the previously defined arguments.</p>
 <p>The target's process will spawn from the current working ip's output directory,
 which is $ORBIT_OUT_DIR.</p>
+<p>While the execution stage is a subprocess within Orbit, any non-zero error code
+returned from the user-defined execution process is propagated through Orbit.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--target, -t &lt;name&gt;</code><br />
             Target to execute</p>

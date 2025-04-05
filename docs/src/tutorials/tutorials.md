@@ -9,10 +9,10 @@ The code provided in this section is very didactic in nature and is not intended
 
 ## Prerequisites
 
-While there is no assumption that you know how Orbit works, there are some other assumptions we encourage you to understand to get the most out of this section:
+While there is no assumption that you know how Orbit works, there are some other assumptions we put in place we believe will help you get the most out of this section:
 
 - Basic knowledge of the command-line: how to navigate around your filesystem, enter commands, and analyze command outputs
-- Basic knowledge of digital logic concepts and hardware description languages: understanding logic gates and at least one ardware description language, such as VHDL, Verilog, or SystemVerilog
+- Basic knowledge of digital logic concepts and hardware description languages: understanding logic gates and at least one hardware description language, such as VHDL, Verilog, or SystemVerilog
 - Basic knowledge of scripting languages: familiarity with a scripting language such as Python or Tcl
 
-If you feel confident in the previously mentioned prerequisites, then you are ready to start your adventure learning Orbit!
+If you feel confident in these prerequisites, then you are ready to start your adventure learning Orbit!

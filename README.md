@@ -123,7 +123,7 @@ Design units written in one language can also have their instantiation code disp
 
 ## Flexibility in use
 
-Since Orbit focuses on efficiently managing the HDL source code and minimizing its associated technical debt, users have the power to add their own execution targets to the build process. This is accomplished by Orbit performing the planning of a build process to generate a single file, called a blueprint, that lists the topologically-sorted order of source files. After planning the build, Orbit invokes the user's target to perform the execution process on the list of source files.
+Since Orbit focuses on efficiently managing the HDL source code and minimizing its associated technical debt, users have the power to add their own execution targets to the build process. This is achieved through a two-stage build sequenece, where first Orbit plans the build by generating a single file, called a blueprint, that lists the topologically-sorted order of necessary source files. After planning the build, Orbit invokes the user's target to perform the execution process on the list of source files.
 
 For a project with the following design hierarchy:
 ```
@@ -150,7 +150,7 @@ VHDL	cpu	/users/chase/projects/cpu/rtl/top.vhd
 SYSV	cpu	/users/chase/projects/cpu/sim/top_tb.sv
 ```
 
-Create a target by writing a script that reads Orbit's generated blueprint file for the EDA tool(s) you prefer to performs the backend processing you require. Configure the target once, and use it across all future ips.
+Create a target by writing a script that reads Orbit's generated blueprint file and performs the backend processing with the EDA tools you prefer. Configure the target once, and use it across all future ips.
 
 ## Highlights
 

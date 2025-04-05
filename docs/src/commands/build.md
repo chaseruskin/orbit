@@ -41,6 +41,9 @@ command-line will follow the previously defined arguments.
 The target's process will spawn from the current working ip's output directory,
 which is $ORBIT_OUT_DIR.
 
+While the execution stage is a subprocess within Orbit, any non-zero error code 
+returned from the user-defined execution process is propagated through Orbit.
+
 ## __OPTIONS__
 
 `--target, -t <name>`  

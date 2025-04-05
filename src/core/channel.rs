@@ -159,14 +159,6 @@ impl Channel {
         list
     }
 
-    // let mut list = String::new();
-    // targets.sort_by(|a, b| a.name.cmp(&b.name));
-    // for t in targets {
-    //     let is_default = def_target.is_some() && def_target.unwrap().get_name() == t.get_name();
-    //     list += &format!("{}\n", t.quick_info(is_default));
-    // }
-    // list
-
     pub fn sync(context: &Context) -> Result<(), Fault> {
         crate::info!("{}", "synchronizing channels ...");
         let channels: Vec<&Channel> = context.get_config().get_channels().into_values().collect();

@@ -124,7 +124,7 @@ impl Subcommand<Context> for Install {
                 // display entire contents about the particular plugin
                 Some(proto) => println!("{}", proto),
                 // display quick overview of all plugins
-                None => println!(
+                None => print!(
                     "{}",
                     Protocol::list_protocols(
                         &mut c

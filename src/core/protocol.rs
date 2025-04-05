@@ -20,6 +20,7 @@
 
 use crate::core::swap;
 use crate::core::target::Process;
+use colored::Colorize;
 use serde_derive::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -111,10 +112,10 @@ impl Protocol {
     ///
     /// The string lists the plugins in alphabetical order by `name`.
     pub fn list_protocols(protos: &mut [&&Protocol]) -> String {
-        let mut list = String::from("Protocols:\n");
+        let mut list = String::new();
         protos.sort_by(|a: &&&Protocol, b| a.name.cmp(&b.name));
         for proto in protos {
-            list += &format!("  {}\n", proto.quick_info());
+            list += &format!("{}\n", proto.quick_info());
         }
         list
     }
@@ -122,9 +123,9 @@ impl Protocol {
     /// Displays a plugin's information in a single line for quick glance.
     pub fn quick_info(&self) -> String {
         format!(
-            "{:<16}{}",
+            "{:<21}{}",
             self.name,
-            self.description.as_ref().unwrap_or(&String::new())
+            self.description.as_ref().unwrap_or(&String::new()).green(),
         )
     }
 

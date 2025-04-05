@@ -21,6 +21,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Renames `--no-clean` flag to `--keep`, `-k`, to align with conventional linux command-line options
 - Renames `ORBIT_CHAN_INDEX` environment variable to `ORBIT_CHANNEL_DIR` to be used during the publishing process
 - Allows `version` entry in the manifest to be optional (defaults to 0.0.0)
+- Adjusts how protocols are listed using `orbit install --list` to be consistent with the format for listing targets (`orbit build --list`) and listing channels (`orbit publish --list`)
 
 ## 0.24.0
 

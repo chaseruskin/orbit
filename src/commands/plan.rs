@@ -90,6 +90,7 @@ impl Plan {
         require_bench: bool,
         allow_bench: bool,
         envs: Environment,
+        priv_by_def: bool,
     ) -> Result<Option<String>, Fault> {
         // create the output path to know where to begin storing files
         let working_ip_path = working_ip.get_root().clone();
@@ -97,7 +98,8 @@ impl Plan {
         let output_path = target_path.join(target.get_name());
 
         // build entire ip graph and resolve with dynamic symbol transformation
-        let ip_graph = match algo::compute_final_ip_graph(&working_ip, Some(&catalog)) {
+        let ip_graph = match algo::compute_final_ip_graph(&working_ip, Some(&catalog), priv_by_def)
+        {
             Ok(g) => g,
             Err(e) => {
                 // generate a single blueprint

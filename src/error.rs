@@ -187,6 +187,20 @@ pub enum Error {
     OrbitHomeDoesNotExist(PathBuf),
     #[error("edge kinds are: \"unit\", \"ip\", \"all\"")]
     EdgeKindInvalid(String),
+    #[error("0 design units found{0}")]
+    IpZeroDesignUnitsFound(Hint),
+    #[error("0 source files are matched to the public entry list{0}")]
+    IpNoDesignUnitsWithPublic(Hint),
+    #[error("all design units within the current ip are private by default as viewed from the outside{0}")]
+    IpAssumedAllPrivateByDefault(Hint),
+    #[error("failed to detect public design units: {0}")]
+    PublishUnitVisibilityFailed(LastError),
+    #[error("cannot use \"--all-public\" flag in this context: {0}")]
+    IpAllPublicNotNow(LastError),
+    #[error("the \"ip.public\" entry is found in the current ip's manifest")]
+    VisNoAllPubEntryExists,
+    #[error("the ip being installed is not local")]
+    VisNoAllPubIpNotLocal,
 }
 
 #[derive(Debug, PartialEq)]
@@ -245,6 +259,9 @@ pub enum Hint {
     ShowConfigFiles,
     ConfirmUuidChange(String),
     SolveNamespaceCollision,
+    AddPublicEntry,
+    AddSourceFiles,
+    FixPublicEntry,
 }
 
 impl Display for Hint {
@@ -305,6 +322,11 @@ impl Display for Hint {
     2) copy the original uuid \"{0}\" back into the manifest to keep the old uuid",
                 uuid
             ),
+            Self::AddPublicEntry => HINT_VIS_1,
+            Self::AddSourceFiles => "create at least one design unit in a .vhd, .sv, or .v file",
+            Self::FixPublicEntry => {
+                "fix the manifest's \"ip.public\" field by adding valid source file paths"
+            }
         };
         write!(
             f,
@@ -323,3 +345,7 @@ const HINT_2: &str = "resolve this error by either
     1) renaming the unit in the local ip to a unique identifier
     2) removing the direct dependency from Orbit.toml
     3) adding the file path for the local ip's unit to the manifest's \"ip.exclude\" field";
+
+const HINT_VIS_1: &str = "resolve this error by either
+    1) adding the \"ip.public\" field to the manifest with a list of source files to be public
+    2) using the \"--all-public\" flag to set all source files as public";

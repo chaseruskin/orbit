@@ -85,15 +85,26 @@ impl Subcommand<Context> for Lock {
             catalog = catalog.installations(c.get_cache_path())?;
         }
 
-        Self::run(&working_ip, &catalog, self.force)
+        Self::run(
+            &working_ip,
+            &catalog,
+            self.force,
+            c.are_units_private_by_default(),
+        )
     }
 }
 
 impl Lock {
     /// Performs the backend logic for creating a blueprint file (planning a design).
-    pub fn run(working_ip: &Ip, catalog: &Catalog, force: bool) -> Result<(), Fault> {
+    pub fn run(
+        working_ip: &Ip,
+        catalog: &Catalog,
+        force: bool,
+        priv_by_def: bool,
+    ) -> Result<(), Fault> {
         // build entire ip graph and resolve with dynamic symbol transformation
-        let ip_graph = match algo::compute_final_ip_graph(&working_ip, Some(&catalog)) {
+        let ip_graph = match algo::compute_final_ip_graph(&working_ip, Some(&catalog), priv_by_def)
+        {
             Ok(g) => g,
             Err(e) => return Err(e)?,
         };
@@ -104,10 +115,10 @@ impl Lock {
     }
 
     /// Writes a lockfile for a newly created ip (one that either was made with `new` or `init`).
-    pub fn write_new_lockfile(local_ip: &Ip, warn: bool) -> Result<(), Fault> {
+    pub fn write_new_lockfile(local_ip: &Ip, warn: bool, priv_by_def: bool) -> Result<(), Fault> {
         // build entire ip graph and resolve with dynamic symbol transformation
         let catalog = Catalog::new();
-        let ip_graph = match algo::compute_final_ip_graph(&local_ip, Some(&catalog)) {
+        let ip_graph = match algo::compute_final_ip_graph(&local_ip, Some(&catalog), priv_by_def) {
             Ok(g) => g,
             Err(e) => match warn {
                 true => {

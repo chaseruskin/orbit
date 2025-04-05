@@ -3,5 +3,6 @@ name = "ip-b"
 uuid = "133pf1iqec3287bkt7i185772"
 version = "0.1.0"
 library = "dupe"
+public = ["*.sv", "*.v", "*.vhd"]
 
 [dependencies]

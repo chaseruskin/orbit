@@ -153,6 +153,7 @@ impl Subcommand<Context> for Build {
             false,
             false,
             envs,
+            c.are_units_private_by_default(),
         )?;
 
         let envs = Environment::new().from_env_file(&output_path)?;

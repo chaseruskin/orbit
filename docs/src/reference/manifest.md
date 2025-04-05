@@ -4,6 +4,8 @@ The `Orbit.toml` file for each ip is called its manifest. It is written in the [
 
 > __Note:__ The manifest's file name is "Orbit.toml", with respect to case-sensitivity.
 
+## Manifest format 
+
 Every manifest file consists of the following sections:
 
 - [[ip]](#the-ip-section) - Defines an ip.
@@ -164,7 +166,7 @@ public = [
 
 The `public` field can be used to explicitly specify which files are visible to other ip when being when being referenced as a dependency. The list contains glob-style patterns that conform to .gitignore file semantics, and are always compared relative that ip's root directory.
 
-If no `public` field is present, then all files are implicitly specified as visible (public) to other ip when being referenced as a dependency.
+If no `public` field is present, then all files are implicitly specified as invisible (private) to other ip when being referenced as a dependency. To change the default behavior when the `public` field is absent, see the configuration's [require-public](./configuration.md#the-require-public-field) entry.
 
 When mixing un-ignore (`!`) and ignore patterns, the order matters. The latest glob in the list among any overlapping globs will be the one effectively used for that particular pattern.
 

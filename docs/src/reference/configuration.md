@@ -32,6 +32,7 @@ Every configuration file consists of the following sections:
 
 - [include](#the-include-field) - Lists other `config.toml` files to process. This field is only allowed for the global configuration file.
 - [[general]](#the-general-section) - The general settings.
+    - [require-public](#the-require-public-field) - Assume source files to be private by default.
     - [target-dir](#the-target-dir-field) - Default target directory.
 - [[test]](#the-test-section) - The test settings.
     - [default-target](#the-default-target-field) - Set the default target for tests.
@@ -80,14 +81,26 @@ include = [
 
 ### The `[general]` section
 
+### The `require-public` field
+
+The `require-public` key determines if to assume source files are private by default. When true, all source files are private to the ip their created within unless their file path is found in ip manifest's `public` entry. When false, all source files are treated as public when the ip manifest's `public` entry is omitted.
+
+``` toml
+[general]
+require-public = true
+# ...
+```
+
+By default, when this key is not specified, it is set true. See the ip manifest's reference on the [public](./manifest.md#the-public-field) entry for more information about defining public source files.
+
 ### The `target-dir` field
 
 The `target-dir` key defines the default output directory to create for the planning and building phases. This value can be overridden on the command-line when the `--target-dir` option is specified. 
 
 ``` toml
 [general]
-target-dir = "target"
 # ...
+target-dir = "target"
 ```
 
 When this key is not defined, the default value for the build directory is "target".

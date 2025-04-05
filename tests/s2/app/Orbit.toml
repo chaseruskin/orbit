@@ -2,6 +2,7 @@
 name = "app"
 uuid = "1h875zp8cjtab1lrkdgue5gxk"
 version = "0.1.0"
+public = ["*.sv", "*.v", "*.vhd"]
 
 [dependencies]
 lib = "0.1.0"

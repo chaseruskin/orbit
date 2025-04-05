@@ -463,7 +463,11 @@ Posting an ip to a channel involves copying the ip's manifest file to a path
 within the channel known as the index. For every publish of an ip, the index 
 corresponds to a unique path within the channel that gets created by Orbit.
 A channel's pre-publish and post-publish hooks can get the value for the ip's 
-index by reading the ORBIT_IP_INDEX environment variable.
+index by reading the ORBIT_CHANNEL_DIR environment variable.
+
+The `--all-public` flag can be used to skip providing the "ip.public" field
+in the current ip's manifest, granting the assumption that all source files
+should be public. It cannot be used if the "ip.public" field exists.
 
 By default, this command performs a dry run, which executes all of the steps 
 in the process except for actually posting the ip to its channel(s). 
@@ -473,6 +477,7 @@ To run the command to completion, use the `--ready` option.
 options."--ready, -y" = "Run the operation to completion"
 options."--no-install" = "Do not install the ip for future use"
 options."--list" = "View available channels and exit"
+options."--all-public" = "Publish with all source files being public"
 
 examples = """
 orbit publish
@@ -528,55 +533,6 @@ orbit search --keyword cdc --limit 20 -i
 """
 
 # ------------------------------------------------------------------------------
-# download        
-# ------------------------------------------------------------------------------
-# [download]
-# name = "download"
-# summary = "fetch packages from the internet"
-# synopsis = "orbit download [options]"
-# description = """
-# This command will get a package from the internet using the default protocol
-# or a user-defined protocol. It places the package in the path defined as
-# environment variable `$ORBIT_ARCHIVE`.
-
-# Downloads are vital to Orbit's management system as to avoid having to solely 
-# rely on accessing the internet to get IP. Downloads allow Orbit to quickly
-# repair broken installations and allow users to learn about IP before installing.
-
-# When using a custom protocol, Orbit expects the final fetched repository to
-# exist within a special directory called the queue. By default, the queue is set
-# to a temporary directory, but it can be overridden with `--queue`. After a 
-# protocol is executed, Orbit resumes the download process by trying to detect the 
-# target IP and then performing a compression algorithm on the path to store as a 
-# single file archive. This final archive is special and packed with additional 
-# bytes, which makes it unsuitable to easily unzip with existing compression 
-# tools.
-
-# A lockfile is required to exist in the current IP in order to download its 
-# dependencies.
-
-# Variable substitution is supported when specifying the "command" and "args"
-# fields for a protocol. Most notably, the queue is accessed as 
-# `{{ orbit.queue }}`. See `orbit help protocols` for more information about 
-# available variables.
-
-# This action may automatically run during an install if the package is missing
-# from the downloads. See `orbit help install` for more details.
-# """
-
-# options."--list" = "Print URLs and exit"
-# options."--missing" = "Filter only uninstalled packages (default: true)"
-# options."--all" = "Gather packages from all dependency types"
-# options."--queue <dir>" = "Set the destination directory for placing fetched repositories"
-# options."--verbose" = "Display the custom protocol being executed"
-# options."--force" = "Download selected packages regardless of status"
-
-# examples = """
-# orbit download --missing --list
-# orbit download --all --force
-# """
-
-# ------------------------------------------------------------------------------
 # install         
 # ------------------------------------------------------------------------------
 [install]
@@ -592,15 +548,21 @@ When this command is ran without specifying the <ip> or a source (such as
 exists.
 
 By default, any dependencies required only for development by the target ip are
-omitted from installation. To also install these dependencies, use `--all`.
+omitted from installation. To also install these dependencies, use the 
+`--all-deps` flag.
 
 If a protocol is recognized using `--protocol`, then an optional tag can also 
 be supplied to help the protocol with providing any additional information it
 may require.
 
-The `--path` command can accept a file system path that is either 1) the root 
+The `--path` option can accept a file system path that is either 1) the root 
 directory that contains the manifest file or 2) a zip archive file that when 
 uncompressed, has the manifest file at the root directoy.
+
+The `--all-public` flag can be used to skip providing the "ip.public" field
+in the current ip's manifest, granting the assumption that all source files
+should be public. It can only be present when installing from a local ip and
+when the "ip.public" field does not exist.
 
 To remove ip from the catalog, see the `remove` command.
 """
@@ -613,7 +575,8 @@ options."--tag <tag>" = "Unique tag to provide to the protocol"
 options."--force" = "Install the ip regardless of the cache slot occupancy"
 options."--offline" = "Skip checking coherency with source"
 options."--list" = "View available protocols and exit"
-options."--all" = "Install all dependencies (including development)"
+options."--all-deps" = "Install all dependencies (including development)"
+options."--all-public" = "Install with all source files being public"
 
 examples = """
 orbit install
@@ -751,3 +714,55 @@ options."--sync" = "synchronize configured channels"
 options."--force" = "bypass interactive prompts"
 options."--color <when>" = "coloring: auto, always, never"
 options."--help, -h" = "print help information"
+
+
+# DEPRECATED ---
+
+# ------------------------------------------------------------------------------
+# download        
+# ------------------------------------------------------------------------------
+# [download]
+# name = "download"
+# summary = "fetch packages from the internet"
+# synopsis = "orbit download [options]"
+# description = """
+# This command will get a package from the internet using the default protocol
+# or a user-defined protocol. It places the package in the path defined as
+# environment variable `$ORBIT_ARCHIVE`.
+
+# Downloads are vital to Orbit's management system as to avoid having to solely 
+# rely on accessing the internet to get IP. Downloads allow Orbit to quickly
+# repair broken installations and allow users to learn about IP before installing.
+
+# When using a custom protocol, Orbit expects the final fetched repository to
+# exist within a special directory called the queue. By default, the queue is set
+# to a temporary directory, but it can be overridden with `--queue`. After a 
+# protocol is executed, Orbit resumes the download process by trying to detect the 
+# target IP and then performing a compression algorithm on the path to store as a 
+# single file archive. This final archive is special and packed with additional 
+# bytes, which makes it unsuitable to easily unzip with existing compression 
+# tools.
+
+# A lockfile is required to exist in the current IP in order to download its 
+# dependencies.
+
+# Variable substitution is supported when specifying the "command" and "args"
+# fields for a protocol. Most notably, the queue is accessed as 
+# `{{ orbit.queue }}`. See `orbit help protocols` for more information about 
+# available variables.
+
+# This action may automatically run during an install if the package is missing
+# from the downloads. See `orbit help install` for more details.
+# """
+
+# options."--list" = "Print URLs and exit"
+# options."--missing" = "Filter only uninstalled packages (default: true)"
+# options."--all" = "Gather packages from all dependency types"
+# options."--queue <dir>" = "Set the destination directory for placing fetched repositories"
+# options."--verbose" = "Display the custom protocol being executed"
+# options."--force" = "Download selected packages regardless of status"
+
+# examples = """
+# orbit download --missing --list
+# orbit download --all --force
+# """

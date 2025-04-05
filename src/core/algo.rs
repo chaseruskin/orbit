@@ -67,6 +67,7 @@ pub fn graph_ip_from_lock(lock: &LockFile) -> Result<GraphMap<IpSpec, &LockEntry
 fn graph_ip<'a>(
     root: &'a Ip,
     catalog: Option<&'a Catalog<'a>>,
+    private_by_default: bool,
 ) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, CodeFault> {
     // create empty graph
     let mut g = GraphMap::new();
@@ -87,7 +88,7 @@ fn graph_ip<'a>(
     let able_to_use_lockfile = root.can_use_lock(catalog);
 
     // add root's identifiers and parse files according to the correct language settings
-    let mut unit_map = root.collect_units(true, false)?;
+    let mut unit_map = root.collect_units(true, false, private_by_default)?;
 
     let mut is_root: bool = true;
 
@@ -109,7 +110,8 @@ fn graph_ip<'a>(
                                 existing_node.index()
                             } else {
                                 // check if identifiers are already taken in graph
-                                let units = relative_ip.collect_units(false, true)?;
+                                let units =
+                                    relative_ip.collect_units(false, true, private_by_default)?;
                                 if let Some(dupe) =
                                     units.iter().find(|(key, _)| unit_map.contains_key(key))
                                 {
@@ -188,7 +190,11 @@ fn graph_ip<'a>(
                                         existing_node.index()
                                     } else {
                                         // check if identifiers are already taken in graph
-                                        let units = cached_ip.collect_units(false, true)?;
+                                        let units = cached_ip.collect_units(
+                                            false,
+                                            true,
+                                            private_by_default,
+                                        )?;
                                         let dst = if let Some(dupe) =
                                             units.iter().find(|(key, _)| unit_map.contains_key(key))
                                         {
@@ -275,9 +281,10 @@ fn graph_ip<'a>(
 pub fn compute_final_ip_graph<'a>(
     target: &'a Ip,
     catalog: Option<&'a Catalog<'a>>,
+    private_by_default: bool,
 ) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, CodeFault> {
     // collect rough outline of ip graph (after this function, the correct files according to language are kept)
-    let mut rough_ip_graph = graph_ip(&target, catalog)?;
+    let mut rough_ip_graph = graph_ip(&target, catalog, private_by_default)?;
 
     // keep track of list of neighbors that must perform dst and their lookup-tables to use after processing all direct impacts
     let mut transforms = HashMap::<IpSpec, HashMap<LangIdentifier, String>>::new();

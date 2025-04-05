@@ -266,6 +266,7 @@ impl Context {
         self.config = self.collect_configs(&global_path, name)?.into();
 
         // @todo: dynamically set from environment variables from configuration data
+        // 2025-04-05: is this still needed?
         Ok(self)
     }
 
@@ -288,6 +289,15 @@ impl Context {
         match self.config.get_general() {
             Some(g) => g.get_build_dir(),
             None => General::new().get_build_dir(),
+        }
+    }
+
+    /// Checks if the design units should be private by default when `public`
+    /// field is omitted from the local ip.
+    pub fn are_units_private_by_default(&self) -> bool {
+        match self.config.get_general() {
+            Some(g) => g.is_public_required(),
+            None => General::new().is_public_required(),
         }
     }
 

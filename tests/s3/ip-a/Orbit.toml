@@ -2,6 +2,7 @@
 name = "ip-a"
 uuid = "02ca23lot1yum2qmwwrcod0ra"
 version = "0.1.0"
+public = ["*.sv", "*.v", "*.vhd"]
 
 [dependencies]
 ip-b = "0.1.0"

@@ -26,7 +26,11 @@ Posting an ip to a channel involves copying the ip's manifest file to a path
 within the channel known as the index. For every publish of an ip, the index 
 corresponds to a unique path within the channel that gets created by Orbit.
 A channel's pre-publish and post-publish hooks can get the value for the ip's 
-index by reading the ORBIT_IP_INDEX environment variable.
+index by reading the ORBIT_CHANNEL_DIR environment variable.
+
+The `--all-public` flag can be used to skip providing the "ip.public" field
+in the current ip's manifest, granting the assumption that all source files
+should be public. It cannot be used if the "ip.public" field exists.
 
 By default, this command performs a dry run, which executes all of the steps 
 in the process except for actually posting the ip to its channel(s). 
@@ -42,6 +46,9 @@ To run the command to completion, use the `--ready` option.
 
 `--list`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; View available channels and exit
+
+`--all-public`  
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Publish with all source files being public
 
 ## __EXAMPLES__
 

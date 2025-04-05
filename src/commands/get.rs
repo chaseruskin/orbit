@@ -170,7 +170,11 @@ impl Subcommand<Context> for Get {
 impl Get {
     fn run(&self, ip: &Ip, is_local: bool, c: &Context) -> Result<(), Fault> {
         // collect all hdl files and parse them
-        let selected_unit = Self::fetch_entity(&ip, &LangIdentifier::Vhdl(self.unit.clone()))?;
+        let selected_unit = Self::fetch_entity(
+            &ip,
+            &LangIdentifier::Vhdl(self.unit.clone()),
+            c.are_units_private_by_default(),
+        )?;
         let unit = match selected_unit {
             Some(lu) => {
                 // verify the unit is only set to public visibility when outside of ip
@@ -384,7 +388,11 @@ impl Get {
         Ok(())
     }
 
-    fn fetch_entity(ip: &Ip, name: &LangIdentifier) -> Result<Option<LangUnit>, Fault> {
+    fn fetch_entity(
+        ip: &Ip,
+        name: &LangIdentifier,
+        priv_by_default: bool,
+    ) -> Result<Option<LangUnit>, Fault> {
         // check if we can use the cached metadata
         if let Some(cached) = Ip::read_cache_metadata(ip.get_root()) {
             let units = cached.get_units();
@@ -410,7 +418,7 @@ impl Get {
                 Ok(None)
             }
         } else {
-            let mut mapping = ip.collect_units(true, false)?;
+            let mut mapping = ip.collect_units(true, false, priv_by_default)?;
             // TODO: need to link to architectures here for VHDL such that they appear in arch listing
             let result = mapping.remove(name);
             Ok(result)

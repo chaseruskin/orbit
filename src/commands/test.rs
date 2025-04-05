@@ -185,6 +185,7 @@ impl Test {
             true,
             true,
             envs,
+            c.are_units_private_by_default(),
         )?;
 
         // prepare for build

@@ -120,7 +120,7 @@ impl Subcommand<Context> for Read {
                         Some(i) => i,
                         None => panic!("version does not exist for this ip"),
                     };
-                    self.run(inst, dest.as_ref(), false)
+                    self.run(inst, dest.as_ref(), false, c.are_units_private_by_default())
                 }
                 None => {
                     // the ip does not exist
@@ -137,14 +137,20 @@ impl Subcommand<Context> for Read {
                 None => return Err(AnyError(format!("not within an existing ip")))?,
             };
 
-            self.run(&ip, dest.as_ref(), true)
+            self.run(&ip, dest.as_ref(), true, c.are_units_private_by_default())
         }
     }
 }
 
 impl Read {
-    fn run(&self, target: &Ip, dest: Option<&PathBuf>, is_local: bool) -> Result<(), Fault> {
-        let (path, loc, lang) = Self::read(&self.unit, &target, dest, is_local)?;
+    fn run(
+        &self,
+        target: &Ip,
+        dest: Option<&PathBuf>,
+        is_local: bool,
+        priv_by_def: bool,
+    ) -> Result<(), Fault> {
+        let (path, loc, lang) = Self::read(&self.unit, &target, dest, is_local, priv_by_def)?;
 
         // dump the file contents of the source code to the console if there was no destination
         let print_to_console = dest.is_none();
@@ -250,9 +256,10 @@ impl Read {
         ip: &Ip,
         dest: Option<&PathBuf>,
         is_local: bool,
+        priv_by_def: bool,
     ) -> Result<(PathBuf, Position, Lang), Fault> {
         // find the unit
-        let units = ip.collect_units(true, false)?;
+        let units = ip.collect_units(true, false, priv_by_def)?;
 
         // get the file data for the primary design unit
         let (source, position) = match units.get_key_value(unit) {

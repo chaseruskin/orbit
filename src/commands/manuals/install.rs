@@ -31,15 +31,21 @@ DESCRIPTION
     exists.
     
     By default, any dependencies required only for development by the target ip are
-    omitted from installation. To also install these dependencies, use '--all'.
+    omitted from installation. To also install these dependencies, use the 
+    '--all-deps' flag.
     
     If a protocol is recognized using '--protocol', then an optional tag can also 
     be supplied to help the protocol with providing any additional information it
     may require.
     
-    The '--path' command can accept a file system path that is either 1) the root 
+    The '--path' option can accept a file system path that is either 1) the root 
     directory that contains the manifest file or 2) a zip archive file that when 
     uncompressed, has the manifest file at the root directoy.
+    
+    The '--all-public' flag can be used to skip providing the "ip.public" field
+    in the current ip's manifest, granting the assumption that all source files
+    should be public. It can only be present when installing from a local ip and
+    when the "ip.public" field does not exist.
     
     To remove ip from the catalog, see the 'remove' command.
 
@@ -68,8 +74,11 @@ OPTIONS
     --list
         View available protocols and exit
 
-    --all
+    --all-deps
         Install all dependencies (including development)
+
+    --all-public
+        Install with all source files being public
 
 EXAMPLES
     orbit install

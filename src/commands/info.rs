@@ -123,7 +123,7 @@ impl Subcommand<Context> for Info {
                     println!("{}", Self::format_cached_units_table(&mut units, self.all));
                 } else {
                     // force computing the primary design units if a physical ip (non-archived)
-                    let units = ip.collect_units(true, false)?;
+                    let units = ip.collect_units(true, false, c.are_units_private_by_default())?;
                     println!(
                         "{}",
                         Self::format_units_table(

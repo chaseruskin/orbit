@@ -96,17 +96,17 @@ impl Subcommand<Context> for Tree {
         // gather the catalog
         let catalog = Catalog::new().installations(c.get_cache_path())?;
 
-        self.run(ip, catalog)
+        self.run(ip, catalog, c.are_units_private_by_default())
     }
 }
 
 impl Tree {
-    fn run(&self, target: Ip, catalog: Catalog) -> Result<(), Fault> {
+    fn run(&self, target: Ip, catalog: Catalog, priv_by_def: bool) -> Result<(), Fault> {
         // Determine how to display the dependencies for the project
         match &self.edges {
-            Kind::Unit => self.run_hdl_graph(target, catalog, true),
-            Kind::Ip => self.run_ip_graph(target, catalog),
-            Kind::All => self.run_hdl_graph(target, catalog, false),
+            Kind::Unit => self.run_hdl_graph(target, catalog, true, priv_by_def),
+            Kind::Ip => self.run_ip_graph(target, catalog, priv_by_def),
+            Kind::All => self.run_hdl_graph(target, catalog, false, priv_by_def),
         }
     }
 
@@ -115,11 +115,17 @@ impl Tree {
     /// If `only_modules` is true, then the tree will only report back entity/module instantiations
     /// within other entity/modules. If false, then any type of primary design unit reference will
     /// be included.
-    fn run_hdl_graph(&self, target: Ip, catalog: Catalog, only_modules: bool) -> Result<(), Fault> {
+    fn run_hdl_graph(
+        &self,
+        target: Ip,
+        catalog: Catalog,
+        only_modules: bool,
+        priv_by_def: bool,
+    ) -> Result<(), Fault> {
         let working_lib = target.get_hdl_library();
 
         // build graph again but with entire set of all files available from all depdendencies
-        let ip_graph = algo::compute_final_ip_graph(&target, Some(&catalog))?;
+        let ip_graph = algo::compute_final_ip_graph(&target, Some(&catalog), priv_by_def)?;
         let files = algo::build_ip_file_list(&ip_graph, &target);
 
         // build the complete graph (using entities as the nodes)
@@ -210,8 +216,8 @@ impl Tree {
     }
 
     /// Construct and print the graph at an IP dependency level.
-    fn run_ip_graph(&self, target: Ip, catalog: Catalog) -> Result<(), Fault> {
-        let ip_graph = algo::compute_final_ip_graph(&target, Some(&catalog))?;
+    fn run_ip_graph(&self, target: Ip, catalog: Catalog, priv_by_def: bool) -> Result<(), Fault> {
+        let ip_graph = algo::compute_final_ip_graph(&target, Some(&catalog), priv_by_def)?;
 
         let tree = ip_graph.get_graph().treeview(0);
 

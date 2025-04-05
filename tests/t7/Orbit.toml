@@ -3,7 +3,6 @@ name = "t7"
 uuid = "0000000000000000000000000"
 version = "0.1.0"
 exclude = ["b.v"]
-
-# See more keys and their definitions at https://chaseruskin.github.io/orbit/reference/manifest.html
+public = ["*.sv", "*.v", "*.vhd"]
 
 [dependencies]

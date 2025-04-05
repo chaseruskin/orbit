@@ -84,7 +84,8 @@ pub struct Install {
     list: bool,
     force: bool,
     verbose: bool,
-    all: bool,
+    all_deps: bool,
+    all_pub: bool,
 }
 
 impl Subcommand<Context> for Install {
@@ -94,7 +95,8 @@ impl Subcommand<Context> for Install {
             // Flags
             force: cli.check(Arg::flag("force"))?,
             verbose: cli.check(Arg::flag("verbose"))?,
-            all: cli.check(Arg::flag("all"))?,
+            all_deps: cli.check(Arg::flag("all-deps"))?,
+            all_pub: cli.check(Arg::flag("all-public"))?,
             list: cli.check(Arg::flag("list"))?,
             offline: cli.check(Arg::flag("offline"))?,
             // Options
@@ -400,8 +402,28 @@ impl Subcommand<Context> for Install {
             catalog = catalog.installations(c.get_cache_path())?;
         }
 
+        // verify all-public is only used when target is local and has no public list
+        if target.force_all_units_private(true) == false && self.all_pub {
+            if target.has_public_list() == true {
+                return Err(Box::new(Error::IpAllPublicNotNow(LastError(
+                    Error::VisNoAllPubEntryExists.to_string(),
+                ))));
+            } else {
+                return Err(Box::new(Error::IpAllPublicNotNow(LastError(
+                    Error::VisNoAllPubIpNotLocal.to_string(),
+                ))));
+            }
+        }
+
         // perform a series of checks on this ip
-        catalog = Self::run_ip_checkpoints(&target, catalog, self.force, &c, self.all)?;
+        catalog = Self::run_ip_checkpoints(
+            &target,
+            catalog,
+            self.force,
+            &c,
+            self.all_deps,
+            self.all_pub,
+        )?;
 
         // add additional check if we can download from online and it matches
         if (self.path.is_some() || self.ip.is_none())
@@ -470,7 +492,8 @@ impl Install {
         catalog: Catalog<'c>,
         force: bool,
         c: &'c Context,
-        all: bool,
+        all_deps: bool,
+        all_pub: bool,
     ) -> Result<Catalog<'c>, Fault> {
         let mut catalog = catalog;
 
@@ -483,7 +506,11 @@ impl Install {
             }
         // create the lockfile
         } else if local_ip.can_use_lock(&catalog) == false {
-            let ip_graph = algo::compute_final_ip_graph(&local_ip, Some(&catalog))?;
+            let ip_graph = algo::compute_final_ip_graph(
+                &local_ip,
+                Some(&catalog),
+                c.are_units_private_by_default(),
+            )?;
             Plan::write_lockfile(&local_ip, &ip_graph, true, true, &catalog)?;
         }
 
@@ -496,7 +523,9 @@ impl Install {
 
         let le = LockEntry::from((local_ip, true));
 
-        let lf = local_ip.get_lock().keep_dev_dep_entries(&local_ip, all);
+        let lf = local_ip
+            .get_lock()
+            .keep_dev_dep_entries(&local_ip, all_deps);
 
         plan::download_missing_deps(vtable, &lf, &le, &catalog, &c.get_config().get_protocols())?;
 
@@ -515,9 +544,23 @@ impl Install {
             )));
         }
 
+        // verify internal design unit visibility
+        crate::info!("verifying source file visibility ...");
+        if let Err(e) = Publish::check_design_unit_visibility_okay(
+            &local_ip,
+            c.are_units_private_by_default(),
+            all_pub,
+        ) {
+            return Err(Box::new(Error::PublishUnitVisibilityFailed(LastError(
+                e.to_string(),
+            ))))?;
+        }
+
         // verify the graph build with no errors
         crate::info!("verifying hardware graph construction ...");
-        if let Err(e) = Publish::check_graph_builds_okay(&local_ip, &catalog) {
+        if let Err(e) =
+            Publish::check_graph_builds_okay(&local_ip, &catalog, c.are_units_private_by_default())
+        {
             return Err(Box::new(Error::PublishHdlGraphFailed(LastError(
                 e.to_string(),
             ))))?;

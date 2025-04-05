@@ -2,6 +2,7 @@
 name = "top"
 version = "0.1.0"
 uuid = "5xwxds2xlr94pgfnlu7q2d6pt"
+public = ["*.sv", "*.v", "*.vhd"]
 
 [dependencies]
 mid = "0.1.0"

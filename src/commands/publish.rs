@@ -44,6 +44,7 @@ pub struct Publish {
     ready: bool,
     no_install: bool,
     list: bool,
+    all_pub: bool,
 }
 
 impl Subcommand<Context> for Publish {
@@ -52,6 +53,7 @@ impl Subcommand<Context> for Publish {
         Ok(Publish {
             list: cli.check(Arg::flag("list"))?,
             no_install: cli.check(Arg::flag("no-install"))?,
+            all_pub: cli.check(Arg::flag("all-public"))?,
             ready: cli.check(Arg::flag("ready").switch('y'))?,
         })
     }
@@ -148,7 +150,18 @@ impl Subcommand<Context> for Publish {
             }
         }
 
-        if let Err(e) = Self::run_ip_checkpoints(&local_ip, &catalog) {
+        if local_ip.has_public_list() == true && self.all_pub == true {
+            return Err(Box::new(Error::IpAllPublicNotNow(LastError(
+                Error::VisNoAllPubEntryExists.to_string(),
+            ))));
+        }
+
+        if let Err(e) = Self::run_ip_checkpoints(
+            &local_ip,
+            &catalog,
+            c.are_units_private_by_default(),
+            self.all_pub,
+        ) {
             return Err(Box::new(Error::PublishFailedCheckpoint(LastError(
                 e.to_string(),
             ))));
@@ -178,7 +191,12 @@ impl Subcommand<Context> for Publish {
 }
 
 impl Publish {
-    pub fn run_ip_checkpoints(local_ip: &Ip, catalog: &Catalog) -> Result<(), Fault> {
+    pub fn run_ip_checkpoints(
+        local_ip: &Ip,
+        catalog: &Catalog,
+        priv_by_def: bool,
+        all_pub: bool,
+    ) -> Result<(), Fault> {
         // verify the lock file is generated and up to date
         crate::info!("verifying lockfile is up to date ...");
         if local_ip.can_use_lock(&catalog) == false {
@@ -199,9 +217,17 @@ impl Publish {
             return Err(Box::new(Error::PublishMissingSource));
         }
 
+        // verify internal design unit visibility
+        crate::info!("verifying source file visibility ...");
+        if let Err(e) = Self::check_design_unit_visibility_okay(&local_ip, priv_by_def, all_pub) {
+            return Err(Box::new(Error::PublishUnitVisibilityFailed(LastError(
+                e.to_string(),
+            ))))?;
+        }
+
         // verify the graph build with no errors
         crate::info!("verifying hardware graph construction ...");
-        if let Err(e) = Self::check_graph_builds_okay(&local_ip, &catalog) {
+        if let Err(e) = Self::check_graph_builds_okay(&local_ip, &catalog, priv_by_def) {
             return Err(Box::new(Error::PublishHdlGraphFailed(LastError(
                 e.to_string(),
             ))))?;
@@ -293,9 +319,40 @@ impl Publish {
         }
     }
 
+    /// Verifies the design units for this ip will be found okay
+    pub fn check_design_unit_visibility_okay(
+        local_ip: &Ip,
+        priv_by_def: bool,
+        all_pub: bool,
+    ) -> Result<(), Fault> {
+        // Verify design units are not empty
+        if local_ip.found_zero_units()? == true {
+            return Err(Box::new(Error::IpZeroDesignUnitsFound(
+                Hint::AddSourceFiles,
+            )));
+        }
+        // Verify we have public design units
+        if local_ip.found_all_units_private(priv_by_def)? == true {
+            return Err(Box::new(Error::IpNoDesignUnitsWithPublic(
+                Hint::FixPublicEntry,
+            )));
+        }
+        // Verify we are not all assumed private
+        if local_ip.force_all_units_private(priv_by_def) == true && all_pub == false {
+            return Err(Box::new(Error::IpAssumedAllPrivateByDefault(
+                Hint::AddPublicEntry,
+            )));
+        }
+        Ok(())
+    }
+
     /// Verifies that we can build the graph for this ip `local_ip` without errors.
-    pub fn check_graph_builds_okay(local_ip: &Ip, catalog: &Catalog) -> Result<(), Fault> {
-        let ip_graph = algo::compute_final_ip_graph(&local_ip, Some(&catalog))?;
+    pub fn check_graph_builds_okay(
+        local_ip: &Ip,
+        catalog: &Catalog,
+        priv_by_def: bool,
+    ) -> Result<(), Fault> {
+        let ip_graph = algo::compute_final_ip_graph(&local_ip, Some(&catalog), priv_by_def)?;
         let files = algo::build_ip_file_list(&ip_graph, &local_ip);
         let _global_graph = Plan::build_full_graph(&files)?;
         Ok(())

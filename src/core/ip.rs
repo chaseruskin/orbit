@@ -108,6 +108,8 @@ pub struct Ip {
     lock: LockFile,
     /// The UUID for the [Ip].
     uuid: Uuid,
+    /// Store if the [Ip] is the current/local ip.
+    is_local: bool,
 }
 
 impl From<IpPointer> for Ip {
@@ -119,6 +121,7 @@ impl From<IpPointer> for Ip {
             root: PathBuf::new(),
             data: man,
             lock: LockFile::new(),
+            is_local: false,
         }
     }
 }
@@ -142,6 +145,7 @@ impl From<IpArchive> for Ip {
             data: man,
             lock: lock,
             uuid: uuid,
+            is_local: false,
         }
     }
 }
@@ -326,6 +330,7 @@ impl Ip {
             data: man,
             lock: lock,
             uuid: uuid,
+            is_local: is_working_ip,
         })
     }
 
@@ -398,8 +403,10 @@ impl Ip {
         if self.mapping.is_physical() == false {
             return lut;
         }
-        // @todo: read units from metadata to speed up results
-        let units = self.collect_units(true, self.has_public_list()).unwrap();
+        // Tries to read units from metadata to speed up results (`force` = false)
+        let units = self
+            .collect_units(false, self.has_public_list(), false)
+            .unwrap();
         let checksum = Ip::read_cache_checksum(self.get_root()).unwrap();
 
         units.into_iter().for_each(|(key, _)| {
@@ -557,6 +564,30 @@ impl Ip {
     //     tbl["units"].as_array_mut().unwrap().set_trailing("\n");
     // }
 
+    /// Checks if all design units for the current ip are implicitly set as private by default.
+    ///
+    /// This function is used to help set the right visibility when collecting units for
+    /// the local ip.
+    pub fn force_all_units_private(&self, private_by_default: bool) -> bool {
+        self.is_local == true && self.has_public_list() == false && private_by_default
+    }
+
+    /// Checks if all units are private, meaning that a `public` field exists but did not
+    /// set any files to be public.
+    ///
+    /// This function is used for the local ip during the installation/publishing process.
+    pub fn found_all_units_private(&self, private_by_default: bool) -> Result<bool, CodeFault> {
+        Ok(self.has_public_list() == true
+            && self.collect_units(true, true, private_by_default)?.len() == 0)
+    }
+
+    /// Checks if there are zero design units found for this ip.
+    ///
+    /// This function is used for the local ip during the installation/publishing process.
+    pub fn found_zero_units(&self) -> Result<bool, CodeFault> {
+        Ok(self.collect_units(true, false, false)?.len() == 0)
+    }
+
     /// Gathers the list of primary design units for the current ip.
     ///
     /// If the manifest has an toml entry for `units` and `force` is set to `false`,
@@ -565,6 +596,7 @@ impl Ip {
         &self,
         force: bool,
         hide_private: bool,
+        private_by_default: bool,
     ) -> Result<HashMap<LangIdentifier, LangUnit>, CodeFault> {
         let public_list = self.into_public_list();
         // try to read from metadata file
@@ -577,8 +609,12 @@ impl Ip {
 
                 let mut map = lang::collect_units(&files)?;
 
+                // Set all design units by default to private
+                if self.force_all_units_private(private_by_default) {
+                    map.iter_mut()
+                        .for_each(|v| v.1.set_visibility(Visibility::Private))
                 // work to remove files that are totally private
-                if public_list.exists() == true {
+                } else if public_list.exists() == true {
                     // track which files are private and have no references or only private references
                     let mut private_set: HashSet<LangIdentifier> = map
                         .iter_mut()

@@ -85,6 +85,7 @@ impl UnitCache {
     }
 }
 
+/// Saved data for an ip located in the cache.
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct PkgCache {
     units: Vec<UnitCache>,
@@ -94,10 +95,10 @@ impl PkgCache {
     /// Creates all the desired cached contents to be stored alongside an installed ip.
     pub fn from_ip(ip: &Ip) -> Result<Self, Fault> {
         // generate the unit map
-        let umap = ip.collect_units(false, false)?;
+        let umap = ip.collect_units(false, false, false)?;
 
         // build using an empty catalog because we only care about local internal links among design units for caching data
-        let ip_graph = algo::compute_final_ip_graph(&ip, None)?;
+        let ip_graph = algo::compute_final_ip_graph(&ip, None, false)?;
         let files = algo::build_ip_file_list(&ip_graph, &ip);
         let global_graph = Plan::build_full_graph(&files)?;
 

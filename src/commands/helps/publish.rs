@@ -25,5 +25,6 @@ Options:
     --ready, -y           run the operation to completion
     --no-install          do not install the ip for future use
     --list                view available channels and exit
+    --all-public          publish with all source files being public
 
 Use 'orbit help publish' to read more about the command."#;

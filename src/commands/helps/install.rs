@@ -30,6 +30,7 @@ Options:
     --force               install the ip regardless of the cache slot occupancy
     --offline             skip checking coherency with source
     --list                view available protocols and exit
-    --all                 install all dependencies (including development)
+    --all-deps            install all dependencies (including development)
+    --all-public          install with all source files being public
 
 Use 'orbit help install' to read more about the command."#;

@@ -2,6 +2,6 @@
 name = "test"
 uuid = "9l9mhzukv5rkdadwrtosianii"
 version = "0.1.0"
-
+public = ["*.sv", "*.v", "*.vhd"]
 
 [dependencies]

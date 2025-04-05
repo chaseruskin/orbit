@@ -3,5 +3,6 @@ name = "lib"
 uuid = "esefn4auh48jjfz1g6xvwj48r"
 version = "0.1.0"
 library = "lib"
+public = ["*.sv", "*.v", "*.vhd"]
 
 [dependencies]

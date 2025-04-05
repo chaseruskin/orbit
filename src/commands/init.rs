@@ -57,7 +57,7 @@ impl Subcommand<Context> for Init {
         })
     }
 
-    fn execute(self, _: &Context) -> proc::Result {
+    fn execute(self, c: &Context) -> proc::Result {
         // TODO: verify the pkgid is not taken
 
         if self.uuid == true {
@@ -78,7 +78,7 @@ impl Subcommand<Context> for Init {
 
         let ip_name = New::extract_name(self.name.as_ref(), &dest)?;
 
-        match self.create_ip(&ip_name) {
+        match self.create_ip(&ip_name, c.are_units_private_by_default()) {
             Ok(r) => Ok(r),
             Err(e) => Err(Error::FailedToInitIp(LastError(e.to_string())))?,
         }
@@ -87,7 +87,7 @@ impl Subcommand<Context> for Init {
 
 impl Init {
     /// Initializes a project at an exising path.
-    fn create_ip(&self, ip: &PkgPart) -> AnyResult<()> {
+    fn create_ip(&self, ip: &PkgPart, priv_by_def: bool) -> AnyResult<()> {
         // verify the directory already exists
         if self.path.is_dir() == false || self.path.exists() == false {
             return Err(Box::new(AnyError(format!(
@@ -114,7 +114,7 @@ impl Init {
 
         // write the lockfile
         let local_ip = Ip::load(self.path.clone(), true, false)?;
-        Lock::write_new_lockfile(&local_ip, true)?;
+        Lock::write_new_lockfile(&local_ip, true, priv_by_def)?;
 
         info!(
             "initialized ip \"{}\"",

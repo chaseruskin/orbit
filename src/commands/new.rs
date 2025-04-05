@@ -55,7 +55,7 @@ impl Subcommand<Context> for New {
         })
     }
 
-    fn execute(self, _: &Context) -> proc::Result {
+    fn execute(self, c: &Context) -> proc::Result {
         // verify we are not already in an ip directory
         {
             // resolve any relative path
@@ -78,7 +78,7 @@ impl Subcommand<Context> for New {
 
         let ip_name = Self::extract_name(self.name.as_ref(), &self.path)?;
 
-        match self.create_ip(&ip_name) {
+        match self.create_ip(&ip_name, c.are_units_private_by_default()) {
             Ok(r) => Ok(r),
             Err(e) => Err(Error::FailedToCreateNewIp(LastError(e.to_string())))?,
         }
@@ -118,7 +118,7 @@ impl New {
 
 impl New {
     /// Creates a new directory at the given `dest` with a new manifest file.
-    fn create_ip(&self, ip: &PkgPart) -> AnyResult<()> {
+    fn create_ip(&self, ip: &PkgPart, priv_by_def: bool) -> AnyResult<()> {
         // create the directory
         std::fs::create_dir_all(&self.path)?;
 
@@ -145,7 +145,7 @@ impl New {
 
         // write the lockfile
         let local_ip = Ip::load(self.path.clone(), true, false)?;
-        Lock::write_new_lockfile(&local_ip, true)?;
+        Lock::write_new_lockfile(&local_ip, true, priv_by_def)?;
 
         // println!(
         //     "info: lockfile created at: {:?}",

@@ -6,14 +6,14 @@ version = 1
 name = "aka"
 version = "1.0.2"
 uuid = "7rpqp96p6pvpjkrg7pt8xcxfw"
-checksum = "2cf31cf9526b5a6ace01c4e43ae4bccf73abb0b1b78357c8e2fb3e0471044231"
+checksum = "b3d90665724d7cfc8f885444c67bf3aa71621538d90eb2333a84fc970314afac"
 dependencies = []
 
 [[ip]]
 name = "ao"
 version = "2.0.0"
 uuid = "cizi0nmsxmwztcek1b55eo7da"
-checksum = "f7f6e40a43bc28eca370cb0dd0d75d7c7919057b4f0a89114472f1951a829dbc"
+checksum = "58c5a0e39f03aa56bf2034aed509542d863fec0a5c6a3e5e94e680011b91056b"
 dependencies = ["aka+7rpqp96p6pvpjkrg7pt8xcxfw:1.0"]
 
 [[ip]]

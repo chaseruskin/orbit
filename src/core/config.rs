@@ -403,13 +403,18 @@ impl From<Configs> for Config {
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct General {
+    #[serde(rename = "require-public")]
+    require_public: Option<bool>,
     #[serde(rename = "target-dir")]
     target_dir: Option<String>,
 }
 
 impl General {
     pub fn new() -> Self {
-        Self { target_dir: None }
+        Self {
+            require_public: None,
+            target_dir: None,
+        }
     }
 
     pub fn get_build_dir(&self) -> String {
@@ -419,6 +424,10 @@ impl General {
             .clone()
     }
 
+    pub fn is_public_required(&self) -> bool {
+        self.require_public.as_ref().unwrap_or(&true).clone()
+    }
+
     /// Merges any populated data from `rhs` into attributes that do not already
     /// have data defined in `self`.
     pub fn merge(&mut self, rhs: Option<Self>) {
@@ -426,6 +435,10 @@ impl General {
             // no build dir defined so give it the value from `rhs`
             if self.target_dir.is_some() == false {
                 self.target_dir = rhs.target_dir
+            }
+            // no require public defined so give it the value from `rhs`
+            if self.require_public.is_some() == false {
+                self.require_public = rhs.require_public
             }
         }
     }

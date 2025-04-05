@@ -253,12 +253,12 @@
 </code></pre>
 <h3 id="the-general-section"><a class="header" href="#the-general-section">The <code>[general]</code> section</a></h3>
 <h3 id="the-require-public-field"><a class="header" href="#the-require-public-field">The <code>require-public</code> field</a></h3>
-<p>The <code>require-public</code> key determines if to assume source files are private by default. When true, all source files are private to the ip their created within unless their file path is found in ip manifest's <code>public</code> entry. When false, all source files are treated as public when the ip manifest's <code>public</code> entry is omitted.</p>
+<p>The <code>require-public</code> key determines if to assume source files are private by default. When true, all source files are private to their respective ip unless their file path is found in their ip manifest's <code>public</code> entry. When false, all source files are treated as public when their ip manifest's <code>public</code> entry is omitted.</p>
 <pre><code class="language-toml">[general]
 require-public = true
 # ...
 </code></pre>
-<p>By default, when this key is not specified, it is set true. See the ip manifest's reference on the <a href="./manifest.html#the-public-field">public</a> entry for more information about defining public source files.</p>
+<p>By default, this key is set true. This means all source files are assumed private by default, unless explicitly specified in their ip manifest's <code>public</code> entry. See the ip manifest's reference on the <a href="./manifest.html#the-public-field">public</a> entry for more information about specifying public source files.</p>
 <h3 id="the-target-dir-field"><a class="header" href="#the-target-dir-field">The <code>target-dir</code> field</a></h3>
 <p>The <code>target-dir</code> key defines the default output directory to create for the planning and building phases. This value can be overridden on the command-line when the <code>--target-dir</code> option is specified.</p>
 <pre><code class="language-toml">[general]

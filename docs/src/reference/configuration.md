@@ -83,7 +83,7 @@ include = [
 
 ### The `require-public` field
 
-The `require-public` key determines if to assume source files are private by default. When true, all source files are private to the ip their created within unless their file path is found in ip manifest's `public` entry. When false, all source files are treated as public when the ip manifest's `public` entry is omitted.
+The `require-public` key determines if to assume source files are private by default. When true, all source files are private to their respective ip unless their file path is found in their ip manifest's `public` entry. When false, all source files are treated as public when their ip manifest's `public` entry is omitted.
 
 ``` toml
 [general]
@@ -91,7 +91,7 @@ require-public = true
 # ...
 ```
 
-By default, when this key is not specified, it is set true. See the ip manifest's reference on the [public](./manifest.md#the-public-field) entry for more information about defining public source files.
+By default, this key is set true. This means all source files are assumed private by default, unless explicitly specified in their ip manifest's `public` entry. See the ip manifest's reference on the [public](./manifest.md#the-public-field) entry for more information about specifying public source files.
 
 ### The `target-dir` field
 

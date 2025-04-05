@@ -163,6 +163,7 @@
 <blockquote>
 <p><strong>Note:</strong> The manifest's file name is "Orbit.toml", with respect to case-sensitivity.</p>
 </blockquote>
+<h2 id="manifest-format"><a class="header" href="#manifest-format">Manifest format</a></h2>
 <p>Every manifest file consists of the following sections:</p>
 <ul>
 <li><a href="#the-ip-section">[ip]</a> - Defines an ip.
@@ -270,7 +271,7 @@ public = [
 ]
 </code></pre>
 <p>The <code>public</code> field can be used to explicitly specify which files are visible to other ip when being when being referenced as a dependency. The list contains glob-style patterns that conform to .gitignore file semantics, and are always compared relative that ip's root directory.</p>
-<p>If no <code>public</code> field is present, then all files are implicitly specified as visible (public) to other ip when being referenced as a dependency.</p>
+<p>If no <code>public</code> field is present, then all files are implicitly specified as invisible (private) to other ip when being referenced as a dependency. To change the default behavior when the <code>public</code> field is absent, see the configuration's <a href="./configuration.html#the-require-public-field">require-public</a> entry.</p>
 <p>When mixing un-ignore (<code>!</code>) and ignore patterns, the order matters. The latest glob in the list among any overlapping globs will be the one effectively used for that particular pattern.</p>
 <h3 id="the-include-field"><a class="header" href="#the-include-field">The <code>include</code> field</a></h3>
 <p>The <code>include</code> field can be used to explicitly specify which files to include during source code analysis.</p>

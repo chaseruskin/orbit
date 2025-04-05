@@ -171,13 +171,18 @@ is the 'latest' released version orbit can identify.</p>
 <code>--url</code> or <code>--path</code>), it will attempt to install the current working ip, if it
 exists.</p>
 <p>By default, any dependencies required only for development by the target ip are
-omitted from installation. To also install these dependencies, use <code>--all</code>.</p>
+omitted from installation. To also install these dependencies, use the
+<code>--all-deps</code> flag.</p>
 <p>If a protocol is recognized using <code>--protocol</code>, then an optional tag can also
 be supplied to help the protocol with providing any additional information it
 may require.</p>
-<p>The <code>--path</code> command can accept a file system path that is either 1) the root
+<p>The <code>--path</code> option can accept a file system path that is either 1) the root
 directory that contains the manifest file or 2) a zip archive file that when
 uncompressed, has the manifest file at the root directoy.</p>
+<p>The <code>--all-public</code> flag can be used to skip providing the "ip.public" field
+in the current ip's manifest, granting the assumption that all source files
+should be public. It can only be present when installing from a local ip and
+when the "ip.public" field does not exist.</p>
 <p>To remove ip from the catalog, see the <code>remove</code> command.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;ip&gt;</code><br />
@@ -196,8 +201,10 @@ uncompressed, has the manifest file at the root directoy.</p>
             Skip checking coherency with source</p>
 <p><code>--list</code><br />
             View available protocols and exit</p>
-<p><code>--all</code><br />
+<p><code>--all-deps</code><br />
             Install all dependencies (including development)</p>
+<p><code>--all-public</code><br />
+            Install with all source files being public</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit install
 orbit install lcd_driver:2.0

@@ -1852,6 +1852,7 @@ Yilinx_Path = "/Users/chase/fpga/bin/yilinx"
 <blockquote>
 <p><strong>Note:</strong> The manifest's file name is "Orbit.toml", with respect to case-sensitivity.</p>
 </blockquote>
+<h2 id="manifest-format"><a class="header" href="#manifest-format">Manifest format</a></h2>
 <p>Every manifest file consists of the following sections:</p>
 <ul>
 <li><a href="reference/manifest.html#the-ip-section">[ip]</a> - Defines an ip.
@@ -1959,7 +1960,7 @@ public = [
 ]
 </code></pre>
 <p>The <code>public</code> field can be used to explicitly specify which files are visible to other ip when being when being referenced as a dependency. The list contains glob-style patterns that conform to .gitignore file semantics, and are always compared relative that ip's root directory.</p>
-<p>If no <code>public</code> field is present, then all files are implicitly specified as visible (public) to other ip when being referenced as a dependency.</p>
+<p>If no <code>public</code> field is present, then all files are implicitly specified as invisible (private) to other ip when being referenced as a dependency. To change the default behavior when the <code>public</code> field is absent, see the configuration's <a href="reference/./configuration.html#the-require-public-field">require-public</a> entry.</p>
 <p>When mixing un-ignore (<code>!</code>) and ignore patterns, the order matters. The latest glob in the list among any overlapping globs will be the one effectively used for that particular pattern.</p>
 <h3 id="the-include-field"><a class="header" href="#the-include-field">The <code>include</code> field</a></h3>
 <p>The <code>include</code> field can be used to explicitly specify which files to include during source code analysis.</p>
@@ -2369,6 +2370,7 @@ precedence:
 <li><a href="reference/configuration.html#the-include-field">include</a> - Lists other <code>config.toml</code> files to process. This field is only allowed for the global configuration file.</li>
 <li><a href="reference/configuration.html#the-general-section">[general]</a> - The general settings.
 <ul>
+<li><a href="reference/configuration.html#the-require-public-field">require-public</a> - Assume source files to be private by default.</li>
 <li><a href="reference/configuration.html#the-target-dir-field">target-dir</a> - Default target directory.</li>
 </ul>
 </li>
@@ -2428,11 +2430,18 @@ precedence:
 ]
 </code></pre>
 <h3 id="the-general-section"><a class="header" href="#the-general-section">The <code>[general]</code> section</a></h3>
+<h3 id="the-require-public-field"><a class="header" href="#the-require-public-field">The <code>require-public</code> field</a></h3>
+<p>The <code>require-public</code> key determines if to assume source files are private by default. When true, all source files are private to the ip their created within unless their file path is found in ip manifest's <code>public</code> entry. When false, all source files are treated as public when the ip manifest's <code>public</code> entry is omitted.</p>
+<pre><code class="language-toml">[general]
+require-public = true
+# ...
+</code></pre>
+<p>By default, when this key is not specified, it is set true. See the ip manifest's reference on the <a href="reference/./manifest.html#the-public-field">public</a> entry for more information about defining public source files.</p>
 <h3 id="the-target-dir-field"><a class="header" href="#the-target-dir-field">The <code>target-dir</code> field</a></h3>
 <p>The <code>target-dir</code> key defines the default output directory to create for the planning and building phases. This value can be overridden on the command-line when the <code>--target-dir</code> option is specified.</p>
 <pre><code class="language-toml">[general]
-target-dir = "target"
 # ...
+target-dir = "target"
 </code></pre>
 <p>When this key is not defined, the default value for the build directory is "target".</p>
 <h3 id="the-test-section"><a class="header" href="#the-test-section">The <code>[test]</code> section</a></h3>
@@ -3147,7 +3156,10 @@ to verify its contents match those of the local ip.</p>
 within the channel known as the index. For every publish of an ip, the index
 corresponds to a unique path within the channel that gets created by Orbit.
 A channel's pre-publish and post-publish hooks can get the value for the ip's
-index by reading the ORBIT_IP_INDEX environment variable.</p>
+index by reading the ORBIT_CHANNEL_DIR environment variable.</p>
+<p>The <code>--all-public</code> flag can be used to skip providing the "ip.public" field
+in the current ip's manifest, granting the assumption that all source files
+should be public. It cannot be used if the "ip.public" field exists.</p>
 <p>By default, this command performs a dry run, which executes all of the steps
 in the process except for actually posting the ip to its channel(s).
 To run the command to completion, use the <code>--ready</code> option.</p>
@@ -3158,6 +3170,8 @@ To run the command to completion, use the <code>--ready</code> option.</p>
             Do not install the ip for future use</p>
 <p><code>--list</code><br />
             View available channels and exit</p>
+<p><code>--all-public</code><br />
+            Publish with all source files being public</p>
 <h2 id="examples-12"><a class="header" href="#examples-12"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit publish
 orbit publish --ready
@@ -3221,13 +3235,18 @@ is the 'latest' released version orbit can identify.</p>
 <code>--url</code> or <code>--path</code>), it will attempt to install the current working ip, if it
 exists.</p>
 <p>By default, any dependencies required only for development by the target ip are
-omitted from installation. To also install these dependencies, use <code>--all</code>.</p>
+omitted from installation. To also install these dependencies, use the
+<code>--all-deps</code> flag.</p>
 <p>If a protocol is recognized using <code>--protocol</code>, then an optional tag can also
 be supplied to help the protocol with providing any additional information it
 may require.</p>
-<p>The <code>--path</code> command can accept a file system path that is either 1) the root
+<p>The <code>--path</code> option can accept a file system path that is either 1) the root
 directory that contains the manifest file or 2) a zip archive file that when
 uncompressed, has the manifest file at the root directoy.</p>
+<p>The <code>--all-public</code> flag can be used to skip providing the "ip.public" field
+in the current ip's manifest, granting the assumption that all source files
+should be public. It can only be present when installing from a local ip and
+when the "ip.public" field does not exist.</p>
 <p>To remove ip from the catalog, see the <code>remove</code> command.</p>
 <h2 id="options-11"><a class="header" href="#options-11"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;ip&gt;</code><br />
@@ -3246,8 +3265,10 @@ uncompressed, has the manifest file at the root directoy.</p>
             Skip checking coherency with source</p>
 <p><code>--list</code><br />
             View available protocols and exit</p>
-<p><code>--all</code><br />
+<p><code>--all-deps</code><br />
             Install all dependencies (including development)</p>
+<p><code>--all-public</code><br />
+            Install with all source files being public</p>
 <h2 id="examples-14"><a class="header" href="#examples-14"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit install
 orbit install lcd_driver:2.0

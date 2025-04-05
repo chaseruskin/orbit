@@ -177,7 +177,10 @@ to verify its contents match those of the local ip.</p>
 within the channel known as the index. For every publish of an ip, the index
 corresponds to a unique path within the channel that gets created by Orbit.
 A channel's pre-publish and post-publish hooks can get the value for the ip's
-index by reading the ORBIT_IP_INDEX environment variable.</p>
+index by reading the ORBIT_CHANNEL_DIR environment variable.</p>
+<p>The <code>--all-public</code> flag can be used to skip providing the "ip.public" field
+in the current ip's manifest, granting the assumption that all source files
+should be public. It cannot be used if the "ip.public" field exists.</p>
 <p>By default, this command performs a dry run, which executes all of the steps
 in the process except for actually posting the ip to its channel(s).
 To run the command to completion, use the <code>--ready</code> option.</p>
@@ -188,6 +191,8 @@ To run the command to completion, use the <code>--ready</code> option.</p>
             Do not install the ip for future use</p>
 <p><code>--list</code><br />
             View available channels and exit</p>
+<p><code>--all-public</code><br />
+            Publish with all source files being public</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit publish
 orbit publish --ready

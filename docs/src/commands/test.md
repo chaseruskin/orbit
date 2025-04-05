@@ -70,7 +70,7 @@ which is $ORBIT_OUT_DIR.
 `--fileset <key=glob>...`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; A glob-style pattern identified by name to include in the blueprint
 
-`--no-clean`  
+`--keep, -k`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Do not clean the target folder before execution
 
 `--force`  

@@ -50,7 +50,7 @@ DESCRIPTION
     
     Every time this command is called, it attempts to clean the temporary
     directory where it saves resulting files. To keep existing files on the next
-    call of this command, use the '--no-clean' option.
+    call of this command, use the '--keep' option.
 
 OPTIONS
     <unit>
@@ -74,7 +74,7 @@ OPTIONS
     --limit <n>
         Maximum number of source code lines to return
 
-    --no-clean
+    --keep, -k
         Do not clean the temporary directory of existing files
 
     --locate

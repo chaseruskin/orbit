@@ -70,7 +70,7 @@ impl Subcommand<Context> for Read {
             // flags
             save: cli.check(Arg::flag("save"))?,
             locate: cli.check(Arg::flag("locate"))?,
-            no_clean: cli.check(Arg::flag("no-clean"))?,
+            no_clean: cli.check(Arg::flag("keep").switch('k'))?,
             // options
             limit: cli.get(Arg::option("limit").value("n"))?,
             ip: cli.get(Arg::option("ip").value("spec"))?,

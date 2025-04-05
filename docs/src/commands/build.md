@@ -70,7 +70,7 @@ which is $ORBIT_OUT_DIR.
 `--force`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Force the target to execute 
 
-`--no-clean`  
+`--keep, -k`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Do not clean the target folder before execution
 
 `--verbose`  

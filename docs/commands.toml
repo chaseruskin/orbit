@@ -142,7 +142,7 @@ ip.
 
 Every time this command is called, it attempts to clean the temporary
 directory where it saves resulting files. To keep existing files on the next
-call of this command, use the `--no-clean` option.
+call of this command, use the `--keep` option.
 """
 
 args."<unit>" = "Read the file for this primary design unit"
@@ -153,7 +153,7 @@ options."--save" = "Write the results to a temporary read-only file"
 options."--start <code>" = "Start the lookup after jumping to this code snippet"
 options."--end <code>" = "Stop the lookup after finding this code snippet"
 options."--limit <n>" = "Maximum number of source code lines to return"
-options."--no-clean" = "Do not clean the temporary directory of existing files"
+options."--keep, -k" = "Do not clean the temporary directory of existing files"
 options."--locate" = "Append the line and column number to the resulting file"
 
 examples = """
@@ -367,7 +367,7 @@ options."--command <path>" = "Overwrite the target's command"
 options."--list" = "View available targets and exit"
 options."--all" = "Include all hdl files of the working ip"
 options."--fileset <key=glob>..." = "A glob-style pattern identified by name to include in the blueprint"
-options."--no-clean" = "Do not clean the target folder before execution"
+options."--keep, -k" = "Do not clean the target folder before execution"
 options."--force" = "Force the target to execute "
 options."--verbose" = "Display the command being executed"
 options."args" = "Arguments to pass to the target"
@@ -424,7 +424,7 @@ options."--list" = "View available targets and exit"
 options."--all" = "Include all hdl files of the working ip"
 options."--fileset <key=glob>..." = "A glob-style pattern identified by name to include in the blueprint"
 options."--force" = "Force the target to execute "
-options."--no-clean" = "Do not clean the target folder before execution"
+options."--keep, -k" = "Do not clean the target folder before execution"
 options."--verbose" = "Display the command being executed"
 options."args" = "Arguments to pass to the target"
 

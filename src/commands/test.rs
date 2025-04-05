@@ -63,7 +63,7 @@ impl Subcommand<Context> for Test {
             verbose: cli.check(Arg::flag("verbose"))?,
             force: cli.check(Arg::flag("force"))?,
             all: cli.check(Arg::flag("all"))?,
-            dirty: cli.check(Arg::flag("no-clean"))?,
+            dirty: cli.check(Arg::flag("keep").switch('k'))?,
             // Options
             dut: cli.get(Arg::option("dut").value("unit"))?,
             bench: cli.get(Arg::option("tb").value("unit"))?,

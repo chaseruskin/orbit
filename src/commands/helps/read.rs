@@ -31,7 +31,7 @@ Options:
     --start <code>        start the lookup after jumping to this code snippet
     --end <code>          stop the lookup after finding this code snippet
     --limit <n>           maximum number of source code lines to return
-    --no-clean            do not clean the temporary directory of existing files
+    --keep, -k            do not clean the temporary directory of existing files
     --locate              append the line and column number to the resulting file
 
 Use 'orbit help read' to read more about the command."#;

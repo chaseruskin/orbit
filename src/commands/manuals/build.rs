@@ -80,7 +80,7 @@ OPTIONS
     --force
         Force the target to execute 
 
-    --no-clean
+    --keep, -k
         Do not clean the target folder before execution
 
     --verbose

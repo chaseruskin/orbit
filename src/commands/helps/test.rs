@@ -32,7 +32,7 @@ Options:
     --all                 include all hdl files of the working ip
     --fileset <key=glob>...
                           a glob-style pattern identified by name to include in the blueprint
-    --no-clean            do not clean the target folder before execution
+    --keep, -k            do not clean the target folder before execution
     --force               force the target to execute 
     --verbose             display the command being executed
     args                  arguments to pass to the target

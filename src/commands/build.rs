@@ -64,7 +64,7 @@ impl Subcommand<Context> for Build {
             verbose: cli.check(Arg::flag("verbose"))?,
             force: cli.check(Arg::flag("force"))?,
             all: cli.check(Arg::flag("all"))?,
-            dirty: cli.check(Arg::flag("no-clean"))?,
+            dirty: cli.check(Arg::flag("keep").switch('k'))?,
             // Options
             top: cli.get(Arg::option("top").value("unit"))?,
             plan: cli.get(Arg::option("plan").value("format"))?,

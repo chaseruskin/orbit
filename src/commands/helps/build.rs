@@ -32,7 +32,7 @@ Options:
     --fileset <key=glob>...
                           a glob-style pattern identified by name to include in the blueprint
     --force               force the target to execute 
-    --no-clean            do not clean the target folder before execution
+    --keep, -k            do not clean the target folder before execution
     --verbose             display the command being executed
     args                  arguments to pass to the target
 

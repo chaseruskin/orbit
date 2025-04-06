@@ -1867,7 +1867,6 @@ Yilinx_Path = "/Users/chase/fpga/bin/yilinx"
 <li><a href="reference/manifest.html#the-source-field">source</a> - The URL for remotely retrieving the ip.</li>
 <li><a href="reference/manifest.html#the-channels-field">channels</a> - The channels to update when publishing the ip.</li>
 <li><a href="reference/manifest.html#the-public-field">public</a> - Files to be visible to other ip.</li>
-<li><a href="reference/manifest.html#the-include-field">include</a> - Files to include during file discovery.</li>
 <li><a href="reference/manifest.html#the-exclude-field">exclude</a> - Files to exclude during file discovery.</li>
 <li><a href="reference/manifest.html#the-readme-field">readme</a> - The path to the README file.</li>
 <li><a href="reference/manifest.html#the-metadata-section">[metadata]</a> - An unchecked section for custom fields.</li>
@@ -1962,21 +1961,28 @@ public = [
 <p>The <code>public</code> field can be used to explicitly specify which files are visible to other ip when being when being referenced as a dependency. The list contains glob-style patterns that conform to .gitignore file semantics, and are always compared relative that ip's root directory.</p>
 <p>If no <code>public</code> field is present, then all files are implicitly specified as invisible (private) to other ip when being referenced as a dependency. To change the default behavior when the <code>public</code> field is absent, see the configuration's <a href="reference/./configuration.html#the-require-public-field">require-public</a> entry.</p>
 <p>When mixing un-ignore (<code>!</code>) and ignore patterns, the order matters. The latest glob in the list among any overlapping globs will be the one effectively used for that particular pattern.</p>
-<h3 id="the-include-field"><a class="header" href="#the-include-field">The <code>include</code> field</a></h3>
-<p>The <code>include</code> field can be used to explicitly specify which files to include during source code analysis.</p>
-<pre><code class="language-toml">[ip]
-# ...
-include = ["rtl/"]
-</code></pre>
-<p>Using <code>include</code> and <code>exclude</code> is mutually exclusive; setting <code>include</code> will override any value of <code>exclude</code>. If <code>include</code> and <code>exclude</code> are omitted, then all files from the root of the ip will be included.</p>
 <h3 id="the-exclude-field"><a class="header" href="#the-exclude-field">The <code>exclude</code> field</a></h3>
-<p>The <code>exclude</code> field can be used to explicitly specify which files to exclude during source code analysis.</p>
+<p>The <code>exclude</code> field is an array of strings that can be used to explicitly specify which files are omitted from file discovery and source code analysis. The patterns specified in the <code>exclude</code> field identify a set of files that are not included. The patterns for this field follow .gitignore file semantics, such as using special meanings for <code>*</code> and <code>!</code> symbols.</p>
 <pre><code class="language-toml">[ip]
 # ...
-exclude = ["deprec/"]
+exclude = [
+    "scrap/",
+    ".*.vhd"
+]
 </code></pre>
-<p>Using <code>include</code> and <code>exclude</code> is mutually exclusive; setting <code>include</code> will override any value of <code>exclude</code>. If <code>include</code> and <code>exclude</code> are omitted, then all files from the root of the ip will be included.</p>
-<p>Files that are always excluded are those found in directories that contain a "CACHEDIR.TAG" file. For example, every target output directory Orbit creates is excluded because they contain this file.</p>
+<p>The default if this field is not specified is to include all files from the root of the ip, except for the exclusions below.</p>
+<p>Regardless of whether <code>exclude</code> is specified, the following files are always excluded:</p>
+<ul>
+<li>Any sub-ips will be skipped (any subdirectory that contains an <code>Orbit.toml</code> file)</li>
+<li>Any directories with file named "CACHEDIR.TAG" (this file denotes a target directory)</li>
+<li>Any files ignored by version control (such as those listed in a <code>.gitignore</code> file)</li>
+</ul>
+<p>The following files are always included:</p>
+<ul>
+<li>The <code>Orbit.toml</code> file of the ip itself is always included</li>
+<li>The <code>Orbit.lock</code> file of the ip itself is always included</li>
+</ul>
+<p>When mixing un-ignore (<code>!</code>) and ignore patterns in the <code>exclude</code> entry, the order matters. The latest glob in the list among any overlapping globs will be the one effectively used for that particular pattern.</p>
 <h3 id="the-readme-field"><a class="header" href="#the-readme-field">The <code>readme</code> field</a></h3>
 <p>The <code>readme</code> field should be the path to a file in the ip root (relative to this Orbit.toml) that contains general information about the ip.</p>
 <pre><code class="language-toml">[ip]
@@ -2421,7 +2427,7 @@ precedence:
 </ul>
 </li>
 </ul>
-<h3 id="the-include-field-1"><a class="header" href="#the-include-field-1">The <code>include</code> field</a></h3>
+<h3 id="the-include-field"><a class="header" href="#the-include-field">The <code>include</code> field</a></h3>
 <p>The <code>include</code> entry is an array of strings that are file paths to other Orbit configuration files. Relative paths are resolved relative to the directory where the configuration file that defines them exists. Only the global configuration file is allowed to have this key.</p>
 <pre><code class="language-toml">include = [
     "profiles/p1/config.toml",

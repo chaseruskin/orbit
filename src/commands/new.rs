@@ -23,7 +23,6 @@ use crate::core::lang::vhdl::token::Identifier;
 use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
 use crate::core::pkgid::PkgPart;
 use crate::error::{Error, Hint, LastError};
-use crate::util::filesystem::Standardize;
 use crate::*;
 use std::borrow::Cow;
 use std::io::Write;
@@ -57,13 +56,13 @@ impl Subcommand<Context> for New {
 
     fn execute(self, c: &Context) -> proc::Result {
         // verify we are not already in an ip directory
-        {
-            // resolve any relative path
-            let dest = PathBuf::standardize(self.path.clone());
-            if let Some(p) = Context::find_ip_path(&dest) {
-                return Err(Error::IpExistsAtPath(p))?;
-            }
-        }
+        // {
+        //     // resolve any relative path
+        //     let dest = PathBuf::standardize(self.path.clone());
+        //     if let Some(p) = Context::find_ip_path(&dest) {
+        //         return Err(Error::IpExistsAtPath(p))?;
+        //     }
+        // }
 
         // verify the path does not exist
         if self.path.exists() == true {

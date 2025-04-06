@@ -28,6 +28,8 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Renames `ORBIT_CHAN_INDEX` environment variable to `ORBIT_CHANNEL_DIR` to be used during the publishing process
 - Allows `version` entry in the manifest to be optional (defaults to 0.0.0)
 - Adjusts how protocols are listed using `orbit install --list` to be consistent with the format for listing targets (`orbit build --list`) and listing channels (`orbit publish --list`)
+- Allows ips to be nested within one another, however, the nested ip is ignored during file discovery for the parent ip
+- Removes `include` entry from manifest as `exclude` can provide same functionality now that it follows .gitignore semantics (such as `!` symbol)
 
 ## 0.24.0
 

@@ -19,6 +19,7 @@ use crate::core::context::CACHE_TAG_FILE;
 use crate::core::fileset;
 use crate::core::lockfile;
 use crate::core::manifest;
+use crate::core::manifest::IP_MANIFEST_FILE;
 use fs_extra;
 use home::home_dir;
 use ignore::WalkBuilder;
@@ -41,11 +42,23 @@ use super::anyerror::Fault;
 /// final [String] entries in the resulting vector.
 ///
 /// Ignores ORBIT_SUM_FILE, .git directory, ORBIT_METADATA_FILE, and IP_LOCK_FILE.
+///
+/// Always ignores folder with a CACHEDIR.TAG file or folders with a Orbit.toml file (besides the
+/// current starting directory).
 pub fn gather_current_files(path: &PathBuf, strip_base: bool) -> Vec<String> {
-    let walker = WalkBuilder::new(path)
+    let start_path = path.clone();
+    let walker = WalkBuilder::new(&path)
         .hidden(false)
-        .filter_entry(|p| {
+        // NOTE: Whatever filters are applied, be sure to update the `copy` function as well!
+        .filter_entry(move |p| {
+            // Always ignore folders with the CACHEDIR.TAG file
             if p.path().is_dir() && p.path().join(CACHE_TAG_FILE).exists() == true {
+                false
+            // Always ignore folders with another Orbit.toml manifest file
+            } else if p.path() != start_path.as_path()
+                && p.path().is_dir()
+                && p.path().join(IP_MANIFEST_FILE).exists() == true
+            {
                 false
             } else {
                 match p.file_name().to_str().unwrap() {
@@ -212,11 +225,20 @@ pub fn copy(
     // gather list of paths to copy
     let mut from_paths = Vec::new();
 
+    let start_path = source.clone();
+
     let mut walker = WalkBuilder::new(&source);
     walker.hidden(minimal);
     if minimal == true {
-        walker.filter_entry(|f| {
+        walker.filter_entry(move |f| {
+            // Always ignore folder with CACHEDIR.TAG file
             if f.path().is_dir() && f.path().join(CACHE_TAG_FILE).exists() {
+                false
+            // Always ignore folders with another Orbit.toml manifest file
+            } else if f.path() != start_path.as_path()
+                && f.path().is_dir()
+                && f.path().join(IP_MANIFEST_FILE).exists() == true
+            {
                 false
             } else {
                 true

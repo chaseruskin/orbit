@@ -65,16 +65,15 @@ impl Subcommand<Context> for Init {
             return Ok(());
         }
 
-        // TODO: refactor due to heavy overlap with 'new' command
-
         // resolve any relative path
         let dest = filesystem::full_normal(&self.path);
+
         // verify we are not already in an ip directory
-        {
-            if let Some(p) = Context::find_ip_path(&dest) {
-                return Err(Error::IpExistsAtPath(p))?;
-            }
-        }
+        // {
+        //     if let Some(p) = Context::find_ip_path(&dest) {
+        //         return Err(Error::IpExistsAtPath(p))?;
+        //     }
+        // }
 
         let ip_name = New::extract_name(self.name.as_ref(), &dest)?;
 

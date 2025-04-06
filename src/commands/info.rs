@@ -120,11 +120,11 @@ impl Subcommand<Context> for Info {
                 };
                 if let Some(mut cache) = cache_data {
                     let mut units = cache.get_units_mut();
-                    println!("{}", Self::format_cached_units_table(&mut units, self.all));
+                    print!("{}", Self::format_cached_units_table(&mut units, self.all));
                 } else {
                     // force computing the primary design units if a physical ip (non-archived)
                     let units = ip.collect_units(true, false, c.are_units_private_by_default())?;
-                    println!(
+                    print!(
                         "{}",
                         Self::format_units_table(
                             units.into_iter().map(|(_, unit)| unit).collect(),
@@ -215,8 +215,6 @@ impl Info {
                 unit.get_visibility().to_string(),
             ));
         }
-        // pop the last \n
-        result.pop();
         result
     }
 
@@ -244,8 +242,6 @@ impl Info {
                 unit.get_visibility().to_string(),
             ));
         }
-        // pop the last \n
-        result.pop();
         result
     }
 }

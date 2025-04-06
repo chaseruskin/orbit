@@ -318,7 +318,6 @@ impl Manifest {
                 public: None,
                 library: None,
                 readme: None,
-                include: None,
                 exclude: None,
                 authors: None,
                 metadata: HashMap::new(),
@@ -500,8 +499,8 @@ pub struct Package {
     channels: Option<Vec<String>>,
     /// Filepaths that should be explictly known to the user for ip referencing
     public: Option<Vec<String>>,
-    /// Filepaths that should be explicitly included during source code analysis
-    include: Option<Vec<String>>,
+    // /// Filepaths that should be explicitly included during source code analysis
+    // include: Option<Vec<String>>,
     /// Filepaths that should be explicitly excluded during source code analysis
     exclude: Option<Vec<String>>,
     /// Filepath to the project's README.
@@ -557,9 +556,9 @@ impl Package {
         &self.readme
     }
 
-    pub fn get_include(&self) -> &Option<Vec<String>> {
-        &self.include
-    }
+    // pub fn get_include(&self) -> &Option<Vec<String>> {
+    //     &self.include
+    // }
 
     pub fn get_exclude(&self) -> &Option<Vec<String>> {
         &self.exclude

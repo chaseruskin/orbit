@@ -691,22 +691,22 @@ impl Ip {
         }
     }
 
-    pub fn get_include_list(&self) -> Result<VipList, Fault> {
-        VipList::new(&self.root, self.get_man().get_ip().get_include().as_ref())
-    }
+    // pub fn get_include_list(&self) -> Result<VipList, Fault> {
+    //     VipList::new(&self.root, self.get_man().get_ip().get_include().as_ref())
+    // }
 
     pub fn get_exclude_list(&self) -> Result<VipList, Fault> {
         VipList::new(&self.root, self.get_man().get_ip().get_exclude().as_ref())
     }
 
     pub fn gather_current_files(&self) -> Vec<String> {
-        let inc = match self.get_include_list() {
-            Ok(vip) => match vip.exists() {
-                true => Some(vip),
-                false => None,
-            },
-            Err(_) => None,
-        };
+        // let inc = match self.get_include_list() {
+        //     Ok(vip) => match vip.exists() {
+        //         true => Some(vip),
+        //         false => None,
+        //     },
+        //     Err(_) => None,
+        // };
         let exc = match self.get_exclude_list() {
             Ok(vip) => match vip.exists() {
                 true => Some(vip),
@@ -716,12 +716,17 @@ impl Ip {
         };
         filesystem::gather_current_files(&self.root, false)
             .into_iter()
-            .filter(|f| match &inc {
-                Some(vip) => vip.is_included(f.as_ref()) == true,
-                None => match &exc {
-                    Some(vip) => vip.is_included(f.as_ref()) == false,
-                    None => true,
-                },
+            .filter(|f| {
+                if f.ends_with(&format!("/{}", IP_MANIFEST_FILE))
+                    || f.ends_with(&format!("/{}", IP_LOCK_FILE))
+                {
+                    true
+                } else {
+                    match &exc {
+                        Some(vip) => vip.is_included(f.as_ref()) == false,
+                        None => true,
+                    }
+                }
             })
             .collect()
     }

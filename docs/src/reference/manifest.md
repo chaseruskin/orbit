@@ -19,7 +19,6 @@ Every manifest file consists of the following sections:
     - [source](#the-source-field) - The URL for remotely retrieving the ip.
     - [channels](#the-channels-field) - The channels to update when publishing the ip.
     - [public](#the-public-field) - Files to be visible to other ip.
-    - [include](#the-include-field) - Files to include during file discovery.
     - [exclude](#the-exclude-field) - Files to exclude during file discovery.
     - [readme](#the-readme-field) - The path to the README file.
     - [[metadata]](#the-metadata-section) - An unchecked section for custom fields.
@@ -170,31 +169,31 @@ If no `public` field is present, then all files are implicitly specified as invi
 
 When mixing un-ignore (`!`) and ignore patterns, the order matters. The latest glob in the list among any overlapping globs will be the one effectively used for that particular pattern.
 
-### The `include` field
-
-The `include` field can be used to explicitly specify which files to include during source code analysis.
-
-``` toml
-[ip]
-# ...
-include = ["rtl/"]
-```
-
-Using `include` and `exclude` is mutually exclusive; setting `include` will override any value of `exclude`. If `include` and `exclude` are omitted, then all files from the root of the ip will be included.
-
 ### The `exclude` field
 
-The `exclude` field can be used to explicitly specify which files to exclude during source code analysis.
+The `exclude` field is an array of strings that can be used to explicitly specify which files are omitted from file discovery and source code analysis. The patterns specified in the `exclude` field identify a set of files that are not included. The patterns for this field follow .gitignore file semantics, such as using special meanings for `*` and `!` symbols.
 
 ``` toml
 [ip]
 # ...
-exclude = ["deprec/"]
+exclude = [
+    "scrap/",
+    ".*.vhd"
+]
 ```
 
-Using `include` and `exclude` is mutually exclusive; setting `include` will override any value of `exclude`. If `include` and `exclude` are omitted, then all files from the root of the ip will be included.
+The default if this field is not specified is to include all files from the root of the ip, except for the exclusions below. 
 
-Files that are always excluded are those found in directories that contain a "CACHEDIR.TAG" file. For example, every target output directory Orbit creates is excluded because they contain this file.
+Regardless of whether `exclude` is specified, the following files are always excluded:
+- Any sub-ips will be skipped (any subdirectory that contains an `Orbit.toml` file)
+- Any directories with file named "CACHEDIR.TAG" (this file denotes a target directory)
+- Any files ignored by version control (such as those listed in a `.gitignore` file)
+
+The following files are always included:
+- The `Orbit.toml` file of the ip itself is always included
+- The `Orbit.lock` file of the ip itself is always included
+
+When mixing un-ignore (`!`) and ignore patterns in the `exclude` entry, the order matters. The latest glob in the list among any overlapping globs will be the one effectively used for that particular pattern.
 
 ### The `readme` field
 

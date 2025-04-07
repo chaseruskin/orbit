@@ -9,37 +9,36 @@
 
 - [Tutorials](./tutorials/tutorials.md)
     - [First Project: Gates](./tutorials/first_project.md)
-    - [Dependencies: Half adder](./tutorials/dependencies.md)
+    - [Dependencies: Half Adder](./tutorials/dependencies.md)
     - [Gates: Revisited](./tutorials/gates_revisited.md)
-    - [Final Project: Full adder](./tutorials/final_project.md)
+    - [Final Project: Full Adder](./tutorials/final_project.md)
 
 - [User Guide](./user/user.md)
     - [Overview](./user/overview.md)
+    - [Researching Ip](./user/researching_ip.md)
+    - [Developing Ip](./user/developing_ip.md)
+    - [Releasing Ip](./user/releasing_ip.md)
     - [Creating Targets](./user/creating_targets.md)
     - [Creating Channels](./user/creating_channels.md)
-    <!-- - [Discovering Ip](./user/discovering.md) -->
-    <!-- - [Developing Ip](./user/developing.md) -->
-    <!-- - [Releasing Ip](./user/releasing.md) -->
-    <!-- - [Creating Channels](./user/creating_channels.md) -->
 
 - [Topic Guide](./topic/topic.md)
-    - [Overview](./topic/overview.md) <!-- good -->
-    - [Agile Package Management](./topic/package_management.md) <!-- good -->
-    - [Extensible Builds](./topic/extensible_builds.md) <!-- good -->
-    - [Catalog](./topic/catalog.md) <!-- good -->
-    - [Ip](./topic/ip.md) <!-- good -->
+    - [Overview](./topic/overview.md)
+    - [Agile Package Management](./topic/package_management.md)
+    - [Extensible Builds](./topic/extensible_builds.md)
+    - [Catalog](./topic/catalog.md)
+    - [Ip](./topic/ip.md)
     - [Targets](./topic/targets.md)
     - [Protocols](./topic/protocols.md)
     - [Channels](./topic/channels.md)
-    - [Orbit.lock](./topic/orbitlock.md) <!-- good -->
-    - [Design Unit Scope](./topic/scope.md) <!-- good -->
-    - [String Swapping](./topic/swapping.md) <!-- 1.0.0 ... check swap tables --> 
+    - [Orbit.lock](./topic/orbitlock.md)
+    - [Design Unit Scope](./topic/scope.md)
+    - [String Swapping](./topic/swapping.md)
     - [Dynamic Symbol Transformation](./topic/dst.md)
 
 - [Reference](./reference/reference.md)
-    - [Manifest](./reference/manifest.md) <!-- 1.0.0 -->
-    - [Names](./reference/names.md) <!-- 1.0.0 -->
-    - [Versions](./reference/versions.md) <!-- 1.0.0 -->
+    - [Manifest](./reference/manifest.md)
+    - [Names](./reference/names.md)
+    - [Versions](./reference/versions.md)
     - [Filesets](./reference/filesets.md)
     - [Blueprint](./reference/blueprint.md)
     - [Environment Variables](./reference/environment_variables.md)

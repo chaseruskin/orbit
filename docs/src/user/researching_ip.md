@@ -2,6 +2,9 @@
 
 During the lifecycle of an ip, the first step in the process is typically to research existing work and identify any components which may be of value in reusing as a dependency for the new ip. This section highlights different ways to discover and gain information about existing ips and their design units.
 
+The guides in this section place no assumption on where your working directory is when running any commands; that is, these commands can be ran from any directory.
+
+
 ### Viewing existing ip
 
 This guide outlines how to see what ips exist on your system in your catalog that could be potentially used as a dependency.
@@ -48,7 +51,7 @@ This guide outlines how to view a design unit's declaration for a particular des
 $ orbit get <unit> --ip <ip>:<version>
 ```
 
-### Reading source code of an ip
+### Reading source code of a design unit
 
 This guide outlines how to view the source code for a particular design unit of an ip found in the catalog.
 

@@ -2,22 +2,105 @@
 
 Once existing work has been evaluated and the requirements for an ip are defined, the next step is typically to begin developing the actual logic for the ip. This section walks through the common steps to building new ip and integrating with existing ip.
 
+### Assumptions
+
 The guides in this section, except for the ones on creation and initialization of an ip, assume you are running commands from the root directory or any subdirectory of the current ip. The current ip, also sometimes referred to as the local ip, is the ip being actively developed.
+
+### Guides
+- [Creating a new ip](#creating-a-new-ip)
+- [Initializing an existing project as an ip](#initializing-an-existing-project-as-an-ip)
+- [Integrating a design unit internal to the current ip](#integrating-a-design-unit-internal-to-the-current-ip)
+- [Integrating a design unit external to the current ip](#integrating-a-design-unit-external-to-the-current-ip)
+- [Running a test](#running-a-test)
+- [Running a build](#running-a-build)
 
 ### Creating a new ip
 
+1. Create a new directory as an Orbit ip by also creating a basic manifest file, where `<ip>` is the name of the new directory as well as the name of the newly created ip:
+```
+$ orbit new <ip>
+```
+
+2. Enter the root directory for the newly created ip to begin working within it, where `<ip>` is the name of the newly created ip's directory:
+```
+$ cd <ip>
+```
 
 ### Initializing an existing project as an ip
 
+1. Enter the root directory for the existing project, where `<project>` is the root directory:
+```
+$ cd <project>
+```
 
-### Integrating a design unit from within the current ip
+2. Initialize the current working directory as an Orbit ip by creating a basic manifest file, where `<ip>` is the name of the newly initialized ip:
+```
+$ orbit init --name <ip>
+```
 
+### Integrating a design unit internal to the current ip
 
-### Integrating a design unit from outside the current ip
+1. Add the necessary code in the current ip's source files referencing the internal design unit as normal. For design units that are entities or modules, return code snippets that can be used to declare IO signals and instantiate the design unit:
+```
+$ orbit get <unit> --signals --instance
+```
 
+### Integrating a design unit external to the current ip
+
+1. Add the external ip as a dependency to the current ip's manifest, where `<ip>` is the name of the external ip and `<version>` is the version of the external ip:
+``` toml
+[dependencies]
+# ...
+<ip> = "<version>"
+```
+
+2. Add the necessary code in the current ip's source files referencing the external design unit as normal. For design units that are entities or modules, return code snippets that can be used to declare IO signals and instantiate the design unit:
+```
+$ orbit get <unit> --ip <ip>:<version> --signals --instance
+```
+
+For more ways on how to add dependencies, see [Specifying Dependencies](./specifying_deps.md).
 
 ### Running a test
 
+1. View the list of available targets configured to run using the test entry point:
+```
+$ orbit test --list
+```
+
+2. Return the configuration data of a particular test target, where `<target>` is the name of the target of interest:
+```
+$ orbit test --list --target <target>
+```
+
+3. Start the build process using the test entry point for a particular testbench and particular target, where `<unit>` is the testbench name of interest and `<target>` is the name of the desired target:
+```
+$ orbit test --tb <unit> --target <target>
+```
+
+4. Start the build process using the test entry point while providing additional arguments `<args>...` that will be passed to the target's command during the execution stage, where `<unit>` is the testbench name of interest and `<target>` is the name of the desired target:
+```
+$ orbit test --tb <unit> --target <target> -- <args>...
+```
 
 ### Running a build
 
+1. View the list of available targets configured to run using the build entry point:
+```
+$ orbit build --list
+```
+
+2. Return the configuration data of a particular build target, where `<target>` is the name of the target of interest:
+```
+$ orbit build --list --target <target>
+```
+
+3. Start the build process using the build entry point for a particular top-level design unit and particular target, where `<unit>` is the top-level name of interest and `<target>` is the name of the desired target:
+```
+$ orbit build --top <unit> --target <target>
+```
+
+4. Start the build process using the build entry point while providing additional arguments `<args>...` that will be passed to the target's command during the execution stage, where `<unit>` is the top-level name of interest and `<target>` is the name of the desired target:
+```
+$ orbit build --top <unit> --target <target> -- <args>...
+```

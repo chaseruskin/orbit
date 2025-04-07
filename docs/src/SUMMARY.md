@@ -20,6 +20,7 @@
     - [Releasing Ip](./user/releasing_ip.md)
     - [Creating Targets](./user/creating_targets.md)
     - [Creating Channels](./user/creating_channels.md)
+    - [Specifying Dependencies](./user/specifying_deps.md)
 
 - [Topic Guide](./topic/topic.md)
     - [Overview](./topic/overview.md)

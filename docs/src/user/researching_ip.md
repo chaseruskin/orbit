@@ -2,8 +2,15 @@
 
 During the lifecycle of an ip, the first step in the process is typically to research existing work and identify any components which may be of value in reusing as a dependency for the new ip. This section highlights different ways to discover and gain information about existing ips and their design units.
 
+### Assumptions
+
 The guides in this section place no assumption on where your working directory is when running any commands; that is, these commands can be ran from any directory.
 
+### Guides
+- [Viewing existing ip](#viewing-existing-ip)
+- [Gathering information about an ip](#gathering-information-about-an-ip)
+- [Gathering information about a design unit](#gathering-information-about-a-design-unit)
+- [Reading source code of a design unit](#reading-source-code-of-a-design-unit)
 
 ### Viewing existing ip
 
@@ -16,7 +23,7 @@ $ orbit search
 
 This will return a list of the ip, where each line records the ip name, latest known version, status in the catalog, and uuid.
 
-### Gathering more information about an ip
+### Gathering information about an ip
 
 This guide outlines how to view more information about an ip found in your catalog that may be of particular interest.
 
@@ -42,7 +49,7 @@ $ orbit info <ip>:<version> --units
 
 This will return a list of the ip's design units, where each line records the design unit's name, design unit type, and accessibility.
 
-### Gathering more information about a design unit
+### Gathering information about a design unit
 
 This guide outlines how to view a design unit's declaration for a particular design unit of an ip found in the catalog.
 

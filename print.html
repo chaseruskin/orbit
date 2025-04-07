@@ -1174,6 +1174,59 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 </li>
 </ul>
 <p>And with that, the cycle continues. As new features, bug fixes, and improvements are brought forth over time, users can repeat the following process to produce another release for any given project.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="researching-ip"><a class="header" href="#researching-ip">Researching Ip</a></h1>
+<p>During the lifecycle of an ip, the first step in the process is typically to research existing work and identify any components which may be of value in reusing as a dependency for the new ip. This section highlights different ways to discover and gain information about existing ips and their design units.</p>
+<h3 id="viewing-existing-ip"><a class="header" href="#viewing-existing-ip">Viewing existing ip</a></h3>
+<p>This guide outlines how to see what ips exist on your system in your catalog that could be potentially used as a dependency.</p>
+<ol>
+<li>Display all results from the catalog:</li>
+</ol>
+<pre><code>$ orbit search
+</code></pre>
+<p>This will return a list of the ip, where each line records the ip name, latest known version, status in the catalog, and uuid.</p>
+<h3 id="gathering-more-information-about-an-ip"><a class="header" href="#gathering-more-information-about-an-ip">Gathering more information about an ip</a></h3>
+<p>This guide outlines how to view more information about an ip found in your catalog that may be of particular interest.</p>
+<ol>
+<li>Identify the name of an ip in the catalog that may be of interest:</li>
+</ol>
+<pre><code>$ orbit search
+</code></pre>
+<ol start="2">
+<li>Return the list of all possible versions of the ip in the catalog, where <code>&lt;ip&gt;</code> is the name of the ip of interest:</li>
+</ol>
+<pre><code>$ orbit info &lt;ip&gt; --versions
+</code></pre>
+<ol start="3">
+<li>Return the metadata found in the ip's manifest, where <code>&lt;ip&gt;</code> is the name of the ip of interest and <code>&lt;vesion&gt;</code> is the version of the ip of interest:</li>
+</ol>
+<pre><code>$ orbit info &lt;ip&gt;:&lt;version&gt;
+</code></pre>
+<ol start="4">
+<li>Return the list of accessible design units for the ip, where <code>&lt;ip&gt;</code> is the name of the ip of interest and <code>&lt;version&gt;</code> is the version of the ip of interest:</li>
+</ol>
+<pre><code>$ orbit info &lt;ip&gt;:&lt;version&gt; --units
+</code></pre>
+<p>This will return a list of the ip's design units, where each line records the design unit's name, design unit type, and accessibility.</p>
+<h3 id="gathering-more-information-about-a-design-unit"><a class="header" href="#gathering-more-information-about-a-design-unit">Gathering more information about a design unit</a></h3>
+<p>This guide outlines how to view a design unit's declaration for a particular design unit of an ip found in the catalog.</p>
+<ol>
+<li>Return the design unit's declaration,  where <code>&lt;unit&gt;</code> is the name of the design unit, <code>&lt;ip&gt;</code> is the name of the ip of interest, and <code>&lt;version&gt;</code> is the version of the ip of interest:</li>
+</ol>
+<pre><code>$ orbit get &lt;unit&gt; --ip &lt;ip&gt;:&lt;version&gt;
+</code></pre>
+<h3 id="reading-source-code-of-an-ip"><a class="header" href="#reading-source-code-of-an-ip">Reading source code of an ip</a></h3>
+<p>This guide outlines how to view the source code for a particular design unit of an ip found in the catalog.</p>
+<ol>
+<li>Display the contents from the design unit's source file, where <code>&lt;unit&gt;</code> is the name of the design unit, <code>&lt;ip&gt;</code> is the name of the ip of interest, and <code>&lt;version&gt;</code> is the version of the ip of interest:</li>
+</ol>
+<pre><code>$ orbit read &lt;unit&gt; --ip &lt;ip&gt;:&lt;version&gt;
+</code></pre>
+<blockquote>
+<p><strong>Tip</strong>: For large source files, it may be helpful to redirect the output to a temporary file, or use the <code>--save</code> flag to automatically write the results to a temporary read-only file.</p>
+</blockquote>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="developing-ip"><a class="header" href="#developing-ip">Developing Ip</a></h1>
+<p>Once existing work has been evaluated and the requirements for an ip are defined, the next step is typically to begin developing the actual logic for the ip. This section walks through the common steps to building new ip and integrating with existing ip.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="releasing-ip"><a class="header" href="#releasing-ip">Releasing Ip</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="creating-targets"><a class="header" href="#creating-targets">Creating Targets</a></h1>
 <p>A target is a user-defined backend process. This section provides steps for ways to configure a target as well as write the script for a target.</p>
 <h3 id="assumptions"><a class="header" href="#assumptions">Assumptions</a></h3>

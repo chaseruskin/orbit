@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Developing Ip - The Book of Orbit</title>
+        <title>Specifying Dependencies - The Book of Orbit</title>
 
 
         <!-- Custom HTML head -->
@@ -158,113 +158,20 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="developing-ip"><a class="header" href="#developing-ip">Developing Ip</a></h1>
-<p>Once existing work has been evaluated and the requirements for an ip are defined, the next step is typically to begin developing the actual logic for the ip. This section walks through the common steps to building new ip and integrating with existing ip.</p>
+                        <h1 id="specifying-dependencies"><a class="header" href="#specifying-dependencies">Specifying Dependencies</a></h1>
+<p>Your ip can depend on other ips found in the catalog or subdirectories on your local file system. You can also temporarily override the location of a dependency - for example, to be able to test out a bug fix in the dependency that you are working on locally. You can also have dependencies that are only used during development. This section walks through the different ways you can specify the dependencies of an ip.</p>
 <h3 id="assumptions"><a class="header" href="#assumptions">Assumptions</a></h3>
-<p>The guides in this section, except for the ones on creation and initialization of an ip, assume you are running commands from the root directory or any subdirectory of the current ip. The current ip, also sometimes referred to as the local ip, is the ip being actively developed.</p>
-<h3 id="guides"><a class="header" href="#guides">Guides</a></h3>
-<ul>
-<li><a href="#creating-a-new-ip">Creating a new ip</a></li>
-<li><a href="#initializing-an-existing-project-as-an-ip">Initializing an existing project as an ip</a></li>
-<li><a href="#integrating-a-design-unit-internal-to-the-current-ip">Integrating a design unit internal to the current ip</a></li>
-<li><a href="#integrating-a-design-unit-external-to-the-current-ip">Integrating a design unit external to the current ip</a></li>
-<li><a href="#running-a-test">Running a test</a></li>
-<li><a href="#running-a-build">Running a build</a></li>
-</ul>
-<h3 id="creating-a-new-ip"><a class="header" href="#creating-a-new-ip">Creating a new ip</a></h3>
-<ol>
-<li>Create a new directory as an Orbit ip by also creating a basic manifest file, where <code>&lt;ip&gt;</code> is the name of the new directory as well as the name of the newly created ip:</li>
-</ol>
-<pre><code>$ orbit new &lt;ip&gt;
-</code></pre>
-<ol start="2">
-<li>Enter the root directory for the newly created ip to begin working within it, where <code>&lt;ip&gt;</code> is the name of the newly created ip's directory:</li>
-</ol>
-<pre><code>$ cd &lt;ip&gt;
-</code></pre>
-<h3 id="initializing-an-existing-project-as-an-ip"><a class="header" href="#initializing-an-existing-project-as-an-ip">Initializing an existing project as an ip</a></h3>
-<ol>
-<li>Enter the root directory for the existing project, where <code>&lt;project&gt;</code> is the root directory:</li>
-</ol>
-<pre><code>$ cd &lt;project&gt;
-</code></pre>
-<ol start="2">
-<li>Initialize the current working directory as an Orbit ip by creating a basic manifest file, where <code>&lt;ip&gt;</code> is the name of the newly initialized ip:</li>
-</ol>
-<pre><code>$ orbit init --name &lt;ip&gt;
-</code></pre>
-<h3 id="integrating-a-design-unit-internal-to-the-current-ip"><a class="header" href="#integrating-a-design-unit-internal-to-the-current-ip">Integrating a design unit internal to the current ip</a></h3>
-<ol>
-<li>Add the necessary code in the current ip's source files referencing the internal design unit as normal. For design units that are entities or modules, return code snippets that can be used to declare IO signals and instantiate the design unit:</li>
-</ol>
-<pre><code>$ orbit get &lt;unit&gt; --signals --instance
-</code></pre>
-<h3 id="integrating-a-design-unit-external-to-the-current-ip"><a class="header" href="#integrating-a-design-unit-external-to-the-current-ip">Integrating a design unit external to the current ip</a></h3>
-<ol>
-<li>Add the external ip as a dependency to the current ip's manifest, where <code>&lt;ip&gt;</code> is the name of the external ip and <code>&lt;version&gt;</code> is the version of the external ip:</li>
-</ol>
-<pre><code class="language-toml">[dependencies]
-# ...
-&lt;ip&gt; = "&lt;version&gt;"
-</code></pre>
-<ol start="2">
-<li>Add the necessary code in the current ip's source files referencing the external design unit as normal. For design units that are entities or modules, return code snippets that can be used to declare IO signals and instantiate the design unit:</li>
-</ol>
-<pre><code>$ orbit get &lt;unit&gt; --ip &lt;ip&gt;:&lt;version&gt; --signals --instance
-</code></pre>
-<p>For more ways on how to add dependencies, see <a href="./specifying_deps.html">Specifying Dependencies</a>.</p>
-<h3 id="running-a-test"><a class="header" href="#running-a-test">Running a test</a></h3>
-<ol>
-<li>View the list of available targets configured to run using the test entry point:</li>
-</ol>
-<pre><code>$ orbit test --list
-</code></pre>
-<ol start="2">
-<li>Return the configuration data of a particular test target, where <code>&lt;target&gt;</code> is the name of the target of interest:</li>
-</ol>
-<pre><code>$ orbit test --list --target &lt;target&gt;
-</code></pre>
-<ol start="3">
-<li>Start the build process using the test entry point for a particular testbench and particular target, where <code>&lt;unit&gt;</code> is the testbench name of interest and <code>&lt;target&gt;</code> is the name of the desired target:</li>
-</ol>
-<pre><code>$ orbit test --tb &lt;unit&gt; --target &lt;target&gt;
-</code></pre>
-<ol start="4">
-<li>Start the build process using the test entry point while providing additional arguments <code>&lt;args&gt;...</code> that will be passed to the target's command during the execution stage, where <code>&lt;unit&gt;</code> is the testbench name of interest and <code>&lt;target&gt;</code> is the name of the desired target:</li>
-</ol>
-<pre><code>$ orbit test --tb &lt;unit&gt; --target &lt;target&gt; -- &lt;args&gt;...
-</code></pre>
-<h3 id="running-a-build"><a class="header" href="#running-a-build">Running a build</a></h3>
-<ol>
-<li>View the list of available targets configured to run using the build entry point:</li>
-</ol>
-<pre><code>$ orbit build --list
-</code></pre>
-<ol start="2">
-<li>Return the configuration data of a particular build target, where <code>&lt;target&gt;</code> is the name of the target of interest:</li>
-</ol>
-<pre><code>$ orbit build --list --target &lt;target&gt;
-</code></pre>
-<ol start="3">
-<li>Start the build process using the build entry point for a particular top-level design unit and particular target, where <code>&lt;unit&gt;</code> is the top-level name of interest and <code>&lt;target&gt;</code> is the name of the desired target:</li>
-</ol>
-<pre><code>$ orbit build --top &lt;unit&gt; --target &lt;target&gt;
-</code></pre>
-<ol start="4">
-<li>Start the build process using the build entry point while providing additional arguments <code>&lt;args&gt;...</code> that will be passed to the target's command during the execution stage, where <code>&lt;unit&gt;</code> is the top-level name of interest and <code>&lt;target&gt;</code> is the name of the desired target:</li>
-</ol>
-<pre><code>$ orbit build --top &lt;unit&gt; --target &lt;target&gt; -- &lt;args&gt;...
-</code></pre>
+<p>The guides in this section assume you are running commands from the root directory or any subdirectory of the current ip. The current ip, also sometimes referred to as the local ip, is the ip being actively developed.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../user/researching_ip.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../user/creating_channels.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../user/releasing_ip.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../topic/topic.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -274,11 +181,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../user/researching_ip.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../user/creating_channels.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../user/releasing_ip.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../topic/topic.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

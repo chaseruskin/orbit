@@ -34,6 +34,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ### Fixes
 - Improves error message when giving bad version for local/relative dependency
+- Removes trailing newlines in the code snippet outputs of the `orbit get` command
 
 ## 0.24.0
 

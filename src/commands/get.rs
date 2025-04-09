@@ -281,9 +281,13 @@ impl Get {
                 .clone(),
         };
 
+        // Track if we need to add a "\n" before the next series of text outputs
+        let mut need_sep: bool = false;
+
         // display architectures
         if self.architectures == true {
-            println!("{}", entity.get_architectures());
+            print!("{}", entity.get_architectures());
+            need_sep = true;
         }
 
         if fmt.is_syntax_highlighted() == false {
@@ -293,23 +297,39 @@ impl Get {
 
         // display library declaration line if displaying instance
         if self.library == true {
-            println!("{}", interface::library_statement(&lib));
+            if need_sep == true {
+                println!();
+            }
+            print!("{}", interface::library_statement(&lib));
+            need_sep = true;
         }
 
         // display component declaration
         if self.component == true || default_output == true {
-            println!("{}", entity.into_component(&fmt));
+            if need_sep == true {
+                println!();
+            }
+            print!("{}", entity.into_component(&fmt));
+            need_sep = true;
         }
 
         // display signal declarations
         if self.signals == true {
             let constants = entity.into_constants(&fmt, "", "");
             if constants.is_empty() == false {
-                println!("{}", constants);
+                if need_sep == true {
+                    println!();
+                }
+                print!("{}", constants);
+                need_sep = true;
             }
             let signals = entity.into_signals(&fmt, &self.signal_prefix, &self.signal_suffix);
             if signals.is_empty() == false {
-                println!("{}", signals);
+                if need_sep == true {
+                    println!();
+                }
+                print!("{}", signals);
+                need_sep = true;
             }
         }
 
@@ -322,7 +342,10 @@ impl Get {
 
         // display instantiation code
         if self.instance == true {
-            println!(
+            if need_sep == true {
+                println!();
+            }
+            print!(
                 "{}",
                 entity.into_instance(
                     &self.name,
@@ -334,12 +357,17 @@ impl Get {
                     "",
                 )
             );
+            need_sep = true;
         }
 
         // print as json data
         if self.json == true {
+            if need_sep == true {
+                println!();
+            }
             println!("{}", serde_json::to_string(&entity)?);
         }
+
         Ok(())
     }
 
@@ -357,31 +385,50 @@ impl Get {
             && self.component == false
             && self.library == false;
 
+        // Track if we need to add a "\n" before the next series of text outputs
+        let mut need_sep: bool = false;
+
         // display architectures
         if self.architectures == true {
-            println!("{}N/A\n", Architectures::new(&Vec::new()));
+            print!("{}N/A\n", Architectures::new(&Vec::new()));
+            need_sep = true;
         }
 
         if self.component == true || default_output == true {
-            println!("{}\n", module.into_declaration(&fmt));
+            if need_sep == true {
+                println!();
+            }
+            print!("{}\n", module.into_declaration(&fmt));
+            need_sep = true;
         }
 
         if self.signals == true {
-            println!(
+            if need_sep == true {
+                println!();
+            }
+            print!(
                 "{}",
                 module.into_wires(&self.signal_prefix, &self.signal_suffix, &fmt)
             );
+            need_sep = true;
         }
 
         if self.instance == true {
-            println!(
+            if need_sep == true {
+                println!();
+            }
+            print!(
                 "{}",
                 module.into_instance(&self.name, &self.signal_prefix, &self.signal_suffix, &fmt)
             );
+            need_sep = true;
         }
 
         // print as json data
         if self.json == true {
+            if need_sep == true {
+                println!();
+            }
             println!("{}", serde_json::to_string(&module)?);
         }
 

@@ -11,10 +11,13 @@ The guides in this section, except for the ones on creation and initialization o
 - [Initializing an existing project as an ip](#initializing-an-existing-project-as-an-ip)
 - [Integrating a design unit internal to the current ip](#integrating-a-design-unit-internal-to-the-current-ip)
 - [Integrating a design unit external to the current ip](#integrating-a-design-unit-external-to-the-current-ip)
+- [Viewing the design hierarchy](#viewing-the-design-hierarchy)
+- [Viewing available targets for testing](#viewing-available-targets-for-testing)
 - [Running a test](#running-a-test)
+- [Viewing available targets for building](#viewing-availble-targets-for-building)
 - [Running a build](#running-a-build)
 
-### Creating a new ip
+## Creating a new ip
 
 1. Create a new directory as an Orbit ip by also creating a basic manifest file, where `<ip>` is the name of the new directory as well as the name of the newly created ip:
 ```
@@ -26,7 +29,7 @@ $ orbit new <ip>
 $ cd <ip>
 ```
 
-### Initializing an existing project as an ip
+## Initializing an existing project as an ip
 
 1. Enter the root directory for the existing project, where `<project>` is the root directory:
 ```
@@ -38,14 +41,19 @@ $ cd <project>
 $ orbit init --name <ip>
 ```
 
-### Integrating a design unit internal to the current ip
+## Integrating a design unit internal to the current ip
 
 1. Add the necessary code in the current ip's source files referencing the internal design unit as normal. For design units that are entities or modules, return code snippets that can be used to declare IO signals and instantiate the design unit:
 ```
 $ orbit get <unit> --signals --instance
 ```
 
-### Integrating a design unit external to the current ip
+2. Verify the dependencies are correctly discovered in the design hierarchy:
+```
+$ orbit tree --edges all --format long
+```
+
+## Integrating a design unit external to the current ip
 
 1. Add the external ip as a dependency to the current ip's manifest, where `<ip>` is the name of the external ip and `<version>` is the version of the external ip:
 ``` toml
@@ -59,9 +67,21 @@ $ orbit get <unit> --signals --instance
 $ orbit get <unit> --ip <ip>:<version> --signals --instance
 ```
 
+3. Verify the dependencies are correctly discovered in the design hierarchy:
+```
+$ orbit tree --edges all --format long
+```
+
 For more ways on how to add dependencies, see [Specifying Dependencies](./specifying_deps.md).
 
-### Running a test
+## Viewing the design hierarchy
+
+1. View the design hierarchy for a particular design unit within the current ip, where `<unit>` is the name of the design unit of interest:
+```
+$ orbit tree <unit>
+```
+
+## Viewing available targets for testing
 
 1. View the list of available targets configured to run using the test entry point:
 ```
@@ -73,17 +93,22 @@ $ orbit test --list
 $ orbit test --list --target <target>
 ```
 
-3. Start the build process using the test entry point for a particular testbench and particular target, where `<unit>` is the testbench name of interest and `<target>` is the name of the desired target:
+## Running a test
+
+1. Start the build process using the test entry point for a particular testbench and particular target, where `<unit>` is the testbench name of interest and `<target>` is the name of the desired target:
 ```
 $ orbit test --tb <unit> --target <target>
 ```
 
-4. Start the build process using the test entry point while providing additional arguments `<args>...` that will be passed to the target's command during the execution stage, where `<unit>` is the testbench name of interest and `<target>` is the name of the desired target:
-```
-$ orbit test --tb <unit> --target <target> -- <args>...
-```
+2. Inspect the resulting command-line outputs and any files generated to the target's output directory.
 
-### Running a build
+> __Tip__: You can also provide additional arguments on the command-line to the target's command that will run during the execution stage of the build process. Add any arguments after an empty flag `--` for Orbit to skip processing them and instead pass them to the target's command.
+> ```
+> $ orbit test --tb <unit> --target <target> -- <args>...
+> ```
+
+
+## Viewing availble targets for building
 
 1. View the list of available targets configured to run using the build entry point:
 ```
@@ -95,12 +120,16 @@ $ orbit build --list
 $ orbit build --list --target <target>
 ```
 
-3. Start the build process using the build entry point for a particular top-level design unit and particular target, where `<unit>` is the top-level name of interest and `<target>` is the name of the desired target:
+## Running a build
+
+1. Start the build process using the build entry point for a particular top-level design unit and particular target, where `<unit>` is the top-level name of interest and `<target>` is the name of the desired target:
 ```
 $ orbit build --top <unit> --target <target>
 ```
 
-4. Start the build process using the build entry point while providing additional arguments `<args>...` that will be passed to the target's command during the execution stage, where `<unit>` is the top-level name of interest and `<target>` is the name of the desired target:
-```
-$ orbit build --top <unit> --target <target> -- <args>...
-```
+2. Inspect the resulting command-line outputs and any files generated to the target's output directory.
+
+> __Tip__: You can also provide additional arguments on the command-line to the target's command that will run during the execution stage of the build process. Add any arguments after an empty flag `--` for Orbit to skip processing them and instead pass them to the target's command.
+> ```
+> $ orbit build --top <unit> --target <target> -- <args>...
+> ```

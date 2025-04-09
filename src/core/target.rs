@@ -338,7 +338,7 @@ args = ["~/scripts/download.bash"]
                         Fileset::new().add_pattern("{{orbit.bench}}.py").unwrap(),
                     ),
                     (
-                        String::from("text"), 
+                        String::from("text"),
                         Fileset::new().add_pattern("*.txt").unwrap(),
                     ),
                 ])),

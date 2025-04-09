@@ -12,7 +12,7 @@ The guides in this section place no assumption on where your working directory i
 - [Gathering information about a design unit](#gathering-information-about-a-design-unit)
 - [Reading source code of a design unit](#reading-source-code-of-a-design-unit)
 
-### Viewing existing ip
+## Viewing existing ip
 
 This guide outlines how to see what ips exist on your system in your catalog that could be potentially used as a dependency.
 
@@ -23,7 +23,7 @@ $ orbit search
 
 This will return a list of the ip, where each line records the ip name, latest known version, status in the catalog, and uuid.
 
-### Gathering information about an ip
+## Gathering information about an ip
 
 This guide outlines how to view more information about an ip found in your catalog that may be of particular interest.
 
@@ -49,7 +49,7 @@ $ orbit info <ip>:<version> --units
 
 This will return a list of the ip's design units, where each line records the design unit's name, design unit type, and accessibility.
 
-### Gathering information about a design unit
+## Gathering information about a design unit
 
 This guide outlines how to view a design unit's declaration for a particular design unit of an ip found in the catalog.
 
@@ -58,7 +58,7 @@ This guide outlines how to view a design unit's declaration for a particular des
 $ orbit get <unit> --ip <ip>:<version>
 ```
 
-### Reading source code of a design unit
+## Reading source code of a design unit
 
 This guide outlines how to view the source code for a particular design unit of an ip found in the catalog.
 

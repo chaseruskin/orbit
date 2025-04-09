@@ -16,8 +16,8 @@
 //
 
 use glob::{Pattern, PatternError};
-use serde_derive::Serialize;
 use serde::de::MapAccess;
+use serde_derive::Serialize;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq, Serialize, Clone)]
@@ -92,7 +92,10 @@ impl<'de> serde::Deserialize<'de> for Fileset {
             {
                 Ok(Fileset {
                     name: String::new(),
-                    patterns: vec![match Style::from_str(value) { Ok(v) => v, Err(e) => return Err(de::Error::custom(e))? }],
+                    patterns: vec![match Style::from_str(value) {
+                        Ok(v) => v,
+                        Err(e) => return Err(de::Error::custom(e))?,
+                    }],
                 })
             }
 
@@ -271,7 +274,8 @@ impl Fileset {
             Some(".") => "",
             _ => "**/",
         };
-        self.patterns.push(Pattern::new(&(prefix.to_owned() + p))?.into());
+        self.patterns
+            .push(Pattern::new(&(prefix.to_owned() + p))?.into());
         Ok(self)
     }
 
@@ -294,7 +298,11 @@ impl Fileset {
             .iter()
             .filter_map(|f| {
                 // iterate through all known patterns for the fileset
-                match &self.patterns.iter().find(|p| p.inner().matches_with(&f, match_opts)) {
+                match &self
+                    .patterns
+                    .iter()
+                    .find(|p| p.inner().matches_with(&f, match_opts))
+                {
                     Some(_) => Some(f),
                     None => None,
                 }
@@ -396,7 +404,10 @@ mod test {
 
     #[test]
     fn assemble_fileset() {
-        let fset = Fileset::new().name("hello_world").add_pattern("*.txt").unwrap();
+        let fset = Fileset::new()
+            .name("hello_world")
+            .add_pattern("*.txt")
+            .unwrap();
         assert_eq!(
             fset,
             Fileset {

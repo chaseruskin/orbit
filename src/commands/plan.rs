@@ -439,8 +439,7 @@ impl Plan {
                         false => (name, fset),
                     };
                     // perform variable substitution on all patterns in the fileset
-                    let mut fset = Fileset::new()
-                        .name(f_name);
+                    let mut fset = Fileset::new().name(f_name);
                     for pat in cli_fset.get_patterns() {
                         fset = fset.add_pattern(&swap::substitute(pat.to_string(), &vtable))?;
                     }
@@ -460,8 +459,7 @@ impl Plan {
             // check against every defined fileset in the command-line (call remaining filesets)
             for (key, cli_fset) in cli_fset_map {
                 // perform variable substitution on all patterns in the fileset
-                let mut fset = Fileset::new()
-                    .name(key);
+                let mut fset = Fileset::new().name(key);
                 for pat in cli_fset.get_patterns() {
                     fset = fset.add_pattern(&swap::substitute(pat.to_string(), &vtable))?;
                 }

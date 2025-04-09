@@ -169,7 +169,7 @@
 <li><a href="#gathering-information-about-a-design-unit">Gathering information about a design unit</a></li>
 <li><a href="#reading-source-code-of-a-design-unit">Reading source code of a design unit</a></li>
 </ul>
-<h3 id="viewing-existing-ip"><a class="header" href="#viewing-existing-ip">Viewing existing ip</a></h3>
+<h2 id="viewing-existing-ip"><a class="header" href="#viewing-existing-ip">Viewing existing ip</a></h2>
 <p>This guide outlines how to see what ips exist on your system in your catalog that could be potentially used as a dependency.</p>
 <ol>
 <li>Display all results from the catalog:</li>
@@ -177,7 +177,7 @@
 <pre><code>$ orbit search
 </code></pre>
 <p>This will return a list of the ip, where each line records the ip name, latest known version, status in the catalog, and uuid.</p>
-<h3 id="gathering-information-about-an-ip"><a class="header" href="#gathering-information-about-an-ip">Gathering information about an ip</a></h3>
+<h2 id="gathering-information-about-an-ip"><a class="header" href="#gathering-information-about-an-ip">Gathering information about an ip</a></h2>
 <p>This guide outlines how to view more information about an ip found in your catalog that may be of particular interest.</p>
 <ol>
 <li>Identify the name of an ip in the catalog that may be of interest:</li>
@@ -200,14 +200,14 @@
 <pre><code>$ orbit info &lt;ip&gt;:&lt;version&gt; --units
 </code></pre>
 <p>This will return a list of the ip's design units, where each line records the design unit's name, design unit type, and accessibility.</p>
-<h3 id="gathering-information-about-a-design-unit"><a class="header" href="#gathering-information-about-a-design-unit">Gathering information about a design unit</a></h3>
+<h2 id="gathering-information-about-a-design-unit"><a class="header" href="#gathering-information-about-a-design-unit">Gathering information about a design unit</a></h2>
 <p>This guide outlines how to view a design unit's declaration for a particular design unit of an ip found in the catalog.</p>
 <ol>
 <li>Return the design unit's declaration,  where <code>&lt;unit&gt;</code> is the name of the design unit, <code>&lt;ip&gt;</code> is the name of the ip of interest, and <code>&lt;version&gt;</code> is the version of the ip of interest:</li>
 </ol>
 <pre><code>$ orbit get &lt;unit&gt; --ip &lt;ip&gt;:&lt;version&gt;
 </code></pre>
-<h3 id="reading-source-code-of-a-design-unit"><a class="header" href="#reading-source-code-of-a-design-unit">Reading source code of a design unit</a></h3>
+<h2 id="reading-source-code-of-a-design-unit"><a class="header" href="#reading-source-code-of-a-design-unit">Reading source code of a design unit</a></h2>
 <p>This guide outlines how to view the source code for a particular design unit of an ip found in the catalog.</p>
 <ol>
 <li>Display the contents from the design unit's source file, where <code>&lt;unit&gt;</code> is the name of the design unit, <code>&lt;ip&gt;</code> is the name of the ip of interest, and <code>&lt;version&gt;</code> is the version of the ip of interest:</li>

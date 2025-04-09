@@ -16,30 +16,112 @@
 //
 
 use glob::{Pattern, PatternError};
-use serde_derive::{Deserialize, Serialize};
-use std::collections::HashMap;
+use serde_derive::Serialize;
+use serde::de::MapAccess;
 use std::str::FromStr;
 
-pub struct Filesets(Vec<Fileset>);
-
-impl From<HashMap<String, Style>> for Filesets {
-    fn from(value: HashMap<String, Style>) -> Self {
-        Self(
-            value
-                .into_iter()
-                .map(|(n, p)| Fileset {
-                    name: n,
-                    pattern: p,
-                })
-                .collect(),
-        )
-    }
+#[derive(Debug, PartialEq, Serialize, Clone)]
+pub struct Fileset {
+    #[serde(skip_serializing, skip_deserializing)]
+    name: String,
+    patterns: Vec<Style>,
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct Fileset {
-    name: String,
-    pattern: Style,
+use serde::de::Visitor;
+
+impl<'de> serde::Deserialize<'de> for Fileset {
+    fn deserialize<D>(deserializer: D) -> Result<Fileset, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        enum Field {
+            Patterns,
+        }
+
+        // This part could also be generated independently by:
+        //
+        //    #[derive(Deserialize)]
+        //    #[serde(field_identifier, rename_all = "lowercase")]
+        //    enum Field { Secs, Nanos }
+        impl<'de> serde::Deserialize<'de> for Field {
+            fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct FieldVisitor;
+
+                impl<'de> Visitor<'de> for FieldVisitor {
+                    type Value = Field;
+
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        formatter.write_str("`patterns`")
+                    }
+
+                    fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                    where
+                        E: de::Error,
+                    {
+                        match value {
+                            "patterns" => Ok(Field::Patterns),
+                            _ => Err(de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+        }
+
+        // This is a Visitor that forwards string types to T's `FromStr` impl and
+        // forwards map types to T's `Deserialize` impl. The `PhantomData` is to
+        // keep the compiler from complaining about T being an unused generic type
+        // parameter. We need T in order to know the Value type for the Visitor
+        // impl.
+        struct LayerVisitor;
+
+        impl<'de> Visitor<'de> for LayerVisitor {
+            type Value = Fileset;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("string or map")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<Fileset, E>
+            where
+                E: de::Error,
+            {
+                Ok(Fileset {
+                    name: String::new(),
+                    patterns: vec![match Style::from_str(value) { Ok(v) => v, Err(e) => return Err(de::Error::custom(e))? }],
+                })
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Fileset, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut patterns: Option<Vec<Style>> = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Patterns => {
+                            if patterns.is_some() {
+                                return Err(de::Error::duplicate_field("patterns]"));
+                            }
+                            patterns = Some(map.next_value()?);
+                        }
+                    }
+                }
+                let patterns = patterns.unwrap();
+                Ok(Fileset {
+                    name: String::new(),
+                    patterns: patterns,
+                })
+            }
+        }
+
+        const FIELDS: &[&str] = &["patterns"];
+        deserializer.deserialize_struct("Fileset", FIELDS, LayerVisitor)
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -148,13 +230,13 @@ impl FromStr for Fileset {
             return Err(Self::Err::EmptyName);
         }
         Ok(Fileset {
-            pattern: match Pattern::new(pattern) {
+            patterns: match Pattern::new(pattern) {
                 // pattern must not be empty
                 Ok(p) => {
                     if p.as_str().is_empty() {
                         return Err(Self::Err::EmptyPattern);
                     } else {
-                        p.into()
+                        vec![p.into()]
                     }
                 }
                 Err(e) => return Err(Self::Err::PatternError(pattern.to_string(), e)),
@@ -165,11 +247,11 @@ impl FromStr for Fileset {
 }
 
 impl Fileset {
-    /// Create a new `Fileset` structure.
+    /// Create a new [Fileset] structure.
     pub fn new() -> Self {
         Fileset {
             name: String::new(),
-            pattern: Pattern::new("*").unwrap().into(),
+            patterns: Vec::new(),
         }
     }
 
@@ -179,21 +261,21 @@ impl Fileset {
         self
     }
 
-    /// Set the `Fileset` glob-style pattern.
+    /// Set the [Fileset] glob-style pattern.
     ///
     /// If no explicit relative file path character is present (`.`), then
     /// it implicitly sets a recursive directory glob pattern as the prefix
     /// (`**/`).
-    pub fn pattern(mut self, p: &str) -> Result<Self, PatternError> {
+    pub fn add_pattern(mut self, p: &str) -> Result<Self, PatternError> {
         let prefix = match p.get(0..1) {
             Some(".") => "",
             _ => "**/",
         };
-        self.pattern = Pattern::new(&(prefix.to_owned() + p))?.into();
+        self.patterns.push(Pattern::new(&(prefix.to_owned() + p))?.into());
         Ok(self)
     }
 
-    /// Standardizes the name to be UPPER-AND-HYPHENS.
+    /// Standardizes the name to be COBOL-CASE.
     ///
     /// The returned string is its own data (cloned from `s`).
     pub fn standardize_name(s: &str) -> String {
@@ -211,10 +293,10 @@ impl Fileset {
         files
             .iter()
             .filter_map(|f| {
-                if self.pattern.inner().matches_with(&f, match_opts) == true {
-                    Some(f)
-                } else {
-                    None
+                // iterate through all known patterns for the fileset
+                match &self.patterns.iter().find(|p| p.inner().matches_with(&f, match_opts)) {
+                    Some(_) => Some(f),
+                    None => None,
                 }
             })
             .collect()
@@ -225,9 +307,9 @@ impl Fileset {
         &self.name
     }
 
-    /// Access pattern.
-    pub fn get_pattern(&self) -> &Pattern {
-        &self.pattern.inner()
+    /// Access the underlying patterns.
+    pub fn get_patterns(&self) -> Vec<&Pattern> {
+        self.patterns.iter().map(|f| f.inner()).collect()
     }
 }
 
@@ -314,24 +396,24 @@ mod test {
 
     #[test]
     fn assemble_fileset() {
-        let fset = Fileset::new().name("hello_world").pattern("*.txt").unwrap();
+        let fset = Fileset::new().name("hello_world").add_pattern("*.txt").unwrap();
         assert_eq!(
             fset,
             Fileset {
                 name: String::from("HELLO-WORLD"),
-                pattern: Pattern::new("**/*.txt").unwrap().into(),
+                patterns: vec![Pattern::new("**/*.txt").unwrap().into()],
             }
         );
 
         let fset = Fileset::new()
             .name("hello_world")
-            .pattern("./some/specific/path.txt")
+            .add_pattern("./some/specific/path.txt")
             .unwrap();
         assert_eq!(
             fset,
             Fileset {
                 name: String::from("HELLO-WORLD"),
-                pattern: Pattern::new("./some/specific/path.txt").unwrap().into(),
+                patterns: vec![Pattern::new("./some/specific/path.txt").unwrap().into()],
             }
         );
     }
@@ -344,7 +426,7 @@ mod test {
             fset.unwrap(),
             Fileset {
                 name: String::from("XSIM-CFG"),
-                pattern: Pattern::new("*.wcfg").unwrap().into()
+                patterns: vec![Pattern::new("*.wcfg").unwrap().into()],
             }
         );
 

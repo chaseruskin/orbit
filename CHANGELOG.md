@@ -18,6 +18,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ## 0.25.0 - unreleased
 
 ### Features
+- Adds ability to store multiple file patterns under one fileset for custom filesets using the `patterns` entry
 - Adds checks for existence of source files and correct source file visibility before installing and publishing
 - Adds `--all-public` flag to assume source files as public when implicitly private
 - Adds `require-public` entry to configuration files to set default behavior of source files being either private by default or public by default

@@ -91,8 +91,15 @@ description = "My target description"
 command = "python3"
 args = ["tar.py"]
 # Add a custom fileset
-fileset.MYSET = "*.txt"
+fileset.A-SET = "*.txt"
 ```
+
+The fileset also supports being able to store more than one pattern. Use the inline table syntax to specify an array of patterns for the fileset's `pattern` field:
+``` toml
+fileset.B-SET = { patterns = ["*.b", "*.b2"] }
+```
+
+If a file matches a least one of defined file patterns, then it will be added under that fileset.
 
 ## Handling a custom fileset
 

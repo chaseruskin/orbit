@@ -16,7 +16,6 @@
 //
 
 use crate::core::context::Context;
-use crate::core::fileset::Style;
 use crate::error::Error;
 use crate::util::anyerror::Fault;
 use crate::util::filesystem;
@@ -29,10 +28,11 @@ use std::str::FromStr;
 use super::blueprint::Scheme;
 use super::swap;
 use super::swap::StrSwapTable;
+use crate::core::fileset::Fileset;
 
 pub type Targets = Vec<Target>;
 
-type Filesets = HashMap<String, Style>;
+type Filesets = HashMap<String, Fileset>;
 
 /// A user-defined backend workflow for processing the files collected
 /// in the generated blueprint file.
@@ -335,9 +335,12 @@ args = ["~/scripts/download.bash"]
                 fileset: Some(HashMap::from([
                     (
                         String::from("py-model"),
-                        Style::from_str("{{orbit.bench}}.py").unwrap()
+                        Fileset::new().add_pattern("{{orbit.bench}}.py").unwrap(),
                     ),
-                    (String::from("text"), Style::from_str("*.txt").unwrap()),
+                    (
+                        String::from("text"), 
+                        Fileset::new().add_pattern("*.txt").unwrap(),
+                    ),
                 ])),
                 root: None,
             }

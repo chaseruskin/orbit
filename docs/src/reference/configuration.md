@@ -289,13 +289,14 @@ If this field is not defined, then the default is true.
 
 ### The `[fileset]` section
 
-The `[fileset]` section allows user-defined key/value pairs, where the key corresponds to a fileset name and the value is a string that corresponds to the glob-style pattern.
+The `[fileset]` section allows user-defined key/value pairs, where the key corresponds to a fileset name and the value is a string that corresponds to the glob-style pattern. The fileset name will be normalized to COBOL-CASE.
 
 ``` toml
 [[target]]
 # ...
-fileset.text = "*.txt"
-fileset.pymdl = "{{ orbit.tb.name }}.py"
+fileset.TEXT = "*.txt"
+fileset.PYMDL = "{{ orbit.tb.name }}.py"
+fileset.B-SET = { patterns = ["*.b", "*.b2"] }
 ```
 
 The values for user-defined filesets support [_string swapping_](./../topic/swapping.md) (as shown in second example entry).

@@ -258,6 +258,8 @@ pcie = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.3.0" }
 
 Explicitly providing the uuid for a dependent ip is also supported in the `[dev-dependencies]` section.
 
+See [Specifying Dependencies](./../user/specifying_deps.md) for the complete list of ways dependencies can be specified.
+
 ### The `[dev-dependencies]` section
 
 The `[dev-dependencies]` section is a table of direct dependencies required for the current ip.
@@ -271,3 +273,5 @@ logic-analyzer = "4.8.0"
 If the ip has no development dependencies, the section can be omitted from the manifest. The ips listed in this section will not be included in the build graph for when this ip is used as a dependency itself.
 
 Refer to the `[dependencies]` section for related capabilities in specifying ips.
+
+See [Specifying Dependencies](./../user/specifying_deps.md) for the complete list of ways dependencies can be specified.

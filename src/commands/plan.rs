@@ -424,24 +424,26 @@ impl Plan {
                 }
             }
 
-            // collect data for the given plugin
+            // collect data for the given target
             if let Some(filesets) = target.get_filesets() {
-                for (name, pattern) in filesets {
+                for (name, fset) in filesets {
                     let proper_key = Fileset::standardize_name(name);
                     // check if appeared in cli arguments
-                    let (f_name, f_patt) = match cli_fset_map.contains_key(&proper_key) {
+                    let (f_name, cli_fset) = match cli_fset_map.contains_key(&proper_key) {
                         // override with fileset provided by command-line if conflicting names
                         true => {
                             // pull from map to ensure it is not double-counted when just writing command-line filesets
                             let entry = cli_fset_map.remove(&proper_key);
-                            (name, entry.unwrap().get_pattern())
+                            (name, entry.unwrap())
                         }
-                        false => (name, pattern.inner()),
+                        false => (name, fset),
                     };
-                    // perform variable substitution
-                    let fset = Fileset::new()
-                        .name(f_name)
-                        .pattern(&swap::substitute(f_patt.to_string(), &vtable))?;
+                    // perform variable substitution on all patterns in the fileset
+                    let mut fset = Fileset::new()
+                        .name(f_name);
+                    for pat in cli_fset.get_patterns() {
+                        fset = fset.add_pattern(&swap::substitute(pat.to_string(), &vtable))?;
+                    }
                     // match files
                     fset.collect_files(&current_files)
                         .into_iter()
@@ -456,11 +458,13 @@ impl Plan {
             }
 
             // check against every defined fileset in the command-line (call remaining filesets)
-            for (_key, fset) in cli_fset_map {
-                // perform variable substitution
-                let fset = Fileset::new()
-                    .name(fset.get_name())
-                    .pattern(&swap::substitute(fset.get_pattern().to_string(), &vtable))?;
+            for (key, cli_fset) in cli_fset_map {
+                // perform variable substitution on all patterns in the fileset
+                let mut fset = Fileset::new()
+                    .name(key);
+                for pat in cli_fset.get_patterns() {
+                    fset = fset.add_pattern(&swap::substitute(pat.to_string(), &vtable))?;
+                }
                 // match files
                 fset.collect_files(&current_files)
                     .into_iter()

@@ -32,6 +32,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Allows ips to be nested within one another, however, the nested ip is ignored during file discovery for the parent ip
 - Removes `include` entry from manifest as `exclude` can provide same functionality now that it follows .gitignore semantics (such as `!` symbol)
 
+### Fixes
+- Improves error message when giving bad version for local/relative dependency
+
 ## 0.24.0
 
 ### Features

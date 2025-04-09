@@ -101,8 +101,8 @@ pub enum Error {
     IpLoadFailed(LastError),
     #[error("failed to parse ip name: {0}")]
     IpNameParseFailed(LastError),
-    #[error("listed version {0} does not match ip's actual version {1}")]
-    DependencyIpRelativeBadVersion(PartialVersion, Version),
+    #[error("manifest requests relative dependency {0} as version {1}, but actual version is {2}")]
+    DependencyIpRelativeBadVersion(PkgPart, PartialVersion, Version),
     #[error("listed name {0} does not match ip's actual name {1}")]
     DependencyIpRelativeBadName(PkgPart, PkgPart),
     #[error("failed to load lockfile: {0}")]

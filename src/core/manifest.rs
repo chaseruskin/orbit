@@ -270,6 +270,7 @@ impl FromFile for Manifest {
                     let ip_version = ip.get_man().get_ip().get_version();
                     if version::is_compatible(dep.get_version(), ip_version) == false {
                         return Err(Error::DependencyIpRelativeBadVersion(
+                            name.clone(),
                             dep.get_version().clone(),
                             ip_version.clone(),
                         ))?;

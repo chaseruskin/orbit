@@ -76,7 +76,12 @@ For more ways on how to add dependencies, see [Specifying Dependencies](./specif
 
 ## Viewing the design hierarchy
 
-1. View the design hierarchy for a particular design unit within the current ip, where `<unit>` is the name of the design unit of interest:
+1. Return the list of known design units for the current ip:
+```
+$ orbit info --units
+```
+
+2. View the design hierarchy for a particular design unit within the current ip, where `<unit>` is the name of the design unit of interest:
 ```
 $ orbit tree <unit>
 ```

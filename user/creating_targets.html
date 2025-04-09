@@ -249,8 +249,12 @@ description = "My target description"
 command = "python3"
 args = ["tar.py"]
 # Add a custom fileset
-fileset.MYSET = "*.txt"
+fileset.A-SET = "*.txt"
 </code></pre>
+<p>The fileset also supports being able to store more than one pattern. Use the inline table syntax to specify an array of patterns for the fileset's <code>pattern</code> field:</p>
+<pre><code class="language-toml">fileset.B-SET = { patterns = ["*.b", "*.b2"] }
+</code></pre>
+<p>If a file matches a least one of defined file patterns, then it will be added under that fileset.</p>
 <h2 id="handling-a-custom-fileset"><a class="header" href="#handling-a-custom-fileset">Handling a custom fileset</a></h2>
 <p>Adding a custom fileset in the target's configuration is not enough to support custom files; the target script must also have support for handling the custom filesets that are collected into the blueprint from the planning stage.</p>
 <ol>

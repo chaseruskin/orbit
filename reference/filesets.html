@@ -159,12 +159,13 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="filesets"><a class="header" href="#filesets">Filesets</a></h1>
-<p>A <em>fileset</em> is group of files identified by a common file pattern. Typically they are denoted by a common file extension, such as <code>.txt</code>, but a fileset can more broadly be grouped under any glob-style pattern.</p>
-<p>A fileset itself consists of a name and a pattern.</p>
+<p>A <em>fileset</em> is group of files identified by a common file pattern. Typically they are denoted by a common file extension, such as <code>.txt</code>, but a fileset can more broadly be grouped under any glob-style file pattern.</p>
+<p>A fileset itself consists of a name and one or more file patterns.</p>
 <ul>
-<li>The name is a string that is normalized to ALL-UPPERCASE-WITH-HYPENS. It is used to identify which fileset a file belongs to.</li>
-<li>The pattern is a glob-style pattern. It is used to perform glob-style matching when searching the file system for files to add to a fileset.</li>
+<li>The name is a string that is normalized to COBOL-CASE. Cobol case uses all upper case letters with the hyphen <code>-</code> delimiter. It is used to identify which fileset a file belongs to.</li>
+<li>A file pattern is a glob-style file pattern. It is used to perform glob-style matching when searching the file system for files to add to a fileset.</li>
 </ul>
+<p>If a file in the search space matches a least one of defined file patterns of a fileset, then it will be added under that fileset.</p>
 <h2 id="built-in-filesets"><a class="header" href="#built-in-filesets">Built-in filesets</a></h2>
 <p>There are built-in filesets that Orbit uses that have special rules and work across all ip, including dependencies. The following filesets are currently built-in with Orbit:</p>
 <ul>
@@ -174,7 +175,9 @@
 </ul>
 <h2 id="custom-filesets"><a class="header" href="#custom-filesets">Custom filesets</a></h2>
 <p>Custom filesets are filesets that are be defined by the user for a specific target. These filesets are only searched for in the local ip and do not extend any of the ip's dependencies.</p>
-<p>If the pattern does not start with an explicit relative path symbol (<code>.</code>), then Orbit assumes to look for the fileset across every possible path in the local ip by implicitly prepending the pattern with <code>**/</code>.</p>
+<p>If a pattern does not start with an explicit relative path symbol (<code>.</code>), then Orbit assumes to look for the fileset across every possible subdirectory in the local ip by implicitly prepending the pattern with <code>**/</code>.</p>
+<h2 id="apply-fileset-patterns"><a class="header" href="#apply-fileset-patterns">Apply fileset patterns</a></h2>
+<p>A fileset's pattern is applied starting from the current ip's root directory, the same directory where the <code>Orbit.toml</code> file exists.</p>
 <h2 id="name-normalization-examples"><a class="header" href="#name-normalization-examples">Name normalization examples</a></h2>
 <div class="table-wrapper"><table><thead><tr><th>User-defined Fileset</th><th>Normalized Fileset</th></tr></thead><tbody>
 <tr><td>GOOD-SET</td><td>GOOD-SET</td></tr>

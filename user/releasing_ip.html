@@ -165,7 +165,74 @@
 <p>This section also assumes you have one or more channels already configured. To learn how to create channels, see <a href="./creating_channels.html">Creating Channels</a>.</p>
 <p>Although not strictly necessary, you may also need to have a protocol configured that meets your requirements for how you access an ip from the internet. To learn how to create protocols, see <a href="./creating_protocols.html">Creating Protocols</a>.</p>
 <h3 id="guides"><a class="header" href="#guides">Guides</a></h3>
-<h2 id="publishing-an-ip"><a class="header" href="#publishing-an-ip">Publishing an ip</a></h2>
+<ul>
+<li><a href="#publishing-an-ip-using-git-tags">Publishing an ip using git tags</a></li>
+</ul>
+<h2 id="publishing-an-ip-using-git-tags"><a class="header" href="#publishing-an-ip-using-git-tags">Publishing an ip using git tags</a></h2>
+<p>This guide walks through the steps to have a successful release using a channel and git tags. It assumes your ip is a git repository and has a remote repository on a platform such as GitHub.</p>
+<ol>
+<li>Specify what version is going to be released:</li>
+</ol>
+<pre><code class="language-toml">[ip]
+# ...
+version = "1.0.0"
+</code></pre>
+<ol start="2">
+<li>Define a source url for the project:</li>
+</ol>
+<pre><code class="language-toml">[ip]
+# ...
+source = "https://github.com/chaseruskin/gates/archive/{{orbit.ip.version}}.zip"
+</code></pre>
+<ol start="3">
+<li>Specify what source files are public:</li>
+</ol>
+<pre><code class="language-toml">[ip]
+# ...
+public = ["rtl"]
+</code></pre>
+<ol start="4">
+<li>Specify which channel to post this to ip to:</li>
+</ol>
+<pre><code class="language-toml">[ip]
+# ...
+channels = ["remote-chipyard"]
+</code></pre>
+<ol start="5">
+<li>Update the lockfile:</li>
+</ol>
+<pre><code>$ orbit lock
+</code></pre>
+<ol start="6">
+<li>Add and commit the final changes to your project:</li>
+</ol>
+<pre><code>$ git commit -am "Stages for release"
+</code></pre>
+<ol start="7">
+<li>Push the committed changes to the remote repository:</li>
+</ol>
+<pre><code>$ git push
+</code></pre>
+<ol start="8">
+<li>Add a git tag to the ip's repository that matches exactly the version specified in the ip's manifest:</li>
+</ol>
+<pre><code>$ git tag 1.0.0
+</code></pre>
+<ol start="9">
+<li>Push the tag to the remote repository:</li>
+</ol>
+<pre><code>$ git push --tags
+</code></pre>
+<ol start="10">
+<li>Run the dry run for the publishing process to verify all ip checkpoints are met:</li>
+</ol>
+<pre><code>$ orbit publish
+</code></pre>
+<ol start="11">
+<li>Once the dry run reports the ip is ready to be published, publish the ip:</li>
+</ol>
+<pre><code>$ orbit publish --ready
+</code></pre>
 
                     </main>
 

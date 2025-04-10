@@ -184,7 +184,7 @@
 <p>This section walks you the basic steps to get Orbit up and running on your local computer.</p>
 <blockquote>
 <h3 id="command-line-notation"><a class="header" href="#command-line-notation">Command Line Notation</a></h3>
-<p>Throughout the tutorials and the rest of the book, commands will be shown that are used in the terminal. Lines that are entered in a terminal are denoted by starting with a $. The $ is just a special marker; it is not to be entered with the command. Lines that don't start with a $ are typically the output of the previous command.</p>
+<p>Throughout this book there are commands shown that are used in a terminal. Lines that are entered in a terminal are denoted by starting with a <code>$</code>. The <code>$</code> is just a special marker; it is not to be entered with the command. Lines that don't start with a <code>$</code> are typically the output of the previous command. Large segments of code blocks are typically contents of a file.</p>
 </blockquote>
 <p>There are two processes to obtaining and maintaining Orbit:</p>
 <ol>
@@ -344,10 +344,6 @@ This program is free software, covered by the GNU General Public License. There 
 <div style="break-before: page; page-break-before: always;"></div><h1 id="tutorials"><a class="header" href="#tutorials">Tutorials</a></h1>
 <p>This section is <strong>learning-oriented</strong>, providing step-by-step lessons intended to teach new users how to start using Orbit.</p>
 <p>The code provided in this section is very didactic in nature and is not intended to reflect production-level code or any particular coding style.</p>
-<blockquote>
-<h3 id="command-line-notation-1"><a class="header" href="#command-line-notation-1">Command Line Notation</a></h3>
-<p>Throughout this section (and the rest of the book), commands will be shown that are used in the terminal. Lines that are entered in a terminal are denoted by starting with a <code>$</code>. The <code>$</code> is just a special marker; it is not to be entered with the command. Lines that don't start with a <code>$</code> are typically the output of the previous command.</p>
-</blockquote>
 <h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
 <p>While there is no assumption that you know how Orbit works, there are some other assumptions we put in place we believe will help you get the most out of this section:</p>
 <ul>
@@ -1370,7 +1366,74 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <p>This section also assumes you have one or more channels already configured. To learn how to create channels, see <a href="user/./creating_channels.html">Creating Channels</a>.</p>
 <p>Although not strictly necessary, you may also need to have a protocol configured that meets your requirements for how you access an ip from the internet. To learn how to create protocols, see <a href="user/./creating_protocols.html">Creating Protocols</a>.</p>
 <h3 id="guides-2"><a class="header" href="#guides-2">Guides</a></h3>
-<h2 id="publishing-an-ip"><a class="header" href="#publishing-an-ip">Publishing an ip</a></h2>
+<ul>
+<li><a href="user/releasing_ip.html#publishing-an-ip-using-git-tags">Publishing an ip using git tags</a></li>
+</ul>
+<h2 id="publishing-an-ip-using-git-tags"><a class="header" href="#publishing-an-ip-using-git-tags">Publishing an ip using git tags</a></h2>
+<p>This guide walks through the steps to have a successful release using a channel and git tags. It assumes your ip is a git repository and has a remote repository on a platform such as GitHub.</p>
+<ol>
+<li>Specify what version is going to be released:</li>
+</ol>
+<pre><code class="language-toml">[ip]
+# ...
+version = "1.0.0"
+</code></pre>
+<ol start="2">
+<li>Define a source url for the project:</li>
+</ol>
+<pre><code class="language-toml">[ip]
+# ...
+source = "https://github.com/chaseruskin/gates/archive/{{orbit.ip.version}}.zip"
+</code></pre>
+<ol start="3">
+<li>Specify what source files are public:</li>
+</ol>
+<pre><code class="language-toml">[ip]
+# ...
+public = ["rtl"]
+</code></pre>
+<ol start="4">
+<li>Specify which channel to post this to ip to:</li>
+</ol>
+<pre><code class="language-toml">[ip]
+# ...
+channels = ["remote-chipyard"]
+</code></pre>
+<ol start="5">
+<li>Update the lockfile:</li>
+</ol>
+<pre><code>$ orbit lock
+</code></pre>
+<ol start="6">
+<li>Add and commit the final changes to your project:</li>
+</ol>
+<pre><code>$ git commit -am "Stages for release"
+</code></pre>
+<ol start="7">
+<li>Push the committed changes to the remote repository:</li>
+</ol>
+<pre><code>$ git push
+</code></pre>
+<ol start="8">
+<li>Add a git tag to the ip's repository that matches exactly the version specified in the ip's manifest:</li>
+</ol>
+<pre><code>$ git tag 1.0.0
+</code></pre>
+<ol start="9">
+<li>Push the tag to the remote repository:</li>
+</ol>
+<pre><code>$ git push --tags
+</code></pre>
+<ol start="10">
+<li>Run the dry run for the publishing process to verify all ip checkpoints are met:</li>
+</ol>
+<pre><code>$ orbit publish
+</code></pre>
+<ol start="11">
+<li>Once the dry run reports the ip is ready to be published, publish the ip:</li>
+</ol>
+<pre><code>$ orbit publish --ready
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="creating-targets"><a class="header" href="#creating-targets">Creating Targets</a></h1>
 <p>A target is a user-defined backend process. This section provides steps for ways to configure a target as well as write the script for a target.</p>
 <h3 id="assumptions-3"><a class="header" href="#assumptions-3">Assumptions</a></h3>

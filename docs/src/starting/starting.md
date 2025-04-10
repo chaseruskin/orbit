@@ -3,8 +3,7 @@
 This section walks you the basic steps to get Orbit up and running on your local computer.
 
 > ### Command Line Notation
-> Throughout the tutorials and the rest of the book, commands will be shown that are used in the terminal. Lines that are entered in a terminal are denoted by starting with a $. The $ is just a special marker; it is not to be entered with the command. Lines that don't start with a $ are typically the output of the previous command.
-
+> Throughout this book there are commands shown that are used in a terminal. Lines that are entered in a terminal are denoted by starting with a `$`. The `$` is just a special marker; it is not to be entered with the command. Lines that don't start with a `$` are typically the output of the previous command. Large segments of code blocks are typically contents of a file.
 
 There are two processes to obtaining and maintaining Orbit:
 1. [Installing](./installing.md)

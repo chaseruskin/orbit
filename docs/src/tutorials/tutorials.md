@@ -4,9 +4,6 @@ This section is __learning-oriented__, providing step-by-step lessons intended t
 
 The code provided in this section is very didactic in nature and is not intended to reflect production-level code or any particular coding style.
 
-> ### Command Line Notation
-> Throughout this section (and the rest of the book), commands will be shown that are used in the terminal. Lines that are entered in a terminal are denoted by starting with a `$`. The `$` is just a special marker; it is not to be entered with the command. Lines that don't start with a `$` are typically the output of the previous command.
-
 ## Prerequisites
 
 While there is no assumption that you know how Orbit works, there are some other assumptions we put in place we believe will help you get the most out of this section:

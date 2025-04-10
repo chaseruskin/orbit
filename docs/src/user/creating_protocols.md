@@ -26,10 +26,12 @@ This guide walks through how to add a protocol to be recognized by Orbit. In thi
 name = "gitit"
 description = "Download ip using git"
 command = "git"
-args = ["clone", "{{ ip.source.url }}"]
+args = ["clone", "{{ orbit.ip.source.url }}"]
 ```
 
-> __Tip__: A protocol may be as simple as a list of known command-line arguments, or may require invoking a script written in a scripting language such as Python or Tcl.
+A protocol may be as simple as a list of known command-line arguments, or may require invoking a script written in a scripting language such as Python or Tcl.
+
+> __Tip__: The strings within the array for the `args` field of a protocol support string variables. See [String Swapping](./../topic/swapping.md#protocol-arguments) to view what variables are allowed.
 
 
 ## Viewing available protocols

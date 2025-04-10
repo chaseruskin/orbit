@@ -28,6 +28,8 @@ A user can define a custom protocol for accessing packages from the internet by 
 Orbit sets the current directory for the custom protocol execution to already be the queue directory.
 This means when a custom protocol is executed, whatever files it downloads and extracts to the current directory is the directory Orbit expects to find the IP.
 
+When a custom protocol is used, Orbit creates a temporary directory and calls the protocol's command from this newly created temporary directory. Orbit removes this temporary directory after an ip is downloaded and creates a new temporary directory for each ip download. 
+
 ### Example
 
 One possible protocol relies on using the `git` command-line tool.

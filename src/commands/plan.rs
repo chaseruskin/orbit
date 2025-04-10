@@ -598,7 +598,6 @@ pub fn download_missing_deps(
                         &mut vtable,
                         Some(&entry.to_ip_spec().to_partial_ip_spec()),
                         src,
-                        None,
                         catalog.get_downloads_path(),
                         &protocols,
                         false,

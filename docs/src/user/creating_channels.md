@@ -68,29 +68,19 @@ sync.args = ["pull"]
 import subprocess
 import os
 
-def restore(path: str, staged: bool):
-    """
-    Restore the modified directory `path` in the channel from the publish command back to their original state.
-    """
-    args = ['--staged'] if staged else []
-    subprocess.Popen(['git', 'restore'] + args + [path]).wait()
-
-channel_dir = os.environ.get("ORBIT_CHANNEL_DIR")
+ip_index = os.environ.get("ORBIT_CHANNEL_IP_DIR")
 ip_name = os.environ.get("ORBIT_IP_NAME")
 ip_version = os.environ.get("ORBIT_IP_VERSION") 
 
 # Add untracked files
-child = subprocess.Popen(['git', 'add', channel_dir])
+child = subprocess.Popen(['git', 'add', ip_index])
 rc = child.wait()
 if rc != 0:
-    restore(channel_dir, staged=False)
     exit(rc)
 # Commit the changes
 child = subprocess.Popen(['git', 'commit', '-m', "Publishes "+ip_name+':'+ip_version])
 rc = child.wait()
 if rc != 0:
-    restore(channel_dir, staged=True)
-    restore(channel_dir, staged=False)
     exit(rc)
 # Push the changes to the remote
 child = subprocess.Popen(['git', 'push'])

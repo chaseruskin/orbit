@@ -52,7 +52,6 @@ The string pattern for a target's fileset configuration is allowed to contain an
 
 The argument list defined in a protocol's configuration is allowed to contain any of the following keys:
 
-- `orbit.queue`: The directory that Orbit expects the ip temporarily placed immediately after download.
 - `orbit.ip.name`: The name of the ip being downloaded.
 - `orbit.ip.version`: The version of the ip being downloaded.
 - `orbit.ip.source.url`: The URL for the ip being downloaded.

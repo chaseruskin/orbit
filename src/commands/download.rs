@@ -83,25 +83,18 @@ impl Download {
     }
 
     /// Calls a protocol for the given package and then places the download into
-    /// the downloads folder.
+    /// the downloads folder (`download_dir`).
     pub fn download(
         vtable: &mut StrSwapTable,
         spec: Option<&PartialIpSpec>,
         src: &Source,
-        queue: Option<&PathBuf>,
         download_dir: &PathBuf,
         protocols: &HashMap<&str, &Protocol>,
         verbose: bool,
         _force: bool,
     ) -> Result<(IpSpec, Vec<u8>), Fault> {
-        // use the user-provided queue directory or simply use a temporary directory
-        let queue = match queue {
-            Some(q) => {
-                std::fs::create_dir_all(q)?;
-                q.clone()
-            }
-            None => TempDir::into_path(TempDir::new()?),
-        };
+        // use a temporary directory the download process
+        let queue = TempDir::into_path(TempDir::new()?);
 
         // access the protocol
         if let Some(proto) = src.get_protocol() {
@@ -131,7 +124,7 @@ impl Download {
                         .replace_vars_in_tag(&vtable);
 
                     let std_queue = PathBuf::standardize(&queue);
-                    vtable.add("orbit.queue", std_queue.to_str().unwrap());
+                    // vtable.add("orbit.queue", std_queue.to_str().unwrap());
                     vtable.add("orbit.ip.source.url", processed_src.get_url());
                     vtable.add("orbit.ip.source.protocol", entry.get_name());
                     vtable.add(
@@ -290,55 +283,54 @@ impl Download {
             }
         }
     }
-
-    pub fn download_all(
-        downloads: &Vec<(IpSpec, Source)>,
-        proto_map: &HashMap<&str, &Protocol>,
-        vtable: StrSwapTable,
-        verbose: bool,
-        queue: Option<&PathBuf>,
-        download_dir: &PathBuf,
-        force: bool,
-    ) -> Result<(), Fault> {
-        match downloads.len() {
-            0 => {
-                crate::info!("no missing downloads");
-                return Ok(());
-            }
-            1 => {
-                crate::info!("downloading 1 ip ...")
-            }
-            _ => {
-                crate::info!("downloading {} ips ...", downloads.len())
-            }
-        }
-        let mut vtable = vtable;
-        let mut results = downloads.iter().filter_map(|e| {
-            match Self::download(
-                &mut vtable,
-                Some(&e.0.to_partial_ip_spec()),
-                &e.1,
-                queue,
-                &download_dir,
-                &proto_map,
-                verbose,
-                force,
-            ) {
-                Ok(_) => None,
-                Err(e) => Some(e),
-            }
-        });
-        if let Some(n) = results.next() {
-            return Err(n);
-        }
-
-        Ok(())
-    }
 }
 
 // impl Download {
 // DEPRECATED: This function may be outdated- was used when `plan` used to be a
 // dedicated subcommand.
+
+// pub fn download_all(
+//     downloads: &Vec<(IpSpec, Source)>,
+//     proto_map: &HashMap<&str, &Protocol>,
+//     vtable: StrSwapTable,
+//     verbose: bool,
+//     queue: Option<&PathBuf>,
+//     download_dir: &PathBuf,
+//     force: bool,
+// ) -> Result<(), Fault> {
+//     match downloads.len() {
+//         0 => {
+//             crate::info!("no missing downloads");
+//             return Ok(());
+//         }
+//         1 => {
+//             crate::info!("downloading 1 ip ...")
+//         }
+//         _ => {
+//             crate::info!("downloading {} ips ...", downloads.len())
+//         }
+//     }
+//     let mut vtable = vtable;
+//     let mut results = downloads.iter().filter_map(|e| {
+//         match Self::download(
+//             &mut vtable,
+//             Some(&e.0.to_partial_ip_spec()),
+//             &e.1,
+//             queue,
+//             &download_dir,
+//             &proto_map,
+//             verbose,
+//             force,
+//         ) {
+//             Ok(_) => None,
+//             Err(e) => Some(e),
+//         }
+//     });
+//     if let Some(n) = results.next() {
+//         return Err(n);
+//     }
+//     Ok(())
+// }
 
 // fn execute(self, c: &Context) -> Result<(), Fault> {
 // // @idea: display lock entries as JSON? or use different env var for ORBIT_DOWNLOAD_LIST and ORBIT_VERSION_LIST

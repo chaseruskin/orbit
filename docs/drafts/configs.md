@@ -167,7 +167,7 @@ Dependencies:
 name = "git-op"
 description = "Fetch remote repositories using git"
 command = "git"
-args = ["clone", "-b", "{{ orbit.ip.version }}", "{{ orbit.ip.source.url }}", "{{ orbit.queue }}/{{ orbit.ip.name }}"]
+args = ["clone", "-b", "{{ orbit.ip.version }}", "{{ orbit.ip.source.url }}"]
 explanation = """\
 This protocol tries to clone a repository defined under the source URL at a tag 
 matching the IP's version.

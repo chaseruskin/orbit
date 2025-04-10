@@ -19,6 +19,7 @@
     - [Developing Ip](./user/developing_ip.md)
     - [Releasing Ip](./user/releasing_ip.md)
     - [Creating Targets](./user/creating_targets.md)
+    - [Creating Protocols](./user/creating_protocols.md)
     - [Creating Channels](./user/creating_channels.md)
     - [Specifying Dependencies](./user/specifying_deps.md)
 

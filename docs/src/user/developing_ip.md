@@ -6,6 +6,9 @@ Once existing work has been evaluated and the requirements for an ip are defined
 
 The guides in this section, except for the ones on creation and initialization of an ip, assume you are running commands from the root directory or any subdirectory of the current ip. The current ip, also sometimes referred to as the local ip, is the ip being actively developed.
 
+This section also assumes you have one or more targets already configured. To learn how to create targets, see [Creating Targets](./creating_targets.md).
+
+
 ### Guides
 - [Creating a new ip](#creating-a-new-ip)
 - [Initializing an existing project as an ip](#initializing-an-existing-project-as-an-ip)

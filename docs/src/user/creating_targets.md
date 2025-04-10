@@ -22,7 +22,7 @@ If a step mentions the "target configuration", this corresponds to the entry for
 
 This guide walks through how to add a target to be recognized by Orbit. In this guide, our target is called `tar`.
 
-1. Open an Orbit configuration file
+1. Open an Orbit configuration file.
    
 2. Make a new entry in the `[[target]]` array:
 ``` toml

@@ -1540,10 +1540,11 @@ for arg in sys.argv[1:]:
 name = "gitit"
 description = "Download ip using git"
 command = "git"
-args = ["clone", "{{ ip.source.url }}"]
+args = ["clone", "{{ orbit.ip.source.url }}"]
 </code></pre>
+<p>A protocol may be as simple as a list of known command-line arguments, or may require invoking a script written in a scripting language such as Python or Tcl.</p>
 <blockquote>
-<p><strong>Tip</strong>: A protocol may be as simple as a list of known command-line arguments, or may require invoking a script written in a scripting language such as Python or Tcl.</p>
+<p><strong>Tip</strong>: The strings within the array for the <code>args</code> field of a protocol support string variables. See <a href="user/./../topic/swapping.html#protocol-arguments">String Swapping</a> to view what variables are allowed.</p>
 </blockquote>
 <h2 id="viewing-available-protocols"><a class="header" href="#viewing-available-protocols">Viewing available protocols</a></h2>
 <p>This guide walks through how to view the protocols already configured and available to use for an ip.</p>
@@ -1638,29 +1639,19 @@ sync.args = ["pull"]
 <pre><code class="language-Python">import subprocess
 import os
 
-def restore(path: str, staged: bool):
-    """
-    Restore the modified directory `path` in the channel from the publish command back to their original state.
-    """
-    args = ['--staged'] if staged else []
-    subprocess.Popen(['git', 'restore'] + args + [path]).wait()
-
-channel_dir = os.environ.get("ORBIT_CHANNEL_DIR")
+ip_index = os.environ.get("ORBIT_CHANNEL_IP_DIR")
 ip_name = os.environ.get("ORBIT_IP_NAME")
 ip_version = os.environ.get("ORBIT_IP_VERSION") 
 
 # Add untracked files
-child = subprocess.Popen(['git', 'add', channel_dir])
+child = subprocess.Popen(['git', 'add', ip_index])
 rc = child.wait()
 if rc != 0:
-    restore(channel_dir, staged=False)
     exit(rc)
 # Commit the changes
 child = subprocess.Popen(['git', 'commit', '-m', "Publishes "+ip_name+':'+ip_version])
 rc = child.wait()
 if rc != 0:
-    restore(channel_dir, staged=True)
-    restore(channel_dir, staged=False)
     exit(rc)
 # Push the changes to the remote
 child = subprocess.Popen(['git', 'push'])
@@ -1906,6 +1897,7 @@ source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
 <p>A user can define a custom protocol for accessing packages from the internet by modifying the configuration file.</p>
 <p>Orbit sets the current directory for the custom protocol execution to already be the queue directory.
 This means when a custom protocol is executed, whatever files it downloads and extracts to the current directory is the directory Orbit expects to find the IP.</p>
+<p>When a custom protocol is used, Orbit creates a temporary directory and calls the protocol's command from this newly created temporary directory. Orbit removes this temporary directory after an ip is downloaded and creates a new temporary directory for each ip download.</p>
 <h3 id="example"><a class="header" href="#example">Example</a></h3>
 <p>One possible protocol relies on using the <code>git</code> command-line tool.</p>
 <p>Filename: config.toml</p>
@@ -2037,7 +2029,6 @@ exclude = [
 <h3 id="protocol-arguments"><a class="header" href="#protocol-arguments">Protocol arguments</a></h3>
 <p>The argument list defined in a protocol's configuration is allowed to contain any of the following keys:</p>
 <ul>
-<li><code>orbit.queue</code>: The directory that Orbit expects the ip temporarily placed immediately after download.</li>
 <li><code>orbit.ip.name</code>: The name of the ip being downloaded.</li>
 <li><code>orbit.ip.version</code>: The version of the ip being downloaded.</li>
 <li><code>orbit.ip.source.url</code>: The URL for the ip being downloaded.</li>

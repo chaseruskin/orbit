@@ -176,6 +176,7 @@ source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
 <p>A user can define a custom protocol for accessing packages from the internet by modifying the configuration file.</p>
 <p>Orbit sets the current directory for the custom protocol execution to already be the queue directory.
 This means when a custom protocol is executed, whatever files it downloads and extracts to the current directory is the directory Orbit expects to find the IP.</p>
+<p>When a custom protocol is used, Orbit creates a temporary directory and calls the protocol's command from this newly created temporary directory. Orbit removes this temporary directory after an ip is downloaded and creates a new temporary directory for each ip download.</p>
 <h3 id="example"><a class="header" href="#example">Example</a></h3>
 <p>One possible protocol relies on using the <code>git</code> command-line tool.</p>
 <p>Filename: config.toml</p>

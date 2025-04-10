@@ -185,10 +185,11 @@
 name = "gitit"
 description = "Download ip using git"
 command = "git"
-args = ["clone", "{{ ip.source.url }}"]
+args = ["clone", "{{ orbit.ip.source.url }}"]
 </code></pre>
+<p>A protocol may be as simple as a list of known command-line arguments, or may require invoking a script written in a scripting language such as Python or Tcl.</p>
 <blockquote>
-<p><strong>Tip</strong>: A protocol may be as simple as a list of known command-line arguments, or may require invoking a script written in a scripting language such as Python or Tcl.</p>
+<p><strong>Tip</strong>: The strings within the array for the <code>args</code> field of a protocol support string variables. See <a href="./../topic/swapping.html#protocol-arguments">String Swapping</a> to view what variables are allowed.</p>
 </blockquote>
 <h2 id="viewing-available-protocols"><a class="header" href="#viewing-available-protocols">Viewing available protocols</a></h2>
 <p>This guide walks through how to view the protocols already configured and available to use for an ip.</p>

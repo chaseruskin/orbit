@@ -176,7 +176,7 @@ impl Environment {
                 .value(PathBuf::standardize(&ip.get_root()).to_str().unwrap()),
         );
         self.insert(
-            EnvVar::new().key(ORBIT_MANIFEST_PATH).value(
+            EnvVar::new().key(ORBIT_MANIFEST_FILE).value(
                 PathBuf::standardize(&ip.get_root().join(IP_MANIFEST_FILE))
                     .to_str()
                     .unwrap(),
@@ -289,7 +289,7 @@ pub const NO_COLOR: &str = "NO_COLOR";
 pub const ORBIT_WIN_LITERAL_CMD: &str = "ORBIT_WIN_LITERAL_CMD";
 
 pub const ORBIT_MANIFEST_DIR: &str = "ORBIT_MANIFEST_DIR";
-pub const ORBIT_MANIFEST_PATH: &str = "ORBIT_MANIFEST_PATH";
+pub const ORBIT_MANIFEST_FILE: &str = "ORBIT_MANIFEST_FILE";
 pub const ORBIT_IP_NAME: &str = "ORBIT_IP_NAME";
 pub const ORBIT_IP_UUID: &str = "ORBIT_IP_UUID";
 pub const ORBIT_IP_VERSION: &str = "ORBIT_IP_VERSION";
@@ -314,6 +314,8 @@ pub const ORBIT_BLUEPRINT: &str = "ORBIT_BLUEPRINT";
 pub const ORBIT_TARGET_DIR: &str = "ORBIT_TARGET_DIR";
 pub const ORBIT_OUT_DIR: &str = "ORBIT_OUT_DIR";
 
+pub const ORBIT_CHANNEL_NAME: &str = "ORBIT_CHANNEL_NAME";
 pub const ORBIT_CHANNEL_DIR: &str = "ORBIT_CHANNEL_DIR";
+pub const ORBIT_CHANNEL_IP_DIR: &str = "ORBIT_CHANNEL_IP_DIR";
 
 pub const ORBIT_ENV_PREFIX: &str = "ORBIT_ENV_";

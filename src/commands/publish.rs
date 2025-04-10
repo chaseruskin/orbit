@@ -29,7 +29,9 @@ use crate::core::iparchive::IpArchive;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::error::{Error, Hint, LastError};
 use crate::util::anyerror::Fault;
-use crate::util::environment::{EnvVar, Environment, ORBIT_CHANNEL_DIR};
+use crate::util::environment::{
+    EnvVar, Environment, ORBIT_CHANNEL_DIR, ORBIT_CHANNEL_IP_DIR, ORBIT_CHANNEL_NAME,
+};
 use crate::util::filesystem;
 
 use cliproc::{cli, proc, stage::*};
@@ -371,7 +373,13 @@ impl Publish {
             // update the index path
             let index_dir = Self::create_pointer_directory(&local_ip);
             let index_path = filesystem::into_std_str(chan.get_root().join(index_dir));
-            env = env.overwrite(EnvVar::with(ORBIT_CHANNEL_DIR, index_path.as_str()));
+            // set the CHANNEL environment variables
+            env = env.overwrite(EnvVar::with(ORBIT_CHANNEL_NAME, chan.get_name()));
+            env = env.overwrite(EnvVar::with(
+                ORBIT_CHANNEL_DIR,
+                &filesystem::into_std_str(chan.get_root().to_path_buf()),
+            ));
+            env = env.overwrite(EnvVar::with(ORBIT_CHANNEL_IP_DIR, index_path.as_str()));
             // publish to this channel
             match self.publish(local_ip, chan, &env) {
                 Ok(_) => (),

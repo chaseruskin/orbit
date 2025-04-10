@@ -253,7 +253,7 @@ impl Download {
             0 => {
                 // could not find the IP
                 Err(AnyError(format!(
-                    "failed to find a manifest for ip \"{}\"",
+                    "failed to find a manifest during download that matches ip \"{}\"",
                     spec.unwrap()
                 )))?
             }

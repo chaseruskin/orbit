@@ -56,7 +56,7 @@ Note that the `version` field is required and its value must match the `version`
 gates = "1.0.0"
 ```
 
-> __Tip__: All methods of specifying dependencies found in the `[dependencies]` table can also be applied to the `[dev-dependencies]` table.
+> __Tip__: All methods of specifying dependencies using the `[dependencies]` table can also be applied to the `[dev-dependencies]` table.
 
 ## Differentiating among dependencies of the same name
 

@@ -14,7 +14,7 @@ Orbit also sets environment variables during runtime such that any subprocesses 
 
 - `ORBIT_MANIFEST_DIR` - The full path to the directory that contains the current ip's manifest.
 
-- `ORBIT_MANIFEST_PATH` - The full path to the file that is the current ip's manifest.
+- `ORBIT_MANIFEST_FILE` - The full path to the file that is the current ip's manifest.
 
 - `ORBIT_IP_NAME` - The name of the current ip.
 
@@ -52,7 +52,12 @@ Orbit also sets environment variables during runtime such that any subprocesses 
   
 - `ORBIT_OUT_DIR` - The full path to the directory where all generated artifacts for the current target will be stored. This directory is inside the target directory for the current ip, and is unique for each selected target.
 
-- `ORBIT_CHANNEL_DIR` - The full path to the directory where the current ip's manifest will be placed for the current channel in the publishing process.
+- `ORBIT_CHANNEL_NAME` - The name of the current channel being used in the publishing process.
+
+- `ORBIT_CHANNEL_DIR` - The full path to the directory that is the root of the current channel.
+
+- `ORBIT_CHANNEL_IP_DIR` - The full path to the directory in the current channel where the current ip's manifest will be copied to during the publishing process.
+
 
 ## Checking the environment
 

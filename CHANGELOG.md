@@ -23,6 +23,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Adds `--all-public` flag to assume source files as public when implicitly private
 - Adds `require-public` entry to configuration files to set default behavior of source files being either private by default or public by default
 - Enforces behavior of source files being private by default
+- Adds `ORBIT_CHANNEL_NAME` and `ORBIT_CHANNEL_DIR` environment variables (set during the publishing process)
 
 ### Changes
 - Renames `--no-clean` flag to `--keep`, `-k`, to align with conventional linux command-line options
@@ -31,6 +32,8 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Adjusts how protocols are listed using `orbit install --list` to be consistent with the format for listing targets (`orbit build --list`) and listing channels (`orbit publish --list`)
 - Allows ips to be nested within one another, however, the nested ip is ignored during file discovery for the parent ip
 - Removes `include` entry from manifest as `exclude` can provide same functionality now that it follows .gitignore semantics (such as `!` symbol)
+- Renames `ORBIT_MANIFEST_PATH` environment variable to `ORBIT_MANIFEST_FILE`
+- Renames `ORBIT_CHANNEL_DIR` environment variable to `ORBIT_CHANNEL_IP_DIR`
 
 ### Fixes
 - Improves error message when giving bad version for local/relative dependency

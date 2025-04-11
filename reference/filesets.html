@@ -162,7 +162,7 @@
 <p>A <em>fileset</em> is group of files identified by a common file pattern. Typically they are denoted by a common file extension, such as <code>.txt</code>, but a fileset can more broadly be grouped under any glob-style file pattern.</p>
 <p>A fileset itself consists of a name and one or more file patterns.</p>
 <ul>
-<li>The name is a string that is normalized to COBOL-CASE. Cobol case uses all upper case letters with the hyphen <code>-</code> delimiter. It is used to identify which fileset a file belongs to.</li>
+<li>The name is a string that is normalized to COBOL-CASE, which uses all upper case letters and the hyphen <code>-</code> delimiter. It is used to identify which fileset a file belongs to.</li>
 <li>A file pattern is a glob-style file pattern. It is used to perform glob-style matching when searching the file system for files to add to a fileset.</li>
 </ul>
 <p>If a file in the search space matches a least one of defined file patterns of a fileset, then it will be added under that fileset.</p>
@@ -174,8 +174,8 @@
 <li><code>SYSV</code>: SystemVerilog files (.sv)</li>
 </ul>
 <h2 id="custom-filesets"><a class="header" href="#custom-filesets">Custom filesets</a></h2>
-<p>Custom filesets are filesets that are be defined by the user for a specific target. These filesets are only searched for in the local ip and do not extend any of the ip's dependencies.</p>
-<p>If a pattern does not start with an explicit relative path symbol (<code>.</code>), then Orbit assumes to look for the fileset across every possible subdirectory in the local ip by implicitly prepending the pattern with <code>**/</code>.</p>
+<p>Custom filesets are filesets that are be defined by the user for a specific target. By default, these filesets are only searched for in the local ip and do not extend any of the ip's dependencies. Set the <code>recursive</code> entry of a fileset true to apply it to all ips in the dependency graph.</p>
+<p>If a pattern does not start with an explicit path delimiter (<code>/</code>), then Orbit assumes to look for the fileset across every possible subdirectory in the local ip by implicitly prepending the pattern with <code>**/</code>.</p>
 <h2 id="apply-fileset-patterns"><a class="header" href="#apply-fileset-patterns">Apply fileset patterns</a></h2>
 <p>A fileset's pattern is applied starting from the current ip's root directory, the same directory where the <code>Orbit.toml</code> file exists.</p>
 <h2 id="name-normalization-examples"><a class="header" href="#name-normalization-examples">Name normalization examples</a></h2>
@@ -191,7 +191,7 @@
 <div class="table-wrapper"><table><thead><tr><th>User-defined pattern</th><th>Interpreted pattern</th></tr></thead><tbody>
 <tr><td><code>*.txt</code></td><td><code>**/*.txt</code></td></tr>
 <tr><td><code>Boards/*.toml</code></td><td><code>**/Boards/*.toml</code></td></tr>
-<tr><td><code>./specific/path.log</code></td><td><code>./specific/path.log</code></td></tr>
+<tr><td><code>/specific/path.log</code></td><td><code>./specific/path.log</code></td></tr>
 </tbody></table>
 </div>
 <p>The custom patterns begin their search for files at the local ip's root directory. The interpreted pattern is the actual glob-style pattern used when collecting files for custom filesets.</p>

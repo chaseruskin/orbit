@@ -170,6 +170,7 @@
 <li><a href="#reading-a-blueprint">Reading a blueprint</a></li>
 <li><a href="#handling-built-in-filesets">Handling built-in filesets</a></li>
 <li><a href="#adding-a-custom-fileset">Adding a custom fileset</a></li>
+<li><a href="#adding-a-custom-recursive-fileset">Adding a custom recursive fileset</a></li>
 <li><a href="#handling-a-custom-fileset">Handling a custom fileset</a></li>
 <li><a href="#handling-additional-arguments">Handling additional arguments</a></li>
 </ul>
@@ -234,7 +235,7 @@ with open(os.environ['ORBIT_BLUEPRINT']) as bp:
 </code></pre>
 <p>This will create placeholders ("TODO") print statements in the code sections where Verilog, SystemVerilog, and VHDL files can be processed by the target script.</p>
 <h2 id="adding-a-custom-fileset"><a class="header" href="#adding-a-custom-fileset">Adding a custom fileset</a></h2>
-<p>This guide walks through how to modify a target's configuration to accept additional files to be collected into the blueprint during the planning stage.</p>
+<p>This guide walks through how to modify a target's configuration to accept additional files to be collected into the blueprint from only the local ip during the planning stage.</p>
 <ol>
 <li>
 <p>Open the target configuration.</p>
@@ -255,6 +256,24 @@ fileset.A-SET = "*.txt"
 <pre><code class="language-toml">fileset.B-SET = { patterns = ["*.b", "*.b2"] }
 </code></pre>
 <p>If a file matches a least one of defined file patterns, then it will be added under that fileset.</p>
+<h2 id="adding-a-custom-recursive-fileset"><a class="header" href="#adding-a-custom-recursive-fileset">Adding a custom recursive fileset</a></h2>
+<p>This guide walks through how to modify a target's configuration to accept additional files to be collected into the blueprint from all ip in the dependency graph during the planning stage.</p>
+<ol>
+<li>
+<p>Open the target configuration.</p>
+</li>
+<li>
+<p>Add the fileset, its glob-style pattern, and the <code>recursive</code> entry true to your target's entry:</p>
+</li>
+</ol>
+<pre><code class="language-toml">[[target]]
+name = "tar"
+description = "My target description"
+command = "python3"
+args = ["tar.py"]
+# Add a custom recursive fileset
+fileset.C-SET = { patterns = ["*.c"], recursive = true }
+</code></pre>
 <h2 id="handling-a-custom-fileset"><a class="header" href="#handling-a-custom-fileset">Handling a custom fileset</a></h2>
 <p>Adding a custom fileset in the target's configuration is not enough to support custom files; the target script must also have support for handling the custom filesets that are collected into the blueprint from the planning stage.</p>
 <ol>
@@ -265,17 +284,17 @@ fileset.A-SET = "*.txt"
 <p>Read the blueprint into a variable (<code>entries</code>) storing the blueprint's data as a list of 3-element (fileset, library, filepath) tuples.</p>
 </li>
 <li>
-<p>Add this code snippet to pseudo-process the custom files collected from the planning stage for the <code>MYSET</code> filset:</p>
+<p>Add this code snippet to pseudo-process the custom files collected from the planning stage for the <code>A-SET</code> filset:</p>
 </li>
 </ol>
 <pre><code class="language-python">for entry in entries:
     # Break out the 3-element tuple into its respective components
     fileset, library, filepath = entry
     # Condition based on the entry's fileset
-    if fileset == 'MYSET':
+    if fileset == 'A-SET':
         print('TODO: handle text file '+filepath+' under the custom fileset '+fileset)
 </code></pre>
-<p>This will create placeholders ("TODO") print statements in the code sections where any file that was found to match the <code>MYSET</code> file pattern can be processed by the target script.</p>
+<p>This will create placeholders ("TODO") print statements in the code sections where any file that was found to match the <code>A-SET</code> file pattern can be processed by the target script.</p>
 <h2 id="handling-additional-arguments"><a class="header" href="#handling-additional-arguments">Handling additional arguments</a></h2>
 <p>Sometimes arguments need to be passed to your target on the command line. Arguments found after <code>--</code> flag for <code>orbit build</code> or <code>orbit test</code> will be appended to the list of arguments already defined in the target's configuration.</p>
 <ol>

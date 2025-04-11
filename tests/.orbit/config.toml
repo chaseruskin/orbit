@@ -10,5 +10,12 @@ description = "Print the blueprint contents"
 command = "cat"
 args = ["blueprint.tsv"]
 
+[[target]]
+name = "rr"
+description = "Test of recursive filesets"
+command = "cat"
+args = ["blueprint.tsv"]
+fileset.pyf = { patterns = ["*.py"], recursive = true }
+
 [test]
 default-target = "ao"

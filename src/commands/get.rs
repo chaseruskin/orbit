@@ -345,7 +345,7 @@ impl Get {
             if need_sep == true {
                 println!();
             }
-            print!(
+            println!(
                 "{}",
                 entity.into_instance(
                     &self.name,
@@ -417,7 +417,7 @@ impl Get {
             if need_sep == true {
                 println!();
             }
-            print!(
+            println!(
                 "{}",
                 module.into_instance(&self.name, &self.signal_prefix, &self.signal_suffix, &fmt)
             );

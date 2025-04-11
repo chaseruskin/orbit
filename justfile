@@ -50,6 +50,7 @@ run-sys-tests:
     just test-partv
     just test-rel-dep
     just test-sep-arch-refs
+    just test-recur-filesets
 
 # Run all system tests
 test-all:
@@ -61,6 +62,7 @@ test-all:
     just test-partv
     just test-rel-dep
     just test-sep-arch-refs
+    just test-recur-filesets
 
 # Planning stage (associated files)
 test-plan-1:
@@ -106,3 +108,8 @@ test-ip-collide:
 test-sep-arch-refs:
     chmod +x ./tests/s7/test.sh
     cd ./tests/s7; ./test.sh
+
+# Recursive filesets
+test-recur-filesets:
+    chmod +x ./tests/s8/test.sh
+    cd ./tests/s8; ./test.sh

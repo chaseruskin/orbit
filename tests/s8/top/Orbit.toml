@@ -1,0 +1,7 @@
+[ip]
+name = "top"
+version = "0.1.0"
+uuid = "aje102fjc86k3fpoe3ifa5nw5"
+
+[dependencies]
+dep = { path = "../dep", version = "0.1.0" }

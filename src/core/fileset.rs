@@ -25,6 +25,7 @@ pub struct Fileset {
     #[serde(skip_serializing, skip_deserializing)]
     name: String,
     patterns: Vec<Style>,
+    recursive: bool,
 }
 
 use serde::de::Visitor;
@@ -36,6 +37,7 @@ impl<'de> serde::Deserialize<'de> for Fileset {
     {
         enum Field {
             Patterns,
+            Recursive,
         }
 
         // This part could also be generated independently by:
@@ -54,7 +56,7 @@ impl<'de> serde::Deserialize<'de> for Fileset {
                     type Value = Field;
 
                     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                        formatter.write_str("`patterns`")
+                        formatter.write_str("`patterns` or `recursive`")
                     }
 
                     fn visit_str<E>(self, value: &str) -> Result<Field, E>
@@ -63,6 +65,7 @@ impl<'de> serde::Deserialize<'de> for Fileset {
                     {
                         match value {
                             "patterns" => Ok(Field::Patterns),
+                            "recursive" => Ok(Field::Recursive),
                             _ => Err(de::Error::unknown_field(value, FIELDS)),
                         }
                     }
@@ -92,6 +95,7 @@ impl<'de> serde::Deserialize<'de> for Fileset {
             {
                 Ok(Fileset {
                     name: String::new(),
+                    recursive: false,
                     patterns: vec![match Style::from_str(value) {
                         Ok(v) => v,
                         Err(e) => return Err(de::Error::custom(e))?,
@@ -104,20 +108,29 @@ impl<'de> serde::Deserialize<'de> for Fileset {
                 V: MapAccess<'de>,
             {
                 let mut patterns: Option<Vec<Style>> = None;
+                let mut recursive: Option<bool> = None;
                 while let Some(key) = map.next_key()? {
                     match key {
                         Field::Patterns => {
                             if patterns.is_some() {
-                                return Err(de::Error::duplicate_field("patterns]"));
+                                return Err(de::Error::duplicate_field("patterns"));
                             }
                             patterns = Some(map.next_value()?);
                         }
+                        Field::Recursive => {
+                            if recursive.is_some() {
+                                return Err(de::Error::duplicate_field("recursive"));
+                            }
+                            recursive = Some(map.next_value()?);
+                        }
                     }
                 }
-                let patterns = patterns.unwrap();
+                let patterns = patterns.ok_or_else(|| de::Error::missing_field("patterns"))?;
+                let recursive = recursive.unwrap_or(false);
                 Ok(Fileset {
                     name: String::new(),
                     patterns: patterns,
+                    recursive: recursive,
                 })
             }
         }
@@ -147,7 +160,7 @@ impl FromStr for Style {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let prefix = match s.get(0..1) {
-            Some(".") => "",
+            Some("/") => ".",
             _ => "**/",
         };
         Ok(Style(Pattern::new(&(prefix.to_owned() + s))?.into()))
@@ -244,6 +257,7 @@ impl FromStr for Fileset {
                 }
                 Err(e) => return Err(Self::Err::PatternError(pattern.to_string(), e)),
             },
+            recursive: false,
             name: Self::standardize_name(name),
         })
     }
@@ -255,6 +269,7 @@ impl Fileset {
         Fileset {
             name: String::new(),
             patterns: Vec::new(),
+            recursive: false,
         }
     }
 
@@ -262,6 +277,11 @@ impl Fileset {
     pub fn name(mut self, s: &str) -> Self {
         self.name = Self::standardize_name(s);
         self
+    }
+
+    /// Checks if the defined fileset is recursive.
+    pub fn is_recursive(&self) -> bool {
+        self.recursive
     }
 
     /// Set the [Fileset] glob-style pattern.
@@ -413,6 +433,7 @@ mod test {
             Fileset {
                 name: String::from("HELLO-WORLD"),
                 patterns: vec![Pattern::new("**/*.txt").unwrap().into()],
+                recursive: false,
             }
         );
 
@@ -425,6 +446,7 @@ mod test {
             Fileset {
                 name: String::from("HELLO-WORLD"),
                 patterns: vec![Pattern::new("./some/specific/path.txt").unwrap().into()],
+                recursive: false,
             }
         );
     }
@@ -438,6 +460,7 @@ mod test {
             Fileset {
                 name: String::from("XSIM-CFG"),
                 patterns: vec![Pattern::new("*.wcfg").unwrap().into()],
+                recursive: false,
             }
         );
 

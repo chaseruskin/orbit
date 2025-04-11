@@ -405,75 +405,76 @@ impl Plan {
 
         // [!] collect user-defined filesets
         {
-            let current_files: Vec<String> = working_ip.gather_current_files();
-
+            // prepare the variable table for string swapping in any custom filesets
             let mut vtable = StrSwapTable::new();
             // variables could potentially store empty strings if units are not set
             vtable.add("orbit.tb.name", &bench_name);
             vtable.add("orbit.top.name", &top_name);
             vtable.add("orbit.dut.name", &top_name);
 
-            // store data in a map for quicker look-ups when comparing to plugin-defind filesets
-            let mut cli_fset_map: HashMap<&String, &Fileset> = HashMap::new();
+            // store data in a map for quicker look-ups when comparing to target-defind filesets
+            let mut cli_fset_map: HashMap<&String, Fileset> = HashMap::new();
 
-            // use command-line set filesets
+            // use command-line set filesets (allow them to build and aggregate multiple patterns)
             if let Some(fsets) = filesets {
                 for fset in fsets {
                     // insert into map structure
-                    cli_fset_map.insert(fset.get_name(), &fset);
-                }
-            }
-
-            // collect data for the given target
-            if let Some(filesets) = target.get_filesets() {
-                for (name, fset) in filesets {
-                    let proper_key = Fileset::standardize_name(name);
-                    // check if appeared in cli arguments
-                    let (f_name, cli_fset) = match cli_fset_map.contains_key(&proper_key) {
-                        // override with fileset provided by command-line if conflicting names
-                        true => {
-                            // pull from map to ensure it is not double-counted when just writing command-line filesets
-                            let entry = cli_fset_map.remove(&proper_key);
-                            (name, entry.unwrap())
-                        }
-                        false => (name, fset),
-                    };
-                    // perform variable substitution on all patterns in the fileset
-                    let mut fset = Fileset::new().name(f_name);
-                    for pat in cli_fset.get_patterns() {
-                        fset = fset.add_pattern(&swap::substitute(pat.to_string(), &vtable))?;
+                    let name = fset.get_name();
+                    let pat = fset.get_patterns().first().unwrap().as_str();
+                    if cli_fset_map.contains_key(&name) {
+                        let next_fset = cli_fset_map.remove(&name).unwrap().add_pattern(pat)?;
+                        cli_fset_map.insert(name, next_fset);
+                    } else {
+                        cli_fset_map.insert(name, Fileset::new().name(name).add_pattern(pat)?);
                     }
-                    // match files
-                    fset.collect_files(&current_files)
-                        .into_iter()
-                        .for_each(|f| {
-                            blueprint.add(Entry::Auxiliary(
-                                fset.get_name().clone(),
-                                working_lib.to_string(),
-                                f.clone(),
-                            ));
-                        });
                 }
             }
 
-            // check against every defined fileset in the command-line (call remaining filesets)
-            for (key, cli_fset) in cli_fset_map {
-                // perform variable substitution on all patterns in the fileset
-                let mut fset = Fileset::new().name(key);
-                for pat in cli_fset.get_patterns() {
-                    fset = fset.add_pattern(&swap::substitute(pat.to_string(), &vtable))?;
+            // traverse the ip graph only if we have to
+            let has_recursive_fset = target
+                .get_filesets()
+                .iter()
+                .find_map(|k| {
+                    k.iter()
+                        .find_map(|(_, v)| if v.is_recursive() { Some(true) } else { None })
+                })
+                .unwrap_or(false);
+
+            // look in all ip for the fileset patterns
+            if has_recursive_fset == true {
+                let mut topo_order = ip_graph.get_graph().topological_sort();
+                // remove the last ip (the "working ip")
+                topo_order.pop().unwrap();
+                let topo_order = topo_order;
+                for i in topo_order {
+                    let all_files = ip_graph
+                        .get_node_by_index(i)
+                        .unwrap()
+                        .as_ref()
+                        .as_ip()
+                        .gather_current_files();
+                    Self::add_files_from_filesets_to_blueprint(
+                        &mut blueprint,
+                        all_files,
+                        target,
+                        &cli_fset_map,
+                        &vtable,
+                        &working_lib,
+                        true,
+                    )?;
                 }
-                // match files
-                fset.collect_files(&current_files)
-                    .into_iter()
-                    .for_each(|f| {
-                        blueprint.add(Entry::Auxiliary(
-                            fset.get_name().clone(),
-                            working_lib.to_string(),
-                            f.clone(),
-                        ));
-                    });
             }
+
+            let current_files: Vec<String> = working_ip.gather_current_files();
+            Self::add_files_from_filesets_to_blueprint(
+                &mut blueprint,
+                current_files,
+                target,
+                &cli_fset_map,
+                &vtable,
+                &working_lib,
+                false,
+            )?;
         }
 
         // collect in-order HDL file list
@@ -506,6 +507,68 @@ impl Plan {
             filesystem::into_std_str(blueprint_path)
         );
         Ok(Some(blueprint_name))
+    }
+
+    /// Reads through all of the filesets and properly adds any files found in the `current_files` to the `blueprint`.
+    ///
+    /// If `require_recur` is true, then the defined target must set as recursive.
+    fn add_files_from_filesets_to_blueprint(
+        blueprint: &mut Blueprint,
+        current_files: Vec<String>,
+        target: &Target,
+        cli_fset_map: &HashMap<&String, Fileset>,
+        vtable: &StrSwapTable,
+        working_lib: &LangIdentifier,
+        require_recur: bool,
+    ) -> Result<(), Fault> {
+        // collect data for the given target
+        if let Some(filesets) = target.get_filesets() {
+            for (name, tar_fset) in filesets {
+                // skip this fileset if we require recursive
+                if require_recur == true && tar_fset.is_recursive() == false {
+                    continue;
+                }
+                // perform variable substitution on all patterns in the fileset
+                let mut fset = Fileset::new().name(name);
+                for pat in tar_fset.get_patterns() {
+                    fset = fset.add_pattern(&swap::substitute(pat.to_string(), &vtable))?;
+                }
+                // match files
+                fset.collect_files(&current_files)
+                    .into_iter()
+                    .for_each(|f| {
+                        blueprint.add(Entry::Auxiliary(
+                            fset.get_name().clone(),
+                            working_lib.to_string(),
+                            f.clone(),
+                        ));
+                    });
+            }
+        }
+
+        // check against every defined fileset in the command-line (call remaining filesets)
+        for (key, cli_fset) in cli_fset_map {
+            // skip this fileset if we require recursive
+            if require_recur == true && cli_fset.is_recursive() == false {
+                continue;
+            }
+            // perform variable substitution on all patterns in the fileset
+            let mut fset = Fileset::new().name(key);
+            for pat in cli_fset.get_patterns() {
+                fset = fset.add_pattern(&swap::substitute(pat.to_string(), &vtable))?;
+            }
+            // match files
+            fset.collect_files(&current_files)
+                .into_iter()
+                .for_each(|f| {
+                    blueprint.add(Entry::Auxiliary(
+                        fset.get_name().clone(),
+                        working_lib.to_string(),
+                        f.clone(),
+                    ));
+                });
+        }
+        Ok(())
     }
 }
 

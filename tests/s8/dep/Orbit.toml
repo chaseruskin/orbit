@@ -1,0 +1,6 @@
+[ip]
+name = "dep"
+version = "0.1.0"
+uuid = "bsyi22wcqyf7vrzspaa8kjfym"
+
+[dependencies]

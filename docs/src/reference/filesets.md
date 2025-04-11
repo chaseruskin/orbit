@@ -3,7 +3,7 @@
 A _fileset_ is group of files identified by a common file pattern. Typically they are denoted by a common file extension, such as `.txt`, but a fileset can more broadly be grouped under any glob-style file pattern.
 
 A fileset itself consists of a name and one or more file patterns. 
-- The name is a string that is normalized to COBOL-CASE. Cobol case uses all upper case letters with the hyphen `-` delimiter. It is used to identify which fileset a file belongs to.
+- The name is a string that is normalized to COBOL-CASE, which uses all upper case letters and the hyphen `-` delimiter. It is used to identify which fileset a file belongs to.
 - A file pattern is a glob-style file pattern. It is used to perform glob-style matching when searching the file system for files to add to a fileset.
 
 If a file in the search space matches a least one of defined file patterns of a fileset, then it will be added under that fileset.
@@ -17,9 +17,9 @@ There are built-in filesets that Orbit uses that have special rules and work acr
 
 ## Custom filesets
 
-Custom filesets are filesets that are be defined by the user for a specific target. These filesets are only searched for in the local ip and do not extend any of the ip's dependencies.
+Custom filesets are filesets that are be defined by the user for a specific target. By default, these filesets are only searched for in the local ip and do not extend any of the ip's dependencies. Set the `recursive` entry of a fileset true to apply it to all ips in the dependency graph.
 
-If a pattern does not start with an explicit relative path symbol (`.`), then Orbit assumes to look for the fileset across every possible subdirectory in the local ip by implicitly prepending the pattern with `**/`.
+If a pattern does not start with an explicit path delimiter (`/`), then Orbit assumes to look for the fileset across every possible subdirectory in the local ip by implicitly prepending the pattern with `**/`.
 
 ## Apply fileset patterns
 
@@ -42,6 +42,6 @@ The normalized fileset name is the name that will be written to the blueprint fi
 | - | - |
 | `*.txt` | `**/*.txt` |
 | `Boards/*.toml` | `**/Boards/*.toml` |
-| `./specific/path.log` | `./specific/path.log` |
+| `/specific/path.log` | `./specific/path.log` |
 
 The custom patterns begin their search for files at the local ip's root directory. The interpreted pattern is the actual glob-style pattern used when collecting files for custom filesets.

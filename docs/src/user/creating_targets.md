@@ -15,6 +15,7 @@ If a step mentions the "target configuration", this corresponds to the entry for
 - [Reading a blueprint](#reading-a-blueprint)
 - [Handling built-in filesets](#handling-built-in-filesets)
 - [Adding a custom fileset](#adding-a-custom-fileset)
+- [Adding a custom recursive fileset](#adding-a-custom-recursive-fileset)
 - [Handling a custom fileset](#handling-a-custom-fileset)
 - [Handling additional arguments](#handling-additional-arguments)
 
@@ -79,7 +80,7 @@ This will create placeholders ("TODO") print statements in the code sections whe
 
 ## Adding a custom fileset
 
-This guide walks through how to modify a target's configuration to accept additional files to be collected into the blueprint during the planning stage.
+This guide walks through how to modify a target's configuration to accept additional files to be collected into the blueprint from only the local ip during the planning stage.
 
 1. Open the target configuration.
 
@@ -101,6 +102,23 @@ fileset.B-SET = { patterns = ["*.b", "*.b2"] }
 
 If a file matches a least one of defined file patterns, then it will be added under that fileset.
 
+## Adding a custom recursive fileset
+
+This guide walks through how to modify a target's configuration to accept additional files to be collected into the blueprint from all ip in the dependency graph during the planning stage.
+
+1. Open the target configuration.
+
+2. Add the fileset, its glob-style pattern, and the `recursive` entry true to your target's entry:
+``` toml
+[[target]]
+name = "tar"
+description = "My target description"
+command = "python3"
+args = ["tar.py"]
+# Add a custom recursive fileset
+fileset.C-SET = { patterns = ["*.c"], recursive = true }
+```
+
 ## Handling a custom fileset
 
 Adding a custom fileset in the target's configuration is not enough to support custom files; the target script must also have support for handling the custom filesets that are collected into the blueprint from the planning stage.
@@ -109,17 +127,17 @@ Adding a custom fileset in the target's configuration is not enough to support c
 
 2. Read the blueprint into a variable (`entries`) storing the blueprint's data as a list of 3-element (fileset, library, filepath) tuples.
 
-3. Add this code snippet to pseudo-process the custom files collected from the planning stage for the `MYSET` filset:
+3. Add this code snippet to pseudo-process the custom files collected from the planning stage for the `A-SET` filset:
 ``` python
 for entry in entries:
     # Break out the 3-element tuple into its respective components
     fileset, library, filepath = entry
     # Condition based on the entry's fileset
-    if fileset == 'MYSET':
+    if fileset == 'A-SET':
         print('TODO: handle text file '+filepath+' under the custom fileset '+fileset)
 ```
 
-This will create placeholders ("TODO") print statements in the code sections where any file that was found to match the `MYSET` file pattern can be processed by the target script.
+This will create placeholders ("TODO") print statements in the code sections where any file that was found to match the `A-SET` file pattern can be processed by the target script.
 
 ## Handling additional arguments
 

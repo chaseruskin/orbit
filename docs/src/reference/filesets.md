@@ -21,22 +21,28 @@ Custom filesets are filesets that are be defined by the user for a specific targ
 
 If a pattern does not start with an explicit path delimiter (`/`), then Orbit assumes to look for the fileset across every possible subdirectory in the local ip by implicitly prepending the pattern with `**/`.
 
-## Apply fileset patterns
+A custom fileset's patterns support string swapping. See [String Swapping](./../topic/swapping.md) to learn more about how it can be applied to fileset patterns.
+
+## Applying fileset patterns
 
 A fileset's pattern is applied starting from the current ip's root directory, the same directory where the `Orbit.toml` file exists.
 
 ## Name normalization examples
 
-| User-defined Fileset  | Normalized Fileset |
+Despite how the user enters the name of a fileset in a target's configuration, the name will be normalized to COBOL-CASE. The following are some examples of how the normalization process works on a variety of naming conventions.
+
+| User-defined fileset name  | Normalized fileset name (COBOL-CASE) |
 | --------- | ------------------ |
-| GOOD-SET  | GOOD-SET           |
-| Set-1     | SET-1              |
-| set_2     | SET-2              |
-| set_three | SET-THREE          |
+| A-SET     | A-SET              |
+| B_Set     | B-SET              |
+| set_1     | SET-1              |
+| SetTwo | SETTWO          |
 
 The normalized fileset name is the name that will be written to the blueprint file when collecting filesets. This design choice is for consistency across targets when reading and parsing the blueprint.
 
 ## Custom pattern assumption examples
+
+Unless starting with a path delimiter (`/`), a pattern of a fileset is assumed to be applied across the ip's directory and all of its subdirectories. The following are some examples of how Orbit interprets a fileset's patterns.
 
 | User-defined pattern | Interpreted pattern |
 | - | - |
@@ -44,4 +50,4 @@ The normalized fileset name is the name that will be written to the blueprint fi
 | `Boards/*.toml` | `**/Boards/*.toml` |
 | `/specific/path.log` | `./specific/path.log` |
 
-The custom patterns begin their search for files at the local ip's root directory. The interpreted pattern is the actual glob-style pattern used when collecting files for custom filesets.
+The custom patterns begin their search for files at the local ip's root directory. The file pattern used by Orbit when collecting files for custom filesets is the interpreted pattern.

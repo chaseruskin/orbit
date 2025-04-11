@@ -163,7 +163,7 @@ public = [
 ]
 ```
 
-The `public` field can be used to explicitly specify which files are visible to other ip when being when being referenced as a dependency. The list contains glob-style patterns that conform to .gitignore file semantics, and are always compared relative that ip's root directory.
+The `public` field can be used to explicitly specify which files are visible to other ip when being when being referenced as a dependency. The list contains glob-style file patterns that conform to .gitignore file semantics and are always compared relative to that ip's root directory.
 
 If no `public` field is present, then all files are implicitly specified as invisible (private) to other ip when being referenced as a dependency. To change the default behavior when the `public` field is absent, see the configuration's [require-public](./configuration.md#the-require-public-field) entry.
 

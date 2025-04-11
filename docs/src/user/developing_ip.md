@@ -17,7 +17,7 @@ This section also assumes you have one or more targets already configured. To le
 - [Viewing the design hierarchy](#viewing-the-design-hierarchy)
 - [Viewing available targets for testing](#viewing-available-targets-for-testing)
 - [Running a test](#running-a-test)
-- [Viewing available targets for building](#viewing-availble-targets-for-building)
+- [Viewing available targets for building](#viewing-available-targets-for-building)
 - [Running a build](#running-a-build)
 
 ## Creating a new ip
@@ -116,7 +116,7 @@ $ orbit test --tb <unit> --target <target>
 > ```
 
 
-## Viewing availble targets for building
+## Viewing available targets for building
 
 1. View the list of available targets configured to run using the build entry point:
 ```

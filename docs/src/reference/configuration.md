@@ -291,15 +291,24 @@ If this field is not defined, then the default is true.
 
 The `[fileset]` section allows user-defined key/value pairs, where the key corresponds to a fileset name and the value is a string that corresponds to the glob-style pattern. The fileset name will be normalized to COBOL-CASE.
 
+If a string is the immediate value of a custom key in the `fileset` section, then it becomes the fileset's only pattern and will only be applied to the current ip's directory.
+
 ``` toml
 [[target]]
 # ...
 fileset.TEXT = "*.txt"
-fileset.PYMDL = "{{ orbit.tb.name }}.py"
-fileset.B-SET = { patterns = ["*.b", "*.b2"] }
+fileset.CPPF = "{{ orbit.tb.name }}.cpp"
 ```
 
-The values for user-defined filesets support [_string swapping_](./../topic/swapping.md) (as shown in second example entry).
+If an inline table is the value of a custom key in the `fileset` section, then it requires the `patterns` field to be an array of strings that represent the different file patterns for this fileset. The optional `recursive` field accepts a boolean that when enabled, will apply the fileset patterns to all ips in the dependency graph.
+
+``` toml
+[[target]]
+# ...
+fileset.PYF = { patterns = ["*.py", "*.py3"], recursive = true }
+```
+
+The patterns for user-defined filesets support [_string swapping_](./../topic/swapping.md) (as shown in the pattern for the `CPPF` fileset).
 
 ### The `[[protocol]]` array
 

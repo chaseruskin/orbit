@@ -12,13 +12,42 @@ Although not strictly necessary, you may also need to have a protocol configured
 
 ### Guides
 
+- [Installing an ip to the catalog](#installing-an-ip-to-the-catalog)
 - [Publishing an ip using git tags](#publishing-an-ip-using-git-tags)
+
+## Installing an ip to the catalog
+
+This guide walks through the steps to install an ip on the local file system to the catalog on the local file system. In this example, we assume the ip has no revision control tied to its project.
+
+1. Specify what version is going to be released using the ip manifest's `version` field, such as `1.0.0`:
+``` toml
+[ip]
+# ...
+version = "1.0.0"
+```
+
+2. Specify what source files in the project are public using the ip manifest's `public` field:
+``` toml
+[ip]
+# ...
+public = ["rtl"]
+```
+
+3. Update the lockfile:
+```
+$ orbit lock
+```
+
+4. Install the ip to the catalog as an immutable reference:
+```
+$ orbit install --path .
+```
 
 ## Publishing an ip using git tags
 
 This guide walks through the steps to have a successful release using a channel and git tags. It assumes your ip is a git repository and has a remote repository on a platform such as GitHub.
 
-1. Specify what version is going to be released:
+1. Specify what version is going to be released using the ip manifest's `version` field, such as `1.0.0`:
 ``` toml
 [ip]
 # ...
@@ -32,7 +61,7 @@ version = "1.0.0"
 source = "https://github.com/chaseruskin/gates/archive/{{orbit.ip.version}}.zip"
 ```
 
-3. Specify what source files are public:
+3. Specify what source files in the project are public using the ip manifest's `public` field:
 ``` toml
 [ip]
 # ...
@@ -56,27 +85,22 @@ $ orbit lock
 $ git commit -am "Stages for release"
 ```
 
-7. Push the committed changes to the remote repository:
-```
-$ git push
-```
-
-8. Add a git tag to the ip's repository that matches exactly the version specified in the ip's manifest:
+7. Add a git tag to the ip's repository that matches exactly the version specified in the ip's manifest:
 ```
 $ git tag 1.0.0
 ```
 
-9. Push the tag to the remote repository:
+8. Push the committed changes and tag to the remote repository:
 ```
 $ git push --tags
 ```
 
-10. Run the dry run for the publishing process to verify all ip checkpoints are met:
+9.  Run the dry run for the publishing process to verify all ip checkpoints are met:
 ```
 $ orbit publish
 ```
 
-11.  Once the dry run reports the ip is ready to be published, publish the ip:
+10.   Once the dry run reports the ip is ready to be published, publish the ip:
 ```
 $ orbit publish --ready
 ```

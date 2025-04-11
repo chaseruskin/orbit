@@ -1243,7 +1243,7 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <li><a href="user/developing_ip.html#viewing-the-design-hierarchy">Viewing the design hierarchy</a></li>
 <li><a href="user/developing_ip.html#viewing-available-targets-for-testing">Viewing available targets for testing</a></li>
 <li><a href="user/developing_ip.html#running-a-test">Running a test</a></li>
-<li><a href="user/developing_ip.html#viewing-availble-targets-for-building">Viewing available targets for building</a></li>
+<li><a href="user/developing_ip.html#viewing-available-targets-for-building">Viewing available targets for building</a></li>
 <li><a href="user/developing_ip.html#running-a-build">Running a build</a></li>
 </ul>
 <h2 id="creating-a-new-ip"><a class="header" href="#creating-a-new-ip">Creating a new ip</a></h2>
@@ -1334,7 +1334,7 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <pre><code>$ orbit test --tb &lt;unit&gt; --target &lt;target&gt; -- &lt;args&gt;...
 </code></pre>
 </blockquote>
-<h2 id="viewing-availble-targets-for-building"><a class="header" href="#viewing-availble-targets-for-building">Viewing availble targets for building</a></h2>
+<h2 id="viewing-available-targets-for-building"><a class="header" href="#viewing-available-targets-for-building">Viewing available targets for building</a></h2>
 <ol>
 <li>View the list of available targets configured to run using the build entry point:</li>
 </ol>
@@ -1367,12 +1367,39 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <p>Although not strictly necessary, you may also need to have a protocol configured that meets your requirements for how you access an ip from the internet. To learn how to create protocols, see <a href="user/./creating_protocols.html">Creating Protocols</a>.</p>
 <h3 id="guides-2"><a class="header" href="#guides-2">Guides</a></h3>
 <ul>
+<li><a href="user/releasing_ip.html#installing-an-ip-to-the-catalog">Installing an ip to the catalog</a></li>
 <li><a href="user/releasing_ip.html#publishing-an-ip-using-git-tags">Publishing an ip using git tags</a></li>
 </ul>
+<h2 id="installing-an-ip-to-the-catalog"><a class="header" href="#installing-an-ip-to-the-catalog">Installing an ip to the catalog</a></h2>
+<p>This guide walks through the steps to install an ip on the local file system to the catalog on the local file system. In this example, we assume the ip has no revision control tied to its project.</p>
+<ol>
+<li>Specify what version is going to be released using the ip manifest's <code>version</code> field, such as <code>1.0.0</code>:</li>
+</ol>
+<pre><code class="language-toml">[ip]
+# ...
+version = "1.0.0"
+</code></pre>
+<ol start="2">
+<li>Specify what source files in the project are public using the ip manifest's <code>public</code> field:</li>
+</ol>
+<pre><code class="language-toml">[ip]
+# ...
+public = ["rtl"]
+</code></pre>
+<ol start="3">
+<li>Update the lockfile:</li>
+</ol>
+<pre><code>$ orbit lock
+</code></pre>
+<ol start="4">
+<li>Install the ip to the catalog as an immutable reference:</li>
+</ol>
+<pre><code>$ orbit install --path .
+</code></pre>
 <h2 id="publishing-an-ip-using-git-tags"><a class="header" href="#publishing-an-ip-using-git-tags">Publishing an ip using git tags</a></h2>
 <p>This guide walks through the steps to have a successful release using a channel and git tags. It assumes your ip is a git repository and has a remote repository on a platform such as GitHub.</p>
 <ol>
-<li>Specify what version is going to be released:</li>
+<li>Specify what version is going to be released using the ip manifest's <code>version</code> field, such as <code>1.0.0</code>:</li>
 </ol>
 <pre><code class="language-toml">[ip]
 # ...
@@ -1386,7 +1413,7 @@ version = "1.0.0"
 source = "https://github.com/chaseruskin/gates/archive/{{orbit.ip.version}}.zip"
 </code></pre>
 <ol start="3">
-<li>Specify what source files are public:</li>
+<li>Specify what source files in the project are public using the ip manifest's <code>public</code> field:</li>
 </ol>
 <pre><code class="language-toml">[ip]
 # ...
@@ -1410,26 +1437,21 @@ channels = ["remote-chipyard"]
 <pre><code>$ git commit -am "Stages for release"
 </code></pre>
 <ol start="7">
-<li>Push the committed changes to the remote repository:</li>
-</ol>
-<pre><code>$ git push
-</code></pre>
-<ol start="8">
 <li>Add a git tag to the ip's repository that matches exactly the version specified in the ip's manifest:</li>
 </ol>
 <pre><code>$ git tag 1.0.0
 </code></pre>
-<ol start="9">
-<li>Push the tag to the remote repository:</li>
+<ol start="8">
+<li>Push the committed changes and tag to the remote repository:</li>
 </ol>
 <pre><code>$ git push --tags
 </code></pre>
-<ol start="10">
+<ol start="9">
 <li>Run the dry run for the publishing process to verify all ip checkpoints are met:</li>
 </ol>
 <pre><code>$ orbit publish
 </code></pre>
-<ol start="11">
+<ol start="10">
 <li>Once the dry run reports the ip is ready to be published, publish the ip:</li>
 </ol>
 <pre><code>$ orbit publish --ready
@@ -2981,13 +3003,18 @@ test = true
 <p>If this field is not defined, then the default is true.</p>
 <h3 id="the-fileset-section"><a class="header" href="#the-fileset-section">The <code>[fileset]</code> section</a></h3>
 <p>The <code>[fileset]</code> section allows user-defined key/value pairs, where the key corresponds to a fileset name and the value is a string that corresponds to the glob-style pattern. The fileset name will be normalized to COBOL-CASE.</p>
+<p>If a string is the immediate value of a custom key in the <code>fileset</code> section, then it becomes the fileset's only pattern and will only be applied to the current ip's directory.</p>
 <pre><code class="language-toml">[[target]]
 # ...
 fileset.TEXT = "*.txt"
-fileset.PYMDL = "{{ orbit.tb.name }}.py"
-fileset.B-SET = { patterns = ["*.b", "*.b2"] }
+fileset.CPPF = "{{ orbit.tb.name }}.cpp"
 </code></pre>
-<p>The values for user-defined filesets support <a href="reference/./../topic/swapping.html"><em>string swapping</em></a> (as shown in second example entry).</p>
+<p>If an inline table is the value of a custom key in the <code>fileset</code> section, then it requires the <code>patterns</code> field to be an array of strings that represent the different file patterns for this fileset. The optional <code>recursive</code> field accepts a boolean that when enabled, will apply the fileset patterns to all ips in the dependency graph.</p>
+<pre><code class="language-toml">[[target]]
+# ...
+fileset.PYF = { patterns = ["*.py", "*.py3"], recursive = true }
+</code></pre>
+<p>The patterns for user-defined filesets support <a href="reference/./../topic/swapping.html"><em>string swapping</em></a> (as shown in the pattern for the <code>CPPF</code> fileset).</p>
 <h3 id="the-protocol-array"><a class="header" href="#the-protocol-array">The <code>[[protocol]]</code> array</a></h3>
 <p>The <code>[[protocol]]</code> array lists user-defined protocols to access ips from the internet. Each protocol must exist under its own <code>[[protocol]]</code> header.</p>
 <h3 id="the-name-field-2"><a class="header" href="#the-name-field-2">The <code>name</code> field</a></h3>

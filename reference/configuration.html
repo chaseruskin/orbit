@@ -386,13 +386,18 @@ test = true
 <p>If this field is not defined, then the default is true.</p>
 <h3 id="the-fileset-section"><a class="header" href="#the-fileset-section">The <code>[fileset]</code> section</a></h3>
 <p>The <code>[fileset]</code> section allows user-defined key/value pairs, where the key corresponds to a fileset name and the value is a string that corresponds to the glob-style pattern. The fileset name will be normalized to COBOL-CASE.</p>
+<p>If a string is the immediate value of a custom key in the <code>fileset</code> section, then it becomes the fileset's only pattern and will only be applied to the current ip's directory.</p>
 <pre><code class="language-toml">[[target]]
 # ...
 fileset.TEXT = "*.txt"
-fileset.PYMDL = "{{ orbit.tb.name }}.py"
-fileset.B-SET = { patterns = ["*.b", "*.b2"] }
+fileset.CPPF = "{{ orbit.tb.name }}.cpp"
 </code></pre>
-<p>The values for user-defined filesets support <a href="./../topic/swapping.html"><em>string swapping</em></a> (as shown in second example entry).</p>
+<p>If an inline table is the value of a custom key in the <code>fileset</code> section, then it requires the <code>patterns</code> field to be an array of strings that represent the different file patterns for this fileset. The optional <code>recursive</code> field accepts a boolean that when enabled, will apply the fileset patterns to all ips in the dependency graph.</p>
+<pre><code class="language-toml">[[target]]
+# ...
+fileset.PYF = { patterns = ["*.py", "*.py3"], recursive = true }
+</code></pre>
+<p>The patterns for user-defined filesets support <a href="./../topic/swapping.html"><em>string swapping</em></a> (as shown in the pattern for the <code>CPPF</code> fileset).</p>
 <h3 id="the-protocol-array"><a class="header" href="#the-protocol-array">The <code>[[protocol]]</code> array</a></h3>
 <p>The <code>[[protocol]]</code> array lists user-defined protocols to access ips from the internet. Each protocol must exist under its own <code>[[protocol]]</code> header.</p>
 <h3 id="the-name-field-1"><a class="header" href="#the-name-field-1">The <code>name</code> field</a></h3>

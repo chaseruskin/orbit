@@ -166,12 +166,39 @@
 <p>Although not strictly necessary, you may also need to have a protocol configured that meets your requirements for how you access an ip from the internet. To learn how to create protocols, see <a href="./creating_protocols.html">Creating Protocols</a>.</p>
 <h3 id="guides"><a class="header" href="#guides">Guides</a></h3>
 <ul>
+<li><a href="#installing-an-ip-to-the-catalog">Installing an ip to the catalog</a></li>
 <li><a href="#publishing-an-ip-using-git-tags">Publishing an ip using git tags</a></li>
 </ul>
+<h2 id="installing-an-ip-to-the-catalog"><a class="header" href="#installing-an-ip-to-the-catalog">Installing an ip to the catalog</a></h2>
+<p>This guide walks through the steps to install an ip on the local file system to the catalog on the local file system. In this example, we assume the ip has no revision control tied to its project.</p>
+<ol>
+<li>Specify what version is going to be released using the ip manifest's <code>version</code> field, such as <code>1.0.0</code>:</li>
+</ol>
+<pre><code class="language-toml">[ip]
+# ...
+version = "1.0.0"
+</code></pre>
+<ol start="2">
+<li>Specify what source files in the project are public using the ip manifest's <code>public</code> field:</li>
+</ol>
+<pre><code class="language-toml">[ip]
+# ...
+public = ["rtl"]
+</code></pre>
+<ol start="3">
+<li>Update the lockfile:</li>
+</ol>
+<pre><code>$ orbit lock
+</code></pre>
+<ol start="4">
+<li>Install the ip to the catalog as an immutable reference:</li>
+</ol>
+<pre><code>$ orbit install --path .
+</code></pre>
 <h2 id="publishing-an-ip-using-git-tags"><a class="header" href="#publishing-an-ip-using-git-tags">Publishing an ip using git tags</a></h2>
 <p>This guide walks through the steps to have a successful release using a channel and git tags. It assumes your ip is a git repository and has a remote repository on a platform such as GitHub.</p>
 <ol>
-<li>Specify what version is going to be released:</li>
+<li>Specify what version is going to be released using the ip manifest's <code>version</code> field, such as <code>1.0.0</code>:</li>
 </ol>
 <pre><code class="language-toml">[ip]
 # ...
@@ -185,7 +212,7 @@ version = "1.0.0"
 source = "https://github.com/chaseruskin/gates/archive/{{orbit.ip.version}}.zip"
 </code></pre>
 <ol start="3">
-<li>Specify what source files are public:</li>
+<li>Specify what source files in the project are public using the ip manifest's <code>public</code> field:</li>
 </ol>
 <pre><code class="language-toml">[ip]
 # ...
@@ -209,26 +236,21 @@ channels = ["remote-chipyard"]
 <pre><code>$ git commit -am "Stages for release"
 </code></pre>
 <ol start="7">
-<li>Push the committed changes to the remote repository:</li>
-</ol>
-<pre><code>$ git push
-</code></pre>
-<ol start="8">
 <li>Add a git tag to the ip's repository that matches exactly the version specified in the ip's manifest:</li>
 </ol>
 <pre><code>$ git tag 1.0.0
 </code></pre>
-<ol start="9">
-<li>Push the tag to the remote repository:</li>
+<ol start="8">
+<li>Push the committed changes and tag to the remote repository:</li>
 </ol>
 <pre><code>$ git push --tags
 </code></pre>
-<ol start="10">
+<ol start="9">
 <li>Run the dry run for the publishing process to verify all ip checkpoints are met:</li>
 </ol>
 <pre><code>$ orbit publish
 </code></pre>
-<ol start="11">
+<ol start="10">
 <li>Once the dry run reports the ip is ready to be published, publish the ip:</li>
 </ol>
 <pre><code>$ orbit publish --ready

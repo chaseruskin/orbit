@@ -8,7 +8,7 @@
 
 Orbit is an agile package manager and extensible build tool for hardware description languages (HDL).
 
-![](./docs/src/images/architecture2.svg)
+![](./docs/src/images/architecture.svg)
 
 Orbit introduces a layer of abstraction called __IPs__, which groups related source code files (`.v`, `.sv`, `.vhd`) together within a common directory.
 

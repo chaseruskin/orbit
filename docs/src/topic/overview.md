@@ -2,7 +2,7 @@
 
 Orbit is an agile package manager and extensible build tool for HDLs.
 
-![](./../images/architecture2.svg)
+![](./../images/architecture.svg)
 
 ## Key concepts
 

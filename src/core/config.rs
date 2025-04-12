@@ -476,6 +476,36 @@ impl Build {
 
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
+pub struct Install {
+    #[serde(rename = "default-protocol")]
+    default_protocol: Option<String>,
+}
+
+impl Install {
+    pub fn new() -> Self {
+        Self {
+            default_protocol: None,
+        }
+    }
+
+    pub fn get_default_protocol(&self) -> Option<&String> {
+        self.default_protocol.as_ref()
+    }
+
+    /// Merges any populated data from `rhs` into attributes that do not already
+    /// have data defined in `self`.
+    pub fn merge(&mut self, rhs: Option<Self>) {
+        if let Some(rhs) = rhs {
+            // no build dir defined so give it the value from `rhs`
+            if self.default_protocol.is_some() == false {
+                self.default_protocol = rhs.default_protocol
+            }
+        }
+    }
+}
+
+#[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct Publish {
     #[serde(rename = "default-channel")]
     default_channel: Option<String>,
@@ -540,11 +570,12 @@ pub const CONFIG_FILE: &str = "config.toml";
 #[serde(deny_unknown_fields)]
 pub struct Config {
     include: Option<Vec<PathBuf>>,
-    general: Option<General>,
-    build: Option<Build>,
-    test: Option<Test>,
-    publish: Option<Publish>,
     env: Option<HashMap<String, String>>,
+    general: Option<General>,
+    test: Option<Test>,
+    build: Option<Build>,
+    publish: Option<Publish>,
+    install: Option<Install>,
     target: Option<Targets>,
     protocol: Option<Protocols>,
     channel: Option<Channels>,
@@ -574,6 +605,7 @@ impl Config {
             build: None,
             test: None,
             publish: None,
+            install: None,
         }
     }
 
@@ -632,6 +664,11 @@ impl Config {
         match &mut self.publish {
             Some(v) => v.merge(rhs.publish),
             None => self.publish = rhs.publish,
+        }
+        // combine '[install]' table
+        match &mut self.install {
+            Some(v) => v.merge(rhs.install),
+            None => self.install = rhs.install,
         }
         // combine '[vhdl-format]' table
         match &mut self.vhdl_format {
@@ -751,6 +788,10 @@ impl Config {
 
     pub fn get_general(&self) -> Option<&General> {
         self.general.as_ref()
+    }
+
+    pub fn get_install(&self) -> Option<&Install> {
+        self.install.as_ref()
     }
 }
 

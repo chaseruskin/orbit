@@ -134,7 +134,8 @@ impl Subcommand<Context> for Install {
                             .get_protocols()
                             .values()
                             .into_iter()
-                            .collect::<Vec<&&Protocol>>()
+                            .collect::<Vec<&&Protocol>>(),
+                        c.get_default_protocol()
                     )
                 ),
             }
@@ -519,7 +520,14 @@ impl Install {
             .get_lock()
             .keep_dev_dep_entries(&local_ip, all_deps);
 
-        plan::download_missing_deps(vtable, &lf, &le, &catalog, &c.get_config().get_protocols())?;
+        plan::download_missing_deps(
+            vtable,
+            &lf,
+            &le,
+            &catalog,
+            c.get_default_protocol(),
+            &c.get_config().get_protocols(),
+        )?;
 
         // recollect the queued items to update the catalog
         catalog = catalog.downloads(c.get_downloads_path())?;
@@ -582,6 +590,7 @@ impl Install {
             ip.as_ref(),
             &target_source,
             c.get_downloads_path(),
+            c.get_default_protocol(),
             &protocols,
             verbose,
             force,
@@ -609,6 +618,7 @@ impl Install {
             Some(&spec.to_partial_ip_spec()),
             &source,
             c.get_downloads_path(),
+            c.get_default_protocol(),
             &protocols,
             self.verbose,
             self.force,

@@ -75,6 +75,7 @@ impl Subcommand<Context> for Lock {
                 &lf,
                 &le,
                 &catalog,
+                c.get_default_protocol(),
                 &c.get_config().get_protocols(),
             )?;
             // recollect the downloaded items to update the catalog for installations

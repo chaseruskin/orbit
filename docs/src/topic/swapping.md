@@ -49,7 +49,7 @@ The argument list defined in a protocol's configuration is allowed to contain an
 
 - `orbit.ip.name`: The name of the ip being downloaded.
 - `orbit.ip.version`: The version of the ip being downloaded.
-- `orbit.ip.repository`: The URL for the ip being downloaded.
+- `orbit.ip.source`: The URL for the ip being downloaded.
 - `orbit.env.*`: Any environment variables loaded from configuration files.
 
 ### Target arguments

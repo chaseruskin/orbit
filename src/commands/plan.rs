@@ -588,7 +588,14 @@ pub fn resolve_missing_deps<'a>(
             .from_config(c.get_config())?;
         let vtable = StrSwapTable::new().load_environment(&env)?;
 
-        download_missing_deps(vtable, &lf, &le, &catalog, &c.get_config().get_protocols())?;
+        download_missing_deps(
+            vtable,
+            &lf,
+            &le,
+            &catalog,
+            c.get_default_protocol(),
+            &c.get_config().get_protocols(),
+        )?;
         // recollect the downloaded items to update the catalog for installations
         catalog = catalog.downloads(c.get_downloads_path())?;
 
@@ -605,6 +612,7 @@ pub fn download_missing_deps(
     lf: &LockFile,
     le: &LockEntry,
     catalog: &Catalog,
+    default_protocol: Option<&String>,
     protocols: &ProtocolMap,
 ) -> Result<(), Fault> {
     let mut vtable = vtable;
@@ -662,6 +670,7 @@ pub fn download_missing_deps(
                         Some(&entry.to_ip_spec().to_partial_ip_spec()),
                         src,
                         catalog.get_downloads_path(),
+                        default_protocol,
                         &protocols,
                         false,
                         true,

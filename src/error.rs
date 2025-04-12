@@ -201,6 +201,8 @@ pub enum Error {
     VisNoAllPubEntryExists,
     #[error("the ip being installed is not local")]
     VisNoAllPubIpNotLocal,
+    #[error("default protocol \"{0}\" not found")]
+    DefaultProtocolNotFound(String),
 }
 
 #[derive(Debug, PartialEq)]

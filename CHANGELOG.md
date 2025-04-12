@@ -28,6 +28,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Adds `patterns` field to the protocol element in configuration files to be able to determine if a protocol should pick up the ip's url to try to download
 - Adds `-p` switch for `--protocol` under `orbit install` command
 - Adds `-l` switch for `--list` flag in various subcommands
+- Allows default protocol to be set under `[install]` table in configuration file
 
 ### Changes
 - Renames `--no-clean` flag to `--keep`, `-k`, to align with conventional linux command-line options
@@ -43,6 +44,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ### Fixes
 - Improves error message when giving bad version for local/relative dependency
 - Removes trailing newlines in the code snippet outputs of the `orbit get` command
+- Errors if default protocol is not found when trying to install an ip
 
 ## 0.24.0
 

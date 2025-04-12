@@ -129,20 +129,29 @@ impl Protocol {
     /// Creates a string to display a list of plugins.
     ///
     /// The string lists the plugins in alphabetical order by `name`.
-    pub fn list_protocols(protos: &mut [&&Protocol]) -> String {
+    pub fn list_protocols(protos: &mut [&&Protocol], def_proto: Option<&String>) -> String {
         let mut list = String::new();
         protos.sort_by(|a: &&&Protocol, b| a.name.cmp(&b.name));
         for proto in protos {
-            list += &format!("{}\n", proto.quick_info());
+            let is_default = def_proto.is_some() && def_proto.unwrap() == proto.get_name();
+            list += &format!("{}\n", proto.quick_info(is_default));
         }
         list
     }
 
     /// Displays a plugin's information in a single line for quick glance.
-    pub fn quick_info(&self) -> String {
+    pub fn quick_info(&self, is_default: bool) -> String {
         format!(
-            "{:<21}{}",
-            self.name,
+            "{:<30}{}",
+            format!(
+                "{}{}",
+                self.name,
+                if is_default {
+                    " [default]".blue()
+                } else {
+                    "".blue()
+                }
+            ),
             self.description.as_ref().unwrap_or(&String::new()).green(),
         )
     }

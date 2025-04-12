@@ -270,7 +270,7 @@ impl Context {
         Ok(self)
     }
 
-    /// Access the configuration data.
+    /// Access the compiled configuration data after resolving all precedence issues.
     pub fn get_config(&self) -> &Config {
         &self.config
     }
@@ -282,6 +282,11 @@ impl Context {
     /// Access the configuration data as mutable.
     pub fn get_config_mut(&mut self) -> &mut Config {
         &mut self.config
+    }
+
+    /// Access the default protocol.
+    pub fn get_default_protocol(&self) -> Option<&String> {
+        self.config.get_install()?.get_default_protocol()
     }
 
     /// Access the build directory data.

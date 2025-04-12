@@ -38,6 +38,8 @@ Every configuration file consists of the following sections:
     - [default-target](#the-default-target-field) - Set the default target for tests.
 - [[build]](#the-build-section) - The build settings.
     - [default-target](#the-default-target-field) - Set the default target for builds.
+- [[install]](#the-install-section) - The install settings.
+    - [default-protocol](#the-default-protocol-field) - Set the default protocol for installing ip.
 - [[vhdl-format]](#the-vhdl-format-section) - VHDL code formatting.
 - [[verilog-format]](#the-verilog-format-section) - SystemVerilog/Verilog code formatting.
 - [[env]](#the-env-section) - The runtime environment variables.
@@ -117,7 +119,7 @@ The `default-target` key sets the default target when starting the build process
 default-target = "modelsim"
 ```
 
-If the default target is set to be used and it cannot be found among the known targets, it will error.
+If the default target is set to be used and its name cannot be found among the known targets, it will error.
 
 ### The `[build]` section
 
@@ -130,7 +132,20 @@ The `default-target` key sets the default target when starting the build process
 default-target = "vivado"
 ```
 
-If the default target is set to be used and it cannot be found among the known targets, it will error.
+If the default target is set to be used and its name cannot be found among the known targets, it will error.
+
+### The `[install]` section
+
+### The `default-protocol` field
+
+The optional `default-protocol` field can be used to specify which protocol should have priority when trying to access an ip from the internet.
+
+``` toml
+[install]
+default-protocol = "git"
+```
+
+If the default protocol has patterns configured and none of the patterns match the given ip's source URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, it will error.
 
 ### The `[vhdl-format]` section
 

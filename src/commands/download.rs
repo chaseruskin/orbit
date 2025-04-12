@@ -88,6 +88,7 @@ impl Download {
         spec: Option<&PartialIpSpec>,
         src: &Source,
         download_dir: &PathBuf,
+        default_protocol: Option<&String>,
         protocols: &HashMap<&str, &Protocol>,
         verbose: bool,
         _force: bool,
@@ -104,11 +105,25 @@ impl Download {
         // perform string swap on source url
         let processed_src = src.clone().replace_vars_in_url(&vtable);
 
-        vtable.add("orbit.ip.repository", processed_src.get_url());
+        vtable.add("orbit.ip.source", processed_src.get_url());
 
         // determine which protocol to try
         let mut sel_protocol: Option<(&&str, &&Protocol)> = None;
-        // first see if a protocol has a matching pattern
+
+        // first try to use a default protocol (name matches an entry and the pattern matches the url or has no patterns defined)
+        if let Some(def) = default_protocol {
+            // error if the name of the default protocol is not found
+            if protocols.iter().find(|(&key, _)| key == def).is_none() {
+                return Err(Box::new(Error::DefaultProtocolNotFound(def.clone())));
+            }
+            sel_protocol = protocols.iter().find(|(&key, &pro)| {
+                key == def
+                    && (pro.has_patterns() == false
+                        || pro.matches_a_pattern(&processed_src.get_url()))
+            });
+        }
+
+        // next see if a protocol has a matching pattern
         if sel_protocol.is_none() {
             sel_protocol = protocols
                 .iter()
@@ -123,7 +138,7 @@ impl Download {
         match sel_protocol {
             Some((&name, &proto)) => {
                 if verbose == true {
-                    crate::info!("downloading ip over \"{}\" protocol ...", name,);
+                    crate::info!("downloading ip over protocol \"{}\" ...", name,);
                 }
                 // allow the user to handle placing the code in the queue
                 let proto: Protocol = proto.clone().replace_vars_in_args(&vtable);
@@ -134,7 +149,7 @@ impl Download {
             }
             None => {
                 if verbose == true {
-                    crate::info!("downloading ip ...");
+                    crate::info!("downloading ip over standard protocol ...");
                 }
                 // potential to use --force here to avoid this error and try with default but not currently implemented that way
                 if let Err(err) = Protocol::single_download(processed_src.get_url(), &queue) {

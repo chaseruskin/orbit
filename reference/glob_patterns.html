@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Command Line - The Book of Orbit</title>
+        <title>Glob Patterns - The Book of Orbit</title>
 
 
         <!-- Custom HTML head -->
@@ -158,66 +158,29 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="command-line"><a class="header" href="#command-line">Command line</a></h1>
-<p>The command line is the main way of interacting with <code>orbit</code>. Let's understand some terminology and rules for communicating to <code>orbit</code> through the command line.</p>
-<h2 id="syntax"><a class="header" href="#syntax">Syntax</a></h2>
-<p>Angular brackets (<code>&lt; &gt;</code>) denotes that a user input is required. The label within the angular brackets gives a hint to the user as to what type of value to enter here.</p>
-<p>Square brackets (<code>[ ]</code>) denotes that the input is optional and is not required to get the command to successfully run.</p>
-<h2 id="jargon"><a class="header" href="#jargon">Jargon</a></h2>
-<p>Orbit uses <em>subcommands</em>, <em>arguments</em>, <em>options</em>, <em>flags</em>, and <em>switches</em>.</p>
-<h3 id="subcommand"><a class="header" href="#subcommand"><strong>Subcommand</strong></a></h3>
-<p>Subcommands are special keywords to route to a particular action. Each subcommand inherits all supercommand's available options. They are the first positional argument following the call to <code>orbit</code>.</p>
-<pre><code>orbit get
-</code></pre>
-<h3 id="argument"><a class="header" href="#argument"><strong>Argument</strong></a></h3>
-<p>An argument is a value interpreted based on its position in the input. Arguments must be included when requested by Orbit within angular brackets (<code>&lt; &gt;</code>).</p>
-<pre><code>orbit new &lt;path&gt;
-</code></pre>
-<p>Arguments may be omitted if they are wrapped with square brackets (<code>[ ]</code>).</p>
-<pre><code>orbit search [&lt;ip&gt;]
-</code></pre>
-<h3 id="flag"><a class="header" href="#flag"><strong>Flag</strong></a></h3>
-<p>A flag is a simple boolean on-off conditional to alter a command's behavior, that is true when present and false otherwise.</p>
-<pre><code>--help
-</code></pre>
-<p>Flags are options that do not take an argument and can be omitted.</p>
-<h3 id="option"><a class="header" href="#option"><strong>Option</strong></a></h3>
-<p>An option is a type of flag that, when provided, is required to have an argument assigned to it. The argument may immediately proceed the option's flag separated by whitespace.</p>
-<pre><code>--target &lt;name&gt;
-</code></pre>
-<p>The argument may also be attached to the option's flag with an equal sign <code>=</code>.</p>
-<pre><code>--target=&lt;name&gt;
-</code></pre>
-<p>Options are able to be omitted.</p>
-<h3 id="switch"><a class="header" href="#switch"><strong>Switch</strong></a></h3>
-<p>A switch is a shorthand flag denoted by a single dash and a single character.</p>
-<pre><code>-h
-</code></pre>
-<p>Multiple switches can be chained onto the same dash.</p>
-<pre><code>-ci
-</code></pre>
-<p>If a switch is associated with an option, it must be declared last on a chain with its argument to immediately follow separated by whitespace or an equal sign <code>=</code>.</p>
-<pre><code>-o &lt;file&gt;
-</code></pre>
-<p>Common flags and options may have a shorthand <em>switch</em> associated with them. For example, <code>--help</code> can be alternatively passed with just <code>-h</code>.</p>
-<h3 id="argument-terminator"><a class="header" href="#argument-terminator"><strong>Argument terminator</strong></a></h3>
-<p>The argument terminator is a special no-op flag <code>--</code> that tells the command-line interpreter to parse up until this symbol.</p>
-<p>Some scenarios will allow you to pass arguments through <code>orbit</code> to an internally executed command. You can pass these arguments by using the <em>argument terminator</em>.</p>
-<h4 id="examples"><a class="header" href="#examples">Examples</a></h4>
-<p>An example of using the argument terminator can be seen when initiating the build process with <code>orbit</code> and trying to pass arguments to the specified target to be used during the execution stage.</p>
-<pre><code>orbit build --target yilinx -- --sram -r=bit
-</code></pre>
-<p>In this command, <code>orbit</code> does not interpret the "--sram" flag nor the "-r=bit" option, but instead passes these arguments to the subprocess call to the "yilinx" target to handle during the execution stage.</p>
+                        <h1 id="glob-patterns"><a class="header" href="#glob-patterns">Glob Patterns</a></h1>
+<p>A glob pattern is a string used for pattern matching against the names in a filesystem directory such that a name is expanded into a list of names matching that pattern.</p>
+<p>The following rules are used by Orbit for any string interpreted as a glob-style pattern:</p>
+<ul>
+<li><code>?</code> matches any single character.</li>
+<li><code>*</code> matches any (possibly empty) sequence of characters.</li>
+<li><code>**</code> matches the current directory and arbitrary subdirectories. To match files in arbitrary subdiretories, use <code>**/*</code>.<br />
+This sequence <strong>must</strong> form a single path component, so both <code>**a</code> and <code>b**</code> are invalid and will result in an error. A sequence of more than two consecutive <code>*</code> characters is also invalid.</li>
+<li><code>[...]</code> matches any character inside the brackets. Character sequences can also specify ranges of characters, as ordered by Unicode, so e.g. <code>[0-9]</code> specifies any character between 0 and 9 inclusive. An unclosed bracket is invalid.</li>
+<li><code>[!...]</code> is the negation of <code>[...]</code>, i.e. it matches any characters <strong>not</strong> in the brackets.</li>
+<li>The metacharacters <code>?</code>, <code>*</code>, <code>[</code>, <code>]</code> can be matched by using brackets (e.g. <code>[?]</code>). When a <code>]</code> occurs immediately following <code>[</code> or <code>[!</code> then it is interpreted as being part of, rather then ending, the character set, so <code>]</code> and NOT <code>]</code> can be matched by <code>[]]</code> and <code>[!]] </code>respectively. The <code>-</code> character can be specified inside a character sequence pattern by placing it at the start or the end, e.g. <code>[abc-]</code>.</li>
+</ul>
+<p>These rules originate from the <a href="https://docs.rs/glob/latest/glob/index.html"><code>glob</code></a> crate.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../reference/glob_patterns.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../reference/json.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../commands/commands.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../reference/command_line.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -227,11 +190,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../reference/glob_patterns.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../reference/json.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../commands/commands.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../reference/command_line.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

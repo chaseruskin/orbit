@@ -2274,14 +2274,14 @@ Yilinx_Path = "/Users/chase/fpga/bin/yilinx"
 <ul>
 <li><a href="reference/manifest.html#the-name-field">name</a> - The name of the ip.</li>
 <li><a href="reference/manifest.html#the-uuid-field">uuid</a> - The universally unique identifier of the ip.</li>
-<li><a href="reference/manifest.html#the-description-field">description</a> - A short description of the ip.</li>
 <li><a href="reference/manifest.html#the-version-field">version</a> - The version of the ip.</li>
+<li><a href="reference/manifest.html#the-description-field">description</a> - A short description of the ip.</li>
 <li><a href="reference/manifest.html#the-authors-field">authors</a> - The authors of the ip.</li>
 <li><a href="reference/manifest.html#the-library-field">library</a> - The HDL library for the design units within the ip.</li>
-<li><a href="reference/manifest.html#the-keywords-field">keywords</a> - A list of simple words categorizing the ip.</li>
 <li><a href="reference/manifest.html#the-source-field">source</a> - The URL of the ip source repository.</li>
-<li><a href="reference/manifest.html#the-channels-field">channels</a> - The channels to update when publishing the ip.</li>
 <li><a href="reference/manifest.html#the-public-field">public</a> - Files to be visible to other ip.</li>
+<li><a href="reference/manifest.html#the-keywords-field">keywords</a> - A list of simple words categorizing the ip.</li>
+<li><a href="reference/manifest.html#the-channels-field">channels</a> - The channels to update when publishing the ip.</li>
 <li><a href="reference/manifest.html#the-exclude-field">exclude</a> - Files to exclude during file discovery.</li>
 <li><a href="reference/manifest.html#the-readme-field">readme</a> - The path to the README file.</li>
 <li><a href="reference/manifest.html#the-metadata-section">[metadata]</a> - An unchecked section for custom fields.</li>
@@ -2319,6 +2319,12 @@ uuid = "ecj831jmc018hhhgl1d4rzgw8"
 # ...
 version = "0.1.0"
 </code></pre>
+<h3 id="the-description-field"><a class="header" href="#the-description-field">The <code>description</code> field</a></h3>
+<p>The description is a short blurb about the ip. This should be plain text (not Markdown).</p>
+<pre><code class="language-toml">[ip]
+# ...
+description = "A short description of the ip"
+</code></pre>
 <h3 id="the-authors-field"><a class="header" href="#the-authors-field">The <code>authors</code> field</a></h3>
 <p>The optional <code>authors</code> field lists in an array the people or organizations that are considered the “authors” of the package. The exact meaning is open to interpretation — it may list the original or primary authors, current maintainers, or owners of the package. An optional email address may be included within angled brackets at the end of each author entry.</p>
 <pre><code class="language-toml">[ip]
@@ -2332,31 +2338,11 @@ authors = ["Duncan Idaho", "Gurney Halleck &lt;ghalleck@dune.mov&gt;"]
 # ...
 library = "axi"
 </code></pre>
-<h3 id="the-description-field"><a class="header" href="#the-description-field">The <code>description</code> field</a></h3>
-<p>The description is a short blurb about the ip. This should be plain text (not Markdown).</p>
-<pre><code class="language-toml">[ip]
-# ...
-description = "A short description of the ip"
-</code></pre>
-<h3 id="the-keywords-field"><a class="header" href="#the-keywords-field">The <code>keywords</code> field</a></h3>
-<p>The <code>keywords</code> field is an array of strings that describe this package. This can help when searching for the package in the catalog.</p>
-<pre><code class="language-toml">[ip]
-# ...
-keywords = ["cpu", "risc"]
-</code></pre>
 <h3 id="the-source-field"><a class="header" href="#the-source-field">The <code>source</code> field</a></h3>
 <p>The <code>source</code> entry is a string that represents the URL where this ip is stored on the internet.</p>
 <pre><code class="language-toml">[ip]
 # ...
 source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
-</code></pre>
-<p>The source key supports <a href="reference/./../topic/swapping.html"><em>string swapping</em></a>.</p>
-<h3 id="the-channels-field"><a class="header" href="#the-channels-field">The <code>channels</code> field</a></h3>
-<p>The <code>channels</code> field is an array of strings listing the names of configured channels that this ip will publish to during the publishing process.</p>
-<p>Without a channel listed in the <code>channels</code> entry, an ip is unable to be published since there is no default channel.</p>
-<pre><code class="language-toml">[ip]
-# ...
-channels = ["hyperspace-labs"]
 </code></pre>
 <h3 id="the-public-field"><a class="header" href="#the-public-field">The <code>public</code> field</a></h3>
 <p>The <code>public</code> field is an array of strings that specify which files are publicly accessible to external ips.</p>
@@ -2370,6 +2356,20 @@ public = [
 <p>The <code>public</code> field can be used to explicitly specify which files are visible to other ip when being when being referenced as a dependency. The list contains glob-style file patterns that conform to .gitignore file semantics and are always compared relative to that ip's root directory.</p>
 <p>If no <code>public</code> field is present, then all files are implicitly specified as invisible (private) to other ip when being referenced as a dependency. To change the default behavior when the <code>public</code> field is absent, see the configuration's <a href="reference/./configuration.html#the-require-public-field">require-public</a> entry.</p>
 <p>When mixing un-ignore (<code>!</code>) and ignore patterns, the order matters. The latest glob in the list among any overlapping globs will be the one effectively used for that particular pattern.</p>
+<p>The source key supports <a href="reference/./../topic/swapping.html"><em>string swapping</em></a>.</p>
+<h3 id="the-keywords-field"><a class="header" href="#the-keywords-field">The <code>keywords</code> field</a></h3>
+<p>The <code>keywords</code> field is an array of strings that describe this package. This can help when searching for the package in the catalog.</p>
+<pre><code class="language-toml">[ip]
+# ...
+keywords = ["cpu", "risc"]
+</code></pre>
+<h3 id="the-channels-field"><a class="header" href="#the-channels-field">The <code>channels</code> field</a></h3>
+<p>The <code>channels</code> field is an array of strings listing the names of configured channels that this ip will publish to during the publishing process.</p>
+<p>Without a channel listed in the <code>channels</code> entry, an ip is unable to be published since there is no default channel.</p>
+<pre><code class="language-toml">[ip]
+# ...
+channels = ["hyperspace-labs"]
+</code></pre>
 <h3 id="the-exclude-field"><a class="header" href="#the-exclude-field">The <code>exclude</code> field</a></h3>
 <p>The <code>exclude</code> field is an array of strings that can be used to explicitly specify which files are omitted from file discovery and source code analysis. The patterns specified in the <code>exclude</code> field identify a set of files that are not included. The patterns for this field follow .gitignore file semantics, such as using special meanings for <code>*</code> and <code>!</code> symbols.</p>
 <pre><code class="language-toml">[ip]
@@ -3111,6 +3111,19 @@ root = "./index"
 <p>The "language" field is allowed to be one of three values: "vhdl", "verilog", or "systemverilog".</p>
 <h2 id="references"><a class="header" href="#references">References</a></h2>
 <p>Some ideas about exporting json from <code>orbit get</code> can be found at this <a href="https://blog.kellybrazil.com/2021/12/03/tips-on-adding-json-output-to-your-cli-app/">blog post</a>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="glob-patterns"><a class="header" href="#glob-patterns">Glob Patterns</a></h1>
+<p>A glob pattern is a string used for pattern matching against the names in a filesystem directory such that a name is expanded into a list of names matching that pattern.</p>
+<p>The following rules are used by Orbit for any string interpreted as a glob-style pattern:</p>
+<ul>
+<li><code>?</code> matches any single character.</li>
+<li><code>*</code> matches any (possibly empty) sequence of characters.</li>
+<li><code>**</code> matches the current directory and arbitrary subdirectories. To match files in arbitrary subdiretories, use <code>**/*</code>.<br />
+This sequence <strong>must</strong> form a single path component, so both <code>**a</code> and <code>b**</code> are invalid and will result in an error. A sequence of more than two consecutive <code>*</code> characters is also invalid.</li>
+<li><code>[...]</code> matches any character inside the brackets. Character sequences can also specify ranges of characters, as ordered by Unicode, so e.g. <code>[0-9]</code> specifies any character between 0 and 9 inclusive. An unclosed bracket is invalid.</li>
+<li><code>[!...]</code> is the negation of <code>[...]</code>, i.e. it matches any characters <strong>not</strong> in the brackets.</li>
+<li>The metacharacters <code>?</code>, <code>*</code>, <code>[</code>, <code>]</code> can be matched by using brackets (e.g. <code>[?]</code>). When a <code>]</code> occurs immediately following <code>[</code> or <code>[!</code> then it is interpreted as being part of, rather then ending, the character set, so <code>]</code> and NOT <code>]</code> can be matched by <code>[]]</code> and <code>[!]] </code>respectively. The <code>-</code> character can be specified inside a character sequence pattern by placing it at the start or the end, e.g. <code>[abc-]</code>.</li>
+</ul>
+<p>These rules originate from the <a href="https://docs.rs/glob/latest/glob/index.html"><code>glob</code></a> crate.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="command-line"><a class="header" href="#command-line">Command line</a></h1>
 <p>The command line is the main way of interacting with <code>orbit</code>. Let's understand some terminology and rules for communicating to <code>orbit</code> through the command line.</p>
 <h2 id="syntax"><a class="header" href="#syntax">Syntax</a></h2>

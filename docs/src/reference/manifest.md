@@ -11,14 +11,14 @@ Every manifest file consists of the following sections:
 - [[ip]](#the-ip-section) - Defines an ip.
     - [name](#the-name-field) - The name of the ip.
     - [uuid](#the-uuid-field) - The universally unique identifier of the ip.
-    - [description](#the-description-field) - A short description of the ip.
     - [version](#the-version-field) - The version of the ip.
+    - [description](#the-description-field) - A short description of the ip.
     - [authors](#the-authors-field) - The authors of the ip.
     - [library](#the-library-field) - The HDL library for the design units within the ip.
-    - [keywords](#the-keywords-field) - A list of simple words categorizing the ip.
     - [source](#the-source-field) - The URL of the ip source repository.
-    - [channels](#the-channels-field) - The channels to update when publishing the ip.
     - [public](#the-public-field) - Files to be visible to other ip.
+    - [keywords](#the-keywords-field) - A list of simple words categorizing the ip.
+    - [channels](#the-channels-field) - The channels to update when publishing the ip.
     - [exclude](#the-exclude-field) - Files to exclude during file discovery.
     - [readme](#the-readme-field) - The path to the README file.
     - [[metadata]](#the-metadata-section) - An unchecked section for custom fields.
@@ -75,6 +75,16 @@ This field is optional and will default to `0.0.0`.
 version = "0.1.0"
 ```
 
+### The `description` field
+
+The description is a short blurb about the ip. This should be plain text (not Markdown).
+
+``` toml
+[ip]
+# ...
+description = "A short description of the ip"
+```
+
 ### The `authors` field
 
 The optional `authors` field lists in an array the people or organizations that are considered the “authors” of the package. The exact meaning is open to interpretation — it may list the original or primary authors, current maintainers, or owners of the package. An optional email address may be included within angled brackets at the end of each author entry.
@@ -96,26 +106,6 @@ The optional `library` entry is an identifier used to denote the HDL library for
 library = "axi"
 ```
 
-### The `description` field
-
-The description is a short blurb about the ip. This should be plain text (not Markdown).
-
-``` toml
-[ip]
-# ...
-description = "A short description of the ip"
-```
-
-### The `keywords` field
-
-The `keywords` field is an array of strings that describe this package. This can help when searching for the package in the catalog.
-
-``` toml
-[ip]
-# ...
-keywords = ["cpu", "risc"]
-```
-
 ### The `source` field
 
 The `source` entry is a string that represents the URL where this ip is stored on the internet.
@@ -124,20 +114,6 @@ The `source` entry is a string that represents the URL where this ip is stored o
 [ip]
 # ...
 source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
-```
-
-The source key supports [_string swapping_](./../topic/swapping.md).
-
-### The `channels` field
-
-The `channels` field is an array of strings listing the names of configured channels that this ip will publish to during the publishing process.
-
-Without a channel listed in the `channels` entry, an ip is unable to be published since there is no default channel.
-
-``` toml
-[ip]
-# ...
-channels = ["hyperspace-labs"]
 ```
 
 ### The `public` field
@@ -158,6 +134,30 @@ The `public` field can be used to explicitly specify which files are visible to 
 If no `public` field is present, then all files are implicitly specified as invisible (private) to other ip when being referenced as a dependency. To change the default behavior when the `public` field is absent, see the configuration's [require-public](./configuration.md#the-require-public-field) entry.
 
 When mixing un-ignore (`!`) and ignore patterns, the order matters. The latest glob in the list among any overlapping globs will be the one effectively used for that particular pattern.
+
+The source key supports [_string swapping_](./../topic/swapping.md).
+
+### The `keywords` field
+
+The `keywords` field is an array of strings that describe this package. This can help when searching for the package in the catalog.
+
+``` toml
+[ip]
+# ...
+keywords = ["cpu", "risc"]
+```
+
+### The `channels` field
+
+The `channels` field is an array of strings listing the names of configured channels that this ip will publish to during the publishing process.
+
+Without a channel listed in the `channels` entry, an ip is unable to be published since there is no default channel.
+
+``` toml
+[ip]
+# ...
+channels = ["hyperspace-labs"]
+```
 
 ### The `exclude` field
 

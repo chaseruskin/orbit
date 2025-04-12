@@ -46,6 +46,7 @@
     - [Environment Variables](./reference/environment_variables.md)
     - [Configuration](./reference/configuration.md)
     - [JSON Output](./reference/json.md)
+    - [Glob Patterns](./reference/glob_patterns.md)
     - [Command Line](./reference/command_line.md)
 
 - [Commands](./commands/commands.md)

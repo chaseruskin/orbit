@@ -2759,6 +2759,7 @@ VHDL	lc3b	/Users/chase/projects/lc3b/sim/alu_tb.vhd
 </ul>
 <h2 id="checking-the-environment"><a class="header" href="#checking-the-environment">Checking the environment</a></h2>
 <p>See <a href="reference/./../commands/env.html"><code>orbit env</code></a> for checking environment variables on the command-line. Not all environment variables, especially runtime environment variables, may be available.</p>
+<p>To review runtime environment variables, open the <code>.env</code> file created by Orbit at the root of a target's output directory. All environment variables found in the <code>.env</code> file are set by Orbit during the build process before the execution stage.</p>
 <!--
 Note about environment variables vs. settings file vs. arguments
 
@@ -2812,6 +2813,11 @@ precedence:
 <li><a href="reference/configuration.html#the-build-section">[build]</a> - The build settings.
 <ul>
 <li><a href="reference/configuration.html#the-default-target-field">default-target</a> - Set the default target for builds.</li>
+</ul>
+</li>
+<li><a href="reference/configuration.html#the-publish-section">[publish]</a> - The publish settings.
+<ul>
+<li><a href="reference/configuration.html#the-default-channels-field">default-channels</a> - Set the default channels to publish an ip to.</li>
 </ul>
 </li>
 <li><a href="reference/configuration.html#the-install-section">[install]</a> - The install settings.
@@ -2882,25 +2888,32 @@ target-dir = "target"
 <p>When this key is not defined, the default value for the build directory is "target".</p>
 <h3 id="the-test-section"><a class="header" href="#the-test-section">The <code>[test]</code> section</a></h3>
 <h3 id="the-default-target-field"><a class="header" href="#the-default-target-field">The <code>default-target</code> field</a></h3>
-<p>The <code>default-target</code> key sets the default target when starting the build process through the test entry point (<code>orbit test</code>).</p>
+<p>The optional <code>default-target</code> key sets the default target when starting the build process through the test entry point (<code>orbit test</code>).</p>
 <pre><code class="language-toml">[test]
 default-target = "modelsim"
 </code></pre>
-<p>If the default target is set to be used and its name cannot be found among the known targets, it will error.</p>
+<p>If the default target is set to be used and its name cannot be found among the known targets, the build process will error.</p>
 <h3 id="the-build-section"><a class="header" href="#the-build-section">The <code>[build]</code> section</a></h3>
 <h3 id="the-default-target-field-1"><a class="header" href="#the-default-target-field-1">The <code>default-target</code> field</a></h3>
-<p>The <code>default-target</code> key sets the default target when starting the build process through the build entry point (<code>orbit build</code>).</p>
+<p>The optional <code>default-target</code> key sets the default target when starting the build process through the build entry point (<code>orbit build</code>).</p>
 <pre><code class="language-toml">[build]
 default-target = "vivado"
 </code></pre>
-<p>If the default target is set to be used and its name cannot be found among the known targets, it will error.</p>
+<p>If the default target is set to be used and its name cannot be found among the known targets, the build process will error.</p>
+<h3 id="the-publish-section"><a class="header" href="#the-publish-section">The <code>[publish]</code> section</a></h3>
+<h3 id="the-default-channels-field"><a class="header" href="#the-default-channels-field">The <code>default-channels</code> field</a></h3>
+<p>The optional <code>default-channels</code> field is an array of strings that represent the names of known channels. When this field is provided and the current ip omits the <code>channels</code> field from its manifest, the ip will be published to the list of channels defined here. If the current ip's manifest does have the <code>channels</code> field defined, then the <code>default-channels</code> field is not applied.</p>
+<pre><code class="language-toml">[publish]
+default-channels = ["hyperspace-labs"]
+</code></pre>
+<p>If the <code>default-channels</code> field is set and at least one of the names cannot be found among the known channels, the publishing process will error.</p>
 <h3 id="the-install-section"><a class="header" href="#the-install-section">The <code>[install]</code> section</a></h3>
 <h3 id="the-default-protocol-field"><a class="header" href="#the-default-protocol-field">The <code>default-protocol</code> field</a></h3>
 <p>The optional <code>default-protocol</code> field can be used to specify which protocol should have priority when trying to access an ip from the internet.</p>
 <pre><code class="language-toml">[install]
 default-protocol = "git"
 </code></pre>
-<p>If the default protocol has patterns configured and none of the patterns match the given ip's source URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, it will error.</p>
+<p>If the default protocol has patterns configured and none of the patterns match the given ip's source URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, the installation process will error.</p>
 <h3 id="the-vhdl-format-section"><a class="header" href="#the-vhdl-format-section">The <code>[vhdl-format]</code> section</a></h3>
 <p>The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their default values.</p>
 <pre><code class="language-toml">[vhdl-format]
@@ -3615,6 +3628,10 @@ index by reading the ORBIT_CHANNEL_IP_DIR environment variable.</p>
 <p>The <code>--all-public</code> flag can be used to skip providing the "ip.public" field
 in the current ip's manifest, granting the assumption that all source files
 should be public. It cannot be used if the "ip.public" field exists.</p>
+<p>If at least one channel is specified on the command-line using the <code>--channel</code>
+option, then any channel list found in the ip's manifest under the
+"ip.channels" field will be ignored as well as any channel list found in the
+"publish.default-channels" field of a configuration file.</p>
 <p>By default, this command performs a dry run, which executes all of the steps
 in the process except for actually posting the ip to its channel(s).
 To run the command to completion, use the <code>--ready</code> option.</p>
@@ -3624,6 +3641,8 @@ channel as well as any newly created directories it made.</p>
 <h2 id="options-9"><a class="header" href="#options-9"><strong>OPTIONS</strong></a></h2>
 <p><code>--ready, -y</code><br />
             Run the operation to completion</p>
+<p><code>--channel, -c &lt;name&gt;...</code><br />
+            Use this channel during publishing</p>
 <p><code>--no-install</code><br />
             Do not install the ip for future use</p>
 <p><code>--list, -l</code><br />
@@ -3633,6 +3652,7 @@ channel as well as any newly created directories it made.</p>
 <h2 id="examples-12"><a class="header" href="#examples-12"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit publish
 orbit publish --ready
+orbit publish -c hyperspace-labs -y
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-search"><a class="header" href="#orbit-search"><strong>orbit search</strong></a></h1>
 <h2 id="name-11"><a class="header" href="#name-11"><strong>NAME</strong></a></h2>

@@ -181,6 +181,10 @@ index by reading the ORBIT_CHANNEL_IP_DIR environment variable.</p>
 <p>The <code>--all-public</code> flag can be used to skip providing the "ip.public" field
 in the current ip's manifest, granting the assumption that all source files
 should be public. It cannot be used if the "ip.public" field exists.</p>
+<p>If at least one channel is specified on the command-line using the <code>--channel</code>
+option, then any channel list found in the ip's manifest under the
+"ip.channels" field will be ignored as well as any channel list found in the
+"publish.default-channels" field of a configuration file.</p>
 <p>By default, this command performs a dry run, which executes all of the steps
 in the process except for actually posting the ip to its channel(s).
 To run the command to completion, use the <code>--ready</code> option.</p>
@@ -190,6 +194,8 @@ channel as well as any newly created directories it made.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>--ready, -y</code><br />
             Run the operation to completion</p>
+<p><code>--channel, -c &lt;name&gt;...</code><br />
+            Use this channel during publishing</p>
 <p><code>--no-install</code><br />
             Do not install the ip for future use</p>
 <p><code>--list, -l</code><br />
@@ -199,6 +205,7 @@ channel as well as any newly created directories it made.</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit publish
 orbit publish --ready
+orbit publish -c hyperspace-labs -y
 </code></pre>
 
                     </main>

@@ -38,6 +38,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Renames `ORBIT_MANIFEST_PATH` environment variable to `ORBIT_MANIFEST_FILE`
 - Renames `ORBIT_CHAN_INDEX` environment variable to `ORBIT_CHANNEL_IP_DIR`
 - Extends name mangling during dynamic symbol transformation from 10 characters of the checksum to 16 characters
+- Errors if trying to name an ip "work" as it is reserved by Orbit for VHDL library purposes
 
 ### Fixes
 - Improves error message when giving bad version for local/relative dependency

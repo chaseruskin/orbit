@@ -111,6 +111,11 @@ impl std::str::FromStr for PkgPart {
     fn from_str(s: &str) -> Result<Self, PkgIdError> {
         use PkgIdError::*;
 
+        // Check to make sure the name is not "work"
+        if s.to_ascii_lowercase() == "work" {
+            return Err(PkgIdError::ReservedName(s.to_string()));
+        }
+
         if let Some(c) = s.chars().next() {
             if c.is_ascii_alphabetic() == false {
                 return Err(NotAlphabeticFirst(c));
@@ -403,6 +408,7 @@ pub enum PkgIdError {
     MissingVendor,
     MissingLibrary,
     InvalidEnding,
+    ReservedName(String),
 }
 
 impl Error for PkgIdError {}
@@ -411,6 +417,7 @@ impl Display for PkgIdError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         use PkgIdError::*;
         match self {
+            ReservedName(w) => write!(f, "identifier \"{}\" is a reserved name", w),
             NotAlphabeticFirst(ch) => write!(
                 f,
                 "expects first character to be alphabetic but found '{}'",
@@ -424,7 +431,7 @@ impl Display for PkgIdError {
             Empty => write!(f, "cannot be empty"),
             BadLen(id, len) => write!(
                 f,
-                "bad length for pkgid '{}'; expecting 3 parts but found {}",
+                "bad length for pkgid \"{}\"; expecting 3 parts but found {}",
                 id, len
             ),
             MissingLibrary => write!(f, "missing library part"),

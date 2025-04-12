@@ -142,7 +142,7 @@ impl Protocol {
     /// Displays a plugin's information in a single line for quick glance.
     pub fn quick_info(&self, is_default: bool) -> String {
         format!(
-            "{:<30}{}",
+            "{:<30} {}",
             format!(
                 "{}{}",
                 self.name,

@@ -117,7 +117,7 @@ impl Target {
     /// Displays a plugin's information in a single line for quick glance.
     pub fn quick_info(&self, is_default: bool) -> String {
         format!(
-            "{:<30}{}",
+            "{:<30} {}",
             format!(
                 "{}{}",
                 self.name,
@@ -130,7 +130,7 @@ impl Target {
             self.description.as_ref().unwrap_or(&String::new()).green(),
         )
     }
-
+    
     /// Creates a string to display a list of plugins.
     ///
     /// The string lists the plugins in alphabetical order by `alias`.

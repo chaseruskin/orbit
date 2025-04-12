@@ -80,10 +80,18 @@ impl Channel {
     }
 
     /// Displays a channel's description in a single line for quick glance.
-    pub fn quick_info(&self) -> String {
+    pub fn quick_info(&self, is_default: bool) -> String {
         format!(
-            "{:<21}{}",
-            self.name,
+            "{:<30} {}",
+            format!(
+                "{}{}",
+                self.name,
+                if is_default {
+                    " [default]".blue()
+                } else {
+                    "".blue()
+                }
+            ),
             self.description.as_ref().unwrap_or(&String::new()).green(),
         )
     }
@@ -146,15 +154,27 @@ impl Channel {
     }
 }
 
+impl std::fmt::Display for Channel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", toml::to_string_pretty(&self).unwrap())
+    }
+}
+
 impl Channel {
     /// Creates a string to display a list of channels.
     ///
     /// The string lists the channels in alphabetical order by `alias`.
-    pub fn list_channels(chans: &mut [&&Channel]) -> String {
+    pub fn list_channels(chans: &mut [&&Channel], default_chans: Option<&Vec<String>>) -> String {
         let mut list = String::new();
         chans.sort_by(|a, b| a.name.cmp(&b.name));
         for c in chans {
-            list += &format!("{}\n", c.quick_info());
+            let is_default = default_chans.is_some()
+                && default_chans
+                    .unwrap()
+                    .iter()
+                    .find(|&p| p == c.get_name())
+                    .is_some();
+            list += &format!("{}\n", c.quick_info(is_default));
         }
         list
     }

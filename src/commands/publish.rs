@@ -47,6 +47,7 @@ pub struct Publish {
     no_install: bool,
     list: bool,
     all_pub: bool,
+    channels: Option<Vec<String>>,
 }
 
 impl Subcommand<Context> for Publish {
@@ -57,23 +58,48 @@ impl Subcommand<Context> for Publish {
             no_install: cli.check(Arg::flag("no-install"))?,
             all_pub: cli.check(Arg::flag("all-public"))?,
             ready: cli.check(Arg::flag("ready").switch('y'))?,
+            channels: cli.get_all(Arg::option("channel").switch('c'))?,
         })
     }
 
     fn execute(self, c: &Context) -> proc::Result {
         // display channel list and exit
         if self.list == true {
-            print!(
-                "{}",
-                Channel::list_channels(
-                    &mut c
-                        .get_config()
+            // try to list the channels provided on command-line
+            if let Some(channels) = &self.channels {
+                // verify all requested channels exist
+                for ch in channels {
+                    if c.get_config()
                         .get_channels()
-                        .values()
-                        .into_iter()
-                        .collect::<Vec<&&Channel>>()
-                )
-            );
+                        .iter()
+                        .find(|(&n, _)| ch == n)
+                        .is_none()
+                    {
+                        return Err(Box::new(Error::ChanNotFound(ch.clone())))?;
+                    }
+                }
+                // print all requested channels
+                c.get_config()
+                    .get_channels()
+                    .iter()
+                    .filter(|(&n, _)| channels.iter().find(|&z| z == n).is_some())
+                    .for_each(|(_, &d)| {
+                        println!("{}", d.to_string());
+                    });
+            } else {
+                print!(
+                    "{}",
+                    Channel::list_channels(
+                        &mut c
+                            .get_config()
+                            .get_channels()
+                            .values()
+                            .into_iter()
+                            .collect::<Vec<&&Channel>>(),
+                        c.get_config().get_default_channels(),
+                    )
+                );
+            }
             return Ok(());
         }
 
@@ -94,8 +120,18 @@ impl Subcommand<Context> for Publish {
         crate::info!("finding channels to publish to ...");
         let mut channels = HashMap::new();
 
-        // check the channel(s) we wish to publish to
-        if let Some(ip_channels) = local_ip.get_man().get_ip().get_channels() {
+        // determine from which list of channels should we try to publish to
+
+        // first try the command-line
+        let mut channel_candidates = self.channels.as_ref();
+
+        // next try the list from the ip's manifest
+        if channel_candidates.is_none() {
+            channel_candidates = local_ip.get_man().get_ip().get_channels().as_ref();
+        }
+
+        // check the channel(s) we wish to publish to (not defaults)
+        if let Some(ip_channels) = channel_candidates {
             for name in ip_channels {
                 match c.get_config().get_channels().get(name) {
                     Some(&chan) => {
@@ -108,17 +144,18 @@ impl Subcommand<Context> for Publish {
         // try the default if channels are not defined in manifest
         } else {
             // verify default channel is valid
-            match c.get_config().get_default_channel() {
-                Some(name) => match c.get_config().get_channels().get(name) {
-                    Some(&chan) => {
-                        crate::info!("using default channel {:?}", name);
-                        channels.insert(name, chan)
-                    }
-                    None => return Err(Box::new(Error::DefChanNotFound(name.clone())))?,
-                },
-                // no default channel selected
-                None => None,
-            };
+            if let Some(ip_channels) = c.get_config().get_default_channels() {
+                for name in ip_channels {
+                    match c.get_config().get_channels().get(name) {
+                        Some(&chan) => {
+                            crate::info!("using default channel {:?}", name);
+                            channels.insert(name, chan)
+                        }
+                        // no default channel found in known channels
+                        None => return Err(Box::new(Error::DefChanNotFound(name.clone())))?,
+                    };
+                }
+            }
         }
 
         // make sure a channel is configured

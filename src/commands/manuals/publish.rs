@@ -43,6 +43,11 @@ DESCRIPTION
     in the current ip's manifest, granting the assumption that all source files
     should be public. It cannot be used if the "ip.public" field exists.
     
+    If at least one channel is specified on the command-line using the '--channel'
+    option, then any channel list found in the ip's manifest under the 
+    "ip.channels" field will be ignored as well as any channel list found in the
+    "publish.default-channels" field of a configuration file.
+    
     By default, this command performs a dry run, which executes all of the steps 
     in the process except for actually posting the ip to its channel(s). 
     To run the command to completion, use the '--ready' option.
@@ -54,6 +59,9 @@ DESCRIPTION
 OPTIONS
     --ready, -y
         Run the operation to completion
+
+    --channel, -c <name>...
+        Use this channel during publishing
 
     --no-install
         Do not install the ip for future use
@@ -67,4 +75,5 @@ OPTIONS
 EXAMPLES
     orbit publish
     orbit publish --ready
+    orbit publish -c hyperspace-labs -y
 "#;

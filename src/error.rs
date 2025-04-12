@@ -133,7 +133,7 @@ pub enum Error {
     DefChanNotFound(String),
     #[error("listed channel \"{0}\" does not exist")]
     ChanNotFound(String),
-    #[error("a channel is required to publish an ip")]
+    #[error("no channels specified: one or more channels are required to publish an ip")]
     NoChanDefined,
     #[error("a manifest file does not exist at path: \"{0}\"")]
     ManifestPathNotFound(String),

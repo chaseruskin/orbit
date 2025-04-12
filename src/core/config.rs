@@ -507,19 +507,19 @@ impl Install {
 #[derive(PartialEq, Debug, Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Publish {
-    #[serde(rename = "default-channel")]
-    default_channel: Option<String>,
+    #[serde(rename = "default-channels")]
+    default_channels: Option<Vec<String>>,
 }
 
 impl Publish {
     pub fn new() -> Self {
         Self {
-            default_channel: None,
+            default_channels: None,
         }
     }
 
-    pub fn get_default_channel(&self) -> Option<&String> {
-        self.default_channel.as_ref()
+    pub fn get_default_channels(&self) -> Option<&Vec<String>> {
+        self.default_channels.as_ref()
     }
 
     /// Merges any populated data from `rhs` into attributes that do not already
@@ -527,8 +527,8 @@ impl Publish {
     pub fn merge(&mut self, rhs: Option<Self>) {
         if let Some(rhs) = rhs {
             // no build dir defined so give it the value from `rhs`
-            if self.default_channel.is_some() == false {
-                self.default_channel = rhs.default_channel
+            if self.default_channels.is_some() == false {
+                self.default_channels = rhs.default_channels
             }
         }
     }
@@ -717,9 +717,9 @@ impl Config {
         }
     }
 
-    pub fn get_default_channel(&self) -> Option<&String> {
+    pub fn get_default_channels(&self) -> Option<&Vec<String>> {
         match &self.publish {
-            Some(p) => p.get_default_channel(),
+            Some(p) => p.get_default_channels(),
             None => None,
         }
     }

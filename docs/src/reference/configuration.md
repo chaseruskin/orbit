@@ -38,6 +38,8 @@ Every configuration file consists of the following sections:
     - [default-target](#the-default-target-field) - Set the default target for tests.
 - [[build]](#the-build-section) - The build settings.
     - [default-target](#the-default-target-field) - Set the default target for builds.
+- [[publish]](#the-publish-section) - The publish settings.
+    - [default-channels](#the-default-channels-field) - Set the default channels to publish an ip to.
 - [[install]](#the-install-section) - The install settings.
     - [default-protocol](#the-default-protocol-field) - Set the default protocol for installing ip.
 - [[vhdl-format]](#the-vhdl-format-section) - VHDL code formatting.
@@ -112,27 +114,40 @@ When this key is not defined, the default value for the build directory is "targ
 
 ### The `default-target` field
 
-The `default-target` key sets the default target when starting the build process through the test entry point (`orbit test`).
+The optional `default-target` key sets the default target when starting the build process through the test entry point (`orbit test`).
 
 ``` toml
 [test]
 default-target = "modelsim"
 ```
 
-If the default target is set to be used and its name cannot be found among the known targets, it will error.
+If the default target is set to be used and its name cannot be found among the known targets, the build process will error.
 
 ### The `[build]` section
 
 ### The `default-target` field
 
-The `default-target` key sets the default target when starting the build process through the build entry point (`orbit build`).
+The optional `default-target` key sets the default target when starting the build process through the build entry point (`orbit build`).
 
 ``` toml
 [build]
 default-target = "vivado"
 ```
 
-If the default target is set to be used and its name cannot be found among the known targets, it will error.
+If the default target is set to be used and its name cannot be found among the known targets, the build process will error.
+
+### The `[publish]` section
+
+### The `default-channels` field
+
+The optional `default-channels` field is an array of strings that represent the names of known channels. When this field is provided and the current ip omits the `channels` field from its manifest, the ip will be published to the list of channels defined here. If the current ip's manifest does have the `channels` field defined, then the `default-channels` field is not applied.
+
+``` toml
+[publish]
+default-channels = ["hyperspace-labs"]
+```
+
+If the `default-channels` field is set and at least one of the names cannot be found among the known channels, the publishing process will error.
 
 ### The `[install]` section
 
@@ -145,7 +160,7 @@ The optional `default-protocol` field can be used to specify which protocol shou
 default-protocol = "git"
 ```
 
-If the default protocol has patterns configured and none of the patterns match the given ip's source URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, it will error.
+If the default protocol has patterns configured and none of the patterns match the given ip's source URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, the installation process will error.
 
 ### The `[vhdl-format]` section
 

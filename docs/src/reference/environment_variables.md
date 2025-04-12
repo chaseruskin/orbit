@@ -63,6 +63,8 @@ Orbit also sets environment variables during runtime such that any subprocesses 
 
 See [`orbit env`](./../commands/env.md) for checking environment variables on the command-line. Not all environment variables, especially runtime environment variables, may be available.
 
+To review runtime environment variables, open the `.env` file created by Orbit at the root of a target's output directory. All environment variables found in the `.env` file are set by Orbit during the build process before the execution stage.
+
 <!--
 Note about environment variables vs. settings file vs. arguments
 

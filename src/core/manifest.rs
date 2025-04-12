@@ -20,7 +20,7 @@
 use crate::core::ip::IpSpec;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::pkgid::PkgPart;
-use crate::core::source::Source;
+use crate::core::source::Repository;
 use crate::core::{source, version};
 use crate::error::Error;
 use crate::error::LastError;
@@ -312,7 +312,7 @@ impl Manifest {
                 name: PkgPart::new(),
                 version: IpVersion::default(),
                 uuid: Uuid::new(),
-                source: None.into(),
+                repository: None.into(),
                 keywords: Vec::new(),
                 description: None,
                 channels: None,
@@ -493,9 +493,9 @@ pub struct Package {
     authors: Option<Vec<String>>,
     #[serde(skip_serializing_if = "vec_is_empty", default)]
     keywords: Vec<String>,
-    /// Describes the URL for fetching the captured state's code (expects .ZIP file)
-    #[serde(deserialize_with = "source::string_or_struct", default)]
-    source: Source,
+    /// Describes the URL for fetching the captured state's code
+    #[serde(deserialize_with = "source::read_string", default)]
+    repository: Option<Repository>,
     /// Known channels where this ip should be published to
     channels: Option<Vec<String>>,
     /// Filepaths that should be explictly known to the user for ip referencing
@@ -536,8 +536,8 @@ impl Package {
         &self.library
     }
 
-    pub fn get_source(&self) -> Option<&Source> {
-        self.source.as_option()
+    pub fn get_source(&self) -> &Option<Repository> {
+        &self.repository
     }
 
     pub fn get_channels(&self) -> &Option<Vec<String>> {
@@ -667,7 +667,7 @@ mod test {
 
             assert_eq!(man.ip.name, PkgPart::from_str("Lab1").unwrap());
             assert_eq!(man.ip.version, IpVersion::new().major(1));
-            assert_eq!(man.ip.get_source(), None);
+            assert_eq!(man.ip.get_source(), &None);
             assert_eq!(man.dependencies, HashMap::new());
             assert_eq!(man.dev_dependencies, HashMap::new());
         }
@@ -679,8 +679,8 @@ mod test {
             assert_eq!(man.ip.name, PkgPart::from_str("gates").unwrap());
             assert_eq!(
                 man.ip.get_source(),
-                Some(
-                    &Source::from_str(
+                &Some(
+                    Repository::from_str(
                         "https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip"
                     )
                     .unwrap()
@@ -720,16 +720,6 @@ mod test {
                 man.ip.get_source().as_ref().unwrap().get_url(),
                 "https://some.url"
             );
-            assert_eq!(
-                man.ip
-                    .get_source()
-                    .as_ref()
-                    .unwrap()
-                    .get_protocol()
-                    .as_ref()
-                    .unwrap(),
-                "ktsp"
-            );
 
             let man: Manifest = match toml::from_str(EX5) {
                 Ok(m) => m,
@@ -741,15 +731,6 @@ mod test {
                 man.ip.get_source().as_ref().unwrap().get_url(),
                 "https://some.url"
             );
-            assert_eq!(
-                man.ip
-                    .get_source()
-                    .as_ref()
-                    .unwrap()
-                    .get_protocol()
-                    .as_ref(),
-                None
-            );
 
             let man: Manifest = match toml::from_str(EX6) {
                 Ok(m) => m,
@@ -760,15 +741,6 @@ mod test {
             assert_eq!(
                 man.ip.get_source().as_ref().unwrap().get_url(),
                 "https://some.url"
-            );
-            assert_eq!(
-                man.ip
-                    .get_source()
-                    .as_ref()
-                    .unwrap()
-                    .get_protocol()
-                    .as_ref(),
-                None
             );
         }
 
@@ -789,7 +761,7 @@ name = "gates"
 uuid = "0000000000000000000000000"
 version = "0.1.0"
 library = "common"
-source = "https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip"
+repository = "https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip"
 
 [ip.metadata]
 foo = 1
@@ -831,28 +803,28 @@ const EX4: &str = r#"[ip]
 name = "lab2"
 uuid = "0000000000000000000000000"
 version = "1.20.0"
-source = { url = "https://some.url", protocol = "ktsp" }
+repository = "https://some.url"
 "#;
 
 const EX5: &str = r#"[ip]
 name = "lab2"
 uuid = "0000000000000000000000000"
 version = "1.20.0"
-source = { url = "https://some.url" }
+repository = "https://some.url"
 "#;
 
 const EX6: &str = r#"[ip]
 name = "lab2"
 uuid = "0000000000000000000000000"
 version = "1.20.0"
-source = "https://some.url"
+repository = "https://some.url"
 "#;
 
 const EX7: &str = r#"[ip]
 name = "lab2"
 uuid = "0000000000000000000000000"
 version = "1.20.0"
-source = { protocol = "ktsp" }
+repository = false
 "#;
 
 const ERR1: &str = r#"[ip]

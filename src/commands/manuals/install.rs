@@ -59,8 +59,8 @@ OPTIONS
     --path <path>
         Path to install the ip from local file system
 
-    --protocol <name>
-        Use a configured protocol to download ip
+    --protocol, -p <name>
+        Protocol to download ip
 
     --tag <tag>
         Unique tag to provide to the protocol

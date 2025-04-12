@@ -16,7 +16,7 @@ Every manifest file consists of the following sections:
     - [authors](#the-authors-field) - The authors of the ip.
     - [library](#the-library-field) - The HDL library for the design units within the ip.
     - [keywords](#the-keywords-field) - A list of simple words categorizing the ip.
-    - [source](#the-source-field) - The URL for remotely retrieving the ip.
+    - [repository](#the-source-field) - The URL of the ip source repository.
     - [channels](#the-channels-field) - The channels to update when publishing the ip.
     - [public](#the-public-field) - Files to be visible to other ip.
     - [exclude](#the-exclude-field) - Files to exclude during file discovery.
@@ -116,27 +116,17 @@ The `keywords` field is an array of strings that describe this package. This can
 keywords = ["cpu", "risc"]
 ```
 
-### The `source` field
+### The `repository` field
 
-The `source` entry is the URL that points to this ip on the internet. The entry's value can either be a string or an inline table.
-
-When the value is a string, it represents the URL. The default protocol will be used on this URL, which is currently curl.
+The `repository` entry is a string that represents the URL where this ip is stored on the internet.
 
 ``` toml
 [ip]
 # ...
-source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
+repository = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
 ```
 
-When the value is an inline table, there are 3 fields that can be specified: the `url`, the `protocol`, and a `tag`. The `url` key is the string for the URL, the `protocol` key is the name of a configured protocol, and the `tag` key is optional metadata that can be used by the specified protocol.
-
-The source field's `url` and `tag` keys support [_string swapping_](./../topic/swapping.md).
-
-``` toml
-[ip]
-# ...
-source = { url = "https://github.com/chaseruskin/orbit.git", protocol = "git", tag = "1.0.0" }
-```
+The repository key supports [_string swapping_](./../topic/swapping.md).
 
 ### The `channels` field
 

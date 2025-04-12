@@ -53,7 +53,7 @@ use crate::core::lockfile::LockEntry;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::protocol::Protocol;
 use crate::core::protocol::ProtocolError;
-use crate::core::source::Source;
+use crate::core::source::Repository;
 use crate::core::swap::StrSwapTable;
 use crate::core::version;
 use crate::core::version::AnyVersion;
@@ -103,7 +103,7 @@ impl Subcommand<Context> for Install {
             path: cli.get(Arg::option("path"))?,
             url: cli.get(Arg::option("url"))?,
             tag: cli.get(Arg::option("tag"))?,
-            protocol: cli.get(Arg::option("protocol").value("name"))?,
+            protocol: cli.get(Arg::option("protocol").switch('p').value("name"))?,
             // Positionals
             ip: cli.get(Arg::positional("ip"))?,
         })
@@ -160,17 +160,9 @@ impl Subcommand<Context> for Install {
         // check if trying to download from the internet
         let target = if let Some(link) = &self.url {
             provided_spec = Some(
-                Self::download_target_from_url(
-                    c,
-                    &link,
-                    &self.protocol,
-                    &self.tag,
-                    &self.ip,
-                    true,
-                    self.force,
-                )?
-                .0
-                .to_partial_ip_spec(),
+                Self::download_target_from_url(c, &link, &self.ip, true, self.force)?
+                    .0
+                    .to_partial_ip_spec(),
             );
             None
         // check if trying to download from local filesystem
@@ -572,8 +564,6 @@ impl Install {
     pub fn download_target_from_url(
         c: &Context,
         url: &str,
-        protocol: &Option<String>,
-        tag: &Option<String>,
         ip: &Option<PartialIpSpec>,
         verbose: bool,
         force: bool,
@@ -584,10 +574,7 @@ impl Install {
 
         let protocols: ProtocolMap = c.get_config().get_protocols();
 
-        let target_source = Source::new()
-            .url(url.to_string())
-            .protocol(protocol.clone())
-            .tag(tag.clone());
+        let target_source = Repository::new().url(url.to_string());
 
         // fetch from the internet
         let (name, bytes) = Download::download(
@@ -605,7 +592,7 @@ impl Install {
     fn download_target_from_source(
         &self,
         c: &Context,
-        source: &Source,
+        source: &Repository,
         spec: IpSpec,
     ) -> Result<Ip, Fault> {
         let env = Environment::new()

@@ -256,13 +256,11 @@ impl Publish {
         };
 
         let ip = local_ip.get_man().get_ip();
-        let src = ip.get_source().unwrap();
+        let src = ip.get_source().as_ref().unwrap();
         // get the ip from the internet and as an archive
         let bytes = Install::download_target_from_url(
             c,
             &src.get_url(),
-            &src.get_protocol(),
-            &src.get_tag(),
             &Some(ip.into_ip_spec().to_partial_ip_spec()),
             false,
             true,

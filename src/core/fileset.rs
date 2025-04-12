@@ -210,6 +210,64 @@ impl Serialize for Style {
     }
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub struct UrlStyle(Pattern);
+
+impl UrlStyle {
+    /// Checks if the pattern matches the url provided.
+    ///
+    /// Treats the match as a string comparison.
+    pub fn matches(&self, url: &str) -> bool {
+        self.0.matches(url)
+    }
+}
+
+impl FromStr for UrlStyle {
+    type Err = PatternError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(UrlStyle(Pattern::new(s)?.into()))
+    }
+}
+
+impl<'de> Deserialize<'de> for UrlStyle {
+    fn deserialize<D>(deserializer: D) -> Result<UrlStyle, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        struct LayerVisitor;
+
+        impl<'de> de::Visitor<'de> for LayerVisitor {
+            type Value = UrlStyle;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a glob-style pattern")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                match UrlStyle::from_str(v) {
+                    Ok(v) => Ok(v),
+                    Err(e) => Err(de::Error::custom(e)),
+                }
+            }
+        }
+
+        deserializer.deserialize_map(LayerVisitor)
+    }
+}
+
+impl Serialize for UrlStyle {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.0.to_string())
+    }
+}
+
 #[derive(Debug)]
 pub enum FilesetError {
     MissingSeparator(char),

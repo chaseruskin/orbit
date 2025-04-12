@@ -49,8 +49,8 @@ To remove ip from the catalog, see the `remove` command.
 `--path <path>`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Path to install the ip from local file system
 
-`--protocol <name>`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Use a configured protocol to download ip
+`--protocol, -p <name>`  
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Protocol to download ip
 
 `--tag <tag>`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Unique tag to provide to the protocol

@@ -58,7 +58,7 @@ version = "1.0.0"
 ``` toml
 [ip]
 # ...
-source = "https://github.com/chaseruskin/gates/archive/{{orbit.ip.version}}.zip"
+repository = "https://github.com/chaseruskin/gates/archive/{{orbit.ip.version}}.zip"
 ```
 
 3. Specify what source files in the project are public using the ip manifest's `public` field:

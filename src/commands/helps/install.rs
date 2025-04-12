@@ -25,7 +25,8 @@ Options:
     <ip>                  ip specification
     --url <url>           URL to install the ip from the internet
     --path <path>         path to install the ip from local file system
-    --protocol <name>     use a configured protocol to download ip
+    --protocol, -p <name>
+                          protocol to download ip
     --tag <tag>           unique tag to provide to the protocol
     --force               install the ip regardless of the cache slot occupancy
     --offline             skip checking coherency with source

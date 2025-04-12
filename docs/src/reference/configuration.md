@@ -53,6 +53,7 @@ Every configuration file consists of the following sections:
 - [[[protocol]]](#the-protocol-array) - Define a protocol.
     - [name](#the-name-field) - The name of the protocol.
     - [description](#the-description-field) - A short description of the protocol.
+    - [patterns](#the-patterns-field) - String patterns to match an ip's URL.
     - [command](#the-command-field) - The command to execute the protocol.
     - [args](#the-args-field) - Arguments to pass to the command.
 - [[[channel]]](#the-channel-array) - Define a channel.
@@ -321,6 +322,16 @@ See [[target]](#the-target-array)'s definition of [`name`](#the-name-field).
 ### The `description` field
 
 See [[target]](#the-target-array)'s definition of [`description`](#the-description-field).
+
+### The `patterns` filed
+
+The optional `patterns` field is an array of strings that represent different URL patterns for the given protocol. If no patterns are provided, then the protocol will accept any URL from a given ip. If a list of patterns is provided, then the protocol will only try an ip if it's URL is a match with one or more of the patterns for that protocol.
+
+``` toml
+[[protocol]]
+# ...
+patterns = ["*.git"]
+```
 
 ### The `command` field
 

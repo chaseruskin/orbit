@@ -18,6 +18,7 @@
 //! A protocol is a series of steps defined for requesting files/packages
 //! from the internet.
 
+use crate::core::fileset::UrlStyle;
 use crate::core::swap;
 use crate::core::target::Process;
 use colored::Colorize;
@@ -32,6 +33,7 @@ pub type Protocols = Vec<Protocol>;
 pub struct Protocol {
     name: String,
     description: Option<String>,
+    patterns: Option<Vec<UrlStyle>>,
     command: String,
     args: Option<Vec<String>>,
     #[serde(skip_serializing, skip_deserializing)]
@@ -59,6 +61,21 @@ impl Protocol {
             self.args
         };
         self
+    }
+
+    /// Checks if the patterns field was defined.
+    pub fn has_patterns(&self) -> bool {
+        self.patterns.is_some()
+    }
+
+    /// Checks if the URL matches a pttern in the list.
+    ///
+    /// Returns false if no patterns were specified.
+    pub fn matches_a_pattern(&self, url: &str) -> bool {
+        match &self.patterns {
+            Some(p) => p.iter().find(|pat| pat.matches(url)).is_some(),
+            None => false,
+        }
     }
 }
 
@@ -93,10 +110,11 @@ impl Protocol {
     pub fn new() -> Self {
         Self {
             name: String::new(),
+            description: None,
+            patterns: None,
             command: String::new(),
             root: None,
             args: None,
-            description: None,
         }
     }
 
@@ -221,6 +239,7 @@ command = "python"
 
     const P_2: &str = r#"
 name = "ffi"
+patterns = ["*.git"]
 command = "bash"
 args = ["~/scripts/download.bash"]    
 "#;
@@ -236,6 +255,7 @@ args = ["~/scripts/download.bash"]
                 args: None,
                 root: None,
                 description: None,
+                patterns: None,
             }
         );
 
@@ -248,6 +268,7 @@ args = ["~/scripts/download.bash"]
                 args: Some(vec![String::from("~/scripts/download.bash")]),
                 root: None,
                 description: None,
+                patterns: Some(vec![UrlStyle::from_str("*.git").unwrap()]),
             }
         );
     }
@@ -266,5 +287,15 @@ args = ["~/scripts/download.bash"]
                 ],
             }
         );
+    }
+
+    #[test]
+    fn ut_match_url_patterns() {
+        let url = "https://github.com/chaseruskin/orbit.git";
+        let pats = vec!["*.git", "https://github.com/*"];
+        for p in &pats {
+            let pat = UrlStyle::from_str(p).unwrap();
+            assert_eq!(pat.matches(&url), true);
+        }
     }
 }

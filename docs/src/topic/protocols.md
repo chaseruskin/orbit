@@ -17,7 +17,7 @@ Filename: Orbit.toml
 [ip]
 name = "orbit"
 version = "1.0.0"
-source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
+repository = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
 # ...
 ```
 
@@ -49,13 +49,21 @@ More complex protocols may require using a scripting language such as Python to 
 
 ### Using a custom protocol
 
-To use a custom protocol, modify the desired project's manifest file to specify the URL as well as the defined protocol's name. It is each user of the package's responsibility to ensure the necessary protocol(s) are properly configured in their settings.
+To use a custom protocol, add the protocol to the `protocols` field of the `[install]` table in an Orbit configuration file.
+``` toml
+[install]
+protocols = ["gitit"]
+```
+
+Now whenever a project
+
+modify the desired project's manifest file to specify the URL as well as the defined protocol's name. It is each user of the package's responsibility to ensure the necessary protocol(s) are properly configured in their settings.
 
 Filename: Orbit.toml
 ``` toml
 [ip]
 name = "orbit"
 version = "1.0.0"
-source = { url = "https://github.com/chaseruskin/orbit.git", protocol = "gitit" }
+repository = "https://github.com/chaseruskin/orbit.git"
 # ...
 ```

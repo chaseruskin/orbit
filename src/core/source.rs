@@ -17,18 +17,14 @@
 
 use super::swap::{self, StrSwapTable};
 use crate::util::anyerror::AnyError;
-use serde::ser::SerializeMap;
 use serde_derive::Deserialize;
 use std::str::FromStr;
 
 /// A [Source] outlines the process and location for extracting packages from the internet.
 #[derive(Debug, PartialEq, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct Source {
-    protocol: Option<String>,
-    url: String,
-    /// A `tag`is optional user-defined information that is needed to proceed with the protocol.
-    tag: Option<String>,
+pub struct Repository {
+    repository: String,
     // Valid is triggered true when built with a function other than "default".
     #[serde(skip, default = "set_true")]
     valid: bool,
@@ -38,52 +34,50 @@ fn set_true() -> bool {
     true
 }
 
-impl Source {
-    pub fn protocol(mut self, p: Option<String>) -> Self {
-        self.protocol = p;
-        self
-    }
+impl Repository {
+    // pub fn protocol(mut self, p: Option<String>) -> Self {
+    //     self.protocol = p;
+    //     self
+    // }
 
     pub fn url(mut self, url: String) -> Self {
-        self.url = url;
+        self.repository = url;
         self
     }
 
-    pub fn tag(mut self, tag: Option<String>) -> Self {
-        self.tag = tag;
-        self
-    }
+    // pub fn tag(mut self, tag: Option<String>) -> Self {
+    //     self.tag = tag;
+    //     self
+    // }
 
     pub fn new() -> Self {
         Self {
-            protocol: None,
-            url: String::new(),
+            repository: String::new(),
             valid: true,
-            tag: None,
         }
     }
 
-    pub fn get_protocol(&self) -> &Option<String> {
-        &self.protocol
-    }
+    // pub fn get_protocol(&self) -> &Option<String> {
+    //     &self.protocol
+    // }
 
     pub fn get_url(&self) -> &str {
-        &self.url
+        &self.repository
     }
 
     pub fn is_valid(&self) -> bool {
         self.valid
     }
 
-    pub fn get_tag(&self) -> &Option<String> {
-        &self.tag
-    }
+    // pub fn get_tag(&self) -> &Option<String> {
+    //     &self.tag
+    // }
 
-    pub fn is_default(&self) -> bool {
-        self.protocol.is_none()
-    }
+    // pub fn is_default(&self) -> bool {
+    //     self.protocol.is_none()
+    // }
 
-    pub fn as_option(&self) -> Option<&Source> {
+    pub fn as_option(&self) -> Option<&Repository> {
         match &self.valid {
             true => Some(&self),
             false => None,
@@ -91,72 +85,61 @@ impl Source {
     }
 
     pub fn replace_vars_in_url(mut self, vtable: &StrSwapTable) -> Self {
-        self.url = swap::substitute(self.url, vtable);
+        self.repository = swap::substitute(self.repository, vtable);
         self
     }
 
-    pub fn replace_vars_in_tag(mut self, vtable: &StrSwapTable) -> Self {
-        self.tag = match self.tag {
-            Some(t) => Some(swap::substitute(t, vtable)),
-            None => None,
-        };
-        self
-    }
+    // pub fn replace_vars_in_tag(mut self, vtable: &StrSwapTable) -> Self {
+    //     self.tag = match self.tag {
+    //         Some(t) => Some(swap::substitute(t, vtable)),
+    //         None => None,
+    //     };
+    //     self
+    // }
 }
 
-impl From<Option<Source>> for Source {
-    fn from(value: Option<Source>) -> Self {
+impl From<Option<Repository>> for Repository {
+    fn from(value: Option<Repository>) -> Self {
         match value {
             Some(s) => s,
-            None => Source::default(),
+            None => Repository::default(),
         }
     }
 }
 
-impl std::fmt::Display for Source {
+impl std::fmt::Display for Repository {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.protocol {
-            Some(p) => {
-                write!(f, "{}+{}", p, self.url)
-            }
-            None => {
-                write!(f, "{}", self.url)
-            }
-        }
+        write!(f, "{}", self.repository)
     }
 }
 
-impl Default for Source {
+impl Default for Repository {
     fn default() -> Self {
         Self {
-            protocol: None,
-            url: String::new(),
+            repository: String::new(),
             valid: false,
-            tag: None,
         }
     }
 }
 
-impl FromStr for Source {
+impl FromStr for Repository {
     type Err = AnyError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self {
-            url: s.to_string(),
-            protocol: None,
-            tag: None,
+            repository: s.to_string(),
             valid: true,
         })
     }
 }
 
+use serde::de::Visitor;
 use serde::de::{self};
-use serde::de::{MapAccess, Visitor};
+use serde::Serialize;
 use serde::Serializer;
-use serde::{Deserialize, Serialize};
 use std::fmt;
 
-pub fn string_or_struct<'de, D>(deserializer: D) -> Result<Source, D::Error>
+pub fn read_string<'de, D>(deserializer: D) -> Result<Option<Repository>, D::Error>
 where
     D: de::Deserializer<'de>,
 {
@@ -168,54 +151,31 @@ where
     struct LayerVisitor;
 
     impl<'de> Visitor<'de> for LayerVisitor {
-        type Value = Source;
+        type Value = Option<Repository>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("string or map")
+            formatter.write_str("string")
         }
 
-        fn visit_str<E>(self, value: &str) -> Result<Source, E>
+        fn visit_str<E>(self, value: &str) -> Result<Option<Repository>, E>
         where
             E: de::Error,
         {
-            Ok(FromStr::from_str(value).unwrap())
-        }
-
-        fn visit_map<M>(self, map: M) -> Result<Source, M::Error>
-        where
-            M: MapAccess<'de>,
-        {
-            // falls back on the derived version of deser for the [Source] struct
-            Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))
+            Ok(Some(FromStr::from_str(value).unwrap()))
         }
     }
 
     deserializer.deserialize_any(LayerVisitor)
 }
 
-impl Serialize for Source {
+impl Serialize for Repository {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         // check if needing to serialize
         match &self.valid {
-            true => {
-                // // serializer.serialize_str(&self.to_string()),
-                let mut map = match self.get_protocol() {
-                    Some(_) => serializer.serialize_map(Some(2)),
-                    None => serializer.serialize_map(Some(1)),
-                }?;
-
-                map.serialize_entry("url", self.get_url())?;
-                if let Some(p) = self.get_protocol() {
-                    map.serialize_entry("protocol", p)?;
-                }
-                if let Some(p) = self.get_tag() {
-                    map.serialize_entry("tag", p)?;
-                }
-                map.end()
-            }
+            true => serializer.serialize_str(self.get_url()),
             false => serializer.serialize_none(),
         }
     }
@@ -230,26 +190,11 @@ mod test {
         let src: &str = "https://some.url";
 
         assert_eq!(
-            Source::from_str(src).unwrap(),
-            Source {
-                protocol: None,
-                tag: None,
-                url: String::from("https://some.url"),
+            Repository::from_str(src).unwrap(),
+            Repository {
+                repository: String::from("https://some.url"),
                 valid: true,
             }
         );
     }
-
-    #[test]
-    fn deser_struct() {
-        let src: Source = match toml::from_str(EX1) {
-            Ok(r) => r,
-            Err(e) => panic!("{}", e.to_string()),
-        };
-
-        assert_eq!(src.is_valid(), true);
-    }
-
-    const EX1: &str = r#"url = "https://some.url"
-protocol = "ktsp""#;
 }

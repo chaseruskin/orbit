@@ -53,5 +53,5 @@ This guide walks through how to configure a particular ip to use a previously co
 ``` toml
 [ip]
 # ...
-source = { url = "https://github.com/chaseruskin/gates.git", protocol = "gitit" }
+repository = "https://github.com/chaseruskin/gates.git"
 ```

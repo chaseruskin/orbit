@@ -26,7 +26,7 @@ use crate::core::lockfile::LockFile;
 use crate::core::manifest;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::protocol::Protocol;
-use crate::core::source::Source;
+use crate::core::source::Repository;
 use crate::core::swap::StrSwapTable;
 use crate::core::target::Process;
 use crate::error::Error;
@@ -34,7 +34,6 @@ use crate::error::Hint;
 use crate::error::LastError;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
-use crate::util::filesystem::Standardize;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
@@ -62,7 +61,7 @@ impl Download {
         lf: &'a LockFile,
         catalog: &Catalog,
         missing_only: bool,
-    ) -> Vec<(IpSpec, Source)> {
+    ) -> Vec<(IpSpec, Repository)> {
         let mut vtable = StrSwapTable::new();
         lf.inner()
             .iter()
@@ -87,7 +86,7 @@ impl Download {
     pub fn download(
         vtable: &mut StrSwapTable,
         spec: Option<&PartialIpSpec>,
-        src: &Source,
+        src: &Repository,
         download_dir: &PathBuf,
         protocols: &HashMap<&str, &Protocol>,
         verbose: bool,
@@ -96,81 +95,55 @@ impl Download {
         // use a temporary directory the download process
         let queue = TempDir::into_path(TempDir::new()?);
 
-        // access the protocol
-        if let Some(proto) = src.get_protocol() {
-            match protocols.get(proto.as_str()) {
-                Some(&entry) => {
-                    if let Some(ip_spec) = spec {
-                        if verbose == true {
-                            crate::info!(
-                                "downloading ip {} over \"{}\" protocol ...",
-                                ip_spec,
-                                &proto
-                            );
-                        }
-                        // update variable table for this lock entry
-                        vtable.add("orbit.ip.name", ip_spec.get_name().as_ref());
-                        vtable.add("orbit.ip.version", &ip_spec.get_version().to_string());
-                    } else {
-                        if verbose == true {
-                            crate::info!("downloading ip over \"{}\" protocol ...", &proto);
-                        }
-                    }
+        if let Some(ip_spec) = spec {
+            // update variable table for this lock entry
+            vtable.add("orbit.ip.name", ip_spec.get_name().as_ref());
+            vtable.add("orbit.ip.version", &ip_spec.get_version().to_string());
+        }
 
-                    // perform string swap on source url
-                    let processed_src = src
-                        .clone()
-                        .replace_vars_in_url(&vtable)
-                        .replace_vars_in_tag(&vtable);
+        // perform string swap on source url
+        let processed_src = src.clone().replace_vars_in_url(&vtable);
 
-                    let std_queue = PathBuf::standardize(&queue);
-                    // vtable.add("orbit.queue", std_queue.to_str().unwrap());
-                    vtable.add("orbit.ip.source.url", processed_src.get_url());
-                    vtable.add("orbit.ip.source.protocol", entry.get_name());
-                    vtable.add(
-                        "orbit.ip.source.tag",
-                        src.get_tag().as_ref().unwrap_or(&String::new()),
-                    );
-                    // allow the user to handle placing the code in the queue
-                    let entry: Protocol = entry.clone().replace_vars_in_args(&vtable);
-                    if let Err(err) = entry.execute(&None, &[], verbose, &std_queue, HashMap::new())
-                    {
-                        fs::remove_dir_all(queue)?;
-                        return Err(Error::ProtocolProcFailed(LastError(err.to_string())))?;
-                    }
+        vtable.add("orbit.ip.repository", processed_src.get_url());
+
+        // determine which protocol to try
+        let mut sel_protocol: Option<(&&str, &&Protocol)> = None;
+        // first see if a protocol has a matching pattern
+        if sel_protocol.is_none() {
+            sel_protocol = protocols
+                .iter()
+                .find(|p| p.1.matches_a_pattern(&processed_src.get_url()));
+        }
+
+        // next see if a protocol has no patterns defined (accepts all)
+        if sel_protocol.is_none() {
+            sel_protocol = protocols.iter().find(|p| p.1.has_patterns() == false);
+        }
+
+        match sel_protocol {
+            Some((&name, &proto)) => {
+                if verbose == true {
+                    crate::info!("downloading ip over \"{}\" protocol ...", name,);
                 }
-                None => {
-                    // potential to use --force here to avoid this error and try with default but not currently implemented that way
+                // allow the user to handle placing the code in the queue
+                let proto: Protocol = proto.clone().replace_vars_in_args(&vtable);
+                if let Err(err) = proto.execute(&None, &[], verbose, &queue, HashMap::new()) {
                     fs::remove_dir_all(queue)?;
-                    return Err(Error::ProtocolNotFound(proto.to_string()))?;
+                    return Err(Error::ProtocolProcFailed(LastError(err.to_string())))?;
                 }
             }
-        }
-        // try to use default protocol
-        if src.is_default() == true {
-            if let Some(ip_spec) = spec {
-                vtable.add("orbit.ip.name", ip_spec.get_name().as_ref());
-                vtable.add("orbit.ip.version", &ip_spec.get_version().to_string());
-                if verbose == true {
-                    crate::info!("downloading ip {} ...", ip_spec);
-                }
-            } else {
+            None => {
                 if verbose == true {
                     crate::info!("downloading ip ...");
                 }
-            }
-
-            // perform string swap on source url
-            let processed_src = src
-                .clone()
-                .replace_vars_in_url(&vtable)
-                .replace_vars_in_tag(&vtable);
-
-            if let Err(err) = Protocol::single_download(processed_src.get_url(), &queue) {
-                fs::remove_dir_all(queue)?;
-                return Err(err);
+                // potential to use --force here to avoid this error and try with default but not currently implemented that way
+                if let Err(err) = Protocol::single_download(processed_src.get_url(), &queue) {
+                    fs::remove_dir_all(queue)?;
+                    return Err(err);
+                }
             }
         }
+
         // move the IP to the downloads folder
         match Self::move_to_download_dir(&queue, download_dir, spec, verbose) {
             Ok((name, bytes)) => {
@@ -185,6 +158,7 @@ impl Download {
         }
     }
 
+    /// Moves the recently downloaded ip to the archive/ directory.
     pub fn move_to_download_dir(
         queue: &PathBuf,
         downloads: &PathBuf,

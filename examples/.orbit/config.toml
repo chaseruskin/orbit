@@ -25,6 +25,13 @@ test = false
 args = ["{{ orbit.blueprint }}"]
 fileset.TEXT = { patterns = ["a.txt", "b.txt"] }
 
+[[protocol]]
+name = "gitit"
+description = "Simple git protocol"
+patterns = ["*.git"]
+command = "git"
+args = ["clone", "{{ orbit.ip.repository }}"]
+
 # [[target.fileset]]
 # name = "FOO-SET"
 # patterns = ["a.txt", "b.txt"]

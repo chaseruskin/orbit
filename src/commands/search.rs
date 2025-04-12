@@ -153,16 +153,18 @@ impl Search {
                 tree.insert(PkgName::new(name, Some(key)), status);
             });
 
-        println!(
-            "{}",
-            Self::fmt_table(
-                tree,
-                self.limit,
-                self.cached,
-                self.downloaded,
-                self.available
-            )
-        );
+        if tree.is_empty() == false {
+            println!(
+                "{}",
+                Self::fmt_table(
+                    tree,
+                    self.limit,
+                    self.cached,
+                    self.downloaded,
+                    self.available
+                )
+            );
+        }
         Ok(())
     }
 

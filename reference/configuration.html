@@ -225,6 +225,7 @@
 <ul>
 <li><a href="#the-name-field">name</a> - The name of the protocol.</li>
 <li><a href="#the-description-field">description</a> - A short description of the protocol.</li>
+<li><a href="#the-patterns-field">patterns</a> - String patterns to match an ip's URL.</li>
 <li><a href="#the-command-field">command</a> - The command to execute the protocol.</li>
 <li><a href="#the-args-field">args</a> - Arguments to pass to the command.</li>
 </ul>
@@ -404,6 +405,12 @@ fileset.PYF = { patterns = ["*.py", "*.py3"], recursive = true }
 <p>See <a href="#the-target-array">[target]</a>'s definition of <a href="#the-name-field"><code>name</code></a>.</p>
 <h3 id="the-description-field-1"><a class="header" href="#the-description-field-1">The <code>description</code> field</a></h3>
 <p>See <a href="#the-target-array">[target]</a>'s definition of <a href="#the-description-field"><code>description</code></a>.</p>
+<h3 id="the-patterns-filed"><a class="header" href="#the-patterns-filed">The <code>patterns</code> filed</a></h3>
+<p>The optional <code>patterns</code> field is an array of strings that represent different URL patterns for the given protocol. If no patterns are provided, then the protocol will accept any URL from a given ip. If a list of patterns is provided, then the protocol will only try an ip if it's URL is a match with one or more of the patterns for that protocol.</p>
+<pre><code class="language-toml">[[protocol]]
+# ...
+patterns = ["*.git"]
+</code></pre>
 <h3 id="the-command-field-1"><a class="header" href="#the-command-field-1">The <code>command</code> field</a></h3>
 <p>See <a href="#the-target-array">[target]</a>'s definition of <a href="#the-command-field"><code>command</code></a>.</p>
 <h3 id="the-args-field-1"><a class="header" href="#the-args-field-1">The <code>args</code> field</a></h3>

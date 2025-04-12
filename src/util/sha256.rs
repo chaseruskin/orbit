@@ -100,6 +100,11 @@ impl Sha256Hash {
     pub fn to_string_short(&self) -> String {
         self.to_string().get(0..16).unwrap().to_string()
     }
+
+    /// Creates the string used for the hash during dynamic symbol transformation.
+    pub fn to_dst_string(&self) -> String {
+        self.to_string_short()
+    }
 }
 
 impl FromStr for Sha256Hash {

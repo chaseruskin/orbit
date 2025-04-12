@@ -1,16 +1,16 @@
 # Dynamic Symbol Transformation
 
-This technique is related to _name mangling_ in programming languages. _Name mangling_ is a technique used to solve problems regarding the need to resolve unique names for programming entities. You can learn more about name mangling [here](https://en.wikipedia.org/wiki/Name_mangling).
+This technique is related to _name mangling_ in programming languages. _Name mangling_ is a technique used to solve problems regarding the need to resolve unique names for programming entities. You can learn more about name mangling on its Wikipedia [page](https://en.wikipedia.org/wiki/Name_mangling).
 
 ## Problem
 
-Before we begin, it is important to understand the problem we are trying to solve. An issue inherent to VHDL, Verilog, SystemVerilog, and many other languages is _namespace pollution_, which is when a large number of programming language variables/identifiers/units/classes are defined at the global level. To learn more about namespace pollution, [here](https://stackoverflow.com/questions/8862665/what-does-it-mean-global-namespace-would-be-polluted/13352212) is a StackOverflow post that explains it in relation to Javascript.
+Before we begin, it is important to understand the problem we are trying to solve. An issue inherent to VHDL, Verilog, SystemVerilog, and many other languages is _namespace pollution_, which is when a large number of programming language variables/identifiers/units/classes are defined at the global level. To learn more about namespace pollution, there is a StackOverflow [post](https://stackoverflow.com/questions/8862665/what-does-it-mean-global-namespace-would-be-polluted/13352212) that does a good job explaining namespace pollution in the context of Javascript.
 
 Namespace pollution can lead to _namespace clashes_. As you define more primary design units at the same scope, you are more likely to have two things that accidently have the same name. This is at the core the problem we are going to solve, because HDL compilers and synthesizers are not built to gracefully handle clashes and will error out when a primary design unit at the same scope has multiple definitions.
 
 In VHDL/Verilog, a common example of a namespace clash is when different files define an entity/module by the same name, which may have different behaviors. Namespace clashes may start to appear when a higher-level ip requires the same entity/module from an ip but as different versions throughout its dependency tree.
 
-## Solution
+## Approach
 
 We solve the namespace pollution problem with an algorithm called _dynamic symbol transformation_ (DST). The DST algorithm solves the namespace clashing problem by rewriting conflicts with a new unique identifier without losing information in the original identifier.
 
@@ -96,11 +96,11 @@ DST identifies namespace clashes within the current dependency graph and automat
 
 The yellow nodes (`lab2`, `lab1`) are the ips that had their source code modified due to DST. Since the modified contents of these ips no longer matches their original contents, the modifications are stored as separate entries in the catalog's cache apart from their original entries.
 
-The red node (`nand_g.v`) is the HDL design element that must be dynamically renamed due to the namespace clash for `nand_g`. The identifier `nand_g` in lab1 was appended with the first 10 digits of the original ip's checksum (`fbe4720d0`). This transforms lab1's `nand_g` module into `nand_g_fbe4720d0`, which is unique and no longer clashes with `nand_g` in lab3.
+The red node (`nand_g.v`) is the HDL design element that must be dynamically renamed due to the namespace clash for `nand_g`. The identifier `nand_g` in lab1 was appended with the first 16 digits of the original ip's checksum (`fbe4720d0a40b25c`). This transforms lab1's `nand_g` module into `nand_g_fbe4720d0a40b25c`, which is unique and no longer clashes with `nand_g` in lab3.
 
 > __Note:__ DST specifically chose to _not_ rename the `nand_g` from lab3. If had decided to rename the `nand_g` from lab3, the user would be burdened with tracking and maintaining the new renamed unique identifier in the local ip (final-project). Since DST never renames identifiers in direct dependencies, DST is always abstracted away from the user and has zero overhead. While direct dependencies may be modified due to neigboring an ip that undergoes DST, direct dependencies are never chosen for DST.
 
-The orange nodes (`and_g.v`, `xor_g.v`) are the HDL design elements that reference/instantiate the design element that was marked for symbol transformation. Once the ip targeted for DST (lab1) resolves the namespace clash, we must update the references for this design element in all the upstream neighboring ips (lab2). Since their references are now broken due to `nand_g` being renamed to `nand_g_fbe4720d0`, the source code is analyzed and updated to fix the broken references of `nand_g` to `nand_g_fbe4720d0`.
+The orange nodes (`and_g.v`, `xor_g.v`) are the HDL design elements that reference/instantiate the design element that was marked for symbol transformation. Once the ip targeted for DST (lab1) resolves the namespace clash, we must update the references for this design element in all the upstream neighboring ips (lab2). Since their references are now broken due to `nand_g` being renamed to `nand_g_fbe4720d0a40b25c`, the source code is analyzed and updated to fix the broken references of `nand_g` to `nand_g_fbe4720d0a40b25c`.
 
 The final unambiguous HDL-level dependency graph is the following:
 ```
@@ -108,21 +108,21 @@ half_add (final-project)
 ├── nand_g (lab3)
 │   ├── not_g (lab2)
 │   └── and_g (lab2)*
-|       └── nand_g_fbe4720d0 (lab1)*
+|       └── nand_g_fbe4720d0a40b25c (lab1)*
 └── xor_g (lab2)*
-    └── nand_g_fbe4720d0 (lab1)*
+    └── nand_g_fbe4720d0a40b25c (lab1)*
 ```
 
 The `*` indicates the modules that had their source code modified to either rename the namespace collision or update its references to the new renamed identifier.
 
 ### Summary 
 
-To recap, DST handled the namespace clash by _transforming_, or renaming, the module `nand_g` within lab1. The `nand_g` identifier was appended with the first 10 digits of the original lab1 ip's checksum (fbe4720d0) to make it `nand_g_fbe4720d0`. This transformation occurred at that ip's source code level (lab1), and modifications were made to the source code for all dependent neighbors of lab1, which was only lab2 in this example. The source code in lab2 had to be updated to rename the references that were originally `nand_g` to `nand_g_fbe4720d0`. Each ip that had source code modifications have their changes saved to their own entries in the catalog's cache, such that the original entries are still intact and available for future use.
+To recap, DST handled the namespace clash by _transforming_, or renaming, the module `nand_g` within lab1. The `nand_g` identifier was appended with the first 16 characters of the original lab1 ip's checksum (fbe4720d0a40b25c) to make it `nand_g_fbe4720d0a40b25c`. This transformation occurred at that ip's source code level (lab1), and modifications were made to the source code for all dependent neighbors of lab1, which was only lab2 in this example. The source code in lab2 had to be updated to rename the references that were originally `nand_g` to `nand_g_fbe4720d0a40b25c`. Each ip that had source code modifications have their changes saved to their own entries in the catalog's cache, such that the original entries are still intact and available for future use.
 
 ## Emphasis
 
-Dynamic symbol transformation lets Orbit avoid the major issues and frustrations of package management that stem from dependency incompatibility. As projects grow in complexity and the number of dependencies increases, Orbit can continue to allow users to integrate different verisons of the same package throughout the overall design while retaining dependency compatibility. Conflicts in incompatible versions are avoided within the dependency graph through DST. You can learn more about dependency incompatibility [here](https://en.wikipedia.org/wiki/Dependency_hell).
+Dynamic symbol transformation lets Orbit avoid the major issues and frustrations of package management that stem from dependency incompatibility. As projects grow in complexity and the number of dependencies increases, Orbit can continue to allow users to integrate different verisons of the same package throughout the overall design while retaining dependency compatibility. Conflicts in incompatible versions are avoided within the dependency graph through DST. You can learn more about dependency incompatibility issues on its Wikipedia [page](https://en.wikipedia.org/wiki/Dependency_hell).
 
 ## Further Reading
 
-- https://stephencoakley.com/2019/04/24/how-rust-solved-dependency-hell
+- [Rust's Dependency Resolution](https://stephencoakley.com/2019/04/24/how-rust-solved-dependency-hell)

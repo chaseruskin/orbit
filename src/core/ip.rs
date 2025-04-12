@@ -410,10 +410,7 @@ impl Ip {
         let checksum = Ip::read_cache_checksum(self.get_root()).unwrap();
 
         units.into_iter().for_each(|(key, _)| {
-            lut.insert(
-                key.clone(),
-                "_".to_string() + checksum.to_string().get(0..10).unwrap(),
-            );
+            lut.insert(key.clone(), "_".to_string() + &checksum.to_dst_string());
         });
         lut
     }

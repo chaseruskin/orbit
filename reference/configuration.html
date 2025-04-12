@@ -206,6 +206,11 @@
 <li><a href="#the-default-target-field">default-target</a> - Set the default target for builds.</li>
 </ul>
 </li>
+<li><a href="#the-install-section">[install]</a> - The install settings.
+<ul>
+<li><a href="#the-default-protocol-field">default-protocol</a> - Set the default protocol for installing ip.</li>
+</ul>
+</li>
 <li><a href="#the-vhdl-format-section">[vhdl-format]</a> - VHDL code formatting.</li>
 <li><a href="#the-verilog-format-section">[verilog-format]</a> - SystemVerilog/Verilog code formatting.</li>
 <li><a href="#the-env-section">[env]</a> - The runtime environment variables.</li>
@@ -273,14 +278,21 @@ target-dir = "target"
 <pre><code class="language-toml">[test]
 default-target = "modelsim"
 </code></pre>
-<p>If the default target is set to be used and it cannot be found among the known targets, it will error.</p>
+<p>If the default target is set to be used and its name cannot be found among the known targets, it will error.</p>
 <h3 id="the-build-section"><a class="header" href="#the-build-section">The <code>[build]</code> section</a></h3>
 <h3 id="the-default-target-field-1"><a class="header" href="#the-default-target-field-1">The <code>default-target</code> field</a></h3>
 <p>The <code>default-target</code> key sets the default target when starting the build process through the build entry point (<code>orbit build</code>).</p>
 <pre><code class="language-toml">[build]
 default-target = "vivado"
 </code></pre>
-<p>If the default target is set to be used and it cannot be found among the known targets, it will error.</p>
+<p>If the default target is set to be used and its name cannot be found among the known targets, it will error.</p>
+<h3 id="the-install-section"><a class="header" href="#the-install-section">The <code>[install]</code> section</a></h3>
+<h3 id="the-default-protocol-field"><a class="header" href="#the-default-protocol-field">The <code>default-protocol</code> field</a></h3>
+<p>The optional <code>default-protocol</code> field can be used to specify which protocol should have priority when trying to access an ip from the internet.</p>
+<pre><code class="language-toml">[install]
+default-protocol = "git"
+</code></pre>
+<p>If the default protocol has patterns configured and none of the patterns match the given ip's source URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, it will error.</p>
 <h3 id="the-vhdl-format-section"><a class="header" href="#the-vhdl-format-section">The <code>[vhdl-format]</code> section</a></h3>
 <p>The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their default values.</p>
 <pre><code class="language-toml">[vhdl-format]

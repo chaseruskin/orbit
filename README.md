@@ -121,9 +121,11 @@ or_gate u_or_gate (
 
 Design units written in one language can also have their instantiation code displayed in a different language, such as the SystemVerilog instance of a VHDL entity.
 
-## Flexibility in use
+## Extensible build processes
 
 Since Orbit focuses on efficiently managing the HDL source code and minimizing its associated technical debt, users have the power to add their own execution targets to the build process. This is achieved through a two-stage build sequenece, where first Orbit plans the build by generating a single file, called a blueprint, that lists the topologically-sorted order of necessary source files. After planning the build, Orbit invokes the user's target to perform the execution process on the list of source files.
+
+![](./docs/src/images/dataflow.svg)
 
 For a project with the following design hierarchy:
 ```
@@ -138,7 +140,7 @@ top_tb
     └── ctrl
 ```
 
-Orbit generates the blueprint listing the order of required HDL source files, even across other projects:
+Orbit can generate the blueprint listing the order of required HDL source files, even across other projects:
 
 Filename: blueprint.tsv
 ```

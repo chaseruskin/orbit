@@ -2,6 +2,8 @@
 
 Orbit is an agile package manager for HDLs. Orbit supports a wide range of commands to the user to automate codebase management processes for installing ip, referencing ip, and removing ip.
 
+![](./../images/management.svg)
+
 ## Installing
 
 `orbit install`

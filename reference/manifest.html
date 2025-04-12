@@ -175,7 +175,7 @@
 <li><a href="#the-authors-field">authors</a> - The authors of the ip.</li>
 <li><a href="#the-library-field">library</a> - The HDL library for the design units within the ip.</li>
 <li><a href="#the-keywords-field">keywords</a> - A list of simple words categorizing the ip.</li>
-<li><a href="#the-source-field">repository</a> - The URL of the ip source repository.</li>
+<li><a href="#the-source-field">source</a> - The URL of the ip source repository.</li>
 <li><a href="#the-channels-field">channels</a> - The channels to update when publishing the ip.</li>
 <li><a href="#the-public-field">public</a> - Files to be visible to other ip.</li>
 <li><a href="#the-exclude-field">exclude</a> - Files to exclude during file discovery.</li>
@@ -240,13 +240,13 @@ description = "A short description of the ip"
 # ...
 keywords = ["cpu", "risc"]
 </code></pre>
-<h3 id="the-repository-field"><a class="header" href="#the-repository-field">The <code>repository</code> field</a></h3>
-<p>The <code>repository</code> entry is a string that represents the URL where this ip is stored on the internet.</p>
+<h3 id="the-source-field"><a class="header" href="#the-source-field">The <code>source</code> field</a></h3>
+<p>The <code>source</code> entry is a string that represents the URL where this ip is stored on the internet.</p>
 <pre><code class="language-toml">[ip]
 # ...
-repository = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
+source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
 </code></pre>
-<p>The repository key supports <a href="./../topic/swapping.html"><em>string swapping</em></a>.</p>
+<p>The source key supports <a href="./../topic/swapping.html"><em>string swapping</em></a>.</p>
 <h3 id="the-channels-field"><a class="header" href="#the-channels-field">The <code>channels</code> field</a></h3>
 <p>The <code>channels</code> field is an array of strings listing the names of configured channels that this ip will publish to during the publishing process.</p>
 <p>Without a channel listed in the <code>channels</code> entry, an ip is unable to be published since there is no default channel.</p>

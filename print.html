@@ -1410,7 +1410,7 @@ version = "1.0.0"
 </ol>
 <pre><code class="language-toml">[ip]
 # ...
-repository = "https://github.com/chaseruskin/gates/archive/{{orbit.ip.version}}.zip"
+source = "https://github.com/chaseruskin/gates/archive/{{orbit.ip.version}}.zip"
 </code></pre>
 <ol start="3">
 <li>Specify what source files in the project are public using the ip manifest's <code>public</code> field:</li>
@@ -1657,7 +1657,7 @@ args = ["clone", "{{ orbit.ip.source.url }}"]
 </ol>
 <pre><code>$ orbit install --list
 </code></pre>
-<h2 id="using-a-protocol"><a class="header" href="#using-a-protocol">Using a protocol</a></h2>
+<h2 id="using-a-protocol-todo"><a class="header" href="#using-a-protocol-todo">Using a protocol (TODO)</a></h2>
 <p>This guide walks through how to configure a particular ip to use a previously configured protocol called <code>gitit</code>.</p>
 <ol>
 <li>
@@ -1669,7 +1669,7 @@ args = ["clone", "{{ orbit.ip.source.url }}"]
 </ol>
 <pre><code class="language-toml">[ip]
 # ...
-repository = "https://github.com/chaseruskin/gates.git"
+source = "https://github.com/chaseruskin/gates.git"
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="creating-channels"><a class="header" href="#creating-channels">Creating Channels</a></h1>
 <p>A channel is a decentralized registry storing the manifests of published ips. This section provides steps for ways to configure a channel.</p>
@@ -1994,7 +1994,7 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <pre><code class="language-toml">[ip]
 name = "orbit"
 version = "1.0.0"
-repository = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
+source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
 # ...
 </code></pre>
 <h2 id="custom-protocols"><a class="header" href="#custom-protocols">Custom protocols</a></h2>
@@ -2008,23 +2008,19 @@ This means when a custom protocol is executed, whatever files it downloads and e
 <pre><code class="language-toml">[[protocol]]
 name = "gitit"
 summary = "Access packages through git to handle remote repositories"
+patterns = ["*.git"]
 command = "git"
-args = ["clone", "-b", "{{ orbit.ip.version }}", "{{ orbit.ip.source.url }}"]
+args = ["clone", "-b", "{{ orbit.ip.version }}", "{{ orbit.ip.source }}"]
 </code></pre>
 <p>This protocol calls <code>git</code> and clones from the IP's URL while checking out the branch/tag that matches the IP's version number. These values are resolved at runtime by Orbit through variable substitution.</p>
 <p>More complex protocols may require using a scripting language such as Python to perform the necessary steps.</p>
 <h3 id="using-a-custom-protocol"><a class="header" href="#using-a-custom-protocol">Using a custom protocol</a></h3>
-<p>To use a custom protocol, add the protocol to the <code>protocols</code> field of the <code>[install]</code> table in an Orbit configuration file.</p>
-<pre><code class="language-toml">[install]
-protocols = ["gitit"]
-</code></pre>
-<p>Now whenever a project</p>
-<p>modify the desired project's manifest file to specify the URL as well as the defined protocol's name. It is each user of the package's responsibility to ensure the necessary protocol(s) are properly configured in their settings.</p>
+<p>Edit the current ip's manifest file to specify the URL that matches one of the patterns for the configured protocol. It is each user of the package's responsibility to ensure the necessary protocol(s) are properly configured in their settings.</p>
 <p>Filename: Orbit.toml</p>
 <pre><code class="language-toml">[ip]
 name = "orbit"
 version = "1.0.0"
-repository = "https://github.com/chaseruskin/orbit.git"
+source = "https://github.com/chaseruskin/orbit.git"
 # ...
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="channels-1"><a class="header" href="#channels-1">Channels</a></h1>
@@ -2117,7 +2113,7 @@ exclude = [
 <p>Not every string is checked for string swapping. Strings that are not allowed to have string swapping ignore any existing keys in the text, leaving the entire string unmodified.</p>
 <p>The following lists the instances when a string is permitted to perform string swapping:</p>
 <h3 id="manifest-files"><a class="header" href="#manifest-files">Manifest files</a></h3>
-<p>The string pattern for an ip's <code>ip.repository</code> field is allowed to contain any of the following keys:</p>
+<p>The string pattern for an ip's <code>ip.source</code> field is allowed to contain any of the following keys:</p>
 <ul>
 <li><code>orbit.ip.name</code>: The name of the ip being downloaded.</li>
 <li><code>orbit.ip.version</code>: The version of the ip being downloaded.</li>
@@ -2155,7 +2151,7 @@ exclude = [
 <pre><code class="language-toml">[ip]
 name = "foo"
 version = "1.2.0"
-repository = "https://github.com/hyperspace-labs/foo/archive/refs/tags/{{orbit.ip.version}}.zip
+source = "https://github.com/hyperspace-labs/foo/archive/refs/tags/{{orbit.ip.version}}.zip
 </code></pre>
 <p>The <code>source</code> field of an ip's manifest is one string that is allowed to string swap. For its string, we specify a key, "orbit.ip.version", by enclosing it in double curly brackets. This tells Orbit that any time it uses this string, it should replace <code>{{orbit.ip.version}}</code> with <code>1.2.0</code>, the value associated with that key.</p>
 <p>By using string swapping, we can reduce the amount of times redundant information has to be maintained, or delay providing information when we may not know the value until runtime.</p>
@@ -2283,7 +2279,7 @@ Yilinx_Path = "/Users/chase/fpga/bin/yilinx"
 <li><a href="reference/manifest.html#the-authors-field">authors</a> - The authors of the ip.</li>
 <li><a href="reference/manifest.html#the-library-field">library</a> - The HDL library for the design units within the ip.</li>
 <li><a href="reference/manifest.html#the-keywords-field">keywords</a> - A list of simple words categorizing the ip.</li>
-<li><a href="reference/manifest.html#the-source-field">repository</a> - The URL of the ip source repository.</li>
+<li><a href="reference/manifest.html#the-source-field">source</a> - The URL of the ip source repository.</li>
 <li><a href="reference/manifest.html#the-channels-field">channels</a> - The channels to update when publishing the ip.</li>
 <li><a href="reference/manifest.html#the-public-field">public</a> - Files to be visible to other ip.</li>
 <li><a href="reference/manifest.html#the-exclude-field">exclude</a> - Files to exclude during file discovery.</li>
@@ -2348,13 +2344,13 @@ description = "A short description of the ip"
 # ...
 keywords = ["cpu", "risc"]
 </code></pre>
-<h3 id="the-repository-field"><a class="header" href="#the-repository-field">The <code>repository</code> field</a></h3>
-<p>The <code>repository</code> entry is a string that represents the URL where this ip is stored on the internet.</p>
+<h3 id="the-source-field"><a class="header" href="#the-source-field">The <code>source</code> field</a></h3>
+<p>The <code>source</code> entry is a string that represents the URL where this ip is stored on the internet.</p>
 <pre><code class="language-toml">[ip]
 # ...
-repository = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
+source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
 </code></pre>
-<p>The repository key supports <a href="reference/./../topic/swapping.html"><em>string swapping</em></a>.</p>
+<p>The source key supports <a href="reference/./../topic/swapping.html"><em>string swapping</em></a>.</p>
 <h3 id="the-channels-field"><a class="header" href="#the-channels-field">The <code>channels</code> field</a></h3>
 <p>The <code>channels</code> field is an array of strings listing the names of configured channels that this ip will publish to during the publishing process.</p>
 <p>Without a channel listed in the <code>channels</code> entry, an ip is unable to be published since there is no default channel.</p>
@@ -3503,7 +3499,7 @@ returned from the user-defined execution process is propagated through Orbit.</p
             The relative directory where the target starts</p>
 <p><code>--command &lt;path&gt;</code><br />
             Overwrite the target's command</p>
-<p><code>--list</code><br />
+<p><code>--list, -l</code><br />
             View available targets and exit</p>
 <p><code>--all</code><br />
             Include all hdl files of the working ip</p>
@@ -3564,7 +3560,7 @@ returned from the user-defined execution process is propagated through Orbit.</p
             The relative directory where the target starts</p>
 <p><code>--command &lt;path&gt;</code><br />
             Overwrite the target's command</p>
-<p><code>--list</code><br />
+<p><code>--list, -l</code><br />
             View available targets and exit</p>
 <p><code>--all</code><br />
             Include all hdl files of the working ip</p>
@@ -3618,7 +3614,7 @@ channel as well as any newly created directories it made.</p>
             Run the operation to completion</p>
 <p><code>--no-install</code><br />
             Do not install the ip for future use</p>
-<p><code>--list</code><br />
+<p><code>--list, -l</code><br />
             View available channels and exit</p>
 <p><code>--all-public</code><br />
             Publish with all source files being public</p>
@@ -3713,7 +3709,7 @@ when the "ip.public" field does not exist.</p>
             Install the ip regardless of the cache slot occupancy</p>
 <p><code>--offline</code><br />
             Skip checking coherency with source</p>
-<p><code>--list</code><br />
+<p><code>--list, -l</code><br />
             View available protocols and exit</p>
 <p><code>--all-deps</code><br />
             Install all dependencies (including development)</p>
@@ -3818,7 +3814,7 @@ respective file.</p>
             Store the value as the key's entry</p>
 <p><code>--unset &lt;key&gt;...</code><br />
             Delete the key's entry</p>
-<p><code>--list</code><br />
+<p><code>--list, -l</code><br />
             Print the list of configuration files and exit</p>
 <h2 id="examples-17"><a class="header" href="#examples-17"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit config --push include="profiles/hyperspacelab"

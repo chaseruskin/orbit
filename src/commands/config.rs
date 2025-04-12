@@ -63,7 +63,7 @@ impl Subcommand<Context> for Config {
         cli.help(Help::with(config::HELP))?;
         Ok(Config {
             // Flags
-            list: cli.check(Arg::flag("list"))?,
+            list: cli.check(Arg::flag("list").switch('l'))?,
             // Options
             push: cli
                 .get_all(Arg::option("push").value("key=value"))?

@@ -73,7 +73,7 @@ OPTIONS
     --unset <key>...
         Delete the key's entry
 
-    --list
+    --list, -l
         Print the list of configuration files and exit
 
 EXAMPLES

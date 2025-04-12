@@ -20,7 +20,7 @@
 use crate::core::ip::IpSpec;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::pkgid::PkgPart;
-use crate::core::source::Repository;
+use crate::core::source::Source;
 use crate::core::{source, version};
 use crate::error::Error;
 use crate::error::LastError;
@@ -312,7 +312,7 @@ impl Manifest {
                 name: PkgPart::new(),
                 version: IpVersion::default(),
                 uuid: Uuid::new(),
-                repository: None.into(),
+                source: None.into(),
                 keywords: Vec::new(),
                 description: None,
                 channels: None,
@@ -495,7 +495,7 @@ pub struct Package {
     keywords: Vec<String>,
     /// Describes the URL for fetching the captured state's code
     #[serde(deserialize_with = "source::read_string", default)]
-    repository: Option<Repository>,
+    source: Option<Source>,
     /// Known channels where this ip should be published to
     channels: Option<Vec<String>>,
     /// Filepaths that should be explictly known to the user for ip referencing
@@ -536,8 +536,8 @@ impl Package {
         &self.library
     }
 
-    pub fn get_source(&self) -> &Option<Repository> {
-        &self.repository
+    pub fn get_source(&self) -> &Option<Source> {
+        &self.source
     }
 
     pub fn get_channels(&self) -> &Option<Vec<String>> {
@@ -680,7 +680,7 @@ mod test {
             assert_eq!(
                 man.ip.get_source(),
                 &Some(
-                    Repository::from_str(
+                    Source::from_str(
                         "https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip"
                     )
                     .unwrap()
@@ -761,7 +761,7 @@ name = "gates"
 uuid = "0000000000000000000000000"
 version = "0.1.0"
 library = "common"
-repository = "https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip"
+source = "https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip"
 
 [ip.metadata]
 foo = 1
@@ -803,28 +803,28 @@ const EX4: &str = r#"[ip]
 name = "lab2"
 uuid = "0000000000000000000000000"
 version = "1.20.0"
-repository = "https://some.url"
+source = "https://some.url"
 "#;
 
 const EX5: &str = r#"[ip]
 name = "lab2"
 uuid = "0000000000000000000000000"
 version = "1.20.0"
-repository = "https://some.url"
+source = "https://some.url"
 "#;
 
 const EX6: &str = r#"[ip]
 name = "lab2"
 uuid = "0000000000000000000000000"
 version = "1.20.0"
-repository = "https://some.url"
+source = "https://some.url"
 "#;
 
 const EX7: &str = r#"[ip]
 name = "lab2"
 uuid = "0000000000000000000000000"
 version = "1.20.0"
-repository = false
+source = false
 "#;
 
 const ERR1: &str = r#"[ip]

@@ -53,7 +53,7 @@ impl Subcommand<Context> for Publish {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
         cli.help(Help::with(HELP))?;
         Ok(Publish {
-            list: cli.check(Arg::flag("list"))?,
+            list: cli.check(Arg::flag("list").switch('l'))?,
             no_install: cli.check(Arg::flag("no-install"))?,
             all_pub: cli.check(Arg::flag("all-public"))?,
             ready: cli.check(Arg::flag("ready").switch('y'))?,

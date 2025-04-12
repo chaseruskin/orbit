@@ -26,7 +26,7 @@ use crate::core::lockfile::LockFile;
 use crate::core::manifest;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::protocol::Protocol;
-use crate::core::source::Repository;
+use crate::core::source::Source;
 use crate::core::swap::StrSwapTable;
 use crate::core::target::Process;
 use crate::error::Error;
@@ -61,7 +61,7 @@ impl Download {
         lf: &'a LockFile,
         catalog: &Catalog,
         missing_only: bool,
-    ) -> Vec<(IpSpec, Repository)> {
+    ) -> Vec<(IpSpec, Source)> {
         let mut vtable = StrSwapTable::new();
         lf.inner()
             .iter()
@@ -86,7 +86,7 @@ impl Download {
     pub fn download(
         vtable: &mut StrSwapTable,
         spec: Option<&PartialIpSpec>,
-        src: &Repository,
+        src: &Source,
         download_dir: &PathBuf,
         protocols: &HashMap<&str, &Protocol>,
         verbose: bool,

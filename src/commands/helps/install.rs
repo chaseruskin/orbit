@@ -30,7 +30,7 @@ Options:
     --tag <tag>           unique tag to provide to the protocol
     --force               install the ip regardless of the cache slot occupancy
     --offline             skip checking coherency with source
-    --list                view available protocols and exit
+    --list, -l            view available protocols and exit
     --all-deps            install all dependencies (including development)
     --all-public          install with all source files being public
 

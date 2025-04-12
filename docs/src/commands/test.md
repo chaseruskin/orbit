@@ -64,7 +64,7 @@ returned from the user-defined execution process is propagated through Orbit.
 `--command <path>`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Overwrite the target's command
 
-`--list`  
+`--list, -l`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; View available targets and exit
 
 `--all`  

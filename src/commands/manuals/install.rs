@@ -71,7 +71,7 @@ OPTIONS
     --offline
         Skip checking coherency with source
 
-    --list
+    --list, -l
         View available protocols and exit
 
     --all-deps

@@ -19,7 +19,7 @@ use crate::core::ip::Ip;
 use crate::core::manifest::FromFile;
 use crate::core::manifest::IpName;
 use crate::core::source;
-use crate::core::source::Repository;
+use crate::core::source::Source;
 use crate::core::uuid::Uuid;
 use crate::core::{catalog::CacheSlot, ip::IpSpec};
 use crate::core::{
@@ -282,7 +282,7 @@ pub mod v1 {
         // @note: `sum` is optional because the root package will have its sum omitted
         checksum: Option<Sha256Hash>,
         #[serde(deserialize_with = "source::read_string", default)]
-        repository: Option<Repository>,
+        source: Option<Source>,
         // @note: `path` is optional and only used if the dependency list uses a local ip
         path: Option<PathBuf>,
         dependencies: Vec<PartialIpSpec>,
@@ -308,7 +308,7 @@ pub mod v1 {
                 } else {
                     None
                 },
-                repository: target.get_man().get_ip().get_source().clone(),
+                source: target.get_man().get_ip().get_source().clone(),
                 dependencies: match target.get_man().get_deps_list(is_local, true).len() {
                     0 => Vec::new(),
                     _ => {
@@ -388,7 +388,7 @@ pub mod v1 {
                 } else {
                     None
                 },
-                repository: ip.get_man().get_ip().get_source().clone(),
+                source: ip.get_man().get_ip().get_source().clone(),
                 dependencies: match ip.get_man().get_deps_list(is_working, true).len() {
                     0 => Vec::new(),
                     _ => {
@@ -530,8 +530,8 @@ pub mod v1 {
             &self.uuid
         }
 
-        pub fn get_source(&self) -> Option<&Repository> {
-            self.repository.as_ref()
+        pub fn get_source(&self) -> Option<&Source> {
+            self.source.as_ref()
         }
 
         pub fn get_name(&self) -> &IpName {

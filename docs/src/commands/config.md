@@ -63,7 +63,7 @@ respective file.
 `--unset <key>...`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Delete the key's entry
 
-`--list`  
+`--list, -l`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Print the list of configuration files and exit
 
 ## __EXAMPLES__

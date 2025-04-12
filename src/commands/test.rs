@@ -59,7 +59,7 @@ impl Subcommand<Context> for Test {
         cli.help(Help::with(test::HELP))?;
         Ok(Test {
             // Flags
-            list: cli.check(Arg::flag("list"))?,
+            list: cli.check(Arg::flag("list").switch('l'))?,
             verbose: cli.check(Arg::flag("verbose"))?,
             force: cli.check(Arg::flag("force"))?,
             all: cli.check(Arg::flag("all"))?,

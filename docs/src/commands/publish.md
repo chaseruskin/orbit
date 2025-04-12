@@ -48,7 +48,7 @@ channel as well as any newly created directories it made.
 `--no-install`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Do not install the ip for future use
 
-`--list`  
+`--list, -l`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; View available channels and exit
 
 `--all-public`  

@@ -29,7 +29,7 @@ The following lists the instances when a string is permitted to perform string s
 
 ### Manifest files
 
-The string pattern for an ip's `ip.repository` field is allowed to contain any of the following keys:
+The string pattern for an ip's `ip.source` field is allowed to contain any of the following keys:
 
 - `orbit.ip.name`: The name of the ip being downloaded.
 - `orbit.ip.version`: The version of the ip being downloaded.
@@ -74,7 +74,7 @@ Consider an ip with the following manifest data:
 [ip]
 name = "foo"
 version = "1.2.0"
-repository = "https://github.com/hyperspace-labs/foo/archive/refs/tags/{{orbit.ip.version}}.zip
+source = "https://github.com/hyperspace-labs/foo/archive/refs/tags/{{orbit.ip.version}}.zip
 ```
 
 The `source` field of an ip's manifest is one string that is allowed to string swap. For its string, we specify a key, "orbit.ip.version", by enclosing it in double curly brackets. This tells Orbit that any time it uses this string, it should replace `{{orbit.ip.version}}` with `1.2.0`, the value associated with that key.

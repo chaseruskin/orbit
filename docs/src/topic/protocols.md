@@ -17,7 +17,7 @@ Filename: Orbit.toml
 [ip]
 name = "orbit"
 version = "1.0.0"
-repository = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
+source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
 # ...
 ```
 
@@ -39,8 +39,9 @@ Filename: config.toml
 [[protocol]]
 name = "gitit"
 summary = "Access packages through git to handle remote repositories"
+patterns = ["*.git"]
 command = "git"
-args = ["clone", "-b", "{{ orbit.ip.version }}", "{{ orbit.ip.source.url }}"]
+args = ["clone", "-b", "{{ orbit.ip.version }}", "{{ orbit.ip.source }}"]
 ```
 
 This protocol calls `git` and clones from the IP's URL while checking out the branch/tag that matches the IP's version number. These values are resolved at runtime by Orbit through variable substitution.
@@ -49,21 +50,13 @@ More complex protocols may require using a scripting language such as Python to 
 
 ### Using a custom protocol
 
-To use a custom protocol, add the protocol to the `protocols` field of the `[install]` table in an Orbit configuration file.
-``` toml
-[install]
-protocols = ["gitit"]
-```
-
-Now whenever a project
-
-modify the desired project's manifest file to specify the URL as well as the defined protocol's name. It is each user of the package's responsibility to ensure the necessary protocol(s) are properly configured in their settings.
+Edit the current ip's manifest file to specify the URL that matches one of the patterns for the configured protocol. It is each user of the package's responsibility to ensure the necessary protocol(s) are properly configured in their settings.
 
 Filename: Orbit.toml
 ``` toml
 [ip]
 name = "orbit"
 version = "1.0.0"
-repository = "https://github.com/chaseruskin/orbit.git"
+source = "https://github.com/chaseruskin/orbit.git"
 # ...
 ```

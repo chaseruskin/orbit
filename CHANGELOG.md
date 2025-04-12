@@ -27,6 +27,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Adds `ORBIT_CHANNEL_NAME` and `ORBIT_CHANNEL_DIR` environment variables (set during the publishing process)
 - Adds `patterns` field to the protocol element in configuration files to be able to determine if a protocol should pick up the ip's url to try to download
 - Adds `-p` switch for `--protocol` under `orbit install` command
+- Adds `-l` switch for `--list` flag in various subcommands
 
 ### Changes
 - Renames `--no-clean` flag to `--keep`, `-k`, to align with conventional linux command-line options

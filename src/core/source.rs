@@ -23,8 +23,8 @@ use std::str::FromStr;
 /// A [Source] outlines the process and location for extracting packages from the internet.
 #[derive(Debug, PartialEq, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct Repository {
-    repository: String,
+pub struct Source {
+    source: String,
     // Valid is triggered true when built with a function other than "default".
     #[serde(skip, default = "set_true")]
     valid: bool,
@@ -34,14 +34,14 @@ fn set_true() -> bool {
     true
 }
 
-impl Repository {
+impl Source {
     // pub fn protocol(mut self, p: Option<String>) -> Self {
     //     self.protocol = p;
     //     self
     // }
 
     pub fn url(mut self, url: String) -> Self {
-        self.repository = url;
+        self.source = url;
         self
     }
 
@@ -52,7 +52,7 @@ impl Repository {
 
     pub fn new() -> Self {
         Self {
-            repository: String::new(),
+            source: String::new(),
             valid: true,
         }
     }
@@ -62,7 +62,7 @@ impl Repository {
     // }
 
     pub fn get_url(&self) -> &str {
-        &self.repository
+        &self.source
     }
 
     pub fn is_valid(&self) -> bool {
@@ -77,7 +77,7 @@ impl Repository {
     //     self.protocol.is_none()
     // }
 
-    pub fn as_option(&self) -> Option<&Repository> {
+    pub fn as_option(&self) -> Option<&Source> {
         match &self.valid {
             true => Some(&self),
             false => None,
@@ -85,7 +85,7 @@ impl Repository {
     }
 
     pub fn replace_vars_in_url(mut self, vtable: &StrSwapTable) -> Self {
-        self.repository = swap::substitute(self.repository, vtable);
+        self.source = swap::substitute(self.source, vtable);
         self
     }
 
@@ -98,36 +98,36 @@ impl Repository {
     // }
 }
 
-impl From<Option<Repository>> for Repository {
-    fn from(value: Option<Repository>) -> Self {
+impl From<Option<Source>> for Source {
+    fn from(value: Option<Source>) -> Self {
         match value {
             Some(s) => s,
-            None => Repository::default(),
+            None => Source::default(),
         }
     }
 }
 
-impl std::fmt::Display for Repository {
+impl std::fmt::Display for Source {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.repository)
+        write!(f, "{}", self.source)
     }
 }
 
-impl Default for Repository {
+impl Default for Source {
     fn default() -> Self {
         Self {
-            repository: String::new(),
+            source: String::new(),
             valid: false,
         }
     }
 }
 
-impl FromStr for Repository {
+impl FromStr for Source {
     type Err = AnyError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self {
-            repository: s.to_string(),
+            source: s.to_string(),
             valid: true,
         })
     }
@@ -139,7 +139,7 @@ use serde::Serialize;
 use serde::Serializer;
 use std::fmt;
 
-pub fn read_string<'de, D>(deserializer: D) -> Result<Option<Repository>, D::Error>
+pub fn read_string<'de, D>(deserializer: D) -> Result<Option<Source>, D::Error>
 where
     D: de::Deserializer<'de>,
 {
@@ -151,13 +151,13 @@ where
     struct LayerVisitor;
 
     impl<'de> Visitor<'de> for LayerVisitor {
-        type Value = Option<Repository>;
+        type Value = Option<Source>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
             formatter.write_str("string")
         }
 
-        fn visit_str<E>(self, value: &str) -> Result<Option<Repository>, E>
+        fn visit_str<E>(self, value: &str) -> Result<Option<Source>, E>
         where
             E: de::Error,
         {
@@ -168,7 +168,7 @@ where
     deserializer.deserialize_any(LayerVisitor)
 }
 
-impl Serialize for Repository {
+impl Serialize for Source {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -190,9 +190,9 @@ mod test {
         let src: &str = "https://some.url";
 
         assert_eq!(
-            Repository::from_str(src).unwrap(),
-            Repository {
-                repository: String::from("https://some.url"),
+            Source::from_str(src).unwrap(),
+            Source {
+                source: String::from("https://some.url"),
                 valid: true,
             }
         );

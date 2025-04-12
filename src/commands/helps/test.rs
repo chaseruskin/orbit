@@ -28,7 +28,7 @@ Options:
     --plan <format>       set the blueprint file format
     --target-dir <dir>    the relative directory where the target starts
     --command <path>      overwrite the target's command
-    --list                view available targets and exit
+    --list, -l            view available targets and exit
     --all                 include all hdl files of the working ip
     --fileset <key=glob>...
                           a glob-style pattern identified by name to include in the blueprint

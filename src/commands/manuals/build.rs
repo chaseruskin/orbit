@@ -71,7 +71,7 @@ OPTIONS
     --command <path>
         Overwrite the target's command
 
-    --list
+    --list, -l
         View available targets and exit
 
     --all

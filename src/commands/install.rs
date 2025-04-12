@@ -53,7 +53,7 @@ use crate::core::lockfile::LockEntry;
 use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::protocol::Protocol;
 use crate::core::protocol::ProtocolError;
-use crate::core::source::Repository;
+use crate::core::source::Source;
 use crate::core::swap::StrSwapTable;
 use crate::core::version;
 use crate::core::version::AnyVersion;
@@ -97,7 +97,7 @@ impl Subcommand<Context> for Install {
             verbose: cli.check(Arg::flag("verbose"))?,
             all_deps: cli.check(Arg::flag("all-deps"))?,
             all_pub: cli.check(Arg::flag("all-public"))?,
-            list: cli.check(Arg::flag("list"))?,
+            list: cli.check(Arg::flag("list").switch('l'))?,
             offline: cli.check(Arg::flag("offline"))?,
             // Options
             path: cli.get(Arg::option("path"))?,
@@ -574,7 +574,7 @@ impl Install {
 
         let protocols: ProtocolMap = c.get_config().get_protocols();
 
-        let target_source = Repository::new().url(url.to_string());
+        let target_source = Source::new().url(url.to_string());
 
         // fetch from the internet
         let (name, bytes) = Download::download(
@@ -592,7 +592,7 @@ impl Install {
     fn download_target_from_source(
         &self,
         c: &Context,
-        source: &Repository,
+        source: &Source,
         spec: IpSpec,
     ) -> Result<Ip, Fault> {
         let env = Environment::new()

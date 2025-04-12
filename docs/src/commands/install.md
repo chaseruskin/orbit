@@ -61,7 +61,7 @@ To remove ip from the catalog, see the `remove` command.
 `--offline`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Skip checking coherency with source
 
-`--list`  
+`--list, -l`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; View available protocols and exit
 
 `--all-deps`  

@@ -43,7 +43,7 @@ This guide walks through how to view the protocols already configured and availa
 $ orbit install --list
 ```
 
-## Using a protocol
+## Using a protocol (TODO)
 
 This guide walks through how to configure a particular ip to use a previously configured protocol called `gitit`.
 
@@ -53,5 +53,5 @@ This guide walks through how to configure a particular ip to use a previously co
 ``` toml
 [ip]
 # ...
-repository = "https://github.com/chaseruskin/gates.git"
+source = "https://github.com/chaseruskin/gates.git"
 ```

@@ -31,7 +31,7 @@ impl Subcommand<()> for Help {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
         cli.help(cliproc::Help::with(HELP))?;
         Ok(Help {
-            list: cli.check(Arg::flag("list"))?,
+            list: cli.check(Arg::flag("list").switch('l'))?,
             topic: cli.get(Arg::positional("topic"))?,
         })
     }

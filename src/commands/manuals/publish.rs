@@ -58,7 +58,7 @@ OPTIONS
     --no-install
         Do not install the ip for future use
 
-    --list
+    --list, -l
         View available channels and exit
 
     --all-public

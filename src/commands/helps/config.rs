@@ -29,6 +29,6 @@ Options:
     --set <key=value>...
                           store the value as the key's entry
     --unset <key>...      delete the key's entry
-    --list                print the list of configuration files and exit
+    --list, -l            print the list of configuration files and exit
 
 Use 'orbit help config' to read more about the command."#;

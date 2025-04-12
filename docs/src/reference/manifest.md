@@ -16,7 +16,7 @@ Every manifest file consists of the following sections:
     - [authors](#the-authors-field) - The authors of the ip.
     - [library](#the-library-field) - The HDL library for the design units within the ip.
     - [keywords](#the-keywords-field) - A list of simple words categorizing the ip.
-    - [repository](#the-source-field) - The URL of the ip source repository.
+    - [source](#the-source-field) - The URL of the ip source repository.
     - [channels](#the-channels-field) - The channels to update when publishing the ip.
     - [public](#the-public-field) - Files to be visible to other ip.
     - [exclude](#the-exclude-field) - Files to exclude during file discovery.
@@ -116,17 +116,17 @@ The `keywords` field is an array of strings that describe this package. This can
 keywords = ["cpu", "risc"]
 ```
 
-### The `repository` field
+### The `source` field
 
-The `repository` entry is a string that represents the URL where this ip is stored on the internet.
+The `source` entry is a string that represents the URL where this ip is stored on the internet.
 
 ``` toml
 [ip]
 # ...
-repository = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
+source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
 ```
 
-The repository key supports [_string swapping_](./../topic/swapping.md).
+The source key supports [_string swapping_](./../topic/swapping.md).
 
 ### The `channels` field
 

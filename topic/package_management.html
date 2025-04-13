@@ -169,12 +169,29 @@
 <p>An ip's <em>field of view</em> represents the set of HDL source code files that can interact with one another. A newly created ip's field of view starts out limited to the set of files found only within that ip. This means instantiations of modules and references to packages must be from primary design units located only within the HDL source code files of the current ip.</p>
 <p>When a module, package, or any other design unit is needed from a different ip, users express their intention to depend on another ip within the current ip by adding the needed ip's name and version to the <code>[dependencies]</code> section of the current ip's manifest. By doing so, the current ip's field of view <strong>expands</strong> to include the HDL source code files found directly within the dependent ip. This means instantiations of modules and references to other primary design units in the current ip's HDL source code can now include primary design units found in the dependent ip.</p>
 <p>Depending on ip in the catalog is only allowed for ip that have an immutable reference located in the catalog's cache. An ip in the catalog only listed as <em>available</em> or <em>downloaded</em> does not have the necessary data to properly reference any HDL source code files from that ip. Thankfully, Orbit automatically works through the required steps to get an ip installed to the cache when the user requests an <code>install</code> operation, even if the ip is not found in the catalog.</p>
-<h2 id="key-takeaways"><a class="header" href="#key-takeaways">Key Takeaways</a></h2>
+<h2 id="important-concepts"><a class="header" href="#important-concepts">Important concepts</a></h2>
 <ul>
-<li>The <em>source</em> is the location where the ip's repository exists; this could any cloud-based platform such as GitHub or GitLab where your repository is stored.</li>
-<li>The <em>catalog</em> is an abstract concept in Orbit that maintains 3 levels: available ip (found in channels), downloaded ip (located in the archive), and installed ip (located in the cache).</li>
-<li>Users interact with the catalog through Orbit. Two fundamental catalog operations are: <code>install</code> and <code>remove</code>. The <code>install</code> operation brings an ip into a usable state in the catalog, while the <code>remove</code> operation takes an ip out of a usable state in the catalog.</li>
-<li>An ip's <em>field of view</em> is the set of HDL source code files that can interact with one another. Each ip has its own field of view, which may extend to other ips not found in the current ip's field of view. By adding an ip as a dependency in the current ip's manifest, you effectively expand the current ip's field of view to include the set of HDL source code files found within the ip dependency.</li>
+<li>
+<p>The <em>source</em> is the location where the ip's repository exists; this could be any cloud-based platform such as GitHub or GitLab where your repository is stored.</p>
+</li>
+<li>
+<p>The <em>catalog</em> is an abstract concept in Orbit that maintains 3 levels: available ip (found in channels), downloaded ip (located in the archive), and installed ip (located in the cache).</p>
+</li>
+<li>
+<p>When an ip is known as <em>available</em> in the catalog, Orbit only has the manifest and other metadata about that ip; there is no HDL source code for that ip in the catalog. The ip's manifest and metadata are tracked in a user-configured <em>channel</em>.</p>
+</li>
+<li>
+<p>When an ip is known as <em>downloaded</em> in the catalog, Orbit has a compressed version of the ip's contents. In this state, the ip is unusable as a dependency. The compressed version of the ip is stored in the <em>archive</em>.</p>
+</li>
+<li>
+<p>When an ip is known as <em>installed</em> in the catalog, Orbit has an uncompressed version of the ip's contents used for reference only. In this immutable state of the ip's contents, the ip is able to be used as a dependency. The immutable reference of the ip is kept in the <em>cache</em>.</p>
+</li>
+<li>
+<p>Users interact with the catalog through Orbit. Two fundamental catalog operations are: <code>install</code> and <code>remove</code>. The <code>install</code> operation brings an ip into a usable state in the catalog, while the <code>remove</code> operation takes an ip out of a usable state in the catalog.</p>
+</li>
+<li>
+<p>An ip's <em>field of view</em> is the set of HDL source code files that can interact with one another. Each ip has its own field of view, which may extend to other ips not found in the current ip's field of view. By adding an ip as a dependency in the current ip's manifest, you effectively expand the current ip's field of view to include the set of HDL source code files found within the ip dependency.</p>
+</li>
 </ul>
 
                     </main>

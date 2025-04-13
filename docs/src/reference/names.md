@@ -1,6 +1,12 @@
-# Names
+# Ip Specification
 
-In order to identify an ip among others, Orbit requires users to assign a human-readable _name_ to each created ip. In addition to the human-readable name, Orbit assigns a _universally unique identifier_ (UUID) to each ip. UUIDs are required in order to avoid namespace collisions at the ip level in Orbit's decentralized system.
+In order to identify an ip among others, Orbit requires users to assign a human-readable _name_ to each created ip. The name is just one component of how to identify an ip, while an ip is fully identified by its _specification_, or _spec_.
+
+While user's provide their own name for an ip, Orbit assigns a _universally unique identifier_ (UUID) to each ip. UUIDs are required in order to avoid namespace collisions at the ip level in Orbit's decentralized system.
+
+Lastly, users provide a version, which denotes the current state of the ip.
+
+An ip spec is composed of the ip's name, UUID, and version.
 
 ## Name 
 
@@ -18,6 +24,7 @@ The following rules currently apply to a name values:
 - begins with an ASCII letter (`a-z`, `A-Z`)
 - contains only ASCII letters (`a-z`, `A-Z`), ASCII digits (`0-9`), dashes `-`, and underscores `_`
 - cannot end with a dash `-` or underscore `_`
+- cannot be "work"
 
 ## UUID 
 
@@ -53,7 +60,7 @@ The following rules currently apply to version values:
 - a label can be attached to the end by using a dash character (`-`)
 - labels can only contain ASCII letters (`a-z`, `A-Z`), ASCII digits (`0-9`), and decimal characters (`.`)
 
-## Ip specification
+## Spec
 
 An ip specification, commonly abbreviated to _spec_, is the total unambiguous reference to a specific ip at a particular version.
 
@@ -86,8 +93,8 @@ To resolve namespace collisions at the ip level, Orbit uses UUIDs. When there ar
 
 ## Libraries
 
-An ip can optionally belong to a library. An ip's _library_ is a higher-level scope that loosely groups together multiple ips. This library identification is used for grouping the HDL source code itself into their language-defined libraries as well.
+In addition to the spec, another form of additional identification is a library. An ip can optionally belong to a library. An ip's _library_ is a higher-level scope that can loosely groups together multiple ips. The library identification is largely used for grouping the HDL source code itself into language-applicable libraries.
 
-A library can be defined through the "library" field in the ip's manifest file. Its format follows the same rules as the ip's name. If no library is defined in the ip's manifest, then the default library is the ip's name.
+A library can be defined through the [`library`](./manifest.md#the-library-field) field in the ip's manifest file. Its format follows the same rules as the ip's name. If no library is defined in the ip's manifest, then the default library is the ip's name.
 
 An ip is _not_ allowed to have "work" explicitly set as its library in the ip's manifest. The "work" library is a reserved library within the context of VHDL used to reference other primary design units within that of the current library.

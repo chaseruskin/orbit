@@ -2,7 +2,7 @@
 
 Ips are the core component that Orbit operates on as a package manager. First, let's understand some key terms related to ip in the context of Orbit.
 
-## Anatomy of an ip
+## Terminology
 
 A developer's tasks often involve interfacing with a collection of closely related files (source code, scripts, text files). This collection of closely related files is typically stored under a single directory and is called a _project_.
 
@@ -12,9 +12,11 @@ In the context of being a package manager for digital hardware, Orbit calls a pa
 
 ## Working ip
 
-Typically, developers work on one project at a given time (while we can work on projects concurrently, we unfortunately are not parallel processors...yet). The _working ip_ is the ip that is currently being developed at a given moment. The working ip is found by Orbit by checking along the working directory and its parent directories. Some Orbit commands only work when they are called within the working ip (`orbit lock`, `orbit build`).
+Typically, developers work on one project at a given time (while we can work on projects concurrently, we unfortunately are not parallel processors). The _working ip_ is the ip that is currently being developed at a given moment. Orbit identifies the working ip by checking along the working directory and its parent directories for a manifest file. Once a manifest file is found, Orbit considers this the working ip. Some Orbit commands only work when they are called within the working ip (`orbit lock`, `orbit build`).
 
-## Types of files inside an ip
+The working ip may also be called other names, such as the _local ip_ or _current ip_. These name differences are only differences in name as the same meaning is preserved.
+
+## Anatomy
 
 Since Orbit focuses on digital hardware projects, it automatically detects and manages files that store HDL source code. Files that store HDL source code are called _source files_. Any other files, such as scripts and test vectors, are considered _auxiliary files_.
 
@@ -32,18 +34,20 @@ All files __except the lock file__ are expected to be edited by the user. Orbit 
 
 File names that begin with ".orbit-" are reserved for internal use and are not allowed at the root directory of an ip. Files that are named with this pattern are used by Orbit in the ip catalog to store additional metadata about the ip.
 
-## Ip names
+## Names
 
-An ip's name is a human-readable name given to an ip so users can easily recall and locate relevant packages.
+An ip's name is a human-readable identifier given to an ip so users can easily remember and locate packages of interest.
 
 ```
 gates
 ```
 
-An ip's _specification_, more commonly called a _spec_, is the full resolved name of an ip. The spec involves the ip's name, uuid, and version.
+An ip's _specification_, more commonly called a _spec_, is the full resolved name of an ip. The spec involves the ip's name, uuid, and version. A complete spec looks like the following:
 
 ```
 gates+8ah2qa261k8wgv55sd1qq17w9:1.0.0
 ```
 
-When asking Orbit to operate on a particular ip outside of the working ip, Orbit will usually ask you to provide the ip's spec. Orbit uses the spec to lookup the ip in the catalog and then carry out the requested function on that ip.
+When asking Orbit to operate on a particular ip outside of the working ip, Orbit will ask you to provide the ip's spec. Orbit uses the spec to lookup the ip in the catalog and then carry out the requested function on that ip. 
+
+To learn more about an ip spec, see [Ip Specification](./../reference/names.md).

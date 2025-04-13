@@ -39,7 +39,7 @@
 
 - [Reference](./reference/reference.md)
     - [Manifest](./reference/manifest.md)
-    - [Names](./reference/names.md)
+    - [Ip Specification](./reference/names.md)
     - [Versions](./reference/versions.md)
     - [Filesets](./reference/filesets.md)
     - [Blueprint](./reference/blueprint.md)

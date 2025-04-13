@@ -25,7 +25,7 @@
 - [Topic Guide](./topic/topic.md)
     - [Why Orbit Exists](./starting/motivation.md)
     - [How Orbit Works](./topic/overview.md)
-    - [Agile Ip Management](./topic/package_management.md)
+    - [Ip Management](./topic/package_management.md)
     - [Extensible Builds](./topic/extensible_builds.md)
     - [Catalog](./topic/catalog.md)
     - [Ip](./topic/ip.md)

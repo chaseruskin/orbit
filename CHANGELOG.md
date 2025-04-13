@@ -15,7 +15,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.25.0 - unreleased
+## 0.25.0
 
 ### Features
 - Adds ability to store multiple file patterns under one fileset for custom filesets using the `patterns` entry

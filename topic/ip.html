@@ -160,13 +160,14 @@
                     <main>
                         <h1 id="ip"><a class="header" href="#ip">Ip</a></h1>
 <p>Ips are the core component that Orbit operates on as a package manager. First, let's understand some key terms related to ip in the context of Orbit.</p>
-<h2 id="anatomy-of-an-ip"><a class="header" href="#anatomy-of-an-ip">Anatomy of an ip</a></h2>
+<h2 id="terminology"><a class="header" href="#terminology">Terminology</a></h2>
 <p>A developer's tasks often involve interfacing with a collection of closely related files (source code, scripts, text files). This collection of closely related files is typically stored under a single directory and is called a <em>project</em>.</p>
 <p>The core operations of a package manager revolve around <em>packages</em>. A <em>package</em> is a project <em>with additional information provided by the developer</em>. This "additional information" is called <em>metadata</em>, and it is written to a special file called a <em>manifest</em>. The manifest must be placed at the project's root directory. Without manifests, a package manager would not know which projects it should manage and what each project's current state is in regards to being a package.</p>
 <p>In the context of being a package manager for digital hardware, Orbit calls a package an <em>ip</em>. An ip's manifest file is "Orbit.toml", with case-sensitivity.</p>
 <h2 id="working-ip"><a class="header" href="#working-ip">Working ip</a></h2>
-<p>Typically, developers work on one project at a given time (while we can work on projects concurrently, we unfortunately are not parallel processors...yet). The <em>working ip</em> is the ip that is currently being developed at a given moment. The working ip is found by Orbit by checking along the working directory and its parent directories. Some Orbit commands only work when they are called within the working ip (<code>orbit lock</code>, <code>orbit build</code>).</p>
-<h2 id="types-of-files-inside-an-ip"><a class="header" href="#types-of-files-inside-an-ip">Types of files inside an ip</a></h2>
+<p>Typically, developers work on one project at a given time (while we can work on projects concurrently, we unfortunately are not parallel processors). The <em>working ip</em> is the ip that is currently being developed at a given moment. Orbit identifies the working ip by checking along the working directory and its parent directories for a manifest file. Once a manifest file is found, Orbit considers this the working ip. Some Orbit commands only work when they are called within the working ip (<code>orbit lock</code>, <code>orbit build</code>).</p>
+<p>The working ip may also be called other names, such as the <em>local ip</em> or <em>current ip</em>. These name differences are only differences in name as the same meaning is preserved.</p>
+<h2 id="anatomy"><a class="header" href="#anatomy">Anatomy</a></h2>
 <p>Since Orbit focuses on digital hardware projects, it automatically detects and manages files that store HDL source code. Files that store HDL source code are called <em>source files</em>. Any other files, such as scripts and test vectors, are considered <em>auxiliary files</em>.</p>
 <p>Auxiliary files can be injected into the planning stage by specifying <em>filesets</em> for the given target. A <em>fileset</em> is glob-style pattern that collects matching files under a common name within the working ip. These matched files will appear in the target's generated blueprint file for future execution.</p>
 <p>So, what files are inside an ip?</p>
@@ -179,14 +180,15 @@
 <p>All files <strong>except the lock file</strong> are expected to be edited by the user. Orbit automatically maintains the lock file to ensure it can reproduce the ip's world state in the future.</p>
 <h3 id="reserved-names"><a class="header" href="#reserved-names">Reserved names</a></h3>
 <p>File names that begin with ".orbit-" are reserved for internal use and are not allowed at the root directory of an ip. Files that are named with this pattern are used by Orbit in the ip catalog to store additional metadata about the ip.</p>
-<h2 id="ip-names"><a class="header" href="#ip-names">Ip names</a></h2>
-<p>An ip's name is a human-readable name given to an ip so users can easily recall and locate relevant packages.</p>
+<h2 id="names"><a class="header" href="#names">Names</a></h2>
+<p>An ip's name is a human-readable identifier given to an ip so users can easily remember and locate packages of interest.</p>
 <pre><code>gates
 </code></pre>
-<p>An ip's <em>specification</em>, more commonly called a <em>spec</em>, is the full resolved name of an ip. The spec involves the ip's name, uuid, and version.</p>
+<p>An ip's <em>specification</em>, more commonly called a <em>spec</em>, is the full resolved name of an ip. The spec involves the ip's name, uuid, and version. A complete spec looks like the following:</p>
 <pre><code>gates+8ah2qa261k8wgv55sd1qq17w9:1.0.0
 </code></pre>
-<p>When asking Orbit to operate on a particular ip outside of the working ip, Orbit will usually ask you to provide the ip's spec. Orbit uses the spec to lookup the ip in the catalog and then carry out the requested function on that ip.</p>
+<p>When asking Orbit to operate on a particular ip outside of the working ip, Orbit will ask you to provide the ip's spec. Orbit uses the spec to lookup the ip in the catalog and then carry out the requested function on that ip.</p>
+<p>To learn more about an ip spec, see <a href="./../reference/names.html">Ip Specification</a>.</p>
 
                     </main>
 

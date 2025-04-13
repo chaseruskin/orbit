@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Names - The Book of Orbit</title>
+        <title>Ip Specification - The Book of Orbit</title>
 
 
         <!-- Custom HTML head -->
@@ -158,8 +158,11 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="names"><a class="header" href="#names">Names</a></h1>
-<p>In order to identify an ip among others, Orbit requires users to assign a human-readable <em>name</em> to each created ip. In addition to the human-readable name, Orbit assigns a <em>universally unique identifier</em> (UUID) to each ip. UUIDs are required in order to avoid namespace collisions at the ip level in Orbit's decentralized system.</p>
+                        <h1 id="ip-specification"><a class="header" href="#ip-specification">Ip Specification</a></h1>
+<p>In order to identify an ip among others, Orbit requires users to assign a human-readable <em>name</em> to each created ip. The name is just one component of how to identify an ip, while an ip is fully identified by its <em>specification</em>, or <em>spec</em>.</p>
+<p>While user's provide their own name for an ip, Orbit assigns a <em>universally unique identifier</em> (UUID) to each ip. UUIDs are required in order to avoid namespace collisions at the ip level in Orbit's decentralized system.</p>
+<p>Lastly, users provide a version, which denotes the current state of the ip.</p>
+<p>An ip spec is composed of the ip's name, UUID, and version.</p>
 <h2 id="name"><a class="header" href="#name">Name</a></h2>
 <p>The ip <em>name</em> is a unique string of characters that abides by a certain set of rules. It is a single name and is defined under the "name" field in an ip's manifest. Every ip is required to have a name. The name should not change over the course of an ip's lifetime.</p>
 <pre><code class="language-toml">[ip]
@@ -172,6 +175,7 @@ name = "cpu"
 <li>begins with an ASCII letter (<code>a-z</code>, <code>A-Z</code>)</li>
 <li>contains only ASCII letters (<code>a-z</code>, <code>A-Z</code>), ASCII digits (<code>0-9</code>), dashes <code>-</code>, and underscores <code>_</code></li>
 <li>cannot end with a dash <code>-</code> or underscore <code>_</code></li>
+<li>cannot be "work"</li>
 </ul>
 <h2 id="uuid"><a class="header" href="#uuid">UUID</a></h2>
 <p>The ip <em>uuid</em> is a unique string of characters encoded in base36 (a-z0-9). An encoded UUID is 25 characters long and is generated using Version 4 UUID. It is defined under the "uuid" field in an ip's manifest. Every ip is required to have a uuid. The uuid should not change over the course of an ip's lifetime.</p>
@@ -199,7 +203,7 @@ version = "1.0.0"
 <li>a label can be attached to the end by using a dash character (<code>-</code>)</li>
 <li>labels can only contain ASCII letters (<code>a-z</code>, <code>A-Z</code>), ASCII digits (<code>0-9</code>), and decimal characters (<code>.</code>)</li>
 </ul>
-<h2 id="ip-specification"><a class="header" href="#ip-specification">Ip specification</a></h2>
+<h2 id="spec"><a class="header" href="#spec">Spec</a></h2>
 <p>An ip specification, commonly abbreviated to <em>spec</em>, is the total unambiguous reference to a specific ip at a particular version.</p>
 <pre><code>spec ::= &lt;name&gt;[+uuid][:version]
 </code></pre>
@@ -222,8 +226,8 @@ version = "1.0.0"
 </div>
 <p>To resolve namespace collisions at the ip level, Orbit uses UUIDs. When there are multiple ips in the catalog that share the same name, a user must then explicitly include the UUID of the requested ip to disambiguate between ips under the same name.</p>
 <h2 id="libraries"><a class="header" href="#libraries">Libraries</a></h2>
-<p>An ip can optionally belong to a library. An ip's <em>library</em> is a higher-level scope that loosely groups together multiple ips. This library identification is used for grouping the HDL source code itself into their language-defined libraries as well.</p>
-<p>A library can be defined through the "library" field in the ip's manifest file. Its format follows the same rules as the ip's name. If no library is defined in the ip's manifest, then the default library is the ip's name.</p>
+<p>In addition to the spec, another form of additional identification is a library. An ip can optionally belong to a library. An ip's <em>library</em> is a higher-level scope that can loosely groups together multiple ips. The library identification is largely used for grouping the HDL source code itself into language-applicable libraries.</p>
+<p>A library can be defined through the <a href="./manifest.html#the-library-field"><code>library</code></a> field in the ip's manifest file. Its format follows the same rules as the ip's name. If no library is defined in the ip's manifest, then the default library is the ip's name.</p>
 <p>An ip is <em>not</em> allowed to have "work" explicitly set as its library in the ip's manifest. The "work" library is a reserved library within the context of VHDL used to reference other primary design units within that of the current library.</p>
 
                     </main>

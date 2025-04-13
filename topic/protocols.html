@@ -161,22 +161,13 @@
                         <h1 id="protocols"><a class="header" href="#protocols">Protocols</a></h1>
 <p>A <em>protocol</em> is a series of steps requried to get a package from the internet. Protocols exist because there are numerous ways to access data from the internet depending on your development environment. Orbit tries to be as modular and flexible as possible by introducing protocols.</p>
 <p>Protocols are required during the download process to acquire a package for potential cache installation.</p>
-<h2 id="default-protocol"><a class="header" href="#default-protocol">Default protocol</a></h2>
-<p>Orbit has a default protocol that relies on the Rust <a href="https://crates.io/crates/curl"><code>curl</code></a> crate to make HTTP requests. This protocol assumes the provided URLs point to a zip archive containing the targeted package. The protocol will extract the zip file to the <em>queue</em>, which is a special temporary directory handled by Orbit. Orbit generates and manages a different queue directory for each package that must be downloaded.</p>
-<h3 id="using-the-default-protocol"><a class="header" href="#using-the-default-protocol">Using the default protocol</a></h3>
-<p>To use the default protocol, modify the desired project's manifest to only specify the URL as the source. The default protocol assumes the URL points to a publicly accessible zip archive.</p>
-<p>Filename: Orbit.toml</p>
-<pre><code class="language-toml">[ip]
-name = "orbit"
-version = "1.0.0"
-source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
-# ...
-</code></pre>
+<p>The goal of a protocol is to place an ip's contents on the user's local file system. Every protocol's process is started from a temporary directory handled by Orbit. After a protocol runs its process, Orbit will try to find the requested ip's manifest within this temporary directory. If Orbit finds the ip's manifest, then the download is considered successful. Orbit creates and manages a different temporary directory for each ip being downloaded.</p>
+<h2 id="standard-protocol"><a class="header" href="#standard-protocol">Standard protocol</a></h2>
+<p>Orbit has one pre-defined standard protocol that relies on the Rust <a href="https://crates.io/crates/curl"><code>curl</code></a> crate to make HTTP requests. This protocol assumes the provided URLs point to a zip archive containing the targeted package. The standard protocol will extract the zip file to the temporary directory handled by Orbit. If the ip's source file is not a zip file, then this protocol will not work.</p>
+<p>If your requirements for how you point an ip's source contents will not work with the standard protocol, then consider configuring a custom protocol.</p>
 <h2 id="custom-protocols"><a class="header" href="#custom-protocols">Custom protocols</a></h2>
-<p>A user can define a custom protocol for accessing packages from the internet by modifying the configuration file.</p>
-<p>Orbit sets the current directory for the custom protocol execution to already be the queue directory.
-This means when a custom protocol is executed, whatever files it downloads and extracts to the current directory is the directory Orbit expects to find the IP.</p>
-<p>When a custom protocol is used, Orbit creates a temporary directory and calls the protocol's command from this newly created temporary directory. Orbit removes this temporary directory after an ip is downloaded and creates a new temporary directory for each ip download.</p>
+<p>Users can configure their own processes to run when trying to download an ip from the internet by adding a new <code>[[protocol]]</code> entry in an Orbit configuration file.</p>
+<p>Orbit will start the custom protocol's process in a temporary directory for the custom protocol to try to download the ip's contents from its provided source URL. Orbit removes the temporary directory after an ip is successfully or unsuccessfully downloaded and creates a new temporary directory for each ip download.</p>
 <h3 id="example"><a class="header" href="#example">Example</a></h3>
 <p>One possible protocol relies on using the <code>git</code> command-line tool.</p>
 <p>Filename: config.toml</p>
@@ -187,17 +178,16 @@ patterns = ["*.git"]
 command = "git"
 args = ["clone", "-b", "{{ orbit.ip.version }}", "{{ orbit.ip.source }}"]
 </code></pre>
-<p>This protocol calls <code>git</code> and clones from the IP's URL while checking out the branch/tag that matches the IP's version number. These values are resolved at runtime by Orbit through variable substitution.</p>
-<p>More complex protocols may require using a scripting language such as Python to perform the necessary steps.</p>
-<h3 id="using-a-custom-protocol"><a class="header" href="#using-a-custom-protocol">Using a custom protocol</a></h3>
-<p>Edit the current ip's manifest file to specify the URL that matches one of the patterns for the configured protocol. It is each user of the package's responsibility to ensure the necessary protocol(s) are properly configured in their settings.</p>
-<p>Filename: Orbit.toml</p>
-<pre><code class="language-toml">[ip]
-name = "orbit"
-version = "1.0.0"
-source = "https://github.com/chaseruskin/orbit.git"
+<p>This protocol calls <code>git</code> and clones from the ip's URL while checking out the branch/tag that matches the ip's version number. These values are resolved at runtime by Orbit through variable substitution.</p>
+<p>This protocol only picks up source URLs that match the <code>*.git</code> glob pattern. If a custom protocol does not define a <code>patterns</code> field for its configured entry, then the protocol will be pick up all source URLs.</p>
+<blockquote>
+<p><strong>Note</strong>: If a custom protocol defines a empty list of patterns in the <code>patterns</code> field for its configured entry, then the protoocl will <em>never</em> pick up any source URLs.</p>
+<pre><code class="language-toml">[[protocol]]
 # ...
+patterns = []
 </code></pre>
+</blockquote>
+<p>More complex protocols may require using a scripting language such as Python to perform the necessary steps.</p>
 
                     </main>
 

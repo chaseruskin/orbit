@@ -170,7 +170,7 @@
 <li><a href="#publishing-an-ip-using-git-tags">Publishing an ip using git tags</a></li>
 </ul>
 <h2 id="installing-an-ip-to-the-catalog"><a class="header" href="#installing-an-ip-to-the-catalog">Installing an ip to the catalog</a></h2>
-<p>This guide walks through the steps to install an ip on the local file system to the catalog on the local file system. In this example, we assume the ip has no revision control tied to its project.</p>
+<p>This guide walks through the steps to install an ip from the local file system to the catalog. In this example, we assume the ip has no revision control tied to its project.</p>
 <ol>
 <li>Specify what version is going to be released using the ip manifest's <code>version</code> field, such as <code>1.0.0</code>:</li>
 </ol>
@@ -191,7 +191,7 @@ public = ["rtl"]
 <pre><code>$ orbit lock
 </code></pre>
 <ol start="4">
-<li>Install the ip to the catalog as an immutable reference:</li>
+<li>Install the ip to the catalog as an immutable reference for use in future ip:</li>
 </ol>
 <pre><code>$ orbit install --path .
 </code></pre>
@@ -219,41 +219,34 @@ source = "https://github.com/chaseruskin/gates/archive/{{orbit.ip.version}}.zip"
 public = ["rtl"]
 </code></pre>
 <ol start="4">
-<li>Specify which channel to post this to ip to:</li>
-</ol>
-<pre><code class="language-toml">[ip]
-# ...
-channels = ["remote-chipyard"]
-</code></pre>
-<ol start="5">
 <li>Update the lockfile:</li>
 </ol>
 <pre><code>$ orbit lock
 </code></pre>
-<ol start="6">
+<ol start="5">
 <li>Add and commit the final changes to your project:</li>
 </ol>
 <pre><code>$ git commit -am "Stages for release"
 </code></pre>
-<ol start="7">
+<ol start="6">
 <li>Add a git tag to the ip's repository that matches exactly the version specified in the ip's manifest:</li>
 </ol>
 <pre><code>$ git tag 1.0.0
 </code></pre>
-<ol start="8">
+<ol start="7">
 <li>Push the committed changes and tag to the remote repository:</li>
 </ol>
 <pre><code>$ git push --tags
 </code></pre>
-<ol start="9">
-<li>Run the dry run for the publishing process to verify all ip checkpoints are met:</li>
+<ol start="8">
+<li>Run the dry run for the publishing process to verify all ip checkpoints are met when publishing to an existing channel, such as <code>remote-chipyard</code>:</li>
 </ol>
-<pre><code>$ orbit publish
+<pre><code>$ orbit publish --channel remote-chipyard
 </code></pre>
-<ol start="10">
-<li>Once the dry run reports the ip is ready to be published, publish the ip:</li>
+<ol start="9">
+<li>Once the dry run reports the ip is ready to be published, publish the ip to an existing channel, such as <code>remote-chipyard</code>:</li>
 </ol>
-<pre><code>$ orbit publish --ready
+<pre><code>$ orbit publish --channel remote-chipyard --ready
 </code></pre>
 
                     </main>

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Motivation - The Book of Orbit</title>
+        <title>Why Orbit Exists - The Book of Orbit</title>
 
 
         <!-- Custom HTML head -->
@@ -158,34 +158,42 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="motivation"><a class="header" href="#motivation">Motivation</a></h1>
+                        <h1 id="why-orbit-exists"><a class="header" href="#why-orbit-exists">Why Orbit Exists</a></h1>
 <p>If you work in the realm of computers, you may hear the phrase: "<em>Hardware is hard</em>." But have you ever thought about <strong>why</strong>?</p>
-<p>There are many possible answers that may lead to this phrase's existence, such as hardware involves battling real-world physics, or that hardware requires knowledge across a wide range of skills, or that hardware has infinitely many ways to go wrong. However, we decide to focus on one particular reason that arises in the context of digital hardware: <strong>a slow and expensive development cycle</strong>.</p>
+<p>There are many possible answers that may lead to this phrase's existence, such as hardware involves battling real-world physics, or that hardware requires knowledge across a wide range of skills, or that hardware has infinitely many ways to go wrong. While all of the aforementioned reasons validate this claim, there is one particular reason that should cease to exist in the context of digital hardware: <strong>a slow and expensive development cycle</strong>.</p>
 <h2 id="background"><a class="header" href="#background">Background</a></h2>
 <p>To describe hardware today, you typically use a hardware description language (HDL). The two most promiment HDLs used and supported by electronic design automation (EDA) tools are VHDL and Verilog. HDLs are not software programing languages, but rather a language to describe how a circuit is intended to be structured or function.</p>
 <p>The core similarity between describing digital hardware and writing software programs is that the developer must apply the creative process by editing files called <em>source code</em>. Source code is used as an input to a back end process, whether it be compilation, simulation, or synthesis. Software and hardware encounter similar problems when working with source code, although software arguably has better tools that already do a good job in solving some of their problems.</p>
 <p>Let's talk about some observations about source code development in the layer above hardware: software. Software development today not only has nice languages to develop with, but the entire ecosystem surrounding that language is a pleasant experience. Take the Rust programming language as an example. Not only does Rust have moden language constructs that forces programmers to rethink how to write their program in a safer way regarding computer memory, but the infrastructure surrounding Rust is very accessible and easy to use, which involves the compiler, code management, and code testing. This is great for software development, but does the same hold true for hardware development?</p>
 <h2 id="the-problem"><a class="header" href="#the-problem">The problem</a></h2>
-<p>At the hardware layer, life is unfortunately not so simple. Not only are the promiment languages being used for things outside of their original intention, but the surrounding infrastructure around these languages is very lacking. Proprietary and expensive tools force developers to adapt to non-standardized practices, making it difficult to share code across systems or other tools, leading to the introduction of the concept called <em>vendor lock-in</em>. Vendor lock-in fragments the community and makes it increasingly difficult to find portable and easily usable source code. Hardware does not have as big of a footprint in the open-source world in comparison to software's vibrant open-source community.</p>
-<p>Without the right infrastructure and tools to easily share, reuse, and maintain source code, hardware experiences slow and expensive development cycles. At this point, you be wondering what are the right tools and infrastructure that hardware needs? To answer this question, you may have to shift your perspective about hardware. Thinking of hardware with the waterfall approach of being <em>built and done with</em> is the wrong mindset. Hardware is rarely built once and forgotten about. Instead, one must think of hardware with a more agile approach in that it evolves and improves upon many iterations. This concept of hardware evolving over time requires special attention when creating the supportive infrastructure around it. But this infrastructure and tooling does not exist for the common HDL languages such as VHDL and Verilog.</p>
-<p>Without the right infrastructure and tools, many source code maintenance tasks related to development, also known as <em>technical debt</em>, become exponentially more time-consuming and increasingly difficult as time goes on and the code base grows in size and complexity. The technical debt falls upon the developer to manually handle because there is no automated systematic tool to instead handle it. Large technical debt in turn leads to long and expensive hardware development cycles, and therefore it is a common goal to strive to minimize technical debt. The solution at this point is not to continue down the dark path ahead, but instead to take a look at how software managed to minimize this problem: package management.</p>
-<h2 id="the-solution"><a class="header" href="#the-solution">The solution</a></h2>
-<p>With the right tools, hardware development can experience faster development cycles and lower development costs. A tool that can make this experience true is a <em>package manager</em>. A package manager's role is to organize and automate the tasks related to source code management. A well-designed package manager can minimize technical debt, while a poorly-designed package manager simply shifts the technical debt to possibly new and different tasks. Software programming languages have become increasingly good at handling source code management through the creation of their own package managers, such as go mod for Go, Cargo for Rust, and pip for Python.</p>
+<p>At the hardware layer, life is unfortunately not so simple. Not only are the promiment languages being used for things outside of their original intention, but the surrounding infrastructure around these languages is very lacking. Proprietary and expensive tools force developers to adapt to non-standardized practices, making it difficult to share code across systems or other tools, leading to <em>vendor lock-in</em>. Vendor lock-in fragments the community and makes it increasingly difficult to find portable and easily usable source code. Hardware does not have as big of a footprint in the open-source world in comparison to software's vibrant open-source community.</p>
+<p>Without the right infrastructure and tools to easily share, reuse, and maintain source code, hardware experiences slow and expensive development cycles. At this point, you be wondering what are the right tools and infrastructure that hardware needs? To answer this question, you may have to shift your perspective about hardware. Thinking of hardware with the waterfall approach of being <em>built and done with</em> is the wrong mindset. Hardware is rarely built once and forgotten about. Instead, one must think of hardware with a more agile approach in that it evolves and improves upon many iterations. This concept of hardware evolving over time requires special attention when creating the supportive infrastructure around it. While this infrastructure and tooling exists in the software development world, unfortunately it is largely missing for the common HDL languages such as VHDL and Verilog.</p>
+<p>Without the right infrastructure and tools, many source code maintenance tasks related to development, also known as <em>technical debt</em>, become exponentially more time-consuming and increasingly difficult as time goes on and the code base grows in size and complexity. The technical debt falls upon the developer to handle manually because there is no automated systematic tool that can properly handle it instead. Large technical debt in turn leads to long and expensive hardware development cycles, and therefore it is a common goal to strive to minimize technical debt. The solution at this point is not to continue down the dark path ahead, but instead to take a look at how software managed to minimize this problem: package management.</p>
+<h2 id="the-approach"><a class="header" href="#the-approach">The approach</a></h2>
+<p>With the right tools, hardware development can experience faster development cycles and lower development costs. A tool that can make this experience true is a <em>package manager</em>. A package manager's role is to organize and automate the tasks related to source code management. A well-designed package manager can minimize technical debt, while a poorly-designed package manager can fail to minimize technical debt and instead shift it to different tasks. Software programming languages have become increasingly good at handling source code management through the creation of their own package managers, such as <a href="https://go.dev/ref/mod">go mod</a> for Go, <a href="https://doc.rust-lang.org/cargo/">Cargo</a> for Rust, and <a href="https://pip.pypa.io/en/stable/">pip</a> for Python.</p>
 <blockquote>
 <p>Having well-designed and easily accessible tools is important to any form of development. Creativity's greatest limiting factor is the tools of which are available to turn an idea into a reality.</p>
 </blockquote>
-<p><em>Orbit</em> is an agile package manager for HDLs. It automates the process of organizing, maintaining, and reusing HDL source code across projects. Since it regularly interacts with the developer, it is designed to be simple and intuitive to use while highly tolerant against errors. Given the HDL landscape is fragmented and requires various EDA tools to carry out different tasks, Orbit is highly flexible- developers can setup their own targets with minimal effort to execute whatever EDA tool they prefer. Orbit operates as the intermediary between the developer's HDL source code and their EDA tools.</p>
-<p>One of the major goals behind Orbit is to support the developer in shifting their perspective of hardware toward a more agile approach in being something that lives and evolves over time. By using Orbit as an HDL package manager, hardware development becomes an enjoyable experience with more of the developer's time devoted to <em>actually</em> creating cool things, not racking up technical debt and fighting to manage millions of files. After all, the saying should be "<em>Hardware is cool</em>", right?</p>
+<h2 id="enter-orbit"><a class="header" href="#enter-orbit">Enter: Orbit</a></h2>
+<p><em>Orbit</em> is an attempt at bringing state of the art package management to HDLs. It automates the process of organizing, maintaining, and reusing HDL source code across projects. It is a tool that allows HDL projects to declare various dependencies and ensure that you'll always get a repeatable build. To accomplish this goal, Orbit does four things:</p>
+<ul>
+<li>Introduces two metadata files with various bits of ip information.</li>
+<li>Fetches and installs your ip's dependencies.</li>
+<li>Invokes any user-defined build tool to adapt to your workflow and EDA tools</li>
+<li>Introduces conventions to make working with HDL projects easier.</li>
+</ul>
+<p>To a large extent, Orbit normalizes the commands needed to build or test a given ip; this is one aspect of the aforementioned conventions. The same command can be used to build a project for any number of EDA tools. Furthermore, Orbit will automatically fetch any dependencies you have defined for your current project and arrange for them to be included in your build as needed.</p>
+<p>One of the major goals behind Orbit is to provide the right infrastructure and ecosystem for anyone's hardware projects to live and evolve over time. By introducing Orbit into your workflow, we believe hardware development becomes a more enjoyable experience where more of your time is devoted to <em>actually</em> creating cool things, not racking up technical debt and fighting to manage millions of files. After all, the saying should be "<em>Hardware is cool</em>", right?</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../starting/starting.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../topic/topic.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../starting/installing.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../topic/overview.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -195,11 +203,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../starting/starting.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../topic/topic.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../starting/installing.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../topic/overview.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

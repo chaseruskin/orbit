@@ -168,7 +168,7 @@
 </ul>
 <p>Orbit's use case is targeted toward anyone interested in developing digital hardware; this includes industrial, academic, and personal settings. Create your next commerical product, university lab assignment, or personal project, using a tool that is tailored to today's advanced development processes.</p>
 <h2 id="sections"><a class="header" href="#sections">Sections</a></h2>
-<p>This "book" is loosely divided into 4 sections:</p>
+<p>This book is loosely divided into 4 sections:</p>
 <ol>
 <li><a href="./tutorials/tutorials.html">Tutorials</a> - Step-by-step lessons</li>
 <li><a href="./user/user.html">User Guide</a> - How-to guides to solve common problems</li>
@@ -199,24 +199,6 @@
 <li>To view more detailed manual pages and information, use <code>orbit help</code>.</li>
 </ul>
 <p>But since you are here, complete documentation can be found on this website.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="motivation"><a class="header" href="#motivation">Motivation</a></h1>
-<p>If you work in the realm of computers, you may hear the phrase: "<em>Hardware is hard</em>." But have you ever thought about <strong>why</strong>?</p>
-<p>There are many possible answers that may lead to this phrase's existence, such as hardware involves battling real-world physics, or that hardware requires knowledge across a wide range of skills, or that hardware has infinitely many ways to go wrong. However, we decide to focus on one particular reason that arises in the context of digital hardware: <strong>a slow and expensive development cycle</strong>.</p>
-<h2 id="background"><a class="header" href="#background">Background</a></h2>
-<p>To describe hardware today, you typically use a hardware description language (HDL). The two most promiment HDLs used and supported by electronic design automation (EDA) tools are VHDL and Verilog. HDLs are not software programing languages, but rather a language to describe how a circuit is intended to be structured or function.</p>
-<p>The core similarity between describing digital hardware and writing software programs is that the developer must apply the creative process by editing files called <em>source code</em>. Source code is used as an input to a back end process, whether it be compilation, simulation, or synthesis. Software and hardware encounter similar problems when working with source code, although software arguably has better tools that already do a good job in solving some of their problems.</p>
-<p>Let's talk about some observations about source code development in the layer above hardware: software. Software development today not only has nice languages to develop with, but the entire ecosystem surrounding that language is a pleasant experience. Take the Rust programming language as an example. Not only does Rust have moden language constructs that forces programmers to rethink how to write their program in a safer way regarding computer memory, but the infrastructure surrounding Rust is very accessible and easy to use, which involves the compiler, code management, and code testing. This is great for software development, but does the same hold true for hardware development?</p>
-<h2 id="the-problem"><a class="header" href="#the-problem">The problem</a></h2>
-<p>At the hardware layer, life is unfortunately not so simple. Not only are the promiment languages being used for things outside of their original intention, but the surrounding infrastructure around these languages is very lacking. Proprietary and expensive tools force developers to adapt to non-standardized practices, making it difficult to share code across systems or other tools, leading to the introduction of the concept called <em>vendor lock-in</em>. Vendor lock-in fragments the community and makes it increasingly difficult to find portable and easily usable source code. Hardware does not have as big of a footprint in the open-source world in comparison to software's vibrant open-source community.</p>
-<p>Without the right infrastructure and tools to easily share, reuse, and maintain source code, hardware experiences slow and expensive development cycles. At this point, you be wondering what are the right tools and infrastructure that hardware needs? To answer this question, you may have to shift your perspective about hardware. Thinking of hardware with the waterfall approach of being <em>built and done with</em> is the wrong mindset. Hardware is rarely built once and forgotten about. Instead, one must think of hardware with a more agile approach in that it evolves and improves upon many iterations. This concept of hardware evolving over time requires special attention when creating the supportive infrastructure around it. But this infrastructure and tooling does not exist for the common HDL languages such as VHDL and Verilog.</p>
-<p>Without the right infrastructure and tools, many source code maintenance tasks related to development, also known as <em>technical debt</em>, become exponentially more time-consuming and increasingly difficult as time goes on and the code base grows in size and complexity. The technical debt falls upon the developer to manually handle because there is no automated systematic tool to instead handle it. Large technical debt in turn leads to long and expensive hardware development cycles, and therefore it is a common goal to strive to minimize technical debt. The solution at this point is not to continue down the dark path ahead, but instead to take a look at how software managed to minimize this problem: package management.</p>
-<h2 id="the-solution"><a class="header" href="#the-solution">The solution</a></h2>
-<p>With the right tools, hardware development can experience faster development cycles and lower development costs. A tool that can make this experience true is a <em>package manager</em>. A package manager's role is to organize and automate the tasks related to source code management. A well-designed package manager can minimize technical debt, while a poorly-designed package manager simply shifts the technical debt to possibly new and different tasks. Software programming languages have become increasingly good at handling source code management through the creation of their own package managers, such as go mod for Go, Cargo for Rust, and pip for Python.</p>
-<blockquote>
-<p>Having well-designed and easily accessible tools is important to any form of development. Creativity's greatest limiting factor is the tools of which are available to turn an idea into a reality.</p>
-</blockquote>
-<p><em>Orbit</em> is an agile package manager for HDLs. It automates the process of organizing, maintaining, and reusing HDL source code across projects. Since it regularly interacts with the developer, it is designed to be simple and intuitive to use while highly tolerant against errors. Given the HDL landscape is fragmented and requires various EDA tools to carry out different tasks, Orbit is highly flexible- developers can setup their own targets with minimal effort to execute whatever EDA tool they prefer. Orbit operates as the intermediary between the developer's HDL source code and their EDA tools.</p>
-<p>One of the major goals behind Orbit is to support the developer in shifting their perspective of hardware toward a more agile approach in being something that lives and evolves over time. By using Orbit as an HDL package manager, hardware development becomes an enjoyable experience with more of the developer's time devoted to <em>actually</em> creating cool things, not racking up technical debt and fighting to manage millions of files. After all, the saying should be "<em>Hardware is cool</em>", right?</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="installing"><a class="header" href="#installing">Installing</a></h1>
 <p>There are two main methods for getting Orbit running on your computer: downloading a precompiled binary or by using Cargo.</p>
 <blockquote>
@@ -1113,7 +1095,7 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <div style="break-before: page; page-break-before: always;"></div><h1 id="user-guide"><a class="header" href="#user-guide">User Guide</a></h1>
 <p>This section is <strong>goal-oriented</strong>, providing answers to questions through a series of steps for users that have some experience with Orbit.</p>
 <p>If you have not used Orbit yet, it is recommended to start with the <a href="user/./../tutorials/tutorials.html">Tutorials</a> section.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="overview"><a class="header" href="#overview">Overview</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="how-to-use-orbit"><a class="header" href="#how-to-use-orbit">How to Use Orbit</a></h1>
 <p>Orbit provides commands through the command-line interface to help at every stage in the hardware development cycle.</p>
 <p><img src="user/./../images/process.svg" alt="" /></p>
 <h2 id="hardware-development-cycle"><a class="header" href="#hardware-development-cycle">Hardware development cycle</a></h2>
@@ -1371,7 +1353,7 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <li><a href="user/releasing_ip.html#publishing-an-ip-using-git-tags">Publishing an ip using git tags</a></li>
 </ul>
 <h2 id="installing-an-ip-to-the-catalog"><a class="header" href="#installing-an-ip-to-the-catalog">Installing an ip to the catalog</a></h2>
-<p>This guide walks through the steps to install an ip on the local file system to the catalog on the local file system. In this example, we assume the ip has no revision control tied to its project.</p>
+<p>This guide walks through the steps to install an ip from the local file system to the catalog. In this example, we assume the ip has no revision control tied to its project.</p>
 <ol>
 <li>Specify what version is going to be released using the ip manifest's <code>version</code> field, such as <code>1.0.0</code>:</li>
 </ol>
@@ -1392,7 +1374,7 @@ public = ["rtl"]
 <pre><code>$ orbit lock
 </code></pre>
 <ol start="4">
-<li>Install the ip to the catalog as an immutable reference:</li>
+<li>Install the ip to the catalog as an immutable reference for use in future ip:</li>
 </ol>
 <pre><code>$ orbit install --path .
 </code></pre>
@@ -1420,41 +1402,34 @@ source = "https://github.com/chaseruskin/gates/archive/{{orbit.ip.version}}.zip"
 public = ["rtl"]
 </code></pre>
 <ol start="4">
-<li>Specify which channel to post this to ip to:</li>
-</ol>
-<pre><code class="language-toml">[ip]
-# ...
-channels = ["remote-chipyard"]
-</code></pre>
-<ol start="5">
 <li>Update the lockfile:</li>
 </ol>
 <pre><code>$ orbit lock
 </code></pre>
-<ol start="6">
+<ol start="5">
 <li>Add and commit the final changes to your project:</li>
 </ol>
 <pre><code>$ git commit -am "Stages for release"
 </code></pre>
-<ol start="7">
+<ol start="6">
 <li>Add a git tag to the ip's repository that matches exactly the version specified in the ip's manifest:</li>
 </ol>
 <pre><code>$ git tag 1.0.0
 </code></pre>
-<ol start="8">
+<ol start="7">
 <li>Push the committed changes and tag to the remote repository:</li>
 </ol>
 <pre><code>$ git push --tags
 </code></pre>
-<ol start="9">
-<li>Run the dry run for the publishing process to verify all ip checkpoints are met:</li>
+<ol start="8">
+<li>Run the dry run for the publishing process to verify all ip checkpoints are met when publishing to an existing channel, such as <code>remote-chipyard</code>:</li>
 </ol>
-<pre><code>$ orbit publish
+<pre><code>$ orbit publish --channel remote-chipyard
 </code></pre>
-<ol start="10">
-<li>Once the dry run reports the ip is ready to be published, publish the ip:</li>
+<ol start="9">
+<li>Once the dry run reports the ip is ready to be published, publish the ip to an existing channel, such as <code>remote-chipyard</code>:</li>
 </ol>
-<pre><code>$ orbit publish --ready
+<pre><code>$ orbit publish --channel remote-chipyard --ready
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="creating-targets"><a class="header" href="#creating-targets">Creating Targets</a></h1>
 <p>A target is a user-defined backend process. This section provides steps for ways to configure a target as well as write the script for a target.</p>
@@ -1627,6 +1602,7 @@ for arg in sys.argv[1:]:
 <h3 id="guides-4"><a class="header" href="#guides-4">Guides</a></h3>
 <ul>
 <li><a href="user/creating_protocols.html#configuring-a-protocol">Configuring a protocol</a></li>
+<li><a href="user/creating_protocols.html#configuring-a-protocol-as-default">Configuring a protocol as default</a></li>
 <li><a href="user/creating_protocols.html#viewing-available-protocols">Viewing available protocols</a></li>
 <li><a href="user/creating_protocols.html#using-a-protocol">Using a protocol</a></li>
 </ul>
@@ -1643,6 +1619,7 @@ for arg in sys.argv[1:]:
 <pre><code class="language-toml">[[protocol]]
 name = "gitit"
 description = "Download ip using git"
+patterns = ["*.git"]
 command = "git"
 args = ["clone", "{{ orbit.ip.source.url }}"]
 </code></pre>
@@ -1650,6 +1627,19 @@ args = ["clone", "{{ orbit.ip.source.url }}"]
 <blockquote>
 <p><strong>Tip</strong>: The strings within the array for the <code>args</code> field of a protocol support string variables. See <a href="user/./../topic/swapping.html#protocol-arguments">String Swapping</a> to view what variables are allowed.</p>
 </blockquote>
+<h2 id="configuring-a-protocol-as-default"><a class="header" href="#configuring-a-protocol-as-default">Configuring a protocol as default</a></h2>
+<p>This guide walks through how to configure an existing protocol to be the first to check if it can be used for a given ip's source URL.</p>
+<ol>
+<li>
+<p>Open an Orbit configuration file.</p>
+</li>
+<li>
+<p>Add the <code>default-protocol</code> field in the <code>[install]</code> section, where the value is the name of a previously defined protocol (such as <code>gitit</code>):</p>
+</li>
+</ol>
+<pre><code class="language-toml">[install]
+default-protocol = "gitit"
+</code></pre>
 <h2 id="viewing-available-protocols"><a class="header" href="#viewing-available-protocols">Viewing available protocols</a></h2>
 <p>This guide walks through how to view the protocols already configured and available to use for an ip.</p>
 <ol>
@@ -1657,26 +1647,34 @@ args = ["clone", "{{ orbit.ip.source.url }}"]
 </ol>
 <pre><code>$ orbit install --list
 </code></pre>
-<h2 id="using-a-protocol-todo"><a class="header" href="#using-a-protocol-todo">Using a protocol (TODO)</a></h2>
+<ol start="2">
+<li>Return configuration data about a particular protocol, such as <code>gitit</code>:</li>
+</ol>
+<pre><code>$ orbit install --list --protocol gitit
+</code></pre>
+<h2 id="using-a-protocol"><a class="header" href="#using-a-protocol">Using a protocol</a></h2>
 <p>This guide walks through how to configure a particular ip to use a previously configured protocol called <code>gitit</code>.</p>
 <ol>
 <li>
 <p>Open the current ip's manifest file.</p>
 </li>
 <li>
-<p>Add the <code>source</code> field to the ip's manifest while making sure to specify the <code>url</code> and <code>protocol</code>, where the <code>url</code> key contains the ip's git repository and the <code>protocol</code> key contains the name of previously configured protocol we wish to use (<code>gitit</code> in this example):</p>
+<p>Add the <code>source</code> field to the ip's manifest, which contains a string of the ip's git repository:</p>
 </li>
 </ol>
 <pre><code class="language-toml">[ip]
 # ...
 source = "https://github.com/chaseruskin/gates.git"
 </code></pre>
+<p>Since this source ends with <code>.git</code>, it matches the pattern for the previously configured <code>gitit</code> protocol, so Orbit will use the <code>gitit</code> command and arguments to download the ip.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="creating-channels"><a class="header" href="#creating-channels">Creating Channels</a></h1>
 <p>A channel is a decentralized registry storing the manifests of published ips. This section provides steps for ways to configure a channel.</p>
 <h3 id="guides-5"><a class="header" href="#guides-5">Guides</a></h3>
 <ul>
 <li><a href="user/creating_channels.html#configuring-a-local-directory-as-a-channel">Configuring a local directory as a channel</a></li>
 <li><a href="user/creating_channels.html#configuring-a-git-repository-as-a-channel">Configuring a git repository as a channel</a></li>
+<li><a href="user/creating_channels.html#configuring-a-channel-as-default">Configuring a channel as default</a></li>
+<li><a href="user/creating_channels.html#viewing-available-channels">Viewing available channels</a></li>
 </ul>
 <h2 id="configuring-a-local-directory-as-a-channel"><a class="header" href="#configuring-a-local-directory-as-a-channel">Configuring a local directory as a channel</a></h2>
 <p>This guide outlines how to set up a directory on the local file system as a recognized channel. In this guide, our channel is called <code>local-chipyard</code>.</p>
@@ -1786,6 +1784,31 @@ post.args = ["publish.py"]
 </ol>
 <pre><code>$ orbit publish --list
 </code></pre>
+<h2 id="configuring-a-channel-as-default"><a class="header" href="#configuring-a-channel-as-default">Configuring a channel as default</a></h2>
+<p>This guide walks through how to configure existing channels to be the default when an ip does not specify any particular channels during the publishing process.</p>
+<ol>
+<li>
+<p>Open an Orbit configuration file.</p>
+</li>
+<li>
+<p>Add the <code>default-channels</code> field in the <code>[publish]</code> section, where the value is an array of one or more strings representing the names of a previously defined channels (such as <code>local-chipyard</code> and <code>remote-chipyard</code>):</p>
+</li>
+</ol>
+<pre><code class="language-toml">[publish]
+default-channels = ["local-chipyard", "remote-chipyard"]
+</code></pre>
+<h2 id="viewing-available-channels"><a class="header" href="#viewing-available-channels">Viewing available channels</a></h2>
+<p>This guide walks through how to view the channels already configured and available for an ip to publish to.</p>
+<ol>
+<li>Return the list of configured channels:</li>
+</ol>
+<pre><code>$ orbit publish --list
+</code></pre>
+<ol start="2">
+<li>Return configuration data about a particular channel, such as <code>local-chipyard</code>:</li>
+</ol>
+<pre><code>$ orbit publish --list --channel local-chipyard
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="specifying-dependencies"><a class="header" href="#specifying-dependencies">Specifying Dependencies</a></h1>
 <p>Your ip can depend on other ips found in the catalog or subdirectories on your local file system. You can also temporarily override the location of a dependency - for example, to be able to test out a bug fix in the dependency that you are working on locally. You can also have dependencies that are only used during development. This section walks through the different ways you can specify the dependencies of an ip.</p>
 <h3 id="assumptions-5"><a class="header" href="#assumptions-5">Assumptions</a></h3>
@@ -1848,7 +1871,33 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <p>Note that the <code>version</code> field is required.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="topic-guide"><a class="header" href="#topic-guide">Topic Guide</a></h1>
 <p>This section is <strong>understanding-oriented</strong>, providing explanations and discussions to clarify and illuminate particular topics around Orbit.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="overview-1"><a class="header" href="#overview-1">Overview</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="why-orbit-exists"><a class="header" href="#why-orbit-exists">Why Orbit Exists</a></h1>
+<p>If you work in the realm of computers, you may hear the phrase: "<em>Hardware is hard</em>." But have you ever thought about <strong>why</strong>?</p>
+<p>There are many possible answers that may lead to this phrase's existence, such as hardware involves battling real-world physics, or that hardware requires knowledge across a wide range of skills, or that hardware has infinitely many ways to go wrong. While all of the aforementioned reasons validate this claim, there is one particular reason that should cease to exist in the context of digital hardware: <strong>a slow and expensive development cycle</strong>.</p>
+<h2 id="background"><a class="header" href="#background">Background</a></h2>
+<p>To describe hardware today, you typically use a hardware description language (HDL). The two most promiment HDLs used and supported by electronic design automation (EDA) tools are VHDL and Verilog. HDLs are not software programing languages, but rather a language to describe how a circuit is intended to be structured or function.</p>
+<p>The core similarity between describing digital hardware and writing software programs is that the developer must apply the creative process by editing files called <em>source code</em>. Source code is used as an input to a back end process, whether it be compilation, simulation, or synthesis. Software and hardware encounter similar problems when working with source code, although software arguably has better tools that already do a good job in solving some of their problems.</p>
+<p>Let's talk about some observations about source code development in the layer above hardware: software. Software development today not only has nice languages to develop with, but the entire ecosystem surrounding that language is a pleasant experience. Take the Rust programming language as an example. Not only does Rust have moden language constructs that forces programmers to rethink how to write their program in a safer way regarding computer memory, but the infrastructure surrounding Rust is very accessible and easy to use, which involves the compiler, code management, and code testing. This is great for software development, but does the same hold true for hardware development?</p>
+<h2 id="the-problem"><a class="header" href="#the-problem">The problem</a></h2>
+<p>At the hardware layer, life is unfortunately not so simple. Not only are the promiment languages being used for things outside of their original intention, but the surrounding infrastructure around these languages is very lacking. Proprietary and expensive tools force developers to adapt to non-standardized practices, making it difficult to share code across systems or other tools, leading to <em>vendor lock-in</em>. Vendor lock-in fragments the community and makes it increasingly difficult to find portable and easily usable source code. Hardware does not have as big of a footprint in the open-source world in comparison to software's vibrant open-source community.</p>
+<p>Without the right infrastructure and tools to easily share, reuse, and maintain source code, hardware experiences slow and expensive development cycles. At this point, you be wondering what are the right tools and infrastructure that hardware needs? To answer this question, you may have to shift your perspective about hardware. Thinking of hardware with the waterfall approach of being <em>built and done with</em> is the wrong mindset. Hardware is rarely built once and forgotten about. Instead, one must think of hardware with a more agile approach in that it evolves and improves upon many iterations. This concept of hardware evolving over time requires special attention when creating the supportive infrastructure around it. While this infrastructure and tooling exists in the software development world, unfortunately it is largely missing for the common HDL languages such as VHDL and Verilog.</p>
+<p>Without the right infrastructure and tools, many source code maintenance tasks related to development, also known as <em>technical debt</em>, become exponentially more time-consuming and increasingly difficult as time goes on and the code base grows in size and complexity. The technical debt falls upon the developer to handle manually because there is no automated systematic tool that can properly handle it instead. Large technical debt in turn leads to long and expensive hardware development cycles, and therefore it is a common goal to strive to minimize technical debt. The solution at this point is not to continue down the dark path ahead, but instead to take a look at how software managed to minimize this problem: package management.</p>
+<h2 id="the-approach"><a class="header" href="#the-approach">The approach</a></h2>
+<p>With the right tools, hardware development can experience faster development cycles and lower development costs. A tool that can make this experience true is a <em>package manager</em>. A package manager's role is to organize and automate the tasks related to source code management. A well-designed package manager can minimize technical debt, while a poorly-designed package manager can fail to minimize technical debt and instead shift it to different tasks. Software programming languages have become increasingly good at handling source code management through the creation of their own package managers, such as <a href="https://go.dev/ref/mod">go mod</a> for Go, <a href="https://doc.rust-lang.org/cargo/">Cargo</a> for Rust, and <a href="https://pip.pypa.io/en/stable/">pip</a> for Python.</p>
+<blockquote>
+<p>Having well-designed and easily accessible tools is important to any form of development. Creativity's greatest limiting factor is the tools of which are available to turn an idea into a reality.</p>
+</blockquote>
+<h2 id="enter-orbit"><a class="header" href="#enter-orbit">Enter: Orbit</a></h2>
+<p><em>Orbit</em> is an attempt at bringing state of the art package management to HDLs. It automates the process of organizing, maintaining, and reusing HDL source code across projects. It is a tool that allows HDL projects to declare various dependencies and ensure that you'll always get a repeatable build. To accomplish this goal, Orbit does four things:</p>
+<ul>
+<li>Introduces two metadata files with various bits of ip information.</li>
+<li>Fetches and installs your ip's dependencies.</li>
+<li>Invokes any user-defined build tool to adapt to your workflow and EDA tools</li>
+<li>Introduces conventions to make working with HDL projects easier.</li>
+</ul>
+<p>To a large extent, Orbit normalizes the commands needed to build or test a given ip; this is one aspect of the aforementioned conventions. The same command can be used to build a project for any number of EDA tools. Furthermore, Orbit will automatically fetch any dependencies you have defined for your current project and arrange for them to be included in your build as needed.</p>
+<p>One of the major goals behind Orbit is to provide the right infrastructure and ecosystem for anyone's hardware projects to live and evolve over time. By introducing Orbit into your workflow, we believe hardware development becomes a more enjoyable experience where more of your time is devoted to <em>actually</em> creating cool things, not racking up technical debt and fighting to manage millions of files. After all, the saying should be "<em>Hardware is cool</em>", right?</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="how-orbit-works"><a class="header" href="#how-orbit-works">How Orbit Works</a></h1>
 <p>Orbit is an agile package manager and extensible build tool for HDLs.</p>
 <p><img src="topic/./../images/architecture.svg" alt="" /></p>
 <h2 id="key-concepts"><a class="header" href="#key-concepts">Key concepts</a></h2>
@@ -1896,7 +1945,7 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <p>Orbit generates a blueprint during the planning stage of the build process. The blueprint is a single file that lists the HDL source code files required for the particular build in topologically sorted order. Targets can also specify other file types to be collected into the blueprint. The blueprint is an artifact to be consumed by the target's process during the exection stage of the build process. Since it can frequently change with each build, it should not be checked into version control.</p>
 </li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="agile-package-management"><a class="header" href="#agile-package-management">Agile Package Management</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="agile-ip-management"><a class="header" href="#agile-ip-management">Agile Ip Management</a></h1>
 <p>Orbit is designed for users to efficiently manage their ip and scale their codebase over time. Many of the processes regarding ip management are automated and abstracted away from the user, enabling them to get their next design done faster. This section takes a closer look at how the <em>catalog</em> works in the context of Orbit and ip management. The catalog is a central concept to Orbit where existing ip are kept and maintained by Orbit.</p>
 <p><img src="topic/./../images/management.svg" alt="" /></p>
 <h2 id="catalog-operations"><a class="header" href="#catalog-operations">Catalog operations</a></h2>

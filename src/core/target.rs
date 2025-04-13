@@ -130,7 +130,7 @@ impl Target {
             self.description.as_ref().unwrap_or(&String::new()).green(),
         )
     }
-    
+
     /// Creates a string to display a list of plugins.
     ///
     /// The string lists the plugins in alphabetical order by `alias`.
@@ -206,12 +206,20 @@ pub trait Process {
 
     fn get_args(&self) -> Vec<&String>;
 
+    /// Formats the command and args into a string to display to the console.
+    fn fmt(&self, command: &String, extra_args: &[String]) -> String {
+        let base = self
+            .get_args()
+            .iter()
+            .fold(command.clone(), |x, y| x + " " + &y);
+        extra_args.iter().fold(base, |x, y| x + " " + &y)
+    }
+
     /// Runs the given `command` with the set `args` for the plugin.
     fn execute(
         &self,
         overloaded_command: &Option<String>,
         extra_args: &[String],
-        verbose: bool,
         cwd: &PathBuf,
         envs: HashMap<&String, &String>,
     ) -> Result<(), Fault> {
@@ -223,7 +231,15 @@ pub trait Process {
 
         let root_path = self.get_root();
 
-        let command = filesystem::resolve_rel_path(root_path, command);
+        // create the string to display
+        let subproc_str = self.fmt(command, extra_args);
+
+        // only resolve from root if not overloaded
+        let command = if overloaded_command.is_none() {
+            filesystem::resolve_rel_path(root_path, command)
+        } else {
+            command.clone()
+        };
 
         let arguments: Vec<String> = self
             .get_args()
@@ -234,12 +250,9 @@ pub trait Process {
         // append args set on the command-line to the base-line of arguments
         let args = [&arguments, extra_args].concat();
         // display the literal command being ran
-        if verbose == true {
-            let s = args
-                .iter()
-                .fold(String::new(), |x, y| x + "\"" + &y + "\" ");
-            crate::info!("running: {} {}", command, s);
-        }
+
+        crate::subproc!("{}", subproc_str.bold());
+
         let mut proc = filesystem::invoke(
             cwd,
             &command,

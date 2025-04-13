@@ -672,7 +672,6 @@ pub fn download_missing_deps(
                         catalog.get_downloads_path(),
                         default_protocol,
                         &protocols,
-                        false,
                         true,
                     )?;
                 }

@@ -41,3 +41,10 @@ macro_rules! hint {
         println!($($arg)*);
     }};
 }
+
+#[macro_export]
+macro_rules! subproc {
+    ($($arg:tt)*) => {{
+        println!($($arg)*);
+    }};
+}

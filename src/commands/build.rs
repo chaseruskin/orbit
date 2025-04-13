@@ -164,13 +164,7 @@ impl Subcommand<Context> for Build {
 
         // run the command from the output path
         crate::info!("executing target {}", target.get_name().green());
-        match target.execute(
-            &self.command,
-            &self.args,
-            self.verbose,
-            &output_path,
-            envs.into_map(),
-        ) {
+        match target.execute(&self.command, &self.args, &output_path, envs.into_map()) {
             Ok(()) => Ok(()),
             Err(e) => Err(Error::TargetProcFailed(LastError(e.to_string())))?,
         }

@@ -90,7 +90,6 @@ impl Download {
         download_dir: &PathBuf,
         default_protocol: Option<&String>,
         protocols: &HashMap<&str, &Protocol>,
-        verbose: bool,
         _force: bool,
     ) -> Result<(IpSpec, Vec<u8>), Fault> {
         // use a temporary directory the download process
@@ -137,20 +136,16 @@ impl Download {
 
         match sel_protocol {
             Some((&name, &proto)) => {
-                if verbose == true {
-                    crate::info!("downloading ip over protocol \"{}\" ...", name,);
-                }
+                crate::info!("downloading ip using protocol {}", name.green());
                 // allow the user to handle placing the code in the queue
                 let proto: Protocol = proto.clone().replace_vars_in_args(&vtable);
-                if let Err(err) = proto.execute(&None, &[], verbose, &queue, HashMap::new()) {
+                if let Err(err) = proto.execute(&None, &[], &queue, HashMap::new()) {
                     fs::remove_dir_all(queue)?;
                     return Err(Error::ProtocolProcFailed(LastError(err.to_string())))?;
                 }
             }
             None => {
-                if verbose == true {
-                    crate::info!("downloading ip over standard protocol ...");
-                }
+                crate::info!("downloading ip using standard protocol");
                 // potential to use --force here to avoid this error and try with default but not currently implemented that way
                 if let Err(err) = Protocol::single_download(processed_src.get_url(), &queue) {
                     fs::remove_dir_all(queue)?;
@@ -160,7 +155,7 @@ impl Download {
         }
 
         // move the IP to the downloads folder
-        match Self::move_to_download_dir(&queue, download_dir, spec, verbose) {
+        match Self::move_to_download_dir(&queue, download_dir, spec) {
             Ok((name, bytes)) => {
                 // clean up temporary directory
                 fs::remove_dir_all(queue)?;
@@ -178,7 +173,6 @@ impl Download {
         queue: &PathBuf,
         downloads: &PathBuf,
         spec: Option<&PartialIpSpec>,
-        verbose: bool,
     ) -> Result<(IpSpec, Vec<u8>), Fault> {
         // code is in the queue now, move it to the downloads/ folder
 
@@ -243,9 +237,9 @@ impl Download {
                 let temp = matching_ips.get(0).unwrap();
                 let manifest_name = temp.get_man().get_ip().get_name();
                 let found_ip_spec = temp.get_man().get_ip().into_ip_spec();
-                if verbose == true {
-                    crate::info!("found ip {}", found_ip_spec);
-                }
+
+                // crate::info!("found ip {}", found_ip_spec);
+
                 // verify the ip is okay
                 Ip::load(temp.get_root().to_path_buf(), false, false)?;
                 // zip the project to the downloads directory

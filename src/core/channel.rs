@@ -132,23 +132,47 @@ impl Channel {
         Ok(())
     }
 
+    /// Runs the synchronization hook for the channel, if one exists.
+    ///
+    /// Silently skips this process if one is not defined for this channel.
     pub fn run_sync(&self, env: &Environment) -> Result<(), Fault> {
         match &self.sync {
-            Some(cmd) => cmd.execute(&None, &Vec::new(), false, self.get_root(), env.into_map()),
+            Some(cmd) => {
+                crate::info!(
+                    "running synchronization hook for channel {}",
+                    self.name.green()
+                );
+                cmd.execute(&None, &Vec::new(), self.get_root(), env.into_map())
+            }
             None => Ok(()),
         }
     }
 
+    /// Runs the pre-publish hook for the channel, if one exists.
+    ///
+    /// Silently skips this process if one is not defined for this channel.
     pub fn run_pre(&self, env: &Environment) -> Result<(), Fault> {
         match &self.pre {
-            Some(cmd) => cmd.execute(&None, &Vec::new(), false, self.get_root(), env.into_map()),
+            Some(cmd) => {
+                crate::info!("running pre-publish hook for channel {}", self.name.green());
+                cmd.execute(&None, &Vec::new(), self.get_root(), env.into_map())
+            }
             None => Ok(()),
         }
     }
 
+    /// Runs the post-publish hook for the channel, if one exists.
+    ///
+    /// Silently skips this process if one is not defined for this channel.
     pub fn run_post(&self, env: &Environment) -> Result<(), Fault> {
         match &self.post {
-            Some(cmd) => cmd.execute(&None, &Vec::new(), false, self.get_root(), env.into_map()),
+            Some(cmd) => {
+                crate::info!(
+                    "running post-publish hook for channel {}",
+                    self.name.green()
+                );
+                cmd.execute(&None, &Vec::new(), self.get_root(), env.into_map())
+            }
             None => Ok(()),
         }
     }

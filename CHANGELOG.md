@@ -25,6 +25,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Adds `require-public` entry to configuration files to set default behavior of source files being either private by default or public by default
 - Enforces behavior of source files being private by default
 - Adds `ORBIT_CHANNEL_NAME` and `ORBIT_CHANNEL_DIR` environment variables (set during the publishing process)
+- Displays the actual command and arguments being run for any configured subprocesses (such from a target or protocol)
 - Adds `patterns` field to the protocol element in configuration files to be able to determine if a protocol should pick up the ip's url to try to download
 - Adds `-p` switch for `--protocol` under `orbit install` command
 - Adds `-l` switch for `--list` flag in various subcommands

@@ -161,7 +161,7 @@ impl Subcommand<Context> for Install {
         // check if trying to download from the internet
         let target = if let Some(link) = &self.url {
             provided_spec = Some(
-                Self::download_target_from_url(c, &link, &self.ip, true, self.force)?
+                Self::download_target_from_url(c, &link, &self.ip, self.force)?
                     .0
                     .to_partial_ip_spec(),
             );
@@ -275,7 +275,6 @@ impl Subcommand<Context> for Install {
                         .into_ip_spec()
                         .to_partial_ip_spec(),
                 ),
-                true,
             )?;
             provided_spec = Some(spec.to_partial_ip_spec());
             Some(target)
@@ -573,7 +572,6 @@ impl Install {
         c: &Context,
         url: &str,
         ip: &Option<PartialIpSpec>,
-        verbose: bool,
         force: bool,
     ) -> Result<(IpSpec, Vec<u8>), Fault> {
         let env = Environment::new().from_config(c.get_config())?;
@@ -592,7 +590,6 @@ impl Install {
             c.get_downloads_path(),
             c.get_default_protocol(),
             &protocols,
-            verbose,
             force,
         )?;
         Ok((name, bytes))
@@ -620,7 +617,6 @@ impl Install {
             c.get_downloads_path(),
             c.get_default_protocol(),
             &protocols,
-            self.verbose,
             self.force,
         )?;
 

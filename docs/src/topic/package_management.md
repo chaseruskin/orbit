@@ -20,9 +20,18 @@ When a module, package, or any other design unit is needed from a different ip, 
 
 Depending on ip in the catalog is only allowed for ip that have an immutable reference located in the catalog's cache. An ip in the catalog only listed as _available_ or _downloaded_ does not have the necessary data to properly reference any HDL source code files from that ip. Thankfully, Orbit automatically works through the required steps to get an ip installed to the cache when the user requests an `install` operation, even if the ip is not found in the catalog.
 
-## Key Takeaways
+## Important concepts
 
-- The _source_ is the location where the ip's repository exists; this could any cloud-based platform such as GitHub or GitLab where your repository is stored.
+- The _source_ is the location where the ip's repository exists; this could be any cloud-based platform such as GitHub or GitLab where your repository is stored.
+
 - The _catalog_ is an abstract concept in Orbit that maintains 3 levels: available ip (found in channels), downloaded ip (located in the archive), and installed ip (located in the cache).
+
+- When an ip is known as _available_ in the catalog, Orbit only has the manifest and other metadata about that ip; there is no HDL source code for that ip in the catalog. The ip's manifest and metadata are tracked in a user-configured _channel_.
+
+- When an ip is known as _downloaded_ in the catalog, Orbit has a compressed version of the ip's contents. In this state, the ip is unusable as a dependency. The compressed version of the ip is stored in the _archive_.
+
+- When an ip is known as _installed_ in the catalog, Orbit has an uncompressed version of the ip's contents used for reference only. In this immutable state of the ip's contents, the ip is able to be used as a dependency. The immutable reference of the ip is kept in the _cache_.
+
 - Users interact with the catalog through Orbit. Two fundamental catalog operations are: `install` and `remove`. The `install` operation brings an ip into a usable state in the catalog, while the `remove` operation takes an ip out of a usable state in the catalog.
+
 - An ip's _field of view_ is the set of HDL source code files that can interact with one another. Each ip has its own field of view, which may extend to other ips not found in the current ip's field of view. By adding an ip as a dependency in the current ip's manifest, you effectively expand the current ip's field of view to include the set of HDL source code files found within the ip dependency.

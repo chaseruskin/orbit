@@ -3,7 +3,6 @@
 [Introduction](./index.md)
 
 - [Getting Started](./starting/starting.md)
-    - [Motivation](./starting/motivation.md)
     - [Installing](./starting/installing.md)
     - [Upgrading](./starting/upgrading.md)
 
@@ -14,7 +13,7 @@
     - [Final Project: Full Adder](./tutorials/final_project.md)
 
 - [User Guide](./user/user.md)
-    - [Overview](./user/overview.md)
+    - [How to Use Orbit](./user/overview.md)
     - [Researching Ip](./user/researching_ip.md)
     - [Developing Ip](./user/developing_ip.md)
     - [Releasing Ip](./user/releasing_ip.md)
@@ -24,8 +23,9 @@
     - [Specifying Dependencies](./user/specifying_deps.md)
 
 - [Topic Guide](./topic/topic.md)
-    - [Overview](./topic/overview.md)
-    - [Agile Package Management](./topic/package_management.md)
+    - [Why Orbit Exists](./starting/motivation.md)
+    - [How Orbit Works](./topic/overview.md)
+    - [Agile Ip Management](./topic/package_management.md)
     - [Extensible Builds](./topic/extensible_builds.md)
     - [Catalog](./topic/catalog.md)
     - [Ip](./topic/ip.md)

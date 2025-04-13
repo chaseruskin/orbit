@@ -1,4 +1,4 @@
-# Overview
+# How to Use Orbit
 
 Orbit provides commands through the command-line interface to help at every stage in the hardware development cycle.
 

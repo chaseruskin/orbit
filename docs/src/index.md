@@ -10,7 +10,7 @@ Orbit is an agile package manager and extensible build tool for hardware descrip
 Orbit's use case is targeted toward anyone interested in developing digital hardware; this includes industrial, academic, and personal settings. Create your next commerical product, university lab assignment, or personal project, using a tool that is tailored to today's advanced development processes.
 
 ## Sections
-This "book" is loosely divided into 4 sections:
+This book is loosely divided into 4 sections:
 1. [Tutorials](./tutorials/tutorials.md) - Step-by-step lessons
 2. [User Guide](./user/user.md) - How-to guides to solve common problems
 3. [Topic Guide](./topic/topic.md) - Explanations that clarify and provide more details

@@ -11,6 +11,7 @@ If a step mentions the "protocol configuration", this corresponds to the entry f
 ### Guides
 
 - [Configuring a protocol](#configuring-a-protocol)
+- [Configuring a protocol as default](#configuring-a-protocol-as-default)
 - [Viewing available protocols](#viewing-available-protocols)
 - [Using a protocol](#using-a-protocol)
 
@@ -25,6 +26,7 @@ This guide walks through how to add a protocol to be recognized by Orbit. In thi
 [[protocol]]
 name = "gitit"
 description = "Download ip using git"
+patterns = ["*.git"]
 command = "git"
 args = ["clone", "{{ orbit.ip.source.url }}"]
 ```
@@ -32,6 +34,18 @@ args = ["clone", "{{ orbit.ip.source.url }}"]
 A protocol may be as simple as a list of known command-line arguments, or may require invoking a script written in a scripting language such as Python or Tcl.
 
 > __Tip__: The strings within the array for the `args` field of a protocol support string variables. See [String Swapping](./../topic/swapping.md#protocol-arguments) to view what variables are allowed.
+
+## Configuring a protocol as default
+
+This guide walks through how to configure an existing protocol to be the first to check if it can be used for a given ip's source URL.
+
+1. Open an Orbit configuration file.
+
+2. Add the `default-protocol` field in the `[install]` section, where the value is the name of a previously defined protocol (such as `gitit`):
+``` toml
+[install]
+default-protocol = "gitit"
+```
 
 
 ## Viewing available protocols
@@ -43,15 +57,22 @@ This guide walks through how to view the protocols already configured and availa
 $ orbit install --list
 ```
 
-## Using a protocol (TODO)
+2. Return configuration data about a particular protocol, such as `gitit`:
+```
+$ orbit install --list --protocol gitit
+```
+
+## Using a protocol
 
 This guide walks through how to configure a particular ip to use a previously configured protocol called `gitit`.
 
 1. Open the current ip's manifest file.
 
-2. Add the `source` field to the ip's manifest while making sure to specify the `url` and `protocol`, where the `url` key contains the ip's git repository and the `protocol` key contains the name of previously configured protocol we wish to use (`gitit` in this example):
+2. Add the `source` field to the ip's manifest, which contains a string of the ip's git repository:
 ``` toml
 [ip]
 # ...
 source = "https://github.com/chaseruskin/gates.git"
 ```
+
+Since this source ends with `.git`, it matches the pattern for the previously configured `gitit` protocol, so Orbit will use the `gitit` command and arguments to download the ip.

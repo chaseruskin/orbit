@@ -1,4 +1,4 @@
-# Overview
+# How Orbit Works
 
 Orbit is an agile package manager and extensible build tool for HDLs.
 

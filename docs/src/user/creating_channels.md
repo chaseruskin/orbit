@@ -5,6 +5,8 @@ A channel is a decentralized registry storing the manifests of published ips. Th
 ### Guides
 - [Configuring a local directory as a channel](#configuring-a-local-directory-as-a-channel)
 - [Configuring a git repository as a channel](#configuring-a-git-repository-as-a-channel)
+- [Configuring a channel as default](#configuring-a-channel-as-default)
+- [Viewing available channels](#viewing-available-channels)
 
 ## Configuring a local directory as a channel
 
@@ -107,4 +109,30 @@ $ orbit config --push include="$PWD/config.toml"
 10. View the configured channel:
 ```
 $ orbit publish --list
+```
+
+## Configuring a channel as default
+
+This guide walks through how to configure existing channels to be the default when an ip does not specify any particular channels during the publishing process.
+
+1. Open an Orbit configuration file.
+
+2. Add the `default-channels` field in the `[publish]` section, where the value is an array of one or more strings representing the names of a previously defined channels (such as `local-chipyard` and `remote-chipyard`):
+``` toml
+[publish]
+default-channels = ["local-chipyard", "remote-chipyard"]
+```
+
+## Viewing available channels
+
+This guide walks through how to view the channels already configured and available for an ip to publish to.
+
+1. Return the list of configured channels:
+``` 
+$ orbit publish --list
+```
+
+2. Return configuration data about a particular channel, such as `local-chipyard`:
+```
+$ orbit publish --list --channel local-chipyard
 ```

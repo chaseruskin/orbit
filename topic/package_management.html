@@ -159,26 +159,23 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="agile-package-management"><a class="header" href="#agile-package-management">Agile Package Management</a></h1>
-<p>Orbit is an agile package manager for HDLs. Orbit supports a wide range of commands to the user to automate codebase management processes for installing ip, referencing ip, and removing ip.</p>
+<p>Orbit is designed for users to efficiently manage their ip and scale their codebase over time. Many of the processes regarding ip management are automated and abstracted away from the user, enabling them to get their next design done faster. This section takes a closer look at how the <em>catalog</em> works in the context of Orbit and ip management. The catalog is a central concept to Orbit where existing ip are kept and maintained by Orbit.</p>
 <p><img src="./../images/management.svg" alt="" /></p>
-<h2 id="installing"><a class="header" href="#installing">Installing</a></h2>
-<p><code>orbit install</code></p>
-<p>Before you can reference an ip in your current project, you must first make sure the ip exists on your local filesystem. Orbit manages ip through its <em>ip catalog</em>. The catalog consists of multiple file paths that Orbit maintains for ips at varying states of accessibility.</p>
-<p>To make an ip accessible by another project, it must first be installed to your ip catalog.</p>
-<h2 id="referencing"><a class="header" href="#referencing">Referencing</a></h2>
-<p><code>orbit info</code>, <code>orbit get</code></p>
-<p>Once an ip is installed to your ip catalog, the design units of that ip are available to be referenced in the current design.</p>
-<ol>
-<li>
-<p>Tell Orbit which installed ip you wish to use by providing the name and version under the <code>[dependencies]</code> table in the Orbit.toml file.</p>
-</li>
-<li>
-<p>Instantiate one of the available design units from the dependency in your source code. At this point, any build that uses this HDL source code will be correctly sorted during the planning stage in topological order.</p>
-</li>
-</ol>
-<h2 id="removing"><a class="header" href="#removing">Removing</a></h2>
-<p><code>orbit remove</code></p>
-<p>An ip can be removed from the catalog when it is no longer supported or needed to be used again. By removing the ip, Orbit deletes the ip's contents stored in the catalog, effectively forgetting that it existed.</p>
+<h2 id="catalog-operations"><a class="header" href="#catalog-operations">Catalog operations</a></h2>
+<p>The catalog is an abstract concept in Orbit where your existing ip are kept and maintained. Physically, the catalog is composed of a set of hidden directories in your file system found within the <code>$ORBIT_HOME</code> directory. Unless something has gone terribly wrong, users never have to worry about manually working within these directories; users interface with Orbit to request operations to be performed on the catalog. The two most fundamental catalog operations are: <code>install</code> and <code>remove</code>.</p>
+<p>The <code>install</code> operation takes an existing ip, which may be from a local file path or a repository URL, and performs a series of steps to place an immutable reference of that ip in the catalog's <em>cache</em>. This operation is typically applied when you wish to make it possible for your current ip to depend on that other ip. If the ip is coming from a source, such as a GitLab repository, then a <em>protocol</em> is used to handle how to download the ip's contents from the internet. Upon a successful download, a compressed backup of the ip's contents is stored in the catalog's <em>archive</em>. If the immutable reference in the cache ever enters an invalid state, Orbit automatically reinstalls the immutable reference from the compressed backup of the ip found in the archive.</p>
+<p>The <code>remove</code> operation takes an ip found in the catalog's cache, and deletes it from the catalog's cache and archive (if exists). This operation is typically applied when you have determined that an ip is not needed anymore for any future ip. If the ip is still a dependency of other ips in the catalog, then the catalog will automatically reinstall the missing ip if required based on the current ip's complete ip dependency graph.</p>
+<h2 id="depending-on-ip"><a class="header" href="#depending-on-ip">Depending on ip</a></h2>
+<p>An ip's <em>field of view</em> represents the set of HDL source code files that can interact with one another. A newly created ip's field of view starts out limited to the set of files found only within that ip. This means instantiations of modules and references to packages must be from primary design units located only within the HDL source code files of the current ip.</p>
+<p>When a module, package, or any other design unit is needed from a different ip, users express their intention to depend on another ip within the current ip by adding the needed ip's name and version to the <code>[dependencies]</code> section of the current ip's manifest. By doing so, the current ip's field of view <strong>expands</strong> to include the HDL source code files found directly within the dependent ip. This means instantiations of modules and references to other primary design units in the current ip's HDL source code can now include primary design units found in the dependent ip.</p>
+<p>Depending on ip in the catalog is only allowed for ip that have an immutable reference located in the catalog's cache. An ip in the catalog only listed as <em>available</em> or <em>downloaded</em> does not have the necessary data to properly reference any HDL source code files from that ip. Thankfully, Orbit automatically works through the required steps to get an ip installed to the cache when the user requests an <code>install</code> operation, even if the ip is not found in the catalog.</p>
+<h2 id="key-takeaways"><a class="header" href="#key-takeaways">Key Takeaways</a></h2>
+<ul>
+<li>The <em>source</em> is the location where the ip's repository exists; this could any cloud-based platform such as GitHub or GitLab where your repository is stored.</li>
+<li>The <em>catalog</em> is an abstract concept in Orbit that maintains 3 levels: available ip (found in channels), downloaded ip (located in the archive), and installed ip (located in the cache).</li>
+<li>Users interact with the catalog through Orbit. Two fundamental catalog operations are: <code>install</code> and <code>remove</code>. The <code>install</code> operation brings an ip into a usable state in the catalog, while the <code>remove</code> operation takes an ip out of a usable state in the catalog.</li>
+<li>An ip's <em>field of view</em> is the set of HDL source code files that can interact with one another. Each ip has its own field of view, which may extend to other ips not found in the current ip's field of view. By adding an ip as a dependency in the current ip's manifest, you effectively expand the current ip's field of view to include the set of HDL source code files found within the ip dependency.</li>
+</ul>
 
                     </main>
 

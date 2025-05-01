@@ -251,7 +251,7 @@ Finally, let's update the lockfile and release version 1.0.0 for the gates ip by
 $ orbit lock
 ```
 ```
-$ orbit install
+$ orbit install --all-public
 ```
 
 One last look at the catalog shows the latest version of gates we have installed is indeed 1.0.0. Nice work!

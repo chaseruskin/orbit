@@ -14,6 +14,10 @@ orbit search [options] [<ip>]
 
 Returns a list of the ip found in the catalog.
 
+The returned list of ip is organized by row with each row consisting of four
+columns: the ip's name, the ip's latest version, the ip's state, and the ip's
+uuid.
+
 By default, all ip in the catalog will be returned. To filter by ip name, use
 the `<ip>` option. To limit the number of results, use the `--limit` option.
 

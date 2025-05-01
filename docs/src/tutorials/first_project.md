@@ -235,10 +235,10 @@ Filename: target/yilinx/fpga.bit
 Now we are ready to move on to more advanced topics, so let's go ahead and store an immutable reference to this project to use in other projects in our developer journey. 
 
 ```
-$ orbit install
+$ orbit install --all-public
 ```
 
-This command ran a series of steps that packaged our project and placed it into our _cache_. Internally, Orbit knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire ip catalog.
+This command ran a series of steps that packaged our project and placed it into our _cache_. Internally, Orbit knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire ip catalog. By default, primary design units are private to the current ip, but the `--all-public` flag tells Orbit that we want all primary design units within the current ip to be directly accessible by other ips.
 
 ```
 $ orbit search

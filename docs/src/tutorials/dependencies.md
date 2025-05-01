@@ -172,7 +172,7 @@ $ orbit lock
 
 Now we can safely install the ip to our catalog.
 ```
-$ orbit install
+$ orbit install --all-public
 ```
 
 Nice, now we have successfully reused designs across ips! However, maybe we should have designed all the logic gates in the gates ip...

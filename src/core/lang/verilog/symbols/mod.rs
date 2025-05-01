@@ -265,7 +265,7 @@ impl VerilogSymbol {
     /// of the equivalent `beg_t` operators.
     ///
     /// This function's last token to consume is the `end_op`, if it exists in balance with
-    /// `beg_t`.
+    /// `beg_t`. This function assumes that `beg_t` was the last consumed/taken token.
     pub fn parse_until_operator<I>(
         tokens: &mut Peekable<I>,
         beg_t: Token<SystemVerilogToken>,
@@ -607,36 +607,49 @@ impl VerilogSymbol {
             .as_type()
             .check_keyword(&Keyword::Bind)
         {
-            let mut tokens = stmt.into_iter().skip(1).peekable();
-            // take the next token as the "target" module
-            let target = if let Some(target) = tokens.next() {
+            // skip the "bind" keyword
+            let mut tokens = stmt.clone().into_iter().skip(1).peekable();
+            // take the next token (identifier) as the "target" module
+            if let Some(target) = tokens.next() {
                 if let Some(dep) = target.as_ref().as_identifier() {
-                    dep.clone()
-                } else {
-                    return Err(VerilogError::BindInvalid);
-                }
-            } else {
-                return Err(VerilogError::BindIncomplete);
-            };
+                    let target = dep.clone();
 
-            // take the next token as the "what to bind" module
-            if let Some(binding) = tokens.next() {
-                if let Some(dep) = binding.as_ref().as_identifier() {
-                    // add both the target and the binding identifiers to the list of dependencies for this module
-                    if let Some(deps) = deps {
-                        deps.insert(CompoundIdentifier::new_minimal_verilog(target.clone()));
-                        deps.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
+                    // take tokens until hitting the next identifier
+                    while let Some(t) = tokens.peek() {
+                        if t.as_type().check_delimiter(&Operator::Dot) == true {
+                            // take the '.' operator
+                            let _ = tokens.next();
+                            // take the next identifier
+                            if tokens.peek().is_some() {
+                                tokens.next();
+                            }
+                        } else if t.as_type().check_delimiter(&Operator::BrackL) == true {
+                            // take the `[` token
+                            let t = tokens.next().unwrap();
+                            // parse until finding the ending `]` token
+                            let _ = Self::parse_until_operator(&mut tokens, t, Operator::BrackR)?;
+                        } else {
+                            break;
+                        }
                     }
-                    refs.insert(CompoundIdentifier::new_minimal_verilog(target.clone()));
-                    refs.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
-                } else {
-                    return Err(VerilogError::BindInvalid);
-                }
-            } else {
-                return Err(VerilogError::BindIncomplete);
-            }
 
-            return Ok(());
+                    if let Some(binding) = tokens.next() {
+                        // take the next identifier as the "what to bind" module
+                        if let Some(dep) = binding.as_ref().as_identifier() {
+                            // add both the target and the binding identifiers to the list of dependencies for this module
+                            if let Some(deps) = deps {
+                                deps.insert(CompoundIdentifier::new_minimal_verilog(
+                                    target.clone(),
+                                ));
+                                deps.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
+                            }
+                            refs.insert(CompoundIdentifier::new_minimal_verilog(target.clone()));
+                            refs.insert(CompoundIdentifier::new_minimal_verilog(dep.clone()));
+                            return Ok(());
+                        }
+                    }
+                }
+            }
         }
 
         // try as a port

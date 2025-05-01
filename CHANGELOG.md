@@ -15,6 +15,18 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.25.1
+
+### Features
+- Adds environment variable initializations for protocol subprocesses
+- Adds `ORBIT_IP_SOURCE` and `ORBIT_PROTOCOL` environment variables to be set for a protocol's subprocess
+
+### Changes
+- Displays a configured subprocess (target, protocol, channel) using the exact command and resolved arguments that will be used (as opposed to displaying the configured unresolved arguments)
+
+### Fixes
+- Improves handling of module dependency detection for SV bind statements
+
 ## 0.25.0
 
 ### Features

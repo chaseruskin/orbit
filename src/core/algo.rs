@@ -548,6 +548,7 @@ fn install_dst(source_ip: &Ip, root: &PathBuf, mapping: &HashMap<LangIdentifier,
     }
 
     // copy the source ip to the new location
+    // println!("HERE!");
     crate::util::filesystem::copy(
         &source_ip.get_root(),
         &cache_path,
@@ -555,8 +556,21 @@ fn install_dst(source_ip: &Ip, root: &PathBuf, mapping: &HashMap<LangIdentifier,
         Some(source_ip.get_files_to_keep()),
     )
     .unwrap();
-    let cached_ip = Ip::load(cache_path, false, false).unwrap();
 
+    // clean up temporary directory
+    std::fs::remove_dir_all(&source_ip.get_root()).unwrap();
+
+    let cached_ip = match Ip::load(cache_path.clone(), false, false) {
+        Ok(r) => r,
+        Err(e) => {
+            // clean up corrupt cache entry directory
+            std::fs::remove_dir_all(&cache_path).unwrap();
+            panic!(
+                "an unexpected error occurred during the final copy of a dynamic cache entry: {}",
+                e
+            );
+        }
+    };
     // indicate this installation is dynamic in the metadata
     cached_ip.set_as_dynamic(mapping);
     // write the new checksum file

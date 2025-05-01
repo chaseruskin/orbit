@@ -277,6 +277,7 @@ pub fn copy(
             let to = target
                 .join(remove_base(&source, &parent.to_path_buf()))
                 .join(from.file_name().unwrap());
+            // println!("copying {:?} -> {:?}", &from, &to);
             std::fs::copy(from, &to)?;
         }
     }

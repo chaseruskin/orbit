@@ -348,9 +348,9 @@ YILINX: Bitstream saved at: target/yilinx/fpga.bit
 </code></pre>
 <h2 id="making-an-ip-and-its-design-units-reusable"><a class="header" href="#making-an-ip-and-its-design-units-reusable">Making an ip and its design units reusable</a></h2>
 <p>Now we are ready to move on to more advanced topics, so let's go ahead and store an immutable reference to this project to use in other projects in our developer journey.</p>
-<pre><code>$ orbit install
+<pre><code>$ orbit install --all-public
 </code></pre>
-<p>This command ran a series of steps that packaged our project and placed it into our <em>cache</em>. Internally, Orbit knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire ip catalog.</p>
+<p>This command ran a series of steps that packaged our project and placed it into our <em>cache</em>. Internally, Orbit knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire ip catalog. By default, primary design units are private to the current ip, but the <code>--all-public</code> flag tells Orbit that we want all primary design units within the current ip to be directly accessible by other ips.</p>
 <pre><code>$ orbit search
 </code></pre>
 <pre><code>gates                   0.1.0           install   8ah2qa261k8wgv55sd1qq17w9

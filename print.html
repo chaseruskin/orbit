@@ -524,9 +524,9 @@ YILINX: Bitstream saved at: target/yilinx/fpga.bit
 </code></pre>
 <h2 id="making-an-ip-and-its-design-units-reusable"><a class="header" href="#making-an-ip-and-its-design-units-reusable">Making an ip and its design units reusable</a></h2>
 <p>Now we are ready to move on to more advanced topics, so let's go ahead and store an immutable reference to this project to use in other projects in our developer journey.</p>
-<pre><code>$ orbit install
+<pre><code>$ orbit install --all-public
 </code></pre>
-<p>This command ran a series of steps that packaged our project and placed it into our <em>cache</em>. Internally, Orbit knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire ip catalog.</p>
+<p>This command ran a series of steps that packaged our project and placed it into our <em>cache</em>. Internally, Orbit knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire ip catalog. By default, primary design units are private to the current ip, but the <code>--all-public</code> flag tells Orbit that we want all primary design units within the current ip to be directly accessible by other ips.</p>
 <pre><code>$ orbit search
 </code></pre>
 <pre><code>gates                   0.1.0           install   8ah2qa261k8wgv55sd1qq17w9
@@ -697,7 +697,7 @@ end architecture;
 <pre><code>$ orbit lock
 </code></pre>
 <p>Now we can safely install the ip to our catalog.</p>
-<pre><code>$ orbit install
+<pre><code>$ orbit install --all-public
 </code></pre>
 <p>Nice, now we have successfully reused designs across ips! However, maybe we should have designed all the logic gates in the gates ip...</p>
 <h3 id="additional-notes-on-dependencies"><a class="header" href="#additional-notes-on-dependencies">Additional notes on dependencies</a></h3>
@@ -912,7 +912,7 @@ uuid = "8ah2qa261k8wgv55sd1qq17w9"
 <p>Finally, let's update the lockfile and release version 1.0.0 for the gates ip by installing it to our cache.</p>
 <pre><code>$ orbit lock
 </code></pre>
-<pre><code>$ orbit install
+<pre><code>$ orbit install --all-public
 </code></pre>
 <p>One last look at the catalog shows the latest version of gates we have installed is indeed 1.0.0. Nice work!</p>
 <pre><code>$ orbit search gates
@@ -3749,6 +3749,9 @@ orbit publish -c hyperspace-labs -y
 </code></pre>
 <h2 id="description-10"><a class="header" href="#description-10"><strong>DESCRIPTION</strong></a></h2>
 <p>Returns a list of the ip found in the catalog.</p>
+<p>The returned list of ip is organized by row with each row consisting of four
+columns: the ip's name, the ip's latest version, the ip's state, and the ip's
+uuid.</p>
 <p>By default, all ip in the catalog will be returned. To filter by ip name, use
 the <code>&lt;ip&gt;</code> option. To limit the number of results, use the <code>--limit</code> option.</p>
 <p>An ip can be stored across three different levels: installed in the cache,

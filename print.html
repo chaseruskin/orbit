@@ -552,7 +552,7 @@ is different, and that is expected behavior. Let's continue to the next tutorial
 </code></pre>
 <ul>
 <li>
-<p>The configurations stored in "/.orbit" exist only for this project; to store configurations that persist across projects make changes to the $ORBIT_HOME directory.</p>
+<p>The configurations stored in ".orbit/" exist only for this project; to store configurations that persist across projects make changes to the $ORBIT_HOME directory.</p>
 </li>
 <li>
 <p>Orbit creates an output directory to store the blueprint and any tool output files during a build. These files should reside in "/target" and may change often during development (probably don't check this directory into version control).</p>
@@ -817,7 +817,7 @@ PROG_FLASH = bool(sys.argv.count('--flash') &gt; 0)
 
 # Get environment variables set by orbit for this particular build
 BLUEPRINT = os.environ.get("ORBIT_BLUEPRINT")
-OUTPUT_PATH = os.environ.get("ORBIT_OUTPUT_PATH")
+OUTPUT_PATH = os.environ.get("ORBIT_OUT_DIR")
 TOP_LEVEL = os.environ.get("ORBIT_TOP_NAME")
 
 synth_order = []
@@ -825,9 +825,9 @@ constraints_file = None
 
 # Parse the blueprint file created by orbit
 with open(BLUEPRINT) as blueprint:
-    rules = blueprint.readlines()
-    for r in rules:
-        fileset, lib, path = r.strip().split('\t')
+    entries = blueprint.readlines()
+    for entry in entries:
+        fileset, lib, path = entry.strip().split('\t')
         if fileset == 'VHDL':
             synth_order += [(lib, path)]
         if fileset == 'YDCF':
@@ -1041,7 +1041,7 @@ end architecture;
 ├── or_gate (gates:1.0.0)
 │   └── nand_gate (gates:1.0.0)
 └── half_add (half-add:0.1.0)
-    └── nand_gate_9f476275c5 (gates:0.1.0)
+    └── nand_gate_9f476275c5a024eb (gates:0.1.0)
 </code></pre>
 <p>The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, Orbit appends the beginning checksum digits from the ip of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict.</p>
 <p>To us though, these slight identifier renamings remain hidden because they occur among indirect dependencies in relation to our current project. When deciding which design unit to rename, Orbit will always choose to rename the unit that is used as an indirect dependency. This key choice allows us to keep using the original unit name when integrating design units into the current project.</p>
@@ -1061,9 +1061,11 @@ end architecture;
 description = "Generate bitstreams for Yilinx FPGAs"
 command = "python"
 args = ["/Users/chase/Develop/rust/orbit/gates/.orbit/yilinx.py"]
+build = true
+test = true
 
-[fileset]
-YDCF = "**/*.ydc"
+[fileset.YDCF]
+patterns = ["**/*.ydc"]
 </code></pre>
 <p>Let's build our current project using the yilinx target for our full adder.</p>
 <pre><code>$ orbit build --target yilinx --top full_add

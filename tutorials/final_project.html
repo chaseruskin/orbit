@@ -274,7 +274,7 @@ end architecture;
 ├── or_gate (gates:1.0.0)
 │   └── nand_gate (gates:1.0.0)
 └── half_add (half-add:0.1.0)
-    └── nand_gate_9f476275c5 (gates:0.1.0)
+    └── nand_gate_9f476275c5a024eb (gates:0.1.0)
 </code></pre>
 <p>The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, Orbit appends the beginning checksum digits from the ip of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict.</p>
 <p>To us though, these slight identifier renamings remain hidden because they occur among indirect dependencies in relation to our current project. When deciding which design unit to rename, Orbit will always choose to rename the unit that is used as an indirect dependency. This key choice allows us to keep using the original unit name when integrating design units into the current project.</p>
@@ -294,9 +294,11 @@ end architecture;
 description = "Generate bitstreams for Yilinx FPGAs"
 command = "python"
 args = ["/Users/chase/Develop/rust/orbit/gates/.orbit/yilinx.py"]
+build = true
+test = true
 
-[fileset]
-YDCF = "**/*.ydc"
+[fileset.YDCF]
+patterns = ["**/*.ydc"]
 </code></pre>
 <p>Let's build our current project using the yilinx target for our full adder.</p>
 <pre><code>$ orbit build --target yilinx --top full_add

@@ -35,6 +35,12 @@ patterns = ["*.git"]
 command = "git"
 args = ["clone", "{{ orbit.ip.repository }}"]
 
+[[protocol]]
+name = "bar"
+command = "python"
+args = ["bar.py"]
+patterns = ["*.url"]
+
 # [[target.fileset]]
 # name = "FOO-SET"
 # patterns = ["a.txt", "b.txt"]

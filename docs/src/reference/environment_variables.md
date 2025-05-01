@@ -26,6 +26,8 @@ Orbit also sets environment variables during runtime such that any subprocesses 
 
 - `ORBIT_IP_CHECKSUM` - The full 64 character hexadecimal string of the SHA256 checksum of the current ip.
 
+- `ORBIT_IP_SOURCE` - The source url of the current ip. This environment variable is only available during a protocol's execution.
+
 - `ORBIT_TARGET` - The name of the target selected for the latest build process.
 
 - `ORBIT_TOP_NAME` - The top level design's identifier for the latest build process, only if the build process was a build.
@@ -57,6 +59,8 @@ Orbit also sets environment variables during runtime such that any subprocesses 
 - `ORBIT_CHANNEL_DIR` - The full path to the directory that is the root of the current channel.
 
 - `ORBIT_CHANNEL_IP_DIR` - The full path to the directory in the current channel where the current ip's manifest will be copied to during the publishing process.
+
+- `ORBIT_PROTOCOL` - The name of the protocol selected for the downloading the current ip. This environment variable is only available during a protocol's execution.
 
 
 ## Checking the environment

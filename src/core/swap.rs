@@ -55,6 +55,10 @@ impl StrSwapTable {
     pub fn get(&self, key: &str) -> Option<&String> {
         self.0.get(key)
     }
+
+    pub fn inner(&self) -> &HashMap<String, String> {
+        &self.0
+    }
 }
 
 const L_VAR_DELIMITER: char = '{';

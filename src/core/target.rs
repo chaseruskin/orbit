@@ -207,12 +207,8 @@ pub trait Process {
     fn get_args(&self) -> Vec<&String>;
 
     /// Formats the command and args into a string to display to the console.
-    fn fmt(&self, command: &String, extra_args: &[String]) -> String {
-        let base = self
-            .get_args()
-            .iter()
-            .fold(command.clone(), |x, y| x + " " + &y);
-        extra_args.iter().fold(base, |x, y| x + " " + &y)
+    fn fmt(&self, command: &String, args: &[String]) -> String {
+        args.iter().fold(command.clone(), |x, y| x + " " + &y)
     }
 
     /// Runs the given `command` with the set `args` for the plugin.
@@ -231,9 +227,6 @@ pub trait Process {
 
         let root_path = self.get_root();
 
-        // create the string to display
-        let subproc_str = self.fmt(command, extra_args);
-
         // only resolve from root if not overloaded
         let command = if overloaded_command.is_none() {
             filesystem::resolve_rel_path(root_path, command)
@@ -249,8 +242,10 @@ pub trait Process {
 
         // append args set on the command-line to the base-line of arguments
         let args = [&arguments, extra_args].concat();
-        // display the literal command being ran
 
+        // create the string to display
+        let subproc_str = self.fmt(&command, &args);
+        // display the literal command being ran
         crate::subproc!("{}", subproc_str.bold());
 
         let mut proc = filesystem::invoke(

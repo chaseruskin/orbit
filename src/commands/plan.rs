@@ -587,6 +587,7 @@ pub fn resolve_missing_deps<'a>(
             // read config.toml for setting any env variables
             .from_config(c.get_config())?;
         let vtable = StrSwapTable::new().load_environment(&env)?;
+        env.initialize();
 
         download_missing_deps(
             vtable,

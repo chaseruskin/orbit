@@ -34,6 +34,9 @@ use crate::error::Hint;
 use crate::error::LastError;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
+use crate::util::environment::EnvVar;
+use crate::util::environment::Environment;
+use crate::util::environment::ORBIT_PROTOCOL;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
@@ -106,6 +109,9 @@ impl Download {
 
         vtable.add("orbit.ip.source", processed_src.get_url());
 
+        // initialize the variable table as environment variables as well
+        Environment::new().from_var_table(vtable)?.initialize();
+
         // determine which protocol to try
         let mut sel_protocol: Option<(&&str, &&Protocol)> = None;
 
@@ -137,6 +143,9 @@ impl Download {
         match sel_protocol {
             Some((&name, &proto)) => {
                 crate::info!("downloading ip using protocol {}", name.green());
+                Environment::new()
+                    .add(EnvVar::new().key(ORBIT_PROTOCOL).value(name))
+                    .initialize();
                 // allow the user to handle placing the code in the queue
                 let proto: Protocol = proto.clone().replace_vars_in_args(&vtable);
                 if let Err(err) = proto.execute(&None, &[], &queue, HashMap::new()) {

@@ -17,6 +17,7 @@
 
 use crate::core::config::Config;
 use crate::core::manifest::IP_MANIFEST_FILE;
+use crate::core::swap::StrSwapTable;
 use crate::util::anyerror::Fault;
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -77,7 +78,7 @@ impl EnvVar {
     /// Sets the environment key.
     pub fn key(mut self, s: &str) -> Self {
         // normalize the key name upon entry
-        self.key = s.to_ascii_uppercase().replace('-', "_");
+        self.key = s.to_ascii_uppercase().replace('-', "_").replace('.', "_");
         self
     }
 
@@ -140,6 +141,14 @@ impl Environment {
                     self.insert(EnvVar::new().key(name).value(value));
                 }
             }
+        }
+        Ok(self)
+    }
+
+    /// Sets environment variables from a [StrSwapTable].
+    pub fn from_var_table(mut self, table: &StrSwapTable) -> Result<Self, Fault> {
+        for (k, v) in table.inner().iter() {
+            self = self.add(EnvVar::new().key(k).value(v));
         }
         Ok(self)
     }
@@ -296,6 +305,7 @@ pub const ORBIT_IP_VERSION: &str = "ORBIT_IP_VERSION";
 pub const ORBIT_IP_LIBRARY: &str = "ORBIT_IP_LIBRARY";
 pub const ORBIT_IP_CHECKSUM: &str = "ORBIT_IP_CHECKSUM";
 
+pub const ORBIT_PROTOCOL: &str = "ORBIT_PROTOCOL";
 pub const ORBIT_TARGET: &str = "ORBIT_TARGET";
 
 pub const ORBIT_TOP_NAME: &str = "ORBIT_TOP_NAME";

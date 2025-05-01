@@ -130,7 +130,7 @@ PROG_FLASH = bool(sys.argv.count('--flash') > 0)
 
 # Get environment variables set by orbit for this particular build
 BLUEPRINT = os.environ.get("ORBIT_BLUEPRINT")
-OUTPUT_PATH = os.environ.get("ORBIT_OUTPUT_PATH")
+OUTPUT_PATH = os.environ.get("ORBIT_OUT_DIR")
 TOP_LEVEL = os.environ.get("ORBIT_TOP_NAME")
 
 synth_order = []
@@ -138,9 +138,9 @@ constraints_file = None
 
 # Parse the blueprint file created by orbit
 with open(BLUEPRINT) as blueprint:
-    rules = blueprint.readlines()
-    for r in rules:
-        fileset, lib, path = r.strip().split('\t')
+    entries = blueprint.readlines()
+    for entry in entries:
+        fileset, lib, path = entry.strip().split('\t')
         if fileset == 'VHDL':
             synth_order += [(lib, path)]
         if fileset == 'YDCF':

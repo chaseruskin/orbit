@@ -144,7 +144,7 @@ full_add (full-add:0.1.0)
 ├── or_gate (gates:1.0.0)
 │   └── nand_gate (gates:1.0.0)
 └── half_add (half-add:0.1.0)
-    └── nand_gate_9f476275c5 (gates:0.1.0)
+    └── nand_gate_9f476275c5a024eb (gates:0.1.0)
 ```
 
 The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, Orbit appends the beginning checksum digits from the ip of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict. 
@@ -175,9 +175,11 @@ name = "yilinx"
 description = "Generate bitstreams for Yilinx FPGAs"
 command = "python"
 args = ["/Users/chase/Develop/rust/orbit/gates/.orbit/yilinx.py"]
+build = true
+test = true
 
-[fileset]
-YDCF = "**/*.ydc"
+[fileset.YDCF]
+patterns = ["**/*.ydc"]
 ```
 
 Let's build our current project using the yilinx target for our full adder.

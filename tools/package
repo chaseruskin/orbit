@@ -25,6 +25,8 @@ if [ $TARGET == armv7-unknown-linux-musleabihf ] || [ $TARGET == arm-unknown-lin
 fi
 
 echo "Building orbit docs..."
+# inject current version of Orbit into the "Installing" page
+python ./tools/sync_docs_version.py ./docs/src/starting/installing.md
 mdbook build docs
 
 echo "Building orbit installer..."

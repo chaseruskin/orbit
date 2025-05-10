@@ -159,37 +159,85 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="json-output"><a class="header" href="#json-output">JSON Output</a></h1>
+<p>Some commands and processes serialize data into JSON as a mechanism for external tools and scripts to easily load data that may be of interest.</p>
+<h2 id="design-units"><a class="header" href="#design-units">Design units</a></h2>
 <p>The <code>orbit get</code> command allows a user to receive various pieces of information related to a design unit, such its component declaration, defined architectures, or entity instantiation.</p>
 <p>It also allows users to export the unit's interface with the <code>--json</code> flag. This is convenient when you wish to pass this information in a more machine-readable format to another tool/program.</p>
 <p>The serialized JSON data is also available during the execution phase of a build process through the appropriate environment variables. To know which variables contain this data, see <a href="./environment_variables.html">Environment Variables</a>.</p>
 <p>The serialized JSON string data is unformatted.</p>
-<h2 id="schema"><a class="header" href="#schema">Schema</a></h2>
-<p>The following schema is implemented for the json output:</p>
+<h3 id="schema"><a class="header" href="#schema">Schema</a></h3>
+<p>The following schema is implemented for the json output of <code>orbit get</code>:</p>
 <pre><code class="language-json">{
-  "identifier": string
+  // the name of the design unit
+  "identifier": "string",
+  // list of generics/parameters
   "generics": [
     {
-        "identifier": string
-        "mode": string
-        "type": string // null if blank
-        "default": string // null if blank
+        "identifier": "string",
+        "mode": "string",
+        "type": "string", // null if blank
+        "default": "string" // null if blank
     }
-  ]
+  ],
+  // list of ports
   "ports": [
     {
-        "identifier": string
-        "mode": string
-        "type": string // null if blank
-        "default": string // null if blank
+        "identifier": "string",
+        "mode": "string",
+        "type": "string", // null if blank
+        "default": "string" // null if blank
     }
-  ]
-  "architectures": [
-      string
   ],
-  "language": string
+  // list of defined architectures (empty if Verilog or SystemVerilog)
+  "architectures": [
+      "string"
+  ],
+  // native language of the design unit (choices: "vhdl", "verilog", "systemverilog")
+  "language": "string"
 }
 </code></pre>
-<p>The "language" field is allowed to be one of three values: "vhdl", "verilog", or "systemverilog".</p>
+<h2 id="published-ip"><a class="header" href="#published-ip">Published ip</a></h2>
+<p>The <code>orbit publish</code> command allows users to automate the process of maintaining a centralized location where released ip can be found. When successfully ran, this command copies an ip's manifest to a directory dedicated to storing manifests.</p>
+<p>It also produces a JSON file of the various pieces of metadata related to the released ip and places it alongide the copied manifest.</p>
+<p>The serialized JSON data is available in a file called <code>Orbit.json</code> found in the same directory as where Orbit placed the <code>Orbit.toml</code> and <code>Orbit.lock</code> files during the publishing process. This file can be read by external tools and processes to collect various pieces of information to display to users in another way.</p>
+<h3 id="schema-1"><a class="header" href="#schema-1">Schema</a></h3>
+<p>The following schema is currently implemented for the json file <code>Orbit.json</code> produced by <code>orbit publish</code>:</p>
+<pre><code class="language-json">{
+  // schema version
+  "version": integer,
+  // serialized ip manifest (Orbit.toml) data
+  "manifest": {
+    "ip": {
+      "name": "string",
+      "uuid": "string",
+      "version": "string",
+      // ... see manifest reference for all properties
+    }
+  },
+  // list of all local design units
+  "units": [
+    {
+      // name of the design unit
+      "identifier": "string",
+      // the primary design unit type (examples: "entity", "module", "package")
+      "type": "string",
+      // native language (choices: "vhdl", "verilog", "systemverilog")
+      "language": "string",
+      // visibility of unit (choices: "public", "protected", "private")
+      "visibility": "string",
+      // list of files relative to the ip that define this unit
+      "sources": [
+        "string"
+      ],
+      // list of unit identifiers that this unit requires
+      "dependencies": [
+        "string"
+      ]
+    }
+  ]
+}
+</code></pre>
+<p>The latest schema version is <code>1</code>. Schema versions increment by 1 whenever there are breaking changes to the schema and its defined properties.</p>
 <h2 id="references"><a class="header" href="#references">References</a></h2>
 <p>Some ideas about exporting json from <code>orbit get</code> can be found at this <a href="https://blog.kellybrazil.com/2021/12/03/tips-on-adding-json-output-to-your-cli-app/">blog post</a>.</p>
 

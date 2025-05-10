@@ -17,6 +17,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ## 0.25.2
 
+### Features
+- Adds `Orbit.json` file to publishing process to be created alongside the copied `Orbit.toml` and `Orbit.lock` files at the destination directory in a channel to store additional metadata about the ip
+
 ### Fixes
 - Safely produces error message instead of panic when trying to install an ip without specifying the ip's name and there exists zero manifests in the downloaded directory
 

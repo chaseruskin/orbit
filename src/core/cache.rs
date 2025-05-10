@@ -26,14 +26,20 @@ use crate::core::lang::node::HdlNode;
 use crate::core::lang::{Lang, LangUnit};
 use crate::core::visibility::Visibility;
 
+use std::str::FromStr;
+
+type VhdlIdentifier = crate::core::lang::vhdl::token::identifier::Identifier;
+type VerilogIdentifier = crate::core::lang::verilog::token::identifier::Identifier;
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct UnitCache {
-    name: LangIdentifier,
+    identifier: String,
+    #[serde(rename = "type")]
     symbol: String,
     language: Lang,
     visibility: Visibility,
     sources: Vec<String>,
-    dependencies: Vec<LangIdentifier>,
+    dependencies: Vec<String>,
 }
 
 impl UnitCache {
@@ -47,7 +53,7 @@ impl UnitCache {
         let base_path_offset = ip.get_root().as_os_str().len();
 
         Self {
-            name: name,
+            identifier: name.to_string(),
             symbol: unit.to_string(),
             language: unit.get_lang(),
             visibility: unit.get_visibility().clone(),
@@ -60,7 +66,7 @@ impl UnitCache {
                     abs_path.get(base_path_offset + 1..).unwrap().to_string()
                 })
                 .collect(),
-            dependencies: deps.into_iter().map(|f| f.clone()).collect(),
+            dependencies: deps.into_iter().map(|f| f.to_string()).collect(),
         }
     }
 
@@ -80,8 +86,13 @@ impl UnitCache {
         self.visibility.clone()
     }
 
-    pub fn get_name(&self) -> &LangIdentifier {
-        &self.name
+    pub fn get_name(&self) -> LangIdentifier {
+        match self.get_lang() {
+            Lang::SystemVerilog | Lang::Verilog => {
+                LangIdentifier::from(VerilogIdentifier::from_str(&self.identifier).unwrap())
+            }
+            Lang::Vhdl => LangIdentifier::from(VhdlIdentifier::from_str(&self.identifier).unwrap()),
+        }
     }
 }
 
@@ -92,6 +103,9 @@ pub struct PkgCache {
 }
 
 impl PkgCache {
+    pub fn new() -> Self {
+        Self { units: Vec::new() }
+    }
     /// Creates all the desired cached contents to be stored alongside an installed ip.
     pub fn from_ip(ip: &Ip) -> Result<Self, Fault> {
         // generate the unit map

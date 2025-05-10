@@ -443,7 +443,7 @@ impl Get {
         // check if we can use the cached metadata
         if let Some(cached) = Ip::read_cache_metadata(ip.get_root()) {
             let units = cached.get_units();
-            if let Some(unit) = units.iter().find(|p| p.get_name() == name) {
+            if let Some(unit) = units.iter().find(|p| &p.get_name() == name) {
                 let files = unit
                     .get_sources()
                     .iter()

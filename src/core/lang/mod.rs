@@ -58,6 +58,9 @@ type SystemVerilogPrimaryUnit = sv::primaryunit::PrimaryUnit;
 
 use super::visibility::{VipList, Visibility};
 
+/// Schema version for `orbit get` JSON data
+pub const SCHEMA_VERSION: u32 = 1;
+
 pub fn read_to_string(source_file: &str) -> Result<String, CodeFault> {
     let contents = match std::fs::read_to_string(&source_file) {
         Ok(dump) => dump,

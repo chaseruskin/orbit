@@ -26,7 +26,8 @@ use crate::core::channel::Channel;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::core::iparchive::IpArchive;
-use crate::core::manifest::IP_MANIFEST_FILE;
+use crate::core::manifest::JsonMeta;
+use crate::core::manifest::{IP_JSON_FILE, IP_MANIFEST_FILE};
 use crate::error::{Error, Hint, LastError};
 use crate::util::anyerror::Fault;
 use crate::util::environment::{
@@ -461,6 +462,12 @@ impl Publish {
         )?;
         // copy the (raw) lockfile there
         local_ip.get_lock().save_to_disk(&output_path)?;
+        // create a JSON metadata file there
+        let json_data = JsonMeta::new(local_ip)?;
+        std::fs::write(
+            output_path.join(IP_JSON_FILE),
+            serde_json::to_string_pretty(&json_data)?,
+        )?;
         Ok(())
     }
 

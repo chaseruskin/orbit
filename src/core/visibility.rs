@@ -75,8 +75,11 @@ impl VipList {
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone, Serialize, Deserialize)]
 pub enum Visibility {
+    #[serde(rename = "public")]
     Public,
+    #[serde(rename = "protected")]
     Protected,
+    #[serde(rename = "private")]
     Private,
 }
 

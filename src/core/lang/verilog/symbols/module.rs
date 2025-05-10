@@ -35,12 +35,15 @@ use crate::core::lang::{
 
 use crate::core::lang::highlight;
 use crate::core::lang::highlight::ToColor;
+use crate::core::lang::SCHEMA_VERSION;
 
 use serde_derive::Serialize;
 use std::iter::Peekable;
 
 #[derive(Debug, PartialEq, Serialize)]
 pub struct Module {
+    #[serde(skip_serializing)]
+    version: u32,
     #[serde(rename = "identifier")]
     name: Identifier,
     #[serde(rename = "generics")]
@@ -269,6 +272,7 @@ impl Module {
             });
 
         Ok(Module {
+            version: SCHEMA_VERSION,
             name: mod_name,
             parameters: params,
             ports: ports,

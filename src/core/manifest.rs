@@ -17,6 +17,7 @@
 
 #![allow(dead_code)]
 
+use crate::core::cache::PkgCache;
 use crate::core::ip::IpSpec;
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::pkgid::PkgPart;
@@ -199,12 +200,36 @@ impl<'de> serde::Deserialize<'de> for Dependency {
 type Dependencies = HashMap<IpName, Dependency>;
 
 pub const IP_MANIFEST_FILE: &str = "Orbit.toml";
+pub const IP_JSON_FILE: &str = "Orbit.json";
+
 // Files reserved for internal cache use
 pub const ORBIT_SUM_FILE: &str = ".orbit-checksum";
 pub const ORBIT_CACHE_FILE: &str = ".orbit-cache";
 pub const ORBIT_DYNAMIC_FILE: &str = ".orbit-dynamic";
 
 const DEPENDENCIES_KEY: &str = "dependencies";
+
+// Verify this number matches the latest documentation (docs/src/reference/json.md)
+const SCHEMA_VERSION: u32 = 1;
+
+#[derive(Serialize, Debug, PartialEq)]
+pub struct JsonMeta<'a> {
+    version: u32,
+    manifest: &'a Manifest,
+    #[serde(flatten)]
+    units: PkgCache,
+}
+
+impl<'a> JsonMeta<'a> {
+    pub fn new(ip: &'a Ip) -> Result<Self, Fault> {
+        let units = PkgCache::from_ip(&ip)?;
+        Ok(Self {
+            version: SCHEMA_VERSION,
+            manifest: ip.get_man(),
+            units: units,
+        })
+    }
+}
 
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -657,6 +682,16 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    #[ignore]
+    fn ut_json() {
+        // Use this test to manually inspect how the Orbit.json file will display data
+        let ip = Ip::load(PathBuf::from("tests/s1"), true, false).unwrap();
+        let jdat = JsonMeta::new(&ip).unwrap();
+        println!("{}", serde_json::to_string_pretty(&jdat).unwrap());
+        panic!();
+    }
 
     mod deser {
         use super::*;

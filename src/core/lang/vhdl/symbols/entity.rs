@@ -26,6 +26,7 @@ use crate::core::lang::{
 
 use crate::core::lang::highlight;
 use crate::core::lang::highlight::ToColor;
+use crate::core::lang::SCHEMA_VERSION;
 
 use super::{
     architecture::Architecture, Architectures, Delimiter, Generics, Identifier,
@@ -34,6 +35,8 @@ use super::{
 
 #[derive(Debug, PartialEq, Serialize)]
 pub struct Entity {
+    #[serde(skip_serializing)]
+    version: u32,
     #[serde(rename = "identifier")]
     name: Identifier,
     generics: Generics,
@@ -54,6 +57,7 @@ impl Entity {
     /// Returns a new blank `Entity` struct.
     pub fn new() -> Self {
         Self {
+            version: SCHEMA_VERSION,
             name: Identifier::new(),
             ports: Ports::new(),
             generics: Generics::new(),
@@ -69,6 +73,7 @@ impl Entity {
     /// available.
     pub fn black_box(name: Identifier) -> Self {
         Self {
+            version: SCHEMA_VERSION,
             name: name,
             ports: Ports::new(),
             generics: Generics::new(),
@@ -311,6 +316,7 @@ impl Entity {
             .collect::<Vec<Vec<Token<VhdlToken>>>>();
 
         Ok(Entity {
+            version: SCHEMA_VERSION,
             name: match entity_name {
                 VhdlToken::Identifier(id) => id,
                 // expecting identifier

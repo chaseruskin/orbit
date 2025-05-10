@@ -244,7 +244,7 @@ See [LICENSE](./LICENSE).
 
 ## Sponsoring
 
-If you find this tool useful, please consider sponsoring! This project started got its inspiration from my first internship with NASA Glenn Research Center in 2021, and I have started working on this project in my spare time throughout my undergraduate and graduate studies since then. Any donation amount is greatly appreciated.
+If you find this tool useful, please consider sponsoring! This project got its inspiration from my first internship with NASA Glenn Research Center in 2021, and I have started working on this project in my spare time throughout my undergraduate, graduate, and professional career. Any donation amount is greatly appreciated.
 
 ## Contributing
 

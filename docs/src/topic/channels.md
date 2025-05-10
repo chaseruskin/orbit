@@ -49,8 +49,10 @@ A post-publish hook can be configured for a channel to perform any operations im
 
 Orbit automates the process of releasing an ip to a channel through the publishing process invoked through `orbit publish`.
 
-The core operation during the publishing process is the ip's manifest gets placed in the channel at its generated index directory. The root of the index directory can be configured using the `root` field, and the remaining subdirectories are pre-determined according to the ip's name. 
+The core operation during the publishing process is the ip's manifest gets placed in the channel at its generated index directory. The root of the index directory can be configured using the `root` field, and the remaining subdirectories are pre-determined according to the ip's name.
 
 The full path to the index directory can be read from the `ORBIT_CHANNEL_DIR` environment variable during a channel's pre-publish or post-publish hook processes. 
 
 The full path to the directoy when an ip's metadata contents are copied to during the publishing process can be read from the `ORBIT_CHANNEL_IP_DIR` environment variable.
+
+Along with copying the ip's manifest to the index directory, the publishing process also copies the ip's lockfile as well as creates a new file, `Orbit.json`, that contains additional metadata about the ip in JSON format. To learn more about what properties are stored in a `Orbit.json` file, see [JSON](./../reference/json.md).

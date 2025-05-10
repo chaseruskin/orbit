@@ -33,7 +33,7 @@ name = "gitit"
 description = "Simple git protocol"
 patterns = ["*.git"]
 command = "git"
-args = ["clone", "{{ orbit.ip.repository }}"]
+args = ["clone", "{{ orbit.ip.source }}"]
 
 [[protocol]]
 name = "bar"

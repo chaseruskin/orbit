@@ -20,7 +20,7 @@ use std::{fmt::Display, path::PathBuf};
 
 use crate::core::{
     blueprint::Scheme,
-    ip::IpSpec,
+    ip::{IpSpec, PartialIpSpec},
     lang::{lexer::Position, LangIdentifier},
     pkgid::PkgPart,
     version::{AnyVersion, PartialVersion, Version},
@@ -123,6 +123,10 @@ pub enum Error {
     EntryUnknownIp(IpSpec),
     #[error("found {0} ips downloaded as candidates: {1}{2}")]
     DownloadFoundManyIps(usize, String, Hint),
+    #[error("failed to find any ip manifest in the downloaded directory")]
+    DownloadFoundZeroIp,
+    #[error("failed to find an ip manifest in the downloaded directory that matches \"{0}\"")]
+    DownloadFoundZeroIpMatch(PartialIpSpec),
     #[error("lockfile is missing or out of date{0}")]
     PublishMissingLockfile(Hint),
     #[error("the ip manifest's source field is required to publish, but is undefined")]

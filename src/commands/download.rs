@@ -32,7 +32,6 @@ use crate::core::target::Process;
 use crate::error::Error;
 use crate::error::Hint;
 use crate::error::LastError;
-use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
@@ -236,11 +235,16 @@ impl Download {
 
         match matching_ips.len() {
             0 => {
-                // could not find the IP
-                Err(AnyError(format!(
-                    "failed to find a manifest during download that matches ip \"{}\"",
-                    spec.unwrap()
-                )))?
+                match spec {
+                    Some(s) => {
+                        // could not find the ip
+                        Err(Box::new(Error::DownloadFoundZeroIpMatch(s.clone())))?
+                    }
+                    None => {
+                        // could not find any ip
+                        Err(Box::new(Error::DownloadFoundZeroIp))?
+                    }
+                }
             }
             1 => {
                 let temp = matching_ips.get(0).unwrap();

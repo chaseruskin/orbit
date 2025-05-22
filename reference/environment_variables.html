@@ -175,6 +175,9 @@
 <p>Orbit also sets environment variables during runtime such that any subprocesses within Orbit, such as targets, can access necessary information.</p>
 <ul>
 <li>
+<p><code>ORBIT</code> - The full path to the <code>orbit</code> binary performing the build.</p>
+</li>
+<li>
 <p><code>ORBIT_MANIFEST_DIR</code> - The full path to the directory that contains the current ip's manifest.</p>
 </li>
 <li>
@@ -205,7 +208,7 @@
 <p><code>ORBIT_TOP_NAME</code> - The top level design's identifier for the latest build process, only if the build process was a build.</p>
 </li>
 <li>
-<p><code>ORBIT_TOP_FILE</code> - The file system path that contains the top level design for the latest build process, only if the build process was a build.</p>
+<p><code>ORBIT_TOP_FILE</code> - The full file system path that contains the top level design for the latest build process, only if the build process was a build.</p>
 </li>
 <li>
 <p><code>ORBIT_TOP_JSON</code> - The serialized json data for the top level design unit for the latest build process, only if the build process was a build (see <a href="json.html">JSON Output</a>).</p>
@@ -214,7 +217,7 @@
 <p><code>ORBIT_TB_NAME</code> - The testbench's identifier for the latest build process, only if the build process was a test.</p>
 </li>
 <li>
-<p><code>ORBIT_TB_FILE</code> - The file system path that contains the testbench for the latest build process, only if the build process was a test.</p>
+<p><code>ORBIT_TB_FILE</code> - The full file system path that contains the testbench for the latest build process, only if the build process was a test.</p>
 </li>
 <li>
 <p><code>ORBIT_TB_JSON</code> - The serialized json data for the testbench for the latest build process, only if the build process was a test (see <a href="json.html">JSON Output</a>).</p>
@@ -223,13 +226,16 @@
 <p><code>ORBIT_DUT_NAME</code> - The design under test's identifier for the latest build process, only if the build process was a test.</p>
 </li>
 <li>
-<p><code>ORBIT_DUT_FILE</code> - The file system path that contains the design under test for the latest build process, only if the build process was a test.</p>
+<p><code>ORBIT_DUT_FILE</code> - The full file system path that contains the design under test for the latest build process, only if the build process was a test.</p>
 </li>
 <li>
 <p><code>ORBIT_DUT_JSON</code> - The serialized json data for the design under test for the latest build process, only if the build process was a test (see <a href="json.html">JSON Output</a>).</p>
 </li>
 <li>
-<p><code>ORBIT_BLUEPRINT</code> - The file name for the blueprint created from the planning stage of the latest build process. The file name includes the file's extension.</p>
+<p><code>ORBIT_BLUEPRINT</code> - The file name for the blueprint created from the planning stage of the latest build process, relative to the current build process's output directory.</p>
+</li>
+<li>
+<p><code>ORBIT_BLUEPRINT_PLAN</code> - The plan name for the blueprint created from the planning stage of the latest build process. See <a href="./blueprint.html">Blueprint</a> for all possible plans.</p>
 </li>
 <li>
 <p><code>ORBIT_TARGET_DIR</code> - The directory where all generated artifacts from any targets will be stored, relative to the current ip's directory. Default is "target".</p>

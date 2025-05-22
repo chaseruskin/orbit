@@ -297,6 +297,8 @@ pub const ORBIT_HOME: &str = "ORBIT_HOME";
 pub const NO_COLOR: &str = "NO_COLOR";
 pub const ORBIT_WIN_LITERAL_CMD: &str = "ORBIT_WIN_LITERAL_CMD";
 
+pub const ORBIT: &str = "ORBIT";
+
 pub const ORBIT_MANIFEST_DIR: &str = "ORBIT_MANIFEST_DIR";
 pub const ORBIT_MANIFEST_FILE: &str = "ORBIT_MANIFEST_FILE";
 pub const ORBIT_IP_NAME: &str = "ORBIT_IP_NAME";
@@ -321,6 +323,8 @@ pub const ORBIT_DUT_FILE: &str = "ORBIT_DUT_FILE";
 pub const ORBIT_DUT_JSON: &str = "ORBIT_DUT_JSON";
 
 pub const ORBIT_BLUEPRINT: &str = "ORBIT_BLUEPRINT";
+pub const ORBIT_BLUEPRINT_PLAN: &str = "ORBIT_BLUEPRINT_PLAN";
+
 pub const ORBIT_TARGET_DIR: &str = "ORBIT_TARGET_DIR";
 pub const ORBIT_OUT_DIR: &str = "ORBIT_OUT_DIR";
 

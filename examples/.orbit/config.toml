@@ -1,6 +1,7 @@
 [[target]]
 name = "foo"
 description = "Print the blueprint contents"
+plans = ["tsv", "json"]
 command = "cat"
 args = ["{{orbit.blueprint}}"]
 

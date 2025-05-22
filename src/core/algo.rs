@@ -581,12 +581,13 @@ fn install_dst(source_ip: &Ip, root: &PathBuf, mapping: &HashMap<LangIdentifier,
     cached_ip
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct IpFileNode<'a> {
     file: String,
     library: LangIdentifier,
     ip: &'a Ip,
     lang: Lang,
+    dep_files: Vec<String>,
 }
 
 impl<'a> Eq for IpFileNode<'a> {}
@@ -613,6 +614,7 @@ impl<'a> IpFileNode<'a> {
             ip: ip,
             library: lib,
             lang: lang,
+            dep_files: Vec::new(),
         }
     }
 
@@ -631,5 +633,15 @@ impl<'a> IpFileNode<'a> {
     /// References the library identifier.
     pub fn get_library(&self) -> LangIdentifier {
         self.ip.get_hdl_library()
+    }
+
+    /// Sets the list of direct dependency filepaths.
+    pub fn add_dep_files(&mut self, mut deps: Vec<String>) {
+        self.dep_files.append(&mut deps);
+    }
+
+    /// Get the direct dependency filepaths.
+    pub fn get_dep_files(&self) -> &Vec<String> {
+        &self.dep_files
     }
 }

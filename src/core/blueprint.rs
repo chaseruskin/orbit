@@ -27,8 +27,10 @@ use super::algo::IpFileNode;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub enum Scheme {
+    #[serde(rename = "tsv")]
     Tsv,
-    // Json,
+    #[serde(rename = "json")]
+    Json,
 }
 
 impl Default for Scheme {
@@ -44,6 +46,7 @@ impl Display for Scheme {
             "{}",
             match self {
                 Self::Tsv => "tsv",
+                Self::Json => "json",
             }
         )
     }
@@ -55,10 +58,18 @@ impl FromStr for Scheme {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_ascii_lowercase().as_ref() {
             "tsv" => Ok(Self::Tsv),
-            // "json" => Ok(Self::Json),
+            "json" => Ok(Self::Json),
             _ => Err(AnyError(format!("unknown file format: {}", s))),
         }
     }
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct JsonEntry {
+    fileset: String,
+    library: String,
+    filepath: String,
+    dependencies: Vec<String>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -91,9 +102,35 @@ impl<'a, 'b> Entry<'a, 'b> {
                 }
                 Self::Auxiliary(key, lib, file) => format!("{}\t{}\t{}", key, lib, file),
             },
-            // Scheme::Json => {
-            //     todo!()
-            // }
+            Scheme::Json => match &self {
+                Self::Hdl(node) => {
+                    let source_set = if fileset::is_verilog(node.get_file()) == true {
+                        "VLOG"
+                    } else if fileset::is_vhdl(node.get_file()) == true {
+                        "VHDL"
+                    } else if fileset::is_systemverilog(node.get_file()) == true {
+                        "SYSV"
+                    } else {
+                        panic!("unknown file in source file set")
+                    };
+                    let entry = JsonEntry {
+                        fileset: source_set.to_string(),
+                        library: node.get_library().to_string(),
+                        filepath: node.get_file().to_string(),
+                        dependencies: node.get_dep_files().clone(),
+                    };
+                    serde_json::to_string_pretty(&entry).unwrap()
+                }
+                Self::Auxiliary(key, lib, file) => {
+                    let entry = JsonEntry {
+                        fileset: key.to_string(),
+                        library: lib.to_string(),
+                        filepath: file.to_string(),
+                        dependencies: vec![],
+                    };
+                    serde_json::to_string_pretty(&entry).unwrap()
+                }
+            },
         }
     }
 }
@@ -124,8 +161,12 @@ impl<'a, 'b> Blueprint<'a, 'b> {
     pub fn get_filename(&self) -> String {
         String::from(match self.scheme {
             Scheme::Tsv => "blueprint.tsv",
-            // Scheme::Json => "blueprint.json",
+            Scheme::Json => "blueprint.json",
         })
+    }
+
+    pub fn get_plan(&self) -> &Scheme {
+        &self.scheme
     }
 
     /// Add the next instruction `instr` to the blueprint.
@@ -137,11 +178,22 @@ impl<'a, 'b> Blueprint<'a, 'b> {
         let blueprint_path = output_path.join(self.get_filename());
         let mut fd = File::create(&blueprint_path).expect("could not create blueprint file");
         // write the data
-        let data = self.steps.iter().fold(String::new(), |mut acc, i| {
-            acc.push_str(i.write(&self.scheme).as_ref());
-            acc.push('\n');
-            acc
-        });
+        let data = match &self.scheme {
+            Scheme::Tsv => self.steps.iter().fold(String::new(), |mut acc, i| {
+                acc.push_str(i.write(&self.scheme).as_ref());
+                acc.push('\n');
+                acc
+            }),
+            Scheme::Json => {
+                // yea... not my best work but it gets the job done (serialize to str then deserialize back to struct to write as serialized list)
+                let entries: Vec<JsonEntry> = self
+                    .steps
+                    .iter()
+                    .map(|m| serde_json::from_str(&m.write(&self.scheme)).unwrap())
+                    .collect();
+                serde_json::to_string_pretty(&entries).unwrap()
+            }
+        };
         fd.write_all(data.as_bytes())
             .expect("failed to write data to blueprint");
         Ok((blueprint_path, self.steps.len()))

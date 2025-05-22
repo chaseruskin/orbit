@@ -30,8 +30,11 @@ use crate::core::target::Target;
 use crate::error::Error;
 use crate::error::LastError;
 use crate::util::anyerror::Fault;
+use crate::util::environment::ORBIT;
 use crate::util::environment::ORBIT_OUT_DIR;
 use crate::util::environment::{EnvVar, Environment, ORBIT_TARGET_DIR};
+use crate::util::filesystem::get_exe_path;
+use crate::util::filesystem::into_std_str;
 use crate::util::filesystem::Standardize;
 use std::path::PathBuf;
 
@@ -163,6 +166,11 @@ impl Test {
             // read ip manifest for env variables
             .from_ip(&working_ip)?
             .add(EnvVar::new().key(ORBIT_TARGET_DIR).value(target_dir))
+            .add(
+                EnvVar::new()
+                    .key(ORBIT)
+                    .value(&into_std_str(get_exe_path()?)),
+            )
             .add(EnvVar::with(
                 ORBIT_OUT_DIR,
                 PathBuf::standardize(&output_path).to_str().unwrap(),

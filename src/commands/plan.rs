@@ -301,6 +301,7 @@ impl Plan {
         // println!("{:?}", min_order);
 
         // generate the file order while merging dependencies for common file path names together
+
         let file_order = Self::determine_file_order(&global_graph, min_order);
 
         // remove duplicate files from list while perserving order
@@ -1624,9 +1625,9 @@ impl Plan {
     fn determine_file_order<'a>(
         global_graph: &'a GraphMap<CompoundIdentifier, HdlNode, ()>,
         min_order: Vec<usize>,
-    ) -> Vec<&'a IpFileNode<'a>> {
+    ) -> Vec<IpFileNode<'a>> {
         // gather the files from each node in-order (multiple files can exist for a node)
-        let mut file_map = HashMap::<String, (&IpFileNode, Vec<&HdlNode>)>::new();
+        let mut file_map = HashMap::<String, (IpFileNode, Vec<&HdlNode>)>::new();
         let mut file_order = Vec::<String>::new();
 
         for i in &min_order {
@@ -1653,39 +1654,64 @@ impl Plan {
                     // enter the new unmarked node and its dependencies
                     None => {
                         file_order.push(ip_file_node.get_file().clone());
-                        file_map.insert(ip_file_node.get_file().clone(), (ip_file_node, preds));
+                        file_map.insert(
+                            ip_file_node.get_file().clone(),
+                            (ip_file_node.clone(), preds),
+                        );
                     }
                 }
             });
         }
 
         // build a graph where nodes are files
-        let mut file_graph: GraphMap<&'a IpFileNode<'a>, (), ()> = GraphMap::new();
+        let mut file_graph: GraphMap<IpFileNode, (), ()> = GraphMap::new();
 
         for file_name in &file_order {
             let (node, deps) = file_map.get(file_name).unwrap();
             // make sure the node exists in the graph before making edge connections
             if file_graph.has_node_by_key(&node) == false {
-                file_graph.add_node(node, ());
+                file_graph.add_node(node.clone(), ());
             }
             for &ifn in deps {
-                for pred_node in ifn.get_associated_files() {
+                for &pred_node in ifn.get_associated_files() {
                     // make sure the node exists before creating edges
                     if file_graph.has_node_by_key(&pred_node) == false {
-                        file_graph.add_node(pred_node, ());
+                        file_graph.add_node(pred_node.clone(), ());
                     }
                     // add edge between them (this function prevents self-loops)
-                    let _ = file_graph.add_edge_by_key(pred_node, node, ());
+                    let _ = file_graph.add_edge_by_key(&pred_node, &node, ());
                 }
             }
         }
+
         // topologically sort and transform into list of the file nodes
-        file_graph
+        let file_list = file_graph
             .get_graph()
             .topological_sort()
             .into_iter()
-            .map(|i| *file_graph.get_key_by_index(i).unwrap())
-            .collect()
+            .map(|i| {
+                // fill in the file dependencies for each ip file node
+                let mut ifn = file_graph.get_key_by_index(i).unwrap().clone();
+                let dep_indices = file_graph
+                    .get_graph()
+                    .predecessors(i)
+                    .collect::<Vec<usize>>();
+                let dep_files = dep_indices
+                    .into_iter()
+                    .map(|m| {
+                        file_graph
+                            .get_key_by_index(m)
+                            .unwrap()
+                            .get_file()
+                            .to_string()
+                    })
+                    .collect();
+                ifn.add_dep_files(dep_files);
+                ifn
+            })
+            .collect();
+
+        file_list
     }
 
     /// Filters out the local nodes existing within the current IP from the `global_graph`.
@@ -1791,6 +1817,10 @@ impl Plan {
             .add(EnvVar::with(
                 environment::ORBIT_BLUEPRINT,
                 &blueprint.get_filename(),
+            ))
+            .add(EnvVar::with(
+                environment::ORBIT_BLUEPRINT_PLAN,
+                &blueprint.get_plan().to_string(),
             ))
             .add(EnvVar::with(environment::ORBIT_TARGET, target.get_name()));
 

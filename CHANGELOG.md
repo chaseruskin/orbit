@@ -15,10 +15,13 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.25.2
+## 0.25.2 - unreleased
 
 ### Features
+- Adds `json` plan to create `blueprint.json` file for targets when configured (includes a dependencies field to list direct file dependencies)
 - Adds `Orbit.json` file to publishing process to be created alongside the copied `Orbit.toml` and `Orbit.lock` files at the destination directory in a channel to store additional metadata about the ip
+- Adds `ORBIT_BLUEPRINT_PLAN` environment variable to contain the current set plan during the build process
+- Adds `ORBIT` environment variable to contain the full path to the orbit binary that was used for the current build process
 
 ### Fixes
 - Safely produces error message instead of panic when trying to install an ip without specifying the ip's name and there exists zero manifests in the downloaded directory

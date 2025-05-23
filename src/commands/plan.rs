@@ -40,7 +40,7 @@ use crate::util::environment::Environment;
 use crate::util::filesystem;
 use crate::util::graph::EdgeStatus;
 use crate::util::graphmap::GraphMap;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 use std::hash::Hash;
 use std::path::{Path, PathBuf};
@@ -262,13 +262,14 @@ impl Plan {
                     // only one topological sorting to compute
                     Ok(r) => {
                         let id = Self::local_to_global(r.index(), &global_graph, &local_graph);
+                        // println!("ROOT: {}", id.index());
                         global_graph
                             .get_graph()
                             .minimal_topological_sort(id.index())
                     }
                     // exclude roots that do not belong to the local graph
                     Err(roots) => {
-                        // println!("{:?}", roots);
+                        // println!("ROOTS ({}): {:?}", roots.len(), roots);
                         let mut order = Vec::new();
                         // create dummy node to rely on all known roots
                         roots.iter().for_each(|r| {
@@ -1634,9 +1635,9 @@ impl Plan {
         min_order: Vec<usize>,
     ) -> Vec<IpFileNode<'a>> {
         // gather the files from each node in-order (multiple files can exist for a node)
-        let mut file_map = HashMap::<String, (IpFileNode, Vec<&HdlNode>)>::new();
+        let mut file_map = BTreeMap::<String, (IpFileNode, Vec<&HdlNode>)>::new();
         let mut file_order = Vec::<String>::new();
-
+        // println!("HERE: {:#?}", min_order);
         for i in &min_order {
             // access the node key and access the files associated with this key (the dependencies)
             let ipfs = global_graph
@@ -1699,10 +1700,12 @@ impl Plan {
             .map(|i| {
                 // fill in the file dependencies for each ip file node
                 let mut ifn = file_graph.get_key_by_index(i).unwrap().clone();
-                let dep_indices = file_graph
+                let mut dep_indices = file_graph
                     .get_graph()
                     .predecessors(i)
                     .collect::<Vec<usize>>();
+                // sort the list of dependency nodes for repeatability purposes
+                dep_indices.sort();
                 let dep_files = dep_indices
                     .into_iter()
                     .map(|m| {
@@ -1713,7 +1716,7 @@ impl Plan {
                             .to_string()
                     })
                     .collect();
-                ifn.add_dep_files(dep_files);
+                ifn.set_dep_files(dep_files);
                 ifn
             })
             .collect();
@@ -1722,13 +1725,17 @@ impl Plan {
     }
 
     /// Filters out the local nodes existing within the current IP from the `global_graph`.
+    ///
+    /// Construction of local graph must be consistent across repeated runs.
     pub fn compute_local_graph<'a>(
         global_graph: &'a GraphMap<CompoundIdentifier, HdlNode, ()>,
         target: &Ip,
     ) -> GraphMap<&'a CompoundIdentifier, &'a HdlNode<'a>, &'a ()> {
         let working_lib = target.get_hdl_library();
-        // restrict graph to units only found within the current IP
-        let local_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> = global_graph
+        // restrict graph to units only found within the current ip
+
+        // first identify all the nodes strictly local to the current ip
+        let local_nodes: Vec<(&CompoundIdentifier, &HdlNode)> = global_graph
             .iter()
             // traverse subset of graph by filtering only for working library entities (current lib)
             .filter(|f| match f.0.get_prefix() {
@@ -1746,8 +1753,24 @@ impl Plan {
                 }
                 in_range
             })
+            .map(|f| (f.0, f.1))
             .collect();
 
+        // then add all nodes into a local graph
+        let mut local_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> = GraphMap::new();
+        for (k, v) in local_nodes.iter() {
+            local_graph.add_node(k, v);
+        }
+
+        // finally recreate the same connections from the global graph within the local graph
+        for n in 0..local_graph.iter().count() {
+            let cur_ln = *local_graph.get_key_by_index(n).unwrap();
+            let cur_gn = global_graph.get_node_by_key(cur_ln).unwrap();
+            let deps_gn = global_graph.predecessors(cur_gn.index());
+            for g in deps_gn {
+                local_graph.add_edge_by_key(&g.0, &cur_ln, &());
+            }
+        }
         local_graph
     }
 

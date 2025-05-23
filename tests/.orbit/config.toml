@@ -1,8 +1,9 @@
 [[target]]
 name = "foo"
 description = "Print bar to the console"
-command = "echo"
-args = ["bar"]
+command = "cat"
+plans = ["tsv", "json"]
+args = ["{{ orbit.blueprint }}"]
 
 [[target]]
 name = "ao"

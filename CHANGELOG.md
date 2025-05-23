@@ -24,6 +24,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Adds `ORBIT` environment variable to contain the full path to the orbit binary that was used for the current build process
 
 ### Fixes
+- Blueprint generation is now idempotent (same topological order will be produced when running the build process repeatedly with no changes to the environment/project)
 - Safely produces error message instead of panic when trying to install an ip without specifying the ip's name and there exists zero manifests in the downloaded directory
 
 ## 0.25.1

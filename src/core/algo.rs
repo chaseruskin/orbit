@@ -15,6 +15,7 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -382,6 +383,9 @@ pub fn build_ip_file_list<'a>(
                 ));
             })
     });
+    // sort the files such that things are deterministic across runs moving
+    // forward when performing topological sorting
+    files.sort();
     files
 }
 
@@ -590,6 +594,18 @@ pub struct IpFileNode<'a> {
     dep_files: Vec<String>,
 }
 
+impl<'a> Ord for IpFileNode<'a> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        (self.file).cmp(&(other.file))
+    }
+}
+
+impl<'a> PartialOrd for IpFileNode<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl<'a> Eq for IpFileNode<'a> {}
 
 impl<'a> Hash for IpFileNode<'a> {
@@ -636,8 +652,8 @@ impl<'a> IpFileNode<'a> {
     }
 
     /// Sets the list of direct dependency filepaths.
-    pub fn add_dep_files(&mut self, mut deps: Vec<String>) {
-        self.dep_files.append(&mut deps);
+    pub fn set_dep_files(&mut self, deps: Vec<String>) {
+        self.dep_files = deps;
     }
 
     /// Get the direct dependency filepaths.

@@ -524,7 +524,11 @@ impl Plan {
     ) -> Result<(), Fault> {
         // collect data for the given target
         if let Some(filesets) = target.get_filesets() {
-            for (name, tar_fset) in filesets {
+            // get the list of keys and sort them
+            let mut sorted_keys: Vec<&String> = filesets.keys().collect();
+            sorted_keys.sort_unstable();
+            for key in sorted_keys {
+                let (name, tar_fset) = filesets.get_key_value(key).unwrap();
                 // skip this fileset if we require recursive
                 if require_recur == true && tar_fset.is_recursive() == false {
                     continue;
@@ -548,7 +552,10 @@ impl Plan {
         }
 
         // check against every defined fileset in the command-line (call remaining filesets)
-        for (key, cli_fset) in cli_fset_map {
+        let mut sorted_keys: Vec<&&String> = cli_fset_map.keys().collect();
+        sorted_keys.sort_unstable();
+        for key in sorted_keys {
+            let (key, cli_fset) = cli_fset_map.get_key_value(key).unwrap();
             // skip this fileset if we require recursive
             if require_recur == true && cli_fset.is_recursive() == false {
                 continue;

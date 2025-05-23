@@ -2,6 +2,8 @@
 name = "foo"
 description = "Print the blueprint contents"
 plans = ["tsv", "json"]
+fileset.text = "*.txt"
+fileset.data = "*.dat"
 command = "cat"
 args = ["{{orbit.blueprint}}"]
 

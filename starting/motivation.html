@@ -44,6 +44,17 @@
         <script src="../toc.js"></script>
     </head>
     <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
     <div id="body-container">
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
@@ -121,7 +132,7 @@
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
                         </ul>
-                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
                         </button>
                     </div>
@@ -167,7 +178,7 @@
 <p>Let's talk about some observations about source code development in the layer above hardware: software. Software development today not only has nice languages to develop with, but the entire ecosystem surrounding that language is a pleasant experience. Take the Rust programming language as an example. Not only does Rust have moden language constructs that forces programmers to rethink how to write their program in a safer way regarding computer memory, but the infrastructure surrounding Rust is very accessible and easy to use, which involves the compiler, code management, and code testing. This is great for software development, but does the same hold true for hardware development?</p>
 <h2 id="the-problem"><a class="header" href="#the-problem">The problem</a></h2>
 <p>At the hardware layer, life is unfortunately not so simple. Not only are the promiment languages being used for things outside of their original intention, but the surrounding infrastructure around these languages is very lacking. Proprietary and expensive tools force developers to adapt to non-standardized practices, making it difficult to share code across systems or other tools, leading to <em>vendor lock-in</em>. Vendor lock-in fragments the community and makes it increasingly difficult to find portable and easily usable source code. Hardware does not have as big of a footprint in the open-source world in comparison to software's vibrant open-source community.</p>
-<p>Without the right infrastructure and tools to easily share, reuse, and maintain source code, hardware experiences slow and expensive development cycles. At this point, you be wondering what are the right tools and infrastructure that hardware needs? To answer this question, you may have to shift your perspective about hardware. Thinking of hardware with the waterfall approach of being <em>built and done with</em> is the wrong mindset. Hardware is rarely built once and forgotten about. Instead, one must think of hardware with a more agile approach in that it evolves and improves upon many iterations. This concept of hardware evolving over time requires special attention when creating the supportive infrastructure around it. While this infrastructure and tooling exists in the software development world, unfortunately it is largely missing for the common HDL languages such as VHDL and Verilog.</p>
+<p>Without the right infrastructure and tools to easily share, reuse, and maintain source code, hardware experiences slow and expensive development cycles. At this point, you be wondering what are the right tools and infrastructure that hardware needs? To answer this question, you may have to shift your perspective about hardware. Thinking of hardware with the waterfall approach of being <em>built and done with</em> is the wrong mindset. Hardware is rarely built once and forgotten about. Instead, one must think of hardware with a more modern approach in that it evolves and improves upon many iterations. This concept of hardware evolving over time requires special attention when creating the supportive infrastructure around it. While this infrastructure and tooling exists in the software development world, unfortunately it is largely missing for the common HDL languages such as VHDL and Verilog.</p>
 <p>Without the right infrastructure and tools, many source code maintenance tasks related to development, also known as <em>technical debt</em>, become exponentially more time-consuming and increasingly difficult as time goes on and the code base grows in size and complexity. The technical debt falls upon the developer to handle manually because there is no automated systematic tool that can properly handle it instead. Large technical debt in turn leads to long and expensive hardware development cycles, and therefore it is a common goal to strive to minimize technical debt. The solution at this point is not to continue down the dark path ahead, but instead to take a look at how software managed to minimize this problem: package management.</p>
 <h2 id="the-approach"><a class="header" href="#the-approach">The approach</a></h2>
 <p>With the right tools, hardware development can experience faster development cycles and lower development costs. A tool that can make this experience true is a <em>package manager</em>. A package manager's role is to organize and automate the tasks related to source code management. A well-designed package manager can minimize technical debt, while a poorly-designed package manager can fail to minimize technical debt and instead shift it to different tasks. Software programming languages have become increasingly good at handling source code management through the creation of their own package managers, such as <a href="https://go.dev/ref/mod">go mod</a> for Go, <a href="https://doc.rust-lang.org/cargo/">Cargo</a> for Rust, and <a href="https://pip.pypa.io/en/stable/">pip</a> for Python.</p>

@@ -44,6 +44,17 @@
         <script src="../toc.js"></script>
     </head>
     <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
     <div id="body-container">
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
@@ -121,7 +132,7 @@
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
                         </ul>
-                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
                         </button>
                     </div>
@@ -159,7 +170,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="extensible-builds"><a class="header" href="#extensible-builds">Extensible Builds</a></h1>
-<p>Orbit is an extensible build tool for HDLs. Orbit separates the build process into two stages: planning and execution. When the build process happens, both stages are performed together in sequential order. Orbit provides two entry points into the build process: <code>orbit test</code> and <code>orbit build</code>.</p>
+<p>Orbit is an extensible build system for HDLs. Orbit separates the build process into two stages: planning and execution. When the build process happens, both stages are performed together in sequential order. Orbit provides two entry points into the build process: <code>orbit test</code> and <code>orbit build</code>.</p>
 <p>What makes Orbit extensible? Well, Orbit does not define the execution stage by default. It leaves it upon the user to add their own execution processes, called <em>targets</em>. A target can be added by modifying an Orbit configuration file. You can write target scripts for whatever tools are integral to your workflow, such as Vivado, ModelSim, VCS, Design Compiler, or Quartus Prime.</p>
 <p><img src="./../images/dataflow.svg" alt="" /></p>
 <h2 id="planning-stage"><a class="header" href="#planning-stage">Planning stage</a></h2>

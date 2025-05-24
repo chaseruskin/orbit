@@ -10,7 +10,7 @@ Orbit is a package manager and build system for VHDL, Verilog, and SystemVerilog
 
 ![](./docs/src/images/architecture.svg)
 
-Orbit introduces a layer of abstraction called __IPs__, which groups related source code files (`.v`, `.sv`, `.vhd`) together within a common directory.
+Orbit groups one or more source code files (`.vhd`, `.v`, `.sv`) into a higher-level organizational unit called an __IP__. Orbit provides management capabilities at the ip level, making ips the "package" in its package management.
 
 Wondering what Orbit is and how it works? Check out the [Topic Overview](https://chaseruskin.github.io/orbit/topic/overview.html) for more details describing Orbit's system architecture and its key concepts.
 

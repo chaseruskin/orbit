@@ -1700,13 +1700,12 @@ impl Plan {
             .map(|i| {
                 // fill in the file dependencies for each ip file node
                 let mut ifn = file_graph.get_key_by_index(i).unwrap().clone();
-                let mut dep_indices = file_graph
+                let dep_indices = file_graph
                     .get_graph()
                     .predecessors(i)
                     .collect::<Vec<usize>>();
-                // sort the list of dependency nodes for repeatability purposes
-                dep_indices.sort();
-                let dep_files = dep_indices
+                // ensure no duplicates exist by
+                let mut dep_files: Vec<String> = dep_indices
                     .into_iter()
                     .map(|m| {
                         file_graph
@@ -1716,6 +1715,11 @@ impl Plan {
                             .to_string()
                     })
                     .collect();
+                // sort the list of files
+                dep_files.sort();
+                // remove all duplicates (only works on sorted lists)
+                dep_files.dedup();
+                // set this file's list of dependency files
                 ifn.set_dep_files(dep_files);
                 ifn
             })

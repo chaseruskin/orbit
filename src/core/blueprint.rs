@@ -72,6 +72,13 @@ struct JsonEntry {
     dependencies: Vec<String>,
 }
 
+/// Built-in fileset name for VHDL source code files
+const VHDL: &str = "VHDL";
+/// Built-in fileset name for Verilog source code files
+const VLOG: &str = "VLOG";
+/// Built-in fileset name for SystemVerilog source code files
+const SYSV: &str = "SYSV";
+
 #[derive(Debug, PartialEq)]
 pub enum Entry<'a, 'b> {
     Hdl(&'b IpFileNode<'a>),
@@ -79,20 +86,24 @@ pub enum Entry<'a, 'b> {
 }
 
 impl<'a, 'b> Entry<'a, 'b> {
-    pub fn write(&self, format: &Scheme) -> String {
+    fn get_builtin_fileset(node: &'b IpFileNode<'a>) -> &'b str {
+        if fileset::is_verilog(node.get_file()) == true {
+            VLOG
+        } else if fileset::is_vhdl(node.get_file()) == true {
+            VHDL
+        } else if fileset::is_systemverilog(node.get_file()) == true {
+            SYSV
+        } else {
+            panic!("unknown file in source file set")
+        }
+    }
+
+    pub fn to_string(&self, format: &Scheme) -> String {
         match &format {
             Scheme::Tsv => match &self {
                 Self::Hdl(node) => {
                     // match on what type of file we have
-                    let source_set = if fileset::is_verilog(node.get_file()) == true {
-                        "VLOG"
-                    } else if fileset::is_vhdl(node.get_file()) == true {
-                        "VHDL"
-                    } else if fileset::is_systemverilog(node.get_file()) == true {
-                        "SYSV"
-                    } else {
-                        panic!("unknown file in source file set")
-                    };
+                    let source_set = Self::get_builtin_fileset(node);
                     format!(
                         "{}\t{}\t{}",
                         source_set,
@@ -102,34 +113,26 @@ impl<'a, 'b> Entry<'a, 'b> {
                 }
                 Self::Auxiliary(key, lib, file) => format!("{}\t{}\t{}", key, lib, file),
             },
-            Scheme::Json => match &self {
-                Self::Hdl(node) => {
-                    let source_set = if fileset::is_verilog(node.get_file()) == true {
-                        "VLOG"
-                    } else if fileset::is_vhdl(node.get_file()) == true {
-                        "VHDL"
-                    } else if fileset::is_systemverilog(node.get_file()) == true {
-                        "SYSV"
-                    } else {
-                        panic!("unknown file in source file set")
-                    };
-                    let entry = JsonEntry {
-                        fileset: source_set.to_string(),
-                        library: node.get_library().to_string(),
-                        filepath: node.get_file().to_string(),
-                        dependencies: node.get_dep_files().clone(),
-                    };
-                    serde_json::to_string_pretty(&entry).unwrap()
+            Scheme::Json => serde_json::to_string_pretty(&self.to_json_entry()).unwrap(),
+        }
+    }
+
+    fn to_json_entry(&self) -> JsonEntry {
+        match &self {
+            Self::Hdl(node) => {
+                let source_set = Self::get_builtin_fileset(node);
+                JsonEntry {
+                    fileset: source_set.to_string(),
+                    library: node.get_library().to_string(),
+                    filepath: node.get_file().to_string(),
+                    dependencies: node.get_dep_files().clone(),
                 }
-                Self::Auxiliary(key, lib, file) => {
-                    let entry = JsonEntry {
-                        fileset: key.to_string(),
-                        library: lib.to_string(),
-                        filepath: file.to_string(),
-                        dependencies: vec![],
-                    };
-                    serde_json::to_string_pretty(&entry).unwrap()
-                }
+            }
+            Self::Auxiliary(key, lib, file) => JsonEntry {
+                fileset: key.to_string(),
+                library: lib.to_string(),
+                filepath: file.to_string(),
+                dependencies: vec![],
             },
         }
     }
@@ -180,18 +183,15 @@ impl<'a, 'b> Blueprint<'a, 'b> {
         // write the data
         let data = match &self.scheme {
             Scheme::Tsv => self.steps.iter().fold(String::new(), |mut acc, i| {
-                acc.push_str(i.write(&self.scheme).as_ref());
+                acc.push_str(i.to_string(&self.scheme).as_ref());
                 acc.push('\n');
                 acc
             }),
             Scheme::Json => {
-                // yea... not my best work but it gets the job done (serialize to str then deserialize back to struct to write as serialized list)
-                let entries: Vec<JsonEntry> = self
-                    .steps
-                    .iter()
-                    .map(|m| serde_json::from_str(&m.write(&self.scheme)).unwrap())
-                    .collect();
-                serde_json::to_string_pretty(&entries).unwrap()
+                let entries: Vec<JsonEntry> =
+                    self.steps.iter().map(|m| m.to_json_entry()).collect();
+                // add a new line because `to_string_pretty` forgets to :)
+                serde_json::to_string_pretty(&entries).unwrap() + "\n"
             }
         };
         fd.write_all(data.as_bytes())

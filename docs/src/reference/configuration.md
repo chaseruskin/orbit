@@ -14,7 +14,7 @@ This design choice was implemented to allow path definitions to be valid across 
 
 Orbit supports multiple levels of configuration. Each level has its own order of precedence. The order of precedence is the following:
 
-1. Local configuration file (current ip's `.orbit/conifg.toml`)
+1. Local configuration file (current ip's `.orbit/config.toml`)
 
 2. Regional configuration files (parent directories of the current working directory)
 

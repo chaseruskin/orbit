@@ -6,29 +6,25 @@
 [![DockerHub](https://img.shields.io/badge/DockerHub-images-important.svg?logo=docker)](https://hub.docker.com/repository/docker/chaseruskin/orbit/general) 
 [![Downloads](https://img.shields.io/github/downloads/chaseruskin/orbit/total.svg)](https://github.com/chaseruskin/orbit/releases)
 
-Orbit is an agile package manager and extensible build tool for hardware description languages (HDL).
+Orbit is a package manager and build system for VHDL, Verilog, and SystemVerilog.
 
 ![](./docs/src/images/architecture.svg)
 
 Orbit introduces a layer of abstraction called __IPs__, which groups related source code files (`.v`, `.sv`, `.vhd`) together within a common directory.
 
-Still wondering what Orbit is and how does it work? Check out the [Topic Overview](https://chaseruskin.github.io/orbit/topic/overview.html) for more details describing Orbit's system architecture and its key concepts.
+Wondering what Orbit is and how it works? Check out the [Topic Overview](https://chaseruskin.github.io/orbit/topic/overview.html) for more details describing Orbit's system architecture and its key concepts.
 
-Curious to learn more about how to use Orbit in your own hardware development workflow? Check out the [User Overview](https://chaseruskin.github.io/orbit/user/overview.html) to see how Orbit can be used to accelerate every stage of the development cycle.
+Curious how to use Orbit in your own hardware development workflow? Check out the [User Overview](https://chaseruskin.github.io/orbit/user/overview.html) to see how Orbit can be used to accelerate every stage of the development cycle.
 
-### Live at the cutting edge of hardware design
-
-The boom of AI and emerging workloads have shown just how fast new advancements can be made in models and algorithms. Today's hardware is no longer good enough to meet the immediate demands of tomorrow's innovations; today's hardware must shift to a more agile development approach. It's time to build tomorrow's hardware, today. It's time to __live at the cutting edge of hardware design.__
-
-### An agile package manager designed to minimize technical debt 
+### An efficient package manager designed to minimize technical debt 
 
 As codebases scale and increase in complexity, it becomes of upmost importance to have the right system in place to efficiently manage the increasing number of resources. Without the right system, the codebase can become bogged down by _technical debt_, leaving you stuck in yesterday's designs.
 
-However, using just any package management system does not guarantee that technical debt is minimized. Poorly-designed package managers will simply shift the technical debt to different resources, while a well-designed package manager will minimize the overall amount of technical debt. With minimal technical debt, you can bring up tomorrow's hardware today. Orbit is __an agile package manager designed to minimize technical debt.__
+However, using just any package management system does not guarantee that technical debt is minimized. Poorly-designed package managers will simply shift the technical debt to different resources, while a well-designed package manager will minimize the overall amount of technical debt. With minimal technical debt, you can bring up tomorrow's hardware today. Orbit is __an efficient package manager designed to minimize technical debt.__
 
-### An extensible build tool designed to support any workflow
+### An extensible build system designed to support any workflow
 
-Hardware development involves many complex processes, from running simulations to generating bitstreams. Orbit simplifies the build process into two stages: planning and execution. Orbit performs the planning of a build by resolving all HDL source code dependencies to produce a single file listing the topologically sorted source file order. From here, Orbit invokes any user-configured target to execute and process the planned list of source files. By allowing users to add their own execution processes, Orbit is __an extensible build tool designed to support any workflow.__
+Hardware development involves many complex processes, from running simulations to generating bitstreams. Orbit simplifies the build process into two stages: planning and execution. Orbit performs the planning of a build by resolving all HDL source code dependencies to produce a single file listing the topologically sorted source file order. From here, Orbit invokes any user-configured target to execute and process the planned list of source files. By allowing users to add their own execution processes, Orbit is __an extensible build system designed to support any workflow.__
 
 ### Free and open source
 
@@ -79,8 +75,7 @@ gates = "2.0.0"
 
 The "Orbit.lock" file is a detailed TOML file automatically maintained by Orbit that stores the complete list of resolved dependencies, including how to get them. This allows anyone to rebuild your project with the exact source code you had as well, even if the source code is distributed across repositories.
 
-
-## Low effort integration
+## Easy code integration
 
 To encourage code reuse and faster development cycles, Orbit includes HDL-specific commands to integrate designs across ips. For example, Orbit can display HDL code snippets of existing design units to be instantiated within your local ip.
 
@@ -121,9 +116,9 @@ or_gate u_or_gate (
 
 Design units written in one language can also have their instantiation code displayed in a different language, such as the SystemVerilog instance of a VHDL entity.
 
-## Extensible build processes
+## Extensible build system
 
-Since Orbit focuses on efficiently managing the HDL source code and minimizing its associated technical debt, users have the power to add their own execution targets to the build process. This is achieved through a two-stage build sequenece, where first Orbit plans the build by generating a single file, called a blueprint, that lists the topologically-sorted order of necessary source files. After planning the build, Orbit invokes the user's target to perform the execution process on the list of source files.
+Since Orbit focuses on efficiently managing the HDL source code and minimizing its associated technical debt, users have the power to add their own execution targets to the build process. This is achieved through a two-stage build sequence, where first Orbit plans the build by generating a single file, called a blueprint, that lists the topologically-sorted order of necessary source files. After planning the build, Orbit invokes the user's target to perform the execution process on the list of source files.
 
 ![](./docs/src/images/dataflow.svg)
 
@@ -156,7 +151,7 @@ Create a target by writing a script that reads Orbit's generated blueprint file 
 
 ## Highlights
 
-What makes Orbit an agile package manager for HDLs? Here are some of its key features:
+Some key features of Orbit are:
 
 - Orbit acts as the intermediary between your source code and backend EDA tools, automating the upkeep process and minimizing technical debt as your codebase evolves over time
 
@@ -190,7 +185,7 @@ What makes Orbit an agile package manager for HDLs? Here are some of its key fea
 
 - Write a target for your preferred EDA tools once, and reuse across projects with Orbit's support for configuration files
 
-And these are only a few of Orbit's features! Download Orbit and read its documentation today to discover everything Orbit provides as an agile package manager for HDLs. 
+And these are only a few of Orbit's features! Download Orbit and read its documentation to discover everything Orbit provides as a package manager and build system for VHDL, Verilog, and SystemVerilog.
 
 ## Installing
 
@@ -200,9 +195,9 @@ Orbit has prebuilt binaries for MacOS, Windows, and Linux. See the [releases pag
 
 Read the [Book of Orbit](https://chaseruskin.github.io/orbit/) for comprehensive documentation composed of tutorials, user guides, topic guides, references, and command manuals.
 
-Orbit brings an agile approach to hardware development that minimizes technical debt through its available commands related to ip integration and build automation:
+Orbit brings a modern approach to hardware development that minimizes technical debt through its available commands related to code management and build automation:
 ```
-Orbit is an hdl package manager and build tool.
+Orbit is an hdl package manager and build system.
 
 Usage:
     orbit [options] [command]

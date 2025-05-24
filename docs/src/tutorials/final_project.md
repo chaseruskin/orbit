@@ -216,4 +216,4 @@ YILINX: Generating bitstream...
 YILINX: Bitstream saved at: target/yilinx/full_add.bit
 ```
 
-Great work! This marks the end to this tutorial series, but the beginning of your experience with Orbit, an agile package manager and extensible build tool for HDLs.
+Great work! This marks the end to this tutorial series, but the beginning of your experience with Orbit, a package manager and build system for HDLs.

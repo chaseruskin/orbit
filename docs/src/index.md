@@ -2,7 +2,7 @@
 
 ![](./images/orbit_logo_128px.png)
 
-Orbit is an agile package manager and extensible build tool for hardware description languages (HDL). Its design is driven by two core principles:
+Orbit is a package manager and build system for VHDL, Verilog, and SystemVerilog. Its design is driven by two core principles:
 
 - Minimize technical debt associated with evolving HDL codebases
 - Tailor to the wide range of users and their possible workflows with a high degree of modularity and extensibility 

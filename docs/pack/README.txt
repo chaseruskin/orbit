@@ -2,7 +2,7 @@
 :: GETTING STARTED WITH ORBIT                               ::
 --------------------------------------------------------------
 
-Orbit is a package manager and build tool for hardware
+Orbit is a package manager and build system for hardware
 description languages. It is a single binary executable
 interfaced through the command-line.
 
@@ -25,8 +25,9 @@ NOTE: For unix, only the Orbit binary is installed. For
 :: MANUAL INSTALLATION     ::
 -----------------------------
 
-Follow the instructions at: 
-https://chaseruskin.github.io/orbit/starting/installing.html.
+Follow the instructions either:
+- online: https://chaseruskin.github.io/orbit/starting/installing.html
+- locally: ./docs/starting/installing.html
 
 -----------------------------
 :: DOCUMENTATION           ::

@@ -1,6 +1,6 @@
 # How Orbit Works
 
-Orbit is an agile package manager and extensible build tool for HDLs.
+Orbit is a package manager and build system for VHDL, Verilog, and SystemVerilog.
 
 ![](./../images/architecture.svg)
 

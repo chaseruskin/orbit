@@ -719,7 +719,7 @@ orbit config ~/.orbit/config.toml --unset env.vivado_path
 # orbit      
 # ------------------------------------------------------------------------------
 [orbit]
-summary = "orbit is an hdl package manager and build tool"
+summary = "orbit is an hdl package manager and build system"
 synopsis = "orbit [options] [command]"
 
 options."--version" = "print version information and exit"

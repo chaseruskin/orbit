@@ -16,7 +16,7 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"Orbit is an hdl package manager and build tool.
+pub const HELP: &str = r#"Orbit is an hdl package manager and build system.
 
 Usage:
     orbit [options] [command]

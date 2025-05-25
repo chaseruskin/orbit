@@ -21,6 +21,7 @@ use std::path::PathBuf;
 
 use crate::util::anyerror::{AnyError, CodeFault, Fault};
 use crate::util::graphmap::GraphMap;
+use crate::warn;
 use std::hash::Hash;
 use tempfile::tempdir;
 
@@ -525,41 +526,70 @@ impl<'a> IpNode<'a> {
             }
         }
         // update the slot with a transformed IP manifest
-        self.transform = Some(install_dst(&temp_ip, &cache_path, &lut));
+        self.transform = Some(install_dst(
+            &temp_ip,
+            &cache_path,
+            &lut,
+            self.original.get_mapping().is_relative(),
+        ));
     }
 }
 
 /// Creates a ip manifest that undergoes dynamic symbol transformation.
 ///
 /// Returns the DST ip for reference.
-fn install_dst(source_ip: &Ip, root: &PathBuf, mapping: &HashMap<LangIdentifier, String>) -> Ip {
+fn install_dst(
+    source_ip: &Ip,
+    root: &PathBuf,
+    mapping: &HashMap<LangIdentifier, String>,
+    is_rel: bool,
+) -> Ip {
     // compute the new checksum on the new ip and its transformed hdl files
     let sum = Ip::compute_checksum(source_ip.get_root());
 
     // determine the cache slot name
-    let cache_path = {
-        let cache_slot = CacheSlot::new(
+    let cache_slot = if is_rel == true {
+        warn!(
+            "using dynamic cache slot entry for relative dependency {}",
+            source_ip.get_man().get_ip().get_name()
+        );
+        CacheSlot::new_rel(
+            source_ip.get_uuid(),
+            source_ip.get_man().get_ip().get_version(),
+        )
+    } else {
+        CacheSlot::new(
             source_ip.get_uuid(),
             source_ip.get_man().get_ip().get_version(),
             &sum,
-        );
-        root.join(cache_slot.to_string())
+        )
     };
+    let cache_path = root.join(cache_slot.to_string());
 
     // check if already exists and return early with manifest if exists
-    if cache_path.exists() == true {
+    if cache_path.exists() == true && is_rel == false {
         return Ip::load(cache_path, false, false).unwrap();
     }
 
-    // copy the source ip to the new location
-    // println!("HERE!");
-    crate::util::filesystem::copy(
-        &source_ip.get_root(),
-        &cache_path,
-        true,
-        Some(source_ip.get_files_to_keep()),
-    )
-    .unwrap();
+    if is_rel == false {
+        // copy the source ip to the new location
+        crate::util::filesystem::copy(
+            &source_ip.get_root(),
+            &cache_path,
+            true,
+            Some(source_ip.get_files_to_keep()),
+        )
+        .unwrap();
+    } else {
+        // perform a "smart" copy to the location for relative DST
+        crate::util::filesystem::smart_copy(
+            &source_ip.get_root(),
+            &cache_path,
+            true,
+            Some(source_ip.get_files_to_keep()),
+        )
+        .unwrap();
+    }
 
     // clean up temporary directory
     std::fs::remove_dir_all(&source_ip.get_root()).unwrap();

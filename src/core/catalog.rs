@@ -134,19 +134,24 @@ impl IpLevel {
         }
     }
 
-    pub fn add_install(&mut self, m: Ip) -> () {
+    pub fn add_install(&mut self, m: Ip) -> bool {
         // only add if not a DST
         if m.is_dynamic() == false {
             self.installs.push(m);
+            true
+        } else {
+            false
         }
     }
 
-    pub fn add_download(&mut self, m: Ip) -> () {
+    pub fn add_download(&mut self, m: Ip) -> bool {
         self.downloads.push(m);
+        true
     }
 
-    pub fn add_available(&mut self, m: Ip) -> () {
+    pub fn add_available(&mut self, m: Ip) -> bool {
         self.available.push(m);
+        true
     }
 
     pub fn get_installations(&self) -> &Vec<Ip> {
@@ -472,7 +477,7 @@ impl<'a> Catalog<'a> {
     fn detect(
         mut self,
         path: &PathBuf,
-        add: &dyn Fn(&mut IpLevel, Ip) -> (),
+        add: &dyn Fn(&mut IpLevel, Ip) -> bool,
         lvl: IpState,
     ) -> Result<Self, Fault> {
         match lvl {
@@ -482,23 +487,36 @@ impl<'a> Catalog<'a> {
             IpState::Unknown => Ok(Vec::new()),
         }?
         .into_iter()
+        // get the UUID for each manifest/ip that was collected from the path finding
         .for_each(|ip| match self.inner.get_mut(&ip.get_uuid()) {
-            Some(lvl) => add(lvl, ip),
-            None => {
-                let pkgpart = ip.get_man().get_ip().get_name();
-                // add this to the list of uuids for this name
-                match self.mappings.get_mut(pkgpart) {
-                    Some(ids) => ids.push(ip.get_uuid().clone()),
-                    None => {
-                        self.mappings
-                            .insert(pkgpart.clone(), vec![ip.get_uuid().clone()]);
-                    }
-                }
-                let pkgid = ip.get_uuid().clone();
-                let mut lvl = IpLevel::new();
-                add(&mut lvl, ip);
-                self.inner.insert(pkgid, lvl);
+            // the UUID already exists in the catalog, so just add it in at its level
+            Some(lvl) => {
+                add(lvl, ip);
                 ()
+            }
+            // the UUID does not already exist in the catalog, so make a mapping
+            None => {
+                // verify the add was successful
+                let mut lvl = IpLevel::new();
+                let did_add = add(&mut lvl, ip);
+                // create a mapping for this uuid and insert into the catalog
+                match did_add {
+                    true => {
+                        let ip = lvl.get(true, true, &AnyVersion::Latest).unwrap();
+                        let pkgpart = ip.get_man().get_ip().get_name();
+                        // add this to the list of uuids for this name
+                        match self.mappings.get_mut(pkgpart) {
+                            Some(ids) => ids.push(ip.get_uuid().clone()),
+                            None => {
+                                self.mappings
+                                    .insert(pkgpart.clone(), vec![ip.get_uuid().clone()]);
+                            }
+                        }
+                        let pkgid = ip.get_uuid().clone();
+                        self.inner.insert(pkgid, lvl);
+                    }
+                    false => (),
+                }
             }
         });
         Ok(self)
@@ -588,6 +606,11 @@ impl CacheSlot {
     /// Combines the various components of a cache slot name into a `CacheSlot`.
     pub fn new(uuid: &Uuid, version: &Version, checksum: &Sha256Hash) -> Self {
         Self(uuid.clone(), version.clone(), checksum.to_string_short())
+    }
+
+    /// Creates a cache slot entry for a dynamic entry formed from a relative dependency
+    pub fn new_rel(uuid: &Uuid, version: &Version) -> Self {
+        Self(uuid.clone(), version.clone(), "relative".to_string())
     }
 
     /// Attempts to deconstruct a [String] into the components of a [CacheSlot].

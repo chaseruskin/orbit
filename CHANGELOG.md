@@ -26,6 +26,8 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ### Fixes
 - Blueprint generation is now idempotent (same topological order will be produced when running the build process repeatedly with no changes to the environment/project)
 - Safely produces error message instead of panic when trying to install an ip without specifying the ip's name and there exists zero manifests in the downloaded directory
+- Correctly skips local dependencies from trying to install when missing from catalog
+- Adds better handling and issues warning for case when local depedency faces secondary effects of DST and performs a smart copy into the cache for the modifications to be applied to resolve DST
 
 ## 0.25.1
 

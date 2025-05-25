@@ -356,6 +356,138 @@ pub fn copy(
     Ok(())
 }
 
+/// Recursively copies files from `source` to `target` directory in a "smart" way.
+///
+/// Assumes `target` directory does not already exist. Ignores the `.git/` folder
+/// if `ignore_git` is set to `true`. Respects `.gitignore` files.
+///
+/// If immutable is `true`, then read_only permissions will be enabled, else the files
+/// will be mutable. Silently skips files that could be changed with mutability/permissions.
+///
+/// - If source and destination files both exist:
+///     - Do nothing if the contents are the same
+///     - Write new contents if they differ
+/// - If source has a file that destination does not:
+///     - Create file and write contents
+/// - If destination as a file that source does not:
+///     - Remove the file from destination
+pub fn smart_copy(
+    source: &PathBuf,
+    target: &PathBuf,
+    minimal: bool,
+    _keep: Option<HashSet<PathBuf>>,
+) -> Result<(), Fault> {
+    // create missing directories to `target`
+    if target.exists() == false {
+        std::fs::create_dir_all(&target)?;
+    }
+    // gather list of paths to copy
+    let mut from_paths = Vec::new();
+
+    let start_path = source.clone();
+
+    let mut walker = WalkBuilder::new(&source);
+    walker.hidden(minimal);
+    if minimal == true {
+        walker.filter_entry(move |f| {
+            // Always ignore folder with CACHEDIR.TAG file
+            if f.path().is_dir() && f.path().join(CACHE_TAG_FILE).exists() {
+                false
+            // Always ignore folders with another Orbit.toml manifest file
+            } else if f.path() != start_path.as_path()
+                && f.path().is_dir()
+                && f.path().join(IP_MANIFEST_FILE).exists() == true
+            {
+                false
+            } else {
+                true
+            }
+        });
+    }
+    let walk = walker.build();
+    for result in walk {
+        match result {
+            Ok(entry) => from_paths.push(entry.path().to_path_buf()),
+            Err(_) => (),
+        }
+    }
+
+    // create all missing directories
+    for from in from_paths.iter().filter(|f| f.is_dir()) {
+        // replace common `source` path with `target` path
+        let to = target.join(remove_base(&source, from));
+        if to.exists() == false {
+            std::fs::create_dir_all(&to)?;
+        }
+    }
+
+    // create all missing files
+    for from in from_paths.iter().filter(|f| f.is_file()) {
+        // grab the parent
+        if let Some(parent) = from.parent() {
+            let to = target
+                .join(remove_base(&source, &parent.to_path_buf()))
+                .join(from.file_name().unwrap());
+            // println!("copying {:?} -> {:?}", &from, &to);
+            if to.exists() == false {
+                std::fs::copy(from, &to)?;
+            // perform comparison on existing files that should exist
+            } else {
+                let from_bytes = {
+                    let mut from_fd = std::fs::File::open(&from)?;
+                    let mut buf = Vec::new();
+                    from_fd.read_to_end(&mut buf)?;
+                    buf
+                };
+                let to_bytes = {
+                    let mut to_fd = std::fs::File::open(&to)?;
+                    let mut buf = Vec::new();
+                    to_fd.read_to_end(&mut buf)?;
+                    buf
+                };
+                // overwrite the contents
+                if to_bytes != from_bytes {
+                    std::fs::copy(from, &to)?;
+                }
+            }
+        }
+    }
+    // remove all empty directories
+    for from in from_paths.iter().rev().filter(|f| f.is_dir()) {
+        // replace common `source` path with `target` path
+        let to = target.join(remove_base(&source, from));
+        // check if directory is empty
+        if to.read_dir()?.count() == 0 {
+            std::fs::remove_dir(to)?;
+        }
+    }
+
+    // gather list of paths that already exist in destination
+    let mut to_paths = Vec::new();
+    let mut walker = WalkBuilder::new(&target);
+    walker.hidden(minimal);
+    let walk = walker.build();
+    for result in walk {
+        match result {
+            Ok(entry) => to_paths.push(entry.path().to_path_buf()),
+            Err(_) => (),
+        }
+    }
+    // println!("{:#?}", to_paths);
+    // remove stale files and directories that exit in destination but not in source
+    for to in to_paths.iter().filter(|p| p != &target) {
+        let mirrored_src = source.join(remove_base(&target, to));
+        if from_paths.contains(&mirrored_src) == false && to.exists() {
+            if to.is_file() {
+                std::fs::remove_file(to)?;
+            } else if to.is_dir() {
+                std::fs::remove_dir_all(to)?;
+            }
+        }
+    }
+    Ok(())
+}
+
 /// This function creates a universally accepted syntax for a full absolute path.
 ///
 /// Begins with a leading forward slash (`/`) and uses forward slashes as component separators.

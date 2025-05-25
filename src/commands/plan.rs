@@ -700,8 +700,8 @@ pub fn download_missing_deps(
 pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) -> Result<(), Fault> {
     // fill in the catalog with missing modules according the lock file if available
     for entry in lf.inner() {
-        // skip the current project's IP entry
-        if entry.matches_target(&le, &catalog) {
+        // skip the current project's IP entry or any relative listings
+        if entry.matches_target(&le, &catalog) || entry.is_relative() {
             continue;
         }
 
@@ -710,6 +710,7 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
         // try to use the lock file to fill in missing pieces
         match catalog.inner().get(entry.get_uuid()) {
             Some(status) => {
+                // println!("{:?} has status in catalog", entry);
                 // find this IP to read its dependencies
                 match status.get_install(&ver) {
                     // no action required (already installed)
@@ -750,10 +751,7 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                 }
             }
             None => {
-                // check if its a relative ip
-                if entry.is_relative() == false {
-                    return Err(Box::new(Error::EntryUnknownIp(entry.to_ip_spec())));
-                }
+                return Err(Box::new(Error::EntryUnknownIp(entry.to_ip_spec())));
             }
         }
     }

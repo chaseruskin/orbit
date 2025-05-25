@@ -58,6 +58,7 @@ impl Subcommand<Context> for Lock {
             .downloads(c.get_downloads_path())?;
 
         // TODO: recreate the ip graph from the lockfile, then read each installation
+        // NOTE: Is this still a TODO...?
         // see Install::install_from_lock_file
 
         // this code is only ran if the lock file matches the manifest and we aren't force to recompute
@@ -82,6 +83,7 @@ impl Subcommand<Context> for Lock {
             catalog = catalog.downloads(c.get_downloads_path())?;
 
             plan::install_missing_deps(&lf, &le, &catalog)?;
+
             // recollect the installations to update the catalog for dependency graphing
             catalog = catalog.installations(c.get_cache_path())?;
         }

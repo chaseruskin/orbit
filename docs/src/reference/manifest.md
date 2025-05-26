@@ -21,6 +21,8 @@ Every manifest file consists of the following sections:
     - [channels](#the-channels-field) - The channels to update when publishing the ip.
     - [exclude](#the-exclude-field) - Files to exclude during file discovery.
     - [readme](#the-readme-field) - The path to the README file.
+    - [license](#the-license-and-license-file-fields) - The ip license.
+    - [license-file](#the-license-and-license-file-fields) - The path to the text of the license.
     - [[metadata]](#the-metadata-section) - An unchecked section for custom fields.
 - [[dependencies]](#the-dependencies-section) - Ip dependencies.
 - [[dev-dependencies]](#the-dev-dependencies-section) - Ip dependencies only used for ongoing development.
@@ -193,6 +195,30 @@ The `readme` field should be the path to a file in the ip root (relative to this
 [ip]
 # ...
 readme = "README.md"
+```
+
+### The `license` and `license-file` fields
+
+The `license` field contains the name of the software license that the package is released under. The `license-file` field contains the path to a file containing the text of the license (relative to this Orbit.toml).
+
+Orbit interprets the `license` field as an [SPDX 2.3 license expression](https://spdx.github.io/spdx-spec/v2.3/SPDX-license-expressions/). The name must be a known license from the [SPDX license list 3.26](https://spdx.org/licenses/). See the SPDX site for more information.
+
+SPDX license expressions support AND and OR operators to combine multiple licenses.
+
+``` toml
+[ip]
+# ...
+license = "MIT OR Apache-2.0"
+```
+
+Using OR indicates the user may choose either license. Using AND indicates the user must comply with both licenses simultaneously. The WITH operator indicates a license with a special exception.
+
+If an ip is using a nonstandard license, then the `license-file` field may be specified in lieu of the `license` field.
+
+``` toml
+[ip]
+# ...
+license-file = "LICENSE.txt"
 ```
 
 ### The `[metadata]` section

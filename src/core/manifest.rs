@@ -41,6 +41,69 @@ pub type IpName = PkgPart;
 pub type IpVersion = crate::core::version::Version;
 pub type DepVersion = crate::core::version::PartialVersion;
 
+use spdx;
+
+#[derive(Debug, PartialEq)]
+pub struct License(spdx::Expression);
+
+impl License {
+    pub fn get(&self) -> &spdx::Expression {
+        &self.0
+    }
+}
+
+impl std::str::FromStr for License {
+    type Err = spdx::ParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(License(spdx::Expression::from_str(s)?))
+    }
+}
+
+impl Display for License {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.to_string())
+    }
+}
+
+impl serde::Serialize for License {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for License {
+    fn deserialize<D>(deserializer: D) -> Result<License, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        struct LayerVisitor;
+
+        impl<'de> Visitor<'de> for LayerVisitor {
+            type Value = License;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("string")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                match License::from_str(value) {
+                    Ok(c) => Ok(c),
+                    Err(e) => Err(E::custom(e.to_string())),
+                }
+            }
+        }
+
+        deserializer.deserialize_str(LayerVisitor)
+    }
+}
+
 #[derive(Serialize, Debug, PartialEq)]
 #[serde(deny_unknown_fields, transparent)]
 pub struct Dependency {
@@ -346,6 +409,8 @@ impl Manifest {
                 readme: None,
                 exclude: None,
                 authors: None,
+                license: None,
+                license_file: None,
                 metadata: HashMap::new(),
             },
             dependencies: Dependencies::new(),
@@ -531,6 +596,11 @@ pub struct Package {
     exclude: Option<Vec<String>>,
     /// Filepath to the project's README.
     readme: Option<PathBuf>,
+    /// The ip's license
+    license: Option<License>,
+    /// The path to the text for the license.
+    #[serde(rename = "license-file")]
+    license_file: Option<PathBuf>,
     /// Ignore this field and never use it for any processing
     #[serde(skip_serializing_if = "map_is_empty", default)]
     metadata: HashMap<String, toml::Value>,
@@ -739,6 +809,17 @@ mod test {
             let man: Manifest = toml::from_str(EX3).unwrap();
             let text = man.to_string();
             assert_eq!(text, EX3);
+        }
+
+        #[test]
+        fn ut_license_parse() {
+            let field = "CERN-OHL-S-2.0";
+            let lic = License::from_str(field).unwrap();
+            assert_eq!(
+                lic.get()
+                    .evaluate(|req| req.license.id().unwrap().is_osi_approved()),
+                true
+            );
         }
 
         #[test]

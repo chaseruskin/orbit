@@ -191,6 +191,8 @@
 <li><a href="#the-channels-field">channels</a> - The channels to update when publishing the ip.</li>
 <li><a href="#the-exclude-field">exclude</a> - Files to exclude during file discovery.</li>
 <li><a href="#the-readme-field">readme</a> - The path to the README file.</li>
+<li><a href="#the-license-and-license-file-fields">license</a> - The ip license.</li>
+<li><a href="#the-license-and-license-file-fields">license-file</a> - The path to the text of the license.</li>
 <li><a href="#the-metadata-section">[metadata]</a> - An unchecked section for custom fields.</li>
 </ul>
 </li>
@@ -304,6 +306,20 @@ exclude = [
 <pre><code class="language-toml">[ip]
 # ...
 readme = "README.md"
+</code></pre>
+<h3 id="the-license-and-license-file-fields"><a class="header" href="#the-license-and-license-file-fields">The <code>license</code> and <code>license-file</code> fields</a></h3>
+<p>The <code>license</code> field contains the name of the software license that the package is released under. The <code>license-file</code> field contains the path to a file containing the text of the license (relative to this Orbit.toml).</p>
+<p>Orbit interprets the <code>license</code> field as an <a href="https://spdx.github.io/spdx-spec/v2.3/SPDX-license-expressions/">SPDX 2.3 license expression</a>. The name must be a known license from the <a href="https://spdx.org/licenses/">SPDX license list 3.26</a>. See the SPDX site for more information.</p>
+<p>SPDX license expressions support AND and OR operators to combine multiple licenses.</p>
+<pre><code class="language-toml">[ip]
+# ...
+license = "MIT OR Apache-2.0"
+</code></pre>
+<p>Using OR indicates the user may choose either license. Using AND indicates the user must comply with both licenses simultaneously. The WITH operator indicates a license with a special exception.</p>
+<p>If an ip is using a nonstandard license, then the <code>license-file</code> field may be specified in lieu of the <code>license</code> field.</p>
+<pre><code class="language-toml">[ip]
+# ...
+license-file = "LICENSE.txt"
 </code></pre>
 <h3 id="the-metadata-section"><a class="header" href="#the-metadata-section">The <code>[metadata]</code> section</a></h3>
 <p>Any type of TOML entry is allowed in this section, as Orbit ignores this section.</p>

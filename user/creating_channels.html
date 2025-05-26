@@ -234,8 +234,7 @@ root = "./index"
 </ol>
 <pre><code class="language-toml">[[channel]]
 # ...
-sync.command = "git"
-sync.args = ["pull"]
+sync.command = ["git", "pull"]
 </code></pre>
 <ol start="6">
 <li>Create a Python script called <code>publish.py</code> to handle automatically adding, committing, and pushing published ips:</li>
@@ -268,8 +267,7 @@ if rc != 0:
 </ol>
 <pre><code class="language-toml">[[channel]]
 # ...
-post.command = "python3"
-post.args = ["publish.py"]
+post.command = ["python", "publish.py"]
 </code></pre>
 <ol start="8">
 <li>

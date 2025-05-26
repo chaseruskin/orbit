@@ -198,11 +198,10 @@
 <pre><code class="language-toml">[[target]]
 name = "tar"
 description = "My target description"
-command = "python3"
-args = ["tar.py"]
+command = ["python", "tar.py"]
 </code></pre>
-<p>Calling the <code>tar</code> target at the start of a build process will now execute the command <code>python3 tar.py</code> for the execution stage.</p>
-<p>Although the execution stage spawns the subprocess in the target's output directoy, any relative file paths defined in the <code>args</code> field are relative to the configuration file that defines them.</p>
+<p>Calling the <code>tar</code> target at the start of a build process will now execute the command <code>python tar.py</code> for the execution stage.</p>
+<p>Although the execution stage spawns the subprocess in the target's output directoy, any relative file paths defined in the <code>command</code> field are relative to the configuration file that defines them, if and only if it is a path that exists in relation to the configuration file's parent directory.</p>
 <h2 id="reading-a-blueprint"><a class="header" href="#reading-a-blueprint">Reading a blueprint</a></h2>
 <p>This guide walks through how to capture the data written to the blueprint from the planning stage in a target script.</p>
 <ol>
@@ -258,8 +257,7 @@ with open(os.environ['ORBIT_BLUEPRINT']) as bp:
 <pre><code class="language-toml">[[target]]
 name = "tar"
 description = "My target description"
-command = "python3"
-args = ["tar.py"]
+command = ["python", "tar.py"]
 # Add a custom fileset
 fileset.A-SET = "*.txt"
 </code></pre>
@@ -280,8 +278,7 @@ fileset.A-SET = "*.txt"
 <pre><code class="language-toml">[[target]]
 name = "tar"
 description = "My target description"
-command = "python3"
-args = ["tar.py"]
+command = ["python", "tar.py"]
 # Add a custom recursive fileset
 fileset.C-SET = { patterns = ["*.c"], recursive = true }
 </code></pre>

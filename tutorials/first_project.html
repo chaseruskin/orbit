@@ -337,8 +337,7 @@ print('YILINX:','Bitstream saved at: target/yilinx/fpga.bit')
 <pre><code class="language-toml">[[target]]
 name = "yilinx"
 description = "Generate bitstreams for Yilinx FPGAs"
-command = "python"
-args = ["yilinx.py"]
+command = ["python", "yilinx.py"]
 </code></pre>
 <h3 id="calling-a-target"><a class="header" href="#calling-a-target">Calling a target</a></h3>
 <pre><code>$ orbit build --target yilinx

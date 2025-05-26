@@ -185,9 +185,8 @@
 <pre><code class="language-toml">[[protocol]]
 name = "gitit"
 summary = "Access packages through git to handle remote repositories"
+command = ["git", "clone", "-b", "{{orbit.ip.version}}", "{{orbit.ip.source}}"]
 patterns = ["*.git"]
-command = "git"
-args = ["clone", "-b", "{{ orbit.ip.version }}", "{{ orbit.ip.source }}"]
 </code></pre>
 <p>This protocol calls <code>git</code> and clones from the ip's URL while checking out the branch/tag that matches the ip's version number. These values are resolved at runtime by Orbit through variable substitution.</p>
 <p>This protocol only picks up source URLs that match the <code>*.git</code> glob pattern. If a custom protocol does not define a <code>patterns</code> field for its configured entry, then the protocol will be pick up all source URLs.</p>

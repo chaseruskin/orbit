@@ -174,9 +174,19 @@
 <blockquote>
 <p><strong>Note:</strong> The configuration's file name is "config.toml", with respect to case-sensitivity.</p>
 </blockquote>
-<h2 id="paths"><a class="header" href="#paths">Paths</a></h2>
-<p>When a field is expected to be a file system path, Orbit has the ability to resolve relative paths. The path is determined in relation to the currently processed <code>config.toml</code>'s parent directory.</p>
+<h2 id="config-relative-paths"><a class="header" href="#config-relative-paths">Config-relative paths</a></h2>
+<p>Paths in config files may be absolute, relative, or a bare name without any path separators. Paths for executables without a path separator will use the <code>PATH</code> environment variable to search for the executable. Paths for non-executables will be relative to where the config value is defined.</p>
+<p>In particular, the rules are:</p>
+<ul>
+<li>For environment variables, paths are relative to the current working directory.</li>
+<li>For config values loaded using <code>orbit config</code>, paths are left unresolved and stored as-is in the config file.</li>
+<li>For config files, paths are relative to the parent directory of the directory where the config files were defined.</li>
+</ul>
 <p>This design choice was implemented to allow path definitions to be valid across file systems when sharing configurations. It is recommended to use relative paths when setting a field's value as a path in a <code>config.toml</code>.</p>
+<h2 id="executable-paths-with-arguments"><a class="header" href="#executable-paths-with-arguments">Executable paths with arguments</a></h2>
+<p>Some Orbit commands invoke external programs, which can be configured as a path and some number of arguments.</p>
+<p>The value may be an array of strings like <code>['/path/to/program', 'somearg']</code> or a space-separated string like <code>'/path/to/program somearg'</code>. If the path to the executable contains a space, the list form must be used.</p>
+<p>If Orbit is passing other arguments to the program such as a path to open or run, they will be passed after the last specified argument in the value of an option of this format. If the specified program does not have path separators, Orbit will search <code>PATH</code> for its executable.</p>
 <h2 id="hierarchical-structure"><a class="header" href="#hierarchical-structure">Hierarchical structure</a></h2>
 <p>Orbit supports multiple levels of configuration. Each level has its own order of precedence. The order of precedence is the following:</p>
 <ol>
@@ -235,7 +245,6 @@
 <li><a href="#the-name-field">name</a> - The name of the target.</li>
 <li><a href="#the-description-field">description</a> - A short description of the target.</li>
 <li><a href="#the-command-field">command</a> - The command to execute the target.</li>
-<li><a href="#the-args-field">args</a> - Arguments to pass to the command.</li>
 <li><a href="#the-plans-field">plans</a> - The list of supported blueprint file formats.</li>
 <li><a href="#the-build-field">build</a> - Enable or disable target invocation for the build subcommand.</li>
 <li><a href="#the-test-field">test</a> - Enable or disable target invocation for the test subcommand.</li>
@@ -248,7 +257,6 @@
 <li><a href="#the-description-field">description</a> - A short description of the protocol.</li>
 <li><a href="#the-patterns-field">patterns</a> - String patterns to match an ip's URL.</li>
 <li><a href="#the-command-field">command</a> - The command to execute the protocol.</li>
-<li><a href="#the-args-field">args</a> - Arguments to pass to the command.</li>
 </ul>
 </li>
 <li><a href="#the-channel-array">[[channel]]</a> - Define a channel.
@@ -256,12 +264,9 @@
 <li><a href="#the-name-field">name</a> - The name of the channel.</li>
 <li><a href="#the-description-field">description</a> - A short description of the channel.</li>
 <li><a href="#the-root-field">root</a> - The directory where the channel exists.</li>
-<li><a href="#the-command-field">sync.command</a> - The command to execute when synchronizing the channel.</li>
-<li><a href="#the-args-field">sync.args</a> - Arguments to pass to the command during synchronization.</li>
-<li><a href="#the-command-field">pre.command</a> - The command to execute immediately before launch.</li>
-<li><a href="#the-command-field">pre.args</a> - Arguments to pass to the command immediately before launch.</li>
-<li><a href="#the-command-field">post.command</a> - The command to execute immediately after launch.</li>
-<li><a href="#the-args-field">post.args</a> - Arguments to pass to the command immediately after launch.</li>
+<li><a href="#the-command-field">sync.command</a> - The command to execute to synchronize the channel with the internet.</li>
+<li><a href="#the-command-field">pre.command</a> - The command to execute immediately before the channel's publishing process.</li>
+<li><a href="#the-command-field">post.command</a> - The command to execute immediately after the channel's publishing process.</li>
 </ul>
 </li>
 </ul>
@@ -382,18 +387,12 @@ name = "dump-blueprint"
 description = "Print the blueprint contents to the screen"
 </code></pre>
 <h3 id="the-command-field"><a class="header" href="#the-command-field">The <code>command</code> field</a></h3>
-<p>The <code>command</code> entry for a target is used to specify what program to run for the execution stage of the build process.</p>
+<p>The <code>command</code> entry for a target is a string or an array of strings (<a href="#executable-paths-with-arguments">program path with args</a>) used to specify the external program and additional arguments (if they exist) to run for the execution stage of the build process.</p>
 <pre><code class="language-toml">[[target]]
 # ...
-command = "cat"
+command = ["cat", "blueprint.tsv"]
 </code></pre>
 <p>This field is required when configuring a target.</p>
-<h3 id="the-args-field"><a class="header" href="#the-args-field">The <code>args</code> field</a></h3>
-<p>The optional <code>args</code> entry is an array of strings that are passed to the program when it runs during the execution stage of the build process. Relative file paths included in this value are considered relative to the configuration file that defines this entry.</p>
-<pre><code class="language-toml">[[target]]
-# ...
-args = ["blueprint.tsv"]
-</code></pre>
 <p>This field supports <a href="./../topic/swapping.html"><em>string swapping</em></a>.</p>
 <h3 id="the-plans-field"><a class="header" href="#the-plans-field">The <code>plans</code> field</a></h3>
 <p>The optional <code>plans</code> entry is an array of strings that specify which blueprint file types are supported by the target.</p>
@@ -447,9 +446,12 @@ fileset.PYF = { patterns = ["*.py", "*.py3"], recursive = true }
 patterns = ["*.git"]
 </code></pre>
 <h3 id="the-command-field-1"><a class="header" href="#the-command-field-1">The <code>command</code> field</a></h3>
-<p>See <a href="#the-target-array">[target]</a>'s definition of <a href="#the-command-field"><code>command</code></a>.</p>
-<h3 id="the-args-field-1"><a class="header" href="#the-args-field-1">The <code>args</code> field</a></h3>
-<p>See <a href="#the-target-array">[target]</a>'s definition of <a href="#the-args-field"><code>args</code></a>.</p>
+<p>The <code>command</code> entry for a protocol is a string or an array of strings (<a href="#executable-paths-with-arguments">program path with args</a>) used to specify the external program and additional arguments (if they exist) to run for the download phase of the installation process.</p>
+<pre><code class="language-toml">[[protocol]]
+# ...
+command = ["git", "clone", "{{orbit.ip.source}}", "-b", "{{orbit.ip.version}}"]
+</code></pre>
+<p>This field is required when configuring a protocol.</p>
 <p>This field supports <a href="./../topic/swapping.html"><em>string swapping</em></a>.</p>
 <h3 id="the-channel-array"><a class="header" href="#the-channel-array">The <code>[[channel]]</code> array</a></h3>
 <p>The <code>[[channel]]</code> array lists user-defined channels for tracking published ips. Each channel must exist under its own <code>[[channel]]</code> header.</p>
@@ -465,20 +467,29 @@ root = "./index"
 </code></pre>
 <p>If this entry is not defined, the default root directory for a channel is <code>.</code>, the directory where the configuration file exists.</p>
 <h3 id="the-synccommand-field"><a class="header" href="#the-synccommand-field">The <code>sync.command</code> field</a></h3>
-<p>See <a href="#the-target-array">[target]</a>'s definition of <a href="#the-command-field"><code>command</code></a>.</p>
-<h3 id="the-syncargs-field"><a class="header" href="#the-syncargs-field">The <code>sync.args</code> field</a></h3>
-<p>See <a href="#the-target-array">[target]</a>'s definition of <a href="#the-args-field"><code>args</code></a>.</p>
-<p>This field supports <a href="./../topic/swapping.html"><em>string swapping</em></a></p>
+<p>The <code>sync.command</code> entry for a channel's sync hook is a string or an array of strings (<a href="#executable-paths-with-arguments">program path with args</a>) used to specify the external program and additional arguments (if they exist) to run to synchronize the channel with the latest changes from the internet.</p>
+<pre><code class="language-toml">[[channel]]
+# ...
+sync.command = ["git", "pull"]
+</code></pre>
+<p>This field is optional when configuring a channel.</p>
+<p>This field supports <a href="./../topic/swapping.html"><em>string swapping</em></a>.</p>
 <h3 id="the-precommand-field"><a class="header" href="#the-precommand-field">The <code>pre.command</code> field</a></h3>
-<p>See <a href="#the-target-array">[target]</a>'s definition of <a href="#the-command-field"><code>command</code></a>.</p>
-<h3 id="the-preargs-field"><a class="header" href="#the-preargs-field">The <code>pre.args</code> field</a></h3>
-<p>See <a href="#the-target-array">[target]</a>'s definition of <a href="#the-args-field"><code>args</code></a>.</p>
-<p>This field supports <a href="./../topic/swapping.html"><em>string swapping</em></a></p>
+<p>The <code>pre.command</code> entry for a channel's pre-publish hook is a string or an array of strings (<a href="#executable-paths-with-arguments">program path with args</a>) used to specify the external program and additional arguments (if they exist) to run before Orbit copies an ip's metadata into the channel during the publishing process.</p>
+<pre><code class="language-toml">[[channel]]
+# ...
+pre.command = ["git", "pull"]
+</code></pre>
+<p>This field is optional when configuring a channel.</p>
+<p>This field supports <a href="./../topic/swapping.html"><em>string swapping</em></a>.</p>
 <h3 id="the-postcommand-field"><a class="header" href="#the-postcommand-field">The <code>post.command</code> field</a></h3>
-<p>See <a href="#the-target-array">[target]</a>'s definition of <a href="#the-command-field"><code>command</code></a>.</p>
-<h3 id="the-postargs-field"><a class="header" href="#the-postargs-field">The <code>post.args</code> field</a></h3>
-<p>See <a href="#the-target-array">[target]</a>'s definition of <a href="#the-args-field"><code>args</code></a>.</p>
-<p>This field supports <a href="./../topic/swapping.html"><em>string swapping</em></a></p>
+<p>The <code>post.command</code> entry for a channel's post-publish hook is a string or an array of strings (<a href="#executable-paths-with-arguments">program path with args</a>) used to specify the external program and additional arguments (if they exist) to run after Orbit copies an ip's metadata into the channel during the publishing process.</p>
+<pre><code class="language-toml">[[channel]]
+# ...
+post.command = ["git", "commit", "-am", "Publishes {{orbit.ip.name}} v{{orbit.ip.version}}"]
+</code></pre>
+<p>This field is optional when configuring a channel.</p>
+<p>This field supports <a href="./../topic/swapping.html"><em>string swapping</em></a>.</p>
 
                     </main>
 

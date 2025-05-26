@@ -48,6 +48,7 @@
     - [JSON Output](./reference/json.md)
     - [Glob Patterns](./reference/glob_patterns.md)
     - [Command Line](./reference/command_line.md)
+    - [Known Limitations](./reference/limitations.md)
 
 - [Commands](./commands/commands.md)
     - [orbit new](./commands/new.md) 

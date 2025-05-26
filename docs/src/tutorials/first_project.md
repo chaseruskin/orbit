@@ -202,8 +202,7 @@ Filename: .orbit/config.toml
 [[target]]
 name = "yilinx"
 description = "Generate bitstreams for Yilinx FPGAs"
-command = "python"
-args = ["yilinx.py"]
+command = ["python", "yilinx.py"]
 ```
 
 ### Calling a target

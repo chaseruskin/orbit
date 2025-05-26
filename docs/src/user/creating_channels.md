@@ -61,8 +61,7 @@ root = "./index"
 ``` toml
 [[channel]]
 # ...
-sync.command = "git"
-sync.args = ["pull"]
+sync.command = ["git", "pull"]
 ```
 
 6. Create a Python script called `publish.py` to handle automatically adding, committing, and pushing published ips:
@@ -95,8 +94,7 @@ if rc != 0:
 ``` toml
 [[channel]]
 # ...
-post.command = "python3"
-post.args = ["publish.py"]
+post.command = ["python", "publish.py"]
 ```
 
 8. Add, commit, and push these changes to the git repository.

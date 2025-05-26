@@ -27,9 +27,8 @@ Filename: config.toml
 [[protocol]]
 name = "gitit"
 summary = "Access packages through git to handle remote repositories"
+command = ["git", "clone", "-b", "{{orbit.ip.version}}", "{{orbit.ip.source}}"]
 patterns = ["*.git"]
-command = "git"
-args = ["clone", "-b", "{{ orbit.ip.version }}", "{{ orbit.ip.source }}"]
 ```
 
 This protocol calls `git` and clones from the ip's URL while checking out the branch/tag that matches the ip's version number. These values are resolved at runtime by Orbit through variable substitution.

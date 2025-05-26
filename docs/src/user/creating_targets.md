@@ -30,13 +30,12 @@ This guide walks through how to add a target to be recognized by Orbit. In this 
 [[target]]
 name = "tar"
 description = "My target description"
-command = "python3"
-args = ["tar.py"]
+command = ["python", "tar.py"]
 ```
 
-Calling the `tar` target at the start of a build process will now execute the command `python3 tar.py` for the execution stage.
+Calling the `tar` target at the start of a build process will now execute the command `python tar.py` for the execution stage.
 
-Although the execution stage spawns the subprocess in the target's output directoy, any relative file paths defined in the `args` field are relative to the configuration file that defines them.
+Although the execution stage spawns the subprocess in the target's output directoy, any relative file paths defined in the `command` field are relative to the configuration file that defines them, if and only if it is a path that exists in relation to the configuration file's parent directory.
 
 ## Reading a blueprint
 
@@ -89,8 +88,7 @@ This guide walks through how to modify a target's configuration to accept additi
 [[target]]
 name = "tar"
 description = "My target description"
-command = "python3"
-args = ["tar.py"]
+command = ["python", "tar.py"]
 # Add a custom fileset
 fileset.A-SET = "*.txt"
 ```
@@ -113,8 +111,7 @@ This guide walks through how to modify a target's configuration to accept additi
 [[target]]
 name = "tar"
 description = "My target description"
-command = "python3"
-args = ["tar.py"]
+command = ["python", "tar.py"]
 # Add a custom recursive fileset
 fileset.C-SET = { patterns = ["*.c"], recursive = true }
 ```
@@ -163,6 +160,5 @@ for arg in sys.argv[1:]:
 ```
 orbit build --target tar -- option1 --verbose --help 
 ```
-
 
 For a more robust solution to handling additional arguments, it is recommended to use an existing argument parsing library such as [`argparse`](https://docs.python.org/3/library/argparse.html).

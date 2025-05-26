@@ -26,9 +26,8 @@ This guide walks through how to add a protocol to be recognized by Orbit. In thi
 [[protocol]]
 name = "gitit"
 description = "Download ip using git"
+command = ["git", "clone", "{{orbit.ip.source}}", "-b", "{{orbit.ip.version}}"]
 patterns = ["*.git"]
-command = "git"
-args = ["clone", "{{ orbit.ip.source.url }}"]
 ```
 
 A protocol may be as simple as a list of known command-line arguments, or may require invoking a script written in a scripting language such as Python or Tcl.

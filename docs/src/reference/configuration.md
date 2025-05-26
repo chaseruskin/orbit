@@ -4,11 +4,24 @@ The `config.toml` file stores settings and extends Orbit's functionality. It is 
 
 > __Note:__ The configuration's file name is "config.toml", with respect to case-sensitivity.
 
-## Paths
+## Config-relative paths
 
-When a field is expected to be a file system path, Orbit has the ability to resolve relative paths. The path is determined in relation to the currently processed `config.toml`'s parent directory. 
+Paths in config files may be absolute, relative, or a bare name without any path separators. Paths for executables without a path separator will use the `PATH` environment variable to search for the executable. Paths for non-executables will be relative to where the config value is defined.
+
+In particular, the rules are:
+- For environment variables, paths are relative to the current working directory.
+- For config values loaded using `orbit config`, paths are left unresolved and stored as-is in the config file.
+- For config files, paths are relative to the parent directory of the directory where the config files were defined.
 
 This design choice was implemented to allow path definitions to be valid across file systems when sharing configurations. It is recommended to use relative paths when setting a field's value as a path in a `config.toml`.
+
+## Executable paths with arguments
+
+Some Orbit commands invoke external programs, which can be configured as a path and some number of arguments.
+
+The value may be an array of strings like `['/path/to/program', 'somearg']` or a space-separated string like `'/path/to/program somearg'`. If the path to the executable contains a space, the list form must be used.
+
+If Orbit is passing other arguments to the program such as a path to open or run, they will be passed after the last specified argument in the value of an option of this format. If the specified program does not have path separators, Orbit will search `PATH` for its executable.
 
 ## Hierarchical structure
 
@@ -49,7 +62,6 @@ Every configuration file consists of the following sections:
     - [name](#the-name-field) - The name of the target.
     - [description](#the-description-field) - A short description of the target.
     - [command](#the-command-field) - The command to execute the target.
-    - [args](#the-args-field) - Arguments to pass to the command.
     - [plans](#the-plans-field) - The list of supported blueprint file formats.
     - [build](#the-build-field) - Enable or disable target invocation for the build subcommand.
     - [test](#the-test-field) - Enable or disable target invocation for the test subcommand.
@@ -59,17 +71,13 @@ Every configuration file consists of the following sections:
     - [description](#the-description-field) - A short description of the protocol.
     - [patterns](#the-patterns-field) - String patterns to match an ip's URL.
     - [command](#the-command-field) - The command to execute the protocol.
-    - [args](#the-args-field) - Arguments to pass to the command.
 - [[[channel]]](#the-channel-array) - Define a channel.
     - [name](#the-name-field) - The name of the channel.
     - [description](#the-description-field) - A short description of the channel.
     - [root](#the-root-field) - The directory where the channel exists.
-    - [sync.command](#the-command-field) - The command to execute when synchronizing the channel.
-    - [sync.args](#the-args-field) - Arguments to pass to the command during synchronization.
-    - [pre.command](#the-command-field) - The command to execute immediately before launch.
-    - [pre.args](#the-command-field) - Arguments to pass to the command immediately before launch.
-    - [post.command](#the-command-field) - The command to execute immediately after launch.
-    - [post.args](#the-args-field) - Arguments to pass to the command immediately after launch.
+    - [sync.command](#the-command-field) - The command to execute to synchronize the channel with the internet.
+    - [pre.command](#the-command-field) - The command to execute immediately before the channel's publishing process.
+    - [post.command](#the-command-field) - The command to execute immediately after the channel's publishing process.
 
 
 ### The `include` field
@@ -252,25 +260,15 @@ description = "Print the blueprint contents to the screen"
 
 ### The `command` field
 
-The `command` entry for a target is used to specify what program to run for the execution stage of the build process.
+The `command` entry for a target is a string or an array of strings ([program path with args](#executable-paths-with-arguments)) used to specify the external program and additional arguments (if they exist) to run for the execution stage of the build process.
 
 ``` toml
 [[target]]
 # ...
-command = "cat"
+command = ["cat", "blueprint.tsv"]
 ```
 
 This field is required when configuring a target.
-
-### The `args` field
-
-The optional `args` entry is an array of strings that are passed to the program when it runs during the execution stage of the build process. Relative file paths included in this value are considered relative to the configuration file that defines this entry.
-
-``` toml
-[[target]]
-# ...
-args = ["blueprint.tsv"]
-```
 
 This field supports [_string swapping_](./../topic/swapping.md).
 
@@ -365,11 +363,15 @@ patterns = ["*.git"]
 
 ### The `command` field
 
-See [[target]](#the-target-array)'s definition of [`command`](#the-command-field).
+The `command` entry for a protocol is a string or an array of strings ([program path with args](#executable-paths-with-arguments)) used to specify the external program and additional arguments (if they exist) to run for the download phase of the installation process.
 
-### The `args` field
+``` toml
+[[protocol]]
+# ...
+command = ["git", "clone", "{{orbit.ip.source}}", "-b", "{{orbit.ip.version}}"]
+```
 
-See [[target]](#the-target-array)'s definition of [`args`](#the-args-field).
+This field is required when configuring a protocol.
 
 This field supports [_string swapping_](./../topic/swapping.md).
 
@@ -399,30 +401,42 @@ If this entry is not defined, the default root directory for a channel is `.`, t
 
 ### The `sync.command` field
 
-See [[target]](#the-target-array)'s definition of [`command`](#the-command-field).
+The `sync.command` entry for a channel's sync hook is a string or an array of strings ([program path with args](#executable-paths-with-arguments)) used to specify the external program and additional arguments (if they exist) to run to synchronize the channel with the latest changes from the internet.
 
-### The `sync.args` field
+``` toml
+[[channel]]
+# ...
+sync.command = ["git", "pull"]
+```
 
-See [[target]](#the-target-array)'s definition of [`args`](#the-args-field).
+This field is optional when configuring a channel.
 
-This field supports [_string swapping_](./../topic/swapping.md)
+This field supports [_string swapping_](./../topic/swapping.md).
 
 ### The `pre.command` field
 
-See [[target]](#the-target-array)'s definition of [`command`](#the-command-field).
+The `pre.command` entry for a channel's pre-publish hook is a string or an array of strings ([program path with args](#executable-paths-with-arguments)) used to specify the external program and additional arguments (if they exist) to run before Orbit copies an ip's metadata into the channel during the publishing process.
 
-### The `pre.args` field
+``` toml
+[[channel]]
+# ...
+pre.command = ["git", "pull"]
+```
 
-See [[target]](#the-target-array)'s definition of [`args`](#the-args-field).
+This field is optional when configuring a channel.
 
-This field supports [_string swapping_](./../topic/swapping.md)
+This field supports [_string swapping_](./../topic/swapping.md).
 
 ### The `post.command` field
 
-See [[target]](#the-target-array)'s definition of [`command`](#the-command-field).
+The `post.command` entry for a channel's post-publish hook is a string or an array of strings ([program path with args](#executable-paths-with-arguments)) used to specify the external program and additional arguments (if they exist) to run after Orbit copies an ip's metadata into the channel during the publishing process.
 
-### The `post.args` field
+``` toml
+[[channel]]
+# ...
+post.command = ["git", "commit", "-am", "Publishes {{orbit.ip.name}} v{{orbit.ip.version}}"]
+```
 
-See [[target]](#the-target-array)'s definition of [`args`](#the-args-field).
+This field is optional when configuring a channel.
 
-This field supports [_string swapping_](./../topic/swapping.md)
+This field supports [_string swapping_](./../topic/swapping.md).

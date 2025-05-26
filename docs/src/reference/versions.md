@@ -69,7 +69,6 @@ A fully qualified version must be written in every project's manifest file.
 [ip]
 # ...
 version = "1.5.4"
-# ...
 ```
 
 A specific (or partially speific) version can be requested for an IP on the command-line by placing a colon `:` character between the package's name and the requested version.

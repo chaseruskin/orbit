@@ -173,8 +173,7 @@ $ orbit build --list --target yilinx
 ```
 name = "yilinx"
 description = "Generate bitstreams for Yilinx FPGAs"
-command = "python"
-args = ["/Users/chase/Develop/rust/orbit/gates/.orbit/yilinx.py"]
+command = ["python", "/Users/chase/Develop/rust/orbit/gates/.orbit/yilinx.py"]
 build = true
 test = true
 

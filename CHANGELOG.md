@@ -23,6 +23,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Adds `ORBIT_BLUEPRINT_PLAN` environment variable to contain the current set plan during the build process
 - Adds `ORBIT` environment variable to contain the full path to the orbit binary that was used for the current build process
 
+### Changes
+- Streamlines command and arguments for external programs by using single field `command` (removes `args` field from configurations of targets, protocols, and channels)
+
 ### Fixes
 - Blueprint generation is now idempotent (same topological order will be produced when running the build process repeatedly with no changes to the environment/project)
 - Safely produces error message instead of panic when trying to install an ip without specifying the ip's name and there exists zero manifests in the downloaded directory

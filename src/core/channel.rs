@@ -16,6 +16,7 @@
 //
 
 use super::target::Process;
+use crate::core::config::Command;
 use crate::core::context::Context;
 use crate::core::ip::Ip;
 use crate::{
@@ -31,8 +32,7 @@ pub type Channels = Vec<Channel>;
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Sequence {
-    command: String,
-    args: Option<Vec<String>>,
+    command: Command,
     #[serde(skip_deserializing, skip_serializing)]
     root: PathBuf,
 }
@@ -43,14 +43,11 @@ impl Process for Sequence {
     }
 
     fn get_args(&self) -> Vec<&String> {
-        match &self.args {
-            Some(list) => list.iter().map(|e| e).collect(),
-            None => Vec::new(),
-        }
+        self.command.get_args()
     }
 
     fn get_command(&self) -> &String {
-        &self.command
+        &self.command.get_command()
     }
 }
 

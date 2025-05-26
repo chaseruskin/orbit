@@ -207,6 +207,10 @@ pub enum Error {
     VisNoAllPubIpNotLocal,
     #[error("default protocol \"{0}\" not found")]
     DefaultProtocolNotFound(String),
+    #[error("cannot be an empty string")]
+    CommandIsEmptyStr,
+    #[error("cannot be an empty list")]
+    CommandIsEmptyVec,
 }
 
 #[derive(Debug, PartialEq)]

@@ -16,16 +16,13 @@ description = "Available ip from hyperspace labs"
 root = "./index"
 
 # If the channel is stored on the internet, synchronize with its remote location
-sync.command = "git"
-sync.args = ["pull"]
+sync.command = ["git", "pull"]
 
 # Issue this command immediately before adding the ip to the channel
-pre.command = "git"
-pre.args = ["pull"]
+pre.command = ["git", "pull"]
 
 # Issue this command immediately after adding the ip to the channel
-post.command = "python"
-post.args = ["publish.py"]
+post.command =["python", "publish.py"]
 ```
 
 ## The synchronization hook

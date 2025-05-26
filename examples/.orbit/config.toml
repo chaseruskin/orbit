@@ -4,8 +4,7 @@ description = "Print the blueprint contents"
 plans = ["tsv", "json"]
 fileset.text = "*.txt"
 fileset.data = "*.dat"
-command = "cat"
-args = ["{{orbit.blueprint}}"]
+command = ["cat", "{{orbit.blueprint}}"]
 
 [test]
 default-target = "foo"
@@ -25,23 +24,20 @@ highlight-syntax = true
 
 [[target]]
 name = "multi"
-command = "cat"
+command = ["cat", "{{ orbit.blueprint }}"]
 build = true
 test = false
-args = ["{{ orbit.blueprint }}"]
 fileset.TEXT = { patterns = ["a.txt", "b.txt"] }
 
 [[protocol]]
 name = "gitit"
 description = "Simple git protocol"
 patterns = ["*.git"]
-command = "git"
-args = ["clone", "{{ orbit.ip.source }}"]
+command = ["git", "clone", "{{ orbit.ip.source }}"]
 
 [[protocol]]
 name = "bar"
-command = "python"
-args = ["bar.py"]
+command = ["python", "bar.py"]
 patterns = ["*.url"]
 
 # [[target.fileset]]

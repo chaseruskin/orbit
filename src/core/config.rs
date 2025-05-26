@@ -31,6 +31,7 @@ use std::fmt::Display;
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use serde::ser::SerializeSeq;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -839,6 +840,151 @@ impl FromFile for Config {
     }
 }
 
+use crate::core::swap;
+use crate::core::swap::StrSwapTable;
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Command {
+    inner: Vec<String>,
+    is_raw: bool,
+}
+
+impl std::str::FromStr for Command {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // verify the string is not empty
+        if s.trim().len() == 0 {
+            Err(Self::Err::CommandIsEmptyStr)
+        } else {
+            // split based on whitespace
+            Ok(Self {
+                inner: s.split_whitespace().map(|m| m.to_string()).collect(),
+                is_raw: true,
+            })
+        }
+    }
+}
+
+impl Command {
+    pub fn new() -> Self {
+        Self {
+            inner: Vec::new(),
+            is_raw: false,
+        }
+    }
+
+    pub fn from_vec(s: Vec<String>) -> Result<Self, Error> {
+        if s.len() == 0 {
+            Err(Error::CommandIsEmptyVec)
+        } else {
+            Ok(Self {
+                inner: s,
+                is_raw: false,
+            })
+        }
+    }
+
+    pub fn get(&self) -> &Vec<String> {
+        &self.inner
+    }
+
+    /// Assumes the list contains at least one item (the command).
+    pub fn get_command(&self) -> &String {
+        self.inner.get(0).unwrap()
+    }
+
+    pub fn get_args(&self) -> Vec<&String> {
+        self.inner.iter().skip(1).collect()
+    }
+
+    /// Performs variable substitution on the provided arguments for the command.
+    pub fn replace_vars_in_args(self, vtable: &StrSwapTable) -> Self {
+        let inner = self
+            .inner
+            .into_iter()
+            .map(|arg| swap::substitute(arg, vtable))
+            .collect();
+        Self {
+            inner: inner,
+            is_raw: self.is_raw,
+        }
+    }
+
+    pub fn resolve_rel_paths(&self, root: &PathBuf) -> Self {
+        let inner = self
+            .inner
+            .iter()
+            .map(|f| filesystem::resolve_rel_path(root, f))
+            .collect();
+        Self {
+            inner: inner,
+            is_raw: self.is_raw,
+        }
+    }
+}
+
+use serde::Serialize;
+
+impl Serialize for Command {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut s = serializer.serialize_seq(Some(self.inner.len()))?;
+        for elem in &self.inner {
+            s.serialize_element(elem)?;
+        }
+        s.end()
+    }
+}
+
+use serde::de;
+use serde::de::Visitor;
+
+impl<'de> serde::Deserialize<'de> for Command {
+    fn deserialize<D>(deserializer: D) -> Result<Command, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        struct LayerVisitor;
+
+        impl<'de> Visitor<'de> for LayerVisitor {
+            type Value = Command;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("string or list")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                match Command::from_str(value) {
+                    Ok(c) => Ok(c),
+                    Err(e) => Err(E::custom(e.to_string())),
+                }
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: de::SeqAccess<'de>,
+            {
+                let mut vec = Vec::new();
+                while let Some(o) = seq.next_element::<String>()? {
+                    vec.push(o);
+                }
+                match Command::from_vec(vec) {
+                    Ok(c) => Ok(c),
+                    Err(e) => Err(de::Error::custom(e.to_string())),
+                }
+            }
+        }
+
+        deserializer.deserialize_str(LayerVisitor)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -858,8 +1004,7 @@ include = [
 [[target]]
 name = "quartus"
 description = "Complete toolflow for Intel Quartus Prime backend program"
-command = "python"
-args = ["./targets/quartus.py"]
+command = ["python", "./targets/quartus.py"]
 fileset.pin-plan = "*.board"
 fileset.bdf-file = "*.bdf"
 
@@ -870,8 +1015,7 @@ VCD_VIEWER = "dwfv"
 
 [[protocol]]
 name = "kstp"
-command = "python"
-args = ["./download.py"]
+command = ["python", "./download.py"]
 
 [vhdl-format]
 tab-size = 3

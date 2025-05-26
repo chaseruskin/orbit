@@ -20,7 +20,7 @@ orbit lock --force
 # # verify DST runs without error
 # STDOUT=$(orbit tree --root entity_c)
 
-orbit b --top entity_c --target gsim -- --lint
+orbit b --top entity_c --target gee -- --lint
 
 orbit remove ip-b --force
 orbit remove ip-a --force

@@ -15,6 +15,7 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
+use crate::core::config::Command;
 use crate::core::context::Context;
 use crate::error::Error;
 use crate::util::anyerror::Fault;
@@ -26,7 +27,6 @@ use std::path::PathBuf;
 use std::str::FromStr;
 
 use super::blueprint::Scheme;
-use super::swap;
 use super::swap::StrSwapTable;
 use crate::core::fileset::Fileset;
 
@@ -43,8 +43,7 @@ pub struct Target {
     description: Option<String>,
     #[serde(skip_serializing, skip_deserializing)]
     root: Option<PathBuf>,
-    command: String,
-    args: Option<Vec<String>>,
+    command: Command,
     fileset: Option<Filesets>,
     plans: Option<Vec<Scheme>>,
     build: Option<bool>,
@@ -54,15 +53,7 @@ pub struct Target {
 impl Target {
     /// Performs variable substitution on the provided arguments for the target.
     pub fn replace_vars_in_args(mut self, vtable: &StrSwapTable) -> Self {
-        self.args = if let Some(args) = self.args {
-            Some(
-                args.into_iter()
-                    .map(|arg| swap::substitute(arg, vtable))
-                    .collect(),
-            )
-        } else {
-            self.args
-        };
+        self.command = self.command.replace_vars_in_args(vtable);
         self
     }
 
@@ -162,32 +153,7 @@ impl Target {
 
 impl std::fmt::Display for Target {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let command = filesystem::resolve_rel_path(self.get_root(), &self.command);
-
-        let args = if self.args.is_some() {
-            Some(
-                self.get_args()
-                    .iter()
-                    .map(|f| filesystem::resolve_rel_path(self.get_root(), f))
-                    .collect(),
-            )
-        } else {
-            None
-        };
-
-        let refreshed_target = Self {
-            command: command,
-            args: args,
-            name: self.name.clone(),
-            description: self.description.clone(),
-            build: self.build,
-            test: self.test,
-            root: self.root.clone(),
-            fileset: self.fileset.clone(),
-            plans: self.plans.clone(),
-        };
-
-        write!(f, "{}", toml::to_string_pretty(&refreshed_target).unwrap())
+        write!(f, "{}", toml::to_string_pretty(&self).unwrap())
     }
 }
 
@@ -275,14 +241,11 @@ impl Process for Target {
     }
 
     fn get_args(&self) -> Vec<&String> {
-        match &self.args {
-            Some(list) => list.iter().map(|e| e).collect(),
-            None => Vec::new(),
-        }
+        self.command.get_args()
     }
 
     fn get_command(&self) -> &String {
-        &self.command
+        self.command.get_command()
     }
 }
 
@@ -312,17 +275,15 @@ mod test {
     const P_1: &str = r#" 
 name = "ghdl"
 description = "Backend script for simulating VHDL with GHDL."  
-command = "python"
+command = "python ./scripts/ghdl.py"
 build = false
-args = ["./scripts/ghdl.py"]
 fileset.py-model = "{{orbit.bench}}.py"
 fileset.text = "*.txt"
 "#;
 
     const P_2: &str = r#"
 name = "ffi"
-command = "bash"
-args = ["~/scripts/download.bash"]    
+command = "bash ~/scripts/download.bash" 
 "#;
 
     #[test]
@@ -332,11 +293,10 @@ args = ["~/scripts/download.bash"]
             plug,
             Target {
                 name: String::from("ghdl"),
-                command: String::from("python"),
+                command: Command::from_str("python ./scripts/ghdl.py").unwrap(),
                 build: Some(false),
                 test: None,
                 plans: None,
-                args: Some(vec![String::from("./scripts/ghdl.py")]),
                 description: Some(String::from(
                     "Backend script for simulating VHDL with GHDL."
                 )),
@@ -359,8 +319,7 @@ args = ["~/scripts/download.bash"]
             plug,
             Target {
                 name: String::from("ffi"),
-                command: String::from("bash"),
-                args: Some(vec![String::from("~/scripts/download.bash")]),
+                command: Command::from_str("bash ~/scripts/download.bash").unwrap(),
                 description: None,
                 plans: None,
                 build: None,

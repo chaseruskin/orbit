@@ -18,8 +18,8 @@
 //! A protocol is a series of steps defined for requesting files/packages
 //! from the internet.
 
+use crate::core::config::Command;
 use crate::core::fileset::UrlStyle;
-use crate::core::swap;
 use crate::core::target::Process;
 use colored::Colorize;
 use serde_derive::{Deserialize, Serialize};
@@ -34,8 +34,7 @@ pub struct Protocol {
     name: String,
     description: Option<String>,
     patterns: Option<Vec<UrlStyle>>,
-    command: String,
-    args: Option<Vec<String>>,
+    command: Command,
     #[serde(skip_serializing, skip_deserializing)]
     root: Option<PathBuf>,
 }
@@ -51,15 +50,7 @@ impl FromStr for Protocol {
 impl Protocol {
     /// Performs variable substitution on the provided arguments for the protocol.
     pub fn replace_vars_in_args(mut self, vtable: &StrSwapTable) -> Self {
-        self.args = if let Some(args) = self.args {
-            Some(
-                args.into_iter()
-                    .map(|arg| swap::substitute(arg, vtable))
-                    .collect(),
-            )
-        } else {
-            self.args
-        };
+        self.command = self.command.replace_vars_in_args(vtable);
         self
     }
 
@@ -85,14 +76,11 @@ impl Process for Protocol {
     }
 
     fn get_command(&self) -> &String {
-        &self.command
+        self.command.get_command()
     }
 
     fn get_args(&self) -> Vec<&String> {
-        match &self.args {
-            Some(list) => list.iter().map(|e| e).collect(),
-            None => Vec::new(),
-        }
+        self.command.get_args()
     }
 }
 
@@ -112,9 +100,8 @@ impl Protocol {
             name: String::new(),
             description: None,
             patterns: None,
-            command: String::new(),
+            command: Command::new(),
             root: None,
-            args: None,
         }
     }
 
@@ -249,8 +236,7 @@ command = "python"
     const P_2: &str = r#"
 name = "ffi"
 patterns = ["*.git"]
-command = "bash"
-args = ["~/scripts/download.bash"]    
+command = ["bash", "~/scripts/download.bash"]    
 "#;
 
     #[test]
@@ -260,8 +246,7 @@ args = ["~/scripts/download.bash"]
             proto,
             Protocol {
                 name: String::from("gcp"),
-                command: String::from("python"),
-                args: None,
+                command: Command::from_str("python").unwrap(),
                 root: None,
                 description: None,
                 patterns: None,
@@ -273,8 +258,11 @@ args = ["~/scripts/download.bash"]
             proto,
             Protocol {
                 name: String::from("ffi"),
-                command: String::from("bash"),
-                args: Some(vec![String::from("~/scripts/download.bash")]),
+                command: Command::from_vec(vec![
+                    "bash".to_string(),
+                    "~/scripts/download.bash".to_string()
+                ])
+                .unwrap(),
                 root: None,
                 description: None,
                 patterns: Some(vec![UrlStyle::from_str("*.git").unwrap()]),

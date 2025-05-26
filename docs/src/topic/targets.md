@@ -14,4 +14,4 @@ Users can setup a target in the configuration file `config.toml`. For all the av
 
 ## Examples
 
-To see one way how targets can be written for various tools, check out the [`orbit-targets`](https://github.com/chaseruskin/orbit-targets) repository on GitHub.
+To see one way how targets can be written for various tools, check out the [`constellation`](https://github.com/chaseruskin/constellation) repository on GitHub.

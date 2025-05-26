@@ -18,7 +18,7 @@ Users can configure their own processes to run when trying to download an ip fro
 
 Orbit will start the custom protocol's process in a temporary directory for the custom protocol to try to download the ip's contents from its provided source URL. Orbit removes the temporary directory after an ip is successfully or unsuccessfully downloaded and creates a new temporary directory for each ip download.
 
-### Example
+## Examples
 
 One possible protocol relies on using the `git` command-line tool.
 

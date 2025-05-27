@@ -15,7 +15,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.25.2 - unreleased
+## 0.25.2
 
 ### Features
 - Adds `json` plan to create `blueprint.json` file for targets when configured (includes a dependencies field to list direct file dependencies)

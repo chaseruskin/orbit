@@ -222,16 +222,26 @@ instance-name = "ux"
 
 ### The `[env]` section
 
-The `[env]` section allows for an arbitrary number of user-defined key/value pairs.
-Each key's value is expected to be a string. Orbit exposes these key/value pairs as variables for string swapping in permissible strings as well as environment variables during the execution stage of the build process.
+The `[env]` section allows you to set additional environment variables for target, protocol and channel command invocations. Each key's value is expected to be a string.
 
 ``` toml
 [env]
-# Accessible as environment variable: ORBIT_ENV_FOO, string variable: orbit.env.foo
-FOO = "bar" 
-# Accessible as environment variable: ORBIT_ENV_LICENSE_FILE, string variable: orbit.env.license.file
 LICENSE_FILE = "3000@server" 
 ```
+
+By default, the variables specified will not override values that already exist in the environment. This behavior can be changed by setting the `force` flag.
+
+Setting the `relative` flag evaluates the value as a config-relative path that is relative to the parent directory of the `.orbit` directory that contains the `config.toml` file. If the path exists, the value of the environment variable will be the full absolute path.
+
+``` toml
+[env]
+TMPDIR = { value = "/home/tmp", force = true }
+OPENSSL_DIR = { value = "vendor/openssl", relative = true }
+```
+
+Orbit also exposes these key/value pairs as variables for string swapping in permissible strings. See [String Swapping](./../topic/swapping.md).
+
+Orbit protects its environment variables from being overridden, regardless if the `force` flag is set. Adding environment variables reserved by Orbit will have no effect.
 
 ### The `[[target]]` array
 

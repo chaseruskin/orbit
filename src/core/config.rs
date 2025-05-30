@@ -23,6 +23,7 @@ use crate::core::target::{Target, Targets};
 use crate::error::Error;
 use crate::error::LastError;
 use crate::util::anyerror::AnyError;
+use crate::util::environment::EnvVar;
 use crate::util::filesystem;
 use crate::util::filesystem::Standardize;
 use std::collections::HashMap;
@@ -571,7 +572,7 @@ pub const CONFIG_FILE: &str = "config.toml";
 #[serde(deny_unknown_fields)]
 pub struct Config {
     include: Option<Vec<PathBuf>>,
-    env: Option<HashMap<String, String>>,
+    env: Option<HashMap<String, EnvVar>>,
     general: Option<General>,
     test: Option<Test>,
     build: Option<Build>,
@@ -725,7 +726,7 @@ impl Config {
         }
     }
 
-    pub fn get_env(&self) -> &Option<HashMap<String, String>> {
+    pub fn get_env(&self) -> &Option<HashMap<String, EnvVar>> {
         &self.env
     }
 
@@ -830,6 +831,13 @@ impl FromFile for Config {
                 if let Some(chans) = &mut r.channel {
                     for c in chans {
                         c.set_root(base.clone())?;
+                    }
+                }
+                // set root for environment variables
+                if let Some(envs) = &mut r.env {
+                    for (key, env) in envs {
+                        env.set_key(key);
+                        env.resolve_relative(&base);
                     }
                 }
                 Ok(r)

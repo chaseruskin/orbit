@@ -15,6 +15,14 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.26.0 - unreleased
+
+### Features
+- Adds `force` and `relative` flags to the fields in the `[env]` table of the `config.toml` file
+
+### Changes
+- Environment variables set in the `[env]` table no longer have a `ORBIT_ENV_` prefix automatically attached to them
+
 ## 0.25.2
 
 ### Features

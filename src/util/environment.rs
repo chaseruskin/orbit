@@ -30,12 +30,18 @@ use std::collections::btree_set::IntoIter;
 use std::collections::btree_set::Iter;
 use std::path::PathBuf;
 
+use serde_derive::Serialize;
+
 use std::collections::btree_set::BTreeSet;
 
-#[derive(Eq)]
+#[derive(Eq, Serialize, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct EnvVar {
+    #[serde(skip_serializing)]
     key: String,
     value: String,
+    force: bool,
+    relative: bool,
 }
 
 impl PartialEq for EnvVar {
@@ -63,6 +69,8 @@ impl Hash for EnvVar {
     }
 }
 
+use crate::util::filesystem::into_std_str;
+
 impl EnvVar {
     pub fn with(key: &str, value: &str) -> Self {
         Self::new().key(key).value(value)
@@ -72,13 +80,14 @@ impl EnvVar {
         Self {
             key: String::new(),
             value: String::new(),
+            relative: false,
+            force: false,
         }
     }
 
     /// Sets the environment key.
     pub fn key(mut self, s: &str) -> Self {
-        // normalize the key name upon entry
-        self.key = s.to_ascii_uppercase().replace('-', "_").replace('.', "_");
+        self.set_key(s);
         self
     }
 
@@ -88,12 +97,41 @@ impl EnvVar {
         self
     }
 
+    /// Sets the environment force option.
+    pub fn force(mut self, force: bool) -> Self {
+        self.force = force;
+        self
+    }
+
+    /// Sets the environment relative option.
+    pub fn relative(mut self, relative: bool) -> Self {
+        self.relative = relative;
+        self
+    }
+
     pub fn get_key(&self) -> &str {
         &self.key
     }
 
     pub fn get_value(&self) -> &str {
         &self.value
+    }
+
+    /// Returns `true` if the environment variable will be set with the value
+    /// it is holding.
+    ///
+    /// If `force` is false and the variable already exists, then this function will
+    /// return `false`.
+    pub fn can_apply(&self) -> bool {
+        std::env::var(&self.key).is_err_and(|x| x == std::env::VarError::NotPresent)
+            || self.force == true
+    }
+
+    /// Tries to inherit a value from the external environment.
+    pub fn try_inherit(&mut self) {
+        if self.force == false && std::env::var(&self.key).is_ok() {
+            self.value = std::env::var(&self.key).unwrap().clone();
+        }
     }
 
     /// Transforms the string format into a orbit variable format.
@@ -106,6 +144,21 @@ impl EnvVar {
             self.value.to_owned(),
         )
     }
+
+    pub fn set_key(&mut self, s: &str) {
+        // normalize the key name upon entry
+        self.key = s.to_ascii_uppercase().replace('-', "_").replace('.', "_");
+    }
+
+    /// Will attempt to resolve a relative path if the environment variable is configured to do such a thing.
+    pub fn resolve_relative(&mut self, root: &PathBuf) {
+        if self.relative == true {
+            let p = PathBuf::from(&self.value);
+            if p.is_relative() == true && root.join(&p).exists() {
+                self.value = into_std_str(root.join(&p));
+            }
+        }
+    }
 }
 
 impl std::fmt::Debug for EnvVar {
@@ -117,6 +170,115 @@ impl std::fmt::Debug for EnvVar {
 impl std::fmt::Display for EnvVar {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}={}", self.key, self.value)
+    }
+}
+
+use serde::de;
+use serde::de::MapAccess;
+use serde::de::Visitor;
+use std::fmt;
+
+impl<'de> serde::Deserialize<'de> for EnvVar {
+    fn deserialize<D>(deserializer: D) -> Result<EnvVar, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        enum Field {
+            Value,
+            Force,
+            Relative,
+        }
+
+        // This part could also be generated independently by:
+        //
+        //    #[derive(Deserialize)]
+        //    #[serde(field_identifier, rename_all = "lowercase")]
+        //    enum Field { Secs, Nanos }
+        impl<'de> serde::Deserialize<'de> for Field {
+            fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct FieldVisitor;
+
+                impl<'de> Visitor<'de> for FieldVisitor {
+                    type Value = Field;
+
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        formatter.write_str("`value` or `force` or `relative`")
+                    }
+
+                    fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                    where
+                        E: de::Error,
+                    {
+                        match value {
+                            "value" => Ok(Field::Value),
+                            "force" => Ok(Field::Force),
+                            "relative" => Ok(Field::Relative),
+                            _ => Err(de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+        }
+
+        struct LayerVisitor;
+
+        impl<'de> Visitor<'de> for LayerVisitor {
+            type Value = EnvVar;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("string or map")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<EnvVar, E>
+            where
+                E: de::Error,
+            {
+                Ok(EnvVar::new().value(value))
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<EnvVar, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut value: Option<String> = None;
+                let mut force: Option<bool> = None;
+                let mut relative: Option<bool> = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Value => {
+                            if value.is_some() {
+                                return Err(de::Error::duplicate_field("value"));
+                            }
+                            value = Some(map.next_value()?);
+                        }
+                        Field::Force => {
+                            if force.is_some() {
+                                return Err(de::Error::duplicate_field("force"));
+                            }
+                            force = Some(map.next_value()?);
+                        }
+                        Field::Relative => {
+                            if relative.is_some() {
+                                return Err(de::Error::duplicate_field("relative"));
+                            }
+                            relative = Some(map.next_value()?);
+                        }
+                    }
+                }
+                let value = value.ok_or_else(|| de::Error::missing_field("value"))?;
+                let force = force.unwrap_or(false);
+                let relative = relative.unwrap_or(false);
+                Ok(EnvVar::new().value(&value).force(force).relative(relative))
+            }
+        }
+
+        const FIELDS: &[&str] = &["value", "force", "relative"];
+        deserializer.deserialize_struct("EnvVar", FIELDS, LayerVisitor)
     }
 }
 
@@ -138,7 +300,7 @@ impl Environment {
                 let result = line.split_once('=');
                 // set env variables
                 if let Some((name, value)) = result {
-                    self.insert(EnvVar::new().key(name).value(value));
+                    self = self.overwrite(EnvVar::new().key(name).value(value));
                 }
             }
         }
@@ -159,32 +321,32 @@ impl Environment {
 
     /// Loads environment variables from a target [Ip].
     pub fn from_ip(mut self, ip: &Ip) -> Result<Self, Fault> {
-        self.insert(
+        self = self.overwrite(
             EnvVar::new()
                 .key(ORBIT_IP_NAME)
                 .value(&ip.get_man().get_ip().get_name().to_string()),
         );
-        self.insert(
+        self = self.overwrite(
             EnvVar::new()
                 .key(ORBIT_IP_UUID)
                 .value(&ip.get_uuid().to_string()),
         );
-        self.insert(
+        self = self.overwrite(
             EnvVar::new()
                 .key(ORBIT_IP_VERSION)
                 .value(&ip.get_man().get_ip().get_version().to_string()),
         );
-        self.insert(
+        self = self.overwrite(
             EnvVar::new()
                 .key(ORBIT_IP_LIBRARY)
                 .value(&ip.get_hdl_library().to_string()),
         );
-        self.insert(
+        self = self.overwrite(
             EnvVar::new()
                 .key(ORBIT_MANIFEST_DIR)
                 .value(PathBuf::standardize(&ip.get_root()).to_str().unwrap()),
         );
-        self.insert(
+        self = self.overwrite(
             EnvVar::new().key(ORBIT_MANIFEST_FILE).value(
                 PathBuf::standardize(&ip.get_root().join(IP_MANIFEST_FILE))
                     .to_str()
@@ -192,7 +354,7 @@ impl Environment {
             ),
         );
         if let Some(sum) = ip.get_checksum() {
-            self.insert(EnvVar::new().key(ORBIT_IP_CHECKSUM).value(&sum.to_string()));
+            self = self.overwrite(EnvVar::new().key(ORBIT_IP_CHECKSUM).value(&sum.to_string()));
         }
         Ok(self)
     }
@@ -203,12 +365,12 @@ impl Environment {
     pub fn from_config(mut self, config: &Config) -> Result<Self, Fault> {
         // read config.toml for setting any env variables
         if let Some(map) = config.get_env() {
-            map.iter().for_each(|(key, val)| {
-                self.insert(
-                    EnvVar::new()
-                        .key(&format!("{}{}", ORBIT_ENV_PREFIX, key))
-                        .value(val),
-                );
+            // ? omit variables that are not set to force and already have the env var set in the environment
+            // .filter(|x| x.can_apply())
+            map.values().for_each(|var| {
+                let mut var = var.clone();
+                var.try_inherit();
+                self.insert(var);
             });
         }
         Ok(self)

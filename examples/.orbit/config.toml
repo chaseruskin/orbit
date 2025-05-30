@@ -1,10 +1,13 @@
+[env]
+LICENSE_FILE = { value = "3000@server", force = true }
+
 [[target]]
 name = "foo"
 description = "Print the blueprint contents"
 plans = ["tsv", "json"]
 fileset.text = "*.txt"
 fileset.data = "*.dat"
-command = ["cat", "{{orbit.blueprint}}"]
+command = ["cat", "{{ orbit.blueprint }}"]
 
 [test]
 default-target = "foo"

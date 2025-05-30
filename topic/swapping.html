@@ -174,10 +174,12 @@
 <p>This process allows permissible strings to become generic enough to avoid having the user frequently update configuration data with redundant information or accidently recall the incorrect value.</p>
 <h2 id="operation"><a class="header" href="#operation">Operation</a></h2>
 <p>String swap works with key-value pairs. When Orbit sees the correct syntax indicating a known key, it will replace the key's contents with its value in its location within the string.</p>
-<p>To have a key substituted with its value, use double opening curly brackets <code>{{</code> to denote the beginning of a key and double closing curly brackets <code>}}</code> to end the key. Whitespace is ignored around the  key within the curly bracket sequences.</p>
+<p>To have a key substituted with its value, use double opening curly brackets <code>{{</code> to denote the beginning of a key and double closing curly brackets <code>}}</code> to end the key. Whitespace is ignored around the key within the curly bracket sequences.</p>
 <p>When Orbit gets a permissible string, it will parse the characters to check if a key exists and should be swapped with its value. If it finds a valid known key, then it replaces everything from and within the curly bracket sequences with the variable's value. If it cannot find a valid key that matches the name, it leaves that sequence of the string unmodified.</p>
+<p>Keys are inherited from environment variables and take on a different formatting.
+All <code>_</code> or <code>-</code> in an environment variable are converted to a <code>.</code>, and the character are converted to lowercase.</p>
 <p>Imagine Orbit maintains the following key <code>orbit.ip.name</code> with the value "foo". Then for a permissible string such as:</p>
-<pre><code>"Hello, {{ orbit.ip.name }}!"
+<pre><code>"Hello, {{ orbit.ip.name  }}!"
 </code></pre>
 <p>The resulting string before being read during runtime would become:</p>
 <pre><code>"Hello, foo!"
@@ -197,7 +199,7 @@
 <li><code>orbit.top.name</code>: The top-level design unit name.</li>
 <li><code>orbit.tb.name</code>: The testbench design unit name.</li>
 <li><code>orbit.dut.name</code>: The design-under-test design unit name.</li>
-<li><code>orbit.env.*</code>: Any environment variables loaded from configuration files.</li>
+<li><code>*</code>: Any environment variables loaded from configuration files.</li>
 </ul>
 <h3 id="protocol-arguments"><a class="header" href="#protocol-arguments">Protocol arguments</a></h3>
 <p>The argument list defined in a protocol's configuration is allowed to contain any of the following keys:</p>
@@ -205,7 +207,7 @@
 <li><code>orbit.ip.name</code>: The name of the ip being downloaded.</li>
 <li><code>orbit.ip.version</code>: The version of the ip being downloaded.</li>
 <li><code>orbit.ip.source</code>: The URL for the ip being downloaded.</li>
-<li><code>orbit.env.*</code>: Any environment variables loaded from configuration files.</li>
+<li><code>*</code>: Any environment variables loaded from configuration files.</li>
 </ul>
 <h3 id="target-arguments"><a class="header" href="#target-arguments">Target arguments</a></h3>
 <p>The argument list defined in a target's configuration is allowed to contain any of the following keys:</p>
@@ -214,10 +216,10 @@
 <li><code>orbit.ip.library</code>: The HDL library of the local ip.</li>
 <li><code>orbit.ip.version</code>: The version of the local ip.</li>
 <li><code>orbit.ip.checksum</code>: The truncated most recent checksum of the local ip.</li>
-<li><code>orbit.env.*</code>: Any environment variables loaded from configuration files.</li>
 <li><code>orbit.top.name</code>: The top-level design unit name.</li>
 <li><code>orbit.tb.name</code>: The testbench design unit name.</li>
 <li><code>orbit.dut.name</code>: The design-under-test design unit name.</li>
+<li><code>*</code>: Any environment variables loaded from configuration files.</li>
 </ul>
 <h2 id="example"><a class="header" href="#example">Example</a></h2>
 <p>Consider an ip with the following manifest data:</p>
@@ -238,9 +240,9 @@ Yilinx_Path = "/Users/chase/fpga/bin/yilinx"
 </code></pre>
 <p>This configuration translates to the following variables:</p>
 <div class="table-wrapper"><table><thead><tr><th>TOML <code>[env]</code> entry</th><th>Environment variable</th><th>Substitution variable</th></tr></thead><tbody>
-<tr><td><code>foo</code></td><td><code>ORBIT_ENV_FOO</code></td><td><code>orbit.env.foo</code></td></tr>
-<tr><td><code>github-user</code></td><td><code>ORBIT_ENV_GITHUB_USER</code></td><td><code>orbit.env.github.user</code></td></tr>
-<tr><td><code>Yilinx_Path</code></td><td><code>ORBIT_ENV_YILINX_PATH</code></td><td><code>orbit.env.yilinx.path</code></td></tr>
+<tr><td><code>foo</code></td><td><code>FOO</code></td><td><code>foo</code></td></tr>
+<tr><td><code>github-user</code></td><td><code>GITHUB_USER</code></td><td><code>github.user</code></td></tr>
+<tr><td><code>Yilinx_Path</code></td><td><code>YILINX_PATH</code></td><td><code>yilinx.path</code></td></tr>
 </tbody></table>
 </div>
                     </main>

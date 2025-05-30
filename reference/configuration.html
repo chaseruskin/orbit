@@ -364,14 +364,18 @@ mapping-offset = 0
 instance-name = "ux"
 </code></pre>
 <h3 id="the-env-section"><a class="header" href="#the-env-section">The <code>[env]</code> section</a></h3>
-<p>The <code>[env]</code> section allows for an arbitrary number of user-defined key/value pairs.
-Each key's value is expected to be a string. Orbit exposes these key/value pairs as variables for string swapping in permissible strings as well as environment variables during the execution stage of the build process.</p>
+<p>The <code>[env]</code> section allows you to set additional environment variables for target, protocol and channel command invocations. Each key's value is expected to be a string.</p>
 <pre><code class="language-toml">[env]
-# Accessible as environment variable: ORBIT_ENV_FOO, string variable: orbit.env.foo
-FOO = "bar" 
-# Accessible as environment variable: ORBIT_ENV_LICENSE_FILE, string variable: orbit.env.license.file
 LICENSE_FILE = "3000@server" 
 </code></pre>
+<p>By default, the variables specified will not override values that already exist in the environment. This behavior can be changed by setting the <code>force</code> flag.</p>
+<p>Setting the <code>relative</code> flag evaluates the value as a config-relative path that is relative to the parent directory of the <code>.orbit</code> directory that contains the <code>config.toml</code> file. If the path exists, the value of the environment variable will be the full absolute path.</p>
+<pre><code class="language-toml">[env]
+TMPDIR = { value = "/home/tmp", force = true }
+OPENSSL_DIR = { value = "vendor/openssl", relative = true }
+</code></pre>
+<p>Orbit also exposes these key/value pairs as variables for string swapping in permissible strings. See <a href="./../topic/swapping.html">String Swapping</a>.</p>
+<p>Orbit protects its environment variables from being overridden, regardless if the <code>force</code> flag is set. Adding environment variables reserved by Orbit will have no effect.</p>
 <h3 id="the-target-array"><a class="header" href="#the-target-array">The <code>[[target]]</code> array</a></h3>
 <p>The <code>[[target]]</code> array lists user-defined targets for implementing the execution stage of the build process. Each target must exist under its own <code>[[target]]</code> header.</p>
 <h3 id="the-name-field"><a class="header" href="#the-name-field">The <code>name</code> field</a></h3>

@@ -25,6 +25,7 @@
 - [Topic Guide](./topic/topic.md)
     - [Why Orbit Exists](./starting/motivation.md)
     - [How Orbit Works](./topic/overview.md)
+    - [Packages and Cores](./topic/projects_and_cores.md)
     - [Ip Management](./topic/package_management.md)
     - [Extensible Builds](./topic/extensible_builds.md)
     - [Catalog](./topic/catalog.md)
@@ -33,7 +34,7 @@
     - [Protocols](./topic/protocols.md)
     - [Channels](./topic/channels.md)
     - [Orbit.lock](./topic/orbitlock.md)
-    - [Design Unit Scope](./topic/scope.md)
+    - [IP Core Visibility](./topic/scope.md)
     - [String Swapping](./topic/swapping.md)
     - [Dynamic Symbol Transformation](./topic/dst.md)
 

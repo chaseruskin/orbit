@@ -10,7 +10,7 @@ Orbit is a package manager and build system for VHDL, Verilog, and SystemVerilog
 
 ![](./docs/src/images/architecture.svg)
 
-Orbit groups one or more source code files (`.vhd`, `.v`, `.sv`) into a higher-level organizational unit called an __IP__. Orbit provides management capabilities at the ip level, making ips the "package" in its package management.
+Orbit groups one or more source code files (`.vhd`, `.v`, `.sv`) into a higher-level organizational unit called a _project_. Orbit provides management capabilities at the project level, making projects the "package" in its package management.
 
 Wondering what Orbit is and how it works? Check out the [Topic Overview](https://chaseruskin.github.io/orbit/topic/overview.html) for more details describing Orbit's system architecture and its key concepts.
 
@@ -46,7 +46,7 @@ With Orbit, a key layer of abstraction is introduced to manage your codebase wit
 
 ## Simple and intuitive to use
 
-Orbit manages your project by turning it into a package (referred to as an ip) with the addition of two files: "Orbit.toml" and "Orbit.lock".
+Orbit manages your project with the addition of two files: "Orbit.toml" and "Orbit.lock".
 
 ```
 cpu/
@@ -60,11 +60,11 @@ cpu/
     └── top_tb.sv
 ```
 
-The "Orbit.toml" file is a simple TOML file maintained by the user that requires only a couple fields, such as the ip's `name` and `version`, to get setup.
+The "Orbit.toml" file is a simple TOML file maintained by the user that requires only a couple fields, such as the project's `name` and `version`, to get setup.
 
 Filename: Orbit.toml
 ``` toml
-[ip]
+[project]
 name = "cpu"
 version = "1.0.0"
 uuid = "71vs0nyo7lqjji6p6uzfviaoi"
@@ -77,11 +77,11 @@ The "Orbit.lock" file is a detailed TOML file automatically maintained by Orbit 
 
 ## Easy code integration
 
-To encourage code reuse and faster development cycles, Orbit includes HDL-specific commands to integrate designs across ips. For example, Orbit can display HDL code snippets of existing design units to be instantiated within your local ip.
+To encourage code reuse and faster development cycles, Orbit includes HDL-specific commands to integrate designs across projects. For example, Orbit can display HDL code snippets of existing design units to be instantiated within your local project.
 
 This includes support for VHDL source code:
 ```
-$ orbit get and_gate --ip gates:2.0.0 --library --signals --instance
+$ orbit get and_gate --project gates:2.0.0 --library --signals --instance
 ```
 ``` vhdl
 library gates;
@@ -100,7 +100,7 @@ u_and_gate : entity gates.and_gate
 
 As well as support for Verilog/SystemVerilog source code:
 ```
-$ orbit get or_gate --ip gates:2.0.0 --signals --instance
+$ orbit get or_gate --project gates:2.0.0 --signals --instance
 ```
 ``` systemverilog
 logic a;
@@ -147,7 +147,7 @@ VHDL	cpu	/users/chase/projects/cpu/rtl/top.vhd
 SYSV	cpu	/users/chase/projects/cpu/sim/top_tb.sv
 ```
 
-Create a target by writing a script that reads Orbit's generated blueprint file and performs the backend processing with the EDA tools you prefer. Configure the target once, and use it across all future ips.
+Create a target by writing a script that reads Orbit's generated blueprint file and performs the backend processing with the EDA tools you prefer. Configure the target once, and use it across all future projects.
 
 ## Highlights
 
@@ -169,19 +169,19 @@ Some key features of Orbit are:
 
 - Integrate existing design units across projects faster than ever with Orbit's ability to display valid HDL code snippets for design unit instantiation, even across languages
 
-- Explore your evolving codebase to identify the projects you need next with Orbit's ability to quickly search through known ip by filtering based on keywords, status, and name
+- Explore your evolving codebase to identify the projects you need next with Orbit's ability to quickly search through known projects by filtering based on keywords, status, and name
 
 - Keep your source code independent of vendor tools and avoid vendor lock-in with Orbit's vendor-agnostic interface to backend EDA tools
 
 - Continue to use your preferred version control system (or none) due to Orbit's flexible approach to being version control system agnostic
 
-- Review high-level design unit circuit tree hierarchies at the HDL level or ip level
+- Review high-level design unit circuit tree hierarchies at the HDL level or project level
 
 - Linux, MacOS, and Windows are fully supported with zero additional dependencies
 
 - Docker images and GitHub Actions are available to support CI/CD workflows
 
-- Manifest files that mark a project as an ip only require a few user-defined fields to get setup
+- Manifest files only require a few user-defined fields to get setup
 
 - Write a target for your preferred EDA tools once, and reuse across projects with Orbit's support for configuration files
 

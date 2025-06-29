@@ -1949,6 +1949,29 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <p>Orbit generates a blueprint during the planning stage of the build process. The blueprint is a single file that lists the HDL source code files required for the particular build in topologically sorted order. Targets can also specify other file types to be collected into the blueprint. The blueprint is an artifact to be consumed by the target's process during the exection stage of the build process. Since it can frequently change with each build, it should not be checked into version control.</p>
 </li>
 </ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="packages-and-cores"><a class="header" href="#packages-and-cores">Packages and Cores</a></h1>
+<p>An important line of distinction is understanding the difference between a package and an IP core.</p>
+<p>An <em>IP core</em>, commonly referred to as a <em>core</em>, is the smallest amount of hardware description code that Orbit considers at a time. A core is a reusable block of design logic composed of one or more design units. A core's name is defined by its root design unit, which is where Orbit starts from when collecting the rest of the required design units for a particular build. Design units are the highest levels of abstraction in hardware description languages, which include VHDL entities and SystemVerilog modules, and can exist in one or more design files.</p>
+<p>All cores remain as their source files when installed by Orbit and are intended to be shared with multiple projects.</p>
+<p>The <em>core root</em> is a primary design unit that Orbit starts from and makes up the root of the core.</p>
+<p>A <em>package</em> is a collection of one or more cores. A package contains an <em>Orbit.toml</em> file, describing metadata for the collection of cores, as well as an auto-generated <em>Orbit.lock</em> file, recording the world state of the package. A package in this context is often synonymous with "project".</p>
+<p>To disambiguate the concept of an "Orbit package" from an "HDL package", much of the documentation in this book and throughout Orbit will favor using the word "project" instead of "package" when discussing an "Orbit package".</p>
+<p>Orbit operates at the package level for hardware description languages, hence being a <em>package manager</em>.</p>
+<p>Cores within a package can be made public or private, see <a href="topic/./scope.html">IP Core Visibility</a> for details.</p>
+<h2 id="orbit-package-vs-hdl-package"><a class="header" href="#orbit-package-vs-hdl-package">Orbit package vs. HDL package</a></h2>
+<p>A number of different concepts are commonly referred to by the word "package". This section clarifies the differences between two distinct meanings in Orbit packaging, "Orbit package" and "HDL package".</p>
+<h3 id="whats-an-orbit-package"><a class="header" href="#whats-an-orbit-package">What's an Orbit package?</a></h3>
+<p>An Orbit package is a collection of source files you can install. Most of the time, this is synonymous with "project". When you type <code>orbit install pkg</code>, or add <code>pkg = 1.0.0</code> to the <code>[dependencies]</code> table in your <code>Orbit.toml</code>, <code>pkg</code> is the name of the Orbit package. Orbit packages are what Orbit manages for you.</p>
+<h3 id="whats-an-hdl-package"><a class="header" href="#whats-an-hdl-package">What's an HDL package?</a></h3>
+<p>An HDL package is a design unit within VHDL or SystemVerilog. These packages are language constructs embedded within their respective language, and are often used to store and share data, methods, and parameters across other design units.</p>
+<p>In SystemVerilog, you can import packages using the <code>import</code> keyword, and in VHDL, you can reference packages using the <code>use</code> keyword.</p>
+<h3 id="what-are-the-links-between-orbit-packages-and-hdl-packages"><a class="header" href="#what-are-the-links-between-orbit-packages-and-hdl-packages">What are the links between Orbit packages and HDL packages?</a></h3>
+<p>An Orbit package contains one or more cores, and within each core exists one or more design units. In some cases, a core's set of design units may contain one or more HDL packages. Therefore, Orbit packages always encapsulate HDL packages and provide a means for other projects to reference these HDL packages.</p>
+<h2 id="references"><a class="header" href="#references">References</a></h2>
+<p><a href="https://packaging.python.org/en/latest/discussions/distribution-package-vs-import-package/">Python Packaging User Guide - Distribution package vs. import package</a></p>
+<p><a href="https://doc.rust-lang.org/book/ch07-01-packages-and-crates.html">The Rust Book - Packages and Crates</a></p>
+<p><a href="https://packaging.python.org/en/latest/discussions/package-formats/">Python Packaging User Guide - Package Formats</a></p>
+<p><a href="https://en.wikipedia.org/wiki/Semiconductor_intellectual_property_core">Wikipedia - Semiconductor intellectual property core</a></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="ip-management"><a class="header" href="#ip-management">Ip Management</a></h1>
 <p>Orbit is designed for users to efficiently manage their ip and scale their codebase over time. Many of the processes regarding ip management are automated and abstracted away from the user, enabling them to get their next design done faster. This section takes a closer look at how the <em>catalog</em> works in the context of Orbit and ip management. The catalog is a central concept to Orbit where existing ip are kept and maintained by Orbit.</p>
 <p><img src="topic/./../images/management.svg" alt="" /></p>
@@ -2125,25 +2148,25 @@ post.command =["python", "publish.py"]
 <blockquote>
 <p><strong>Note:</strong> An ip's lock file contains all the data required by it to reproduce its current state, so it does not require reading the lock files of its dependencies.</p>
 </blockquote>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="design-unit-scope"><a class="header" href="#design-unit-scope">Design Unit Scope</a></h1>
-<p>Scope, accessibility, and visibility are important concepts when writing code intended to be used by a greater audience. Specifying what is strictly internal to an ip (<em>private</em>) and what is accessible outside of an ip (<em>public</em>) can help with encapsulation, code organization, and managing complexity. Specifying accessibility for the modules within an ip can keep the ip's contents focused and express designer's intent on which modules should be used by the outside world.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="ip-core-visibility"><a class="header" href="#ip-core-visibility">IP Core Visibility</a></h1>
+<p>Scope, accessibility, and visibility are important concepts when writing code intended to be used by a greater audience. Specifying what is strictly internal to an package (<em>private</em>) and what is accessible outside of an package (<em>public</em>) can help with encapsulation, code organization, and managing complexity. Specifying accessibility for the modules within an package can keep the package's contents focused and express designer's intent on which modules should be used by the outside world.</p>
 <p>In traditional hardware description languages such as VHDL and SystemVerilog, there already exists this concept of scope and accessibility: modules external to one another can only access the other through its ports, leaving the internal architectures private to the modules that define them. Some signals are private to a module, that is, they are defined and used strictly internal to that module. A user of that module does not need to know the details of why that signal exists, rather, they simply need to understand what the module does at a system-level and how to communicate with it through its interface.</p>
-<p>However, at the design unit abstraction level, where users deal with the primary building blocks of these languages such as <code>entity</code>, <code>module</code>, and <code>package</code>, there is no sense of accessibility. All design units are accessible because this is the highest level of abstraction defined for these languages; there is nothing more abstract to encapsulate them. But with Orbit, another layer of abstraction is introduced called <em>ips</em>. An ip encapsulates design units, thus providing the opportunity to introduce scope and accessibility at the design unit abstraction level. Users can specify which source files, which in turn store design units, are public or private with respective to the ip that encapsulates them.</p>
+<p>However, at the design unit abstraction level, where users deal with the primary building blocks of these languages such as <code>entity</code>, <code>module</code>, and <code>package</code>, there is no sense of accessibility. All design units are accessible because this is the highest level of abstraction defined for these languages; there is nothing more abstract to encapsulate them. But with Orbit, two layers of abstraction are introduced: <a href="topic/./projects_and_cores.html"><em>packages</em> and <em>cores</em></a>. An package encapsulates one or more cores, which encapsulate one or more design units, thus providing the opportunity to introduce scope and accessibility at the design unit abstraction level. Users can specify which source files, which in turn store design units, are public or private with respective to the package that encapsulates them.</p>
 <h2 id="approach-to-accessibility"><a class="header" href="#approach-to-accessibility">Approach to accessibility</a></h2>
-<p>A good rule of thumb when thinking about accessibility is to make everything as private as possible; make accessible only what is strictly necessary. In the context of ips, this typically means making the following private to an ip:</p>
+<p>A good rule of thumb when thinking about accessibility is to make everything as private as possible; make accessible only what is strictly necessary. In the context of packages, this typically means making the following private to an package:</p>
 <ul>
-<li><strong>Testbenches</strong>: These modules are typically only used when actively developing an ip, not when it is needed as a dependency. A source file that contains a testbench is typically named with a <code>_tb</code> suffix.</li>
-<li><strong>Board-level design units</strong>: These modules are typically designed around application-specific requirements, stitching together the physical board's interface with the core logic of the application. An application would require its own board-level design unit, thus not making it a good candidate for accessibility within an ip. A source file that contains a board-level design unit is typically named with <code>top</code> or <code>app</code>.</li>
+<li><strong>Testbenches</strong>: These modules are typically only used when actively developing a project, not when it is needed as a dependency. A source file that contains a testbench is typically named with a <code>_tb</code> suffix.</li>
+<li><strong>Board-level design units</strong>: These modules are typically designed around application-specific requirements, stitching together the physical board's interface with the core logic of the application. An application would require its own board-level design unit, thus not making it a good candidate for accessibility within an project. A source file that contains a board-level design unit is typically named with <code>top</code> or <code>app</code>.</li>
 </ul>
-<p>Any other design units that should be left private are up to the developer and greatly depend on how an ip's code is organized.</p>
+<p>Any other design units that should be left private are up to the developer and greatly depend on how an project's code is organized.</p>
 <h2 id="file-accessibility"><a class="header" href="#file-accessibility">File accessibility</a></h2>
-<p>By default, all source files, and therefore all design units, are considered private to the current ip.</p>
-<p>An ip's manifest allows for users to set the <a href="topic/./../reference/manifest.html#the-public-field"><code>public</code></a> field, which can store a list of user-defined file patterns for Orbit to consider publicly accessible from outside the ip.</p>
+<p>By default, all source files, and therefore all design units, are considered private to the current project.</p>
+<p>An project's manifest allows for users to set the <a href="topic/./../reference/manifest.html#the-public-field"><code>public</code></a> field, which can store a list of user-defined file patterns for Orbit to consider publicly accessible from outside the project.</p>
 <h2 id="file-visibility"><a class="header" href="#file-visibility">File visibility</a></h2>
-<p>By default, all source files in an ip are included when Orbit performs source code analysis within the current ip.</p>
-<p>An ip's manifest allows for users to set an <a href="topic/./../reference/manifest.html#the-exclude-field"><code>exclude</code></a> field, which can store a list of user-defined file patterns for Orbit to ignore during file discovery.</p>
+<p>By default, all source files in a project are included when Orbit performs source code analysis within the current project.</p>
+<p>A project's manifest allows for users to set an <a href="topic/./../reference/manifest.html#the-exclude-field"><code>exclude</code></a> field, which can store a list of user-defined file patterns for Orbit to ignore during file discovery.</p>
 <h3 id="resolving-errors"><a class="header" href="#resolving-errors">Resolving errors</a></h3>
-<p>Orbit prevents duplicate primary design units from being identified within certain situations. For example, duplicate design unit names are not allowed within the same ip because Orbit cannot resolve ambiguity in which unit is used where.</p>
+<p>Orbit prevents duplicate primary design units from being identified within certain situations. For example, duplicate design unit names are not allowed within the same project because Orbit cannot resolve ambiguity in which unit is used where.</p>
 <p>An error may look like the following:</p>
 <pre><code>error: duplicate primary design units identified as "foo"
 
@@ -2162,7 +2185,7 @@ exclude = [
     "rtl/foo2.vhd"
 ]
 </code></pre>
-<p>In this example, the value for the above <code>exclude</code> field in the local ip's manifest will resolve the previous error because it prevents Orbit from seeing the file "rtl/foo2.vhd" during any file discovery operations.</p>
+<p>In this example, the value for the above <code>exclude</code> field in the local project's manifest will resolve the previous error because it prevents Orbit from seeing the file "rtl/foo2.vhd" during any file discovery operations.</p>
 <h2 id="file-pattern-format"><a class="header" href="#file-pattern-format">File pattern format</a></h2>
 <p>Both the <code>exclude</code> key and the <code>public</code> key take an array of strings as their value. These strings are interpreted as file patterns, which follow the <a href="https://git-scm.com/docs/gitignore#_pattern_format">.gitignore</a> format.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="string-swapping"><a class="header" href="#string-swapping">String Swapping</a></h1>
@@ -3344,7 +3367,7 @@ post.command = ["git", "commit", "-am", "Publishes {{orbit.ip.name}} v{{orbit.ip
 }
 </code></pre>
 <p>The latest schema version is <code>1</code>. Schema versions increment by 1 whenever there are breaking changes to the schema and its defined properties.</p>
-<h2 id="references"><a class="header" href="#references">References</a></h2>
+<h2 id="references-1"><a class="header" href="#references-1">References</a></h2>
 <p>Some ideas about exporting json from <code>orbit get</code> can be found at this <a href="https://blog.kellybrazil.com/2021/12/03/tips-on-adding-json-output-to-your-cli-app/">blog post</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="glob-patterns"><a class="header" href="#glob-patterns">Glob Patterns</a></h1>
 <p>A glob pattern is a string used for pattern matching against the names in a filesystem directory such that a name is expanded into a list of names matching that pattern.</p>

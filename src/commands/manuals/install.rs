@@ -17,7 +17,7 @@
 
 // This manual page was automatically generated from the mangen.py tool.
 pub const MANUAL: &str = r#"NAME
-    install - store an immutable reference to an ip
+    install - store an immutable reference to a project
 
 SYNOPSIS
     orbit install [options]

@@ -2,12 +2,12 @@
 
 In this tutorial, you will learn how to:
 
-[1.](#creating-an-ip) Create an ip from scratch  
-[2.](#integrating-design-units) Use Orbit to integrate an entity into a larger design  
-[3.](#building-an-ip-for-a-scripted-workflow) Build a design using a simple target  
-[4.](#making-an-ip-and-its-design-units-reusable) Release a version of an ip
+1. [Create a new project from scratch](#creating-a-new-project)  
+2. [Use Orbit to integrate an entity into a larger design](#integrating-design-units) 
+3. [Build a design using a simple target](#building-a-project-for-a-scripted-workflow) 
+4. [Release a new version of a project](#making-a-project-and-its-design-units-reusable)
 
-## Creating an ip
+## Creating a new project
 
 First, navigate to a directory in your file system where you would like to store the project. From there, let's issue our first `orbit` command:
 ```
@@ -157,7 +157,7 @@ and_gate
 
 Cool! We got a hierarchical view of our top-most design unit.
 
-## Building an ip for a scripted workflow
+## Building a project for a scripted workflow
 
 After all of our hard work, we are excited to show off our latest design on the newest Yilinx FPGA that just arrived in the mail. You realize you need a way to get your HDL code to the Yilinx synthesis tool in order to generate the final bitstream for your FPGA.
 
@@ -229,7 +229,7 @@ Filename: target/yilinx/fpga.bit
 011010101101011010101101
 ```
 
-## Making an ip and its design units reusable
+## Making a project and its design units reusable
 
 Now we are ready to move on to more advanced topics, so let's go ahead and store an immutable reference to this project to use in other projects in our developer journey. 
 
@@ -237,7 +237,7 @@ Now we are ready to move on to more advanced topics, so let's go ahead and store
 $ orbit install --all-public
 ```
 
-This command ran a series of steps that packaged our project and placed it into our _cache_. Internally, Orbit knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire ip catalog. By default, primary design units are private to the current ip, but the `--all-public` flag tells Orbit that we want all primary design units within the current ip to be directly accessible by other ips.
+This command ran a series of steps that packaged our project and placed it into our _cache_. Internally, Orbit knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire catalog. By default, IP cores are private to the current project, but the `--all-public` flag tells Orbit that we want all cores within the current project to be directly accessible by other projects.
 
 ```
 $ orbit search
@@ -247,7 +247,7 @@ gates                   0.1.0           install   8ah2qa261k8wgv55sd1qq17w9
 ```
 
 And there it is! You may notice your UUID (the random 25 characters and numbers)
-is different, and that is expected behavior. Let's continue to the next tutorial, where we introduce dependencies across ips.
+is different, and that is expected behavior. Let's continue to the next tutorial, where we introduce dependencies across projects.
 
 ### Additional notes on project structure
 

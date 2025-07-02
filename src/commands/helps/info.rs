@@ -16,7 +16,7 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"Display information about an ip.
+pub const HELP: &str = r#"Display information about a project.
 
 Usage:
     orbit info [options] [<ip>]

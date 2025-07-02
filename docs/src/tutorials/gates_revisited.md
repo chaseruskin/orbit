@@ -2,11 +2,11 @@
 
 In this tutorial, you will learn how to:
 
-[1.](#updating-the-gates-ip) Edit an existing ip  
-[2.](#extending-the-yilinx-target) Use environment variables and command-line arguments to create more robust targets  
-[3.](#rereleasing-the-gates-ip) Release the next version for an existing ip  
+1. [Update an existing project](#updating-the-gates-project)
+2. [Use environment variables and command-line arguments to create more robust targets](#extending-the-yilinx-target) 
+3. [Release the next version for a project](#rereleasing-the-gates-project) 
 
-## Editing the gates ip
+## Updating the gates project
 
 It seems we left out some logic gates when we last worked on the gates project, so let's implement them now. Navigate to the directory in your file system where you currently store the gates project.
 
@@ -79,7 +79,7 @@ begin
 end architecture;
 ```
 
-Showing the list of possible design units for the current project should now include the OR gate entity.
+Showing the list of possible cores for the current project should now include the OR gate entity.
 ```
 $ orbit info --units
 ```
@@ -91,9 +91,8 @@ or_gate                             entity        public
 
 ## Extending the Yilinx target
 
-
 Next, we want to program our Yilinx FPGA with the OR gate design to test it on the board. However, there are some quick updates we first want to apply to the ".orbit/yilinx.py" script.
-- We want a way to specify which I/O pins of the FPGA will be used during placement and routing
+- We want a way to specify which I/O pins of the FPGA will be used during placement and routing.
 - We want a way to specify whether to program the FPGA bitstream to SRAM storage (volatile) or flash storage (nonvolatile).
 
 After searching through Yilinx documentation for hours, you learn that the Yilinx design tool can accept .ydc files for FPGA pin assignments. Let's edit our yilinx target to collect any .ydc files our project may have during Orbit's planning step.
@@ -230,13 +229,13 @@ $ orbit build --list
 yilinx               Generate bitstreams for Yilinx FPGAs
 ```
 
-## Rereleasing the gates ip
+## Rereleasing the gates project
 
-We made changes to the gates ip, and now we want to have the ability to use these new updates or continue using the old changes. To do this, we want to update the version number in the manifest file. Let's edit the Orbit.toml file's version field to contain version "1.0.0".
+We made changes to the gates project, and now we want to have the ability to use these new updates or continue using the old changes. To do this, we want to update the version number in the manifest file. Let's edit the Orbit.toml file's version field to contain version "1.0.0".
 
 Filename: Orbit.toml
 ``` toml
-[ip]
+[project]
 name = "gates"
 version = "1.0.0" # Update the version to 1.0.0!
 uuid = "8ah2qa261k8wgv55sd1qq17w9"
@@ -245,7 +244,7 @@ uuid = "8ah2qa261k8wgv55sd1qq17w9"
 
 ```
 
-Finally, let's update the lockfile and release version 1.0.0 for the gates ip by installing it to our cache.
+Finally, let's update the lockfile and release version 1.0.0 for the gates project by installing it to our cache.
 ```
 $ orbit lock
 ```
@@ -261,7 +260,7 @@ $ orbit search gates
 gates                       1.0.0     install
 ```
 
-We can see that our previous version of gates is still available too; by default, the search command will report the highest known version for an ip.
+We can see that our previous version of gates is still available too; by default, the search command will report the highest known version for a project.
 ```
 $ orbit info gates --versions
 ```

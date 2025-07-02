@@ -17,7 +17,7 @@
 
 // This manual page was automatically generated from the mangen.py tool.
 pub const MANUAL: &str = r#"NAME
-    init - initialize an ip from an existing project
+    init - initialize a project from an existing directory
 
 SYNOPSIS
     orbit init [options] [<path>]

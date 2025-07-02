@@ -17,7 +17,7 @@
 
 // This manual page was automatically generated from the mangen.py tool.
 pub const MANUAL: &str = r#"NAME
-    publish - post an ip to a channel
+    publish - post a project to a channel
 
 SYNOPSIS
     orbit publish [options]

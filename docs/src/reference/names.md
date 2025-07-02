@@ -1,4 +1,4 @@
-# Ip Specification
+# Project Specification
 
 In order to identify an ip among others, Orbit requires users to assign a human-readable _name_ to each created ip. The name is just one component of how to identify an ip, while an ip is fully identified by its _specification_, or _spec_.
 

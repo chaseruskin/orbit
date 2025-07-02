@@ -4,7 +4,7 @@ An important line of distinction is understanding the difference between a packa
 
 An _IP core_, commonly referred to as a _core_, is the smallest amount of hardware description code that Orbit considers at a time. A core is a reusable block of design logic composed of one or more design units. A core's name is defined by its root design unit, which is where Orbit starts from when collecting the rest of the required design units for a particular build. Design units are the highest levels of abstraction in hardware description languages, which include VHDL entities and SystemVerilog modules, and can exist in one or more design files.
 
-All cores remain as their source files when installed by Orbit and are intended to be shared with multiple projects.
+All cores remain as source code when installed by Orbit and are intended to be shared with multiple projects.
 
 The _core root_ is a primary design unit that Orbit starts from and makes up the root of the core.
 

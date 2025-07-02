@@ -17,7 +17,7 @@
 
 // This manual page was automatically generated from the mangen.py tool.
 pub const MANUAL: &str = r#"NAME
-    new - create a new ip
+    new - create a new project
 
 SYNOPSIS
     orbit new [options] <path>

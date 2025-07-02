@@ -16,7 +16,7 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"Initialize an ip from an existing project.
+pub const HELP: &str = r#"Initialize a project from an existing directory.
 
 Usage:
     orbit init [options] [<path>]

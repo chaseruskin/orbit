@@ -16,7 +16,7 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"Save the world state of an ip.
+pub const HELP: &str = r#"Save the world state of a project.
 
 Usage:
     orbit lock [options]

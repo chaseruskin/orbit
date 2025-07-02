@@ -17,7 +17,7 @@
 
 // This manual page was automatically generated from the mangen.py tool.
 pub const MANUAL: &str = r#"NAME
-    remove - delete an ip from the catalog
+    remove - delete a project from the catalog
 
 SYNOPSIS
     orbit remove [options] <ip>

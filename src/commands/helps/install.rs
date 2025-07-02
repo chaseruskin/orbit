@@ -16,7 +16,7 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"Store an immutable reference to an ip.
+pub const HELP: &str = r#"Store an immutable reference to a project.
 
 Usage:
     orbit install [options]

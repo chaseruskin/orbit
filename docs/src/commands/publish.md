@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-publish - post an ip to a channel
+publish - post a project to a channel
 
 ## __SYNOPSIS__
 

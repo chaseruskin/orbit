@@ -3,7 +3,7 @@
 # ------------------------------------------------------------------------------
 [new]
 name = "new"
-summary = "create a new ip"
+summary = "create a new project"
 synopsis = "orbit new [options] <path>"
 description = """
 Creates a new ip at the target directory `<path>`. The path is assumed to not
@@ -38,7 +38,7 @@ orbit new eecs/lab1 --name adder
 # ------------------------------------------------------------------------------
 [init]
 name = "init"
-summary = "initialize an ip from an existing project"
+summary = "initialize a project from an existing directory"
 synopsis = "orbit init [options] [<path>]"
 description = """
 Initializes an ip at the file system directory `<path>`. If not path is
@@ -79,7 +79,7 @@ orbit init --uuid
 # ------------------------------------------------------------------------------
 [info]
 name = "info"
-summary = "display information about an ip"
+summary = "display information about a project"
 synopsis = "orbit info [options] [<ip>]"
 description = """
 Displays various bits of information about a particular ip. If no ip is
@@ -292,7 +292,7 @@ orbit tree -e ip --ascii
 # ------------------------------------------------------------------------------
 [lock]
 name = "lock"
-summary = "save the world state of an ip"
+summary = "save the world state of a project"
 synopsis = "orbit lock [options]"
 description = """
 Saves the state of the world for the local ip. To accomplish this, Orbit reads
@@ -446,7 +446,7 @@ orbit build --target xsim --force -- --help
 # ------------------------------------------------------------------------------
 [publish]
 name = "publish"
-summary = "post an ip to a channel"
+summary = "post a project to a channel"
 synopsis = "orbit publish [options]"
 description = """
 Performs a series of checks for a local ip and then releases it to its 
@@ -500,7 +500,7 @@ orbit publish -c hyperspace-labs -y
 # ------------------------------------------------------------------------------
 [search]
 name = "search"
-summary = "browse the ip catalog"
+summary = "browse the catalog"
 synopsis = "orbit search [options] [<ip>]"
 description = """
 Returns a list of the ip found in the catalog.
@@ -552,7 +552,7 @@ orbit search --keyword cdc --limit 20 -i
 # ------------------------------------------------------------------------------
 [install]
 name = "install"
-summary = "store an immutable reference to an ip"
+summary = "store an immutable reference to a project"
 synopsis = "orbit install [options]"
 description = """
 This command will place an ip into the cache. By default, the specified version
@@ -605,7 +605,7 @@ orbit install alu:2.3.7 --path ./projects/alu --force
 # ------------------------------------------------------------------------------
 [remove]
 name = "remove"
-summary = "delete an ip from the catalog"
+summary = "delete a project from the catalog"
 synopsis = "orbit remove [options] <ip>"
 description = """
 Deletes save data for a known ip from the catalog. The ip's data for its

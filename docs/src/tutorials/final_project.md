@@ -2,20 +2,20 @@
 
 In this tutorial, you will learn how to:
 
-[1.](#specifying-multiple-dependencies-for-an-ip) Depend on multiple ips for a single project  
-[2.](#overcoming-hdl-problems-namespace-pollution) Use Orbit to overcome namespace pollution  
-[3.](#reusing-targets-that-are-globally-configured) Build a project with a globally-configured target  
+1. [Depend on multiple projects for a single project](#specifying-multiple-dependencies-for-a-project)
+2. [Use Orbit to overcome namespace pollution](#overcoming-hdl-problems-namespace-pollution) 
+3. [Build a project with a globally-configured target](#reusing-targets-that-are-globally-configured) 
 
-## Specifying multiple dependencies for an ip
+## Specifying multiple dependencies for a project
 
-After the quick detour back to the gates ip, we are ready to tackle our final challenge in this mini tutorial series: the full adder. Like our previous projects, navigate to a directory in your file system where you would like to store the project.
+After the quick detour back to the gates project, we are ready to tackle our final challenge in this mini tutorial series: the full adder. Like our previous projects, navigate to a directory in your file system where you would like to store the project.
 ```
 orbit new full-add --lib adding
 ```
 
 For the rest of this tutorial, we will be working relative to the project directory "/full-add" that currently stores our new full-add project. 
 
-For this final project, we will need circuits described in both the gate ip and half-add ip. Let's quickly recall if version 1.0.0 of gates has the OR gate we will need.
+For this final project, we will need circuits described in both the gate project and half-add project. Let's quickly recall if version 1.0.0 of gates has the OR gate we will need.
 ```
 $ orbit info gates:1.0.0 --units
 ```
@@ -25,19 +25,19 @@ nand_gate                           entity        public
 or_gate                             entity        public 
 ```
 
-Yup! It's there, and we know we will need some half adders as well. Let's add both ips to our manifest file.
+Yup! It's there, and we know we will need some half adders as well. Let's add both projects to our manifest file.
 
 filename: Orbit.toml
 ``` toml
-[ip]
+[project]
 name = "full-add"
 version = "0.1.0"
 uuid = "9pu41jrkfhwq646bfw4g7o9ah"
 library = "adding"
 
 [dependencies]
-gates = "1.0.0" # Add the gates ip as a dependency!
-half-add = "0.1.0" # Add the half-add ip as a dependency too!
+gates = "1.0.0" # Add the gates project as a dependency!
+half-add = "0.1.0" # Add the half-add project as a dependency too!
 ```
 
 Okay, time to start coding!
@@ -46,7 +46,7 @@ Okay, time to start coding!
 
 Our full adder circuit will be constructed of 2 half adders and an OR gate. Let's collect some HDL code snippets to use for our full adder circuit.
 ```
-$ orbit get half_add --ip half-add -li
+$ orbit get half_add --project half-add -li
 ```
 ```
 library adding;
@@ -62,7 +62,7 @@ uX : entity adding.half_add
 
 Remember, we can use the shorthand switches `-l` and `-i` for the `--library` and `--instance` flags respectively. Let's also get the code snippet for the OR gate.
 ```
-$ orbit get or_gate --ip gates:1.0.0 -li
+$ orbit get or_gate --project gates:1.0.0 -li
 ```
 ```
 library gates;
@@ -129,7 +129,7 @@ end architecture;
 
 Our design heirarchy is getting more complex; we have full adders constructed of half adders and OR gates, half adders constructed of NAND gates, OR gates constructed of... uh-oh. More NAND gates. 
 
-The NAND gate design unit used in the OR gates is different from NAND gates used in the half adders because they reside in different versions of the gates ip (essentially different ips). So did we just define an NAND gate entity twice with the same identifier? Yes, and thanks to Orbit, this situation is okay.
+The NAND gate design unit used in the OR gates is different from NAND gates used in the half adders because they reside in different versions of the gates project (essentially different projects). So did we just define an NAND gate entity twice with the same identifier? Yes, and thanks to Orbit, this situation is okay.
 
 ### Huh?
 
@@ -147,7 +147,7 @@ full_add (full-add:0.1.0)
     └── nand_gate_9f476275c5a024eb (gates:0.1.0)
 ```
 
-The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, Orbit appends the beginning checksum digits from the ip of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict. 
+The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, Orbit appends the beginning checksum digits from the project of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict. 
 
 To us though, these slight identifier renamings remain hidden because they occur among indirect dependencies in relation to our current project. When deciding which design unit to rename, Orbit will always choose to rename the unit that is used as an indirect dependency. This key choice allows us to keep using the original unit name when integrating design units into the current project.
 
@@ -215,4 +215,4 @@ YILINX: Generating bitstream...
 YILINX: Bitstream saved at: target/yilinx/full_add.bit
 ```
 
-Great work! This marks the end to this tutorial series, but the beginning of your experience with Orbit, a package manager and build system for HDLs.
+Great work! This marks the end to this tutorial series, but the beginning of your experience with Orbit, a package manager and build system for VHDL, Verilog, and SystemVerilog.

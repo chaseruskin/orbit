@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-install - store an immutable reference to an ip
+install - store an immutable reference to a project
 
 ## __SYNOPSIS__
 

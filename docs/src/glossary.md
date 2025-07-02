@@ -21,9 +21,6 @@ A configuration is a collection of user-defined settings intended to extend and 
 ### Fileset
 A fileset is a collection of related files under a given name. A glob-style file pattern is used to discover the files of a given fileset. Filesets are used to group common files together into the blueprint during the planning stage of the build process. Orbit comes with built-in filesets for VHDL, Verilog, and SystemVerilog files. In addition, a target can configure its own custom filesets.
 
-### Intellectual Property (IP)
-An ip is a project with a manifest file at its root directory. At a minimum, an ip has two attributes: a name and a uuid. The name is a human-friendly identifier for the ip, while the uuid is a machine-friendly identifier for the ip used to help reduce ambiguity when potentially introducing ips of the same name into the catalog.
-
 ### Ip Specification (spec)
 The ip specification, or spec, describes the format for identifying and referencing an ip. Each ip in the user's catalog must have a unique spec. The format of a ip's spec is: `<name>[+<uuid>][:<version>]`.
 
@@ -46,10 +43,22 @@ See [lockfile](#lockfile).
 See [manifest](#manifest).
 
 ### Package
-See [IP](#intellectual-property-ip).
+A package is a collection of source files and a `Orbit.toml` [manifest](#manifest) file which describes the package. A package has a name, version, and UUID, which are used for specifying dependencies between packages.
+
+The _package root_ is the directory where the package's `Orbit.toml` manifest is located.
+
+The _package ID specification_, or _SPEC_, is a string used to uniquely reference a specific version of a package from a specific source.
+
+A package is more commonly referred to as a [project](#project).
+
+### Package Manager
+
+Broadly speaking, a package manager is a program (or collection of related programs) in a software ecosystem that automates the process of obtaining, installing, and upgrading artifacts. Within a programming language ecosystem, a package manager is a developer-focused tool whose primary functionality is to download library artifacts and their dependencies from some central repository; this capability is often combined with the ability to perform software builds (by invoking the language-specific compiler).
+
+Orbit is a package manager within the HDL ecosystem. Orbit downloads your HDL [package](#package)'s dependencies, resolves the order of source files required for a backend build process, and makes distributable packages.
 
 ### Project
-A project is a collection of HDL source files and any other required files related to a specific application or library. Placing a manifest in a project makes it an ip.
+Another name for a [package](#package).
 
 ### Protocol
 A protocol is a process configured by the user that Orbit may use to download an ip from the internet.

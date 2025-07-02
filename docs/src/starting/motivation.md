@@ -26,15 +26,17 @@ With the right tools, hardware development can experience faster development cyc
 
 > Having well-designed and easily accessible tools is important to any form of development. Creativity's greatest limiting factor is the tools of which are available to turn an idea into a reality.
 
+Rather than work directly with source code files and your EDA tools, you can avoid the difficulties involved in reusing and updating code by introducing a higher-level ["_package_"](../glossary.md#package) abstraction and by using a [_package manager_](../glossary.md#package-manager).
+
 ## Enter: Orbit
 
 _Orbit_ is an attempt at bringing state of the art package management to HDLs. It automates the process of organizing, maintaining, and reusing HDL source code across projects. It is a tool that allows HDL projects to declare various dependencies and ensure that you'll always get a repeatable build. To accomplish this goal, Orbit does four things:
 
-- Introduces two metadata files with various bits of ip information.
-- Fetches and installs your ip's dependencies.
-- Invokes any user-defined build tool to adapt to your workflow and EDA tools
+- Introduces two metadata files with various bits of project information.
+- Fetches and installs your project's dependencies.
+- Invokes any user-defined build tool to adapt to your workflow and EDA tools.
 - Introduces conventions to make working with HDL projects easier. 
 
-To a large extent, Orbit normalizes the commands needed to build or test a given ip; this is one aspect of the aforementioned conventions. The same command can be used to build a project for any number of EDA tools. Furthermore, Orbit will automatically fetch any dependencies you have defined for your current project and arrange for them to be included in your build as needed.
+To a large extent, Orbit normalizes the commands needed to build or test a given project; this is one aspect of the aforementioned conventions. The same command can be used to build a project for any number of EDA tools. Furthermore, Orbit will automatically fetch any dependencies you have defined for your current project and arrange for them to be included in your build as needed.
 
 One of the major goals behind Orbit is to provide the right infrastructure and ecosystem for anyone's hardware projects to live and evolve over time. By introducing Orbit into your workflow, we believe hardware development becomes a more enjoyable experience where more of your time is devoted to _actually_ creating cool things, not racking up technical debt and fighting to manage millions of files. After all, the saying should be "_Hardware is cool_", right?

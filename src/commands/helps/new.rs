@@ -16,7 +16,7 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"Create a new ip.
+pub const HELP: &str = r#"Create a new project.
 
 Usage:
     orbit new [options] <path>

@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-lock - save the world state of an ip
+lock - save the world state of a project
 
 ## __SYNOPSIS__
 

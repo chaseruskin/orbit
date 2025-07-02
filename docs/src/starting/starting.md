@@ -11,9 +11,9 @@ There are two processes to obtaining and maintaining Orbit:
 
 ## Seeking Help
 
-Orbit is a package manager and development tool. With learning new tools there is always a learning curve. Orbit tries to make it less intimidating to use by offering help and information in a variety of ways:
+Orbit is a package manager and build system tool. With learning any new tool there is always a learning curve. Orbit tries to make it less intimidating to use by offering help and information in a variety of ways:
 - To see a list of common commands and options, just use `orbit` with no arguments.
-- To view quick summaries on commands, use `-h, --help` flags.
+- To view quick summaries of commands, use `-h, --help` flags.
 - To view more detailed manual pages and information, use `orbit help`.
 
-But since you are here, complete documentation can be found on this website.
+But since you are here, complete documentation can be found in this book.

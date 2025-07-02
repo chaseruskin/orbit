@@ -2,11 +2,11 @@
 
 In this tutorial, you will learn how to:
 
-[1.](#referencing-external-ips) Specify an external ip as a dependency  
-[2.](#learning-about-ips) Use Orbit to learn more about external ips and their design units  
-[3.](#integrating-design-units-across-ips) Leverage Orbit across ips to integrate an entity into a separate ip  
+1. [Specify an external project as a dependency](#referencing-external-projects)  
+2. [Use Orbit to learn more about external projects and their cores](#learning-about-projects) 
+3. [Leverage Orbit across projects to integrate an entity into a separate project](#integrating-design-units-across-projects)
 
-## Referencing external ips
+## Referencing external projects
 
 After completing the gates project from the previous tutorial ahead of schedule, you take a well deserved vacation. Now you have returned to work and are tasked with building a half adder.
 
@@ -29,7 +29,7 @@ Add a new entry for gates to the dependencies table in our project's manifest, O
 
 Filename: Orbit.toml
 ``` toml
-[ip]
+[project]
 name = "half-add"
 version = "0.1.0"
 uuid = "7ddyiof2rzj3g8onn4tfzb69a"
@@ -41,11 +41,11 @@ gates = "0.1.0" # Add the dependency here!
 
 We've referenced it, now we have to use it!
 
-## Learning about ips
+## Learning about projects
 
-Your memory is a little foggy on what gates actually did, and what entities were available. Luckily, we can query for information through Orbit about ips and their design units.
+Your memory is a little foggy on what gates actually did, and what cores are available. Luckily, we can query for information through Orbit about projects and their cores.
 
-Let's remember what entities we have at our disposal.
+Let's remember what cores we have at our disposal.
 
 ```
 $ orbit info gates --units
@@ -69,12 +69,12 @@ end architecture;
 ```
 Cool, we had used the VHDL keyword `nand` to describe that particular circuit. Sometimes it may be insightful to read code snippets and comments from external design units when trying to integrate them into a new project.
 
-## Integrating design units across ips
+## Integrating design units across projects
 
 Let's use the NAND gate we previously defined to construct a half adder circuit. We can use the shorthand switches `-s` and  `-i` for the  `--signals` and `--instance` flags, respectively.
 
 ```
-$ orbit get --ip gates nand_gate -si
+$ orbit get --project gates nand_gate -si
 ```
 ```
 signal a : std_logic;
@@ -163,31 +163,31 @@ half_add (half-add:0.1.0)
 └── nand_gate (gates:0.1.0)
 ```
 
-Finally, let's install this ip to the cache for future reuse as well. But before we can install any ip to our cache, an ip must have an up to date lockfile.
+Finally, let's install this project to the cache for future reuse as well. But before we can install any project to our cache, a project must have an up to date lockfile.
 
 Lockfiles are updated whenever a user calls `orbit build` or `orbit test`, but they can also be updated with the dedicated `orbit lock` command. Let's go ahead and generate the lockfile now.
 ```
 $ orbit lock
 ```
 
-Now we can safely install the ip to our catalog.
+Now we can safely install the project to our catalog.
 ```
 $ orbit install --all-public
 ```
 
-Nice, now we have successfully reused designs across ips! However, maybe we should have designed all the logic gates in the gates ip...
+Nice, now we have successfully reused designs across projects! However, maybe we should have designed all the logic gates in the gates project...
 
 ### Additional notes on dependencies
 
-Before integrating a design unit from an external ip into a separate project, it's important to first update the Orbit.toml file. This manifest file has a dependencies section, which allows you to tell Orbit which ips to bring into the current project scope. Without the ips in scope, Orbit may be unable to identify where you got a reference for a particular design unit. Orbit denotes an unknown design unit with a ? when displaying the design hierarchy.
+Before integrating a design unit from an external project into the current project, it's important to first update the "Orbit.toml" file. This manifest file has a dependencies section, which allows you to tell Orbit which projects to bring into the current project's scope. Without the correct projects in scope, Orbit may be unable to identify where you got a reference for a particular design unit. Orbit denotes an unknown design unit with a ? when displaying the design hierarchy.
 ```
 half_add (half-add:0.1.0)
 └─ nand_gate ?
 ```
 
-After introducing dependencies at the project level, it's also important to maintain an up-to-date lockfile, Orbit.lock. In most cases, Orbit will automatically generate it when it needs it, however, you as the user can also explicitly request Orbit to update the lockfile.
+After introducing dependencies at the project level, it's also important to maintain an up-to-date lockfile, "Orbit.lock". In most cases, Orbit will automatically generate it when it needs it, however, you as the user can also explicitly request Orbit to update the lockfile.
 ```
 $ orbit lock
 ```
 
-The lockfile saves information for Orbit to use later when needing to reconstruct the state of an ip. This includes saving information about all ip dependencies, their checksums, and potential sources of retrieval. Remember, the Orbit.lock file is automatically managed by Orbit and does not require direct user editing.
+The lockfile saves information for Orbit to use later when needing to reconstruct the state of a project. This includes saving information about all project dependencies, their checksums, and potential sources of retrieval. Remember, the Orbit.lock file is automatically managed by Orbit and does not require direct user editing.

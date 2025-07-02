@@ -17,7 +17,7 @@
 
 // This manual page was automatically generated from the mangen.py tool.
 pub const MANUAL: &str = r#"NAME
-    search - browse the ip catalog
+    search - browse the catalog
 
 SYNOPSIS
     orbit search [options] [<ip>]

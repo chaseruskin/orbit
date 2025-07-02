@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-remove - delete an ip from the catalog
+remove - delete a project from the catalog
 
 ## __SYNOPSIS__
 

@@ -16,7 +16,7 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"Post an ip to a channel.
+pub const HELP: &str = r#"Post a project to a channel.
 
 Usage:
     orbit publish [options]

@@ -16,7 +16,7 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"Browse the ip catalog.
+pub const HELP: &str = r#"Browse the catalog.
 
 Usage:
     orbit search [options] [<ip>]

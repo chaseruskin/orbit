@@ -17,7 +17,7 @@
 
 // This manual page was automatically generated from the mangen.py tool.
 pub const MANUAL: &str = r#"NAME
-    info - display information about an ip
+    info - display information about a project
 
 SYNOPSIS
     orbit info [options] [<ip>]

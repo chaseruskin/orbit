@@ -1,53 +1,51 @@
-# Ip
+# Projects
 
-Ips are the core component that Orbit operates on as a package manager. First, let's understand some key terms related to ip in the context of Orbit.
+A _project_ is a collection of one or more IP cores. Projects are the _packages_ Orbit manages as a package manager. First, let's understand some key terms related to packages in the context of Orbit.
 
 ## Terminology
 
-A developer's tasks often involve interfacing with a collection of closely related files (source code, scripts, text files). This collection of closely related files is typically stored under a single directory and is called a _project_.
+A developer's tasks often involve interfacing with a collection of closely related files (source code, scripts, text files). This collection of closely related files is typically grouped together under a single directory called a project. Orbit recognizes a directory on your filesystem as a project by finding its _manifest_, which contains metadata about the project, such as its name and version. The manifest file must be named "Orbit.toml" and exists at the root of the project.
 
-The core operations of a package manager revolve around _packages_. A _package_ is a project _with additional information provided by the developer_. This "additional information" is called _metadata_, and it is written to a special file called a _manifest_. The manifest must be placed at the project's root directory. Without manifests, a package manager would not know which projects it should manage and what each project's current state is in regards to being a package.
+In the context of being a package manager for digital hardware, Orbit calls its packages _projects_ to disambiguite from package constructs found within HDLs. For more information, see [Packages and Cores](./projects_and_cores.md).
 
-In the context of being a package manager for digital hardware, Orbit calls a package an _ip_. An ip's manifest file is "Orbit.toml", with case-sensitivity.
+## Working project
 
-## Working ip
+Typically, developers work on one project at a given time (while we can work on projects concurrently, we unfortunately are not parallel processors). The _working project_ is the project that is currently being developed at a given moment. Orbit identifies the working project by checking along the working directory and its parent directories for a manifest file. Once a manifest file is found, Orbit considers this the working project. Some Orbit commands only work when they are called within the working project (`orbit lock`, `orbit build`).
 
-Typically, developers work on one project at a given time (while we can work on projects concurrently, we unfortunately are not parallel processors). The _working ip_ is the ip that is currently being developed at a given moment. Orbit identifies the working ip by checking along the working directory and its parent directories for a manifest file. Once a manifest file is found, Orbit considers this the working ip. Some Orbit commands only work when they are called within the working ip (`orbit lock`, `orbit build`).
+The working project may also be called other names, such as the _local project_ or _current project_. These name differences are only differences in name as the same meaning is preserved.
 
-The working ip may also be called other names, such as the _local ip_ or _current ip_. These name differences are only differences in name as the same meaning is preserved.
-
-## Anatomy
+## Anatomy of a project
 
 Since Orbit focuses on digital hardware projects, it automatically detects and manages files that store HDL source code. Files that store HDL source code are called _source files_. Any other files, such as scripts and test vectors, are considered _auxiliary files_.
 
-Auxiliary files can be injected into the planning stage by specifying _filesets_ for the given target. A _fileset_ is glob-style pattern that collects matching files under a common name within the working ip. These matched files will appear in the target's generated blueprint file for future execution.
+Auxiliary files can be injected into the planning stage by specifying custom _filesets_ for the given target. A _fileset_ is glob-style pattern that collects matching files under a common name within the working project. These matched files will appear in the target's generated blueprint file for future execution.
 
-So, what files are inside an ip?
-- _Source files_: Stores HDL source code (VHDL, Verilog)
+So, what files are inside a project?
+- _Source files_: Stores HDL source code (VHDL, Verilog, SystemVerilog)
 - _Auxiliary files_: Any additional files that do not store source code
-- _Manifest file_ (`Orbit.toml`): Stores the ip's metadata provided by the user
-- _Lock file_ (`Orbit.lock`): Saves the ip's world state for reproducibility purposes
+- _Manifest file_ (`Orbit.toml`): Stores the project's metadata provided by the user
+- _Lock file_ (`Orbit.lock`): Saves the project's world state for reproducibility purposes
 
-All files __except the lock file__ are expected to be edited by the user. Orbit automatically maintains the lock file to ensure it can reproduce the ip's world state in the future.
+All files __except the lock file__ are expected to be edited by the user. Orbit automatically maintains the lock file to ensure it can reproduce the project's world state in the future.
 
 ### Reserved names
 
-File names that begin with ".orbit-" are reserved for internal use and are not allowed at the root directory of an ip. Files that are named with this pattern are used by Orbit in the ip catalog to store additional metadata about the ip.
+File names that begin with ".orbit-" are reserved for internal use and are not allowed at the root directory of a project. Files that are named with this pattern are used by Orbit in the catalog to store additional metadata about the project.
 
 ## Names
 
-An ip's name is a human-readable identifier given to an ip so users can easily remember and locate packages of interest.
+A project's name is a human-readable identifier given to an project so users can easily remember and locate packages of interest.
 
 ```
 gates
 ```
 
-An ip's _specification_, more commonly called a _spec_, is the full resolved name of an ip. The spec involves the ip's name, uuid, and version. A complete spec looks like the following:
+A project's _specification_, more commonly called a _spec_, is the full resolved name of an project. The spec involves the project's name, uuid, and version. A complete spec looks like the following:
 
 ```
 gates+8ah2qa261k8wgv55sd1qq17w9:1.0.0
 ```
 
-When asking Orbit to operate on a particular ip outside of the working ip, Orbit will ask you to provide the ip's spec. Orbit uses the spec to lookup the ip in the catalog and then carry out the requested function on that ip. 
+When asking Orbit to operate on a particular project outside of the working project, Orbit will ask you to provide the project's spec. Orbit uses the spec to lookup the project in the catalog and then carry out the requested function on that project. 
 
-To learn more about an ip spec, see [Ip Specification](./../reference/names.md).
+To learn more about an project spec, see [Project Specification](./../reference/names.md).

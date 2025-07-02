@@ -4,10 +4,10 @@
 
 Orbit is a package manager and build system for VHDL, Verilog, and SystemVerilog. Its design is driven by two core principles:
 
-- Minimize technical debt associated with evolving HDL codebases
-- Tailor to the wide range of users and their possible workflows with a high degree of modularity and extensibility 
+1. Minimize technical debt associated with evolving HDL codebases
+2. Tailor to the wide range of users and their possible workflows with a high degree of modularity and extensibility 
 
-Orbit's use case is targeted toward anyone interested in developing digital hardware; this includes industrial, academic, and personal settings. Create your next commerical product, university lab assignment, or personal project, using a tool that is tailored to today's advanced development processes.
+Orbit's use case is targeted toward anyone interested in developing digital hardware; this includes industrial, academic, and personal settings. Create your next commerical product, university lab assignment, or personal project, using a tool that is tailored to today's modern development processes.
 
 ## Sections
 This book is loosely divided into 4 sections:

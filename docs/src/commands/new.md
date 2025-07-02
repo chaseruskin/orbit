@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-new - create a new ip
+new - create a new project
 
 ## __SYNOPSIS__
 

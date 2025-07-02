@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-search - browse the ip catalog
+search - browse the catalog
 
 ## __SYNOPSIS__
 

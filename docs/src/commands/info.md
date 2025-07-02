@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-info - display information about an ip
+info - display information about a project
 
 ## __SYNOPSIS__
 

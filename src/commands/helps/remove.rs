@@ -16,7 +16,7 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"Delete an ip from the catalog.
+pub const HELP: &str = r#"Delete a project from the catalog.
 
 Usage:
     orbit remove [options] <ip>

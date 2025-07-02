@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-init - initialize an ip from an existing project
+init - initialize a project from an existing directory
 
 ## __SYNOPSIS__
 

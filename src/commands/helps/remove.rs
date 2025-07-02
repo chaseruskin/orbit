@@ -19,10 +19,10 @@
 pub const HELP: &str = r#"Delete a project from the catalog.
 
 Usage:
-    orbit remove [options] <ip>
+    orbit remove [options] <project>
 
 Arguments:
-    <ip>                  ip specification
+    <project>             project ID specification
 
 Options:
     --force               skip interactive prompts

@@ -19,14 +19,14 @@
 pub const HELP: &str = r#"Browse the catalog.
 
 Usage:
-    orbit search [options] [<ip>]
+    orbit search [options] [<project>]
 
 Options:
-    <ip>                  ip's name
-    --install, -i         filter ip installed to the cache
-    --download, -d        filter ip downloaded to the archive
-    --available, -a       filter ip available via channels
-    --keyword <term>...   include ip that have this keyword
+    <project>             project ID specification
+    --install, -i         filter projects installed to the cache
+    --download, -d        filter projects downloaded to the archive
+    --available, -a       filter projects available via channels
+    --keyword <term>...   include projects that have this keyword
     --limit <n>           maximum number of results to return
     --match               return results that pass each filter
 

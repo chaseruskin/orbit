@@ -12,16 +12,17 @@ orbit install [options]
 
 ## __DESCRIPTION__
 
-This command will place an ip into the cache. By default, the specified version
-is the 'latest' released version orbit can identify.
+This command will place a project into the cache. By default, the specified
+version is the 'latest' released version of the project that Orbit has 
+identified.
 
-When this command is ran without specifying the <ip> or a source (such as
-`--url` or `--path`), it will attempt to install the current working ip, if it
+When this command is ran without specifying the `<project>` or a source (such 
+as `--url` or `--path`), it will attempt to install the current project, if it
 exists.
 
-By default, any dependencies required only for development by the target ip are
-omitted from installation. To also install these dependencies, use the 
-`--all-deps` flag.
+By default, any dependencies required only for development by the target
+project are omitted from installation. To also install these dependencies, 
+use the `--all-deps` flag.
 
 If a protocol is recognized using `--protocol`, then an optional tag can also 
 be supplied to help the protocol with providing any additional information it
@@ -31,32 +32,29 @@ The `--path` option can accept a file system path that is either 1) the root
 directory that contains the manifest file or 2) a zip archive file that when 
 uncompressed, has the manifest file at the root directoy.
 
-The `--all-public` flag can be used to skip providing the "ip.public" field
-in the current ip's manifest, granting the assumption that all source files
-should be public. It can only be present when installing from a local ip and
-when the "ip.public" field does not exist.
+The `--all-public` flag can be used to skip providing the "project.public" 
+field in the current project's manifest, granting the assumption that all 
+source files should be public. It can only be present when installing from a 
+local project and when the "project.public" field does not exist.
 
-To remove ip from the catalog, see the `remove` command.
+To remove a project from the catalog, see the `remove` command.
 
 ## __OPTIONS__
 
-`<ip>`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Ip specification
+`<project>`  
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Project id specification
 
 `--url <url>`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Url to install the ip from the internet
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Url to install the project from the internet
 
 `--path <path>`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Path to install the ip from local file system
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Path to install the project from local file system
 
 `--protocol, -p <name>`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Protocol to download ip
-
-`--tag <tag>`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Unique tag to provide to the protocol
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Protocol to download the project
 
 `--force`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Install the ip regardless of the cache slot occupancy
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Install the project regardless of the cache slot occupancy
 
 `--offline`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Skip checking coherency with source

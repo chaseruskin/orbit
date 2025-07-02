@@ -22,10 +22,10 @@ Usage:
     orbit new [options] <path>
 
 Arguments:
-    <path>                directory to create for the ip
+    <path>                directory to create for the project
 
 Options:
-    --name <name>         set the resulting ip's name
-    --lib <lib>           set the resulting ip's library
+    --name <name>         set the resulting project's name
+    --lib <lib>           set the resulting project's library
 
 Use 'orbit help new' to read more about the command."#;

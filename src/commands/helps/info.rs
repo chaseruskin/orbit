@@ -19,12 +19,12 @@
 pub const HELP: &str = r#"Display information about a project.
 
 Usage:
-    orbit info [options] [<ip>]
+    orbit info [options] [<project>]
 
 Options:
-    <ip>                  ip specification
+    <project>             project ID specification
     --versions, -v        display the list of known versions
-    --units, -u           display the HDL design elements defined for this ip
+    --units, -u           display the cores for this project
     --all, -a             include any private or hidden results
 
 Use 'orbit help info' to read more about the command."#;

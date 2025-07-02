@@ -23,20 +23,20 @@ SYNOPSIS
     orbit lock [options]
 
 DESCRIPTION
-    Saves the state of the world for the local ip. To accomplish this, Orbit reads
-    the local ip's manifest file, "Orbit.toml", to resolve any missing ip 
-    dependencies. It writes the information required to reproduce this state to 
-    the ip's lock file, "Orbit.lock".
+    Saves the state of the world for the local project. To accomplish this, Orbit
+    reads the local project's manifest file, "Orbit.toml", to resolve any missing
+    project dependencies. It writes the information required to reproduce this 
+    state to the project's lock file, "Orbit.lock".
     
-    A local ip must exist for this command to execute.
+    A local project must exist for this command to execute.
     
     It is encouraged to check the lock file into version control such that other
-    users trying to reconstruct the ip can reproduce the ip's current state. The 
-    lock file should not be manually edited by the user.
+    users trying to reconstruct the project can reproduce the project's current 
+    state. The lock file should not be manually edited by the user.
     
-    To capture the world state for the local ip, Orbit downloads and installs any
-    unresolved ip dependencies. If an installed dependency's computed checksum 
-    does not match the checksum stored in the lock file, it assumes the 
+    To capture the world state for the local project, Orbit downloads and installs 
+    any unresolved project dependencies. If an installed dependency's computed 
+    checksum does not match the checksum stored in the lock file, it assumes the 
     installation is corrupt and will reinstall the dependency to the cache.
 
 OPTIONS

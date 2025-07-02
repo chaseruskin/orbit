@@ -25,7 +25,8 @@ Arguments:
     <unit>                read the file for this primary design unit
 
 Options:
-    --ip <spec>           ip specification
+    --project, -p <spec>
+                          project ID specification
     --doc <code>          find the preceding comments to the code snippet
     --save                write the results to a temporary read-only file
     --start <code>        start the lookup after jumping to this code snippet

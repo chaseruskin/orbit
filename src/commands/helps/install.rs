@@ -22,13 +22,12 @@ Usage:
     orbit install [options]
 
 Options:
-    <ip>                  ip specification
-    --url <url>           URL to install the ip from the internet
-    --path <path>         path to install the ip from local file system
+    <project>             project ID specification
+    --url <url>           URL to install the project from the internet
+    --path <path>         path to install the project from local file system
     --protocol, -p <name>
-                          protocol to download ip
-    --tag <tag>           unique tag to provide to the protocol
-    --force               install the ip regardless of the cache slot occupancy
+                          protocol to download the project
+    --force               install the project regardless of the cache slot occupancy
     --offline             skip checking coherency with source
     --list, -l            view available protocols and exit
     --all-deps            install all dependencies (including development)

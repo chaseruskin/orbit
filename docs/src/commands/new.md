@@ -12,12 +12,12 @@ orbit new [options] <path>
 
 ## __DESCRIPTION__
 
-Creates a new ip at the target directory `<path>`. The path is assumed to not
-already exist. A new directory will be created at the file system destination
-that contains a minimal manifest file.
+Creates a new project at the target directory `<path>`. The path is assumed to
+not already exist. A new directory will be created at the file system 
+destination that contains a minimal manifest file.
 
-If no name is supplied, then the ip's name defaults to the final directory name
-taken from `<path>`. Using the `--name` option allows this field to be
+If no name is supplied, then the project's name defaults to the final directory 
+name taken from `<path>`. Using the `--name` option allows this field to be
 explicitly set.
 
 The newly created manifest file is intended to be edited by the user. See more
@@ -25,19 +25,19 @@ The newly created manifest file is intended to be edited by the user. See more
 
    https://chaseruskin.github.io/orbit/reference/manifest.html
 
-For initializing an already existing project into an ip, see the `init` 
+For initializing an already existing project into an project, see the `init` 
 command.
 
 ## __OPTIONS__
 
 `<path>`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Directory to create for the ip
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Directory to create for the project
 
 `--name <name>`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Set the resulting ip's name
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Set the resulting project's name
 
 `--lib <lib>`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Set the resulting ip's library
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Set the resulting project's library
 
 ## __EXAMPLES__
 

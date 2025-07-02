@@ -20,30 +20,30 @@ pub const MANUAL: &str = r#"NAME
     info - display information about a project
 
 SYNOPSIS
-    orbit info [options] [<ip>]
+    orbit info [options] [<project>]
 
 DESCRIPTION
-    Displays various bits of information about a particular ip. If no ip is
-    provided, then it displays information related to the local ip.
+    Displays various bits of information about a particular project. If no project
+    is provided, then it displays information related to the local project.
     
     To display manifest information, no additional options are required.
     
-    To display the defined HDL design elements within the ip, use the '--units'
-    option. For non-local ip, its protected and private design elements are hidden
-    from the results. To display design elements of all visibility levels the
-    '--all' option must also be present.
+    To display the available cores within the project, use the '--units' option. 
+    For non-local projects, its protected and private design units are hidden
+    from the results. To display design units of all visibility levels the '--all' 
+    option must also be present.
     
-    To display the known versions for an ip, use the '--versions' option.
+    To display the known versions for a project, use the '--versions' option.
 
 OPTIONS
-    <ip>
-        Ip specification
+    <project>
+        Project id specification
 
     --versions, -v
         Display the list of known versions
 
     --units, -u
-        Display the hdl design elements defined for this ip
+        Display the cores for this project
 
     --all, -a
         Include any private or hidden results

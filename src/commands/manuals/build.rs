@@ -23,7 +23,8 @@ SYNOPSIS
     orbit build [options] [--] [args]...
 
 DESCRIPTION
-    This command prepares a given target and then executes the target.
+    This command prepares a given target and then executes the target under the
+    context of a build.
     
     While this command functions similar to 'orbit test', the targets that are 
     encouraged to be used with this command are ones that produce artifacts at the
@@ -42,14 +43,14 @@ DESCRIPTION
     A target typically goes through three steps for the building process:  
        1. Parse the blueprint file  
        2. Process the referenced files listed in the blueprint  
-       3. Generate a artifact(s)
+       3. Generate one or more artifacts
     
     Any command-line arguments entered after the terminating flag '--' will be
     passed in the received order as arguments to the subprocess's command. If a 
     target already has defined arguments, the additional arguments passed from the 
     command-line will follow the previously defined arguments.
     
-    The target's process will spawn from the current working ip's output directory,
+    The target's process will spawn from the current project's output directory,
     which is $ORBIT_OUT_DIR.
     
     While the execution stage is a subprocess within Orbit, any non-zero error code 
@@ -75,7 +76,7 @@ OPTIONS
         View available targets and exit
 
     --all
-        Include all hdl files of the working ip
+        Include all hdl files of the current project
 
     --fileset <key=glob>...
         A glob-style pattern identified by name to include in the blueprint

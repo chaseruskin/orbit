@@ -51,7 +51,7 @@ impl Subcommand<Context> for Search {
             keywords: cli
                 .get_all(Arg::option("keyword").value("term"))?
                 .unwrap_or(Vec::new()),
-            ip: cli.get(Arg::positional("ip"))?,
+            ip: cli.get(Arg::positional("project"))?,
         })
     }
 

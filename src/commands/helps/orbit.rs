@@ -26,7 +26,7 @@ Commands:
     init                  initialize a project from an existing directory
     info                  display information about a project
     read                  lookup hdl source code
-    get                   fetch an hdl unit for code integration
+    get                   display integration code for a core
     tree                  show the dependency graph
     lock                  save the world state of a project
     test, t               run a test

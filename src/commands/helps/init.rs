@@ -23,8 +23,8 @@ Usage:
 
 Options:
     <path>                directory to initialize
-    --name <name>         set the resulting ip's name
-    --lib <lib>           set the resulting ip's library
+    --name <name>         set the resulting project's name
+    --lib <lib>           set the resulting project's library
     --uuid                print a new uuid and exit
 
 Use 'orbit help init' to read more about the command."#;

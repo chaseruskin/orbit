@@ -25,7 +25,7 @@ Options:
     --ready, -y           run the operation to completion
     --channel, -c <name>...
                           use this channel during publishing
-    --no-install          do not install the ip for future use
+    --no-install          do not install the project for future use
     --list, -l            view available channels and exit
     --all-public          publish with all source files being public
 

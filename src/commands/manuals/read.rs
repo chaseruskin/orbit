@@ -32,8 +32,8 @@ DESCRIPTION
     the '--locate' option with the '--save' option will append the line and column
     number of the identified code snippet to the end of the resulting file path.
     
-    If no ip is provided by the '--ip' option, then it will assume to search the
-    local ip for the provided design unit.
+    If no project is provided by the '--project' option, then it will assume to 
+    search the local project for the provided design unit.
     
     The values for options '--start', '--end', and '--doc' must be valid hdl code. 
     The code is interpreted in the native language of the provided design unit.
@@ -42,11 +42,11 @@ DESCRIPTION
     identified code snippet. 
     
     A design unit must visible in order for it to return the respective source
-    code. When reading a design unit that exists within the local ip, it can be 
-    any visibility. When reading a design unit that exists outside of the
-    local ip, its visibility must be "public" or "protected". Design units that 
-    are set to "private" visibility are not allowed to be read outside of their
-    ip.
+    code. When reading a design unit that exists within the local project, it can 
+    be any visibility. When reading a design unit that exists outside of the
+    local project, its visibility must be "public" or "protected". Design units 
+    that are set to "private" visibility are not allowed to be read outside of
+    their project.
     
     Every time this command is called, it attempts to clean the temporary
     directory where it saves resulting files. To keep existing files on the next
@@ -56,8 +56,8 @@ OPTIONS
     <unit>
         Read the file for this primary design unit
 
-    --ip <spec>
-        Ip specification
+    --project, -p <spec>
+        Project id specification
 
     --doc <code>
         Find the preceding comments to the code snippet
@@ -82,6 +82,6 @@ OPTIONS
 
 EXAMPLES
     orbit read and_gate --limit 25
-    orbit read math_pkg --ip math --doc "function clog2" --start "package math_pkg"
-    orbit read math_pkg --ip math --doc "function flog2p1" --save --locate
+    orbit read math_pkg -p math --doc "function clog2" --start "package math_pkg"
+    orbit read math_pkg -p math --doc "function flog2p1" --save --locate
 "#;

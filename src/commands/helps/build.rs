@@ -28,7 +28,7 @@ Options:
     --target-dir <dir>    the relative directory where the target starts
     --command <path>      overwrite the target's command
     --list, -l            view available targets and exit
-    --all                 include all hdl files of the working ip
+    --all                 include all hdl files of the current project
     --fileset <key=glob>...
                           a glob-style pattern identified by name to include in the blueprint
     --force               force the target to execute 

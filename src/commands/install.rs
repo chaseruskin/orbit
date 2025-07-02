@@ -80,7 +80,6 @@ pub struct Install {
     path: Option<PathBuf>,
     protocol: Option<String>,
     offline: bool,
-    tag: Option<String>,
     list: bool,
     force: bool,
     verbose: bool,
@@ -102,10 +101,9 @@ impl Subcommand<Context> for Install {
             // Options
             path: cli.get(Arg::option("path"))?,
             url: cli.get(Arg::option("url"))?,
-            tag: cli.get(Arg::option("tag"))?,
             protocol: cli.get(Arg::option("protocol").switch('p').value("name"))?,
             // Positionals
-            ip: cli.get(Arg::positional("ip"))?,
+            ip: cli.get(Arg::positional("project"))?,
         })
     }
 

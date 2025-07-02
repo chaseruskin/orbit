@@ -47,7 +47,7 @@ impl Subcommand<Context> for Remove {
             verbose: cli.check(Arg::flag("verbose"))?,
             force: cli.check(Arg::flag("force"))?,
             // recurse: cli.check(Arg::flag("recurse").switch('r'))?,
-            ip: cli.require(Arg::positional("ip"))?,
+            ip: cli.require(Arg::positional("project"))?,
         })
     }
 

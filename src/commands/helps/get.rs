@@ -16,7 +16,7 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"Fetch an hdl unit for code integration.
+pub const HELP: &str = r#"Display integration code for a core.
 
 Usage:
     orbit get [options] <unit>
@@ -25,7 +25,8 @@ Arguments:
     <unit>                primary design unit identifier
 
 Options:
-    --ip <spec>           ip specification
+    --project, -p <spec>
+                          project ID specification
     --json                export the unit's information as valid json
     --library, -l         display the unit's library declaration
     --component, -c       display the unit's declaration

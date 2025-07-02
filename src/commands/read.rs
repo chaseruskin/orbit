@@ -73,7 +73,7 @@ impl Subcommand<Context> for Read {
             no_clean: cli.check(Arg::flag("keep").switch('k'))?,
             // options
             limit: cli.get(Arg::option("limit").value("n"))?,
-            ip: cli.get(Arg::option("ip").value("spec"))?,
+            ip: cli.get(Arg::option("project").switch('p').value("spec"))?,
             start: cli.get(Arg::option("start").value("code"))?,
             end: cli.get(Arg::option("end").value("code"))?,
             comment: cli.get(Arg::option("doc").value("code"))?,

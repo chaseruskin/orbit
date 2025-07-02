@@ -115,7 +115,7 @@ impl Subcommand<Context> for Get {
             // const_suffix: cli
             //     .get(Arg::option("const-suffix").value("value"))?
             //     .unwrap_or_default(),
-            ip: cli.get(Arg::option("ip").value("spec"))?,
+            ip: cli.get(Arg::option("project").switch('p').value("spec"))?,
             name: cli.get(Arg::option("name").value("identifier"))?,
             unit: cli.require(Arg::positional("unit"))?,
         })

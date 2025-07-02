@@ -22,8 +22,8 @@ Usage:
     orbit tree [options] [<unit>...]
 
 Options:
-    <unit>...             uppermost hdl unit of the dependency tree
-    --edges, -e <kind>    the kind of dependencies to display (unit, ip, all)
+    <unit>...             uppermost HDL unit of the dependency tree
+    --edges, -e <kind>    the kind of dependencies to display (unit, project, all)
     --format <fmt>        determine how to display nodes (long, short)
     --ascii               limit the textual tree characters to the 128 ASCII set
 

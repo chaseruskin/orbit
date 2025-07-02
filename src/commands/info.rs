@@ -50,7 +50,7 @@ impl Subcommand<Context> for Info {
             all: cli.check(Arg::flag("all").switch('a'))?,
             versions: cli.check(Arg::flag("versions").switch('v'))?,
             units: cli.check(Arg::flag("units").switch('u'))?,
-            ip: cli.get(Arg::positional("ip"))?,
+            ip: cli.get(Arg::positional("project"))?,
         })
     }
 

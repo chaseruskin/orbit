@@ -176,38 +176,37 @@
 <pre><code>orbit install [options]
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will place an ip into the cache. By default, the specified version
-is the 'latest' released version orbit can identify.</p>
-<p>When this command is ran without specifying the <ip> or a source (such as
-<code>--url</code> or <code>--path</code>), it will attempt to install the current working ip, if it
+<p>This command will place a project into the cache. By default, the specified
+version is the 'latest' released version of the project that Orbit has
+identified.</p>
+<p>When this command is ran without specifying the <code>&lt;project&gt;</code> or a source (such
+as <code>--url</code> or <code>--path</code>), it will attempt to install the current project, if it
 exists.</p>
-<p>By default, any dependencies required only for development by the target ip are
-omitted from installation. To also install these dependencies, use the
-<code>--all-deps</code> flag.</p>
+<p>By default, any dependencies required only for development by the target
+project are omitted from installation. To also install these dependencies,
+use the <code>--all-deps</code> flag.</p>
 <p>If a protocol is recognized using <code>--protocol</code>, then an optional tag can also
 be supplied to help the protocol with providing any additional information it
 may require.</p>
 <p>The <code>--path</code> option can accept a file system path that is either 1) the root
 directory that contains the manifest file or 2) a zip archive file that when
 uncompressed, has the manifest file at the root directoy.</p>
-<p>The <code>--all-public</code> flag can be used to skip providing the "ip.public" field
-in the current ip's manifest, granting the assumption that all source files
-should be public. It can only be present when installing from a local ip and
-when the "ip.public" field does not exist.</p>
-<p>To remove ip from the catalog, see the <code>remove</code> command.</p>
+<p>The <code>--all-public</code> flag can be used to skip providing the "project.public"
+field in the current project's manifest, granting the assumption that all
+source files should be public. It can only be present when installing from a
+local project and when the "project.public" field does not exist.</p>
+<p>To remove a project from the catalog, see the <code>remove</code> command.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
-<p><code>&lt;ip&gt;</code><br />
-            Ip specification</p>
+<p><code>&lt;project&gt;</code><br />
+            Project id specification</p>
 <p><code>--url &lt;url&gt;</code><br />
-            Url to install the ip from the internet</p>
+            Url to install the project from the internet</p>
 <p><code>--path &lt;path&gt;</code><br />
-            Path to install the ip from local file system</p>
+            Path to install the project from local file system</p>
 <p><code>--protocol, -p &lt;name&gt;</code><br />
-            Protocol to download ip</p>
-<p><code>--tag &lt;tag&gt;</code><br />
-            Unique tag to provide to the protocol</p>
+            Protocol to download the project</p>
 <p><code>--force</code><br />
-            Install the ip regardless of the cache slot occupancy</p>
+            Install the project regardless of the cache slot occupancy</p>
 <p><code>--offline</code><br />
             Skip checking coherency with source</p>
 <p><code>--list, -l</code><br />

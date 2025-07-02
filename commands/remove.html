@@ -173,19 +173,19 @@
 <h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>
 <p>remove - delete a project from the catalog</p>
 <h2 id="synopsis"><a class="header" href="#synopsis"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit remove [options] &lt;ip&gt;
+<pre><code>orbit remove [options] &lt;project&gt;
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>Deletes save data for a known ip from the catalog. The ip's data for its
-particular version is removed from the catalog's cache and the catalog's
+<p>Deletes save data for a known project from the catalog. The project's data for
+its particular version is removed from the catalog's cache and the catalog's
 archive.</p>
 <p>By default, an interactive prompt will appear to confirm with the user if the
-correct ip is okay to be removed. To skip this interactive prompt and assume
+correct project is okay to be removed. To skip this interactive prompt and assume
 it is correct without confirmation, use the <code>--force</code> option.</p>
-<p>To add ip to the catalog, see the <code>install</code> command.</p>
+<p>To add a project to the catalog, see the <code>install</code> command.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
-<p><code>&lt;ip&gt;</code><br />
-            Ip specification</p>
+<p><code>&lt;project&gt;</code><br />
+            Project id specification</p>
 <p><code>--force</code><br />
             Skip interactive prompts</p>
 <p><code>--verbose</code><br />

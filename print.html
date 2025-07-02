@@ -3513,24 +3513,24 @@ endmodule
 <pre><code>orbit new [options] &lt;path&gt;
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>Creates a new ip at the target directory <code>&lt;path&gt;</code>. The path is assumed to not
-already exist. A new directory will be created at the file system destination
-that contains a minimal manifest file.</p>
-<p>If no name is supplied, then the ip's name defaults to the final directory name
-taken from <code>&lt;path&gt;</code>. Using the <code>--name</code> option allows this field to be
+<p>Creates a new project at the target directory <code>&lt;path&gt;</code>. The path is assumed to
+not already exist. A new directory will be created at the file system
+destination that contains a minimal manifest file.</p>
+<p>If no name is supplied, then the project's name defaults to the final directory
+name taken from <code>&lt;path&gt;</code>. Using the <code>--name</code> option allows this field to be
 explicitly set.</p>
 <p>The newly created manifest file is intended to be edited by the user. See more
 <code>Orbit.toml</code> keys and their definitions at:</p>
 <p>https://chaseruskin.github.io/orbit/reference/manifest.html</p>
-<p>For initializing an already existing project into an ip, see the <code>init</code>
+<p>For initializing an already existing project into an project, see the <code>init</code>
 command.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;path&gt;</code><br />
-            Directory to create for the ip</p>
+            Directory to create for the project</p>
 <p><code>--name &lt;name&gt;</code><br />
-            Set the resulting ip's name</p>
+            Set the resulting project's name</p>
 <p><code>--lib &lt;lib&gt;</code><br />
-            Set the resulting ip's library</p>
+            Set the resulting project's library</p>
 <h2 id="examples-3"><a class="header" href="#examples-3"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit new gates
 orbit new eecs/lab1 --name adder
@@ -3542,27 +3542,27 @@ orbit new eecs/lab1 --name adder
 <pre><code>orbit init [options] [&lt;path&gt;]
 </code></pre>
 <h2 id="description-1"><a class="header" href="#description-1"><strong>DESCRIPTION</strong></a></h2>
-<p>Initializes an ip at the file system directory <code>&lt;path&gt;</code>. If not path is
+<p>Initializes a project at the file system directory <code>&lt;path&gt;</code>. If no path is
 provided, then it defaults to the current working directory.</p>
-<p>If no name is provided, then the resulting ip's name defaults to the
-directory's name. Using the <code>--name</code> option allows the ip's name to be
+<p>If no name is provided, then the resulting project's name defaults to the
+directory's name. Using the <code>--name</code> option allows the project's name to be
 explicitly set.</p>
 <p>Under certain circumstances, you may need a new uuid. This situation will be
 uncommon for many users, but nonetheless it exists. To display a new uuid that
 can be copied into an existing manifest, use the <code>--uuid</code> option. All other
-options are ignored when this option is present. Keep in mind that an ip's uuid
-is not intended to change over the course of its lifetime.</p>
+options are ignored when this option is present. Keep in mind that a project's
+uuid is not intended to change over the course of its lifetime.</p>
 <p>The newly created manifest file is intended to be edited by the user. See more
 <code>Orbit.toml</code> keys and their definitions at:</p>
 <p>https://chaseruskin.github.io/orbit/reference/manifest.html</p>
-<p>To create a new ip from a non-existing directory, see the <code>new</code> command.</p>
+<p>To create a new project from a non-existing directory, see the <code>new</code> command.</p>
 <h2 id="options-1"><a class="header" href="#options-1"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;path&gt;</code><br />
             Directory to initialize</p>
 <p><code>--name &lt;name&gt;</code><br />
-            Set the resulting ip's name</p>
+            Set the resulting project's name</p>
 <p><code>--lib &lt;lib&gt;</code><br />
-            Set the resulting ip's library</p>
+            Set the resulting project's library</p>
 <p><code>--uuid</code><br />
             Print a new uuid and exit</p>
 <h2 id="examples-4"><a class="header" href="#examples-4"><strong>EXAMPLES</strong></a></h2>
@@ -3575,24 +3575,24 @@ orbit init --uuid
 <h2 id="name-3"><a class="header" href="#name-3"><strong>NAME</strong></a></h2>
 <p>info - display information about a project</p>
 <h2 id="synopsis-2"><a class="header" href="#synopsis-2"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit info [options] [&lt;ip&gt;]
+<pre><code>orbit info [options] [&lt;project&gt;]
 </code></pre>
 <h2 id="description-2"><a class="header" href="#description-2"><strong>DESCRIPTION</strong></a></h2>
-<p>Displays various bits of information about a particular ip. If no ip is
-provided, then it displays information related to the local ip.</p>
+<p>Displays various bits of information about a particular project. If no project
+is provided, then it displays information related to the local project.</p>
 <p>To display manifest information, no additional options are required.</p>
-<p>To display the defined HDL design elements within the ip, use the <code>--units</code>
-option. For non-local ip, its protected and private design elements are hidden
-from the results. To display design elements of all visibility levels the
-<code>--all</code> option must also be present.</p>
-<p>To display the known versions for an ip, use the <code>--versions</code> option.</p>
+<p>To display the available cores within the project, use the <code>--units</code> option.
+For non-local projects, its protected and private design units are hidden
+from the results. To display design units of all visibility levels the <code>--all</code>
+option must also be present.</p>
+<p>To display the known versions for a project, use the <code>--versions</code> option.</p>
 <h2 id="options-2"><a class="header" href="#options-2"><strong>OPTIONS</strong></a></h2>
-<p><code>&lt;ip&gt;</code><br />
-            Ip specification</p>
+<p><code>&lt;project&gt;</code><br />
+            Project id specification</p>
 <p><code>--versions, -v</code><br />
             Display the list of known versions</p>
 <p><code>--units, -u</code><br />
-            Display the hdl design elements defined for this ip</p>
+            Display the cores for this project</p>
 <p><code>--all, -a</code><br />
             Include any private or hidden results</p>
 <h2 id="examples-5"><a class="header" href="#examples-5"><strong>EXAMPLES</strong></a></h2>
@@ -3615,26 +3615,26 @@ of the code being reused in your current design.</p>
 results to a file for improved readability, use the <code>--save</code> option. Combining
 the <code>--locate</code> option with the <code>--save</code> option will append the line and column
 number of the identified code snippet to the end of the resulting file path.</p>
-<p>If no ip is provided by the <code>--ip</code> option, then it will assume to search the
-local ip for the provided design unit.</p>
+<p>If no project is provided by the <code>--project</code> option, then it will assume to
+search the local project for the provided design unit.</p>
 <p>The values for options <code>--start</code>, <code>--end</code>, and <code>--doc</code> must be valid hdl code.
 The code is interpreted in the native language of the provided design unit.</p>
 <p>The <code>--doc</code> option will attempt to find the comments immediately preceding the
 identified code snippet.</p>
 <p>A design unit must visible in order for it to return the respective source
-code. When reading a design unit that exists within the local ip, it can be
-any visibility. When reading a design unit that exists outside of the
-local ip, its visibility must be "public" or "protected". Design units that
-are set to "private" visibility are not allowed to be read outside of their
-ip.</p>
+code. When reading a design unit that exists within the local project, it can
+be any visibility. When reading a design unit that exists outside of the
+local project, its visibility must be "public" or "protected". Design units
+that are set to "private" visibility are not allowed to be read outside of
+their project.</p>
 <p>Every time this command is called, it attempts to clean the temporary
 directory where it saves resulting files. To keep existing files on the next
 call of this command, use the <code>--keep</code> option.</p>
 <h2 id="options-3"><a class="header" href="#options-3"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;unit&gt;</code><br />
             Read the file for this primary design unit</p>
-<p><code>--ip &lt;spec&gt;</code><br />
-            Ip specification</p>
+<p><code>--project, -p &lt;spec&gt;</code><br />
+            Project id specification</p>
 <p><code>--doc &lt;code&gt;</code><br />
             Find the preceding comments to the code snippet</p>
 <p><code>--save</code><br />
@@ -3651,31 +3651,31 @@ call of this command, use the <code>--keep</code> option.</p>
             Append the line and column number to the resulting file</p>
 <h2 id="examples-6"><a class="header" href="#examples-6"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit read and_gate --limit 25
-orbit read math_pkg --ip math --doc "function clog2" --start "package math_pkg"
-orbit read math_pkg --ip math --doc "function flog2p1" --save --locate
+orbit read math_pkg -p math --doc "function clog2" --start "package math_pkg"
+orbit read math_pkg -p math --doc "function flog2p1" --save --locate
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-get"><a class="header" href="#orbit-get"><strong>orbit get</strong></a></h1>
 <h2 id="name-5"><a class="header" href="#name-5"><strong>NAME</strong></a></h2>
-<p>get - fetch an hdl unit for code integration</p>
+<p>get - display integration code for a core</p>
 <h2 id="synopsis-4"><a class="header" href="#synopsis-4"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit get [options] &lt;unit&gt;
 </code></pre>
 <h2 id="description-4"><a class="header" href="#description-4"><strong>DESCRIPTION</strong></a></h2>
 <p>Returns hdl code snippets for the provided design unit to be integrated into
-the current design. The code snippets are returned in the native hdl
+the current project. The code snippets are returned in the native hdl
 language of the identified design unit. Code snippets are designed to be
 copy and pasted from the console to the current design for quick code
 integration.</p>
-<p>If an ip is not provided with the <code>--ip</code> option, then it will search the local
-ip for the requested design unit.</p>
+<p>If a project is not provided with the <code>--project</code> option, then it will search
+the local project for the requested design unit.</p>
 <p>If the design unit is in VHDL with the <code>--instance</code> option being used without
 the <code>--component</code> option, then it will return the direct instantiation code
 style (VHDL-93 feature).</p>
 <p>Copying unit instantiations into higher-level entities will not
-automatically track source code references across ips. In order to properly
-establish source code reference tracking across ips, the local ip's manifest
-must have an up to date <code>[dependencies]</code> table that lists all the ips from
-which it references source code.</p>
+automatically track source code references across projects. In order to
+properly establish source code reference tracking across projects, the local
+project's manifest must have an up to date <code>[dependencies]</code> table that lists
+all the external projects from which it references source code.</p>
 <p>An identifier prefix or suffix can be attached to the signal declarations and
 the instantiation's port connection signals by using <code>--signal-prefix</code> and
 <code>--signal-suffix</code> respectively. These optional texts are treated as normal
@@ -3683,11 +3683,11 @@ strings and are not checked for correct hdl coding syntax.</p>
 <p>When no output options are specified, this command by default will display
 the unit's declaration.</p>
 <p>A design unit must visible in order for it to return the respective code
-snippets. When fetching a design unit that exists within the local ip, it
+snippets. When fetching a design unit that exists within the local project, it
 can be any visibility. When fetching a design unit that exists outside of the
-local ip, its visibility must be "public". Design units that are set to
+local project, its visibility must be "public". Design units that are set to
 "protected" or "private" visibility are not allowed to be referenced across
-ips.</p>
+projects.</p>
 <p>Exporting the unit's declaration information can be accomplished by using the
 <code>--json</code> option. The valid json is unformatted for encouragement to be
 processed by other programs.</p>
@@ -3698,8 +3698,8 @@ language, use the <code>--language</code> option. Valid values are "vhdl", "sv",
 <h2 id="options-4"><a class="header" href="#options-4"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;unit&gt;</code><br />
             Primary design unit identifier</p>
-<p><code>--ip &lt;spec&gt;</code><br />
-            Ip specification</p>
+<p><code>--project, -p &lt;spec&gt;</code><br />
+            Project id specification</p>
 <p><code>--json</code><br />
             Export the unit's information as valid json</p>
 <p><code>--library, -l</code><br />
@@ -3721,10 +3721,10 @@ language, use the <code>--language</code> option. Valid values are "vhdl", "sv",
 <p><code>--signal-suffix &lt;str&gt;</code><br />
             Append information to the instance's signals</p>
 <h2 id="examples-7"><a class="header" href="#examples-7"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit get and_gate --ip gates:1.0.0 --component
-orbit get ram --ip mem:2 -csi
+<pre><code>orbit get and_gate --project gates:1.0.0 --component
+orbit get ram --project mem:2 -csi
 orbit get uart -si --name uart_inst0
-orbit get or_gate --ip gates --json
+orbit get or_gate -p gates --json
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-tree"><a class="header" href="#orbit-tree"><strong>orbit tree</strong></a></h1>
 <h2 id="name-6"><a class="header" href="#name-6"><strong>NAME</strong></a></h2>
@@ -3736,25 +3736,25 @@ orbit get or_gate --ip gates --json
 <p>Shows the hierarchical tree structure of the hardware design starting from a
 root node.</p>
 <p>By default, it will try to automatically detect the root node for the
-local ip. If there is ambiguity in determining what node can be the root, then
-all root nodes and their respective trees will be displayed. To only display
-the tree of a particular node, use the <code>&lt;unit&gt;</code> option.</p>
+local project. If there is ambiguity in determining what node can be the root,
+then all root nodes and their respective trees will be displayed. To only
+display the tree of a particular node, use the <code>&lt;unit&gt;</code> option.</p>
 <p>The tree can display different kinds of dependencies relative to the current
-ip using the <code>--edges</code> option. By default, this command uses "unit". By
-specifying edges as "ip", it will return the ip-level dependency tree. When
-using "unit" or "all", the hdl dependency graph will be displayed. The hdl
-graph shown with "unit" displays the composition of usable entities/modules.
-To generate this graph, it analyzes each VHDL architecture and ignores Verilog
-compiler directives. If an unidentified entity is instantiated, it will appear
-as a leaf in the graph and will be considered as a "black box" denoted by
-the "?" character next to its position in the tree. The hdl graph shown with
-"all" displays the composition of the design including all primary design unit
-references. Any references (excluding entity instantiations) that are not
-found will not appear in the dependency graph for the "all" option.</p>
+project using the <code>--edges</code> option. By default, this command uses "unit". By
+specifying edges as "project", it will return the project-level dependency
+tree. When using "unit" or "all", the HDL dependency graph will be displayed.</p>
+<p>The HDL graph shown with "unit" displays the composition of usable
+entities/modules. To generate this graph, it analyzes each VHDL architecture
+and ignores Verilog compiler directives. If an unidentified entity is
+instantiated, it will appear as a leaf in the graph and will be considered
+as a "black box" denoted by the "?" character next to its position in the
+tree. The HDL graph shown with "all" displays the composition of the design
+including all primary design unit references. Any references (excluding entity
+instantiations) that are not found will not appear in the dependency graph for
+the "all" option.</p>
 <p>Using the <code>--format</code> option can alter how much information is displayed for
-each hdl design unit in the tree composition. By default, only the design
+each HDL design unit in the tree composition. By default, only the design
 unit's name is displayed for each unit.</p>
-<p>To display the ip dependency graph, use the <code>--ip</code> option.</p>
 <p>If the tree's character output is not displaying properly, then the tree can
 be displayed using a set of standard ASCII characters with the <code>--ascii</code>
 option.</p>
@@ -3762,7 +3762,7 @@ option.</p>
 <p><code>&lt;unit&gt;...</code><br />
             Uppermost hdl unit of the dependency tree</p>
 <p><code>--edges, -e &lt;kind&gt;</code><br />
-            The kind of dependencies to display (unit, ip, all)</p>
+            The kind of dependencies to display (unit, project, all)</p>
 <p><code>--format &lt;fmt&gt;</code><br />
             Determine how to display nodes (long, short)</p>
 <p><code>--ascii</code><br />
@@ -3770,7 +3770,7 @@ option.</p>
 <h2 id="examples-8"><a class="header" href="#examples-8"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit tree
 orbit tree top --format long
-orbit tree -e ip --ascii
+orbit tree -e project --ascii
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-lock"><a class="header" href="#orbit-lock"><strong>orbit lock</strong></a></h1>
 <h2 id="name-7"><a class="header" href="#name-7"><strong>NAME</strong></a></h2>
@@ -3779,17 +3779,17 @@ orbit tree -e ip --ascii
 <pre><code>orbit lock [options]
 </code></pre>
 <h2 id="description-6"><a class="header" href="#description-6"><strong>DESCRIPTION</strong></a></h2>
-<p>Saves the state of the world for the local ip. To accomplish this, Orbit reads
-the local ip's manifest file, "Orbit.toml", to resolve any missing ip
-dependencies. It writes the information required to reproduce this state to
-the ip's lock file, "Orbit.lock".</p>
-<p>A local ip must exist for this command to execute.</p>
+<p>Saves the state of the world for the local project. To accomplish this, Orbit
+reads the local project's manifest file, "Orbit.toml", to resolve any missing
+project dependencies. It writes the information required to reproduce this
+state to the project's lock file, "Orbit.lock".</p>
+<p>A local project must exist for this command to execute.</p>
 <p>It is encouraged to check the lock file into version control such that other
-users trying to reconstruct the ip can reproduce the ip's current state. The
-lock file should not be manually edited by the user.</p>
-<p>To capture the world state for the local ip, Orbit downloads and installs any
-unresolved ip dependencies. If an installed dependency's computed checksum
-does not match the checksum stored in the lock file, it assumes the
+users trying to reconstruct the project can reproduce the project's current
+state. The lock file should not be manually edited by the user.</p>
+<p>To capture the world state for the local project, Orbit downloads and installs
+any unresolved project dependencies. If an installed dependency's computed
+checksum does not match the checksum stored in the lock file, it assumes the
 installation is corrupt and will reinstall the dependency to the cache.</p>
 <h2 id="options-6"><a class="header" href="#options-6"><strong>OPTIONS</strong></a></h2>
 <p><code>--force</code><br />
@@ -3805,7 +3805,8 @@ orbit lock --force
 <pre><code>orbit test [options] [--] [args]...
 </code></pre>
 <h2 id="description-7"><a class="header" href="#description-7"><strong>DESCRIPTION</strong></a></h2>
-<p>This command prepares a given target and then executes the target.</p>
+<p>This command prepares a given target and then executes the target under the
+context of a test.</p>
 <p>While this command functions similar to <code>orbit build</code>, the targets that are
 encouraged to be used with this command are ones that are designed to either
 "pass" or "fail", typically through a return code. This command requires a
@@ -3821,13 +3822,13 @@ definition.</p>
 <ol>
 <li>Parse the blueprint file</li>
 <li>Process the referenced files listed in the blueprint</li>
-<li>Verify the hdl source code passes all tests</li>
+<li>Verify the HDL source code passes all tests</li>
 </ol>
 <p>Any command-line arguments entered after the terminating flag <code>--</code> will be
 passed in the received order as arguments to the subprocess's command. If a
 target already has defined arguments, the additional arguments passed from the
 command-line will follow the previously defined arguments.</p>
-<p>The target's process will spawn from the current working ip's output directory,
+<p>The target's process will spawn from the current project's output directory,
 which is $ORBIT_OUT_DIR.</p>
 <p>While the execution stage is a subprocess within Orbit, any non-zero error code
 returned from the user-defined execution process is propagated through Orbit.</p>
@@ -3847,7 +3848,7 @@ returned from the user-defined execution process is propagated through Orbit.</p
 <p><code>--list, -l</code><br />
             View available targets and exit</p>
 <p><code>--all</code><br />
-            Include all hdl files of the working ip</p>
+            Include all hdl files of the current project</p>
 <p><code>--fileset &lt;key=glob&gt;...</code><br />
             A glob-style pattern identified by name to include in the blueprint</p>
 <p><code>--keep, -k</code><br />
@@ -3868,7 +3869,8 @@ returned from the user-defined execution process is propagated through Orbit.</p
 <pre><code>orbit build [options] [--] [args]...
 </code></pre>
 <h2 id="description-8"><a class="header" href="#description-8"><strong>DESCRIPTION</strong></a></h2>
-<p>This command prepares a given target and then executes the target.</p>
+<p>This command prepares a given target and then executes the target under the
+context of a build.</p>
 <p>While this command functions similar to <code>orbit test</code>, the targets that are
 encouraged to be used with this command are ones that produce artifacts at the
 end of their execution process. This command does not allow the top to be a
@@ -3884,13 +3886,13 @@ definition.</p>
 <ol>
 <li>Parse the blueprint file</li>
 <li>Process the referenced files listed in the blueprint</li>
-<li>Generate a artifact(s)</li>
+<li>Generate one or more artifacts</li>
 </ol>
 <p>Any command-line arguments entered after the terminating flag <code>--</code> will be
 passed in the received order as arguments to the subprocess's command. If a
 target already has defined arguments, the additional arguments passed from the
 command-line will follow the previously defined arguments.</p>
-<p>The target's process will spawn from the current working ip's output directory,
+<p>The target's process will spawn from the current project's output directory,
 which is $ORBIT_OUT_DIR.</p>
 <p>While the execution stage is a subprocess within Orbit, any non-zero error code
 returned from the user-defined execution process is propagated through Orbit.</p>
@@ -3908,7 +3910,7 @@ returned from the user-defined execution process is propagated through Orbit.</p
 <p><code>--list, -l</code><br />
             View available targets and exit</p>
 <p><code>--all</code><br />
-            Include all hdl files of the working ip</p>
+            Include all hdl files of the current project</p>
 <p><code>--fileset &lt;key=glob&gt;...</code><br />
             A glob-style pattern identified by name to include in the blueprint</p>
 <p><code>--force</code><br />
@@ -3932,28 +3934,29 @@ orbit build --target xsim --force -- --help
 <pre><code>orbit publish [options]
 </code></pre>
 <h2 id="description-9"><a class="header" href="#description-9"><strong>DESCRIPTION</strong></a></h2>
-<p>Performs a series of checks for a local ip and then releases it to its
+<p>Performs a series of checks for a local project and then releases it to its
 specified channel(s).</p>
-<p>There are multiple checks that are performed before an ip can be published.
-First, the ip must have an up to date lockfile with no relative dependencies.
-The ip's manifest must also have a value for the source field. In addition,
-Orbit must be able to construct the hdl source code graph without errors.
-Finally, the ip is downloaded from its source url and temporarily installed
-to verify its contents match those of the local ip.</p>
-<p>Posting an ip to a channel involves copying the ip's manifest file to a path
-within the channel known as the index. For every publish of an ip, the index
-corresponds to a unique path within the channel that gets created by Orbit.
-A channel's pre-publish and post-publish hooks can get the value for the ip's
-index by reading the ORBIT_CHANNEL_IP_DIR environment variable.</p>
-<p>The <code>--all-public</code> flag can be used to skip providing the "ip.public" field
-in the current ip's manifest, granting the assumption that all source files
-should be public. It cannot be used if the "ip.public" field exists.</p>
+<p>There are multiple checks that are performed before a project can be published.
+First, the project must have an up to date lockfile with no relative
+dependencies. The project's manifest must also have a value for the source
+field. In addition, Orbit must be able to construct the HDL source code graph
+without errors. Finally, the project is downloaded from its source url and
+temporarily installed to verify its contents match those of the local project.</p>
+<p>Posting a project to a channel involves copying the project's manifest file to
+a path within the channel known as the index. For every publish of a project,
+the index corresponds to a unique path within the channel that gets created by
+Orbit. A channel's pre-publish and post-publish hooks can get the value for the
+project's index by reading the ORBIT_CHANNEL_IP_DIR environment variable.</p>
+<p>The <code>--all-public</code> flag can be used to skip providing the "project.public"
+field in the current project's manifest, granting the assumption that all
+source files should be public. It cannot be used if the "project.public" field
+exists.</p>
 <p>If at least one channel is specified on the command-line using the <code>--channel</code>
-option, then any channel list found in the ip's manifest under the
-"ip.channels" field will be ignored as well as any channel list found in the
+option, then any channel list found in the project's manifest under the
+"project.channels" field will be ignored as well as any channel list found in the
 "publish.default-channels" field of a configuration file.</p>
 <p>By default, this command performs a dry run, which executes all of the steps
-in the process except for actually posting the ip to its channel(s).
+in the process except for actually posting the project to its channel(s).
 To run the command to completion, use the <code>--ready</code> option.</p>
 <p>If the publishing process fails during the channel's pre or post commands,
 Orbit will rollback its changes by removing any files it copied into the
@@ -3964,7 +3967,7 @@ channel as well as any newly created directories it made.</p>
 <p><code>--channel, -c &lt;name&gt;...</code><br />
             Use this channel during publishing</p>
 <p><code>--no-install</code><br />
-            Do not install the ip for future use</p>
+            Do not install the project for future use</p>
 <p><code>--list, -l</code><br />
             View available channels and exit</p>
 <p><code>--all-public</code><br />
@@ -3978,42 +3981,43 @@ orbit publish -c hyperspace-labs -y
 <h2 id="name-11"><a class="header" href="#name-11"><strong>NAME</strong></a></h2>
 <p>search - browse the catalog</p>
 <h2 id="synopsis-10"><a class="header" href="#synopsis-10"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit search [options] [&lt;ip&gt;]
+<pre><code>orbit search [options] [&lt;project&gt;]
 </code></pre>
 <h2 id="description-10"><a class="header" href="#description-10"><strong>DESCRIPTION</strong></a></h2>
-<p>Returns a list of the ip found in the catalog.</p>
-<p>The returned list of ip is organized by row with each row consisting of four
-columns: the ip's name, the ip's latest version, the ip's state, and the ip's
-uuid.</p>
-<p>By default, all ip in the catalog will be returned. To filter by ip name, use
-the <code>&lt;ip&gt;</code> option. To limit the number of results, use the <code>--limit</code> option.</p>
-<p>An ip can be stored across three different levels: installed in the cache,
+<p>Returns a list of the projects found in the catalog.</p>
+<p>The returned list of projects is organized by row with each row consisting of four
+columns: the project's name, latest version, catalog state, and UUID.</p>
+<p>By default, all projects in the catalog will be returned. To filter by project
+name, use the <code>&lt;project&gt;</code> option. To limit the number of results, use the
+<code>--limit</code> option.</p>
+<p>A project can be stored across three different levels: installed in the cache,
 downloaded to the archive, and available via channels. By default, all levels
-are searched for ip. Applying a level filter (<code>--install</code>, <code>--download</code>,
+are searched for projects. Applying a level filter (<code>--install</code>, <code>--download</code>,
 <code>--available</code> options) will restrict the search to only checking the filtered
-levels for ip.</p>
-<p>A resulting ip is only read from one level, even when multiple levels are
-searched. When an ip exists at multiple levels, the catalog imposes a priority
-on which level to choose. Installed ip have higher priority over downloaded ip,
-and downloaded ip have higher priority over available ip.</p>
+levels for projects.</p>
+<p>A resulting project is only read from one level, even when multiple levels are
+searched. When a project exists at multiple levels, the catalog imposes a
+priority on which level to choose. Installed projects have higher priority
+over downloaded projects, and downloaded projects have higher priority over
+available projects.</p>
 <p>Results can also be filtered by keyword using the <code>--keyword</code> option. By
-default, if an ip matches at least one filter then it will be returned in the
-result. To collect only ip that match each presented filter, use the <code>--match</code>
-option.</p>
-<p>If an ip has a higher version that exists and is not currently installed, then
-an asterisk character "*" will appear next the ip's version. To update the ip
-to the latest version, see the <code>install</code> command.</p>
+default, if a project matches at least one filter then it will be returned in
+the result. To collect only projects that match each presented filter, use
+the <code>--match</code> option.</p>
+<p>If a project has a higher version that exists and is not currently installed,
+then an asterisk character "*" will appear next the project's version. To
+update the project to the latest version, see the <code>install</code> command.</p>
 <h2 id="options-10"><a class="header" href="#options-10"><strong>OPTIONS</strong></a></h2>
-<p><code>&lt;ip&gt;</code><br />
-            Ip's name</p>
+<p><code>&lt;project&gt;</code><br />
+            Project id specification</p>
 <p><code>--install, -i</code><br />
-            Filter ip installed to the cache</p>
+            Filter projects installed to the cache</p>
 <p><code>--download, -d</code><br />
-            Filter ip downloaded to the archive</p>
+            Filter projects downloaded to the archive</p>
 <p><code>--available, -a</code><br />
-            Filter ip available via channels</p>
+            Filter projects available via channels</p>
 <p><code>--keyword &lt;term&gt;...</code><br />
-            Include ip that have this keyword</p>
+            Include projects that have this keyword</p>
 <p><code>--limit &lt;n&gt;</code><br />
             Maximum number of results to return</p>
 <p><code>--match</code><br />
@@ -4030,38 +4034,37 @@ orbit search --keyword cdc --limit 20 -i
 <pre><code>orbit install [options]
 </code></pre>
 <h2 id="description-11"><a class="header" href="#description-11"><strong>DESCRIPTION</strong></a></h2>
-<p>This command will place an ip into the cache. By default, the specified version
-is the 'latest' released version orbit can identify.</p>
-<p>When this command is ran without specifying the <ip> or a source (such as
-<code>--url</code> or <code>--path</code>), it will attempt to install the current working ip, if it
+<p>This command will place a project into the cache. By default, the specified
+version is the 'latest' released version of the project that Orbit has
+identified.</p>
+<p>When this command is ran without specifying the <code>&lt;project&gt;</code> or a source (such
+as <code>--url</code> or <code>--path</code>), it will attempt to install the current project, if it
 exists.</p>
-<p>By default, any dependencies required only for development by the target ip are
-omitted from installation. To also install these dependencies, use the
-<code>--all-deps</code> flag.</p>
+<p>By default, any dependencies required only for development by the target
+project are omitted from installation. To also install these dependencies,
+use the <code>--all-deps</code> flag.</p>
 <p>If a protocol is recognized using <code>--protocol</code>, then an optional tag can also
 be supplied to help the protocol with providing any additional information it
 may require.</p>
 <p>The <code>--path</code> option can accept a file system path that is either 1) the root
 directory that contains the manifest file or 2) a zip archive file that when
 uncompressed, has the manifest file at the root directoy.</p>
-<p>The <code>--all-public</code> flag can be used to skip providing the "ip.public" field
-in the current ip's manifest, granting the assumption that all source files
-should be public. It can only be present when installing from a local ip and
-when the "ip.public" field does not exist.</p>
-<p>To remove ip from the catalog, see the <code>remove</code> command.</p>
+<p>The <code>--all-public</code> flag can be used to skip providing the "project.public"
+field in the current project's manifest, granting the assumption that all
+source files should be public. It can only be present when installing from a
+local project and when the "project.public" field does not exist.</p>
+<p>To remove a project from the catalog, see the <code>remove</code> command.</p>
 <h2 id="options-11"><a class="header" href="#options-11"><strong>OPTIONS</strong></a></h2>
-<p><code>&lt;ip&gt;</code><br />
-            Ip specification</p>
+<p><code>&lt;project&gt;</code><br />
+            Project id specification</p>
 <p><code>--url &lt;url&gt;</code><br />
-            Url to install the ip from the internet</p>
+            Url to install the project from the internet</p>
 <p><code>--path &lt;path&gt;</code><br />
-            Path to install the ip from local file system</p>
+            Path to install the project from local file system</p>
 <p><code>--protocol, -p &lt;name&gt;</code><br />
-            Protocol to download ip</p>
-<p><code>--tag &lt;tag&gt;</code><br />
-            Unique tag to provide to the protocol</p>
+            Protocol to download the project</p>
 <p><code>--force</code><br />
-            Install the ip regardless of the cache slot occupancy</p>
+            Install the project regardless of the cache slot occupancy</p>
 <p><code>--offline</code><br />
             Skip checking coherency with source</p>
 <p><code>--list, -l</code><br />
@@ -4080,19 +4083,19 @@ orbit install alu:2.3.7 --path ./projects/alu --force
 <h2 id="name-13"><a class="header" href="#name-13"><strong>NAME</strong></a></h2>
 <p>remove - delete a project from the catalog</p>
 <h2 id="synopsis-12"><a class="header" href="#synopsis-12"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit remove [options] &lt;ip&gt;
+<pre><code>orbit remove [options] &lt;project&gt;
 </code></pre>
 <h2 id="description-12"><a class="header" href="#description-12"><strong>DESCRIPTION</strong></a></h2>
-<p>Deletes save data for a known ip from the catalog. The ip's data for its
-particular version is removed from the catalog's cache and the catalog's
+<p>Deletes save data for a known project from the catalog. The project's data for
+its particular version is removed from the catalog's cache and the catalog's
 archive.</p>
 <p>By default, an interactive prompt will appear to confirm with the user if the
-correct ip is okay to be removed. To skip this interactive prompt and assume
+correct project is okay to be removed. To skip this interactive prompt and assume
 it is correct without confirmation, use the <code>--force</code> option.</p>
-<p>To add ip to the catalog, see the <code>install</code> command.</p>
+<p>To add a project to the catalog, see the <code>install</code> command.</p>
 <h2 id="options-12"><a class="header" href="#options-12"><strong>OPTIONS</strong></a></h2>
-<p><code>&lt;ip&gt;</code><br />
-            Ip specification</p>
+<p><code>&lt;project&gt;</code><br />
+            Project id specification</p>
 <p><code>--force</code><br />
             Skip interactive prompts</p>
 <p><code>--verbose</code><br />
@@ -4176,30 +4179,36 @@ respective file.</p>
 orbit config ~/.orbit/config.toml --unset env.vivado_path
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h3 id="archive-1"><a class="header" href="#archive-1">Archive</a></h3>
-<p>The archive is a location in the catalog where compressed snapshots of a specific ip's version exist. The compressed ip files are unable to be referenced as dependencies, but they are able to be <em>installed</em> to the cache for usage. The ip's in the archvie are considered <em>downloaded</em>.</p>
+<p>The archive is a location in the catalog where compressed snapshots of a specific project's version exist. The compressed files of a project are unable to be referenced as dependencies, but they are able to be <em>installed</em> to the cache for usage. The projects in the archive are considered <em>downloaded</em>.</p>
 <h3 id="blueprint-1"><a class="header" href="#blueprint-1">Blueprint</a></h3>
-<p>A blueprint is a single file that lists all the required source files and auxiliary files for the build process of a particular target. The source files are listed in topologically-sorted order. The blueprint is generated by Orbit during the planning stage of the build process, and the blueprint is typically used as input to the execution stage of the build process.</p>
+<p>A blueprint is a single file that lists all the required source files and auxiliary files for the build process of a particular target. The source files are listed in topologically-sorted order. Any auxiliary files collected as a part of the target's custom filesets are listed before any source files. The blueprint is generated by Orbit during the planning stage of the build process, and the blueprint is typically used as input to the execution stage of the build process.</p>
 <p>A blueprint can store the information collected from the planning stage in different file formats, called plans. The default plan is tab-separated values (TSV).</p>
 <h3 id="cache-1"><a class="header" href="#cache-1">Cache</a></h3>
-<p>The cache is a location in the catalog where where immutable references to a specific ip's version exist. An ip's dependencies are referenced from the cache. The ip that are found at the cache level are considered <em>installed</em>.</p>
+<p>The cache is a location in the catalog where immutable references to a specific project's versions exist. A project's dependencies are referenced from the cache. The projects that are found at the cache level are considered <em>installed</em>.</p>
 <h3 id="catalog-1"><a class="header" href="#catalog-1">Catalog</a></h3>
-<p>The catalog is the user's entire space of currently known ip to Orbit. It consists of 3 main levels: cache, archive, and channels. The cache stores the most details of an ip, while the channels store the least details of an ip.</p>
+<p>The catalog is the entire user's space of currently known projects to Orbit. It consists of 3 main levels: cache, archive, and channels. The cache stores the most information for a given project, while the channels store the least amount of information for a given project.</p>
 <h3 id="channels-2"><a class="header" href="#channels-2">Channels</a></h3>
-<p>The channels are a set of decentralized registries that store the manifests for versions of ip. In other words, a channel is simply a directory that stores the "Orbit.toml" files for published ips. No source code is stored in a channel, however, Orbit is able to use the manifest as a means to <em>download</em> that ip to the archive for local filesystem access. The ip that are found at the channels level are considered <em>available</em>. Users must configure their own channels as their are no default channels.</p>
+<p>The channels are a set of decentralized registries that store the manifests for versions of projects. In other words, a channel is simply a directory that stores the "Orbit.toml" files for published projects. No source code is stored in a channel, however, Orbit is able to use the manifest as a means to <em>download</em> that project to the archive for local filesystem access. The projects that are found at the channels level are considered <em>available</em>. Users must configure their own channels as their are no default channels directly built into Orbit.</p>
+<h3 id="configtoml"><a class="header" href="#configtoml">Config.toml</a></h3>
+<p>See <a href="glossary.html#configuration">Configuration</a>.</p>
 <h3 id="configuration-1"><a class="header" href="#configuration-1">Configuration</a></h3>
-<p>A configuration is a collection of user-defined settings intended to extend and modify Orbit's functionality. Among these settings may include user-defined targets, protocols, and channels. Configurations are stored in files called "config.toml" and have varying precedence depending on where they are processed relative to the local ip.</p>
+<p>A configuration is a collection of user-defined settings intended to extend and modify Orbit's functionality. Among these settings may include user-defined targets, protocols, and channels. Configurations are stored in files called "config.toml" and have varying precedence depending on where they are processed relative to the local project.</p>
+<h3 id="core"><a class="header" href="#core">Core</a></h3>
+<p>The shorthand (and more common) name for an <a href="glossary.html#ip-core">IP core</a>.</p>
+<h3 id="current-project"><a class="header" href="#current-project">Current Project</a></h3>
+<p>Another name for a <a href="glossary.html#local-project">local project</a>.</p>
 <h3 id="fileset"><a class="header" href="#fileset">Fileset</a></h3>
 <p>A fileset is a collection of related files under a given name. A glob-style file pattern is used to discover the files of a given fileset. Filesets are used to group common files together into the blueprint during the planning stage of the build process. Orbit comes with built-in filesets for VHDL, Verilog, and SystemVerilog files. In addition, a target can configure its own custom filesets.</p>
-<h3 id="ip-specification-spec"><a class="header" href="#ip-specification-spec">Ip Specification (spec)</a></h3>
-<p>The ip specification, or spec, describes the format for identifying and referencing an ip. Each ip in the user's catalog must have a unique spec. The format of a ip's spec is: <code>&lt;name&gt;[+&lt;uuid&gt;][:&lt;version&gt;]</code>.</p>
-<h3 id="local-ip"><a class="header" href="#local-ip">Local Ip</a></h3>
-<p>The local ip, which also may be referred to as the current ip, is the ip detected from the current working directory on the command-line. Some commands can only be executed from the local ip, such as <code>orbit lock</code> and <code>orbit build</code>.</p>
+<h3 id="ip-core"><a class="header" href="#ip-core">IP Core</a></h3>
+<p>An IP core is a resusable block of design logic composed of one or more design units. An IP core is the smallest amount of hardware description code that Orbit considers at a time. Design units that make up an IP core may include VHDL entities or Verilog modules.</p>
+<h3 id="local-project"><a class="header" href="#local-project">Local Project</a></h3>
+<p>The local project is the project detected by Orbit from the current working directory on the command-line. Some commands can only be executed from the local project, such as <code>orbit lock</code> and <code>orbit build</code>.</p>
 <h3 id="lockfile"><a class="header" href="#lockfile">Lockfile</a></h3>
-<p>A lockfile is a file that precisely describes an ip all of its resolved dependencies. A lockfile called "Orbit.lock" is generated and maintained by Orbit. The lockfile should be checked into your version control system for reproducible builds. It is not to be manually edited by the user.</p>
+<p>A lockfile is a file that precisely describes a project and all of its resolved dependencies. The lockfile is called "Orbit.lock" and is automatically generated and maintained by Orbit. The lockfile should be checked into your version control system for reproducible builds. It is not to be manually edited by the user.</p>
 <p>With the lockfile, Orbit is able to download missing dependencies, install missing dependencies, and verify the data integrity of installed dependencies.</p>
 <h3 id="manifest-1"><a class="header" href="#manifest-1">Manifest</a></h3>
-<p>A manifest is a configuration file that decscribes an ip recognized by Orbit. Manifest files
-are exactly named <code>Orbit.toml</code>. The manifest is intended to be edited by the user. The manifest is used as input for Orbit to generate the lockfile.</p>
+<p>A manifest is a configuration file containing metadata about a project that is recognized by Orbit. Manifest files
+are named "Orbit.toml". The manifest is intended to be edited by the user. The manifest is used as an input for Orbit to generate the lockfile.</p>
 <h3 id="orbitlock-1"><a class="header" href="#orbitlock-1">Orbit.lock</a></h3>
 <p>See <a href="glossary.html#lockfile">lockfile</a>.</p>
 <h3 id="orbittoml"><a class="header" href="#orbittoml">Orbit.toml</a></h3>
@@ -4213,27 +4222,29 @@ are exactly named <code>Orbit.toml</code>. The manifest is intended to be edited
 <p>Broadly speaking, a package manager is a program (or collection of related programs) in a software ecosystem that automates the process of obtaining, installing, and upgrading artifacts. Within a programming language ecosystem, a package manager is a developer-focused tool whose primary functionality is to download library artifacts and their dependencies from some central repository; this capability is often combined with the ability to perform software builds (by invoking the language-specific compiler).</p>
 <p>Orbit is a package manager within the HDL ecosystem. Orbit downloads your HDL <a href="glossary.html#package">package</a>'s dependencies, resolves the order of source files required for a backend build process, and makes distributable packages.</p>
 <h3 id="project"><a class="header" href="#project">Project</a></h3>
-<p>Another name for a <a href="glossary.html#package">package</a>.</p>
+<p>Another (more common) name for a <a href="glossary.html#package">package</a>.</p>
+<h3 id="project-id-specification-spec"><a class="header" href="#project-id-specification-spec">Project ID Specification (SPEC)</a></h3>
+<p>The project ID specification, or SPEC, describes the format for identifying and referencing a project. Each project in the user's catalog must have a unique SPEC. The format for the project ID specification is: <code>&lt;name&gt;[+&lt;uuid&gt;][:&lt;version&gt;]</code>.</p>
 <h3 id="protocol"><a class="header" href="#protocol">Protocol</a></h3>
-<p>A protocol is a process configured by the user that Orbit may use to download an ip from the internet.</p>
-<p>The default protocol for Orbit assumes the url for an ip points to a zip file and uses the curl library to download it to the archive. An ip's manifest must explicitly specify an different protocol configured by the user to override the default protocol.</p>
+<p>A protocol is a process configured by the user that Orbit may use to download a project from the internet.</p>
+<p>The default protocol for Orbit assumes the url for a project points to a zip file and uses the curl library to download it to the archive.</p>
 <h3 id="systemverilog"><a class="header" href="#systemverilog">SystemVerilog</a></h3>
 <p>SystemVerilog is a hardware description and hardware verification language used to model, design, simulate, test, and implement electronic systems.</p>
 <h3 id="target"><a class="header" href="#target">Target</a></h3>
 <p>A target is a process configured by the user that Orbit invokes during the execution stage of the build process. A target is given a name such that it can be identified throughout the system and may be comprised of a command, arguments, and custom filesets.</p>
-<p>A target's behavio during the execution stage typically follows 3 steps:</p>
+<p>A target's behavior during the execution stage typically follows three steps:</p>
 <ol>
 <li>Accept the blueprint file and environment variables set by Orbit from the planning stage</li>
 <li>Perform backend processing on the list of source files using an EDA tool</li>
 <li>Save the results of the processing, whether it be a simulation log, bitstream, or synthesis report</li>
 </ol>
-<p>Users must configure their own targets; no default targets are included with Orbit.</p>
+<p>Users must configure their own targets; no targets are included by default with Orbit.</p>
 <h3 id="vhdl"><a class="header" href="#vhdl">VHDL</a></h3>
 <p>VHSIC Hardware Design Language (VHDL) is a hardware descrption language to model the behavior of digitally electronic circuits.</p>
 <h3 id="verilog"><a class="header" href="#verilog">Verilog</a></h3>
 <p>Verilog is a hardware description language to model electronic systems. The final standard (IEEE 1364-2005) for Verilog merged into the SystemVerilog standard. Today, Verilog has been officially part of the SystemVerilog language.</p>
-<h3 id="configtoml"><a class="header" href="#configtoml">config.toml</a></h3>
-<p>See <a href="glossary.html#configuration">Configuration</a></p>
+<h3 id="working-project-1"><a class="header" href="#working-project-1">Working Project</a></h3>
+<p>Another name for a <a href="glossary.html#local-project">local project</a>.</p>
 
                     </main>
 

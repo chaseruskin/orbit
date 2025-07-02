@@ -176,24 +176,24 @@
 <pre><code>orbit new [options] &lt;path&gt;
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>Creates a new ip at the target directory <code>&lt;path&gt;</code>. The path is assumed to not
-already exist. A new directory will be created at the file system destination
-that contains a minimal manifest file.</p>
-<p>If no name is supplied, then the ip's name defaults to the final directory name
-taken from <code>&lt;path&gt;</code>. Using the <code>--name</code> option allows this field to be
+<p>Creates a new project at the target directory <code>&lt;path&gt;</code>. The path is assumed to
+not already exist. A new directory will be created at the file system
+destination that contains a minimal manifest file.</p>
+<p>If no name is supplied, then the project's name defaults to the final directory
+name taken from <code>&lt;path&gt;</code>. Using the <code>--name</code> option allows this field to be
 explicitly set.</p>
 <p>The newly created manifest file is intended to be edited by the user. See more
 <code>Orbit.toml</code> keys and their definitions at:</p>
 <p>https://chaseruskin.github.io/orbit/reference/manifest.html</p>
-<p>For initializing an already existing project into an ip, see the <code>init</code>
+<p>For initializing an already existing project into an project, see the <code>init</code>
 command.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
 <p><code>&lt;path&gt;</code><br />
-            Directory to create for the ip</p>
+            Directory to create for the project</p>
 <p><code>--name &lt;name&gt;</code><br />
-            Set the resulting ip's name</p>
+            Set the resulting project's name</p>
 <p><code>--lib &lt;lib&gt;</code><br />
-            Set the resulting ip's library</p>
+            Set the resulting project's library</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit new gates
 orbit new eecs/lab1 --name adder

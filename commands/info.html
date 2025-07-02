@@ -173,24 +173,24 @@
 <h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>
 <p>info - display information about a project</p>
 <h2 id="synopsis"><a class="header" href="#synopsis"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit info [options] [&lt;ip&gt;]
+<pre><code>orbit info [options] [&lt;project&gt;]
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>Displays various bits of information about a particular ip. If no ip is
-provided, then it displays information related to the local ip.</p>
+<p>Displays various bits of information about a particular project. If no project
+is provided, then it displays information related to the local project.</p>
 <p>To display manifest information, no additional options are required.</p>
-<p>To display the defined HDL design elements within the ip, use the <code>--units</code>
-option. For non-local ip, its protected and private design elements are hidden
-from the results. To display design elements of all visibility levels the
-<code>--all</code> option must also be present.</p>
-<p>To display the known versions for an ip, use the <code>--versions</code> option.</p>
+<p>To display the available cores within the project, use the <code>--units</code> option.
+For non-local projects, its protected and private design units are hidden
+from the results. To display design units of all visibility levels the <code>--all</code>
+option must also be present.</p>
+<p>To display the known versions for a project, use the <code>--versions</code> option.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
-<p><code>&lt;ip&gt;</code><br />
-            Ip specification</p>
+<p><code>&lt;project&gt;</code><br />
+            Project id specification</p>
 <p><code>--versions, -v</code><br />
             Display the list of known versions</p>
 <p><code>--units, -u</code><br />
-            Display the hdl design elements defined for this ip</p>
+            Display the cores for this project</p>
 <p><code>--all, -a</code><br />
             Include any private or hidden results</p>
 <h2 id="examples"><a class="header" href="#examples"><strong>EXAMPLES</strong></a></h2>

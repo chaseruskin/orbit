@@ -173,42 +173,43 @@
 <h2 id="name"><a class="header" href="#name"><strong>NAME</strong></a></h2>
 <p>search - browse the catalog</p>
 <h2 id="synopsis"><a class="header" href="#synopsis"><strong>SYNOPSIS</strong></a></h2>
-<pre><code>orbit search [options] [&lt;ip&gt;]
+<pre><code>orbit search [options] [&lt;project&gt;]
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>Returns a list of the ip found in the catalog.</p>
-<p>The returned list of ip is organized by row with each row consisting of four
-columns: the ip's name, the ip's latest version, the ip's state, and the ip's
-uuid.</p>
-<p>By default, all ip in the catalog will be returned. To filter by ip name, use
-the <code>&lt;ip&gt;</code> option. To limit the number of results, use the <code>--limit</code> option.</p>
-<p>An ip can be stored across three different levels: installed in the cache,
+<p>Returns a list of the projects found in the catalog.</p>
+<p>The returned list of projects is organized by row with each row consisting of four
+columns: the project's name, latest version, catalog state, and UUID.</p>
+<p>By default, all projects in the catalog will be returned. To filter by project
+name, use the <code>&lt;project&gt;</code> option. To limit the number of results, use the
+<code>--limit</code> option.</p>
+<p>A project can be stored across three different levels: installed in the cache,
 downloaded to the archive, and available via channels. By default, all levels
-are searched for ip. Applying a level filter (<code>--install</code>, <code>--download</code>,
+are searched for projects. Applying a level filter (<code>--install</code>, <code>--download</code>,
 <code>--available</code> options) will restrict the search to only checking the filtered
-levels for ip.</p>
-<p>A resulting ip is only read from one level, even when multiple levels are
-searched. When an ip exists at multiple levels, the catalog imposes a priority
-on which level to choose. Installed ip have higher priority over downloaded ip,
-and downloaded ip have higher priority over available ip.</p>
+levels for projects.</p>
+<p>A resulting project is only read from one level, even when multiple levels are
+searched. When a project exists at multiple levels, the catalog imposes a
+priority on which level to choose. Installed projects have higher priority
+over downloaded projects, and downloaded projects have higher priority over
+available projects.</p>
 <p>Results can also be filtered by keyword using the <code>--keyword</code> option. By
-default, if an ip matches at least one filter then it will be returned in the
-result. To collect only ip that match each presented filter, use the <code>--match</code>
-option.</p>
-<p>If an ip has a higher version that exists and is not currently installed, then
-an asterisk character "*" will appear next the ip's version. To update the ip
-to the latest version, see the <code>install</code> command.</p>
+default, if a project matches at least one filter then it will be returned in
+the result. To collect only projects that match each presented filter, use
+the <code>--match</code> option.</p>
+<p>If a project has a higher version that exists and is not currently installed,
+then an asterisk character "*" will appear next the project's version. To
+update the project to the latest version, see the <code>install</code> command.</p>
 <h2 id="options"><a class="header" href="#options"><strong>OPTIONS</strong></a></h2>
-<p><code>&lt;ip&gt;</code><br />
-            Ip's name</p>
+<p><code>&lt;project&gt;</code><br />
+            Project id specification</p>
 <p><code>--install, -i</code><br />
-            Filter ip installed to the cache</p>
+            Filter projects installed to the cache</p>
 <p><code>--download, -d</code><br />
-            Filter ip downloaded to the archive</p>
+            Filter projects downloaded to the archive</p>
 <p><code>--available, -a</code><br />
-            Filter ip available via channels</p>
+            Filter projects available via channels</p>
 <p><code>--keyword &lt;term&gt;...</code><br />
-            Include ip that have this keyword</p>
+            Include projects that have this keyword</p>
 <p><code>--limit &lt;n&gt;</code><br />
             Maximum number of results to return</p>
 <p><code>--match</code><br />

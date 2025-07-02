@@ -176,7 +176,8 @@
 <pre><code>orbit test [options] [--] [args]...
 </code></pre>
 <h2 id="description"><a class="header" href="#description"><strong>DESCRIPTION</strong></a></h2>
-<p>This command prepares a given target and then executes the target.</p>
+<p>This command prepares a given target and then executes the target under the
+context of a test.</p>
 <p>While this command functions similar to <code>orbit build</code>, the targets that are
 encouraged to be used with this command are ones that are designed to either
 "pass" or "fail", typically through a return code. This command requires a
@@ -192,13 +193,13 @@ definition.</p>
 <ol>
 <li>Parse the blueprint file</li>
 <li>Process the referenced files listed in the blueprint</li>
-<li>Verify the hdl source code passes all tests</li>
+<li>Verify the HDL source code passes all tests</li>
 </ol>
 <p>Any command-line arguments entered after the terminating flag <code>--</code> will be
 passed in the received order as arguments to the subprocess's command. If a
 target already has defined arguments, the additional arguments passed from the
 command-line will follow the previously defined arguments.</p>
-<p>The target's process will spawn from the current working ip's output directory,
+<p>The target's process will spawn from the current project's output directory,
 which is $ORBIT_OUT_DIR.</p>
 <p>While the execution stage is a subprocess within Orbit, any non-zero error code
 returned from the user-defined execution process is propagated through Orbit.</p>
@@ -218,7 +219,7 @@ returned from the user-defined execution process is propagated through Orbit.</p
 <p><code>--list, -l</code><br />
             View available targets and exit</p>
 <p><code>--all</code><br />
-            Include all hdl files of the working ip</p>
+            Include all hdl files of the current project</p>
 <p><code>--fileset &lt;key=glob&gt;...</code><br />
             A glob-style pattern identified by name to include in the blueprint</p>
 <p><code>--keep, -k</code><br />

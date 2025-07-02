@@ -185,15 +185,16 @@
 <blockquote>
 <p>Having well-designed and easily accessible tools is important to any form of development. Creativity's greatest limiting factor is the tools of which are available to turn an idea into a reality.</p>
 </blockquote>
+<p>Rather than work directly with source code files and your EDA tools, you can avoid the difficulties involved in reusing and updating code by introducing a higher-level <a href="../glossary.html#package">"<em>package</em>"</a> abstraction and by using a <a href="../glossary.html#package-manager"><em>package manager</em></a>.</p>
 <h2 id="enter-orbit"><a class="header" href="#enter-orbit">Enter: Orbit</a></h2>
 <p><em>Orbit</em> is an attempt at bringing state of the art package management to HDLs. It automates the process of organizing, maintaining, and reusing HDL source code across projects. It is a tool that allows HDL projects to declare various dependencies and ensure that you'll always get a repeatable build. To accomplish this goal, Orbit does four things:</p>
 <ul>
-<li>Introduces two metadata files with various bits of ip information.</li>
-<li>Fetches and installs your ip's dependencies.</li>
-<li>Invokes any user-defined build tool to adapt to your workflow and EDA tools</li>
+<li>Introduces two metadata files with various bits of project information.</li>
+<li>Fetches and installs your project's dependencies.</li>
+<li>Invokes any user-defined build tool to adapt to your workflow and EDA tools.</li>
 <li>Introduces conventions to make working with HDL projects easier.</li>
 </ul>
-<p>To a large extent, Orbit normalizes the commands needed to build or test a given ip; this is one aspect of the aforementioned conventions. The same command can be used to build a project for any number of EDA tools. Furthermore, Orbit will automatically fetch any dependencies you have defined for your current project and arrange for them to be included in your build as needed.</p>
+<p>To a large extent, Orbit normalizes the commands needed to build or test a given project; this is one aspect of the aforementioned conventions. The same command can be used to build a project for any number of EDA tools. Furthermore, Orbit will automatically fetch any dependencies you have defined for your current project and arrange for them to be included in your build as needed.</p>
 <p>One of the major goals behind Orbit is to provide the right infrastructure and ecosystem for anyone's hardware projects to live and evolve over time. By introducing Orbit into your workflow, we believe hardware development becomes a more enjoyable experience where more of your time is devoted to <em>actually</em> creating cool things, not racking up technical debt and fighting to manage millions of files. After all, the saying should be "<em>Hardware is cool</em>", right?</p>
 
                     </main>

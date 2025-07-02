@@ -184,8 +184,6 @@
 <p>A configuration is a collection of user-defined settings intended to extend and modify Orbit's functionality. Among these settings may include user-defined targets, protocols, and channels. Configurations are stored in files called "config.toml" and have varying precedence depending on where they are processed relative to the local ip.</p>
 <h3 id="fileset"><a class="header" href="#fileset">Fileset</a></h3>
 <p>A fileset is a collection of related files under a given name. A glob-style file pattern is used to discover the files of a given fileset. Filesets are used to group common files together into the blueprint during the planning stage of the build process. Orbit comes with built-in filesets for VHDL, Verilog, and SystemVerilog files. In addition, a target can configure its own custom filesets.</p>
-<h3 id="intellectual-property-ip"><a class="header" href="#intellectual-property-ip">Intellectual Property (IP)</a></h3>
-<p>An ip is a project with a manifest file at its root directory. At a minimum, an ip has two attributes: a name and a uuid. The name is a human-friendly identifier for the ip, while the uuid is a machine-friendly identifier for the ip used to help reduce ambiguity when potentially introducing ips of the same name into the catalog.</p>
 <h3 id="ip-specification-spec"><a class="header" href="#ip-specification-spec">Ip Specification (spec)</a></h3>
 <p>The ip specification, or spec, describes the format for identifying and referencing an ip. Each ip in the user's catalog must have a unique spec. The format of a ip's spec is: <code>&lt;name&gt;[+&lt;uuid&gt;][:&lt;version&gt;]</code>.</p>
 <h3 id="local-ip"><a class="header" href="#local-ip">Local Ip</a></h3>
@@ -201,9 +199,15 @@ are exactly named <code>Orbit.toml</code>. The manifest is intended to be edited
 <h3 id="orbittoml"><a class="header" href="#orbittoml">Orbit.toml</a></h3>
 <p>See <a href="#manifest">manifest</a>.</p>
 <h3 id="package"><a class="header" href="#package">Package</a></h3>
-<p>See <a href="#intellectual-property-ip">IP</a>.</p>
+<p>A package is a collection of source files and a <code>Orbit.toml</code> <a href="#manifest">manifest</a> file which describes the package. A package has a name, version, and UUID, which are used for specifying dependencies between packages.</p>
+<p>The <em>package root</em> is the directory where the package's <code>Orbit.toml</code> manifest is located.</p>
+<p>The <em>package ID specification</em>, or <em>SPEC</em>, is a string used to uniquely reference a specific version of a package from a specific source.</p>
+<p>A package is more commonly referred to as a <a href="#project">project</a>.</p>
+<h3 id="package-manager"><a class="header" href="#package-manager">Package Manager</a></h3>
+<p>Broadly speaking, a package manager is a program (or collection of related programs) in a software ecosystem that automates the process of obtaining, installing, and upgrading artifacts. Within a programming language ecosystem, a package manager is a developer-focused tool whose primary functionality is to download library artifacts and their dependencies from some central repository; this capability is often combined with the ability to perform software builds (by invoking the language-specific compiler).</p>
+<p>Orbit is a package manager within the HDL ecosystem. Orbit downloads your HDL <a href="#package">package</a>'s dependencies, resolves the order of source files required for a backend build process, and makes distributable packages.</p>
 <h3 id="project"><a class="header" href="#project">Project</a></h3>
-<p>A project is a collection of HDL source files and any other required files related to a specific application or library. Placing a manifest in a project makes it an ip.</p>
+<p>Another name for a <a href="#package">package</a>.</p>
 <h3 id="protocol"><a class="header" href="#protocol">Protocol</a></h3>
 <p>A protocol is a process configured by the user that Orbit may use to download an ip from the internet.</p>
 <p>The default protocol for Orbit assumes the url for an ip points to a zip file and uses the curl library to download it to the archive. An ip's manifest must explicitly specify an different protocol configured by the user to override the default protocol.</p>

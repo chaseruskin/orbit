@@ -173,11 +173,11 @@
                         <h1 id="the-book-of-orbit"><a class="header" href="#the-book-of-orbit">The Book of Orbit</a></h1>
 <p><img src="./images/orbit_logo_128px.png" alt="" /></p>
 <p>Orbit is a package manager and build system for VHDL, Verilog, and SystemVerilog. Its design is driven by two core principles:</p>
-<ul>
+<ol>
 <li>Minimize technical debt associated with evolving HDL codebases</li>
 <li>Tailor to the wide range of users and their possible workflows with a high degree of modularity and extensibility</li>
-</ul>
-<p>Orbit's use case is targeted toward anyone interested in developing digital hardware; this includes industrial, academic, and personal settings. Create your next commerical product, university lab assignment, or personal project, using a tool that is tailored to today's advanced development processes.</p>
+</ol>
+<p>Orbit's use case is targeted toward anyone interested in developing digital hardware; this includes industrial, academic, and personal settings. Create your next commerical product, university lab assignment, or personal project, using a tool that is tailored to today's modern development processes.</p>
 <h2 id="sections"><a class="header" href="#sections">Sections</a></h2>
 <p>This book is loosely divided into 4 sections:</p>
 <ol>
@@ -203,13 +203,13 @@
 <li><a href="starting/./upgrading.html">Upgrading</a></li>
 </ol>
 <h2 id="seeking-help"><a class="header" href="#seeking-help">Seeking Help</a></h2>
-<p>Orbit is a package manager and development tool. With learning new tools there is always a learning curve. Orbit tries to make it less intimidating to use by offering help and information in a variety of ways:</p>
+<p>Orbit is a package manager and build system tool. With learning any new tool there is always a learning curve. Orbit tries to make it less intimidating to use by offering help and information in a variety of ways:</p>
 <ul>
 <li>To see a list of common commands and options, just use <code>orbit</code> with no arguments.</li>
-<li>To view quick summaries on commands, use <code>-h, --help</code> flags.</li>
+<li>To view quick summaries of commands, use <code>-h, --help</code> flags.</li>
 <li>To view more detailed manual pages and information, use <code>orbit help</code>.</li>
 </ul>
-<p>But since you are here, complete documentation can be found on this website.</p>
+<p>But since you are here, complete documentation can be found in this book.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="installing"><a class="header" href="#installing">Installing</a></h1>
 <p>There are two main methods for getting Orbit running on your computer: downloading a precompiled binary or by using Cargo.</p>
 <blockquote>
@@ -347,11 +347,13 @@ This program is free software, covered by the GNU General Public License. There 
 <p>If you feel confident in these prerequisites, then you are ready to start your adventure learning Orbit!</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="first-project-gates"><a class="header" href="#first-project-gates">First Project: Gates</a></h1>
 <p>In this tutorial, you will learn how to:</p>
-<p><a href="tutorials/first_project.html#creating-an-ip">1.</a> Create an ip from scratch<br />
-<a href="tutorials/first_project.html#integrating-design-units">2.</a> Use Orbit to integrate an entity into a larger design<br />
-<a href="tutorials/first_project.html#building-an-ip-for-a-scripted-workflow">3.</a> Build a design using a simple target<br />
-<a href="tutorials/first_project.html#making-an-ip-and-its-design-units-reusable">4.</a> Release a version of an ip</p>
-<h2 id="creating-an-ip"><a class="header" href="#creating-an-ip">Creating an ip</a></h2>
+<ol>
+<li><a href="tutorials/first_project.html#creating-a-new-project">Create a new project from scratch</a></li>
+<li><a href="tutorials/first_project.html#integrating-design-units">Use Orbit to integrate an entity into a larger design</a></li>
+<li><a href="tutorials/first_project.html#building-a-project-for-a-scripted-workflow">Build a design using a simple target</a></li>
+<li><a href="tutorials/first_project.html#making-a-project-and-its-design-units-reusable">Release a new version of a project</a></li>
+</ol>
+<h2 id="creating-a-new-project"><a class="header" href="#creating-a-new-project">Creating a new project</a></h2>
 <p>First, navigate to a directory in your file system where you would like to store the project. From there, let's issue our first <code>orbit</code> command:</p>
 <pre><code>$ orbit new gates
 </code></pre>
@@ -477,7 +479,7 @@ end architecture;
 └── nand_gate
 </code></pre>
 <p>Cool! We got a hierarchical view of our top-most design unit.</p>
-<h2 id="building-an-ip-for-a-scripted-workflow"><a class="header" href="#building-an-ip-for-a-scripted-workflow">Building an ip for a scripted workflow</a></h2>
+<h2 id="building-a-project-for-a-scripted-workflow"><a class="header" href="#building-a-project-for-a-scripted-workflow">Building a project for a scripted workflow</a></h2>
 <p>After all of our hard work, we are excited to show off our latest design on the newest Yilinx FPGA that just arrived in the mail. You realize you need a way to get your HDL code to the Yilinx synthesis tool in order to generate the final bitstream for your FPGA.</p>
 <p>To make this possible, Orbit builds a project through two stages: planning and execution. Although both stages occur together, users must define their own targets to be invoked during execution. This explicit separation of layers between planning and execution enable the user to tailor the build process to their specific requirements.</p>
 <h3 id="creating-a-target"><a class="header" href="#creating-a-target">Creating a target</a></h3>
@@ -532,17 +534,17 @@ YILINX: Bitstream saved at: target/yilinx/fpga.bit
 <p>Filename: target/yilinx/fpga.bit</p>
 <pre><code class="language-text">011010101101011010101101
 </code></pre>
-<h2 id="making-an-ip-and-its-design-units-reusable"><a class="header" href="#making-an-ip-and-its-design-units-reusable">Making an ip and its design units reusable</a></h2>
+<h2 id="making-a-project-and-its-design-units-reusable"><a class="header" href="#making-a-project-and-its-design-units-reusable">Making a project and its design units reusable</a></h2>
 <p>Now we are ready to move on to more advanced topics, so let's go ahead and store an immutable reference to this project to use in other projects in our developer journey.</p>
 <pre><code>$ orbit install --all-public
 </code></pre>
-<p>This command ran a series of steps that packaged our project and placed it into our <em>cache</em>. Internally, Orbit knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire ip catalog. By default, primary design units are private to the current ip, but the <code>--all-public</code> flag tells Orbit that we want all primary design units within the current ip to be directly accessible by other ips.</p>
+<p>This command ran a series of steps that packaged our project and placed it into our <em>cache</em>. Internally, Orbit knows where our cache is and can reference designs from our cache when we request them. Let's make sure our project was properly installed by viewing our entire catalog. By default, IP cores are private to the current project, but the <code>--all-public</code> flag tells Orbit that we want all cores within the current project to be directly accessible by other projects.</p>
 <pre><code>$ orbit search
 </code></pre>
 <pre><code>gates                   0.1.0           install   8ah2qa261k8wgv55sd1qq17w9
 </code></pre>
 <p>And there it is! You may notice your UUID (the random 25 characters and numbers)
-is different, and that is expected behavior. Let's continue to the next tutorial, where we introduce dependencies across ips.</p>
+is different, and that is expected behavior. Let's continue to the next tutorial, where we introduce dependencies across projects.</p>
 <h3 id="additional-notes-on-project-structure"><a class="header" href="#additional-notes-on-project-structure">Additional notes on project structure</a></h3>
 <p>Our final project structure looks like the following:</p>
 <pre><code>gates/
@@ -573,10 +575,12 @@ is different, and that is expected behavior. Let's continue to the next tutorial
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="dependencies-half-adder"><a class="header" href="#dependencies-half-adder">Dependencies: Half adder</a></h1>
 <p>In this tutorial, you will learn how to:</p>
-<p><a href="tutorials/dependencies.html#referencing-external-ips">1.</a> Specify an external ip as a dependency<br />
-<a href="tutorials/dependencies.html#learning-about-ips">2.</a> Use Orbit to learn more about external ips and their design units<br />
-<a href="tutorials/dependencies.html#integrating-design-units-across-ips">3.</a> Leverage Orbit across ips to integrate an entity into a separate ip</p>
-<h2 id="referencing-external-ips"><a class="header" href="#referencing-external-ips">Referencing external ips</a></h2>
+<ol>
+<li><a href="tutorials/dependencies.html#referencing-external-projects">Specify an external project as a dependency</a></li>
+<li><a href="tutorials/dependencies.html#learning-about-projects">Use Orbit to learn more about external projects and their cores</a></li>
+<li><a href="tutorials/dependencies.html#integrating-design-units-across-projects">Leverage Orbit across projects to integrate an entity into a separate project</a></li>
+</ol>
+<h2 id="referencing-external-projects"><a class="header" href="#referencing-external-projects">Referencing external projects</a></h2>
 <p>After completing the gates project from the previous tutorial ahead of schedule, you take a well deserved vacation. Now you have returned to work and are tasked with building a half adder.</p>
 <p>Let's create a new project. Navigate to a directory in your file system where you would like to store the project.</p>
 <pre><code>$ orbit new half-add --lib adding
@@ -590,7 +594,7 @@ is different, and that is expected behavior. Let's continue to the next tutorial
 <p>Awesome! Our next step is tell Orbit that our current project, half-add, wants to use gates as a dependency.</p>
 <p>Add a new entry for gates to the dependencies table in our project's manifest, Orbit.toml.</p>
 <p>Filename: Orbit.toml</p>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 name = "half-add"
 version = "0.1.0"
 uuid = "7ddyiof2rzj3g8onn4tfzb69a"
@@ -600,9 +604,9 @@ library = "adding"
 gates = "0.1.0" # Add the dependency here!
 </code></pre>
 <p>We've referenced it, now we have to use it!</p>
-<h2 id="learning-about-ips"><a class="header" href="#learning-about-ips">Learning about ips</a></h2>
-<p>Your memory is a little foggy on what gates actually did, and what entities were available. Luckily, we can query for information through Orbit about ips and their design units.</p>
-<p>Let's remember what entities we have at our disposal.</p>
+<h2 id="learning-about-projects"><a class="header" href="#learning-about-projects">Learning about projects</a></h2>
+<p>Your memory is a little foggy on what gates actually did, and what cores are available. Luckily, we can query for information through Orbit about projects and their cores.</p>
+<p>Let's remember what cores we have at our disposal.</p>
 <pre><code>$ orbit info gates --units
 </code></pre>
 <pre><code>and_gate                            entity        public 
@@ -619,9 +623,9 @@ begin
 end architecture;
 </code></pre>
 <p>Cool, we had used the VHDL keyword <code>nand</code> to describe that particular circuit. Sometimes it may be insightful to read code snippets and comments from external design units when trying to integrate them into a new project.</p>
-<h2 id="integrating-design-units-across-ips"><a class="header" href="#integrating-design-units-across-ips">Integrating design units across ips</a></h2>
+<h2 id="integrating-design-units-across-projects"><a class="header" href="#integrating-design-units-across-projects">Integrating design units across projects</a></h2>
 <p>Let's use the NAND gate we previously defined to construct a half adder circuit. We can use the shorthand switches <code>-s</code> and  <code>-i</code> for the  <code>--signals</code> and <code>--instance</code> flags, respectively.</p>
-<pre><code>$ orbit get --ip gates nand_gate -si
+<pre><code>$ orbit get --project gates nand_gate -si
 </code></pre>
 <pre><code>signal a : std_logic;
 signal b : std_logic;
@@ -702,29 +706,31 @@ end architecture;
 <pre><code>half_add (half-add:0.1.0)
 └── nand_gate (gates:0.1.0)
 </code></pre>
-<p>Finally, let's install this ip to the cache for future reuse as well. But before we can install any ip to our cache, an ip must have an up to date lockfile.</p>
+<p>Finally, let's install this project to the cache for future reuse as well. But before we can install any project to our cache, a project must have an up to date lockfile.</p>
 <p>Lockfiles are updated whenever a user calls <code>orbit build</code> or <code>orbit test</code>, but they can also be updated with the dedicated <code>orbit lock</code> command. Let's go ahead and generate the lockfile now.</p>
 <pre><code>$ orbit lock
 </code></pre>
-<p>Now we can safely install the ip to our catalog.</p>
+<p>Now we can safely install the project to our catalog.</p>
 <pre><code>$ orbit install --all-public
 </code></pre>
-<p>Nice, now we have successfully reused designs across ips! However, maybe we should have designed all the logic gates in the gates ip...</p>
+<p>Nice, now we have successfully reused designs across projects! However, maybe we should have designed all the logic gates in the gates project...</p>
 <h3 id="additional-notes-on-dependencies"><a class="header" href="#additional-notes-on-dependencies">Additional notes on dependencies</a></h3>
-<p>Before integrating a design unit from an external ip into a separate project, it's important to first update the Orbit.toml file. This manifest file has a dependencies section, which allows you to tell Orbit which ips to bring into the current project scope. Without the ips in scope, Orbit may be unable to identify where you got a reference for a particular design unit. Orbit denotes an unknown design unit with a ? when displaying the design hierarchy.</p>
+<p>Before integrating a design unit from an external project into the current project, it's important to first update the "Orbit.toml" file. This manifest file has a dependencies section, which allows you to tell Orbit which projects to bring into the current project's scope. Without the correct projects in scope, Orbit may be unable to identify where you got a reference for a particular design unit. Orbit denotes an unknown design unit with a ? when displaying the design hierarchy.</p>
 <pre><code>half_add (half-add:0.1.0)
 └─ nand_gate ?
 </code></pre>
-<p>After introducing dependencies at the project level, it's also important to maintain an up-to-date lockfile, Orbit.lock. In most cases, Orbit will automatically generate it when it needs it, however, you as the user can also explicitly request Orbit to update the lockfile.</p>
+<p>After introducing dependencies at the project level, it's also important to maintain an up-to-date lockfile, "Orbit.lock". In most cases, Orbit will automatically generate it when it needs it, however, you as the user can also explicitly request Orbit to update the lockfile.</p>
 <pre><code>$ orbit lock
 </code></pre>
-<p>The lockfile saves information for Orbit to use later when needing to reconstruct the state of an ip. This includes saving information about all ip dependencies, their checksums, and potential sources of retrieval. Remember, the Orbit.lock file is automatically managed by Orbit and does not require direct user editing.</p>
+<p>The lockfile saves information for Orbit to use later when needing to reconstruct the state of a project. This includes saving information about all project dependencies, their checksums, and potential sources of retrieval. Remember, the Orbit.lock file is automatically managed by Orbit and does not require direct user editing.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="gates-revisited"><a class="header" href="#gates-revisited">Gates: Revisited</a></h1>
 <p>In this tutorial, you will learn how to:</p>
-<p><a href="tutorials/gates_revisited.html#updating-the-gates-ip">1.</a> Edit an existing ip<br />
-<a href="tutorials/gates_revisited.html#extending-the-yilinx-target">2.</a> Use environment variables and command-line arguments to create more robust targets<br />
-<a href="tutorials/gates_revisited.html#rereleasing-the-gates-ip">3.</a> Release the next version for an existing ip</p>
-<h2 id="editing-the-gates-ip"><a class="header" href="#editing-the-gates-ip">Editing the gates ip</a></h2>
+<ol>
+<li><a href="tutorials/gates_revisited.html#updating-the-gates-project">Update an existing project</a></li>
+<li><a href="tutorials/gates_revisited.html#extending-the-yilinx-target">Use environment variables and command-line arguments to create more robust targets</a></li>
+<li><a href="tutorials/gates_revisited.html#rereleasing-the-gates-project">Release the next version for a project</a></li>
+</ol>
+<h2 id="updating-the-gates-project"><a class="header" href="#updating-the-gates-project">Updating the gates project</a></h2>
 <p>It seems we left out some logic gates when we last worked on the gates project, so let's implement them now. Navigate to the directory in your file system where you currently store the gates project.</p>
 <p>For the rest of this tutorial, we will be working relative to the project directory "/gates" that currently stores the gates project.</p>
 <p>Let's implement the OR gate while restricting our design to only NAND gates like before.</p>
@@ -788,7 +794,7 @@ begin
 
 end architecture;
 </code></pre>
-<p>Showing the list of possible design units for the current project should now include the OR gate entity.</p>
+<p>Showing the list of possible cores for the current project should now include the OR gate entity.</p>
 <pre><code>$ orbit info --units
 </code></pre>
 <pre><code>and_gate                            entity        public
@@ -798,7 +804,7 @@ or_gate                             entity        public
 <h2 id="extending-the-yilinx-target"><a class="header" href="#extending-the-yilinx-target">Extending the Yilinx target</a></h2>
 <p>Next, we want to program our Yilinx FPGA with the OR gate design to test it on the board. However, there are some quick updates we first want to apply to the ".orbit/yilinx.py" script.</p>
 <ul>
-<li>We want a way to specify which I/O pins of the FPGA will be used during placement and routing</li>
+<li>We want a way to specify which I/O pins of the FPGA will be used during placement and routing.</li>
 <li>We want a way to specify whether to program the FPGA bitstream to SRAM storage (volatile) or flash storage (nonvolatile).</li>
 </ul>
 <p>After searching through Yilinx documentation for hours, you learn that the Yilinx design tool can accept .ydc files for FPGA pin assignments. Let's edit our yilinx target to collect any .ydc files our project may have during Orbit's planning step.</p>
@@ -907,10 +913,10 @@ YILINX: Programming bitstream to flash...
 </code></pre>
 <pre><code>yilinx               Generate bitstreams for Yilinx FPGAs
 </code></pre>
-<h2 id="rereleasing-the-gates-ip"><a class="header" href="#rereleasing-the-gates-ip">Rereleasing the gates ip</a></h2>
-<p>We made changes to the gates ip, and now we want to have the ability to use these new updates or continue using the old changes. To do this, we want to update the version number in the manifest file. Let's edit the Orbit.toml file's version field to contain version "1.0.0".</p>
+<h2 id="rereleasing-the-gates-project"><a class="header" href="#rereleasing-the-gates-project">Rereleasing the gates project</a></h2>
+<p>We made changes to the gates project, and now we want to have the ability to use these new updates or continue using the old changes. To do this, we want to update the version number in the manifest file. Let's edit the Orbit.toml file's version field to contain version "1.0.0".</p>
 <p>Filename: Orbit.toml</p>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 name = "gates"
 version = "1.0.0" # Update the version to 1.0.0!
 uuid = "8ah2qa261k8wgv55sd1qq17w9"
@@ -918,7 +924,7 @@ uuid = "8ah2qa261k8wgv55sd1qq17w9"
 [dependencies]
 
 </code></pre>
-<p>Finally, let's update the lockfile and release version 1.0.0 for the gates ip by installing it to our cache.</p>
+<p>Finally, let's update the lockfile and release version 1.0.0 for the gates project by installing it to our cache.</p>
 <pre><code>$ orbit lock
 </code></pre>
 <pre><code>$ orbit install --all-public
@@ -928,7 +934,7 @@ uuid = "8ah2qa261k8wgv55sd1qq17w9"
 </code></pre>
 <pre><code>gates                       1.0.0     install
 </code></pre>
-<p>We can see that our previous version of gates is still available too; by default, the search command will report the highest known version for an ip.</p>
+<p>We can see that our previous version of gates is still available too; by default, the search command will report the highest known version for a project.</p>
 <pre><code>$ orbit info gates --versions
 </code></pre>
 <pre><code>1.0.0         install  
@@ -936,37 +942,39 @@ uuid = "8ah2qa261k8wgv55sd1qq17w9"
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="final-project-full-adder"><a class="header" href="#final-project-full-adder">Final Project: Full adder</a></h1>
 <p>In this tutorial, you will learn how to:</p>
-<p><a href="tutorials/final_project.html#specifying-multiple-dependencies-for-an-ip">1.</a> Depend on multiple ips for a single project<br />
-<a href="tutorials/final_project.html#overcoming-hdl-problems-namespace-pollution">2.</a> Use Orbit to overcome namespace pollution<br />
-<a href="tutorials/final_project.html#reusing-targets-that-are-globally-configured">3.</a> Build a project with a globally-configured target</p>
-<h2 id="specifying-multiple-dependencies-for-an-ip"><a class="header" href="#specifying-multiple-dependencies-for-an-ip">Specifying multiple dependencies for an ip</a></h2>
-<p>After the quick detour back to the gates ip, we are ready to tackle our final challenge in this mini tutorial series: the full adder. Like our previous projects, navigate to a directory in your file system where you would like to store the project.</p>
+<ol>
+<li><a href="tutorials/final_project.html#specifying-multiple-dependencies-for-a-project">Depend on multiple projects for a single project</a></li>
+<li><a href="tutorials/final_project.html#overcoming-hdl-problems-namespace-pollution">Use Orbit to overcome namespace pollution</a></li>
+<li><a href="tutorials/final_project.html#reusing-targets-that-are-globally-configured">Build a project with a globally-configured target</a></li>
+</ol>
+<h2 id="specifying-multiple-dependencies-for-a-project"><a class="header" href="#specifying-multiple-dependencies-for-a-project">Specifying multiple dependencies for a project</a></h2>
+<p>After the quick detour back to the gates project, we are ready to tackle our final challenge in this mini tutorial series: the full adder. Like our previous projects, navigate to a directory in your file system where you would like to store the project.</p>
 <pre><code>orbit new full-add --lib adding
 </code></pre>
 <p>For the rest of this tutorial, we will be working relative to the project directory "/full-add" that currently stores our new full-add project.</p>
-<p>For this final project, we will need circuits described in both the gate ip and half-add ip. Let's quickly recall if version 1.0.0 of gates has the OR gate we will need.</p>
+<p>For this final project, we will need circuits described in both the gate project and half-add project. Let's quickly recall if version 1.0.0 of gates has the OR gate we will need.</p>
 <pre><code>$ orbit info gates:1.0.0 --units
 </code></pre>
 <pre><code>and_gate                            entity        public 
 nand_gate                           entity        public 
 or_gate                             entity        public 
 </code></pre>
-<p>Yup! It's there, and we know we will need some half adders as well. Let's add both ips to our manifest file.</p>
+<p>Yup! It's there, and we know we will need some half adders as well. Let's add both projects to our manifest file.</p>
 <p>filename: Orbit.toml</p>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 name = "full-add"
 version = "0.1.0"
 uuid = "9pu41jrkfhwq646bfw4g7o9ah"
 library = "adding"
 
 [dependencies]
-gates = "1.0.0" # Add the gates ip as a dependency!
-half-add = "0.1.0" # Add the half-add ip as a dependency too!
+gates = "1.0.0" # Add the gates project as a dependency!
+half-add = "0.1.0" # Add the half-add project as a dependency too!
 </code></pre>
 <p>Okay, time to start coding!</p>
 <h2 id="overcoming-hdl-problems-namespace-pollution"><a class="header" href="#overcoming-hdl-problems-namespace-pollution">Overcoming HDL problems: Namespace pollution</a></h2>
 <p>Our full adder circuit will be constructed of 2 half adders and an OR gate. Let's collect some HDL code snippets to use for our full adder circuit.</p>
-<pre><code>$ orbit get half_add --ip half-add -li
+<pre><code>$ orbit get half_add --project half-add -li
 </code></pre>
 <pre><code>library adding;
 
@@ -979,7 +987,7 @@ uX : entity adding.half_add
   );
 </code></pre>
 <p>Remember, we can use the shorthand switches <code>-l</code> and <code>-i</code> for the <code>--library</code> and <code>--instance</code> flags respectively. Let's also get the code snippet for the OR gate.</p>
-<pre><code>$ orbit get or_gate --ip gates:1.0.0 -li
+<pre><code>$ orbit get or_gate --project gates:1.0.0 -li
 </code></pre>
 <pre><code>library gates;
 
@@ -1040,7 +1048,7 @@ begin
 end architecture;
 </code></pre>
 <p>Our design heirarchy is getting more complex; we have full adders constructed of half adders and OR gates, half adders constructed of NAND gates, OR gates constructed of... uh-oh. More NAND gates.</p>
-<p>The NAND gate design unit used in the OR gates is different from NAND gates used in the half adders because they reside in different versions of the gates ip (essentially different ips). So did we just define an NAND gate entity twice with the same identifier? Yes, and thanks to Orbit, this situation is okay.</p>
+<p>The NAND gate design unit used in the OR gates is different from NAND gates used in the half adders because they reside in different versions of the gates project (essentially different projects). So did we just define an NAND gate entity twice with the same identifier? Yes, and thanks to Orbit, this situation is okay.</p>
 <h3 id="huh"><a class="header" href="#huh">Huh?</a></h3>
 <p>Typical EDA tools will complain and error out when primary design units share the same name. How would they know which one is being used where? Fortunately, Orbit is one step ahead of these tools due to implementing an algorithm called <em>dynamic symbol transformation</em>.</p>
 <p>Let's take a look at the design tree hierarchy. You may notice something interesting.</p>
@@ -1052,7 +1060,7 @@ end architecture;
 └── half_add (half-add:0.1.0)
     └── nand_gate_9f476275c5a024eb (gates:0.1.0)
 </code></pre>
-<p>The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, Orbit appends the beginning checksum digits from the ip of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict.</p>
+<p>The entities from gates version 0.1.0 and version 1.0.0 are allowed to co-exist in this design. To circumvent EDA tool problems during builds, Orbit appends the beginning checksum digits from the project of the unit in conflict to the design unit's identifier. Any design units that referenced the unit in conflict will also be updated to properly reference the new identifier for the unit in conflict.</p>
 <p>To us though, these slight identifier renamings remain hidden because they occur among indirect dependencies in relation to our current project. When deciding which design unit to rename, Orbit will always choose to rename the unit that is used as an indirect dependency. This key choice allows us to keep using the original unit name when integrating design units into the current project.</p>
 <h3 id="okay-so-what"><a class="header" href="#okay-so-what">Okay, so what?</a></h3>
 <p>This may be a silly example, but there is a key takeaway here. Designs are constantly evolving. When creating the latest module, you never know what will come next. By allowing the state of a design to live on while also providing support for new growth, a user no longer spends their time trying to manage compatibility among the increasingly interconnected dependencies. Instead, there exists a freedom to continue to innovate.</p>
@@ -1101,7 +1109,7 @@ YILINX: Performing place-and-route...
 YILINX: Generating bitstream...
 YILINX: Bitstream saved at: target/yilinx/full_add.bit
 </code></pre>
-<p>Great work! This marks the end to this tutorial series, but the beginning of your experience with Orbit, a package manager and build system for HDLs.</p>
+<p>Great work! This marks the end to this tutorial series, but the beginning of your experience with Orbit, a package manager and build system for VHDL, Verilog, and SystemVerilog.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="user-guide"><a class="header" href="#user-guide">User Guide</a></h1>
 <p>This section is <strong>goal-oriented</strong>, providing answers to questions through a series of steps for users that have some experience with Orbit.</p>
 <p>If you have not used Orbit yet, it is recommended to start with the <a href="user/./../tutorials/tutorials.html">Tutorials</a> section.</p>
@@ -1891,15 +1899,16 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <blockquote>
 <p>Having well-designed and easily accessible tools is important to any form of development. Creativity's greatest limiting factor is the tools of which are available to turn an idea into a reality.</p>
 </blockquote>
+<p>Rather than work directly with source code files and your EDA tools, you can avoid the difficulties involved in reusing and updating code by introducing a higher-level <a href="starting/../glossary.html#package">"<em>package</em>"</a> abstraction and by using a <a href="starting/../glossary.html#package-manager"><em>package manager</em></a>.</p>
 <h2 id="enter-orbit"><a class="header" href="#enter-orbit">Enter: Orbit</a></h2>
 <p><em>Orbit</em> is an attempt at bringing state of the art package management to HDLs. It automates the process of organizing, maintaining, and reusing HDL source code across projects. It is a tool that allows HDL projects to declare various dependencies and ensure that you'll always get a repeatable build. To accomplish this goal, Orbit does four things:</p>
 <ul>
-<li>Introduces two metadata files with various bits of ip information.</li>
-<li>Fetches and installs your ip's dependencies.</li>
-<li>Invokes any user-defined build tool to adapt to your workflow and EDA tools</li>
+<li>Introduces two metadata files with various bits of project information.</li>
+<li>Fetches and installs your project's dependencies.</li>
+<li>Invokes any user-defined build tool to adapt to your workflow and EDA tools.</li>
 <li>Introduces conventions to make working with HDL projects easier.</li>
 </ul>
-<p>To a large extent, Orbit normalizes the commands needed to build or test a given ip; this is one aspect of the aforementioned conventions. The same command can be used to build a project for any number of EDA tools. Furthermore, Orbit will automatically fetch any dependencies you have defined for your current project and arrange for them to be included in your build as needed.</p>
+<p>To a large extent, Orbit normalizes the commands needed to build or test a given project; this is one aspect of the aforementioned conventions. The same command can be used to build a project for any number of EDA tools. Furthermore, Orbit will automatically fetch any dependencies you have defined for your current project and arrange for them to be included in your build as needed.</p>
 <p>One of the major goals behind Orbit is to provide the right infrastructure and ecosystem for anyone's hardware projects to live and evolve over time. By introducing Orbit into your workflow, we believe hardware development becomes a more enjoyable experience where more of your time is devoted to <em>actually</em> creating cool things, not racking up technical debt and fighting to manage millions of files. After all, the saying should be "<em>Hardware is cool</em>", right?</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="how-orbit-works"><a class="header" href="#how-orbit-works">How Orbit Works</a></h1>
 <p>Orbit is a package manager and build system for VHDL, Verilog, and SystemVerilog.</p>
@@ -1952,7 +1961,7 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <div style="break-before: page; page-break-before: always;"></div><h1 id="packages-and-cores"><a class="header" href="#packages-and-cores">Packages and Cores</a></h1>
 <p>An important line of distinction is understanding the difference between a package and an IP core.</p>
 <p>An <em>IP core</em>, commonly referred to as a <em>core</em>, is the smallest amount of hardware description code that Orbit considers at a time. A core is a reusable block of design logic composed of one or more design units. A core's name is defined by its root design unit, which is where Orbit starts from when collecting the rest of the required design units for a particular build. Design units are the highest levels of abstraction in hardware description languages, which include VHDL entities and SystemVerilog modules, and can exist in one or more design files.</p>
-<p>All cores remain as their source files when installed by Orbit and are intended to be shared with multiple projects.</p>
+<p>All cores remain as source code when installed by Orbit and are intended to be shared with multiple projects.</p>
 <p>The <em>core root</em> is a primary design unit that Orbit starts from and makes up the root of the core.</p>
 <p>A <em>package</em> is a collection of one or more cores. A package contains an <em>Orbit.toml</em> file, describing metadata for the collection of cores, as well as an auto-generated <em>Orbit.lock</em> file, recording the world state of the package. A package in this context is often synonymous with "project".</p>
 <p>To disambiguate the concept of an "Orbit package" from an "HDL package", much of the documentation in this book and throughout Orbit will favor using the word "project" instead of "package" when discussing an "Orbit package".</p>
@@ -2023,6 +2032,36 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <p>Orbit provides two entry points into the build process: <code>orbit test</code> and <code>orbit build</code>. Each entry point is suited for a particular type of build process.</p>
 <p>If you are trying to run a simulation (accompanied by an HDL testbench), then it is recommended to use the <code>orbit test</code> entry point. This command allows you to enter the build process by specifying the testbench using <code>--tb &lt;unit&gt;</code> and its design-under-test using <code>--dut &lt;unit&gt;</code>. This entry point is typically used for verification workflows, where the end result of the build process is more concerned with making sure all steps in the process complete successfully with no errors.</p>
 <p>For any non-testing workflow (one that lacks an HDL testbench), then it is recommended to use the <code>orbit build</code> entry point. This command allows you to enter the build process by specifying the top level using <code>--top &lt;unit&gt;</code>. This entry point is typically used for any workflow where the end result of the build process is more concerned with producing output files (commonly called artifacts), such as a bitstream or synthesis report.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="projects"><a class="header" href="#projects">Projects</a></h1>
+<p>A <em>project</em> is a collection of one or more IP cores. Projects are the <em>packages</em> Orbit manages as a package manager. First, let's understand some key terms related to packages in the context of Orbit.</p>
+<h2 id="terminology"><a class="header" href="#terminology">Terminology</a></h2>
+<p>A developer's tasks often involve interfacing with a collection of closely related files (source code, scripts, text files). This collection of closely related files is typically grouped together under a single directory called a project. Orbit recognizes a directory on your filesystem as a project by finding its <em>manifest</em>, which contains metadata about the project, such as its name and version. The manifest file must be named "Orbit.toml" and exists at the root of the project.</p>
+<p>In the context of being a package manager for digital hardware, Orbit calls its packages <em>projects</em> to disambiguite from package constructs found within HDLs. For more information, see <a href="topic/./projects_and_cores.html">Packages and Cores</a>.</p>
+<h2 id="working-project"><a class="header" href="#working-project">Working project</a></h2>
+<p>Typically, developers work on one project at a given time (while we can work on projects concurrently, we unfortunately are not parallel processors). The <em>working project</em> is the project that is currently being developed at a given moment. Orbit identifies the working project by checking along the working directory and its parent directories for a manifest file. Once a manifest file is found, Orbit considers this the working project. Some Orbit commands only work when they are called within the working project (<code>orbit lock</code>, <code>orbit build</code>).</p>
+<p>The working project may also be called other names, such as the <em>local project</em> or <em>current project</em>. These name differences are only differences in name as the same meaning is preserved.</p>
+<h2 id="anatomy-of-a-project"><a class="header" href="#anatomy-of-a-project">Anatomy of a project</a></h2>
+<p>Since Orbit focuses on digital hardware projects, it automatically detects and manages files that store HDL source code. Files that store HDL source code are called <em>source files</em>. Any other files, such as scripts and test vectors, are considered <em>auxiliary files</em>.</p>
+<p>Auxiliary files can be injected into the planning stage by specifying custom <em>filesets</em> for the given target. A <em>fileset</em> is glob-style pattern that collects matching files under a common name within the working project. These matched files will appear in the target's generated blueprint file for future execution.</p>
+<p>So, what files are inside a project?</p>
+<ul>
+<li><em>Source files</em>: Stores HDL source code (VHDL, Verilog, SystemVerilog)</li>
+<li><em>Auxiliary files</em>: Any additional files that do not store source code</li>
+<li><em>Manifest file</em> (<code>Orbit.toml</code>): Stores the project's metadata provided by the user</li>
+<li><em>Lock file</em> (<code>Orbit.lock</code>): Saves the project's world state for reproducibility purposes</li>
+</ul>
+<p>All files <strong>except the lock file</strong> are expected to be edited by the user. Orbit automatically maintains the lock file to ensure it can reproduce the project's world state in the future.</p>
+<h3 id="reserved-names"><a class="header" href="#reserved-names">Reserved names</a></h3>
+<p>File names that begin with ".orbit-" are reserved for internal use and are not allowed at the root directory of a project. Files that are named with this pattern are used by Orbit in the catalog to store additional metadata about the project.</p>
+<h2 id="names"><a class="header" href="#names">Names</a></h2>
+<p>A project's name is a human-readable identifier given to an project so users can easily remember and locate packages of interest.</p>
+<pre><code>gates
+</code></pre>
+<p>A project's <em>specification</em>, more commonly called a <em>spec</em>, is the full resolved name of an project. The spec involves the project's name, uuid, and version. A complete spec looks like the following:</p>
+<pre><code>gates+8ah2qa261k8wgv55sd1qq17w9:1.0.0
+</code></pre>
+<p>When asking Orbit to operate on a particular project outside of the working project, Orbit will ask you to provide the project's spec. Orbit uses the spec to lookup the project in the catalog and then carry out the requested function on that project.</p>
+<p>To learn more about an project spec, see <a href="topic/./../reference/names.html">Project Specification</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="catalog"><a class="header" href="#catalog">Catalog</a></h1>
 <p>As a package manager, Orbit must know what ips are available and where ips are stored on your local file system so that they can be operated on. Orbit stores your ips in the <em>catalog</em>. The <em>catalog</em> is a set of directories on your local file system maintained by orbit. These directories are typically hidden from the user because they are not regularly interfacing with the file system contents at these locations and manually tampering the contents may cause trouble for Orbit when it tries to use them.</p>
 <p>There are three levels to the catalog: the cache, the archive, and channels.</p>
@@ -2036,37 +2075,6 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <p><em>Channels</em> are user-defined directories to set up as registries to maintain the ips that are currently <em>available</em> to download or install. These ips may require internet to download their contents and then install to your cache.</p>
 <p>Default location: <code>$ORBIT_HOME/channels</code></p>
 <p>Adding a new channel is as simple as adding a directory to the location where channels are defined.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="ip"><a class="header" href="#ip">Ip</a></h1>
-<p>Ips are the core component that Orbit operates on as a package manager. First, let's understand some key terms related to ip in the context of Orbit.</p>
-<h2 id="terminology"><a class="header" href="#terminology">Terminology</a></h2>
-<p>A developer's tasks often involve interfacing with a collection of closely related files (source code, scripts, text files). This collection of closely related files is typically stored under a single directory and is called a <em>project</em>.</p>
-<p>The core operations of a package manager revolve around <em>packages</em>. A <em>package</em> is a project <em>with additional information provided by the developer</em>. This "additional information" is called <em>metadata</em>, and it is written to a special file called a <em>manifest</em>. The manifest must be placed at the project's root directory. Without manifests, a package manager would not know which projects it should manage and what each project's current state is in regards to being a package.</p>
-<p>In the context of being a package manager for digital hardware, Orbit calls a package an <em>ip</em>. An ip's manifest file is "Orbit.toml", with case-sensitivity.</p>
-<h2 id="working-ip"><a class="header" href="#working-ip">Working ip</a></h2>
-<p>Typically, developers work on one project at a given time (while we can work on projects concurrently, we unfortunately are not parallel processors). The <em>working ip</em> is the ip that is currently being developed at a given moment. Orbit identifies the working ip by checking along the working directory and its parent directories for a manifest file. Once a manifest file is found, Orbit considers this the working ip. Some Orbit commands only work when they are called within the working ip (<code>orbit lock</code>, <code>orbit build</code>).</p>
-<p>The working ip may also be called other names, such as the <em>local ip</em> or <em>current ip</em>. These name differences are only differences in name as the same meaning is preserved.</p>
-<h2 id="anatomy"><a class="header" href="#anatomy">Anatomy</a></h2>
-<p>Since Orbit focuses on digital hardware projects, it automatically detects and manages files that store HDL source code. Files that store HDL source code are called <em>source files</em>. Any other files, such as scripts and test vectors, are considered <em>auxiliary files</em>.</p>
-<p>Auxiliary files can be injected into the planning stage by specifying <em>filesets</em> for the given target. A <em>fileset</em> is glob-style pattern that collects matching files under a common name within the working ip. These matched files will appear in the target's generated blueprint file for future execution.</p>
-<p>So, what files are inside an ip?</p>
-<ul>
-<li><em>Source files</em>: Stores HDL source code (VHDL, Verilog)</li>
-<li><em>Auxiliary files</em>: Any additional files that do not store source code</li>
-<li><em>Manifest file</em> (<code>Orbit.toml</code>): Stores the ip's metadata provided by the user</li>
-<li><em>Lock file</em> (<code>Orbit.lock</code>): Saves the ip's world state for reproducibility purposes</li>
-</ul>
-<p>All files <strong>except the lock file</strong> are expected to be edited by the user. Orbit automatically maintains the lock file to ensure it can reproduce the ip's world state in the future.</p>
-<h3 id="reserved-names"><a class="header" href="#reserved-names">Reserved names</a></h3>
-<p>File names that begin with ".orbit-" are reserved for internal use and are not allowed at the root directory of an ip. Files that are named with this pattern are used by Orbit in the ip catalog to store additional metadata about the ip.</p>
-<h2 id="names"><a class="header" href="#names">Names</a></h2>
-<p>An ip's name is a human-readable identifier given to an ip so users can easily remember and locate packages of interest.</p>
-<pre><code>gates
-</code></pre>
-<p>An ip's <em>specification</em>, more commonly called a <em>spec</em>, is the full resolved name of an ip. The spec involves the ip's name, uuid, and version. A complete spec looks like the following:</p>
-<pre><code>gates+8ah2qa261k8wgv55sd1qq17w9:1.0.0
-</code></pre>
-<p>When asking Orbit to operate on a particular ip outside of the working ip, Orbit will ask you to provide the ip's spec. Orbit uses the spec to lookup the ip in the catalog and then carry out the requested function on that ip.</p>
-<p>To learn more about an ip spec, see <a href="topic/./../reference/names.html">Ip Specification</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="targets"><a class="header" href="#targets">Targets</a></h1>
 <p>Orbit operates at the <em>front end</em> of hardware development. At the <em>back end</em> of hardware development is where the true "processing" occurs. A particular "process" that occurs in the back end and produces some result is called a <em>target</em>.</p>
 <p>Orbit has no built-in targets. Since hardware development varies widely with the tools available, the environments in which development occurs, and the processes that occur within those environments, Orbit has not built-in targets. This design choice gives users flexibility in configuring the types of workflows that are most important to them.</p>
@@ -2551,7 +2559,7 @@ logic-analyzer = "4.8.0"
 <p>If the ip has no development dependencies, the section can be omitted from the manifest. The ips listed in this section will not be included in the build graph for when this ip is used as a dependency itself.</p>
 <p>Refer to the <code>[dependencies]</code> section for related capabilities in specifying ips.</p>
 <p>See <a href="reference/./../user/specifying_deps.html">Specifying Dependencies</a> for the complete list of ways dependencies can be specified.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="ip-specification"><a class="header" href="#ip-specification">Ip Specification</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="project-specification"><a class="header" href="#project-specification">Project Specification</a></h1>
 <p>In order to identify an ip among others, Orbit requires users to assign a human-readable <em>name</em> to each created ip. The name is just one component of how to identify an ip, while an ip is fully identified by its <em>specification</em>, or <em>spec</em>.</p>
 <p>While user's provide their own name for an ip, Orbit assigns a <em>universally unique identifier</em> (UUID) to each ip. UUIDs are required in order to avoid namespace collisions at the ip level in Orbit's decentralized system.</p>
 <p>Lastly, users provide a version, which denotes the current state of the ip.</p>
@@ -3500,7 +3508,7 @@ endmodule
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-new"><a class="header" href="#orbit-new"><strong>orbit new</strong></a></h1>
 <h2 id="name-1"><a class="header" href="#name-1"><strong>NAME</strong></a></h2>
-<p>new - create a new ip</p>
+<p>new - create a new project</p>
 <h2 id="synopsis"><a class="header" href="#synopsis"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit new [options] &lt;path&gt;
 </code></pre>
@@ -3529,7 +3537,7 @@ orbit new eecs/lab1 --name adder
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-init"><a class="header" href="#orbit-init"><strong>orbit init</strong></a></h1>
 <h2 id="name-2"><a class="header" href="#name-2"><strong>NAME</strong></a></h2>
-<p>init - initialize an ip from an existing project</p>
+<p>init - initialize a project from an existing directory</p>
 <h2 id="synopsis-1"><a class="header" href="#synopsis-1"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit init [options] [&lt;path&gt;]
 </code></pre>
@@ -3565,7 +3573,7 @@ orbit init --uuid
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-info"><a class="header" href="#orbit-info"><strong>orbit info</strong></a></h1>
 <h2 id="name-3"><a class="header" href="#name-3"><strong>NAME</strong></a></h2>
-<p>info - display information about an ip</p>
+<p>info - display information about a project</p>
 <h2 id="synopsis-2"><a class="header" href="#synopsis-2"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit info [options] [&lt;ip&gt;]
 </code></pre>
@@ -3766,7 +3774,7 @@ orbit tree -e ip --ascii
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-lock"><a class="header" href="#orbit-lock"><strong>orbit lock</strong></a></h1>
 <h2 id="name-7"><a class="header" href="#name-7"><strong>NAME</strong></a></h2>
-<p>lock - save the world state of an ip</p>
+<p>lock - save the world state of a project</p>
 <h2 id="synopsis-6"><a class="header" href="#synopsis-6"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit lock [options]
 </code></pre>
@@ -3919,7 +3927,7 @@ orbit build --target xsim --force -- --help
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-publish"><a class="header" href="#orbit-publish"><strong>orbit publish</strong></a></h1>
 <h2 id="name-10"><a class="header" href="#name-10"><strong>NAME</strong></a></h2>
-<p>publish - post an ip to a channel</p>
+<p>publish - post a project to a channel</p>
 <h2 id="synopsis-9"><a class="header" href="#synopsis-9"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit publish [options]
 </code></pre>
@@ -3968,7 +3976,7 @@ orbit publish -c hyperspace-labs -y
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-search"><a class="header" href="#orbit-search"><strong>orbit search</strong></a></h1>
 <h2 id="name-11"><a class="header" href="#name-11"><strong>NAME</strong></a></h2>
-<p>search - browse the ip catalog</p>
+<p>search - browse the catalog</p>
 <h2 id="synopsis-10"><a class="header" href="#synopsis-10"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit search [options] [&lt;ip&gt;]
 </code></pre>
@@ -4017,7 +4025,7 @@ orbit search --keyword cdc --limit 20 -i
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-install"><a class="header" href="#orbit-install"><strong>orbit install</strong></a></h1>
 <h2 id="name-12"><a class="header" href="#name-12"><strong>NAME</strong></a></h2>
-<p>install - store an immutable reference to an ip</p>
+<p>install - store an immutable reference to a project</p>
 <h2 id="synopsis-11"><a class="header" href="#synopsis-11"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit install [options]
 </code></pre>
@@ -4070,7 +4078,7 @@ orbit install alu:2.3.7 --path ./projects/alu --force
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-remove"><a class="header" href="#orbit-remove"><strong>orbit remove</strong></a></h1>
 <h2 id="name-13"><a class="header" href="#name-13"><strong>NAME</strong></a></h2>
-<p>remove - delete an ip from the catalog</p>
+<p>remove - delete a project from the catalog</p>
 <h2 id="synopsis-12"><a class="header" href="#synopsis-12"><strong>SYNOPSIS</strong></a></h2>
 <pre><code>orbit remove [options] &lt;ip&gt;
 </code></pre>
@@ -4182,8 +4190,6 @@ orbit config ~/.orbit/config.toml --unset env.vivado_path
 <p>A configuration is a collection of user-defined settings intended to extend and modify Orbit's functionality. Among these settings may include user-defined targets, protocols, and channels. Configurations are stored in files called "config.toml" and have varying precedence depending on where they are processed relative to the local ip.</p>
 <h3 id="fileset"><a class="header" href="#fileset">Fileset</a></h3>
 <p>A fileset is a collection of related files under a given name. A glob-style file pattern is used to discover the files of a given fileset. Filesets are used to group common files together into the blueprint during the planning stage of the build process. Orbit comes with built-in filesets for VHDL, Verilog, and SystemVerilog files. In addition, a target can configure its own custom filesets.</p>
-<h3 id="intellectual-property-ip"><a class="header" href="#intellectual-property-ip">Intellectual Property (IP)</a></h3>
-<p>An ip is a project with a manifest file at its root directory. At a minimum, an ip has two attributes: a name and a uuid. The name is a human-friendly identifier for the ip, while the uuid is a machine-friendly identifier for the ip used to help reduce ambiguity when potentially introducing ips of the same name into the catalog.</p>
 <h3 id="ip-specification-spec"><a class="header" href="#ip-specification-spec">Ip Specification (spec)</a></h3>
 <p>The ip specification, or spec, describes the format for identifying and referencing an ip. Each ip in the user's catalog must have a unique spec. The format of a ip's spec is: <code>&lt;name&gt;[+&lt;uuid&gt;][:&lt;version&gt;]</code>.</p>
 <h3 id="local-ip"><a class="header" href="#local-ip">Local Ip</a></h3>
@@ -4199,9 +4205,15 @@ are exactly named <code>Orbit.toml</code>. The manifest is intended to be edited
 <h3 id="orbittoml"><a class="header" href="#orbittoml">Orbit.toml</a></h3>
 <p>See <a href="glossary.html#manifest">manifest</a>.</p>
 <h3 id="package"><a class="header" href="#package">Package</a></h3>
-<p>See <a href="glossary.html#intellectual-property-ip">IP</a>.</p>
+<p>A package is a collection of source files and a <code>Orbit.toml</code> <a href="glossary.html#manifest">manifest</a> file which describes the package. A package has a name, version, and UUID, which are used for specifying dependencies between packages.</p>
+<p>The <em>package root</em> is the directory where the package's <code>Orbit.toml</code> manifest is located.</p>
+<p>The <em>package ID specification</em>, or <em>SPEC</em>, is a string used to uniquely reference a specific version of a package from a specific source.</p>
+<p>A package is more commonly referred to as a <a href="glossary.html#project">project</a>.</p>
+<h3 id="package-manager"><a class="header" href="#package-manager">Package Manager</a></h3>
+<p>Broadly speaking, a package manager is a program (or collection of related programs) in a software ecosystem that automates the process of obtaining, installing, and upgrading artifacts. Within a programming language ecosystem, a package manager is a developer-focused tool whose primary functionality is to download library artifacts and their dependencies from some central repository; this capability is often combined with the ability to perform software builds (by invoking the language-specific compiler).</p>
+<p>Orbit is a package manager within the HDL ecosystem. Orbit downloads your HDL <a href="glossary.html#package">package</a>'s dependencies, resolves the order of source files required for a backend build process, and makes distributable packages.</p>
 <h3 id="project"><a class="header" href="#project">Project</a></h3>
-<p>A project is a collection of HDL source files and any other required files related to a specific application or library. Placing a manifest in a project makes it an ip.</p>
+<p>Another name for a <a href="glossary.html#package">package</a>.</p>
 <h3 id="protocol"><a class="header" href="#protocol">Protocol</a></h3>
 <p>A protocol is a process configured by the user that Orbit may use to download an ip from the internet.</p>
 <p>The default protocol for Orbit assumes the url for an ip points to a zip file and uses the curl library to download it to the archive. An ip's manifest must explicitly specify an different protocol configured by the user to override the default protocol.</p>

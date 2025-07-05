@@ -190,10 +190,10 @@
 <p>At the start of any project, it's important to survey existing work to identify any related projects that either already meet your requirements or can be used to help meet your requirements.</p>
 <ul>
 <li>
-<p>Orbit helps you quickly survey what projects exist in the ip catalog with <code>orbit search</code>. This will return a list of all projects available in the ip catalog, their latest version, their status (installed, downloaded, available), and its unique identifier.</p>
+<p>Orbit helps you quickly survey what projects exist in the catalog with <code>orbit search</code>. This will return a list of all projects available in the catalog, their latest version, their status (installed, downloaded, available), and its unique identifier.</p>
 </li>
 <li>
-<p>Further refining your search to get more information about a particular project can be done with <code>orbit info</code>. This command can display data pulled from the ip's manifest, what design units it contains, the different versions of the project, and other data related to that project.</p>
+<p>Further refining your search to get more information about a particular project can be done with <code>orbit info</code>. This command can display data pulled from the project's manifest, what design units it contains, the different versions of the project, and other data related to that project.</p>
 </li>
 <li>
 <p>After finding a design unit of interest within a particular project, a reference to that design unit's source code can be made available with <code>orbit read</code>. If the source code is well-documented and written in a clear manner, then this referring to the source code can help easily understand if using this particular design unit will be able to help you in your next project.</p>
@@ -206,7 +206,7 @@
 <p>The bulk of time and resources for any project takes place during the development stage. In this stage, the project's architecture is created, the system's functionalities are implemented, and checked to make sure they meet the project's requirements through testing.</p>
 <ul>
 <li>
-<p>Using any design units from existing ip in your latest project can be quickly achieved using <code>orbit get</code>. This command will return the necessary HDL code snippets to correctly instantiate a design unit. Simply adding the external ip's name and version to the current project's <code>[dependencies]</code> table within the <code>Orbit.toml</code> file will allow Orbit to record the information necessary to correctly reference the design unit's within that ip.</p>
+<p>Using any design units from existing project in your current project can be quickly achieved using <code>orbit get</code>. This command will return the necessary HDL code snippets to correctly instantiate a design unit. Simply adding the external project's name and version to the current project's <code>[dependencies]</code> table within the <code>Orbit.toml</code> file will allow Orbit to record the information necessary to correctly reference the design unit's within that project.</p>
 </li>
 <li>
 <p>Running a build process on a new design unit that does not require a testbench can be achieved with <code>orbit build</code>. By configuring and specifying a target, this command gives you the power to run any particular workflow for your set of tools and unique demands, such as performing synthesis.</p>
@@ -222,7 +222,7 @@
 <p>A detailed record of how to reproduce the project using Orbit can created with <code>orbit lock</code>. This command will generate a lockfile, <code>Orbit.lock</code>, which saves all the information about the current project and its dependencies such that the exact state of the project can be reproduced at a later time in any environment.</p>
 </li>
 <li>
-<p>Securing the current state of the project as a release (such as version 1.0.0) for others to find is done using <code>orbit publish</code>. This command verifies the current project's state is valid in the context of Orbit and then installs it to your local ip catalog as well as posts its manifest to any of its configured channels. By posting the ip to a channel, any other users who also have the same channel configured will be able to see the newly available project.</p>
+<p>Securing the current state of the project as a release (such as version 1.0.0) for others to find is done using <code>orbit publish</code>. This command verifies the current project's state is valid in the context of Orbit and then installs it to your catalog as well as posts the project's manifest to any of its configured channels. By posting the project to a channel, any other users who also have the same channel configured will be able to see the newly available project.</p>
 </li>
 </ul>
 <p>And with that, the cycle continues. As new features, bug fixes, and improvements are brought forth over time, users can repeat the following process to produce another release for any given project.</p>

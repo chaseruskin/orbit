@@ -169,48 +169,48 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="developing-ip"><a class="header" href="#developing-ip">Developing Ip</a></h1>
-<p>Once existing work has been evaluated and the requirements for an ip are defined, the next step is typically to begin developing the actual logic for the ip. This section walks through the common steps to building new ip and integrating with existing ip.</p>
+                        <h1 id="developing-projects"><a class="header" href="#developing-projects">Developing Projects</a></h1>
+<p>Once existing work has been evaluated and the requirements for a project are loosely defined, the next step is typically to begin developing the actual logic for the project. This section walks through the common steps to build a new project and integrate it with existing projects.</p>
 <h3 id="assumptions"><a class="header" href="#assumptions">Assumptions</a></h3>
-<p>The guides in this section, except for the ones on creation and initialization of an ip, assume you are running commands from the root directory or any subdirectory of the current ip. The current ip, also sometimes referred to as the local ip, is the ip being actively developed.</p>
+<p>The guides in this section, except for the ones on creation and initialization of a project, assume you are running commands from the root directory or any subdirectory of the current project. The current project is the local project being actively developed.</p>
 <p>This section also assumes you have one or more targets already configured. To learn how to create targets, see <a href="./creating_targets.html">Creating Targets</a>.</p>
 <h3 id="guides"><a class="header" href="#guides">Guides</a></h3>
 <ul>
-<li><a href="#creating-a-new-ip">Creating a new ip</a></li>
-<li><a href="#initializing-an-existing-project-as-an-ip">Initializing an existing project as an ip</a></li>
-<li><a href="#integrating-a-design-unit-internal-to-the-current-ip">Integrating a design unit internal to the current ip</a></li>
-<li><a href="#integrating-a-design-unit-external-to-the-current-ip">Integrating a design unit external to the current ip</a></li>
+<li><a href="#creating-a-new-project">Creating a new project</a></li>
+<li><a href="#initializing-an-existing-directory-as-a-project">Initializing an existing directory as a project</a></li>
+<li><a href="#integrating-a-design-unit-internal-to-the-current-project">Integrating a design unit internal to the current project</a></li>
+<li><a href="#integrating-a-design-unit-external-to-the-current-project">Integrating a design unit external to the current project</a></li>
 <li><a href="#viewing-the-design-hierarchy">Viewing the design hierarchy</a></li>
 <li><a href="#viewing-available-targets-for-testing">Viewing available targets for testing</a></li>
 <li><a href="#running-a-test">Running a test</a></li>
 <li><a href="#viewing-available-targets-for-building">Viewing available targets for building</a></li>
 <li><a href="#running-a-build">Running a build</a></li>
 </ul>
-<h2 id="creating-a-new-ip"><a class="header" href="#creating-a-new-ip">Creating a new ip</a></h2>
+<h2 id="creating-a-new-project"><a class="header" href="#creating-a-new-project">Creating a new project</a></h2>
 <ol>
-<li>Create a new directory as an Orbit ip by also creating a basic manifest file, where <code>&lt;ip&gt;</code> is the name of the new directory as well as the name of the newly created ip:</li>
+<li>Create a new directory as an Orbit package by also creating a basic manifest file, where <code>&lt;project&gt;</code> is the name of the new directory as well as the name of the newly created project:</li>
 </ol>
-<pre><code>$ orbit new &lt;ip&gt;
+<pre><code>$ orbit new &lt;project&gt;
 </code></pre>
-<ol start="2">
-<li>Enter the root directory for the newly created ip to begin working within it, where <code>&lt;ip&gt;</code> is the name of the newly created ip's directory:</li>
+<ol>
+<li>Enter the root directory for the newly created project to begin working within it, where <code>&lt;project&gt;</code> is the name of the newly created project's directory:</li>
 </ol>
-<pre><code>$ cd &lt;ip&gt;
+<pre><code>$ cd &lt;project&gt;
 </code></pre>
-<h2 id="initializing-an-existing-project-as-an-ip"><a class="header" href="#initializing-an-existing-project-as-an-ip">Initializing an existing project as an ip</a></h2>
+<h2 id="initializing-an-existing-directory-as-a-project"><a class="header" href="#initializing-an-existing-directory-as-a-project">Initializing an existing directory as a project</a></h2>
 <ol>
 <li>Enter the root directory for the existing project, where <code>&lt;project&gt;</code> is the root directory:</li>
 </ol>
 <pre><code>$ cd &lt;project&gt;
 </code></pre>
 <ol start="2">
-<li>Initialize the current working directory as an Orbit ip by creating a basic manifest file, where <code>&lt;ip&gt;</code> is the name of the newly initialized ip:</li>
+<li>Initialize the current working directory as an Orbit package by creating a basic manifest file, where <code>&lt;project&gt;</code> is the name of the newly initialized project:</li>
 </ol>
-<pre><code>$ orbit init --name &lt;ip&gt;
+<pre><code>$ orbit init --name &lt;project&gt;
 </code></pre>
-<h2 id="integrating-a-design-unit-internal-to-the-current-ip"><a class="header" href="#integrating-a-design-unit-internal-to-the-current-ip">Integrating a design unit internal to the current ip</a></h2>
+<h2 id="integrating-a-design-unit-internal-to-the-current-project"><a class="header" href="#integrating-a-design-unit-internal-to-the-current-project">Integrating a design unit internal to the current project</a></h2>
 <ol>
-<li>Add the necessary code in the current ip's source files referencing the internal design unit as normal. For design units that are entities or modules, return code snippets that can be used to declare IO signals and instantiate the design unit:</li>
+<li>Add the necessary code in the current project's source files referencing the internal design unit as normal. For design units that are entities or modules, return code snippets that can be used to declare IO signals and instantiate the design unit:</li>
 </ol>
 <pre><code>$ orbit get &lt;unit&gt; --signals --instance
 </code></pre>
@@ -219,18 +219,18 @@
 </ol>
 <pre><code>$ orbit tree --edges all --format long
 </code></pre>
-<h2 id="integrating-a-design-unit-external-to-the-current-ip"><a class="header" href="#integrating-a-design-unit-external-to-the-current-ip">Integrating a design unit external to the current ip</a></h2>
+<h2 id="integrating-a-design-unit-external-to-the-current-project"><a class="header" href="#integrating-a-design-unit-external-to-the-current-project">Integrating a design unit external to the current project</a></h2>
 <ol>
-<li>Add the external ip as a dependency to the current ip's manifest, where <code>&lt;ip&gt;</code> is the name of the external ip and <code>&lt;version&gt;</code> is the version of the external ip:</li>
+<li>Add the external project as a dependency to the current project's manifest, where <code>&lt;project&gt;</code> is the name of the external project and <code>&lt;version&gt;</code> is the version of the external project:</li>
 </ol>
 <pre><code class="language-toml">[dependencies]
 # ...
-&lt;ip&gt; = "&lt;version&gt;"
+&lt;project&gt; = "&lt;version&gt;"
 </code></pre>
 <ol start="2">
-<li>Add the necessary code in the current ip's source files referencing the external design unit as normal. For design units that are entities or modules, return code snippets that can be used to declare IO signals and instantiate the design unit:</li>
+<li>Add the necessary code in the current project's source files referencing the external design unit as normal. For design units that are entities or modules, return code snippets that can be used to declare IO signals and instantiate the design unit:</li>
 </ol>
-<pre><code>$ orbit get &lt;unit&gt; --ip &lt;ip&gt;:&lt;version&gt; --signals --instance
+<pre><code>$ orbit get &lt;unit&gt; --project &lt;project&gt;:&lt;version&gt; --signals --instance
 </code></pre>
 <ol start="3">
 <li>Verify the dependencies are correctly discovered in the design hierarchy:</li>
@@ -240,12 +240,12 @@
 <p>For more ways on how to add dependencies, see <a href="./specifying_deps.html">Specifying Dependencies</a>.</p>
 <h2 id="viewing-the-design-hierarchy"><a class="header" href="#viewing-the-design-hierarchy">Viewing the design hierarchy</a></h2>
 <ol>
-<li>Return the list of known design units for the current ip:</li>
+<li>Return the list of known design units for the current project:</li>
 </ol>
 <pre><code>$ orbit info --units
 </code></pre>
 <ol start="2">
-<li>View the design hierarchy for a particular design unit within the current ip, where <code>&lt;unit&gt;</code> is the name of the design unit of interest:</li>
+<li>View the design hierarchy for a particular design unit within the current project, where <code>&lt;unit&gt;</code> is the name of the design unit of interest:</li>
 </ol>
 <pre><code>$ orbit tree &lt;unit&gt;
 </code></pre>

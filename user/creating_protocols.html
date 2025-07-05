@@ -170,9 +170,9 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="creating-protocols"><a class="header" href="#creating-protocols">Creating Protocols</a></h1>
-<p>A protocol is a user-defined series of steps requried to obtain an ip from the internet. This section provides steps for ways to create and configure a protocol.</p>
+<p>A protocol is a user-defined series of steps requried to obtain a project from the internet. This section provides steps for ways to create and configure a protocol.</p>
 <blockquote>
-<p><strong>Note</strong>: The default method for obtaining ip from the internet is using Rust's <code>curl</code> library under the assumption that the ip's URL is a .zip file. If you prefer a different method to access ip from the internet, then you must create a protocol.</p>
+<p><strong>Note</strong>: The default method for obtaining a project from the internet is using Rust's <code>curl</code> library under the assumption that the project's URL is a .zip file. If you prefer a different method to access projects from the internet, then you must create a protocol.</p>
 </blockquote>
 <h3 id="assumptions"><a class="header" href="#assumptions">Assumptions</a></h3>
 <p>If a step mentions the "protocol configuration", this corresponds to the entry for the protocol that has been defined in an Orbit configuration file (config.toml).</p>
@@ -195,8 +195,8 @@
 </ol>
 <pre><code class="language-toml">[[protocol]]
 name = "gitit"
-description = "Download ip using git"
-command = ["git", "clone", "{{orbit.ip.source}}", "-b", "{{orbit.ip.version}}"]
+description = "Download projects using git"
+command = ["git", "clone", "{{orbit.project.source}}", "-b", "{{orbit.project.version}}"]
 patterns = ["*.git"]
 </code></pre>
 <p>A protocol may be as simple as a list of known command-line arguments, or may require invoking a script written in a scripting language such as Python or Tcl.</p>
@@ -204,7 +204,7 @@ patterns = ["*.git"]
 <p><strong>Tip</strong>: The strings within the array for the <code>args</code> field of a protocol support string variables. See <a href="./../topic/swapping.html#protocol-arguments">String Swapping</a> to view what variables are allowed.</p>
 </blockquote>
 <h2 id="configuring-a-protocol-as-default"><a class="header" href="#configuring-a-protocol-as-default">Configuring a protocol as default</a></h2>
-<p>This guide walks through how to configure an existing protocol to be the first to check if it can be used for a given ip's source URL.</p>
+<p>This guide walks through how to configure an existing protocol to be the first to check if it can be used for a given project's source URL.</p>
 <ol>
 <li>
 <p>Open an Orbit configuration file.</p>
@@ -217,7 +217,7 @@ patterns = ["*.git"]
 default-protocol = "gitit"
 </code></pre>
 <h2 id="viewing-available-protocols"><a class="header" href="#viewing-available-protocols">Viewing available protocols</a></h2>
-<p>This guide walks through how to view the protocols already configured and available to use for an ip.</p>
+<p>This guide walks through how to view the protocols already configured and available to use for a project.</p>
 <ol>
 <li>Return the list of configured protocols:</li>
 </ol>
@@ -229,20 +229,20 @@ default-protocol = "gitit"
 <pre><code>$ orbit install --list --protocol gitit
 </code></pre>
 <h2 id="using-a-protocol"><a class="header" href="#using-a-protocol">Using a protocol</a></h2>
-<p>This guide walks through how to configure a particular ip to use a previously configured protocol called <code>gitit</code>.</p>
+<p>This guide walks through how to configure a particular project to use a previously configured protocol called <code>gitit</code>.</p>
 <ol>
 <li>
-<p>Open the current ip's manifest file.</p>
+<p>Open the current project's manifest file.</p>
 </li>
 <li>
-<p>Add the <code>source</code> field to the ip's manifest, which contains a string of the ip's git repository:</p>
+<p>Add the <code>source</code> field to the project's manifest, which contains a string of the project's git repository:</p>
 </li>
 </ol>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 # ...
 source = "https://github.com/chaseruskin/gates.git"
 </code></pre>
-<p>Since this source ends with <code>.git</code>, it matches the pattern for the previously configured <code>gitit</code> protocol, so Orbit will use the <code>gitit</code> command and arguments to download the ip.</p>
+<p>Since this source ends with <code>.git</code>, it matches the pattern for the previously configured <code>gitit</code> protocol, so Orbit will use the <code>gitit</code> command and arguments to download the project.</p>
 
                     </main>
 

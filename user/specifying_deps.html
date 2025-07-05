@@ -170,9 +170,9 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="specifying-dependencies"><a class="header" href="#specifying-dependencies">Specifying Dependencies</a></h1>
-<p>Your ip can depend on other ips found in the catalog or subdirectories on your local file system. You can also temporarily override the location of a dependency - for example, to be able to test out a bug fix in the dependency that you are working on locally. You can also have dependencies that are only used during development. This section walks through the different ways you can specify the dependencies of an ip.</p>
+<p>Your projects can depend on other projects found in the catalog or subdirectories on your local file system. You can also temporarily override the location of a dependency - for example, to be able to test out a bug fix in the dependency that you are working on locally. You can also have dependencies that are only used during development. This section walks through the different ways you can specify the dependencies of a project.</p>
 <h3 id="assumptions"><a class="header" href="#assumptions">Assumptions</a></h3>
-<p>The guides in this section assume you are running commands from the root directory or any subdirectory of the current ip. The current ip, also sometimes referred to as the local ip, is the ip being actively developed.</p>
+<p>The guides in this section assume you are running commands from the root directory or any subdirectory of the current project. The current project is the project being actively developed.</p>
 <h3 id="guides"><a class="header" href="#guides">Guides</a></h3>
 <ul>
 <li><a href="#using-a-strict-version-of-a-dependency">Using a strict version of a dependency</a></li>
@@ -184,28 +184,28 @@
 </ul>
 <h2 id="using-a-strict-version-of-a-dependency"><a class="header" href="#using-a-strict-version-of-a-dependency">Using a strict version of a dependency</a></h2>
 <ol>
-<li>Add the name of the ip (such as <code>gates</code>) as a new entry in the <code>[dependencies]</code> table of the current ip's manifest with the fully qualified version to use (such as <code>1.0.0</code>):</li>
+<li>Add the name of the external project (such as <code>gates</code>) as a new entry in the <code>[dependencies]</code> table of the current project's manifest with the fully qualified version to use (such as <code>1.0.0</code>):</li>
 </ol>
 <pre><code class="language-toml">[dependencies]
 gates = "1.0.0"
 </code></pre>
 <h2 id="using-a-relaxed-micro-version-of-a-dependency"><a class="header" href="#using-a-relaxed-micro-version-of-a-dependency">Using a relaxed micro version of a dependency</a></h2>
 <ol>
-<li>Add the name of the ip (such as <code>gates</code>) as a new entry in the <code>[dependencies]</code> table of the current ip's manifest with a partially qualified version to use, omitting the micro version number (such as <code>1.0</code>) to accept <em>any</em> micro version number:</li>
+<li>Add the name of the external project (such as <code>gates</code>) as a new entry in the <code>[dependencies]</code> table of the current project's manifest with a partially qualified version to use, omitting the micro version number (such as <code>1.0</code>) to accept <em>any</em> micro version number:</li>
 </ol>
 <pre><code class="language-toml">[dependencies]
 gates = "1.0"
 </code></pre>
 <h2 id="using-a-relaxed-minor-version-of-a-dependency"><a class="header" href="#using-a-relaxed-minor-version-of-a-dependency">Using a relaxed minor version of a dependency</a></h2>
 <ol>
-<li>Add the name of the ip (such as <code>gates</code>) as a new entry in the <code>[dependencies]</code> table of the current ip's manifest with a partially qualified version to use, omitting the minor and micro version number (such as <code>1</code>) to accept <em>any</em> minor and <em>any</em> micro version number:</li>
+<li>Add the name of the external project (such as <code>gates</code>) as a new entry in the <code>[dependencies]</code> table of the current project's manifest with a partially qualified version to use, omitting the minor and micro version number (such as <code>1</code>) to accept <em>any</em> minor and <em>any</em> micro version number:</li>
 </ol>
 <pre><code class="language-toml">[dependencies]
 gates = "1"
 </code></pre>
 <h2 id="overriding-the-location-of-a-dependency"><a class="header" href="#overriding-the-location-of-a-dependency">Overriding the location of a dependency</a></h2>
 <ol>
-<li>Specify the local file sytem path to the root directory of the ip using the <code>path</code> field to use it as the source for the dependency:</li>
+<li>Specify the local file sytem path to the root directory of the external project using the <code>path</code> field to use it as the source for the dependency:</li>
 </ol>
 <pre><code class="language-toml">[dependencies]
 gates = { path = "../gates", version = "1.0.1-dev" }
@@ -213,7 +213,7 @@ gates = { path = "../gates", version = "1.0.1-dev" }
 <p>Note that the <code>version</code> field is required and its value must match the <code>version</code> defined in the local dependency's manifest file.</p>
 <h2 id="including-a-dependency-only-for-development"><a class="header" href="#including-a-dependency-only-for-development">Including a dependency only for development</a></h2>
 <ol>
-<li>Add the name of the ip (such as <code>gates</code>) as a new entry in the <code>[dev-dependencies]</code> table of the current ip's manifest:</li>
+<li>Add the name of the external project (such as <code>gates</code>) as a new entry in the <code>[dev-dependencies]</code> table of the current project's manifest:</li>
 </ol>
 <pre><code class="language-toml">[dev-dependencies]
 gates = "1.0.0"
@@ -223,7 +223,7 @@ gates = "1.0.0"
 </blockquote>
 <h2 id="differentiating-among-dependencies-of-the-same-name"><a class="header" href="#differentiating-among-dependencies-of-the-same-name">Differentiating among dependencies of the same name</a></h2>
 <ol>
-<li>Specify the UUID of the ip that has a conflicting name in the catalog using the <code>uuid</code> field to explicitly request this ip as the dependency:</li>
+<li>Specify the UUID of the external project that has a conflicting name in the catalog using the <code>uuid</code> field to explicitly request this project as the dependency:</li>
 </ol>
 <pre><code class="language-toml">[dependencies]
 gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }

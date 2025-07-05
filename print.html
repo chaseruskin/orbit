@@ -1134,10 +1134,10 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <p>At the start of any project, it's important to survey existing work to identify any related projects that either already meet your requirements or can be used to help meet your requirements.</p>
 <ul>
 <li>
-<p>Orbit helps you quickly survey what projects exist in the ip catalog with <code>orbit search</code>. This will return a list of all projects available in the ip catalog, their latest version, their status (installed, downloaded, available), and its unique identifier.</p>
+<p>Orbit helps you quickly survey what projects exist in the catalog with <code>orbit search</code>. This will return a list of all projects available in the catalog, their latest version, their status (installed, downloaded, available), and its unique identifier.</p>
 </li>
 <li>
-<p>Further refining your search to get more information about a particular project can be done with <code>orbit info</code>. This command can display data pulled from the ip's manifest, what design units it contains, the different versions of the project, and other data related to that project.</p>
+<p>Further refining your search to get more information about a particular project can be done with <code>orbit info</code>. This command can display data pulled from the project's manifest, what design units it contains, the different versions of the project, and other data related to that project.</p>
 </li>
 <li>
 <p>After finding a design unit of interest within a particular project, a reference to that design unit's source code can be made available with <code>orbit read</code>. If the source code is well-documented and written in a clear manner, then this referring to the source code can help easily understand if using this particular design unit will be able to help you in your next project.</p>
@@ -1150,7 +1150,7 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <p>The bulk of time and resources for any project takes place during the development stage. In this stage, the project's architecture is created, the system's functionalities are implemented, and checked to make sure they meet the project's requirements through testing.</p>
 <ul>
 <li>
-<p>Using any design units from existing ip in your latest project can be quickly achieved using <code>orbit get</code>. This command will return the necessary HDL code snippets to correctly instantiate a design unit. Simply adding the external ip's name and version to the current project's <code>[dependencies]</code> table within the <code>Orbit.toml</code> file will allow Orbit to record the information necessary to correctly reference the design unit's within that ip.</p>
+<p>Using any design units from existing project in your current project can be quickly achieved using <code>orbit get</code>. This command will return the necessary HDL code snippets to correctly instantiate a design unit. Simply adding the external project's name and version to the current project's <code>[dependencies]</code> table within the <code>Orbit.toml</code> file will allow Orbit to record the information necessary to correctly reference the design unit's within that project.</p>
 </li>
 <li>
 <p>Running a build process on a new design unit that does not require a testbench can be achieved with <code>orbit build</code>. By configuring and specifying a target, this command gives you the power to run any particular workflow for your set of tools and unique demands, such as performing synthesis.</p>
@@ -1166,111 +1166,111 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <p>A detailed record of how to reproduce the project using Orbit can created with <code>orbit lock</code>. This command will generate a lockfile, <code>Orbit.lock</code>, which saves all the information about the current project and its dependencies such that the exact state of the project can be reproduced at a later time in any environment.</p>
 </li>
 <li>
-<p>Securing the current state of the project as a release (such as version 1.0.0) for others to find is done using <code>orbit publish</code>. This command verifies the current project's state is valid in the context of Orbit and then installs it to your local ip catalog as well as posts its manifest to any of its configured channels. By posting the ip to a channel, any other users who also have the same channel configured will be able to see the newly available project.</p>
+<p>Securing the current state of the project as a release (such as version 1.0.0) for others to find is done using <code>orbit publish</code>. This command verifies the current project's state is valid in the context of Orbit and then installs it to your catalog as well as posts the project's manifest to any of its configured channels. By posting the project to a channel, any other users who also have the same channel configured will be able to see the newly available project.</p>
 </li>
 </ul>
 <p>And with that, the cycle continues. As new features, bug fixes, and improvements are brought forth over time, users can repeat the following process to produce another release for any given project.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="researching-ip"><a class="header" href="#researching-ip">Researching Ip</a></h1>
-<p>During the lifecycle of an ip, the first step in the process is typically to research existing work and identify any components which may be of value in reusing as a dependency for the new ip. This section highlights different ways to discover and gain information about existing ips and their design units.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="researching-projects"><a class="header" href="#researching-projects">Researching Projects</a></h1>
+<p>During the lifecycle of a project, the first step in the process is typically to research existing work and identify any components which may be of value in reusing as a dependency for the new project. This section highlights different ways to discover and gain information about existing projects and their design units.</p>
 <h3 id="assumptions"><a class="header" href="#assumptions">Assumptions</a></h3>
 <p>The guides in this section place no assumption on where your working directory is when running any commands; that is, these commands can be ran from any directory.</p>
 <h3 id="guides"><a class="header" href="#guides">Guides</a></h3>
 <ul>
-<li><a href="user/researching_ip.html#viewing-existing-ip">Viewing existing ip</a></li>
-<li><a href="user/researching_ip.html#gathering-information-about-an-ip">Gathering information about an ip</a></li>
-<li><a href="user/researching_ip.html#gathering-information-about-a-design-unit">Gathering information about a design unit</a></li>
-<li><a href="user/researching_ip.html#reading-source-code-of-a-design-unit">Reading source code of a design unit</a></li>
+<li><a href="user/researching_ip.html#viewing-existing-project">Viewing existing projects</a></li>
+<li><a href="user/researching_ip.html#gathering-information-about-a-project">Gathering information about a project</a></li>
+<li><a href="user/researching_ip.html#gathering-information-about-a-core">Gathering information about a core</a></li>
+<li><a href="user/researching_ip.html#reading-source-code-of-a-core">Reading source code of a core</a></li>
 </ul>
-<h2 id="viewing-existing-ip"><a class="header" href="#viewing-existing-ip">Viewing existing ip</a></h2>
-<p>This guide outlines how to see what ips exist on your system in your catalog that could be potentially used as a dependency.</p>
+<h2 id="viewing-existing-projects"><a class="header" href="#viewing-existing-projects">Viewing existing projects</a></h2>
+<p>This guide outlines how to see what projects exist on your system in your catalog that could be potentially used as a dependency.</p>
 <ol>
 <li>Display all results from the catalog:</li>
 </ol>
 <pre><code>$ orbit search
 </code></pre>
-<p>This will return a list of the ip, where each line records the ip name, latest known version, status in the catalog, and uuid.</p>
-<h2 id="gathering-information-about-an-ip"><a class="header" href="#gathering-information-about-an-ip">Gathering information about an ip</a></h2>
-<p>This guide outlines how to view more information about an ip found in your catalog that may be of particular interest.</p>
+<p>This will return a list of the known projects, where each line records the project's name, latest known version, status in the catalog, and UUID.</p>
+<h2 id="gathering-information-about-a-project"><a class="header" href="#gathering-information-about-a-project">Gathering information about a project</a></h2>
+<p>This guide outlines how to view more information about a project found in your catalog that may be of particular interest.</p>
 <ol>
-<li>Identify the name of an ip in the catalog that may be of interest:</li>
+<li>Identify the name of a project in the catalog that may be of interest:</li>
 </ol>
 <pre><code>$ orbit search
 </code></pre>
-<ol start="2">
-<li>Return the list of all possible versions of the ip in the catalog, where <code>&lt;ip&gt;</code> is the name of the ip of interest:</li>
-</ol>
-<pre><code>$ orbit info &lt;ip&gt; --versions
-</code></pre>
-<ol start="3">
-<li>Return the metadata found in the ip's manifest, where <code>&lt;ip&gt;</code> is the name of the ip of interest and <code>&lt;vesion&gt;</code> is the version of the ip of interest:</li>
-</ol>
-<pre><code>$ orbit info &lt;ip&gt;:&lt;version&gt;
-</code></pre>
-<ol start="4">
-<li>Return the list of accessible design units for the ip, where <code>&lt;ip&gt;</code> is the name of the ip of interest and <code>&lt;version&gt;</code> is the version of the ip of interest:</li>
-</ol>
-<pre><code>$ orbit info &lt;ip&gt;:&lt;version&gt; --units
-</code></pre>
-<p>This will return a list of the ip's design units, where each line records the design unit's name, design unit type, and accessibility.</p>
-<h2 id="gathering-information-about-a-design-unit"><a class="header" href="#gathering-information-about-a-design-unit">Gathering information about a design unit</a></h2>
-<p>This guide outlines how to view a design unit's declaration for a particular design unit of an ip found in the catalog.</p>
 <ol>
-<li>Return the design unit's declaration,  where <code>&lt;unit&gt;</code> is the name of the design unit, <code>&lt;ip&gt;</code> is the name of the ip of interest, and <code>&lt;version&gt;</code> is the version of the ip of interest:</li>
+<li>Return the list of all possible versions of the project in the catalog, where <code>&lt;project&gt;</code> is the name of the project of interest:</li>
 </ol>
-<pre><code>$ orbit get &lt;unit&gt; --ip &lt;ip&gt;:&lt;version&gt;
+<pre><code>$ orbit info &lt;project&gt; --versions
+</code></pre>
+<ol>
+<li>Return the metadata found in the project's manifest, where <code>&lt;project&gt;</code> is the name of the project of interest and <code>&lt;vesion&gt;</code> is the version of the project of interest:</li>
+</ol>
+<pre><code>$ orbit info &lt;project&gt;:&lt;version&gt;
+</code></pre>
+<ol>
+<li>Return the list of accessible IP cores for the project, where <code>&lt;project&gt;</code> is the name of the project of interest and <code>&lt;version&gt;</code> is the version of the project of interest:</li>
+</ol>
+<pre><code>$ orbit info &lt;project&gt;:&lt;version&gt; --units
+</code></pre>
+<p>This will return a list of the project's design units, where each line records the design unit's name, design unit type, and accessibility.</p>
+<h2 id="gathering-information-about-a-design-unit"><a class="header" href="#gathering-information-about-a-design-unit">Gathering information about a design unit</a></h2>
+<p>This guide outlines how to view a design unit's declaration for a particular design unit of a project found in the catalog.</p>
+<ol>
+<li>Return the design unit's declaration,  where <code>&lt;unit&gt;</code> is the name of the design unit, <code>&lt;project&gt;</code> is the name of the project of interest, and <code>&lt;version&gt;</code> is the version of the project of interest:</li>
+</ol>
+<pre><code>$ orbit get &lt;unit&gt; --project &lt;project&gt;:&lt;version&gt;
 </code></pre>
 <h2 id="reading-source-code-of-a-design-unit"><a class="header" href="#reading-source-code-of-a-design-unit">Reading source code of a design unit</a></h2>
-<p>This guide outlines how to view the source code for a particular design unit of an ip found in the catalog.</p>
+<p>This guide outlines how to view the source code for a particular design unit of a project found in the catalog.</p>
 <ol>
-<li>Display the contents from the design unit's source file, where <code>&lt;unit&gt;</code> is the name of the design unit, <code>&lt;ip&gt;</code> is the name of the ip of interest, and <code>&lt;version&gt;</code> is the version of the ip of interest:</li>
+<li>Display the contents from the design unit's source file, where <code>&lt;unit&gt;</code> is the name of the design unit, <code>&lt;project&gt;</code> is the name of the project of interest, and <code>&lt;version&gt;</code> is the version of the project of interest:</li>
 </ol>
-<pre><code>$ orbit read &lt;unit&gt; --ip &lt;ip&gt;:&lt;version&gt;
+<pre><code>$ orbit read &lt;unit&gt; --project &lt;project&gt;:&lt;version&gt;
 </code></pre>
 <blockquote>
 <p><strong>Tip</strong>: For large source files, it may be helpful to redirect the output to a temporary file, or use the <code>--save</code> flag to automatically write the results to a temporary read-only file.</p>
 </blockquote>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="developing-ip"><a class="header" href="#developing-ip">Developing Ip</a></h1>
-<p>Once existing work has been evaluated and the requirements for an ip are defined, the next step is typically to begin developing the actual logic for the ip. This section walks through the common steps to building new ip and integrating with existing ip.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="developing-projects"><a class="header" href="#developing-projects">Developing Projects</a></h1>
+<p>Once existing work has been evaluated and the requirements for a project are loosely defined, the next step is typically to begin developing the actual logic for the project. This section walks through the common steps to build a new project and integrate it with existing projects.</p>
 <h3 id="assumptions-1"><a class="header" href="#assumptions-1">Assumptions</a></h3>
-<p>The guides in this section, except for the ones on creation and initialization of an ip, assume you are running commands from the root directory or any subdirectory of the current ip. The current ip, also sometimes referred to as the local ip, is the ip being actively developed.</p>
+<p>The guides in this section, except for the ones on creation and initialization of a project, assume you are running commands from the root directory or any subdirectory of the current project. The current project is the local project being actively developed.</p>
 <p>This section also assumes you have one or more targets already configured. To learn how to create targets, see <a href="user/./creating_targets.html">Creating Targets</a>.</p>
 <h3 id="guides-1"><a class="header" href="#guides-1">Guides</a></h3>
 <ul>
-<li><a href="user/developing_ip.html#creating-a-new-ip">Creating a new ip</a></li>
-<li><a href="user/developing_ip.html#initializing-an-existing-project-as-an-ip">Initializing an existing project as an ip</a></li>
-<li><a href="user/developing_ip.html#integrating-a-design-unit-internal-to-the-current-ip">Integrating a design unit internal to the current ip</a></li>
-<li><a href="user/developing_ip.html#integrating-a-design-unit-external-to-the-current-ip">Integrating a design unit external to the current ip</a></li>
+<li><a href="user/developing_ip.html#creating-a-new-project">Creating a new project</a></li>
+<li><a href="user/developing_ip.html#initializing-an-existing-directory-as-a-project">Initializing an existing directory as a project</a></li>
+<li><a href="user/developing_ip.html#integrating-a-design-unit-internal-to-the-current-project">Integrating a design unit internal to the current project</a></li>
+<li><a href="user/developing_ip.html#integrating-a-design-unit-external-to-the-current-project">Integrating a design unit external to the current project</a></li>
 <li><a href="user/developing_ip.html#viewing-the-design-hierarchy">Viewing the design hierarchy</a></li>
 <li><a href="user/developing_ip.html#viewing-available-targets-for-testing">Viewing available targets for testing</a></li>
 <li><a href="user/developing_ip.html#running-a-test">Running a test</a></li>
 <li><a href="user/developing_ip.html#viewing-available-targets-for-building">Viewing available targets for building</a></li>
 <li><a href="user/developing_ip.html#running-a-build">Running a build</a></li>
 </ul>
-<h2 id="creating-a-new-ip"><a class="header" href="#creating-a-new-ip">Creating a new ip</a></h2>
+<h2 id="creating-a-new-project-1"><a class="header" href="#creating-a-new-project-1">Creating a new project</a></h2>
 <ol>
-<li>Create a new directory as an Orbit ip by also creating a basic manifest file, where <code>&lt;ip&gt;</code> is the name of the new directory as well as the name of the newly created ip:</li>
+<li>Create a new directory as an Orbit package by also creating a basic manifest file, where <code>&lt;project&gt;</code> is the name of the new directory as well as the name of the newly created project:</li>
 </ol>
-<pre><code>$ orbit new &lt;ip&gt;
+<pre><code>$ orbit new &lt;project&gt;
 </code></pre>
-<ol start="2">
-<li>Enter the root directory for the newly created ip to begin working within it, where <code>&lt;ip&gt;</code> is the name of the newly created ip's directory:</li>
+<ol>
+<li>Enter the root directory for the newly created project to begin working within it, where <code>&lt;project&gt;</code> is the name of the newly created project's directory:</li>
 </ol>
-<pre><code>$ cd &lt;ip&gt;
+<pre><code>$ cd &lt;project&gt;
 </code></pre>
-<h2 id="initializing-an-existing-project-as-an-ip"><a class="header" href="#initializing-an-existing-project-as-an-ip">Initializing an existing project as an ip</a></h2>
+<h2 id="initializing-an-existing-directory-as-a-project"><a class="header" href="#initializing-an-existing-directory-as-a-project">Initializing an existing directory as a project</a></h2>
 <ol>
 <li>Enter the root directory for the existing project, where <code>&lt;project&gt;</code> is the root directory:</li>
 </ol>
 <pre><code>$ cd &lt;project&gt;
 </code></pre>
 <ol start="2">
-<li>Initialize the current working directory as an Orbit ip by creating a basic manifest file, where <code>&lt;ip&gt;</code> is the name of the newly initialized ip:</li>
+<li>Initialize the current working directory as an Orbit package by creating a basic manifest file, where <code>&lt;project&gt;</code> is the name of the newly initialized project:</li>
 </ol>
-<pre><code>$ orbit init --name &lt;ip&gt;
+<pre><code>$ orbit init --name &lt;project&gt;
 </code></pre>
-<h2 id="integrating-a-design-unit-internal-to-the-current-ip"><a class="header" href="#integrating-a-design-unit-internal-to-the-current-ip">Integrating a design unit internal to the current ip</a></h2>
+<h2 id="integrating-a-design-unit-internal-to-the-current-project"><a class="header" href="#integrating-a-design-unit-internal-to-the-current-project">Integrating a design unit internal to the current project</a></h2>
 <ol>
-<li>Add the necessary code in the current ip's source files referencing the internal design unit as normal. For design units that are entities or modules, return code snippets that can be used to declare IO signals and instantiate the design unit:</li>
+<li>Add the necessary code in the current project's source files referencing the internal design unit as normal. For design units that are entities or modules, return code snippets that can be used to declare IO signals and instantiate the design unit:</li>
 </ol>
 <pre><code>$ orbit get &lt;unit&gt; --signals --instance
 </code></pre>
@@ -1279,18 +1279,18 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 </ol>
 <pre><code>$ orbit tree --edges all --format long
 </code></pre>
-<h2 id="integrating-a-design-unit-external-to-the-current-ip"><a class="header" href="#integrating-a-design-unit-external-to-the-current-ip">Integrating a design unit external to the current ip</a></h2>
+<h2 id="integrating-a-design-unit-external-to-the-current-project"><a class="header" href="#integrating-a-design-unit-external-to-the-current-project">Integrating a design unit external to the current project</a></h2>
 <ol>
-<li>Add the external ip as a dependency to the current ip's manifest, where <code>&lt;ip&gt;</code> is the name of the external ip and <code>&lt;version&gt;</code> is the version of the external ip:</li>
+<li>Add the external project as a dependency to the current project's manifest, where <code>&lt;project&gt;</code> is the name of the external project and <code>&lt;version&gt;</code> is the version of the external project:</li>
 </ol>
 <pre><code class="language-toml">[dependencies]
 # ...
-&lt;ip&gt; = "&lt;version&gt;"
+&lt;project&gt; = "&lt;version&gt;"
 </code></pre>
 <ol start="2">
-<li>Add the necessary code in the current ip's source files referencing the external design unit as normal. For design units that are entities or modules, return code snippets that can be used to declare IO signals and instantiate the design unit:</li>
+<li>Add the necessary code in the current project's source files referencing the external design unit as normal. For design units that are entities or modules, return code snippets that can be used to declare IO signals and instantiate the design unit:</li>
 </ol>
-<pre><code>$ orbit get &lt;unit&gt; --ip &lt;ip&gt;:&lt;version&gt; --signals --instance
+<pre><code>$ orbit get &lt;unit&gt; --project &lt;project&gt;:&lt;version&gt; --signals --instance
 </code></pre>
 <ol start="3">
 <li>Verify the dependencies are correctly discovered in the design hierarchy:</li>
@@ -1300,12 +1300,12 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <p>For more ways on how to add dependencies, see <a href="user/./specifying_deps.html">Specifying Dependencies</a>.</p>
 <h2 id="viewing-the-design-hierarchy"><a class="header" href="#viewing-the-design-hierarchy">Viewing the design hierarchy</a></h2>
 <ol>
-<li>Return the list of known design units for the current ip:</li>
+<li>Return the list of known design units for the current project:</li>
 </ol>
 <pre><code>$ orbit info --units
 </code></pre>
 <ol start="2">
-<li>View the design hierarchy for a particular design unit within the current ip, where <code>&lt;unit&gt;</code> is the name of the design unit of interest:</li>
+<li>View the design hierarchy for a particular design unit within the current project, where <code>&lt;unit&gt;</code> is the name of the design unit of interest:</li>
 </ol>
 <pre><code>$ orbit tree &lt;unit&gt;
 </code></pre>
@@ -1359,63 +1359,63 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <pre><code>$ orbit build --top &lt;unit&gt; --target &lt;target&gt; -- &lt;args&gt;...
 </code></pre>
 </blockquote>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="releasing-ip"><a class="header" href="#releasing-ip">Releasing Ip</a></h1>
-<p>After the ip has been tested and developed to its specification, it may be ready to give its implementation a meaningful version and release it for others to use. This section walks through the common steps to successfully prepare and deploy an ip for use in future ips.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="releasing-projects"><a class="header" href="#releasing-projects">Releasing Projects</a></h1>
+<p>After the current project has been tested and developed to its specification, it may be ready to give its implementation a meaningful version and release it for others to use. This section walks through the common steps to successfully prepare and deploy a project for use in future projects.</p>
 <h3 id="assumptions-2"><a class="header" href="#assumptions-2">Assumptions</a></h3>
-<p>The guides in this section assume you are running commands from the root directory or any subdirectory of the current ip. The current ip, also sometimes referred to as the local ip, is the ip being actively developed.</p>
+<p>The guides in this section assume you are running commands from the root directory or any subdirectory of the current project. The current project is the local project being actively developed.</p>
 <p>This section also assumes you have one or more channels already configured. To learn how to create channels, see <a href="user/./creating_channels.html">Creating Channels</a>.</p>
-<p>Although not strictly necessary, you may also need to have a protocol configured that meets your requirements for how you access an ip from the internet. To learn how to create protocols, see <a href="user/./creating_protocols.html">Creating Protocols</a>.</p>
+<p>Although not strictly necessary, you may also need to have a protocol configured that meets your requirements for how you access a project from the internet. To learn how to create protocols, see <a href="user/./creating_protocols.html">Creating Protocols</a>.</p>
 <h3 id="guides-2"><a class="header" href="#guides-2">Guides</a></h3>
 <ul>
-<li><a href="user/releasing_ip.html#installing-an-ip-to-the-catalog">Installing an ip to the catalog</a></li>
-<li><a href="user/releasing_ip.html#publishing-an-ip-using-git-tags">Publishing an ip using git tags</a></li>
+<li><a href="user/releasing_ip.html#installing-a-project-to-the-catalog">Installing a project to the catalog</a></li>
+<li><a href="user/releasing_ip.html#publishing-a-project-using-git-tags">Publishing a project using git tags</a></li>
 </ul>
-<h2 id="installing-an-ip-to-the-catalog"><a class="header" href="#installing-an-ip-to-the-catalog">Installing an ip to the catalog</a></h2>
-<p>This guide walks through the steps to install an ip from the local file system to the catalog. In this example, we assume the ip has no revision control tied to its project.</p>
+<h2 id="installing-a-project-to-the-catalog"><a class="header" href="#installing-a-project-to-the-catalog">Installing a project to the catalog</a></h2>
+<p>This guide walks through the steps to install a project from the local file system to the catalog. In this example, we assume the current project has no revision control tied to its project.</p>
 <ol>
-<li>Specify what version is going to be released using the ip manifest's <code>version</code> field, such as <code>1.0.0</code>:</li>
+<li>Specify what version is going to be released using the project manifest's <code>version</code> field, such as <code>1.0.0</code>:</li>
 </ol>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 # ...
 version = "1.0.0"
 </code></pre>
-<ol start="2">
-<li>Specify what source files in the project are public using the ip manifest's <code>public</code> field:</li>
+<ol>
+<li>Specify what source files in the project are public using the project manifest's <code>public</code> field:</li>
 </ol>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 # ...
 public = ["rtl"]
 </code></pre>
-<ol start="3">
+<ol>
 <li>Update the lockfile:</li>
 </ol>
 <pre><code>$ orbit lock
 </code></pre>
-<ol start="4">
-<li>Install the ip to the catalog as an immutable reference for use in future ip:</li>
+<ol>
+<li>Install the project to the catalog as an immutable reference for use in future projects:</li>
 </ol>
 <pre><code>$ orbit install --path .
 </code></pre>
-<h2 id="publishing-an-ip-using-git-tags"><a class="header" href="#publishing-an-ip-using-git-tags">Publishing an ip using git tags</a></h2>
-<p>This guide walks through the steps to have a successful release using a channel and git tags. It assumes your ip is a git repository and has a remote repository on a platform such as GitHub.</p>
+<h2 id="publishing-a-project-using-git-tags"><a class="header" href="#publishing-a-project-using-git-tags">Publishing a project using git tags</a></h2>
+<p>This guide walks through the steps to have a successful release using a channel and git tags. It assumes your current project is a git repository and has a remote repository on a platform such as GitHub.</p>
 <ol>
-<li>Specify what version is going to be released using the ip manifest's <code>version</code> field, such as <code>1.0.0</code>:</li>
+<li>Specify what version is going to be released using the project manifest's <code>version</code> field, such as <code>1.0.0</code>:</li>
 </ol>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 # ...
 version = "1.0.0"
 </code></pre>
 <ol start="2">
 <li>Define a source url for the project:</li>
 </ol>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 # ...
-source = "https://github.com/chaseruskin/gates/archive/{{orbit.ip.version}}.zip"
+source = "https://github.com/chaseruskin/gates/archive/{{orbit.project.version}}.zip"
 </code></pre>
 <ol start="3">
-<li>Specify what source files in the project are public using the ip manifest's <code>public</code> field:</li>
+<li>Specify what source files in the project are public using the project manifest's <code>public</code> field:</li>
 </ol>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 # ...
 public = ["rtl"]
 </code></pre>
@@ -1430,7 +1430,7 @@ public = ["rtl"]
 <pre><code>$ git commit -am "Stages for release"
 </code></pre>
 <ol start="6">
-<li>Add a git tag to the ip's repository that matches exactly the version specified in the ip's manifest:</li>
+<li>Add a git tag to the project's repository that matches exactly the version specified in the project's manifest:</li>
 </ol>
 <pre><code>$ git tag 1.0.0
 </code></pre>
@@ -1440,12 +1440,12 @@ public = ["rtl"]
 <pre><code>$ git push --tags
 </code></pre>
 <ol start="8">
-<li>Run the dry run for the publishing process to verify all ip checkpoints are met when publishing to an existing channel, such as <code>remote-chipyard</code>:</li>
+<li>Run the dry run for the publishing process to verify all project checkpoints are met when publishing to an existing channel, such as <code>remote-chipyard</code>:</li>
 </ol>
 <pre><code>$ orbit publish --channel remote-chipyard
 </code></pre>
 <ol start="9">
-<li>Once the dry run reports the ip is ready to be published, publish the ip to an existing channel, such as <code>remote-chipyard</code>:</li>
+<li>Once the dry run reports the project is ready to be published, publish the project to an existing channel, such as <code>remote-chipyard</code>:</li>
 </ol>
 <pre><code>$ orbit publish --channel remote-chipyard --ready
 </code></pre>
@@ -1525,7 +1525,7 @@ with open(os.environ['ORBIT_BLUEPRINT']) as bp:
 </code></pre>
 <p>This will create placeholders ("TODO") print statements in the code sections where Verilog, SystemVerilog, and VHDL files can be processed by the target script.</p>
 <h2 id="adding-a-custom-fileset"><a class="header" href="#adding-a-custom-fileset">Adding a custom fileset</a></h2>
-<p>This guide walks through how to modify a target's configuration to accept additional files to be collected into the blueprint from only the local ip during the planning stage.</p>
+<p>This guide walks through how to modify a target's configuration to accept additional files to be collected into the blueprint from only the current project during the planning stage.</p>
 <ol>
 <li>
 <p>Open the target configuration.</p>
@@ -1546,7 +1546,7 @@ fileset.A-SET = "*.txt"
 </code></pre>
 <p>If a file matches a least one of defined file patterns, then it will be added under that fileset.</p>
 <h2 id="adding-a-custom-recursive-fileset"><a class="header" href="#adding-a-custom-recursive-fileset">Adding a custom recursive fileset</a></h2>
-<p>This guide walks through how to modify a target's configuration to accept additional files to be collected into the blueprint from all ip in the dependency graph during the planning stage.</p>
+<p>This guide walks through how to modify a target's configuration to accept additional files to be collected into the blueprint from all projects in the dependency graph during the planning stage.</p>
 <ol>
 <li>
 <p>Open the target configuration.</p>
@@ -1608,9 +1608,9 @@ for arg in sys.argv[1:]:
 </code></pre>
 <p>For a more robust solution to handling additional arguments, it is recommended to use an existing argument parsing library such as <a href="https://docs.python.org/3/library/argparse.html"><code>argparse</code></a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="creating-protocols"><a class="header" href="#creating-protocols">Creating Protocols</a></h1>
-<p>A protocol is a user-defined series of steps requried to obtain an ip from the internet. This section provides steps for ways to create and configure a protocol.</p>
+<p>A protocol is a user-defined series of steps requried to obtain a project from the internet. This section provides steps for ways to create and configure a protocol.</p>
 <blockquote>
-<p><strong>Note</strong>: The default method for obtaining ip from the internet is using Rust's <code>curl</code> library under the assumption that the ip's URL is a .zip file. If you prefer a different method to access ip from the internet, then you must create a protocol.</p>
+<p><strong>Note</strong>: The default method for obtaining a project from the internet is using Rust's <code>curl</code> library under the assumption that the project's URL is a .zip file. If you prefer a different method to access projects from the internet, then you must create a protocol.</p>
 </blockquote>
 <h3 id="assumptions-4"><a class="header" href="#assumptions-4">Assumptions</a></h3>
 <p>If a step mentions the "protocol configuration", this corresponds to the entry for the protocol that has been defined in an Orbit configuration file (config.toml).</p>
@@ -1633,8 +1633,8 @@ for arg in sys.argv[1:]:
 </ol>
 <pre><code class="language-toml">[[protocol]]
 name = "gitit"
-description = "Download ip using git"
-command = ["git", "clone", "{{orbit.ip.source}}", "-b", "{{orbit.ip.version}}"]
+description = "Download projects using git"
+command = ["git", "clone", "{{orbit.project.source}}", "-b", "{{orbit.project.version}}"]
 patterns = ["*.git"]
 </code></pre>
 <p>A protocol may be as simple as a list of known command-line arguments, or may require invoking a script written in a scripting language such as Python or Tcl.</p>
@@ -1642,7 +1642,7 @@ patterns = ["*.git"]
 <p><strong>Tip</strong>: The strings within the array for the <code>args</code> field of a protocol support string variables. See <a href="user/./../topic/swapping.html#protocol-arguments">String Swapping</a> to view what variables are allowed.</p>
 </blockquote>
 <h2 id="configuring-a-protocol-as-default"><a class="header" href="#configuring-a-protocol-as-default">Configuring a protocol as default</a></h2>
-<p>This guide walks through how to configure an existing protocol to be the first to check if it can be used for a given ip's source URL.</p>
+<p>This guide walks through how to configure an existing protocol to be the first to check if it can be used for a given project's source URL.</p>
 <ol>
 <li>
 <p>Open an Orbit configuration file.</p>
@@ -1655,7 +1655,7 @@ patterns = ["*.git"]
 default-protocol = "gitit"
 </code></pre>
 <h2 id="viewing-available-protocols"><a class="header" href="#viewing-available-protocols">Viewing available protocols</a></h2>
-<p>This guide walks through how to view the protocols already configured and available to use for an ip.</p>
+<p>This guide walks through how to view the protocols already configured and available to use for a project.</p>
 <ol>
 <li>Return the list of configured protocols:</li>
 </ol>
@@ -1667,22 +1667,22 @@ default-protocol = "gitit"
 <pre><code>$ orbit install --list --protocol gitit
 </code></pre>
 <h2 id="using-a-protocol"><a class="header" href="#using-a-protocol">Using a protocol</a></h2>
-<p>This guide walks through how to configure a particular ip to use a previously configured protocol called <code>gitit</code>.</p>
+<p>This guide walks through how to configure a particular project to use a previously configured protocol called <code>gitit</code>.</p>
 <ol>
 <li>
-<p>Open the current ip's manifest file.</p>
+<p>Open the current project's manifest file.</p>
 </li>
 <li>
-<p>Add the <code>source</code> field to the ip's manifest, which contains a string of the ip's git repository:</p>
+<p>Add the <code>source</code> field to the project's manifest, which contains a string of the project's git repository:</p>
 </li>
 </ol>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 # ...
 source = "https://github.com/chaseruskin/gates.git"
 </code></pre>
-<p>Since this source ends with <code>.git</code>, it matches the pattern for the previously configured <code>gitit</code> protocol, so Orbit will use the <code>gitit</code> command and arguments to download the ip.</p>
+<p>Since this source ends with <code>.git</code>, it matches the pattern for the previously configured <code>gitit</code> protocol, so Orbit will use the <code>gitit</code> command and arguments to download the project.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="creating-channels"><a class="header" href="#creating-channels">Creating Channels</a></h1>
-<p>A channel is a decentralized registry storing the manifests of published ips. This section provides steps for ways to configure a channel.</p>
+<p>A channel is a decentralized registry storing the manifests of published projects. This section provides steps for ways to configure a channel.</p>
 <h3 id="guides-5"><a class="header" href="#guides-5">Guides</a></h3>
 <ul>
 <li><a href="user/creating_channels.html#configuring-a-local-directory-as-a-channel">Configuring a local directory as a channel</a></li>
@@ -1707,7 +1707,7 @@ source = "https://github.com/chaseruskin/gates.git"
 </ol>
 <pre><code class="language-toml">[[channel]]
 name = "local-chipyard"
-description = "Local registry of available ip"
+description = "Local registry of available projects"
 root = "./channels/local-chipyard"
 </code></pre>
 <ol start="4">
@@ -1732,10 +1732,10 @@ root = "./channels/local-chipyard"
 </ol>
 <pre><code class="language-toml">[[channel]]
 name = "remote-chipyard"
-description = "Remote registry of available ip"
+description = "Remote registry of available projects"
 </code></pre>
 <ol start="4">
-<li>Specify the directory where data for published ip should exist within the repository:</li>
+<li>Specify the directory where data for published projects should exist within the repository:</li>
 </ol>
 <pre><code class="language-toml">[[channel]]
 # ...
@@ -1748,23 +1748,23 @@ root = "./index"
 # ...
 sync.command = ["git", "pull"]
 </code></pre>
-<ol start="6">
-<li>Create a Python script called <code>publish.py</code> to handle automatically adding, committing, and pushing published ips:</li>
+<ol>
+<li>Create a Python script called <code>publish.py</code> to handle automatically adding, committing, and pushing published projects:</li>
 </ol>
 <pre><code class="language-Python">import subprocess
 import os
 
-ip_index = os.environ.get("ORBIT_CHANNEL_IP_DIR")
-ip_name = os.environ.get("ORBIT_IP_NAME")
-ip_version = os.environ.get("ORBIT_IP_VERSION") 
+project_index = os.environ.get("ORBIT_CHANNEL_PROJECT_DIR")
+project_name = os.environ.get("ORBIT_PROJECT_NAME")
+project_version = os.environ.get("ORBIT_PROJECT_VERSION") 
 
 # Add untracked files
-child = subprocess.Popen(['git', 'add', ip_index])
+child = subprocess.Popen(['git', 'add', project_index])
 rc = child.wait()
 if rc != 0:
     exit(rc)
 # Commit the changes
-child = subprocess.Popen(['git', 'commit', '-m', "Publishes "+ip_name+':'+ip_version])
+child = subprocess.Popen(['git', 'commit', '-m', "Publishes "+project_name+':'+project_version])
 rc = child.wait()
 if rc != 0:
     exit(rc)
@@ -1775,7 +1775,7 @@ if rc != 0:
     exit(rc)
 </code></pre>
 <ol start="7">
-<li>Configure the <code>publish.py</code> Python script to run within the publishing process after Orbit copies the published ip metadata into the channel:</li>
+<li>Configure the <code>publish.py</code> Python script to run within the publishing process after Orbit copies the published project metadata into the channel:</li>
 </ol>
 <pre><code class="language-toml">[[channel]]
 # ...
@@ -1797,7 +1797,7 @@ post.command = ["python", "publish.py"]
 <pre><code>$ orbit publish --list
 </code></pre>
 <h2 id="configuring-a-channel-as-default"><a class="header" href="#configuring-a-channel-as-default">Configuring a channel as default</a></h2>
-<p>This guide walks through how to configure existing channels to be the default when an ip does not specify any particular channels during the publishing process.</p>
+<p>This guide walks through how to configure existing channels to be the default when a project does not specify any particular channels during the publishing process.</p>
 <ol>
 <li>
 <p>Open an Orbit configuration file.</p>
@@ -1810,7 +1810,7 @@ post.command = ["python", "publish.py"]
 default-channels = ["local-chipyard", "remote-chipyard"]
 </code></pre>
 <h2 id="viewing-available-channels"><a class="header" href="#viewing-available-channels">Viewing available channels</a></h2>
-<p>This guide walks through how to view the channels already configured and available for an ip to publish to.</p>
+<p>This guide walks through how to view the channels already configured and available for a project to publish to.</p>
 <ol>
 <li>Return the list of configured channels:</li>
 </ol>
@@ -1822,9 +1822,9 @@ default-channels = ["local-chipyard", "remote-chipyard"]
 <pre><code>$ orbit publish --list --channel local-chipyard
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="specifying-dependencies"><a class="header" href="#specifying-dependencies">Specifying Dependencies</a></h1>
-<p>Your ip can depend on other ips found in the catalog or subdirectories on your local file system. You can also temporarily override the location of a dependency - for example, to be able to test out a bug fix in the dependency that you are working on locally. You can also have dependencies that are only used during development. This section walks through the different ways you can specify the dependencies of an ip.</p>
+<p>Your projects can depend on other projects found in the catalog or subdirectories on your local file system. You can also temporarily override the location of a dependency - for example, to be able to test out a bug fix in the dependency that you are working on locally. You can also have dependencies that are only used during development. This section walks through the different ways you can specify the dependencies of a project.</p>
 <h3 id="assumptions-5"><a class="header" href="#assumptions-5">Assumptions</a></h3>
-<p>The guides in this section assume you are running commands from the root directory or any subdirectory of the current ip. The current ip, also sometimes referred to as the local ip, is the ip being actively developed.</p>
+<p>The guides in this section assume you are running commands from the root directory or any subdirectory of the current project. The current project is the project being actively developed.</p>
 <h3 id="guides-6"><a class="header" href="#guides-6">Guides</a></h3>
 <ul>
 <li><a href="user/specifying_deps.html#using-a-strict-version-of-a-dependency">Using a strict version of a dependency</a></li>
@@ -1836,28 +1836,28 @@ default-channels = ["local-chipyard", "remote-chipyard"]
 </ul>
 <h2 id="using-a-strict-version-of-a-dependency"><a class="header" href="#using-a-strict-version-of-a-dependency">Using a strict version of a dependency</a></h2>
 <ol>
-<li>Add the name of the ip (such as <code>gates</code>) as a new entry in the <code>[dependencies]</code> table of the current ip's manifest with the fully qualified version to use (such as <code>1.0.0</code>):</li>
+<li>Add the name of the external project (such as <code>gates</code>) as a new entry in the <code>[dependencies]</code> table of the current project's manifest with the fully qualified version to use (such as <code>1.0.0</code>):</li>
 </ol>
 <pre><code class="language-toml">[dependencies]
 gates = "1.0.0"
 </code></pre>
 <h2 id="using-a-relaxed-micro-version-of-a-dependency"><a class="header" href="#using-a-relaxed-micro-version-of-a-dependency">Using a relaxed micro version of a dependency</a></h2>
 <ol>
-<li>Add the name of the ip (such as <code>gates</code>) as a new entry in the <code>[dependencies]</code> table of the current ip's manifest with a partially qualified version to use, omitting the micro version number (such as <code>1.0</code>) to accept <em>any</em> micro version number:</li>
+<li>Add the name of the external project (such as <code>gates</code>) as a new entry in the <code>[dependencies]</code> table of the current project's manifest with a partially qualified version to use, omitting the micro version number (such as <code>1.0</code>) to accept <em>any</em> micro version number:</li>
 </ol>
 <pre><code class="language-toml">[dependencies]
 gates = "1.0"
 </code></pre>
 <h2 id="using-a-relaxed-minor-version-of-a-dependency"><a class="header" href="#using-a-relaxed-minor-version-of-a-dependency">Using a relaxed minor version of a dependency</a></h2>
 <ol>
-<li>Add the name of the ip (such as <code>gates</code>) as a new entry in the <code>[dependencies]</code> table of the current ip's manifest with a partially qualified version to use, omitting the minor and micro version number (such as <code>1</code>) to accept <em>any</em> minor and <em>any</em> micro version number:</li>
+<li>Add the name of the external project (such as <code>gates</code>) as a new entry in the <code>[dependencies]</code> table of the current project's manifest with a partially qualified version to use, omitting the minor and micro version number (such as <code>1</code>) to accept <em>any</em> minor and <em>any</em> micro version number:</li>
 </ol>
 <pre><code class="language-toml">[dependencies]
 gates = "1"
 </code></pre>
 <h2 id="overriding-the-location-of-a-dependency"><a class="header" href="#overriding-the-location-of-a-dependency">Overriding the location of a dependency</a></h2>
 <ol>
-<li>Specify the local file sytem path to the root directory of the ip using the <code>path</code> field to use it as the source for the dependency:</li>
+<li>Specify the local file sytem path to the root directory of the external project using the <code>path</code> field to use it as the source for the dependency:</li>
 </ol>
 <pre><code class="language-toml">[dependencies]
 gates = { path = "../gates", version = "1.0.1-dev" }
@@ -1865,7 +1865,7 @@ gates = { path = "../gates", version = "1.0.1-dev" }
 <p>Note that the <code>version</code> field is required and its value must match the <code>version</code> defined in the local dependency's manifest file.</p>
 <h2 id="including-a-dependency-only-for-development"><a class="header" href="#including-a-dependency-only-for-development">Including a dependency only for development</a></h2>
 <ol>
-<li>Add the name of the ip (such as <code>gates</code>) as a new entry in the <code>[dev-dependencies]</code> table of the current ip's manifest:</li>
+<li>Add the name of the external project (such as <code>gates</code>) as a new entry in the <code>[dev-dependencies]</code> table of the current project's manifest:</li>
 </ol>
 <pre><code class="language-toml">[dev-dependencies]
 gates = "1.0.0"
@@ -1875,7 +1875,7 @@ gates = "1.0.0"
 </blockquote>
 <h2 id="differentiating-among-dependencies-of-the-same-name"><a class="header" href="#differentiating-among-dependencies-of-the-same-name">Differentiating among dependencies of the same name</a></h2>
 <ol>
-<li>Specify the UUID of the ip that has a conflicting name in the catalog using the <code>uuid</code> field to explicitly request this ip as the dependency:</li>
+<li>Specify the UUID of the external project that has a conflicting name in the catalog using the <code>uuid</code> field to explicitly request this project as the dependency:</li>
 </ol>
 <pre><code class="language-toml">[dependencies]
 gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
@@ -1981,7 +1981,7 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <p><a href="https://doc.rust-lang.org/book/ch07-01-packages-and-crates.html">The Rust Book - Packages and Crates</a></p>
 <p><a href="https://packaging.python.org/en/latest/discussions/package-formats/">Python Packaging User Guide - Package Formats</a></p>
 <p><a href="https://en.wikipedia.org/wiki/Semiconductor_intellectual_property_core">Wikipedia - Semiconductor intellectual property core</a></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="ip-management"><a class="header" href="#ip-management">Ip Management</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="package-management"><a class="header" href="#package-management">Package Management</a></h1>
 <p>Orbit is designed for users to efficiently manage their ip and scale their codebase over time. Many of the processes regarding ip management are automated and abstracted away from the user, enabling them to get their next design done faster. This section takes a closer look at how the <em>catalog</em> works in the context of Orbit and ip management. The catalog is a central concept to Orbit where existing ip are kept and maintained by Orbit.</p>
 <p><img src="topic/./../images/management.svg" alt="" /></p>
 <h2 id="catalog-operations"><a class="header" href="#catalog-operations">Catalog operations</a></h2>

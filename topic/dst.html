@@ -183,6 +183,7 @@
 <p>In VHDL/Verilog, a common example of a namespace clash is when different files define an entity/module by the same name, which may have different behaviors. Namespace clashes may start to appear when a project requires the same entity/module from one particular project but as multiple different versions throughout its dependency tree.</p>
 <h2 id="approach"><a class="header" href="#approach">Approach</a></h2>
 <p>We solve the namespace pollution problem with an algorithm called <em>dynamic symbol transformation</em> (DST). The DST algorithm solves the namespace clashing problem by rewriting conflicts with a new unique identifier without losing information in the original identifier.</p>
+<p>Orbit performs the DST algorithm during the planning stage of the build process before a blueprint file is created.</p>
 <h3 id="limitations"><a class="header" href="#limitations">Limitations</a></h3>
 <p>Orbit automatically handles resolving duplicate identifiers for primary design units due to two design contraints. The limitations are:</p>
 <ol>

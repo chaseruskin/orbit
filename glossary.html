@@ -187,19 +187,25 @@
 <h3 id="core"><a class="header" href="#core">Core</a></h3>
 <p>The shorthand (and more common) name for an <a href="#ip-core">IP core</a>.</p>
 <h3 id="current-project"><a class="header" href="#current-project">Current Project</a></h3>
-<p>Another name for a <a href="#local-project">local project</a>.</p>
+<p>The current project is the project detected by Orbit from the current working directory on the command-line. Some commands require a current project in order to run, such as <code>orbit lock</code> and <code>orbit build</code>.</p>
+<h3 id="design-element"><a class="header" href="#design-element">Design Element</a></h3>
+<p>Verilog and SystemVerilog's terminology for a <a href="#primary-design-unit">primary design unit</a>. These include Verilog modules and primitives, as well as SystemVerilog modules, programs, interfaces, checkers, packages, primitives, and configurations.</p>
 <h3 id="fileset"><a class="header" href="#fileset">Fileset</a></h3>
 <p>A fileset is a collection of related files under a given name. A glob-style file pattern is used to discover the files of a given fileset. Filesets are used to group common files together into the blueprint during the planning stage of the build process. Orbit comes with built-in filesets for VHDL, Verilog, and SystemVerilog files. In addition, a target can configure its own custom filesets.</p>
 <h3 id="ip-core"><a class="header" href="#ip-core">IP Core</a></h3>
 <p>An IP core is a resusable block of design logic composed of one or more design units. An IP core is the smallest amount of hardware description code that Orbit considers at a time. Design units that make up an IP core may include VHDL entities or Verilog modules.</p>
+<h3 id="index"><a class="header" href="#index">Index</a></h3>
+<p>An index is the searchable list of <a href="#project">projects</a> in a <a href="#channels">channel</a>.</p>
 <h3 id="local-project"><a class="header" href="#local-project">Local Project</a></h3>
-<p>The local project is the project detected by Orbit from the current working directory on the command-line. Some commands can only be executed from the local project, such as <code>orbit lock</code> and <code>orbit build</code>.</p>
+<p>Another name for the <a href="#current-project">current project</a>.</p>
 <h3 id="lockfile"><a class="header" href="#lockfile">Lockfile</a></h3>
 <p>A lockfile is a file that precisely describes a project and all of its resolved dependencies. The lockfile is called "Orbit.lock" and is automatically generated and maintained by Orbit. The lockfile should be checked into your version control system for reproducible builds. It is not to be manually edited by the user.</p>
 <p>With the lockfile, Orbit is able to download missing dependencies, install missing dependencies, and verify the data integrity of installed dependencies.</p>
 <h3 id="manifest"><a class="header" href="#manifest">Manifest</a></h3>
 <p>A manifest is a configuration file containing metadata about a project that is recognized by Orbit. Manifest files
 are named "Orbit.toml". The manifest is intended to be edited by the user. The manifest is used as an input for Orbit to generate the lockfile.</p>
+<h3 id="orbit"><a class="header" href="#orbit">Orbit</a></h3>
+<p>Orbit is a package manager and build system for <a href="#vhdl">VHDL</a>, <a href="#verilog">Verilog</a>, and <a href="#systemverilog">SystemVerilog</a>. It is the primary topic of this book.</p>
 <h3 id="orbitlock"><a class="header" href="#orbitlock">Orbit.lock</a></h3>
 <p>See <a href="#lockfile">lockfile</a>.</p>
 <h3 id="orbittoml"><a class="header" href="#orbittoml">Orbit.toml</a></h3>
@@ -208,10 +214,13 @@ are named "Orbit.toml". The manifest is intended to be edited by the user. The m
 <p>A package is a collection of source files and a <code>Orbit.toml</code> <a href="#manifest">manifest</a> file which describes the package. A package has a name, version, and UUID, which are used for specifying dependencies between packages.</p>
 <p>The <em>package root</em> is the directory where the package's <code>Orbit.toml</code> manifest is located.</p>
 <p>The <em>package ID specification</em>, or <em>SPEC</em>, is a string used to uniquely reference a specific version of a package from a specific source.</p>
+<p>The source code for a given package is further subdivided into <a href="#ip-core">IP cores</a>.</p>
 <p>A package is more commonly referred to as a <a href="#project">project</a>.</p>
 <h3 id="package-manager"><a class="header" href="#package-manager">Package Manager</a></h3>
 <p>Broadly speaking, a package manager is a program (or collection of related programs) in a software ecosystem that automates the process of obtaining, installing, and upgrading artifacts. Within a programming language ecosystem, a package manager is a developer-focused tool whose primary functionality is to download library artifacts and their dependencies from some central repository; this capability is often combined with the ability to perform software builds (by invoking the language-specific compiler).</p>
 <p>Orbit is a package manager within the HDL ecosystem. Orbit downloads your HDL <a href="#package">package</a>'s dependencies, resolves the order of source files required for a backend build process, and makes distributable packages.</p>
+<h3 id="primary-design-unit"><a class="header" href="#primary-design-unit">Primary Design Unit</a></h3>
+<p>A primary design unit, or design unit, is the highest layer of abstraction to describe hardware constructs in VHDL. These include VHDL entities, packages, configurations, and contexts. An <a href="#ip-core">IP core</a> is named by its root primary design unit, or <a href="#design-element">design element</a> if it is described in Verilog or SystemVerilog.</p>
 <h3 id="project"><a class="header" href="#project">Project</a></h3>
 <p>Another (more common) name for a <a href="#package">package</a>.</p>
 <h3 id="project-id-specification-spec"><a class="header" href="#project-id-specification-spec">Project ID Specification (SPEC)</a></h3>
@@ -235,7 +244,7 @@ are named "Orbit.toml". The manifest is intended to be edited by the user. The m
 <h3 id="verilog"><a class="header" href="#verilog">Verilog</a></h3>
 <p>Verilog is a hardware description language to model electronic systems. The final standard (IEEE 1364-2005) for Verilog merged into the SystemVerilog standard. Today, Verilog has been officially part of the SystemVerilog language.</p>
 <h3 id="working-project"><a class="header" href="#working-project">Working Project</a></h3>
-<p>Another name for a <a href="#local-project">local project</a>.</p>
+<p>Another name for the <a href="#current-project">current project</a>.</p>
 
                     </main>
 

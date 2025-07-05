@@ -178,18 +178,18 @@
 </ul>
 <p>If a file in the search space matches a least one of defined file patterns of a fileset, then it will be added under that fileset.</p>
 <h2 id="built-in-filesets"><a class="header" href="#built-in-filesets">Built-in filesets</a></h2>
-<p>There are built-in filesets that Orbit uses that have special rules and work across all ip, including dependencies. The following filesets are currently built-in with Orbit:</p>
+<p>There are built-in filesets that Orbit uses that have special rules and work across all projects, including dependencies. The following filesets are currently built-in with Orbit:</p>
 <ul>
 <li><code>VHDL</code>: VHDL files (.vhd, .vhdl)</li>
 <li><code>VLOG</code>: Verilog files (.v, .vl, .vlg)</li>
 <li><code>SYSV</code>: SystemVerilog files (.sv)</li>
 </ul>
 <h2 id="custom-filesets"><a class="header" href="#custom-filesets">Custom filesets</a></h2>
-<p>Custom filesets are filesets that are be defined by the user for a specific target. By default, these filesets are only searched for in the local ip and do not extend any of the ip's dependencies. Set the <code>recursive</code> entry of a fileset true to apply it to all ips in the dependency graph.</p>
-<p>If a pattern does not start with an explicit path delimiter (<code>/</code>), then Orbit assumes to look for the fileset across every possible subdirectory in the local ip by implicitly prepending the pattern with <code>**/</code>.</p>
+<p>Custom filesets are filesets that are be defined by the user for a specific target. By default, these filesets are only searched for in the current project and do not extend any of the project's dependencies. Set the <code>recursive</code> entry of a fileset true to apply it to all projects in the dependency graph.</p>
+<p>If a pattern does not start with an explicit path delimiter (<code>/</code>), then Orbit assumes to look for the fileset across every possible subdirectory in the current project by implicitly prepending the pattern with <code>**/</code>.</p>
 <p>A custom fileset's patterns support string swapping. See <a href="./../topic/swapping.html">String Swapping</a> to learn more about how it can be applied to fileset patterns.</p>
 <h2 id="applying-fileset-patterns"><a class="header" href="#applying-fileset-patterns">Applying fileset patterns</a></h2>
-<p>A fileset's pattern is applied starting from the current ip's root directory, the same directory where the <code>Orbit.toml</code> file exists.</p>
+<p>A fileset's pattern is applied starting from the current project's root directory, the same directory where the <code>Orbit.toml</code> file exists.</p>
 <h2 id="name-normalization-examples"><a class="header" href="#name-normalization-examples">Name normalization examples</a></h2>
 <p>Despite how the user enters the name of a fileset in a target's configuration, the name will be normalized to COBOL-CASE. The following are some examples of how the normalization process works on a variety of naming conventions.</p>
 <div class="table-wrapper"><table><thead><tr><th>User-defined fileset name</th><th>Normalized fileset name (COBOL-CASE)</th></tr></thead><tbody>
@@ -201,14 +201,14 @@
 </div>
 <p>The normalized fileset name is the name that will be written to the blueprint file when collecting filesets. This design choice is for consistency across targets when reading and parsing the blueprint.</p>
 <h2 id="custom-pattern-assumption-examples"><a class="header" href="#custom-pattern-assumption-examples">Custom pattern assumption examples</a></h2>
-<p>Unless starting with a path delimiter (<code>/</code>), a pattern of a fileset is assumed to be applied across the ip's directory and all of its subdirectories. The following are some examples of how Orbit interprets a fileset's patterns.</p>
+<p>Unless starting with a path delimiter (<code>/</code>), a pattern of a fileset is assumed to be applied across the project's directory and all of its subdirectories. The following are some examples of how Orbit interprets a fileset's patterns.</p>
 <div class="table-wrapper"><table><thead><tr><th>User-defined pattern</th><th>Interpreted pattern</th></tr></thead><tbody>
 <tr><td><code>*.txt</code></td><td><code>**/*.txt</code></td></tr>
 <tr><td><code>Boards/*.toml</code></td><td><code>**/Boards/*.toml</code></td></tr>
 <tr><td><code>/specific/path.log</code></td><td><code>./specific/path.log</code></td></tr>
 </tbody></table>
 </div>
-<p>The custom patterns begin their search for files at the local ip's root directory. The file pattern used by Orbit when collecting files for custom filesets is the interpreted pattern.</p>
+<p>The custom patterns begin their search for files at the current project's root directory. The file pattern used by Orbit when collecting files for custom filesets is the interpreted pattern.</p>
 
                     </main>
 

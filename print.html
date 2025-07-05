@@ -2285,6 +2285,7 @@ Yilinx_Path = "/Users/chase/fpga/bin/yilinx"
 <p>In VHDL/Verilog, a common example of a namespace clash is when different files define an entity/module by the same name, which may have different behaviors. Namespace clashes may start to appear when a project requires the same entity/module from one particular project but as multiple different versions throughout its dependency tree.</p>
 <h2 id="approach"><a class="header" href="#approach">Approach</a></h2>
 <p>We solve the namespace pollution problem with an algorithm called <em>dynamic symbol transformation</em> (DST). The DST algorithm solves the namespace clashing problem by rewriting conflicts with a new unique identifier without losing information in the original identifier.</p>
+<p>Orbit performs the DST algorithm during the planning stage of the build process before a blueprint file is created.</p>
 <h3 id="limitations"><a class="header" href="#limitations">Limitations</a></h3>
 <p>Orbit automatically handles resolving duplicate identifiers for primary design units due to two design contraints. The limitations are:</p>
 <ol>
@@ -2372,140 +2373,140 @@ Yilinx_Path = "/Users/chase/fpga/bin/yilinx"
 <div style="break-before: page; page-break-before: always;"></div><h1 id="reference"><a class="header" href="#reference">Reference</a></h1>
 <p>This section is <strong>information-oriented</strong>, providing technical descriptions intended to serve as reference for existing users with accurate details about Orbit and its components.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="manifest"><a class="header" href="#manifest">Manifest</a></h1>
-<p>The <code>Orbit.toml</code> file for each ip is called its manifest. It is written in the <a href="https://toml.io/en/">TOML</a> format. It is maintained by the user and contains metadata that is needed to build the ip. The manifest is read by Orbit to help automatically generate the ip's lock file, <code>Orbit.lock</code>.</p>
+<p>The <code>Orbit.toml</code> file for each project is called its manifest. It is written in the <a href="https://toml.io/en/">TOML</a> format. It is maintained by the user and contains metadata that is needed to describe the project. The manifest is read by Orbit to help automatically generate the project's lock file, <code>Orbit.lock</code>.</p>
 <blockquote>
 <p><strong>Note:</strong> The manifest's file name is "Orbit.toml", with respect to case-sensitivity.</p>
 </blockquote>
 <h2 id="manifest-format"><a class="header" href="#manifest-format">Manifest format</a></h2>
 <p>Every manifest file consists of the following sections:</p>
 <ul>
-<li><a href="reference/manifest.html#the-ip-section">[ip]</a> - Defines an ip.
+<li><a href="reference/manifest.html#the-project-section">[project]</a> - Defines a project.
 <ul>
-<li><a href="reference/manifest.html#the-name-field">name</a> - The name of the ip.</li>
-<li><a href="reference/manifest.html#the-uuid-field">uuid</a> - The universally unique identifier of the ip.</li>
-<li><a href="reference/manifest.html#the-version-field">version</a> - The version of the ip.</li>
-<li><a href="reference/manifest.html#the-description-field">description</a> - A short description of the ip.</li>
-<li><a href="reference/manifest.html#the-authors-field">authors</a> - The authors of the ip.</li>
-<li><a href="reference/manifest.html#the-library-field">library</a> - The HDL library for the design units within the ip.</li>
-<li><a href="reference/manifest.html#the-source-field">source</a> - The URL of the ip source repository.</li>
-<li><a href="reference/manifest.html#the-public-field">public</a> - Files to be visible to other ip.</li>
-<li><a href="reference/manifest.html#the-keywords-field">keywords</a> - A list of simple words categorizing the ip.</li>
-<li><a href="reference/manifest.html#the-channels-field">channels</a> - The channels to update when publishing the ip.</li>
-<li><a href="reference/manifest.html#the-exclude-field">exclude</a> - Files to exclude during file discovery.</li>
+<li><a href="reference/manifest.html#the-name-field">name</a> - The name of the project.</li>
+<li><a href="reference/manifest.html#the-uuid-field">uuid</a> - The universally unique identifier of the project.</li>
+<li><a href="reference/manifest.html#the-version-field">version</a> - The version of the project.</li>
+<li><a href="reference/manifest.html#the-description-field">description</a> - A short description of the project.</li>
+<li><a href="reference/manifest.html#the-authors-field">authors</a> - The authors of the project.</li>
+<li><a href="reference/manifest.html#the-library-field">library</a> - The HDL library for the design units within the project.</li>
+<li><a href="reference/manifest.html#the-source-field">source</a> - The URL of the project source repository.</li>
+<li><a href="reference/manifest.html#the-public-field">public</a> - Source files to be visible to other project.</li>
+<li><a href="reference/manifest.html#the-keywords-field">keywords</a> - A list of simple words categorizing the project.</li>
+<li><a href="reference/manifest.html#the-channels-field">channels</a> - The channels to update when publishing the project.</li>
+<li><a href="reference/manifest.html#the-ignore-field">ignore</a> - Files to ignore during file discovery.</li>
 <li><a href="reference/manifest.html#the-readme-field">readme</a> - The path to the README file.</li>
-<li><a href="reference/manifest.html#the-license-and-license-file-fields">license</a> - The ip license.</li>
+<li><a href="reference/manifest.html#the-license-and-license-file-fields">license</a> - The project license.</li>
 <li><a href="reference/manifest.html#the-license-and-license-file-fields">license-file</a> - The path to the text of the license.</li>
 <li><a href="reference/manifest.html#the-metadata-section">[metadata]</a> - An unchecked section for custom fields.</li>
 </ul>
 </li>
-<li><a href="reference/manifest.html#the-dependencies-section">[dependencies]</a> - Ip dependencies.</li>
-<li><a href="reference/manifest.html#the-dev-dependencies-section">[dev-dependencies]</a> - Ip dependencies only used for ongoing development.</li>
+<li><a href="reference/manifest.html#the-dependencies-section">[dependencies]</a> - Project dependencies.</li>
+<li><a href="reference/manifest.html#the-dev-dependencies-section">[dev-dependencies]</a> - Project dependencies only used for ongoing development.</li>
 </ul>
-<h3 id="the-ip-section"><a class="header" href="#the-ip-section">The <code>[ip]</code> section</a></h3>
-<p>The first section in a <code>Orbit.toml</code> file is <code>[ip]</code>.</p>
-<pre><code class="language-toml">[ip]
-name = "my-ip" # the name of the package
+<h3 id="the-project-section"><a class="header" href="#the-project-section">The <code>[project]</code> section</a></h3>
+<p>The first section in a <code>Orbit.toml</code> file is <code>[project]</code>.</p>
+<pre><code class="language-toml">[project]
+name = "my-project" # the name of the package
 uuid = "ecj831jmc018hhhgl1d4rzgw8" # the universally unique identifier
 </code></pre>
 <p>The only fields required by Orbit are the name and uuid.</p>
 <h3 id="the-name-field"><a class="header" href="#the-name-field">The <code>name</code> field</a></h3>
-<p>The ip name is an identifier used to refer to the ip. It is used when listed as a dependency in another package, and as the name of the HDL library for all of its source files when the <code>library</code> field is omitted. See <a href="reference/./names.html">names</a> for more information.</p>
-<pre><code class="language-toml">[ip]
-name = "my-ip"
+<p>The project name is an identifier used to refer to the project. It is used when listed as a dependency in another package, and as the name of the HDL library for all of its source files when the <code>library</code> field is omitted. See <a href="reference/./names.html">names</a> for more information.</p>
+<pre><code class="language-toml">[project]
+name = "my-project"
 # ...
 </code></pre>
 <h3 id="the-uuid-field"><a class="header" href="#the-uuid-field">The <code>uuid</code> field</a></h3>
 <p>A random string consisting of 25 characters in base36 encoding (a-z0-9).</p>
-<p>This field is used to safeguard against namespace collisions at the ip-level, and should <em>not</em> be manually edited at any point over the lifetime of an ip.</p>
+<p>This field is used to safeguard against namespace collisions at the project-level, and should <em>not</em> be manually edited at any point over the lifetime of an project.</p>
 <p>If needing a UUID, obtain a UUID from Orbit by running <code>orbit init --uuid</code>.</p>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 # ...
 uuid = "ecj831jmc018hhhgl1d4rzgw8"
 </code></pre>
 <h3 id="the-version-field"><a class="header" href="#the-version-field">The <code>version</code> field</a></h3>
-<p>The current version of the ip.</p>
+<p>The current version of the project.</p>
 <p>Versions must have three numeric parts, the major version, the minor version, and the micro version. Each part is separated by a <code>.</code> delimiter. An optional label can be added at the end, denoted by a <code>-</code>. See <a href="reference/./versions.html">versions</a> for more information.</p>
 <p>This field is optional and will default to <code>0.0.0</code>.</p>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 # ...
 version = "0.1.0"
 </code></pre>
 <h3 id="the-description-field"><a class="header" href="#the-description-field">The <code>description</code> field</a></h3>
-<p>The description is a short blurb about the ip. This should be plain text (not Markdown).</p>
-<pre><code class="language-toml">[ip]
+<p>The description is a short blurb about the project. This should be plain text (not Markdown).</p>
+<pre><code class="language-toml">[project]
 # ...
-description = "A short description of the ip"
+description = "A short description of the project"
 </code></pre>
 <h3 id="the-authors-field"><a class="header" href="#the-authors-field">The <code>authors</code> field</a></h3>
 <p>The optional <code>authors</code> field lists in an array the people or organizations that are considered the “authors” of the package. The exact meaning is open to interpretation — it may list the original or primary authors, current maintainers, or owners of the package. An optional email address may be included within angled brackets at the end of each author entry.</p>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 # ...
 authors = ["Duncan Idaho", "Gurney Halleck &lt;ghalleck@dune.mov&gt;"]
 
 </code></pre>
 <h3 id="the-library-field"><a class="header" href="#the-library-field">The <code>library</code> field</a></h3>
-<p>The optional <code>library</code> entry is an identifier used to denote the HDL library for all of the source files found within the ip.</p>
-<pre><code class="language-toml">[ip]
+<p>The optional <code>library</code> entry is an identifier used to denote the HDL library for all of the source files found within the project.</p>
+<pre><code class="language-toml">[project]
 # ...
 library = "axi"
 </code></pre>
 <h3 id="the-source-field"><a class="header" href="#the-source-field">The <code>source</code> field</a></h3>
-<p>The <code>source</code> entry is a string that represents the URL where this ip is stored on the internet.</p>
-<pre><code class="language-toml">[ip]
+<p>The <code>source</code> entry is a string that represents the URL where this project is stored on the internet.</p>
+<pre><code class="language-toml">[project]
 # ...
 source = "https://github.com/chaseruskin/orbit/archive/refs/tags/1.0.0.zip"
 </code></pre>
 <h3 id="the-public-field"><a class="header" href="#the-public-field">The <code>public</code> field</a></h3>
-<p>The <code>public</code> field is an array of strings that specify which files are publicly accessible to external ips.</p>
-<pre><code class="language-toml">[ip]
+<p>The <code>public</code> field is an array of strings that specify which source files are publicly accessible to external projects.</p>
+<pre><code class="language-toml">[project]
 # ...
 public = [
     "rtl/",
     "!*_tb.sv"
 ]
 </code></pre>
-<p>The <code>public</code> field can be used to explicitly specify which files are visible to other ip when being when being referenced as a dependency. The list contains glob-style file patterns that conform to .gitignore file semantics and are always compared relative to that ip's root directory.</p>
-<p>If no <code>public</code> field is present, then all files are implicitly specified as invisible (private) to other ip when being referenced as a dependency. To change the default behavior when the <code>public</code> field is absent, see the configuration's <a href="reference/./configuration.html#the-require-public-field">require-public</a> entry.</p>
+<p>The <code>public</code> field can be used to explicitly specify which source files are visible to other projects when being when being referenced as a dependency. The list contains glob-style file patterns that conform to .gitignore file semantics and are always compared relative to that project's root directory.</p>
+<p>If no <code>public</code> field is present, then all source files are implicitly specified as invisible (private) to other projects when being referenced as a dependency. To change the default behavior when the <code>public</code> field is absent, see the configuration's <a href="reference/./configuration.html#the-require-public-field">require-public</a> entry.</p>
 <p>When mixing un-ignore (<code>!</code>) and ignore patterns, the order matters. The latest glob in the list among any overlapping globs will be the one effectively used for that particular pattern.</p>
 <p>The source key supports <a href="reference/./../topic/swapping.html"><em>string swapping</em></a>.</p>
 <h3 id="the-keywords-field"><a class="header" href="#the-keywords-field">The <code>keywords</code> field</a></h3>
 <p>The <code>keywords</code> field is an array of strings that describe this package. This can help when searching for the package in the catalog.</p>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 # ...
 keywords = ["cpu", "risc"]
 </code></pre>
 <h3 id="the-channels-field"><a class="header" href="#the-channels-field">The <code>channels</code> field</a></h3>
-<p>The <code>channels</code> field is an array of strings listing the names of configured channels that this ip will publish to during the publishing process.</p>
-<p>Without a channel listed in the <code>channels</code> entry, an ip is unable to be published since there is no default channel.</p>
-<pre><code class="language-toml">[ip]
+<p>The <code>channels</code> field is an array of strings listing the names of configured channels that this project will publish to during the publishing process.</p>
+<p>Without a channel listed in the <code>channels</code> entry, a project is unable to be published since there is no default channel.</p>
+<pre><code class="language-toml">[project]
 # ...
 channels = ["hyperspace-labs"]
 </code></pre>
-<h3 id="the-exclude-field"><a class="header" href="#the-exclude-field">The <code>exclude</code> field</a></h3>
-<p>The <code>exclude</code> field is an array of strings that can be used to explicitly specify which files are omitted from file discovery and source code analysis. The patterns specified in the <code>exclude</code> field identify a set of files that are not included. The patterns for this field follow .gitignore file semantics, such as using special meanings for <code>*</code> and <code>!</code> symbols.</p>
-<pre><code class="language-toml">[ip]
+<h3 id="the-ignore-field"><a class="header" href="#the-ignore-field">The <code>ignore</code> field</a></h3>
+<p>The <code>ignore</code> field is an array of strings that can be used to explicitly specify which files are omitted from file discovery and source code analysis. The patterns specified in the <code>ignore</code> field identify a set of files that are not included. The patterns for this field follow .gitignore file semantics, such as using special meanings for <code>*</code> and <code>!</code> symbols.</p>
+<pre><code class="language-toml">[project]
 # ...
-exclude = [
+ignore = [
     "scrap/",
     ".*.vhd"
 ]
 </code></pre>
-<p>The default if this field is not specified is to include all files from the root of the ip, except for the exclusions below.</p>
-<p>Regardless of whether <code>exclude</code> is specified, the following files are always excluded:</p>
+<p>The default if this field is not specified is to include all files from the root of the project, except for the exclusions below.</p>
+<p>Regardless of whether <code>ignore</code> is specified, the following files are always ignored:</p>
 <ul>
-<li>Any sub-ips will be skipped (any subdirectory that contains an <code>Orbit.toml</code> file)</li>
+<li>Any sub-projects will be skipped (any subdirectory that contains an <code>Orbit.toml</code> file)</li>
 <li>Any directories with file named "CACHEDIR.TAG" (this file denotes a target directory)</li>
 <li>Any files ignored by version control (such as those listed in a <code>.gitignore</code> file)</li>
 </ul>
 <p>The following files are always included:</p>
 <ul>
-<li>The <code>Orbit.toml</code> file of the ip itself is always included</li>
-<li>The <code>Orbit.lock</code> file of the ip itself is always included</li>
+<li>The <code>Orbit.toml</code> file of the project itself is always included</li>
+<li>The <code>Orbit.lock</code> file of the project itself is always included</li>
 </ul>
-<p>When mixing un-ignore (<code>!</code>) and ignore patterns in the <code>exclude</code> entry, the order matters. The latest glob in the list among any overlapping globs will be the one effectively used for that particular pattern.</p>
+<p>When mixing un-ignore (<code>!</code>) and ignore patterns in the <code>ignore</code> entry, the order matters. The latest glob in the list among any overlapping globs will be the one effectively used for that particular pattern.</p>
 <h3 id="the-readme-field"><a class="header" href="#the-readme-field">The <code>readme</code> field</a></h3>
-<p>The <code>readme</code> field should be the path to a file in the ip root (relative to this Orbit.toml) that contains general information about the ip.</p>
-<pre><code class="language-toml">[ip]
+<p>The <code>readme</code> field should be the path to a file in the project root (relative to this Orbit.toml) that contains general information about the project.</p>
+<pre><code class="language-toml">[project]
 # ...
 readme = "README.md"
 </code></pre>
@@ -2513,67 +2514,67 @@ readme = "README.md"
 <p>The <code>license</code> field contains the name of the software license that the package is released under. The <code>license-file</code> field contains the path to a file containing the text of the license (relative to this Orbit.toml).</p>
 <p>Orbit interprets the <code>license</code> field as an <a href="https://spdx.github.io/spdx-spec/v2.3/SPDX-license-expressions/">SPDX 2.3 license expression</a>. The name must be a known license from the <a href="https://spdx.org/licenses/">SPDX license list 3.26</a>. See the SPDX site for more information.</p>
 <p>SPDX license expressions support AND and OR operators to combine multiple licenses.</p>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 # ...
 license = "MIT OR Apache-2.0"
 </code></pre>
 <p>Using OR indicates the user may choose either license. Using AND indicates the user must comply with both licenses simultaneously. The WITH operator indicates a license with a special exception.</p>
-<p>If an ip is using a nonstandard license, then the <code>license-file</code> field may be specified in lieu of the <code>license</code> field.</p>
-<pre><code class="language-toml">[ip]
+<p>If a project is using a nonstandard license, then the <code>license-file</code> field may be specified in lieu of the <code>license</code> field.</p>
+<pre><code class="language-toml">[project]
 # ...
 license-file = "LICENSE.txt"
 </code></pre>
 <h3 id="the-metadata-section"><a class="header" href="#the-metadata-section">The <code>[metadata]</code> section</a></h3>
 <p>Any type of TOML entry is allowed in this section, as Orbit ignores this section.</p>
-<pre><code class="language-toml">[ip.metadata]
+<pre><code class="language-toml">[project.metadata]
 custom-field-1 = true
 custom-field-2 = "hello world"
 # ...
 </code></pre>
 <p>You can even add additional tables within this section to organize your own project metadata.</p>
-<pre><code class="language-toml">[ip.metadata.toolchains]
+<pre><code class="language-toml">[project.metadata.toolchains]
 vivado = "2024.1"
 # ...
 
-[ip.metadata.vivado]
+[project.metadata.vivado]
 part = "xc7a35tcpg236–1"
 # ...
 </code></pre>
 <h3 id="the-dependencies-section"><a class="header" href="#the-dependencies-section">The <code>[dependencies]</code> section</a></h3>
-<p>The <code>[dependencies]</code> section is a table of direct dependencies required for the current ip.</p>
+<p>The <code>[dependencies]</code> section is a table of direct dependencies required for the current project.</p>
 <pre><code class="language-toml">[dependencies]
 gates = "1.0.0"
 uart = "2.3.1"
 </code></pre>
-<p>If the ip has no dependencies, the section can be omitted from the manifest. The ips listed in this section will always be included in the build graph. For ips that should only be included in the build graph when developing the ip, see the <code>[dev-dependencies]</code> section.</p>
-<p>Dependencies can also be specified as local when given a file system path that points to the directory where that ip's manifest exists.</p>
+<p>If the project has no dependencies, the section can be omitted from the manifest. The projects listed in this section will always be included in the build graph. For projects that should only be included in the build graph when developing the current project, see the <code>[dev-dependencies]</code> section.</p>
+<p>Dependencies can also be specified as local when given a file system path that points to the directory where that project's manifest exists.</p>
 <pre><code class="language-toml">[dependencies]
 spi = { path = "../spi", version = "0.1.2" }
 </code></pre>
-<p>Local dependencies are useful when trying to test modifications of that ip within the context of another ip. Local dependencies are also supported in the <code>[dev-dependencies]</code> section.</p>
-<p>If adding a dependency that is an ambiguous name within the ip catalog, its uuid is required in order to select the correct ip. When the ip's name is unique within the ip catalog, specifying the uuid is optional when listing dependencies.</p>
+<p>Local dependencies are useful when trying to test modifications of that project within the context of another project. Local dependencies are also supported in the <code>[dev-dependencies]</code> section.</p>
+<p>If adding a dependency that is an ambiguous name within the project catalog, its UUID is required in order to select the correct project. When the project's name is unique within the project catalog, specifying the UUID is optional when listing dependencies.</p>
 <pre><code class="language-toml">[dependencies]
 pcie = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.3.0" }
 </code></pre>
-<p>Explicitly providing the uuid for a dependent ip is also supported in the <code>[dev-dependencies]</code> section.</p>
+<p>Explicitly providing the UUID for a dependent project is also supported in the <code>[dev-dependencies]</code> section.</p>
 <p>See <a href="reference/./../user/specifying_deps.html">Specifying Dependencies</a> for the complete list of ways dependencies can be specified.</p>
 <h3 id="the-dev-dependencies-section"><a class="header" href="#the-dev-dependencies-section">The <code>[dev-dependencies]</code> section</a></h3>
-<p>The <code>[dev-dependencies]</code> section is a table of direct dependencies required for the current ip.</p>
+<p>The <code>[dev-dependencies]</code> section is a table of direct dependencies required for the current project.</p>
 <pre><code class="language-toml">[dev-dependencies]
 testkit = "1.3.7"
 logic-analyzer = "4.8.0"
 </code></pre>
-<p>If the ip has no development dependencies, the section can be omitted from the manifest. The ips listed in this section will not be included in the build graph for when this ip is used as a dependency itself.</p>
-<p>Refer to the <code>[dependencies]</code> section for related capabilities in specifying ips.</p>
+<p>If the project has no development dependencies, the section can be omitted from the manifest. The projtects listed in this section will not be included in the build graph for when this project is used as a dependency itself.</p>
+<p>Refer to the <code>[dependencies]</code> section for related capabilities in specifying projects.</p>
 <p>See <a href="reference/./../user/specifying_deps.html">Specifying Dependencies</a> for the complete list of ways dependencies can be specified.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="project-specification"><a class="header" href="#project-specification">Project Specification</a></h1>
-<p>In order to identify an ip among others, Orbit requires users to assign a human-readable <em>name</em> to each created ip. The name is just one component of how to identify an ip, while an ip is fully identified by its <em>specification</em>, or <em>spec</em>.</p>
-<p>While user's provide their own name for an ip, Orbit assigns a <em>universally unique identifier</em> (UUID) to each ip. UUIDs are required in order to avoid namespace collisions at the ip level in Orbit's decentralized system.</p>
-<p>Lastly, users provide a version, which denotes the current state of the ip.</p>
-<p>An ip spec is composed of the ip's name, UUID, and version.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="project-id-specification"><a class="header" href="#project-id-specification">Project ID Specification</a></h1>
+<p>In order to identify a project among many other projects, Orbit requires users to assign a human-readable <em>name</em> to each created project. The name is just one component of how to identify a project, while a project is fully identified by its <em>project ID specification</em>, or <em>spec</em>.</p>
+<p>While user's provide their own name for a project, Orbit assigns a <em>universally unique identifier</em> (UUID) to each project. UUIDs are required in order to avoid namespace collisions at the project level in Orbit's decentralized system.</p>
+<p>Lastly, users provide a version, which denotes the current state of the project.</p>
+<p>A project ID specification is composed of the project's name, UUID, and version.</p>
 <h2 id="name"><a class="header" href="#name">Name</a></h2>
-<p>The ip <em>name</em> is a unique string of characters that abides by a certain set of rules. It is a single name and is defined under the "name" field in an ip's manifest. Every ip is required to have a name. The name should not change over the course of an ip's lifetime.</p>
-<pre><code class="language-toml">[ip]
+<p>The project <em>name</em> is a unique string of characters that abides by a certain set of rules. It is a single name and is defined under the "name" field in a project's manifest. Every project is required to have a name. The name should not change over the course of an project's lifetime.</p>
+<pre><code class="language-toml">[project]
 name = "cpu"
 # ...
 </code></pre>
@@ -2586,8 +2587,8 @@ name = "cpu"
 <li>cannot be "work"</li>
 </ul>
 <h2 id="uuid"><a class="header" href="#uuid">UUID</a></h2>
-<p>The ip <em>uuid</em> is a unique string of characters encoded in base36 (a-z0-9). An encoded UUID is 25 characters long and is generated using Version 4 UUID. It is defined under the "uuid" field in an ip's manifest. Every ip is required to have a uuid. The uuid should not change over the course of an ip's lifetime.</p>
-<pre><code class="language-toml">[ip]
+<p>The project <em>UUID</em> is a unique string of characters encoded in base36 (a-z0-9). An encoded UUID is 25 characters long and is generated using Version 4 UUID. It is defined under the "uuid" field in a project's manifest. Every project is required to have a UUID. The UUID should not change over the course of an project's lifetime.</p>
+<pre><code class="language-toml">[project]
 # ...
 uuid = "71vs0nyo7lqjji6p6uzfviaoi"
 </code></pre>
@@ -2598,8 +2599,8 @@ uuid = "71vs0nyo7lqjji6p6uzfviaoi"
 <li>is 25 characters long</li>
 </ul>
 <h2 id="version"><a class="header" href="#version">Version</a></h2>
-<p>The ip <em>version</em> is a series of 3 numbers separated by decimal characters (<code>.</code>) with an optional label suffix attached with a dash character (<code>-</code>). The version should be updated over the course of an ip's lifetime when significant enough changes to the project require a new version value.</p>
-<pre><code class="language-toml">[ip]
+<p>The project <em>version</em> is a series of 3 numbers separated by decimal characters (<code>.</code>) with an optional label suffix attached with a dash character (<code>-</code>). The version should be updated over the course of an project's lifetime when significant enough changes to the project require a new version value.</p>
+<pre><code class="language-toml">[project]
 # ...
 version = "1.0.0"
 </code></pre>
@@ -2612,31 +2613,31 @@ version = "1.0.0"
 <li>labels can only contain ASCII letters (<code>a-z</code>, <code>A-Z</code>), ASCII digits (<code>0-9</code>), and decimal characters (<code>.</code>)</li>
 </ul>
 <h2 id="spec"><a class="header" href="#spec">Spec</a></h2>
-<p>An ip specification, commonly abbreviated to <em>spec</em>, is the total unambiguous reference to a specific ip at a particular version.</p>
+<p>A project ID specification, commonly referred to as a <em>spec</em>, is the total unambiguous reference to a specific project  at a particular version.</p>
 <pre><code>spec ::= &lt;name&gt;[+uuid][:version]
 </code></pre>
 <h3 id="example-specifications"><a class="header" href="#example-specifications">Example specifications</a></h3>
-<p>The following provides various valid inputs when defining an ip's spec and how it decomposes into its parts.</p>
+<p>The following provides various valid inputs when defining a project's spec and how it decomposes into its parts.</p>
 <div class="table-wrapper"><table><thead><tr><th>Spec</th><th>Name</th><th>UUID</th><th>Version</th></tr></thead><tbody>
-<tr><td><code>gates:1.0.0</code></td><td><code>gates</code></td><td>Automatically resolved if only 1 ip exists with the name <code>gates</code></td><td><code>1.0.0</code></td></tr>
-<tr><td><code>ram</code></td><td><code>ram</code></td><td>Automatically resolved if only 1 ip exists with the name <code>ram</code></td><td><code>latest</code></td></tr>
-<tr><td><code>fifo:2.3</code></td><td><code>fifo</code></td><td>Automatically resolved if only 1 ip exists with the name <code>fifo</code></td><td><code>2.3.*</code></td></tr>
+<tr><td><code>gates:1.0.0</code></td><td><code>gates</code></td><td>Automatically resolved if only 1 project exists with the name <code>gates</code></td><td><code>1.0.0</code></td></tr>
+<tr><td><code>ram</code></td><td><code>ram</code></td><td>Automatically resolved if only 1 project exists with the name <code>ram</code></td><td><code>latest</code></td></tr>
+<tr><td><code>fifo:2.3</code></td><td><code>fifo</code></td><td>Automatically resolved if only 1 project exists with the name <code>fifo</code></td><td><code>2.3.*</code></td></tr>
 <tr><td><code>cpu+71vs0nyo7lqjji6p6uzfviaoi:1.0.0</code></td><td><code>cpu</code></td><td><code>71vs0nyo7lqjji6p6uzfviaoi</code></td><td><code>1.0.0</code></td></tr>
 </tbody></table>
 </div>
 <h3 id="namespace-collisions"><a class="header" href="#namespace-collisions">Namespace Collisions</a></h3>
-<p>Two different ip's may share a common name within the catalog even though their contents are different. Two names are considered equal if their lowercase mapping is identical, where dashes (<code>-</code>) also map to underscores (<code>_</code>).</p>
+<p>Two different project's may share a common name within the catalog even though their contents are different. Two names are considered equal if their lowercase mapping is identical, where dashes (<code>-</code>) also map to underscores (<code>_</code>).</p>
 <div class="table-wrapper"><table><thead><tr><th>Spec 1</th><th>Spec 2</th><th>Collision</th></tr></thead><tbody>
 <tr><td><code>gates</code></td><td><code>GATES</code></td><td>true</td></tr>
 <tr><td><code>ram</code></td><td><code>rom</code></td><td>false</td></tr>
 <tr><td><code>fifo_cdc</code></td><td><code>Fifo-CDC</code></td><td>true</td></tr>
 </tbody></table>
 </div>
-<p>To resolve namespace collisions at the ip level, Orbit uses UUIDs. When there are multiple ips in the catalog that share the same name, a user must then explicitly include the UUID of the requested ip to disambiguate between ips under the same name.</p>
+<p>To resolve namespace collisions at the project level, Orbit uses UUIDs. When there are multiple projects in the catalog that share the same name, a user must then explicitly include the UUID of the requested project to disambiguate between projects under the same name.</p>
 <h2 id="libraries"><a class="header" href="#libraries">Libraries</a></h2>
-<p>In addition to the spec, another form of additional identification is a library. An ip can optionally belong to a library. An ip's <em>library</em> is a higher-level scope that can loosely groups together multiple ips. The library identification is largely used for grouping the HDL source code itself into language-applicable libraries.</p>
-<p>A library can be defined through the <a href="reference/./manifest.html#the-library-field"><code>library</code></a> field in the ip's manifest file. Its format follows the same rules as the ip's name. If no library is defined in the ip's manifest, then the default library is the ip's name.</p>
-<p>An ip is <em>not</em> allowed to have "work" explicitly set as its library in the ip's manifest. The "work" library is a reserved library within the context of VHDL used to reference other primary design units within that of the current library.</p>
+<p>In addition to the spec, another form of additional identification is a library. A project can optionally belong to a library. A project's <em>library</em> is a higher-level scope that can loosely groups together multiple projects. The library identification is largely used for grouping the HDL source code itself into language-applicable libraries.</p>
+<p>A library can be defined through the <a href="reference/./manifest.html#the-library-field"><code>library</code></a> field in the project's manifest file. Its format follows the same rules as the project's name. If no library is defined in the project's manifest, then the default library is the project's name.</p>
+<p>A project is <em>not</em> allowed to have "work" explicitly set as its library in the project's manifest. The "work" library is a reserved library within the context of VHDL used to reference other primary design units within that of the current library.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="versions"><a class="header" href="#versions">Versions</a></h1>
 <p>Code evolves over time, and versions provide a method for capturing a project's state at a given time stamp.</p>
 <p>Orbit uses the <em>semantic versioning</em> scheme for capturing project's state at given time periods. Semantic versioning uses 3 numeric values to signify different levels of change.</p>
@@ -2668,7 +2669,7 @@ also operates on the basis of using 3 digits. To learn more about <em>calender v
 <pre><code>1
 1.0
 </code></pre>
-<p>When given a partially qualified version, Orbit references the maximum version available that satifies the partially qualified version. If no version is specified, it assumes the request is for the latest known version. The latest known version can also be explicitly requested by inputting <code>latest</code> as the version. Assume the known released versions for a given IP are as listed:</p>
+<p>When given a partially qualified version, Orbit references the maximum version available that satifies the partially qualified version. If no version is specified, it assumes the request is for the latest known version. The latest known version can also be explicitly requested by inputting <code>latest</code> as the version. Assume the known released versions for a given project are as listed:</p>
 <div class="table-wrapper"><table><thead><tr><th>Versions</th></tr></thead><tbody>
 <tr><td><code>2.1.0</code></td></tr>
 <tr><td><code>1.5.0</code></td></tr>
@@ -2690,13 +2691,13 @@ also operates on the basis of using 3 digits. To learn more about <em>calender v
 </div>
 <h2 id="example-3"><a class="header" href="#example-3">Example</a></h2>
 <p>A fully qualified version must be written in every project's manifest file.</p>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 # ...
 version = "1.5.4"
 </code></pre>
-<p>A specific (or partially speific) version can be requested for an IP on the command-line by placing a colon <code>:</code> character between the package's name and the requested version.</p>
+<p>A specific (or partially specific) version can be requested for a project on the command-line by placing a colon <code>:</code> character between the package's name and the requested version.</p>
 <pre><code>$ orbit install gates:1.5.4
-$ orbit get nor_gate --ip gates:1.5
+$ orbit get nor_gate --project gates:1.5
 </code></pre>
 <h2 id="comparing-versions"><a class="header" href="#comparing-versions">Comparing versions</a></h2>
 <p>The following pseudocode provides additional help in learning about how versions are compared (selecting a "higher" version).</p>
@@ -2716,18 +2717,18 @@ ELSE:
 </ul>
 <p>If a file in the search space matches a least one of defined file patterns of a fileset, then it will be added under that fileset.</p>
 <h2 id="built-in-filesets"><a class="header" href="#built-in-filesets">Built-in filesets</a></h2>
-<p>There are built-in filesets that Orbit uses that have special rules and work across all ip, including dependencies. The following filesets are currently built-in with Orbit:</p>
+<p>There are built-in filesets that Orbit uses that have special rules and work across all projects, including dependencies. The following filesets are currently built-in with Orbit:</p>
 <ul>
 <li><code>VHDL</code>: VHDL files (.vhd, .vhdl)</li>
 <li><code>VLOG</code>: Verilog files (.v, .vl, .vlg)</li>
 <li><code>SYSV</code>: SystemVerilog files (.sv)</li>
 </ul>
 <h2 id="custom-filesets"><a class="header" href="#custom-filesets">Custom filesets</a></h2>
-<p>Custom filesets are filesets that are be defined by the user for a specific target. By default, these filesets are only searched for in the local ip and do not extend any of the ip's dependencies. Set the <code>recursive</code> entry of a fileset true to apply it to all ips in the dependency graph.</p>
-<p>If a pattern does not start with an explicit path delimiter (<code>/</code>), then Orbit assumes to look for the fileset across every possible subdirectory in the local ip by implicitly prepending the pattern with <code>**/</code>.</p>
+<p>Custom filesets are filesets that are be defined by the user for a specific target. By default, these filesets are only searched for in the current project and do not extend any of the project's dependencies. Set the <code>recursive</code> entry of a fileset true to apply it to all projects in the dependency graph.</p>
+<p>If a pattern does not start with an explicit path delimiter (<code>/</code>), then Orbit assumes to look for the fileset across every possible subdirectory in the current project by implicitly prepending the pattern with <code>**/</code>.</p>
 <p>A custom fileset's patterns support string swapping. See <a href="reference/./../topic/swapping.html">String Swapping</a> to learn more about how it can be applied to fileset patterns.</p>
 <h2 id="applying-fileset-patterns"><a class="header" href="#applying-fileset-patterns">Applying fileset patterns</a></h2>
-<p>A fileset's pattern is applied starting from the current ip's root directory, the same directory where the <code>Orbit.toml</code> file exists.</p>
+<p>A fileset's pattern is applied starting from the current project's root directory, the same directory where the <code>Orbit.toml</code> file exists.</p>
 <h2 id="name-normalization-examples"><a class="header" href="#name-normalization-examples">Name normalization examples</a></h2>
 <p>Despite how the user enters the name of a fileset in a target's configuration, the name will be normalized to COBOL-CASE. The following are some examples of how the normalization process works on a variety of naming conventions.</p>
 <div class="table-wrapper"><table><thead><tr><th>User-defined fileset name</th><th>Normalized fileset name (COBOL-CASE)</th></tr></thead><tbody>
@@ -2739,17 +2740,17 @@ ELSE:
 </div>
 <p>The normalized fileset name is the name that will be written to the blueprint file when collecting filesets. This design choice is for consistency across targets when reading and parsing the blueprint.</p>
 <h2 id="custom-pattern-assumption-examples"><a class="header" href="#custom-pattern-assumption-examples">Custom pattern assumption examples</a></h2>
-<p>Unless starting with a path delimiter (<code>/</code>), a pattern of a fileset is assumed to be applied across the ip's directory and all of its subdirectories. The following are some examples of how Orbit interprets a fileset's patterns.</p>
+<p>Unless starting with a path delimiter (<code>/</code>), a pattern of a fileset is assumed to be applied across the project's directory and all of its subdirectories. The following are some examples of how Orbit interprets a fileset's patterns.</p>
 <div class="table-wrapper"><table><thead><tr><th>User-defined pattern</th><th>Interpreted pattern</th></tr></thead><tbody>
 <tr><td><code>*.txt</code></td><td><code>**/*.txt</code></td></tr>
 <tr><td><code>Boards/*.toml</code></td><td><code>**/Boards/*.toml</code></td></tr>
 <tr><td><code>/specific/path.log</code></td><td><code>./specific/path.log</code></td></tr>
 </tbody></table>
 </div>
-<p>The custom patterns begin their search for files at the local ip's root directory. The file pattern used by Orbit when collecting files for custom filesets is the interpreted pattern.</p>
+<p>The custom patterns begin their search for files at the current project's root directory. The file pattern used by Orbit when collecting files for custom filesets is the interpreted pattern.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="blueprint"><a class="header" href="#blueprint">Blueprint</a></h1>
 <p>The <em>blueprint</em> is a file containing a list of files required for a particular back end. This single file is the main method Orbit uses to communicate information to a target's process.</p>
-<p>When the blueprint is created, it is saved to the local ip's target output directory.</p>
+<p>When the blueprint is created, it is saved to the current project's target output directory.</p>
 <h2 id="plans"><a class="header" href="#plans">Plans</a></h2>
 <p>The blueprint can be created in different formats, also called <em>plans</em>. A target can configure which plans to accept by specifying the <a href="reference/./configuration.html#the-plans-field"><code>plans</code></a> field. A supported plan can be generated by Orbit from the build or test entry point by using the <code>--plan</code> command-line option.</p>
 <p>The currently supported formats are:</p>
@@ -2763,10 +2764,10 @@ ELSE:
 <p>Each blueprint format may contain different information and store it in a different way. Refer to each specification to see exactly how the data is communicated through their blueprint.</p>
 <p>Attributes that are consistent across all formats are the fileset, library, and filepath.</p>
 <p>The <em>fileset</em> is the group name for the file pattern that matched the given rule's file.</p>
-<p>The <em>library</em> is the hdl defined library for the ip which the given file at this particular step was found.</p>
+<p>The <em>library</em> is the HDL defined library for the project which the given file at this particular step was found.</p>
 <p>The <em>filepath</em> is the absolute file system path to the given rule's file.</p>
 <h3 id="built-in-filesets-1"><a class="header" href="#built-in-filesets-1">Built-in Filesets</a></h3>
-<p>The following filesets are already recognized by Orbit and are used for identifying hdl source code:</p>
+<p>The following filesets are already recognized by Orbit and are used for identifying HDL source code:</p>
 <div class="table-wrapper"><table><thead><tr><th>Fileset</th><th>Supported file extensions</th></tr></thead><tbody>
 <tr><td><code>VHDL</code></td><td>.vhd, .vhdl</td></tr>
 <tr><td><code>VLOG</code></td><td>.v, .vl, .vlg</td></tr>
@@ -2889,28 +2890,31 @@ VHDL	lc3b	/Users/chase/projects/lc3b/sim/alu_tb.vhd
 <p><code>ORBIT</code> - The full path to the <code>orbit</code> binary performing the build.</p>
 </li>
 <li>
-<p><code>ORBIT_MANIFEST_DIR</code> - The full path to the directory that contains the current ip's manifest.</p>
+<p><code>ORBIT_MANIFEST_DIR</code> - The full path to the directory that contains the current project's manifest.</p>
 </li>
 <li>
-<p><code>ORBIT_MANIFEST_FILE</code> - The full path to the file that is the current ip's manifest.</p>
+<p><code>ORBIT_MANIFEST_FILE</code> - The full path to the file that is the current project's manifest.</p>
 </li>
 <li>
-<p><code>ORBIT_IP_NAME</code> - The name of the current ip.</p>
+<p><code>ORBIT_PROJECT_DIR</code> - The full path to the directory that contains the current project's manifest.</p>
 </li>
 <li>
-<p><code>ORBIT_IP_UUID</code> - The uuid of the current ip.</p>
+<p><code>ORBIT_PROJECT_NAME</code> - The name of the current project.</p>
 </li>
 <li>
-<p><code>ORBIT_IP_LIBRARY</code> - The interpretated HDL library of the current ip.</p>
+<p><code>ORBIT_PROJECT_UUID</code> - The uuid of the current project.</p>
 </li>
 <li>
-<p><code>ORBIT_IP_VERSION</code> - The version of the current ip.</p>
+<p><code>ORBIT_PROJECT_LIBRARY</code> - The interpretated HDL library of the current project.</p>
 </li>
 <li>
-<p><code>ORBIT_IP_CHECKSUM</code> - The full 64 character hexadecimal string of the SHA256 checksum of the current ip.</p>
+<p><code>ORBIT_PROJECT_VERSION</code> - The version of the current project.</p>
 </li>
 <li>
-<p><code>ORBIT_IP_SOURCE</code> - The source url of the current ip. This environment variable is only available during a protocol's execution.</p>
+<p><code>ORBIT_PROJECT_CHECKSUM</code> - The full 64 character hexadecimal string of the SHA256 checksum of the current project.</p>
+</li>
+<li>
+<p><code>ORBIT_PROJECT_SOURCE</code> - The source url of the current project. This environment variable is only available during a protocol's execution.</p>
 </li>
 <li>
 <p><code>ORBIT_TARGET</code> - The name of the target selected for the latest build process.</p>
@@ -2949,10 +2953,10 @@ VHDL	lc3b	/Users/chase/projects/lc3b/sim/alu_tb.vhd
 <p><code>ORBIT_BLUEPRINT_PLAN</code> - The plan name for the blueprint created from the planning stage of the latest build process. See <a href="reference/./blueprint.html">Blueprint</a> for all possible plans.</p>
 </li>
 <li>
-<p><code>ORBIT_TARGET_DIR</code> - The directory where all generated artifacts from any targets will be stored, relative to the current ip's directory. Default is "target".</p>
+<p><code>ORBIT_TARGET_DIR</code> - The directory where all generated artifacts from any targets will be stored, relative to the current project's directory. Default is "target".</p>
 </li>
 <li>
-<p><code>ORBIT_OUT_DIR</code> - The full path to the directory where all generated artifacts for the current target will be stored. This directory is inside the target directory for the current ip, and is unique for each selected target.</p>
+<p><code>ORBIT_OUT_DIR</code> - The full path to the directory where all generated artifacts for the current target will be stored. This directory is inside the target directory for the current project, and is unique for each selected target.</p>
 </li>
 <li>
 <p><code>ORBIT_CHANNEL_NAME</code> - The name of the current channel being used in the publishing process.</p>
@@ -2961,10 +2965,10 @@ VHDL	lc3b	/Users/chase/projects/lc3b/sim/alu_tb.vhd
 <p><code>ORBIT_CHANNEL_DIR</code> - The full path to the directory that is the root of the current channel.</p>
 </li>
 <li>
-<p><code>ORBIT_CHANNEL_IP_DIR</code> - The full path to the directory in the current channel where the current ip's manifest will be copied to during the publishing process.</p>
+<p><code>ORBIT_CHANNEL_PROJECT_DIR</code> - The full path to the directory in the current channel where the current project's manifest will be copied to during the publishing process.</p>
 </li>
 <li>
-<p><code>ORBIT_PROTOCOL</code> - The name of the protocol selected for the downloading the current ip. This environment variable is only available during a protocol's execution.</p>
+<p><code>ORBIT_PROTOCOL</code> - The name of the protocol selected for the downloading the current project. This environment variable is only available during a protocol's execution.</p>
 </li>
 </ul>
 <h2 id="checking-the-environment"><a class="header" href="#checking-the-environment">Checking the environment</a></h2>
@@ -2999,7 +3003,7 @@ precedence:
 <p>Orbit supports multiple levels of configuration. Each level has its own order of precedence. The order of precedence is the following:</p>
 <ol>
 <li>
-<p>Local configuration file (current ip's <code>.orbit/config.toml</code>)</p>
+<p>Local configuration file (current project's <code>.orbit/config.toml</code>)</p>
 </li>
 <li>
 <p>Regional configuration files (parent directories of the current working directory)</p>
@@ -3037,12 +3041,12 @@ precedence:
 </li>
 <li><a href="reference/configuration.html#the-publish-section">[publish]</a> - The publish settings.
 <ul>
-<li><a href="reference/configuration.html#the-default-channels-field">default-channels</a> - Set the default channels to publish an ip to.</li>
+<li><a href="reference/configuration.html#the-default-channels-field">default-channels</a> - Set the default channels to publish a project to.</li>
 </ul>
 </li>
 <li><a href="reference/configuration.html#the-install-section">[install]</a> - The install settings.
 <ul>
-<li><a href="reference/configuration.html#the-default-protocol-field">default-protocol</a> - Set the default protocol for installing ip.</li>
+<li><a href="reference/configuration.html#the-default-protocol-field">default-protocol</a> - Set the default protocol for installing projects.</li>
 </ul>
 </li>
 <li><a href="reference/configuration.html#the-vhdl-format-section">[vhdl-format]</a> - VHDL code formatting.</li>
@@ -3063,7 +3067,7 @@ precedence:
 <ul>
 <li><a href="reference/configuration.html#the-name-field">name</a> - The name of the protocol.</li>
 <li><a href="reference/configuration.html#the-description-field">description</a> - A short description of the protocol.</li>
-<li><a href="reference/configuration.html#the-patterns-field">patterns</a> - String patterns to match an ip's URL.</li>
+<li><a href="reference/configuration.html#the-patterns-field">patterns</a> - String patterns to match an project's URL.</li>
 <li><a href="reference/configuration.html#the-command-field">command</a> - The command to execute the protocol.</li>
 </ul>
 </li>
@@ -3088,12 +3092,12 @@ precedence:
 </code></pre>
 <h3 id="the-general-section"><a class="header" href="#the-general-section">The <code>[general]</code> section</a></h3>
 <h3 id="the-require-public-field"><a class="header" href="#the-require-public-field">The <code>require-public</code> field</a></h3>
-<p>The <code>require-public</code> key determines if to assume source files are private by default. When true, all source files are private to their respective ip unless their file path is found in their ip manifest's <code>public</code> entry. When false, all source files are treated as public when their ip manifest's <code>public</code> entry is omitted.</p>
+<p>The <code>require-public</code> key determines if to assume source files are private by default. When true, all source files are private to their respective project unless their file path is found in their project manifest's <code>public</code> entry. When false, all source files are treated as public when their project manifest's <code>public</code> entry is omitted.</p>
 <pre><code class="language-toml">[general]
 require-public = true
 # ...
 </code></pre>
-<p>By default, this key is set true. This means all source files are assumed private by default, unless explicitly specified in their ip manifest's <code>public</code> entry. See the ip manifest's reference on the <a href="reference/./manifest.html#the-public-field">public</a> entry for more information about specifying public source files.</p>
+<p>By default, this key is set true. This means all source files are assumed private by default, unless explicitly specified in their project manifest's <code>public</code> entry. See the project manifest's reference on the <a href="reference/./manifest.html#the-public-field">public</a> entry for more information about specifying public source files.</p>
 <h3 id="the-target-dir-field"><a class="header" href="#the-target-dir-field">The <code>target-dir</code> field</a></h3>
 <p>The <code>target-dir</code> key defines the default output directory to create for the planning and building phases. This value can be overridden on the command-line when the <code>--target-dir</code> option is specified.</p>
 <pre><code class="language-toml">[general]
@@ -3117,18 +3121,18 @@ default-target = "vivado"
 <p>If the default target is set to be used and its name cannot be found among the known targets, the build process will error.</p>
 <h3 id="the-publish-section"><a class="header" href="#the-publish-section">The <code>[publish]</code> section</a></h3>
 <h3 id="the-default-channels-field"><a class="header" href="#the-default-channels-field">The <code>default-channels</code> field</a></h3>
-<p>The optional <code>default-channels</code> field is an array of strings that represent the names of known channels. When this field is provided and the current ip omits the <code>channels</code> field from its manifest, the ip will be published to the list of channels defined here. If the current ip's manifest does have the <code>channels</code> field defined, then the <code>default-channels</code> field is not applied.</p>
+<p>The optional <code>default-channels</code> field is an array of strings that represent the names of known channels. When this field is provided and the current project omits the <code>channels</code> field from its manifest, the project will be published to the list of channels defined here. If the current project's manifest does have the <code>channels</code> field defined, then the <code>default-channels</code> field is not applied.</p>
 <pre><code class="language-toml">[publish]
 default-channels = ["hyperspace-labs"]
 </code></pre>
 <p>If the <code>default-channels</code> field is set and at least one of the names cannot be found among the known channels, the publishing process will error.</p>
 <h3 id="the-install-section"><a class="header" href="#the-install-section">The <code>[install]</code> section</a></h3>
 <h3 id="the-default-protocol-field"><a class="header" href="#the-default-protocol-field">The <code>default-protocol</code> field</a></h3>
-<p>The optional <code>default-protocol</code> field can be used to specify which protocol should have priority when trying to access an ip from the internet.</p>
+<p>The optional <code>default-protocol</code> field can be used to specify which protocol should have priority when trying to access a project from the internet.</p>
 <pre><code class="language-toml">[install]
 default-protocol = "git"
 </code></pre>
-<p>If the default protocol has patterns configured and none of the patterns match the given ip's source URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, the installation process will error.</p>
+<p>If the default protocol has patterns configured and none of the patterns match the given project's source URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, the installation process will error.</p>
 <h3 id="the-vhdl-format-section"><a class="header" href="#the-vhdl-format-section">The <code>[vhdl-format]</code> section</a></h3>
 <p>The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their default values.</p>
 <pre><code class="language-toml">[vhdl-format]
@@ -3233,26 +3237,26 @@ test = true
 <p>If this field is not defined, then the default is true.</p>
 <h3 id="the-fileset-section"><a class="header" href="#the-fileset-section">The <code>[fileset]</code> section</a></h3>
 <p>The <code>[fileset]</code> section allows user-defined key/value pairs, where the key corresponds to a fileset name and the value is a string that corresponds to the glob-style pattern. The fileset name will be normalized to COBOL-CASE.</p>
-<p>If a string is the immediate value of a custom key in the <code>fileset</code> section, then it becomes the fileset's only pattern and will only be applied to the current ip's directory.</p>
+<p>If a string is the immediate value of a custom key in the <code>fileset</code> section, then it becomes the fileset's only pattern and will only be applied to the current project's directory.</p>
 <pre><code class="language-toml">[[target]]
 # ...
 fileset.TEXT = "*.txt"
 fileset.CPPF = "{{ orbit.tb.name }}.cpp"
 </code></pre>
-<p>If an inline table is the value of a custom key in the <code>fileset</code> section, then it requires the <code>patterns</code> field to be an array of strings that represent the different file patterns for this fileset. The optional <code>recursive</code> field accepts a boolean that when enabled, will apply the fileset patterns to all ips in the dependency graph.</p>
+<p>If an inline table is the value of a custom key in the <code>fileset</code> section, then it requires the <code>patterns</code> field to be an array of strings that represent the different file patterns for this fileset. The optional <code>recursive</code> field accepts a boolean that when enabled, will apply the fileset patterns to all projects in the dependency graph.</p>
 <pre><code class="language-toml">[[target]]
 # ...
 fileset.PYF = { patterns = ["*.py", "*.py3"], recursive = true }
 </code></pre>
 <p>The patterns for user-defined filesets support <a href="reference/./../topic/swapping.html"><em>string swapping</em></a> (as shown in the pattern for the <code>CPPF</code> fileset).</p>
 <h3 id="the-protocol-array"><a class="header" href="#the-protocol-array">The <code>[[protocol]]</code> array</a></h3>
-<p>The <code>[[protocol]]</code> array lists user-defined protocols to access ips from the internet. Each protocol must exist under its own <code>[[protocol]]</code> header.</p>
+<p>The <code>[[protocol]]</code> array lists user-defined protocols to access projects from the internet. Each protocol must exist under its own <code>[[protocol]]</code> header.</p>
 <h3 id="the-name-field-2"><a class="header" href="#the-name-field-2">The <code>name</code> field</a></h3>
 <p>See <a href="reference/configuration.html#the-target-array">[target]</a>'s definition of <a href="reference/configuration.html#the-name-field"><code>name</code></a>.</p>
 <h3 id="the-description-field-2"><a class="header" href="#the-description-field-2">The <code>description</code> field</a></h3>
 <p>See <a href="reference/configuration.html#the-target-array">[target]</a>'s definition of <a href="reference/configuration.html#the-description-field"><code>description</code></a>.</p>
 <h3 id="the-patterns-filed"><a class="header" href="#the-patterns-filed">The <code>patterns</code> filed</a></h3>
-<p>The optional <code>patterns</code> field is an array of strings that represent different URL patterns for the given protocol. If no patterns are provided, then the protocol will accept any URL from a given ip. If a list of patterns is provided, then the protocol will only try an ip if it's URL is a match with one or more of the patterns for that protocol.</p>
+<p>The optional <code>patterns</code> field is an array of strings that represent different URL patterns for the given protocol. If no patterns are provided, then the protocol will accept any URL from a given project. If a list of patterns is provided, then the protocol will only try a project if it's URL is a match with one or more of the patterns for that protocol.</p>
 <pre><code class="language-toml">[[protocol]]
 # ...
 patterns = ["*.git"]
@@ -3261,12 +3265,12 @@ patterns = ["*.git"]
 <p>The <code>command</code> entry for a protocol is a string or an array of strings (<a href="reference/configuration.html#executable-paths-with-arguments">program path with args</a>) used to specify the external program and additional arguments (if they exist) to run for the download phase of the installation process.</p>
 <pre><code class="language-toml">[[protocol]]
 # ...
-command = ["git", "clone", "{{orbit.ip.source}}", "-b", "{{orbit.ip.version}}"]
+command = ["git", "clone", "{{orbit.project.source}}", "-b", "{{orbit.project.version}}"]
 </code></pre>
 <p>This field is required when configuring a protocol.</p>
 <p>This field supports <a href="reference/./../topic/swapping.html"><em>string swapping</em></a>.</p>
 <h3 id="the-channel-array"><a class="header" href="#the-channel-array">The <code>[[channel]]</code> array</a></h3>
-<p>The <code>[[channel]]</code> array lists user-defined channels for tracking published ips. Each channel must exist under its own <code>[[channel]]</code> header.</p>
+<p>The <code>[[channel]]</code> array lists user-defined channels for tracking published projects. Each channel must exist under its own <code>[[channel]]</code> header.</p>
 <h3 id="the-name-field-3"><a class="header" href="#the-name-field-3">The <code>name</code> field</a></h3>
 <p>See <a href="reference/configuration.html#the-target-array">[target]</a>'s definition of <a href="reference/configuration.html#the-name-field"><code>name</code></a>.</p>
 <h3 id="the-description-field-3"><a class="header" href="#the-description-field-3">The <code>description</code> field</a></h3>
@@ -3287,7 +3291,7 @@ sync.command = ["git", "pull"]
 <p>This field is optional when configuring a channel.</p>
 <p>This field supports <a href="reference/./../topic/swapping.html"><em>string swapping</em></a>.</p>
 <h3 id="the-precommand-field"><a class="header" href="#the-precommand-field">The <code>pre.command</code> field</a></h3>
-<p>The <code>pre.command</code> entry for a channel's pre-publish hook is a string or an array of strings (<a href="reference/configuration.html#executable-paths-with-arguments">program path with args</a>) used to specify the external program and additional arguments (if they exist) to run before Orbit copies an ip's metadata into the channel during the publishing process.</p>
+<p>The <code>pre.command</code> entry for a channel's pre-publish hook is a string or an array of strings (<a href="reference/configuration.html#executable-paths-with-arguments">program path with args</a>) used to specify the external program and additional arguments (if they exist) to run before Orbit copies a project's metadata into the channel during the publishing process.</p>
 <pre><code class="language-toml">[[channel]]
 # ...
 pre.command = ["git", "pull"]
@@ -3295,10 +3299,10 @@ pre.command = ["git", "pull"]
 <p>This field is optional when configuring a channel.</p>
 <p>This field supports <a href="reference/./../topic/swapping.html"><em>string swapping</em></a>.</p>
 <h3 id="the-postcommand-field"><a class="header" href="#the-postcommand-field">The <code>post.command</code> field</a></h3>
-<p>The <code>post.command</code> entry for a channel's post-publish hook is a string or an array of strings (<a href="reference/configuration.html#executable-paths-with-arguments">program path with args</a>) used to specify the external program and additional arguments (if they exist) to run after Orbit copies an ip's metadata into the channel during the publishing process.</p>
+<p>The <code>post.command</code> entry for a channel's post-publish hook is a string or an array of strings (<a href="reference/configuration.html#executable-paths-with-arguments">program path with args</a>) used to specify the external program and additional arguments (if they exist) to run after Orbit copies a project's metadata into the channel during the publishing process.</p>
 <pre><code class="language-toml">[[channel]]
 # ...
-post.command = ["git", "commit", "-am", "Publishes {{orbit.ip.name}} v{{orbit.ip.version}}"]
+post.command = ["git", "commit", "-am", "Publishes {{orbit.project.name}} v{{orbit.project.version}}"]
 </code></pre>
 <p>This field is optional when configuring a channel.</p>
 <p>This field supports <a href="reference/./../topic/swapping.html"><em>string swapping</em></a>.</p>
@@ -3340,18 +3344,18 @@ post.command = ["git", "commit", "-am", "Publishes {{orbit.ip.name}} v{{orbit.ip
   "language": "string"
 }
 </code></pre>
-<h2 id="published-ip"><a class="header" href="#published-ip">Published ip</a></h2>
-<p>The <code>orbit publish</code> command allows users to automate the process of maintaining a centralized location where released ip can be found. When successfully ran, this command copies an ip's manifest to a directory dedicated to storing manifests.</p>
-<p>It also produces a JSON file of the various pieces of metadata related to the released ip and places it alongide the copied manifest.</p>
+<h2 id="published-projects"><a class="header" href="#published-projects">Published projects</a></h2>
+<p>The <code>orbit publish</code> command allows users to automate the process of maintaining a centralized location where released projects can be found. When successfully ran, this command copies a project's manifest to a directory dedicated to storing manifests.</p>
+<p>It also produces a JSON file of the various pieces of metadata related to the released project and places it alongide the copied manifest.</p>
 <p>The serialized JSON data is available in a file called <code>Orbit.json</code> found in the same directory as where Orbit placed the <code>Orbit.toml</code> and <code>Orbit.lock</code> files during the publishing process. This file can be read by external tools and processes to collect various pieces of information to display to users in another way.</p>
 <h3 id="schema-1"><a class="header" href="#schema-1">Schema</a></h3>
 <p>The following schema is currently implemented for the json file <code>Orbit.json</code> produced by <code>orbit publish</code>:</p>
 <pre><code class="language-json">{
   // schema version
   "version": integer,
-  // serialized ip manifest (Orbit.toml) data
+  // serialized project manifest (Orbit.toml) data
   "manifest": {
-    "ip": {
+    "project": {
       "name": "string",
       "uuid": "string",
       "version": "string",
@@ -3369,7 +3373,7 @@ post.command = ["git", "commit", "-am", "Publishes {{orbit.ip.name}} v{{orbit.ip
       "language": "string",
       // visibility of unit (choices: "public", "protected", "private")
       "visibility": "string",
-      // list of files relative to the ip that define this unit
+      // list of files relative to the project that define this unit
       "sources": [
         "string"
       ],
@@ -3383,7 +3387,7 @@ post.command = ["git", "commit", "-am", "Publishes {{orbit.ip.name}} v{{orbit.ip
 </code></pre>
 <p>The latest schema version is <code>1</code>. Schema versions increment by 1 whenever there are breaking changes to the schema and its defined properties.</p>
 <h2 id="references-1"><a class="header" href="#references-1">References</a></h2>
-<p>Some ideas about exporting json from <code>orbit get</code> can be found at this <a href="https://blog.kellybrazil.com/2021/12/03/tips-on-adding-json-output-to-your-cli-app/">blog post</a>.</p>
+<p>Some ideas about exporting json can be found at this <a href="https://blog.kellybrazil.com/2021/12/03/tips-on-adding-json-output-to-your-cli-app/">blog post</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="glob-patterns"><a class="header" href="#glob-patterns">Glob Patterns</a></h1>
 <p>A glob pattern is a string used for pattern matching against the names in a filesystem directory such that a name is expanded into a list of names matching that pattern.</p>
 <p>The following rules are used by Orbit for any string interpreted as a glob-style pattern:</p>
@@ -3413,7 +3417,7 @@ This sequence <strong>must</strong> form a single path component, so both <code>
 <pre><code>orbit new &lt;path&gt;
 </code></pre>
 <p>Arguments may be omitted if they are wrapped with square brackets (<code>[ ]</code>).</p>
-<pre><code>orbit search [&lt;ip&gt;]
+<pre><code>orbit search [&lt;project&gt;]
 </code></pre>
 <h3 id="flag"><a class="header" href="#flag"><strong>Flag</strong></a></h3>
 <p>A flag is a simple boolean on-off conditional to alter a command's behavior, that is true when present and false otherwise.</p>
@@ -4203,19 +4207,25 @@ orbit config ~/.orbit/config.toml --unset env.vivado_path
 <h3 id="core"><a class="header" href="#core">Core</a></h3>
 <p>The shorthand (and more common) name for an <a href="glossary.html#ip-core">IP core</a>.</p>
 <h3 id="current-project"><a class="header" href="#current-project">Current Project</a></h3>
-<p>Another name for a <a href="glossary.html#local-project">local project</a>.</p>
+<p>The current project is the project detected by Orbit from the current working directory on the command-line. Some commands require a current project in order to run, such as <code>orbit lock</code> and <code>orbit build</code>.</p>
+<h3 id="design-element"><a class="header" href="#design-element">Design Element</a></h3>
+<p>Verilog and SystemVerilog's terminology for a <a href="glossary.html#primary-design-unit">primary design unit</a>. These include Verilog modules and primitives, as well as SystemVerilog modules, programs, interfaces, checkers, packages, primitives, and configurations.</p>
 <h3 id="fileset"><a class="header" href="#fileset">Fileset</a></h3>
 <p>A fileset is a collection of related files under a given name. A glob-style file pattern is used to discover the files of a given fileset. Filesets are used to group common files together into the blueprint during the planning stage of the build process. Orbit comes with built-in filesets for VHDL, Verilog, and SystemVerilog files. In addition, a target can configure its own custom filesets.</p>
 <h3 id="ip-core"><a class="header" href="#ip-core">IP Core</a></h3>
 <p>An IP core is a resusable block of design logic composed of one or more design units. An IP core is the smallest amount of hardware description code that Orbit considers at a time. Design units that make up an IP core may include VHDL entities or Verilog modules.</p>
+<h3 id="index"><a class="header" href="#index">Index</a></h3>
+<p>An index is the searchable list of <a href="glossary.html#project">projects</a> in a <a href="glossary.html#channels">channel</a>.</p>
 <h3 id="local-project"><a class="header" href="#local-project">Local Project</a></h3>
-<p>The local project is the project detected by Orbit from the current working directory on the command-line. Some commands can only be executed from the local project, such as <code>orbit lock</code> and <code>orbit build</code>.</p>
+<p>Another name for the <a href="glossary.html#current-project">current project</a>.</p>
 <h3 id="lockfile"><a class="header" href="#lockfile">Lockfile</a></h3>
 <p>A lockfile is a file that precisely describes a project and all of its resolved dependencies. The lockfile is called "Orbit.lock" and is automatically generated and maintained by Orbit. The lockfile should be checked into your version control system for reproducible builds. It is not to be manually edited by the user.</p>
 <p>With the lockfile, Orbit is able to download missing dependencies, install missing dependencies, and verify the data integrity of installed dependencies.</p>
 <h3 id="manifest-1"><a class="header" href="#manifest-1">Manifest</a></h3>
 <p>A manifest is a configuration file containing metadata about a project that is recognized by Orbit. Manifest files
 are named "Orbit.toml". The manifest is intended to be edited by the user. The manifest is used as an input for Orbit to generate the lockfile.</p>
+<h3 id="orbit"><a class="header" href="#orbit">Orbit</a></h3>
+<p>Orbit is a package manager and build system for <a href="glossary.html#vhdl">VHDL</a>, <a href="glossary.html#verilog">Verilog</a>, and <a href="glossary.html#systemverilog">SystemVerilog</a>. It is the primary topic of this book.</p>
 <h3 id="orbitlock-1"><a class="header" href="#orbitlock-1">Orbit.lock</a></h3>
 <p>See <a href="glossary.html#lockfile">lockfile</a>.</p>
 <h3 id="orbittoml"><a class="header" href="#orbittoml">Orbit.toml</a></h3>
@@ -4224,10 +4234,13 @@ are named "Orbit.toml". The manifest is intended to be edited by the user. The m
 <p>A package is a collection of source files and a <code>Orbit.toml</code> <a href="glossary.html#manifest">manifest</a> file which describes the package. A package has a name, version, and UUID, which are used for specifying dependencies between packages.</p>
 <p>The <em>package root</em> is the directory where the package's <code>Orbit.toml</code> manifest is located.</p>
 <p>The <em>package ID specification</em>, or <em>SPEC</em>, is a string used to uniquely reference a specific version of a package from a specific source.</p>
+<p>The source code for a given package is further subdivided into <a href="glossary.html#ip-core">IP cores</a>.</p>
 <p>A package is more commonly referred to as a <a href="glossary.html#project">project</a>.</p>
 <h3 id="package-manager"><a class="header" href="#package-manager">Package Manager</a></h3>
 <p>Broadly speaking, a package manager is a program (or collection of related programs) in a software ecosystem that automates the process of obtaining, installing, and upgrading artifacts. Within a programming language ecosystem, a package manager is a developer-focused tool whose primary functionality is to download library artifacts and their dependencies from some central repository; this capability is often combined with the ability to perform software builds (by invoking the language-specific compiler).</p>
 <p>Orbit is a package manager within the HDL ecosystem. Orbit downloads your HDL <a href="glossary.html#package">package</a>'s dependencies, resolves the order of source files required for a backend build process, and makes distributable packages.</p>
+<h3 id="primary-design-unit"><a class="header" href="#primary-design-unit">Primary Design Unit</a></h3>
+<p>A primary design unit, or design unit, is the highest layer of abstraction to describe hardware constructs in VHDL. These include VHDL entities, packages, configurations, and contexts. An <a href="glossary.html#ip-core">IP core</a> is named by its root primary design unit, or <a href="glossary.html#design-element">design element</a> if it is described in Verilog or SystemVerilog.</p>
 <h3 id="project"><a class="header" href="#project">Project</a></h3>
 <p>Another (more common) name for a <a href="glossary.html#package">package</a>.</p>
 <h3 id="project-id-specification-spec"><a class="header" href="#project-id-specification-spec">Project ID Specification (SPEC)</a></h3>
@@ -4251,7 +4264,7 @@ are named "Orbit.toml". The manifest is intended to be edited by the user. The m
 <h3 id="verilog"><a class="header" href="#verilog">Verilog</a></h3>
 <p>Verilog is a hardware description language to model electronic systems. The final standard (IEEE 1364-2005) for Verilog merged into the SystemVerilog standard. Today, Verilog has been officially part of the SystemVerilog language.</p>
 <h3 id="working-project-1"><a class="header" href="#working-project-1">Working Project</a></h3>
-<p>Another name for a <a href="glossary.html#local-project">local project</a>.</p>
+<p>Another name for the <a href="glossary.html#current-project">current project</a>.</p>
 
                     </main>
 

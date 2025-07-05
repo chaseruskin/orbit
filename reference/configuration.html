@@ -191,7 +191,7 @@
 <p>Orbit supports multiple levels of configuration. Each level has its own order of precedence. The order of precedence is the following:</p>
 <ol>
 <li>
-<p>Local configuration file (current ip's <code>.orbit/config.toml</code>)</p>
+<p>Local configuration file (current project's <code>.orbit/config.toml</code>)</p>
 </li>
 <li>
 <p>Regional configuration files (parent directories of the current working directory)</p>
@@ -229,12 +229,12 @@
 </li>
 <li><a href="#the-publish-section">[publish]</a> - The publish settings.
 <ul>
-<li><a href="#the-default-channels-field">default-channels</a> - Set the default channels to publish an ip to.</li>
+<li><a href="#the-default-channels-field">default-channels</a> - Set the default channels to publish a project to.</li>
 </ul>
 </li>
 <li><a href="#the-install-section">[install]</a> - The install settings.
 <ul>
-<li><a href="#the-default-protocol-field">default-protocol</a> - Set the default protocol for installing ip.</li>
+<li><a href="#the-default-protocol-field">default-protocol</a> - Set the default protocol for installing projects.</li>
 </ul>
 </li>
 <li><a href="#the-vhdl-format-section">[vhdl-format]</a> - VHDL code formatting.</li>
@@ -255,7 +255,7 @@
 <ul>
 <li><a href="#the-name-field">name</a> - The name of the protocol.</li>
 <li><a href="#the-description-field">description</a> - A short description of the protocol.</li>
-<li><a href="#the-patterns-field">patterns</a> - String patterns to match an ip's URL.</li>
+<li><a href="#the-patterns-field">patterns</a> - String patterns to match an project's URL.</li>
 <li><a href="#the-command-field">command</a> - The command to execute the protocol.</li>
 </ul>
 </li>
@@ -280,12 +280,12 @@
 </code></pre>
 <h3 id="the-general-section"><a class="header" href="#the-general-section">The <code>[general]</code> section</a></h3>
 <h3 id="the-require-public-field"><a class="header" href="#the-require-public-field">The <code>require-public</code> field</a></h3>
-<p>The <code>require-public</code> key determines if to assume source files are private by default. When true, all source files are private to their respective ip unless their file path is found in their ip manifest's <code>public</code> entry. When false, all source files are treated as public when their ip manifest's <code>public</code> entry is omitted.</p>
+<p>The <code>require-public</code> key determines if to assume source files are private by default. When true, all source files are private to their respective project unless their file path is found in their project manifest's <code>public</code> entry. When false, all source files are treated as public when their project manifest's <code>public</code> entry is omitted.</p>
 <pre><code class="language-toml">[general]
 require-public = true
 # ...
 </code></pre>
-<p>By default, this key is set true. This means all source files are assumed private by default, unless explicitly specified in their ip manifest's <code>public</code> entry. See the ip manifest's reference on the <a href="./manifest.html#the-public-field">public</a> entry for more information about specifying public source files.</p>
+<p>By default, this key is set true. This means all source files are assumed private by default, unless explicitly specified in their project manifest's <code>public</code> entry. See the project manifest's reference on the <a href="./manifest.html#the-public-field">public</a> entry for more information about specifying public source files.</p>
 <h3 id="the-target-dir-field"><a class="header" href="#the-target-dir-field">The <code>target-dir</code> field</a></h3>
 <p>The <code>target-dir</code> key defines the default output directory to create for the planning and building phases. This value can be overridden on the command-line when the <code>--target-dir</code> option is specified.</p>
 <pre><code class="language-toml">[general]
@@ -309,18 +309,18 @@ default-target = "vivado"
 <p>If the default target is set to be used and its name cannot be found among the known targets, the build process will error.</p>
 <h3 id="the-publish-section"><a class="header" href="#the-publish-section">The <code>[publish]</code> section</a></h3>
 <h3 id="the-default-channels-field"><a class="header" href="#the-default-channels-field">The <code>default-channels</code> field</a></h3>
-<p>The optional <code>default-channels</code> field is an array of strings that represent the names of known channels. When this field is provided and the current ip omits the <code>channels</code> field from its manifest, the ip will be published to the list of channels defined here. If the current ip's manifest does have the <code>channels</code> field defined, then the <code>default-channels</code> field is not applied.</p>
+<p>The optional <code>default-channels</code> field is an array of strings that represent the names of known channels. When this field is provided and the current project omits the <code>channels</code> field from its manifest, the project will be published to the list of channels defined here. If the current project's manifest does have the <code>channels</code> field defined, then the <code>default-channels</code> field is not applied.</p>
 <pre><code class="language-toml">[publish]
 default-channels = ["hyperspace-labs"]
 </code></pre>
 <p>If the <code>default-channels</code> field is set and at least one of the names cannot be found among the known channels, the publishing process will error.</p>
 <h3 id="the-install-section"><a class="header" href="#the-install-section">The <code>[install]</code> section</a></h3>
 <h3 id="the-default-protocol-field"><a class="header" href="#the-default-protocol-field">The <code>default-protocol</code> field</a></h3>
-<p>The optional <code>default-protocol</code> field can be used to specify which protocol should have priority when trying to access an ip from the internet.</p>
+<p>The optional <code>default-protocol</code> field can be used to specify which protocol should have priority when trying to access a project from the internet.</p>
 <pre><code class="language-toml">[install]
 default-protocol = "git"
 </code></pre>
-<p>If the default protocol has patterns configured and none of the patterns match the given ip's source URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, the installation process will error.</p>
+<p>If the default protocol has patterns configured and none of the patterns match the given project's source URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, the installation process will error.</p>
 <h3 id="the-vhdl-format-section"><a class="header" href="#the-vhdl-format-section">The <code>[vhdl-format]</code> section</a></h3>
 <p>The currently supported entries are demonstrated in the following code snippet. Entries not present will be set to their default values.</p>
 <pre><code class="language-toml">[vhdl-format]
@@ -425,26 +425,26 @@ test = true
 <p>If this field is not defined, then the default is true.</p>
 <h3 id="the-fileset-section"><a class="header" href="#the-fileset-section">The <code>[fileset]</code> section</a></h3>
 <p>The <code>[fileset]</code> section allows user-defined key/value pairs, where the key corresponds to a fileset name and the value is a string that corresponds to the glob-style pattern. The fileset name will be normalized to COBOL-CASE.</p>
-<p>If a string is the immediate value of a custom key in the <code>fileset</code> section, then it becomes the fileset's only pattern and will only be applied to the current ip's directory.</p>
+<p>If a string is the immediate value of a custom key in the <code>fileset</code> section, then it becomes the fileset's only pattern and will only be applied to the current project's directory.</p>
 <pre><code class="language-toml">[[target]]
 # ...
 fileset.TEXT = "*.txt"
 fileset.CPPF = "{{ orbit.tb.name }}.cpp"
 </code></pre>
-<p>If an inline table is the value of a custom key in the <code>fileset</code> section, then it requires the <code>patterns</code> field to be an array of strings that represent the different file patterns for this fileset. The optional <code>recursive</code> field accepts a boolean that when enabled, will apply the fileset patterns to all ips in the dependency graph.</p>
+<p>If an inline table is the value of a custom key in the <code>fileset</code> section, then it requires the <code>patterns</code> field to be an array of strings that represent the different file patterns for this fileset. The optional <code>recursive</code> field accepts a boolean that when enabled, will apply the fileset patterns to all projects in the dependency graph.</p>
 <pre><code class="language-toml">[[target]]
 # ...
 fileset.PYF = { patterns = ["*.py", "*.py3"], recursive = true }
 </code></pre>
 <p>The patterns for user-defined filesets support <a href="./../topic/swapping.html"><em>string swapping</em></a> (as shown in the pattern for the <code>CPPF</code> fileset).</p>
 <h3 id="the-protocol-array"><a class="header" href="#the-protocol-array">The <code>[[protocol]]</code> array</a></h3>
-<p>The <code>[[protocol]]</code> array lists user-defined protocols to access ips from the internet. Each protocol must exist under its own <code>[[protocol]]</code> header.</p>
+<p>The <code>[[protocol]]</code> array lists user-defined protocols to access projects from the internet. Each protocol must exist under its own <code>[[protocol]]</code> header.</p>
 <h3 id="the-name-field-1"><a class="header" href="#the-name-field-1">The <code>name</code> field</a></h3>
 <p>See <a href="#the-target-array">[target]</a>'s definition of <a href="#the-name-field"><code>name</code></a>.</p>
 <h3 id="the-description-field-1"><a class="header" href="#the-description-field-1">The <code>description</code> field</a></h3>
 <p>See <a href="#the-target-array">[target]</a>'s definition of <a href="#the-description-field"><code>description</code></a>.</p>
 <h3 id="the-patterns-filed"><a class="header" href="#the-patterns-filed">The <code>patterns</code> filed</a></h3>
-<p>The optional <code>patterns</code> field is an array of strings that represent different URL patterns for the given protocol. If no patterns are provided, then the protocol will accept any URL from a given ip. If a list of patterns is provided, then the protocol will only try an ip if it's URL is a match with one or more of the patterns for that protocol.</p>
+<p>The optional <code>patterns</code> field is an array of strings that represent different URL patterns for the given protocol. If no patterns are provided, then the protocol will accept any URL from a given project. If a list of patterns is provided, then the protocol will only try a project if it's URL is a match with one or more of the patterns for that protocol.</p>
 <pre><code class="language-toml">[[protocol]]
 # ...
 patterns = ["*.git"]
@@ -453,12 +453,12 @@ patterns = ["*.git"]
 <p>The <code>command</code> entry for a protocol is a string or an array of strings (<a href="#executable-paths-with-arguments">program path with args</a>) used to specify the external program and additional arguments (if they exist) to run for the download phase of the installation process.</p>
 <pre><code class="language-toml">[[protocol]]
 # ...
-command = ["git", "clone", "{{orbit.ip.source}}", "-b", "{{orbit.ip.version}}"]
+command = ["git", "clone", "{{orbit.project.source}}", "-b", "{{orbit.project.version}}"]
 </code></pre>
 <p>This field is required when configuring a protocol.</p>
 <p>This field supports <a href="./../topic/swapping.html"><em>string swapping</em></a>.</p>
 <h3 id="the-channel-array"><a class="header" href="#the-channel-array">The <code>[[channel]]</code> array</a></h3>
-<p>The <code>[[channel]]</code> array lists user-defined channels for tracking published ips. Each channel must exist under its own <code>[[channel]]</code> header.</p>
+<p>The <code>[[channel]]</code> array lists user-defined channels for tracking published projects. Each channel must exist under its own <code>[[channel]]</code> header.</p>
 <h3 id="the-name-field-2"><a class="header" href="#the-name-field-2">The <code>name</code> field</a></h3>
 <p>See <a href="#the-target-array">[target]</a>'s definition of <a href="#the-name-field"><code>name</code></a>.</p>
 <h3 id="the-description-field-2"><a class="header" href="#the-description-field-2">The <code>description</code> field</a></h3>
@@ -479,7 +479,7 @@ sync.command = ["git", "pull"]
 <p>This field is optional when configuring a channel.</p>
 <p>This field supports <a href="./../topic/swapping.html"><em>string swapping</em></a>.</p>
 <h3 id="the-precommand-field"><a class="header" href="#the-precommand-field">The <code>pre.command</code> field</a></h3>
-<p>The <code>pre.command</code> entry for a channel's pre-publish hook is a string or an array of strings (<a href="#executable-paths-with-arguments">program path with args</a>) used to specify the external program and additional arguments (if they exist) to run before Orbit copies an ip's metadata into the channel during the publishing process.</p>
+<p>The <code>pre.command</code> entry for a channel's pre-publish hook is a string or an array of strings (<a href="#executable-paths-with-arguments">program path with args</a>) used to specify the external program and additional arguments (if they exist) to run before Orbit copies a project's metadata into the channel during the publishing process.</p>
 <pre><code class="language-toml">[[channel]]
 # ...
 pre.command = ["git", "pull"]
@@ -487,10 +487,10 @@ pre.command = ["git", "pull"]
 <p>This field is optional when configuring a channel.</p>
 <p>This field supports <a href="./../topic/swapping.html"><em>string swapping</em></a>.</p>
 <h3 id="the-postcommand-field"><a class="header" href="#the-postcommand-field">The <code>post.command</code> field</a></h3>
-<p>The <code>post.command</code> entry for a channel's post-publish hook is a string or an array of strings (<a href="#executable-paths-with-arguments">program path with args</a>) used to specify the external program and additional arguments (if they exist) to run after Orbit copies an ip's metadata into the channel during the publishing process.</p>
+<p>The <code>post.command</code> entry for a channel's post-publish hook is a string or an array of strings (<a href="#executable-paths-with-arguments">program path with args</a>) used to specify the external program and additional arguments (if they exist) to run after Orbit copies a project's metadata into the channel during the publishing process.</p>
 <pre><code class="language-toml">[[channel]]
 # ...
-post.command = ["git", "commit", "-am", "Publishes {{orbit.ip.name}} v{{orbit.ip.version}}"]
+post.command = ["git", "commit", "-am", "Publishes {{orbit.project.name}} v{{orbit.project.version}}"]
 </code></pre>
 <p>This field is optional when configuring a channel.</p>
 <p>This field supports <a href="./../topic/swapping.html"><em>string swapping</em></a>.</p>

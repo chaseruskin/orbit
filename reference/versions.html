@@ -200,7 +200,7 @@ also operates on the basis of using 3 digits. To learn more about <em>calender v
 <pre><code>1
 1.0
 </code></pre>
-<p>When given a partially qualified version, Orbit references the maximum version available that satifies the partially qualified version. If no version is specified, it assumes the request is for the latest known version. The latest known version can also be explicitly requested by inputting <code>latest</code> as the version. Assume the known released versions for a given IP are as listed:</p>
+<p>When given a partially qualified version, Orbit references the maximum version available that satifies the partially qualified version. If no version is specified, it assumes the request is for the latest known version. The latest known version can also be explicitly requested by inputting <code>latest</code> as the version. Assume the known released versions for a given project are as listed:</p>
 <div class="table-wrapper"><table><thead><tr><th>Versions</th></tr></thead><tbody>
 <tr><td><code>2.1.0</code></td></tr>
 <tr><td><code>1.5.0</code></td></tr>
@@ -222,13 +222,13 @@ also operates on the basis of using 3 digits. To learn more about <em>calender v
 </div>
 <h2 id="example"><a class="header" href="#example">Example</a></h2>
 <p>A fully qualified version must be written in every project's manifest file.</p>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 # ...
 version = "1.5.4"
 </code></pre>
-<p>A specific (or partially speific) version can be requested for an IP on the command-line by placing a colon <code>:</code> character between the package's name and the requested version.</p>
+<p>A specific (or partially specific) version can be requested for a project on the command-line by placing a colon <code>:</code> character between the package's name and the requested version.</p>
 <pre><code>$ orbit install gates:1.5.4
-$ orbit get nor_gate --ip gates:1.5
+$ orbit get nor_gate --project gates:1.5
 </code></pre>
 <h2 id="comparing-versions"><a class="header" href="#comparing-versions">Comparing versions</a></h2>
 <p>The following pseudocode provides additional help in learning about how versions are compared (selecting a "higher" version).</p>

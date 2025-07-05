@@ -14,21 +14,23 @@ Orbit also sets environment variables during runtime such that any subprocesses 
 
 - `ORBIT` - The full path to the `orbit` binary performing the build.
 
-- `ORBIT_MANIFEST_DIR` - The full path to the directory that contains the current ip's manifest.
+- `ORBIT_MANIFEST_DIR` - The full path to the directory that contains the current project's manifest.
 
-- `ORBIT_MANIFEST_FILE` - The full path to the file that is the current ip's manifest.
+- `ORBIT_MANIFEST_FILE` - The full path to the file that is the current project's manifest.
 
-- `ORBIT_IP_NAME` - The name of the current ip.
+- `ORBIT_PROJECT_DIR` - The full path to the directory that contains the current project's manifest.
 
-- `ORBIT_IP_UUID` - The uuid of the current ip.
+- `ORBIT_PROJECT_NAME` - The name of the current project.
 
-- `ORBIT_IP_LIBRARY` - The interpretated HDL library of the current ip.
+- `ORBIT_PROJECT_UUID` - The uuid of the current project.
 
-- `ORBIT_IP_VERSION` - The version of the current ip.
+- `ORBIT_PROJECT_LIBRARY` - The interpretated HDL library of the current project.
 
-- `ORBIT_IP_CHECKSUM` - The full 64 character hexadecimal string of the SHA256 checksum of the current ip.
+- `ORBIT_PROJECT_VERSION` - The version of the current project.
 
-- `ORBIT_IP_SOURCE` - The source url of the current ip. This environment variable is only available during a protocol's execution.
+- `ORBIT_PROJECT_CHECKSUM` - The full 64 character hexadecimal string of the SHA256 checksum of the current project.
+
+- `ORBIT_PROJECT_SOURCE` - The source url of the current project. This environment variable is only available during a protocol's execution.
 
 - `ORBIT_TARGET` - The name of the target selected for the latest build process.
 
@@ -54,17 +56,17 @@ Orbit also sets environment variables during runtime such that any subprocesses 
 
 - `ORBIT_BLUEPRINT_PLAN` - The plan name for the blueprint created from the planning stage of the latest build process. See [Blueprint](./blueprint.md) for all possible plans.
 
-- `ORBIT_TARGET_DIR` - The directory where all generated artifacts from any targets will be stored, relative to the current ip's directory. Default is "target".
+- `ORBIT_TARGET_DIR` - The directory where all generated artifacts from any targets will be stored, relative to the current project's directory. Default is "target".
   
-- `ORBIT_OUT_DIR` - The full path to the directory where all generated artifacts for the current target will be stored. This directory is inside the target directory for the current ip, and is unique for each selected target.
+- `ORBIT_OUT_DIR` - The full path to the directory where all generated artifacts for the current target will be stored. This directory is inside the target directory for the current project, and is unique for each selected target.
 
 - `ORBIT_CHANNEL_NAME` - The name of the current channel being used in the publishing process.
 
 - `ORBIT_CHANNEL_DIR` - The full path to the directory that is the root of the current channel.
 
-- `ORBIT_CHANNEL_IP_DIR` - The full path to the directory in the current channel where the current ip's manifest will be copied to during the publishing process.
+- `ORBIT_CHANNEL_PROJECT_DIR` - The full path to the directory in the current channel where the current project's manifest will be copied to during the publishing process.
 
-- `ORBIT_PROTOCOL` - The name of the protocol selected for the downloading the current ip. This environment variable is only available during a protocol's execution.
+- `ORBIT_PROTOCOL` - The name of the protocol selected for the downloading the current project. This environment variable is only available during a protocol's execution.
 
 
 ## Checking the environment

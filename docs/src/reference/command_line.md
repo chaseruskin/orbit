@@ -25,7 +25,7 @@ orbit new <path>
 ```
 Arguments may be omitted if they are wrapped with square brackets (`[ ]`).
 ```
-orbit search [<ip>]
+orbit search [<project>]
 ```
 
 ### __Flag__

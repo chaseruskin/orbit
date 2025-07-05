@@ -6,8 +6,11 @@
 [![DockerHub](https://img.shields.io/badge/DockerHub-images-important.svg?logo=docker)](https://hub.docker.com/repository/docker/chaseruskin/orbit/general) 
 [![Downloads](https://img.shields.io/github/downloads/chaseruskin/orbit/total.svg)](https://github.com/chaseruskin/orbit/releases)
 
-Orbit is a package manager and build system for VHDL, Verilog, and SystemVerilog.
+Orbit is a package manager and build system for VHDL, Verilog, and SystemVerilog. It accomplishes two goals:
+1. Empower users to reuse IP cores
+2. Provide an extensible infrastructure for users to automate their EDA workflows
 
+The following diagram is a high-level system architecture of how Orbit is used to manage projects and automate build processes:
 ![](./docs/src/images/architecture.svg)
 
 Orbit groups one or more source code files (`.vhd`, `.v`, `.sv`) into a higher-level organizational unit called a _project_. Orbit provides management capabilities at the project level, making projects the "package" in its package management.
@@ -77,7 +80,7 @@ The "Orbit.lock" file is a detailed TOML file automatically maintained by Orbit 
 
 ## Easy code integration
 
-To encourage code reuse and faster development cycles, Orbit includes HDL-specific commands to integrate designs across projects. For example, Orbit can display HDL code snippets of existing design units to be instantiated within your local project.
+To encourage code reuse, Orbit includes commands tailored toward HDL development to integrate designs across projects. For example, Orbit can display HDL code snippets of existing design units to be instantiated within your local project.
 
 This includes support for VHDL source code:
 ```

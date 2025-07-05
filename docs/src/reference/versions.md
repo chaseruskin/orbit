@@ -39,7 +39,7 @@ In some scenarios a _partially qualified_ version can be accepted. This means on
 1.0
 ```
 
-When given a partially qualified version, Orbit references the maximum version available that satifies the partially qualified version. If no version is specified, it assumes the request is for the latest known version. The latest known version can also be explicitly requested by inputting `latest` as the version. Assume the known released versions for a given IP are as listed: 
+When given a partially qualified version, Orbit references the maximum version available that satifies the partially qualified version. If no version is specified, it assumes the request is for the latest known version. The latest known version can also be explicitly requested by inputting `latest` as the version. Assume the known released versions for a given project are as listed: 
 
 Versions | 
 ---------|
@@ -66,16 +66,16 @@ Requested | Returned  |
 A fully qualified version must be written in every project's manifest file.
 
 ``` toml
-[ip]
+[project]
 # ...
 version = "1.5.4"
 ```
 
-A specific (or partially speific) version can be requested for an IP on the command-line by placing a colon `:` character between the package's name and the requested version.
+A specific (or partially specific) version can be requested for a project on the command-line by placing a colon `:` character between the package's name and the requested version.
 
 ```
 $ orbit install gates:1.5.4
-$ orbit get nor_gate --ip gates:1.5
+$ orbit get nor_gate --project gates:1.5
 ```
 
 ## Comparing versions

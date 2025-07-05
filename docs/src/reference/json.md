@@ -46,11 +46,11 @@ The following schema is implemented for the json output of `orbit get`:
 }
 ```
 
-## Published ip
+## Published projects
 
-The `orbit publish` command allows users to automate the process of maintaining a centralized location where released ip can be found. When successfully ran, this command copies an ip's manifest to a directory dedicated to storing manifests.
+The `orbit publish` command allows users to automate the process of maintaining a centralized location where released projects can be found. When successfully ran, this command copies a project's manifest to a directory dedicated to storing manifests.
 
-It also produces a JSON file of the various pieces of metadata related to the released ip and places it alongide the copied manifest.
+It also produces a JSON file of the various pieces of metadata related to the released project and places it alongide the copied manifest.
 
 The serialized JSON data is available in a file called `Orbit.json` found in the same directory as where Orbit placed the `Orbit.toml` and `Orbit.lock` files during the publishing process. This file can be read by external tools and processes to collect various pieces of information to display to users in another way.
 
@@ -61,9 +61,9 @@ The following schema is currently implemented for the json file `Orbit.json` pro
 {
   // schema version
   "version": integer,
-  // serialized ip manifest (Orbit.toml) data
+  // serialized project manifest (Orbit.toml) data
   "manifest": {
-    "ip": {
+    "project": {
       "name": "string",
       "uuid": "string",
       "version": "string",
@@ -81,7 +81,7 @@ The following schema is currently implemented for the json file `Orbit.json` pro
       "language": "string",
       // visibility of unit (choices: "public", "protected", "private")
       "visibility": "string",
-      // list of files relative to the ip that define this unit
+      // list of files relative to the project that define this unit
       "sources": [
         "string"
       ],
@@ -98,4 +98,4 @@ The latest schema version is `1`. Schema versions increment by 1 whenever there 
 
 ## References
 
-Some ideas about exporting json from `orbit get` can be found at this [blog post](https://blog.kellybrazil.com/2021/12/03/tips-on-adding-json-output-to-your-cli-app/).
+Some ideas about exporting json can be found at this [blog post](https://blog.kellybrazil.com/2021/12/03/tips-on-adding-json-output-to-your-cli-app/).

@@ -40,7 +40,7 @@
 
 - [Reference](./reference/reference.md)
     - [Manifest](./reference/manifest.md)
-    - [Project Specification](./reference/names.md)
+    - [Project ID Specification](./reference/names.md)
     - [Versions](./reference/versions.md)
     - [Filesets](./reference/filesets.md)
     - [Blueprint](./reference/blueprint.md)

@@ -25,7 +25,10 @@ A configuration is a collection of user-defined settings intended to extend and 
 The shorthand (and more common) name for an [IP core](#ip-core).
 
 ### Current Project
-Another name for a [local project](#local-project).
+The current project is the project detected by Orbit from the current working directory on the command-line. Some commands require a current project in order to run, such as `orbit lock` and `orbit build`.
+
+### Design Element
+Verilog and SystemVerilog's terminology for a [primary design unit](#primary-design-unit). These include Verilog modules and primitives, as well as SystemVerilog modules, programs, interfaces, checkers, packages, primitives, and configurations.
 
 ### Fileset
 A fileset is a collection of related files under a given name. A glob-style file pattern is used to discover the files of a given fileset. Filesets are used to group common files together into the blueprint during the planning stage of the build process. Orbit comes with built-in filesets for VHDL, Verilog, and SystemVerilog files. In addition, a target can configure its own custom filesets.
@@ -33,8 +36,11 @@ A fileset is a collection of related files under a given name. A glob-style file
 ### IP Core
 An IP core is a resusable block of design logic composed of one or more design units. An IP core is the smallest amount of hardware description code that Orbit considers at a time. Design units that make up an IP core may include VHDL entities or Verilog modules.
 
+### Index
+An index is the searchable list of [projects](#project) in a [channel](#channels).
+
 ### Local Project
-The local project is the project detected by Orbit from the current working directory on the command-line. Some commands can only be executed from the local project, such as `orbit lock` and `orbit build`.
+Another name for the [current project](#current-project).
 
 ### Lockfile
 A lockfile is a file that precisely describes a project and all of its resolved dependencies. The lockfile is called "Orbit.lock" and is automatically generated and maintained by Orbit. The lockfile should be checked into your version control system for reproducible builds. It is not to be manually edited by the user. 
@@ -44,6 +50,9 @@ With the lockfile, Orbit is able to download missing dependencies, install missi
 ### Manifest
 A manifest is a configuration file containing metadata about a project that is recognized by Orbit. Manifest files 
 are named "Orbit.toml". The manifest is intended to be edited by the user. The manifest is used as an input for Orbit to generate the lockfile.
+
+### Orbit
+Orbit is a package manager and build system for [VHDL](#vhdl), [Verilog](#verilog), and [SystemVerilog](#systemverilog). It is the primary topic of this book.
 
 ### Orbit.lock
 See [lockfile](#lockfile).
@@ -58,6 +67,8 @@ The _package root_ is the directory where the package's `Orbit.toml` manifest is
 
 The _package ID specification_, or _SPEC_, is a string used to uniquely reference a specific version of a package from a specific source.
 
+The source code for a given package is further subdivided into [IP cores](#ip-core).
+
 A package is more commonly referred to as a [project](#project).
 
 ### Package Manager
@@ -65,6 +76,9 @@ A package is more commonly referred to as a [project](#project).
 Broadly speaking, a package manager is a program (or collection of related programs) in a software ecosystem that automates the process of obtaining, installing, and upgrading artifacts. Within a programming language ecosystem, a package manager is a developer-focused tool whose primary functionality is to download library artifacts and their dependencies from some central repository; this capability is often combined with the ability to perform software builds (by invoking the language-specific compiler).
 
 Orbit is a package manager within the HDL ecosystem. Orbit downloads your HDL [package](#package)'s dependencies, resolves the order of source files required for a backend build process, and makes distributable packages.
+
+### Primary Design Unit
+A primary design unit, or design unit, is the highest layer of abstraction to describe hardware constructs in VHDL. These include VHDL entities, packages, configurations, and contexts. An [IP core](#ip-core) is named by its root primary design unit, or [design element](#design-element) if it is described in Verilog or SystemVerilog.
 
 ### Project
 Another (more common) name for a [package](#package).
@@ -97,4 +111,4 @@ VHSIC Hardware Design Language (VHDL) is a hardware descrption language to model
 Verilog is a hardware description language to model electronic systems. The final standard (IEEE 1364-2005) for Verilog merged into the SystemVerilog standard. Today, Verilog has been officially part of the SystemVerilog language.
 
 ### Working Project
-Another name for a [local project](#local-project).
+Another name for the [current project](#current-project).

@@ -2,7 +2,7 @@
 
 The _blueprint_ is a file containing a list of files required for a particular back end. This single file is the main method Orbit uses to communicate information to a target's process.
 
-When the blueprint is created, it is saved to the local ip's target output directory.
+When the blueprint is created, it is saved to the current project's target output directory.
 
 ## Plans
 
@@ -25,13 +25,13 @@ Attributes that are consistent across all formats are the fileset, library, and 
 
 The _fileset_ is the group name for the file pattern that matched the given rule's file.
 
-The _library_ is the hdl defined library for the ip which the given file at this particular step was found.
+The _library_ is the HDL defined library for the project which the given file at this particular step was found.
 
 The _filepath_ is the absolute file system path to the given rule's file.
 
 ### Built-in Filesets
 
-The following filesets are already recognized by Orbit and are used for identifying hdl source code:
+The following filesets are already recognized by Orbit and are used for identifying HDL source code:
 
 Fileset| Supported file extensions |        
 -------|---------|    

@@ -10,22 +10,22 @@ If a file in the search space matches a least one of defined file patterns of a 
 
 ## Built-in filesets
 
-There are built-in filesets that Orbit uses that have special rules and work across all ip, including dependencies. The following filesets are currently built-in with Orbit:
+There are built-in filesets that Orbit uses that have special rules and work across all projects, including dependencies. The following filesets are currently built-in with Orbit:
 - `VHDL`: VHDL files (.vhd, .vhdl)
 - `VLOG`: Verilog files (.v, .vl, .vlg)
 - `SYSV`: SystemVerilog files (.sv)
 
 ## Custom filesets
 
-Custom filesets are filesets that are be defined by the user for a specific target. By default, these filesets are only searched for in the local ip and do not extend any of the ip's dependencies. Set the `recursive` entry of a fileset true to apply it to all ips in the dependency graph.
+Custom filesets are filesets that are be defined by the user for a specific target. By default, these filesets are only searched for in the current project and do not extend any of the project's dependencies. Set the `recursive` entry of a fileset true to apply it to all projects in the dependency graph.
 
-If a pattern does not start with an explicit path delimiter (`/`), then Orbit assumes to look for the fileset across every possible subdirectory in the local ip by implicitly prepending the pattern with `**/`.
+If a pattern does not start with an explicit path delimiter (`/`), then Orbit assumes to look for the fileset across every possible subdirectory in the current project by implicitly prepending the pattern with `**/`.
 
 A custom fileset's patterns support string swapping. See [String Swapping](./../topic/swapping.md) to learn more about how it can be applied to fileset patterns.
 
 ## Applying fileset patterns
 
-A fileset's pattern is applied starting from the current ip's root directory, the same directory where the `Orbit.toml` file exists.
+A fileset's pattern is applied starting from the current project's root directory, the same directory where the `Orbit.toml` file exists.
 
 ## Name normalization examples
 
@@ -42,7 +42,7 @@ The normalized fileset name is the name that will be written to the blueprint fi
 
 ## Custom pattern assumption examples
 
-Unless starting with a path delimiter (`/`), a pattern of a fileset is assumed to be applied across the ip's directory and all of its subdirectories. The following are some examples of how Orbit interprets a fileset's patterns.
+Unless starting with a path delimiter (`/`), a pattern of a fileset is assumed to be applied across the project's directory and all of its subdirectories. The following are some examples of how Orbit interprets a fileset's patterns.
 
 | User-defined pattern | Interpreted pattern |
 | - | - |
@@ -50,4 +50,4 @@ Unless starting with a path delimiter (`/`), a pattern of a fileset is assumed t
 | `Boards/*.toml` | `**/Boards/*.toml` |
 | `/specific/path.log` | `./specific/path.log` |
 
-The custom patterns begin their search for files at the local ip's root directory. The file pattern used by Orbit when collecting files for custom filesets is the interpreted pattern.
+The custom patterns begin their search for files at the current project's root directory. The file pattern used by Orbit when collecting files for custom filesets is the interpreted pattern.

@@ -27,7 +27,7 @@ If Orbit is passing other arguments to the program such as a path to open or run
 
 Orbit supports multiple levels of configuration. Each level has its own order of precedence. The order of precedence is the following:
 
-1. Local configuration file (current ip's `.orbit/config.toml`)
+1. Local configuration file (current project's `.orbit/config.toml`)
 
 2. Regional configuration files (parent directories of the current working directory)
 
@@ -52,9 +52,9 @@ Every configuration file consists of the following sections:
 - [[build]](#the-build-section) - The build settings.
     - [default-target](#the-default-target-field) - Set the default target for builds.
 - [[publish]](#the-publish-section) - The publish settings.
-    - [default-channels](#the-default-channels-field) - Set the default channels to publish an ip to.
+    - [default-channels](#the-default-channels-field) - Set the default channels to publish a project to.
 - [[install]](#the-install-section) - The install settings.
-    - [default-protocol](#the-default-protocol-field) - Set the default protocol for installing ip.
+    - [default-protocol](#the-default-protocol-field) - Set the default protocol for installing projects.
 - [[vhdl-format]](#the-vhdl-format-section) - VHDL code formatting.
 - [[verilog-format]](#the-verilog-format-section) - SystemVerilog/Verilog code formatting.
 - [[env]](#the-env-section) - The runtime environment variables.
@@ -69,7 +69,7 @@ Every configuration file consists of the following sections:
 - [[[protocol]]](#the-protocol-array) - Define a protocol.
     - [name](#the-name-field) - The name of the protocol.
     - [description](#the-description-field) - A short description of the protocol.
-    - [patterns](#the-patterns-field) - String patterns to match an ip's URL.
+    - [patterns](#the-patterns-field) - String patterns to match an project's URL.
     - [command](#the-command-field) - The command to execute the protocol.
 - [[[channel]]](#the-channel-array) - Define a channel.
     - [name](#the-name-field) - The name of the channel.
@@ -96,7 +96,7 @@ include = [
 
 ### The `require-public` field
 
-The `require-public` key determines if to assume source files are private by default. When true, all source files are private to their respective ip unless their file path is found in their ip manifest's `public` entry. When false, all source files are treated as public when their ip manifest's `public` entry is omitted.
+The `require-public` key determines if to assume source files are private by default. When true, all source files are private to their respective project unless their file path is found in their project manifest's `public` entry. When false, all source files are treated as public when their project manifest's `public` entry is omitted.
 
 ``` toml
 [general]
@@ -104,7 +104,7 @@ require-public = true
 # ...
 ```
 
-By default, this key is set true. This means all source files are assumed private by default, unless explicitly specified in their ip manifest's `public` entry. See the ip manifest's reference on the [public](./manifest.md#the-public-field) entry for more information about specifying public source files.
+By default, this key is set true. This means all source files are assumed private by default, unless explicitly specified in their project manifest's `public` entry. See the project manifest's reference on the [public](./manifest.md#the-public-field) entry for more information about specifying public source files.
 
 ### The `target-dir` field
 
@@ -148,7 +148,7 @@ If the default target is set to be used and its name cannot be found among the k
 
 ### The `default-channels` field
 
-The optional `default-channels` field is an array of strings that represent the names of known channels. When this field is provided and the current ip omits the `channels` field from its manifest, the ip will be published to the list of channels defined here. If the current ip's manifest does have the `channels` field defined, then the `default-channels` field is not applied.
+The optional `default-channels` field is an array of strings that represent the names of known channels. When this field is provided and the current project omits the `channels` field from its manifest, the project will be published to the list of channels defined here. If the current project's manifest does have the `channels` field defined, then the `default-channels` field is not applied.
 
 ``` toml
 [publish]
@@ -161,14 +161,14 @@ If the `default-channels` field is set and at least one of the names cannot be f
 
 ### The `default-protocol` field
 
-The optional `default-protocol` field can be used to specify which protocol should have priority when trying to access an ip from the internet.
+The optional `default-protocol` field can be used to specify which protocol should have priority when trying to access a project from the internet.
 
 ``` toml
 [install]
 default-protocol = "git"
 ```
 
-If the default protocol has patterns configured and none of the patterns match the given ip's source URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, the installation process will error.
+If the default protocol has patterns configured and none of the patterns match the given project's source URL, then it is not used. If the default protocol is set to be used and its name cannot be found among the known protocols, the installation process will error.
 
 ### The `[vhdl-format]` section
 
@@ -330,7 +330,7 @@ If this field is not defined, then the default is true.
 
 The `[fileset]` section allows user-defined key/value pairs, where the key corresponds to a fileset name and the value is a string that corresponds to the glob-style pattern. The fileset name will be normalized to COBOL-CASE.
 
-If a string is the immediate value of a custom key in the `fileset` section, then it becomes the fileset's only pattern and will only be applied to the current ip's directory.
+If a string is the immediate value of a custom key in the `fileset` section, then it becomes the fileset's only pattern and will only be applied to the current project's directory.
 
 ``` toml
 [[target]]
@@ -339,7 +339,7 @@ fileset.TEXT = "*.txt"
 fileset.CPPF = "{{ orbit.tb.name }}.cpp"
 ```
 
-If an inline table is the value of a custom key in the `fileset` section, then it requires the `patterns` field to be an array of strings that represent the different file patterns for this fileset. The optional `recursive` field accepts a boolean that when enabled, will apply the fileset patterns to all ips in the dependency graph.
+If an inline table is the value of a custom key in the `fileset` section, then it requires the `patterns` field to be an array of strings that represent the different file patterns for this fileset. The optional `recursive` field accepts a boolean that when enabled, will apply the fileset patterns to all projects in the dependency graph.
 
 ``` toml
 [[target]]
@@ -351,7 +351,7 @@ The patterns for user-defined filesets support [_string swapping_](./../topic/sw
 
 ### The `[[protocol]]` array
 
-The `[[protocol]]` array lists user-defined protocols to access ips from the internet. Each protocol must exist under its own `[[protocol]]` header.
+The `[[protocol]]` array lists user-defined protocols to access projects from the internet. Each protocol must exist under its own `[[protocol]]` header.
 
 ### The `name` field
 
@@ -363,7 +363,7 @@ See [[target]](#the-target-array)'s definition of [`description`](#the-descripti
 
 ### The `patterns` filed
 
-The optional `patterns` field is an array of strings that represent different URL patterns for the given protocol. If no patterns are provided, then the protocol will accept any URL from a given ip. If a list of patterns is provided, then the protocol will only try an ip if it's URL is a match with one or more of the patterns for that protocol.
+The optional `patterns` field is an array of strings that represent different URL patterns for the given protocol. If no patterns are provided, then the protocol will accept any URL from a given project. If a list of patterns is provided, then the protocol will only try a project if it's URL is a match with one or more of the patterns for that protocol.
 
 ``` toml
 [[protocol]]
@@ -378,7 +378,7 @@ The `command` entry for a protocol is a string or an array of strings ([program 
 ``` toml
 [[protocol]]
 # ...
-command = ["git", "clone", "{{orbit.ip.source}}", "-b", "{{orbit.ip.version}}"]
+command = ["git", "clone", "{{orbit.project.source}}", "-b", "{{orbit.project.version}}"]
 ```
 
 This field is required when configuring a protocol.
@@ -387,7 +387,7 @@ This field supports [_string swapping_](./../topic/swapping.md).
 
 ### The `[[channel]]` array
 
-The `[[channel]]` array lists user-defined channels for tracking published ips. Each channel must exist under its own `[[channel]]` header.
+The `[[channel]]` array lists user-defined channels for tracking published projects. Each channel must exist under its own `[[channel]]` header.
 
 ### The `name` field
 
@@ -425,7 +425,7 @@ This field supports [_string swapping_](./../topic/swapping.md).
 
 ### The `pre.command` field
 
-The `pre.command` entry for a channel's pre-publish hook is a string or an array of strings ([program path with args](#executable-paths-with-arguments)) used to specify the external program and additional arguments (if they exist) to run before Orbit copies an ip's metadata into the channel during the publishing process.
+The `pre.command` entry for a channel's pre-publish hook is a string or an array of strings ([program path with args](#executable-paths-with-arguments)) used to specify the external program and additional arguments (if they exist) to run before Orbit copies a project's metadata into the channel during the publishing process.
 
 ``` toml
 [[channel]]
@@ -439,12 +439,12 @@ This field supports [_string swapping_](./../topic/swapping.md).
 
 ### The `post.command` field
 
-The `post.command` entry for a channel's post-publish hook is a string or an array of strings ([program path with args](#executable-paths-with-arguments)) used to specify the external program and additional arguments (if they exist) to run after Orbit copies an ip's metadata into the channel during the publishing process.
+The `post.command` entry for a channel's post-publish hook is a string or an array of strings ([program path with args](#executable-paths-with-arguments)) used to specify the external program and additional arguments (if they exist) to run after Orbit copies a project's metadata into the channel during the publishing process.
 
 ``` toml
 [[channel]]
 # ...
-post.command = ["git", "commit", "-am", "Publishes {{orbit.ip.name}} v{{orbit.ip.version}}"]
+post.command = ["git", "commit", "-am", "Publishes {{orbit.project.name}} v{{orbit.project.version}}"]
 ```
 
 This field is optional when configuring a channel.

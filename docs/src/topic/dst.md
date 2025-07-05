@@ -17,7 +17,9 @@ In VHDL/Verilog, a common example of a namespace clash is when different files d
 
 ## Approach
 
-We solve the namespace pollution problem with an algorithm called _dynamic symbol transformation_ (DST). The DST algorithm solves the namespace clashing problem by rewriting conflicts with a new unique identifier without losing information in the original identifier.
+We solve the namespace pollution problem with an algorithm called _dynamic symbol transformation_ (DST). The DST algorithm solves the namespace clashing problem by rewriting conflicts with a new unique identifier without losing information in the original identifier. 
+
+Orbit performs the DST algorithm during the planning stage of the build process before a blueprint file is created.
 
 ### Limitations
 

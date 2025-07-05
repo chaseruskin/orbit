@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="r5-r_rpe-W_XDR8gnN_N" name="Page-1">
-        <mxGraphModel dx="1805" dy="1638" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="2403" dy="1975" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -61,7 +61,7 @@
                 <mxCell id="122" value="Dependencies" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" parent="116" vertex="1">
                     <mxGeometry x="70.32999999999998" y="226.0342857142857" width="60" height="29.142857142857142" as="geometry"/>
                 </mxCell>
-                <mxCell id="123" value="Ip" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" parent="116" vertex="1">
+                <mxCell id="123" value="Project" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" parent="116" vertex="1">
                     <mxGeometry x="70.32999999999998" y="38.857142857142854" width="60" height="29.142857142857142" as="geometry"/>
                 </mxCell>
                 <mxCell id="124" value="name = &quot;cpu&quot;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;" parent="116" vertex="1">
@@ -92,8 +92,8 @@
                 <mxCell id="106" value="$ &lt;b&gt;&lt;u&gt;orbit lock&lt;/u&gt;&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fillColor=#FFFFFF;" parent="126" vertex="1">
                     <mxGeometry x="200.00475409836065" y="40" width="106.22950819672131" height="38.46" as="geometry"/>
                 </mxCell>
-                <mxCell id="103" value="Local Ip" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" parent="126" vertex="1">
-                    <mxGeometry x="284.59016393442624" y="10" width="70.81967213114754" height="30" as="geometry"/>
+                <mxCell id="103" value="Current Project" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;" parent="126" vertex="1">
+                    <mxGeometry x="284.59" y="10" width="95.41" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="20" value="" style="group" parent="1" vertex="1" connectable="0">
                     <mxGeometry x="190" y="-40" width="660" height="230" as="geometry"/>

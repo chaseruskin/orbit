@@ -80,17 +80,17 @@ Since the current project requires both code segments, then traditionally your E
 
 Consider the following project-level dependency tree:
 
-![](./../images/dst-graph1.svg)
+![](./../images/dst-graph-1.svg)
 
-The gray node (`final-project`) is the current project you are currently working within, the green nodes (`lab2`, `lab3`) are the direct dependencies to the local project, and the blue node (`lab1`) is an indirect dependency to the local project.
+The gray node (`lab4`) is the current project you are working within, the green nodes (`lab2`, `lab3`) are the direct dependencies to the current project, and the blue node (`lab1`) is an indirect dependency to the current project.
 
 Within each project, there exists one or more HDL source code files describing design units. 
 
-Imagine the `final-project` project has a module called `half_add` which is the root of circuit hierarchy. From there, it reuses entities from the other projects.
+Imagine the `lab4` project has a module called `half_add` which is the root of circuit hierarchy. From there, it reuses entities from the other projects.
 
 Consider then HDL-level dependency tree:
 
-![](./../images/dst-graph2.svg)
+![](./../images/dst-graph-2.svg)
 
 Notice lab1 and lab3 both have the `nand_g` module, but their interfaces and functionality are different as previously mentioned. How can we allow both units in the hierarchy while resolving the namespace clash?
 
@@ -98,19 +98,19 @@ Notice lab1 and lab3 both have the `nand_g` module, but their interfaces and fun
 
 DST identifies namespace clashes within the current dependency graph and automatically resolves the conflicts to produce a clean unambiguous graph.
 
-![](./../images/dst-graph3.svg)
+![](./../images/dst-graph-3.svg)
 
 The yellow nodes (`lab2`, `lab1`) are the projects that had their source code modified due to DST. Since the modified contents of these projects no longer matches their original contents, the modifications are stored as separate entries in the catalog's cache apart from their original entries.
 
 The red node (`nand_g.v`) is the HDL design element that must be dynamically renamed due to the namespace clash for `nand_g`. The identifier `nand_g` in lab1 was appended with the first 16 digits of the original project's checksum (`fbe4720d0a40b25c`). This transforms lab1's `nand_g` module into `nand_g_fbe4720d0a40b25c`, which is unique and no longer clashes with `nand_g` in lab3.
 
-> __Note:__ DST specifically chose to _not_ rename the `nand_g` from lab3. If had decided to rename the `nand_g` from lab3, the user would be burdened with tracking and maintaining the new renamed unique identifier in the local project (final-project). Since DST never renames identifiers in direct dependencies, DST is always abstracted away from the user and has zero overhead. While direct dependencies may be modified due to neigboring a project that undergoes DST, direct dependencies are never chosen for DST.
+> __Note:__ DST specifically chose to _not_ rename the `nand_g` from lab3. If had decided to rename the `nand_g` from lab3, the user would be burdened with tracking and maintaining the new renamed unique identifier in the current project (lab4). Since DST never renames identifiers in direct dependencies, DST is always abstracted away from the user and has zero overhead. While direct dependencies may be modified due to neigboring a project that undergoes DST, direct dependencies are never chosen for DST.
 
 The orange nodes (`and_g.v`, `xor_g.v`) are the HDL design elements that reference/instantiate the design element that was marked for symbol transformation. Once the project targeted for DST (lab1) resolves the namespace clash, we must update the references for this design element in all the upstream neighboring projects (lab2). Since their references are now broken due to `nand_g` being renamed to `nand_g_fbe4720d0a40b25c`, the source code is analyzed and updated to fix the broken references of `nand_g` to `nand_g_fbe4720d0a40b25c`.
 
 The final unambiguous HDL-level dependency graph is the following:
 ```
-half_add (final-project)
+half_add (lab4)
 ├── nand_g (lab3)
 │   ├── not_g (lab2)
 │   └── and_g (lab2)*

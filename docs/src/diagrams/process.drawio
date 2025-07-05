@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="Rr6S4Ah8kOE3q6iGMgMT" name="Page-1">
-        <mxGraphModel dx="70" dy="3236" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="-393" dy="2937" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -34,10 +34,10 @@
                 <mxCell id="11" value="$ &lt;b&gt;&lt;u&gt;orbit test&lt;/u&gt;&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fillStyle=solid;fillColor=#FFFFFF;" parent="6" vertex="1">
                     <mxGeometry x="336.87999999999965" y="547.77" width="106.22950819672131" height="38.46" as="geometry"/>
                 </mxCell>
-                <mxCell id="12" value="Create an ip from&lt;br&gt;an existing project" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="6" vertex="1">
+                <mxCell id="12" value="Create a project from an existing directory" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="6" vertex="1">
                     <mxGeometry x="139.99524590163946" y="140.76999999999998" width="112.5" height="112.5" as="geometry"/>
                 </mxCell>
-                <mxCell id="13" value="Create an ip from scratch" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="6" vertex="1">
+                <mxCell id="13" value="Create a project from scratch" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="6" vertex="1">
                     <mxGeometry x="139.99524590163946" y="3.75" width="112.5" height="112.5" as="geometry"/>
                 </mxCell>
                 <mxCell id="14" value="Display HDL &lt;br&gt;code snippets to instantiate an existing design &lt;br&gt;unit" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="6" vertex="1">
@@ -46,10 +46,10 @@
                 <mxCell id="15" value="Does the process for &lt;br&gt;the current design unit &lt;br&gt;use a testbench?" style="rhombus;whiteSpace=wrap;html=1;fillStyle=solid;fillColor=#FFFFFF;" parent="6" vertex="1">
                     <mxGeometry x="309.99524590163946" y="380.77" width="160" height="120" as="geometry"/>
                 </mxCell>
-                <mxCell id="16" value="Add the design unit&#39;s ip to the manifest&#39;s dependency list" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="6" vertex="1">
+                <mxCell id="16" value="Add the design unit&#39;s project to the manifest&#39;s dependency list" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="6" vertex="1">
                     <mxGeometry x="506.86524590163935" y="280.77" width="112.5" height="112.5" as="geometry"/>
                 </mxCell>
-                <mxCell id="17" value="Using a design unit&amp;nbsp;&lt;div&gt;from&amp;nbsp;&lt;span style=&quot;background-color: transparent;&quot;&gt;an existing ip?&lt;/span&gt;&lt;/div&gt;" style="rhombus;whiteSpace=wrap;html=1;fillStyle=solid;fillColor=#FFFFFF;" parent="6" vertex="1">
+                <mxCell id="17" value="Using a design &lt;br&gt;unit&amp;nbsp;&lt;span style=&quot;background-color: transparent;&quot;&gt;from&amp;nbsp;&lt;/span&gt;&lt;span style=&quot;background-color: transparent;&quot;&gt;an existing&lt;/span&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent;&quot;&gt;project?&lt;/span&gt;&lt;/div&gt;" style="rhombus;whiteSpace=wrap;html=1;fillStyle=solid;fillColor=#FFFFFF;" parent="6" vertex="1">
                     <mxGeometry x="309.99524590163924" width="160" height="120" as="geometry"/>
                 </mxCell>
                 <mxCell id="18" value="Inspect output to determine if the previous process was successful" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="6" vertex="1">
@@ -186,7 +186,7 @@
                 <mxCell id="44" value="$ &lt;b&gt;&lt;u&gt;orbit lock&lt;/u&gt;&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fillStyle=solid;fillColor=#FFFFFF;" parent="42" vertex="1">
                     <mxGeometry x="446.25475409836065" y="162.31" width="106.22950819672131" height="38.46" as="geometry"/>
                 </mxCell>
-                <mxCell id="45" value="Record all ip dependency information" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="42" vertex="1">
+                <mxCell id="45" value="Record all &lt;br&gt;project dependency information" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="42" vertex="1">
                     <mxGeometry x="273.75" y="125.29000000000008" width="112.5" height="112.5" as="geometry"/>
                 </mxCell>
                 <mxCell id="46" value="" style="endArrow=classic;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="42" source="44" target="45" edge="1">
@@ -195,7 +195,7 @@
                         <mxPoint x="460" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="47" value="Release the state &lt;br&gt;of the ip as a new version" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="42" vertex="1">
+                <mxCell id="47" value="Release the state &lt;br&gt;of the project as a new version" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="42" vertex="1">
                     <mxGeometry width="112.5" height="112.5" as="geometry"/>
                 </mxCell>
                 <mxCell id="48" value="" style="endArrow=classic;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="42" source="45" target="43" edge="1">
@@ -258,13 +258,13 @@
                         <mxPoint x="299.04997453044905" y="298.1866129006139" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="61" value="Refer to an &lt;br&gt;existing design &lt;br&gt;unit&#39;s source &lt;br&gt;code" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="52" vertex="1">
+                <mxCell id="61" value="Refer to an &lt;br&gt;existing IP core&#39;s source code" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="52" vertex="1">
                     <mxGeometry x="416.88" y="135.01999999999998" width="112.5" height="112.5" as="geometry"/>
                 </mxCell>
-                <mxCell id="62" value="Learn more about an existing ip" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="52" vertex="1">
+                <mxCell id="62" value="Learn more &lt;br&gt;about an existing &lt;br&gt;project" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="52" vertex="1">
                     <mxGeometry x="210.63" width="112.5" height="112.5" as="geometry"/>
                 </mxCell>
-                <mxCell id="63" value="Survey what ip &lt;br&gt;exist in the catalog" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="52" vertex="1">
+                <mxCell id="63" value="Survey what projects exist&lt;br&gt;in the catalog" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillStyle=solid;fillColor=#FFFFFF;" parent="52" vertex="1">
                     <mxGeometry y="157.01999999999998" width="112.5" height="112.5" as="geometry"/>
                 </mxCell>
                 <mxCell id="64" value="1. Research" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="1" vertex="1">

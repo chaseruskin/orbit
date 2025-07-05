@@ -16,7 +16,7 @@
 //
 
 use crate::core::config::Config;
-use crate::core::manifest::IP_MANIFEST_FILE;
+use crate::core::manifest::PROJECT_MANIFEST_FILE;
 use crate::core::swap::StrSwapTable;
 use crate::util::anyerror::Fault;
 use std::collections::HashMap;
@@ -24,7 +24,7 @@ use std::hash::Hash;
 use std::io::Read;
 use std::io::Write;
 
-use crate::core::ip::Ip;
+use crate::core::project::Project;
 use crate::util::filesystem::Standardize;
 use std::collections::btree_set::IntoIter;
 use std::collections::btree_set::Iter;
@@ -320,41 +320,50 @@ impl Environment {
     }
 
     /// Loads environment variables from a target [Ip].
-    pub fn from_ip(mut self, ip: &Ip) -> Result<Self, Fault> {
+    pub fn from_project(mut self, prj: &Project) -> Result<Self, Fault> {
         self = self.overwrite(
             EnvVar::new()
-                .key(ORBIT_IP_NAME)
-                .value(&ip.get_man().get_ip().get_name().to_string()),
+                .key(ORBIT_PROJECT_NAME)
+                .value(&prj.get_man().get_project().get_name().to_string()),
         );
         self = self.overwrite(
             EnvVar::new()
-                .key(ORBIT_IP_UUID)
-                .value(&ip.get_uuid().to_string()),
+                .key(ORBIT_PROJECT_DIR)
+                .value(PathBuf::standardize(&prj.get_root()).to_str().unwrap()),
         );
         self = self.overwrite(
             EnvVar::new()
-                .key(ORBIT_IP_VERSION)
-                .value(&ip.get_man().get_ip().get_version().to_string()),
+                .key(ORBIT_PROJECT_UUID)
+                .value(&prj.get_uuid().to_string()),
         );
         self = self.overwrite(
             EnvVar::new()
-                .key(ORBIT_IP_LIBRARY)
-                .value(&ip.get_hdl_library().to_string()),
+                .key(ORBIT_PROJECT_VERSION)
+                .value(&prj.get_man().get_project().get_version().to_string()),
+        );
+        self = self.overwrite(
+            EnvVar::new()
+                .key(ORBIT_PROJECT_LIBRARY)
+                .value(&prj.get_hdl_library().to_string()),
         );
         self = self.overwrite(
             EnvVar::new()
                 .key(ORBIT_MANIFEST_DIR)
-                .value(PathBuf::standardize(&ip.get_root()).to_str().unwrap()),
+                .value(PathBuf::standardize(&prj.get_root()).to_str().unwrap()),
         );
         self = self.overwrite(
             EnvVar::new().key(ORBIT_MANIFEST_FILE).value(
-                PathBuf::standardize(&ip.get_root().join(IP_MANIFEST_FILE))
+                PathBuf::standardize(&prj.get_root().join(PROJECT_MANIFEST_FILE))
                     .to_str()
                     .unwrap(),
             ),
         );
-        if let Some(sum) = ip.get_checksum() {
-            self = self.overwrite(EnvVar::new().key(ORBIT_IP_CHECKSUM).value(&sum.to_string()));
+        if let Some(sum) = prj.get_checksum() {
+            self = self.overwrite(
+                EnvVar::new()
+                    .key(ORBIT_PROJECT_CHECKSUM)
+                    .value(&sum.to_string()),
+            );
         }
         Ok(self)
     }
@@ -463,14 +472,19 @@ pub const ORBIT: &str = "ORBIT";
 
 pub const ORBIT_MANIFEST_DIR: &str = "ORBIT_MANIFEST_DIR";
 pub const ORBIT_MANIFEST_FILE: &str = "ORBIT_MANIFEST_FILE";
-pub const ORBIT_IP_NAME: &str = "ORBIT_IP_NAME";
-pub const ORBIT_IP_UUID: &str = "ORBIT_IP_UUID";
-pub const ORBIT_IP_VERSION: &str = "ORBIT_IP_VERSION";
-pub const ORBIT_IP_LIBRARY: &str = "ORBIT_IP_LIBRARY";
-pub const ORBIT_IP_CHECKSUM: &str = "ORBIT_IP_CHECKSUM";
+pub const ORBIT_PROJECT_DIR: &str = "ORBIT_PROJECT_DIR";
+pub const ORBIT_PROJECT_NAME: &str = "ORBIT_PROJECT_NAME";
+pub const ORBIT_PROJECT_UUID: &str = "ORBIT_PROJECT_UUID";
+pub const ORBIT_PROJECT_VERSION: &str = "ORBIT_PROJECT_VERSION";
+pub const ORBIT_PROJECT_LIBRARY: &str = "ORBIT_PROJECT_LIBRARY";
+pub const ORBIT_PROJECT_CHECKSUM: &str = "ORBIT_PROJECT_CHECKSUM";
 
 pub const ORBIT_PROTOCOL: &str = "ORBIT_PROTOCOL";
 pub const ORBIT_TARGET: &str = "ORBIT_TARGET";
+
+pub const ORBIT_CORE_ROOT_NAME: &str = "ORBIT_CORE_ROOT_NAME";
+pub const ORBIT_CORE_ROOT_FILE: &str = "ORBIT_CORE_ROOT_FILE";
+pub const ORBIT_CORE_ROOT_JSON: &str = "ORBIT_CORE_ROOT_JSON";
 
 pub const ORBIT_TOP_NAME: &str = "ORBIT_TOP_NAME";
 pub const ORBIT_TOP_FILE: &str = "ORBIT_TOP_FILE";
@@ -492,6 +506,6 @@ pub const ORBIT_OUT_DIR: &str = "ORBIT_OUT_DIR";
 
 pub const ORBIT_CHANNEL_NAME: &str = "ORBIT_CHANNEL_NAME";
 pub const ORBIT_CHANNEL_DIR: &str = "ORBIT_CHANNEL_DIR";
-pub const ORBIT_CHANNEL_IP_DIR: &str = "ORBIT_CHANNEL_IP_DIR";
+pub const ORBIT_CHANNEL_PROJECT_DIR: &str = "ORBIT_CHANNEL_PROJECT_DIR";
 
 pub const ORBIT_ENV_PREFIX: &str = "ORBIT_ENV_";

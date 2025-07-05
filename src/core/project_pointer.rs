@@ -16,29 +16,29 @@
 //
 
 use super::{
-    ip::Ip,
-    manifest::{self, Manifest, IP_MANIFEST_FILE},
+    manifest::{self, Manifest, PROJECT_MANIFEST_FILE},
+    project::Project,
 };
 use crate::error::LastError;
 use crate::util::anyerror::Fault;
 use crate::{core::manifest::FromFile, error::Error};
 use std::path::PathBuf;
 
-/// The ip pointer stores the manifest for an ip, to be used to grab the ip from another
+/// The project pointer stores the manifest for a project, to be used to grab the project from another
 /// location not already on the user's local file system.
 #[derive(Debug, PartialEq)]
-pub struct IpPointer {
+pub struct ProjectPointer {
     manifest: Manifest,
 }
 
-impl IpPointer {
+impl ProjectPointer {
     pub fn decouple(self) -> Manifest {
         self.manifest
     }
 
-    /// Loads an IpPointer struct.
+    /// Loads an [ProjectPointer] struct.
     pub fn read(path: PathBuf) -> Result<Self, Fault> {
-        let man_path = path.join(IP_MANIFEST_FILE);
+        let man_path = path.join(PROJECT_MANIFEST_FILE);
         if man_path.exists() == false || man_path.is_file() == false {
             return Err(Error::IpLoadFailed(LastError(
                 Error::ManifestPathNotFound(man_path.to_string_lossy().to_string()).to_string(),
@@ -51,15 +51,15 @@ impl IpPointer {
     /// Finds all Manifest files available in the provided path `path`.
     ///
     /// Errors if on filesystem problems.
-    pub fn detect_all(path: &PathBuf) -> Result<Vec<Ip>, Fault> {
+    pub fn detect_all(path: &PathBuf) -> Result<Vec<Project>, Fault> {
         let mut result = Vec::new();
         // walk the directory
-        for mut entry in manifest::find_file(&path, IP_MANIFEST_FILE, false)? {
-            // remove the manifest file to access the ip's root directory
+        for mut entry in manifest::find_file(&path, PROJECT_MANIFEST_FILE, false)? {
+            // remove the manifest file to access the project's root directory
             entry.pop();
             result.push({
-                let ptr = IpPointer::read(entry)?;
-                Ip::from(ptr)
+                let ptr = ProjectPointer::read(entry)?;
+                Project::from(ptr)
             });
         }
         Ok(result)

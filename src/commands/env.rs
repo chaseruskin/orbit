@@ -19,7 +19,7 @@ use std::path::PathBuf;
 
 use crate::commands::helps::env;
 use crate::core::context::Context;
-use crate::core::ip::Ip;
+use crate::core::project::Project;
 use crate::util::environment;
 use crate::util::environment::EnvVar;
 use crate::util::environment::Environment;
@@ -57,7 +57,7 @@ impl Subcommand<Context> for Env {
                 .key(environment::ORBIT_TARGET_DIR)
                 .value(&c.get_target_dir()),
             EnvVar::new().key(environment::ORBIT_MANIFEST_DIR).value(
-                PathBuf::standardize(c.get_ip_path().unwrap_or(&PathBuf::new()))
+                PathBuf::standardize(c.get_project_path().unwrap_or(&PathBuf::new()))
                     .to_str()
                     .unwrap(),
             ),
@@ -77,10 +77,10 @@ impl Subcommand<Context> for Env {
         }
 
         // check if in an ip to add those variables
-        if let Some(ip_path) = c.get_ip_path() {
+        if let Some(ip_path) = c.get_project_path() {
             // check ip
-            if let Ok(ip) = Ip::load(ip_path.clone(), true, false) {
-                env = env.from_ip(&ip)?;
+            if let Ok(ip) = Project::load(ip_path.clone(), true, false) {
+                env = env.from_project(&ip)?;
             }
             // check the build directory
             env = env.from_env_file(&std::path::PathBuf::from(c.get_target_dir()))?;

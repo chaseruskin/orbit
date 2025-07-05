@@ -25,23 +25,23 @@ use std::path::PathBuf;
 
 use super::catalog::Catalog;
 use super::catalog::PkgName;
-use super::iparchive::IpArchive;
-use super::ippointer::IpPointer;
 use super::lang;
 use super::lang::LangIdentifier;
 use super::lang::LangUnit;
 use super::lockfile::LockFile;
-use super::lockfile::IP_LOCK_FILE;
+use super::lockfile::PROJECT_LOCK_FILE;
 use super::manifest::FromFile;
+use super::project_archive::ProjectArchive;
+use super::project_pointer::ProjectPointer;
 use super::version::PartialVersion;
 use super::visibility::VipList;
 use super::visibility::Visibility;
 use crate::core::cache::PkgCache;
 use crate::core::lockfile::LockEntry;
-use crate::core::manifest::IP_MANIFEST_FILE;
 use crate::core::manifest::ORBIT_CACHE_FILE;
 use crate::core::manifest::ORBIT_DYNAMIC_FILE;
 use crate::core::manifest::ORBIT_SUM_FILE;
+use crate::core::manifest::PROJECT_MANIFEST_FILE;
 use crate::core::uuid::Uuid;
 use crate::error::Error;
 use crate::error::Hint;
@@ -98,7 +98,7 @@ impl Mapping {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Ip {
+pub struct Project {
     mapping: Mapping,
     /// The base directory for the entire [Ip] structure.
     root: PathBuf,
@@ -112,11 +112,11 @@ pub struct Ip {
     is_local: bool,
 }
 
-impl From<IpPointer> for Ip {
-    fn from(value: IpPointer) -> Self {
+impl From<ProjectPointer> for Project {
+    fn from(value: ProjectPointer) -> Self {
         let man = value.decouple();
         Self {
-            uuid: man.get_ip().get_uuid().clone(),
+            uuid: man.get_project().get_uuid().clone(),
             mapping: Mapping::Imaginary,
             root: PathBuf::new(),
             data: man,
@@ -126,14 +126,14 @@ impl From<IpPointer> for Ip {
     }
 }
 
-impl From<IpArchive> for Ip {
-    fn from(value: IpArchive) -> Self {
+impl From<ProjectArchive> for Project {
+    fn from(value: ProjectArchive) -> Self {
         let (man, lock, archive) = value.decouple();
-        let uuid = match lock.get_self_entry(man.get_ip().get_name()) {
+        let uuid = match lock.get_self_entry(man.get_project().get_name()) {
             Some(entry) => entry.get_uuid().clone(),
             None => match lock.get(
-                man.get_ip().get_name(),
-                &man.get_ip().get_version().to_partial_version(),
+                man.get_project().get_name(),
+                &man.get_project().get_version().to_partial_version(),
             ) {
                 Some(entry) => entry.get_uuid().clone(),
                 None => Uuid::new(),
@@ -150,11 +150,11 @@ impl From<IpArchive> for Ip {
     }
 }
 
-impl Ip {
+impl Project {
     pub fn has_public_list(&self) -> bool {
         VipList::new(
             &self.get_root(),
-            self.get_man().get_ip().get_publics().as_ref(),
+            self.get_man().get_project().get_publics().as_ref(),
         )
         .unwrap()
         .exists()
@@ -163,14 +163,14 @@ impl Ip {
     pub fn into_public_list(&self) -> VipList {
         VipList::new(
             &self.get_root(),
-            self.get_man().get_ip().get_publics().as_ref(),
+            self.get_man().get_project().get_publics().as_ref(),
         )
         .unwrap()
     }
 
     /// Generates a list of files that are known to either be public or protected.
     pub fn into_non_private_list(&self) -> VipList {
-        let meta = Ip::read_cache_metadata(self.get_root());
+        let meta = Project::read_cache_metadata(self.get_root());
         let mut list = match meta {
             Some(m) => match m.get_protected().len() {
                 0 => None,
@@ -178,7 +178,7 @@ impl Ip {
             },
             None => None,
         };
-        if let Some(public) = self.get_man().get_ip().get_publics() {
+        if let Some(public) = self.get_man().get_project().get_publics() {
             list = match list {
                 Some(mut l) => {
                     l.extend(public.clone());
@@ -215,9 +215,9 @@ impl Ip {
     /// non physical mappings of an ip.
     pub fn get_checksum(&self) -> Option<Sha256Hash> {
         match self.get_mapping() {
-            Mapping::Physical => match Ip::read_cache_checksum(&self.get_root()) {
+            Mapping::Physical => match Project::read_cache_checksum(&self.get_root()) {
                 Some(sum) => Some(sum),
-                None => Some(Ip::compute_checksum(&self.get_root())),
+                None => Some(Project::compute_checksum(&self.get_root())),
             },
             _ => None,
         }
@@ -249,10 +249,10 @@ impl Ip {
     pub fn relate(root: PathBuf, base_path: &PathBuf) -> Result<Self, Fault> {
         // resolve the path if it is relative
         let resolved_root = filesystem::resolve_rel_path2(&base_path, &root);
-        let mut relative_ip = Ip::load(resolved_root, false, false)?;
+        let mut relative_ip = Project::load(resolved_root, false, false)?;
         relative_ip.mapping = Mapping::Relative(root);
         // verify this ip has a lockfile
-        let lock_path = relative_ip.get_root().join(IP_LOCK_FILE);
+        let lock_path = relative_ip.get_root().join(PROJECT_LOCK_FILE);
         if lock_path.exists() == false || lock_path.is_file() == false {
             return Err(Error::LockfileLoadFailed(LastError(
                 "a lockfile does not exist".to_string(),
@@ -275,7 +275,7 @@ impl Ip {
         is_working_ip: bool,
         force_apply_new_uuid: bool,
     ) -> Result<Self, Fault> {
-        let man_path = root.join(IP_MANIFEST_FILE);
+        let man_path = root.join(PROJECT_MANIFEST_FILE);
         if man_path.exists() == false || man_path.is_file() == false {
             return Err(Error::IpLoadFailed(LastError(
                 Error::ManifestPathNotFound(man_path.to_string_lossy().to_string()).to_string(),
@@ -284,7 +284,7 @@ impl Ip {
         let man = Manifest::from_file(&man_path)?;
 
         // verify the public list is okay
-        VipList::new(&root, man.get_ip().get_publics().as_ref())?;
+        VipList::new(&root, man.get_project().get_publics().as_ref())?;
 
         if is_working_ip == true {
             // verify there are no files that created by user that are reserved for orbit's internal use
@@ -294,7 +294,7 @@ impl Ip {
             }
         }
 
-        let lock_path = root.join(IP_LOCK_FILE);
+        let lock_path = root.join(PROJECT_LOCK_FILE);
 
         let lock = match LockFile::from_file(&lock_path) {
             Ok(l) => l,
@@ -308,16 +308,16 @@ impl Ip {
             }
         };
 
-        let uuid = man.get_ip().get_uuid().clone();
+        let uuid = man.get_project().get_uuid().clone();
 
         // verify the UUIDs between the manifest and lockfile are the same
         if is_working_ip == true {
             //  println!("manifest: {:?}", uuid);
-            if let Some(lf) = lock.get_self_entry(man.get_ip().get_name()) {
+            if let Some(lf) = lock.get_self_entry(man.get_project().get_name()) {
                 // println!("lockfile: {:?}", lf.get_uuid());
                 if lf.get_uuid() != &uuid && force_apply_new_uuid == false {
                     return Err(Error::UuidModified(
-                        man.get_ip().get_name().clone(),
+                        man.get_project().get_name().clone(),
                         Hint::ConfirmUuidChange(lf.get_uuid().encode()),
                     ))?;
                 }
@@ -336,7 +336,7 @@ impl Ip {
 
     /// Checks if the given path hosts a valid manifest file.
     pub fn is_valid(path: &PathBuf) -> Result<(), Fault> {
-        let man_path = path.join(IP_MANIFEST_FILE);
+        let man_path = path.join(PROJECT_MANIFEST_FILE);
         if man_path.exists() == false || man_path.is_file() == false {
             return Err(Error::ManifestPathNotFound(
                 man_path.to_string_lossy().to_string(),
@@ -361,19 +361,19 @@ impl Ip {
         for mut entry in manifest::find_file(&path, &name, is_exclusive)? {
             // remove the manifest file to access the ip's root directory
             entry.pop();
-            result.push(Ip::load(entry, is_working, false)?);
+            result.push(Project::load(entry, is_working, false)?);
         }
         Ok(result)
     }
 
-    /// Finds all IP manifest files along the provided path `path`.
+    /// Finds all project manifest files along the provided path `path`.
     ///
     /// Wraps Manifest::detect_all.
     pub fn detect_all(
         path: &PathBuf,
         is_working: bool,
     ) -> Result<Vec<Self>, Box<dyn std::error::Error>> {
-        Self::detect_all_sub(path, IP_MANIFEST_FILE, true, is_working)
+        Self::detect_all_sub(path, PROJECT_MANIFEST_FILE, true, is_working)
     }
 
     /// Checks the metadata file for a entry for `dynamic`.
@@ -407,7 +407,7 @@ impl Ip {
         let units = self
             .collect_units(false, self.has_public_list(), false)
             .unwrap();
-        let checksum = Ip::read_cache_checksum(self.get_root()).unwrap();
+        let checksum = Project::read_cache_checksum(self.get_root()).unwrap();
 
         units.into_iter().for_each(|(key, _)| {
             lut.insert(key.clone(), "_".to_string() + &checksum.to_dst_string());
@@ -449,8 +449,12 @@ impl Ip {
     /// made to the lock file.
     pub fn can_use_lock(&self, catalog: &Catalog) -> bool {
         let target = self.get_lock().get(
-            self.get_man().get_ip().get_name(),
-            &self.get_man().get_ip().get_version().to_partial_version(),
+            self.get_man().get_project().get_name(),
+            &self
+                .get_man()
+                .get_project()
+                .get_version()
+                .to_partial_version(),
         );
         let target_is_ok = match target {
             Some(entry) => entry.matches_target(&LockEntry::from((self, true)), &catalog),
@@ -462,7 +466,7 @@ impl Ip {
         // check that all entries are valid of dependencies and dev dependencies
         for dep in self.get_man().get_deps_list(true, true) {
             if let Some(entry) = self.get_lock().get(dep.0, dep.1.get_version()) {
-                if let Some(relative_ip) = dep.1.as_ip() {
+                if let Some(relative_ip) = dep.1.as_project() {
                     if &LockEntry::from((relative_ip, true)) == entry {
                         ()
                     } else {
@@ -481,7 +485,7 @@ impl Ip {
         self.lock.is_empty() == false
     }
 
-    /// Computes the checksum on the root of the IP.
+    /// Computes the checksum on the root of the project.
     ///
     /// Changes the current working directory to the root for consistent computation.
     pub fn compute_checksum(dir: &PathBuf) -> Sha256Hash {
@@ -535,7 +539,7 @@ impl Ip {
     /// Serializes the cached ip's data into the [ORBIT_CACHE_FILE].
     pub fn write_cache_metadata(&self) -> Result<(), Fault> {
         let path = self.get_root().join(manifest::ORBIT_CACHE_FILE);
-        let meta = PkgCache::from_ip(&self)?;
+        let meta = PkgCache::from_project(&self)?;
         let serialized = serde_json::to_string(&meta)?;
         std::fs::write(&path, serialized)?;
         Ok(())
@@ -693,7 +697,10 @@ impl Ip {
     // }
 
     pub fn get_exclude_list(&self) -> Result<VipList, Fault> {
-        VipList::new(&self.root, self.get_man().get_ip().get_exclude().as_ref())
+        VipList::new(
+            &self.root,
+            self.get_man().get_project().get_ignore().as_ref(),
+        )
     }
 
     pub fn gather_current_files(&self) -> Vec<String> {
@@ -714,8 +721,8 @@ impl Ip {
         filesystem::gather_current_files(&self.root, false)
             .into_iter()
             .filter(|f| {
-                if f.ends_with(&format!("/{}", IP_MANIFEST_FILE))
-                    || f.ends_with(&format!("/{}", IP_LOCK_FILE))
+                if f.ends_with(&format!("/{}", PROJECT_MANIFEST_FILE))
+                    || f.ends_with(&format!("/{}", PROJECT_LOCK_FILE))
                 {
                     true
                 } else {
@@ -729,11 +736,11 @@ impl Ip {
     }
 
     /// Compile a list of referenced paths to make sure are copied into a directory
-    /// when moving an IP around the filesystem.
+    /// when moving an project around the filesystem.
     pub fn get_files_to_keep(&self) -> HashSet<PathBuf> {
         let mut list = HashSet::new();
         // keep the readme if set in manifest
-        if let Some(readme) = self.get_man().get_ip().get_readme() {
+        if let Some(readme) = self.get_man().get_project().get_readme() {
             // resolve a relative path
             list.insert(filesystem::resolve_rel_path2(self.get_root(), readme));
         }
@@ -741,7 +748,7 @@ impl Ip {
     }
 }
 
-use crate::core::pkgid::PkgPart;
+use crate::core::name::Name;
 use crate::core::version::Version;
 use crate::util::filesystem;
 use std::fs;
@@ -751,14 +758,14 @@ const SPEC_DELIM: &str = ":";
 const UUID_DELIM: &str = "+";
 
 #[derive(PartialEq, Hash, Eq, Clone, PartialOrd)]
-pub struct IpSpec(PkgPart, Uuid, Version);
+pub struct ProjectIdSpec(Name, Uuid, Version);
 
-impl IpSpec {
-    pub fn new(id: PkgPart, uuid: Uuid, version: Version) -> Self {
+impl ProjectIdSpec {
+    pub fn new(id: Name, uuid: Uuid, version: Version) -> Self {
         Self(id, uuid, version)
     }
 
-    pub fn get_name(&self) -> &PkgPart {
+    pub fn get_name(&self) -> &Name {
         &self.0
     }
 
@@ -770,8 +777,8 @@ impl IpSpec {
         &self.2
     }
 
-    pub fn to_partial_ip_spec(&self) -> PartialIpSpec {
-        PartialIpSpec(
+    pub fn to_partial_project_id_spec(&self) -> PartialProjectIdSpec {
+        PartialProjectIdSpec(
             self.0.clone(),
             Some(self.1.clone()),
             AnyVersion::Specific(self.2.to_partial_version()),
@@ -783,7 +790,7 @@ impl IpSpec {
     }
 }
 
-impl FromStr for IpSpec {
+impl FromStr for ProjectIdSpec {
     type Err = Fault;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -791,7 +798,7 @@ impl FromStr for IpSpec {
         match s.rsplit_once(SPEC_DELIM) {
             Some((rem, v)) => match rem.rsplit_once(UUID_DELIM) {
                 Some((name, id)) => Ok(Self::new(
-                    PkgPart::from_str(name)?,
+                    Name::from_str(name)?,
                     Uuid::from_str(id)?,
                     Version::from_str(v)?,
                 )),
@@ -808,7 +815,7 @@ impl FromStr for IpSpec {
     }
 }
 
-impl std::fmt::Debug for IpSpec {
+impl std::fmt::Debug for ProjectIdSpec {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -822,14 +829,14 @@ impl std::fmt::Debug for IpSpec {
     }
 }
 
-impl std::fmt::Display for IpSpec {
+impl std::fmt::Display for ProjectIdSpec {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}{}{}", self.get_name(), SPEC_DELIM, self.get_version())
     }
 }
 
-impl From<(PkgPart, Uuid, Version)> for IpSpec {
-    fn from(value: (PkgPart, Uuid, Version)) -> Self {
+impl From<(Name, Uuid, Version)> for ProjectIdSpec {
+    fn from(value: (Name, Uuid, Version)) -> Self {
         Self(value.0, value.1, value.2)
     }
 }
@@ -839,15 +846,15 @@ use serde::Serializer;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-impl<'de> Deserialize<'de> for IpSpec {
-    fn deserialize<D>(deserializer: D) -> Result<IpSpec, D::Error>
+impl<'de> Deserialize<'de> for ProjectIdSpec {
+    fn deserialize<D>(deserializer: D) -> Result<ProjectIdSpec, D::Error>
     where
         D: de::Deserializer<'de>,
     {
         struct LayerVisitor;
 
         impl<'de> de::Visitor<'de> for LayerVisitor {
-            type Value = IpSpec;
+            type Value = ProjectIdSpec;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("an identifier and a version")
@@ -857,7 +864,7 @@ impl<'de> Deserialize<'de> for IpSpec {
             where
                 E: de::Error,
             {
-                match IpSpec::from_str(v) {
+                match ProjectIdSpec::from_str(v) {
                     Ok(v) => Ok(v),
                     Err(e) => Err(de::Error::custom(e)),
                 }
@@ -868,7 +875,7 @@ impl<'de> Deserialize<'de> for IpSpec {
     }
 }
 
-impl Serialize for IpSpec {
+impl Serialize for ProjectIdSpec {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -880,14 +887,14 @@ impl Serialize for IpSpec {
 use crate::core::version::AnyVersion;
 
 #[derive(PartialEq, Clone, Hash, Eq)]
-pub struct PartialIpSpec(PkgPart, Option<Uuid>, AnyVersion);
+pub struct PartialProjectIdSpec(Name, Option<Uuid>, AnyVersion);
 
-impl PartialIpSpec {
-    pub fn new(name: PkgPart, uuid: Option<Uuid>, version: PartialVersion) -> Self {
+impl PartialProjectIdSpec {
+    pub fn new(name: Name, uuid: Option<Uuid>, version: PartialVersion) -> Self {
         Self(name, uuid, AnyVersion::Specific(version))
     }
 
-    pub fn get_name(&self) -> &PkgPart {
+    pub fn get_name(&self) -> &Name {
         &self.0
     }
 
@@ -899,8 +906,8 @@ impl PartialIpSpec {
         &self.2
     }
 
-    pub fn as_ip_spec(&self) -> Option<IpSpec> {
-        Some(IpSpec::new(
+    pub fn as_ip_spec(&self) -> Option<ProjectIdSpec> {
+        Some(ProjectIdSpec::new(
             self.0.clone(),
             self.1.as_ref()?.clone(),
             self.2.as_specific()?.as_version()?,
@@ -912,7 +919,7 @@ impl PartialIpSpec {
     }
 }
 
-impl std::fmt::Debug for PartialIpSpec {
+impl std::fmt::Debug for PartialProjectIdSpec {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.1 {
             Some(id) => write!(f, "{}{}{}{}{}", self.0, UUID_DELIM, id, SPEC_DELIM, self.2),
@@ -921,15 +928,15 @@ impl std::fmt::Debug for PartialIpSpec {
     }
 }
 
-impl<'de> Deserialize<'de> for PartialIpSpec {
-    fn deserialize<D>(deserializer: D) -> Result<PartialIpSpec, D::Error>
+impl<'de> Deserialize<'de> for PartialProjectIdSpec {
+    fn deserialize<D>(deserializer: D) -> Result<PartialProjectIdSpec, D::Error>
     where
         D: de::Deserializer<'de>,
     {
         struct LayerVisitor;
 
         impl<'de> de::Visitor<'de> for LayerVisitor {
-            type Value = PartialIpSpec;
+            type Value = PartialProjectIdSpec;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("an identifier and a version")
@@ -939,7 +946,7 @@ impl<'de> Deserialize<'de> for PartialIpSpec {
             where
                 E: de::Error,
             {
-                match PartialIpSpec::from_str(v) {
+                match PartialProjectIdSpec::from_str(v) {
                     Ok(v) => Ok(v),
                     Err(e) => Err(de::Error::custom(e)),
                 }
@@ -950,7 +957,7 @@ impl<'de> Deserialize<'de> for PartialIpSpec {
     }
 }
 
-impl Serialize for PartialIpSpec {
+impl Serialize for PartialProjectIdSpec {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -960,11 +967,11 @@ impl Serialize for PartialIpSpec {
 }
 
 struct FullName {
-    name: PkgPart,
+    name: Name,
     id: Uuid,
 }
 
-impl FromStr for PartialIpSpec {
+impl FromStr for PartialProjectIdSpec {
     type Err = AnyError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -972,7 +979,7 @@ impl FromStr for PartialIpSpec {
             // split by delimiter (beginning from rhs)
             Some((rem, ver)) => match rem.rsplit_once(UUID_DELIM) {
                 Some((name, id)) => Ok(Self(
-                    match PkgPart::from_str(name) {
+                    match Name::from_str(name) {
                         Ok(p) => p,
                         Err(e) => return Err(AnyError(e.to_string())),
                     },
@@ -986,7 +993,7 @@ impl FromStr for PartialIpSpec {
                     },
                 )),
                 None => Ok(Self(
-                    match PkgPart::from_str(rem) {
+                    match Name::from_str(rem) {
                         Ok(p) => p,
                         Err(e) => return Err(AnyError(e.to_string())),
                     },
@@ -999,7 +1006,7 @@ impl FromStr for PartialIpSpec {
             },
             None => match s.rsplit_once(UUID_DELIM) {
                 Some((name, id)) => Ok(Self(
-                    match PkgPart::from_str(name) {
+                    match Name::from_str(name) {
                         Ok(p) => p,
                         Err(e) => return Err(AnyError(e.to_string())),
                     },
@@ -1010,7 +1017,7 @@ impl FromStr for PartialIpSpec {
                     AnyVersion::Latest,
                 )),
                 None => Ok(Self(
-                    match PkgPart::from_str(s) {
+                    match Name::from_str(s) {
                         Ok(p) => p,
                         Err(e) => return Err(AnyError(e.to_string())),
                     },
@@ -1022,7 +1029,7 @@ impl FromStr for PartialIpSpec {
     }
 }
 
-impl std::fmt::Display for PartialIpSpec {
+impl std::fmt::Display for PartialProjectIdSpec {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}{}{}", self.get_name(), SPEC_DELIM, self.get_version())
     }
@@ -1034,7 +1041,7 @@ mod test {
 
     #[test]
     fn compute_checksum() {
-        let sum = Ip::compute_checksum(&PathBuf::from("./tests/t6/"));
+        let sum = Project::compute_checksum(&PathBuf::from("./tests/t6/"));
         assert_eq!(
             sum,
             Sha256Hash::from_u32s([
@@ -1052,12 +1059,12 @@ mod test {
         );
 
         assert_eq!(
-            IpSpec::new(
-                PkgPart::from_str("name").unwrap(),
+            ProjectIdSpec::new(
+                Name::from_str("name").unwrap(),
                 Uuid::from_str("71vs0nyo7lqjji6p6uzfviaoi").unwrap(),
                 Version::from_str("1.0.0").unwrap()
             ),
-            IpSpec::from_str(&ip).unwrap()
+            ProjectIdSpec::from_str(&ip).unwrap()
         );
     }
 
@@ -1065,6 +1072,6 @@ mod test {
     fn from_str_ip_spec_bad() {
         let ip = format!("name");
 
-        assert_eq!(IpSpec::from_str(&ip).is_err(), true);
+        assert_eq!(ProjectIdSpec::from_str(&ip).is_err(), true);
     }
 }

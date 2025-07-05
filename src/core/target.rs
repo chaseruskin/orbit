@@ -255,12 +255,12 @@ mod test {
 
     #[derive(Debug, PartialEq, Serialize, Deserialize)]
     pub struct Plugins {
-        plugin: Vec<Target>,
+        target: Vec<Target>,
     }
 
     impl Plugins {
         pub fn new() -> Self {
-            Self { plugin: Vec::new() }
+            Self { target: Vec::new() }
         }
     }
 
@@ -332,13 +332,13 @@ command = "bash ~/scripts/download.bash"
 
     #[test]
     fn series_of_plugins() {
-        let contents = format!("{0}{1}\n{0}{2}", "[[plugin]]", P_1, P_2);
+        let contents = format!("{0}{1}\n{0}{2}", "[[target]]", P_1, P_2);
         // assemble the list of protocols
         let plugs = Plugins::from_str(&contents).unwrap();
         assert_eq!(
             plugs,
             Plugins {
-                plugin: vec![
+                target: vec![
                     Target::from_str(P_1).unwrap(),
                     Target::from_str(P_2).unwrap()
                 ],

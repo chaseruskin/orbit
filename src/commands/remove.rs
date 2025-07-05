@@ -18,7 +18,7 @@
 use super::helps::remove;
 use crate::core::catalog::{CacheSlot, Catalog};
 use crate::core::context::Context;
-use crate::core::ip::{Ip, PartialIpSpec};
+use crate::core::project::{PartialProjectIdSpec, Project};
 use crate::core::version::AnyVersion;
 use crate::error::Error;
 use crate::util::anyerror::{AnyError, Fault};
@@ -31,7 +31,7 @@ use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Remove {
-    ip: PartialIpSpec,
+    spec: PartialProjectIdSpec,
     force: bool,
     // TODO: implement recursive removal (take away all dependent ips)
     // recurse: bool,
@@ -47,7 +47,7 @@ impl Subcommand<Context> for Remove {
             verbose: cli.check(Arg::flag("verbose"))?,
             force: cli.check(Arg::flag("force"))?,
             // recurse: cli.check(Arg::flag("recurse").switch('r'))?,
-            ip: cli.require(Arg::positional("project"))?,
+            spec: cli.require(Arg::positional("project"))?,
         })
     }
 
@@ -58,39 +58,57 @@ impl Subcommand<Context> for Remove {
             .downloads(c.get_downloads_path())?;
 
         // check for ip in development or installation
-        let status = match catalog.translate_name(&self.ip.to_pkg_name())? {
+        let status = match catalog.translate_name(&self.spec.to_pkg_name())? {
             Some(st) => st,
             None => {
                 return Err(AnyError(format!(
-                    "ip \"{}\" does not exist in the catalog",
-                    self.ip
+                    "project \"{}\" does not exist in the catalog",
+                    self.spec
                 )))?
             }
         };
 
         // determine the ip version (invariant of state) that matches
         let detected_version = {
-            let install_version = status.get_install(&self.ip.get_version());
-            let download_version = status.get_download(&self.ip.get_version());
+            let install_version = status.get_install(&self.spec.get_version());
+            let download_version = status.get_download(&self.spec.get_version());
 
             if let Some(iv) = install_version {
                 if let Some(dv) = download_version {
-                    if iv.get_man().get_ip().get_version() > dv.get_man().get_ip().get_version() {
+                    if iv.get_man().get_project().get_version()
+                        > dv.get_man().get_project().get_version()
+                    {
                         AnyVersion::Specific(
-                            iv.get_man().get_ip().get_version().to_partial_version(),
+                            iv.get_man()
+                                .get_project()
+                                .get_version()
+                                .to_partial_version(),
                         )
                     } else {
                         AnyVersion::Specific(
-                            dv.get_man().get_ip().get_version().to_partial_version(),
+                            dv.get_man()
+                                .get_project()
+                                .get_version()
+                                .to_partial_version(),
                         )
                     }
                 } else {
-                    AnyVersion::Specific(iv.get_man().get_ip().get_version().to_partial_version())
+                    AnyVersion::Specific(
+                        iv.get_man()
+                            .get_project()
+                            .get_version()
+                            .to_partial_version(),
+                    )
                 }
             } else if let Some(dv) = download_version {
-                AnyVersion::Specific(dv.get_man().get_ip().get_version().to_partial_version())
+                AnyVersion::Specific(
+                    dv.get_man()
+                        .get_project()
+                        .get_version()
+                        .to_partial_version(),
+                )
             } else {
-                self.ip.get_version().clone()
+                self.spec.get_version().clone()
             }
         };
 
@@ -100,16 +118,20 @@ impl Subcommand<Context> for Remove {
 
         if cached_ip.is_none() && archived_ip.is_none() {
             return Err(Error::Custom(format!(
-                "unable to find a version \"{1}\" for ip \"{0}\" that can be removed",
-                self.ip.get_name(),
+                "unable to find a version \"{1}\" for project \"{0}\" that can be removed",
+                self.spec.get_name(),
                 detected_version
             )))?;
         }
 
         // get a complete name
         let ip_spec = match cached_ip {
-            Some(c) => c.get_man().get_ip().into_ip_spec(),
-            None => archived_ip.unwrap().get_man().get_ip().into_ip_spec(),
+            Some(c) => c.get_man().get_project().into_project_id_spec(),
+            None => archived_ip
+                .unwrap()
+                .get_man()
+                .get_project()
+                .into_project_id_spec(),
         };
 
         // TODO: issue a warning if the ip to be deleted is not found in a channel (this action may be
@@ -117,7 +139,7 @@ impl Subcommand<Context> for Remove {
 
         // confirm with user that it is the correct ip
         if self.force == false {
-            if prompt::prompt(&format!("removing ip {}, proceed", ip_spec), true)? == false {
+            if prompt::prompt(&format!("removing project {}, proceed", ip_spec), true)? == false {
                 crate::info!("removal cancelled");
                 return Ok(());
             }
@@ -130,13 +152,13 @@ impl Subcommand<Context> for Remove {
             Some(t) => {
                 Self::remove_install(t)?;
                 if self.verbose == true {
-                    crate::info!("removed ip {} from the cache", ip_spec);
+                    crate::info!("removed project {} from the cache", ip_spec);
                 }
                 Self::remove_dynamics(c.get_cache_path(), t, self.verbose)?;
             }
             None => {
                 if self.verbose == true {
-                    crate::info!("ip {} is already removed from the cache", self.ip);
+                    crate::info!("project {} is already removed from the cache", self.spec);
                 }
             }
         };
@@ -146,17 +168,17 @@ impl Subcommand<Context> for Remove {
             Some(t) => {
                 Self::remove_download(c.get_downloads_path(), t)?;
                 if self.verbose == true {
-                    crate::info!("removed ip {} from the archive", ip_spec);
+                    crate::info!("removed project {} from the archive", ip_spec);
                 }
             }
             None => {
                 if self.verbose == true {
-                    crate::info!("ip {} is already removed from the archive", self.ip);
+                    crate::info!("project {} is already removed from the archive", self.spec);
                 }
             }
         };
 
-        crate::info!("removed ip {}", ip_spec);
+        crate::info!("removed project {}", ip_spec);
         self.run()
     }
 }
@@ -167,8 +189,8 @@ impl Remove {
     }
 
     /// Removes the compressed snapshot file of the ip from the archive.
-    pub fn remove_download(archive_path: &PathBuf, target: &Ip) -> Result<(), Fault> {
-        let ip_spec = target.get_man().get_ip().into_ip_spec();
+    pub fn remove_download(archive_path: &PathBuf, target: &Project) -> Result<(), Fault> {
+        let ip_spec = target.get_man().get_project().into_project_id_spec();
         // delete the project from the cache (default behavior)
         fs::remove_file(
             archive_path.join(
@@ -183,16 +205,20 @@ impl Remove {
         Ok(())
     }
 
-    /// Removes the installed IP from its root directory. This function assumes
-    /// the `target` IP exists under the installation path (cache path).
-    pub fn remove_install(target: &Ip) -> Result<(), Fault> {
+    /// Removes the installed project from its root directory. This function assumes
+    /// the `target` project exists under the installation path (cache path).
+    pub fn remove_install(target: &Project) -> Result<(), Fault> {
         // delete the project from the cache (default behavior)
         fs::remove_dir_all(target.get_root())?;
         Ok(())
     }
 
-    pub fn remove_dynamics(cache_path: &PathBuf, target: &Ip, verbose: bool) -> Result<(), Fault> {
-        let ip_spec = target.get_man().get_ip().into_ip_spec();
+    pub fn remove_dynamics(
+        cache_path: &PathBuf,
+        target: &Project,
+        verbose: bool,
+    ) -> Result<(), Fault> {
+        let ip_spec = target.get_man().get_project().into_project_id_spec();
 
         let og_cache_slot = CacheSlot::new(
             target.get_uuid(),
@@ -212,13 +238,13 @@ impl Remove {
                         continue;
                     }
                     // check for same UUID
-                    let cached_ip = Ip::load(entry.path().to_path_buf(), false, false)?;
+                    let cached_ip = Project::load(entry.path().to_path_buf(), false, false)?;
                     // remove the slot if it is dynamic
                     if cached_ip.is_dynamic() == true {
                         fs::remove_dir_all(entry.path())?;
                         if verbose == true {
                             crate::info!(
-                                "removed dynamic variant of ip {} from the cache",
+                                "removed dynamic variant of project {} from the cache",
                                 ip_spec
                             );
                         }

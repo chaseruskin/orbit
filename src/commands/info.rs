@@ -19,8 +19,8 @@ use crate::commands::helps::info;
 use crate::core::cache::UnitCache;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
-use crate::core::ip::{Ip, PartialIpSpec};
 use crate::core::lang::LangUnit;
+use crate::core::project::{PartialProjectIdSpec, Project};
 use crate::core::version;
 use crate::core::visibility::Visibility;
 use crate::error::{Error, Hint};
@@ -37,7 +37,7 @@ pub struct Info {
     // TODO: narrow the displayed version list with a range?
     versions: bool,
     units: bool,
-    ip: Option<PartialIpSpec>,
+    spec: Option<PartialProjectIdSpec>,
     all: bool,
     // TODO: view changelog?
     // TODO: view readme?
@@ -50,7 +50,7 @@ impl Subcommand<Context> for Info {
             all: cli.check(Arg::flag("all").switch('a'))?,
             versions: cli.check(Arg::flag("versions").switch('v'))?,
             units: cli.check(Arg::flag("units").switch('u'))?,
-            ip: cli.get(Arg::positional("project"))?,
+            spec: cli.get(Arg::positional("project"))?,
         })
     }
 
@@ -61,9 +61,9 @@ impl Subcommand<Context> for Info {
             .downloads(c.get_downloads_path())?
             .available(&c.get_config().get_channels())?;
 
-        let dev_ip: Option<Result<Ip, Fault>> = {
-            match Context::find_ip_path(&current_dir().unwrap()) {
-                Some(dir) => Some(Ip::load(dir, true, false)),
+        let dev_prj: Option<Result<Project, Fault>> = {
+            match Context::find_project_path(&current_dir().unwrap()) {
+                Some(dir) => Some(Project::load(dir, true, false)),
                 None => None,
             }
         };
@@ -71,7 +71,7 @@ impl Subcommand<Context> for Info {
         let mut is_local_ip = false;
 
         // try to auto-determine the ip (check if in a working ip)
-        let ip: &Ip = if let Some(spec) = &self.ip {
+        let prj: &Project = if let Some(spec) = &self.spec {
             // find the path to the provided ip by searching through the catalog
             if let Some(lvl) = catalog.translate_name(&spec.to_pkg_name())? {
                 // return the highest available version
@@ -96,10 +96,10 @@ impl Subcommand<Context> for Info {
                 ))?;
             }
         } else {
-            if dev_ip.is_none() == true {
+            if dev_prj.is_none() == true {
                 return Err(Error::NoAssumedWorkingIpFound)?;
             } else {
-                match &dev_ip {
+                match &dev_prj {
                     Some(Ok(r)) => {
                         is_local_ip = true;
                         r
@@ -112,18 +112,18 @@ impl Subcommand<Context> for Info {
 
         // load the ip's manifest
         if self.units == true {
-            if ip.get_mapping().is_physical() == true {
+            if prj.get_mapping().is_physical() == true {
                 // try to read from cache file
                 let cache_data = match is_local_ip {
                     true => None,
-                    false => Ip::read_cache_metadata(ip.get_root()),
+                    false => Project::read_cache_metadata(prj.get_root()),
                 };
                 if let Some(mut cache) = cache_data {
                     let mut units = cache.get_units_mut();
                     print!("{}", Self::format_cached_units_table(&mut units, self.all));
                 } else {
                     // force computing the primary design units if a physical ip (non-archived)
-                    let units = ip.collect_units(true, false, c.are_units_private_by_default())?;
+                    let units = prj.collect_units(true, false, c.are_units_private_by_default())?;
                     print!(
                         "{}",
                         Self::format_units_table(
@@ -136,7 +136,7 @@ impl Subcommand<Context> for Info {
             } else {
                 // a 'virtual' ip, so try to extract units from
                 crate::info!(
-                    "unable to display HDL units from a downloaded ip; try again after installing"
+                    "unable to display HDL units from a downloaded project; try again after installing"
                 );
             }
 
@@ -145,13 +145,13 @@ impl Subcommand<Context> for Info {
 
         // display all installed versions in the cache
         if self.versions == true {
-            let specified_ver = if let Some(spec) = self.ip.as_ref() {
+            let specified_ver = if let Some(spec) = self.spec.as_ref() {
                 spec.get_version().as_specific()
             } else {
                 None
             };
 
-            return match catalog.get_possible_versions(ip.get_uuid()) {
+            return match catalog.get_possible_versions(prj.get_uuid()) {
                 Some(vers) => {
                     match vers.len() {
                         0 => {
@@ -182,12 +182,12 @@ impl Subcommand<Context> for Info {
                     }
                     Ok(())
                 }
-                None => Err(AnyError(format!("no ip found in catalog")))?,
+                None => Err(AnyError(format!("no project found in catalog")))?,
             };
         }
 
         // print the manifest data "pretty"
-        let s = toml::to_string_pretty(ip.get_man())?;
+        let s = toml::to_string_pretty(prj.get_man())?;
         println!("{}", s);
         Ok(())
     }

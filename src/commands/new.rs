@@ -18,10 +18,10 @@
 use crate::commands::helps::new;
 use crate::commands::orbit::AnyResult;
 use crate::core::context::Context;
-use crate::core::ip::Ip;
 use crate::core::lang::vhdl::token::Identifier;
-use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
-use crate::core::pkgid::PkgPart;
+use crate::core::manifest::{Manifest, PROJECT_MANIFEST_FILE};
+use crate::core::name::Name;
+use crate::core::project::Project;
 use crate::error::{Error, Hint, LastError};
 use crate::*;
 use std::borrow::Cow;
@@ -39,7 +39,7 @@ pub struct New {
     /// Specify where to create the new ip on the local machine.
     path: PathBuf,
     /// Optionally give the name for the ip, by default tries to be the parent folder's name.
-    name: Option<PkgPart>,
+    name: Option<Name>,
     /// Optionally set a library for the ip
     library: Option<Identifier>,
 }
@@ -87,17 +87,14 @@ impl Subcommand<Context> for New {
 impl New {
     /// Determines the final name to use for the ip based on the given `name` and falls back
     /// to the `path`'s file name if not `name` is given.
-    pub fn extract_name<'a>(
-        name: Option<&'a PkgPart>,
-        path: &PathBuf,
-    ) -> AnyResult<Cow<'a, PkgPart>> {
+    pub fn extract_name<'a>(name: Option<&'a Name>, path: &PathBuf) -> AnyResult<Cow<'a, Name>> {
         match name {
             Some(n) => Ok(Cow::Borrowed(n)),
             // try to use the path's ending name as the ip name
             None => match path.file_name() {
                 Some(fname) => {
                     let s = fname.to_string_lossy();
-                    match PkgPart::from_str(s.as_ref()) {
+                    match Name::from_str(s.as_ref()) {
                         Ok(r) => Ok(Cow::Owned(r)),
                         Err(e) => Err(Error::CannotAutoExtractNameFromPath(
                             s.to_string(),
@@ -117,14 +114,14 @@ impl New {
 
 impl New {
     /// Creates a new directory at the given `dest` with a new manifest file.
-    fn create_ip(&self, ip: &PkgPart, priv_by_def: bool) -> AnyResult<()> {
+    fn create_ip(&self, ip: &Name, priv_by_def: bool) -> AnyResult<()> {
         // create the directory
         std::fs::create_dir_all(&self.path)?;
 
         // create the file directly nested within the destination path
         let manifest_path = {
             let mut p = self.path.clone();
-            p.push(IP_MANIFEST_FILE);
+            p.push(PROJECT_MANIFEST_FILE);
             p
         };
 
@@ -143,17 +140,17 @@ impl New {
         // );
 
         // write the lockfile
-        let local_ip = Ip::load(self.path.clone(), true, false)?;
+        let local_ip = Project::load(self.path.clone(), true, false)?;
         Lock::write_new_lockfile(&local_ip, true, priv_by_def)?;
 
         // println!(
         //     "info: lockfile created at: {:?}",
-        //     filesystem::into_std_str(filesystem::full_normal(&local_ip.get_root().join(IP_LOCK_FILE)))
+        //     filesystem::into_std_str(filesystem::full_normal(&local_ip.get_root().join(project_LOCK_FILE)))
         // );
 
         info!(
-            "created new ip \"{}\"",
-            local_ip.get_man().get_ip().get_name()
+            "created new project \"{}\"",
+            local_ip.get_man().get_project().get_name()
         );
 
         // display the help message
@@ -173,28 +170,28 @@ mod test {
         let path = PathBuf::from("gates");
         assert_eq!(
             New::extract_name(name.as_ref(), &path).unwrap().as_ref(),
-            &PkgPart::from_str("gates").unwrap()
+            &Name::from_str("gates").unwrap()
         );
 
-        let name = Some(PkgPart::from_str("sha256").unwrap());
+        let name = Some(Name::from_str("sha256").unwrap());
         let path = PathBuf::from("gates");
         assert_eq!(
             New::extract_name(name.as_ref(), &path).unwrap().as_ref(),
-            &PkgPart::from_str("sha256").unwrap()
+            &Name::from_str("sha256").unwrap()
         );
 
         let name = None;
         let path = PathBuf::from("./a/long/path/to/project");
         assert_eq!(
             New::extract_name(name.as_ref(), &path).unwrap().as_ref(),
-            &PkgPart::from_str("project").unwrap()
+            &Name::from_str("project").unwrap()
         );
 
         let name = None;
         let path = PathBuf::from("./a/long/path/to/Project/");
         assert_eq!(
             New::extract_name(name.as_ref(), &path).unwrap().as_ref(),
-            &PkgPart::from_str("Project").unwrap()
+            &Name::from_str("Project").unwrap()
         );
     }
 
@@ -205,7 +202,7 @@ mod test {
         let path = PathBuf::from(".");
         assert_eq!(
             New::extract_name(name.as_ref(), &path).unwrap().as_ref(),
-            &PkgPart::from_str("sha256").unwrap()
+            &Name::from_str("sha256").unwrap()
         );
     }
 }

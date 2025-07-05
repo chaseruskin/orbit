@@ -17,14 +17,14 @@
 
 use crate::core::catalog::Catalog;
 use crate::core::catalog::DownloadSlot;
-use crate::core::ip::Ip;
-use crate::core::ip::IpSpec;
-use crate::core::ip::PartialIpSpec;
-use crate::core::iparchive::IpArchive;
 use crate::core::lockfile::LockEntry;
 use crate::core::lockfile::LockFile;
 use crate::core::manifest;
-use crate::core::manifest::IP_MANIFEST_FILE;
+use crate::core::manifest::PROJECT_MANIFEST_FILE;
+use crate::core::project::PartialProjectIdSpec;
+use crate::core::project::Project;
+use crate::core::project::ProjectIdSpec;
+use crate::core::project_archive::ProjectArchive;
 use crate::core::protocol::Protocol;
 use crate::core::source::Source;
 use crate::core::swap::StrSwapTable;
@@ -63,7 +63,7 @@ impl Download {
         lf: &'a LockFile,
         catalog: &Catalog,
         missing_only: bool,
-    ) -> Vec<(IpSpec, Source)> {
+    ) -> Vec<(ProjectIdSpec, Source)> {
         let mut vtable = StrSwapTable::new();
         lf.inner()
             .iter()
@@ -74,9 +74,9 @@ impl Download {
                         || catalog.is_downloaded_slot(&p.to_download_slot_key()) == false)
             })
             .map(|f| {
-                let spec = f.to_ip_spec();
-                vtable.add("orbit.ip.name", spec.get_name().as_ref());
-                vtable.add("orbit.ip.version", &spec.get_version().to_string());
+                let spec = f.to_project_id_spec();
+                vtable.add("orbit.project.name", spec.get_name().as_ref());
+                vtable.add("orbit.project.version", &spec.get_version().to_string());
                 let processed_src = f.get_source().unwrap().clone().replace_vars_in_url(&vtable);
                 (spec, processed_src)
             })
@@ -87,26 +87,29 @@ impl Download {
     /// the downloads folder (`download_dir`).
     pub fn download(
         vtable: &mut StrSwapTable,
-        spec: Option<&PartialIpSpec>,
+        spec: Option<&PartialProjectIdSpec>,
         src: &Source,
         download_dir: &PathBuf,
         default_protocol: Option<&String>,
         protocols: &HashMap<&str, &Protocol>,
         _force: bool,
-    ) -> Result<(IpSpec, Vec<u8>), Fault> {
+    ) -> Result<(ProjectIdSpec, Vec<u8>), Fault> {
         // use a temporary directory the download process
         let queue = TempDir::into_path(TempDir::new()?);
 
-        if let Some(ip_spec) = spec {
+        if let Some(project_id_spec) = spec {
             // update variable table for this lock entry
-            vtable.add("orbit.ip.name", ip_spec.get_name().as_ref());
-            vtable.add("orbit.ip.version", &ip_spec.get_version().to_string());
+            vtable.add("orbit.project.name", project_id_spec.get_name().as_ref());
+            vtable.add(
+                "orbit.project.version",
+                &project_id_spec.get_version().to_string(),
+            );
         }
 
         // perform string swap on source url
         let processed_src = src.clone().replace_vars_in_url(&vtable);
 
-        vtable.add("orbit.ip.source", processed_src.get_url());
+        vtable.add("orbit.project.source", processed_src.get_url());
 
         // initialize the variable table as environment variables as well
         Environment::new().from_var_table(vtable)?.initialize();
@@ -141,7 +144,7 @@ impl Download {
 
         match sel_protocol {
             Some((&name, &proto)) => {
-                crate::info!("downloading ip using protocol {}", name.green());
+                crate::info!("downloading project using protocol {}", name.green());
                 Environment::new()
                     .add(EnvVar::new().key(ORBIT_PROTOCOL).value(name))
                     .initialize();
@@ -153,7 +156,7 @@ impl Download {
                 }
             }
             None => {
-                crate::info!("downloading ip using standard protocol");
+                crate::info!("downloading project using standard protocol");
                 // potential to use --force here to avoid this error and try with default but not currently implemented that way
                 if let Err(err) = Protocol::single_download(processed_src.get_url(), &queue) {
                     fs::remove_dir_all(queue)?;
@@ -162,7 +165,7 @@ impl Download {
             }
         }
 
-        // move the IP to the downloads folder
+        // move the project to the downloads folder
         match Self::move_to_download_dir(&queue, download_dir, spec) {
             Ok((name, bytes)) => {
                 // clean up temporary directory
@@ -180,35 +183,38 @@ impl Download {
     pub fn move_to_download_dir(
         queue: &PathBuf,
         downloads: &PathBuf,
-        spec: Option<&PartialIpSpec>,
-    ) -> Result<(IpSpec, Vec<u8>), Fault> {
+        spec: Option<&PartialProjectIdSpec>,
+    ) -> Result<(ProjectIdSpec, Vec<u8>), Fault> {
         // code is in the queue now, move it to the downloads/ folder
 
-        let entries = manifest::find_file(&queue, IP_MANIFEST_FILE, false)?;
+        let entries = manifest::find_file(&queue, PROJECT_MANIFEST_FILE, false)?;
 
         let mut matching_ips = Vec::new();
 
-        // find the IP (make sure there is only 1!)
+        // find the project (make sure there is only 1!)
         for entry in entries {
             // println!("{:?}", entry);
-            // check if this is our IP
-            match Ip::load(entry.parent().unwrap().to_path_buf(), true, false) {
+            // check if this is our project
+            match Project::load(entry.parent().unwrap().to_path_buf(), true, false) {
                 Ok(temp) => {
                     // println!("{}", temp.get_man().get_ip().into_ip_spec());
-                    let manifest_version =
-                        temp.get_man().get_ip().get_version().to_partial_version();
+                    let manifest_version = temp
+                        .get_man()
+                        .get_project()
+                        .get_version()
+                        .to_partial_version();
 
                     // move to downloads only if we match the name
                     if let Some(prov) = spec {
                         let mut is_match = true;
                         // make sure the uuid's match (if available)
                         if let Some(uuid) = prov.as_uuid() {
-                            if uuid != temp.get_man().get_ip().get_uuid() {
+                            if uuid != temp.get_man().get_project().get_uuid() {
                                 is_match = false;
                             }
                         }
                         // make sure the names match
-                        if prov.get_name() != temp.get_man().get_ip().get_name() {
+                        if prov.get_name() != temp.get_man().get_project().get_name() {
                             is_match = false;
                         }
                         // make sure the version falls under right domain
@@ -248,28 +254,30 @@ impl Download {
             }
             1 => {
                 let temp = matching_ips.get(0).unwrap();
-                let manifest_name = temp.get_man().get_ip().get_name();
-                let found_ip_spec = temp.get_man().get_ip().into_ip_spec();
+                let manifest_name = temp.get_man().get_project().get_name();
+                let found_ip_spec = temp.get_man().get_project().into_project_id_spec();
 
                 // crate::info!("found ip {}", found_ip_spec);
 
                 // verify the ip is okay
-                Ip::load(temp.get_root().to_path_buf(), false, false)?;
+                Project::load(temp.get_root().to_path_buf(), false, false)?;
                 // zip the project to the downloads directory
                 let download_slot_name = DownloadSlot::new(
                     manifest_name,
                     temp.get_uuid(),
-                    temp.get_man().get_ip().get_version(),
+                    temp.get_man().get_project().get_version(),
                 );
                 let full_download_path = downloads.join(&download_slot_name.as_ref());
-                let bytes = IpArchive::write(&temp, &full_download_path)?;
+                let bytes = ProjectArchive::write(&temp, &full_download_path)?;
                 return Ok((found_ip_spec, bytes));
             }
             _ => {
                 let mut candidate_list = String::new();
                 matching_ips.iter().for_each(|i| {
-                    candidate_list
-                        .push_str(&format!("\n    {:?}", i.get_man().get_ip().into_ip_spec()));
+                    candidate_list.push_str(&format!(
+                        "\n    {:?}",
+                        i.get_man().get_project().into_project_id_spec()
+                    ));
                 });
                 Err(Box::new(Error::DownloadFoundManyIps(
                     matching_ips.len(),
@@ -350,7 +358,7 @@ impl Download {
 //     false => Catalog::new().downloads(c.get_downloads_path())?,
 // };
 
-// // verify running from an IP directory and enter IP's root directory
+// // verify running from an project directory and enter project's root directory
 // c.jump_to_working_ip()?;
 
 // let ip = Ip::load(c.get_ip_path().unwrap().clone(), true)?;

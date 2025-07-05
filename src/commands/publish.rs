@@ -24,14 +24,14 @@ use crate::core::algo;
 use crate::core::catalog::{Catalog, PointerSlot};
 use crate::core::channel::Channel;
 use crate::core::context::Context;
-use crate::core::ip::Ip;
-use crate::core::iparchive::IpArchive;
 use crate::core::manifest::JsonMeta;
-use crate::core::manifest::{IP_JSON_FILE, IP_MANIFEST_FILE};
+use crate::core::manifest::{PROJECT_JSON_FILE, PROJECT_MANIFEST_FILE};
+use crate::core::project::Project;
+use crate::core::project_archive::ProjectArchive;
 use crate::error::{Error, Hint, LastError};
 use crate::util::anyerror::Fault;
 use crate::util::environment::{
-    EnvVar, Environment, ORBIT_CHANNEL_DIR, ORBIT_CHANNEL_IP_DIR, ORBIT_CHANNEL_NAME,
+    EnvVar, Environment, ORBIT_CHANNEL_DIR, ORBIT_CHANNEL_NAME, ORBIT_CHANNEL_PROJECT_DIR,
 };
 use crate::util::filesystem;
 
@@ -105,18 +105,18 @@ impl Subcommand<Context> for Publish {
         }
 
         // verify running from an ip directory and enter ip's root directory
-        c.jump_to_working_ip()?;
+        c.jump_to_working_project()?;
 
-        let local_ip = Ip::load(c.get_ip_path().unwrap().to_path_buf(), true, false)?;
+        let local_ip = Project::load(c.get_project_path().unwrap().to_path_buf(), true, false)?;
 
         // initialize environment
         let env = Environment::new()
             // read config.toml for setting any env variables
             .from_config(c.get_config())?
             // read ip manifest for env variables
-            .from_ip(&local_ip)?;
+            .from_project(&local_ip)?;
 
-        let ip_spec = local_ip.get_man().get_ip().into_ip_spec();
+        let ip_spec = local_ip.get_man().get_project().into_project_id_spec();
 
         crate::info!("finding channels to publish to ...");
         let mut channels = HashMap::new();
@@ -128,7 +128,7 @@ impl Subcommand<Context> for Publish {
 
         // next try the list from the ip's manifest
         if channel_candidates.is_none() {
-            channel_candidates = local_ip.get_man().get_ip().get_channels().as_ref();
+            channel_candidates = local_ip.get_man().get_project().get_channels().as_ref();
         }
 
         // check the channel(s) we wish to publish to (not defaults)
@@ -179,7 +179,7 @@ impl Subcommand<Context> for Publish {
             match found.get_available(&crate::core::version::AnyVersion::Specific(
                 local_ip
                     .get_man()
-                    .get_ip()
+                    .get_project()
                     .get_version()
                     .to_partial_version(),
             )) {
@@ -208,7 +208,7 @@ impl Subcommand<Context> for Publish {
         }
 
         // verify the package is available to be downloaded
-        crate::info!("verifying coherency with ip's source  ...");
+        crate::info!("verifying coherency with project's source  ...");
         let remove = self.ready == false || self.no_install == true;
         let changes = match Self::test_download_and_install(&local_ip, &c, remove, true) {
             Ok(c) => c,
@@ -232,7 +232,7 @@ impl Subcommand<Context> for Publish {
 
 impl Publish {
     pub fn run_ip_checkpoints(
-        local_ip: &Ip,
+        local_ip: &Project,
         catalog: &Catalog,
         priv_by_def: bool,
         all_pub: bool,
@@ -252,8 +252,8 @@ impl Publish {
         }
 
         // verify the ip has a source
-        crate::info!("verifying ip manifest's source field is defined ...");
-        if local_ip.get_man().get_ip().get_source().is_none() {
+        crate::info!("verifying project manifest's source field is defined ...");
+        if local_ip.get_man().get_project().get_source().is_none() {
             return Err(Box::new(Error::PublishMissingSource));
         }
 
@@ -277,7 +277,7 @@ impl Publish {
     }
 
     pub fn test_download_and_install(
-        local_ip: &Ip,
+        local_ip: &Project,
         c: &Context,
         remove: bool,
         verbose: bool,
@@ -287,29 +287,29 @@ impl Publish {
         // install from local path to what its checksum would be
         let local_sum = {
             let local_install = Install::install(local_ip, c.get_cache_path(), true, false)?
-                .expect("ip should be installed from local");
-            let sum = Ip::compute_checksum(&local_install.get_root());
+                .expect("project should be installed from local");
+            let sum = Project::compute_checksum(&local_install.get_root());
             Remove::remove_install(&local_install)?;
             sum
         };
 
-        let ip = local_ip.get_man().get_ip();
+        let ip = local_ip.get_man().get_project();
         let src = ip.get_source().as_ref().unwrap();
         // get the ip from the internet and as an archive
         let bytes = Install::download_target_from_url(
             c,
             &src.get_url(),
-            &Some(ip.into_ip_spec().to_partial_ip_spec()),
+            &Some(ip.into_project_id_spec().to_partial_project_id_spec()),
             true,
         )?
         .1;
         // try to extract the ip from the archives
         let tmp_archive_staging_dir = tempfile::tempdir()?.into_path();
-        if let Err(e) = IpArchive::extract(&bytes, &tmp_archive_staging_dir) {
+        if let Err(e) = ProjectArchive::extract(&bytes, &tmp_archive_staging_dir) {
             fs::remove_dir_all(tmp_archive_staging_dir)?;
             return Err(e);
         }
-        let unzipped_ip = match Ip::load(tmp_archive_staging_dir.clone(), false, false) {
+        let unzipped_ip = match Project::load(tmp_archive_staging_dir.clone(), false, false) {
             Ok(x) => x,
             Err(e) => {
                 fs::remove_dir_all(tmp_archive_staging_dir)?;
@@ -321,7 +321,7 @@ impl Publish {
             match Install::install(&unzipped_ip, c.get_cache_path(), true, verbose_install) {
                 Ok(x) => {
                     fs::remove_dir_all(tmp_archive_staging_dir)?;
-                    x.expect("ip should be installed from archive")
+                    x.expect("project should be installed from archive")
                 }
                 Err(e) => {
                     fs::remove_dir_all(tmp_archive_staging_dir)?;
@@ -329,7 +329,7 @@ impl Publish {
                 }
             };
         // after collecting the checksums, clean up the installations if needed
-        let installed_sum = Ip::compute_checksum(installed_ip.get_root());
+        let installed_sum = Project::compute_checksum(installed_ip.get_root());
 
         if remove == true {
             Remove::remove_download(c.get_downloads_path(), &unzipped_ip)?;
@@ -358,7 +358,7 @@ impl Publish {
 
     /// Verifies the design units for this ip will be found okay
     pub fn check_design_unit_visibility_okay(
-        local_ip: &Ip,
+        local_ip: &Project,
         priv_by_def: bool,
         all_pub: bool,
     ) -> Result<(), Fault> {
@@ -385,19 +385,19 @@ impl Publish {
 
     /// Verifies that we can build the graph for this ip `local_ip` without errors.
     pub fn check_graph_builds_okay(
-        local_ip: &Ip,
+        local_ip: &Project,
         catalog: &Catalog,
         priv_by_def: bool,
     ) -> Result<(), Fault> {
-        let ip_graph = algo::compute_final_ip_graph(&local_ip, Some(&catalog), priv_by_def)?;
-        let files = algo::build_ip_file_list(&ip_graph, &local_ip);
+        let ip_graph = algo::compute_final_project_graph(&local_ip, Some(&catalog), priv_by_def)?;
+        let files = algo::build_project_file_list(&ip_graph, &local_ip);
         let _global_graph = Plan::build_full_graph(&files)?;
         Ok(())
     }
 
     fn publish_all(
         &self,
-        local_ip: &Ip,
+        local_ip: &Project,
         channels: HashMap<&String, &Channel>,
         mut env: Environment,
         changes: &Option<Changes>,
@@ -414,7 +414,7 @@ impl Publish {
                 ORBIT_CHANNEL_DIR,
                 &filesystem::into_std_str(chan.get_root().to_path_buf()),
             ));
-            env = env.overwrite(EnvVar::with(ORBIT_CHANNEL_IP_DIR, index_path.as_str()));
+            env = env.overwrite(EnvVar::with(ORBIT_CHANNEL_PROJECT_DIR, index_path.as_str()));
             // publish to this channel
             match self.publish(local_ip, chan, &env) {
                 Ok(_) => (),
@@ -427,7 +427,12 @@ impl Publish {
         Ok(())
     }
 
-    fn publish(&self, local_ip: &Ip, channel: &Channel, env: &Environment) -> Result<(), Fault> {
+    fn publish(
+        &self,
+        local_ip: &Project,
+        channel: &Channel,
+        env: &Environment,
+    ) -> Result<(), Fault> {
         // run the pre-publish command sequence, if exist
         channel.run_pre(&env)?;
         // copy the ip's manifest to the location in the channel
@@ -440,9 +445,9 @@ impl Publish {
     /// Creates the path where an ip will place its pointer contents.
     ///
     /// The directory is something like this: `uuid[0]/uuid-version`.
-    fn create_pointer_directory(ip: &Ip) -> PathBuf {
-        let name = ip.get_man().get_ip().get_name();
-        let version = ip.get_man().get_ip().get_version();
+    fn create_pointer_directory(ip: &Project) -> PathBuf {
+        let name = ip.get_man().get_project().get_name();
+        let version = ip.get_man().get_project().get_version();
         let uuid = ip.get_uuid();
         PathBuf::new()
             .join(String::from(uuid.encode().chars().next().unwrap()))
@@ -450,14 +455,14 @@ impl Publish {
     }
 
     /// Writes the ip's manifest to the channel.
-    fn copy_to_channel(&self, local_ip: &Ip, channel: &Channel) -> Result<(), Fault> {
+    fn copy_to_channel(&self, local_ip: &Project, channel: &Channel) -> Result<(), Fault> {
         let output_dir = Self::create_pointer_directory(&local_ip);
         let output_path = channel.get_root().join(output_dir);
         // create any mising directories
         std::fs::create_dir_all(&output_path)?;
         // copy the (raw) manifest there (in formatted string)
         std::fs::write(
-            output_path.join(IP_MANIFEST_FILE),
+            output_path.join(PROJECT_MANIFEST_FILE),
             local_ip.get_man().to_string(),
         )?;
         // copy the (raw) lockfile there
@@ -465,7 +470,7 @@ impl Publish {
         // create a JSON metadata file there
         let json_data = JsonMeta::new(local_ip)?;
         std::fs::write(
-            output_path.join(IP_JSON_FILE),
+            output_path.join(PROJECT_JSON_FILE),
             serde_json::to_string_pretty(&json_data)?,
         )?;
         Ok(())
@@ -477,7 +482,7 @@ impl Publish {
     /// operation to allow users to try again from a known state.
     fn rollback_changes(
         &self,
-        local_ip: &Ip,
+        local_ip: &Project,
         channel: &Channel,
         changes: &Option<Changes>,
     ) -> Result<(), Fault> {
@@ -499,7 +504,7 @@ impl Publish {
         let first_dir = PathBuf::from(String::from(
             local_ip
                 .get_man()
-                .get_ip()
+                .get_project()
                 .get_name()
                 .as_ref()
                 .chars()
@@ -519,6 +524,6 @@ impl Publish {
 
 pub struct Changes {
     pub downloads_path: PathBuf,
-    pub archived_ip: Ip,
-    pub cached_ip: Ip,
+    pub archived_ip: Project,
+    pub cached_ip: Project,
 }

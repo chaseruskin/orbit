@@ -2,21 +2,21 @@
 # It is not intended for manual editing.
 version = 1
 
-[[ip]]
+[[project]]
 name = "ip-a"
 version = "0.1.0"
 uuid = "02ca23lot1yum2qmwwrcod0ra"
-checksum = "359dbceea610fd0914682c202bb041781b5cc722517d0fbaf6ef73ef3f8e0070"
+checksum = "5275a8778809c135a57f8454707211a1d45f40b7a3efb6cfe25cc62ade83e3a4"
 dependencies = ["ip-b+133pf1iqec3287bkt7i185772:0.1.0"]
 
-[[ip]]
+[[project]]
 name = "ip-b"
 version = "0.1.0"
 uuid = "133pf1iqec3287bkt7i185772"
-checksum = "032d98014ebcb55b31c982146da66c923a700da9d4b9b72df35869e1bdb78eb3"
+checksum = "ca99a73147e03b1d5bbb79eb3be25be0d0ad3a8cfeb0d96ee4252fc19e8ed53b"
 dependencies = []
 
-[[ip]]
+[[project]]
 name = "ip-c"
 version = "0.1.0"
 uuid = "3kpqlqt1dp9xv079kxub90c7a"

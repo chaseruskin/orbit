@@ -19,10 +19,9 @@ use super::plan::PlanError;
 use crate::commands::helps::tree;
 use crate::commands::plan::Plan;
 use crate::core::algo;
-use crate::core::algo::IpFileNode;
+use crate::core::algo::ProjectFileNode;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
-use crate::core::ip::Ip;
 use crate::core::lang::node::HdlNode;
 use crate::core::lang::node::HdlSymbol;
 use crate::core::lang::node::IdentifierFormat;
@@ -31,6 +30,7 @@ use crate::core::lang::reference::CompoundIdentifier;
 use crate::core::lang::vhdl::token::Identifier as VhdlIdentifier;
 use crate::core::lang::Lang;
 use crate::core::lang::LangIdentifier;
+use crate::core::project::Project;
 use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::Fault;
@@ -45,7 +45,7 @@ use cliproc::{Arg, Cli, Help, Subcommand};
 #[derive(Debug, PartialEq)]
 pub enum Kind {
     Unit,
-    Ip,
+    Project,
     All,
 }
 
@@ -55,7 +55,7 @@ impl FromStr for Kind {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "unit" => Ok(Kind::Unit),
-            "ip" => Ok(Kind::Ip),
+            "project" => Ok(Kind::Project),
             "all" => Ok(Kind::All),
             _ => Err(Error::EdgeKindInvalid(s.to_string())),
         }
@@ -88,24 +88,24 @@ impl Subcommand<Context> for Tree {
 
     fn execute(self, c: &Context) -> proc::Result {
         // go to the ip directory
-        c.jump_to_working_ip()?;
+        c.jump_to_working_project()?;
 
         // get the ip manifest
-        let ip = Ip::load(c.get_ip_path().unwrap().clone(), true, false)?;
+        let project = Project::load(c.get_project_path().unwrap().clone(), true, false)?;
 
         // gather the catalog
         let catalog = Catalog::new().installations(c.get_cache_path())?;
 
-        self.run(ip, catalog, c.are_units_private_by_default())
+        self.run(project, catalog, c.are_units_private_by_default())
     }
 }
 
 impl Tree {
-    fn run(&self, target: Ip, catalog: Catalog, priv_by_def: bool) -> Result<(), Fault> {
+    fn run(&self, target: Project, catalog: Catalog, priv_by_def: bool) -> Result<(), Fault> {
         // Determine how to display the dependencies for the project
         match &self.edges {
             Kind::Unit => self.run_hdl_graph(target, catalog, true, priv_by_def),
-            Kind::Ip => self.run_ip_graph(target, catalog, priv_by_def),
+            Kind::Project => self.run_project_graph(target, catalog, priv_by_def),
             Kind::All => self.run_hdl_graph(target, catalog, false, priv_by_def),
         }
     }
@@ -117,7 +117,7 @@ impl Tree {
     /// be included.
     fn run_hdl_graph(
         &self,
-        target: Ip,
+        target: Project,
         catalog: Catalog,
         only_modules: bool,
         priv_by_def: bool,
@@ -125,15 +125,16 @@ impl Tree {
         let working_lib = target.get_hdl_library();
 
         // build graph again but with entire set of all files available from all depdendencies
-        let ip_graph = algo::compute_final_ip_graph(&target, Some(&catalog), priv_by_def)?;
-        let files = algo::build_ip_file_list(&ip_graph, &target);
+        let project_graph =
+            algo::compute_final_project_graph(&target, Some(&catalog), priv_by_def)?;
+        let files = algo::build_project_file_list(&project_graph, &target);
 
         // build the complete graph (using entities as the nodes)
         let global_graph = Self::build_graph(&files, only_modules)?;
 
         let roots = match &self.roots {
             Some(user_roots) => {
-                // restrict graph to units only found within the current IP
+                // restrict graph to units only found within the current project
                 let local_graph = Plan::compute_local_graph(&global_graph, &target);
                 let mut roots = Vec::new();
                 for root_name in user_roots {
@@ -161,7 +162,7 @@ impl Tree {
                 roots
             }
             None => {
-                // restrict graph to units only found within the current IP
+                // restrict graph to units only found within the current project
                 let local_graph = Plan::compute_local_graph(&global_graph, &target);
                 // compile list of all roots
                 let mut roots = Vec::new();
@@ -215,11 +216,17 @@ impl Tree {
         Ok(())
     }
 
-    /// Construct and print the graph at an IP dependency level.
-    fn run_ip_graph(&self, target: Ip, catalog: Catalog, priv_by_def: bool) -> Result<(), Fault> {
-        let ip_graph = algo::compute_final_ip_graph(&target, Some(&catalog), priv_by_def)?;
+    /// Construct and print the graph at an project dependency level.
+    fn run_project_graph(
+        &self,
+        target: Project,
+        catalog: Catalog,
+        priv_by_def: bool,
+    ) -> Result<(), Fault> {
+        let project_graph =
+            algo::compute_final_project_graph(&target, Some(&catalog), priv_by_def)?;
 
-        let tree = ip_graph.get_graph().treeview(0);
+        let tree = project_graph.get_graph().treeview(0);
 
         for twig in &tree {
             let branch_str = match self.ascii {
@@ -229,14 +236,14 @@ impl Tree {
             println!(
                 "{}{}",
                 branch_str,
-                ip_graph
+                project_graph
                     .get_node_by_index(twig.1)
                     .unwrap()
                     .as_ref()
-                    .as_ip()
+                    .as_project()
                     .get_man()
-                    .get_ip()
-                    .into_ip_spec()
+                    .get_project()
+                    .into_project_id_spec()
             );
         }
         Ok(())
@@ -261,7 +268,7 @@ impl Tree {
 
     /// Constructs a graph of the design heirarchy with entity nodes.
     fn build_graph<'a>(
-        files: &'a Vec<IpFileNode>,
+        files: &'a Vec<ProjectFileNode>,
         only_modules: bool,
     ) -> Result<GraphMap<CompoundIdentifier, HdlNode<'a>, ()>, Fault> {
         // entity identifier, HashNode (hash-node holds entity structs)

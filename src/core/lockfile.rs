@@ -15,15 +15,15 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-use crate::core::ip::Ip;
 use crate::core::manifest::FromFile;
-use crate::core::manifest::IpName;
+use crate::core::manifest::ProjectName;
+use crate::core::project::Project;
 use crate::core::source;
 use crate::core::source::Source;
 use crate::core::uuid::Uuid;
-use crate::core::{catalog::CacheSlot, ip::IpSpec};
+use crate::core::{catalog::CacheSlot, project::ProjectIdSpec};
 use crate::core::{
-    pkgid::PkgPart,
+    name::Name,
     version::{self, AnyVersion, Version},
 };
 use crate::util::anyerror::AnyError;
@@ -34,7 +34,7 @@ use std::error::Error;
 use std::fmt::Display;
 use std::{path::PathBuf, str::FromStr};
 
-pub const IP_LOCK_FILE: &str = "Orbit.lock";
+pub const PROJECT_LOCK_FILE: &str = "Orbit.lock";
 
 const LOCK_VERSION: usize = 1;
 const LOCK_COMMENT: &str =
@@ -74,7 +74,7 @@ impl LockFile {
                     Ok(r) => r,
                     // enter a blank lock file if failed (do not exit)
                     Err(e) => {
-                        crate::warn!("failed to parse {} file: {}", IP_LOCK_FILE, e);
+                        crate::warn!("failed to parse {} file: {}", PROJECT_LOCK_FILE, e);
                         v1::LockFile::new()
                     }
                 },
@@ -108,7 +108,7 @@ pub mod v1 {
 
     use crate::core::{
         catalog::{Catalog, DownloadSlot},
-        ip::PartialIpSpec,
+        project::PartialProjectIdSpec,
     };
 
     use super::*;
@@ -117,7 +117,7 @@ pub mod v1 {
     pub struct LockFile {
         // internal number to determine how to parse the current lockfile
         version: usize,
-        ip: Vec<LockEntry>,
+        project: Vec<LockEntry>,
     }
 
     impl FromStr for LockFile {
@@ -133,77 +133,80 @@ pub mod v1 {
         pub fn new() -> Self {
             Self {
                 version: LOCK_VERSION,
-                ip: Vec::new(),
+                project: Vec::new(),
             }
         }
 
         pub fn unwrap(self) -> Vec<LockEntry> {
-            self.ip
+            self.project
         }
 
         pub fn wrap(reqs: Vec<LockEntry>) -> Self {
             Self {
                 version: LOCK_VERSION,
-                ip: reqs,
+                project: reqs,
             }
         }
 
         /// Checks if a lockfile is empty (does not exist).
         pub fn is_empty(&self) -> bool {
-            self.ip.len() == 0
+            self.project.len() == 0
         }
 
         /// Creates a lockfile from a build list.
-        pub fn from_build_list(mut build_list: Vec<&Ip>, root: &Ip) -> Result<Self, Fault> {
+        pub fn from_build_list(
+            mut build_list: Vec<&Project>,
+            root: &Project,
+        ) -> Result<Self, Fault> {
             // sort the build list by pkgid and then version
             build_list.sort_by(|&x, &y| {
                 match x
                     .get_man()
-                    .get_ip()
+                    .get_project()
                     .get_name()
-                    .cmp(y.get_man().get_ip().get_name())
+                    .cmp(y.get_man().get_project().get_name())
                 {
                     std::cmp::Ordering::Less => std::cmp::Ordering::Less,
                     std::cmp::Ordering::Equal => x
                         .get_man()
-                        .get_ip()
+                        .get_project()
                         .get_version()
-                        .cmp(y.get_man().get_ip().get_version()),
+                        .cmp(y.get_man().get_project().get_version()),
                     std::cmp::Ordering::Greater => std::cmp::Ordering::Greater,
                 }
             });
 
-            let ip_ref = build_list.iter().map(|f| *f).collect();
+            let prj_ref = build_list.iter().map(|f| *f).collect();
 
             let mut entries = Vec::new();
-            for ip in build_list {
-                entries.push(LockEntry::create(ip, ip == root, &ip_ref)?);
+            for prj in build_list {
+                entries.push(LockEntry::create(prj, prj == root, &prj_ref)?);
             }
             Ok(Self {
                 version: LOCK_VERSION,
-                ip: entries,
+                project: entries,
             })
         }
 
         /// Returns an exact match of `target` and `version` from within the lockfile.
-        pub fn get(&self, target: &PkgPart, version: &PartialVersion) -> Option<&LockEntry> {
-            self.ip
+        pub fn get(&self, target: &Name, version: &PartialVersion) -> Option<&LockEntry> {
+            self.project
                 .iter()
                 .find(|&f| &f.name == target && version::is_compatible(version, &f.version))
         }
 
-        /// Returns the current working ip, denoted by not having a checksum with it.
-        pub fn get_self_entry(&self, target: &PkgPart) -> Option<&LockEntry> {
-            self.ip
+        /// Returns the current working project, denoted by not having a checksum with it.
+        pub fn get_self_entry(&self, target: &Name) -> Option<&LockEntry> {
+            self.project
                 .iter()
                 .find(|&f| f.checksum.is_none() && &f.name == target)
         }
 
         /// Returns the highest compatible version from the lockfile for the given `target`.
-        pub fn get_highest(&self, target: &PkgPart, version: &AnyVersion) -> Option<&LockEntry> {
+        pub fn get_highest(&self, target: &Name, version: &AnyVersion) -> Option<&LockEntry> {
             // collect all versions
             let space: Vec<&Version> = self
-                .ip
+                .project
                 .iter()
                 .filter_map(|f| {
                     if &f.name == target {
@@ -214,32 +217,35 @@ pub mod v1 {
                 })
                 .collect();
             match version::get_target_version(&version, &space) {
-                Ok(v) => self.ip.iter().find(|f| &f.name == target && f.version == v),
+                Ok(v) => self
+                    .project
+                    .iter()
+                    .find(|f| &f.name == target && f.version == v),
                 Err(_) => None,
             }
         }
 
         /// Given an already generated lockfile, find the highest exact version that would be used
         /// for the provided compatibility version.
-        pub fn get_minimum_requires(&self, _target: &PkgPart, _version: &AnyVersion) -> Version {
+        pub fn get_minimum_requires(&self, _target: &Name, _version: &AnyVersion) -> Version {
             todo!()
         }
 
         pub fn inner(&self) -> &Vec<LockEntry> {
-            &self.ip
+            &self.project
         }
 
         /// Writes the [LockFile] data to disk.
         pub fn save_to_disk(&self, dir: &PathBuf) -> Result<(), Box<dyn Error>> {
             // write a file
             std::fs::write(
-                dir.join(IP_LOCK_FILE),
+                dir.join(PROJECT_LOCK_FILE),
                 format!("{}\n{}", LOCK_COMMENT, &self.to_string()),
             )?;
             Ok(())
         }
 
-        pub fn keep_dev_dep_entries(&self, target: &Ip, enable: bool) -> Self {
+        pub fn keep_dev_dep_entries(&self, target: &Project, enable: bool) -> Self {
             // find the dev-deps and remove them from the lockfile data
             let entries: Vec<LockEntry> = match enable {
                 // install dev-deps anyway
@@ -276,31 +282,31 @@ pub mod v1 {
 
     #[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
     pub struct LockEntry {
-        name: IpName,
+        name: ProjectName,
         version: Version,
         uuid: Uuid,
         // @note: `sum` is optional because the root package will have its sum omitted
         checksum: Option<Sha256Hash>,
         #[serde(deserialize_with = "source::read_string", default)]
         source: Option<Source>,
-        // @note: `path` is optional and only used if the dependency list uses a local ip
+        // @note: `path` is optional and only used if the dependency list uses a local project
         path: Option<PathBuf>,
-        dependencies: Vec<PartialIpSpec>,
+        dependencies: Vec<PartialProjectIdSpec>,
     }
 
     impl LockEntry {
         /// Creates a new [LockEntry].
-        fn create(target: &Ip, is_local: bool, others: &Vec<&Ip>) -> Result<Self, Fault> {
+        fn create(target: &Project, is_local: bool, others: &Vec<&Project>) -> Result<Self, Fault> {
             Ok(Self {
-                name: target.get_man().get_ip().get_name().clone(),
-                version: target.get_man().get_ip().get_version().clone(),
+                name: target.get_man().get_project().get_name().clone(),
+                version: target.get_man().get_project().get_version().clone(),
                 uuid: target.get_uuid().clone(),
                 checksum: if is_local == true || target.get_mapping().is_relative() == true {
                     None
                 } else {
                     Some(
-                        Ip::read_cache_checksum(target.get_root())
-                            .unwrap_or(Ip::compute_checksum(target.get_root())),
+                        Project::read_cache_checksum(target.get_root())
+                            .unwrap_or(Project::compute_checksum(target.get_root())),
                     )
                 },
                 path: if let Some(rel_path) = target.get_mapping().as_relative_path() {
@@ -308,11 +314,11 @@ pub mod v1 {
                 } else {
                     None
                 },
-                source: target.get_man().get_ip().get_source().clone(),
+                source: target.get_man().get_project().get_source().clone(),
                 dependencies: match target.get_man().get_deps_list(is_local, true).len() {
                     0 => Vec::new(),
                     _ => {
-                        let mut result: Vec<PartialIpSpec> = target
+                        let mut result: Vec<PartialProjectIdSpec> = target
                             .get_man()
                             .get_deps_list(is_local, true)
                             .into_iter()
@@ -320,35 +326,35 @@ pub mod v1 {
                                 let id = match e.1.as_uuid() {
                                     Some(id) => {
                                         // verify this uuid exists in the build list
-                                        if let Some(found_ip) = others.iter().find(|p| p.get_uuid() == id) {
-                                            if found_ip.get_man().get_ip().get_name() != e.0 {
-                                                panic!("ip with this uuid is not associated with package name {}", e.0)
+                                        if let Some(found_project) = others.iter().find(|p| p.get_uuid() == id) {
+                                            if found_project.get_man().get_project().get_name() != e.0 {
+                                                panic!("project with this uuid is not associated with package name {}", e.0)
                                             }
                                         } else {
-                                            panic!("no ip found with this uuid")
+                                            panic!("no project found with this uuid")
                                         }
                                         id
                                     },
                                     None => {
-                                        // find the ip that matches the name (must only be 1)
-                                        let mut found_ip: Option<&Ip> = None;
-                                        for other_ip in others {
-                                            if other_ip.get_man().get_ip().get_name() == e.0 {
-                                                if let Some(already_ip) = found_ip {
-                                                    // we came across two ips with the same name but different uuids
-                                                    if already_ip.get_uuid() != other_ip.get_uuid() {
-                                                        panic!("ip namespace collision {}: please specify the direct dependency's uuid", e.0)
+                                        // find the project that matches the name (must only be 1)
+                                        let mut found_project: Option<&Project> = None;
+                                        for other_project in others {
+                                            if other_project.get_man().get_project().get_name() == e.0 {
+                                                if let Some(already_project) = found_project {
+                                                    // we came across two projects with the same name but different uuids
+                                                    if already_project.get_uuid() != other_project.get_uuid() {
+                                                        panic!("project namespace collision {}: please specify the direct dependency's uuid", e.0)
                                                     }
                                                 }
-                                                found_ip = Some(*other_ip);
+                                                found_project = Some(*other_project);
                                             }
                                         }
-                                        found_ip
-                                            .expect("missing an ip from the build list")
+                                        found_project
+                                            .expect("missing an project from the build list")
                                             .get_uuid()
                                     }
                                 };
-                                PartialIpSpec::new(
+                                PartialProjectIdSpec::new(
                                     e.0.clone(),
                                     Some(id.clone()),
                                     e.1.get_version().clone(),
@@ -367,37 +373,37 @@ pub mod v1 {
         }
     }
 
-    impl From<(&Ip, bool)> for LockEntry {
-        fn from(ip: (&Ip, bool)) -> Self {
-            let is_working = ip.1;
-            let ip = ip.0;
+    impl From<(&Project, bool)> for LockEntry {
+        fn from(project: (&Project, bool)) -> Self {
+            let is_working = project.1;
+            let project = project.0;
             Self {
-                name: ip.get_man().get_ip().get_name().clone(),
-                version: ip.get_man().get_ip().get_version().clone(),
-                uuid: ip.get_uuid().clone(),
-                checksum: if is_working == true || ip.get_mapping().is_relative() == true {
+                name: project.get_man().get_project().get_name().clone(),
+                version: project.get_man().get_project().get_version().clone(),
+                uuid: project.get_uuid().clone(),
+                checksum: if is_working == true || project.get_mapping().is_relative() == true {
                     None
                 } else {
                     Some(
-                        Ip::read_cache_checksum(ip.get_root())
-                            .unwrap_or(Ip::compute_checksum(ip.get_root())),
+                        Project::read_cache_checksum(project.get_root())
+                            .unwrap_or(Project::compute_checksum(project.get_root())),
                     )
                 },
-                path: if let Some(rel_path) = ip.get_mapping().as_relative_path() {
+                path: if let Some(rel_path) = project.get_mapping().as_relative_path() {
                     Some(rel_path.clone())
                 } else {
                     None
                 },
-                source: ip.get_man().get_ip().get_source().clone(),
-                dependencies: match ip.get_man().get_deps_list(is_working, true).len() {
+                source: project.get_man().get_project().get_source().clone(),
+                dependencies: match project.get_man().get_deps_list(is_working, true).len() {
                     0 => Vec::new(),
                     _ => {
-                        let mut result: Vec<PartialIpSpec> = ip
+                        let mut result: Vec<PartialProjectIdSpec> = project
                             .get_man()
                             .get_deps_list(is_working, true)
                             .into_iter()
                             .map(|e| {
-                                PartialIpSpec::new(
+                                PartialProjectIdSpec::new(
                                     e.0.clone(),
                                     match e.1.as_uuid() {
                                         Some(u) => Some(u.clone()),
@@ -422,20 +428,20 @@ pub mod v1 {
     impl LockEntry {
         /// Performs an equality check against a target entry `other`.
         ///
-        /// Ignores the checksum comparison because the target ip should not have its
+        /// Ignores the checksum comparison because the target project should not have its
         /// checksum computed in the .lock file.
         pub fn matches_target<'c>(&self, other: &LockEntry, _catalog: &Catalog<'c>) -> bool {
             self.get_name() == other.get_name()
                 && self.get_version() == other.get_version()
                 && self.get_uuid() == other.get_uuid()
                 && self.get_source() == other.get_source()
-                // TODO: have bool to determine if the deps should be hard-matched (such as when ip is local)
+                // TODO: have bool to determine if the deps should be hard-matched (such as when project is local)
                 && other.matches_deps_loosely(self.get_deps())
                 && self.get_path() == other.get_path()
         }
 
         /// Only checks uuids if they were provided by both ends.
-        pub fn matches_deps_loosely(&self, man: &Vec<PartialIpSpec>) -> bool {
+        pub fn matches_deps_loosely(&self, man: &Vec<PartialProjectIdSpec>) -> bool {
             let deps = &self.dependencies;
             if deps.len() != man.len() {
                 return false;
@@ -462,7 +468,7 @@ pub mod v1 {
         }
 
         /// Verify each dependecy is matched.
-        pub fn matches_deps(&self, other: &Vec<PartialIpSpec>, catalog: &Catalog) -> bool {
+        pub fn matches_deps(&self, other: &Vec<PartialProjectIdSpec>, catalog: &Catalog) -> bool {
             let deps = &self.dependencies;
             if deps.len() != other.len() {
                 return false;
@@ -518,7 +524,7 @@ pub mod v1 {
             &self.path
         }
 
-        pub fn get_deps(&self) -> &Vec<PartialIpSpec> {
+        pub fn get_deps(&self) -> &Vec<PartialProjectIdSpec> {
             self.dependencies.as_ref()
         }
 
@@ -534,7 +540,7 @@ pub mod v1 {
             self.source.as_ref()
         }
 
-        pub fn get_name(&self) -> &IpName {
+        pub fn get_name(&self) -> &ProjectName {
             &self.name
         }
 
@@ -554,8 +560,8 @@ pub mod v1 {
             DownloadSlot::new(self.get_name(), self.get_uuid(), self.get_version())
         }
 
-        pub fn to_ip_spec(&self) -> IpSpec {
-            IpSpec::new(self.name.clone(), self.uuid.clone(), self.version.clone())
+        pub fn to_project_id_spec(&self) -> ProjectIdSpec {
+            ProjectIdSpec::new(self.name.clone(), self.uuid.clone(), self.version.clone())
         }
     }
 }
@@ -689,7 +695,7 @@ pub mod v1 {
 
 //         const DATA1: &str = r#"version = 1
 
-// [[ip]]
+// [[project]]
 // name = "lab1"
 // version = "0.5.0"
 // uuid = "0000000000000000000000000"
@@ -699,7 +705,7 @@ pub mod v1 {
 //     "lab2:1.0.0",
 // ]
 
-// [[ip]]
+// [[project]]
 // name = "lab2"
 // version = "1.0.0"
 // uuid = "0000000000000000000000000"
@@ -707,14 +713,14 @@ pub mod v1 {
 // url = "https://go2.here"
 // dependencies = []
 
-// [[ip]]
+// [[project]]
 // name = "lab3"
 // version = "2.3.1"
 // uuid = "0000000000000000000000000"
 // checksum = "0000000000000000000000000000000000000000000000000000000000000000"
 // dependencies = []
 
-// [[ip]]
+// [[project]]
 // name = "lab4"
 // version = "0.5.19"
 // uuid = "0000000000000000000000000"

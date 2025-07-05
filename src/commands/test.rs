@@ -22,8 +22,8 @@ use crate::core::blueprint::Scheme;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::fileset::Fileset;
-use crate::core::ip::Ip;
 use crate::core::lang::vhdl::token::Identifier;
+use crate::core::project::Project;
 use crate::core::swap::StrSwapTable;
 use crate::core::target::Process;
 use crate::core::target::Target;
@@ -113,11 +113,11 @@ impl Subcommand<Context> for Test {
         // coordinate the plan
         let plan = target.coordinate_plan(&self.plan)?;
 
-        // check that user is in an IP directory
-        c.jump_to_working_ip()?;
+        // check that user is in an project directory
+        c.jump_to_working_project()?;
 
         // create the ip manifest
-        let ip = Ip::load(c.get_ip_path().unwrap().clone(), true, false)?;
+        let project = Project::load(c.get_project_path().unwrap().clone(), true, false)?;
 
         // @todo: recreate the ip graph from the lockfile, then read each installation
         // see Install::install_from_lock_file
@@ -133,10 +133,10 @@ impl Subcommand<Context> for Test {
         let catalog = Catalog::new()
             .installations(c.get_cache_path())?
             .downloads(c.get_downloads_path())?;
-        let catalog = plan::resolve_missing_deps(c, &ip, catalog, self.force)?;
+        let catalog = plan::resolve_missing_deps(c, &project, catalog, self.force)?;
 
         self.run(
-            &ip,
+            &project,
             target_dir,
             target.get_name(),
             target,
@@ -150,7 +150,7 @@ impl Subcommand<Context> for Test {
 impl Test {
     fn run(
         &self,
-        working_ip: &Ip,
+        working_project: &Project,
         target_dir: &str,
         out_dir: &str,
         target: &Target,
@@ -158,13 +158,13 @@ impl Test {
         c: &Context,
         scheme: &Scheme,
     ) -> Result<(), Fault> {
-        let output_path = working_ip.get_root().join(target_dir).join(out_dir);
+        let output_path = working_project.get_root().join(target_dir).join(out_dir);
 
         let envs = Environment::new()
             // read config.toml for setting any env variables
             .from_config(c.get_config())?
             // read ip manifest for env variables
-            .from_ip(&working_ip)?
+            .from_project(&working_project)?
             .add(EnvVar::new().key(ORBIT_TARGET_DIR).value(target_dir))
             .add(
                 EnvVar::new()
@@ -178,7 +178,7 @@ impl Test {
 
         // plan the target
         Plan::run(
-            &working_ip,
+            &working_project,
             target_dir,
             target,
             catalog,

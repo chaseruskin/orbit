@@ -2,7 +2,7 @@ import os
 
 def main():
     print(os.environ.keys())
-    url = os.environ['ORBIT_IP_SOURCE']
+    url = os.environ['ORBIT_PROJECT_SOURCE']
     print(url)
     pass
 

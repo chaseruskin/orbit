@@ -17,7 +17,7 @@
 
 use crate::commands::plan::Plan;
 use crate::core::algo;
-use crate::core::ip::Ip;
+use crate::core::project::Project;
 use crate::util::anyerror::Fault;
 use serde_derive::{Deserialize, Serialize};
 
@@ -44,13 +44,13 @@ pub struct UnitCache {
 
 impl UnitCache {
     pub fn from_graph_entry(
-        ip: &Ip,
+        project: &Project,
         name: LangIdentifier,
         node: &HdlNode,
         unit: &LangUnit,
         deps: Vec<&LangIdentifier>,
     ) -> Self {
-        let base_path_offset = ip.get_root().as_os_str().len();
+        let base_path_offset = project.get_root().as_os_str().len();
 
         Self {
             identifier: name.to_string(),
@@ -96,7 +96,7 @@ impl UnitCache {
     }
 }
 
-/// Saved data for an ip located in the cache.
+/// Saved data for a project located in the cache.
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct PkgCache {
     units: Vec<UnitCache>,
@@ -106,14 +106,14 @@ impl PkgCache {
     pub fn new() -> Self {
         Self { units: Vec::new() }
     }
-    /// Creates all the desired cached contents to be stored alongside an installed ip.
-    pub fn from_ip(ip: &Ip) -> Result<Self, Fault> {
+    /// Creates all the desired cached contents to be stored alongside an installed project.
+    pub fn from_project(project: &Project) -> Result<Self, Fault> {
         // generate the unit map
-        let umap = ip.collect_units(false, false, false)?;
+        let umap = project.collect_units(false, false, false)?;
 
         // build using an empty catalog because we only care about local internal links among design units for caching data
-        let ip_graph = algo::compute_final_ip_graph(&ip, None, false)?;
-        let files = algo::build_ip_file_list(&ip_graph, &ip);
+        let project_graph = algo::compute_final_project_graph(&project, None, false)?;
+        let files = algo::build_project_file_list(&project_graph, &project);
         let global_graph = Plan::build_full_graph(&files)?;
 
         let mut units = Vec::new();
@@ -130,7 +130,7 @@ impl PkgCache {
             let name = f.0.get_suffix().clone();
             let lunit = umap.get(&name).unwrap();
             units.push(UnitCache::from_graph_entry(
-                &ip,
+                &project,
                 name,
                 f.1.as_ref(),
                 lunit,

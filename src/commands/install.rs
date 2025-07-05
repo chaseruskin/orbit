@@ -45,12 +45,12 @@ use crate::core::algo;
 use crate::core::catalog::CacheSlot;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
-use crate::core::ip::Ip;
-use crate::core::ip::IpSpec;
-use crate::core::ip::PartialIpSpec;
-use crate::core::iparchive::IpArchive;
 use crate::core::lockfile::LockEntry;
-use crate::core::manifest::IP_MANIFEST_FILE;
+use crate::core::manifest::PROJECT_MANIFEST_FILE;
+use crate::core::project::PartialProjectIdSpec;
+use crate::core::project::Project;
+use crate::core::project::ProjectIdSpec;
+use crate::core::project_archive::ProjectArchive;
 use crate::core::protocol::Protocol;
 use crate::core::protocol::ProtocolError;
 use crate::core::source::Source;
@@ -75,7 +75,7 @@ use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Install {
-    ip: Option<PartialIpSpec>,
+    ip: Option<PartialProjectIdSpec>,
     url: Option<String>,
     path: Option<PathBuf>,
     protocol: Option<String>,
@@ -161,7 +161,7 @@ impl Subcommand<Context> for Install {
             provided_spec = Some(
                 Self::download_target_from_url(c, &link, &self.ip, self.force)?
                     .0
-                    .to_partial_ip_spec(),
+                    .to_partial_project_id_spec(),
             );
             None
         // check if trying to download from local filesystem
@@ -197,31 +197,31 @@ impl Subcommand<Context> for Install {
                 None => &search_dir,
             };
 
-            let search_path = search_dir.join(IP_MANIFEST_FILE);
+            let search_path = search_dir.join(PROJECT_MANIFEST_FILE);
 
             let target = match &self.ip {
                 Some(entry) => match search_path.exists() {
                     true => {
-                        let ip = Ip::load(search_dir.to_path_buf(), true, false)?;
-                        if ip.get_man().get_ip().get_name() == entry.get_name()
+                        let ip = Project::load(search_dir.to_path_buf(), true, false)?;
+                        if ip.get_man().get_project().get_name() == entry.get_name()
                             && (entry.get_version().is_latest()
                                 || version::is_compatible(
                                     entry.get_version().as_specific().unwrap(),
-                                    ip.get_man().get_ip().get_version(),
+                                    ip.get_man().get_project().get_version(),
                                 ))
                         {
                             ip
                         } else {
                             if temp_dir_for_zip.is_none() {
                                 Err(Error::Custom(format!(
-                                    "could not find ip \"{}\" at path \"{}\"",
+                                    "could not find project \"{}\" at path \"{}\"",
                                     entry,
                                     filesystem::into_std_str(search_dir.to_path_buf())
                                 )))?
                             } else {
                                 std::fs::remove_dir_all(temp_dir_for_zip.clone().unwrap())?;
                                 Err(Error::Custom(format!(
-                                    "could not find ip \"{}\" in archive \"{}\"",
+                                    "could not find project \"{}\" in archive \"{}\"",
                                     entry,
                                     filesystem::into_std_str(search_dir.to_path_buf())
                                 )))?
@@ -245,7 +245,7 @@ impl Subcommand<Context> for Install {
                 },
                 // make sure there is only 1 ip to load
                 None => match search_path.exists() {
-                    true => Ip::load(search_dir.to_path_buf(), true, false)?,
+                    true => Project::load(search_dir.to_path_buf(), true, false)?,
                     false => {
                         if temp_dir_for_zip.is_none() {
                             Err(Error::Custom(format!(
@@ -269,12 +269,12 @@ impl Subcommand<Context> for Install {
                 Some(
                     &target
                         .get_man()
-                        .get_ip()
-                        .into_ip_spec()
-                        .to_partial_ip_spec(),
+                        .get_project()
+                        .into_project_id_spec()
+                        .to_partial_project_id_spec(),
                 ),
             )?;
-            provided_spec = Some(spec.to_partial_ip_spec());
+            provided_spec = Some(spec.to_partial_project_id_spec());
             Some(target)
         // attempt to find the catalog
         } else {
@@ -300,12 +300,12 @@ impl Subcommand<Context> for Install {
                             // place the dependency into a temporary directory
                             // @MARK: fix this to cleanup manually since we forced it into_path.
                             let dir = tempfile::tempdir()?.into_path();
-                            if let Err(e) = IpArchive::extract(&bytes, &dir) {
+                            if let Err(e) = ProjectArchive::extract(&bytes, &dir) {
                                 fs::remove_dir_all(dir)?;
                                 return Err(e);
                             }
-                            // load the IP
-                            let unzipped_ip = match Ip::load(dir.clone(), false, false) {
+                            // load the project
+                            let unzipped_ip = match Project::load(dir.clone(), false, false) {
                                 Ok(x) => x,
                                 Err(e) => {
                                     fs::remove_dir_all(dir)?;
@@ -316,58 +316,70 @@ impl Subcommand<Context> for Install {
                         // follow pointer to download an archive
                         } else if slot.get_mapping().is_pointer() {
                             // println!("{}", "using pointer");
-                            match slot.get_man().get_ip().get_source() {
+                            match slot.get_man().get_project().get_source() {
                                 Some(sour) => Some(self.download_target_from_source(
                                     c,
                                     sour,
-                                    slot.get_man().get_ip().into_ip_spec(),
+                                    slot.get_man().get_project().into_project_id_spec(),
                                 )?),
                                 None => {
                                     return Err(Error::Custom(format!(
-                                        "ip requires source to download"
+                                        "project requires source to download"
                                     )))?
                                 }
                             }
                         // use the physical/local location of the ip? (does this ever occur?)
                         } else {
-                            Some(Ip::load(slot.get_root().clone(), false, false)?)
+                            Some(Project::load(slot.get_root().clone(), false, false)?)
                         }
                     } else {
                         return Err(Error::Custom(format!(
-                            "ip {} does not exist in the catalog",
+                            "project {} does not exist in the catalog",
                             spec
                         )))?;
                     }
                 } else {
                     return Err(Error::Custom(format!(
-                        "failed to find an ip in the catalog"
+                        "failed to find a project in the catalog"
                     )))?;
                 }
-            // use the local IP if the ip spec was not provided
+            // use the local project if the ip spec was not provided
             } else {
                 target
             }
-        // use the local IP if a path was supplied
+        // use the local project if a path was supplied
         } else {
             target
         };
         // println!("{:?},", target);
         let target = match target {
             Some(t) => t,
-            None => return Err(Error::Custom(format!("failed to find an ip to install")))?,
+            None => {
+                return Err(Error::Custom(format!(
+                    "failed to find a project to install"
+                )))?
+            }
         };
 
         // println!("{:?}", target.get_uuid());
 
         // verify the ip is not already taken in the cache
-        if let Some(ip_levels) =
-            catalog.translate_name(&target.get_man().get_ip().into_ip_spec().to_pkg_name())?
-        {
+        if let Some(ip_levels) = catalog.translate_name(
+            &target
+                .get_man()
+                .get_project()
+                .into_project_id_spec()
+                .to_pkg_name(),
+        )? {
             if let Some(cached_ip) = ip_levels.get_install(&AnyVersion::Specific(
-                target.get_man().get_ip().get_version().to_partial_version(),
+                target
+                    .get_man()
+                    .get_project()
+                    .get_version()
+                    .to_partial_version(),
             )) {
-                let cached_version = cached_ip.get_man().get_ip().get_version();
-                let target_version = target.get_man().get_ip().get_version();
+                let cached_version = cached_ip.get_man().get_project().get_version();
+                let target_version = target.get_man().get_project().get_version();
 
                 // compare uuids and versions
                 if cached_ip.get_uuid() == target.get_uuid() && cached_version == target_version {
@@ -378,8 +390,8 @@ impl Subcommand<Context> for Install {
                     // tell the user we already have it installed!
                     } else {
                         crate::info!(
-                            "ip {} is already installed",
-                            target.get_man().get_ip().into_ip_spec()
+                            "project {} is already installed",
+                            target.get_man().get_project().into_project_id_spec()
                         );
                         return Ok(());
                     }
@@ -417,10 +429,10 @@ impl Subcommand<Context> for Install {
 
         // add additional check if we can download from online and it matches
         if (self.path.is_some() || self.ip.is_none())
-            && target.get_man().get_ip().get_source().is_some()
+            && target.get_man().get_project().get_source().is_some()
             && self.offline == false
         {
-            crate::info!("{}", "verifying coherency with ip's source  ...");
+            crate::info!("{}", "verifying coherency with project's source  ...");
             let changes = Publish::test_download_and_install(&target, c, false, false)?;
             // remove from install so that we can install again
             if let Some(chg) = changes {
@@ -478,7 +490,7 @@ impl Subcommand<Context> for Install {
 
 impl Install {
     fn run_ip_checkpoints<'c>(
-        local_ip: &Ip,
+        local_ip: &Project,
         catalog: Catalog<'c>,
         force: bool,
         c: &'c Context,
@@ -496,7 +508,7 @@ impl Install {
             }
         // create the lockfile
         } else if local_ip.can_use_lock(&catalog) == false {
-            let ip_graph = algo::compute_final_ip_graph(
+            let ip_graph = algo::compute_final_project_graph(
                 &local_ip,
                 Some(&catalog),
                 c.are_units_private_by_default(),
@@ -507,7 +519,7 @@ impl Install {
         crate::info!("{}", "reading dependencies from lockfile ...");
         let env = Environment::new()
             .from_config(c.get_config())?
-            .from_ip(&local_ip)?;
+            .from_project(&local_ip)?;
 
         let vtable = StrSwapTable::new().load_environment(&env)?;
 
@@ -569,9 +581,9 @@ impl Install {
     pub fn download_target_from_url(
         c: &Context,
         url: &str,
-        ip: &Option<PartialIpSpec>,
+        ip: &Option<PartialProjectIdSpec>,
         force: bool,
-    ) -> Result<(IpSpec, Vec<u8>), Fault> {
+    ) -> Result<(ProjectIdSpec, Vec<u8>), Fault> {
         let env = Environment::new().from_config(c.get_config())?;
         let mut vtable = StrSwapTable::new().load_environment(&env)?;
         env.initialize();
@@ -597,8 +609,8 @@ impl Install {
         &self,
         c: &Context,
         source: &Source,
-        spec: IpSpec,
-    ) -> Result<Ip, Fault> {
+        spec: ProjectIdSpec,
+    ) -> Result<Project, Fault> {
         let env = Environment::new()
             // read config.toml for setting any env variables
             .from_config(c.get_config())?;
@@ -610,7 +622,7 @@ impl Install {
         // fetch from the internet
         let (_name, bytes) = Download::download(
             &mut vtable,
-            Some(&spec.to_partial_ip_spec()),
+            Some(&spec.to_partial_project_id_spec()),
             &source,
             c.get_downloads_path(),
             c.get_default_protocol(),
@@ -619,12 +631,12 @@ impl Install {
         )?;
 
         let dir = tempfile::tempdir()?.into_path();
-        if let Err(e) = IpArchive::extract(&bytes, &dir) {
+        if let Err(e) = ProjectArchive::extract(&bytes, &dir) {
             fs::remove_dir_all(dir)?;
             return Err(e);
         }
-        // load the IP
-        let unzipped_ip = match Ip::load(dir.clone(), false, false) {
+        // load the project
+        let unzipped_ip = match Project::load(dir.clone(), false, false) {
             Ok(x) => x,
             Err(e) => {
                 fs::remove_dir_all(dir)?;
@@ -636,9 +648,9 @@ impl Install {
 
     pub fn is_checksum_good(root: &PathBuf) -> bool {
         // verify the checksum
-        if let Some(sha) = Ip::read_cache_checksum(&root) {
+        if let Some(sha) = Project::read_cache_checksum(&root) {
             // make sure the sums match expected
-            sha == Ip::compute_checksum(&root)
+            sha == Project::compute_checksum(&root)
         // failing to compute a checksum
         } else {
             false
@@ -648,13 +660,13 @@ impl Install {
     /// Installs the `ip` with particular partial `version` to the `cache_root`.
     /// It will reinstall if it finds the original installation has a mismatching checksum.
     ///
-    /// Returns `true` if the IP was successfully installed and `false` if it already existed.
+    /// Returns `true` if the project was successfully installed and `false` if it already existed.
     pub fn install(
-        src: &Ip,
+        src: &Project,
         cache_root: &PathBuf,
         force: bool,
         verbose: bool,
-    ) -> Result<Option<Ip>, Fault> {
+    ) -> Result<Option<Project>, Fault> {
         // temporary destination to move files for processing and manipulation
         let dest = tempfile::tempdir()?.into_path();
         filesystem::copy(src.get_root(), &dest, true, Some(src.get_files_to_keep()))?;
@@ -673,15 +685,15 @@ impl Install {
         // @todo: getting the size of the entire directory
 
         // access the name and version
-        let version = src.get_man().get_ip().get_version();
-        let ip_spec = src.get_man().get_ip().into_ip_spec();
+        let version = src.get_man().get_project().get_version();
+        let ip_spec = src.get_man().get_project().into_project_id_spec();
 
         if verbose == true {
-            crate::info!("installing ip {} ...", &ip_spec);
+            crate::info!("installing project {} ...", &ip_spec);
         }
 
         // perform sha256 on the temporary cloned directory
-        let checksum = Ip::compute_checksum(&dest);
+        let checksum = Project::compute_checksum(&dest);
         // println!("checksum: {}", checksum);
 
         // use checksum to create new directory slot
@@ -702,7 +714,7 @@ impl Install {
                             continue;
                         }
                         // check for same UUID
-                        let cached_ip = Ip::load(entry.path().to_path_buf(), false, false)?;
+                        let cached_ip = Project::load(entry.path().to_path_buf(), false, false)?;
                         if cached_ip.get_uuid() == src.get_uuid() {
                             // remove the slot no matter if it is dynamic or not
                             fs::remove_dir_all(entry.path())?;
@@ -724,7 +736,7 @@ impl Install {
                     return Ok(None);
                 } else {
                     if verbose == true {
-                        crate::info!("reinstalling ip {} due to bad checksum ...", ip_spec);
+                        crate::info!("reinstalling project {} due to bad checksum ...", ip_spec);
                     }
                     // blow directory up for re-install
                     std::fs::remove_dir_all(&cache_slot)?;
@@ -737,7 +749,7 @@ impl Install {
         // clean up the temporary directory ourself
         fs::remove_dir_all(dest)?;
 
-        let installed_ip = Ip::load(cache_slot, false, false)?;
+        let installed_ip = Project::load(cache_slot, false, false)?;
 
         // write the checksum to the directory (this file is excluded from auditing)
         installed_ip.write_cache_checksum(&checksum)?;
@@ -747,13 +759,13 @@ impl Install {
         Ok(Some(installed_ip))
     }
 
-    fn run(&self, target: &Ip, catalog: &Catalog) -> Result<(), Fault> {
+    fn run(&self, target: &Project, catalog: &Catalog) -> Result<(), Fault> {
         let result = Self::install(&target, &catalog.get_cache_path(), self.force, true)?;
         match result {
             Some(_) => (),
             None => crate::info!(
-                "ip {} is already installed",
-                target.get_man().get_ip().into_ip_spec()
+                "project {} is already installed",
+                target.get_man().get_project().into_project_id_spec()
             ),
         }
 
@@ -771,9 +783,9 @@ impl Install {
         // _pkg.get_lock().save_to_disk(&_pkg.get_root())?;
         // todo!();
 
-        // @todo: check lockfile to process installing any IP that may be already downloaded to the queue
+        // @todo: check lockfile to process installing any project that may be already downloaded to the queue
 
-        // verify each requirement for the IP is also installed (o.w. install)
+        // verify each requirement for the project is also installed (o.w. install)
 
         // if let Some(lock) = man.get_lockfile() {
         //     Self::install_from_lock_file(&self, &lock, &catalog)?;

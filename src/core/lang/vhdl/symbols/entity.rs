@@ -285,7 +285,7 @@ impl Entity {
     /// Generates list of available architectures.
     ///
     /// Note: This fn must be ran after linking entities and architectures in the
-    /// current ip.
+    /// current project.
     pub fn get_architectures(&self) -> Architectures {
         Architectures::new(&self.architectures)
     }

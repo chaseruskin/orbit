@@ -18,9 +18,9 @@
 #![allow(dead_code)]
 
 use crate::core::cache::PkgCache;
-use crate::core::ip::IpSpec;
 use crate::core::lang::vhdl::token::Identifier;
-use crate::core::pkgid::PkgPart;
+use crate::core::name::Name;
+use crate::core::project::ProjectIdSpec;
 use crate::core::source::Source;
 use crate::core::{source, version};
 use crate::error::Error;
@@ -32,13 +32,13 @@ use std::fmt::{self, Display};
 use std::path::PathBuf;
 use std::{collections::HashMap, str::FromStr};
 
-use super::ip::Ip;
 use super::lang::vhdl::token::identifier::Identifier as VhdlIdentifier;
 use super::lang::LangIdentifier;
+use super::project::Project;
 use super::uuid::Uuid;
 
-pub type IpName = PkgPart;
-pub type IpVersion = crate::core::version::Version;
+pub type ProjectName = Name;
+pub type ProjectVersion = crate::core::version::Version;
 pub type DepVersion = crate::core::version::PartialVersion;
 
 use spdx;
@@ -111,7 +111,7 @@ pub struct Dependency {
     #[serde(skip_serializing)]
     path: Option<PathBuf>,
     #[serde(skip_serializing)]
-    relative_ip: Option<Ip>,
+    relative_project: Option<Project>,
     #[serde(skip_serializing)]
     uuid: Option<Uuid>,
 }
@@ -129,8 +129,8 @@ impl Dependency {
         self.path.as_ref()
     }
 
-    pub fn as_ip(&self) -> Option<&Ip> {
-        self.relative_ip.as_ref()
+    pub fn as_project(&self) -> Option<&Project> {
+        self.relative_project.as_ref()
     }
 
     pub fn as_uuid(&self) -> Option<&Uuid> {
@@ -209,7 +209,7 @@ impl<'de> serde::Deserialize<'de> for Dependency {
                         Ok(v) => v,
                         Err(e) => return Err(de::Error::custom(e))?,
                     },
-                    relative_ip: None,
+                    relative_project: None,
                     uuid: None,
                 })
             }
@@ -249,7 +249,7 @@ impl<'de> serde::Deserialize<'de> for Dependency {
                 Ok(Dependency {
                     path: path,
                     version: version,
-                    relative_ip: None,
+                    relative_project: None,
                     uuid: id,
                 })
             }
@@ -260,10 +260,10 @@ impl<'de> serde::Deserialize<'de> for Dependency {
     }
 }
 
-type Dependencies = HashMap<IpName, Dependency>;
+type Dependencies = HashMap<ProjectName, Dependency>;
 
-pub const IP_MANIFEST_FILE: &str = "Orbit.toml";
-pub const IP_JSON_FILE: &str = "Orbit.json";
+pub const PROJECT_MANIFEST_FILE: &str = "Orbit.toml";
+pub const PROJECT_JSON_FILE: &str = "Orbit.json";
 
 // Files reserved for internal cache use
 pub const ORBIT_SUM_FILE: &str = ".orbit-checksum";
@@ -284,11 +284,11 @@ pub struct JsonMeta<'a> {
 }
 
 impl<'a> JsonMeta<'a> {
-    pub fn new(ip: &'a Ip) -> Result<Self, Fault> {
-        let units = PkgCache::from_ip(&ip)?;
+    pub fn new(project: &'a Project) -> Result<Self, Fault> {
+        let units = PkgCache::from_project(&project)?;
         Ok(Self {
             version: SCHEMA_VERSION,
-            manifest: ip.get_man(),
+            manifest: project.get_man(),
             units: units,
         })
     }
@@ -297,7 +297,7 @@ impl<'a> JsonMeta<'a> {
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
-    ip: Package,
+    project: Package,
     #[serde(skip_serializing_if = "map_is_empty", default)]
     dependencies: Dependencies,
     #[serde(
@@ -343,41 +343,41 @@ impl FromFile for Manifest {
             ))?;
         }
 
-        let local_name = man.get_ip().get_name().clone();
-        let local_version = man.get_ip().get_version().clone();
+        let local_name = man.get_project().get_name().clone();
+        let local_version = man.get_project().get_version().clone();
 
         // verify contents of manifest
         for (name, dep) in man.get_deps_list_mut(true, false) {
             if dep.is_relative() == true {
-                if dep.as_ip().is_none() {
-                    let ip = Ip::relate(
+                if dep.as_project().is_none() {
+                    let project = Project::relate(
                         dep.as_path().unwrap().clone(),
                         &path.parent().unwrap().to_path_buf(),
                     )?;
-                    // verify the ip loaded has the correct version assigned by the user
-                    let ip_version = ip.get_man().get_ip().get_version();
-                    if version::is_compatible(dep.get_version(), ip_version) == false {
+                    // verify the project loaded has the correct version assigned by the user
+                    let project_version = project.get_man().get_project().get_version();
+                    if version::is_compatible(dep.get_version(), project_version) == false {
                         return Err(Error::DependencyIpRelativeBadVersion(
                             name.clone(),
                             dep.get_version().clone(),
-                            ip_version.clone(),
+                            project_version.clone(),
                         ))?;
                     }
-                    // verify the ip loaded has the correct name assigned by the user
-                    let ip_name = ip.get_man().get_ip().get_name();
-                    if ip_name != name {
+                    // verify the project loaded has the correct name assigned by the user
+                    let project_name = project.get_man().get_project().get_name();
+                    if project_name != name {
                         return Err(Error::DependencyIpRelativeBadName(
                             name.clone(),
-                            ip_name.clone(),
+                            project_name.clone(),
                         ))?;
                     }
-                    dep.uuid = Some(ip.get_uuid().clone());
-                    dep.relative_ip = Some(ip);
+                    dep.uuid = Some(project.get_uuid().clone());
+                    dep.relative_project = Some(project);
                 }
             }
-            // verify there are no cycles in the ip dependency graph
+            // verify there are no cycles in the project-level dependency graph
             if name == &local_name && version::is_compatible(dep.get_version(), &local_version) {
-                return Err(Error::CyclicDependencyIp(local_name))?;
+                return Err(Error::CyclicDependencyProject(local_name))?;
             }
         }
         Ok(man)
@@ -396,9 +396,9 @@ impl Manifest {
     /// Establishes a minimal bare [Manifest].
     pub fn new() -> Self {
         Self {
-            ip: Package {
-                name: PkgPart::new(),
-                version: IpVersion::default(),
+            project: Package {
+                name: Name::new(),
+                version: ProjectVersion::default(),
                 uuid: Uuid::new(),
                 source: None.into(),
                 keywords: Vec::new(),
@@ -407,7 +407,7 @@ impl Manifest {
                 public: None,
                 library: None,
                 readme: None,
-                exclude: None,
+                ignore: None,
                 authors: None,
                 license: None,
                 license_file: None,
@@ -421,11 +421,11 @@ impl Manifest {
     /// Returns the library name to be used for HDL. If a library is not specified,
     /// then it chooses "work".
     pub fn get_hdl_library(&self) -> LangIdentifier {
-        match self.get_ip().get_library().as_ref() {
+        match self.get_project().get_library().as_ref() {
             Some(l) => LangIdentifier::Vhdl(Identifier::from(l)),
             // IDEA: or for none -> Identifier::from(self.get_man().get_ip().get_name()),
             // OR: Identifier::new_working()
-            None => LangIdentifier::Vhdl(Identifier::from(self.get_ip().get_name())),
+            None => LangIdentifier::Vhdl(Identifier::from(self.get_project().get_name())),
         }
     }
 
@@ -446,12 +446,12 @@ impl Manifest {
     }
 
     /// Composes a [String] to write to a clean manifest file.
-    pub fn write_empty_manifest(name: &IpName, lib: &Option<String>) -> String {
+    pub fn write_empty_manifest(name: &ProjectName, lib: &Option<String>) -> String {
         let uuid = Uuid::new();
         match lib {
             None => {
                 format!(
-                    r#"[ip]
+                    r#"[project]
 name = "{}"
 version = "0.1.0"
 uuid = "{}"
@@ -463,7 +463,7 @@ uuid = "{}"
             }
             Some(lib) => {
                 format!(
-                    r#"[ip]
+                    r#"[project]
 name = "{}"
 version = "0.1.0"
 uuid = "{}"
@@ -477,8 +477,8 @@ library = "{}"
         }
     }
 
-    pub fn get_ip(&self) -> &Package {
-        &self.ip
+    pub fn get_project(&self) -> &Package {
+        &self.project
     }
 
     /// Returns the list of dependencies found only under the "dependencies"
@@ -513,7 +513,7 @@ library = "{}"
     ///
     /// The first part is the name of the dependency, while the second part is
     /// the metadata about that dependency (version, uuid, etc.).
-    pub fn get_deps_list(&self, include_dev: bool, ordered: bool) -> Vec<(&PkgPart, &Dependency)> {
+    pub fn get_deps_list(&self, include_dev: bool, ordered: bool) -> Vec<(&Name, &Dependency)> {
         let mut result = Vec::with_capacity(
             self.dependencies.len()
                 + match include_dev {
@@ -537,7 +537,7 @@ library = "{}"
         &mut self,
         include_dev: bool,
         ordered: bool,
-    ) -> Vec<(&PkgPart, &mut Dependency)> {
+    ) -> Vec<(&Name, &mut Dependency)> {
         let mut result = Vec::with_capacity(
             self.dependencies.len()
                 + match include_dev {
@@ -573,12 +573,12 @@ fn map_is_empty<K, V>(field: &HashMap<K, V>) -> bool {
 #[derive(Deserialize, Serialize, Debug, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Package {
-    name: IpName,
+    name: ProjectName,
     uuid: Uuid,
     #[serde(default)]
-    version: IpVersion,
+    version: ProjectVersion,
     #[serde(deserialize_with = "validate_lib_name", default)]
-    library: Option<IpName>,
+    library: Option<ProjectName>,
     description: Option<String>,
     authors: Option<Vec<String>>,
     #[serde(skip_serializing_if = "vec_is_empty", default)]
@@ -586,17 +586,17 @@ pub struct Package {
     /// Describes the URL for fetching the captured state's code
     #[serde(deserialize_with = "source::read_string", default)]
     source: Option<Source>,
-    /// Known channels where this ip should be published to
+    /// Known channels where this project should be published to
     channels: Option<Vec<String>>,
-    /// Filepaths that should be explictly known to the user for ip referencing
+    /// Filepaths that should be explictly known to the user for project referencing
     public: Option<Vec<String>>,
     // /// Filepaths that should be explicitly included during source code analysis
     // include: Option<Vec<String>>,
     /// Filepaths that should be explicitly excluded during source code analysis
-    exclude: Option<Vec<String>>,
+    ignore: Option<Vec<String>>,
     /// Filepath to the project's README.
     readme: Option<PathBuf>,
-    /// The ip's license
+    /// The project's license
     license: Option<License>,
     /// The path to the text for the license.
     #[serde(rename = "license-file")]
@@ -607,7 +607,7 @@ pub struct Package {
 }
 
 impl Package {
-    pub fn get_name(&self) -> &IpName {
+    pub fn get_name(&self) -> &ProjectName {
         &self.name
     }
 
@@ -619,7 +619,7 @@ impl Package {
         &self.uuid
     }
 
-    pub fn get_version(&self) -> &IpVersion {
+    pub fn get_version(&self) -> &ProjectVersion {
         &self.version
     }
 
@@ -627,7 +627,7 @@ impl Package {
         &self.keywords
     }
 
-    pub fn get_library(&self) -> &Option<IpName> {
+    pub fn get_library(&self) -> &Option<ProjectName> {
         &self.library
     }
 
@@ -639,9 +639,9 @@ impl Package {
         &self.channels
     }
 
-    /// Clones into a new [IpSpec] struct.
-    pub fn into_ip_spec(&self) -> IpSpec {
-        IpSpec::new(
+    /// Clones into a new [ProjectIdSpec] struct.
+    pub fn into_project_id_spec(&self) -> ProjectIdSpec {
+        ProjectIdSpec::new(
             self.get_name().clone(),
             self.uuid.clone(),
             self.get_version().clone(),
@@ -656,8 +656,8 @@ impl Package {
     //     &self.include
     // }
 
-    pub fn get_exclude(&self) -> &Option<Vec<String>> {
-        &self.exclude
+    pub fn get_ignore(&self) -> &Option<Vec<String>> {
+        &self.ignore
     }
 }
 
@@ -710,7 +710,7 @@ pub fn find_file(path: &PathBuf, name: &str, is_exclusive: bool) -> Result<Vec<P
     Ok(result)
 }
 
-pub fn validate_lib_name<'de, D>(deserializer: D) -> Result<Option<IpName>, D::Error>
+pub fn validate_lib_name<'de, D>(deserializer: D) -> Result<Option<ProjectName>, D::Error>
 where
     D: de::Deserializer<'de>,
 {
@@ -722,17 +722,17 @@ where
     struct LayerVisitor;
 
     impl<'de> Visitor<'de> for LayerVisitor {
-        type Value = Option<IpName>;
+        type Value = Option<ProjectName>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
             formatter.write_str("string")
         }
 
-        fn visit_str<E>(self, value: &str) -> Result<Option<IpName>, E>
+        fn visit_str<E>(self, value: &str) -> Result<Option<ProjectName>, E>
         where
             E: de::Error,
         {
-            let name = match IpName::from_str(value) {
+            let name = match ProjectName::from_str(value) {
                 Ok(n) => n,
                 Err(e) => return Err(de::Error::custom(e))?,
             };
@@ -757,7 +757,7 @@ mod test {
     #[ignore]
     fn ut_json() {
         // Use this test to manually inspect how the Orbit.json file will display data
-        let ip = Ip::load(PathBuf::from("tests/s1"), true, false).unwrap();
+        let ip = Project::load(PathBuf::from("tests/s1"), true, false).unwrap();
         let jdat = JsonMeta::new(&ip).unwrap();
         println!("{}", serde_json::to_string_pretty(&jdat).unwrap());
         panic!();
@@ -770,9 +770,9 @@ mod test {
         fn ut_minimal() {
             let man: Manifest = toml::from_str(EX2).unwrap();
 
-            assert_eq!(man.ip.name, PkgPart::from_str("Lab1").unwrap());
-            assert_eq!(man.ip.version, IpVersion::new().major(1));
-            assert_eq!(man.ip.get_source(), &None);
+            assert_eq!(man.project.name, Name::from_str("Lab1").unwrap());
+            assert_eq!(man.project.version, ProjectVersion::new().major(1));
+            assert_eq!(man.project.get_source(), &None);
             assert_eq!(man.dependencies, HashMap::new());
             assert_eq!(man.dev_dependencies, HashMap::new());
         }
@@ -781,9 +781,9 @@ mod test {
         fn ut_complex() {
             let man: Manifest = toml::from_str(EX1).unwrap();
 
-            assert_eq!(man.ip.name, PkgPart::from_str("gates").unwrap());
+            assert_eq!(man.project.name, Name::from_str("gates").unwrap());
             assert_eq!(
-                man.ip.get_source(),
+                man.project.get_source(),
                 &Some(
                     Source::from_str(
                         "https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip"
@@ -793,7 +793,7 @@ mod test {
             );
             assert_eq!(man.dependencies.len(), 1);
             assert_eq!(man.dev_dependencies.len(), 2);
-            assert_eq!(man.ip.library, Some(PkgPart::from_str("common").unwrap()));
+            assert_eq!(man.project.library, Some(Name::from_str("common").unwrap()));
         }
 
         #[test]
@@ -831,9 +831,9 @@ mod test {
 
             println!("{}", toml::to_string(&man).unwrap());
 
-            assert_eq!(man.ip.get_source().is_some(), true);
+            assert_eq!(man.project.get_source().is_some(), true);
             assert_eq!(
-                man.ip.get_source().as_ref().unwrap().get_url(),
+                man.project.get_source().as_ref().unwrap().get_url(),
                 "https://some.url"
             );
 
@@ -842,9 +842,9 @@ mod test {
                 Err(e) => panic!("{}", e.to_string()),
             };
 
-            assert_eq!(man.ip.get_source().is_some(), true);
+            assert_eq!(man.project.get_source().is_some(), true);
             assert_eq!(
-                man.ip.get_source().as_ref().unwrap().get_url(),
+                man.project.get_source().as_ref().unwrap().get_url(),
                 "https://some.url"
             );
 
@@ -853,9 +853,9 @@ mod test {
                 Err(e) => panic!("{}", e.to_string()),
             };
 
-            assert_eq!(man.ip.get_source().is_some(), true);
+            assert_eq!(man.project.get_source().is_some(), true);
             assert_eq!(
-                man.ip.get_source().as_ref().unwrap().get_url(),
+                man.project.get_source().as_ref().unwrap().get_url(),
                 "https://some.url"
             );
         }
@@ -872,18 +872,18 @@ mod test {
     }
 }
 
-const EX1: &str = r#"[ip]
+const EX1: &str = r#"[project]
 name = "gates"
 uuid = "0000000000000000000000000"
 version = "0.1.0"
 library = "common"
 source = "https://github.com/ks-tech/gates/archive/refs/tags/0.1.0.zip"
 
-[ip.metadata]
+[project.metadata]
 foo = 1
 bar = 2
 
-[ip.metadata.subtable]
+[project.metadata.subtable]
 foo = "hello world"
 
 [dependencies]
@@ -896,13 +896,13 @@ my-testing-framework = "0.1.0"
 
 "#;
 
-const EX2: &str = r#"[ip]
+const EX2: &str = r#"[project]
 name = "Lab1"
 uuid = "0000000000000000000000000"
 version = "1.0.0"
 "#;
 
-const EX3: &str = r#"[ip]
+const EX3: &str = r#"[project]
 name = "lab2"
 uuid = "0000000000000000000000000"
 version = "1.20.0"
@@ -915,33 +915,33 @@ some-package = "9.0.0"
 top-builder = "1.0.0"
 "#;
 
-const EX4: &str = r#"[ip]
+const EX4: &str = r#"[project]
 name = "lab2"
 uuid = "0000000000000000000000000"
 version = "1.20.0"
 source = "https://some.url"
 "#;
 
-const EX5: &str = r#"[ip]
+const EX5: &str = r#"[project]
 name = "lab2"
 uuid = "0000000000000000000000000"
 version = "1.20.0"
 source = "https://some.url"
 "#;
 
-const EX6: &str = r#"[ip]
+const EX6: &str = r#"[project]
 name = "lab2"
 uuid = "0000000000000000000000000"
 version = "1.20.0"
 source = "https://some.url"
 "#;
 
-const EX7: &str = r#"[ip]
+const EX7: &str = r#"[project]
 name = "lab2"
 uuid = "0000000000000000000000000"
 version = "1.20.0"
 source = false
 "#;
 
-const ERR1: &str = r#"[ip]
+const ERR1: &str = r#"[project]
 "#;

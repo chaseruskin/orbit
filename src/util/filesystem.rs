@@ -19,7 +19,7 @@ use crate::core::context::CACHE_TAG_FILE;
 use crate::core::fileset;
 use crate::core::lockfile;
 use crate::core::manifest;
-use crate::core::manifest::IP_MANIFEST_FILE;
+use crate::core::manifest::PROJECT_MANIFEST_FILE;
 use fs_extra;
 use home::home_dir;
 use ignore::WalkBuilder;
@@ -43,7 +43,7 @@ use super::anyerror::Fault;
 /// Setting `strip_base` to `true` will remove the overlapping `path` components from the
 /// final [String] entries in the resulting vector.
 ///
-/// Ignores ORBIT_SUM_FILE, .git directory, ORBIT_METADATA_FILE, and IP_LOCK_FILE.
+/// Ignores ORBIT_SUM_FILE, .git directory, ORBIT_METADATA_FILE, and PROJECT_LOCK_FILE.
 ///
 /// Always ignores folder with a CACHEDIR.TAG file or folders with a Orbit.toml file (besides the
 /// current starting directory).
@@ -59,13 +59,13 @@ pub fn gather_current_files(path: &PathBuf, strip_base: bool) -> Vec<String> {
             // Always ignore folders with another Orbit.toml manifest file
             } else if p.path() != start_path.as_path()
                 && p.path().is_dir()
-                && p.path().join(IP_MANIFEST_FILE).exists() == true
+                && p.path().join(PROJECT_MANIFEST_FILE).exists() == true
             {
                 false
             } else {
                 match p.file_name().to_str().unwrap() {
                     manifest::ORBIT_SUM_FILE
-                    | lockfile::IP_LOCK_FILE
+                    | lockfile::PROJECT_LOCK_FILE
                     | manifest::ORBIT_CACHE_FILE => false,
                     _ => true,
                 }
@@ -259,7 +259,7 @@ pub fn remove_base(base: &PathBuf, full: &PathBuf) -> PathBuf {
 }
 
 pub fn is_orbit_metadata(s: &str) -> bool {
-    s == manifest::IP_MANIFEST_FILE || s == lockfile::IP_LOCK_FILE
+    s == manifest::PROJECT_MANIFEST_FILE || s == lockfile::PROJECT_LOCK_FILE
 }
 
 pub fn is_minimal(name: &str) -> bool {
@@ -300,7 +300,7 @@ pub fn copy(
             // Always ignore folders with another Orbit.toml manifest file
             } else if f.path() != start_path.as_path()
                 && f.path().is_dir()
-                && f.path().join(IP_MANIFEST_FILE).exists() == true
+                && f.path().join(PROJECT_MANIFEST_FILE).exists() == true
             {
                 false
             } else {
@@ -396,7 +396,7 @@ pub fn smart_copy(
             // Always ignore folders with another Orbit.toml manifest file
             } else if f.path() != start_path.as_path()
                 && f.path().is_dir()
-                && f.path().join(IP_MANIFEST_FILE).exists() == true
+                && f.path().join(PROJECT_MANIFEST_FILE).exists() == true
             {
                 false
             } else {

@@ -2,14 +2,14 @@
 # It is not intended for manual editing.
 version = 1
 
-[[ip]]
+[[project]]
 name = "aka"
 version = "1.0.1"
 uuid = "7rpqp96p6pvpjkrg7pt8xcxfw"
-checksum = "fa42075ade137cb25ecebe7a67fe4ac1eed32ba6dc524472d2def2b8bb7b5b7c"
+checksum = "8a5b04bba3de1c28e4330bb03c6cd6032f7c77292853f3e1ca8eeb47226468e7"
 dependencies = []
 
-[[ip]]
+[[project]]
 name = "ao"
 version = "2.0.0"
 uuid = "cizi0nmsxmwztcek1b55eo7da"

@@ -1,8 +1,8 @@
-[ip]
+[project]
 name = "t7"
 uuid = "0000000000000000000000000"
 version = "0.1.0"
-exclude = ["b.v"]
+ignore = ["b.v"]
 public = ["*.sv", "*.v", "*.vhd"]
 
 [dependencies]

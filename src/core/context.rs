@@ -47,12 +47,12 @@ Signature: 8a477f597d28d172789f06886806bc55
 pub struct Context {
     /// File system path directing to root of orbit data and configurations.
     home_path: PathBuf,
-    /// File system path directing to ip installations
+    /// File system path directing to project installations
     cache_path: PathBuf,
-    /// File system path directing to ip downloads
+    /// File system path directing to project downloads
     archive_path: PathBuf,
-    /// The parent path to the current ip `Orbit.toml` manifest file.
-    ip_path: Option<PathBuf>,
+    /// The parent path to the current project `Orbit.toml` manifest file.
+    project_path: Option<PathBuf>,
     /// Directory name for the intermediate build processes and outputs.    
     build_dir: String,
     /// Language support mode.
@@ -74,7 +74,7 @@ impl Context {
             home_path: home,
             cache_path: cache,
             archive_path: downloads,
-            ip_path: None,
+            project_path: None,
             plugins: HashMap::new(),
             all_configs: Configs::new(),
             config: Config::new(),
@@ -226,8 +226,8 @@ impl Context {
         for upper_path in work_dirs {
             let parent_path = upper_path.join(ORBIT_HIDDEN_DIR).join(name);
             if parent_path.exists() == true {
-                let locality = match self.get_ip_path() {
-                    Some(ip_path) => match &parent_path == ip_path {
+                let locality = match self.get_project_path() {
+                    Some(prj_path) => match &parent_path == prj_path {
                         true => Locality::Local,
                         false => Locality::Regional,
                     },
@@ -249,9 +249,9 @@ impl Context {
     ///
     /// The settings file `name` must be directly under `$ORBIT_HOME`. It also
     /// checks for a local configuration as `name` under a .orbit/ directory if
-    /// the command is invoked from within an ip directory.
+    /// the command is invoked from within a project directory.
     ///
-    /// Note: the `self.ip_path` must already be determined before invocation.
+    /// Note: the `self.project_path` must already be determined before invocation.
     pub fn settings(mut self, name: &str) -> Result<Context, Fault> {
         // check if global file exists first
         let global_path = self.home_path.join(name);
@@ -298,7 +298,7 @@ impl Context {
     }
 
     /// Checks if the design units should be private by default when `public`
-    /// field is omitted from the local ip.
+    /// field is omitted from the local project.
     pub fn are_units_private_by_default(&self) -> bool {
         match self.config.get_general() {
             Some(g) => g.is_public_required(),
@@ -306,9 +306,9 @@ impl Context {
         }
     }
 
-    /// Access the ip directory detected from the current working directory.
-    pub fn get_ip_path(&self) -> Option<&path::PathBuf> {
-        self.ip_path.as_ref()
+    /// Access the project directory detected from the current working directory.
+    pub fn get_project_path(&self) -> Option<&path::PathBuf> {
+        self.project_path.as_ref()
     }
 
     /// Access the home path.
@@ -316,10 +316,10 @@ impl Context {
         &self.home_path
     }
 
-    /// Determines if the directory is within a current IP and sets the proper
+    /// Determines if the directory is within a current project and sets the proper
     /// runtime environment variable.
-    pub fn current_ip_dir(mut self, s: &str) -> Result<Context, Error> {
-        self.ip_path = match Context::find_ip_path(match &std::env::current_dir() {
+    pub fn current_project_dir(mut self, s: &str) -> Result<Context, Error> {
+        self.project_path = match Context::find_project_path(match &std::env::current_dir() {
             Ok(r) => r,
             Err(_) => return Err(Error::FailedToGetCurDir),
         }) {
@@ -332,28 +332,28 @@ impl Context {
         Ok(self)
     }
 
-    /// Changes current working directory to the detected IP path.
+    /// Changes current working directory to the detected project path.
     ///
-    /// Returns an error if ip_path is `None`.
-    pub fn jump_to_working_ip(&self) -> Result<(), Error> {
-        match self.get_ip_path() {
+    /// Returns an error if project_path is `None`.
+    pub fn jump_to_working_project(&self) -> Result<(), Error> {
+        match self.get_project_path() {
             Some(cwd) => {
                 // set the current working directory to here
                 std::env::set_current_dir(&cwd).expect("could not change directories");
             }
             None => {
-                // @IDEA also give information about reading about ip-dir sensitive commands as a topic?
-                return Err(Error::NoWorkingIpFound);
+                // @IDEA also give information about reading about project-dir sensitive commands as a topic?
+                return Err(Error::NoWorkingProjectFound);
             }
         }
         Ok(())
     }
 
-    /// Finds the complete path to the current IP's directory.
+    /// Finds the complete path to the current project's directory.
     ///
     /// This function will recursively backtrack down the current working directory
     /// until finding the first directory with a file named "Orbit.toml".
-    pub fn find_ip_path(dir: &std::path::PathBuf) -> Option<path::PathBuf> {
+    pub fn find_project_path(dir: &std::path::PathBuf) -> Option<path::PathBuf> {
         Self::find_target_path(dir, "Orbit.toml")
     }
 
@@ -393,7 +393,7 @@ impl Context {
         }
     }
 
-    /// Sets the IP's build directory and the corresponding environment variable.
+    /// Sets the project's build directory and the corresponding environment variable.
     pub fn build_dir(self, s: &str) -> Result<Context, Error> {
         env::set_var(s, &self.get_target_dir());
         Ok(self)

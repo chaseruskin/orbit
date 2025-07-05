@@ -23,7 +23,7 @@ use std::fmt::Display;
 use std::io::Write;
 use std::{fs::File, path::PathBuf, str::FromStr};
 
-use super::algo::IpFileNode;
+use super::algo::ProjectFileNode;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 pub enum Scheme {
@@ -81,12 +81,12 @@ const SYSV: &str = "SYSV";
 
 #[derive(Debug, PartialEq)]
 pub enum Entry<'a, 'b> {
-    Hdl(&'b IpFileNode<'a>),
+    Hdl(&'b ProjectFileNode<'a>),
     Auxiliary(String, String, String),
 }
 
 impl<'a, 'b> Entry<'a, 'b> {
-    fn get_builtin_fileset(node: &'b IpFileNode<'a>) -> &'b str {
+    fn get_builtin_fileset(node: &'b ProjectFileNode<'a>) -> &'b str {
         if fileset::is_verilog(node.get_file()) == true {
             VLOG
         } else if fileset::is_vhdl(node.get_file()) == true {

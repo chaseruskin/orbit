@@ -22,8 +22,8 @@ use crate::core::blueprint::Scheme;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::fileset::Fileset;
-use crate::core::ip::Ip;
 use crate::core::lang::vhdl::token::Identifier;
+use crate::core::project::Project;
 use crate::core::swap::StrSwapTable;
 use crate::core::target::Process;
 use crate::core::target::Target;
@@ -111,28 +111,29 @@ impl Subcommand<Context> for Build {
         let plan = target.coordinate_plan(&self.plan)?;
 
         // verify running from an ip directory and enter ip's root directory
-        c.jump_to_working_ip()?;
+        c.jump_to_working_project()?;
 
-        let working_ip = Ip::load(c.get_ip_path().unwrap().to_path_buf(), true, false)?;
+        let current_project =
+            Project::load(c.get_project_path().unwrap().to_path_buf(), true, false)?;
 
         // determine the build directory based on cli priority
         let default_target_dir = c.get_target_dir();
         let target_dir = self.target_dir.as_ref().unwrap_or(&default_target_dir);
         let out_dir = target.get_name();
 
-        let output_path = working_ip.get_root().join(target_dir).join(out_dir);
+        let output_path = current_project.get_root().join(target_dir).join(out_dir);
 
         // gather the catalog and resolve any missing dependencies
         let catalog = Catalog::new()
             .installations(c.get_cache_path())?
             .downloads(c.get_downloads_path())?;
-        let catalog = plan::resolve_missing_deps(c, &working_ip, catalog, self.force)?;
+        let catalog = plan::resolve_missing_deps(c, &current_project, catalog, self.force)?;
 
         let envs = Environment::new()
             // read config.toml for setting any env variables
             .from_config(c.get_config())?
             // read ip manifest for env variables
-            .from_ip(&working_ip)?
+            .from_project(&current_project)?
             .add(EnvVar::with(ORBIT_TARGET_DIR, target_dir))
             .add(
                 EnvVar::new()
@@ -146,7 +147,7 @@ impl Subcommand<Context> for Build {
 
         // plan for the provided target
         Plan::run(
-            &working_ip,
+            &current_project,
             target_dir,
             target,
             catalog,

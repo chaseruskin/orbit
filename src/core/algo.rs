@@ -30,24 +30,26 @@ use crate::core::lang::vhdl::token::VhdlTokenizer;
 
 use crate::core::catalog::CacheSlot;
 use crate::core::catalog::Catalog;
-use crate::core::ip::Ip;
-use crate::core::ip::IpSpec;
 use crate::core::lockfile::{LockEntry, LockFile};
+use crate::core::project::Project;
+use crate::core::project::ProjectIdSpec;
 use crate::core::version::AnyVersion;
 
 use super::catalog::PkgName;
 use super::fileset;
-use super::ip::PartialIpSpec;
 use super::lang::sv::token::tokenizer::SystemVerilogTokenizer;
 use super::lang::verilog::token::tokenizer::VerilogTokenizer;
 use super::lang::{sv, verilog, vhdl, Lang, LangIdentifier};
+use super::project::PartialProjectIdSpec;
 
-/// Constructs an ip-graph from a lockfile.
-pub fn graph_ip_from_lock(lock: &LockFile) -> Result<GraphMap<IpSpec, &LockEntry, ()>, Fault> {
+/// Constructs an project-level graph from a lockfile.
+pub fn graph_project_from_lock(
+    lock: &LockFile,
+) -> Result<GraphMap<ProjectIdSpec, &LockEntry, ()>, Fault> {
     let mut graph = GraphMap::new();
     // add all vertices
     lock.inner().iter().for_each(|f| {
-        graph.add_node(f.to_ip_spec(), f);
+        graph.add_node(f.to_project_id_spec(), f);
     });
     // add all edges
     lock.inner().iter().for_each(|upper| {
@@ -57,26 +59,26 @@ pub fn graph_ip_from_lock(lock: &LockFile) -> Result<GraphMap<IpSpec, &LockEntry
             let lower = lock
                 .get_highest(&dep.get_name(), dep.get_version())
                 .unwrap();
-            graph.add_edge_by_key(&lower.to_ip_spec(), &upper.to_ip_spec(), ());
+            graph.add_edge_by_key(&lower.to_project_id_spec(), &upper.to_project_id_spec(), ());
         }
     });
     Ok(graph)
 }
 
-/// Constructs a graph at the IP-level.
+/// Constructs a graph at the project-level.
 ///
 /// Note: this function performs no reduction.
-fn graph_ip<'a>(
-    root: &'a Ip,
+fn graph_project<'a>(
+    root: &'a Project,
     catalog: Option<&'a Catalog<'a>>,
     private_by_default: bool,
-) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, CodeFault> {
+) -> Result<GraphMap<ProjectIdSpec, ProjectNode<'a>, ()>, CodeFault> {
     // create empty graph
     let mut g = GraphMap::new();
     // construct iterative approach with lists
     let t = g.add_node(
-        root.get_man().get_ip().into_ip_spec(),
-        IpNode::new_keep(root, LangIdentifier::new_working()),
+        root.get_man().get_project().into_project_id_spec(),
+        ProjectNode::new_keep(root, LangIdentifier::new_working()),
     );
     // Only operate on the local ip if catalog is omitted
     if catalog.is_none() {
@@ -94,26 +96,26 @@ fn graph_ip<'a>(
 
     let mut is_root: bool = true;
 
-    while let Some((num, ip)) = processing.pop() {
+    while let Some((num, prj)) = processing.pop() {
         // load dependencies from manifest
-        let reqs = ip.get_man().get_deps_list(is_root, true);
+        let reqs = prj.get_man().get_deps_list(is_root, true);
         // read dependencies
         for (pkgid, dependency) in reqs {
             // check if we are looking in cache or going local
             match dependency.is_relative() {
                 true => {
                     // check if it is a local ip
-                    match dependency.as_ip() {
-                        Some(relative_ip) => {
+                    match dependency.as_project() {
+                        Some(relative_prj) => {
                             // check if node is already in graph ????
-                            let s = if let Some(existing_node) =
-                                g.get_node_by_key(&relative_ip.get_man().get_ip().into_ip_spec())
-                            {
+                            let s = if let Some(existing_node) = g.get_node_by_key(
+                                &relative_prj.get_man().get_project().into_project_id_spec(),
+                            ) {
                                 existing_node.index()
                             } else {
                                 // check if identifiers are already taken in graph
                                 let units =
-                                    relative_ip.collect_units(false, true, private_by_default)?;
+                                    relative_prj.collect_units(false, true, private_by_default)?;
                                 if let Some(dupe) =
                                     units.iter().find(|(key, _)| unit_map.contains_key(key))
                                 {
@@ -123,7 +125,10 @@ fn graph_ip<'a>(
                                             None,
                                             Box::new(HdlNamingError::DuplicateAcrossDirect(
                                                 dupe.get_name().to_string(),
-                                                relative_ip.get_man().get_ip().into_ip_spec(),
+                                                relative_prj
+                                                    .get_man()
+                                                    .get_project()
+                                                    .into_project_id_spec(),
                                                 PathBuf::from(dupe.get_source_file()),
                                                 dupe.get_position().clone(),
                                             )),
@@ -133,7 +138,10 @@ fn graph_ip<'a>(
                                             None,
                                             Box::new(HdlNamingError::DuplicateAcrossDirect(
                                                 dupe.get_name().to_string(),
-                                                relative_ip.get_man().get_ip().into_ip_spec(),
+                                                relative_prj
+                                                    .get_man()
+                                                    .get_project()
+                                                    .into_project_id_spec(),
                                                 PathBuf::from(dupe.get_source_file()),
                                                 dupe.get_position().clone(),
                                             )),
@@ -144,21 +152,21 @@ fn graph_ip<'a>(
                                 for (key, unit) in units {
                                     unit_map.insert(key, unit);
                                 }
-                                let lib = relative_ip.get_hdl_library();
+                                let lib = relative_prj.get_hdl_library();
                                 g.add_node(
-                                    relative_ip.get_man().get_ip().into_ip_spec(),
-                                    IpNode::new_keep(relative_ip, lib),
+                                    relative_prj.get_man().get_project().into_project_id_spec(),
+                                    ProjectNode::new_keep(relative_prj, lib),
                                 )
                             };
                             g.add_edge_by_index(s, num, ());
-                            processing.push((s, &relative_ip));
+                            processing.push((s, &relative_prj));
                         }
                         None => {
                             return Err(CodeFault(
                                 None,
                                 Box::new(AnyError(format!(
-                                    "unknown ip {}",
-                                    PartialIpSpec::new(
+                                    "unknown project {}",
+                                    PartialProjectIdSpec::new(
                                         pkgid.clone(),
                                         None,
                                         dependency.get_version().clone()
@@ -180,19 +188,19 @@ fn graph_ip<'a>(
                     // resolve the uuid for this package... try to use existing lockfile from above code segment
                     match catalog.translate_name(&PkgName::new(pkgid, uuid))? {
                         Some(status) => {
-                            // find this IP to read its dependencies
+                            // find this project to read its dependencies
                             match status.get_install(&AnyVersion::Specific(
                                 dependency.get_version().clone(),
                             )) {
-                                Some(cached_ip) => {
+                                Some(cached_prj) => {
                                     // check if node is already in graph ????
                                     let s = if let Some(existing_node) = g.get_node_by_key(
-                                        &cached_ip.get_man().get_ip().into_ip_spec(),
+                                        &cached_prj.get_man().get_project().into_project_id_spec(),
                                     ) {
                                         existing_node.index()
                                     } else {
                                         // check if identifiers are already taken in graph
-                                        let units = cached_ip.collect_units(
+                                        let units = cached_prj.collect_units(
                                             false,
                                             true,
                                             private_by_default,
@@ -207,10 +215,10 @@ fn graph_ip<'a>(
                                                     Box::new(
                                                         HdlNamingError::DuplicateAcrossDirect(
                                                             dupe.get_name().to_string(),
-                                                            cached_ip
+                                                            cached_prj
                                                                 .get_man()
-                                                                .get_ip()
-                                                                .into_ip_spec(),
+                                                                .get_project()
+                                                                .into_project_id_spec(),
                                                             PathBuf::from(dupe.get_source_file()),
                                                             dupe.get_position().clone(),
                                                         ),
@@ -227,25 +235,28 @@ fn graph_ip<'a>(
                                                 unit_map.insert(key, unit);
                                             }
                                         }
-                                        let lib = cached_ip.get_hdl_library();
+                                        let lib = cached_prj.get_hdl_library();
                                         g.add_node(
-                                            cached_ip.get_man().get_ip().into_ip_spec(),
+                                            cached_prj
+                                                .get_man()
+                                                .get_project()
+                                                .into_project_id_spec(),
                                             match dst {
-                                                true => IpNode::new_alter(cached_ip, lib),
-                                                false => IpNode::new_keep(cached_ip, lib),
+                                                true => ProjectNode::new_alter(cached_prj, lib),
+                                                false => ProjectNode::new_keep(cached_prj, lib),
                                             },
                                         )
                                     };
                                     g.add_edge_by_index(s, num, ());
-                                    processing.push((s, cached_ip));
+                                    processing.push((s, cached_prj));
                                 }
                                 // todo: try to use the lock file to fill in missing pieces
                                 None => {
                                     return Err(CodeFault(
                                         None,
                                         Box::new(AnyError(format!(
-                                            "ip {} is not installed",
-                                            PartialIpSpec::new(
+                                            "project {} is not installed",
+                                            PartialProjectIdSpec::new(
                                                 pkgid.clone(),
                                                 None,
                                                 dependency.get_version().clone()
@@ -256,13 +267,13 @@ fn graph_ip<'a>(
                             }
                         }
                         // todo: try to use the lock file to fill in missing pieces
-                        // @TODO: check the queue for this IP and attempt to install
+                        // @TODO: check the queue for this project and attempt to install
                         None => {
                             return Err(CodeFault(
                                 None,
                                 Box::new(AnyError(format!(
-                                    "unknown ip {}",
-                                    PartialIpSpec::new(
+                                    "unknown project {}",
+                                    PartialProjectIdSpec::new(
                                         pkgid.clone(),
                                         None,
                                         dependency.get_version().clone()
@@ -280,25 +291,25 @@ fn graph_ip<'a>(
     Ok(g)
 }
 
-pub fn compute_final_ip_graph<'a>(
-    target: &'a Ip,
+pub fn compute_final_project_graph<'a>(
+    target: &'a Project,
     catalog: Option<&'a Catalog<'a>>,
     private_by_default: bool,
-) -> Result<GraphMap<IpSpec, IpNode<'a>, ()>, CodeFault> {
+) -> Result<GraphMap<ProjectIdSpec, ProjectNode<'a>, ()>, CodeFault> {
     // collect rough outline of ip graph (after this function, the correct files according to language are kept)
-    let mut rough_ip_graph = graph_ip(&target, catalog, private_by_default)?;
+    let mut rough_project_graph = graph_project(&target, catalog, private_by_default)?;
 
     // keep track of list of neighbors that must perform dst and their lookup-tables to use after processing all direct impacts
-    let mut transforms = HashMap::<IpSpec, HashMap<LangIdentifier, String>>::new();
+    let mut transforms = HashMap::<ProjectIdSpec, HashMap<LangIdentifier, String>>::new();
 
     // iterate through the graph to find all DST nodes to create their replacements
     {
-        let mut graph_iter = rough_ip_graph.get_map().iter();
+        let mut graph_iter = rough_project_graph.get_map().iter();
 
         while let Some((key, node)) = graph_iter.next() {
             if node.as_ref().is_direct_conflict() == true {
                 // remember units if true that a transform occurred
-                let lut = node.as_ref().as_ip().generate_dst_lut();
+                let lut = node.as_ref().as_project().generate_dst_lut();
                 match transforms.get_mut(key) {
                     // update the hashmap for the key
                     Some(entry) => lut.into_iter().for_each(|pair| {
@@ -313,14 +324,14 @@ pub fn compute_final_ip_graph<'a>(
                 }
 
                 // grab neighbors and update their hashmaps
-                let index = rough_ip_graph.get_node_by_key(&key).unwrap().index();
-                let mut dependents = rough_ip_graph.get_graph().successors(index);
+                let index = rough_project_graph.get_node_by_key(&key).unwrap().index();
+                let mut dependents = rough_project_graph.get_graph().successors(index);
 
                 while let Some(i) = dependents.next() {
                     // remember units if true that a transform occurred on the direct conflict node
-                    let lut = node.as_ref().as_ip().generate_dst_lut();
+                    let lut = node.as_ref().as_project().generate_dst_lut();
                     // determine the neighboring node's ip spec
-                    let neighbor_key = rough_ip_graph.get_key_by_index(i).unwrap();
+                    let neighbor_key = rough_project_graph.get_key_by_index(i).unwrap();
 
                     match transforms.get_mut(&neighbor_key) {
                         // update the hashmap for the key
@@ -344,7 +355,7 @@ pub fn compute_final_ip_graph<'a>(
     if let Some(catalog) = catalog {
         let mut transforms_iter = transforms.into_iter();
         while let Some((key, lut)) = transforms_iter.next() {
-            rough_ip_graph
+            rough_project_graph
                 .get_map_mut()
                 .get_mut(&key)
                 .unwrap()
@@ -353,34 +364,34 @@ pub fn compute_final_ip_graph<'a>(
         }
     }
 
-    Ok(rough_ip_graph)
+    Ok(rough_project_graph)
 }
 
 /// Take the ip graph and create the entire space of HDL files that could be used for the current design.
-pub fn build_ip_file_list<'a>(
-    ip_graph: &'a GraphMap<IpSpec, IpNode<'a>, ()>,
-    working_ip: &Ip,
-) -> Vec<IpFileNode<'a>> {
+pub fn build_project_file_list<'a>(
+    project_graph: &'a GraphMap<ProjectIdSpec, ProjectNode<'a>, ()>,
+    current_project: &Project,
+) -> Vec<ProjectFileNode<'a>> {
     let mut files = Vec::new();
-    ip_graph.get_map().iter().for_each(|(_, ip)| {
-        let inner_ip = ip.as_ref().as_ip();
-        let non_private_list = inner_ip.into_non_private_list();
-        inner_ip
+    project_graph.get_map().iter().for_each(|(_, prj)| {
+        let inner_prj = prj.as_ref().as_project();
+        let non_private_list = inner_prj.into_non_private_list();
+        inner_prj
             .gather_current_files()
             .into_iter()
             .filter(|f| {
-                working_ip == inner_ip
-                    || inner_ip.get_mapping().is_relative()
+                current_project == inner_prj
+                    || inner_prj.get_mapping().is_relative()
                     || non_private_list.is_included(f.as_ref())
             })
             .filter(|f| {
                 (fileset::is_vhdl(f)) || (fileset::is_verilog(f)) || (fileset::is_systemverilog(f))
             })
             .for_each(|f| {
-                files.push(IpFileNode::new(
+                files.push(ProjectFileNode::new(
                     f,
-                    inner_ip,
-                    ip.as_ref().get_library().clone(),
+                    inner_prj,
+                    prj.as_ref().get_library().clone(),
                 ));
             })
     });
@@ -393,20 +404,22 @@ pub fn build_ip_file_list<'a>(
 /// Create a minimal graph map that consists of just this local ip node.
 ///
 /// Useful for initializing or creating new ip and having to make the lockfile.
-pub fn minimal_graph_map<'a>(local_ip: &'a Ip) -> GraphMap<IpSpec, IpNode<'a>, ()> {
+pub fn minimal_graph_map<'a>(
+    current_prj: &'a Project,
+) -> GraphMap<ProjectIdSpec, ProjectNode<'a>, ()> {
     let mut g = GraphMap::new();
     g.add_node(
-        local_ip.get_man().get_ip().into_ip_spec(),
-        IpNode::new_keep(local_ip, LangIdentifier::new_working()),
+        current_prj.get_man().get_project().into_project_id_spec(),
+        ProjectNode::new_keep(current_prj, LangIdentifier::new_working()),
     );
     g
 }
 
 #[derive(Debug, PartialEq)]
-pub struct IpNode<'a> {
+pub struct ProjectNode<'a> {
     dyn_state: DynState,
-    original: &'a Ip,
-    transform: Option<Ip>,
+    original: &'a Project,
+    transform: Option<Project>,
     library: LangIdentifier,
 }
 
@@ -416,8 +429,8 @@ pub enum DynState {
     Alter,
 }
 
-impl<'a> IpNode<'a> {
-    fn new_keep(og: &'a Ip, lib: LangIdentifier) -> Self {
+impl<'a> ProjectNode<'a> {
+    fn new_keep(og: &'a Project, lib: LangIdentifier) -> Self {
         Self {
             dyn_state: DynState::Keep,
             original: og,
@@ -426,7 +439,7 @@ impl<'a> IpNode<'a> {
         }
     }
 
-    fn new_alter(og: &'a Ip, lib: LangIdentifier) -> Self {
+    fn new_alter(og: &'a Project, lib: LangIdentifier) -> Self {
         Self {
             dyn_state: DynState::Alter,
             original: og,
@@ -437,8 +450,8 @@ impl<'a> IpNode<'a> {
 
     /// References the internal `IpManifest` struct.
     ///
-    /// Favors the dynamic IP if it exists over the original IP.
-    pub fn as_ip(&'a self) -> &'a Ip {
+    /// Favors the dynamic project if it exists over the original project.
+    pub fn as_project(&'a self) -> &'a Project {
         if let Some(altered) = &self.transform {
             altered
         } else {
@@ -448,7 +461,7 @@ impl<'a> IpNode<'a> {
 
     /// References the underlying original `IpManifest` struct regardless if it has
     /// a transform.
-    pub fn as_original_ip(&'a self) -> &'a Ip {
+    pub fn as_original_project(&'a self) -> &'a Project {
         &self.original
     }
 
@@ -464,7 +477,7 @@ impl<'a> IpNode<'a> {
         }
     }
 
-    /// Transforms the current IP into a different installed ip with alternated symbols.
+    /// Transforms the current project into a different installed ip with alternated symbols.
     ///
     /// Returns the new IpManifest to be replaced with. If the manifest was marked as `Keep`, then
     /// it returns the original manifest.
@@ -488,10 +501,10 @@ impl<'a> IpNode<'a> {
         .unwrap();
 
         // create the ip from the temporary dir
-        let temp_ip = Ip::load(temp_path, false, false).unwrap();
+        let temp_prj = Project::load(temp_path, false, false).unwrap();
 
         // edit all vhdl files
-        let files = temp_ip.gather_current_files();
+        let files = temp_prj.gather_current_files();
         for file in &files {
             // perform dst on the data (VHDL)
             if fileset::is_vhdl(&file) == true {
@@ -525,9 +538,9 @@ impl<'a> IpNode<'a> {
                 std::fs::write(&systemverilog_path, transform).unwrap();
             }
         }
-        // update the slot with a transformed IP manifest
+        // update the slot with a transformed project manifest
         self.transform = Some(install_dst(
-            &temp_ip,
+            &temp_prj,
             &cache_path,
             &lut,
             self.original.get_mapping().is_relative(),
@@ -539,28 +552,28 @@ impl<'a> IpNode<'a> {
 ///
 /// Returns the DST ip for reference.
 fn install_dst(
-    source_ip: &Ip,
+    source_prj: &Project,
     root: &PathBuf,
     mapping: &HashMap<LangIdentifier, String>,
     is_rel: bool,
-) -> Ip {
+) -> Project {
     // compute the new checksum on the new ip and its transformed hdl files
-    let sum = Ip::compute_checksum(source_ip.get_root());
+    let sum = Project::compute_checksum(source_prj.get_root());
 
     // determine the cache slot name
     let cache_slot = if is_rel == true {
         warn!(
             "using dynamic cache slot entry for relative dependency {}",
-            source_ip.get_man().get_ip().get_name()
+            source_prj.get_man().get_project().get_name()
         );
         CacheSlot::new_rel(
-            source_ip.get_uuid(),
-            source_ip.get_man().get_ip().get_version(),
+            source_prj.get_uuid(),
+            source_prj.get_man().get_project().get_version(),
         )
     } else {
         CacheSlot::new(
-            source_ip.get_uuid(),
-            source_ip.get_man().get_ip().get_version(),
+            source_prj.get_uuid(),
+            source_prj.get_man().get_project().get_version(),
             &sum,
         )
     };
@@ -568,33 +581,33 @@ fn install_dst(
 
     // check if already exists and return early with manifest if exists
     if cache_path.exists() == true && is_rel == false {
-        return Ip::load(cache_path, false, false).unwrap();
+        return Project::load(cache_path, false, false).unwrap();
     }
 
     if is_rel == false {
         // copy the source ip to the new location
         crate::util::filesystem::copy(
-            &source_ip.get_root(),
+            &source_prj.get_root(),
             &cache_path,
             true,
-            Some(source_ip.get_files_to_keep()),
+            Some(source_prj.get_files_to_keep()),
         )
         .unwrap();
     } else {
         // perform a "smart" copy to the location for relative DST
         crate::util::filesystem::smart_copy(
-            &source_ip.get_root(),
+            &source_prj.get_root(),
             &cache_path,
             true,
-            Some(source_ip.get_files_to_keep()),
+            Some(source_prj.get_files_to_keep()),
         )
         .unwrap();
     }
 
     // clean up temporary directory
-    std::fs::remove_dir_all(&source_ip.get_root()).unwrap();
+    std::fs::remove_dir_all(&source_prj.get_root()).unwrap();
 
-    let cached_ip = match Ip::load(cache_path.clone(), false, false) {
+    let cached_prj = match Project::load(cache_path.clone(), false, false) {
         Ok(r) => r,
         Err(e) => {
             // clean up corrupt cache entry directory
@@ -606,46 +619,46 @@ fn install_dst(
         }
     };
     // indicate this installation is dynamic in the metadata
-    cached_ip.set_as_dynamic(mapping);
+    cached_prj.set_as_dynamic(mapping);
     // write the new checksum file
-    cached_ip.write_cache_checksum(&sum).unwrap();
+    cached_prj.write_cache_checksum(&sum).unwrap();
     // write the metadata
-    cached_ip.write_cache_metadata().unwrap();
+    cached_prj.write_cache_metadata().unwrap();
 
-    cached_ip
+    cached_prj
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct IpFileNode<'a> {
+pub struct ProjectFileNode<'a> {
     file: String,
     library: LangIdentifier,
-    ip: &'a Ip,
+    project: &'a Project,
     lang: Lang,
     dep_files: Vec<String>,
 }
 
-impl<'a> Ord for IpFileNode<'a> {
+impl<'a> Ord for ProjectFileNode<'a> {
     fn cmp(&self, other: &Self) -> Ordering {
         (self.file).cmp(&(other.file))
     }
 }
 
-impl<'a> PartialOrd for IpFileNode<'a> {
+impl<'a> PartialOrd for ProjectFileNode<'a> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<'a> Eq for IpFileNode<'a> {}
+impl<'a> Eq for ProjectFileNode<'a> {}
 
-impl<'a> Hash for IpFileNode<'a> {
+impl<'a> Hash for ProjectFileNode<'a> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.file.hash(state)
     }
 }
 
-impl<'a> IpFileNode<'a> {
-    pub fn new(file: String, ip: &'a Ip, lib: LangIdentifier) -> Self {
+impl<'a> ProjectFileNode<'a> {
+    pub fn new(file: String, project: &'a Project, lib: LangIdentifier) -> Self {
         let lang = if fileset::is_vhdl(&file) == true {
             Lang::Vhdl
         } else if fileset::is_verilog(&file) == true {
@@ -653,11 +666,11 @@ impl<'a> IpFileNode<'a> {
         } else if fileset::is_systemverilog(&file) == true {
             Lang::SystemVerilog
         } else {
-            panic!("unsupported language in ip file node")
+            panic!("unsupported language in project file node")
         };
         Self {
             file: file,
-            ip: ip,
+            project,
             library: lib,
             lang: lang,
             dep_files: Vec::new(),
@@ -668,8 +681,8 @@ impl<'a> IpFileNode<'a> {
         &self.file
     }
 
-    pub fn get_ip(&self) -> &Ip {
-        &self.ip
+    pub fn get_project(&self) -> &Project {
+        &self.project
     }
 
     pub fn get_language(&self) -> &Lang {
@@ -678,7 +691,7 @@ impl<'a> IpFileNode<'a> {
 
     /// References the library identifier.
     pub fn get_library(&self) -> LangIdentifier {
-        self.ip.get_hdl_library()
+        self.project.get_hdl_library()
     }
 
     /// Sets the list of direct dependency filepaths.

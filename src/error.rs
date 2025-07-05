@@ -20,9 +20,9 @@ use std::{fmt::Display, path::PathBuf};
 
 use crate::core::{
     blueprint::Scheme,
-    ip::{IpSpec, PartialIpSpec},
     lang::{lexer::Position, LangIdentifier},
-    pkgid::PkgPart,
+    name::Name,
+    project::{PartialProjectIdSpec, ProjectIdSpec},
     version::{AnyVersion, PartialVersion, Version},
     visibility::Visibility,
 };
@@ -31,27 +31,27 @@ use crate::core::{
 pub enum Error {
     #[error("{0}")]
     Custom(String),
-    #[error("an ip already exists at {0:?}")]
+    #[error("a project already exists at {0:?}")]
     IpExistsAtPath(PathBuf),
     #[error("path {0:?} already exists {1}")]
     PathAlreadyExists(PathBuf, Hint),
-    #[error("directory {0:?} is an invalid ip name: {1}{2}")]
+    #[error("directory {0:?} is an invalid project name: {1}{2}")]
     CannotAutoExtractNameFromPath(String, LastError, Hint),
     #[error("file system path {0:?} is missing a name{1}")]
     MissingFileSystemPathName(PathBuf, Hint),
-    #[error("failed to create new ip: {0}")]
+    #[error("failed to create new project: {0}")]
     FailedToCreateNewIp(LastError),
-    #[error("failed to initialize ip: {0}")]
+    #[error("failed to initialize project: {0}")]
     FailedToInitIp(LastError),
     #[error("a target must be defined")]
     MissingRequiredTarget,
-    #[error("command must be ran from a local ip: no ip found in current directory or any parent directory")]
-    NoWorkingIpFound,
-    #[error("command must be ran from a local ip when an ip is not explicitly defined: no ip found in current directory or any parent directory")]
+    #[error("command must be ran from a local project: no project found in current directory or any parent directory")]
+    NoWorkingProjectFound,
+    #[error("command must be ran from a local project when a project is not explicitly defined: no project found in current directory or any parent directory")]
     NoAssumedWorkingIpFound,
-    #[error("ip {0:?} does not exist in the cache")]
+    #[error("project {0:?} does not exist in the cache")]
     IpNotFoundInCache(String),
-    #[error("ip {0:?} does not exist in the catalog{1}")]
+    #[error("project {0:?} does not exist in the catalog{1}")]
     IpNotFoundAnywhere(String, Hint),
     #[error("exited with error code: {0}")]
     ChildProcErrorCode(i32),
@@ -81,7 +81,7 @@ pub enum Error {
     ConfigSaveFailed(String, LastError),
     #[error("failed to parse source code file {0:?}: {1}")]
     SourceCodeInvalidSyntax(PathBuf, LastError),
-    #[error("failed to process ip graph: {0}")]
+    #[error("failed to process project graph: {0}")]
     IpGraphFailed(LastError),
     #[error("failed to parse identifier: {0}")]
     CrossIdentifierParsingFailed(LastError),
@@ -97,47 +97,47 @@ pub enum Error {
     GetUnitNotFound(String, Hint),
     #[error("unit \"{0}\" is not a usable design component{1}")]
     GetUnitNotComponent(String, Hint),
-    #[error("failed to load ip: {0}")]
+    #[error("failed to load project: {0}")]
     IpLoadFailed(LastError),
-    #[error("failed to parse ip name: {0}")]
+    #[error("failed to parse project name: {0}")]
     IpNameParseFailed(LastError),
     #[error("manifest requests relative dependency {0} as version {1}, but actual version is {2}")]
-    DependencyIpRelativeBadVersion(PkgPart, PartialVersion, Version),
-    #[error("listed name {0} does not match ip's actual name {1}")]
-    DependencyIpRelativeBadName(PkgPart, PkgPart),
+    DependencyIpRelativeBadVersion(Name, PartialVersion, Version),
+    #[error("listed name {0} does not match project's actual name {1}")]
+    DependencyIpRelativeBadName(Name, Name),
     #[error("failed to load lockfile: {0}")]
     LockfileLoadFailed(LastError),
     #[error("failed to install: {0}")]
     InstallFailed(LastError),
-    #[error("ip has dependencies that are relative")]
+    #[error("project has dependencies that are relative")]
     IpHasRelativeDependencies,
     #[error("a testbench is required to test")]
     TestbenchRequired,
     #[error("top \"{0}\" is not tested in testbench \"{1}\"{2}")]
     TopNotInTestbench(LangIdentifier, LangIdentifier, Hint),
     #[error("lockfile entry \"{0}\" is not queued for installation (missing download)")]
-    EntryMissingDownload(IpSpec),
+    EntryMissingDownload(ProjectIdSpec),
     #[error("lockfile entry \"{0}\" is not queued for installation")]
-    EntryNotQueued(IpSpec),
-    #[error("lockfile entry \"{0}\" is not queued for installation (unknown ip)")]
-    EntryUnknownIp(IpSpec),
-    #[error("found {0} ips downloaded as candidates: {1}{2}")]
+    EntryNotQueued(ProjectIdSpec),
+    #[error("lockfile entry \"{0}\" is not queued for installation (unknown project)")]
+    EntryUnknownIp(ProjectIdSpec),
+    #[error("found {0} projects downloaded as candidates: {1}{2}")]
     DownloadFoundManyIps(usize, String, Hint),
-    #[error("failed to find any ip manifest in the downloaded directory")]
+    #[error("failed to find any project manifest in the downloaded directory")]
     DownloadFoundZeroIp,
-    #[error("failed to find an ip manifest in the downloaded directory that matches \"{0}\"")]
-    DownloadFoundZeroIpMatch(PartialIpSpec),
+    #[error("failed to find a project manifest in the downloaded directory that matches \"{0}\"")]
+    DownloadFoundZeroIpMatch(PartialProjectIdSpec),
     #[error("lockfile is missing or out of date{0}")]
     PublishMissingLockfile(Hint),
-    #[error("the ip manifest's source field is required to publish, but is undefined")]
+    #[error("the project manifest's source field is required to publish, but is undefined")]
     PublishMissingSource,
-    #[error("ip {0} is already published to at least one of the specified channels")]
-    PublishAlreadyExists(IpSpec),
+    #[error("project {0} is already published to at least one of the specified channels")]
+    PublishAlreadyExists(ProjectIdSpec),
     #[error("default channel \"{0}\" does not exist")]
     DefChanNotFound(String),
     #[error("listed channel \"{0}\" does not exist")]
     ChanNotFound(String),
-    #[error("no channels specified: one or more channels are required to publish an ip")]
+    #[error("no channels specified: one or more channels are required to publish a project")]
     NoChanDefined,
     #[error("a manifest file does not exist at path: \"{0}\"")]
     ManifestPathNotFound(String),
@@ -145,22 +145,22 @@ pub enum Error {
     ManifestParseFailed(String, LastError),
     #[error("failed to build hdl graph: {0}")]
     PublishHdlGraphFailed(LastError),
-    #[error("ip {0} is ready to be published{1}")]
-    PublishDryRunDone(IpSpec, Hint),
-    #[error("checksums do not match between downloaded ip and local ip{0}")]
+    #[error("project {0} is ready to be published{1}")]
+    PublishDryRunDone(ProjectIdSpec, Hint),
+    #[error("checksums do not match between downloaded project and current project{0}")]
     PublishChecksumsOff(Hint),
     #[error("channel's resolved path {0:?} does not exist")]
     ChannelPathNotFound(PathBuf),
     #[error("channel's resolved path {0:?} is not a directory")]
     ChannelPathNotDir(PathBuf),
-    #[error("ip has \"{0}\" listed as a relative dependency")]
-    PublishRelativeDepExists(PkgPart),
+    #[error("project has \"{0}\" listed as a relative dependency")]
+    PublishRelativeDepExists(Name),
     #[error("failed to pass publish checkpoint: {0}")]
     PublishFailedCheckpoint(LastError),
-    #[error("cyclic dependency with local ip \"{0}\"")]
-    CyclicDependencyIp(PkgPart),
-    #[error("failed to get uuid for ip \"{0}\" due to missing or corrupted lockfile{1}")]
-    RequiredUuuidMissing(IpSpec, Hint),
+    #[error("cyclic dependency with local project \"{0}\"")]
+    CyclicDependencyProject(Name),
+    #[error("failed to get uuid for project \"{0}\" due to missing or corrupted lockfile{1}")]
+    RequiredUuuidMissing(ProjectIdSpec, Hint),
     #[error("failed to find a version matching \"{0}\"{1}")]
     VersionNotFound(AnyVersion, Hint),
     #[error("cannot {0} unit \"{1}\" due to {2} visibility{3}")]
@@ -174,13 +174,13 @@ pub enum Error {
     #[error("invalid character \"{0}\" does not belong to alphabet (a-z0-9)")]
     UuidInvalidChar(char),
     #[error(
-        "ip namespace collision for \"{0}\": please disambiguate by providing the appropriate uuid:\n\n{1}{2}"
+        "project namespace collision for \"{0}\": please disambiguate by providing the appropriate uuid:\n\n{1}{2}"
     )]
     IpNamespaceCollision(String, String, Hint),
     #[error(
-        "uuid for ip \"{0}\" has been modified which can result in unintended consequences{1}"
+        "uuid for project \"{0}\" has been modified which can result in unintended consequences{1}"
     )]
-    UuidModified(PkgPart, Hint),
+    UuidModified(Name, Hint),
     #[error("failed to get current working directory (does it still exist?)")]
     FailedToGetCurDir,
     #[error(
@@ -189,21 +189,21 @@ pub enum Error {
     FailedToGetHomeDir,
     #[error("directory {0:?} does not exist for ORBIT_HOME")]
     OrbitHomeDoesNotExist(PathBuf),
-    #[error("edge kinds are: \"unit\", \"ip\", \"all\"")]
+    #[error("edge kinds are: \"unit\", \"project\", \"all\"")]
     EdgeKindInvalid(String),
     #[error("0 design units found{0}")]
     IpZeroDesignUnitsFound(Hint),
     #[error("0 source files are matched to the public entry list{0}")]
     IpNoDesignUnitsWithPublic(Hint),
-    #[error("all design units within the current ip are private by default as viewed from the outside{0}")]
+    #[error("all design units within the current project are private by default as viewed from the outside{0}")]
     IpAssumedAllPrivateByDefault(Hint),
     #[error("failed to detect public design units: {0}")]
     PublishUnitVisibilityFailed(LastError),
     #[error("cannot use \"--all-public\" flag in this context: {0}")]
     IpAllPublicNotNow(LastError),
-    #[error("the \"ip.public\" entry is found in the current ip's manifest")]
+    #[error("the \"project.public\" entry is found in the current project's manifest")]
     VisNoAllPubEntryExists,
-    #[error("the ip being installed is not local")]
+    #[error("the project being installed is not local")]
     VisNoAllPubIpNotLocal,
     #[error("default protocol \"{0}\" not found")]
     DefaultProtocolNotFound(String),
@@ -253,7 +253,7 @@ pub enum Hint {
     ResolveDuplicateIds1,
     ResolveDuplicateIds2,
     ShowAvailableUnitsLocal,
-    ShowAvailableUnitsExternal(IpSpec),
+    ShowAvailableUnitsExternal(ProjectIdSpec),
     DutSpecify,
     WantsTestbench,
     WantsTop,
@@ -284,7 +284,7 @@ impl Display for Hint {
             _ => None,
         };
         let message = match self {
-            Self::CatalogList => "use `orbit search` to see the list of known ips",
+            Self::CatalogList => "use `orbit search` to see the list of known projects",
             Self::TargetsListBuild => {
                 "use `orbit build --list` to see the list of defined build targets"
             }
@@ -293,7 +293,7 @@ impl Display for Hint {
             }
             Self::InitNotNew => "use `orbit init` to initialize an existing directory",
             Self::IpNameSeparate => {
-                "use the \"--name\" option for making an ip name separate from the directory name"
+                "use the \"--name\" option for making a project name separate from the directory name"
             }
             Self::ResolveDuplicateIds1 => HINT_1,
             Self::ResolveDuplicateIds2 => HINT_2,
@@ -307,24 +307,24 @@ impl Display for Hint {
                 "use `orbit build` and its \"--top\" option to select top-level designs"
             }
             Self::SolveNamespaceCollision => {
-                "use `orbit info` for each candidate to help determine your intended ip"
+                "use `orbit info` for each candidate to help determine your intended project"
             }
             Self::TopSpecify => "use the \"--top\" option to specify the top-level design",
             Self::BenchSpecify => "use the \"--tb\" option to specify the testbench",
             Self::RootSpecify => "use the \"--root\" option to specify the root design unit",
             Self::IncludeAllInPlan => "use the \"-all\" flag to continue with this setup",
             Self::SpecifyIpSpecForDownload => {
-                "consider providing the ip specification for the requested ip to download"
+                "consider providing the project ID specification for the requested project to download"
             }
-            Self::MakeLock => "use `orbit lock` to generate the latest lockfile for this ip",
-            Self::PublishWithReady => "use the \"--ready\" flag to publish the ip to its channels",
-            Self::RegenerateLockfile => "verify the ip's lockfile exists and is up to date",
-            Self::ShowVersions => "use `orbit info <ip> --versions` to see all known versions",
+            Self::MakeLock => "use `orbit lock` to generate the latest lockfile for this project",
+            Self::PublishWithReady => "use the \"--ready\" flag to publish the project to its channels",
+            Self::RegenerateLockfile => "verify the project's lockfile exists and is up to date",
+            Self::ShowVersions => "use `orbit info <project> --versions` to see all known versions",
             Self::ShowConfigFiles => {
                 "use `orbit config --list` to see the list of current configuration files"
             }
             Self::PublishSyncRemote => {
-                "check that the local ip's contents matches the source's contents"
+                "check that the current project's contents matches the source's contents"
             }
             Self::ConfirmUuidChange(uuid) => &format!(
                 "resolve this error by either
@@ -335,7 +335,7 @@ impl Display for Hint {
             Self::AddPublicEntry => HINT_VIS_1,
             Self::AddSourceFiles => "create at least one design unit in a .vhd, .sv, or .v file",
             Self::FixPublicEntry => {
-                "fix the manifest's \"ip.public\" field by adding valid source file paths"
+                "fix the manifest's \"project.public\" field by adding valid source file paths"
             }
         };
         write!(
@@ -349,13 +349,13 @@ impl Display for Hint {
 
 const HINT_1: &str = "resolve this error by either
     1) renaming one of the units to a unique identifier
-    2) adding one of the file paths to the manifest's \"ip.exclude\" field";
+    2) adding one of the file paths to the manifest's \"project.ignore\" field";
 
 const HINT_2: &str = "resolve this error by either
-    1) renaming the unit in the local ip to a unique identifier
+    1) renaming the unit in the current project to a unique identifier
     2) removing the direct dependency from Orbit.toml
-    3) adding the file path for the local ip's unit to the manifest's \"ip.exclude\" field";
+    3) adding the file path for the current project's unit to the manifest's \"project.ignore\" field";
 
 const HINT_VIS_1: &str = "resolve this error by either
-    1) adding the \"ip.public\" field to the manifest with a list of source files to be public
+    1) adding the \"project.public\" field to the manifest with a list of source files to be public
     2) using the \"--all-public\" flag to set all source files as public";

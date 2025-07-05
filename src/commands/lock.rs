@@ -20,8 +20,8 @@ use crate::commands::helps::lock;
 use crate::core::algo;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
-use crate::core::ip::Ip;
 use crate::core::lockfile::LockEntry;
+use crate::core::project::Project;
 use crate::core::swap::StrSwapTable;
 use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
@@ -44,13 +44,17 @@ impl Subcommand<Context> for Lock {
     }
 
     fn execute(self, c: &Context) -> proc::Result {
-        // check that user is in an IP directory
-        c.jump_to_working_ip()?;
+        // check that user is in an project directory
+        c.jump_to_working_project()?;
 
         let force_apply_new_uuid = self.force;
 
         // store the working ip struct
-        let working_ip = Ip::load(c.get_ip_path().unwrap().clone(), true, force_apply_new_uuid)?;
+        let working_ip = Project::load(
+            c.get_project_path().unwrap().clone(),
+            true,
+            force_apply_new_uuid,
+        )?;
 
         // assemble the catalog
         let mut catalog = Catalog::new()
@@ -100,17 +104,17 @@ impl Subcommand<Context> for Lock {
 impl Lock {
     /// Performs the backend logic for creating a blueprint file (planning a design).
     pub fn run(
-        working_ip: &Ip,
+        working_ip: &Project,
         catalog: &Catalog,
         force: bool,
         priv_by_def: bool,
     ) -> Result<(), Fault> {
         // build entire ip graph and resolve with dynamic symbol transformation
-        let ip_graph = match algo::compute_final_ip_graph(&working_ip, Some(&catalog), priv_by_def)
-        {
-            Ok(g) => g,
-            Err(e) => return Err(e)?,
-        };
+        let ip_graph =
+            match algo::compute_final_project_graph(&working_ip, Some(&catalog), priv_by_def) {
+                Ok(g) => g,
+                Err(e) => return Err(e)?,
+            };
 
         // only write lockfile and exit if flag is raised
         Plan::write_lockfile(&working_ip, &ip_graph, force, true, &catalog)?;
@@ -118,19 +122,24 @@ impl Lock {
     }
 
     /// Writes a lockfile for a newly created ip (one that either was made with `new` or `init`).
-    pub fn write_new_lockfile(local_ip: &Ip, warn: bool, priv_by_def: bool) -> Result<(), Fault> {
+    pub fn write_new_lockfile(
+        local_ip: &Project,
+        warn: bool,
+        priv_by_def: bool,
+    ) -> Result<(), Fault> {
         // build entire ip graph and resolve with dynamic symbol transformation
         let catalog = Catalog::new();
-        let ip_graph = match algo::compute_final_ip_graph(&local_ip, Some(&catalog), priv_by_def) {
-            Ok(g) => g,
-            Err(e) => match warn {
-                true => {
-                    crate::warn!("{}", e.1);
-                    algo::minimal_graph_map(local_ip)
-                }
-                false => return Err(e)?,
-            },
-        };
+        let ip_graph =
+            match algo::compute_final_project_graph(&local_ip, Some(&catalog), priv_by_def) {
+                Ok(g) => g,
+                Err(e) => match warn {
+                    true => {
+                        crate::warn!("{}", e.1);
+                        algo::minimal_graph_map(local_ip)
+                    }
+                    false => return Err(e)?,
+                },
+            };
         Plan::write_lockfile(&local_ip, &ip_graph, true, false, &catalog)?;
         Ok(())
     }

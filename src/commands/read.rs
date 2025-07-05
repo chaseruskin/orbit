@@ -25,8 +25,6 @@ use super::get::GetError;
 use crate::commands::helps::read;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
-use crate::core::ip::Ip;
-use crate::core::ip::PartialIpSpec;
 use crate::core::lang::lexer::Position;
 use crate::core::lang::lexer::Token;
 use crate::core::lang::sv::token::token::SystemVerilogToken;
@@ -37,6 +35,8 @@ use crate::core::lang::vhdl::token::VhdlToken;
 use crate::core::lang::vhdl::token::VhdlTokenizer;
 use crate::core::lang::Lang;
 use crate::core::lang::LangIdentifier;
+use crate::core::project::PartialProjectIdSpec;
+use crate::core::project::Project;
 use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::AnyError;
@@ -53,7 +53,7 @@ const TMP_DIR: &str = "tmp";
 #[derive(Debug, PartialEq)]
 pub struct Read {
     unit: LangIdentifier,
-    ip: Option<PartialIpSpec>,
+    spec: Option<PartialProjectIdSpec>,
     locate: bool,
     save: bool,
     no_clean: bool,
@@ -73,7 +73,7 @@ impl Subcommand<Context> for Read {
             no_clean: cli.check(Arg::flag("keep").switch('k'))?,
             // options
             limit: cli.get(Arg::option("limit").value("n"))?,
-            ip: cli.get(Arg::option("project").switch('p').value("spec"))?,
+            spec: cli.get(Arg::option("project").switch('p').value("spec"))?,
             start: cli.get(Arg::option("start").value("code"))?,
             end: cli.get(Arg::option("end").value("code"))?,
             comment: cli.get(Arg::option("doc").value("code"))?,
@@ -108,8 +108,8 @@ impl Subcommand<Context> for Read {
             false => None,
         };
 
-        // checking external IP
-        if let Some(spec) = &self.ip {
+        // checking external project
+        if let Some(spec) = &self.spec {
             // gather the catalog (all manifests)
             let catalog = Catalog::new().installations(c.get_cache_path())?;
 
@@ -118,7 +118,7 @@ impl Subcommand<Context> for Read {
                 Some(lvl) => {
                     let inst = match lvl.get_install(spec.get_version()) {
                         Some(i) => i,
-                        None => panic!("version does not exist for this ip"),
+                        None => panic!("version does not exist for this project"),
                     };
                     self.run(inst, dest.as_ref(), false, c.are_units_private_by_default())
                 }
@@ -130,11 +130,11 @@ impl Subcommand<Context> for Read {
                     )))?;
                 }
             }
-        // must be in an IP if omitting the pkgid
+        // must be in an project if omitting the pkgid
         } else {
-            let ip = match c.get_ip_path() {
-                Some(p) => Ip::load(p.to_path_buf(), true, false)?,
-                None => return Err(AnyError(format!("not within an existing ip")))?,
+            let ip = match c.get_project_path() {
+                Some(p) => Project::load(p.to_path_buf(), true, false)?,
+                None => return Err(AnyError(format!("not within an existing project")))?,
             };
 
             self.run(&ip, dest.as_ref(), true, c.are_units_private_by_default())
@@ -145,7 +145,7 @@ impl Subcommand<Context> for Read {
 impl Read {
     fn run(
         &self,
-        target: &Ip,
+        target: &Project,
         dest: Option<&PathBuf>,
         is_local: bool,
         priv_by_def: bool,
@@ -253,7 +253,7 @@ impl Read {
     /// file it is referencing (no copy).
     fn read(
         unit: &LangIdentifier,
-        ip: &Ip,
+        ip: &Project,
         dest: Option<&PathBuf>,
         is_local: bool,
         priv_by_def: bool,
@@ -266,7 +266,7 @@ impl Read {
             Some((name, unit)) => {
                 // verify the unit is not private when trying to read from nonlocal ip
                 if unit.get_visibility().is_private() == true && is_local == false {
-                    let spec = ip.get_man().get_ip().into_ip_spec();
+                    let spec = ip.get_man().get_project().into_project_id_spec();
                     return Err(Error::UnitIsWrongVisibility(
                         String::from("read"),
                         name.clone(),
@@ -291,7 +291,7 @@ impl Read {
                 }
             }
             None => {
-                let spec = ip.get_man().get_ip().into_ip_spec();
+                let spec = ip.get_man().get_project().into_project_id_spec();
                 return Err(GetError::SuggestShow(
                     GetError::UnitNotFound(unit.clone(), spec.clone()).to_string(),
                     Hint::ShowAvailableUnitsExternal(spec),

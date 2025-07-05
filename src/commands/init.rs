@@ -20,10 +20,10 @@ use super::new::New;
 use crate::commands::helps::init;
 use crate::commands::orbit::AnyResult;
 use crate::core::context::Context;
-use crate::core::ip::Ip;
 use crate::core::lang::vhdl::token::Identifier;
-use crate::core::manifest::{Manifest, IP_MANIFEST_FILE};
-use crate::core::pkgid::PkgPart;
+use crate::core::manifest::{Manifest, PROJECT_MANIFEST_FILE};
+use crate::core::name::Name;
+use crate::core::project::Project;
 use crate::core::uuid::Uuid;
 use crate::error::{Error, LastError};
 use crate::util::anyerror::AnyError;
@@ -38,7 +38,7 @@ use cliproc::{Arg, Cli, Help, Subcommand};
 
 #[derive(Debug, PartialEq)]
 pub struct Init {
-    name: Option<PkgPart>,
+    name: Option<Name>,
     library: Option<Identifier>,
     path: PathBuf,
     uuid: bool,
@@ -86,7 +86,7 @@ impl Subcommand<Context> for Init {
 
 impl Init {
     /// Initializes a project at an exising path.
-    fn create_ip(&self, ip: &PkgPart, priv_by_def: bool) -> AnyResult<()> {
+    fn create_ip(&self, ip: &Name, priv_by_def: bool) -> AnyResult<()> {
         // verify the directory already exists
         if self.path.is_dir() == false || self.path.exists() == false {
             return Err(Box::new(AnyError(format!(
@@ -98,7 +98,7 @@ impl Init {
         // create the file directly nested within the destination path
         let manifest_path = {
             let mut p = self.path.clone();
-            p.push(IP_MANIFEST_FILE);
+            p.push(PROJECT_MANIFEST_FILE);
             p
         };
 
@@ -112,12 +112,12 @@ impl Init {
         manifest.write_all(Manifest::write_empty_manifest(&ip, &lib_str).as_bytes())?;
 
         // write the lockfile
-        let local_ip = Ip::load(self.path.clone(), true, false)?;
+        let local_ip = Project::load(self.path.clone(), true, false)?;
         Lock::write_new_lockfile(&local_ip, true, priv_by_def)?;
 
         info!(
-            "initialized ip \"{}\"",
-            local_ip.get_man().get_ip().get_name()
+            "initialized project \"{}\"",
+            local_ip.get_man().get_project().get_name()
         );
 
         // display the help message

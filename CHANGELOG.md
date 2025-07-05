@@ -19,8 +19,12 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 ### Features
 - Adds `force` and `relative` flags to the fields in the `[env]` table of the `config.toml` file
+- Adds `ORBIT_PROJECT_DIR` environment variable (alias of `ORBIT_MANIFEST_DIR`)
+- Adds `ORBIT_CORE_ROOT_NAME`, `ORBIT_CORE_ROOT_FILE`, and `ORBIT_CORE_ROOT_JSON` environment variables to always set to the core's root design unit regardless if running `orbit build` or `orbit test`
 
 ### Changes
+- Changes manifest `[ip]` table to be `[project]`
+- Updates wording for an Orbit package to be called a `project` vs. deprecated `ip` name
 - Environment variables set in the `[env]` table no longer have a `ORBIT_ENV_` prefix automatically attached to them
 
 ## 0.25.2
@@ -107,7 +111,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Adds `build` and `test` fields for `[[target]]` in configuration files to explicitly enable or disable a target from either the build subcommand and test subcommand
 - Adds caching mechanism for retrieving list of units from file for `orbit info -u` on installed ips to improve performance
 - Adds caching mechanism for retrieving source files for particular design unit when requesting code snippets for `orbit get` on installed ips to improve performance
-- Allows un-ignore patterns (`!`) in `public` field for `[ip]` table in manifest
+- Allows un-ignore patterns (`!`) in `public` field for `[project]` table in manifest
 
 ### Changes
 - Writes entire 64 characters of the SHA256 checksum (rather than first 10 characters) of current ip to `ORBIT_IP_CHECKSUM` env var during the build process

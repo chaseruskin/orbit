@@ -20,7 +20,7 @@ use super::VhdlError;
 use crate::core::lang::highlight;
 use crate::core::lang::highlight::ToColor;
 use crate::core::lang::LangIdentifier;
-use crate::core::pkgid::PkgPart;
+use crate::core::name::Name;
 use crate::util::strcmp;
 use colored::ColoredString;
 use serde_derive::{Deserialize, Serialize};
@@ -100,8 +100,8 @@ impl Hash for Identifier {
     }
 }
 
-impl From<&PkgPart> for Identifier {
-    fn from(part: &PkgPart) -> Self {
+impl From<&Name> for Identifier {
+    fn from(part: &Name) -> Self {
         Identifier::Basic(part.to_normal().to_string())
     }
 }

@@ -24,7 +24,7 @@ use crate::core::lang::vhdl::symbols::VHDLParser;
 use crate::core::lang::vhdl::token::identifier::Identifier;
 use crate::util::anyerror::CodeFault;
 use crate::util::filesystem;
-use crate::{core::ip::IpSpec, error::Hint};
+use crate::{core::project::ProjectIdSpec, error::Hint};
 use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use toml_edit::InlineTable;
 
@@ -269,8 +269,8 @@ pub fn collect_units(files: &Vec<String>) -> Result<HashMap<Identifier, PrimaryU
 #[derive(Debug)]
 pub enum HdlNamingError {
     DuplicateIdentifier(String, PathBuf, Position, PathBuf, Position),
-    DuplicateAcrossDirect(String, IpSpec, PathBuf, Position),
-    DuplicateAcrossLocal(String, IpSpec, PathBuf, Position),
+    DuplicateAcrossDirect(String, ProjectIdSpec, PathBuf, Position),
+    DuplicateAcrossLocal(String, ProjectIdSpec, PathBuf, Position),
 }
 
 impl std::error::Error for HdlNamingError {}

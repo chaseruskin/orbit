@@ -18,9 +18,6 @@
 use crate::commands::helps::get;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
-use crate::core::ip::Ip;
-use crate::core::ip::IpSpec;
-use crate::core::ip::PartialIpSpec;
 use crate::core::lang;
 use crate::core::lang::sv::format::SystemVerilogFormat;
 use crate::core::lang::verilog::symbols::module::Module;
@@ -32,6 +29,9 @@ use crate::core::lang::vhdl::token::Identifier as VhdlIdentifier;
 use crate::core::lang::Lang;
 use crate::core::lang::LangIdentifier;
 use crate::core::lang::LangUnit;
+use crate::core::project::PartialProjectIdSpec;
+use crate::core::project::Project;
+use crate::core::project::ProjectIdSpec;
 use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::{AnyError, Fault};
@@ -74,7 +74,7 @@ impl FromStr for LangConversion {
 #[derive(Debug, PartialEq)]
 pub struct Get {
     unit: VhdlIdentifier,
-    ip: Option<PartialIpSpec>,
+    project: Option<PartialProjectIdSpec>,
     signals: bool,
     component: bool,
     instance: bool,
@@ -115,7 +115,7 @@ impl Subcommand<Context> for Get {
             // const_suffix: cli
             //     .get(Arg::option("const-suffix").value("value"))?
             //     .unwrap_or_default(),
-            ip: cli.get(Arg::option("project").switch('p').value("spec"))?,
+            project: cli.get(Arg::option("project").switch('p').value("spec"))?,
             name: cli.get(Arg::option("name").value("identifier"))?,
             unit: cli.require(Arg::positional("unit"))?,
         })
@@ -139,39 +139,42 @@ impl Subcommand<Context> for Get {
 
         let mut is_local_ip = false;
         // try to auto-determine the ip (check if in a working ip)
-        let ip_path = if let Some(spec) = &self.ip {
+        let ip_path = if let Some(spec) = &self.project {
             // @todo: find the path to the provided ip by searching through the catalog
             if let Some(lvl) = catalog.translate_name(&spec.to_pkg_name())? {
                 if let Some(slot) = lvl.get_install(spec.get_version()) {
                     slot.get_root().clone()
                 } else {
-                    return Err(AnyError(format!("ip {} does not exist in the cache", spec)))?;
+                    return Err(AnyError(format!(
+                        "project {} does not exist in the cache",
+                        spec
+                    )))?;
                 }
             } else {
-                return Err(AnyError(format!("no ip found in cache")))?;
+                return Err(AnyError(format!("no project found in cache")))?;
             }
         } else {
-            let ip = Context::find_ip_path(&env::current_dir().unwrap());
+            let ip = Context::find_project_path(&env::current_dir().unwrap());
             is_local_ip = true;
             if ip.is_none() == true {
-                return Err(AnyError(format!("no ip provided or detected")))?;
+                return Err(AnyError(format!("no project provided or detected")))?;
             } else {
                 ip.unwrap()
             }
         };
 
         // load the manifest from the path
-        let ip = Ip::load(ip_path, is_local_ip, false)?;
+        let ip = Project::load(ip_path, is_local_ip, false)?;
 
         self.run(&ip, is_local_ip, &c)
     }
 }
 
 impl Get {
-    fn run(&self, ip: &Ip, is_local: bool, c: &Context) -> Result<(), Fault> {
+    fn run(&self, project: &Project, is_local: bool, c: &Context) -> Result<(), Fault> {
         // collect all hdl files and parse them
         let selected_unit = Self::fetch_entity(
-            &ip,
+            &project,
             &LangIdentifier::Vhdl(self.unit.clone()),
             c.are_units_private_by_default(),
         )?;
@@ -183,7 +186,9 @@ impl Get {
                         String::from("get"),
                         lu.get_name(),
                         lu.get_visibility().clone(),
-                        Hint::ShowAvailableUnitsExternal(ip.get_man().get_ip().into_ip_spec()),
+                        Hint::ShowAvailableUnitsExternal(
+                            project.get_man().get_project().into_project_id_spec(),
+                        ),
                     ))?;
                 }
                 // check to make sure it is a component
@@ -192,9 +197,9 @@ impl Get {
                 } else {
                     let hint = match is_local {
                         true => Hint::ShowAvailableUnitsLocal,
-                        false => {
-                            Hint::ShowAvailableUnitsExternal(ip.get_man().get_ip().into_ip_spec())
-                        }
+                        false => Hint::ShowAvailableUnitsExternal(
+                            project.get_man().get_project().into_project_id_spec(),
+                        ),
                     };
                     return Err(Error::GetUnitNotComponent(lu.get_name().to_string(), hint))?;
                 }
@@ -202,7 +207,9 @@ impl Get {
             None => {
                 let hint = match is_local {
                     true => Hint::ShowAvailableUnitsLocal,
-                    false => Hint::ShowAvailableUnitsExternal(ip.get_man().get_ip().into_ip_spec()),
+                    false => Hint::ShowAvailableUnitsExternal(
+                        project.get_man().get_project().into_project_id_spec(),
+                    ),
                 };
                 return Err(Error::GetUnitNotFound(self.unit.to_string(), hint))?;
             }
@@ -217,9 +224,9 @@ impl Get {
                     LangConversion::Sv => {
                         // convert the entity to a SV module
                         let module = entity.to_sv_module()?;
-                        self.display_verilog_module(&ip, &module, &c.get_sv_format())
+                        self.display_verilog_module(&project, &module, &c.get_sv_format())
                     }
-                    _ => self.display_vhdl_entity(&ip, entity, is_local, &c.get_vhdl_format()),
+                    _ => self.display_vhdl_entity(&project, entity, is_local, &c.get_vhdl_format()),
                 }
             }
             Lang::Verilog => {
@@ -229,9 +236,9 @@ impl Get {
                     LangConversion::Vhdl => {
                         // convert the entity to a SV module
                         let entity = module.to_vhdl_entity()?;
-                        self.display_vhdl_entity(&ip, &entity, is_local, &c.get_vhdl_format())
+                        self.display_vhdl_entity(&project, &entity, is_local, &c.get_vhdl_format())
                     }
-                    _ => self.display_verilog_module(&ip, module, &c.get_sv_format()),
+                    _ => self.display_verilog_module(&project, module, &c.get_sv_format()),
                 }
             }
             Lang::SystemVerilog => {
@@ -245,9 +252,9 @@ impl Get {
                     LangConversion::Vhdl => {
                         // convert the entity to a SV module
                         let entity = module.to_vhdl_entity()?;
-                        self.display_vhdl_entity(&ip, &entity, is_local, &c.get_vhdl_format())
+                        self.display_vhdl_entity(&project, &entity, is_local, &c.get_vhdl_format())
                     }
-                    _ => self.display_verilog_module(&ip, module, &c.get_sv_format()),
+                    _ => self.display_verilog_module(&project, module, &c.get_sv_format()),
                 }
             }
         }?;
@@ -257,7 +264,7 @@ impl Get {
 
     fn display_vhdl_entity(
         &self,
-        ip: &Ip,
+        ip: &Project,
         entity: &Entity,
         is_local: bool,
         fmt: &VhdlFormat,
@@ -373,7 +380,7 @@ impl Get {
 
     fn display_verilog_module(
         &self,
-        _ip: &Ip,
+        _ip: &Project,
         module: &Module,
         fmt: &SystemVerilogFormat,
     ) -> Result<(), Fault> {
@@ -436,12 +443,12 @@ impl Get {
     }
 
     fn fetch_entity(
-        ip: &Ip,
+        ip: &Project,
         name: &LangIdentifier,
         priv_by_default: bool,
     ) -> Result<Option<LangUnit>, Fault> {
         // check if we can use the cached metadata
-        if let Some(cached) = Ip::read_cache_metadata(ip.get_root()) {
+        if let Some(cached) = Project::read_cache_metadata(ip.get_root()) {
             let units = cached.get_units();
             if let Some(unit) = units.iter().find(|p| &p.get_name() == name) {
                 let files = unit
@@ -475,7 +482,7 @@ impl Get {
 
 #[derive(Debug)]
 pub enum GetError {
-    UnitNotFound(LangIdentifier, IpSpec),
+    UnitNotFound(LangIdentifier, ProjectIdSpec),
     SuggestShow(String, Hint),
 }
 
@@ -485,7 +492,7 @@ impl std::fmt::Display for GetError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::UnitNotFound(ent, spec) => {
-                write!(f, "failed to find unit \"{}\" in ip \"{}\"", ent, spec)
+                write!(f, "failed to find unit \"{}\" in project \"{}\"", ent, spec)
             }
             Self::SuggestShow(err, hint) => {
                 write!(f, "{}{}", err, hint)

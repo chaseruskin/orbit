@@ -18,7 +18,7 @@
 use super::target::Process;
 use crate::core::config::Command;
 use crate::core::context::Context;
-use crate::core::ip::Ip;
+use crate::core::project::Project;
 use crate::{
     error::Error,
     util::{anyerror::Fault, environment::Environment},
@@ -207,9 +207,9 @@ impl Channel {
         let mut env = Environment::new()
             // read config.toml for setting any env variables
             .from_config(context.get_config())?;
-        if let Some(path) = context.get_ip_path() {
-            // read ip manifest for env variables
-            env = env.from_ip(&Ip::load(path.clone(), true, false)?)?;
+        if let Some(path) = context.get_project_path() {
+            // read project manifest for env variables
+            env = env.from_project(&Project::load(path.clone(), true, false)?)?;
         }
         for c in channels {
             c.run_sync(&env)?;

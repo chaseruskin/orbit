@@ -19,7 +19,6 @@ use crate::commands::download::Download;
 use crate::core::blueprint::{Blueprint, Entry, Scheme};
 use crate::core::context::{self, Context};
 use crate::core::fileset::Fileset;
-use crate::core::iparchive::IpArchive;
 use crate::core::lang::parser::ParseError;
 use crate::core::lang::reference::CompoundIdentifier;
 use crate::core::lang::sv::symbols::{SystemVerilogParser, SystemVerilogSymbol};
@@ -28,6 +27,7 @@ use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbols::{VHDLParser, VhdlSymbol};
 use crate::core::lang::vhdl::token::Identifier;
 use crate::core::lang::{self, Lang, LangIdentifier};
+use crate::core::project_archive::ProjectArchive;
 use crate::core::swap;
 use crate::core::swap::StrSwapTable;
 use crate::core::target::Target;
@@ -47,13 +47,13 @@ use std::path::{Path, PathBuf};
 
 use crate::commands::install::Install;
 use crate::core::algo;
-use crate::core::algo::IpFileNode;
-use crate::core::algo::IpNode;
+use crate::core::algo::ProjectFileNode;
+use crate::core::algo::ProjectNode;
 use crate::core::catalog::Catalog;
-use crate::core::ip::Ip;
-use crate::core::ip::IpSpec;
 use crate::core::lockfile::LockEntry;
 use crate::core::lockfile::LockFile;
+use crate::core::project::Project;
+use crate::core::project::ProjectIdSpec;
 use crate::util::graphmap::Node;
 
 #[derive(Debug, PartialEq)]
@@ -75,7 +75,7 @@ impl Plan {
     ///
     /// If a blueprint was created, it will return the file name for that blueprint.
     pub fn run(
-        working_ip: &Ip,
+        working_project: &Project,
         target_dir: &str,
         target: &Target,
         catalog: Catalog,
@@ -93,21 +93,24 @@ impl Plan {
         priv_by_def: bool,
     ) -> Result<Option<String>, Fault> {
         // create the output path to know where to begin storing files
-        let working_ip_path = working_ip.get_root().clone();
+        let working_ip_path = working_project.get_root().clone();
         let target_path = working_ip_path.join(target_dir);
         let output_path = target_path.join(target.get_name());
 
         // build entire ip graph and resolve with dynamic symbol transformation
-        let ip_graph = match algo::compute_final_ip_graph(&working_ip, Some(&catalog), priv_by_def)
-        {
+        let prj_graph = match algo::compute_final_project_graph(
+            &working_project,
+            Some(&catalog),
+            priv_by_def,
+        ) {
             Ok(g) => g,
             Err(e) => {
                 // generate a single blueprint
                 if e.is_source_err() == true && force == true {
                     let mut blueprint = Blueprint::new(scheme.clone());
-                    let ip_file_node = IpFileNode::new(
+                    let ip_file_node = ProjectFileNode::new(
                         e.as_source_file().unwrap().to_string(),
-                        &working_ip,
+                        &working_project,
                         LangIdentifier::new_working(),
                     );
                     blueprint.add(Entry::Hdl(&ip_file_node));
@@ -146,7 +149,7 @@ impl Plan {
 
         // only write lockfile and exit if flag is raised
         if only_lock == true {
-            Self::write_lockfile(&working_ip, &ip_graph, force, true, &catalog)?;
+            Self::write_lockfile(&working_project, &prj_graph, force, true, &catalog)?;
             return Ok(None);
         }
 
@@ -155,15 +158,15 @@ impl Plan {
             fs::remove_dir_all(&output_path)?;
         }
 
-        let files = algo::build_ip_file_list(&ip_graph, &working_ip);
+        let files = algo::build_project_file_list(&prj_graph, &working_project);
 
         let global_graph = Self::build_full_graph(&files)?;
 
-        let working_lib = working_ip.get_hdl_library();
+        let working_lib = working_project.get_hdl_library();
 
-        // restrict graph to units only found within the current IP
+        // restrict graph to units only found within the current project
         let local_graph: GraphMap<&CompoundIdentifier, &HdlNode, &()> =
-            Self::compute_local_graph(&global_graph, &working_ip);
+            Self::compute_local_graph(&global_graph, &working_project);
 
         let (top, bench) = match allow_bench {
             true => {
@@ -252,7 +255,7 @@ impl Plan {
         }
 
         // [!] write the lock file
-        Self::write_lockfile(&working_ip, &ip_graph, true, true, &catalog)?;
+        Self::write_lockfile(&working_project, &prj_graph, true, true, &catalog)?;
 
         // compute minimal topological ordering
         let min_order = match all {
@@ -413,6 +416,11 @@ impl Plan {
             vtable.add("orbit.tb.name", &bench_name);
             vtable.add("orbit.top.name", &top_name);
             vtable.add("orbit.dut.name", &top_name);
+            if bench_name.len() > 0 {
+                vtable.add("orbit.core.root.name", &bench_name);
+            } else {
+                vtable.add("orbit.core.root.name", &top_name);
+            }
 
             // store data in a map for quicker look-ups when comparing to target-defind filesets
             let mut cli_fset_map: HashMap<&String, Fileset> = HashMap::new();
@@ -444,16 +452,16 @@ impl Plan {
 
             // look in all ip for the fileset patterns
             if has_recursive_fset == true {
-                let mut topo_order = ip_graph.get_graph().topological_sort();
+                let mut topo_order = prj_graph.get_graph().topological_sort();
                 // remove the last ip (the "working ip")
                 topo_order.pop().unwrap();
                 let topo_order = topo_order;
                 for i in topo_order {
-                    let all_files = ip_graph
+                    let all_files = prj_graph
                         .get_node_by_index(i)
                         .unwrap()
                         .as_ref()
-                        .as_ip()
+                        .as_project()
                         .gather_current_files();
                     Self::add_files_from_filesets_to_blueprint(
                         &mut blueprint,
@@ -467,7 +475,7 @@ impl Plan {
                 }
             }
 
-            let current_files: Vec<String> = working_ip.gather_current_files();
+            let current_files: Vec<String> = working_project.gather_current_files();
             Self::add_files_from_filesets_to_blueprint(
                 &mut blueprint,
                 current_files,
@@ -583,14 +591,14 @@ impl Plan {
 
 pub fn resolve_missing_deps<'a>(
     c: &'a Context,
-    working_ip: &'a Ip,
+    working_project: &'a Project,
     mut catalog: Catalog<'a>,
     force: bool,
 ) -> Result<Catalog<'a>, Fault> {
     // this code is only ran if the lock file matches the manifest and we aren't force to recompute
-    if working_ip.can_use_lock(&catalog) == true && force == false {
-        let le: LockEntry = LockEntry::from((working_ip, true));
-        let lf = working_ip.get_lock();
+    if working_project.can_use_lock(&catalog) == true && force == false {
+        let le: LockEntry = LockEntry::from((working_project, true));
+        let lf = working_project.get_lock();
 
         let env = Environment::new()
             // read config.toml for setting any env variables
@@ -628,7 +636,7 @@ pub fn download_missing_deps(
     let mut vtable = vtable;
     // fetch all non-downloaded packages
     for entry in lf.inner() {
-        // skip the current project's IP entry or any IP already in the downloads/
+        // skip the current project's project entry or any project already in the downloads/
         if entry.matches_target(le, &catalog) == true
             || catalog.is_downloaded_slot(&entry.to_download_slot_key()) == true
             || entry.is_relative() == true
@@ -647,8 +655,8 @@ pub fn download_missing_deps(
                         // verify the checksum
                         if Install::is_checksum_good(&dep.get_root()) == false {
                             crate::info!(
-                                "redownloading ip {} due to bad checksum ...",
-                                dep.get_man().get_ip().into_ip_spec()
+                                "redownloading project {} due to bad checksum ...",
+                                dep.get_man().get_project().into_project_id_spec()
                             );
                             require_download = true;
                         }
@@ -677,7 +685,7 @@ pub fn download_missing_deps(
                     // fetch from the internet
                     Download::download(
                         &mut vtable,
-                        Some(&entry.to_ip_spec().to_partial_ip_spec()),
+                        Some(&entry.to_project_id_spec().to_partial_project_id_spec()),
                         src,
                         catalog.get_downloads_path(),
                         default_protocol,
@@ -687,8 +695,8 @@ pub fn download_missing_deps(
                 }
                 None => {
                     return Err(AnyError(format!(
-                        "unable to fetch ip {} from the internet due to missing source",
-                        entry.to_ip_spec()
+                        "unable to fetch project {} from the internet due to missing source",
+                        entry.to_project_id_spec()
                     )))?;
                 }
             }
@@ -700,7 +708,7 @@ pub fn download_missing_deps(
 pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) -> Result<(), Fault> {
     // fill in the catalog with missing modules according the lock file if available
     for entry in lf.inner() {
-        // skip the current project's IP entry or any relative listings
+        // skip the current project's project entry or any relative listings
         if entry.matches_target(&le, &catalog) || entry.is_relative() {
             continue;
         }
@@ -711,7 +719,7 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
         match catalog.inner().get(entry.get_uuid()) {
             Some(status) => {
                 // println!("{:?} has status in catalog", entry);
-                // find this IP to read its dependencies
+                // find this project to read its dependencies
                 match status.get_install(&ver) {
                     // no action required (already installed)
                     Some(dep) => {
@@ -720,8 +728,8 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                             match status.get_download(&ver) {
                                 Some(dep) => {
                                     crate::info!(
-                                        "reinstalling ip {} due to bad checksum ...",
-                                        dep.get_man().get_ip().into_ip_spec()
+                                        "reinstalling project {} due to bad checksum ...",
+                                        dep.get_man().get_project().into_project_id_spec()
                                     );
                                     // perform extra work if the Ip is virtual (from downloads)
                                     install_ip_from_downloads(&dep, &catalog, true)?
@@ -729,7 +737,7 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                                 None => {
                                     // failed to get the install from the queue
                                     return Err(Box::new(Error::EntryMissingDownload(
-                                        entry.to_ip_spec(),
+                                        entry.to_project_id_spec(),
                                     )));
                                 }
                             }
@@ -744,31 +752,33 @@ pub fn install_missing_deps(lf: &LockFile, le: &LockEntry, catalog: &Catalog) ->
                                 install_ip_from_downloads(&dep, &catalog, false)?
                             }
                             None => {
-                                return Err(Box::new(Error::EntryNotQueued(entry.to_ip_spec())))
+                                return Err(Box::new(Error::EntryNotQueued(
+                                    entry.to_project_id_spec(),
+                                )))
                             }
                         }
                     }
                 }
             }
             None => {
-                return Err(Box::new(Error::EntryUnknownIp(entry.to_ip_spec())));
+                return Err(Box::new(Error::EntryUnknownIp(entry.to_project_id_spec())));
             }
         }
     }
     Ok(())
 }
 
-fn install_ip_from_downloads(dep: &Ip, catalog: &Catalog, force: bool) -> Result<(), Fault> {
+fn install_ip_from_downloads(dep: &Project, catalog: &Catalog, force: bool) -> Result<(), Fault> {
     // perform extra work if the Ip is virtual (from downloads)
     if let Some(bytes) = dep.get_mapping().as_bytes() {
         // place the dependency into a temporary directory
         let dir = tempfile::tempdir()?.into_path();
-        if let Err(e) = IpArchive::extract(&bytes, &dir) {
+        if let Err(e) = ProjectArchive::extract(&bytes, &dir) {
             fs::remove_dir_all(dir)?;
             return Err(e);
         }
-        // load the IP
-        let unzipped_dep = match Ip::load(dir.clone(), false, false) {
+        // load the project
+        let unzipped_dep = match Project::load(dir.clone(), false, false) {
             Ok(x) => x,
             Err(e) => {
                 fs::remove_dir_all(dir)?;
@@ -801,7 +811,7 @@ use crate::core::lang::node::{HdlNode, HdlSymbol};
 impl Plan {
     pub fn create_verilog_node<'a, 'b>(
         graph_map: &'b mut GraphMap<CompoundIdentifier, HdlNode<'a>, ()>,
-        node: &'a IpFileNode,
+        node: &'a ProjectFileNode,
         component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
     ) -> Result<(), Fault> {
         let contents = lang::read_to_string(&node.get_file())?;
@@ -870,7 +880,7 @@ impl Plan {
 
     pub fn create_systemverilog_node<'a, 'b>(
         graph_map: &'b mut GraphMap<CompoundIdentifier, HdlNode<'a>, ()>,
-        node: &'a IpFileNode,
+        node: &'a ProjectFileNode,
         component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
     ) -> Result<(), Fault> {
         let contents = lang::read_to_string(&node.get_file())?;
@@ -931,7 +941,7 @@ impl Plan {
 
     pub fn create_vhdl_node<'a, 'b>(
         graph_map: &'b mut GraphMap<CompoundIdentifier, HdlNode<'a>, ()>,
-        node: &'a IpFileNode,
+        node: &'a ProjectFileNode,
         component_pairs: &'b mut HashMap<LangIdentifier, LangIdentifier>,
         sub_nodes: &'b mut Vec<(LangIdentifier, SubUnitNode<'a>)>,
     ) -> Result<(), Fault> {
@@ -1164,7 +1174,7 @@ impl Plan {
 
     /// Builds a graph of design units. Used for planning
     pub fn build_full_graph<'a>(
-        files: &'a Vec<IpFileNode>,
+        files: &'a Vec<ProjectFileNode>,
     ) -> Result<GraphMap<CompoundIdentifier, HdlNode<'a>, ()>, Fault> {
         let mut graph_map: GraphMap<CompoundIdentifier, HdlNode, ()> = GraphMap::new();
 
@@ -1262,8 +1272,8 @@ impl Plan {
     /// Writes the lockfile according to the constructed `ip_graph`. Only writes if the lockfile is
     /// out of date or `force` is `true`.
     pub fn write_lockfile<'c>(
-        target: &Ip,
-        ip_graph: &GraphMap<IpSpec, IpNode, ()>,
+        target: &Project,
+        project_graph: &GraphMap<ProjectIdSpec, ProjectNode, ()>,
         force: bool,
         verbose: bool,
         catalog: &Catalog<'c>,
@@ -1271,10 +1281,10 @@ impl Plan {
         // only modify the lockfile if it is out-of-date
         if target.can_use_lock(&catalog) == false || force == true {
             // create build list
-            let build_list: Vec<&Ip> = ip_graph
+            let build_list: Vec<&Project> = project_graph
                 .get_map()
                 .iter()
-                .map(|p| p.1.as_ref().as_original_ip())
+                .map(|p| p.1.as_ref().as_original_project())
                 .collect();
             let lock = LockFile::from_build_list(build_list, target)?;
             lock.save_to_disk(target.get_root())?;
@@ -1631,9 +1641,9 @@ impl Plan {
     fn determine_file_order<'a>(
         global_graph: &'a GraphMap<CompoundIdentifier, HdlNode, ()>,
         min_order: Vec<usize>,
-    ) -> Vec<IpFileNode<'a>> {
+    ) -> Vec<ProjectFileNode<'a>> {
         // gather the files from each node in-order (multiple files can exist for a node)
-        let mut file_map = BTreeMap::<String, (IpFileNode, Vec<&HdlNode>)>::new();
+        let mut file_map = BTreeMap::<String, (ProjectFileNode, Vec<&HdlNode>)>::new();
         let mut file_order = Vec::<String>::new();
         // println!("HERE: {:#?}", min_order);
         for i in &min_order {
@@ -1644,7 +1654,7 @@ impl Plan {
                 .as_ref()
                 .get_associated_files();
             // handle each associated file in the list
-            ipfs.into_iter().for_each(|&ip_file_node| {
+            ipfs.into_iter().for_each(|&prj_file_node| {
                 // collect all dependencies in the graph from this node
                 let mut preds: Vec<&HdlNode> = global_graph
                     .predecessors(*i)
@@ -1652,17 +1662,17 @@ impl Plan {
                     .map(|ip_file_node| ip_file_node.1)
                     .collect();
                 // merge dependencies together from various primary design units
-                match file_map.get_mut(ip_file_node.get_file()) {
+                match file_map.get_mut(prj_file_node.get_file()) {
                     // update the existing node by merging dependencies together
                     Some((_file_node, deps)) => {
                         deps.append(&mut preds);
                     }
                     // enter the new unmarked node and its dependencies
                     None => {
-                        file_order.push(ip_file_node.get_file().clone());
+                        file_order.push(prj_file_node.get_file().clone());
                         file_map.insert(
-                            ip_file_node.get_file().clone(),
-                            (ip_file_node.clone(), preds),
+                            prj_file_node.get_file().clone(),
+                            (prj_file_node.clone(), preds),
                         );
                     }
                 }
@@ -1670,7 +1680,7 @@ impl Plan {
         }
 
         // build a graph where nodes are files
-        let mut file_graph: GraphMap<IpFileNode, (), ()> = GraphMap::new();
+        let mut file_graph: GraphMap<ProjectFileNode, (), ()> = GraphMap::new();
 
         for file_name in &file_order {
             let (node, deps) = file_map.get(file_name).unwrap();
@@ -1726,12 +1736,12 @@ impl Plan {
         file_list
     }
 
-    /// Filters out the local nodes existing within the current IP from the `global_graph`.
+    /// Filters out the local nodes existing within the current project from the `global_graph`.
     ///
     /// Construction of local graph must be consistent across repeated runs.
     pub fn compute_local_graph<'a>(
         global_graph: &'a GraphMap<CompoundIdentifier, HdlNode, ()>,
-        target: &Ip,
+        target: &Project,
     ) -> GraphMap<&'a CompoundIdentifier, &'a HdlNode<'a>, &'a ()> {
         let working_lib = target.get_hdl_library();
         // restrict graph to units only found within the current ip
@@ -1748,7 +1758,7 @@ impl Plan {
             .filter(|f| {
                 let mut in_range: bool = true;
                 for tag in f.1.get_associated_files() {
-                    if tag.get_ip() != target {
+                    if tag.get_project() != target {
                         in_range = false;
                         break;
                     }
@@ -1807,6 +1817,30 @@ impl Plan {
 
         // build upon existing environment variables to save in .env file
         envs = envs
+            .add(EnvVar::with(
+                environment::ORBIT_CORE_ROOT_NAME,
+                if require_bench == true {
+                    &bench_name
+                } else {
+                    &top_name
+                },
+            ))
+            .add(EnvVar::with(
+                environment::ORBIT_CORE_ROOT_FILE,
+                if require_bench == true {
+                    &bench_file
+                } else {
+                    &top_file
+                },
+            ))
+            .add(EnvVar::with(
+                environment::ORBIT_CORE_ROOT_JSON,
+                if require_bench == true {
+                    &bench_json
+                } else {
+                    &top_json
+                },
+            ))
             .add(EnvVar::with(
                 environment::ORBIT_TOP_NAME,
                 if require_bench == false {
@@ -1885,10 +1919,10 @@ impl std::fmt::Display for PlanError {
             }
             Self::UnknownEntity(id) => write!(
                 f,
-                "local ip does not contain any component named \"{}\"",
+                "current project does not contain any component named \"{}\"",
                 id
             ),
-            Self::Empty => write!(f, "zero components found in the local ip"),
+            Self::Empty => write!(f, "zero components found in the current project"),
             Self::BadEntity(id) => write!(f, "design element \"{}\" is not a component", id),
             Self::BadTestbench(id, hint) => {
                 write!(f, "component \"{}\" is not a testbench{}", id, hint,)
@@ -1906,7 +1940,7 @@ impl std::fmt::Display for PlanError {
             Self::UnknownUnit(id) => {
                 write!(
                     f,
-                    "no primary design unit named \"{}\" in the current ip",
+                    "no primary design unit named \"{}\" in the current project",
                     id
                 )
             }
@@ -1981,7 +2015,7 @@ mod test {
 //         // unwrap because at this point the target must exist
 //         let target = target.unwrap();
 
-//         // check that user is in an IP directory
+//         // check that user is in an project directory
 //         c.jump_to_working_ip()?;
 
 //         // store the working ip struct

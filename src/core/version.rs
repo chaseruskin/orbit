@@ -96,7 +96,7 @@ pub fn get_target_version<'a>(
     ver: &AnyVersion,
     space: &'a Vec<&Version>,
 ) -> Result<Version, Fault> {
-    // find the specified version for the given ip
+    // find the specified version for the given project
     let mut latest_version: Option<&Version> = None;
     space
         .into_iter()

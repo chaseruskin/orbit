@@ -18,7 +18,7 @@
 use crate::util::{anyerror::Fault, environment::Environment};
 use std::collections::HashMap;
 
-use super::ip::Ip;
+use super::project::Project;
 
 pub struct StrSwapTable(HashMap<String, String>);
 
@@ -35,16 +35,16 @@ impl StrSwapTable {
         Ok(self)
     }
 
-    pub fn load_ip(mut self, ip: &Ip) -> Result<Self, Fault> {
+    pub fn load_project(mut self, prj: &Project) -> Result<Self, Fault> {
         self.0.insert(
-            String::from("orbit.ip.name"),
-            ip.get_man().get_ip().get_name().to_string(),
+            String::from("orbit.project.name"),
+            prj.get_man().get_project().get_name().to_string(),
         );
         self.0.insert(
-            String::from("orbit.ip.version"),
-            ip.get_man().get_ip().get_version().to_string(),
+            String::from("orbit.project.version"),
+            prj.get_man().get_project().get_version().to_string(),
         );
-        // self.0.insert(String::from("orbit.ip.checksum"), )
+        // self.0.insert(String::from("orbit.project.checksum"), )
         Ok(self)
     }
 

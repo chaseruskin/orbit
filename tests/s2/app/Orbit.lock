@@ -2,15 +2,15 @@
 # It is not intended for manual editing.
 version = 1
 
-[[ip]]
+[[project]]
 name = "app"
 version = "0.1.0"
 uuid = "1h875zp8cjtab1lrkdgue5gxk"
 dependencies = ["lib+esefn4auh48jjfz1g6xvwj48r:0.1.0"]
 
-[[ip]]
+[[project]]
 name = "lib"
 version = "0.1.0"
 uuid = "esefn4auh48jjfz1g6xvwj48r"
-checksum = "a140518d487850d25745299c01358b76c42f3dbdd98349c8b738caecd8350ac5"
+checksum = "7fffccdc154b1defcd38beffff5ff2db72019b8d60b6cc4af9b96a2131e16f83"
 dependencies = []

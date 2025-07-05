@@ -256,7 +256,7 @@ pub struct UseClause {
     @NOTE To check instantiations, check for all identifiers against the
     list of known public identifiers from external API.
 
-    Example: given a ip with public primary design units: adder, adder_pkg
+    Example: given a project with public primary design units: adder, adder_pkg
 */
 
 #[derive(Debug, PartialEq)]

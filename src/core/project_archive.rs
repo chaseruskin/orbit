@@ -15,9 +15,9 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-use super::ip::Ip;
 use super::lockfile::LockFile;
 use super::manifest::Manifest;
+use super::project::Project;
 use crate::util::anyerror::{AnyError, Fault};
 use crate::util::compress;
 use flate2::read::ZlibDecoder;
@@ -33,24 +33,24 @@ use zip::ZipArchive;
 
 const ARCHIVE_MARKER: [u8; 4] = [0xc7, 0x9e, 0xf1, 0x6b];
 
-pub const ARCHIVE_EXT: &str = "ip";
+pub const ARCHIVE_EXT: &str = "project";
 
 /// Number of bytes to read a [u32] value.
 const U32_SIZE: usize = 4;
 
 pub type IpBytesZipped = Vec<u8>;
 
-/// The IP archive stores the compressed version of a project along with any
+/// The project archive stores the compressed version of a project along with any
 /// metadata in its 'header'. The format is: \[MARKER HEADER_LEN HEADER_BYTES PROJECT_DIR_BYTES].
 #[derive(Debug, PartialEq)]
-pub struct IpArchive {
+pub struct ProjectArchive {
     manifest: Manifest,
     lock: LockFile,
-    /// Compressed data containing the [Ip].
+    /// Compressed data containing the [Project].
     archive: IpBytesZipped,
 }
 
-impl IpArchive {
+impl ProjectArchive {
     fn slice(buf: &[u8], offset: usize, size: usize) -> &[u8] {
         &buf[offset..offset + size]
     }
@@ -82,7 +82,7 @@ impl IpArchive {
         }
     }
 
-    /// Parses according to version of [IpArchive] format.
+    /// Parses according to version of [ProjectArchive] format.
     ///
     /// The `repairing` argument should be asserted only when a repair process
     /// is occurring.
@@ -170,12 +170,12 @@ impl IpArchive {
     pub fn repair(archive: &[u8], path: &PathBuf) -> Result<Vec<u8>, Fault> {
         // place the dependency into a temporary directory
         let dir = tempfile::tempdir()?.into_path();
-        if let Err(e) = IpArchive::extract(&archive, &dir) {
+        if let Err(e) = ProjectArchive::extract(&archive, &dir) {
             fs::remove_dir_all(dir)?;
             return Err(e);
         }
-        // load the IP
-        let extracted_ip = match Ip::load(dir.clone(), false, false) {
+        // load the project
+        let extracted_ip = match Project::load(dir.clone(), false, false) {
             Ok(x) => x,
             Err(e) => {
                 fs::remove_dir_all(dir)?;
@@ -208,9 +208,9 @@ impl IpArchive {
     }
 
     /// Stores the project's state and additional metadata into a .zip archive.
-    pub fn write(ip: &Ip, dest: &PathBuf) -> Result<Vec<u8>, Fault> {
+    pub fn write(project: &Project, dest: &PathBuf) -> Result<Vec<u8>, Fault> {
         // compress the ip package
-        compress::write_zip_dir(ip.get_root(), &dest)?;
+        compress::write_zip_dir(project.get_root(), &dest)?;
         // read back the bytes
         let archive_bytes = fs::read(&dest)?;
 
@@ -220,9 +220,9 @@ impl IpArchive {
             let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
             let embedded_data = vec![
                 // get the manifest bytes
-                ip.get_man().to_string(),
+                project.get_man().to_string(),
                 // get the lockfile bytes
-                ip.get_lock().to_string(),
+                project.get_lock().to_string(),
             ];
             for data in embedded_data {
                 // write the size of the string
@@ -254,15 +254,15 @@ impl IpArchive {
         Ok(all_bytes)
     }
 
-    /// Detects all Ip found as archives.
-    pub fn detect_all(dir: &PathBuf) -> Result<Vec<Ip>, Fault> {
-        // for each .ip file
+    /// Detects all projects found as archives.
+    pub fn detect_all(dir: &PathBuf) -> Result<Vec<Project>, Fault> {
+        // for each .project file
         fs::read_dir(&dir)?
             .filter_map(|result| if let Ok(r) = result { Some(r) } else { None })
             .map(|entry| entry.path().to_path_buf())
             .filter(|path| path.extension().is_some() && path.extension().unwrap() == ARCHIVE_EXT)
-            .map(|path| match IpArchive::read(&path) {
-                Ok(arc) => Ok(Ip::from(arc)),
+            .map(|path| match ProjectArchive::read(&path) {
+                Ok(arc) => Ok(Project::from(arc)),
                 Err(e) => Err(e),
             })
             .collect()

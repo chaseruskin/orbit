@@ -41,6 +41,7 @@ The string pattern for a project's `project.source` field is allowed to contain 
 
 The string pattern for a target's fileset configuration is allowed to contain any of the following keys:
 
+- `orbit.core.root.name`: The core root design unit name.
 - `orbit.top.name`: The top-level design unit name.
 - `orbit.tb.name`: The testbench design unit name.
 - `orbit.dut.name`: The design-under-test design unit name.
@@ -63,6 +64,7 @@ The argument list defined in a target's configuration is allowed to contain any 
 - `orbit.project.library`: The HDL library of the current project.
 - `orbit.project.version`: The version of the current project.
 - `orbit.project.checksum`: The truncated most recent checksum of the current project.
+- `orbit.core.root.name`: The core root design unit name.
 - `orbit.top.name`: The top-level design unit name.
 - `orbit.tb.name`: The testbench design unit name.
 - `orbit.dut.name`: The design-under-test design unit name.

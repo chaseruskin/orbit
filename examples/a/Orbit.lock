@@ -2,7 +2,7 @@
 # It is not intended for manual editing.
 version = 1
 
-[[ip]]
+[[project]]
 name = "a"
 version = "0.1.1"
 uuid = "9lgqxpmr3a5far3mod7d7a40k"

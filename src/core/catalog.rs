@@ -28,26 +28,26 @@ use std::{
 };
 
 use super::channel::Channel;
-use super::iparchive::ARCHIVE_EXT;
-use super::ippointer::IpPointer;
+use super::project_archive::ARCHIVE_EXT;
+use super::project_pointer::ProjectPointer;
 use super::{
-    pkgid::PkgPart,
+    name::Name,
     version::{AnyVersion, Version},
 };
 
-use crate::core::ip::Ip;
-use crate::core::iparchive::IpArchive;
+use crate::core::project::Project;
+use crate::core::project_archive::ProjectArchive;
 use std::cmp::PartialOrd;
 use std::hash::Hash;
 
 #[derive(Debug)]
 pub struct VersionItem<'a> {
     version: &'a Version,
-    state: IpState,
+    state: ProjectState,
 }
 
 impl<'a> VersionItem<'a> {
-    pub fn new(v: &'a Version, s: IpState) -> Self {
+    pub fn new(v: &'a Version, s: ProjectState) -> Self {
         Self {
             version: v,
             state: s,
@@ -58,7 +58,7 @@ impl<'a> VersionItem<'a> {
         &self.version
     }
 
-    pub fn get_state(&self) -> &IpState {
+    pub fn get_state(&self) -> &ProjectState {
         &self.state
     }
 }
@@ -92,22 +92,22 @@ impl<'a> Hash for VersionItem<'a> {
 
 #[derive(Debug)]
 pub struct Catalog<'a> {
-    inner: HashMap<Uuid, IpLevel>,
-    mappings: HashMap<PkgPart, Vec<Uuid>>,
+    inner: HashMap<Uuid, ProjectLevel>,
+    mappings: HashMap<Name, Vec<Uuid>>,
     cache: Option<&'a PathBuf>,
     downloads: Option<&'a PathBuf>,
     available: Option<HashMap<&'a String, &'a PathBuf>>,
 }
 
 #[derive(Debug, PartialEq)]
-pub enum IpState {
+pub enum ProjectState {
     Downloaded,
     Installation,
     Available,
     Unknown,
 }
 
-impl std::fmt::Display for IpState {
+impl std::fmt::Display for ProjectState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self {
             Self::Downloaded => write!(f, "download"),
@@ -119,13 +119,13 @@ impl std::fmt::Display for IpState {
 }
 
 #[derive(Debug)]
-pub struct IpLevel {
-    installs: Vec<Ip>,
-    downloads: Vec<Ip>,
-    available: Vec<Ip>,
+pub struct ProjectLevel {
+    installs: Vec<Project>,
+    downloads: Vec<Project>,
+    available: Vec<Project>,
 }
 
-impl IpLevel {
+impl ProjectLevel {
     pub fn new() -> Self {
         Self {
             installs: Vec::new(),
@@ -134,7 +134,7 @@ impl IpLevel {
         }
     }
 
-    pub fn add_install(&mut self, m: Ip) -> bool {
+    pub fn add_install(&mut self, m: Project) -> bool {
         // only add if not a DST
         if m.is_dynamic() == false {
             self.installs.push(m);
@@ -144,25 +144,25 @@ impl IpLevel {
         }
     }
 
-    pub fn add_download(&mut self, m: Ip) -> bool {
+    pub fn add_download(&mut self, m: Project) -> bool {
         self.downloads.push(m);
         true
     }
 
-    pub fn add_available(&mut self, m: Ip) -> bool {
+    pub fn add_available(&mut self, m: Project) -> bool {
         self.available.push(m);
         true
     }
 
-    pub fn get_installations(&self) -> &Vec<Ip> {
+    pub fn get_installations(&self) -> &Vec<Project> {
         &self.installs
     }
 
-    pub fn get_downloads(&self) -> &Vec<Ip> {
+    pub fn get_downloads(&self) -> &Vec<Project> {
         &self.downloads
     }
 
-    pub fn get_availability(&self) -> &Vec<Ip> {
+    pub fn get_availability(&self) -> &Vec<Project> {
         &self.available
     }
 
@@ -179,21 +179,21 @@ impl IpLevel {
     }
 
     /// Returns the manifest with the most compatible version fitting `version`.
-    pub fn get_install(&self, version: &AnyVersion) -> Option<&Ip> {
+    pub fn get_install(&self, version: &AnyVersion) -> Option<&Project> {
         Self::get_target_version(version, self.get_installations())
     }
 
     /// Returns the manifest with the most compatible version fitting `version`.
-    pub fn get_download(&self, version: &AnyVersion) -> Option<&Ip> {
+    pub fn get_download(&self, version: &AnyVersion) -> Option<&Project> {
         Self::get_target_version(version, self.get_downloads())
     }
 
     /// Returns the manifest with the most compatible version fitting `version`.
-    pub fn get_available(&self, version: &AnyVersion) -> Option<&Ip> {
+    pub fn get_available(&self, version: &AnyVersion) -> Option<&Project> {
         Self::get_target_version(version, self.get_availability())
     }
 
-    /// References the ip matching the most compatible version `version`.
+    /// References the project matching the most compatible version `version`.
     ///
     /// A `dev` version is only searched at the DEV_PATH. Any other version is
     /// first sought for in the cache installations, and if not found then searched
@@ -204,7 +204,7 @@ impl IpLevel {
         check_downloads: bool,
         check_available: bool,
         version: &AnyVersion,
-    ) -> Option<&Ip> {
+    ) -> Option<&Project> {
         let ins = self.get_install(version);
 
         let dld = match check_downloads {
@@ -220,12 +220,16 @@ impl IpLevel {
             Some(i) => {
                 let mut h = i;
                 if let Some(d) = dld {
-                    if d.get_man().get_ip().get_version() > i.get_man().get_ip().get_version() {
+                    if d.get_man().get_project().get_version()
+                        > i.get_man().get_project().get_version()
+                    {
                         h = d;
                     }
                 }
                 if let Some(a) = ava {
-                    if a.get_man().get_ip().get_version() > h.get_man().get_ip().get_version() {
+                    if a.get_man().get_project().get_version()
+                        > h.get_man().get_project().get_version()
+                    {
                         h = a;
                     }
                 }
@@ -235,7 +239,9 @@ impl IpLevel {
                 Some(d) => {
                     let mut h = d;
                     if let Some(a) = ava {
-                        if a.get_man().get_ip().get_version() > h.get_man().get_ip().get_version() {
+                        if a.get_man().get_project().get_version()
+                            > h.get_man().get_project().get_version()
+                        {
                             h = a;
                         }
                     }
@@ -248,15 +254,15 @@ impl IpLevel {
     }
 
     /// Tracks what level the `manifest` came from.
-    pub fn get_state(&self, ip: &Ip) -> IpState {
-        if self.installs.iter().find(|f| f == &ip).is_some() {
-            IpState::Installation
-        } else if self.available.iter().find(|f| f == &ip).is_some() {
-            IpState::Available
-        } else if self.downloads.iter().find(|f| f == &ip).is_some() {
-            IpState::Downloaded
+    pub fn get_state(&self, project: &Project) -> ProjectState {
+        if self.installs.iter().find(|f| f == &project).is_some() {
+            ProjectState::Installation
+        } else if self.available.iter().find(|f| f == &project).is_some() {
+            ProjectState::Available
+        } else if self.downloads.iter().find(|f| f == &project).is_some() {
+            ProjectState::Downloaded
         } else {
-            IpState::Unknown
+            ProjectState::Unknown
         }
     }
 
@@ -265,28 +271,29 @@ impl IpLevel {
     /// Returns `None` if no compatible version was found.
     ///
     /// Panics if a development version is entered as `target`.
-    fn get_target_version<'a>(target: &AnyVersion, space: &'a Vec<Ip>) -> Option<&'a Ip> {
-        // find the specified version for the given ip
-        let mut latest_version: Option<&Ip> = None;
+    fn get_target_version<'a>(target: &AnyVersion, space: &'a Vec<Project>) -> Option<&'a Project> {
+        // find the specified version for the given project
+        let mut latest_version: Option<&Project> = None;
         space
             .iter()
-            .filter(|ip| match &target {
-                AnyVersion::Specific(v) => {
-                    crate::core::version::is_compatible(v, ip.get_man().get_ip().get_version())
-                }
+            .filter(|prj| match &target {
+                AnyVersion::Specific(v) => crate::core::version::is_compatible(
+                    v,
+                    prj.get_man().get_project().get_version(),
+                ),
                 AnyVersion::Latest => true,
             })
-            .for_each(|ip| {
+            .for_each(|prj| {
                 if latest_version.is_none()
-                    || ip.get_man().get_ip().get_version()
+                    || prj.get_man().get_project().get_version()
                         > latest_version
                             .as_ref()
                             .unwrap()
                             .get_man()
-                            .get_ip()
+                            .get_project()
                             .get_version()
                 {
-                    latest_version = Some(ip);
+                    latest_version = Some(prj);
                 }
             });
         latest_version
@@ -314,7 +321,7 @@ impl<'a> Catalog<'a> {
         self.get_downloads_path().join(slot.as_ref()).is_file()
     }
 
-    pub fn get_downloaded_slot(&self, name: &PkgPart, version: &Version) -> Option<DownloadSlot> {
+    pub fn get_downloaded_slot(&self, name: &Name, version: &Version) -> Option<DownloadSlot> {
         let mut ids = Vec::new();
 
         if let Ok(mut rd) = read_dir(self.get_downloads_path()) {
@@ -340,19 +347,19 @@ impl<'a> Catalog<'a> {
         }
     }
 
-    /// Searches the `path` for ip installed.
+    /// Searches the `path` for projects installed.
     pub fn installations(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
         self.cache = Some(&path);
-        self.detect(path, &IpLevel::add_install, IpState::Installation)
+        self.detect(path, &ProjectLevel::add_install, ProjectState::Installation)
     }
 
-    /// Searches the `path` for ip downloaded.
+    /// Searches the `path` for projects downloaded.
     pub fn downloads(mut self, path: &'a PathBuf) -> Result<Self, Fault> {
         self.downloads = Some(&path);
-        self.detect(path, &IpLevel::add_download, IpState::Downloaded)
+        self.detect(path, &ProjectLevel::add_download, ProjectState::Downloaded)
     }
 
-    /// Searches the `path` for ip available.
+    /// Searches the `path` for projects available.
     pub fn available(mut self, channels: &HashMap<&'a String, &'a Channel>) -> Result<Self, Fault> {
         let mut map = HashMap::new();
         // update the availables
@@ -360,8 +367,8 @@ impl<'a> Catalog<'a> {
             map.insert(name, chan.get_root());
             self = self.detect(
                 map.get(name).unwrap(),
-                &IpLevel::add_available,
-                IpState::Available,
+                &ProjectLevel::add_available,
+                ProjectState::Available,
             )?;
         }
         self.available = Some(map);
@@ -378,19 +385,19 @@ impl<'a> Catalog<'a> {
         Ok(self)
     }
 
-    pub fn inner(&self) -> &HashMap<Uuid, IpLevel> {
+    pub fn inner(&self) -> &HashMap<Uuid, ProjectLevel> {
         &self.inner
     }
 
-    pub fn inner_mut(&mut self) -> &mut HashMap<Uuid, IpLevel> {
+    pub fn inner_mut(&mut self) -> &mut HashMap<Uuid, ProjectLevel> {
         &mut self.inner
     }
 
-    pub fn mappings(&self) -> &HashMap<PkgPart, Vec<Uuid>> {
+    pub fn mappings(&self) -> &HashMap<Name, Vec<Uuid>> {
         &self.mappings
     }
 
-    pub fn translate_name(&self, name: &PkgName) -> Result<Option<&IpLevel>, CodeFault> {
+    pub fn translate_name(&self, name: &PkgName) -> Result<Option<&ProjectLevel>, CodeFault> {
         if let Some(id) = name.get_uuid() {
             Ok(self.inner.get(id))
         } else {
@@ -434,31 +441,31 @@ impl<'a> Catalog<'a> {
         }
     }
 
-    /// Returns all possible versions found for the `target` ip.
+    /// Returns all possible versions found for the `target` project.
     ///
     /// Returns `None` if the id is not found in the catalog.
     pub fn get_possible_versions(&self, id: &Uuid) -> Option<Vec<VersionItem>> {
         let kaban = self.inner.get(&id)?;
         let mut set = HashSet::new();
         // read from cache
-        for ip in kaban.get_installations() {
+        for project in kaban.get_installations() {
             set.insert(VersionItem::new(
-                ip.get_man().get_ip().get_version(),
-                IpState::Installation,
+                project.get_man().get_project().get_version(),
+                ProjectState::Installation,
             ));
         }
         // read from downloads
-        for ip in kaban.get_downloads() {
+        for project in kaban.get_downloads() {
             set.insert(VersionItem::new(
-                ip.get_man().get_ip().get_version(),
-                IpState::Downloaded,
+                project.get_man().get_project().get_version(),
+                ProjectState::Downloaded,
             ));
         }
         // read from available
-        for ip in kaban.get_availability() {
+        for project in kaban.get_availability() {
             set.insert(VersionItem::new(
-                ip.get_man().get_ip().get_version(),
-                IpState::Available,
+                project.get_man().get_project().get_version(),
+                ProjectState::Available,
             ));
         }
         let mut arr: Vec<VersionItem> = set.into_iter().collect();
@@ -471,48 +478,48 @@ impl<'a> Catalog<'a> {
         todo!()
     }
 
-    /// Finds all `Orbit.toml` manifest files (markings of an IP) within the provided `path`.
+    /// Finds all `Orbit.toml` manifest files (markings of a project) within the provided `path`.
     ///
-    /// This function is generic enough to be used to catch ip at all 3 levels: dev, install, and available.
+    /// This function is generic enough to be used to catch projects at all 3 levels: dev, install, and available.
     fn detect(
         mut self,
         path: &PathBuf,
-        add: &dyn Fn(&mut IpLevel, Ip) -> bool,
-        lvl: IpState,
+        add: &dyn Fn(&mut ProjectLevel, Project) -> bool,
+        lvl: ProjectState,
     ) -> Result<Self, Fault> {
         match lvl {
-            IpState::Installation => Ip::detect_all(path, false),
-            IpState::Available => IpPointer::detect_all(path),
-            IpState::Downloaded => IpArchive::detect_all(path),
-            IpState::Unknown => Ok(Vec::new()),
+            ProjectState::Installation => Project::detect_all(path, false),
+            ProjectState::Available => ProjectPointer::detect_all(path),
+            ProjectState::Downloaded => ProjectArchive::detect_all(path),
+            ProjectState::Unknown => Ok(Vec::new()),
         }?
         .into_iter()
-        // get the UUID for each manifest/ip that was collected from the path finding
-        .for_each(|ip| match self.inner.get_mut(&ip.get_uuid()) {
+        // get the UUID for each manifest/project that was collected from the path finding
+        .for_each(|project| match self.inner.get_mut(&project.get_uuid()) {
             // the UUID already exists in the catalog, so just add it in at its level
             Some(lvl) => {
-                add(lvl, ip);
+                add(lvl, project);
                 ()
             }
             // the UUID does not already exist in the catalog, so make a mapping
             None => {
                 // verify the add was successful
-                let mut lvl = IpLevel::new();
-                let did_add = add(&mut lvl, ip);
+                let mut lvl = ProjectLevel::new();
+                let did_add = add(&mut lvl, project);
                 // create a mapping for this uuid and insert into the catalog
                 match did_add {
                     true => {
-                        let ip = lvl.get(true, true, &AnyVersion::Latest).unwrap();
-                        let pkgpart = ip.get_man().get_ip().get_name();
+                        let project = lvl.get(true, true, &AnyVersion::Latest).unwrap();
+                        let pkgpart = project.get_man().get_project().get_name();
                         // add this to the list of uuids for this name
                         match self.mappings.get_mut(pkgpart) {
-                            Some(ids) => ids.push(ip.get_uuid().clone()),
+                            Some(ids) => ids.push(project.get_uuid().clone()),
                             None => {
                                 self.mappings
-                                    .insert(pkgpart.clone(), vec![ip.get_uuid().clone()]);
+                                    .insert(pkgpart.clone(), vec![project.get_uuid().clone()]);
                             }
                         }
-                        let pkgid = ip.get_uuid().clone();
+                        let pkgid = project.get_uuid().clone();
                         self.inner.insert(pkgid, lvl);
                     }
                     false => (),
@@ -650,8 +657,8 @@ impl CacheSlot {
 pub struct DownloadSlot(String);
 
 impl DownloadSlot {
-    /// Combines the various components of a ip name into a [DownloadSlot].
-    pub fn new(_name: &PkgPart, uuid: &Uuid, version: &Version) -> Self {
+    /// Combines the various components of a project name into a [DownloadSlot].
+    pub fn new(_name: &Name, uuid: &Uuid, version: &Version) -> Self {
         Self(format!("{}-{}.{}", uuid, version, ARCHIVE_EXT))
     }
 }
@@ -667,7 +674,7 @@ pub struct PointerSlot(String);
 
 impl PointerSlot {
     /// Combines the various components of a cache slot name into a [PointerSlot].
-    pub fn new(_name: &PkgPart, uuid: &Uuid, version: &Version) -> Self {
+    pub fn new(_name: &Name, uuid: &Uuid, version: &Version) -> Self {
         Self(format!("{}-{}", uuid, version))
     }
 }
@@ -680,16 +687,16 @@ impl AsRef<str> for PointerSlot {
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
 pub struct PkgName<'a> {
-    name: &'a PkgPart,
+    name: &'a Name,
     id: Option<&'a Uuid>,
 }
 
 impl<'a> PkgName<'a> {
-    pub fn new(name: &'a PkgPart, id: Option<&'a Uuid>) -> Self {
+    pub fn new(name: &'a Name, id: Option<&'a Uuid>) -> Self {
         Self { name: name, id: id }
     }
 
-    pub fn get_name(&self) -> &'a PkgPart {
+    pub fn get_name(&self) -> &'a Name {
         &self.name
     }
 

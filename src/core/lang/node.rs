@@ -15,7 +15,7 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-use crate::core::algo::IpFileNode;
+use crate::core::algo::ProjectFileNode;
 use crate::core::lang::vhdl::subunit::SubUnit;
 use crate::core::lang::vhdl::symbols::VhdlSymbol;
 use crate::util::anyerror::AnyError;
@@ -138,11 +138,11 @@ impl HdlSymbol {
 #[derive(Debug, PartialEq)]
 pub struct HdlNode<'a> {
     sym: HdlSymbol,
-    files: Vec<&'a IpFileNode<'a>>, // must use a vector to retain file order in blueprint
+    files: Vec<&'a ProjectFileNode<'a>>, // must use a vector to retain file order in blueprint
 }
 
 impl<'a> HdlNode<'a> {
-    pub fn new(sym: HdlSymbol, file: &'a IpFileNode) -> Self {
+    pub fn new(sym: HdlSymbol, file: &'a ProjectFileNode) -> Self {
         let mut set = Vec::with_capacity(1);
         set.push(file);
         Self {
@@ -160,7 +160,7 @@ impl<'a> HdlNode<'a> {
         }
     }
 
-    pub fn add_file(&mut self, ipf: &'a IpFileNode<'a>) {
+    pub fn add_file(&mut self, ipf: &'a ProjectFileNode<'a>) {
         if self.files.contains(&ipf) == false {
             self.files.push(ipf);
         }
@@ -179,7 +179,7 @@ impl<'a> HdlNode<'a> {
         &mut self.sym
     }
 
-    pub fn get_associated_files(&self) -> &Vec<&'a IpFileNode<'a>> {
+    pub fn get_associated_files(&self) -> &Vec<&'a ProjectFileNode<'a>> {
         &self.files
     }
 
@@ -201,8 +201,12 @@ impl<'a> HdlNode<'a> {
         } else {
             match fmt {
                 IdentifierFormat::Long => {
-                    let ip = self.files.first().unwrap().get_ip();
-                    format!("{} ({})", &name, ip.get_man().get_ip().into_ip_spec())
+                    let project = self.files.first().unwrap().get_project();
+                    format!(
+                        "{} ({})",
+                        &name,
+                        project.get_man().get_project().into_project_id_spec()
+                    )
                 }
                 IdentifierFormat::Short => format!("{}", &name),
             }
@@ -213,11 +217,11 @@ impl<'a> HdlNode<'a> {
 #[derive(Debug, PartialEq)]
 pub struct SubUnitNode<'a> {
     sub: SubUnit,
-    file: &'a IpFileNode<'a>,
+    file: &'a ProjectFileNode<'a>,
 }
 
 impl<'a> SubUnitNode<'a> {
-    pub fn new(unit: SubUnit, file: &'a IpFileNode<'a>) -> Self {
+    pub fn new(unit: SubUnit, file: &'a ProjectFileNode<'a>) -> Self {
         Self {
             sub: unit,
             file: file,
@@ -229,8 +233,8 @@ impl<'a> SubUnitNode<'a> {
         &self.sub
     }
 
-    /// References the ip file node.
-    pub fn get_file(&self) -> &'a IpFileNode<'a> {
+    /// References the project file node.
+    pub fn get_file(&self) -> &'a ProjectFileNode<'a> {
         &self.file
     }
 }

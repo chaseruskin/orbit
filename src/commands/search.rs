@@ -16,8 +16,8 @@
 //
 
 use crate::core::context::Context;
-use crate::core::ip::Mapping;
-use crate::core::pkgid::PkgPart;
+use crate::core::name::Name;
+use crate::core::project::Mapping;
 use crate::util::anyerror::Fault;
 use std::collections::BTreeMap;
 
@@ -25,12 +25,12 @@ use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
 
 use crate::commands::helps::search;
-use crate::core::catalog::{Catalog, IpLevel, PkgName};
+use crate::core::catalog::{Catalog, PkgName, ProjectLevel};
 use crate::core::version::AnyVersion;
 
 #[derive(Debug, PartialEq)]
 pub struct Search {
-    ip: Option<PkgPart>,
+    name: Option<Name>,
     cached: bool,
     downloaded: bool,
     available: bool,
@@ -51,17 +51,17 @@ impl Subcommand<Context> for Search {
             keywords: cli
                 .get_all(Arg::option("keyword").value("term"))?
                 .unwrap_or(Vec::new()),
-            ip: cli.get(Arg::positional("project"))?,
+            name: cli.get(Arg::positional("project"))?,
         })
     }
 
     fn execute(self, c: &Context) -> proc::Result {
         let mut catalog = Catalog::new();
-        // collect installed IP
+        // collect installed project
         catalog = catalog.installations(c.get_cache_path())?;
-        // collect downloaded IP
+        // collect downloaded project
         catalog = catalog.downloads(c.get_downloads_path())?;
-        // collect available IP
+        // collect available project
         catalog = catalog.available(&c.get_config().get_channels())?;
 
         self.run(&catalog)
@@ -78,7 +78,7 @@ impl Search {
         for (key, ids) in catalog.mappings() {
             match self.hard_match {
                 true => {
-                    match &self.ip {
+                    match &self.name {
                         // names must be identical
                         Some(pkgid) => {
                             if key == pkgid {
@@ -93,10 +93,10 @@ impl Search {
                 }
                 false => {
                     // pass everything if there is no filters applied
-                    if self.ip.is_none() && self.keywords.is_empty() {
+                    if self.name.is_none() && self.keywords.is_empty() {
                         name_match_uuids.extend(ids)
                     } else {
-                        if let Some(pkgid) = &self.ip {
+                        if let Some(pkgid) = &self.name {
                             if key.starts_with(pkgid) == true {
                                 name_match_uuids.extend(ids);
                             }
@@ -114,7 +114,7 @@ impl Search {
                     true => {
                         let mut all_match = true;
                         for kw in &self.keywords {
-                            if prj.get_man().get_ip().get_keywords().contains(kw) == false {
+                            if prj.get_man().get_project().get_keywords().contains(kw) == false {
                                 all_match = false;
                                 break;
                             }
@@ -126,7 +126,7 @@ impl Search {
                     false => {
                         for kw in &self.keywords {
                             // only one keyword must be matching
-                            if prj.get_man().get_ip().get_keywords().contains(kw) == true {
+                            if prj.get_man().get_project().get_keywords().contains(kw) == true {
                                 keyword_match_uuids.push(key);
                                 break;
                             }
@@ -148,7 +148,7 @@ impl Search {
                     .get(true, true, &AnyVersion::Latest)
                     .unwrap()
                     .get_man()
-                    .get_ip()
+                    .get_project()
                     .get_name();
                 tree.insert(PkgName::new(name, Some(key)), status);
             });
@@ -169,7 +169,7 @@ impl Search {
     }
 
     fn fmt_table(
-        table: BTreeMap<PkgName, &IpLevel>,
+        table: BTreeMap<PkgName, &ProjectLevel>,
         limit: Option<usize>,
         cached: bool,
         downloaded: bool,
@@ -205,16 +205,17 @@ impl Search {
                     // check if download or available have a later version
                     if let Some(download_ip) = dld {
                         if default || cached {
-                            is_update_available = download_ip.get_man().get_ip().get_version()
-                                > installed_ip.get_man().get_ip().get_version();
+                            is_update_available = download_ip.get_man().get_project().get_version()
+                                > installed_ip.get_man().get_project().get_version();
                         }
                     }
                     // if update is not coming from download, see if it comes from available
                     if is_update_available == false {
                         if let Some(avail_ip) = ava {
                             if default || cached || downloaded && dld.is_some() {
-                                is_update_available = avail_ip.get_man().get_ip().get_version()
-                                    > installed_ip.get_man().get_ip().get_version();
+                                is_update_available =
+                                    avail_ip.get_man().get_project().get_version()
+                                        > installed_ip.get_man().get_project().get_version();
                             }
                         }
                     }
@@ -230,8 +231,8 @@ impl Search {
                 } else if let Some(download_ip) = dld {
                     if let Some(avail_ip) = ava {
                         if default || downloaded {
-                            is_update_available = avail_ip.get_man().get_ip().get_version()
-                                > download_ip.get_man().get_ip().get_version();
+                            is_update_available = avail_ip.get_man().get_project().get_version()
+                                > download_ip.get_man().get_project().get_version();
                         }
                     }
                     match default || downloaded {
@@ -270,7 +271,7 @@ impl Search {
             body.push_str(&format!(
                 "{:<24}{:<16}{:<10}{:<25}\n",
                 name.get_name().to_string(),
-                ip.get_man().get_ip().get_version().to_string() + {
+                ip.get_man().get_project().get_version().to_string() + {
                     if is_update_available == true {
                         "*"
                     } else {

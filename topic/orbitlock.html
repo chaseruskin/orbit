@@ -170,12 +170,12 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="orbitlock"><a class="header" href="#orbitlock">Orbit.lock</a></h1>
-<p>The <em>Orbit.lock</em> lock file is a file that captures every dependency required for the current ip. This includes information about exact versions of dependencies and how to get them if any are missing from the cache.</p>
-<p>The lock file is managed by Orbit, and formalizes the data the user provided in the <code>Orbit.toml</code> manifest file. The lock file is required for every ip and should not be manually edited.</p>
-<p>With a lock file, the current state of the ip can be reproduced at a later time and in any environment. If the current ip uses version control, then it is recommended to track <code>Orbit.lock</code> to ensure reproducibility across environments.</p>
-<p>To update the current ip's lock file, use <code>orbit lock</code>. The lock file will also automatically be updated before the build process when using <code>orbit build</code> or <code>orbit test</code>.</p>
+<p>The <em>Orbit.lock</em> lock file is a file that captures every dependency required for the current project. This includes information about exact versions of dependencies and how to get them if any are missing from the cache.</p>
+<p>The lock file is managed by Orbit, and formalizes the data the user provided in the <code>Orbit.toml</code> manifest file. The lock file is required for every project and should not be manually edited.</p>
+<p>With a lock file, the current state of the project can be reproduced at a later time and in any environment. If the current project uses version control, then it is recommended to track <code>Orbit.lock</code> to ensure reproducibility across environments.</p>
+<p>To update the current project's lock file, use <code>orbit lock</code>. The lock file will also automatically be updated before the build process when using <code>orbit build</code> or <code>orbit test</code>.</p>
 <blockquote>
-<p><strong>Note:</strong> An ip's lock file contains all the data required by it to reproduce its current state, so it does not require reading the lock files of its dependencies.</p>
+<p><strong>Note:</strong> A project's lock file contains all the data required by it to reproduce its current state, so it does not require reading the lock files of its dependencies.</p>
 </blockquote>
 
                     </main>
@@ -186,7 +186,7 @@
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../topic/scope.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../topic/core_visibility.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -200,7 +200,7 @@
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../topic/scope.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../topic/core_visibility.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

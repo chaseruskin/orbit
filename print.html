@@ -174,8 +174,8 @@
 <p><img src="./images/orbit_logo_128px.png" alt="" /></p>
 <p>Orbit is a package manager and build system for VHDL, Verilog, and SystemVerilog. Its design is driven by two core principles:</p>
 <ol>
-<li>Minimize technical debt associated with evolving HDL codebases</li>
-<li>Tailor to the wide range of users and their possible workflows with a high degree of modularity and extensibility</li>
+<li><strong>Empower users to reuse IP cores</strong>: Minimize technical debt associated with evolving HDL codebases</li>
+<li><strong>Provide an extensible infrastructure for users to automate their EDA workflow</strong>: Tailor to the wide range of users and their possible workflows with a high degree of modularity and extensibility</li>
 </ol>
 <p>Orbit's use case is targeted toward anyone interested in developing digital hardware; this includes industrial, academic, and personal settings. Create your next commerical product, university lab assignment, or personal project, using a tool that is tailored to today's modern development processes.</p>
 <h2 id="sections"><a class="header" href="#sections">Sections</a></h2>
@@ -1176,10 +1176,10 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <p>The guides in this section place no assumption on where your working directory is when running any commands; that is, these commands can be ran from any directory.</p>
 <h3 id="guides"><a class="header" href="#guides">Guides</a></h3>
 <ul>
-<li><a href="user/researching_ip.html#viewing-existing-project">Viewing existing projects</a></li>
-<li><a href="user/researching_ip.html#gathering-information-about-a-project">Gathering information about a project</a></li>
-<li><a href="user/researching_ip.html#gathering-information-about-a-core">Gathering information about a core</a></li>
-<li><a href="user/researching_ip.html#reading-source-code-of-a-core">Reading source code of a core</a></li>
+<li><a href="user/researching_projects.html#viewing-existing-projects">Viewing existing projects</a></li>
+<li><a href="user/researching_projects.html#gathering-information-about-a-project">Gathering information about a project</a></li>
+<li><a href="user/researching_projects.html#gathering-information-about-a-core">Gathering information about a core</a></li>
+<li><a href="user/researching_projects.html#reading-source-code-of-a-core">Reading source code of a core</a></li>
 </ul>
 <h2 id="viewing-existing-projects"><a class="header" href="#viewing-existing-projects">Viewing existing projects</a></h2>
 <p>This guide outlines how to see what projects exist on your system in your catalog that could be potentially used as a dependency.</p>
@@ -1212,14 +1212,14 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <pre><code>$ orbit info &lt;project&gt;:&lt;version&gt; --units
 </code></pre>
 <p>This will return a list of the project's design units, where each line records the design unit's name, design unit type, and accessibility.</p>
-<h2 id="gathering-information-about-a-design-unit"><a class="header" href="#gathering-information-about-a-design-unit">Gathering information about a design unit</a></h2>
+<h2 id="gathering-information-about-a-core"><a class="header" href="#gathering-information-about-a-core">Gathering information about a core</a></h2>
 <p>This guide outlines how to view a design unit's declaration for a particular design unit of a project found in the catalog.</p>
 <ol>
 <li>Return the design unit's declaration,  where <code>&lt;unit&gt;</code> is the name of the design unit, <code>&lt;project&gt;</code> is the name of the project of interest, and <code>&lt;version&gt;</code> is the version of the project of interest:</li>
 </ol>
 <pre><code>$ orbit get &lt;unit&gt; --project &lt;project&gt;:&lt;version&gt;
 </code></pre>
-<h2 id="reading-source-code-of-a-design-unit"><a class="header" href="#reading-source-code-of-a-design-unit">Reading source code of a design unit</a></h2>
+<h2 id="reading-source-code-of-a-core"><a class="header" href="#reading-source-code-of-a-core">Reading source code of a core</a></h2>
 <p>This guide outlines how to view the source code for a particular design unit of a project found in the catalog.</p>
 <ol>
 <li>Display the contents from the design unit's source file, where <code>&lt;unit&gt;</code> is the name of the design unit, <code>&lt;project&gt;</code> is the name of the project of interest, and <code>&lt;version&gt;</code> is the version of the project of interest:</li>
@@ -1236,15 +1236,15 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <p>This section also assumes you have one or more targets already configured. To learn how to create targets, see <a href="user/./creating_targets.html">Creating Targets</a>.</p>
 <h3 id="guides-1"><a class="header" href="#guides-1">Guides</a></h3>
 <ul>
-<li><a href="user/developing_ip.html#creating-a-new-project">Creating a new project</a></li>
-<li><a href="user/developing_ip.html#initializing-an-existing-directory-as-a-project">Initializing an existing directory as a project</a></li>
-<li><a href="user/developing_ip.html#integrating-a-design-unit-internal-to-the-current-project">Integrating a design unit internal to the current project</a></li>
-<li><a href="user/developing_ip.html#integrating-a-design-unit-external-to-the-current-project">Integrating a design unit external to the current project</a></li>
-<li><a href="user/developing_ip.html#viewing-the-design-hierarchy">Viewing the design hierarchy</a></li>
-<li><a href="user/developing_ip.html#viewing-available-targets-for-testing">Viewing available targets for testing</a></li>
-<li><a href="user/developing_ip.html#running-a-test">Running a test</a></li>
-<li><a href="user/developing_ip.html#viewing-available-targets-for-building">Viewing available targets for building</a></li>
-<li><a href="user/developing_ip.html#running-a-build">Running a build</a></li>
+<li><a href="user/developing_projects.html#creating-a-new-project">Creating a new project</a></li>
+<li><a href="user/developing_projects.html#initializing-an-existing-directory-as-a-project">Initializing an existing directory as a project</a></li>
+<li><a href="user/developing_projects.html#integrating-a-design-unit-internal-to-the-current-project">Integrating a design unit internal to the current project</a></li>
+<li><a href="user/developing_projects.html#integrating-a-design-unit-external-to-the-current-project">Integrating a design unit external to the current project</a></li>
+<li><a href="user/developing_projects.html#viewing-the-design-hierarchy">Viewing the design hierarchy</a></li>
+<li><a href="user/developing_projects.html#viewing-available-targets-for-testing">Viewing available targets for testing</a></li>
+<li><a href="user/developing_projects.html#running-a-test">Running a test</a></li>
+<li><a href="user/developing_projects.html#viewing-available-targets-for-building">Viewing available targets for building</a></li>
+<li><a href="user/developing_projects.html#running-a-build">Running a build</a></li>
 </ul>
 <h2 id="creating-a-new-project-1"><a class="header" href="#creating-a-new-project-1">Creating a new project</a></h2>
 <ol>
@@ -1367,8 +1367,8 @@ YILINX: Bitstream saved at: target/yilinx/full_add.bit
 <p>Although not strictly necessary, you may also need to have a protocol configured that meets your requirements for how you access a project from the internet. To learn how to create protocols, see <a href="user/./creating_protocols.html">Creating Protocols</a>.</p>
 <h3 id="guides-2"><a class="header" href="#guides-2">Guides</a></h3>
 <ul>
-<li><a href="user/releasing_ip.html#installing-a-project-to-the-catalog">Installing a project to the catalog</a></li>
-<li><a href="user/releasing_ip.html#publishing-a-project-using-git-tags">Publishing a project using git tags</a></li>
+<li><a href="user/releasing_projects.html#installing-a-project-to-the-catalog">Installing a project to the catalog</a></li>
+<li><a href="user/releasing_projects.html#publishing-a-project-using-git-tags">Publishing a project using git tags</a></li>
 </ul>
 <h2 id="installing-a-project-to-the-catalog"><a class="header" href="#installing-a-project-to-the-catalog">Installing a project to the catalog</a></h2>
 <p>This guide walks through the steps to install a project from the local file system to the catalog. In this example, we assume the current project has no revision control tied to its project.</p>
@@ -1899,7 +1899,7 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <blockquote>
 <p>Having well-designed and easily accessible tools is important to any form of development. Creativity's greatest limiting factor is the tools of which are available to turn an idea into a reality.</p>
 </blockquote>
-<p>Rather than work directly with source code files and your EDA tools, you can avoid the difficulties involved in reusing and updating code by introducing a higher-level <a href="starting/../glossary.html#package">"<em>package</em>"</a> abstraction and by using a <a href="starting/../glossary.html#package-manager"><em>package manager</em></a>.</p>
+<p>Rather than work directly with source code files and your EDA tools, you can avoid the difficulties involved in reusing and updating code by introducing a higher-level <a href="topic/../glossary.html#package">"<em>package</em>"</a> abstraction and by using a <a href="topic/../glossary.html#package-manager"><em>package manager</em></a>.</p>
 <h2 id="enter-orbit"><a class="header" href="#enter-orbit">Enter: Orbit</a></h2>
 <p><em>Orbit</em> is an attempt at bringing state of the art package management to HDLs. It automates the process of organizing, maintaining, and reusing HDL source code across projects. It is a tool that allows HDL projects to declare various dependencies and ensure that you'll always get a repeatable build. To accomplish this goal, Orbit does four things:</p>
 <ul>
@@ -1916,34 +1916,34 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <h2 id="key-concepts"><a class="header" href="#key-concepts">Key concepts</a></h2>
 <ul>
 <li>
-<p>Orbit manages your ips using a group of file system directories that together make up the <strong>Catalog</strong>. The catalog has 3 levels that store increasingly more information about a particular ip: <strong>Channels</strong>, the <strong>Archive</strong>, and the <strong>Cache</strong>.</p>
+<p>Orbit manages your projects using a group of file system directories that together make up the <strong>Catalog</strong>. The catalog has 3 levels that store increasingly more information about a particular project: <strong>Channels</strong>, the <strong>Archive</strong>, and the <strong>Cache</strong>.</p>
 </li>
 <li>
-<p>An ip's manifest may be stored in a user-defined channel so that a user can find that ip. Running <code>orbit install</code> will download the ip from its defined source found in its channel and create a compressed snapshot of the ip in the archive. Once the compressed snapshot is saved, Orbit will decompress the archived snapshot into an immutable reference of the ip at the cache level. The usage of checksums prevents users from editing ips in the cache.</p>
+<p>A project's manifest may be stored in a user-defined channel so that a user can find that project. Running <code>orbit install</code> will download the project from its defined source found in its channel and create a compressed snapshot of the project in the archive. Once the compressed snapshot is saved, Orbit will decompress the archived snapshot into an immutable reference of the project at the cache level. The usage of checksums prevents users from editing projects in the cache.</p>
 </li>
 <li>
-<p>Every ip requires a <strong>Manifest</strong> file, named <code>Orbit.toml</code>. This is a simple TOML file maintained by the user. The manifest file documents basic metadata about the ip, like its name and version, as well as the ip's list of direct dependencies.</p>
+<p>Every project requires a <strong>Manifest</strong> file, named <code>Orbit.toml</code>. This is a simple TOML file maintained by the user. The manifest file documents basic metadata about the project, like its name and version, as well as the project's list of direct dependencies.</p>
 </li>
 <li>
-<p>An ip saves its world state by storing a <strong>Lockfile</strong>, called <code>Orbit.lock</code>, alongside the manifest. A lockfile lists all of the resolved ip dependencies required for the local ip and how to retrieve those ips if necessary again. Running <code>orbit lock</code> will build an ip-level graph to resolve the entire ip-level dependency tree and store this information in the lockfile.</p>
+<p>A project saves its world state by storing a <strong>Lockfile</strong>, called <code>Orbit.lock</code>, alongside the manifest. A lockfile lists all of the resolved project dependencies required for the current project and how to retrieve those projects if necessary again. Running <code>orbit lock</code> will build an project-level graph to resolve the entire project-level dependency tree and store this information in the lockfile.</p>
 </li>
 <li>
-<p>Users customize their experience with Orbit using <strong>Configurations</strong>, which are collections of <strong>Targets</strong>, <strong>Settings</strong>, and <strong>Protocols</strong>. All of these items are defined in an Orbit configuration file, called <code>config.toml</code>. Configurations allow users to reuse and share their workflows across teams and ips.</p>
+<p>Users customize their experience with Orbit using <strong>Configurations</strong>, which are collections of <strong>Targets</strong>, <strong>Settings</strong>, and <strong>Protocols</strong>. All of these items are defined in an Orbit configuration file, called <code>config.toml</code>. Configurations allow users to reuse and share their workflows across teams and projects.</p>
 </li>
 <li>
-<p>To build (or test) a design within a local ip, Orbit runs a <strong>Build Process</strong>. The build process takes as input the local ip's <strong>Lockfile</strong>, <strong>Source Files</strong> (hdl code), <strong>Auxiliary Files</strong> (any other file types needed), and a specified <strong>Target</strong>. Running <code>orbit build</code> (or <code>orbit test</code>) will enter the build process.</p>
+<p>To build (or test) a design within a local project, Orbit runs a <strong>Build Process</strong>. The build process takes as input the local project's <strong>Lockfile</strong>, <strong>Source Files</strong> (hdl code), <strong>Auxiliary Files</strong> (any other file types needed), and a specified <strong>Target</strong>. Running <code>orbit build</code> (or <code>orbit test</code>) will enter the build process.</p>
 </li>
 <li>
 <p>The build process occurs in 2 stages: the <strong>Planning Stage</strong> and the <strong>Execution Stage</strong>. During the planning stage, Orbit generates a <strong>Blueprint</strong>, which is a single file that lists all the files required to perform the build. During the execution stage, Orbit calls the specified <strong>Target</strong>'s commmand, which typically reads the previously generated blueprint and processes the files using some user-defined EDA tool. The final output from the build process is typically one or more <strong>Artifacts</strong>, which are one or more files generated from the user-defined EDA tool.</p>
 </li>
 <li>
-<p>Publish a new version of an ip when it is ready by posting it to a user-defined channel. This method enables other users who also have that channel configured to seamlessly discover and access that new version of the ip. Running <code>orbit publish</code> will run a series of checks and then copy the ip's manifest to the proper location within the specified channel.</p>
+<p>Publish a new version of a project when it is ready by posting it to a user-defined channel. This method enables other users who also have that channel configured to seamlessly discover and access that new version of the project. Running <code>orbit publish</code> will run a series of checks and then copy the project's manifest to the proper location within the specified channel.</p>
 </li>
 </ul>
 <h2 id="other-notes"><a class="header" href="#other-notes">Other notes</a></h2>
 <ul>
 <li>
-<p>Backend EDA tools and workflows (makefiles, TCL scripts, etc.) are decoupled from ip and are able to be reused across projects by creating targets in the configuration file (<code>config.toml</code>).</p>
+<p>Backend EDA tools and workflows (makefiles, TCL scripts, etc.) have the ability to be decoupled from projects and are able to be reused across projects by creating targets in the configuration file (<code>config.toml</code>).</p>
 </li>
 <li>
 <p>Orbit does not require a version control system (VCS). Orbit is intended to work with any VCS (git, mercurial, svn, etc.).</p>
@@ -1958,6 +1958,57 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <p>Orbit generates a blueprint during the planning stage of the build process. The blueprint is a single file that lists the HDL source code files required for the particular build in topologically sorted order. Targets can also specify other file types to be collected into the blueprint. The blueprint is an artifact to be consumed by the target's process during the exection stage of the build process. Since it can frequently change with each build, it should not be checked into version control.</p>
 </li>
 </ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="package-management"><a class="header" href="#package-management">Package Management</a></h1>
+<p>Orbit is designed for users to efficiently manage their projects and scale their codebase over time. Many of the processes regarding package management are automated and abstracted away from the user, enabling them to get their next design done faster. This section takes a closer look at how the <em>catalog</em> works in the context of Orbit and package management. The catalog is a central concept to Orbit where existing projects are kept and maintained by Orbit.</p>
+<p><img src="topic/./../images/management.svg" alt="" /></p>
+<h2 id="catalog-operations"><a class="header" href="#catalog-operations">Catalog operations</a></h2>
+<p>The catalog is an abstract concept in Orbit where your existing projects are kept and maintained. Physically, the catalog is composed of a set of hidden directories in your file system found within the <code>$ORBIT_HOME</code> directory. Unless something has gone terribly wrong, users never have to worry about manually working within these directories; users interface with Orbit to request operations to be performed on the catalog. The two most fundamental catalog operations are: <code>install</code> and <code>remove</code>.</p>
+<p>The <code>install</code> operation takes an existing project, which may be from a local file path or a repository URL, and performs a series of steps to place an immutable reference of that project in the catalog's <em>cache</em>. This operation is typically applied when you wish to make it possible for your current project to depend on that other project. If the project is coming from a source, such as a GitLab repository, then a <em>protocol</em> is used to handle how to download the project's contents from the internet. Upon a successful download, a compressed backup of the project's contents is stored in the catalog's <em>archive</em>. If the immutable reference in the cache ever enters an invalid state, Orbit automatically reinstalls the immutable reference from the compressed backup of the project found in the archive.</p>
+<p>The <code>remove</code> operation takes a project found in the catalog's cache, and deletes it from the catalog's cache and archive (if exists). This operation is typically applied when you have determined that a project is not needed anymore for any future projects. If the project is still a dependency of other projects in the catalog, then the catalog will automatically reinstall the missing project if required based on the current project's complete project dependency graph.</p>
+<h2 id="depending-on-projects"><a class="header" href="#depending-on-projects">Depending on projects</a></h2>
+<p>A project's <em>field of view</em> represents the set of HDL source code files that can interact with one another. A newly created project's field of view starts out limited to the set of files found only within that project. This means instantiations of modules and references to packages must be from primary design units located only within the HDL source code files of the current project.</p>
+<p>When a module, package, or any other design unit is needed from a different project, users express their intention to depend on another project within the current project by adding the needed project's name and version to the <code>[dependencies]</code> section of the current project's manifest. By doing so, the current project's field of view <strong>expands</strong> to include the HDL source code files found directly within the dependent project. This means instantiations of modules and references to other primary design units in the current project's HDL source code can now include primary design units found in the dependent project.</p>
+<p>Depending on projects in the catalog is only allowed for projects that have an immutable reference located in the catalog's cache. A project in the catalog only listed as <em>available</em> or <em>downloaded</em> does not have the necessary data to properly reference any HDL source code files from that particular project. Thankfully, Orbit automatically works through the required steps to get a project installed to the cache when the user requests an <code>install</code> operation, even if the project is not found in the catalog.</p>
+<h2 id="important-concepts"><a class="header" href="#important-concepts">Important concepts</a></h2>
+<ul>
+<li>
+<p>The <em>source</em> is the location where the project's repository exists; this could be any cloud-based platform such as GitHub or GitLab where your repository is stored.</p>
+</li>
+<li>
+<p>The <em>catalog</em> is an abstract concept in Orbit that maintains 3 levels: available projects (found in channels), downloaded projects (located in the archive), and installed projects (located in the cache).</p>
+</li>
+<li>
+<p>When a project is known as <em>available</em> in the catalog, Orbit only has the manifest and other metadata about that project; there is no HDL source code for that project in the catalog. The project's manifest and metadata are tracked in a user-configured <em>channel</em>.</p>
+</li>
+<li>
+<p>When a project is known as <em>downloaded</em> in the catalog, Orbit has a compressed version of the project's contents. In this state, the project is unusable as a dependency. The compressed version of the project is stored in the <em>archive</em>.</p>
+</li>
+<li>
+<p>When a project is known as <em>installed</em> in the catalog, Orbit has an uncompressed version of the project's contents used for reference only. In this immutable state of the project's contents, the project is able to be used as a dependency. The immutable reference of the project is kept in the <em>cache</em>.</p>
+</li>
+<li>
+<p>Users interact with the catalog through Orbit. Two fundamental catalog operations are: <code>install</code> and <code>remove</code>. The <code>install</code> operation brings a project into a usable state in the catalog, while the <code>remove</code> operation takes a project out of a usable state in the catalog.</p>
+</li>
+<li>
+<p>A project's <em>field of view</em> is the set of HDL source code files that can interact with one another. Each project has its own field of view, which may extend to other projects not found in the current project's field of view. By adding a project as a dependency in the current project's manifest, you effectively expand the current project's field of view to include the set of HDL source code files found within the project dependency.</p>
+</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="extensible-builds"><a class="header" href="#extensible-builds">Extensible Builds</a></h1>
+<p>Orbit is an extensible build system for HDLs. Orbit separates the build process into two stages: planning and execution. When the build process happens, both stages are performed together in sequential order. Orbit provides two entry points into the build process: <code>orbit test</code> and <code>orbit build</code>.</p>
+<p>What makes Orbit extensible? Well, Orbit does not define the execution stage by default. It leaves it upon the user to add their own execution processes, called <em>targets</em>. A target can be added by modifying an Orbit configuration file. You can write target scripts for whatever tools are integral to your workflow, such as Vivado, ModelSim, VCS, Design Compiler, or Quartus Prime.</p>
+<p><img src="topic/./../images/dataflow.svg" alt="" /></p>
+<h2 id="planning-stage"><a class="header" href="#planning-stage">Planning stage</a></h2>
+<p>Orbit is the central system of the planning stage. Orbit takes your HDL source files (VHDL, Verilog, and SystemVerilog files) as input and generates the topologically sorted order of the source files saved to a single file known as the <em>blueprint</em> as output. Alongside the blueprint, Orbit sets a series of environment variables specific to the current build process that are available to the specified target during the execution stage for that target's convenience. These environment variables include things such as the output directory (<code>ORBIT_OUT_DIR</code>) and the name of the top-level design unit (<code>ORBIT_TOP_NAME</code>).</p>
+<p>To create the blueprint, Orbit tokenizes your current project's HDL source code along with the HDL source code of the current project's depedendencies found in the catalog to analyze references to other design units across source files. With this information, Orbit generates a graph at the HDL source code level and sorts it in topological order, with the top-level design unit being last.</p>
+<!-- Orbit sets runtime environment variables that can be accessed during the execution stage by the specified target. -->
+<h2 id="execution-stage"><a class="header" href="#execution-stage">Execution stage</a></h2>
+<p>The target specified at the start of the build process is the central system of the execution stage. The target typically takes in the outputs from the planning stage (blueprint and environment variables) as inputs to perform some backend processing with an EDA tool. Finally, the target executes the backend EDA tool to produce your results, also known as <em>artifacts</em>. Artifacts can really be anything, from synthesis reports and log files to netlists and bitstreams. Recall that targets are written and configured by <em>you</em>, so their behavior is in your control.</p>
+<p>Orbit leaves the execution stage undefined by default because there are a wide range of different backend EDA tools available that enforce different requirements and even change requirements and behaviors across versions. It would be a nightmare to try to design a "one-script-fits-all" approach because everyone's desired workflow, computing requirements, and choice of tool is so diverse.</p>
+<p>It is encouraged for a target to read the environment variables set by Orbit during the planning stage to further tailor the executed workflow for the given set of inputs. The environment variables can be used to help write robust and resuable targets.</p>
+<h2 id="test-or-build"><a class="header" href="#test-or-build">Test or build?</a></h2>
+<p>Orbit provides two entry points into the build process: <code>orbit test</code> and <code>orbit build</code>. Each entry point is suited for a particular type of build process.</p>
+<p>If you are trying to run a simulation (accompanied by an HDL testbench), then it is recommended to use the <code>orbit test</code> entry point. This command allows you to enter the build process by specifying the testbench using <code>--tb &lt;unit&gt;</code> and its design-under-test using <code>--dut &lt;unit&gt;</code>. This entry point is typically used for verification workflows, where the end result of the build process is more concerned with making sure all steps in the process complete successfully with no errors.</p>
+<p>For any non-testing workflow (one that lacks an HDL testbench), then it is recommended to use the <code>orbit build</code> entry point. This command allows you to enter the build process by specifying the top level using <code>--top &lt;unit&gt;</code>. This entry point is typically used for any workflow where the end result of the build process is more concerned with producing output files (commonly called artifacts), such as a bitstream or synthesis report.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="packages-and-cores"><a class="header" href="#packages-and-cores">Packages and Cores</a></h1>
 <p>An important line of distinction is understanding the difference between a package and an IP core.</p>
 <p>An <em>IP core</em>, commonly referred to as a <em>core</em>, is the smallest amount of hardware description code that Orbit considers at a time. A core is a reusable block of design logic composed of one or more design units. A core's name is defined by its root design unit, which is where Orbit starts from when collecting the rest of the required design units for a particular build. Design units are the highest levels of abstraction in hardware description languages, which include VHDL entities and SystemVerilog modules, and can exist in one or more design files.</p>
@@ -1966,7 +2017,7 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <p>A <em>package</em> is a collection of one or more cores. A package contains an <em>Orbit.toml</em> file, describing metadata for the collection of cores, as well as an auto-generated <em>Orbit.lock</em> file, recording the world state of the package. A package in this context is often synonymous with "project".</p>
 <p>To disambiguate the concept of an "Orbit package" from an "HDL package", much of the documentation in this book and throughout Orbit will favor using the word "project" instead of "package" when discussing an "Orbit package".</p>
 <p>Orbit operates at the package level for hardware description languages, hence being a <em>package manager</em>.</p>
-<p>Cores within a package can be made public or private, see <a href="topic/./scope.html">IP Core Visibility</a> for details.</p>
+<p>Cores within a package can be made public or private, see <a href="topic/./core_visibility.html">IP Core Visibility</a> for details.</p>
 <h2 id="orbit-package-vs-hdl-package"><a class="header" href="#orbit-package-vs-hdl-package">Orbit package vs. HDL package</a></h2>
 <p>A number of different concepts are commonly referred to by the word "package". This section clarifies the differences between two distinct meanings in Orbit packaging, "Orbit package" and "HDL package".</p>
 <h3 id="whats-an-orbit-package"><a class="header" href="#whats-an-orbit-package">What's an Orbit package?</a></h3>
@@ -1981,62 +2032,11 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <p><a href="https://doc.rust-lang.org/book/ch07-01-packages-and-crates.html">The Rust Book - Packages and Crates</a></p>
 <p><a href="https://packaging.python.org/en/latest/discussions/package-formats/">Python Packaging User Guide - Package Formats</a></p>
 <p><a href="https://en.wikipedia.org/wiki/Semiconductor_intellectual_property_core">Wikipedia - Semiconductor intellectual property core</a></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="package-management"><a class="header" href="#package-management">Package Management</a></h1>
-<p>Orbit is designed for users to efficiently manage their ip and scale their codebase over time. Many of the processes regarding ip management are automated and abstracted away from the user, enabling them to get their next design done faster. This section takes a closer look at how the <em>catalog</em> works in the context of Orbit and ip management. The catalog is a central concept to Orbit where existing ip are kept and maintained by Orbit.</p>
-<p><img src="topic/./../images/management.svg" alt="" /></p>
-<h2 id="catalog-operations"><a class="header" href="#catalog-operations">Catalog operations</a></h2>
-<p>The catalog is an abstract concept in Orbit where your existing ip are kept and maintained. Physically, the catalog is composed of a set of hidden directories in your file system found within the <code>$ORBIT_HOME</code> directory. Unless something has gone terribly wrong, users never have to worry about manually working within these directories; users interface with Orbit to request operations to be performed on the catalog. The two most fundamental catalog operations are: <code>install</code> and <code>remove</code>.</p>
-<p>The <code>install</code> operation takes an existing ip, which may be from a local file path or a repository URL, and performs a series of steps to place an immutable reference of that ip in the catalog's <em>cache</em>. This operation is typically applied when you wish to make it possible for your current ip to depend on that other ip. If the ip is coming from a source, such as a GitLab repository, then a <em>protocol</em> is used to handle how to download the ip's contents from the internet. Upon a successful download, a compressed backup of the ip's contents is stored in the catalog's <em>archive</em>. If the immutable reference in the cache ever enters an invalid state, Orbit automatically reinstalls the immutable reference from the compressed backup of the ip found in the archive.</p>
-<p>The <code>remove</code> operation takes an ip found in the catalog's cache, and deletes it from the catalog's cache and archive (if exists). This operation is typically applied when you have determined that an ip is not needed anymore for any future ip. If the ip is still a dependency of other ips in the catalog, then the catalog will automatically reinstall the missing ip if required based on the current ip's complete ip dependency graph.</p>
-<h2 id="depending-on-ip"><a class="header" href="#depending-on-ip">Depending on ip</a></h2>
-<p>An ip's <em>field of view</em> represents the set of HDL source code files that can interact with one another. A newly created ip's field of view starts out limited to the set of files found only within that ip. This means instantiations of modules and references to packages must be from primary design units located only within the HDL source code files of the current ip.</p>
-<p>When a module, package, or any other design unit is needed from a different ip, users express their intention to depend on another ip within the current ip by adding the needed ip's name and version to the <code>[dependencies]</code> section of the current ip's manifest. By doing so, the current ip's field of view <strong>expands</strong> to include the HDL source code files found directly within the dependent ip. This means instantiations of modules and references to other primary design units in the current ip's HDL source code can now include primary design units found in the dependent ip.</p>
-<p>Depending on ip in the catalog is only allowed for ip that have an immutable reference located in the catalog's cache. An ip in the catalog only listed as <em>available</em> or <em>downloaded</em> does not have the necessary data to properly reference any HDL source code files from that ip. Thankfully, Orbit automatically works through the required steps to get an ip installed to the cache when the user requests an <code>install</code> operation, even if the ip is not found in the catalog.</p>
-<h2 id="important-concepts"><a class="header" href="#important-concepts">Important concepts</a></h2>
-<ul>
-<li>
-<p>The <em>source</em> is the location where the ip's repository exists; this could be any cloud-based platform such as GitHub or GitLab where your repository is stored.</p>
-</li>
-<li>
-<p>The <em>catalog</em> is an abstract concept in Orbit that maintains 3 levels: available ip (found in channels), downloaded ip (located in the archive), and installed ip (located in the cache).</p>
-</li>
-<li>
-<p>When an ip is known as <em>available</em> in the catalog, Orbit only has the manifest and other metadata about that ip; there is no HDL source code for that ip in the catalog. The ip's manifest and metadata are tracked in a user-configured <em>channel</em>.</p>
-</li>
-<li>
-<p>When an ip is known as <em>downloaded</em> in the catalog, Orbit has a compressed version of the ip's contents. In this state, the ip is unusable as a dependency. The compressed version of the ip is stored in the <em>archive</em>.</p>
-</li>
-<li>
-<p>When an ip is known as <em>installed</em> in the catalog, Orbit has an uncompressed version of the ip's contents used for reference only. In this immutable state of the ip's contents, the ip is able to be used as a dependency. The immutable reference of the ip is kept in the <em>cache</em>.</p>
-</li>
-<li>
-<p>Users interact with the catalog through Orbit. Two fundamental catalog operations are: <code>install</code> and <code>remove</code>. The <code>install</code> operation brings an ip into a usable state in the catalog, while the <code>remove</code> operation takes an ip out of a usable state in the catalog.</p>
-</li>
-<li>
-<p>An ip's <em>field of view</em> is the set of HDL source code files that can interact with one another. Each ip has its own field of view, which may extend to other ips not found in the current ip's field of view. By adding an ip as a dependency in the current ip's manifest, you effectively expand the current ip's field of view to include the set of HDL source code files found within the ip dependency.</p>
-</li>
-</ul>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="extensible-builds"><a class="header" href="#extensible-builds">Extensible Builds</a></h1>
-<p>Orbit is an extensible build system for HDLs. Orbit separates the build process into two stages: planning and execution. When the build process happens, both stages are performed together in sequential order. Orbit provides two entry points into the build process: <code>orbit test</code> and <code>orbit build</code>.</p>
-<p>What makes Orbit extensible? Well, Orbit does not define the execution stage by default. It leaves it upon the user to add their own execution processes, called <em>targets</em>. A target can be added by modifying an Orbit configuration file. You can write target scripts for whatever tools are integral to your workflow, such as Vivado, ModelSim, VCS, Design Compiler, or Quartus Prime.</p>
-<p><img src="topic/./../images/dataflow.svg" alt="" /></p>
-<h2 id="planning-stage"><a class="header" href="#planning-stage">Planning stage</a></h2>
-<p>Orbit is the central system of the planning stage. Orbit takes your HDL source files (VHDL, Verilog, and SystemVerilog files) as input and generates the topologically sorted order of the source files saved to a single file known as the <em>blueprint</em> as output. Alongside the blueprint, Orbit sets a series of environment variables specific to the current build process that are available to the specified target during the execution stage for that target's convenience. These environment variables include things such as the output directory (<code>ORBIT_OUT_DIR</code>) and the name of the top-level design unit (<code>ORBIT_TOP_NAME</code>).</p>
-<p>To create the blueprint, Orbit tokenizes your current ip's HDL source code along with the HDL source code of the current ip's depedendencies found in the catalog to analyze references to other design units across source files. With this information, Orbit generates a graph at the HDL source code level and sorts it in topological order, with the top-level design unit being last.</p>
-<!-- Orbit sets runtime environment variables that can be accessed during the execution stage by the specified target. -->
-<h2 id="execution-stage"><a class="header" href="#execution-stage">Execution stage</a></h2>
-<p>The target specified at the start of the build process is the central system of the execution stage. The target typically takes in the outputs from the planning stage (blueprint and environment variables) as inputs to perform some backend processing with an EDA tool. Finally, the target executes the backend EDA tool to produce your results, also known as <em>artifacts</em>. Artifacts can really be anything, from synthesis reports and log files to netlists and bitstreams. Recall that targets are written and configured by <em>you</em>, so their behavior is in your control.</p>
-<p>Orbit leaves the execution stage undefined by default because there are a wide range of different backend EDA tools available that enforce different requirements and even change requirements and behaviors across versions. It would be a nightmare to try to design a "one-script-fits-all" approach because everyone's desired workflow, computing requirements, and choice of tool is so diverse.</p>
-<p>It is encouraged for a target to read the environment variables set by Orbit during the planning stage to further tailor the executed workflow for the given set of inputs. The environment variables can be used to help write robust and resuable targets.</p>
-<h2 id="test-or-build"><a class="header" href="#test-or-build">Test or build?</a></h2>
-<p>Orbit provides two entry points into the build process: <code>orbit test</code> and <code>orbit build</code>. Each entry point is suited for a particular type of build process.</p>
-<p>If you are trying to run a simulation (accompanied by an HDL testbench), then it is recommended to use the <code>orbit test</code> entry point. This command allows you to enter the build process by specifying the testbench using <code>--tb &lt;unit&gt;</code> and its design-under-test using <code>--dut &lt;unit&gt;</code>. This entry point is typically used for verification workflows, where the end result of the build process is more concerned with making sure all steps in the process complete successfully with no errors.</p>
-<p>For any non-testing workflow (one that lacks an HDL testbench), then it is recommended to use the <code>orbit build</code> entry point. This command allows you to enter the build process by specifying the top level using <code>--top &lt;unit&gt;</code>. This entry point is typically used for any workflow where the end result of the build process is more concerned with producing output files (commonly called artifacts), such as a bitstream or synthesis report.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="projects"><a class="header" href="#projects">Projects</a></h1>
 <p>A <em>project</em> is a collection of one or more IP cores. Projects are the <em>packages</em> Orbit manages as a package manager. First, let's understand some key terms related to packages in the context of Orbit.</p>
 <h2 id="terminology"><a class="header" href="#terminology">Terminology</a></h2>
 <p>A developer's tasks often involve interfacing with a collection of closely related files (source code, scripts, text files). This collection of closely related files is typically grouped together under a single directory called a project. Orbit recognizes a directory on your filesystem as a project by finding its <em>manifest</em>, which contains metadata about the project, such as its name and version. The manifest file must be named "Orbit.toml" and exists at the root of the project.</p>
-<p>In the context of being a package manager for digital hardware, Orbit calls its packages <em>projects</em> to disambiguite from package constructs found within HDLs. For more information, see <a href="topic/./projects_and_cores.html">Packages and Cores</a>.</p>
+<p>In the context of being a package manager for digital hardware, Orbit calls its packages <em>projects</em> to disambiguite from package constructs found within HDLs. For more information, see <a href="topic/./packages_and_cores.html">Packages and Cores</a>.</p>
 <h2 id="working-project"><a class="header" href="#working-project">Working project</a></h2>
 <p>Typically, developers work on one project at a given time (while we can work on projects concurrently, we unfortunately are not parallel processors). The <em>working project</em> is the project that is currently being developed at a given moment. Orbit identifies the working project by checking along the working directory and its parent directories for a manifest file. Once a manifest file is found, Orbit considers this the working project. Some Orbit commands only work when they are called within the working project (<code>orbit lock</code>, <code>orbit build</code>).</p>
 <p>The working project may also be called other names, such as the <em>local project</em> or <em>current project</em>. These name differences are only differences in name as the same meaning is preserved.</p>
@@ -2061,18 +2061,18 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <pre><code>gates+8ah2qa261k8wgv55sd1qq17w9:1.0.0
 </code></pre>
 <p>When asking Orbit to operate on a particular project outside of the working project, Orbit will ask you to provide the project's spec. Orbit uses the spec to lookup the project in the catalog and then carry out the requested function on that project.</p>
-<p>To learn more about an project spec, see <a href="topic/./../reference/names.html">Project Specification</a>.</p>
+<p>To learn more about an project spec, see <a href="topic/./../reference/project_id_specification.html">Project ID Specification</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="catalog"><a class="header" href="#catalog">Catalog</a></h1>
-<p>As a package manager, Orbit must know what ips are available and where ips are stored on your local file system so that they can be operated on. Orbit stores your ips in the <em>catalog</em>. The <em>catalog</em> is a set of directories on your local file system maintained by orbit. These directories are typically hidden from the user because they are not regularly interfacing with the file system contents at these locations and manually tampering the contents may cause trouble for Orbit when it tries to use them.</p>
+<p>As a package manager, Orbit must know what packages are available and where packages are stored on your local file system so that they can be operated on. Orbit stores your projects in the <em>catalog</em>. The <em>catalog</em> is a set of directories on your local file system maintained by orbit. These directories are typically hidden from the user because they are not regularly interfacing with the file system contents at these locations and manually tampering the contents may cause trouble for Orbit when it tries to use them.</p>
 <p>There are three levels to the catalog: the cache, the archive, and channels.</p>
 <h2 id="cache"><a class="header" href="#cache">Cache</a></h2>
-<p>The <em>cache</em> maintains the ips that are currently <em>installed</em> on your local file system. Installed ips can be immediately added as a dependency to your current project.</p>
+<p>The <em>cache</em> maintains the projects that are currently <em>installed</em> on your local file system. Installed projects can be immediately added as a dependency to your current project.</p>
 <p>Default location: <code>$ORBIT_HOME/cache</code></p>
 <h2 id="archive"><a class="header" href="#archive">Archive</a></h2>
-<p>The <em>archive</em> maintains the ips that are currently <em>downloaded</em> on your local file system. Downloaded ips can be added as a dependency to your current project only after being installed to the cache.</p>
+<p>The <em>archive</em> maintains the projects that are currently <em>downloaded</em> on your local file system. Downloaded projects can be added as a dependency to your current project only after being installed to the cache.</p>
 <p>Default location: <code>$ORBIT_HOME/archive</code></p>
 <h2 id="channels"><a class="header" href="#channels">Channels</a></h2>
-<p><em>Channels</em> are user-defined directories to set up as registries to maintain the ips that are currently <em>available</em> to download or install. These ips may require internet to download their contents and then install to your cache.</p>
+<p><em>Channels</em> are user-defined directories to set up as registries to maintain the projects that are currently <em>available</em> to download or install. These projects may require internet to download their contents and then install to your cache.</p>
 <p>Default location: <code>$ORBIT_HOME/channels</code></p>
 <p>Adding a new channel is as simple as adding a directory to the location where channels are defined.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="targets"><a class="header" href="#targets">Targets</a></h1>
@@ -2087,23 +2087,23 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <div style="break-before: page; page-break-before: always;"></div><h1 id="protocols"><a class="header" href="#protocols">Protocols</a></h1>
 <p>A <em>protocol</em> is a series of steps requried to get a package from the internet. Protocols exist because there are numerous ways to access data from the internet depending on your development environment. Orbit tries to be as modular and flexible as possible by introducing protocols.</p>
 <p>Protocols are required during the download process to acquire a package for potential cache installation.</p>
-<p>The goal of a protocol is to place an ip's contents on the user's local file system. Every protocol's process is started from a temporary directory handled by Orbit. After a protocol runs its process, Orbit will try to find the requested ip's manifest within this temporary directory. If Orbit finds the ip's manifest, then the download is considered successful. Orbit creates and manages a different temporary directory for each ip being downloaded.</p>
+<p>The goal of a protocol is to place a project's contents on the user's local file system. Every protocol's process is started from a temporary directory handled by Orbit. After a protocol runs its process, Orbit will try to find the requested project's manifest within this temporary directory. If Orbit finds the project's manifest, then the download is considered successful. Orbit creates and manages a different temporary directory for each project being downloaded.</p>
 <h2 id="standard-protocol"><a class="header" href="#standard-protocol">Standard protocol</a></h2>
-<p>Orbit has one pre-defined standard protocol that relies on the Rust <a href="https://crates.io/crates/curl"><code>curl</code></a> crate to make HTTP requests. This protocol assumes the provided URLs point to a zip archive containing the targeted package. The standard protocol will extract the zip file to the temporary directory handled by Orbit. If the ip's source file is not a zip file, then this protocol will not work.</p>
-<p>If your requirements for how you point an ip's source contents will not work with the standard protocol, then consider configuring a custom protocol.</p>
+<p>Orbit has one pre-defined standard protocol that relies on the Rust <a href="https://crates.io/crates/curl"><code>curl</code></a> crate to make HTTP requests. This protocol assumes the provided URLs point to a zip archive containing the targeted package. The standard protocol will extract the zip file to the temporary directory handled by Orbit. If the project's source file is not a zip file, then this protocol will not work.</p>
+<p>If your requirements for how you point a project's source contents will not work with the standard protocol, then consider configuring a custom protocol.</p>
 <h2 id="custom-protocols"><a class="header" href="#custom-protocols">Custom protocols</a></h2>
-<p>Users can configure their own processes to run when trying to download an ip from the internet by adding a new <code>[[protocol]]</code> entry in an Orbit configuration file.</p>
-<p>Orbit will start the custom protocol's process in a temporary directory for the custom protocol to try to download the ip's contents from its provided source URL. Orbit removes the temporary directory after an ip is successfully or unsuccessfully downloaded and creates a new temporary directory for each ip download.</p>
+<p>Users can configure their own processes to run when trying to download a project from the internet by adding a new <code>[[protocol]]</code> entry in an Orbit configuration file.</p>
+<p>Orbit will start the custom protocol's process in a temporary directory for the custom protocol to try to download the project's contents from its provided source URL. Orbit removes the temporary directory after a project is successfully or unsuccessfully downloaded and creates a new temporary directory for each project download.</p>
 <h2 id="examples-1"><a class="header" href="#examples-1">Examples</a></h2>
 <p>One possible protocol relies on using the <code>git</code> command-line tool.</p>
 <p>Filename: config.toml</p>
 <pre><code class="language-toml">[[protocol]]
 name = "gitit"
 summary = "Access packages through git to handle remote repositories"
-command = ["git", "clone", "-b", "{{orbit.ip.version}}", "{{orbit.ip.source}}"]
+command = ["git", "clone", "-b", "{{orbit.project.version}}", "{{orbit.project.source}}"]
 patterns = ["*.git"]
 </code></pre>
-<p>This protocol calls <code>git</code> and clones from the ip's URL while checking out the branch/tag that matches the ip's version number. These values are resolved at runtime by Orbit through variable substitution.</p>
+<p>This protocol calls <code>git</code> and clones from the project's URL while checking out the branch/tag that matches the project's version number. These values are resolved at runtime by Orbit through variable substitution.</p>
 <p>This protocol only picks up source URLs that match the <code>*.git</code> glob pattern. If a custom protocol does not define a <code>patterns</code> field for its configured entry, then the protocol will be pick up all source URLs.</p>
 <blockquote>
 <p><strong>Note</strong>: If a custom protocol defines a empty list of patterns in the <code>patterns</code> field for its configured entry, then the protoocl will <em>never</em> pick up any source URLs.</p>
@@ -2114,52 +2114,52 @@ patterns = []
 </blockquote>
 <p>More complex protocols may require using a scripting language such as Python to perform the necessary steps.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="channels-1"><a class="header" href="#channels-1">Channels</a></h1>
-<p>As your codebase evolves over time, you may have accrued a lot of ips. However, an issue arises regarding <em>discovery</em>- how do others quickly find all ips that have been released?</p>
-<p>Orbit solves this problem by using channels. A <em>channel</em> is a lightweight decentralized registry index. In other words, a channel is a directory that contains multiple ip manifests. With this approach, users can simply configure channels to discover the many available released ips.</p>
+<p>As your codebase evolves over time, you may have accrued a lot of projects. However, an issue arises regarding <em>discovery</em>- how do others quickly find all projects that have been released?</p>
+<p>Orbit solves this problem by using channels. A <em>channel</em> is a lightweight decentralized registry index. In other words, a channel is a directory that contains multiple project manifests. With this approach, users can simply configure channels to discover the many available released projects.</p>
 <p>Channels can be as manual or automated as you prefer. You can configure commands to run for a channel's synchronization hook, pre-publish hook, and post-publish hook. Channels are encouraged to be as automated as possible by defining these fields in the channel's configuration.</p>
 <h3 id="example"><a class="header" href="#example">Example</a></h3>
 <pre><code class="language-toml">[[channel]]
 name = "hyperspace-labs"
-description = "Available ip from hyperspace labs"
-# Directory where ip contents are placed
+description = "Available projects from hyperspace labs"
+# Directory where project contents are placed
 root = "./index"
 
 # If the channel is stored on the internet, synchronize with its remote location
 sync.command = ["git", "pull"]
 
-# Issue this command immediately before adding the ip to the channel
+# Issue this command immediately before adding the project to the channel
 pre.command = ["git", "pull"]
 
-# Issue this command immediately after adding the ip to the channel
+# Issue this command immediately after adding the project to the channel
 post.command =["python", "publish.py"]
 </code></pre>
 <h2 id="the-synchronization-hook"><a class="header" href="#the-synchronization-hook">The synchronization hook</a></h2>
-<p>A synchronization hook can be configured for a channel to update your local copy of a channel with its remote source. Synchronization hooks, if configured, will run as part of the publishing process to confirm the ip has not been released yet.</p>
+<p>A synchronization hook can be configured for a channel to update your local copy of a channel with its remote source. Synchronization hooks, if configured, will run as part of the publishing process to confirm the project has not been released yet.</p>
 <p>All channels with synchronization hooks can be manually triggered to run their synchronization hooks by running:</p>
 <pre><code>$ orbit --sync
 </code></pre>
 <h2 id="the-pre-publish-hook"><a class="header" href="#the-pre-publish-hook">The pre-publish hook</a></h2>
-<p>A pre-publish hook can be configured for a channel to perform any operations immediately before the ip's metadata contents are copied into the given channel.</p>
+<p>A pre-publish hook can be configured for a channel to perform any operations immediately before the project's metadata contents are copied into the given channel.</p>
 <h2 id="the-post-publish-hook"><a class="header" href="#the-post-publish-hook">The post-publish hook</a></h2>
-<p>A post-publish hook can be configured for a channel to perform any operations immediately after the ip's metadata contents are copied into the given channel.</p>
+<p>A post-publish hook can be configured for a channel to perform any operations immediately after the project's metadata contents are copied into the given channel.</p>
 <h2 id="the-publishing-process"><a class="header" href="#the-publishing-process">The publishing process</a></h2>
-<p>Orbit automates the process of releasing an ip to a channel through the publishing process invoked through <code>orbit publish</code>.</p>
-<p>The core operation during the publishing process is the ip's manifest gets placed in the channel at its generated index directory. The root of the index directory can be configured using the <code>root</code> field, and the remaining subdirectories are pre-determined according to the ip's name.</p>
-<p>The full path to the index directory can be read from the <code>ORBIT_CHANNEL_DIR</code> environment variable during a channel's pre-publish or post-publish hook processes.</p>
-<p>The full path to the directoy when an ip's metadata contents are copied to during the publishing process can be read from the <code>ORBIT_CHANNEL_IP_DIR</code> environment variable.</p>
-<p>Along with copying the ip's manifest to the index directory, the publishing process also copies the ip's lockfile as well as creates a new file, <code>Orbit.json</code>, that contains additional metadata about the ip in JSON format. To learn more about what properties are stored in a <code>Orbit.json</code> file, see <a href="topic/./../reference/json.html">JSON</a>.</p>
+<p>Orbit automates the process of releasing a project to a channel through the publishing process invoked through <code>orbit publish</code>.</p>
+<p>The core operation during the publishing process is the project's manifest gets placed in the channel at its generated index directory. The root of the index directory can be configured using the <code>root</code> field, and the remaining subdirectories are pre-determined according to the project's name.</p>
+<p>The full path to the index root directory can be read from the <code>ORBIT_CHANNEL_DIR</code> environment variable during a channel's pre-publish or post-publish hook processes.</p>
+<p>The full path to the directoy when an project's metadata contents are copied to during the publishing process can be read from the <code>ORBIT_CHANNEL_PROJECT_DIR</code> environment variable.</p>
+<p>Along with copying the project's manifest to the index directory, the publishing process also copies the project's lockfile as well as creates a new file, <code>Orbit.json</code>, that contains additional metadata about the project in JSON format. To learn more about what properties are stored in a <code>Orbit.json</code> file, see <a href="topic/./../reference/json.html">JSON</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbitlock"><a class="header" href="#orbitlock">Orbit.lock</a></h1>
-<p>The <em>Orbit.lock</em> lock file is a file that captures every dependency required for the current ip. This includes information about exact versions of dependencies and how to get them if any are missing from the cache.</p>
-<p>The lock file is managed by Orbit, and formalizes the data the user provided in the <code>Orbit.toml</code> manifest file. The lock file is required for every ip and should not be manually edited.</p>
-<p>With a lock file, the current state of the ip can be reproduced at a later time and in any environment. If the current ip uses version control, then it is recommended to track <code>Orbit.lock</code> to ensure reproducibility across environments.</p>
-<p>To update the current ip's lock file, use <code>orbit lock</code>. The lock file will also automatically be updated before the build process when using <code>orbit build</code> or <code>orbit test</code>.</p>
+<p>The <em>Orbit.lock</em> lock file is a file that captures every dependency required for the current project. This includes information about exact versions of dependencies and how to get them if any are missing from the cache.</p>
+<p>The lock file is managed by Orbit, and formalizes the data the user provided in the <code>Orbit.toml</code> manifest file. The lock file is required for every project and should not be manually edited.</p>
+<p>With a lock file, the current state of the project can be reproduced at a later time and in any environment. If the current project uses version control, then it is recommended to track <code>Orbit.lock</code> to ensure reproducibility across environments.</p>
+<p>To update the current project's lock file, use <code>orbit lock</code>. The lock file will also automatically be updated before the build process when using <code>orbit build</code> or <code>orbit test</code>.</p>
 <blockquote>
-<p><strong>Note:</strong> An ip's lock file contains all the data required by it to reproduce its current state, so it does not require reading the lock files of its dependencies.</p>
+<p><strong>Note:</strong> A project's lock file contains all the data required by it to reproduce its current state, so it does not require reading the lock files of its dependencies.</p>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="ip-core-visibility"><a class="header" href="#ip-core-visibility">IP Core Visibility</a></h1>
 <p>Scope, accessibility, and visibility are important concepts when writing code intended to be used by a greater audience. Specifying what is strictly internal to an package (<em>private</em>) and what is accessible outside of an package (<em>public</em>) can help with encapsulation, code organization, and managing complexity. Specifying accessibility for the modules within an package can keep the package's contents focused and express designer's intent on which modules should be used by the outside world.</p>
 <p>In traditional hardware description languages such as VHDL and SystemVerilog, there already exists this concept of scope and accessibility: modules external to one another can only access the other through its ports, leaving the internal architectures private to the modules that define them. Some signals are private to a module, that is, they are defined and used strictly internal to that module. A user of that module does not need to know the details of why that signal exists, rather, they simply need to understand what the module does at a system-level and how to communicate with it through its interface.</p>
-<p>However, at the design unit abstraction level, where users deal with the primary building blocks of these languages such as <code>entity</code>, <code>module</code>, and <code>package</code>, there is no sense of accessibility. All design units are accessible because this is the highest level of abstraction defined for these languages; there is nothing more abstract to encapsulate them. But with Orbit, two layers of abstraction are introduced: <a href="topic/./projects_and_cores.html"><em>packages</em> and <em>cores</em></a>. An package encapsulates one or more cores, which encapsulate one or more design units, thus providing the opportunity to introduce scope and accessibility at the design unit abstraction level. Users can specify which source files, which in turn store design units, are public or private with respective to the package that encapsulates them.</p>
+<p>However, at the design unit abstraction level, where users deal with the primary building blocks of these languages such as <code>entity</code>, <code>module</code>, and <code>package</code>, there is no sense of accessibility. All design units are accessible because this is the highest level of abstraction defined for these languages; there is nothing more abstract to encapsulate them. But with Orbit, two layers of abstraction are introduced: <a href="topic/./packages_and_cores.html"><em>packages</em> and <em>cores</em></a>. An package encapsulates one or more cores, which encapsulate one or more design units, thus providing the opportunity to introduce scope and accessibility at the design unit abstraction level. Users can specify which source files, which in turn store design units, are public or private with respective to the package that encapsulates them.</p>
 <h2 id="approach-to-accessibility"><a class="header" href="#approach-to-accessibility">Approach to accessibility</a></h2>
 <p>A good rule of thumb when thinking about accessibility is to make everything as private as possible; make accessible only what is strictly necessary. In the context of packages, this typically means making the following private to an package:</p>
 <ul>
@@ -2172,7 +2172,7 @@ post.command =["python", "publish.py"]
 <p>An project's manifest allows for users to set the <a href="topic/./../reference/manifest.html#the-public-field"><code>public</code></a> field, which can store a list of user-defined file patterns for Orbit to consider publicly accessible from outside the project.</p>
 <h2 id="file-visibility"><a class="header" href="#file-visibility">File visibility</a></h2>
 <p>By default, all source files in a project are included when Orbit performs source code analysis within the current project.</p>
-<p>A project's manifest allows for users to set an <a href="topic/./../reference/manifest.html#the-exclude-field"><code>exclude</code></a> field, which can store a list of user-defined file patterns for Orbit to ignore during file discovery.</p>
+<p>A project's manifest allows for users to set an <a href="topic/./../reference/manifest.html#the-ignore-field"><code>ignore</code></a> field, which can store a list of user-defined file patterns for Orbit to ignore during file discovery.</p>
 <h3 id="resolving-errors"><a class="header" href="#resolving-errors">Resolving errors</a></h3>
 <p>Orbit prevents duplicate primary design units from being identified within certain situations. For example, duplicate design unit names are not allowed within the same project because Orbit cannot resolve ambiguity in which unit is used where.</p>
 <p>An error may look like the following:</p>
@@ -2183,19 +2183,19 @@ location 2: rtl/foo2.vhd:1:1
 
 hint: resolve this error by either
     1) renaming one of the units to a unique identifier
-    2) adding one of the file paths to the manifest's "ip.exclude" field
+    2) adding one of the file paths to the manifest's "project.ignore" field
 </code></pre>
-<p>The <code>exclude</code> field can be used in this scenario to tell Orbit to ignore reading a particular file during the HDL source code dependency analysis.</p>
+<p>The <code>ignore</code> field can be used in this scenario to tell Orbit to ignore reading a particular file during the HDL source code dependency analysis.</p>
 <p>Filename: Orbit.toml</p>
-<pre><code class="language-toml">[ip]
+<pre><code class="language-toml">[project]
 # ...
-exclude = [
+ignore = [
     "rtl/foo2.vhd"
 ]
 </code></pre>
-<p>In this example, the value for the above <code>exclude</code> field in the local project's manifest will resolve the previous error because it prevents Orbit from seeing the file "rtl/foo2.vhd" during any file discovery operations.</p>
+<p>In this example, the value for the above <code>ignore</code> field in the local project's manifest will resolve the previous error because it prevents Orbit from seeing the file "rtl/foo2.vhd" during any file discovery operations.</p>
 <h2 id="file-pattern-format"><a class="header" href="#file-pattern-format">File pattern format</a></h2>
-<p>Both the <code>exclude</code> key and the <code>public</code> key take an array of strings as their value. These strings are interpreted as file patterns, which follow the <a href="https://git-scm.com/docs/gitignore#_pattern_format">.gitignore</a> format.</p>
+<p>Both the <code>ignore</code> key and the <code>public</code> key take an array of strings as their value. These strings are interpreted as file patterns, which follow the <a href="https://git-scm.com/docs/gitignore#_pattern_format">.gitignore</a> format.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="string-swapping"><a class="header" href="#string-swapping">String Swapping</a></h1>
 <p><em>String swapping</em> is the process of injecting runtime information into specific locations of strings defined in configuration values.</p>
 <p>This process allows permissible strings to become generic enough to avoid having the user frequently update configuration data with redundant information or accidently recall the incorrect value.</p>
@@ -2205,8 +2205,8 @@ exclude = [
 <p>When Orbit gets a permissible string, it will parse the characters to check if a key exists and should be swapped with its value. If it finds a valid known key, then it replaces everything from and within the curly bracket sequences with the variable's value. If it cannot find a valid key that matches the name, it leaves that sequence of the string unmodified.</p>
 <p>Keys are inherited from environment variables and take on a different formatting.
 All <code>_</code> or <code>-</code> in an environment variable are converted to a <code>.</code>, and the character are converted to lowercase.</p>
-<p>Imagine Orbit maintains the following key <code>orbit.ip.name</code> with the value "foo". Then for a permissible string such as:</p>
-<pre><code>"Hello, {{ orbit.ip.name  }}!"
+<p>Imagine Orbit maintains the following key <code>orbit.project.name</code> with the value "foo". Then for a permissible string such as:</p>
+<pre><code>"Hello, {{ orbit.project.name  }}!"
 </code></pre>
 <p>The resulting string before being read during runtime would become:</p>
 <pre><code>"Hello, foo!"
@@ -2215,10 +2215,10 @@ All <code>_</code> or <code>-</code> in an environment variable are converted to
 <p>Not every string is checked for string swapping. Strings that are not allowed to have string swapping ignore any existing keys in the text, leaving the entire string unmodified.</p>
 <p>The following lists the instances when a string is permitted to perform string swapping:</p>
 <h3 id="manifest-files"><a class="header" href="#manifest-files">Manifest files</a></h3>
-<p>The string pattern for an ip's <code>ip.source</code> field is allowed to contain any of the following keys:</p>
+<p>The string pattern for a project's <code>project.source</code> field is allowed to contain any of the following keys:</p>
 <ul>
-<li><code>orbit.ip.name</code>: The name of the ip being downloaded.</li>
-<li><code>orbit.ip.version</code>: The version of the ip being downloaded.</li>
+<li><code>orbit.project.name</code>: The name of the project being downloaded.</li>
+<li><code>orbit.project.version</code>: The version of the project being downloaded.</li>
 </ul>
 <h3 id="fileset-patterns"><a class="header" href="#fileset-patterns">Fileset patterns</a></h3>
 <p>The string pattern for a target's fileset configuration is allowed to contain any of the following keys:</p>
@@ -2231,31 +2231,31 @@ All <code>_</code> or <code>-</code> in an environment variable are converted to
 <h3 id="protocol-arguments"><a class="header" href="#protocol-arguments">Protocol arguments</a></h3>
 <p>The argument list defined in a protocol's configuration is allowed to contain any of the following keys:</p>
 <ul>
-<li><code>orbit.ip.name</code>: The name of the ip being downloaded.</li>
-<li><code>orbit.ip.version</code>: The version of the ip being downloaded.</li>
-<li><code>orbit.ip.source</code>: The URL for the ip being downloaded.</li>
+<li><code>orbit.project.name</code>: The name of the project being downloaded.</li>
+<li><code>orbit.project.version</code>: The version of the project being downloaded.</li>
+<li><code>orbit.project.source</code>: The URL for the project being downloaded.</li>
 <li><code>*</code>: Any environment variables loaded from configuration files.</li>
 </ul>
 <h3 id="target-arguments"><a class="header" href="#target-arguments">Target arguments</a></h3>
 <p>The argument list defined in a target's configuration is allowed to contain any of the following keys:</p>
 <ul>
-<li><code>orbit.ip.name</code>: The name of the local ip.</li>
-<li><code>orbit.ip.library</code>: The HDL library of the local ip.</li>
-<li><code>orbit.ip.version</code>: The version of the local ip.</li>
-<li><code>orbit.ip.checksum</code>: The truncated most recent checksum of the local ip.</li>
+<li><code>orbit.project.name</code>: The name of the current project.</li>
+<li><code>orbit.project.library</code>: The HDL library of the current project.</li>
+<li><code>orbit.project.version</code>: The version of the current project.</li>
+<li><code>orbit.project.checksum</code>: The truncated most recent checksum of the current project.</li>
 <li><code>orbit.top.name</code>: The top-level design unit name.</li>
 <li><code>orbit.tb.name</code>: The testbench design unit name.</li>
 <li><code>orbit.dut.name</code>: The design-under-test design unit name.</li>
 <li><code>*</code>: Any environment variables loaded from configuration files.</li>
 </ul>
 <h2 id="example-1"><a class="header" href="#example-1">Example</a></h2>
-<p>Consider an ip with the following manifest data:</p>
-<pre><code class="language-toml">[ip]
+<p>Consider a project with the following manifest data:</p>
+<pre><code class="language-toml">[project]
 name = "foo"
 version = "1.2.0"
-source = "https://github.com/hyperspace-labs/foo/archive/refs/tags/{{orbit.ip.version}}.zip
+source = "https://github.com/hyperspace-labs/foo/archive/refs/tags/{{orbit.project.version}}.zip
 </code></pre>
-<p>The <code>source</code> field of an ip's manifest is one string that is allowed to string swap. For its string, we specify a key, "orbit.ip.version", by enclosing it in double curly brackets. This tells Orbit that any time it uses this string, it should replace <code>{{orbit.ip.version}}</code> with <code>1.2.0</code>, the value associated with that key.</p>
+<p>The <code>source</code> field of a project's manifest is one string that is allowed to string swap. For its string, we specify a key, "orbit.project.version", by enclosing it in double curly brackets. This tells Orbit that any time it uses this string, it should replace <code>{{orbit.project.version}}</code> with <code>1.2.0</code>, the value associated with that key.</p>
 <p>By using string swapping, we can reduce the amount of times redundant information has to be maintained, or delay providing information when we may not know the value until runtime.</p>
 <h2 id="environment-variable-translation-examples"><a class="header" href="#environment-variable-translation-examples">Environment variable translation examples</a></h2>
 <p>A key recognized by Orbit during string swapping can be an environment variable key. For an environment variable key to be recognized as a key in the context of string swapping, the environment variable key is converted to lowercase with each "_" character replaced by a "." character.</p>
@@ -2324,7 +2324,7 @@ Yilinx_Path = "/Users/chase/fpga/bin/yilinx"
 );
 </code></pre>
 <p>Remember that this identifier could appear again at the same namespace level (since its global across all source code files), even if it has a different interface/implementation.</p>
-<p>Now imagine you are integrating HDL code from various existing ips. As you instantiate modules within larger modules, you realize there exists another module named <code>nand_g</code> in the hierarchy, but this one has a different behavior and port interface than the previously defined <code>nand_g</code> circuit from the "lab1/" directory.</p>
+<p>Now imagine you are integrating HDL code from various existing projects. As you instantiate modules within larger modules, you realize there exists another module named <code>nand_g</code> in the hierarchy, but this one has a different behavior and port interface than the previously defined <code>nand_g</code> circuit from the "lab1/" directory.</p>
 <p>Filename: lab3/nand_g.v</p>
 <pre><code class="language-verilog">module nand_g (
   input wire[3:0] x,
@@ -2410,7 +2410,7 @@ uuid = "ecj831jmc018hhhgl1d4rzgw8" # the universally unique identifier
 </code></pre>
 <p>The only fields required by Orbit are the name and uuid.</p>
 <h3 id="the-name-field"><a class="header" href="#the-name-field">The <code>name</code> field</a></h3>
-<p>The project name is an identifier used to refer to the project. It is used when listed as a dependency in another package, and as the name of the HDL library for all of its source files when the <code>library</code> field is omitted. See <a href="reference/./names.html">names</a> for more information.</p>
+<p>The project name is an identifier used to refer to the project. It is used when listed as a dependency in another package, and as the name of the HDL library for all of its source files when the <code>library</code> field is omitted. See <a href="reference/./project_id_specification.html">Project ID Specification</a> for more information.</p>
 <pre><code class="language-toml">[project]
 name = "my-project"
 # ...
@@ -3957,7 +3957,7 @@ temporarily installed to verify its contents match those of the local project.</
 a path within the channel known as the index. For every publish of a project,
 the index corresponds to a unique path within the channel that gets created by
 Orbit. A channel's pre-publish and post-publish hooks can get the value for the
-project's index by reading the ORBIT_CHANNEL_IP_DIR environment variable.</p>
+project's index by reading the ORBIT_CHANNEL_PROJECT_DIR environment variable.</p>
 <p>The <code>--all-public</code> flag can be used to skip providing the "project.public"
 field in the current project's manifest, granting the assumption that all
 source files should be public. It cannot be used if the "project.public" field
@@ -4136,7 +4136,7 @@ by Orbit.</p>
 <h2 id="examples-16"><a class="header" href="#examples-16"><strong>EXAMPLES</strong></a></h2>
 <pre><code>orbit env
 orbit env ORBIT_HOME
-orbit env ORBIT_MANIFEST_DIR ORBIT_IP_NAME
+orbit env ORBIT_MANIFEST_DIR ORBIT_PROJECT_NAME
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-config"><a class="header" href="#orbit-config"><strong>orbit config</strong></a></h1>
 <h2 id="name-15"><a class="header" href="#name-15"><strong>NAME</strong></a></h2>

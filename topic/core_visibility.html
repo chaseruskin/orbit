@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Projects - The Book of Orbit</title>
+        <title>IP Core Visibility - The Book of Orbit</title>
 
 
         <!-- Custom HTML head -->
@@ -169,46 +169,56 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="projects"><a class="header" href="#projects">Projects</a></h1>
-<p>A <em>project</em> is a collection of one or more IP cores. Projects are the <em>packages</em> Orbit manages as a package manager. First, let's understand some key terms related to packages in the context of Orbit.</p>
-<h2 id="terminology"><a class="header" href="#terminology">Terminology</a></h2>
-<p>A developer's tasks often involve interfacing with a collection of closely related files (source code, scripts, text files). This collection of closely related files is typically grouped together under a single directory called a project. Orbit recognizes a directory on your filesystem as a project by finding its <em>manifest</em>, which contains metadata about the project, such as its name and version. The manifest file must be named "Orbit.toml" and exists at the root of the project.</p>
-<p>In the context of being a package manager for digital hardware, Orbit calls its packages <em>projects</em> to disambiguite from package constructs found within HDLs. For more information, see <a href="./projects_and_cores.html">Packages and Cores</a>.</p>
-<h2 id="working-project"><a class="header" href="#working-project">Working project</a></h2>
-<p>Typically, developers work on one project at a given time (while we can work on projects concurrently, we unfortunately are not parallel processors). The <em>working project</em> is the project that is currently being developed at a given moment. Orbit identifies the working project by checking along the working directory and its parent directories for a manifest file. Once a manifest file is found, Orbit considers this the working project. Some Orbit commands only work when they are called within the working project (<code>orbit lock</code>, <code>orbit build</code>).</p>
-<p>The working project may also be called other names, such as the <em>local project</em> or <em>current project</em>. These name differences are only differences in name as the same meaning is preserved.</p>
-<h2 id="anatomy-of-a-project"><a class="header" href="#anatomy-of-a-project">Anatomy of a project</a></h2>
-<p>Since Orbit focuses on digital hardware projects, it automatically detects and manages files that store HDL source code. Files that store HDL source code are called <em>source files</em>. Any other files, such as scripts and test vectors, are considered <em>auxiliary files</em>.</p>
-<p>Auxiliary files can be injected into the planning stage by specifying custom <em>filesets</em> for the given target. A <em>fileset</em> is glob-style pattern that collects matching files under a common name within the working project. These matched files will appear in the target's generated blueprint file for future execution.</p>
-<p>So, what files are inside a project?</p>
+                        <h1 id="ip-core-visibility"><a class="header" href="#ip-core-visibility">IP Core Visibility</a></h1>
+<p>Scope, accessibility, and visibility are important concepts when writing code intended to be used by a greater audience. Specifying what is strictly internal to an package (<em>private</em>) and what is accessible outside of an package (<em>public</em>) can help with encapsulation, code organization, and managing complexity. Specifying accessibility for the modules within an package can keep the package's contents focused and express designer's intent on which modules should be used by the outside world.</p>
+<p>In traditional hardware description languages such as VHDL and SystemVerilog, there already exists this concept of scope and accessibility: modules external to one another can only access the other through its ports, leaving the internal architectures private to the modules that define them. Some signals are private to a module, that is, they are defined and used strictly internal to that module. A user of that module does not need to know the details of why that signal exists, rather, they simply need to understand what the module does at a system-level and how to communicate with it through its interface.</p>
+<p>However, at the design unit abstraction level, where users deal with the primary building blocks of these languages such as <code>entity</code>, <code>module</code>, and <code>package</code>, there is no sense of accessibility. All design units are accessible because this is the highest level of abstraction defined for these languages; there is nothing more abstract to encapsulate them. But with Orbit, two layers of abstraction are introduced: <a href="./packages_and_cores.html"><em>packages</em> and <em>cores</em></a>. An package encapsulates one or more cores, which encapsulate one or more design units, thus providing the opportunity to introduce scope and accessibility at the design unit abstraction level. Users can specify which source files, which in turn store design units, are public or private with respective to the package that encapsulates them.</p>
+<h2 id="approach-to-accessibility"><a class="header" href="#approach-to-accessibility">Approach to accessibility</a></h2>
+<p>A good rule of thumb when thinking about accessibility is to make everything as private as possible; make accessible only what is strictly necessary. In the context of packages, this typically means making the following private to an package:</p>
 <ul>
-<li><em>Source files</em>: Stores HDL source code (VHDL, Verilog, SystemVerilog)</li>
-<li><em>Auxiliary files</em>: Any additional files that do not store source code</li>
-<li><em>Manifest file</em> (<code>Orbit.toml</code>): Stores the project's metadata provided by the user</li>
-<li><em>Lock file</em> (<code>Orbit.lock</code>): Saves the project's world state for reproducibility purposes</li>
+<li><strong>Testbenches</strong>: These modules are typically only used when actively developing a project, not when it is needed as a dependency. A source file that contains a testbench is typically named with a <code>_tb</code> suffix.</li>
+<li><strong>Board-level design units</strong>: These modules are typically designed around application-specific requirements, stitching together the physical board's interface with the core logic of the application. An application would require its own board-level design unit, thus not making it a good candidate for accessibility within an project. A source file that contains a board-level design unit is typically named with <code>top</code> or <code>app</code>.</li>
 </ul>
-<p>All files <strong>except the lock file</strong> are expected to be edited by the user. Orbit automatically maintains the lock file to ensure it can reproduce the project's world state in the future.</p>
-<h3 id="reserved-names"><a class="header" href="#reserved-names">Reserved names</a></h3>
-<p>File names that begin with ".orbit-" are reserved for internal use and are not allowed at the root directory of a project. Files that are named with this pattern are used by Orbit in the catalog to store additional metadata about the project.</p>
-<h2 id="names"><a class="header" href="#names">Names</a></h2>
-<p>A project's name is a human-readable identifier given to an project so users can easily remember and locate packages of interest.</p>
-<pre><code>gates
+<p>Any other design units that should be left private are up to the developer and greatly depend on how an project's code is organized.</p>
+<h2 id="file-accessibility"><a class="header" href="#file-accessibility">File accessibility</a></h2>
+<p>By default, all source files, and therefore all design units, are considered private to the current project.</p>
+<p>An project's manifest allows for users to set the <a href="./../reference/manifest.html#the-public-field"><code>public</code></a> field, which can store a list of user-defined file patterns for Orbit to consider publicly accessible from outside the project.</p>
+<h2 id="file-visibility"><a class="header" href="#file-visibility">File visibility</a></h2>
+<p>By default, all source files in a project are included when Orbit performs source code analysis within the current project.</p>
+<p>A project's manifest allows for users to set an <a href="./../reference/manifest.html#the-ignore-field"><code>ignore</code></a> field, which can store a list of user-defined file patterns for Orbit to ignore during file discovery.</p>
+<h3 id="resolving-errors"><a class="header" href="#resolving-errors">Resolving errors</a></h3>
+<p>Orbit prevents duplicate primary design units from being identified within certain situations. For example, duplicate design unit names are not allowed within the same project because Orbit cannot resolve ambiguity in which unit is used where.</p>
+<p>An error may look like the following:</p>
+<pre><code>error: duplicate primary design units identified as "foo"
+
+location 1: rtl/foo1.vhd:20:1
+location 2: rtl/foo2.vhd:1:1
+
+hint: resolve this error by either
+    1) renaming one of the units to a unique identifier
+    2) adding one of the file paths to the manifest's "project.ignore" field
 </code></pre>
-<p>A project's <em>specification</em>, more commonly called a <em>spec</em>, is the full resolved name of an project. The spec involves the project's name, uuid, and version. A complete spec looks like the following:</p>
-<pre><code>gates+8ah2qa261k8wgv55sd1qq17w9:1.0.0
+<p>The <code>ignore</code> field can be used in this scenario to tell Orbit to ignore reading a particular file during the HDL source code dependency analysis.</p>
+<p>Filename: Orbit.toml</p>
+<pre><code class="language-toml">[project]
+# ...
+ignore = [
+    "rtl/foo2.vhd"
+]
 </code></pre>
-<p>When asking Orbit to operate on a particular project outside of the working project, Orbit will ask you to provide the project's spec. Orbit uses the spec to lookup the project in the catalog and then carry out the requested function on that project.</p>
-<p>To learn more about an project spec, see <a href="./../reference/names.html">Project Specification</a>.</p>
+<p>In this example, the value for the above <code>ignore</code> field in the local project's manifest will resolve the previous error because it prevents Orbit from seeing the file "rtl/foo2.vhd" during any file discovery operations.</p>
+<h2 id="file-pattern-format"><a class="header" href="#file-pattern-format">File pattern format</a></h2>
+<p>Both the <code>ignore</code> key and the <code>public</code> key take an array of strings as their value. These strings are interpreted as file patterns, which follow the <a href="https://git-scm.com/docs/gitignore#_pattern_format">.gitignore</a> format.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../topic/extensible_builds.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../topic/orbitlock.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../topic/catalog.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../topic/swapping.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -218,11 +228,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../topic/extensible_builds.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../topic/orbitlock.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../topic/catalog.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../topic/swapping.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

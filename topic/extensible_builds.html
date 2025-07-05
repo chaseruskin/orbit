@@ -175,7 +175,7 @@
 <p><img src="./../images/dataflow.svg" alt="" /></p>
 <h2 id="planning-stage"><a class="header" href="#planning-stage">Planning stage</a></h2>
 <p>Orbit is the central system of the planning stage. Orbit takes your HDL source files (VHDL, Verilog, and SystemVerilog files) as input and generates the topologically sorted order of the source files saved to a single file known as the <em>blueprint</em> as output. Alongside the blueprint, Orbit sets a series of environment variables specific to the current build process that are available to the specified target during the execution stage for that target's convenience. These environment variables include things such as the output directory (<code>ORBIT_OUT_DIR</code>) and the name of the top-level design unit (<code>ORBIT_TOP_NAME</code>).</p>
-<p>To create the blueprint, Orbit tokenizes your current ip's HDL source code along with the HDL source code of the current ip's depedendencies found in the catalog to analyze references to other design units across source files. With this information, Orbit generates a graph at the HDL source code level and sorts it in topological order, with the top-level design unit being last.</p>
+<p>To create the blueprint, Orbit tokenizes your current project's HDL source code along with the HDL source code of the current project's depedendencies found in the catalog to analyze references to other design units across source files. With this information, Orbit generates a graph at the HDL source code level and sorts it in topological order, with the top-level design unit being last.</p>
 <!-- Orbit sets runtime environment variables that can be accessed during the execution stage by the specified target. -->
 <h2 id="execution-stage"><a class="header" href="#execution-stage">Execution stage</a></h2>
 <p>The target specified at the start of the build process is the central system of the execution stage. The target typically takes in the outputs from the planning stage (blueprint and environment variables) as inputs to perform some backend processing with an EDA tool. Finally, the target executes the backend EDA tool to produce your results, also known as <em>artifacts</em>. Artifacts can really be anything, from synthesis reports and log files to netlists and bitstreams. Recall that targets are written and configured by <em>you</em>, so their behavior is in your control.</p>
@@ -194,7 +194,7 @@
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../topic/ip.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../topic/packages_and_cores.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -208,7 +208,7 @@
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../topic/ip.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../topic/packages_and_cores.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

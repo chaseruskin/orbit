@@ -170,16 +170,16 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="catalog"><a class="header" href="#catalog">Catalog</a></h1>
-<p>As a package manager, Orbit must know what ips are available and where ips are stored on your local file system so that they can be operated on. Orbit stores your ips in the <em>catalog</em>. The <em>catalog</em> is a set of directories on your local file system maintained by orbit. These directories are typically hidden from the user because they are not regularly interfacing with the file system contents at these locations and manually tampering the contents may cause trouble for Orbit when it tries to use them.</p>
+<p>As a package manager, Orbit must know what packages are available and where packages are stored on your local file system so that they can be operated on. Orbit stores your projects in the <em>catalog</em>. The <em>catalog</em> is a set of directories on your local file system maintained by orbit. These directories are typically hidden from the user because they are not regularly interfacing with the file system contents at these locations and manually tampering the contents may cause trouble for Orbit when it tries to use them.</p>
 <p>There are three levels to the catalog: the cache, the archive, and channels.</p>
 <h2 id="cache"><a class="header" href="#cache">Cache</a></h2>
-<p>The <em>cache</em> maintains the ips that are currently <em>installed</em> on your local file system. Installed ips can be immediately added as a dependency to your current project.</p>
+<p>The <em>cache</em> maintains the projects that are currently <em>installed</em> on your local file system. Installed projects can be immediately added as a dependency to your current project.</p>
 <p>Default location: <code>$ORBIT_HOME/cache</code></p>
 <h2 id="archive"><a class="header" href="#archive">Archive</a></h2>
-<p>The <em>archive</em> maintains the ips that are currently <em>downloaded</em> on your local file system. Downloaded ips can be added as a dependency to your current project only after being installed to the cache.</p>
+<p>The <em>archive</em> maintains the projects that are currently <em>downloaded</em> on your local file system. Downloaded projects can be added as a dependency to your current project only after being installed to the cache.</p>
 <p>Default location: <code>$ORBIT_HOME/archive</code></p>
 <h2 id="channels"><a class="header" href="#channels">Channels</a></h2>
-<p><em>Channels</em> are user-defined directories to set up as registries to maintain the ips that are currently <em>available</em> to download or install. These ips may require internet to download their contents and then install to your cache.</p>
+<p><em>Channels</em> are user-defined directories to set up as registries to maintain the projects that are currently <em>available</em> to download or install. These projects may require internet to download their contents and then install to your cache.</p>
 <p>Default location: <code>$ORBIT_HOME/channels</code></p>
 <p>Adding a new channel is as simple as adding a directory to the location where channels are defined.</p>
 
@@ -187,7 +187,7 @@
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../topic/ip.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../topic/projects.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
@@ -201,7 +201,7 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../topic/ip.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../topic/projects.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 

@@ -170,40 +170,40 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="channels"><a class="header" href="#channels">Channels</a></h1>
-<p>As your codebase evolves over time, you may have accrued a lot of ips. However, an issue arises regarding <em>discovery</em>- how do others quickly find all ips that have been released?</p>
-<p>Orbit solves this problem by using channels. A <em>channel</em> is a lightweight decentralized registry index. In other words, a channel is a directory that contains multiple ip manifests. With this approach, users can simply configure channels to discover the many available released ips.</p>
+<p>As your codebase evolves over time, you may have accrued a lot of projects. However, an issue arises regarding <em>discovery</em>- how do others quickly find all projects that have been released?</p>
+<p>Orbit solves this problem by using channels. A <em>channel</em> is a lightweight decentralized registry index. In other words, a channel is a directory that contains multiple project manifests. With this approach, users can simply configure channels to discover the many available released projects.</p>
 <p>Channels can be as manual or automated as you prefer. You can configure commands to run for a channel's synchronization hook, pre-publish hook, and post-publish hook. Channels are encouraged to be as automated as possible by defining these fields in the channel's configuration.</p>
 <h3 id="example"><a class="header" href="#example">Example</a></h3>
 <pre><code class="language-toml">[[channel]]
 name = "hyperspace-labs"
-description = "Available ip from hyperspace labs"
-# Directory where ip contents are placed
+description = "Available projects from hyperspace labs"
+# Directory where project contents are placed
 root = "./index"
 
 # If the channel is stored on the internet, synchronize with its remote location
 sync.command = ["git", "pull"]
 
-# Issue this command immediately before adding the ip to the channel
+# Issue this command immediately before adding the project to the channel
 pre.command = ["git", "pull"]
 
-# Issue this command immediately after adding the ip to the channel
+# Issue this command immediately after adding the project to the channel
 post.command =["python", "publish.py"]
 </code></pre>
 <h2 id="the-synchronization-hook"><a class="header" href="#the-synchronization-hook">The synchronization hook</a></h2>
-<p>A synchronization hook can be configured for a channel to update your local copy of a channel with its remote source. Synchronization hooks, if configured, will run as part of the publishing process to confirm the ip has not been released yet.</p>
+<p>A synchronization hook can be configured for a channel to update your local copy of a channel with its remote source. Synchronization hooks, if configured, will run as part of the publishing process to confirm the project has not been released yet.</p>
 <p>All channels with synchronization hooks can be manually triggered to run their synchronization hooks by running:</p>
 <pre><code>$ orbit --sync
 </code></pre>
 <h2 id="the-pre-publish-hook"><a class="header" href="#the-pre-publish-hook">The pre-publish hook</a></h2>
-<p>A pre-publish hook can be configured for a channel to perform any operations immediately before the ip's metadata contents are copied into the given channel.</p>
+<p>A pre-publish hook can be configured for a channel to perform any operations immediately before the project's metadata contents are copied into the given channel.</p>
 <h2 id="the-post-publish-hook"><a class="header" href="#the-post-publish-hook">The post-publish hook</a></h2>
-<p>A post-publish hook can be configured for a channel to perform any operations immediately after the ip's metadata contents are copied into the given channel.</p>
+<p>A post-publish hook can be configured for a channel to perform any operations immediately after the project's metadata contents are copied into the given channel.</p>
 <h2 id="the-publishing-process"><a class="header" href="#the-publishing-process">The publishing process</a></h2>
-<p>Orbit automates the process of releasing an ip to a channel through the publishing process invoked through <code>orbit publish</code>.</p>
-<p>The core operation during the publishing process is the ip's manifest gets placed in the channel at its generated index directory. The root of the index directory can be configured using the <code>root</code> field, and the remaining subdirectories are pre-determined according to the ip's name.</p>
-<p>The full path to the index directory can be read from the <code>ORBIT_CHANNEL_DIR</code> environment variable during a channel's pre-publish or post-publish hook processes.</p>
-<p>The full path to the directoy when an ip's metadata contents are copied to during the publishing process can be read from the <code>ORBIT_CHANNEL_IP_DIR</code> environment variable.</p>
-<p>Along with copying the ip's manifest to the index directory, the publishing process also copies the ip's lockfile as well as creates a new file, <code>Orbit.json</code>, that contains additional metadata about the ip in JSON format. To learn more about what properties are stored in a <code>Orbit.json</code> file, see <a href="./../reference/json.html">JSON</a>.</p>
+<p>Orbit automates the process of releasing a project to a channel through the publishing process invoked through <code>orbit publish</code>.</p>
+<p>The core operation during the publishing process is the project's manifest gets placed in the channel at its generated index directory. The root of the index directory can be configured using the <code>root</code> field, and the remaining subdirectories are pre-determined according to the project's name.</p>
+<p>The full path to the index root directory can be read from the <code>ORBIT_CHANNEL_DIR</code> environment variable during a channel's pre-publish or post-publish hook processes.</p>
+<p>The full path to the directoy when an project's metadata contents are copied to during the publishing process can be read from the <code>ORBIT_CHANNEL_PROJECT_DIR</code> environment variable.</p>
+<p>Along with copying the project's manifest to the index directory, the publishing process also copies the project's lockfile as well as creates a new file, <code>Orbit.json</code>, that contains additional metadata about the project in JSON format. To learn more about what properties are stored in a <code>Orbit.json</code> file, see <a href="./../reference/json.html">JSON</a>.</p>
 
                     </main>
 

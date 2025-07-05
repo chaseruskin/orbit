@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Researching Projects - The Book of Orbit</title>
+        <title>Projects - The Book of Orbit</title>
 
 
         <!-- Custom HTML head -->
@@ -169,75 +169,46 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="researching-projects"><a class="header" href="#researching-projects">Researching Projects</a></h1>
-<p>During the lifecycle of a project, the first step in the process is typically to research existing work and identify any components which may be of value in reusing as a dependency for the new project. This section highlights different ways to discover and gain information about existing projects and their design units.</p>
-<h3 id="assumptions"><a class="header" href="#assumptions">Assumptions</a></h3>
-<p>The guides in this section place no assumption on where your working directory is when running any commands; that is, these commands can be ran from any directory.</p>
-<h3 id="guides"><a class="header" href="#guides">Guides</a></h3>
+                        <h1 id="projects"><a class="header" href="#projects">Projects</a></h1>
+<p>A <em>project</em> is a collection of one or more IP cores. Projects are the <em>packages</em> Orbit manages as a package manager. First, let's understand some key terms related to packages in the context of Orbit.</p>
+<h2 id="terminology"><a class="header" href="#terminology">Terminology</a></h2>
+<p>A developer's tasks often involve interfacing with a collection of closely related files (source code, scripts, text files). This collection of closely related files is typically grouped together under a single directory called a project. Orbit recognizes a directory on your filesystem as a project by finding its <em>manifest</em>, which contains metadata about the project, such as its name and version. The manifest file must be named "Orbit.toml" and exists at the root of the project.</p>
+<p>In the context of being a package manager for digital hardware, Orbit calls its packages <em>projects</em> to disambiguite from package constructs found within HDLs. For more information, see <a href="./packages_and_cores.html">Packages and Cores</a>.</p>
+<h2 id="working-project"><a class="header" href="#working-project">Working project</a></h2>
+<p>Typically, developers work on one project at a given time (while we can work on projects concurrently, we unfortunately are not parallel processors). The <em>working project</em> is the project that is currently being developed at a given moment. Orbit identifies the working project by checking along the working directory and its parent directories for a manifest file. Once a manifest file is found, Orbit considers this the working project. Some Orbit commands only work when they are called within the working project (<code>orbit lock</code>, <code>orbit build</code>).</p>
+<p>The working project may also be called other names, such as the <em>local project</em> or <em>current project</em>. These name differences are only differences in name as the same meaning is preserved.</p>
+<h2 id="anatomy-of-a-project"><a class="header" href="#anatomy-of-a-project">Anatomy of a project</a></h2>
+<p>Since Orbit focuses on digital hardware projects, it automatically detects and manages files that store HDL source code. Files that store HDL source code are called <em>source files</em>. Any other files, such as scripts and test vectors, are considered <em>auxiliary files</em>.</p>
+<p>Auxiliary files can be injected into the planning stage by specifying custom <em>filesets</em> for the given target. A <em>fileset</em> is glob-style pattern that collects matching files under a common name within the working project. These matched files will appear in the target's generated blueprint file for future execution.</p>
+<p>So, what files are inside a project?</p>
 <ul>
-<li><a href="#viewing-existing-project">Viewing existing projects</a></li>
-<li><a href="#gathering-information-about-a-project">Gathering information about a project</a></li>
-<li><a href="#gathering-information-about-a-core">Gathering information about a core</a></li>
-<li><a href="#reading-source-code-of-a-core">Reading source code of a core</a></li>
+<li><em>Source files</em>: Stores HDL source code (VHDL, Verilog, SystemVerilog)</li>
+<li><em>Auxiliary files</em>: Any additional files that do not store source code</li>
+<li><em>Manifest file</em> (<code>Orbit.toml</code>): Stores the project's metadata provided by the user</li>
+<li><em>Lock file</em> (<code>Orbit.lock</code>): Saves the project's world state for reproducibility purposes</li>
 </ul>
-<h2 id="viewing-existing-projects"><a class="header" href="#viewing-existing-projects">Viewing existing projects</a></h2>
-<p>This guide outlines how to see what projects exist on your system in your catalog that could be potentially used as a dependency.</p>
-<ol>
-<li>Display all results from the catalog:</li>
-</ol>
-<pre><code>$ orbit search
+<p>All files <strong>except the lock file</strong> are expected to be edited by the user. Orbit automatically maintains the lock file to ensure it can reproduce the project's world state in the future.</p>
+<h3 id="reserved-names"><a class="header" href="#reserved-names">Reserved names</a></h3>
+<p>File names that begin with ".orbit-" are reserved for internal use and are not allowed at the root directory of a project. Files that are named with this pattern are used by Orbit in the catalog to store additional metadata about the project.</p>
+<h2 id="names"><a class="header" href="#names">Names</a></h2>
+<p>A project's name is a human-readable identifier given to an project so users can easily remember and locate packages of interest.</p>
+<pre><code>gates
 </code></pre>
-<p>This will return a list of the known projects, where each line records the project's name, latest known version, status in the catalog, and UUID.</p>
-<h2 id="gathering-information-about-a-project"><a class="header" href="#gathering-information-about-a-project">Gathering information about a project</a></h2>
-<p>This guide outlines how to view more information about a project found in your catalog that may be of particular interest.</p>
-<ol>
-<li>Identify the name of a project in the catalog that may be of interest:</li>
-</ol>
-<pre><code>$ orbit search
+<p>A project's <em>specification</em>, more commonly called a <em>spec</em>, is the full resolved name of an project. The spec involves the project's name, uuid, and version. A complete spec looks like the following:</p>
+<pre><code>gates+8ah2qa261k8wgv55sd1qq17w9:1.0.0
 </code></pre>
-<ol>
-<li>Return the list of all possible versions of the project in the catalog, where <code>&lt;project&gt;</code> is the name of the project of interest:</li>
-</ol>
-<pre><code>$ orbit info &lt;project&gt; --versions
-</code></pre>
-<ol>
-<li>Return the metadata found in the project's manifest, where <code>&lt;project&gt;</code> is the name of the project of interest and <code>&lt;vesion&gt;</code> is the version of the project of interest:</li>
-</ol>
-<pre><code>$ orbit info &lt;project&gt;:&lt;version&gt;
-</code></pre>
-<ol>
-<li>Return the list of accessible IP cores for the project, where <code>&lt;project&gt;</code> is the name of the project of interest and <code>&lt;version&gt;</code> is the version of the project of interest:</li>
-</ol>
-<pre><code>$ orbit info &lt;project&gt;:&lt;version&gt; --units
-</code></pre>
-<p>This will return a list of the project's design units, where each line records the design unit's name, design unit type, and accessibility.</p>
-<h2 id="gathering-information-about-a-design-unit"><a class="header" href="#gathering-information-about-a-design-unit">Gathering information about a design unit</a></h2>
-<p>This guide outlines how to view a design unit's declaration for a particular design unit of a project found in the catalog.</p>
-<ol>
-<li>Return the design unit's declaration,  where <code>&lt;unit&gt;</code> is the name of the design unit, <code>&lt;project&gt;</code> is the name of the project of interest, and <code>&lt;version&gt;</code> is the version of the project of interest:</li>
-</ol>
-<pre><code>$ orbit get &lt;unit&gt; --project &lt;project&gt;:&lt;version&gt;
-</code></pre>
-<h2 id="reading-source-code-of-a-design-unit"><a class="header" href="#reading-source-code-of-a-design-unit">Reading source code of a design unit</a></h2>
-<p>This guide outlines how to view the source code for a particular design unit of a project found in the catalog.</p>
-<ol>
-<li>Display the contents from the design unit's source file, where <code>&lt;unit&gt;</code> is the name of the design unit, <code>&lt;project&gt;</code> is the name of the project of interest, and <code>&lt;version&gt;</code> is the version of the project of interest:</li>
-</ol>
-<pre><code>$ orbit read &lt;unit&gt; --project &lt;project&gt;:&lt;version&gt;
-</code></pre>
-<blockquote>
-<p><strong>Tip</strong>: For large source files, it may be helpful to redirect the output to a temporary file, or use the <code>--save</code> flag to automatically write the results to a temporary read-only file.</p>
-</blockquote>
+<p>When asking Orbit to operate on a particular project outside of the working project, Orbit will ask you to provide the project's spec. Orbit uses the spec to lookup the project in the catalog and then carry out the requested function on that project.</p>
+<p>To learn more about an project spec, see <a href="./../reference/project_id_specification.html">Project ID Specification</a>.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../user/overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../topic/packages_and_cores.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../user/developing_ip.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../topic/catalog.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -247,11 +218,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../user/overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../topic/packages_and_cores.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../user/developing_ip.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../topic/catalog.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

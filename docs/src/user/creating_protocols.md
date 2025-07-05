@@ -1,8 +1,8 @@
 # Creating Protocols
 
-A protocol is a user-defined series of steps requried to obtain an ip from the internet. This section provides steps for ways to create and configure a protocol.
+A protocol is a user-defined series of steps requried to obtain a project from the internet. This section provides steps for ways to create and configure a protocol.
 
-> __Note__: The default method for obtaining ip from the internet is using Rust's `curl` library under the assumption that the ip's URL is a .zip file. If you prefer a different method to access ip from the internet, then you must create a protocol.
+> __Note__: The default method for obtaining a project from the internet is using Rust's `curl` library under the assumption that the project's URL is a .zip file. If you prefer a different method to access projects from the internet, then you must create a protocol.
 
 ### Assumptions
 
@@ -25,8 +25,8 @@ This guide walks through how to add a protocol to be recognized by Orbit. In thi
 ``` toml
 [[protocol]]
 name = "gitit"
-description = "Download ip using git"
-command = ["git", "clone", "{{orbit.ip.source}}", "-b", "{{orbit.ip.version}}"]
+description = "Download projects using git"
+command = ["git", "clone", "{{orbit.project.source}}", "-b", "{{orbit.project.version}}"]
 patterns = ["*.git"]
 ```
 
@@ -36,7 +36,7 @@ A protocol may be as simple as a list of known command-line arguments, or may re
 
 ## Configuring a protocol as default
 
-This guide walks through how to configure an existing protocol to be the first to check if it can be used for a given ip's source URL.
+This guide walks through how to configure an existing protocol to be the first to check if it can be used for a given project's source URL.
 
 1. Open an Orbit configuration file.
 
@@ -49,7 +49,7 @@ default-protocol = "gitit"
 
 ## Viewing available protocols
 
-This guide walks through how to view the protocols already configured and available to use for an ip.
+This guide walks through how to view the protocols already configured and available to use for a project.
 
 1. Return the list of configured protocols:
 ``` 
@@ -63,15 +63,15 @@ $ orbit install --list --protocol gitit
 
 ## Using a protocol
 
-This guide walks through how to configure a particular ip to use a previously configured protocol called `gitit`.
+This guide walks through how to configure a particular project to use a previously configured protocol called `gitit`.
 
-1. Open the current ip's manifest file.
+1. Open the current project's manifest file.
 
-2. Add the `source` field to the ip's manifest, which contains a string of the ip's git repository:
+2. Add the `source` field to the project's manifest, which contains a string of the project's git repository:
 ``` toml
-[ip]
+[project]
 # ...
 source = "https://github.com/chaseruskin/gates.git"
 ```
 
-Since this source ends with `.git`, it matches the pattern for the previously configured `gitit` protocol, so Orbit will use the `gitit` command and arguments to download the ip.
+Since this source ends with `.git`, it matches the pattern for the previously configured `gitit` protocol, so Orbit will use the `gitit` command and arguments to download the project.

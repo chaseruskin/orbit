@@ -1,6 +1,6 @@
 # Creating Channels
 
-A channel is a decentralized registry storing the manifests of published ips. This section provides steps for ways to configure a channel.
+A channel is a decentralized registry storing the manifests of published projects. This section provides steps for ways to configure a channel.
 
 ### Guides
 - [Configuring a local directory as a channel](#configuring-a-local-directory-as-a-channel)
@@ -23,7 +23,7 @@ mkdir -p "$(orbit env ORBIT_HOME)/channels/local-chipyard"
 ``` toml
 [[channel]]
 name = "local-chipyard"
-description = "Local registry of available ip"
+description = "Local registry of available projects"
 root = "./channels/local-chipyard"
 ```
 
@@ -47,10 +47,10 @@ $ touch config.toml
 ``` toml
 [[channel]]
 name = "remote-chipyard"
-description = "Remote registry of available ip"
+description = "Remote registry of available projects"
 ```
 
-4. Specify the directory where data for published ip should exist within the repository:
+4. Specify the directory where data for published projects should exist within the repository:
 ``` toml
 [[channel]]
 # ...
@@ -64,22 +64,22 @@ root = "./index"
 sync.command = ["git", "pull"]
 ```
 
-6. Create a Python script called `publish.py` to handle automatically adding, committing, and pushing published ips:
+1. Create a Python script called `publish.py` to handle automatically adding, committing, and pushing published projects:
 ``` Python
 import subprocess
 import os
 
-ip_index = os.environ.get("ORBIT_CHANNEL_IP_DIR")
-ip_name = os.environ.get("ORBIT_IP_NAME")
-ip_version = os.environ.get("ORBIT_IP_VERSION") 
+project_index = os.environ.get("ORBIT_CHANNEL_PROJECT_DIR")
+project_name = os.environ.get("ORBIT_PROJECT_NAME")
+project_version = os.environ.get("ORBIT_PROJECT_VERSION") 
 
 # Add untracked files
-child = subprocess.Popen(['git', 'add', ip_index])
+child = subprocess.Popen(['git', 'add', project_index])
 rc = child.wait()
 if rc != 0:
     exit(rc)
 # Commit the changes
-child = subprocess.Popen(['git', 'commit', '-m', "Publishes "+ip_name+':'+ip_version])
+child = subprocess.Popen(['git', 'commit', '-m', "Publishes "+project_name+':'+project_version])
 rc = child.wait()
 if rc != 0:
     exit(rc)
@@ -90,7 +90,7 @@ if rc != 0:
     exit(rc)
 ```
 
-7. Configure the `publish.py` Python script to run within the publishing process after Orbit copies the published ip metadata into the channel:
+7. Configure the `publish.py` Python script to run within the publishing process after Orbit copies the published project metadata into the channel:
 ``` toml
 [[channel]]
 # ...
@@ -111,7 +111,7 @@ $ orbit publish --list
 
 ## Configuring a channel as default
 
-This guide walks through how to configure existing channels to be the default when an ip does not specify any particular channels during the publishing process.
+This guide walks through how to configure existing channels to be the default when a project does not specify any particular channels during the publishing process.
 
 1. Open an Orbit configuration file.
 
@@ -123,7 +123,7 @@ default-channels = ["local-chipyard", "remote-chipyard"]
 
 ## Viewing available channels
 
-This guide walks through how to view the channels already configured and available for an ip to publish to.
+This guide walks through how to view the channels already configured and available for a project to publish to.
 
 1. Return the list of configured channels:
 ``` 

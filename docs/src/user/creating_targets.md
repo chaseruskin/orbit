@@ -79,7 +79,7 @@ This will create placeholders ("TODO") print statements in the code sections whe
 
 ## Adding a custom fileset
 
-This guide walks through how to modify a target's configuration to accept additional files to be collected into the blueprint from only the local ip during the planning stage.
+This guide walks through how to modify a target's configuration to accept additional files to be collected into the blueprint from only the current project during the planning stage.
 
 1. Open the target configuration.
 
@@ -102,7 +102,7 @@ If a file matches a least one of defined file patterns, then it will be added un
 
 ## Adding a custom recursive fileset
 
-This guide walks through how to modify a target's configuration to accept additional files to be collected into the blueprint from all ip in the dependency graph during the planning stage.
+This guide walks through how to modify a target's configuration to accept additional files to be collected into the blueprint from all projects in the dependency graph during the planning stage.
 
 1. Open the target configuration.
 

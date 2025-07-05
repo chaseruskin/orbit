@@ -170,18 +170,24 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="dynamic-symbol-transformation"><a class="header" href="#dynamic-symbol-transformation">Dynamic Symbol Transformation</a></h1>
-<p>This technique is related to <em>name mangling</em> in programming languages. <em>Name mangling</em> is a technique used to solve problems regarding the need to resolve unique names for programming entities. You can learn more about name mangling on its Wikipedia <a href="https://en.wikipedia.org/wiki/Name_mangling">page</a>.</p>
+<p>Dynamic Symbol Transformation (DST) is a <a href="https://en.wikipedia.org/wiki/Name_mangling">name mangling</a> algorithm to solve the problems caused by the need to resolve unique names for primary design units in VHDL, Verilog, and SystemVerilog.</p>
+<p>DST can be considered a <a href="https://without.boats/blog/zero-cost-abstractions/#:~:text=May%2016%2C%202019,be%20avoided%20without%20the%20abstraction">zero-cost abstraction</a> due to the following traits of the algorithm's implementation:</p>
+<ul>
+<li><strong>No global costs</strong>: There are no negative impacts on performance of a design that does not use it.</li>
+<li><strong>Optimal performance</strong>: The best implementation of the solution that someone would have written manually is no better than the algorithm's output.</li>
+<li><strong>Improve users' experience</strong>: There is no additional overhead incurred by users and it enables users to more easily describe the designs they want to describe.</li>
+</ul>
 <h2 id="problem"><a class="header" href="#problem">Problem</a></h2>
 <p>Before we begin, it is important to understand the problem we are trying to solve. An issue inherent to VHDL, Verilog, SystemVerilog, and many other languages is <em>namespace pollution</em>, which is when a large number of programming language variables/identifiers/units/classes are defined at the global level. To learn more about namespace pollution, there is a StackOverflow <a href="https://stackoverflow.com/questions/8862665/what-does-it-mean-global-namespace-would-be-polluted/13352212">post</a> that does a good job explaining namespace pollution in the context of Javascript.</p>
 <p>Namespace pollution can lead to <em>namespace clashes</em>. As you define more primary design units at the same scope, you are more likely to have two things that accidently have the same name. This is at the core the problem we are going to solve, because HDL compilers and synthesizers are not built to gracefully handle clashes and will error out when a primary design unit at the same scope has multiple definitions.</p>
-<p>In VHDL/Verilog, a common example of a namespace clash is when different files define an entity/module by the same name, which may have different behaviors. Namespace clashes may start to appear when a higher-level ip requires the same entity/module from an ip but as different versions throughout its dependency tree.</p>
+<p>In VHDL/Verilog, a common example of a namespace clash is when different files define an entity/module by the same name, which may have different behaviors. Namespace clashes may start to appear when a project requires the same entity/module from one particular project but as multiple different versions throughout its dependency tree.</p>
 <h2 id="approach"><a class="header" href="#approach">Approach</a></h2>
 <p>We solve the namespace pollution problem with an algorithm called <em>dynamic symbol transformation</em> (DST). The DST algorithm solves the namespace clashing problem by rewriting conflicts with a new unique identifier without losing information in the original identifier.</p>
 <h3 id="limitations"><a class="header" href="#limitations">Limitations</a></h3>
 <p>Orbit automatically handles resolving duplicate identifiers for primary design units due to two design contraints. The limitations are:</p>
 <ol>
-<li>All primary design unit identifiers in the current ip must be unique within the scope of the ip.</li>
-<li>All primary design units identifiers in the current ip must be unique within the scope of the ip's direct dependencies. An identifier can be duplicated for primary design units across indirect dependencies.</li>
+<li>All primary design unit identifiers in the current project must be unique within the scope of the project.</li>
+<li>All primary design units identifiers in the current project must be unique within the scope of the project's direct dependencies. An identifier can be duplicated for primary design units across indirect dependencies.</li>
 </ol>
 <h2 id="example"><a class="header" href="#example">Example</a></h2>
 <p>This section walks through a basic demonstration of the DST algorithm. First, it defines some terminology, and then walks through the algorithm's functionality.</p>
@@ -223,25 +229,25 @@
   output wire[3:0] z
 );
 </code></pre>
-<p>Since the current ip requires both code segments, then traditionally your EDA tool would complain to you and be unable to resolve which <code>nand_g</code> to be used where. It then falls on the developer to rename one of the modules where it is defined and everywhere it is referenced, which introduces additional overhead in time and possibilities for errors. This problem is solved with DST.</p>
+<p>Since the current project requires both code segments, then traditionally your EDA tool would complain to you and be unable to resolve which <code>nand_g</code> to be used where. It then falls on the developer to rename one of the modules where it is defined and everywhere it is referenced, which introduces additional overhead in time and possibilities for errors. This problem is solved with DST.</p>
 <h3 id="setup"><a class="header" href="#setup">Setup</a></h3>
-<p>Consider the following project-level ip dependency tree:</p>
+<p>Consider the following project-level dependency tree:</p>
 <p><img src="./../images/dst-graph1.svg" alt="" /></p>
-<p>The gray node (<code>final-project</code>) is the local ip you are currently working within, the green nodes (<code>lab2</code>, <code>lab3</code>) are the direct dependencies to the local ip, and the blue node (<code>lab1</code>) is an indirect dependency to the local ip.</p>
+<p>The gray node (<code>final-project</code>) is the current project you are currently working within, the green nodes (<code>lab2</code>, <code>lab3</code>) are the direct dependencies to the local project, and the blue node (<code>lab1</code>) is an indirect dependency to the local project.</p>
 <p>Within each project, there exists one or more HDL source code files describing design units.</p>
-<p>Imagine the <code>final-project</code> ip has a module called <code>half_add</code> which is the root of circuit hierarchy. From there, it reuses entities from the other ip.</p>
+<p>Imagine the <code>final-project</code> project has a module called <code>half_add</code> which is the root of circuit hierarchy. From there, it reuses entities from the other projects.</p>
 <p>Consider then HDL-level dependency tree:</p>
 <p><img src="./../images/dst-graph2.svg" alt="" /></p>
 <p>Notice lab1 and lab3 both have the <code>nand_g</code> module, but their interfaces and functionality are different as previously mentioned. How can we allow both units in the hierarchy while resolving the namespace clash?</p>
 <h3 id="transformation"><a class="header" href="#transformation">Transformation</a></h3>
-<p>DST identifies namespace clashes within the current dependency graph and automatically resolve the conflicts to produce a clean unambiguous graph.</p>
+<p>DST identifies namespace clashes within the current dependency graph and automatically resolves the conflicts to produce a clean unambiguous graph.</p>
 <p><img src="./../images/dst-graph3.svg" alt="" /></p>
-<p>The yellow nodes (<code>lab2</code>, <code>lab1</code>) are the ips that had their source code modified due to DST. Since the modified contents of these ips no longer matches their original contents, the modifications are stored as separate entries in the catalog's cache apart from their original entries.</p>
-<p>The red node (<code>nand_g.v</code>) is the HDL design element that must be dynamically renamed due to the namespace clash for <code>nand_g</code>. The identifier <code>nand_g</code> in lab1 was appended with the first 16 digits of the original ip's checksum (<code>fbe4720d0a40b25c</code>). This transforms lab1's <code>nand_g</code> module into <code>nand_g_fbe4720d0a40b25c</code>, which is unique and no longer clashes with <code>nand_g</code> in lab3.</p>
+<p>The yellow nodes (<code>lab2</code>, <code>lab1</code>) are the projects that had their source code modified due to DST. Since the modified contents of these projects no longer matches their original contents, the modifications are stored as separate entries in the catalog's cache apart from their original entries.</p>
+<p>The red node (<code>nand_g.v</code>) is the HDL design element that must be dynamically renamed due to the namespace clash for <code>nand_g</code>. The identifier <code>nand_g</code> in lab1 was appended with the first 16 digits of the original project's checksum (<code>fbe4720d0a40b25c</code>). This transforms lab1's <code>nand_g</code> module into <code>nand_g_fbe4720d0a40b25c</code>, which is unique and no longer clashes with <code>nand_g</code> in lab3.</p>
 <blockquote>
-<p><strong>Note:</strong> DST specifically chose to <em>not</em> rename the <code>nand_g</code> from lab3. If had decided to rename the <code>nand_g</code> from lab3, the user would be burdened with tracking and maintaining the new renamed unique identifier in the local ip (final-project). Since DST never renames identifiers in direct dependencies, DST is always abstracted away from the user and has zero overhead. While direct dependencies may be modified due to neigboring an ip that undergoes DST, direct dependencies are never chosen for DST.</p>
+<p><strong>Note:</strong> DST specifically chose to <em>not</em> rename the <code>nand_g</code> from lab3. If had decided to rename the <code>nand_g</code> from lab3, the user would be burdened with tracking and maintaining the new renamed unique identifier in the local project (final-project). Since DST never renames identifiers in direct dependencies, DST is always abstracted away from the user and has zero overhead. While direct dependencies may be modified due to neigboring a project that undergoes DST, direct dependencies are never chosen for DST.</p>
 </blockquote>
-<p>The orange nodes (<code>and_g.v</code>, <code>xor_g.v</code>) are the HDL design elements that reference/instantiate the design element that was marked for symbol transformation. Once the ip targeted for DST (lab1) resolves the namespace clash, we must update the references for this design element in all the upstream neighboring ips (lab2). Since their references are now broken due to <code>nand_g</code> being renamed to <code>nand_g_fbe4720d0a40b25c</code>, the source code is analyzed and updated to fix the broken references of <code>nand_g</code> to <code>nand_g_fbe4720d0a40b25c</code>.</p>
+<p>The orange nodes (<code>and_g.v</code>, <code>xor_g.v</code>) are the HDL design elements that reference/instantiate the design element that was marked for symbol transformation. Once the project targeted for DST (lab1) resolves the namespace clash, we must update the references for this design element in all the upstream neighboring projects (lab2). Since their references are now broken due to <code>nand_g</code> being renamed to <code>nand_g_fbe4720d0a40b25c</code>, the source code is analyzed and updated to fix the broken references of <code>nand_g</code> to <code>nand_g_fbe4720d0a40b25c</code>.</p>
 <p>The final unambiguous HDL-level dependency graph is the following:</p>
 <pre><code>half_add (final-project)
 ├── nand_g (lab3)
@@ -253,12 +259,13 @@
 </code></pre>
 <p>The <code>*</code> indicates the modules that had their source code modified to either rename the namespace collision or update its references to the new renamed identifier.</p>
 <h3 id="summary"><a class="header" href="#summary">Summary</a></h3>
-<p>To recap, DST handled the namespace clash by <em>transforming</em>, or renaming, the module <code>nand_g</code> within lab1. The <code>nand_g</code> identifier was appended with the first 16 characters of the original lab1 ip's checksum (fbe4720d0a40b25c) to make it <code>nand_g_fbe4720d0a40b25c</code>. This transformation occurred at that ip's source code level (lab1), and modifications were made to the source code for all dependent neighbors of lab1, which was only lab2 in this example. The source code in lab2 had to be updated to rename the references that were originally <code>nand_g</code> to <code>nand_g_fbe4720d0a40b25c</code>. Each ip that had source code modifications have their changes saved to their own entries in the catalog's cache, such that the original entries are still intact and available for future use.</p>
+<p>To recap, DST handled the namespace clash by <em>transforming</em>, or renaming, the module <code>nand_g</code> within lab1. The <code>nand_g</code> identifier was appended with the first 16 characters of the original lab1 project's checksum (fbe4720d0a40b25c) to make it <code>nand_g_fbe4720d0a40b25c</code>. This transformation occurred at that project's source code level (lab1), and modifications were made to the source code for all dependent neighbors of lab1, which was only lab2 in this example. The source code in lab2 had to be updated to rename the references that were originally <code>nand_g</code> to <code>nand_g_fbe4720d0a40b25c</code>. Each project that had source code modifications have their changes saved to their own entries in the catalog's cache, such that the original entries are still intact and available for future use.</p>
 <h2 id="emphasis"><a class="header" href="#emphasis">Emphasis</a></h2>
 <p>Dynamic symbol transformation lets Orbit avoid the major issues and frustrations of package management that stem from dependency incompatibility. As projects grow in complexity and the number of dependencies increases, Orbit can continue to allow users to integrate different verisons of the same package throughout the overall design while retaining dependency compatibility. Conflicts in incompatible versions are avoided within the dependency graph through DST. You can learn more about dependency incompatibility issues on its Wikipedia <a href="https://en.wikipedia.org/wiki/Dependency_hell">page</a>.</p>
 <h2 id="further-reading"><a class="header" href="#further-reading">Further Reading</a></h2>
 <ul>
 <li><a href="https://stephencoakley.com/2019/04/24/how-rust-solved-dependency-hell">Rust's Dependency Resolution</a></li>
+<li><a href="https://without.boats/blog/zero-cost-abstractions/#:~:text=May%2016%2C%202019,be%20avoided%20without%20the%20abstraction.">Zero Cost Abstraction</a></li>
 </ul>
 
                     </main>

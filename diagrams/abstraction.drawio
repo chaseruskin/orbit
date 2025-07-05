@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="LOKKSFyuJx2BbzAw-Vqr" name="Page-1">
-        <mxGraphModel dx="346" dy="241" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="603" dy="438" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -16,10 +16,10 @@
                 <mxCell id="3" value="" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="320" y="270" width="360" height="130" as="geometry"/>
                 </mxCell>
-                <mxCell id="4" value="Local Project" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
-                    <mxGeometry x="350" y="310" width="80" height="70" as="geometry"/>
+                <mxCell id="4" value="Current Project" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" parent="1" vertex="1">
+                    <mxGeometry x="350" y="310" width="90" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="5" value="Existing IP" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                <mxCell id="5" value="Existing Projects" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
                     <mxGeometry x="460" y="310" width="190" height="70" as="geometry"/>
                 </mxCell>
                 <mxCell id="26" value="Codebase" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
@@ -31,7 +31,7 @@
                         <mxPoint x="740" y="450" as="targetPoint"/>
                         <Array as="points">
                             <mxPoint x="410" y="420"/>
-                            <mxPoint x="390" y="420"/>
+                            <mxPoint x="395" y="420"/>
                         </Array>
                     </mxGeometry>
                 </mxCell>
@@ -111,7 +111,7 @@
                         </Array>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="80" value="Artifacts" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;fillColor=#fff2cc;strokeColor=#d6b656;size=10;" vertex="1" parent="1">
+                <mxCell id="80" value="Artifacts" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;darkOpacity=0.05;fillColor=#fff2cc;strokeColor=#d6b656;size=10;" parent="1" vertex="1">
                     <mxGeometry x="340" y="300" width="60" height="30" as="geometry"/>
                 </mxCell>
             </root>

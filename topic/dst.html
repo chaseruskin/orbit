@@ -233,24 +233,24 @@
 <p>Since the current project requires both code segments, then traditionally your EDA tool would complain to you and be unable to resolve which <code>nand_g</code> to be used where. It then falls on the developer to rename one of the modules where it is defined and everywhere it is referenced, which introduces additional overhead in time and possibilities for errors. This problem is solved with DST.</p>
 <h3 id="setup"><a class="header" href="#setup">Setup</a></h3>
 <p>Consider the following project-level dependency tree:</p>
-<p><img src="./../images/dst-graph1.svg" alt="" /></p>
-<p>The gray node (<code>final-project</code>) is the current project you are currently working within, the green nodes (<code>lab2</code>, <code>lab3</code>) are the direct dependencies to the local project, and the blue node (<code>lab1</code>) is an indirect dependency to the local project.</p>
+<p><img src="./../images/dst-graph-1.svg" alt="" /></p>
+<p>The gray node (<code>lab4</code>) is the current project you are working within, the green nodes (<code>lab2</code>, <code>lab3</code>) are the direct dependencies to the current project, and the blue node (<code>lab1</code>) is an indirect dependency to the current project.</p>
 <p>Within each project, there exists one or more HDL source code files describing design units.</p>
-<p>Imagine the <code>final-project</code> project has a module called <code>half_add</code> which is the root of circuit hierarchy. From there, it reuses entities from the other projects.</p>
+<p>Imagine the <code>lab4</code> project has a module called <code>half_add</code> which is the root of circuit hierarchy. From there, it reuses entities from the other projects.</p>
 <p>Consider then HDL-level dependency tree:</p>
-<p><img src="./../images/dst-graph2.svg" alt="" /></p>
+<p><img src="./../images/dst-graph-2.svg" alt="" /></p>
 <p>Notice lab1 and lab3 both have the <code>nand_g</code> module, but their interfaces and functionality are different as previously mentioned. How can we allow both units in the hierarchy while resolving the namespace clash?</p>
 <h3 id="transformation"><a class="header" href="#transformation">Transformation</a></h3>
 <p>DST identifies namespace clashes within the current dependency graph and automatically resolves the conflicts to produce a clean unambiguous graph.</p>
-<p><img src="./../images/dst-graph3.svg" alt="" /></p>
+<p><img src="./../images/dst-graph-3.svg" alt="" /></p>
 <p>The yellow nodes (<code>lab2</code>, <code>lab1</code>) are the projects that had their source code modified due to DST. Since the modified contents of these projects no longer matches their original contents, the modifications are stored as separate entries in the catalog's cache apart from their original entries.</p>
 <p>The red node (<code>nand_g.v</code>) is the HDL design element that must be dynamically renamed due to the namespace clash for <code>nand_g</code>. The identifier <code>nand_g</code> in lab1 was appended with the first 16 digits of the original project's checksum (<code>fbe4720d0a40b25c</code>). This transforms lab1's <code>nand_g</code> module into <code>nand_g_fbe4720d0a40b25c</code>, which is unique and no longer clashes with <code>nand_g</code> in lab3.</p>
 <blockquote>
-<p><strong>Note:</strong> DST specifically chose to <em>not</em> rename the <code>nand_g</code> from lab3. If had decided to rename the <code>nand_g</code> from lab3, the user would be burdened with tracking and maintaining the new renamed unique identifier in the local project (final-project). Since DST never renames identifiers in direct dependencies, DST is always abstracted away from the user and has zero overhead. While direct dependencies may be modified due to neigboring a project that undergoes DST, direct dependencies are never chosen for DST.</p>
+<p><strong>Note:</strong> DST specifically chose to <em>not</em> rename the <code>nand_g</code> from lab3. If had decided to rename the <code>nand_g</code> from lab3, the user would be burdened with tracking and maintaining the new renamed unique identifier in the current project (lab4). Since DST never renames identifiers in direct dependencies, DST is always abstracted away from the user and has zero overhead. While direct dependencies may be modified due to neigboring a project that undergoes DST, direct dependencies are never chosen for DST.</p>
 </blockquote>
 <p>The orange nodes (<code>and_g.v</code>, <code>xor_g.v</code>) are the HDL design elements that reference/instantiate the design element that was marked for symbol transformation. Once the project targeted for DST (lab1) resolves the namespace clash, we must update the references for this design element in all the upstream neighboring projects (lab2). Since their references are now broken due to <code>nand_g</code> being renamed to <code>nand_g_fbe4720d0a40b25c</code>, the source code is analyzed and updated to fix the broken references of <code>nand_g</code> to <code>nand_g_fbe4720d0a40b25c</code>.</p>
 <p>The final unambiguous HDL-level dependency graph is the following:</p>
-<pre><code>half_add (final-project)
+<pre><code>half_add (lab4)
 ├── nand_g (lab3)
 │   ├── not_g (lab2)
 │   └── and_g (lab2)*

@@ -10,7 +10,7 @@ What makes Orbit extensible? Well, Orbit does not define the execution stage by 
 
 Orbit is the central system of the planning stage. Orbit takes your HDL source files (VHDL, Verilog, and SystemVerilog files) as input and generates the topologically sorted order of the source files saved to a single file known as the _blueprint_ as output. Alongside the blueprint, Orbit sets a series of environment variables specific to the current build process that are available to the specified target during the execution stage for that target's convenience. These environment variables include things such as the output directory (`ORBIT_OUT_DIR`) and the name of the top-level design unit (`ORBIT_TOP_NAME`).
 
-To create the blueprint, Orbit tokenizes your current ip's HDL source code along with the HDL source code of the current ip's depedendencies found in the catalog to analyze references to other design units across source files. With this information, Orbit generates a graph at the HDL source code level and sorts it in topological order, with the top-level design unit being last.
+To create the blueprint, Orbit tokenizes your current project's HDL source code along with the HDL source code of the current project's depedendencies found in the catalog to analyze references to other design units across source files. With this information, Orbit generates a graph at the HDL source code level and sorts it in topological order, with the top-level design unit being last.
 
 <!-- Orbit sets runtime environment variables that can be accessed during the execution stage by the specified target. -->
 

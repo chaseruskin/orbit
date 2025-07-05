@@ -4,7 +4,7 @@ Scope, accessibility, and visibility are important concepts when writing code in
 
 In traditional hardware description languages such as VHDL and SystemVerilog, there already exists this concept of scope and accessibility: modules external to one another can only access the other through its ports, leaving the internal architectures private to the modules that define them. Some signals are private to a module, that is, they are defined and used strictly internal to that module. A user of that module does not need to know the details of why that signal exists, rather, they simply need to understand what the module does at a system-level and how to communicate with it through its interface.
 
-However, at the design unit abstraction level, where users deal with the primary building blocks of these languages such as `entity`, `module`, and `package`, there is no sense of accessibility. All design units are accessible because this is the highest level of abstraction defined for these languages; there is nothing more abstract to encapsulate them. But with Orbit, two layers of abstraction are introduced: [_packages_ and _cores_](./projects_and_cores.md). An package encapsulates one or more cores, which encapsulate one or more design units, thus providing the opportunity to introduce scope and accessibility at the design unit abstraction level. Users can specify which source files, which in turn store design units, are public or private with respective to the package that encapsulates them.
+However, at the design unit abstraction level, where users deal with the primary building blocks of these languages such as `entity`, `module`, and `package`, there is no sense of accessibility. All design units are accessible because this is the highest level of abstraction defined for these languages; there is nothing more abstract to encapsulate them. But with Orbit, two layers of abstraction are introduced: [_packages_ and _cores_](./packages_and_cores.md). An package encapsulates one or more cores, which encapsulate one or more design units, thus providing the opportunity to introduce scope and accessibility at the design unit abstraction level. Users can specify which source files, which in turn store design units, are public or private with respective to the package that encapsulates them.
 
 ## Approach to accessibility
 
@@ -25,7 +25,7 @@ An project's manifest allows for users to set the [`public`](./../reference/mani
 
 By default, all source files in a project are included when Orbit performs source code analysis within the current project.
 
-A project's manifest allows for users to set an [`exclude`](./../reference/manifest.md#the-exclude-field) field, which can store a list of user-defined file patterns for Orbit to ignore during file discovery.
+A project's manifest allows for users to set an [`ignore`](./../reference/manifest.md#the-ignore-field) field, which can store a list of user-defined file patterns for Orbit to ignore during file discovery.
 
 ### Resolving errors
 
@@ -40,22 +40,22 @@ location 2: rtl/foo2.vhd:1:1
 
 hint: resolve this error by either
     1) renaming one of the units to a unique identifier
-    2) adding one of the file paths to the manifest's "ip.exclude" field
+    2) adding one of the file paths to the manifest's "project.ignore" field
 ```
 
-The `exclude` field can be used in this scenario to tell Orbit to ignore reading a particular file during the HDL source code dependency analysis.
+The `ignore` field can be used in this scenario to tell Orbit to ignore reading a particular file during the HDL source code dependency analysis.
 
 Filename: Orbit.toml
 ``` toml
-[ip]
+[project]
 # ...
-exclude = [
+ignore = [
     "rtl/foo2.vhd"
 ]
 ```
 
-In this example, the value for the above `exclude` field in the local project's manifest will resolve the previous error because it prevents Orbit from seeing the file "rtl/foo2.vhd" during any file discovery operations.
+In this example, the value for the above `ignore` field in the local project's manifest will resolve the previous error because it prevents Orbit from seeing the file "rtl/foo2.vhd" during any file discovery operations.
 
 ## File pattern format
 
-Both the `exclude` key and the `public` key take an array of strings as their value. These strings are interpreted as file patterns, which follow the [.gitignore](https://git-scm.com/docs/gitignore#_pattern_format) format.
+Both the `ignore` key and the `public` key take an array of strings as their value. These strings are interpreted as file patterns, which follow the [.gitignore](https://git-scm.com/docs/gitignore#_pattern_format) format.

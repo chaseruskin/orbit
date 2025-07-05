@@ -7,7 +7,7 @@ During the lifecycle of a project, the first step in the process is typically to
 The guides in this section place no assumption on where your working directory is when running any commands; that is, these commands can be ran from any directory.
 
 ### Guides
-- [Viewing existing projects](#viewing-existing-project)
+- [Viewing existing projects](#viewing-existing-projects)
 - [Gathering information about a project](#gathering-information-about-a-project)
 - [Gathering information about a core](#gathering-information-about-a-core)
 - [Reading source code of a core](#reading-source-code-of-a-core)
@@ -49,7 +49,7 @@ $ orbit info <project>:<version> --units
 
 This will return a list of the project's design units, where each line records the design unit's name, design unit type, and accessibility.
 
-## Gathering information about a design unit
+## Gathering information about a core
 
 This guide outlines how to view a design unit's declaration for a particular design unit of a project found in the catalog.
 
@@ -58,7 +58,7 @@ This guide outlines how to view a design unit's declaration for a particular des
 $ orbit get <unit> --project <project>:<version>
 ```
 
-## Reading source code of a design unit
+## Reading source code of a core
 
 This guide outlines how to view the source code for a particular design unit of a project found in the catalog.
 

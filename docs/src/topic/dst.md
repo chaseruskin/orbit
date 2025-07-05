@@ -63,7 +63,7 @@ module nand_g (
 
 Remember that this identifier could appear again at the same namespace level (since its global across all source code files), even if it has a different interface/implementation. 
 
-Now imagine you are integrating HDL code from various existing ips. As you instantiate modules within larger modules, you realize there exists another module named `nand_g` in the hierarchy, but this one has a different behavior and port interface than the previously defined `nand_g` circuit from the "lab1/" directory.
+Now imagine you are integrating HDL code from various existing projects. As you instantiate modules within larger modules, you realize there exists another module named `nand_g` in the hierarchy, but this one has a different behavior and port interface than the previously defined `nand_g` circuit from the "lab1/" directory.
 
 Filename: lab3/nand_g.v
 ``` verilog

@@ -14,7 +14,7 @@ To disambiguate the concept of an "Orbit package" from an "HDL package", much of
 
 Orbit operates at the package level for hardware description languages, hence being a _package manager_.
 
-Cores within a package can be made public or private, see [IP Core Visibility](./scope.md) for details.
+Cores within a package can be made public or private, see [IP Core Visibility](./core_visibility.md) for details.
 
 ## Orbit package vs. HDL package
 

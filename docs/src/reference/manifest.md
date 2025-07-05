@@ -41,7 +41,7 @@ The only fields required by Orbit are the name and uuid.
 
 ### The `name` field
 
-The project name is an identifier used to refer to the project. It is used when listed as a dependency in another package, and as the name of the HDL library for all of its source files when the `library` field is omitted. See [names](./names.md) for more information.
+The project name is an identifier used to refer to the project. It is used when listed as a dependency in another package, and as the name of the HDL library for all of its source files when the `library` field is omitted. See [Project ID Specification](./project_id_specification.md) for more information.
 
 ``` toml
 [project]

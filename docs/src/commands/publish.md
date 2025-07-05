@@ -26,7 +26,7 @@ Posting a project to a channel involves copying the project's manifest file to
 a path within the channel known as the index. For every publish of a project, 
 the index corresponds to a unique path within the channel that gets created by 
 Orbit. A channel's pre-publish and post-publish hooks can get the value for the
-project's index by reading the ORBIT_CHANNEL_IP_DIR environment variable.
+project's index by reading the ORBIT_CHANNEL_PROJECT_DIR environment variable.
 
 The `--all-public` flag can be used to skip providing the "project.public" 
 field in the current project's manifest, granting the assumption that all 

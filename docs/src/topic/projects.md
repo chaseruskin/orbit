@@ -6,7 +6,7 @@ A _project_ is a collection of one or more IP cores. Projects are the _packages_
 
 A developer's tasks often involve interfacing with a collection of closely related files (source code, scripts, text files). This collection of closely related files is typically grouped together under a single directory called a project. Orbit recognizes a directory on your filesystem as a project by finding its _manifest_, which contains metadata about the project, such as its name and version. The manifest file must be named "Orbit.toml" and exists at the root of the project.
 
-In the context of being a package manager for digital hardware, Orbit calls its packages _projects_ to disambiguite from package constructs found within HDLs. For more information, see [Packages and Cores](./projects_and_cores.md).
+In the context of being a package manager for digital hardware, Orbit calls its packages _projects_ to disambiguite from package constructs found within HDLs. For more information, see [Packages and Cores](./packages_and_cores.md).
 
 ## Working project
 
@@ -48,4 +48,4 @@ gates+8ah2qa261k8wgv55sd1qq17w9:1.0.0
 
 When asking Orbit to operate on a particular project outside of the working project, Orbit will ask you to provide the project's spec. Orbit uses the spec to lookup the project in the catalog and then carry out the requested function on that project. 
 
-To learn more about an project spec, see [Project Specification](./../reference/names.md).
+To learn more about an project spec, see [Project ID Specification](./../reference/project_id_specification.md).

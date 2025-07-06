@@ -183,6 +183,7 @@
 <li><a href="#the-uuid-field">uuid</a> - The universally unique identifier of the project.</li>
 <li><a href="#the-version-field">version</a> - The version of the project.</li>
 <li><a href="#the-description-field">description</a> - A short description of the project.</li>
+<li><a href="#the-documentation-field">documentation</a> - URL of the project documentation.</li>
 <li><a href="#the-authors-field">authors</a> - The authors of the project.</li>
 <li><a href="#the-library-field">library</a> - The HDL library for the design units within the project.</li>
 <li><a href="#the-source-field">source</a> - The URL of the project source repository.</li>
@@ -233,6 +234,12 @@ version = "0.1.0"
 <pre><code class="language-toml">[project]
 # ...
 description = "A short description of the project"
+</code></pre>
+<h3 id="the-documentation-field"><a class="header" href="#the-documentation-field">The <code>documentation</code> field</a></h3>
+<p>The documentation field specifies a URL to a website hosting the crate’s documentation.</p>
+<pre><code class="language-toml">[project]
+# ...
+documentation = "https://chaseruskin.github.io/orbit"
 </code></pre>
 <h3 id="the-authors-field"><a class="header" href="#the-authors-field">The <code>authors</code> field</a></h3>
 <p>The optional <code>authors</code> field lists in an array the people or organizations that are considered the “authors” of the package. The exact meaning is open to interpretation — it may list the original or primary authors, current maintainers, or owners of the package. An optional email address may be included within angled brackets at the end of each author entry.</p>

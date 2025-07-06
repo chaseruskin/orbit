@@ -2007,7 +2007,7 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <p>It is encouraged for a target to read the environment variables set by Orbit during the planning stage to further tailor the executed workflow for the given set of inputs. The environment variables can be used to help write robust and resuable targets.</p>
 <h2 id="test-or-build"><a class="header" href="#test-or-build">Test or build?</a></h2>
 <p>Orbit provides two entry points into the build process: <code>orbit test</code> and <code>orbit build</code>. Each entry point is suited for a particular type of build process.</p>
-<p>If you are trying to run a simulation (accompanied by an HDL testbench), then it is recommended to use the <code>orbit test</code> entry point. This command allows you to enter the build process by specifying the testbench using <code>--tb &lt;unit&gt;</code> and its design-under-test using <code>--dut &lt;unit&gt;</code>. This entry point is typically used for verification workflows, where the end result of the build process is more concerned with making sure all steps in the process complete successfully with no errors.</p>
+<p>If you are trying to run a simulation (often accompanied by an HDL testbench), then it is recommended to use the <code>orbit test</code> entry point. This command allows you to enter the build process by specifying the testbench using <code>--tb &lt;unit&gt;</code> and its design-under-test using <code>--dut &lt;unit&gt;</code>. This entry point is typically used for verification workflows, where the end result of the build process is more concerned with making sure all steps in the process complete successfully with no errors.</p>
 <p>For any non-testing workflow (one that lacks an HDL testbench), then it is recommended to use the <code>orbit build</code> entry point. This command allows you to enter the build process by specifying the top level using <code>--top &lt;unit&gt;</code>. This entry point is typically used for any workflow where the end result of the build process is more concerned with producing output files (commonly called artifacts), such as a bitstream or synthesis report.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="packages-and-cores"><a class="header" href="#packages-and-cores">Packages and Cores</a></h1>
 <p>An important line of distinction is understanding the difference between a package and an IP core.</p>
@@ -2922,22 +2922,22 @@ VHDL	lc3b	/Users/chase/projects/lc3b/sim/alu_tb.vhd
 <p><code>ORBIT_TARGET</code> - The name of the target selected for the latest build process.</p>
 </li>
 <li>
-<p><code>ORBIT_TOP_NAME</code> - The top level design's identifier for the latest build process, only if the build process was a build.</p>
+<p><code>ORBIT_TOP_NAME</code> - The top level design's identifier for the latest build process.</p>
 </li>
 <li>
-<p><code>ORBIT_TOP_FILE</code> - The full file system path that contains the top level design for the latest build process, only if the build process was a build.</p>
+<p><code>ORBIT_TOP_FILE</code> - The full file system path that contains the top level design for the latest build process.</p>
 </li>
 <li>
-<p><code>ORBIT_TOP_JSON</code> - The serialized json data for the top level design unit for the latest build process, only if the build process was a build (see <a href="reference/json.html">JSON Output</a>).</p>
+<p><code>ORBIT_TOP_JSON</code> - The serialized json data for the top level design unit for the latest build process (see <a href="reference/json.html">JSON Output</a>).</p>
 </li>
 <li>
-<p><code>ORBIT_TB_NAME</code> - The testbench's identifier for the latest build process, only if the build process was a test.</p>
+<p><code>ORBIT_TB_NAME</code> - The testbench's identifier for the latest build process, only if the build process was a test and a testbench was found.</p>
 </li>
 <li>
-<p><code>ORBIT_TB_FILE</code> - The full file system path that contains the testbench for the latest build process, only if the build process was a test.</p>
+<p><code>ORBIT_TB_FILE</code> - The full file system path that contains the testbench for the latest build process, only if the build process was a test and a testbench was found.</p>
 </li>
 <li>
-<p><code>ORBIT_TB_JSON</code> - The serialized json data for the testbench for the latest build process, only if the build process was a test (see <a href="reference/json.html">JSON Output</a>).</p>
+<p><code>ORBIT_TB_JSON</code> - The serialized json data for the testbench for the latest build process, only if the build process was a test and a testbench was found (see <a href="reference/json.html">JSON Output</a>).</p>
 </li>
 <li>
 <p><code>ORBIT_DUT_NAME</code> - The design under test's identifier for the latest build process, only if the build process was a test.</p>
@@ -3822,8 +3822,8 @@ orbit lock --force
 context of a test.</p>
 <p>While this command functions similar to <code>orbit build</code>, the targets that are
 encouraged to be used with this command are ones that are designed to either
-"pass" or "fail", typically through a return code. This command requires a
-testbench, if you do not want to set a testbench, see <code>orbit build</code>.</p>
+"pass" or "fail", typically through a return code. This command optionally
+requests a testbench, if you must not allow a testbench, see <code>orbit build</code>.</p>
 <p>A target must be provided for the test command to run. A default target can
 be specified in a configuration file, which will be used when a target is
 omitted from the command-line.</p>
@@ -3873,7 +3873,7 @@ returned from the user-defined execution process is propagated through Orbit.</p
 <p><code>args</code><br />
             Arguments to pass to the target</p>
 <h2 id="examples-10"><a class="header" href="#examples-10"><strong>EXAMPLES</strong></a></h2>
-<pre><code>orbit test --dut adder --tb adder_tb --target modelsim -- --lint
+<pre><code>orbit test --dut adder --tb adder_tb --target modelsim -- -r sim
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="orbit-build"><a class="header" href="#orbit-build"><strong>orbit build</strong></a></h1>
 <h2 id="name-9"><a class="header" href="#name-9"><strong>NAME</strong></a></h2>

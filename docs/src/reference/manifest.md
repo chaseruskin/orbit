@@ -13,6 +13,7 @@ Every manifest file consists of the following sections:
     - [uuid](#the-uuid-field) - The universally unique identifier of the project.
     - [version](#the-version-field) - The version of the project.
     - [description](#the-description-field) - A short description of the project.
+    - [documentation](#the-documentation-field) - URL of the project documentation.
     - [authors](#the-authors-field) - The authors of the project.
     - [library](#the-library-field) - The HDL library for the design units within the project.
     - [source](#the-source-field) - The URL of the project source repository.
@@ -85,6 +86,16 @@ The description is a short blurb about the project. This should be plain text (n
 [project]
 # ...
 description = "A short description of the project"
+```
+
+### The `documentation` field
+
+The documentation field specifies a URL to a website hosting the crate’s documentation.
+
+``` toml
+[project]
+# ...
+documentation = "https://chaseruskin.github.io/orbit"
 ```
 
 ### The `authors` field

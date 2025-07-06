@@ -37,25 +37,25 @@ A fileset is a collection of related files under a given name. A glob-style file
 An IP core is a resusable block of design logic composed of one or more design units. An IP core is the smallest amount of hardware description code that Orbit considers at a time. Design units that make up an IP core may include VHDL entities or Verilog modules.
 
 ### Index
-An index is the searchable list of [projects](#project) in a [channel](#channels).
+The index is the searchable list of [projects](#project) in a [channel](#channels).
 
 ### Local Project
 Another name for the [current project](#current-project).
 
-### Lockfile
-A lockfile is a file that precisely describes a project and all of its resolved dependencies. The lockfile is called "Orbit.lock" and is automatically generated and maintained by Orbit. The lockfile should be checked into your version control system for reproducible builds. It is not to be manually edited by the user. 
+### Lock file
+A lock file is a file that precisely describes a project and all of its resolved dependencies. The lock file is called "Orbit.lock" and is automatically generated and maintained by Orbit. The lock file should be checked into your version control system for reproducible builds. It is not to be manually edited by the user. 
 
-With the lockfile, Orbit is able to download missing dependencies, install missing dependencies, and verify the data integrity of installed dependencies.
+With the lock file, Orbit is able to download missing dependencies, install missing dependencies, and verify the data integrity of installed dependencies.
 
 ### Manifest
 A manifest is a configuration file containing metadata about a project that is recognized by Orbit. Manifest files 
-are named "Orbit.toml". The manifest is intended to be edited by the user. The manifest is used as an input for Orbit to generate the lockfile.
+are named "Orbit.toml". The manifest is intended to be edited by the user. The manifest is used as an input for Orbit to generate the lock file.
 
 ### Orbit
 Orbit is a package manager and build system for [VHDL](#vhdl), [Verilog](#verilog), and [SystemVerilog](#systemverilog). It is the primary topic of this book.
 
 ### Orbit.lock
-See [lockfile](#lockfile).
+See [lock file](#lock-file).
 
 ### Orbit.toml
 See [manifest](#manifest).

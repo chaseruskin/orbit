@@ -403,6 +403,7 @@ impl Manifest {
                 source: None.into(),
                 keywords: Vec::new(),
                 description: None,
+                documentation: None,
                 channels: None,
                 public: None,
                 library: None,
@@ -580,6 +581,8 @@ pub struct Package {
     #[serde(deserialize_with = "validate_lib_name", default)]
     library: Option<ProjectName>,
     description: Option<String>,
+    /// URL of the project documentation
+    documentation: Option<String>,
     authors: Option<Vec<String>>,
     #[serde(skip_serializing_if = "vec_is_empty", default)]
     keywords: Vec<String>,

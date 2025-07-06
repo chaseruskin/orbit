@@ -34,17 +34,17 @@ Orbit also sets environment variables during runtime such that any subprocesses 
 
 - `ORBIT_TARGET` - The name of the target selected for the latest build process.
 
-- `ORBIT_TOP_NAME` - The top level design's identifier for the latest build process, only if the build process was a build.
+- `ORBIT_TOP_NAME` - The top level design's identifier for the latest build process.
 
-- `ORBIT_TOP_FILE` - The full file system path that contains the top level design for the latest build process, only if the build process was a build.
+- `ORBIT_TOP_FILE` - The full file system path that contains the top level design for the latest build process.
 
-- `ORBIT_TOP_JSON` - The serialized json data for the top level design unit for the latest build process, only if the build process was a build (see [JSON Output](json.md)).
+- `ORBIT_TOP_JSON` - The serialized json data for the top level design unit for the latest build process (see [JSON Output](json.md)).
 
-- `ORBIT_TB_NAME` - The testbench's identifier for the latest build process, only if the build process was a test.
+- `ORBIT_TB_NAME` - The testbench's identifier for the latest build process, only if the build process was a test and a testbench was found.
 
-- `ORBIT_TB_FILE` - The full file system path that contains the testbench for the latest build process, only if the build process was a test.
+- `ORBIT_TB_FILE` - The full file system path that contains the testbench for the latest build process, only if the build process was a test and a testbench was found.
 
-- `ORBIT_TB_JSON` - The serialized json data for the testbench for the latest build process, only if the build process was a test (see [JSON Output](json.md)).
+- `ORBIT_TB_JSON` - The serialized json data for the testbench for the latest build process, only if the build process was a test and a testbench was found (see [JSON Output](json.md)).
 
 - `ORBIT_DUT_NAME` - The design under test's identifier for the latest build process, only if the build process was a test.
 

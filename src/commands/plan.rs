@@ -87,7 +87,7 @@ impl Plan {
         top_name: &Option<Identifier>,
         filesets: &Option<Vec<Fileset>>,
         scheme: &Scheme,
-        require_bench: bool,
+        is_test: bool,
         allow_bench: bool,
         envs: Environment,
         priv_by_def: bool,
@@ -127,7 +127,7 @@ impl Plan {
                         &String::new(),
                         &String::new(),
                         target,
-                        require_bench,
+                        is_test,
                     )?;
                     // create a blueprint file
                     crate::warn!(
@@ -250,8 +250,9 @@ impl Plan {
                     Hint::IncludeAllInPlan,
                 ))?;
             }
-        } else if bench.is_none() == true && require_bench == true {
-            return Err(Error::TestbenchRequired)?;
+        } else if bench.is_none() == true && is_test == true {
+            // allow test to proceed if testbench is omitted.
+            // return Err(Error::TestbenchRequired)?;
         }
 
         // [!] write the lock file
@@ -389,16 +390,16 @@ impl Plan {
 
         // print information (maybe also print the plugin saved to .env too?)
         match top_name.is_empty() {
-            false => match require_bench {
+            false => match is_test {
                 true => crate::info!("dut set to {}", top_name.blue()),
                 false => crate::info!("top-level set to {}", top_name.blue()),
             },
-            true => match require_bench {
+            true => match is_test {
                 true => crate::warn!("no dut set"),
                 false => crate::warn!("no top-level set"),
             },
         }
-        if require_bench == true {
+        if is_test == true {
             match bench_name.is_empty() {
                 false => crate::info!("testbench set to {}", bench_name.blue()),
                 true => crate::warn!("no testbench set"),
@@ -413,14 +414,13 @@ impl Plan {
             // prepare the variable table for string swapping in any custom filesets
             let mut vtable = StrSwapTable::new();
             // variables could potentially store empty strings if units are not set
-            vtable.add("orbit.tb.name", &bench_name);
-            vtable.add("orbit.top.name", &top_name);
-            vtable.add("orbit.dut.name", &top_name);
             if bench_name.len() > 0 {
-                vtable.add("orbit.core.root.name", &bench_name);
+                vtable.add("orbit.top.name", &bench_name);
             } else {
-                vtable.add("orbit.core.root.name", &top_name);
+                vtable.add("orbit.top.name", &top_name);
             }
+            vtable.add("orbit.tb.name", &bench_name);
+            vtable.add("orbit.dut.name", &top_name);
 
             // store data in a map for quicker look-ups when comparing to target-defind filesets
             let mut cli_fset_map: HashMap<&String, Fileset> = HashMap::new();
@@ -509,7 +509,7 @@ impl Plan {
             &bench_file,
             &bench_json,
             target,
-            require_bench,
+            is_test,
         )?;
         // create a blueprint file
         crate::info!(
@@ -1798,7 +1798,7 @@ impl Plan {
         bench_file: &str,
         bench_json: &str,
         target: &Target,
-        require_bench: bool,
+        is_test: bool,
     ) -> Result<PathBuf, Fault> {
         let output_path = target_path.join(target.get_name());
         // create a output build directorie(s) if they do not exist
@@ -1818,64 +1818,40 @@ impl Plan {
         // build upon existing environment variables to save in .env file
         envs = envs
             .add(EnvVar::with(
-                environment::ORBIT_CORE_ROOT_NAME,
-                if require_bench == true {
-                    &bench_name
-                } else {
-                    &top_name
-                },
-            ))
-            .add(EnvVar::with(
-                environment::ORBIT_CORE_ROOT_FILE,
-                if require_bench == true {
-                    &bench_file
-                } else {
-                    &top_file
-                },
-            ))
-            .add(EnvVar::with(
-                environment::ORBIT_CORE_ROOT_JSON,
-                if require_bench == true {
-                    &bench_json
-                } else {
-                    &top_json
-                },
-            ))
-            .add(EnvVar::with(
                 environment::ORBIT_TOP_NAME,
-                if require_bench == false {
+                if is_test == false || bench_name.len() == 0 {
                     &top_name
                 } else {
-                    ""
+                    &bench_name
                 },
             ))
             .add(EnvVar::with(
                 environment::ORBIT_TOP_FILE,
-                if require_bench == false {
+                if is_test == false || bench_name.len() == 0 {
                     &top_file
                 } else {
-                    ""
+                    &bench_file
                 },
             ))
             .add(EnvVar::with(
                 environment::ORBIT_TOP_JSON,
-                if require_bench == false {
+                if is_test == false || bench_name.len() == 0 {
                     &top_json
                 } else {
-                    ""
+                    &bench_json
                 },
             ))
             .add(EnvVar::with(
                 environment::ORBIT_DUT_NAME,
-                if require_bench == true { &top_name } else { "" },
+                if is_test == true { &top_name } else { "" },
             ))
             .add(EnvVar::with(
                 environment::ORBIT_DUT_FILE,
-                if require_bench == true { &top_file } else { "" },
+                if is_test == true { &top_file } else { "" },
             ))
             .add(EnvVar::with(
                 environment::ORBIT_DUT_JSON,
-                if require_bench == true { &top_json } else { "" },
+                if is_test == true { &top_json } else { "" },
             ))
             .add(EnvVar::with(environment::ORBIT_TB_NAME, &bench_name))
             .add(EnvVar::with(environment::ORBIT_TB_FILE, &bench_file))

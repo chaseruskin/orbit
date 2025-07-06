@@ -17,8 +17,8 @@ context of a test.
 
 While this command functions similar to `orbit build`, the targets that are 
 encouraged to be used with this command are ones that are designed to either
-"pass" or "fail", typically through a return code. This command requires a
-testbench, if you do not want to set a testbench, see `orbit build`.
+"pass" or "fail", typically through a return code. This command optionally
+requests a testbench, if you must not allow a testbench, see `orbit build`.
 
 A target must be provided for the test command to run. A default target can
 be specified in a configuration file, which will be used when a target is
@@ -89,6 +89,6 @@ returned from the user-defined execution process is propagated through Orbit.
 ## __EXAMPLES__
 
 ```
-orbit test --dut adder --tb adder_tb --target modelsim -- --lint
+orbit test --dut adder --tb adder_tb --target modelsim -- -r sim
 ```
 

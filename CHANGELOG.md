@@ -20,12 +20,13 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ### Features
 - Adds `force` and `relative` flags to the fields in the `[env]` table of the `config.toml` file
 - Adds `ORBIT_PROJECT_DIR` environment variable (alias of `ORBIT_MANIFEST_DIR`)
-- Adds `ORBIT_CORE_ROOT_NAME`, `ORBIT_CORE_ROOT_FILE`, and `ORBIT_CORE_ROOT_JSON` environment variables to always set to the core's root design unit regardless if running `orbit build` or `orbit test`
 
 ### Changes
+- Allows `orbit test` to run without requiring a testbench or without requiring a dut
 - Changes manifest `[ip]` table to be `[project]`
 - Updates wording for an Orbit package to be called a `project` vs. deprecated `ip` name
 - Environment variables set in the `[env]` table no longer have a `ORBIT_ENV_` prefix automatically attached to them
+- Sets `ORBIT_TOP_*` as the build process's selected core root regardless if the entry point was `orbit build` or `orbit test`
 
 ## 0.25.2
 

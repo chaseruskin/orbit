@@ -155,6 +155,16 @@ pub enum Lang {
     SystemVerilog,
 }
 
+impl Lang {
+    pub fn into_fileset_name(&self) -> String {
+        String::from(match &self {
+            Self::Vhdl => "vhdl",
+            Self::SystemVerilog => "sysv",
+            Self::Verilog => "vlog",
+        })
+    }
+}
+
 impl FromStr for Lang {
     type Err = AnyError;
 

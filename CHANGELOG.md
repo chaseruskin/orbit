@@ -21,6 +21,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Adds `force` and `relative` flags to the fields in the `[env]` table of the `config.toml` file
 - Adds `ORBIT_PROJECT_DIR` environment variable (alias of `ORBIT_MANIFEST_DIR`)
 - Adds `documentation` field to the manifest's `[project]` table
+- Adds color and improved formatting to `orbit info` command
 
 ### Changes
 - Allows `orbit test` to run without requiring a testbench or without requiring a dut

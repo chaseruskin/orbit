@@ -20,12 +20,14 @@ use crate::core::cache::UnitCache;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::lang::LangUnit;
+use crate::core::manifest::Manifest;
 use crate::core::project::{PartialProjectIdSpec, Project};
 use crate::core::version;
 use crate::core::visibility::Visibility;
 use crate::error::{Error, Hint};
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
+use colored::Colorize;
 use std::cmp::Ordering;
 use std::env::current_dir;
 
@@ -187,13 +189,56 @@ impl Subcommand<Context> for Info {
         }
 
         // print the manifest data "pretty"
-        let s = toml::to_string_pretty(prj.get_man())?;
-        println!("{}", s);
+        let s = self.format_manifest_info(&prj.get_man());
+        print!("{}", s);
         Ok(())
     }
 }
 
 impl Info {
+    fn format_manifest_info(&self, man: &Manifest) -> String {
+        let mut result = String::new();
+        let prj = man.get_project();
+        result.push_str(&format!("{}", prj.get_name().to_string().green().bold()));
+        // check if there are any keywords
+        for key in prj.get_keywords() {
+            result.push_str(&format!(" {}{}", "#".cyan().bold(), key.cyan().bold()));
+        }
+        result.push_str("\n");
+        if let Some(desc) = prj.get_description() {
+            result.push_str(desc);
+            result.push_str("\n");
+        }
+        result.push_str(&format!(
+            "{}: {}\n",
+            "version".green().bold(),
+            prj.get_version()
+        ));
+        result.push_str(&format!("{}: {}\n", "uuid".green().bold(), prj.get_uuid()));
+        if let Some(lic) = prj.get_license() {
+            result.push_str(&format!("{}: {}\n", "license".green().bold(), lic));
+        } else {
+            result.push_str(&format!(
+                "{}: {}\n",
+                "license".green().bold(),
+                "unknown".yellow().bold()
+            ));
+        }
+        if let Some(docs) = prj.get_documentation() {
+            result.push_str(&format!("{}: {}\n", "documentation".green().bold(), docs));
+        }
+        // display dependencies if exist
+        let deps = man.get_deps_list(false, true);
+        if deps.len() > 0 {
+            result.push_str(&format!("{}:", "dependencies".green().bold()));
+            for (name, dep) in deps {
+                result.push_str(&format!("\n    {}:{}", name, dep.get_version()));
+            }
+            result.push_str("\n");
+        }
+        result
+    }
+
     /// Creates a string to display the primary design units for the particular ip from the cached data file.
     fn format_cached_units_table(table: &mut Vec<UnitCache>, all: bool) -> String {
         let mut result = String::new();
@@ -208,10 +253,19 @@ impl Info {
             if all == false && unit.get_visibility() != Visibility::Public {
                 continue;
             }
+            // let i = 15 + 6 - unit.get_symbol().len();
+            // result.push_str(&format!(
+            //     "{:<40}{}{:<i$}{:<9}\n",
+            //     unit.get_name().to_string().green().bold(),
+            //     unit.get_symbol().blue().bold(),
+            //     &format!(" ({})", unit.get_lang().into_fileset_name()),
+            //     unit.get_visibility().to_string(),
+            // ));
             result.push_str(&format!(
-                "{:<40}{:<15}{:<9}\n",
-                unit.get_name().to_string(),
-                unit.get_symbol(),
+                "{:<40}{:<15}{:<7}{:<9}\n",
+                unit.get_name().to_string(), // .green().bold(),
+                unit.get_symbol().cyan().bold(),
+                unit.get_lang().into_fileset_name().bold(),
                 unit.get_visibility().to_string(),
             ));
         }
@@ -235,10 +289,14 @@ impl Info {
             {
                 continue;
             }
+
+            // IDEA: apply no color if private or protected?
+            // let yes_color = unit.get_visibility() == &Visibility::Public;
             result.push_str(&format!(
-                "{:<40}{:<15}{:<9}\n",
-                unit.get_name().to_string(),
-                unit.to_string(),
+                "{:<40}{:<15}{:<7}{:<9}\n",
+                unit.get_name().to_string(), // .green().bold(),
+                unit.to_string().cyan().bold(),
+                unit.get_lang().into_fileset_name().bold(),
                 unit.get_visibility().to_string(),
             ));
         }

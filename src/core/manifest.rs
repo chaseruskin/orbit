@@ -614,6 +614,18 @@ impl Package {
         &self.name
     }
 
+    pub fn get_description(&self) -> &Option<String> {
+        &self.description
+    }
+
+    pub fn get_documentation(&self) -> &Option<String> {
+        &self.documentation
+    }
+
+    pub fn get_license(&self) -> &Option<License> {
+        &self.license
+    }
+
     pub fn get_publics(&self) -> &Option<Vec<String>> {
         &self.public
     }

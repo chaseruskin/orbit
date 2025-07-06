@@ -206,19 +206,19 @@ Usage:
     orbit [options] [command]
 
 Commands:
-    new                   create a new ip
-    init                  initialize an ip from an existing project
-    info                  display information about an ip
+    new                   create a new project
+    init                  initialize a project from an existing directory
+    info                  display information about a project
     read                  lookup hdl source code
-    get                   fetch an hdl unit for code integration
+    get                   display integration code for a core
     tree                  show the dependency graph
-    lock                  save the world state of an ip
+    lock                  save the world state of a project
     test, t               run a test
     build, b              plan and execute a target
-    publish               post an ip to a channel
-    search                browse the ip catalog
-    install               store an immutable reference to an ip
-    remove                delete an ip from the catalog
+    publish               post a project to a channel
+    search                browse the catalog
+    install               store an immutable reference to a project
+    remove                delete a project from the catalog
     env                   print orbit environment information
     config                modify configuration data
 

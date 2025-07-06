@@ -15,7 +15,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
-## 0.26.0 - unreleased
+## 0.26.0
 
 ### Features
 - Adds `force` and `relative` flags to the fields in the `[env]` table of the `config.toml` file
@@ -29,6 +29,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Updates wording for an Orbit package to be called a `project` vs. deprecated `ip` name
 - Environment variables set in the `[env]` table no longer have a `ORBIT_ENV_` prefix automatically attached to them
 - Sets `ORBIT_TOP_*` as the build process's selected core root regardless if the entry point was `orbit build` or `orbit test`
+- Changes manifest's `exclude` key to be called `ignore` to be more consistent with existing literature (`.gitignore`)
 
 ## 0.25.2
 

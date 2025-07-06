@@ -5,7 +5,7 @@ Dynamic Symbol Transformation (DST) is a [name mangling](https://en.wikipedia.or
 DST can be considered a [zero-cost abstraction](https://without.boats/blog/zero-cost-abstractions/#:~:text=May%2016%2C%202019,be%20avoided%20without%20the%20abstraction) due to the following traits of the algorithm's implementation:
 - __No global costs__: There are no negative impacts on performance of a design that does not use it.
 - __Optimal performance__: The best implementation of the solution that someone would have written manually is no better than the algorithm's output.
-- __Improve users' experience__: There is no additional overhead incurred by users and it enables users to more easily describe the designs they want to describe. 
+- __Improve users' experience__: There is no additional overhead incurred by users while enabling users to more easily describe the designs they want to describe. 
 
 ## Problem
 

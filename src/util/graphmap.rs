@@ -119,7 +119,7 @@ impl<K: Eq + Hash + Clone, V, E> GraphMap<K, V, E> {
         &self.graph
     }
 
-    pub fn iter(&self) -> IterGraphMap<K, V, E> {
+    pub fn iter(&self) -> IterGraphMap<'_, K, V, E> {
         IterGraphMap {
             graph: &self,
             current_node_index: 0,

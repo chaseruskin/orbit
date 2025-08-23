@@ -15,6 +15,11 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 
 # Changelog
 
+## 0.26.1
+
+### Features
+- Adds file locking mechanism to grant exclusive access to target output directories when issuing multiple `orbit build` and/or `orbit test` commands to the same target directory
+
 ## 0.26.0
 
 ### Features

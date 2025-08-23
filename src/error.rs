@@ -39,6 +39,8 @@ pub enum Error {
     CannotAutoExtractNameFromPath(String, LastError, Hint),
     #[error("file system path {0:?} is missing a name{1}")]
     MissingFileSystemPathName(PathBuf, Hint),
+    #[error("process failed to unlock file {0:?}: {1}")]
+    FileUnlockFailed(PathBuf, String),
     #[error("failed to create new project: {0}")]
     FailedToCreateNewIp(LastError),
     #[error("failed to initialize project: {0}")]

@@ -444,7 +444,7 @@ impl<'a> Catalog<'a> {
     /// Returns all possible versions found for the `target` project.
     ///
     /// Returns `None` if the id is not found in the catalog.
-    pub fn get_possible_versions(&self, id: &Uuid) -> Option<Vec<VersionItem>> {
+    pub fn get_possible_versions(&self, id: &Uuid) -> Option<Vec<VersionItem<'_>>> {
         let kaban = self.inner.get(&id)?;
         let mut set = HashSet::new();
         // read from cache

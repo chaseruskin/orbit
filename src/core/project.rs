@@ -785,7 +785,7 @@ impl ProjectIdSpec {
         )
     }
 
-    pub fn to_pkg_name(&self) -> PkgName {
+    pub fn to_pkg_name(&self) -> PkgName<'_> {
         PkgName::new(&self.0, Some(&self.1))
     }
 }
@@ -914,7 +914,7 @@ impl PartialProjectIdSpec {
         ))
     }
 
-    pub fn to_pkg_name(&self) -> PkgName {
+    pub fn to_pkg_name(&self) -> PkgName<'_> {
         PkgName::new(&self.0, self.1.as_ref())
     }
 }

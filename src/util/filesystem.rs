@@ -20,6 +20,7 @@ use crate::core::fileset;
 use crate::core::lockfile;
 use crate::core::manifest;
 use crate::core::manifest::PROJECT_MANIFEST_FILE;
+use crate::info;
 use fs_extra;
 use home::home_dir;
 use ignore::WalkBuilder;
@@ -28,6 +29,7 @@ use std::collections::HashSet;
 use std::env;
 use std::env::current_dir;
 use std::ffi::OsStr;
+use std::fs::TryLockError;
 use std::io::Read;
 use std::io::Write;
 use std::path::PathBuf;
@@ -111,30 +113,82 @@ pub fn into_std_str(path: PathBuf) -> String {
 // file: https://github.com/rust-lang/cargo/blob/master/src/cargo/util/flock.rs
 const LOCK_FILE: &str = ".#lock";
 
+#[derive(PartialEq, Debug)]
+pub enum LockZone {
+    OutputDir,
+}
+
 /// Attempts to acquire a lock, blocking until granting access.
-pub fn acquire_lock<P>(dir: &P) -> Result<(), Fault>
+pub fn acquire_lock<P>(
+    dir: &P,
+    lockzone: LockZone,
+    name: Option<&str>,
+) -> Result<(PathBuf, std::fs::File), Fault>
 where
     P: AsRef<Path>,
 {
     let pid = std::process::id();
-    let lock_path = dir.as_ref().join(LOCK_FILE);
-    loop {
+    let name = name.unwrap_or("");
+    let lock_path = dir.as_ref().join(name.to_string() + LOCK_FILE);
+
+    let zone = match lockzone {
+        LockZone::OutputDir => "target output directory",
+    };
+
+    let mut waiting_on_lock = false;
+    let lockfile = loop {
         if lock_path.try_exists().unwrap_or(true) == false {
             // `create_new` is an atomic operation, so if we create then we are "in"
             if let Ok(mut writer) = std::fs::File::create_new(&lock_path) {
-                let buf = pid.to_le_bytes();
-                match writer.write(&buf) {
-                    Ok(_) => break,
-                    Err(e) => {
-                        std::mem::drop(writer);
-                        std::fs::remove_file(&lock_path)?;
-                        return Err(Box::new(e))?;
+                match writer.try_lock() {
+                    Ok(_) => match writer.write(&pid.to_string().as_bytes()) {
+                        Ok(_) => {
+                            writer.flush().unwrap();
+                            break writer;
+                        }
+                        Err(e) => {
+                            std::mem::drop(writer);
+                            std::fs::remove_file(&lock_path)?;
+                            return Err(Box::new(e))?;
+                        }
+                    },
+                    // Lock not acquired
+                    Err(TryLockError::WouldBlock) => {
+                        if waiting_on_lock == false {
+                            info!("waiting for file lock on {}", zone);
+                        }
+                        waiting_on_lock = true;
                     }
+                    Err(TryLockError::Error(err)) => return Err(Box::new(err)),
+                }
+            }
+        } else {
+            if let Ok(mut writer) = std::fs::File::create(&lock_path) {
+                match writer.try_lock() {
+                    Ok(_) => match writer.write(&pid.to_string().as_bytes()) {
+                        Ok(_) => {
+                            writer.flush().unwrap();
+                            break writer;
+                        }
+                        Err(e) => {
+                            std::mem::drop(writer);
+                            std::fs::remove_file(&lock_path)?;
+                            return Err(Box::new(e))?;
+                        }
+                    },
+                    // Lock not acquired
+                    Err(TryLockError::WouldBlock) => {
+                        if waiting_on_lock == false {
+                            info!("waiting for file lock on {}", zone);
+                        }
+                        waiting_on_lock = true;
+                    }
+                    Err(TryLockError::Error(err)) => return Err(Box::new(err)),
                 }
             }
         }
-    }
-    Ok(())
+    };
+    Ok((lock_path, lockfile))
 }
 
 /// Attempts to release a lock, if one exists for the current process.

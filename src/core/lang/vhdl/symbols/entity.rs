@@ -286,7 +286,7 @@ impl Entity {
     ///
     /// Note: This fn must be ran after linking entities and architectures in the
     /// current project.
-    pub fn get_architectures(&self) -> Architectures {
+    pub fn get_architectures(&self) -> Architectures<'_> {
         Architectures::new(&self.architectures)
     }
 

@@ -81,7 +81,6 @@ impl Plan {
         catalog: Catalog,
         clean: bool,
         force: bool,
-        only_lock: bool,
         all: bool,
         bench_name: &Option<Identifier>,
         top_name: &Option<Identifier>,
@@ -146,12 +145,6 @@ impl Plan {
                 }
             }
         };
-
-        // only write lockfile and exit if flag is raised
-        if only_lock == true {
-            Self::write_lockfile(&working_project, &prj_graph, force, true, &catalog)?;
-            return Ok(None);
-        }
 
         // check if to clean the directory
         if clean == true && Path::exists(&output_path) == true {

@@ -35,7 +35,9 @@ use crate::util::environment::ORBIT_OUT_DIR;
 use crate::util::environment::{EnvVar, Environment, ORBIT_TARGET_DIR};
 use crate::util::filesystem::get_exe_path;
 use crate::util::filesystem::into_std_str;
+use crate::util::filesystem::LockZone;
 use crate::util::filesystem::Standardize;
+use crate::warn;
 use std::path::PathBuf;
 
 use super::plan::{self, Plan};
@@ -158,6 +160,8 @@ impl Test {
         c: &Context,
         scheme: &Scheme,
     ) -> Result<(), Fault> {
+        // path where all targets are to be kept
+        let target_path = working_project.get_root().join(target_dir);
         let output_path = working_project.get_root().join(target_dir).join(out_dir);
 
         let envs = Environment::new()
@@ -176,6 +180,13 @@ impl Test {
                 PathBuf::standardize(&output_path).to_str().unwrap(),
             ));
 
+        // try to acquire a lock to only allow one orbit process access to this directory
+        let (lockpath, _lockfd) = crate::util::filesystem::acquire_lock(
+            &target_path,
+            LockZone::OutputDir,
+            Some(&target.get_name()),
+        )?;
+
         // plan the target
         Plan::run(
             &working_project,
@@ -184,7 +195,6 @@ impl Test {
             catalog,
             self.dirty == false,
             self.force,
-            false,
             self.all,
             &self.bench,
             &self.dut,
@@ -205,7 +215,19 @@ impl Test {
         // run the command from the output path
         crate::info!("executing target {}", target.get_name().green());
         match target.execute(&self.command, &self.args, &output_path, envs.into_map()) {
-            Ok(()) => Ok(()),
+            Ok(()) => {
+                // unlock the file (delete it)
+                match std::fs::remove_file(&lockpath) {
+                    Ok(_) => Ok(()),
+                    Err(e) => {
+                        warn!(
+                            "{}",
+                            Error::FileUnlockFailed(lockpath.clone(), e.to_string(),).to_string()
+                        );
+                        Ok(())
+                    }
+                }
+            }
             Err(e) => Err(Error::TargetProcFailed(LastError(e.to_string())))?,
         }
     }

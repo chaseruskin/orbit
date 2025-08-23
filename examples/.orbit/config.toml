@@ -24,6 +24,10 @@ highlight-syntax = true
 [verilog-format]
 highlight-syntax = true
 
+[[target]]
+name = "gui"
+description = "Set up an interactive ongoing process"
+command = ["python", "gui.py"]
 
 [[target]]
 name = "multi"

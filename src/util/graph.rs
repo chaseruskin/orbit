@@ -171,7 +171,7 @@ impl<V, E> Graph<V, E> {
     }
 
     /// Creates an iterator over the incoming nodes to the `target` source.
-    pub fn predecessors(&self, target: NodeIndex) -> Predecessors<V, E> {
+    pub fn predecessors(&self, target: NodeIndex) -> Predecessors<'_, V, E> {
         let first_incoming_edge = self.vertices[target].first_incoming_edge;
         Predecessors {
             graph: self,
@@ -180,7 +180,7 @@ impl<V, E> Graph<V, E> {
     }
 
     /// Creates an iterator over the outgoing nodes from the `source` node.
-    pub fn successors(&self, source: NodeIndex) -> Successors<V, E> {
+    pub fn successors(&self, source: NodeIndex) -> Successors<'_, V, E> {
         let first_outgoing_edge = self.vertices[source].first_outgoing_edge;
         Successors {
             graph: self,
@@ -188,7 +188,7 @@ impl<V, E> Graph<V, E> {
         }
     }
 
-    pub fn iter(&self) -> IterGraph<V, E> {
+    pub fn iter(&self) -> IterGraph<'_, V, E> {
         IterGraph {
             graph: self,
             current_node_index: 0,
@@ -342,7 +342,7 @@ where
     K: Eq + Hash + Clone,
 {
     /// Creates an iterator over the outgoing nodes from the `source` node.
-    pub fn successors(&self, source: NodeIndex) -> SuccessorsGraphMap<K, V, E> {
+    pub fn successors(&self, source: NodeIndex) -> SuccessorsGraphMap<'_, K, V, E> {
         let first_outgoing_edge = self.get_graph().vertices[source].first_outgoing_edge;
         SuccessorsGraphMap {
             graph: self,
@@ -350,7 +350,7 @@ where
         }
     }
 
-    pub fn predecessors(&self, source: NodeIndex) -> PredecessorsGraphMap<K, V, E> {
+    pub fn predecessors(&self, source: NodeIndex) -> PredecessorsGraphMap<'_, K, V, E> {
         let first_incoming_edge = self.get_graph().vertices[source].first_incoming_edge;
         PredecessorsGraphMap {
             graph: self,

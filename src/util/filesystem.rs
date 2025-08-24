@@ -137,6 +137,13 @@ where
 
     let mut waiting_on_lock = false;
     let lockfile = loop {
+        // verify the directory exists
+        if dir.as_ref().exists() == false {
+            match std::fs::create_dir_all(&dir) {
+                Ok(_) => (),
+                Err(e) => return Err(Box::new(e)),
+            }
+        }
         if lock_path.try_exists().unwrap_or(true) == false {
             // `create_new` is an atomic operation, so if we create then we are "in"
             if let Ok(mut writer) = std::fs::File::create_new(&lock_path) {

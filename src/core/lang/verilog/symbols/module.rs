@@ -335,8 +335,22 @@ impl Module {
                     // add the ':'
                     tokens.push(Self::vh(Vvt::Delimiter(VhDelimiter::Colon)));
 
+                    // check what the default value is to potentially help with type inference casting (assume default integer if unspecified)
+                    let infer_with_no_type_expr = vec![SystemVerilogToken::Number(
+                        crate::core::lang::verilog::token::number::Number::Decimal(String::new()),
+                    )];
+                    let def_val_expr = Some(
+                        p.get_default()
+                            .as_static_expr()
+                            .as_ref()
+                            .unwrap_or(&infer_with_no_type_expr),
+                    );
+
                     // add the datatype
-                    tokens.push(Self::vh(Self::convert_datatype_to_vh(p.get_datatype())));
+                    tokens.push(Self::vh(Self::convert_datatype_to_vh(
+                        p.get_datatype(),
+                        def_val_expr,
+                    )));
 
                     // any ranges for that dataype?
                     if let Some(ranges) = p.get_datatype().get_ranges() {
@@ -391,8 +405,14 @@ impl Module {
                 };
                 tokens.push(Self::vh(Vvt::Keyword(dir)));
 
-                // add the datatype
-                tokens.push(Self::vh(Self::convert_datatype_to_vh(p.get_datatype())));
+                // check what the default value is to potentially help with type inference casting
+                let def_val_expr = p.get_default().as_static_expr();
+
+                // add the datatype (use default if exists to help with type inference)
+                tokens.push(Self::vh(Self::convert_datatype_to_vh(
+                    p.get_datatype(),
+                    def_val_expr.as_ref(),
+                )));
 
                 // any ranges for that dataype?
                 if let Some(ranges) = p.get_datatype().get_ranges() {
@@ -432,7 +452,12 @@ impl Module {
 
     /// Helps convert a SV token into its VHDL equivalent when dealing with
     /// datatypes.
-    fn convert_datatype_to_vh(datatype: &DataType) -> Vvt {
+    ///
+    /// Allows type inference if a default value was supplied.
+    fn convert_datatype_to_vh(
+        datatype: &DataType,
+        def_value: Option<&Vec<SystemVerilogToken>>,
+    ) -> Vvt {
         let dtype = datatype.get_type();
         let has_range = datatype.get_ranges().is_some();
 
@@ -465,9 +490,38 @@ impl Module {
                 _ => panic!("unsupported datatype conversion to vhdl"),
             }
         } else {
-            match has_range {
-                true => Vvt::Identifier(VhIdentifier::Basic("std_logic_vector".to_string())),
-                false => Vvt::Identifier(VhIdentifier::Basic("std_logic".to_string())),
+            match def_value {
+                Some(expr) => {
+                    if let Some(first_token) = expr.first() {
+                        match first_token {
+                            SystemVerilogToken::Number(_) => {
+                                Vvt::Identifier(VhIdentifier::Basic("integer".to_string()))
+                            }
+                            SystemVerilogToken::StringLiteral(_) => {
+                                Vvt::Identifier(VhIdentifier::Basic("string".to_string()))
+                            }
+                            _ => match has_range {
+                                true => Vvt::Identifier(VhIdentifier::Basic(
+                                    "std_logic_vector".to_string(),
+                                )),
+                                false => {
+                                    Vvt::Identifier(VhIdentifier::Basic("std_logic".to_string()))
+                                }
+                            },
+                        }
+                    } else {
+                        match has_range {
+                            true => {
+                                Vvt::Identifier(VhIdentifier::Basic("std_logic_vector".to_string()))
+                            }
+                            false => Vvt::Identifier(VhIdentifier::Basic("std_logic".to_string())),
+                        }
+                    }
+                }
+                None => match has_range {
+                    true => Vvt::Identifier(VhIdentifier::Basic("std_logic_vector".to_string())),
+                    false => Vvt::Identifier(VhIdentifier::Basic("std_logic".to_string())),
+                },
             }
         };
         datatype
@@ -531,7 +585,7 @@ impl Module {
                 tokens.push(t);
             });
 
-        // only introduce the '=' token if we successfully transfered the VHDL to SV
+        // only introduce the ':=' token if we successfully transfered the VHDL to SV
         if tokens.len() > 0 {
             tokens.insert(0, Self::vh(Vvt::Delimiter(VhDelimiter::VarAssign)));
         }

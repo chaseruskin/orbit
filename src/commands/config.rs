@@ -30,6 +30,7 @@ use crate::error::LastError;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::filesystem;
+use crate::warn;
 
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
@@ -162,7 +163,12 @@ impl Config {
                         Some(cfg) => cfg,
                         None => configs.last_mut().unwrap(),
                     };
-                    cfg.0.append_include(&entry.1);
+                    // verify the key does not already exist
+                    if cfg.0.already_include(&entry.1) {
+                        warn!("skipping value {:?} for configuration field \"include\": value already exists", entry.1);
+                    } else {
+                        cfg.0.append_include(&entry.1);
+                    }
                 }
                 _ => return Err(Error::ConfigFieldNotList(entry.0.to_string()))?,
             };

@@ -46,6 +46,9 @@ before `--unset` options. Not every configuration field can be edited through
 the command-line. More complex fields may require manual edits by opening its
 respective file.
 
+If the item to be pushed to a key's list using `--push` already exists in the 
+list, it will not be added again.
+
 ## __OPTIONS__
 
 `<path>`  

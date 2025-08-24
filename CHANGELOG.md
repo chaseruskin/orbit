@@ -21,6 +21,9 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Adds file locking mechanism to grant exclusive access to target output directories when issuing multiple `orbit build` and/or `orbit test` commands to the same target directory
 - Improves parameter type inference for Verilog/SV language conversions to VHDL for `orbit get` command
 
+### Changes
+- Prevents duplicate values from being appended to configuration's `include` field using `orbit config` command
+
 ## 0.26.0
 
 ### Features

@@ -125,6 +125,24 @@ impl ConfigDocument {
         Self::append_list(&mut self.document, INCLUDE_KEY, item, true);
     }
 
+    /// Checks if the value already exists in the `include` entry.
+    ///
+    /// Returns true if the key already exists.
+    pub fn already_include(&self, item: &str) -> bool {
+        let arr = match self.document[INCLUDE_KEY].as_array() {
+            Some(arr) => arr,
+            None => return false,
+        };
+        for ar in arr {
+            if let Some(val) = ar.as_str() {
+                if val == item {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
     /// Pops the last value from the `include` entry.
     pub fn pop_include(&mut self) -> bool {
         let arr = match self.document[INCLUDE_KEY].as_array_mut() {

@@ -20,6 +20,7 @@ use crate::core::fileset;
 use crate::core::lockfile;
 use crate::core::manifest;
 use crate::core::manifest::PROJECT_MANIFEST_FILE;
+use crate::error::Error;
 use crate::info;
 use fs_extra;
 use home::home_dir;
@@ -114,8 +115,13 @@ pub fn into_std_str(path: PathBuf) -> String {
 // file: https://github.com/rust-lang/cargo/blob/master/src/cargo/util/flock.rs
 const LOCK_FILE: &str = ".#lock";
 
-pub const PRJ_CACHE_EX_LOCK_NAME: &str = "catalog-mutate";
-pub const PRJ_CACHE_SH_LOCK_NAME: &str = "catalog";
+pub const PRJ_CATALOG_EX_LOCK_NAME: &str = "catalog-mutate";
+pub const PRJ_CATALOG_SH_LOCK_NAME: &str = "catalog";
+
+#[cfg(target_os = "windows")]
+pub const OS_CAN_SHARE_LOCK: bool = false;
+#[cfg(not(target_os = "windows"))]
+pub const OS_CAN_SHARE_LOCK: bool = true;
 
 #[derive(PartialEq, Debug)]
 pub enum LockZone {
@@ -168,7 +174,7 @@ where
         }
         if lock_path.try_exists().unwrap_or(true) == false {
             // `create_new` is an atomic operation, so if we create then we are "in"
-            if let Ok(mut writer) = std::fs::File::create_new(&lock_path) {
+            if let Ok(mut writer) = File::create_new(&lock_path) {
                 // try to secure the lock (shared or unshared)
                 let lock_attempt = match shared {
                     true => writer.try_lock_shared(),
@@ -184,7 +190,7 @@ where
                         Err(e) => {
                             std::mem::drop(writer);
                             std::fs::remove_file(&lock_path)?;
-                            return Err(Box::new(e))?;
+                            return Err(Box::new(Error::FileLockFailed(lock_path, e.to_string())))?;
                         }
                     },
                     // Lock not acquired
@@ -194,11 +200,13 @@ where
                         }
                         waiting_on_lock = true;
                     }
-                    Err(TryLockError::Error(err)) => return Err(Box::new(err)),
+                    Err(TryLockError::Error(err)) => {
+                        return Err(Box::new(Error::FileLockFailed(lock_path, err.to_string())))?
+                    }
                 }
             }
         } else {
-            if let Ok(mut writer) = std::fs::File::create(&lock_path) {
+            if let Ok(mut writer) = File::create(&lock_path) {
                 // try to secure the lock (shared or unshared)
                 let lock_attempt = match shared {
                     true => writer.try_lock_shared(),
@@ -214,7 +222,7 @@ where
                         Err(e) => {
                             std::mem::drop(writer);
                             std::fs::remove_file(&lock_path)?;
-                            return Err(Box::new(e))?;
+                            return Err(Box::new(Error::FileLockFailed(lock_path, e.to_string())))?;
                         }
                     },
                     // Lock not acquired
@@ -224,7 +232,9 @@ where
                         }
                         waiting_on_lock = true;
                     }
-                    Err(TryLockError::Error(err)) => return Err(Box::new(err)),
+                    Err(TryLockError::Error(err)) => {
+                        return Err(Box::new(Error::FileLockFailed(lock_path, err.to_string())))?
+                    }
                 }
             }
         }

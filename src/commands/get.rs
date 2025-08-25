@@ -37,7 +37,7 @@ use crate::error::Hint;
 use crate::util::anyerror::{AnyError, Fault};
 use crate::util::filesystem::LockZone;
 use crate::util::filesystem::Standardize;
-use crate::util::filesystem::PRJ_CACHE_SH_LOCK_NAME;
+use crate::util::filesystem::PRJ_CATALOG_SH_LOCK_NAME;
 use colored::Colorize;
 use std::env;
 use std::path::PathBuf;
@@ -137,8 +137,8 @@ impl Subcommand<Context> for Get {
         let (_cache_rd_path, cache_rd_lock) = crate::util::filesystem::acquire_lock(
             c.get_home_path(),
             LockZone::PackageCache,
-            Some(PRJ_CACHE_SH_LOCK_NAME),
-            true,
+            Some(PRJ_CATALOG_SH_LOCK_NAME),
+            crate::util::filesystem::OS_CAN_SHARE_LOCK,
         )?;
 
         // load the catalog

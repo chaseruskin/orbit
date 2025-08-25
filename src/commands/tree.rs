@@ -35,7 +35,7 @@ use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::Fault;
 use crate::util::filesystem::LockZone;
-use crate::util::filesystem::PRJ_CACHE_EX_LOCK_NAME;
+use crate::util::filesystem::PRJ_CATALOG_EX_LOCK_NAME;
 use crate::util::graph::EdgeStatus;
 use crate::util::graphmap::GraphMap;
 use std::collections::HashMap;
@@ -99,7 +99,7 @@ impl Subcommand<Context> for Tree {
         let (_cache_ap_path, cache_ap_lock) = crate::util::filesystem::acquire_lock(
             c.get_home_path(),
             LockZone::PackageCache,
-            Some(PRJ_CACHE_EX_LOCK_NAME),
+            Some(PRJ_CATALOG_EX_LOCK_NAME),
             false,
         )?;
 

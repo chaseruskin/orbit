@@ -38,8 +38,8 @@ use crate::util::filesystem::get_exe_path;
 use crate::util::filesystem::into_std_str;
 use crate::util::filesystem::LockZone;
 use crate::util::filesystem::Standardize;
-use crate::util::filesystem::PRJ_CACHE_EX_LOCK_NAME;
-use crate::util::filesystem::PRJ_CACHE_SH_LOCK_NAME;
+use crate::util::filesystem::PRJ_CATALOG_EX_LOCK_NAME;
+use crate::util::filesystem::PRJ_CATALOG_SH_LOCK_NAME;
 use crate::warn;
 use std::path::PathBuf;
 
@@ -134,7 +134,7 @@ impl Subcommand<Context> for Build {
         let (_cache_ap_path, cache_ap_lock) = crate::util::filesystem::acquire_lock(
             c.get_home_path(),
             LockZone::PackageCache,
-            Some(PRJ_CACHE_EX_LOCK_NAME),
+            Some(PRJ_CATALOG_EX_LOCK_NAME),
             false,
         )?;
 
@@ -187,12 +187,12 @@ impl Subcommand<Context> for Build {
             c.are_units_private_by_default(),
         )?;
 
-        // before we read the source files in our process, request a "READ" action to the cache
+        // before we read the source files in our process, request a shared "READ" action to the cache
         let (_cache_rd_path, cache_rd_lock) = crate::util::filesystem::acquire_lock(
             c.get_home_path(),
             LockZone::PackageCache,
-            Some(PRJ_CACHE_SH_LOCK_NAME),
-            true,
+            Some(PRJ_CATALOG_SH_LOCK_NAME),
+            crate::util::filesystem::OS_CAN_SHARE_LOCK,
         )?;
 
         // release our "APPEND" action to the cache

@@ -23,8 +23,8 @@ use crate::core::version::AnyVersion;
 use crate::error::Error;
 use crate::util::anyerror::{AnyError, Fault};
 use crate::util::filesystem::LockZone;
-use crate::util::filesystem::PRJ_CACHE_EX_LOCK_NAME;
-use crate::util::filesystem::PRJ_CACHE_SH_LOCK_NAME;
+use crate::util::filesystem::PRJ_CATALOG_EX_LOCK_NAME;
+use crate::util::filesystem::PRJ_CATALOG_SH_LOCK_NAME;
 use crate::util::prompt;
 use std::fs;
 use std::path::PathBuf;
@@ -59,7 +59,7 @@ impl Subcommand<Context> for Remove {
         let (_cache_ap_path, cache_ap_lock) = crate::util::filesystem::acquire_lock(
             c.get_home_path(),
             LockZone::PackageCache,
-            Some(PRJ_CACHE_EX_LOCK_NAME),
+            Some(PRJ_CATALOG_EX_LOCK_NAME),
             false,
         )?;
 
@@ -67,7 +67,7 @@ impl Subcommand<Context> for Remove {
         let (_cache_rd_path, cache_rd_lock) = crate::util::filesystem::acquire_lock(
             c.get_home_path(),
             LockZone::PackageCache,
-            Some(PRJ_CACHE_SH_LOCK_NAME),
+            Some(PRJ_CATALOG_SH_LOCK_NAME),
             false,
         )?;
 

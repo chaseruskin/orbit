@@ -35,7 +35,7 @@ use crate::util::environment::{
 };
 use crate::util::filesystem;
 use crate::util::filesystem::LockZone;
-use crate::util::filesystem::PRJ_CACHE_EX_LOCK_NAME;
+use crate::util::filesystem::PRJ_CATALOG_EX_LOCK_NAME;
 
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
@@ -175,7 +175,7 @@ impl Subcommand<Context> for Publish {
         let (_cache_ap_path, cache_ap_lock) = crate::util::filesystem::acquire_lock(
             c.get_home_path(),
             LockZone::PackageCache,
-            Some(PRJ_CACHE_EX_LOCK_NAME),
+            Some(PRJ_CATALOG_EX_LOCK_NAME),
             false,
         )?;
 

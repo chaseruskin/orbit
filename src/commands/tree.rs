@@ -34,6 +34,8 @@ use crate::core::project::Project;
 use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::Fault;
+use crate::util::filesystem::LockZone;
+use crate::util::filesystem::PRJ_CACHE_EX_LOCK_NAME;
 use crate::util::graph::EdgeStatus;
 use crate::util::graphmap::GraphMap;
 use std::collections::HashMap;
@@ -93,10 +95,21 @@ impl Subcommand<Context> for Tree {
         // get the ip manifest
         let project = Project::load(c.get_project_path().unwrap().clone(), true, false)?;
 
+        // before we gather the catalog, request an "APPEND" action to the cache
+        let (_cache_ap_path, cache_ap_lock) = crate::util::filesystem::acquire_lock(
+            c.get_home_path(),
+            LockZone::PackageCache,
+            Some(PRJ_CACHE_EX_LOCK_NAME),
+            false,
+        )?;
+
         // gather the catalog
         let catalog = Catalog::new().installations(c.get_cache_path())?;
 
-        self.run(project, catalog, c.are_units_private_by_default())
+        let result = self.run(project, catalog, c.are_units_private_by_default());
+        // release our "APPEND" action to the cache
+        crate::util::filesystem::release_lock(&cache_ap_lock)?;
+        result
     }
 }
 

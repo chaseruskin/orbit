@@ -34,6 +34,8 @@ use crate::util::environment::{
     EnvVar, Environment, ORBIT_CHANNEL_DIR, ORBIT_CHANNEL_NAME, ORBIT_CHANNEL_PROJECT_DIR,
 };
 use crate::util::filesystem;
+use crate::util::filesystem::LockZone;
+use crate::util::filesystem::PRJ_CACHE_EX_LOCK_NAME;
 
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
@@ -169,6 +171,14 @@ impl Subcommand<Context> for Publish {
             chan.run_sync(&env)?;
         }
 
+        // before we gather the catalog, request an "APPEND" action to the cache
+        let (_cache_ap_path, cache_ap_lock) = crate::util::filesystem::acquire_lock(
+            c.get_home_path(),
+            LockZone::PackageCache,
+            Some(PRJ_CACHE_EX_LOCK_NAME),
+            false,
+        )?;
+
         // verify the version of the ip does not already exist at the available level
         let catalog = Catalog::new()
             .installations(c.get_cache_path())?
@@ -220,13 +230,16 @@ impl Subcommand<Context> for Publish {
         };
 
         // TODO: warn if there are no HDL units in the project
-        match self.ready {
+        let result = match self.ready {
             true => self.publish_all(&local_ip, channels, env, &changes),
             false => Err(Box::new(Error::PublishDryRunDone(
                 ip_spec,
                 Hint::PublishWithReady,
             )))?,
-        }
+        };
+        // release our "APPEND" action to the cache
+        crate::util::filesystem::release_lock(&cache_ap_lock)?;
+        result
     }
 }
 

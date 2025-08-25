@@ -25,6 +25,8 @@ use crate::core::project::Project;
 use crate::core::swap::StrSwapTable;
 use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
+use crate::util::filesystem::LockZone;
+use crate::util::filesystem::PRJ_CACHE_EX_LOCK_NAME;
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
 
@@ -54,6 +56,14 @@ impl Subcommand<Context> for Lock {
             c.get_project_path().unwrap().clone(),
             true,
             force_apply_new_uuid,
+        )?;
+
+        // before we gather the catalog, request an "APPEND" action to the cache
+        let (_cache_ap_path, cache_ap_lock) = crate::util::filesystem::acquire_lock(
+            c.get_home_path(),
+            LockZone::PackageCache,
+            Some(PRJ_CACHE_EX_LOCK_NAME),
+            false,
         )?;
 
         // assemble the catalog
@@ -92,12 +102,15 @@ impl Subcommand<Context> for Lock {
             catalog = catalog.installations(c.get_cache_path())?;
         }
 
-        Self::run(
+        let result = Self::run(
             &working_ip,
             &catalog,
             self.force,
             c.are_units_private_by_default(),
-        )
+        );
+        // release our "APPEND" action to the cache
+        crate::util::filesystem::release_lock(&cache_ap_lock)?;
+        result
     }
 }
 

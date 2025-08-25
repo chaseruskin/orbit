@@ -29,7 +29,6 @@ use crate::core::target::Process;
 use crate::core::target::Target;
 use crate::error::Error;
 use crate::error::LastError;
-use crate::util::anyerror::Fault;
 use crate::util::environment::ORBIT;
 use crate::util::environment::ORBIT_OUT_DIR;
 use crate::util::environment::{EnvVar, Environment, ORBIT_TARGET_DIR};
@@ -37,6 +36,8 @@ use crate::util::filesystem::get_exe_path;
 use crate::util::filesystem::into_std_str;
 use crate::util::filesystem::LockZone;
 use crate::util::filesystem::Standardize;
+use crate::util::filesystem::PRJ_CACHE_EX_LOCK_NAME;
+use crate::util::filesystem::PRJ_CACHE_SH_LOCK_NAME;
 use crate::warn;
 use std::path::PathBuf;
 
@@ -119,56 +120,41 @@ impl Subcommand<Context> for Test {
         c.jump_to_working_project()?;
 
         // create the ip manifest
-        let project = Project::load(c.get_project_path().unwrap().clone(), true, false)?;
+        let current_project = Project::load(c.get_project_path().unwrap().clone(), true, false)?;
 
         // @todo: recreate the ip graph from the lockfile, then read each installation
+        // 2025-08-24 is this still relevant? -> probably no
         // see Install::install_from_lock_file
 
         // determine the build directory (command-line arg overrides configuration setting)
-        let default_build_dir = c.get_target_dir();
-        let target_dir = match &self.target_dir {
-            Some(dir) => dir,
-            None => &default_build_dir,
-        };
+        let default_target_dir = c.get_target_dir();
+        let target_dir = self.target_dir.as_ref().unwrap_or(&default_target_dir);
+        let out_dir = target.get_name();
+
+        // path where all targets are to be kept
+        let target_path = current_project.get_root().join(target_dir);
+        // path where the current selected target will be kept
+        let output_path = current_project.get_root().join(target_dir).join(out_dir);
+
+        // before we gather the catalog, request an "APPEND" action to the cache
+        let (_cache_ap_path, cache_ap_lock) = crate::util::filesystem::acquire_lock(
+            c.get_home_path(),
+            LockZone::PackageCache,
+            Some(PRJ_CACHE_EX_LOCK_NAME),
+            false,
+        )?;
 
         // gather the catalog and resolve any missing dependencies
         let catalog = Catalog::new()
             .installations(c.get_cache_path())?
             .downloads(c.get_downloads_path())?;
-        let catalog = plan::resolve_missing_deps(c, &project, catalog, self.force)?;
-
-        self.run(
-            &project,
-            target_dir,
-            target.get_name(),
-            target,
-            catalog,
-            &c,
-            &plan,
-        )
-    }
-}
-
-impl Test {
-    fn run(
-        &self,
-        working_project: &Project,
-        target_dir: &str,
-        out_dir: &str,
-        target: &Target,
-        catalog: Catalog,
-        c: &Context,
-        scheme: &Scheme,
-    ) -> Result<(), Fault> {
-        // path where all targets are to be kept
-        let target_path = working_project.get_root().join(target_dir);
-        let output_path = working_project.get_root().join(target_dir).join(out_dir);
+        let catalog = plan::resolve_missing_deps(c, &current_project, catalog, self.force)?;
 
         let envs = Environment::new()
             // read config.toml for setting any env variables
             .from_config(c.get_config())?
             // read ip manifest for env variables
-            .from_project(&working_project)?
+            .from_project(&current_project)?
             .add(EnvVar::new().key(ORBIT_TARGET_DIR).value(target_dir))
             .add(
                 EnvVar::new()
@@ -180,16 +166,17 @@ impl Test {
                 PathBuf::standardize(&output_path).to_str().unwrap(),
             ));
 
-        // try to acquire a lock to only allow one orbit process access to this directory
+        // try to acquire a lock to only allow one orbit process access to the target output directory
         let (lockpath, _lockfd) = crate::util::filesystem::acquire_lock(
             &target_path,
             LockZone::OutputDir,
             Some(&target.get_name()),
+            false,
         )?;
 
         // plan the target
         Plan::run(
-            &working_project,
+            &current_project,
             target_dir,
             target,
             catalog,
@@ -199,12 +186,23 @@ impl Test {
             &self.bench,
             &self.dut,
             &self.filesets,
-            &scheme,
+            &plan,
             true,
             true,
             envs,
             c.are_units_private_by_default(),
         )?;
+
+        // before we read the source files in our process, request a "READ" action to the cache
+        let (_cache_rd_path, cache_rd_lock) = crate::util::filesystem::acquire_lock(
+            c.get_home_path(),
+            LockZone::PackageCache,
+            Some(PRJ_CACHE_SH_LOCK_NAME),
+            true,
+        )?;
+
+        // release our "APPEND" action to the cache
+        crate::util::filesystem::release_lock(&cache_ap_lock)?;
 
         // prepare for build
         let envs = Environment::new().from_env_file(&output_path)?;
@@ -214,20 +212,23 @@ impl Test {
 
         // run the command from the output path
         crate::info!("executing target {}", target.get_name().green());
-        match target.execute(&self.command, &self.args, &output_path, envs.into_map()) {
-            Ok(()) => {
-                // unlock the file (delete it)
-                match std::fs::remove_file(&lockpath) {
-                    Ok(_) => Ok(()),
-                    Err(e) => {
-                        warn!(
-                            "{}",
-                            Error::FileUnlockFailed(lockpath.clone(), e.to_string(),).to_string()
-                        );
-                        Ok(())
-                    }
-                }
+        let result = target.execute(&self.command, &self.args, &output_path, envs.into_map());
+
+        // release our "READ" action to the cache
+        crate::util::filesystem::release_lock(&cache_rd_lock)?;
+
+        // unlock the target output directory
+        match std::fs::remove_file(&lockpath) {
+            Ok(_) => (),
+            Err(e) => {
+                warn!(
+                    "{}",
+                    Error::FileUnlockFailed(lockpath.clone(), e.to_string(),).to_string()
+                );
             }
+        }
+        match result {
+            Ok(()) => Ok(()),
             Err(e) => Err(Error::TargetProcFailed(LastError(e.to_string())))?,
         }
     }

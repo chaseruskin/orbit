@@ -146,7 +146,7 @@ impl Plan {
             }
         };
 
-        // check if to clean the directory
+        // check if to clean the target output directory (but keep the file lock!!)
         if clean == true && Path::exists(&output_path) == true {
             fs::remove_dir_all(&output_path)?;
         }
@@ -412,8 +412,10 @@ impl Plan {
             } else {
                 vtable.add("orbit.top.name", &top_name);
             }
-            vtable.add("orbit.tb.name", &bench_name);
-            vtable.add("orbit.dut.name", &top_name);
+            if is_test == true {
+                vtable.add("orbit.tb.name", &bench_name);
+                vtable.add("orbit.dut.name", &top_name);
+            }
 
             // store data in a map for quicker look-ups when comparing to target-defind filesets
             let mut cli_fset_map: HashMap<&String, Fileset> = HashMap::new();

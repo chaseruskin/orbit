@@ -27,6 +27,8 @@ use cliproc::{Arg, Cli, Help, Subcommand};
 use crate::commands::helps::search;
 use crate::core::catalog::{Catalog, PkgName, ProjectLevel};
 use crate::core::version::AnyVersion;
+use crate::util::filesystem::LockZone;
+use crate::util::filesystem::PRJ_CACHE_SH_LOCK_NAME;
 
 #[derive(Debug, PartialEq)]
 pub struct Search {
@@ -56,6 +58,14 @@ impl Subcommand<Context> for Search {
     }
 
     fn execute(self, c: &Context) -> proc::Result {
+        // before we read the source files in our process, request a "READ" action to the cache
+        let (_cache_rd_path, cache_rd_lock) = crate::util::filesystem::acquire_lock(
+            c.get_home_path(),
+            LockZone::PackageCache,
+            Some(PRJ_CACHE_SH_LOCK_NAME),
+            true,
+        )?;
+
         let mut catalog = Catalog::new();
         // collect installed project
         catalog = catalog.installations(c.get_cache_path())?;
@@ -64,7 +74,12 @@ impl Subcommand<Context> for Search {
         // collect available project
         catalog = catalog.available(&c.get_config().get_channels())?;
 
-        self.run(&catalog)
+        let result = self.run(&catalog);
+
+        // release our "READ" action to the cache
+        crate::util::filesystem::release_lock(&cache_rd_lock)?;
+
+        result
     }
 }
 

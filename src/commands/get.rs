@@ -35,7 +35,9 @@ use crate::core::project::ProjectIdSpec;
 use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::{AnyError, Fault};
+use crate::util::filesystem::LockZone;
 use crate::util::filesystem::Standardize;
+use crate::util::filesystem::PRJ_CACHE_SH_LOCK_NAME;
 use colored::Colorize;
 use std::env;
 use std::path::PathBuf;
@@ -131,7 +133,15 @@ impl Subcommand<Context> for Get {
             )))?;
         }
 
-        // @todo: load the catalog
+        // before we gather the catalog, request a shared "READ" action to the cache
+        let (_cache_rd_path, cache_rd_lock) = crate::util::filesystem::acquire_lock(
+            c.get_home_path(),
+            LockZone::PackageCache,
+            Some(PRJ_CACHE_SH_LOCK_NAME),
+            true,
+        )?;
+
+        // load the catalog
         let catalog = Catalog::new()
             // .store(c.get_store_path())
             // .development(c.get_development_path().unwrap())?
@@ -140,7 +150,7 @@ impl Subcommand<Context> for Get {
         let mut is_local_ip = false;
         // try to auto-determine the ip (check if in a working ip)
         let ip_path = if let Some(spec) = &self.project {
-            // @todo: find the path to the provided ip by searching through the catalog
+            // find the path to the provided ip by searching through the catalog
             if let Some(lvl) = catalog.translate_name(&spec.to_pkg_name())? {
                 if let Some(slot) = lvl.get_install(spec.get_version()) {
                     slot.get_root().clone()
@@ -166,7 +176,12 @@ impl Subcommand<Context> for Get {
         // load the manifest from the path
         let ip = Project::load(ip_path, is_local_ip, false)?;
 
-        self.run(&ip, is_local_ip, &c)
+        let result = self.run(&ip, is_local_ip, &c);
+
+        // release our "READ" action to the cache
+        crate::util::filesystem::release_lock(&cache_rd_lock)?;
+
+        result
     }
 }
 

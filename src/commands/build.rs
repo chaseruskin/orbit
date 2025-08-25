@@ -38,6 +38,8 @@ use crate::util::filesystem::get_exe_path;
 use crate::util::filesystem::into_std_str;
 use crate::util::filesystem::LockZone;
 use crate::util::filesystem::Standardize;
+use crate::util::filesystem::PRJ_CACHE_EX_LOCK_NAME;
+use crate::util::filesystem::PRJ_CACHE_SH_LOCK_NAME;
 use crate::warn;
 use std::path::PathBuf;
 
@@ -128,6 +130,14 @@ impl Subcommand<Context> for Build {
         // path where the current selected target will be kept
         let output_path = current_project.get_root().join(target_dir).join(out_dir);
 
+        // before we gather the catalog, request an "APPEND" action to the cache
+        let (_cache_ap_path, cache_ap_lock) = crate::util::filesystem::acquire_lock(
+            c.get_home_path(),
+            LockZone::PackageCache,
+            Some(PRJ_CACHE_EX_LOCK_NAME),
+            false,
+        )?;
+
         // gather the catalog and resolve any missing dependencies
         let catalog = Catalog::new()
             .installations(c.get_cache_path())?
@@ -150,11 +160,12 @@ impl Subcommand<Context> for Build {
                 PathBuf::standardize(&output_path).to_str().unwrap(),
             ));
 
-        // try to acquire a lock to only allow one orbit process access to this directory
+        // try to acquire a lock to only allow one orbit process access to the target output directory
         let (lockpath, _lockfd) = crate::util::filesystem::acquire_lock(
             &target_path,
             LockZone::OutputDir,
             Some(&target.get_name()),
+            false,
         )?;
 
         // plan for the provided target
@@ -176,6 +187,17 @@ impl Subcommand<Context> for Build {
             c.are_units_private_by_default(),
         )?;
 
+        // before we read the source files in our process, request a "READ" action to the cache
+        let (_cache_rd_path, cache_rd_lock) = crate::util::filesystem::acquire_lock(
+            c.get_home_path(),
+            LockZone::PackageCache,
+            Some(PRJ_CACHE_SH_LOCK_NAME),
+            true,
+        )?;
+
+        // release our "APPEND" action to the cache
+        crate::util::filesystem::release_lock(&cache_ap_lock)?;
+
         let envs = Environment::new().from_env_file(&output_path)?;
 
         // modify the target to update with the available
@@ -184,20 +206,23 @@ impl Subcommand<Context> for Build {
 
         // run the command from the output path
         crate::info!("executing target {}", target.get_name().green());
-        match target.execute(&self.command, &self.args, &output_path, envs.into_map()) {
-            Ok(()) => {
-                // unlock the file (delete it)
-                match std::fs::remove_file(&lockpath) {
-                    Ok(_) => Ok(()),
-                    Err(e) => {
-                        warn!(
-                            "{}",
-                            Error::FileUnlockFailed(lockpath.clone(), e.to_string(),).to_string()
-                        );
-                        Ok(())
-                    }
-                }
+        let result = target.execute(&self.command, &self.args, &output_path, envs.into_map());
+
+        // release our "READ" action to the cache
+        crate::util::filesystem::release_lock(&cache_rd_lock)?;
+
+        // unlock the target output directory
+        match std::fs::remove_file(&lockpath) {
+            Ok(_) => (),
+            Err(e) => {
+                warn!(
+                    "{}",
+                    Error::FileUnlockFailed(lockpath.clone(), e.to_string(),).to_string()
+                );
             }
+        }
+        match result {
+            Ok(()) => Ok(()),
             Err(e) => Err(Error::TargetProcFailed(LastError(e.to_string())))?,
         }
     }

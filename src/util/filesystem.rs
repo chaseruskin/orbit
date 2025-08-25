@@ -29,6 +29,7 @@ use std::collections::HashSet;
 use std::env;
 use std::env::current_dir;
 use std::ffi::OsStr;
+use std::fs::File;
 use std::fs::TryLockError;
 use std::io::Read;
 use std::io::Write;
@@ -106,33 +107,54 @@ pub fn into_std_str(path: PathBuf) -> String {
     s
 }
 
-// NOTE: File locking is coming (soon?) to Rust's standard library, see open
+// NOTE: File locking is here! (rustc 1.89.0) to Rust's standard library, see closed
 // issue: https://github.com/rust-lang/rust/issues/130994
 //
 // In addition, Cargo's codebase has its own filelocking module, see source
 // file: https://github.com/rust-lang/cargo/blob/master/src/cargo/util/flock.rs
 const LOCK_FILE: &str = ".#lock";
 
+pub const PRJ_CACHE_EX_LOCK_NAME: &str = "catalog-mutate";
+pub const PRJ_CACHE_SH_LOCK_NAME: &str = "catalog";
+
 #[derive(PartialEq, Debug)]
 pub enum LockZone {
     OutputDir,
+    PackageCache,
+}
+
+/// Attempts to release a lock, returning an error if failed.
+pub fn release_lock(fd: &File) -> Result<(), Fault> {
+    match fd.unlock() {
+        Ok(()) => Ok(()),
+        Err(e) => Err(Box::new(e)),
+    }
 }
 
 /// Attempts to acquire a lock, blocking until granting access.
+///
+/// Goes for a shared lock if `shared` is true, otherwise goes for an exclusive
+/// lock.
 pub fn acquire_lock<P>(
     dir: &P,
     lockzone: LockZone,
     name: Option<&str>,
+    shared: bool,
 ) -> Result<(PathBuf, std::fs::File), Fault>
 where
     P: AsRef<Path>,
 {
     let pid = std::process::id();
     let name = name.unwrap_or("");
-    let lock_path = dir.as_ref().join(name.to_string() + LOCK_FILE);
+    let lock_path = if name.len() > 0 {
+        dir.as_ref().join(&format!("{}-{}", LOCK_FILE, name))
+    } else {
+        dir.as_ref().join(LOCK_FILE)
+    };
 
     let zone = match lockzone {
         LockZone::OutputDir => "target output directory",
+        LockZone::PackageCache => "project cache directory",
     };
 
     let mut waiting_on_lock = false;
@@ -147,7 +169,13 @@ where
         if lock_path.try_exists().unwrap_or(true) == false {
             // `create_new` is an atomic operation, so if we create then we are "in"
             if let Ok(mut writer) = std::fs::File::create_new(&lock_path) {
-                match writer.try_lock() {
+                // try to secure the lock (shared or unshared)
+                let lock_attempt = match shared {
+                    true => writer.try_lock_shared(),
+                    false => writer.try_lock(),
+                };
+                // take action based on locking result
+                match lock_attempt {
                     Ok(_) => match writer.write(&pid.to_string().as_bytes()) {
                         Ok(_) => {
                             writer.flush().unwrap();
@@ -171,7 +199,13 @@ where
             }
         } else {
             if let Ok(mut writer) = std::fs::File::create(&lock_path) {
-                match writer.try_lock() {
+                // try to secure the lock (shared or unshared)
+                let lock_attempt = match shared {
+                    true => writer.try_lock_shared(),
+                    false => writer.try_lock(),
+                };
+                // take action based on locking result
+                match lock_attempt {
                     Ok(_) => match writer.write(&pid.to_string().as_bytes()) {
                         Ok(_) => {
                             writer.flush().unwrap();
@@ -196,34 +230,6 @@ where
         }
     };
     Ok((lock_path, lockfile))
-}
-
-/// Attempts to release a lock, if one exists for the current process.
-pub fn release_lock<P>(dir: &P) -> Result<(), Fault>
-where
-    P: AsRef<Path>,
-{
-    let pid = std::process::id();
-    let lock_path = dir.as_ref().join(LOCK_FILE);
-    loop {
-        // only consider successful reads of the file's existence
-        if let Ok(exists) = lock_path.try_exists() {
-            // check to see if its our lock file to release?
-            if exists == true {
-                let locked_pid = {
-                    let mut reader = std::fs::File::open(&lock_path)?;
-                    let mut buf = [0_u8; std::mem::size_of::<u32>()];
-                    reader.read_exact(&mut buf)?;
-                    u32::from_le_bytes(buf)
-                };
-                if locked_pid == pid {
-                    std::fs::remove_file(&lock_path)?;
-                }
-            }
-            break;
-        }
-    }
-    Ok(())
 }
 
 pub enum Unit {

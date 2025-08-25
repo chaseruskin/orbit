@@ -280,6 +280,7 @@ options."<unit>..." = "Uppermost HDL unit of the dependency tree"
 options."--edges, -e <kind>" = "The kind of dependencies to display (unit, project, all)"
 options."--format <fmt>" = "Determine how to display nodes (long, short)"
 options."--ascii" = "Limit the textual tree characters to the 128 ASCII set"
+# options."--json" = "Export the tree's information as valid json"
 
 examples = """
 orbit tree

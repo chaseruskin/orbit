@@ -63,7 +63,9 @@ use crate::error::LastError;
 use crate::util::anyerror::Fault;
 use crate::util::environment::Environment;
 use crate::util::filesystem;
+use crate::util::filesystem::LockZone;
 use crate::util::filesystem::Standardize;
+use crate::util::filesystem::PRJ_CACHE_EX_LOCK_NAME;
 use std::env;
 use std::fs;
 use std::fs::File;
@@ -139,6 +141,14 @@ impl Subcommand<Context> for Install {
             }
             return Ok(());
         }
+
+        // before we gather the catalog, request an "APPEND" action to the cache
+        let (_cache_ap_path, cache_ap_lock) = crate::util::filesystem::acquire_lock(
+            c.get_home_path(),
+            LockZone::PackageCache,
+            Some(PRJ_CACHE_EX_LOCK_NAME),
+            false,
+        )?;
 
         // gather the catalog (all manifests)
         let mut catalog = if self.force == true {
@@ -484,7 +494,11 @@ impl Subcommand<Context> for Install {
         // }
 
         // install the top-level target
-        self.run(&target, &catalog)
+        let result = self.run(&target, &catalog);
+        // release our "APPEND" action to the cache
+        crate::util::filesystem::release_lock(&cache_ap_lock)?;
+
+        result
     }
 }
 

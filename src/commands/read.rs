@@ -41,6 +41,8 @@ use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
+use crate::util::filesystem::LockZone;
+use crate::util::filesystem::PRJ_CACHE_SH_LOCK_NAME;
 use crate::util::sha256;
 use std::fs;
 
@@ -110,11 +112,19 @@ impl Subcommand<Context> for Read {
 
         // checking external project
         if let Some(spec) = &self.spec {
+            // before we gather the catalog, request a shared "READ" action to the cache
+            let (_cache_rd_path, cache_rd_lock) = crate::util::filesystem::acquire_lock(
+                c.get_home_path(),
+                LockZone::PackageCache,
+                Some(PRJ_CACHE_SH_LOCK_NAME),
+                true,
+            )?;
+
             // gather the catalog (all manifests)
             let catalog = Catalog::new().installations(c.get_cache_path())?;
 
             // access the requested ip
-            match catalog.translate_name(&spec.to_pkg_name())? {
+            let result = match catalog.translate_name(&spec.to_pkg_name())? {
                 Some(lvl) => {
                     let inst = match lvl.get_install(spec.get_version()) {
                         Some(i) => i,
@@ -129,7 +139,10 @@ impl Subcommand<Context> for Read {
                         Hint::CatalogList,
                     )))?;
                 }
-            }
+            };
+            // release our "READ" action to the cache
+            crate::util::filesystem::release_lock(&cache_rd_lock)?;
+            result
         // must be in an project if omitting the pkgid
         } else {
             let ip = match c.get_project_path() {

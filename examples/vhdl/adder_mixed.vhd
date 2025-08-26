@@ -29,7 +29,7 @@ entity adder_mixed is
 end entity;
 
 --defines a ripple-carry adder using 6 full adders
-architecture struct of adder is
+architecture struct of adder_mixed is
 
     --internal signal to propagate carry bit through each full adder
     signal carry_i : std_logic_vector(WORD_WIDTH downto 0) := (others => not FOO);
@@ -39,7 +39,7 @@ begin
 
     --generate 6 full adder instances  
     ripple_carry : for ii in 0 to WORD_WIDTH-1 generate
-        u_fa : work.lab1_pkg.fa
+        u_fa : work.fa
         port map(
             input1    => input1(ii),
             input2    => input2(ii),
@@ -51,5 +51,11 @@ begin
 
     --last bit is to be carried out from adder
     carry_out <= carry_i(WORD_WIDTH);
+
+    u_mb : entity work.magic_box
+    port map (
+        input  => input,
+        output => output
+    );
 
 end architecture;

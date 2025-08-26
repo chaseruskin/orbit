@@ -51,7 +51,7 @@ def main():
 
     for source in source_files:
         data = ''
-        with open(source, 'r') as fd:
+        with open(source, 'r', encoding='utf-8') as fd:
             data = fd.read()
             # check if it starts with the latest header
             if data.startswith(NEW_HEADER) == True:

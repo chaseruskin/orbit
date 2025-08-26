@@ -27,7 +27,7 @@ Commands:
     info                  display information about a project
     read                  lookup hdl source code
     get                   display integration code for a core
-    tree                  show the dependency graph
+    tree                  show a dependency graph
     lock                  save the world state of a project
     test, t               run a test
     build, b              plan and execute a target

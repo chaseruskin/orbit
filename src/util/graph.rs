@@ -315,8 +315,8 @@ impl<V, E> Graph<V, E> {
         while let Some(n) = tunnels.next() {
             // remember the order and parent branch type
             let twig_type = match tunnels.peek() {
-                Some(_) => Twig::MidBranch(Some(Box::new(level.clone()))),
-                None => Twig::EndLeaf(Some(Box::new(level.clone()))),
+                Some(_) => Twig::MidBranch(Some(Box::new(level.clone())), false),
+                None => Twig::EndLeaf(Some(Box::new(level.clone())), false),
             };
             traversal.append(&mut self.recurse_treeview(n, twig_type));
         }
@@ -325,13 +325,42 @@ impl<V, E> Graph<V, E> {
 
     /// Creates the in-order y-down list of nodes to display with their
     /// corresponding indentation depth and twig style.
-    pub fn treeview(&self, target: NodeIndex) -> Vec<(Twig, NodeIndex)> {
-        self.recurse_treeview(target, Twig::EndLeaf(None))
+    pub fn treeview(&self, target: NodeIndex, dedupe: bool) -> Vec<(Twig, NodeIndex)> {
+        match dedupe {
+            true => self.dedupe_treeview(target, Twig::EndLeaf(None, false), Vec::new()),
+            false => self.recurse_treeview(target, Twig::EndLeaf(None, false)),
+        }
     }
 
     /// Removes duplicate branches from the treeview and replaces them with labels.
-    pub fn compress_treeview(&self, _tree: &Vec<(Twig, NodeIndex)>) -> Vec<(Twig, NodeIndex)> {
-        todo!()
+    pub fn dedupe_treeview(
+        &self,
+        target: NodeIndex,
+        level: Twig,
+        mut visited: Vec<NodeIndex>,
+    ) -> Vec<(Twig, NodeIndex)> {
+        let mut traversal = Vec::new();
+        visited.push(target);
+        // add target to the list
+        traversal.push((level.clone(), target));
+        // select predecessors
+        let mut tunnels = self.predecessors(target).peekable();
+        while let Some(n) = tunnels.next() {
+            let is_dupe =
+                visited.iter().find(|p| p == &&n).is_some() && self.predecessors(n).count() > 0;
+            // remember the order and parent branch type
+            let twig_type = match tunnels.peek() {
+                Some(_) => Twig::MidBranch(Some(Box::new(level.clone())), is_dupe),
+                None => Twig::EndLeaf(Some(Box::new(level.clone())), is_dupe),
+            };
+            if is_dupe == true {
+                traversal.push((twig_type, n));
+            } else {
+                traversal.append(&mut self.dedupe_treeview(n, twig_type, visited.clone()));
+                visited.append(&mut traversal.iter().map(|f| f.1).collect());
+            }
+        }
+        traversal
     }
 }
 
@@ -427,16 +456,24 @@ impl EdgeStatus {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Twig {
-    EndLeaf(Option<Box<Twig>>),
-    MidBranch(Option<Box<Twig>>),
+    EndLeaf(Option<Box<Twig>>, bool),
+    MidBranch(Option<Box<Twig>>, bool),
 }
 
 impl Twig {
     /// Accesses what type of node was the parent to the current `self`.
     pub fn get_upper(&self) -> Option<&Twig> {
         match self {
-            Self::EndLeaf(e) => e.as_deref(),
-            Self::MidBranch(e) => e.as_deref(),
+            Self::EndLeaf(e, _) => e.as_deref(),
+            Self::MidBranch(e, _) => e.as_deref(),
+        }
+    }
+
+    /// Returns true if this twig was marked as a duplicate.
+    pub fn is_dupe(&self) -> bool {
+        match self {
+            Self::EndLeaf(_, b) => *b,
+            Self::MidBranch(_, b) => *b,
         }
     }
 }
@@ -449,12 +486,12 @@ impl std::fmt::Display for Twig {
             let mut x = self;
             while let Some(n) = x.get_upper() {
                 match n {
-                    Self::EndLeaf(q) => {
+                    Self::EndLeaf(q, _) => {
                         if q.is_some() {
                             space.push_str("    ")
                         }
                     }
-                    Self::MidBranch(q) => {
+                    Self::MidBranch(q, _) => {
                         if q.is_some() {
                             space.push_str("   │")
                         }
@@ -467,14 +504,14 @@ impl std::fmt::Display for Twig {
         };
 
         match self {
-            Self::EndLeaf(m) => {
+            Self::EndLeaf(m, _) => {
                 if m.is_none() {
                     write!(f, "")
                 } else {
                     write!(f, "{}└── ", space)
                 }
             }
-            Self::MidBranch(_) => write!(f, "{}├── ", space),
+            Self::MidBranch(_, _) => write!(f, "{}├── ", space),
         }
     }
 }
@@ -546,7 +583,12 @@ mod test {
     fn tree_to_string(t: &Vec<(Twig, usize)>) -> String {
         let mut display = String::new();
         for node in t {
-            display.push_str(&format!("{}{}\n", node.0, node.1));
+            display.push_str(&format!(
+                "{}{}{}\n",
+                node.0,
+                node.1,
+                if node.0.is_dupe() { " (*)" } else { "" }
+            ));
         }
         display
     }
@@ -555,7 +597,7 @@ mod test {
     fn treeview() {
         let mut g = binary_tree();
         g.add_edge(4, 2, ());
-        let tree = g.treeview(0);
+        let tree = g.treeview(0, false);
         assert_eq!(
             tree_to_string(&tree),
             "\
@@ -569,6 +611,20 @@ mod test {
         └── 4
             ├── 6
             └── 5
+"
+        );
+        let tree = g.treeview(0, true);
+        assert_eq!(
+            tree_to_string(&tree),
+            "\
+0
+├── 4
+│   ├── 6
+│   └── 5
+└── 1
+    ├── 3
+    └── 2
+        └── 4 (*)
 "
         );
     }
@@ -602,7 +658,7 @@ mod test {
 
         graph.add_edge(h, g, ());
 
-        let tree = graph.treeview(z);
+        let tree = graph.treeview(z, false);
         assert_eq!(
             tree_to_string(&tree),
             "\
@@ -617,6 +673,24 @@ mod test {
     ├── 3
     │   └── 8
     │       └── 9
+    └── 2
+"
+        );
+
+        let tree = graph.treeview(z, true);
+        assert_eq!(
+            tree_to_string(&tree),
+            "\
+0
+└── 1
+    ├── 4
+    │   ├── 7
+    │   └── 6
+    ├── 5
+    │   └── 8
+    │       └── 9
+    ├── 3
+    │   └── 8 (*)
     └── 2
 "
         );

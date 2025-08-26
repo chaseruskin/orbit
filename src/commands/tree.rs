@@ -20,6 +20,7 @@ use crate::commands::helps::tree;
 use crate::commands::plan::Plan;
 use crate::core::algo;
 use crate::core::algo::ProjectFileNode;
+use crate::core::algo::ProjectNode;
 use crate::core::catalog::Catalog;
 use crate::core::context::Context;
 use crate::core::lang::node::HdlNode;
@@ -31,6 +32,7 @@ use crate::core::lang::vhdl::token::Identifier as VhdlIdentifier;
 use crate::core::lang::Lang;
 use crate::core::lang::LangIdentifier;
 use crate::core::project::Project;
+use crate::core::project::ProjectIdSpec;
 use crate::error::Error;
 use crate::error::Hint;
 use crate::util::anyerror::Fault;
@@ -38,11 +40,91 @@ use crate::util::filesystem::LockZone;
 use crate::util::filesystem::PRJ_CATALOG_EX_LOCK_NAME;
 use crate::util::graph::EdgeStatus;
 use crate::util::graphmap::GraphMap;
+use serde_derive::Serialize;
 use std::collections::HashMap;
 use std::str::FromStr;
 
 use cliproc::{cli, proc, stage::*};
 use cliproc::{Arg, Cli, Help, Subcommand};
+
+#[derive(PartialEq, Debug, Serialize)]
+struct SerNode {
+    name: String,
+    targets: Vec<String>,
+    sources: Vec<String>,
+}
+
+impl SerNode {
+    pub fn from_hdl_graph(
+        graph: &GraphMap<CompoundIdentifier, HdlNode<'_>, ()>,
+        id: usize,
+    ) -> Self {
+        let name = graph
+            .get_node_by_index(id)
+            .unwrap()
+            .as_ref()
+            .get_symbol()
+            .get_name()
+            .to_string();
+        let sources = graph
+            .predecessors(id)
+            .into_iter()
+            .map(|i| i.1.get_symbol().get_name().to_string())
+            .collect();
+        let targets = graph
+            .successors(id)
+            .into_iter()
+            .map(|i| i.1.get_symbol().get_name().to_string())
+            .collect();
+        Self {
+            name: name,
+            sources: sources,
+            targets: targets,
+        }
+    }
+
+    pub fn from_project_graph(
+        graph: &GraphMap<ProjectIdSpec, ProjectNode<'_>, ()>,
+        id: usize,
+    ) -> Self {
+        let name = graph
+            .get_node_by_index(id)
+            .unwrap()
+            .as_ref()
+            .as_project()
+            .get_man()
+            .get_project()
+            .get_name()
+            .to_string();
+        let sources = graph
+            .predecessors(id)
+            .into_iter()
+            .map(|i| {
+                i.1.as_project()
+                    .get_man()
+                    .get_project()
+                    .get_name()
+                    .to_string()
+            })
+            .collect();
+        let targets = graph
+            .successors(id)
+            .into_iter()
+            .map(|i| {
+                i.1.as_project()
+                    .get_man()
+                    .get_project()
+                    .get_name()
+                    .to_string()
+            })
+            .collect();
+        Self {
+            name: name,
+            sources: sources,
+            targets: targets,
+        }
+    }
+}
 
 #[derive(Debug, PartialEq)]
 pub enum Kind {
@@ -67,23 +149,26 @@ impl FromStr for Kind {
 #[derive(Debug, PartialEq)]
 pub struct Tree {
     roots: Option<Vec<VhdlIdentifier>>,
-    // compress: bool,
+    no_dedupe: bool,
+    // -i, --invert: reverse the tree to show dependents
+    // --depth N: show up to N levels of the tree (N=1 shows direct dependencies)
     format: Option<IdentifierFormat>,
     ascii: bool,
     edges: Kind,
+    json: bool,
 }
 
 impl Subcommand<Context> for Tree {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
         cli.help(Help::with(tree::HELP))?;
         Ok(Tree {
-            // TODO: implement compression logic
-            // compress: cli.check(Arg::flag("compress"))?,
             ascii: cli.check(Arg::flag("ascii"))?,
+            json: cli.check(Arg::flag("json"))?,
+            no_dedupe: cli.check(Arg::flag("no-dedupe"))?,
             edges: cli
                 .get(Arg::option("edges").switch('e').value("kind"))?
                 .unwrap_or(Kind::Unit),
-            format: cli.get(Arg::option("format").value("fmt"))?,
+            format: cli.get(Arg::option("format").value("format"))?,
             roots: cli.get_all(Arg::positional("unit"))?,
         })
     }
@@ -195,6 +280,12 @@ impl Tree {
             }
         };
 
+        // turn on de-duplication when asking for json or when not requesting no deduplication
+        let en_dedupe = self.json || !self.no_dedupe;
+
+        // serialized nodes for json output
+        let mut ser_nodes = Vec::new();
+
         // display each root's tree to the console
         roots
             .iter()
@@ -208,24 +299,40 @@ impl Tree {
                     || only_modules == false
             })
             .for_each(|n| {
-                let tree = global_graph.get_graph().treeview(*n);
+                let tree = global_graph.get_graph().treeview(*n, en_dedupe);
                 for twig in &tree {
                     let branch_str = match self.ascii {
                         true => Self::to_ascii(&twig.0.to_string()),
                         false => twig.0.to_string(),
                     };
-                    println!(
-                        "{}{}",
-                        branch_str,
-                        global_graph
-                            .get_node_by_index(twig.1)
-                            .unwrap()
-                            .as_ref()
-                            .display(self.format.as_ref().unwrap_or(&IdentifierFormat::Short))
-                    );
+                    match self.json {
+                        true => {
+                            // only add if not a duplicate!
+                            if twig.0.is_dupe() == false {
+                                ser_nodes.push(SerNode::from_hdl_graph(&global_graph, twig.1))
+                            }
+                        }
+                        false => {
+                            println!(
+                                "{}{}{}",
+                                branch_str,
+                                global_graph
+                                    .get_node_by_index(twig.1)
+                                    .unwrap()
+                                    .as_ref()
+                                    .display(
+                                        self.format.as_ref().unwrap_or(&IdentifierFormat::Short)
+                                    ),
+                                if twig.0.is_dupe() == true { " (*)" } else { "" },
+                            );
+                        }
+                    }
                 }
             });
 
+        if self.json == true {
+            println!("{}", serde_json::to_string(&ser_nodes).unwrap());
+        }
         Ok(())
     }
 
@@ -239,25 +346,44 @@ impl Tree {
         let project_graph =
             algo::compute_final_project_graph(&target, Some(&catalog), priv_by_def)?;
 
-        let tree = project_graph.get_graph().treeview(0);
+        // turn on de-duplication when asking for json or when not requesting no deduplication
+        let en_dedupe = self.json || !self.no_dedupe;
+
+        let tree = project_graph.get_graph().treeview(0, en_dedupe);
+
+        let mut ser_nodes = Vec::new();
 
         for twig in &tree {
             let branch_str = match self.ascii {
                 true => Self::to_ascii(&twig.0.to_string()),
                 false => twig.0.to_string(),
             };
-            println!(
-                "{}{}",
-                branch_str,
-                project_graph
-                    .get_node_by_index(twig.1)
-                    .unwrap()
-                    .as_ref()
-                    .as_project()
-                    .get_man()
-                    .get_project()
-                    .into_project_id_spec()
-            );
+            match self.json {
+                true => {
+                    // only add if not a duplicate!
+                    if twig.0.is_dupe() == false {
+                        ser_nodes.push(SerNode::from_project_graph(&project_graph, twig.1))
+                    }
+                }
+                false => {
+                    println!(
+                        "{}{}",
+                        branch_str,
+                        project_graph
+                            .get_node_by_index(twig.1)
+                            .unwrap()
+                            .as_ref()
+                            .as_project()
+                            .get_man()
+                            .get_project()
+                            .into_project_id_spec()
+                    );
+                }
+            }
+        }
+
+        if self.json == true {
+            println!("{}", serde_json::to_string(&ser_nodes).unwrap());
         }
         Ok(())
     }

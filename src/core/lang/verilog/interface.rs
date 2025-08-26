@@ -208,7 +208,7 @@ pub fn display_connections(
 ) -> ColorVec {
     let mut result = ColorVec::new();
 
-    if port_list.is_empty() == false {
+    if port_list.is_empty() == false || is_params == false {
         result.push_whitespace(1);
         if is_params == true {
             result.push_color(Operator::Pound.to_color());
@@ -239,8 +239,10 @@ pub fn display_connections(
             };
         });
 
-    if port_list.is_empty() == false {
-        result.push_str("\n");
+    if port_list.is_empty() == false || is_params == false {
+        if port_list.is_empty() == false {
+            result.push_str("\n");
+        }
         result.push_color(Operator::ParenR.to_color());
         if is_params == true {
             result.push_whitespace(1);

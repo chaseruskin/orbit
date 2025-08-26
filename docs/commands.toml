@@ -240,7 +240,7 @@ orbit get or_gate -p gates --json
 # ------------------------------------------------------------------------------
 [tree]
 name = "tree"
-summary = "show the dependency graph"
+summary = "show a dependency graph"
 synopsis = "orbit tree [options] [<unit>...]"
 description = """
 Shows the hierarchical tree structure of the hardware design starting from a
@@ -266,26 +266,30 @@ including all primary design unit references. Any references (excluding entity
 instantiations) that are not found will not appear in the dependency graph for
 the "all" option.
 
+Nodes marked with (*) have been “de-duplicated”. The dependencies for the node 
+have already been shown elsewhere in the graph, and so are not repeated. Use 
+the `--no-dedupe` option to repeat the duplicates.
+
 Using the `--format` option can alter how much information is displayed for
 each HDL design unit in the tree composition. By default, only the design
 unit's name is displayed for each unit.
 
 If the tree's character output is not displaying properly, then the tree can
-be displayed using a set of standard ASCII characters with the `--ascii`
-option.
+be displayed using a set of standard ASCII characters with the `--charset`
+option set to "ascii".
 """
 
 options."<unit>..." = "Uppermost HDL unit of the dependency tree"
-# options."--compress" = "Replace duplicate branches with a unique label"
 options."--edges, -e <kind>" = "The kind of dependencies to display (unit, project, all)"
-options."--format <fmt>" = "Determine how to display nodes (long, short)"
-options."--ascii" = "Limit the textual tree characters to the 128 ASCII set"
-# options."--json" = "Export the tree's information as valid json"
+options."--format <format>" = "Determine how to display node names (short, long)"
+options."--no-dedupe" = "Do not de-duplicate repeated dependencies"
+options."--charset <charset>" = "Choose the character set for the tree (utf8, ascii)"
+options."--json" = "Export the tree's information as valid json"
 
 examples = """
 orbit tree
 orbit tree top --format long
-orbit tree -e project --ascii
+orbit tree -e project --charset ascii
 """
 
 # ------------------------------------------------------------------------------  

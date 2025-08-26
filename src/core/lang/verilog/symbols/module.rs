@@ -138,6 +138,7 @@ impl Module {
             "{}",
             interface::display_connections(&self.ports, false, signal_prefix, signal_suffix, fmt)
         ));
+
         result.push_str(&format!("{}", Operator::Terminator.to_color()));
         result
     }

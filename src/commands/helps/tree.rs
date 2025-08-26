@@ -16,7 +16,7 @@
 //
 
 // Automatically generated from the mansync.py script.
-pub const HELP: &str = r#"Show the dependency graph.
+pub const HELP: &str = r#"Show a dependency graph.
 
 Usage:
     orbit tree [options] [<unit>...]
@@ -24,7 +24,9 @@ Usage:
 Options:
     <unit>...             uppermost HDL unit of the dependency tree
     --edges, -e <kind>    the kind of dependencies to display (unit, project, all)
-    --format <fmt>        determine how to display nodes (long, short)
-    --ascii               limit the textual tree characters to the 128 ASCII set
+    --format <format>     determine how to display node names (short, long)
+    --no-dedupe           do not de-duplicate repeated dependencies
+    --charset <charset>   choose the character set for the tree (utf8, ascii)
+    --json                export the tree's information as valid json
 
 Use 'orbit help tree' to read more about the command."#;

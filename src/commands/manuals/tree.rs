@@ -17,7 +17,7 @@
 
 // This manual page was automatically generated from the mangen.py tool.
 pub const MANUAL: &str = r#"NAME
-    tree - show the dependency graph
+    tree - show a dependency graph
 
 SYNOPSIS
     orbit tree [options] [<unit>...]
@@ -46,13 +46,17 @@ DESCRIPTION
     instantiations) that are not found will not appear in the dependency graph for
     the "all" option.
     
+    Nodes marked with (*) have been “de-duplicated”. The dependencies for the node 
+    have already been shown elsewhere in the graph, and so are not repeated. Use 
+    the '--no-dedupe' option to repeat the duplicates.
+    
     Using the '--format' option can alter how much information is displayed for
     each HDL design unit in the tree composition. By default, only the design
     unit's name is displayed for each unit.
     
     If the tree's character output is not displaying properly, then the tree can
-    be displayed using a set of standard ASCII characters with the '--ascii'
-    option.
+    be displayed using a set of standard ASCII characters with the '--charset'
+    option set to "ascii".
 
 OPTIONS
     <unit>...
@@ -61,14 +65,20 @@ OPTIONS
     --edges, -e <kind>
         The kind of dependencies to display (unit, project, all)
 
-    --format <fmt>
-        Determine how to display nodes (long, short)
+    --format <format>
+        Determine how to display node names (short, long)
 
-    --ascii
-        Limit the textual tree characters to the 128 ascii set
+    --no-dedupe
+        Do not de-duplicate repeated dependencies
+
+    --charset <charset>
+        Choose the character set for the tree (utf8, ascii)
+
+    --json
+        Export the tree's information as valid json
 
 EXAMPLES
     orbit tree
     orbit tree top --format long
-    orbit tree -e project --ascii
+    orbit tree -e project --charset ascii
 "#;

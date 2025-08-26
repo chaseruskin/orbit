@@ -2,7 +2,7 @@
 
 ## __NAME__
 
-tree - show the dependency graph
+tree - show a dependency graph
 
 ## __SYNOPSIS__
 
@@ -35,13 +35,17 @@ including all primary design unit references. Any references (excluding entity
 instantiations) that are not found will not appear in the dependency graph for
 the "all" option.
 
+Nodes marked with (*) have been “de-duplicated”. The dependencies for the node 
+have already been shown elsewhere in the graph, and so are not repeated. Use 
+the `--no-dedupe` option to repeat the duplicates.
+
 Using the `--format` option can alter how much information is displayed for
 each HDL design unit in the tree composition. By default, only the design
 unit's name is displayed for each unit.
 
 If the tree's character output is not displaying properly, then the tree can
-be displayed using a set of standard ASCII characters with the `--ascii`
-option.
+be displayed using a set of standard ASCII characters with the `--charset`
+option set to "ascii".
 
 ## __OPTIONS__
 
@@ -51,17 +55,23 @@ option.
 `--edges, -e <kind>`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; The kind of dependencies to display (unit, project, all)
 
-`--format <fmt>`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Determine how to display nodes (long, short)
+`--format <format>`  
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Determine how to display node names (short, long)
 
-`--ascii`  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Limit the textual tree characters to the 128 ascii set
+`--no-dedupe`  
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Do not de-duplicate repeated dependencies
+
+`--charset <charset>`  
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Choose the character set for the tree (utf8, ascii)
+
+`--json`  
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Export the tree's information as valid json
 
 ## __EXAMPLES__
 
 ```
 orbit tree
 orbit tree top --format long
-orbit tree -e project --ascii
+orbit tree -e project --charset ascii
 ```
 

@@ -58,8 +58,6 @@ impl Subcommand<Context> for Init {
     }
 
     fn execute(self, c: &Context) -> proc::Result {
-        // TODO: verify the pkgid is not taken
-
         if self.uuid == true {
             println!("{}", Uuid::new().encode());
             return Ok(());
@@ -68,12 +66,12 @@ impl Subcommand<Context> for Init {
         // resolve any relative path
         let dest = filesystem::full_normal(&self.path);
 
-        // verify we are not already in an ip directory
-        // {
-        //     if let Some(p) = Context::find_ip_path(&dest) {
-        //         return Err(Error::IpExistsAtPath(p))?;
-        //     }
-        // }
+        // verify this current path does have an existing project
+        if let Some(c_path) = c.get_project_path() {
+            if c_path == &dest {
+                return Err(Error::IpExistsAtPath(dest))?;
+            }
+        }
 
         let ip_name = New::extract_name(self.name.as_ref(), &dest)?;
 

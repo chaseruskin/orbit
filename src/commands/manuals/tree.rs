@@ -46,7 +46,7 @@ DESCRIPTION
     instantiations) that are not found will not appear in the dependency graph for
     the "all" option.
     
-    Nodes marked with (*) have been “de-duplicated”. The dependencies for the node 
+    Nodes marked with (*) have been "de-duplicated". The dependencies for the node 
     have already been shown elsewhere in the graph, and so are not repeated. Use 
     the '--no-dedupe' option to repeat the duplicates.
     

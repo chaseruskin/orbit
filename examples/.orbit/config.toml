@@ -30,6 +30,11 @@ description = "Set up an interactive ongoing process"
 command = ["python", "gui.py"]
 
 [[target]]
+name = "tui"
+description = "Set up an interactive ongoing process"
+command = ["python", "gui.py"]
+
+[[target]]
 name = "multi"
 command = ["cat", "{{ orbit.blueprint }}"]
 build = true

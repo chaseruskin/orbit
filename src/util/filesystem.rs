@@ -33,7 +33,6 @@ use std::ffi::OsStr;
 use std::fs::File;
 use std::fs::TryLockError;
 use std::io::Read;
-use std::io::Write;
 use std::path::PathBuf;
 use std::path::{Component, Path};
 
@@ -118,11 +117,6 @@ const LOCK_FILE: &str = ".#lock";
 pub const PRJ_CATALOG_EX_LOCK_NAME: &str = "catalog-mutate";
 pub const PRJ_CATALOG_SH_LOCK_NAME: &str = "catalog";
 
-#[cfg(target_os = "windows")]
-pub const OS_CAN_SHARE_LOCK: bool = false;
-#[cfg(not(target_os = "windows"))]
-pub const OS_CAN_SHARE_LOCK: bool = true;
-
 #[derive(PartialEq, Debug)]
 pub enum LockZone {
     OutputDir,
@@ -150,7 +144,6 @@ pub fn acquire_lock<P>(
 where
     P: AsRef<Path>,
 {
-    let pid = std::process::id();
     let name = name.unwrap_or("");
     let lock_path = if name.len() > 0 {
         dir.as_ref().join(&format!("{}-{}", LOCK_FILE, name))
@@ -172,69 +165,37 @@ where
                 Err(e) => return Err(Box::new(e)),
             }
         }
-        if lock_path.try_exists().unwrap_or(true) == false {
-            // `create_new` is an atomic operation, so if we create then we are "in"
-            if let Ok(mut writer) = File::create_new(&lock_path) {
-                // try to secure the lock (shared or unshared)
-                let lock_attempt = match shared {
-                    true => writer.try_lock_shared(),
-                    false => writer.try_lock(),
-                };
-                // take action based on locking result
-                match lock_attempt {
-                    Ok(_) => match writer.write(&pid.to_string().as_bytes()) {
-                        Ok(_) => {
-                            writer.flush().unwrap();
-                            break writer;
-                        }
-                        Err(e) => {
-                            std::mem::drop(writer);
-                            std::fs::remove_file(&lock_path)?;
-                            return Err(Box::new(Error::FileLockFailed(lock_path, e.to_string())))?;
-                        }
-                    },
-                    // Lock not acquired
-                    Err(TryLockError::WouldBlock) => {
-                        if waiting_on_lock == false {
-                            info!("waiting for file lock on {}", zone);
-                        }
-                        waiting_on_lock = true;
+        // create the file if it does not exist
+        if lock_path.exists() == false {
+            let _ = File::create_new(&lock_path);
+        }
+        // get the options based on which lock we are trying to access
+        let fd_opts = match shared {
+            true => std::fs::OpenOptions::new().read(true).to_owned(),
+            false => std::fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create(true)
+                .to_owned(),
+        };
+        if let Ok(fd) = fd_opts.open(&lock_path) {
+            // try to secure the lock (shared or unshared)
+            let lock_attempt = match shared {
+                true => fd.try_lock_shared(),
+                false => fd.try_lock(),
+            };
+            // take action based on locking result
+            match lock_attempt {
+                Ok(_) => break fd,
+                // Lock not acquired
+                Err(TryLockError::WouldBlock) => {
+                    if waiting_on_lock == false {
+                        info!("waiting for file lock on {}", zone);
                     }
-                    Err(TryLockError::Error(err)) => {
-                        return Err(Box::new(Error::FileLockFailed(lock_path, err.to_string())))?
-                    }
+                    waiting_on_lock = true;
                 }
-            }
-        } else {
-            if let Ok(mut writer) = File::create(&lock_path) {
-                // try to secure the lock (shared or unshared)
-                let lock_attempt = match shared {
-                    true => writer.try_lock_shared(),
-                    false => writer.try_lock(),
-                };
-                // take action based on locking result
-                match lock_attempt {
-                    Ok(_) => match writer.write(&pid.to_string().as_bytes()) {
-                        Ok(_) => {
-                            writer.flush().unwrap();
-                            break writer;
-                        }
-                        Err(e) => {
-                            std::mem::drop(writer);
-                            std::fs::remove_file(&lock_path)?;
-                            return Err(Box::new(Error::FileLockFailed(lock_path, e.to_string())))?;
-                        }
-                    },
-                    // Lock not acquired
-                    Err(TryLockError::WouldBlock) => {
-                        if waiting_on_lock == false {
-                            info!("waiting for file lock on {}", zone);
-                        }
-                        waiting_on_lock = true;
-                    }
-                    Err(TryLockError::Error(err)) => {
-                        return Err(Box::new(Error::FileLockFailed(lock_path, err.to_string())))?
-                    }
+                Err(TryLockError::Error(err)) => {
+                    return Err(Box::new(Error::FileLockFailed(lock_path, err.to_string())))?
                 }
             }
         }

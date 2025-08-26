@@ -192,7 +192,7 @@ impl Subcommand<Context> for Build {
             c.get_home_path(),
             LockZone::PackageCache,
             Some(PRJ_CATALOG_SH_LOCK_NAME),
-            crate::util::filesystem::OS_CAN_SHARE_LOCK,
+            true,
         )?;
 
         // release our "APPEND" action to the cache

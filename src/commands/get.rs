@@ -37,7 +37,7 @@ use crate::error::Hint;
 use crate::util::anyerror::{AnyError, Fault};
 use crate::util::filesystem::LockZone;
 use crate::util::filesystem::Standardize;
-use crate::util::filesystem::PRJ_CATALOG_SH_LOCK_NAME;
+use crate::util::filesystem::PRJ_CATALOG_EX_LOCK_NAME;
 use colored::Colorize;
 use std::env;
 use std::path::PathBuf;
@@ -133,12 +133,12 @@ impl Subcommand<Context> for Get {
             )))?;
         }
 
-        // before we gather the catalog, request a shared "READ" action to the cache
-        let (_cache_rd_path, cache_rd_lock) = crate::util::filesystem::acquire_lock(
+        // before we gather the catalog, request an exclusive "APPEND" action to the cache
+        let (_cache_ap_path, cache_ap_lock) = crate::util::filesystem::acquire_lock(
             c.get_home_path(),
             LockZone::PackageCache,
-            Some(PRJ_CATALOG_SH_LOCK_NAME),
-            crate::util::filesystem::OS_CAN_SHARE_LOCK,
+            Some(PRJ_CATALOG_EX_LOCK_NAME),
+            false,
         )?;
 
         // load the catalog
@@ -178,8 +178,8 @@ impl Subcommand<Context> for Get {
 
         let result = self.run(&ip, is_local_ip, &c);
 
-        // release our "READ" action to the cache
-        crate::util::filesystem::release_lock(&cache_rd_lock)?;
+        // release our "APPEND" action to the cache
+        crate::util::filesystem::release_lock(&cache_ap_lock)?;
 
         result
     }

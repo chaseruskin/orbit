@@ -28,7 +28,7 @@ use crate::error::{Error, Hint};
 use crate::util::anyerror::AnyError;
 use crate::util::anyerror::Fault;
 use crate::util::filesystem::LockZone;
-use crate::util::filesystem::PRJ_CATALOG_SH_LOCK_NAME;
+use crate::util::filesystem::PRJ_CATALOG_EX_LOCK_NAME;
 use colored::Colorize;
 use std::cmp::Ordering;
 use std::env::current_dir;
@@ -59,12 +59,12 @@ impl Subcommand<Context> for Info {
     }
 
     fn execute(self, c: &Context) -> proc::Result {
-        // before we gather the catalog, request a shared "READ" action to the cache
-        let (_cache_rd_path, cache_rd_lock) = crate::util::filesystem::acquire_lock(
+        // before we gather the catalog, request an exclusive "APPEND" action to the cache
+        let (_cache_ap_path, cache_ap_lock) = crate::util::filesystem::acquire_lock(
             c.get_home_path(),
             LockZone::PackageCache,
-            Some(PRJ_CATALOG_SH_LOCK_NAME),
-            crate::util::filesystem::OS_CAN_SHARE_LOCK,
+            Some(PRJ_CATALOG_EX_LOCK_NAME),
+            false,
         )?;
 
         // collect all manifests available (load catalog)
@@ -153,7 +153,7 @@ impl Subcommand<Context> for Info {
             }
 
             // release our "READ" action to the cache
-            crate::util::filesystem::release_lock(&cache_rd_lock)?;
+            crate::util::filesystem::release_lock(&cache_ap_lock)?;
 
             return Ok(());
         }

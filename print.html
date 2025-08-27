@@ -2073,17 +2073,24 @@ gates = { uuid = "3p3oajkuoukigs45fskr0svnv", version = "1.0.0" }
 <p>To learn more about an project spec, see <a href="topic/./../reference/project_id_specification.html">Project ID Specification</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="catalog"><a class="header" href="#catalog">Catalog</a></h1>
 <p>As a package manager, Orbit must know what packages are available and where packages are stored on your local file system so that they can be operated on. Orbit stores your projects in the <em>catalog</em>. The <em>catalog</em> is a set of directories on your local file system maintained by orbit. These directories are typically hidden from the user because they are not regularly interfacing with the file system contents at these locations and manually tampering the contents may cause trouble for Orbit when it tries to use them.</p>
+<h2 id="levels"><a class="header" href="#levels">Levels</a></h2>
 <p>There are three levels to the catalog: the cache, the archive, and channels.</p>
-<h2 id="cache"><a class="header" href="#cache">Cache</a></h2>
+<h3 id="cache"><a class="header" href="#cache">Cache</a></h3>
 <p>The <em>cache</em> maintains the projects that are currently <em>installed</em> on your local file system. Installed projects can be immediately added as a dependency to your current project.</p>
 <p>Default location: <code>$ORBIT_HOME/cache</code></p>
-<h2 id="archive"><a class="header" href="#archive">Archive</a></h2>
+<h3 id="archive"><a class="header" href="#archive">Archive</a></h3>
 <p>The <em>archive</em> maintains the projects that are currently <em>downloaded</em> on your local file system. Downloaded projects can be added as a dependency to your current project only after being installed to the cache.</p>
 <p>Default location: <code>$ORBIT_HOME/archive</code></p>
-<h2 id="channels"><a class="header" href="#channels">Channels</a></h2>
+<h3 id="channels"><a class="header" href="#channels">Channels</a></h3>
 <p><em>Channels</em> are user-defined directories to set up as registries to maintain the projects that are currently <em>available</em> to download or install. These projects may require internet to download their contents and then install to your cache.</p>
 <p>Default location: <code>$ORBIT_HOME/channels</code></p>
 <p>Adding a new channel is as simple as adding a directory to the location where channels are defined.</p>
+<h2 id="atomicity-and-synchronization"><a class="header" href="#atomicity-and-synchronization">Atomicity and synchronization</a></h2>
+<p>Since the catalog is a location on your local file system, it is susceptible to race conditions if multiple processes try to read and write to this location at the same time. To prevent multiple Orbit processes from introducing race conditions, Orbit implements a file locking mechanism on the catalog. The file locking mechanism relies on Rust's standard library locking functions implemented in <a href="https://doc.rust-lang.org/std/fs/struct.File.html"><code>std::fs::File</code></a>.</p>
+<p>With the file locking mechanism in place for the catalog, Orbit processes may block until granted access to the catalog. A message like the following may appear if another Orbit process has currently locked the catalog:</p>
+<pre><code>info: waiting for file lock on project catalog directory
+</code></pre>
+<p>Once the Orbit process holding the lock has finished executing, it will release the lock for another process wishing to gain access to the catalog.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="targets"><a class="header" href="#targets">Targets</a></h1>
 <p>Orbit operates at the <em>front end</em> of hardware development. At the <em>back end</em> of hardware development is where the true "processing" occurs. A particular "process" that occurs in the back end and produces some result is called a <em>target</em>.</p>
 <p>Orbit has no built-in targets. Since hardware development varies widely with the tools available, the environments in which development occurs, and the processes that occur within those environments, Orbit has not built-in targets. This design choice gives users flexibility in configuring the types of workflows that are most important to them.</p>
@@ -3526,10 +3533,6 @@ endmodule
 </code></pre>
 <p>Orbit thinks the literal identifier for the module is named <code> `TOP</code>, which obviously is not the case. In this instance, Orbit will not properly analyze this module and may not be able to connect this module with any modules that instantiate it.</p>
 <p>Preprocessors are a giant feat that are largely unnecessary for Orbit to correctly function in 99% of given scenarios. As seen in the first example, Orbit will correctly handle tokenizing around macros, but will not evaluate them.</p>
-<h2 id="file-locking"><a class="header" href="#file-locking">File Locking</a></h2>
-<p>Orbit reads and writes to particular locations in your file system to automatically manage files and resources for you. In the context of Orbit, a file system is intended to be a globally shared, hence locked, resource. Currently, there is no locking mechanism implemented in Orbit.</p>
-<p>File locking is only important when there is the risk of multiple processes operating on the same file. Under conditions when you are running one Orbit process at a time, file locking is largely unncessary. File locking may be important to you if you have many users/processes calling Orbit potentially at the same time under the same project and/or are configured with a centrally located catalog.</p>
-<p>File locking is planned to be implemented in the near future, either by adopting Cargo's file locking implementation (<a href="https://github.com/rust-lang/cargo/blob/master/src/cargo/util/flock.rs"><code>flock.rs</code></a>) or waiting for file locking to be implemented into the Rust standard library (<a href="https://github.com/rust-lang/rust/issues/130994">issue #130994</a>)</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="commands"><a class="header" href="#commands">Commands</a></h1>
 <p>Commands are loosely grouped into two types: development and management. Commands used for development often operate on your local ip. Commands used for management often use Orbit to gain insight into external ip found in the catalog.</p>
 <p>The commands are listed below in their group and in a typical order of usage for a possible workflow.</p>

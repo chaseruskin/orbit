@@ -58,7 +58,7 @@ impl Subcommand<Context> for Remove {
         // before we gather the catalog, request an "APPEND" action to the cache
         let (_cache_ap_path, cache_ap_lock) = crate::util::filesystem::acquire_lock(
             c.get_home_path(),
-            LockZone::PackageCache,
+            LockZone::ProjectCatalog,
             Some(PRJ_CATALOG_EX_LOCK_NAME),
             false,
         )?;
@@ -66,7 +66,7 @@ impl Subcommand<Context> for Remove {
         // before we gather the catalog, request an exclusive "READ" action to the cache
         let (_cache_rd_path, cache_rd_lock) = crate::util::filesystem::acquire_lock(
             c.get_home_path(),
-            LockZone::PackageCache,
+            LockZone::ProjectCatalog,
             Some(PRJ_CATALOG_SH_LOCK_NAME),
             false,
         )?;

@@ -28,7 +28,7 @@ lic:
 
 # Run the documentation book on the local host for testing before going live
 docs:
-    mdbook serve ./docs
+    mdbook serve ./docs --dest-dir target/book
 
 # Run all the possible tests available for this project
 fulltest:

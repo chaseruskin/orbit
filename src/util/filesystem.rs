@@ -120,7 +120,7 @@ pub const PRJ_CATALOG_SH_LOCK_NAME: &str = "catalog";
 #[derive(PartialEq, Debug)]
 pub enum LockZone {
     OutputDir,
-    PackageCache,
+    ProjectCatalog,
 }
 
 /// Attempts to release a lock, returning an error if failed.
@@ -153,7 +153,7 @@ where
 
     let zone = match lockzone {
         LockZone::OutputDir => "target output directory",
-        LockZone::PackageCache => "project cache directory",
+        LockZone::ProjectCatalog => "project catalog directory",
     };
 
     let mut waiting_on_lock = false;

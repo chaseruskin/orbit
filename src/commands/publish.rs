@@ -174,7 +174,7 @@ impl Subcommand<Context> for Publish {
         // before we gather the catalog, request an "APPEND" action to the cache
         let (_cache_ap_path, cache_ap_lock) = crate::util::filesystem::acquire_lock(
             c.get_home_path(),
-            LockZone::PackageCache,
+            LockZone::ProjectCatalog,
             Some(PRJ_CATALOG_EX_LOCK_NAME),
             false,
         )?;

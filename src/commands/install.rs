@@ -272,19 +272,26 @@ impl Subcommand<Context> for Install {
                     }
                 },
             };
-            // move the ip to the downloads folder if not already there
-            let (spec, _) = Download::move_to_download_dir(
-                &target.get_root(),
-                c.get_downloads_path(),
-                Some(
-                    &target
-                        .get_man()
-                        .get_project()
-                        .into_project_id_spec()
-                        .to_partial_project_id_spec(),
-                ),
-            )?;
-            provided_spec = Some(spec.to_partial_project_id_spec());
+            // 2025-08-26: Not needed as checklist procedure will install local to downloads
+            // // move the ip to the downloads folder if not already there
+            // let (spec, _) = Download::move_to_download_dir(
+            //     &target.get_root(),
+            //     c.get_downloads_path(),
+            //     Some(
+            //         &target
+            //             .get_man()
+            //             .get_project()
+            //             .into_project_id_spec()
+            //             .to_partial_project_id_spec(),
+            //     ),
+            // )?;
+            provided_spec = Some(
+                target
+                    .get_man()
+                    .get_project()
+                    .into_project_id_spec()
+                    .to_partial_project_id_spec(),
+            );
             Some(target)
         // attempt to find the catalog
         } else {

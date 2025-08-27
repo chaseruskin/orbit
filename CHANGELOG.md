@@ -21,6 +21,8 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 - Adds file locking mechanism among multiple Orbit processes for atomic operations within single shared catalog resource
 - Adds file locking mechanism to grant exclusive access to target output directories when issuing multiple `orbit build` and/or `orbit test` commands to the same target directory
 - Adds de-duplication by default to `orbit tree` output
+- Adds `--invert` flag to `orbit tree` to display reverse dependencies
+- Adds `--depth <depth>` option to `orbit tree` to set a maximum depth to the tree displayed
 - Allows `orbit tree` to export tree as structured JSON data using `--json` for potential to be processed downstream by other tools
 - Improves parameter type inference for Verilog/SV language conversions to VHDL for `orbit get` command
 
@@ -30,6 +32,7 @@ Add `- unreleased` along the next future version to prevent CI/CD from triggerin
 ### Fixes
 - Adds required `()` to SV and Verilog code snippets for module instances that do not have any ports when requesting them with `orbit get`
 - Returns error when trying to initialize an existing directory that already has an Orbit.toml file when using `orbit init`
+- Correctly removes project from downloads directory if moved there midway through installation and installation failed
 
 ## 0.26.0
 

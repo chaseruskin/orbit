@@ -24,6 +24,8 @@ Usage:
 Options:
     <unit>...             uppermost HDL unit of the dependency tree
     --edges, -e <kind>    the kind of dependencies to display (unit, project, all)
+    --invert, -i          show the reverse dependencies for the node
+    --depth <depth>       maximum display depth of the dependency tree
     --format <format>     determine how to display node names (short, long)
     --no-dedupe           do not de-duplicate repeated dependencies
     --charset <charset>   choose the character set for the tree (utf8, ascii)

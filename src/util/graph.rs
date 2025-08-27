@@ -214,6 +214,22 @@ impl<V, E> Graph<V, E> {
         true
     }
 
+    /// Determines which node has zero incoming edges as the `leaf` node.
+    ///
+    /// Returns a list of all leaves.
+    pub fn find_leaves(&self) -> Vec<NodeIndex> {
+        let leaves = self
+            .vertices
+            .iter()
+            .enumerate()
+            .filter_map(|(i, n)| match n.first_incoming_edge.is_none() {
+                true => Some(i),
+                false => None,
+            })
+            .collect();
+        leaves
+    }
+
     /// Determines which node has zero outgoing edges as the 'root' node.
     ///
     /// Returns a list of possible roots (potentially zero) as an err if there is
@@ -306,8 +322,18 @@ impl<V, E> Graph<V, E> {
 
     /// Recursively generates the in-order y-down list of nodes to print with their
     /// corresponding twig style and level of indentation.
-    fn recurse_treeview(&self, target: NodeIndex, level: Twig) -> Vec<(Twig, NodeIndex)> {
+    fn recurse_treeview(
+        &self,
+        target: NodeIndex,
+        level: Twig,
+        max_depth: Option<usize>,
+    ) -> Vec<(Twig, NodeIndex)> {
         let mut traversal = Vec::new();
+        if let Some(d) = max_depth {
+            if level.get_depth() > d {
+                return traversal;
+            }
+        }
         // add target to the list
         traversal.push((level.clone(), target));
         // select predecessors
@@ -318,28 +344,82 @@ impl<V, E> Graph<V, E> {
                 Some(_) => Twig::MidBranch(Some(Box::new(level.clone())), false),
                 None => Twig::EndLeaf(Some(Box::new(level.clone())), false),
             };
-            traversal.append(&mut self.recurse_treeview(n, twig_type));
+            traversal.append(&mut self.recurse_treeview(n, twig_type, max_depth));
+        }
+        traversal
+    }
+
+    /// Recursively generates the in-order y-up list of nodes to print with their
+    /// corresponding twig style and level of indentation.
+    fn recurse_reverse_treeview(
+        &self,
+        target: NodeIndex,
+        level: Twig,
+        max_depth: Option<usize>,
+    ) -> Vec<(Twig, NodeIndex)> {
+        let mut traversal = Vec::new();
+        if let Some(d) = max_depth {
+            if level.get_depth() > d {
+                return traversal;
+            }
+        }
+        // add target to the list
+        traversal.push((level.clone(), target));
+        // select successors
+        let mut tunnels = self.successors(target).peekable();
+        while let Some(n) = tunnels.next() {
+            // remember the order and parent branch type
+            let twig_type = match tunnels.peek() {
+                Some(_) => Twig::MidBranch(Some(Box::new(level.clone())), false),
+                None => Twig::EndLeaf(Some(Box::new(level.clone())), false),
+            };
+            traversal.append(&mut self.recurse_reverse_treeview(n, twig_type, max_depth));
         }
         traversal
     }
 
     /// Creates the in-order y-down list of nodes to display with their
     /// corresponding indentation depth and twig style.
-    pub fn treeview(&self, target: NodeIndex, dedupe: bool) -> Vec<(Twig, NodeIndex)> {
+    pub fn treeview(
+        &self,
+        target: NodeIndex,
+        dedupe: bool,
+        reverse: bool,
+        depth: Option<usize>,
+    ) -> Vec<(Twig, NodeIndex)> {
         match dedupe {
-            true => self.dedupe_treeview(target, Twig::EndLeaf(None, false), Vec::new()),
-            false => self.recurse_treeview(target, Twig::EndLeaf(None, false)),
+            true => match reverse {
+                false => {
+                    self.dedupe_treeview(target, Twig::EndLeaf(None, false), depth, Vec::new())
+                }
+                true => self.dedupe_reverse_treeview(
+                    target,
+                    Twig::EndLeaf(None, false),
+                    depth,
+                    Vec::new(),
+                ),
+            },
+            false => match reverse {
+                false => self.recurse_treeview(target, Twig::EndLeaf(None, false), depth),
+                true => self.recurse_reverse_treeview(target, Twig::EndLeaf(None, false), depth),
+            },
         }
     }
 
     /// Removes duplicate branches from the treeview and replaces them with labels.
-    pub fn dedupe_treeview(
+    fn dedupe_treeview(
         &self,
         target: NodeIndex,
         level: Twig,
+        max_depth: Option<usize>,
         mut visited: Vec<NodeIndex>,
     ) -> Vec<(Twig, NodeIndex)> {
         let mut traversal = Vec::new();
+        if let Some(d) = max_depth {
+            if level.get_depth() > d {
+                return traversal;
+            }
+        }
         visited.push(target);
         // add target to the list
         traversal.push((level.clone(), target));
@@ -356,7 +436,54 @@ impl<V, E> Graph<V, E> {
             if is_dupe == true {
                 traversal.push((twig_type, n));
             } else {
-                traversal.append(&mut self.dedupe_treeview(n, twig_type, visited.clone()));
+                traversal.append(&mut self.dedupe_treeview(
+                    n,
+                    twig_type,
+                    max_depth,
+                    visited.clone(),
+                ));
+                visited.append(&mut traversal.iter().map(|f| f.1).collect());
+            }
+        }
+        traversal
+    }
+
+    /// Removes duplicate branches from the treeview and replaces them with labels.
+    fn dedupe_reverse_treeview(
+        &self,
+        target: NodeIndex,
+        level: Twig,
+        max_depth: Option<usize>,
+        mut visited: Vec<NodeIndex>,
+    ) -> Vec<(Twig, NodeIndex)> {
+        let mut traversal = Vec::new();
+        if let Some(d) = max_depth {
+            if level.get_depth() > d {
+                return traversal;
+            }
+        }
+        visited.push(target);
+        // add target to the list
+        traversal.push((level.clone(), target));
+        // select successors
+        let mut tunnels = self.successors(target).peekable();
+        while let Some(n) = tunnels.next() {
+            let is_dupe =
+                visited.iter().find(|p| p == &&n).is_some() && self.successors(n).count() > 0;
+            // remember the order and parent branch type
+            let twig_type = match tunnels.peek() {
+                Some(_) => Twig::MidBranch(Some(Box::new(level.clone())), is_dupe),
+                None => Twig::EndLeaf(Some(Box::new(level.clone())), is_dupe),
+            };
+            if is_dupe == true {
+                traversal.push((twig_type, n));
+            } else {
+                traversal.append(&mut self.dedupe_reverse_treeview(
+                    n,
+                    twig_type,
+                    max_depth,
+                    visited.clone(),
+                ));
                 visited.append(&mut traversal.iter().map(|f| f.1).collect());
             }
         }
@@ -474,6 +601,18 @@ impl Twig {
         match self {
             Self::EndLeaf(_, b) => *b,
             Self::MidBranch(_, b) => *b,
+        }
+    }
+
+    /// Returns the depth of this node in tree.
+    pub fn get_depth(&self) -> usize {
+        let twig = match self {
+            Self::EndLeaf(t, _) => t,
+            Self::MidBranch(t, _) => t,
+        };
+        match twig {
+            Some(t) => t.get_depth() + 1,
+            None => 0,
         }
     }
 }
@@ -597,7 +736,7 @@ mod test {
     fn treeview() {
         let mut g = binary_tree();
         g.add_edge(4, 2, ());
-        let tree = g.treeview(0, false);
+        let tree = g.treeview(0, false, false, None);
         assert_eq!(
             tree_to_string(&tree),
             "\
@@ -613,7 +752,7 @@ mod test {
             └── 5
 "
         );
-        let tree = g.treeview(0, true);
+        let tree = g.treeview(0, true, false, None);
         assert_eq!(
             tree_to_string(&tree),
             "\
@@ -658,7 +797,7 @@ mod test {
 
         graph.add_edge(h, g, ());
 
-        let tree = graph.treeview(z, false);
+        let tree = graph.treeview(z, false, false, None);
         assert_eq!(
             tree_to_string(&tree),
             "\
@@ -677,7 +816,7 @@ mod test {
 "
         );
 
-        let tree = graph.treeview(z, true);
+        let tree = graph.treeview(z, true, false, None);
         assert_eq!(
             tree_to_string(&tree),
             "\

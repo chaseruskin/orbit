@@ -65,6 +65,12 @@ OPTIONS
     --edges, -e <kind>
         The kind of dependencies to display (unit, project, all)
 
+    --invert, -i
+        Show the reverse dependencies for the node
+
+    --depth <depth>
+        Maximum display depth of the dependency tree
+
     --format <format>
         Determine how to display node names (short, long)
 

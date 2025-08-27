@@ -281,6 +281,8 @@ option set to "ascii".
 
 options."<unit>..." = "Uppermost HDL unit of the dependency tree"
 options."--edges, -e <kind>" = "The kind of dependencies to display (unit, project, all)"
+options."--invert, -i" = "Show the reverse dependencies for the node"
+options."--depth <depth>" = "Maximum display depth of the dependency tree"
 options."--format <format>" = "Determine how to display node names (short, long)"
 options."--no-dedupe" = "Do not de-duplicate repeated dependencies"
 options."--charset <charset>" = "Choose the character set for the tree (utf8, ascii)"

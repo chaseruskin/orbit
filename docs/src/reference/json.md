@@ -46,6 +46,32 @@ The following schema is implemented for the json output of `orbit get`:
 }
 ```
 
+## Dependency trees
+
+The `orbit tree` command allows one to view how cores are related to one another by displaying a dependency tree. 
+
+It also allows users to export the dependency tree with the `--json` flag. This is convenient when you wish to pass this information in a more machine-readable format to another tool/program.
+
+### Schema
+
+The following schema is currently implemented for json output of `orbit tree`:
+``` json
+[
+  {
+    // the node's name
+    "name": "string",
+    // a list of the nodes that use this current node
+    "targets": [
+      "string",
+    ],
+    // a list of the nodes this current node uses
+    "sources": [
+      "string"
+    ]
+  }
+]
+```
+
 ## Published projects
 
 The `orbit publish` command allows users to automate the process of maintaining a centralized location where released projects can be found. When successfully ran, this command copies a project's manifest to a directory dedicated to storing manifests.

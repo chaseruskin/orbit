@@ -55,6 +55,12 @@ option set to "ascii".
 `--edges, -e <kind>`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; The kind of dependencies to display (unit, project, all)
 
+`--invert, -i`  
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Show the reverse dependencies for the node
+
+`--depth <depth>`  
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Maximum display depth of the dependency tree
+
 `--format <format>`  
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Determine how to display node names (short, long)
 

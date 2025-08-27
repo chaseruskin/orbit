@@ -40,6 +40,8 @@ use crate::util::filesystem::LockZone;
 use crate::util::filesystem::PRJ_CATALOG_EX_LOCK_NAME;
 use crate::util::graph::EdgeStatus;
 use crate::util::graphmap::GraphMap;
+use colored::ColoredString;
+use colored::Colorize;
 use serde_derive::Serialize;
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -147,13 +149,31 @@ impl FromStr for Kind {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum Charset {
+    Utf8,
+    Ascii,
+}
+
+impl FromStr for Charset {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "utf8" => Ok(Charset::Utf8),
+            "ascii" => Ok(Charset::Ascii),
+            _ => Err(Error::CharsetInvalid(s.to_string())),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Tree {
     roots: Option<Vec<VhdlIdentifier>>,
     no_dedupe: bool,
-    // -i, --invert: reverse the tree to show dependents
-    // --depth N: show up to N levels of the tree (N=1 shows direct dependencies)
+    invert: bool,
+    depth: Option<usize>,
     format: Option<IdentifierFormat>,
-    ascii: bool,
+    charset: Charset,
     edges: Kind,
     json: bool,
 }
@@ -162,12 +182,16 @@ impl Subcommand<Context> for Tree {
     fn interpret<'c>(cli: &'c mut Cli<Memory>) -> cli::Result<Self> {
         cli.help(Help::with(tree::HELP))?;
         Ok(Tree {
-            ascii: cli.check(Arg::flag("ascii"))?,
             json: cli.check(Arg::flag("json"))?,
+            invert: cli.check(Arg::flag("invert").switch('i'))?,
             no_dedupe: cli.check(Arg::flag("no-dedupe"))?,
+            depth: cli.get(Arg::option("depth").value("depth"))?,
             edges: cli
                 .get(Arg::option("edges").switch('e').value("kind"))?
                 .unwrap_or(Kind::Unit),
+            charset: cli
+                .get(Arg::option("charset").value("charset"))?
+                .unwrap_or(Charset::Utf8),
             format: cli.get(Arg::option("format").value("format"))?,
             roots: cli.get_all(Arg::positional("unit"))?,
         })
@@ -264,17 +288,24 @@ impl Tree {
                 let local_graph = Plan::compute_local_graph(&global_graph, &target);
                 // compile list of all roots
                 let mut roots = Vec::new();
-                match local_graph.find_root() {
-                    Ok(i) => roots.push(
-                        Plan::local_to_global(i.index(), &global_graph, &local_graph).index(),
-                    ),
-                    Err(e) => match e.len() {
-                        0 => return Err(PlanError::Empty)?,
-                        _ => e.into_iter().for_each(|f| {
-                            roots
-                                .push(Plan::local_to_global(f, &global_graph, &local_graph).index())
-                        }),
-                    },
+                if self.invert == true {
+                    local_graph.find_leaves().into_iter().for_each(|f| {
+                        roots.push(Plan::local_to_global(f, &global_graph, &local_graph).index())
+                    })
+                } else {
+                    match local_graph.find_root() {
+                        Ok(i) => roots.push(
+                            Plan::local_to_global(i.index(), &global_graph, &local_graph).index(),
+                        ),
+                        Err(e) => match e.len() {
+                            0 => return Err(PlanError::Empty)?,
+                            _ => e.into_iter().for_each(|f| {
+                                roots.push(
+                                    Plan::local_to_global(f, &global_graph, &local_graph).index(),
+                                )
+                            }),
+                        },
+                    }
                 }
                 roots
             }
@@ -299,9 +330,12 @@ impl Tree {
                     || only_modules == false
             })
             .for_each(|n| {
-                let tree = global_graph.get_graph().treeview(*n, en_dedupe);
+                let tree =
+                    global_graph
+                        .get_graph()
+                        .treeview(*n, en_dedupe, self.invert, self.depth);
                 for twig in &tree {
-                    let branch_str = match self.ascii {
+                    let branch_str = match self.charset == Charset::Ascii {
                         true => Self::to_ascii(&twig.0.to_string()),
                         false => twig.0.to_string(),
                     };
@@ -323,7 +357,11 @@ impl Tree {
                                     .display(
                                         self.format.as_ref().unwrap_or(&IdentifierFormat::Short)
                                     ),
-                                if twig.0.is_dupe() == true { " (*)" } else { "" },
+                                if twig.0.is_dupe() == true {
+                                    " (*)".blue()
+                                } else {
+                                    ColoredString::default()
+                                },
                             );
                         }
                     }
@@ -349,12 +387,14 @@ impl Tree {
         // turn on de-duplication when asking for json or when not requesting no deduplication
         let en_dedupe = self.json || !self.no_dedupe;
 
-        let tree = project_graph.get_graph().treeview(0, en_dedupe);
+        let tree = project_graph
+            .get_graph()
+            .treeview(0, en_dedupe, self.invert, self.depth);
 
         let mut ser_nodes = Vec::new();
 
         for twig in &tree {
-            let branch_str = match self.ascii {
+            let branch_str = match self.charset == Charset::Ascii {
                 true => Self::to_ascii(&twig.0.to_string()),
                 false => twig.0.to_string(),
             };

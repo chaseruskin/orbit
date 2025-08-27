@@ -115,6 +115,10 @@ impl<K: Eq + Hash + Clone, V, E> GraphMap<K, V, E> {
         }
     }
 
+    pub fn find_leaves(&self) -> Vec<usize> {
+        self.graph.find_leaves()
+    }
+
     pub fn get_graph(&self) -> &Graph<K, E> {
         &self.graph
     }

@@ -195,6 +195,8 @@ pub enum Error {
     OrbitHomeDoesNotExist(PathBuf),
     #[error("edge kinds are: \"unit\", \"project\", \"all\"")]
     EdgeKindInvalid(String),
+    #[error("charsets are: \"utf8\", \"ascii\"")]
+    CharsetInvalid(String),
     #[error("0 design units found{0}")]
     IpZeroDesignUnitsFound(Hint),
     #[error("0 source files are matched to the public entry list{0}")]
